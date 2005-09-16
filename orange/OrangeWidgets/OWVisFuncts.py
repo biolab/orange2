@@ -3,6 +3,22 @@ from copy import copy
 differentClassPermutationsDict = {}
 projectionListDict = {}
 
+# take a number and return a formated string, eg: 2341232 -> "2,341,232"
+def createStringFromNumber(num):
+    s = str(num)
+    arr = range(len(s)-2)[:0:-3]
+    for i in arr:
+        s = s[:i] + "," + s[i:]
+    return s
+        
+
+
+# factoriela
+def fact(i):
+        ret = 1
+        for j in range(2, i+1): ret*= j
+        return ret
+
 # compute permutations of elements in alist
 def permutations(alist, blist=[], retList = []):
     if not len(alist): return [copy(blist)]
@@ -13,10 +29,18 @@ def permutations(alist, blist=[], retList = []):
         alist.insert(i, blist.pop())
     return retList
 
+
+# return number of combinations where we select "select" from "total"
+def combinationsCount(select, total):
+    return fact(total)/ (fact(total-select)*fact(select))
+
+# get the actual combinations of items
 def combinations(items, count):
     if count > len(items): return []
     answer = []
     indices = range(count)
+    if indices == []: return [[]]   # if count = 0 return empty list
+    
     indices[-1] = indices[-1] - 1
     while 1:
         limit = len(items) - 1
