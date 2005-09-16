@@ -120,6 +120,7 @@ class OWSieveDiagram(OWWidget):
                 attrY = discData.domain[attr2].name
                 current += 1
                 if self.stopCalculating:
+                    self.progressBarFinished()
                     self.calculateButton.show()
                     self.stopCalculateButton.hide()
                     return
