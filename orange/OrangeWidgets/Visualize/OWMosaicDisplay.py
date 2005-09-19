@@ -12,12 +12,18 @@
 from OWWidget import *
 #from qt import *
 from qtcanvas import *
+from OWMosaicOptimization import *
 import orngInteract
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
 from copy import copy
 import OWGraphTools, OWGUI 
 
+
+BOTTOM = 0
+LEFT = 1
+TOP = 2
+RIGHT = 3
 
 ###########################################################################################
 ##### WIDGET : 
@@ -79,6 +85,12 @@ class OWMosaicDisplay(OWWidget):
         box2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         box3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         box4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+
+        self.optimizationDlg = MosaicOptimization(self, self.signalManager)
+        optimizationButtons = OWGUI.widgetBox(self.controlArea, " Optimization Dialog ", orientation = "horizontal")
+        optimizationButtons.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow)
+        
         
         box5 = OWGUI.widgetBox(self.controlArea, "Visual Settings")
         box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
@@ -106,6 +118,7 @@ class OWMosaicDisplay(OWWidget):
 
         if data == None: return
 
+        self.attr2Combo.insertItem("(None)")
         self.attr3Combo.insertItem("(None)")
         self.attr4Combo.insertItem("(None)")
 
@@ -118,7 +131,7 @@ class OWMosaicDisplay(OWWidget):
 
         if self.attr1Combo.count() > 0:
             self.attr1 = str(self.attr1Combo.text(0))
-            self.attr2 = str(self.attr2Combo.text(self.attr2Combo.count() > 1))
+            self.attr2 = str(self.attr2Combo.text(1 + (self.attr2Combo.count() > 1)))
         self.attr3 = str(self.attr3Combo.text(0))
         self.attr4 = str(self.attr4Combo.text(0))
         
@@ -135,6 +148,8 @@ class OWMosaicDisplay(OWWidget):
     # receive new data and update all fields
     def cdata(self, data):
         self.data = None
+        self.optimizationDlg.setData(data)
+        
         if data:
             #self.data = orange.Preprocessor_dropMissing(data)
             self.data = data
@@ -145,6 +160,22 @@ class OWMosaicDisplay(OWWidget):
         
         self.updateData()
 
+
+    def setShownAttributes(self, attrList):
+        if not attrList: return
+        self.attr1 = attrList[0]
+        
+        if len(attrList) > 1: self.attr2 = attrList[1]
+        else: self.attr2 = "(None)"
+
+        if len(attrList) > 2: self.attr3 = attrList[2]
+        else: self.attr3 = "(None)"
+
+        if len(attrList) > 3: self.attr4 = attrList[3]
+        else: self.attr4 = "(None)"
+
+        self.updateData()
+        
 
     ######################################################################
     ## UPDATEDATA - gets called every time the graph has to be updated
@@ -163,19 +194,23 @@ class OWMosaicDisplay(OWWidget):
             attrList.remove("(None)")
 
         selectList = attrList
-        if self.data.domain.classVar: data = self.data.select(attrList + [self.data.domain.classVar.name])
-        else: data = self.data.select(attrList)
+        data = self.optimizationDlg.getData()   # get the selected class values
+        if self.data.domain.classVar: data = data.select(attrList + [data.domain.classVar.name])
+        else: data = data.select(attrList)
         data = orange.Preprocessor_dropMissing(data)
         
         # get the maximum width of rectangle
-        text = QCanvasText(attrList[1], self.canvas);
-        font = text.font(); font.setBold(1); text.setFont(font)
-        width = text.boundingRect().right() - text.boundingRect().left() + 30 + 20
-        xOff = width
-        if len(attrList) == 4:
-            text = QCanvasText(attrList[3], self.canvas);
+        xOff = 50
+        width = 50
+        if len(attrList) > 1:
+            text = QCanvasText(attrList[1], self.canvas);
             font = text.font(); font.setBold(1); text.setFont(font)
-            width += text.boundingRect().right() - text.boundingRect().left() + 30 + 20
+            width = text.boundingRect().right() - text.boundingRect().left() + 30 + 20
+            xOff = width
+            if len(attrList) == 4:
+                text = QCanvasText(attrList[3], self.canvas);
+                font = text.font(); font.setBold(1); text.setFont(font)
+                width += text.boundingRect().right() - text.boundingRect().left() + 30 + 20
         
         # get the maximum height of rectangle        
         height = 90
@@ -186,11 +221,13 @@ class OWMosaicDisplay(OWWidget):
         self.legend = {}        # dictionary that tells us, for what attributes did we already show the legend
         for attr in attrList: self.legend[attr] = 0
 
+        self.drawnSides = dict([(0,0),(1,0),(2,0),(3,0)])
+
         # draw rectangles
-        self.DrawData(data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 1)
+        self.DrawData(data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 0, "", len(attrList))
 
         # draw labels
-        self.DrawText(data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
+        #self.DrawText(data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
 
         # draw class legend
         self.DrawClasses(data, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
@@ -200,7 +237,37 @@ class OWMosaicDisplay(OWWidget):
    
     ######################################################################
     ## DRAW TEXT - draw legend for all attributes in attrList and their possible values
-    def DrawText(self, data, attrList, (x0, x1), (y0, y1)):
+    def DrawText(self, data, side, attr, (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute):
+        if self.drawnSides[side] or not data or len(data) == 0: return
+        if side == RIGHT and lastValueForFirstAttribute != 2: return
+        
+        self.drawnSides[side] = 1
+
+        if side % 2 == 0: values = data.domain[attr].values
+        else            : values = list(data.domain[attr].values)[::-1]
+
+        width  = x1-x0 - (side % 2 == 0) * self.cellspace*(totalAttrs-side)*(len(values)-1)
+        height = y1-y0 - (side % 2 == 1) * self.cellspace*(totalAttrs-side)*(len(values)-1)
+        
+        #calculate position of first attribute
+        if side == 0:    self.addText(attr, x0+(x1-x0)/2, y1 + self.attributeNameOffset, Qt.AlignCenter, 1)
+        elif side == 1:  self.addText(attr, x0 - self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignRight + Qt.AlignVCenter, 1)
+        elif side == 2:  self.addText(attr, x0+(x1-x0)/2, y0 - self.attributeNameOffset, Qt.AlignCenter, 1)
+        else:            self.addText(attr, x1 + self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignLeft + Qt.AlignVCenter, 1)
+                
+        currPos = 0        
+        for val in values:
+            tempData = data.select({attr:val})
+            perc = float(len(tempData))/float(len(data))
+            if side == 0:    self.addText(str(val), x0+currPos+(x1-x0)*0.5*perc, y1 + self.attributeValueOffset, Qt.AlignCenter, 0)
+            elif side == 1:  self.addText(str(val), x0-self.attributeValueOffset, y0+currPos+(y1-y0)*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, 0)
+            elif side == 2:  self.addText(str(val), x0+currPos+(x1-x0)*perc*0.5, y0 - self.attributeValueOffset, Qt.AlignCenter, 0)
+            else:            self.addText(str(val), x1+self.attributeValueOffset, y0 + currPos + (y1-y0)*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 0)
+
+            if side % 2 == 0: currPos += perc*width + self.cellspace*(totalAttrs-side)
+            else :            currPos += perc*height+ self.cellspace*(totalAttrs-side)
+            
+        """
         # save values for all attributes
         values = [data.domain[attr].values for attr in attrList]
 
@@ -260,33 +327,36 @@ class OWMosaicDisplay(OWWidget):
             perc = float(len(tempData3))/float(len(tempData2)) #* (float(len(tempData1))/float(len(tempData0)))
             self.addText(str(val), x1 + self.attributeValueOffset, y0 + currPos + height2*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 0)
             currPos += perc*height2 + self.cellspace
+        """
             
     ######################################################################
     ##  DRAW DATA - draw rectangles for attributes in attrList inside rect (x0,x1), (y0,y1)
-    def DrawData(self, data, attrList, (x0, x1), (y0, y1), bHorizontal, condition = ""):
+    def DrawData(self, data, attrList, (x0, x1), (y0, y1), side, condition, totalAttrs, lastValueForFirstAttribute = 0):
         if len(data) == 0:
             self.addRect(x0, x1, y0, y1, None)
             return
         attr = attrList[0]
         edge = len(attrList) * self.cellspace  # how much smaller rectangles do we draw
-        if bHorizontal: vals = self.data.domain[attr].values
+        if side%2 == 0: vals = self.data.domain[attr].values
         else:           vals = list(self.data.domain[attr].values)[::-1]
         currPos = 0
-        if bHorizontal: whole = (x1-x0)-edge*(len(vals)-1)  # we remove the space needed for separating different attr. values
-        else:           whole = (y1-y0)-edge*(len(vals)-1)
-        
+        if side%2 == 0: whole = max(0, (x1-x0)-edge*(len(vals)-1))  # we remove the space needed for separating different attr. values
+        else:           whole = max(0, (y1-y0)-edge*(len(vals)-1))
+
         for val in vals:
             tempData = data.select({attr:val})
             perc = float(len(tempData))/float(len(data))
-            if bHorizontal:
+            if side % 2 == 0:   # if drawing horizontal
                 size = ceil(whole*perc);
                 if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>")
-                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), not bHorizontal, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>")
+                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute + (side%2==0 and val == vals[-1]))
             else:
                 size = ceil(whole*perc)
                 if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>")
-                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), not bHorizontal, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>")
+                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute + (side%2==0 and val == vals[-1]))
             currPos += size + edge
+
+        self.DrawText(data, side, attrList[0], (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute)
 
 
      # draw the class legend below the square
@@ -304,14 +374,24 @@ class OWMosaicDisplay(OWWidget):
 
         self.names = []
         totalWidth = 0
+
         for name in data.domain.classVar.values:
             item = QCanvasText(name, self.canvas)
             self.names.append(item)
             totalWidth += item.boundingRect().width()
 
+        item = QCanvasText(data.domain.classVar.name, self.canvas)
+        self.names.append(item)
+        totalWidth += item.boundingRect().width()
+
         distance = 30
-        startX = x - (totalWidth + (len(data.domain.classVar.values)-1)*distance)/2
+        startX = x - (totalWidth + (len(data.domain.classVar.values))*distance)/2
         xOffset = 0
+
+        self.names[-1].move(startX, y-4)
+        self.names[-1].show()
+        xOffset += self.names[-1].boundingRect().width() + distance + 4
+        
         for i in range(len(data.domain.classVar.values)):
             symbol = QCanvasRectangle (startX + xOffset, y, 8, 8, self.canvas)
             symbol.setBrush(QBrush(self.colorPalette[i])); symbol.setPen(QPen(self.colorPalette[i]))
@@ -354,25 +434,25 @@ class OWMosaicDisplay(OWWidget):
             for i in range(len(dist)):
                 val = dist[i]
                 if self.horizontalDistribution:
-                    v = (x1-x0)/len(data) * val
+                    v = ((x1-x0)* val)/len(data)
                     r = QCanvasRectangle(x0+total, y0+1, v, y1-y0-1, self.canvas)
                 else:
-                    v = (y1-y0)/len(data) * val
+                    v = ((y1-y0)* val)/len(data) 
                     r = QCanvasRectangle(x0, y0+total, x1-x0, v, self.canvas)
                 r.setPen(QPen(self.colorPalette[i])); r.setBrush(QBrush(self.colorPalette[i]))
                 r.setZ(-20); r.show()
                 self.rects.append(r)
                 total += v
 
-            if self.showAprioriDistribution:
+            if self.showAprioriDistribution and abs(x1 - x0) > 1 and abs(y1 - y0) > 1:
                 total = 0
                 for i in range(len(originalDist)-1):
                     r = QCanvasLine(self.canvas)
                     if self.horizontalDistribution:
-                        total += (x1-x0)/len(self.data) * originalDist[i]
+                        total += ((x1-x0)* originalDist[i])/len(self.data) 
                         r.setPoints(x0+total, y0+1, x0+total, y1-1)
                     else:
-                        total += (y1-y0)/len(self.data) * originalDist[i]
+                        total += ((y1-y0)* originalDist[i])/len(self.data)
                         r.setPoints(x0+1, y0+total, x1-1, y0+total)
                     r.setZ(10); r.show()
                     self.rects.append(r)
