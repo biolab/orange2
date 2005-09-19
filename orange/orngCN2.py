@@ -12,6 +12,8 @@ def ruleToString(rule, showDistribution = True):
             return ">="
         else: return "="
 
+    if not rule:
+        return "None"
     conds = rule.filter.conditions
     domain = rule.filter.domain
     
@@ -78,7 +80,7 @@ class mEstimate(orange.RuleEvaluator):
         if not rule.classDistribution:
             return 0.
         sumDist = rule.classDistribution.cases
-        if not sumDist or (targetClass>-1 and not rule.classDistribution[targetClass]):
+        if self.m == 0 and not sumDist:
             return 0.
         # get distribution
         if targetClass>-1:
@@ -88,6 +90,21 @@ class mEstimate(orange.RuleEvaluator):
             p = max(rule.classDistribution)+2*self.m*apriori[rule.classDistribution.modus()]/apriori.cases
             p = p / (rule.classDistribution.cases + self.m)      
         return p
+
+class RuleStopping_apriori(orange.RuleStoppingCriteria):
+    def __init__(self, apriori=None):
+        self.apriori =  None
+        
+    def __call__(self,rules,rule,examples,data):
+        if not self.apriori:
+            return False
+        if not type(rule.classifier) == orange.DefaultClassifier:
+            return False
+        ruleAcc = rule.classDistribution[rule.classifier.defaultVal]/rule.classDistribution.abs
+        aprioriAcc = self.apriori[rule.classifier.defaultVal]/self.apriori.abs
+        if ruleAcc>aprioriAcc:
+            return False
+        return True
     
 def CN2Learner(examples = None, weightID=0, **kwds):
     cn2 = CN2LearnerClass(**kwds)
@@ -159,8 +176,8 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
         self.ruleFinder.evaluator = evaluator
         self.ruleFinder.validator = orange.RuleValidator_LRS(alpha = alpha)
-        self.ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha = alpha)
-        self.ruleStopping = orange.RuleStoppingCriteria_NegativeDistribution()
+        self.ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha = 1.0)
+        self.ruleStopping = RuleStopping_apriori()
         self.dataStopping = orange.RuleDataStoppingCriteria_NoPositives()
         
     def __call__(self, examples, weight=0):
@@ -168,6 +185,7 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
             print "CN2 can learn only on discrete class!"
             return
         rules = orange.RuleList()
+        self.ruleStopping.apriori = orange.Distribution(examples.domain.classVar,examples)
         progress=getattr(self,"progressCallback",None)
         if progress:
             progress.start = 0.0
@@ -198,35 +216,59 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
             for i,d in enumerate(disc):
                 disc[i]+=disc2[i]
             return disc
-        
+
         # create empty distribution
         retDist = orange.DiscDistribution(example.domain.classVar)
-
         # iterate through examples - add distributions
         for r in self.rules:
             if r(example) and r.classDistribution:
                 retDist = add(retDist, r.classDistribution)
-
-
-        if retDist.cases == 0:
-            classifier = orange.DefaultClassifier(example.domain.classVar, self.prior.modus(),
-                                                  defaultDistribution = self.prior)
-        else:
-            classifier = orange.DefaultClassifier(example.domain.classVar, retDist.modus(),
-                                                  defaultDistribution = retDist)
-        classifier.defaultDistribution.normalize()
+        if not retDist.abs:
+            retDist = self.prior
+        retDist.normalize()
         # return classifier(example, result_type=result_type)
         if result_type == orange.GetValue:
-          return classifier(example)
+          return retDist.modus()
         if result_type == orange.GetProbabilities:
-          return classifier.defaultDistribution
-        return (classifier(example),classifier.defaultDistribution)
+          return retDist
+        return (retDist.modus(),retDist)
 
     def __str__(self):
         retStr = ""
         for r in self.rules:
             retStr += ruleToString(r)+" "+str(r.classDistribution)+"\n"
         return retStr
+
+class RuleClassifier_bestRule(orange.RuleClassifier):
+    def __init__(self, rules, examples, weightID = 0):
+        self.rules = rules
+        self.examples = examples
+        self.prior = orange.Distribution(examples.domain.classVar, examples)
+
+    def __call__(self, example, result_type=orange.GetValue):
+        for r in self.rules:
+            r.filter.domain = example.domain
+        retDist = None
+        bestRule = None
+        for r in self.rules:
+            if r(example) and (not bestRule or r.quality>bestRule.quality):
+                retDist = r.classDistribution
+                bestRule = r
+        if not retDist:
+            retDist = self.prior
+        retDist.normalize()
+        # return classifier(example, result_type=result_type)
+        if result_type == orange.GetValue:
+          return retDist.modus()
+        if result_type == orange.GetProbabilities:
+          return retDist
+        return (retDist.modus,retDist)
+
+    def __str__(self):
+        retStr = ""
+        for r in self.rules:
+            retStr += ruleToString(r)+" "+str(r.classDistribution)+"\n"
+        return retStr    
 
 class CovererAndRemover_multWeights(orange.RuleCovererAndRemover):
     def __init__(self, mult = 0.7):
@@ -237,14 +279,91 @@ class CovererAndRemover_multWeights(orange.RuleCovererAndRemover):
             for example in examples:
                 example[weights] = 1.
         newWeightsID = orange.newmetaid()
-        for example in examples:
+        newDomain = orange.Domain(examples.domain)
+        newDomain.addmeta(newWeightsID, orange.FloatVariable("weight"+str(newWeightsID)))
+        newExamples = examples.select(newDomain)
+        for example in newExamples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 example[newWeightsID]=example[weights]*self.mult
             else:
                 example[newWeightsID]=example[weights]
+        return (newExamples,newWeightsID)
+
+class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
+    def __call__(self, rule, examples, weights, targetClass):
+        if not weights:
+            weights = orange.newmetaid()
+            for example in examples:
+                example[weights] = 1.
+        try:
+            coverage = examples.domain.getmeta("Coverage")
+        except:
+            coverage = orange.FloatVariable("Coverage")
+            examples.domain.addmeta(orange.newmetaid(),coverage)
+            examples.addMetaAttribute(coverage,0.0)
+        newWeightsID = orange.newmetaid()
+        for example in examples:
+            if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
+                try:
+                    example[coverage]+=1.0
+                except:
+                    example[coverage]=1.0
+                example[newWeightsID]=1.0/(example[coverage]+1)
+            else:
+                example[newWeightsID]=example[weights]
+            #print example[newWeightsID]
         return (examples,newWeightsID)
+
+def rule_in_set(rule,rules):
+    for r in rules:
+        if rules_equal(rule,r):
+            return True
+    return False
+
+def rules_equal(rule1,rule2):
+    if not len(rule1.filter.conditions)==len(rule2.filter.conditions):
+        return False
+    for c1 in rule1.filter.conditions:
+        found=False # find the same condition in the other rule
+        for c2 in rule2.filter.conditions:
+            try:
+                if not c1.position == c2.position: continue # same attribute?
+                if not type(c1) == type(c2): continue # same type of condition
+                if type(c1) == orange.ValueFilter_discrete:
+                    if not type(c1.values[0]) == type(c2.values[0]): continue
+                    if not c1.values[0] == c2.values[0]: continue # same value?
+                if type(c1) == orange.ValueFilter_continuous:
+                    if not c1.oper == c2.oper: continue # same operator?
+                    if not c1.ref == c2.ref: continue #same threshold?
+                found=True
+                break
+            except:
+                pass
+        if not found:
+            return False
+    return True
+
+class noDuplicates_validator(orange.RuleValidator):
+    def __init__(self,alpha=.05,min_coverage=0,max_rule_length=0,rules=orange.RuleList()):
+        self.rules = rules
+        self.validator = orange.RuleValidator_LRS(alpha=alpha,min_coverage=min_coverage,max_rule_length=max_rule_length)
+        
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if rule_in_set(rule,self.rules):
+            return False
+        return bool(self.validator(rule,data,weightID,targetClass,apriori))
                 
-    
+class ruleSt_setRules(orange.RuleStoppingCriteria):
+    def __init__(self,validator):
+        self.ruleStopping = orange.RuleStoppingCriteria_NegativeDistribution()
+        self.validator = validator
+
+    def __call__(self,rules,rule,examples,data):        
+        ru_st = self.ruleStopping(rules,rule,examples,data)
+        if not ru_st:
+            self.validator.rules.append(rule)
+        return bool(ru_st)
+
 def CN2SDUnorderedLearner(examples = None, weightID=0, **kwds):
     cn2 = CN2SDUnorderedLearnerClass(**kwds)
     if examples:
@@ -257,4 +376,5 @@ class CN2SDUnorderedLearnerClass(CN2UnorderedLearnerClass):
         CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
                                           beamWidth = beamWidth, alpha = alpha, **kwds)
         self.coverAndRemove = CovererAndRemover_multWeights(mult=mult)
-        
+        self.ruleFinder.validator = noDuplicates_validator(alpha = alpha)
+        self.ruleStopping = ruleSt_setRules(self.ruleFinder.validator)
