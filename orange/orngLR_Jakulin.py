@@ -81,8 +81,8 @@ class BLogisticLearner(orange.Learner):
 class BLogisticClassifier(orange.Classifier):
     def __init__(self, model,examples):
         (self.chisq,self.devnce,self.ndf,self.beta,
-        self.se_beta,self.fit,self.stdres,
-        self.covbeta,errorno,masking) = model
+        self.se_beta,self.fit,self.covbeta,
+        self.stdres,errorno,masking) = model
 
         # set up the parameters for discrimination
         sum = 1.0
