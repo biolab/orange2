@@ -407,6 +407,11 @@ class OWBaseWidget(QDialog):
     def setWidgetStateHandler(self, handler):
         self.widgetStateHandler = handler
 
+
+    def setStatusBarText(self, text):
+        self.statusBar.message(text)
+
+
     def printEvent(self, type, text):
         # if we are in debug mode print the event into the file
         if text: self.signalManager.addEvent(type + " from " + self.captionTitle[3:] + ": " + text)
