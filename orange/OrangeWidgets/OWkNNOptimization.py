@@ -1279,12 +1279,13 @@ CLUSTER = 1
 # analyse the attributes that appear in the top projections. show how often do they appear also in other top projections
 class OWInteractionAnalysis(OWWidget):
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Result Analysis", wantGraph = 1)
+        OWWidget.__init__(self, parent, signalManager, "Interaction Analysis", wantGraph = 1)
 
         self.attributeCount = 10
         self.projectionCount = 50
         self.rotateXAttributes = 1
         self.onlyLower = 1
+        self.useDarkness = 1
         self.results = None
         self.dialogType = -1
 
@@ -1297,20 +1298,20 @@ class OWInteractionAnalysis(OWWidget):
 
         b1 = OWGUI.widgetBox(self.controlArea, 'Number Of Attributes')
         b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Projections')
-        b3 = OWGUI.widgetBox(self.controlArea, box = 1)
-        b4 = OWGUI.widgetBox(self.controlArea, box = 1)
+        b3 = OWGUI.widgetBox(self.controlArea, "Settings")
         
         OWGUI.hSlider(b1, self, 'attributeCount', minValue=5, maxValue = 200, step=1, callback = self.updateGraph, ticks=5)
         self.projectionCountSlider = OWGUI.hSlider(b2, self, 'projectionCount', minValue=1, maxValue = 100000, step=1, callback = self.updateGraph, ticks=5)
-        OWGUI.checkBox(b3, self, 'rotateXAttributes', label = "Rotate X Labels", callback = self.updateGraph)
-        OWGUI.checkBox(b4, self, 'onlyLower', label = "Show Only Lower Diagonal", callback = self.updateGraph)
+        OWGUI.checkBox(b3, self, 'rotateXAttributes', label = "Rotate X labels", callback = self.updateGraph)
+        OWGUI.checkBox(b3, self, 'onlyLower', label = "Show only lower diagonal", callback = self.updateGraph)
+        OWGUI.checkBox(b3, self, 'useDarkness', label = "Use color to represent projection quality", callback = self.updateGraph)
+
         box = OWGUI.widgetBox(self.controlArea, "")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
 
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         
         self.updateGraph()
 
@@ -1328,26 +1329,24 @@ class OWInteractionAnalysis(OWWidget):
         white = QColor(255,255,255)
         self.graph.clear()
         self.graph.removeMarkers()
-        if self.results == None or  self.dialogType not in [VIZRANK, CLUSTER]: return
+        if self.results == None or self.dialogType not in [VIZRANK, CLUSTER]: return
 
         attributes = []
         attrDict = {}
         index = 0; projectionsUsed = 0
 
+        best = self.results[0][ACCURACY]
+        worst= self.results[min(len(self.results)-1, self.projectionCount)][ACCURACY]
+        
         while index < len(self.results):
+            if self.dialogType != VIZRANK:
+                while index < len(self.results) and type(self.results[index][TRY_INDEX]) != dict: index += 1
+                
+            if index >= len(self.results): break
             if projectionsUsed >= self.projectionCount: break
             projectionsUsed += 1
             
-            attrs = []
-            if self.dialogType == VIZRANK:
-                if index >= len(self.results): break
-                attrs = self.results[index][3]
-                index += 1
-            else:
-                while index < len(self.results) and type(self.results[index][4]) != dict: index += 1
-                if index >= len(self.results): break
-                attrs = self.results[index][3]
-                index += 1
+            attrs = self.results[index][ATTR_LIST]
 
             if len(attributes) < self.attributeCount:
                 for attr in attrs:
@@ -1358,9 +1357,10 @@ class OWInteractionAnalysis(OWWidget):
                 for j in range(i+1, len(attrs)):
                     if attrs[i] not in attributes or attrs[j] not in attributes: continue
                     if not attrDict.has_key((attrs[i], attrs[j])) and not attrDict.has_key((attrs[j], attrs[i])):
-                        attrDict[(attrs[i], attrs[j])] = 1
+                        attrDict[(attrs[i], attrs[j])] = self.results[index][ACCURACY]
                         if attrs[i] not in attributes: attributes.append(attrs[i])
                         if attrs[j] not in attributes: attributes.append(attrs[j])
+            index += 1
    
         eps = 0.05
         num = len(attributes)
@@ -1370,13 +1370,21 @@ class OWInteractionAnalysis(OWWidget):
             for y in range(num-x):
                 yy = num-y-1
                 if not attrDict.has_key((attributes[x], attributes[yy])) and not attrDict.has_key((attributes[yy], attributes[x])): continue
+
+                if attrDict.has_key((attributes[x], attributes[yy])): val = attrDict[(attributes[x], attributes[yy])]
+                else: val = attrDict[(attributes[yy], attributes[x])]
+
+                if self.useDarkness:
+                    v = 255 - 255*((val-worst)/float(best - worst))
+                    color = QColor(v,v,v)
+                else: color = black
                 
-                curve = PolygonCurve(self.graph, QPen(black), QBrush(black))
+                curve = PolygonCurve(self.graph, QPen(color), QBrush(color))
                 key = self.graph.insertCurve(curve)
                 self.graph.setCurveData(key, [x+eps, x+1-eps, x+1-eps, x+eps], [y+eps, y+eps, y+1-eps, y+1-eps])
 
                 if not self.onlyLower:
-                    curve = PolygonCurve(self.graph, QPen(black), QBrush(black))
+                    curve = PolygonCurve(self.graph, QPen(color), QBrush(color))
                     key = self.graph.insertCurve(curve)
                     self.graph.setCurveData(key, [num-1-y+eps, num-1-y+eps, num-y-eps, num-y-eps], [num-1-x+eps, num-x-eps, num-x-eps, num-1-x+eps] )
 
@@ -1389,11 +1397,10 @@ class OWInteractionAnalysis(OWWidget):
 
         # draw x markers
         for x in range(num):
-            if self.rotateXAttributes: marker = MyMarker(self.graph, attributes[x], x + 0.5, -0.3, 90)
-            else: marker = MyMarker(self.graph, attributes[x], x + 0.5, -0.3, 0)
+            marker = MyMarker(self.graph, attributes[x], x + 0.5, -0.3, 90*self.rotateXAttributes)
             mkey = self.graph.insertMarker(marker)
-            if self.rotateXAttributes: self.graph.marker(mkey).setLabelAlignment(Qt.AlignLeft+ Qt.AlignCenter)
-            else: self.graph.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+            if self.rotateXAttributes: self.graph.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
+            else: self.graph.marker(mkey).setLabelAlignment(Qt.AlignCenter)
 
         # draw y markers
         for y in range(num):
