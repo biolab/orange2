@@ -39,8 +39,8 @@ class OWWidget(OWBaseWidget):
             self.widgetStatusArea = QHBox(self)
             self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
             self.statusBar = QStatusBar(self.widgetStatusArea, )
-            self.statusBar.setSizeGripEnabled(1)
-            #self.statusBar.setWFlags( Qt.WStyle_DialogBorder)
+            self.statusBar.setSizeGripEnabled(0)
+            self.widgetStatusArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
             #self.statusBar.hide()
         
         self.resize(640,480)
