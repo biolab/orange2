@@ -1,6 +1,6 @@
 from OWBaseWidget import *
 from OWWidget import OWWidget
-import os, orange, orngTest, time, Numeric
+import os, orange, orngTest, time, Numeric, math, orngCI
 import OWGUI, OWVisAttrSelection, OWVisFuncts
 
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
@@ -14,6 +14,7 @@ TRY_INDEX = 2
 CHI_SQUARE = 0
 DIFFERENCE = 1
 MAX_DIFFERENCE = 2
+GAIN_RATIO = 3
 
 
 class MosaicOptimization(OWBaseWidget):
@@ -36,21 +37,16 @@ class MosaicOptimization(OWBaseWidget):
         self.attrDisc = 1
         self.qualityMeasure = 1
         self.resultListLen = 1000
-        self.attributeCount = 3
-        self.optimizationType = 1
+        self.attributeCount = 2
+        self.optimizationType = 0
         self.percentDataUsed = 100
 
-
-        self.maxLastDictLen = 60
-        self.lastDistributionsDict = {}
-        self.recentListData = []
 
         self.aprioriDistribution = None
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
         self.cancelOptimization = 0
         self.data = None
-        self.subsetdata = None
         self.evaluatedAttributes = None   # save last evaluated attributes
         self.allResults = []
         self.shownResults = []
@@ -65,12 +61,12 @@ class MosaicOptimization(OWBaseWidget):
         self.MainTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self)
         self.ManageTab = QVGroupBox(self)
-        #self.ArgumentationTab = QVGroupBox(self)
+        self.ArgumentationTab = QVGroupBox(self)
         #self.ClassificationTab = QVGroupBox(self)
         
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
-        #self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
+        self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         #self.tabs.insertTab(self.ClassificationTab, "Classification")
         self.tabs.insertTab(self.ManageTab, "Manage & Save")        
 
@@ -103,7 +99,7 @@ class MosaicOptimization(OWBaseWidget):
 
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Sum of differences between expected and actual counts", "Maximum of differences between expected and actual counts"], tooltip = "What is interesting?")
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Sum of differences between expected and actual counts", "Maximum of differences between expected and actual counts", "Gain Ratio"], tooltip = "What is interesting?")
 
         self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
@@ -114,6 +110,23 @@ class MosaicOptimization(OWBaseWidget):
         OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = " Measure for Ranking Attributes ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
         self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Number of projections to show in projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
+
+
+        # ##########################
+        # ARGUMENTATION TAB
+        self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
+        self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments)
+        f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
+        self.stopArgumentationButton = OWGUI.button(self.argumentationBox, self, "Stop Searching", callback = self.stopArgumentationClick)
+        self.stopArgumentationButton.setFont(f)
+        self.stopArgumentationButton.hide()
+        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments For Class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for The Selected Class Value ")
+        self.argumentList = QListBox(self.argumentBox)
+        self.argumentList.setMinimumSize(200,200)
+        self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
+
+
 
         # ##########################
         # SAVE & MANAGE TAB
@@ -155,10 +168,10 @@ class MosaicOptimization(OWBaseWidget):
     # ##############################################################
     # EVENTS
     # ##############################################################
-    def showSelectedAttributes(self):
+    def showSelectedAttributes(self, attrs = None):
         if not self.parentWidget: return
 
-        (score, attrs, index) = self.getSelectedProjection()
+        if not attrs: (score, attrs, index) = self.getSelectedProjection()
         self.parentWidget.setShownAttributes(attrs)
     
         
@@ -230,9 +243,10 @@ class MosaicOptimization(OWBaseWidget):
 
     def setData(self, data):
         self.setStatusBarText("")
-        if not data:
-            self.data = None
-            return
+        self.classValueList.clear()
+        self.data = None
+        
+        if not data: return
         
         if hasattr(data, "name"): self.datasetName = data.name
         else: self.datasetName = ""
@@ -258,11 +272,16 @@ class MosaicOptimization(OWBaseWidget):
         # add class values
         for i in range(len(data.domain.classVar.values)):
             self.classesList.insertItem(data.domain.classVar.values[i])
+            self.classValueList.insertItem(data.domain.classVar.values[i])
+            
+        if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
         self.classesList.selectAll(1)
 
     # get only the data examples that belong to one of the selected class values
     def getData(self):
-        return self.data.select({self.data.domain.classVar.name: [self.data.domain.classVar.values[i] for i in self.selectedClasses]})
+        if self.data and self.data.domain.classVar:
+            return self.data.select({self.data.domain.classVar.name: [self.data.domain.classVar.values[i] for i in self.selectedClasses]})
+        else: return self.data
         
 
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
@@ -295,9 +314,6 @@ class MosaicOptimization(OWBaseWidget):
 
         self.clearResults()
         self.disableControls()
-        del self.lastDistributionsDict
-        self.lastDistributionsDict = {}
-        self.recentListData = []
         
         hasMissingData = (len(self.data) != len(orange.Preprocessor_dropMissing(self.data)))
         if self.optimizationType == 0: maxLength = self.attributeCount; minLength = self.attributeCount
@@ -332,7 +348,7 @@ class MosaicOptimization(OWBaseWidget):
                     attrs = [evaluatedAttrs[z]] + attrList  
                     #print attrs
 
-                    val = self._Evaluate(data, attrs, ())
+                    val = self._Evaluate(data, attrs)
 
                     if self.isOptimizationCanceled():
                         secs = time.time() - startTime
@@ -359,49 +375,29 @@ class MosaicOptimization(OWBaseWidget):
         self.enableControls()
 
 
-    
-    def _Evaluate(self, data, attrs, dictData):
+    def _Evaluate(self, data, attrs):
         val = 0.0
-        if len(attrs) == 0:
+        newFeature, quality = orngCI.FeatureByCartesianProduct(data, attrs)
+        data2 = orngCI.addAnAttribute(newFeature, data)
+
+        if self.qualityMeasure == GAIN_RATIO:
+            return orange.MeasureAttribute_gainRatio(newFeature, data2)
+        else:
             actualDistribution = orange.Distribution(data.domain.classVar.name, data)
             aprioriSum = sum(self.aprioriDistribution)
-            actualSum = sum(actualDistribution)
-            
-            for i in range(len(self.aprioriDistribution)):
-                actual = actualDistribution.values()[i]
-                if self.qualityMeasure == CHI_SQUARE:
-                    expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
-                    if not expected: continue
-                    val += (actual - expected)**2 / expected
-                elif self.qualityMeasure == DIFFERENCE:
-                    expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
-                    val += abs(expected-actual)
-                elif self.qualityMeasure == MAX_DIFFERENCE:
-                    expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
-                    val = max(val, abs(expected-actual))
 
-        else:
-            attr = attrs[0]
-            key = dictData + (attr,)
-            if key in self.lastDistributionsDict.keys():
-                distribution = self.lastDistributionsDict[key]
-                self.refreshAttributeListTime(key)
-            else:
-                distribution = [data.select({attr:v}) for v in data.domain[attr].values]
-                if len(dictData) <= 4:  # update dict if not more than two attributes are in the dictData
-                    self.addAttributeToRecent(key, distribution)
+            for dist in orange.ContingencyAttrClass(newFeature, data):
+                for i in range(len(self.aprioriDistribution)):
+                    expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
                     
+                    if self.qualityMeasure == CHI_SQUARE and expected:
+                        val += (dist[i] - expected)**2 / expected
+                    elif self.qualityMeasure == DIFFERENCE:
+                        val += abs(expected-dist[i])
+                    elif self.qualityMeasure == MAX_DIFFERENCE:
+                        val = max(val, abs(expected-dist[i]))
 
-            for i in range(len(data.domain[attr].values)):
-                d = distribution[i]
-                if not len(d): continue
-
-                if self.qualityMeasure == MAX_DIFFERENCE:
-                    val = max(val, self._Evaluate(d, attrs[1:], dictData + (attr, data.domain[attr].values[i])))
-                else:
-                    val += self._Evaluate(d, attrs[1:], dictData + (attr, data.domain[attr].values[i]))
-        return val
-    
+            return val
 
     def getProjectionQuality(self, data, attrList):
         if not self.aprioriDistribution:
@@ -626,42 +622,116 @@ class MosaicOptimization(OWBaseWidget):
         self.statusBar.message(text)
         qApp.processEvents()
 
-    # ########################################################################
-    # functions that operate with the recent distributions buffer
-    # ########################################################################
-    def removeAttributeFromRecent(self, attrList):
-        if self.lastDistributionsDict.has_key(attrList):
-            self.lastDistributionsDict.pop(attrList)
-        else:
-            print "key ", attrList, " not in the dict LastDistributionDict..."
-            
-        for i in range(len(self.recentListData)):
-            if self.recentListData[i][1] == attrList:
-                self.recentListData.pop(i)
-                return
+           
+    # ######################################################
+    # Argumentation functions
+    # ######################################################
+    def findArguments(self, selectBest = 1, showClassification = 1, example = None):
+        self.cancelArgumentation = 0
 
-        print "key ", attrList, " not in the list recentListData..."
+        self.argumentList.clear()
+        self.arguments = [[] for i in range(self.classValueList.count())]
+                
+        if not example and not self.parentWidget.subsetData:
+            QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide an example that you wish to classify. \nYou can do this by sending the example to the Mosaic display widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
+            return None
+        if len(self.shownResults) == 0:
+            QMessageBox.information( None, "Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
+            return None
+
+        data = self.getData()   # get only the examples that have one of the class values that is selected in the class value list
+        if not data:
+            QMessageBox.critical(None,'No data','There is no data or no class value is selected in the Manage tab.',QMessageBox.Ok)
+            return None
+
+        if example == None: example = self.parentWidget.subsetData[0]
         
+        self.findArgumentsButton.hide()
+        self.stopArgumentationButton.show()
 
-    def addAttributeToRecent(self, attrList, distribution):
-        if len(self.recentListData) > self.maxLastDictLen:    # remove the oldest item
-            (t, attrs) = min(self.recentListData)
-            self.removeAttributeFromRecent(attrs)
+        if self.percentDataUsed != 100:
+            indices = orange.MakeRandomIndices2(data, 1.0-float(self.percentDataUsed)/100.0)
+            data = data.select(indices)
 
-        self.lastDistributionsDict[attrList] = distribution
-        self.recentListData.insert(0, (time.time(), attrList))
+        self.aprioriDistribution = orange.Distribution(data.domain.classVar.name, data)
+        currentClassValue = self.classValueList.currentItem()
 
+        for index in range(min(len(self.shownResults), 1000)):       # use only best argumentCount projections for argumentation
+            if self.cancelArgumentation: break          # user pressed cancel
+            
+            qApp.processEvents()
+            (accuracy, attrList, tryIndex) = self.allResults[index]
 
-    def refreshAttributeListTime(self, attrList):
-        for i in range(len(self.recentListData)):
-            if self.recentListData[i][1] == attrList:
-                self.recentListData.pop(i)
-                self.recentListData.insert(0, (time.time(), attrList))      # set time to current
-                return
-        print "attrs ", attrList, " not in the list recentListData... unable to refresh time..."
+            attrVals = [example[attr] for attr in attrList]
+            if "?" in attrVals: continue  # the testExample has a missing value at one of the visualized attributes
 
+            d = orange.Preprocessor_take(data, values = dict([(data.domain[attr], example[attr]) for attr in attrList]))
+            
+            args = self.getArguments(d)
+            print attrList, args
+
+            for v in range(len(args)):
+                if not args[v]: continue
+
+                ind = self.getArgumentIndex(args[v], v)
+                self.arguments[v].insert(ind, (args[v], accuracy, attrList, index))
+                if v == currentClassValue:
+                    self.argumentList.insertItem("%.2f - %s" %(args[v], attrList), ind)
             
 
+        self.stopArgumentationButton.hide()
+        self.findArgumentsButton.show()
+        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
+
+
+    def getArguments(self, data):
+        actualDistribution = orange.Distribution(data.domain.classVar.name, data)
+        aprioriSum = sum(self.aprioriDistribution)
+        arguments = []
+        
+        for i in range(len(self.aprioriDistribution)):
+            actual = actualDistribution.values()[i]
+            if self.qualityMeasure == CHI_SQUARE:
+                expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
+                
+                if expected and actual > expected:  arguments.append(((actual - expected)**2)/ expected)
+                else: arguments.append(0)
+            elif self.qualityMeasure == DIFFERENCE or self.qualityMeasure == MAX_DIFFERENCE:
+                expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
+                if actual > expected:  arguments.append((actual-expected) * (aprioriSum/float(self.aprioriDistribution[i])))
+                else: arguments.append(0)
+        return arguments
+    
+
+    def getArgumentIndex(self, value, classValue):
+        if len(self.arguments[classValue]) == 0: return 0
+        
+        top = 0; bottom = len(self.arguments[classValue])
+        while (bottom-top) > 1:
+            mid  = (bottom + top)/2
+            if max(value, self.arguments[classValue][mid][0]) == value: bottom = mid
+            else: top = mid
+
+        if max(value, self.arguments[classValue][top][0]) == value:  return top
+        else:                                                        return bottom
+        
+    def stopArgumentationClick(self):
+        self.cancelArgumentation = 1
+    
+    def argumentationClassChanged(self):
+        self.argumentList.clear()
+        if len(self.arguments) == 0: return
+        ind = self.classValueList.currentItem()
+        for i in range(len(self.arguments[ind])):
+            (val, accuracy, attrList, index) = self.arguments[ind][i]
+            self.argumentList.insertItem("%.2f - %s" %(val, attrList), i)
+            
+
+    def argumentSelected(self):
+        ind = self.argumentList.currentItem()
+        classInd = self.classValueList.currentItem()
+        self.showSelectedAttributes(self.arguments[classInd][ind][2])
+        
 
 
 
