@@ -252,13 +252,15 @@ class OWMosaicDisplay(OWWidget):
         for attr in attrList: self.legend[attr] = 0
 
         self.drawnSides = dict([(0,0),(1,0),(2,0),(3,0)])
+        self.drawPositions = {}
 
         # draw rectangles
         self.DrawData(data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 0, "", len(attrList))
 
         # draw class legend
         self.DrawLegend(data, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
-       
+
+        del data
         self.canvas.update()
 
 
@@ -267,27 +269,35 @@ class OWMosaicDisplay(OWWidget):
     def DrawData(self, data, attrList, (x0, x1), (y0, y1), side, condition, totalAttrs, lastValueForFirstAttribute = 0, usedAttrs = []):
         if len(data) == 0:
             self.addRect(x0, x1, y0, y1, None)
+            self.DrawText(data, side, attrList[0], (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute)  # store coordinates for later drawing of labels
             return
+        
         attr = attrList[0]
         edge = len(attrList) * self.cellspace  # how much smaller rectangles do we draw
         if side%2 == 0: vals = self.data.domain[attr].values
         else:           vals = list(self.data.domain[attr].values)[::-1]
-        currPos = 0
-        if side%2 == 0: whole = max(0, (x1-x0)-edge*(len(vals)-1))  # we remove the space needed for separating different attr. values
-        else:           whole = max(0, (y1-y0)-edge*(len(vals)-1))
 
+        if side%2 == 0:
+            whole = max(0, (x1-x0)-edge*(len(vals)-1))  # we remove the space needed for separating different attr. values
+            if whole == 0: edge = (x1-x0)/float(len(vals)-1)
+        else:
+            whole = max(0, (y1-y0)-edge*(len(vals)-1))
+            if whole == 0: edge = (y1-y0)/float(len(vals)-1)
+
+        currPos = 0
         for val in vals:
             tempData = data.select({attr:val})
             perc = float(len(tempData))/float(len(data))
+            size = int(whole*perc)
+
             if side % 2 == 0:   # if drawing horizontal
-                size = ceil(whole*perc);
                 if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", usedAttrs + [attr, val])
                 else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute + (side%2==0 and val == vals[-1]), usedAttrs + [attr, val])
             else:
-                size = ceil(whole*perc)
                 if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", usedAttrs + [attr, val])
                 else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute + (side%2==0 and val == vals[-1]), usedAttrs + [attr, val])
             currPos += size + edge
+            del tempData
 
         self.DrawText(data, side, attrList[0], (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute)
 
@@ -295,7 +305,13 @@ class OWMosaicDisplay(OWWidget):
     ######################################################################
     ## DRAW TEXT - draw legend for all attributes in attrList and their possible values
     def DrawText(self, data, side, attr, (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute):
-        if self.drawnSides[side] or not data or len(data) == 0: return
+        if self.drawnSides[side]: return
+        if not data or len(data) == 0:
+            if not self.drawPositions.has_key(side): self.drawPositions[side] = (x0, x1, y0, y1)
+            return
+        else:
+            if self.drawPositions.has_key(side): (x0, x1, y0, y1) = self.drawPositions[side]        # restore the positions where we have to draw the attribute values and attribute name
+            
         if side == RIGHT and lastValueForFirstAttribute != 2: return
         
         self.drawnSides[side] = 1
@@ -312,17 +328,19 @@ class OWMosaicDisplay(OWWidget):
         elif side == 2:  self.addText(attr, x0+(x1-x0)/2, y0 - self.attributeNameOffset, Qt.AlignCenter, 1)
         else:            self.addText(attr, x1 + self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignLeft + Qt.AlignVCenter, 1)
                 
-        currPos = 0        
+        currPos = 0
+        dist = orange.Distribution(attr, data)
         for val in values:
-            tempData = data.select({attr:val})
-            perc = float(len(tempData))/float(len(data))
-            if side == 0:    self.addText(str(val), x0+currPos+(x1-x0)*0.5*perc, y1 + self.attributeValueOffset, Qt.AlignCenter, 0)
-            elif side == 1:  self.addText(str(val), x0-self.attributeValueOffset, y0+currPos+(y1-y0)*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, 0)
-            elif side == 2:  self.addText(str(val), x0+currPos+(x1-x0)*perc*0.5, y0 - self.attributeValueOffset, Qt.AlignCenter, 0)
-            else:            self.addText(str(val), x1+self.attributeValueOffset, y0 + currPos + (y1-y0)*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 0)
+            perc = dist[val]/float(len(data))
+            if side == 0:    self.addText(str(val), x0+currPos+width*0.5*perc, y1 + self.attributeValueOffset, Qt.AlignCenter, 0)
+            elif side == 1:  self.addText(str(val), x0-self.attributeValueOffset, y0+currPos+height*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, 0)
+            elif side == 2:  self.addText(str(val), x0+currPos+width*perc*0.5, y0 - self.attributeValueOffset, Qt.AlignCenter, 0)
+            else:            self.addText(str(val), x1+self.attributeValueOffset, y0 + currPos + height*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 0)
 
             if side % 2 == 0: currPos += perc*width + self.cellspace*(totalAttrs-side)
             else :            currPos += perc*height+ self.cellspace*(totalAttrs-side)
+
+            
             
         
      # draw the class legend below the square
