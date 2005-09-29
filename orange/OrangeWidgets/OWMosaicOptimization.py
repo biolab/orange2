@@ -15,6 +15,7 @@ CHI_SQUARE = 0
 DIFFERENCE = 1
 MAX_DIFFERENCE = 2
 GAIN_RATIO = 3
+INFORMATION_GAIN = 4
 
 
 class MosaicOptimization(OWBaseWidget):
@@ -99,7 +100,7 @@ class MosaicOptimization(OWBaseWidget):
 
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Sum of differences between expected and actual counts", "Maximum of differences between expected and actual counts", "Gain Ratio"], tooltip = "What is interesting?")
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Sum of differences between expected and actual counts", "Maximum of differences between expected and actual counts", "Gain Ratio", "Information Gain"], tooltip = "What is interesting?")
 
         self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
@@ -376,15 +377,15 @@ class MosaicOptimization(OWBaseWidget):
 
 
     def _Evaluate(self, data, attrs):
-        val = 0.0
         newFeature, quality = orngCI.FeatureByCartesianProduct(data, attrs)
-        data2 = orngCI.addAnAttribute(newFeature, data)
-
+        
         if self.qualityMeasure == GAIN_RATIO:
-            return orange.MeasureAttribute_gainRatio(newFeature, data2)
+            return orange.MeasureAttribute_gainRatio(newFeature, data)
+        elif self.qualityMeasure == INFORMATION_GAIN:
+            return orange.MeasureAttribute_info(newFeature, data)
         else:
-            actualDistribution = orange.Distribution(data.domain.classVar.name, data)
             aprioriSum = sum(self.aprioriDistribution)
+            val = 0.0
 
             for dist in orange.ContingencyAttrClass(newFeature, data):
                 for i in range(len(self.aprioriDistribution)):
@@ -403,7 +404,7 @@ class MosaicOptimization(OWBaseWidget):
         if not self.aprioriDistribution:
             self.aprioriDistribution = orange.Distribution(data.domain.classVar.name, data)
 
-        return self._Evaluate(data, attrList, [])
+        return self._Evaluate(data, attrList)
 
     # reevaluate projections in the list using the current settings
     def reevaluateProjections(self):
@@ -440,10 +441,7 @@ class MosaicOptimization(OWBaseWidget):
     
     
     def addResult(self, score, attrList, tryIndex):
-        #if self.getQualityMeasure() != BRIER_SCORE: funct = max
-        #else: funct = min
-        funct = max
-        self.insertItem(score, attrList, self.findTargetIndex(score, funct), tryIndex)
+        self.insertItem(score, attrList, self.findTargetIndex(score, max), tryIndex)
         qApp.processEvents()        # allow processing of other events
 
     # use bisection to find correct index
@@ -638,6 +636,9 @@ class MosaicOptimization(OWBaseWidget):
         if len(self.shownResults) == 0:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
             return None
+        if self.qualityMeasure in [GAIN_RATIO, INFORMATION_GAIN]:
+            QMessageBox.information( None, "Argumentation", 'For argumentation you can not use Gain ratio or Information gain measure of projection interestingness. Please select a different measure.', QMessageBox.Ok + QMessageBox.Default)
+            return None
 
         data = self.getData()   # get only the examples that have one of the class values that is selected in the class value list
         if not data:
@@ -667,40 +668,38 @@ class MosaicOptimization(OWBaseWidget):
 
             d = orange.Preprocessor_take(data, values = dict([(data.domain[attr], example[attr]) for attr in attrList]))
             
-            args = self.getArguments(d)
-            print attrList, args
+            val, ind = self.getArguments(d, attrVals)
 
-            for v in range(len(args)):
-                if not args[v]: continue
-
-                ind = self.getArgumentIndex(args[v], v)
-                self.arguments[v].insert(ind, (args[v], accuracy, attrList, index))
-                if v == currentClassValue:
-                    self.argumentList.insertItem("%.2f - %s" %(args[v], attrList), ind)
-            
+            pos = self.getArgumentIndex(val, ind)
+            self.arguments[ind].insert(pos, (val, accuracy, attrList, index))
+            if ind == currentClassValue:
+                self.argumentList.insertItem("%.2f - %s" %(val, attrList), pos)
 
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
         if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
 
 
-    def getArguments(self, data):
+    def getArguments(self, data, attrVals):
         actualDistribution = orange.Distribution(data.domain.classVar.name, data)
         aprioriSum = sum(self.aprioriDistribution)
         arguments = []
         
         for i in range(len(self.aprioriDistribution)):
             actual = actualDistribution.values()[i]
+            expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
+            if not expected or actual <= expected:
+                arguments.append(0)
+                continue
+
             if self.qualityMeasure == CHI_SQUARE:
-                expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
-                
-                if expected and actual > expected:  arguments.append(((actual - expected)**2)/ expected)
-                else: arguments.append(0)
+                arguments.append(((actual - expected)**2)/ expected)
             elif self.qualityMeasure == DIFFERENCE or self.qualityMeasure == MAX_DIFFERENCE:
-                expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
-                if actual > expected:  arguments.append((actual-expected) * (aprioriSum/float(self.aprioriDistribution[i])))
-                else: arguments.append(0)
-        return arguments
+                arguments.append((actual-expected) * (aprioriSum/float(self.aprioriDistribution[i])))
+
+        val = max(arguments)
+        ind = arguments.index(val)
+        return (val, ind)
     
 
     def getArgumentIndex(self, value, classValue):
