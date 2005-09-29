@@ -22,17 +22,9 @@
 #ifndef ORANGEMDS_CPP
 #define ORANGEMDS_CPP
 
-#include "orange_api.hpp"
-#ifdef _MSC_VER
-  #ifndef ORANGEMDS_EXPORTS
-    #define ORANGEMDS_API __declspec(dllexport)
-  #else
-    #define ORANGEMDS_API __declspec(dllimport)
-  #endif
-#else
-  #define ORANGEMDS_API
-#endif
 
+#include "orangemds_globals.hpp"
+#include "mds.hpp"
 #include <Python.h>
 #include <math.h>
 #include <stdlib.h>
@@ -42,6 +34,202 @@ using namespace std;
 #define MAX(a,b) (a>b)? a: b
 #include<memory.h>
 
+#include "px/externs.px"
+#include "vectortemplates.hpp"
+#include "orvector.hpp"
+#include "cls_orange.hpp"
+#include "random.hpp"
+
+
+C_NAMED(MDS, Orange, "(distanceMatrix [dim, points])->MDS")
+BASED_ON(StressFunc, Orange)
+C_CALL(KruskalStress, StressFunc, "(float, float[,float])->float")
+C_CALL(SammonStress, StressFunc, "(float, float[,float])->float")
+C_CALL(SgnSammonStress, StressFunc, "(float, float[,float])->float")
+C_CALL(SgnRelStress, StressFunc, "(float, float[,float])->float")
+C_CALL(StressFunc_Python, StressFunc,"")
+
+PyObject *mysetCallbackFunction(PyObject *self, PyObject *args)
+{ PyObject *func;
+  if (!PyArg_ParseTuple(args, "O", &func)) {
+    PyErr_Format(PyExc_TypeError, "callback function for '%s' expected", self->ob_type->tp_name);
+    Py_DECREF(self);
+    return PYNULL;
+  }
+  else if (!PyCallable_Check(func)) {
+    PyErr_Format(PyExc_TypeError, "'%s' object is not callable", func->ob_type->tp_name);
+    Py_DECREF(self);
+    return PYNULL;
+  }
+
+  PyObject_SetAttrString(self, "__callback", func);
+  return self;
+}
+
+PyObject* StressFunc_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrStressFunc_Type)
+    return mysetCallbackFunction(WrapNewOrange(mlnew TStressFunc_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TStressFunc_Python(), type);
+}
+
+PyObject *MDS_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(dissMatrix[, dim, points])")
+{
+    PyTRY
+    int dim=2;
+    PSymMatrix matrix;
+    PFloatListList points;
+    if(!PyArg_ParseTuple(args, "O&|iO&", cc_SymMatrix, &matrix, &dim, cc_FloatListList, &points))
+		return NULL;
+	
+    //cout <<"MDS Create 1"<<endl;
+    PMDS mds=mlnew TMDS(matrix, dim);
+    if(points && points->size()==matrix->dim)
+        mds->points=points;
+	else{
+		PRandomGenerator rg=mlnew TRandomGenerator();
+		for(int i=0;i<mds->n; i++)
+			for(int j=0; j<mds->dim; j++)
+				mds->points->at(i)->at(j)=rg->randfloat();
+	}
+
+    return WrapOrange(mds);
+    PyCATCH
+}
+
+PyObject *MDS_SMACOFstep(PyTypeObject  *self) PYARGS(METH_NOARGS, "()")
+{
+    PyTRY
+    SELF_AS(TMDS).SMACOFstep();
+	RETURN_NONE;
+    PyCATCH
+}
+
+PyObject *MDS_getDistances(PyTypeObject *self) PYARGS(METH_NOARGS, "()")
+{
+    PyTRY
+    SELF_AS(TMDS).getDistances();
+	RETURN_NONE;
+    PyCATCH
+}
+
+PyObject *MDS_getStress(PyTypeObject *self, PyObject *args) PYARGS(METH_VARARGS, "([stressFunc=SgnRelStress])")
+{
+    PyTRY
+    PStressFunc sf;
+    PyObject *callback=NULL;
+    if(PyTuple_Size(args)==1){
+        if(!PyArg_ParseTuple(args, "O&", cc_StressFunc, &sf))
+            if(!(PyArg_ParseTuple(args, "O", &callback) &&
+				(sf=PyOrange_AsStressFunc(mysetCallbackFunction(WrapNewOrange(mlnew TStressFunc_Python(),
+				(PyTypeObject*)&PyOrStressFunc_Type), args)))))
+				return NULL;
+        SELF_AS(TMDS).getStress(sf);
+    }else
+        SELF_AS(TMDS).getStress(mlnew TSgnRelStress());
+	RETURN_NONE;
+    PyCATCH
+}
+
+PyObject *MDS_optimize(PyObject* self, PyObject* args, PyObject* kwds) PYARGS(METH_VARARGS, "(numSteps[, stressFunc=orangemds.SgnRelStress, progressCallback=None])->None")
+{
+	PyTRY
+	int iter;
+	float eps=1e-3f;
+	PProgressCallback callback;
+	PStressFunc stress;
+	PyObject *pyStress=NULL;
+	if(!PyArg_ParseTuple(args, "i|O&f", &iter, cc_StressFunc, &stress, &eps))
+		if(PyArg_ParseTuple(args, "i|Of", &iter, &pyStress, &eps) && pyStress){
+			PyObject *arg=Py_BuildValue("(O)", pyStress);
+			stress=PyOrange_AsStressFunc(mysetCallbackFunction(WrapNewOrange(mlnew TStressFunc_Python(),
+			(PyTypeObject*)&PyOrStressFunc_Type), arg));
+		} else
+			return NULL;
+			
+	SELF_AS(TMDS).optimize(iter, stress, eps);
+	RETURN_NONE;
+	PyCATCH
+}
+PyObject *KruskalStress_call(PyTypeObject *self, PyObject *args)
+{
+    PyTRY
+    float cur, cor, w;
+    if(!PyArg_ParseTuple(args, "ff|f:KruskalStress.__call__", &cur, &cor, &w))
+        return NULL;
+    if(PyTuple_Size(args)==2)
+        return Py_BuildValue("f",SELF_AS(TKruskalStress).operator ()(cur,cor));
+    else
+        return Py_BuildValue("f",SELF_AS(TKruskalStress).operator ()(cur, cor, w));
+    PyCATCH
+}
+
+PyObject *SammonStress_call(PyTypeObject *self, PyObject *args)
+{
+    PyTRY
+    float cur, cor, w;
+    if(!PyArg_ParseTuple(args, "ff|f:SammonStress.__call__", &cur, &cor, &w))
+        return NULL;
+    if(PyTuple_Size(args)==2)
+        return Py_BuildValue("f",SELF_AS(TSammonStress).operator ()(cur,cor));
+    else
+        return Py_BuildValue("f",SELF_AS(TSammonStress).operator ()(cur, cor, w));
+    PyCATCH
+}
+
+PyObject *SgnSammonStress_call(PyTypeObject *self, PyObject *args)
+{
+    PyTRY
+    float cur, cor, w;
+    if(!PyArg_ParseTuple(args, "ff|f:SgnSammonStress.__call__", &cur, &cor, &w))
+        return NULL;
+    if(PyTuple_Size(args)==2)
+        return Py_BuildValue("f",SELF_AS(TSgnSammonStress).operator ()(cur,cor));
+    else
+        return Py_BuildValue("f",SELF_AS(TSgnSammonStress).operator ()(cur, cor, w));
+    PyCATCH
+}
+
+PyObject *SgnRelStress_call(PyTypeObject *self, PyObject *args)
+{
+    PyTRY
+    float cur, cor, w;
+    if(!PyArg_ParseTuple(args, "ff|f:SgnRelStress.__call__", &cur, &cor, &w))
+        return NULL;
+    if(PyTuple_Size(args)==2)
+        return Py_BuildValue("f",SELF_AS(TSgnRelStress).operator ()(cur,cor));
+    else
+		return Py_BuildValue("f",SELF_AS(TSgnRelStress).operator ()(cur, cor, w));
+    PyCATCH
+}
+
+PFloatListList PFloatListList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::P_FromArguments(arg); }
+PyObject *FloatListList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_FromArguments(type, arg); }
+PyObject *FloatListList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of FloatList>)") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_new(type, arg, kwds); }
+PyObject *FloatListList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_getitem(self, index); }
+int       FloatListList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_setitem(self, index, item); }
+PyObject *FloatListList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_getslice(self, start, stop); }
+int       FloatListList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_setslice(self, start, stop, item); }
+int       FloatListList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_len(self); }
+PyObject *FloatListList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_richcmp(self, object, op); }
+PyObject *FloatListList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_concat(self, obj); }
+PyObject *FloatListList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_repeat(self, times); }
+PyObject *FloatListList_str(TPyOrange *self) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_str(self); }
+PyObject *FloatListList_repr(TPyOrange *self) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_str(self); }
+int       FloatListList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_contains(self, obj); }
+PyObject *FloatListList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(FloatList) -> None") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_append(self, item); }
+PyObject *FloatListList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(FloatList) -> int") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_count(self, obj); }
+PyObject *FloatListList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> FloatListList") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_filter(self, args); }
+PyObject *FloatListList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(FloatList) -> int") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_index(self, obj); }
+PyObject *FloatListList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_insert(self, args); }
+PyObject *FloatListList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_native(self); }
+PyObject *FloatListList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> FloatList") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_pop(self, args); }
+PyObject *FloatListList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(FloatList) -> None") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_remove(self, obj); }
+PyObject *FloatListList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_reverse(self); }
+PyObject *FloatListList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PFloatListList, TFloatListList, PFloatList, &PyOrFloatList_Type>::_sort(self, args); }
+
+
+	
 double *getArray(PyObject *obj, int *dim1, int *dim2)
 {
     (*dim1)=PySequence_Size(obj);
@@ -63,7 +251,7 @@ double *getArray(PyObject *obj, int *dim1, int *dim2)
         return NULL;
     }
 
-    for(int i=0;i<(*dim1);i++){
+    for(i=0;i<(*dim1);i++){
         ////cout << i<<"a ";
         a=PySequence_GetItem(obj,i);
         if(PySequence_Size(a)!=(*dim2)){
@@ -317,7 +505,7 @@ PyObject *SMACOFStep(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(dist, di
 
     //cout<<"R"<<endl;
 
-	for(int i=0;i<len;i++)
+	for(i=0;i<len;i++)
 		for(int j=0;j<dim;j++){
 			sum=0.0;
 			for(int k=0;k<len;k++)
@@ -346,6 +534,10 @@ bool initorangemdsExceptions()
 void gcorangemdsUnsafeStaticInitialization()
 {
 }
+
+#include "px/externs.px"
+
+#include "px/orangemds.px"
 
 #include "px/initialization.px"
 
