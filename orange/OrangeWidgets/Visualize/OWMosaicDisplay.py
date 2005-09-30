@@ -17,8 +17,10 @@ import orngInteract
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
 from copy import copy
+from OWVisGraph import getVariableValuesSorted, getVariableValueIndices
 import random
-import OWGraphTools, OWGUI 
+import OWGraphTools, OWGUI
+from OWQCanvasFuncts import *
 
 PEARSON = 0
 CLASS_DISTRIBUTION = 1
@@ -274,8 +276,8 @@ class OWMosaicDisplay(OWWidget):
         
         attr = attrList[0]
         edge = len(attrList) * self.cellspace  # how much smaller rectangles do we draw
-        if side%2 == 0: vals = self.data.domain[attr].values
-        else:           vals = list(self.data.domain[attr].values)[::-1]
+        vals = getVariableValuesSorted(self.data, attr)
+        if side%2: vals = vals[::-1]        # reverse names if necessary
 
         if side%2 == 0:
             whole = max(0, (x1-x0)-edge*(len(vals)-1))  # we remove the space needed for separating different attr. values
@@ -284,11 +286,11 @@ class OWMosaicDisplay(OWWidget):
             whole = max(0, (y1-y0)-edge*(len(vals)-1))
             if whole == 0: edge = (y1-y0)/float(len(vals)-1)
 
-        currPos = 0
+        currPos = 0.0
         for val in vals:
             tempData = data.select({attr:val})
             perc = float(len(tempData))/float(len(data))
-            size = int(whole*perc)
+            size = whole*perc
 
             if side % 2 == 0:   # if drawing horizontal
                 if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", usedAttrs + [attr, val])
@@ -316,26 +318,26 @@ class OWMosaicDisplay(OWWidget):
         
         self.drawnSides[side] = 1
 
-        if side % 2 == 0: values = data.domain[attr].values
-        else            : values = list(data.domain[attr].values)[::-1]
+        values = getVariableValuesSorted(data, attr)
+        if side % 2:  values = values[::-1]
 
         width  = x1-x0 - (side % 2 == 0) * self.cellspace*(totalAttrs-side)*(len(values)-1)
         height = y1-y0 - (side % 2 == 1) * self.cellspace*(totalAttrs-side)*(len(values)-1)
         
         #calculate position of first attribute
-        if side == 0:    self.addText(attr, x0+(x1-x0)/2, y1 + self.attributeNameOffset, Qt.AlignCenter, 1)
-        elif side == 1:  self.addText(attr, x0 - self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignRight + Qt.AlignVCenter, 1)
-        elif side == 2:  self.addText(attr, x0+(x1-x0)/2, y0 - self.attributeNameOffset, Qt.AlignCenter, 1)
-        else:            self.addText(attr, x1 + self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignLeft + Qt.AlignVCenter, 1)
+        if side == 0:    self.texts.append(OWCanvasText(self.canvas, attr, x0+(x1-x0)/2, y1 + self.attributeNameOffset, Qt.AlignCenter, bold = 1))
+        elif side == 1:  self.texts.append(OWCanvasText(self.canvas, attr, x0 - self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignRight + Qt.AlignVCenter, bold = 1))
+        elif side == 2:  self.texts.append(OWCanvasText(self.canvas, attr, x0+(x1-x0)/2, y0 - self.attributeNameOffset, Qt.AlignCenter, bold = 1))
+        else:            self.texts.append(OWCanvasText(self.canvas, attr, x1 + self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignLeft + Qt.AlignVCenter, bold = 1))
                 
         currPos = 0
         dist = orange.Distribution(attr, data)
         for val in values:
             perc = dist[val]/float(len(data))
-            if side == 0:    self.addText(str(val), x0+currPos+width*0.5*perc, y1 + self.attributeValueOffset, Qt.AlignCenter, 0)
-            elif side == 1:  self.addText(str(val), x0-self.attributeValueOffset, y0+currPos+height*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, 0)
-            elif side == 2:  self.addText(str(val), x0+currPos+width*perc*0.5, y0 - self.attributeValueOffset, Qt.AlignCenter, 0)
-            else:            self.addText(str(val), x1+self.attributeValueOffset, y0 + currPos + height*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 0)
+            if side == 0:    self.texts.append(OWCanvasText(self.canvas, str(val), x0+currPos+width*0.5*perc, y1 + self.attributeValueOffset, Qt.AlignCenter, bold = 0))
+            elif side == 1:  self.texts.append(OWCanvasText(self.canvas, str(val), x0-self.attributeValueOffset, y0+currPos+height*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, bold = 0))
+            elif side == 2:  self.texts.append(OWCanvasText(self.canvas, str(val), x0+currPos+width*perc*0.5, y0 - self.attributeValueOffset, Qt.AlignCenter, bold = 0))
+            else:            self.texts.append(OWCanvasText(self.canvas, str(val), x1+self.attributeValueOffset, y0 + currPos + height*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, bold = 0))
 
             if side % 2 == 0: currPos += perc*width + self.cellspace*(totalAttrs-side)
             else :            currPos += perc*height+ self.cellspace*(totalAttrs-side)
@@ -352,20 +354,19 @@ class OWMosaicDisplay(OWWidget):
 
         if self.interiorColoring == CLASS_DISTRIBUTION and (not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous): return
 
+        
         self.names = []
-        totalWidth = 0
-
         if self.interiorColoring == PEARSON:
             names = ["<-8", "-8:-4", "-4:-2", "-2:2", "2:4", "4:8", ">8", "Residuals:"]
             colors = self.redColors[::-1] + self.blueColors[1:]
         else:
-            names = data.domain.classVar.values + [data.domain.classVar.name+":"]
+            names = getVariableValuesSorted(data, data.domain.classVar.name) + [data.domain.classVar.name+":"]
             colors = [self.colorPalette[i] for i in range(len(data.domain.classVar.values))]
-
+        
         for name in names:
-            item = QCanvasText(name, self.canvas)
-            self.names.append(item)
-            totalWidth += item.boundingRect().width()
+            self.names.append(OWCanvasText(self.canvas, name))
+            
+        totalWidth = sum([self.names[i].boundingRect().width() for i in range(len(self.names))])
 
         # compute the x position of the center of the legend
         y = y1 + self.attributeNameOffset + 15
@@ -380,34 +381,24 @@ class OWMosaicDisplay(OWWidget):
         for i in range(len(names)-1):
             if self.interiorColoring == PEARSON: edgeColor = Qt.black
             else: edgeColor = colors[i]
-            
-            symbol = QCanvasRectangle (startX + xOffset, y, size, size, self.canvas)
-            symbol.setBrush(QBrush(colors[i])); symbol.setPen(QPen(edgeColor))
-            symbol.show()
+
+            symbol = OWCanvasRectangle(self.canvas, startX + xOffset, y, size, size, edgeColor, colors[i])
             self.symbols.append(symbol)
+
             self.names[i].move(startX + xOffset + 18, y+1)
-            self.names[i].show()
+
             xOffset += distance + self.names[i].boundingRect().width()
             
 
-
-    # draws text with caption name at position x,y with alignment and style
-    def addText(self, name, x, y, alignment, bold):
-        text = QCanvasText(name, self.canvas)
-        text.setTextFlags(alignment)
-        font = text.font(); font.setBold(bold); text.setFont(font)
-        text.move(x, y)
-        text.show()
-        self.texts.append(text)
-
     # draw a rectangle, set it to back and add it to rect list                
     def addRect(self, x0, x1, y0, y1, data = None, condition = "", usedAttrs = []):
-        if x0==x1: x1+=1
-        if y0==y1: y1+=1
-        rect = QCanvasRectangle(x0, y0, x1-x0, y1-y0, self.canvas)
-        rect.setZ(-10)
-        rect.show()
-        #pen = rect.pen(); pen.setWidth(2); rect.setPen(pen)
+        x0 = int(x0); x1 = int(x1); y0 = int(y0); y1 = int(y1)
+        if x0 == x1: x1+=1
+        if y0 == y1: y1+=1
+
+        if x1-x0 + y1-y0 == 2: y1+=1        # if we want to show a rectangle of width and height 1 it doesn't show anything. in such cases we therefore have to increase size of one edge
+
+        rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = -10)            
         self.rects.append(rect)
 
         if not data: return rect
@@ -429,39 +420,36 @@ class OWMosaicDisplay(OWWidget):
 
             if pearson > 0: color = self.blueColors[ind]
             else: color = self.redColors[ind]
-            rect = QCanvasRectangle(x0, y0+1, x1-x0, y1-y0-1, self.canvas)
-            rect.setPen(QPen(color)); rect.setBrush(QBrush(color)); rect.setZ(-20); rect.show()
+            rect = OWCanvasRectangle(self.canvas, x0, y0+1, x1-x0, y1-y0, color, color, z = -20)
             self.rects.append(rect)
         else:
             originalDist = orange.Distribution(self.data.domain.classVar.name, self.data)
             dist = orange.Distribution(data.domain.classVar.name, data)
+            values = getVariableValuesSorted(data, data.domain.classVar.name)
             
             total = 0
             for i in range(len(dist)):
-                val = dist[i]
+                val = dist[values[i]]
                 if self.horizontalDistribution:
                     v = ((x1-x0)* val)/len(data)
-                    r = QCanvasRectangle(x0+total, y0+1, v, y1-y0-1, self.canvas)
+                    r = OWCanvasRectangle(self.canvas, x0+total, y0+1, v, y1-y0, self.colorPalette[i], self.colorPalette[i], z = -20)
+
                 else:
-                    v = ((y1-y0)* val)/len(data) 
-                    r = QCanvasRectangle(x0, y0+total, x1-x0, v, self.canvas)
-                r.setPen(QPen(self.colorPalette[i])); r.setBrush(QBrush(self.colorPalette[i]))
-                r.setZ(-20); r.show()
+                    v = ((y1-y0)* val)/len(data)
+                    r = OWCanvasRectangle(self.canvas, x0, y0+total, x1-x0, v, self.colorPalette[i], self.colorPalette[i], z = -20)
+
                 self.rects.append(r)
                 total += v
 
             if self.showAprioriDistribution and abs(x1 - x0) > 1 and abs(y1 - y0) > 1:
                 total = 0
                 for i in range(len(originalDist)-1):
-                    r = QCanvasLine(self.canvas)
                     if self.horizontalDistribution:
-                        total += ((x1-x0)* originalDist[i])/len(self.data) 
-                        r.setPoints(x0+total, y0+1, x0+total, y1-1)
+                        total += ((x1-x0)* originalDist[values[i]])/len(self.data) 
+                        self.rects.append(OWCanvasLine(self.canvas, x0+total, y0+1, x0+total, y1-1, z = 10))
                     else:
-                        total += ((y1-y0)* originalDist[i])/len(self.data)
-                        r.setPoints(x0+1, y0+total, x1-1, y0+total)
-                    r.setZ(10); r.show()
-                    self.rects.append(r)
+                        total += ((y1-y0)* originalDist[values[i]])/len(self.data)
+                        self.rects.append(OWCanvasLine(self.canvas, x0+1, y0+total, x1-1, y0+total, z = 10))
 
         if self.subsetData:
             correctBox = 1
@@ -470,10 +458,8 @@ class OWMosaicDisplay(OWWidget):
                     correctBox = 0
                     break
             if correctBox:
-                rect = QCanvasRectangle(x0-3, y0-3, x1-x0+6, y1-y0+6, self.canvas)
-                rect.setPen(QPen(QColor(0,255,0),3)); rect.setBrush(QBrush(Qt.white)); rect.setZ(-50); rect.show()
+                rect = OWCanvasRectangle(self.canvas, x0-3, y0-3, x1-x0+6, y1-y0+6, QColor(0,255,0), Qt.white, penWidth = 3, z=-50)
                 self.rects.append(rect)
-
 
         self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist, pearson, expected)
 

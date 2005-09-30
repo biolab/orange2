@@ -12,6 +12,7 @@ from OWWidget import *
 from qt import *
 from qtcanvas import *
 import orngInteract, OWGUI
+from OWQCanvasFuncts import *
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
 
@@ -382,8 +383,8 @@ class OWSieveDiagram(OWWidget):
             name  = "P(%s, %s) =\\= P(%s)*P(%s)" %(self.attrX, self.attrY, self.attrX, self.attrY)
         else:
             name = "P(%s, %s | %s = %s) =\\= P(%s | %s = %s)*P(%s | %s = %s)" %(self.attrX, self.attrY, self.attrCondition, self.attrConditionValue, self.attrX, self.attrCondition, self.attrConditionValue, self.attrY, self.attrCondition, self.attrConditionValue)
-        self.addText(name, xOff+ sqareSize/2, 10, Qt.AlignHCenter, 1)
-        self.addText("N = " + str(len(data)), xOff+ sqareSize/2, 30, Qt.AlignHCenter, 0)
+        self.texts.append(OWCanvasText(self.canvas, name , xOff+ sqareSize/2, 10, Qt.AlignHCenter, bold = 1))
+        self.texts.append(OWCanvasText(self.canvas, "N = " + str(len(data)), xOff+ sqareSize/2, 30, Qt.AlignHCenter, bold = 0))
 
         ######################
         # compute chi-square
@@ -411,9 +412,7 @@ class OWSieveDiagram(OWWidget):
                 height = int(float(sqareSize * valsY[j])/float(len(data)))
 
                 # create rectangle
-                rect = QCanvasRectangle(currX+2, currY+2, width-4, height-4, self.canvas)
-                rect.setZ(-10)
-                rect.show()
+                rect = OWCanvasRectangle(self.canvas, currX+2, currY+2, width-4, height-4, z = -10)
                 self.rects.append(rect)
 
                 self.addRectIndependencePearson(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
@@ -421,14 +420,14 @@ class OWSieveDiagram(OWWidget):
 
                 currY += height
                 if currX == xOff:
-                    self.addText(data.domain[self.attrY].values[j], xOff - 10, currY - height/2, Qt.AlignRight+Qt.AlignVCenter, 0)
+                    self.texts.append(OWCanvasText(self.canvas, data.domain[self.attrY].values[j], xOff - 10, currY - height/2, Qt.AlignRight+Qt.AlignVCenter, bold = 0))
 
-            self.addText(data.domain[self.attrX].values[i], currX + width/2, yOff + sqareSize + 5, Qt.AlignCenter, 0)
+            self.texts.append(OWCanvasText(self.canvas, data.domain[self.attrX].values[i], currX + width/2, yOff + sqareSize + 5, Qt.AlignCenter, bold = 0))
             currX += width
 
         # show attribute names
-        self.addText(self.attrY, 5, yOff + sqareSize/2, Qt.AlignLeft, 1)
-        self.addText(self.attrX, xOff + sqareSize/2, yOff + sqareSize + 15, Qt.AlignCenter, 1)
+        self.texts.append(OWCanvasText(self.canvas, self.attrY, 5, yOff + sqareSize/2, Qt.AlignLeft, bold = 1))
+        self.texts.append(OWCanvasText(self.canvas, self.attrX, xOff + sqareSize/2, yOff + sqareSize + 15, Qt.AlignCenter, bold = 1))
 
         self.canvas.update()
 
@@ -465,15 +464,7 @@ class OWSieveDiagram(OWWidget):
             kvoc = 1 - 0.4*pearson
         if self.showLines == 1: self.addLines(x,y,w,h, kvoc, pen)
 
-    # draws text with caption name at position x,y with alignment and style
-    def addText(self, name, x, y, alignment, bold):
-        text = QCanvasText(name, self.canvas);
-        text.setTextFlags(alignment);
-        font = text.font(); font.setBold(bold); text.setFont(font)
-        text.move(x, y)
-        text.show()
-        self.texts.append(text)
-
+    
     #################################################
     # add tooltips
     def addTooltip(self, x,y,w,h, (xAttr, xVal), (yAttr, yVal), actual, sum, chisquare):
