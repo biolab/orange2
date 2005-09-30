@@ -128,7 +128,6 @@ class MosaicOptimization(OWBaseWidget):
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
 
 
-
         # ##########################
         # SAVE & MANAGE TAB
         self.classesBox = OWGUI.widgetBox(self.ManageTab, " Select Class Values You Wish to Consider ")
@@ -347,7 +346,6 @@ class MosaicOptimization(OWBaseWidget):
                 
                 for attrList in combinations:
                     attrs = [evaluatedAttrs[z]] + attrList  
-                    #print attrs
 
                     val = self._Evaluate(data, attrs)
 
