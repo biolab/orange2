@@ -124,10 +124,11 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
     
     return wa, wb
 
-def button(widget, master, label, callback = None, disabled=0):
+def button(widget, master, label, callback = None, disabled=0, tooltip=None):
     btn = QPushButton(label, widget)
     btn.setDisabled(disabled)
     if callback: master.connect(btn, SIGNAL("clicked()"), callback)
+    if tooltip: QToolTip.add(btn, tooltip)
     return btn
 
 def separator(widget, width=0, height=8):
