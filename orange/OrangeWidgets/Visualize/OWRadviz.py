@@ -18,7 +18,7 @@ from OWClusterOptimization import *
 from OWFreeVizOptimization import *
 import time
 import OWToolbars, OWGUI, orngTest, orangeom
-import OWVisFuncts
+import OWVisFuncts, OWDlgs
 
 ###########################################################################################
 ##### WIDGET : Radviz visualization
@@ -28,7 +28,7 @@ class OWRadviz(OWWidget):
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "VizRankClassifierName", "clusterClassifierName",
                     "attractG", "repelG", "law", "showOptimizationSteps", "lockToCircle", "valueScalingType", "graph.showProbabilities", "showAllAttributes",
-                    "learnerIndex"]
+                    "learnerIndex", "palettesDict", "selectedPaletteIndex", "currentColorState"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
@@ -58,6 +58,9 @@ class OWRadviz(OWWidget):
         self.outlierValues = None
         self.attributeSelectionList = None
         self.learnerIndex = 0
+        self.palettesDict = {}
+        self.selectedPaletteIndex = 0
+        self.currentColorState = None
 
         
         #add a graph widget
@@ -122,9 +125,9 @@ class OWRadviz(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
 
-        self.optimizationDlgButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow)
+        self.optimizationDlgButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.")
         self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow)
-        self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow)
+        self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved")
         self.optimizationDlgButton.setMaximumWidth(63)
         self.clusterDetectionDlgButton.setMaximumWidth(63)
         self.freeVizDlgButton.setMaximumWidth(63)
@@ -181,9 +184,10 @@ class OWRadviz(OWWidget):
         self.selectionChanged()
 
         # ####
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
-
+        hbox = OWGUI.widgetBox(self.SettingsTab, " Set Colors For...", orientation = "horizontal")
+        self.canvasColorButton = OWGUI.button(hbox, self, "Canvas", self.setGraphCanvasColor, tooltip = "Set the canvas background color")
+        self.classColorButton = OWGUI.button(hbox, self, "Class", self.setContinuousPalette, tooltip = "Set the class palette for the case of continuous class")
+        
 
         # ####################################
         # ANCHORS TAB
@@ -242,6 +246,10 @@ class OWRadviz(OWWidget):
         self.activateLoadedSettings()
         self.setValueScaling() # XXX is there any better way to do this?!
         self.resize(900, 700)
+
+        dlg = OWDlgs.ColorPalette(self, "Color Palette", self.palettesDict, self.selectedPaletteIndex, self.currentColorState, callback = None, additionalColors = None, modal = FALSE)
+        self.colorPalette = dlg.getColorPalette(250)    # create a palette with 250 different colors. if you want a better resoultion increase this number
+        del dlg
 
 
     def activateLoadedSettings(self):
@@ -672,12 +680,8 @@ class OWRadviz(OWWidget):
         
 
     def selectionChanged(self):
-        if self.autoSendSelection:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
-            self.sendSelections()
-        else:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
-        
+        self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)
+        if self.autoSendSelection: self.sendSelections()
 
     def setGraphCanvasColor(self):
         newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
@@ -685,6 +689,18 @@ class OWRadviz(OWWidget):
             self.graphCanvasColor = str(newColor.name())
             self.graph.setCanvasColor(QColor(newColor))
 
+    def setContinuousPalette(self):
+        dlg = OWDlgs.ColorPalette(self, "Color Palette", self.palettesDict, self.selectedPaletteIndex, self.currentColorState, callback = None, additionalColors = None)
+        if dlg.exec_loop():
+            self.selectedPaletteIndex = dlg.selectedPaletteIndex
+            self.currentColorState = dlg.currentState
+            self.colorPalette = dlg.getColorPalette()
+            self.updateGraph()
+        del dlg
+
+
+    def getColorPalette(self):
+        return self.colorPalette
 
     # ###############################################################################################################
     # functions used by OWClusterOptimization class

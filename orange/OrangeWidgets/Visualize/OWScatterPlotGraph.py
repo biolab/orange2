@@ -358,7 +358,7 @@ class OWScatterPlotGraph(OWVisGraph):
             # slow, unoptimized drawing because we use different symbols and/or different sizes of symbols
             # ##############################################################
             else:
-                if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV()
+                if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:  classColors = self.scatterWidget.getColorPalette()
                 elif colorIndex != -1:                                                                          classColors = ColorPaletteHSV(len(self.rawdata.domain[colorIndex].values))
 
                 shownSubsetCount = 0
@@ -378,7 +378,9 @@ class OWScatterPlotGraph(OWVisGraph):
                     else:                           y = self.rawdata[i][yAttrIndex].value
 
                     if colorIndex != -1:
-                        if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor = QColor(); newColor.setHsv(self.noJitteringScaledData[colorIndex][i] * classColors.maxHueVal, 255, 255)
+                        if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
+                            newColor = QColor();
+                            newColor.setRgb(classColors[int(self.noJitteringScaledData[colorIndex][i] * (len(classColors)-1))])
                         else: newColor = classColors[colorIndices[self.rawdata[i][colorIndex].value]]
                     else: newColor = QColor(0,0,0)
                             
@@ -475,15 +477,17 @@ class OWScatterPlotGraph(OWVisGraph):
         # ##############################################################
         # draw color scale for continuous coloring attribute
         if colorIndex != -1 and showColorLegend and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
-            x0 = xmax + xVar*1.0/100.0
-            x1 = x0 + xVar*5.0/100.0
-            colors = ColorPaletteHSV()
+            x0 = xmax + xVar*1.0/100.0;  x1 = x0 + xVar*5.0/100.0
+            palette = self.scatterWidget.getColorPalette()
+            height = yVar / float(len(palette))
+            xs = [x0, x1, x1, x0]
 
-            for i in range(1000):
-                y = yVarMin + i*yVar/1000.
-                newCurveKey = self.insertCurve(str(i))
-                self.setCurvePen(newCurveKey, QPen(colors.getColor(float(i)/1000.0), 3))
-                self.setCurveData(newCurveKey, [x0,x1], [y,y])
+            for i in range(len(palette)):
+                y = yVarMin + i*yVar/float(len(palette))
+                col = QColor(); col.setRgb(palette[i])
+                curve = PolygonCurve(self, QPen(col), QBrush(col))
+                newCurveKey = self.insertCurve(curve)
+                self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
 
             # add markers for min and max value of color attribute
             (colorVarMin, colorVarMax) = self.attrValues[colorAttr]

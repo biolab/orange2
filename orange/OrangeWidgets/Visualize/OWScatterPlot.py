@@ -14,8 +14,7 @@ from OWWidget import *
 from OWScatterPlotGraph import *
 from OWkNNOptimization import *
 from OWClusterOptimization import *
-import OWGUI
-import OWToolbars
+import OWGUI, OWToolbars, OWDlgs
 
 ###########################################################################################
 ##### WIDGET : Scatterplot visualization
@@ -24,7 +23,7 @@ class OWScatterPlot(OWWidget):
     settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showVerticalGridlines", "showHorizontalGridlines", "graph.showAxisScale",
                     "graph.enabledLegend", "graphGridColor", "graphCanvasColor", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
                     "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
-                    "VizRankClassifierName", "clusterClassifierName", "learnerIndex"]
+                    "VizRankClassifierName", "clusterClassifierName", "learnerIndex", "palettesDict", "selectedPaletteIndex", "currentColorState"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
@@ -47,6 +46,9 @@ class OWScatterPlot(OWWidget):
         self.outlierValues = None
         self.learnerIndex = 0
         self.learnersArray = [None, None]   # VizRank, Cluster
+        self.palettesDict = {}
+        self.selectedPaletteIndex = 0
+        self.currentColorState = None
 
         self.graph = OWScatterPlotGraph(self, self.mainArea)
         self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "ScatterPlot")
@@ -115,7 +117,7 @@ class OWScatterPlot(OWWidget):
         self.graph.clusterOptimization = self.clusterDlg
         
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialogs ", orientation = "horizontal")
-        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow)
+        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.")
         OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow)
         self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
         self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
@@ -172,15 +174,21 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = " Data selection ", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         
-        self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Change Colors ", orientation = "horizontal")
-        OWGUI.button(self.colorButtonsBox, self, "Canvas", self.setGraphCanvasColor)
-        OWGUI.button(self.colorButtonsBox, self, "Grid", self.setGraphGridColor)
+        self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Set Colors For...", orientation = "horizontal")
+        OWGUI.button(self.colorButtonsBox, self, "Canvas", self.setGraphCanvasColor, tooltip = "Set the canvas background color")
+        #OWGUI.button(self.colorButtonsBox, self, "Grid", self.setGraphGridColor, tooltip = "Set the grid color")
+        OWGUI.button(self.colorButtonsBox, self, "Class", self.setContinuousPalette, tooltip = "Set the class palette for the case of continuous class")
+        
 
         self.SettingsTab.setMinimumWidth(max(self.GeneralTab.sizeHint().width(), self.SettingsTab.sizeHint().width())+20)
         self.icons = self.createAttributeIconDict()
         
         self.activateLoadedSettings()
         self.resize(900, 700)
+
+        dlg = OWDlgs.ColorPalette(self, "Color Palette", self.palettesDict, self.selectedPaletteIndex, self.currentColorState, callback = None, additionalColors = None, modal = FALSE)
+        self.colorPalette = dlg.getColorPalette(250)    # create a palette with 250 different colors. if you want a better resoultion increase this number
+        del dlg
 
     
     def activateLoadedSettings(self):
@@ -491,6 +499,18 @@ class OWScatterPlot(OWWidget):
         if newColor.isValid():
             self.graphGridColor = str(newColor.name())
             self.graph.setGridColor(newColor)
+
+    def setContinuousPalette(self):
+        dlg = OWDlgs.ColorPalette(self, "Color Palette", self.palettesDict, self.selectedPaletteIndex, self.currentColorState, callback = None, additionalColors = None)
+        if dlg.exec_loop():
+            self.selectedPaletteIndex = dlg.selectedPaletteIndex
+            self.currentColorState = dlg.currentState
+            self.colorPalette = dlg.getColorPalette()
+            self.updateGraph()
+        del dlg
+
+    def getColorPalette(self):
+        return self.colorPalette
 
     def setMinimalGraphProperties(self):
         attrs = ["graph.pointWidth", "graph.enabledLegend", "graph.showClusters", "showXAxisTitle", "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines", "graph.showAxisScale", "autoSendSelection"]

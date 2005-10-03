@@ -351,23 +351,12 @@ class OWRadvizGraph(OWVisGraph):
         # CONTINUOUS class
         # ############################################################## 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
-            colors = ColorPaletteHSV()
-
-            palette = [qRgb(255.*i/254., 255.*i/254., 255-(255.*i/254.)) for i in range(254)] + [qRgb(255, 255, 255)]
+            palette = self.radvizWidget.getColorPalette()
 
             for i in range(dataSize):
                 if not validData[i]: continue
                 newColor = QColor()
-#                newColor.setHsv(self.noJitteringScaledData[classNameIndex][i] * colors.maxHueVal, 255, 255)
-                c = self.noJitteringScaledData[classNameIndex][i]
-                newColor.setRgb(255*c, 255*c, 255-255*c)
-##                if c < 0.5:
-###                    newColor.setRgb(math.floor(c*511), math.floor(c*511), 255)
-##                    newColor.setRgb(0, 0, 255-math.floor(c*511))
-##                else:
-###                    newColor.setRgb(255, 255-math.floor(c*511), 255-math.floor(c*511))
-##                    newColor.setRgb(math.floor(c*511), 0, 0)
-
+                newColor.setRgb(palette[int(self.noJitteringScaledData[classNameIndex][i] * (len(palette)-1))])
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
 
@@ -431,13 +420,15 @@ class OWRadvizGraph(OWVisGraph):
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
             # show legend for continuous class
             else:
-                xs = [1.15, 1.20]
-                colors = ColorPaletteHSV(-1)
-                for i in range(1000):
-                    y = -1.0 + i*2.0/1000.0
-                    newCurveKey = self.insertCurve(str(i))
-                    self.setCurvePen(newCurveKey, QPen(colors.getColor(float(i)/1000.0)))
-                    self.setCurveData(newCurveKey, xs, [y,y])
+                xs = [1.15, 1.20, 1.20, 1.15]
+                palette = self.radvizWidget.getColorPalette()
+                height = 2 / float(len(palette))
+                for i in range(len(palette)):
+                    y = -1.0 + i*2.0/float(len(palette))
+                    col = QColor(); col.setRgb(palette[i])
+                    curve = PolygonCurve(self, QPen(col), QBrush(col))
+                    newCurveKey = self.insertCurve(curve)
+                    self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
 
                 # add markers for min and max value of color attribute
                 [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
