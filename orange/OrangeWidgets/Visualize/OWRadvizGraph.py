@@ -423,8 +423,9 @@ class OWRadvizGraph(OWVisGraph):
                 xs = [1.15, 1.20, 1.20, 1.15]
                 palette = self.radvizWidget.getColorPalette()
                 height = 2 / float(len(palette))
+                lenPalette = len(palette)
                 for i in range(len(palette)):
-                    y = -1.0 + i*2.0/float(len(palette))
+                    y = -1.0 + i*2.0/float(lenPalette)
                     col = QColor(); col.setRgb(palette[i])
                     curve = PolygonCurve(self, QPen(col), QBrush(col))
                     newCurveKey = self.insertCurve(curve)
@@ -432,8 +433,8 @@ class OWRadvizGraph(OWVisGraph):
 
                 # add markers for min and max value of color attribute
                 [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
-                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
         self.updateLayout()

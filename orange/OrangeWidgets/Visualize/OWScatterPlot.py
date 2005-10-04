@@ -20,10 +20,10 @@ import OWGUI, OWToolbars, OWDlgs
 ##### WIDGET : Scatterplot visualization
 ###########################################################################################
 class OWScatterPlot(OWWidget):
-    settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showVerticalGridlines", "showHorizontalGridlines", "graph.showAxisScale",
-                    "graph.enabledLegend", "graphGridColor", "graphCanvasColor", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
+    settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
+                    "graph.enabledLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
                     "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
-                    "VizRankClassifierName", "clusterClassifierName", "learnerIndex", "palettesDict", "selectedPaletteIndex", "currentColorState"]
+                    "VizRankClassifierName", "clusterClassifierName", "learnerIndex", "colorSettings"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
@@ -34,21 +34,16 @@ class OWScatterPlot(OWWidget):
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Learner", orange.Learner)]
 
         # local variables    
-        self.showVerticalGridlines = 0
-        self.showHorizontalGridlines = 0
+        self.showGridlines = 0
         self.autoSendSelection = 1
         self.toolbarSelection = 0
         self.VizRankClassifierName = "VizRank classifier (Scatterplot)"
         self.clusterClassifierName = "Visual cluster classifier (Scatterplot)"
-        self.graphCanvasColor = str(Qt.white.name())
-        self.graphGridColor = str(Qt.black.name())
         self.classificationResults = None
         self.outlierValues = None
         self.learnerIndex = 0
         self.learnersArray = [None, None]   # VizRank, Cluster
-        self.palettesDict = {}
-        self.selectedPaletteIndex = 0
-        self.currentColorState = None
+        self.colorSettings = None
 
         self.graph = OWScatterPlotGraph(self, self.mainArea)
         self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "ScatterPlot")
@@ -161,10 +156,12 @@ class OWScatterPlot(OWWidget):
         #OWGUI.checkBox(box4, self, 'graph.showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
         OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.optimizedDrawing', 'Optimize drawing', callback = self.updateGraph, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
-        OWGUI.checkBox(box4, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
-        OWGUI.checkBox(box4, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
+        OWGUI.checkBox(box4, self, 'showGridlines', 'Show gridlines', callback = self.setShowGridlines)
         OWGUI.checkBox(box4, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
 
+        self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Colors ", orientation = "horizontal")
+        OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables")
+        
         box5 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
         OWGUI.comboBox(box5, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
 
@@ -174,29 +171,23 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = " Data selection ", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         
-        self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Set Colors For...", orientation = "horizontal")
-        OWGUI.button(self.colorButtonsBox, self, "Canvas", self.setGraphCanvasColor, tooltip = "Set the canvas background color")
-        #OWGUI.button(self.colorButtonsBox, self, "Grid", self.setGraphGridColor, tooltip = "Set the grid color")
-        OWGUI.button(self.colorButtonsBox, self, "Class", self.setContinuousPalette, tooltip = "Set the class palette for the case of continuous class")
-        
-
         self.SettingsTab.setMinimumWidth(max(self.GeneralTab.sizeHint().width(), self.SettingsTab.sizeHint().width())+20)
         self.icons = self.createAttributeIconDict()
         
         self.activateLoadedSettings()
         self.resize(900, 700)
 
-        dlg = OWDlgs.ColorPalette(self, "Color Palette", self.palettesDict, self.selectedPaletteIndex, self.currentColorState, callback = None, additionalColors = None, modal = FALSE)
-        self.colorPalette = dlg.getColorPalette(250)    # create a palette with 250 different colors. if you want a better resoultion increase this number
-        del dlg
-
     
     def activateLoadedSettings(self):
-        self.graph.enableGridXB(self.showVerticalGridlines)
-        self.graph.enableGridYL(self.showHorizontalGridlines)
-        self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
-        self.graph.setGridPen(QPen(QColor(self.graphGridColor)))
+        dlg = self.createColorDialog()
+        self.colorPalette = dlg.getColorPalette("colorPalette")
+
+        self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+        self.graph.setGridPen(QPen(dlg.getColor("Grid")))
                 
+        self.graph.enableGridXB(self.showGridlines)
+        self.graph.enableGridYL(self.showGridlines)
+
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.optimizationDlg.changeLearnerName(self.VizRankClassifierName)
@@ -475,11 +466,9 @@ class OWScatterPlot(OWWidget):
             self.graph.setCurveSymbol(key, QwtSymbol(symbol.style(), symbol.brush(), symbol.pen(), QSize(self.graph.pointWidth, self.graph.pointWidth)))
         self.graph.repaint()
 
-    def setVerticalGridlines(self):
-        self.graph.enableGridXB(self.showVerticalGridlines)
-
-    def setHorizontalGridlines(self):
-        self.graph.enableGridYL(self.showHorizontalGridlines)
+    def setShowGridlines(self):
+        self.graph.enableGridXB(self.showGridlines)
+        self.graph.enableGridYL(self.showGridlines)
 
     def setAutoSendSelection(self):
         if self.autoSendSelection:
@@ -488,32 +477,36 @@ class OWScatterPlot(OWWidget):
         else:
             self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
 
-    def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
-        if newColor.isValid():
-            self.graphCanvasColor = str(newColor.name())
-            self.graph.setCanvasColor(QColor(newColor))
-
-    def setGraphGridColor(self):
-        newColor = QColorDialog.getColor(QColor(self.graphGridColor))
-        if newColor.isValid():
-            self.graphGridColor = str(newColor.name())
-            self.graph.setGridColor(newColor)
-
-    def setContinuousPalette(self):
-        dlg = OWDlgs.ColorPalette(self, "Color Palette", self.palettesDict, self.selectedPaletteIndex, self.currentColorState, callback = None, additionalColors = None)
+    def setColors(self):
+        dlg = self.createColorDialog()
         if dlg.exec_loop():
-            self.selectedPaletteIndex = dlg.selectedPaletteIndex
-            self.currentColorState = dlg.currentState
-            self.colorPalette = dlg.getColorPalette()
+            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
+            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+            self.graph.setGridPen(QPen(dlg.getColor("Grid")))
             self.updateGraph()
-        del dlg
+
+    def createColorDialog(self):
+        c = OWDlgs.ColorPalette(self, "Color Palette")
+        c.createColorPalette("colorPalette", "Continuous variable palette")
+        box = c.createBox("otherColors", "Other Colors")
+        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        box.addSpace(5)
+        c.createColorButton(box, "Grid", "Grid color", Qt.black)
+        box.addSpace(5)
+        box.adjustSize()
+        if self.colorSettings:
+            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
+            c.setCurrentState(self.colorSettings[2])
+        else:
+            c.setColorSchemas()
+        return c
 
     def getColorPalette(self):
         return self.colorPalette
 
     def setMinimalGraphProperties(self):
-        attrs = ["graph.pointWidth", "graph.enabledLegend", "graph.showClusters", "showXAxisTitle", "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines", "graph.showAxisScale", "autoSendSelection"]
+        attrs = ["graph.pointWidth", "graph.enabledLegend", "graph.showClusters", "showXAxisTitle", "showYAxisTitle", "showGridlines", "graph.showAxisScale", "autoSendSelection"]
         self.oldSettings = dict([(attr, mygetattr(self, attr)) for attr in attrs])
 
         self.graph.pointWidth = 4
@@ -522,8 +515,7 @@ class OWScatterPlot(OWWidget):
         self.graph.showXaxisTitle = 0
         self.graph.showYLaxisTitle = 0
         self.graph.showAxisScale = 0
-        self.showVerticalGridlines = 0
-        self.showHorizontalGridlines = 0
+        self.showGridlines = 0
         self.autoSendSelection = 0
         #self.updateValues()
 

@@ -12,19 +12,17 @@
 
 from OWWidget import *
 from OWParallelGraph import *
-import OWVisAttrSelection 
-import OWToolbars
-import OWGUI
+import OWToolbars, OWGUI, OWDlgs, OWVisAttrSelection 
 from sys import getrecursionlimit, setrecursionlimit
 
 ###########################################################################################
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "graph.jitterSize", "graph.showDistributions",
+    settingsList = ["attrContOrder", "attrDiscOrder", "graph.jitterSize", "graph.showDistributions",
                     "graph.showAttrValues", "graph.hidePureExamples", "graph.globalValueScaling", "linesDistance",
                     "graph.useSplines", "graph.lineTracking", "graph.enabledLegend", "autoSendSelection",
-                    "toolbarSelection", "graph.showStatistics"]
+                    "toolbarSelection", "graph.showStatistics", "colorSettings"]
     attributeContOrder = ["None", "ReliefF", "Fisher discriminant", "Signal to Noise", "Signal to Noise For Each Class"]
     attributeDiscOrder = ["None", "ReliefF", "GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
@@ -55,13 +53,13 @@ class OWParallelCoordinates(OWWidget):
         self.autoSendSelection = 1
         self.attrDiscOrder = "None"
         self.attrContOrder = "None"
-        self.graphCanvasColor = str(Qt.white.name())
         self.projections = None
         self.correlationDict = {}
         self.middleLabels = "Correlations"
         self.exampleSelectionList = None
         self.attributeSelectionList = None  
         self.toolbarSelection = 0
+        self.colorSettings = None
         
         self.graph.jitterSize = 10
         self.graph.showDistributions = 1
@@ -148,7 +146,9 @@ class OWParallelCoordinates(OWWidget):
         OWGUI.comboBox(box3, self, "graph.showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateValues, sendSelectedValue = 0, valueType = int)
         OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
         
-        
+        hbox4 = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        OWGUI.button(hbox4, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables")
+
         box2 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
         OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
 
@@ -157,9 +157,6 @@ class OWParallelCoordinates(OWWidget):
         # continuous attribute ordering
         OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
         OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = " Discrete attribute ordering ", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
-
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
 
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         self.icons = self.createAttributeIconDict()
@@ -173,7 +170,10 @@ class OWParallelCoordinates(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
+        dlg = self.createColorDialog()
+        self.colorPalette = dlg.getColorPalette("colorPalette")
+        self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+       
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
     def targetValueChanged(self):
@@ -479,12 +479,30 @@ class OWParallelCoordinates(OWWidget):
             self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
             
 
-    def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
-        if newColor.isValid():
-            self.graphCanvasColor = str(newColor.name())
-            self.graph.setCanvasColor(QColor(newColor))
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_loop():
+            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
+            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+            self.updateGraph()
 
+    def createColorDialog(self):
+        c = OWDlgs.ColorPalette(self, "Color Palette")
+        c.createColorPalette("colorPalette", "Continuous variable palette")
+        box = c.createBox("otherColors", "Other Colors")
+        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        box.addSpace(5)
+        box.adjustSize()
+        if self.colorSettings:
+            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
+            c.setCurrentState(self.colorSettings[2])
+        else:
+            c.setColorSchemas()
+        return c
+
+    def getColorPalette(self):
+        return self.colorPalette
 
 CORRELATION = 0
 VIZRANK = 1

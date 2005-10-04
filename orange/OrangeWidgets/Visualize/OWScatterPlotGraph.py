@@ -477,7 +477,7 @@ class OWScatterPlotGraph(OWVisGraph):
         # ##############################################################
         # draw color scale for continuous coloring attribute
         if colorIndex != -1 and showColorLegend and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
-            x0 = xmax + xVar*1.0/100.0;  x1 = x0 + xVar*5.0/100.0
+            x0 = xmax + xVar*1.0/100.0;  x1 = x0 + xVar*2.5/100.0
             palette = self.scatterWidget.getColorPalette()
             height = yVar / float(len(palette))
             xs = [x0, x1, x1, x0]
@@ -491,8 +491,8 @@ class OWScatterPlotGraph(OWVisGraph):
 
             # add markers for min and max value of color attribute
             (colorVarMin, colorVarMax) = self.attrValues[colorAttr]
-            self.addMarker("%s = %.3f" % (colorAttr, colorVarMin), x0 - xVar*1./100.0, yVarMin + yVar*0.04, Qt.AlignLeft)
-            self.addMarker("%s = %.3f" % (colorAttr, colorVarMax), x0 - xVar*1./100.0, yVarMin + yVar*0.96, Qt.AlignLeft)
+            self.addMarker("%s = %%.%df" % (colorAttr, self.rawdata.domain[colorAttr].numberOfDecimals) % (colorVarMin), x0 - xVar*1./100.0, yVarMin + yVar*0.04, Qt.AlignLeft)
+            self.addMarker("%s = %%.%df" % (colorAttr, self.rawdata.domain[colorAttr].numberOfDecimals) % (colorVarMax), x0 - xVar*1./100.0, yVarMin + yVar*0.96, Qt.AlignLeft)
         # ##############################################################
 
         # restore the correct showFilledSymbols

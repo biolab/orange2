@@ -24,11 +24,11 @@ import OWVisFuncts, OWDlgs
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["graph.pointWidth", "graph.jitterSize", "graphCanvasColor", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor",
+    settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "VizRankClassifierName", "clusterClassifierName",
                     "attractG", "repelG", "law", "showOptimizationSteps", "lockToCircle", "valueScalingType", "graph.showProbabilities", "showAllAttributes",
-                    "learnerIndex", "palettesDict", "selectedPaletteIndex", "currentColorState"]
+                    "learnerIndex", "colorSettings"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
@@ -49,7 +49,6 @@ class OWRadviz(OWWidget):
         self.showOptimizationSteps = 0
         self.valueScalingType = 0
         self.autoSendSelection = 1
-        self.graphCanvasColor = str(Qt.white.name())
         self.data = None
         self.toolbarSelection = 0
         self.VizRankClassifierName = "VizRank classifier (Radviz)"
@@ -58,10 +57,7 @@ class OWRadviz(OWWidget):
         self.outlierValues = None
         self.attributeSelectionList = None
         self.learnerIndex = 0
-        self.palettesDict = {}
-        self.selectedPaletteIndex = 0
-        self.currentColorState = None
-
+        self.colorSettings = None
         
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -170,8 +166,11 @@ class OWRadviz(OWWidget):
         OWGUI.checkBox(box3, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
         OWGUI.checkBox(box3, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
         OWGUI.checkBox(box3, self, 'graph.showProbabilities', 'Show probabilities', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
-        
 
+        # ####
+        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables")
+        
         box2 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
         OWGUI.comboBox(box2, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
         OWGUI.comboBox(box2, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
@@ -182,12 +181,6 @@ class OWRadviz(OWWidget):
         box4 = OWGUI.widgetBox(self.SettingsTab, " Sending Selection ")
         OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
         self.selectionChanged()
-
-        # ####
-        hbox = OWGUI.widgetBox(self.SettingsTab, " Set Colors For...", orientation = "horizontal")
-        self.canvasColorButton = OWGUI.button(hbox, self, "Canvas", self.setGraphCanvasColor, tooltip = "Set the canvas background color")
-        self.classColorButton = OWGUI.button(hbox, self, "Class", self.setContinuousPalette, tooltip = "Set the class palette for the case of continuous class")
-        
 
         # ####################################
         # ANCHORS TAB
@@ -247,13 +240,12 @@ class OWRadviz(OWWidget):
         self.setValueScaling() # XXX is there any better way to do this?!
         self.resize(900, 700)
 
-        dlg = OWDlgs.ColorPalette(self, "Color Palette", self.palettesDict, self.selectedPaletteIndex, self.currentColorState, callback = None, additionalColors = None, modal = FALSE)
-        self.colorPalette = dlg.getColorPalette(250)    # create a palette with 250 different colors. if you want a better resoultion increase this number
-        del dlg
-
 
     def activateLoadedSettings(self):
-        self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
+        dlg = self.createColorDialog()
+        self.colorPalette = dlg.getColorPalette("colorPalette")
+        self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+                
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.optimizationDlg.changeLearnerName(self.VizRankClassifierName)
@@ -683,21 +675,27 @@ class OWRadviz(OWWidget):
         self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)
         if self.autoSendSelection: self.sendSelections()
 
-    def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
-        if newColor.isValid():
-            self.graphCanvasColor = str(newColor.name())
-            self.graph.setCanvasColor(QColor(newColor))
-
-    def setContinuousPalette(self):
-        dlg = OWDlgs.ColorPalette(self, "Color Palette", self.palettesDict, self.selectedPaletteIndex, self.currentColorState, callback = None, additionalColors = None)
+    def setColors(self):
+        dlg = self.createColorDialog()
         if dlg.exec_loop():
-            self.selectedPaletteIndex = dlg.selectedPaletteIndex
-            self.currentColorState = dlg.currentState
-            self.colorPalette = dlg.getColorPalette()
+            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
+            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.graph.setCanvasBackground(dlg.getColor("Canvas"))
             self.updateGraph()
-        del dlg
 
+    def createColorDialog(self):
+        c = OWDlgs.ColorPalette(self, "Color Palette")
+        c.createColorPalette("colorPalette", "Continuous variable palette")
+        box = c.createBox("otherColors", "Other Colors")
+        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        box.addSpace(5)
+        box.adjustSize()
+        if self.colorSettings:
+            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
+            c.setCurrentState(self.colorSettings[2])
+        else:
+            c.setColorSchemas()
+        return c
 
     def getColorPalette(self):
         return self.colorPalette

@@ -13,20 +13,18 @@
 from OWWidget import *
 from random import betavariate 
 from OWPolyvizGraph import *
-import OWVisAttrSelection
 from OWkNNOptimization import *
 from time import time
 from math import pow
-import OWToolbars
-import OWVisFuncts
+import OWVisAttrSelection, OWToolbars, OWVisFuncts, OWDlgs
 
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["graph.pointWidth", "lineLength", "graph.jitterSize", "graphCanvasColor", "graph.globalValueScaling", "graph.scaleFactor",
+    settingsList = ["graph.pointWidth", "lineLength", "graph.jitterSize", "graph.globalValueScaling", "graph.scaleFactor",
                     "graph.enabledLegend", "graph.showFilledSymbols", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection",
-                    "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankClassifierName"]
+                    "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankClassifierName", "colorSettings"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -44,10 +42,10 @@ class OWPolyviz(OWWidget):
         self.autoSendSelection = 1
         self.rotateAttributes = 0
         self.toolbarSelection = 0
-        self.graphCanvasColor = str(Qt.white.name())
         self.VizRankClassifierName = "VizRank classifier (Polyviz)"
         self.outlierValues = None
         self.kNNExampleAccuracy = None
+        self.colorSettings = None
 
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -136,19 +134,17 @@ class OWPolyviz(OWWidget):
         OWGUI.checkBox(box2, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
         OWGUI.checkBox(box2, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
 
+        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables")
+
         box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
         OWGUI.comboBox(box3, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
         OWGUI.comboBox(box3, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
 
-
         box4 = OWGUI.widgetBox(self.SettingsTab, " Sending Selection ")
         OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
 
-        # ####
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
-
-
+       
         # ####################################
         #K-NN OPTIMIZATION functionality
         self.optimizationDlg.useHeuristicToFindAttributeOrderCheck.show()
@@ -180,7 +176,10 @@ class OWPolyviz(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
+        dlg = self.createColorDialog()
+        self.colorPalette = dlg.getColorPalette("colorPalette")
+        self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+        
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
         self.optimizationDlg.changeLearnerName(self.VizRankClassifierName)
 
@@ -503,11 +502,30 @@ class OWPolyviz(OWWidget):
         else:
             self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
 
-    def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
-        if newColor.isValid():
-            self.graphCanvasColor = str(newColor.name())
-            self.graph.setCanvasColor(QColor(newColor))
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_loop():
+            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
+            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+            self.updateGraph()
+
+    def createColorDialog(self):
+        c = OWDlgs.ColorPalette(self, "Color Palette")
+        c.createColorPalette("colorPalette", "Continuous variable palette")
+        box = c.createBox("otherColors", "Other Colors")
+        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        box.addSpace(5)
+        box.adjustSize()
+        if self.colorSettings:
+            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
+            c.setCurrentState(self.colorSettings[2])
+        else:
+            c.setColorSchemas()
+        return c
+
+    def getColorPalette(self):
+        return self.colorPalette
 
 
 #test widget appearance

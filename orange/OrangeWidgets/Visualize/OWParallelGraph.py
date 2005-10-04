@@ -51,22 +51,28 @@ class OWParallelGraph(OWVisGraph):
         self.curvePoints = []
         self.dataKeys = []
 
-        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw([self.getAttributeLabel(attr) for attr in attributes]))
-        self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         blackColor = QColor(0, 0, 0)
         
         if self.scaledData == None:  return
         if len(attributes) == 0: return
 
+        """
         if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete:
             #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-0.5, 1)
-            self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)   # changed because of qwtplot's bug. only every second attribute label was shown is -0.5 was used
+            self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1, 1)   # changed because of qwtplot's bug. only every second attribute label was shown if -0.5 was used
         else:
             self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)
-
+        
+        """
         if self.showAttrValues or midLabels:       self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
         else:                                      self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
 
+##        if (self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous and self.enabledLegend) or (len(attributes) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete and (self.showDistributionValues or self.showAttrValues)):
+##            self.addCurve("edge", self.canvasBackground(), self.canvasBackground(), 1, QwtCurve.Lines, QwtSymbol.None, xData = [len(attributes),len(attributes)], yData = [1,1])
+
+        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw([self.getAttributeLabel(attr) for attr in attributes]))
+        self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
+        
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
         scaleDraw.setOptions(0) 
         scaleDraw.setTickLength(0, 0, 0)
@@ -90,6 +96,7 @@ class OWParallelGraph(OWVisGraph):
             if self.lineTracking or self.showStatistics: colorPalette.setBrightness(130)
         else:
             colorPalette = ColorPaletteHSV()
+            palette = self.parallelDlg.getColorPalette()
 
         # ############################################
         # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
@@ -158,12 +165,11 @@ class OWParallelGraph(OWVisGraph):
                     newColor = self.colorNonTargetValue
                     curves[0].append(curve)
             else:
-                if self.rawdata.domain.classVar == None:
-                    newColor = blackColor
+                if not self.rawdata.domain.classVar: newColor = blackColor
                 elif continuousClass:
-                    newColor = colorPalette[self.noJitteringScaledData[classNameIndex][i]]
-                else:
-                    newColor = colorPalette[classValueIndices[self.rawdata[i].getclass().value]]
+                    newColor = QColor()
+                    newColor.setRgb(palette[int(self.noJitteringScaledData[classNameIndex][i] * (len(palette)-1))])
+                else:                                newColor = colorPalette[classValueIndices[self.rawdata[i].getclass().value]]
                 key = self.insertCurve(curve)
                 self.dataKeys.append(key)
             curve.setPen(QPen(newColor))
@@ -203,11 +209,11 @@ class OWParallelGraph(OWVisGraph):
             if self.showAttrValues == 1:
                 attr = self.rawdata.domain[attributes[i]]
                 if attr.varType == orange.VarTypes.Continuous:
-                    strVal = "%.2f" % (self.attrValues[attr.name][0])
+                    strVal = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][0])
                     mkey1 = self.insertMarker(strVal)
                     self.marker(mkey1).setXValue(i)
                     self.marker(mkey1).setYValue(0.0)
-                    strVal = "%.2f" % (self.attrValues[attr.name][1])
+                    strVal = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][1])
                     mkey2 = self.insertMarker(strVal)
                     self.marker(mkey2).setXValue(i)
                     self.marker(mkey2).setYValue(1.0)
@@ -295,7 +301,6 @@ class OWParallelGraph(OWVisGraph):
                         xs = []; ys = []
                 self.addCurve("", colorPalette[c], colorPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4)
 
-
         
         # ##################################################
         # show labels in the middle of the axis
@@ -307,10 +312,29 @@ class OWParallelGraph(OWVisGraph):
                 self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
 
         # show the legend
-        if self.enabledLegend == 1 and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-            for ind in range(len(varValues)):
-                self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], colorPalette[ind], colorPalette[ind], self.pointWidth, enableLegend = 1)
+        if self.enabledLegend == 1 and self.rawdata.domain.classVar:
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+                varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                for ind in range(len(varValues)):
+                    self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], colorPalette[ind], colorPalette[ind], self.pointWidth, enableLegend = 1)
+            else:
+                l = len(attributes)-1
+                xs = [l*1.15, l*1.20, l*1.20, l*1.15]
+                palette = self.parallelDlg.getColorPalette()
+                height = 1 / float(len(palette))
+                lenPalette = len(palette)
+                for i in range(len(palette)):
+                    y = i/float(lenPalette)
+                    col = QColor(); col.setRgb(palette[i])
+                    curve = PolygonCurve(self, QPen(col), QBrush(col))
+                    newCurveKey = self.insertCurve(curve)
+                    self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
+
+                # add markers for min and max value of color attribute
+                [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
+                decimals = self.rawdata.domain.classVar.numberOfDecimals
+                self.addMarker("%%.%df" % (decimals) % (minVal), xs[0] - l*0.02, 0.04, Qt.AlignLeft)
+                self.addMarker("%%.%df" % (decimals) % (maxVal), xs[0] - l*0.02, 1.0 - 0.04, Qt.AlignLeft)
 
 
     # ##########################################

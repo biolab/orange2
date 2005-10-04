@@ -202,8 +202,8 @@ class OWPolyvizGraph(OWVisGraph):
 
             else:
                 # min and max value
-                #names = ["%.3f" % (self.attrLocalValues[labels[i]][0]), "%.3f" % (self.attrLocalValues[labels[i]][1])]
-                names = ["%.1f" % (0.0), "%.1f" % (1.0)]
+                names = ["%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
+                #names = ["%.1f" % (0.0), "%.1f" % (1.0)]
                 if attributeReverse[labels[i]] == 1: names.reverse()
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
@@ -277,20 +277,20 @@ class OWPolyvizGraph(OWVisGraph):
             for i in range(len(table)):
                 fillColor = bwColors.getColor(kNNValues[i])
                 edgeColor = classColors.getColor(classValueIndices[table[i].getclass().value])
-                key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [table[i][0].value], yData = [table[i][1].value])
+                self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [table[i][0].value], yData = [table[i][1].value])
                 self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], fillColor, i, length)
 
         # CONTINUOUS class 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
-            colors = ColorPaletteHSV()
+            palette = self.polyvizWidget.getColorPalette()
             for i in range(dataSize):
                 if not validData[i]: continue
                 newColor = QColor(0,0,0)
-                if self.useDifferentColors: newColor.setHsv(self.noJitteringScaledData[classNameIndex][i] * colors.maxHueVal, 255, 255)
+                if self.useDifferentColors:
+                    newColor.setRgb(palette[int(self.noJitteringScaledData[classNameIndex][i] * (len(palette)-1))])
                 curveData[i][PENCOLOR] = newColor
                 curveData[i][BRUSHCOLOR] = newColor
-
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveData[i][SYMBOL], xData = [x_positions[i]], yData = [y_positions[i]])
+                self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
                 self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
 
@@ -362,18 +362,21 @@ class OWPolyvizGraph(OWVisGraph):
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
             # show legend for continuous class
             else:
-                xs = [1.15, 1.20]
-                colors = ColorPaletteHSV(-1)
-                for i in range(1000):
-                    y = -1.0 + i*2.0/1000.0
-                    newCurveKey = self.insertCurve(str(i))
-                    self.setCurvePen(newCurveKey, QPen(colors.getColor(float(i)/1000.0)))
-                    self.setCurveData(newCurveKey, xs, [y,y])
+                xs = [1.15, 1.20, 1.20, 1.15]
+                palette = self.polyvizWidget.getColorPalette()
+                height = 2 / float(len(palette))
+                lenPalette = len(palette)
+                for i in range(len(palette)):
+                    y = -1.0 + i*2.0/float(lenPalette)
+                    col = QColor(); col.setRgb(palette[i])
+                    curve = PolygonCurve(self, QPen(col), QBrush(col))
+                    newCurveKey = self.insertCurve(curve)
+                    self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
 
                 # add markers for min and max value of color attribute
                 [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
-                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
 
     def addAnchorLine(self, x, y, xAnchors, yAnchors, color, index, count):
