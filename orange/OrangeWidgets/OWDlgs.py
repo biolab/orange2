@@ -125,67 +125,59 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
 
 class ColorPaletteWidget(QVBox):
-    def __init__(self, parent, master, label = "Colors", palettesDict = {}, selectedPaletteIndex = 0, currentState = None,  callback = None, additionalColors = None):
+    def __init__(self, parent, master, label = "Colors", callback = None):
         QVBox.__init__(self, parent)
         self.setSpacing(4)
         
         self.master = master
         self.callback = callback
+        self.counter = 1
+        self.paletteNames = []
+        self.colorButtonNames = []
 
         self.colorSchemas = {}
-        master.selectedPaletteIndex = 0
-        master.passThroughBlack = 0
-        master.gamma = 1
-        master.currentState = currentState
+        self.master.selectedSchemaIndex = 0
+        self.schemaCombo = OWGUI.comboBox(self, self.master, "selectedSchemaIndex", box = "Saved Profiles", callback = self.paletteSelected)
         
-        self.schemaCombo = OWGUI.comboBox(self, master, "selectedPaletteIndex", box = "Saved Palettes", callback = self.paletteSelected)
-
-        box = OWGUI.widgetBox(self, "Colors")
-
-        self.interpolationHBox = QHBox(box)
-        self.interpolationHBox.setSpacing(5)
-
-        self.colorButton1 = ColorButton(self, self.interpolationHBox)
-        self.interpolationView = InterpolationView(self.interpolationHBox)
-        self.colorButton2 = ColorButton(self, self.interpolationHBox)
-
-        box.addSpace(6)
-        
-        self.chkPassThroughBlack = OWGUI.checkBox(box, master, "passThroughBlack", "Pass through black", callback = self.colorSchemaChange)
-        box.addSpace(6)
-
-        self.setColorSchemas(palettesDict, selectedPaletteIndex)
-        if currentState: self.setCurrentState(currentState)
-        else: self.paletteSelected()
-
-
-    def setColorSchemas(self, schemas, selectedPaletteIndex):
+    def getColorSchemas(self):
+        return self.colorSchemas
+    
+    def setColorSchemas(self, schemas = None, selectedSchemaIndex = 0):
         self.schemaCombo.clear()
 
-        if not schemas or len(schemas.keys()) > 0:
+        if not schemas or len(schemas.keys()) == 0:
             schemas = {}
-            schemas["Blue - Yellow"] = (0,0,255, 255, 255, 0, FALSE)
+            schemas["Default"] = tuple([self.__dict__[name].getColor().rgb() for name in self.colorButtonNames] + [(self.__dict__[name+"Left"].getColor().rgb(), self.__dict__[name+"Right"].getColor().rgb(), self.master.__dict__[name+"passThroughBlack"]) for name in self.paletteNames])
 
+        self.colorSchemas = schemas
         for key in schemas.keys():
             self.schemaCombo.insertItem(key)
-            (r1, g1, b1, r2, g2, b2, throughblack) = schemas[key]
-            self.colorSchemas[key] = ColorSchema(key, self.createPalette(QColor(r1, g1, b1), QColor(r2, g2, b2), throughblack), {}, throughblack)
 
         self.schemaCombo.insertItem("Save current palette as...")
-        self.selectedPaletteIndex = selectedPaletteIndex
+        self.selectedSchemaIndex = selectedSchemaIndex
+        self.paletteSelected()
 
+    def getCurrentState(self):
+        l1 = [self.qRgbFromQColor(self.__dict__[name].getColor()) for name in self.colorButtonNames]
+        l2 = [(self.qRgbFromQColor(self.__dict__[name+"Left"].getColor()), self.qRgbFromQColor(self.__dict__[name+"Right"].getColor()), self.master.__dict__[name+"passThroughBlack"]) for name in self.paletteNames]
+        return tuple(l1+l2)
 
     def setCurrentState(self, state):
-        col1 = QColor(); col1.setRgb(state[0]); self.colorButton1.setColor(col1)
-        col2 = QColor(); col2.setRgb(state[1]); self.colorButton2.setColor(col2)
-        self.master.passThroughBlack = state[2]
-        self.interpolationView.setPalette(self.createPalette(col1, col2, self.master.passThroughBlack)+ 5*[Qt.white.rgb()])
+        for i in range(len(self.colorButtonNames)):
+            self.__dict__[self.colorButtonNames[i]].setColor(self.rgbToQColor(state[i]))
+        for i in range(len(self.colorButtonNames),len(state)):
+            (l, r, chk) = state[i]
+            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"Left"].setColor(self.rgbToQColor(l))
+            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"Right"].setColor(self.rgbToQColor(r))
+            self.master.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"passThroughBlack"] = chk
+            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"passThroughBlackCheckbox"].setChecked(chk)
+            pallete = self.createPalette(self.rgbToQColor(l), self.rgbToQColor(r), chk) + 5*[Qt.white.rgb()]
+            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"View"].setPalette(pallete)
         self.master.currentState = state
 
-    def getCurrentState(self): return self.master.currentState
-
     def paletteSelected(self):
-        if self.master.selectedPaletteIndex == self.schemaCombo.count()-1:    # if we selected "Save current palette as..." option then add another option to the list
+        if not self.schemaCombo.count(): return 
+        if self.master.selectedSchemaIndex == self.schemaCombo.count()-1:    # if we selected "Save current palette as..." option then add another option to the list
             message = "Please enter new color schema name"
             ok = FALSE
             while (not ok):
@@ -197,31 +189,24 @@ class ColorPaletteWidget(QVBox):
                             ok = FALSE
                             message = "Color schema with that name already exists, please enter another name"
                     if (ok):
-                        self.colorSchemas[str(s[0])] = ColorSchema(self.getCurrentColorSchema().getName(), self.getCurrentColorSchema().getPalette(), self.getCurrentColorSchema().getAdditionalColors(), self.getCurrentColorSchema().getPassThroughBlack())
+                        self.colorSchemas[str(s[0])] = self.getCurrentState()
                         self.schemaCombo.insertItem(s[0], 0)
                         self.schemaCombo.setCurrentItem(0)
-                        self.master.currentState = (self.colorButton1.getColor().rgb(), self.colorButton2.getColor().rgb(), self.master.passThroughBlack)
+                        self.master.currentState = self.colorSchemas[str(s[0])]
                 else:
                     state = self.getCurrentState()          # if we pressed cancel we have to select a different item than the "Save current palette as..."
-                    self.master.selectedPaletteIndex = 0    # this will change the color buttons, so we have to restore the colors
+                    self.master.selectedSchemaIndex = 0    # this will change the color buttons, so we have to restore the colors
                     self.setCurrentState(state)             
         else:
             schema = self.getCurrentColorSchema()
-            self.interpolationView.setPalette(schema.getPalette() + 5*[Qt.white.rgb()])
-            self.colorButton1.setColor(self.rgbToQColor(schema.getPalette()[0]))
-            self.colorButton2.setColor(self.rgbToQColor(schema.getPalette()[paletteInterpolationColors-1]))
+            self.setCurrentState(schema)
             if self.callback: self.callback()
 
 
     # this function is called if one of the color buttons was pressed or there was any other change of the color palette
     def colorSchemaChange(self):
-        name = self.getCurrentColorSchema().getName()
-        palette = self.createPalette(self.colorButton1.getColor(), self.colorButton2.getColor(), self.master.passThroughBlack)
-
-        self.interpolationView.setPalette(palette + 5*[Qt.white.rgb()])
-
-        self.master.currentState = (self.colorButton1.getColor().rgb(), self.colorButton2.getColor().rgb(), self.master.passThroughBlack)
-
+        state = self.getCurrentState()
+        self.setCurrentState(state)
         if self.callback: self.callback()
 
     def getCurrentColorSchema(self):
@@ -229,9 +214,6 @@ class ColorPaletteWidget(QVBox):
 
     def setCurrentColorSchema(self, schema):
         self.colorSchemas[str(self.schemaCombo.currentText())] = schema
-
-    def getColorSchemas(self):
-        return self.colorSchemas
 
     def createPalette(self, color1, color2, passThroughBlack, colorNumber = paletteInterpolationColors):
         if passThroughBlack:
@@ -247,30 +229,107 @@ class ColorPaletteWidget(QVBox):
 
     def qRgbFromQColor(self, qcolor):
         return qRgb(qcolor.red(), qcolor.green(), qcolor.blue())
-    
+
+    def createBox(self, boxName, boxCaption = None):
+        box = OWGUI.widgetBox(self, boxCaption)
+        box.setAlignment(Qt.AlignLeft)
+        return box
+
+    def createColorButton(self, box, buttonName, buttonCaption, initialColor = Qt.black):
+        self.__dict__["buttonBox"+str(self.counter)] = QHBox(box)
+        self.__dict__["buttonBox"+str(self.counter)].setSpacing(5)
+        self.__dict__[buttonName] = ColorButton(self, self.__dict__["buttonBox"+str(self.counter)])
+        self.__dict__["buttonLabel"+str(self.counter)] = OWGUI.widgetLabel(self.__dict__["buttonBox"+str(self.counter)], buttonCaption)
+        self.__dict__[buttonName].setColor(initialColor)
+        self.colorButtonNames.append(buttonName)
+        self.__dict__["buttonBoxSpacing"+str(self.counter)] = QHBox(self.__dict__["buttonBox"+str(self.counter)])
+
+        self.__dict__[buttonName].setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed ))
+        self.__dict__["buttonLabel"+str(self.counter)].setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed ))
+        
+        #self.__dict__["buttonBoxSpacing"+str(self.counter)].setSizePolicy(QSizePolicy(QSizePolicy.Expanding , QSizePolicy.Fixed ))
+        self.counter += 1
+
+    def createColorPalette(self, paletteName, boxCaption, passThroughBlack = 0, initialColor1 = Qt.white, initialColor2 = Qt.black):
+        self.__dict__["buttonBox"+str(self.counter)] = OWGUI.widgetBox(self, boxCaption)
+
+        self.__dict__["paletteBox"+str(self.counter)] = OWGUI.widgetBox(self.__dict__["buttonBox"+str(self.counter)], orientation = "horizontal")
+        self.__dict__[paletteName+"Left"]  = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)])
+        self.__dict__[paletteName+ "View"] = InterpolationView(self.__dict__["paletteBox"+str(self.counter)])
+        self.__dict__[paletteName+"Right"] = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)])
+
+        self.__dict__[paletteName+"Left"].setColor(initialColor1)
+        self.__dict__[paletteName+"Right"].setColor(initialColor2)
+        self.__dict__["buttonBox"+str(self.counter)].addSpace(6)
+        
+        self.master.__dict__[paletteName+"passThroughBlack"] = passThroughBlack
+        self.__dict__[paletteName+"passThroughBlackCheckbox"] = OWGUI.checkBox(self.__dict__["buttonBox"+str(self.counter)], self.master, paletteName+"passThroughBlack", "Pass through black", callback = self.colorSchemaChange)
+        self.paletteNames.append(paletteName)
+        self.counter += 1
+
 
 class ColorPalette(OWBaseWidget):
-    def __init__(self,parent, caption = "Color Palette", palettesDict = {}, selectedPaletteIndex = 0, currentState = None, callback = None, additionalColors = None, modal  = TRUE):
+    def __init__(self,parent, caption = "Color Palette", callback = None, modal  = TRUE):
         OWBaseWidget.__init__(self, None, None, caption, modal = modal)
         self.layout = QVBoxLayout(self, 4)
         
-        self.colorBox = ColorPaletteWidget(self, self, "Colors", palettesDict, selectedPaletteIndex, currentState, callback, additionalColors)
-        self.layout.addWidget(self.colorBox)
+        self.mainArea = ColorPaletteWidget(self, self, "Colors", callback)
+        self.layout.addWidget(self.mainArea)
             
         self.hbox = OWGUI.widgetBox(self, orientation = "horizontal")
         self.layout.addWidget(self.hbox)
         
         self.okButton = OWGUI.button(self.hbox, self, "OK", self.accept)
         self.cancelButton = OWGUI.button(self.hbox, self, "Cancel", self.reject)
+        self.setMinimumWidth(230)
 
-    def getColorPalette(self, colorNumber = paletteInterpolationColors):
-        return self.colorBox.createPalette(self.colorBox.colorButton1.getColor(), self.colorBox.colorButton2.getColor(), self.passThroughBlack, colorNumber)
+    def getCurrentSchemeIndex(self):
+        return self.selectedSchemaIndex
 
+    def getCurrentState(self):
+        return self.mainArea.getCurrentState()
+
+    def setCurrentState(self, state):
+        self.mainArea.setCurrentState(state)
+
+    def getColorSchemas(self):
+        return self.mainArea.colorSchemas
+    
+    def setColorSchemas(self, schemas = None, selectedSchemaIndex = 0):
+        self.mainArea.setColorSchemas(schemas, selectedSchemaIndex)
+
+    def getColor(self, buttonName):
+        return self.mainArea.__dict__[buttonName].getColor()
+
+    def getColorPalette(self, paletteName):
+        c1 = self.mainArea.__dict__[paletteName+"Left"].getColor()
+        c2 = self.mainArea.__dict__[paletteName+"Right"].getColor()
+        b = self.mainArea.master.__dict__[paletteName+"passThroughBlack"]
+        return self.mainArea.createPalette(c1, c2, b)
+
+    def createBox(self, boxName, boxCaption = None):
+        return self.mainArea.createBox(boxName, boxCaption)
+
+    def createColorButton(self, box, buttonName, buttonCaption, initialColor = Qt.black):
+        self.mainArea.createColorButton(box, buttonName, buttonCaption, initialColor)
+
+    def createColorPalette(self, paletteName, boxCaption, passThroughBlack = 0, initialColor1 = Qt.white, initialColor2 = Qt.black):
+        self.mainArea.createColorPalette(paletteName, boxCaption, passThroughBlack, initialColor1, initialColor2)
+    
 
 if __name__== "__main__":
     a = QApplication(sys.argv)
-    c = ColorPalette(None)
-    
+    c = ColorPalette(None, modal = FALSE)
+    c.createColorPalette("colorPalette", "Palette")
+    box = c.createBox("otherColors", "Colors")
+    c.createColorButton(box, "Canvas", "Canvas")
+    box.addSpace(5)
+    c.createColorButton(box, "Grid", "Grid")
+    box.addSpace(5)
+    c.createColorButton(box, "test", "ttest")
+    box.addSpace(5)
+    box.adjustSize()
+    c.setColorSchemas()
     a.setMainWidget(c)
     c.show()
     a.exec_loop()
