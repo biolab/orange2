@@ -1,6 +1,10 @@
-""" <name>Select Data</name> <description>Selects instances from the
-data set based on conditions over attributes.</description>
-<icon>icons/SelectData.png</icon> <priority>1150</priority> """
+"""
+<name>Select Data</name>
+<description>Selects instances from the data set based on conditions over attributes.</description>
+<icon>icons/SelectData.png</icon>
+<priority>1150</priority>
+<author>Peter Juvan (peter.juvan@fri.uni-lj.si)</author>
+"""
 
 import orange
 from OWWidget import *
@@ -16,8 +20,8 @@ class OWSelectData(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
 
         # set channels
-        self.inputs = [("Examples", ExampleTable, self.onDataInput, 1)]
-        self.outputs = [("Matching Examples", ExampleTable), ("Non-Matching Examples", ExampleTable), ("Matching Classified Examples", ExampleTableWithClass), ("Non-Matching Classified Examples", ExampleTableWithClass)]
+        self.inputs = [("Examples", ExampleTable, self.onDataInput)]
+        self.outputs = [("Matching Examples", ExampleTable, Default), ("Non-Matching Examples", ExampleTable), ("Matching Classified Examples", ExampleTableWithClass, Default), ("Non-Matching Classified Examples", ExampleTableWithClass)]
 
         # manually set member variables
         self.name2var = {}   # key: variable name, item: orange.Variable

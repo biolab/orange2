@@ -3,6 +3,7 @@
 <description>Shows data in a spreadsheet.</description>
 <icon>icons/DataTable.png</icon>
 <priority>100</priority>
+<author>Peter Juvan (peter.juvan@fri.uni-lj.si)</author>
 """
 
 # OWDataTable.py
@@ -25,7 +26,7 @@ class OWDataTable(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Table")
 
-        self.inputs = [("Examples", ExampleTable, self.dataset, 0)]
+        self.inputs = [("Examples", ExampleTable, self.dataset, Multiple)]
         self.outputs = []
         
         self.data = {}          # key: id, value: ExampleTable
