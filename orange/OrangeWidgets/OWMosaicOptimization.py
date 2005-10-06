@@ -16,6 +16,7 @@ DIFFERENCE = 1
 MAX_DIFFERENCE = 2
 GAIN_RATIO = 3
 INFORMATION_GAIN = 4
+INTERACION_GAIN = 5
 
 
 class MosaicOptimization(OWBaseWidget):
@@ -100,7 +101,7 @@ class MosaicOptimization(OWBaseWidget):
 
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Sum of differences between expected and actual counts", "Maximum of differences between expected and actual counts", "Gain Ratio", "Information Gain"], tooltip = "What is interesting?")
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Sum of differences between expected and actual counts", "Maximum of differences between expected and actual counts", "Gain Ratio", "Information Gain", "Interaction Gain"], tooltip = "What is interesting?")
 
         self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
@@ -279,7 +280,7 @@ class MosaicOptimization(OWBaseWidget):
 
     # get only the data examples that belong to one of the selected class values
     def getData(self):
-        if self.data and self.data.domain.classVar:
+        if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
             return self.data.select({self.data.domain.classVar.name: [self.data.domain.classVar.values[i] for i in self.selectedClasses]})
         else: return self.data
         
@@ -288,7 +289,7 @@ class MosaicOptimization(OWBaseWidget):
     def getEvaluatedAttributes(self, data):
         if not data.domain.classVar or data.domain.classVar.varType != orange.VarTypes.Discrete:
             QMessageBox.information( None, "Mosaic Dialog", 'In order to be able to find interesing projections the data set has to have a discrete class.', QMessageBox.Ok + QMessageBox.Default)
-            return
+            return []
             
         if self.evaluatedAttributes: return self.evaluatedAttributes
         
@@ -329,6 +330,8 @@ class MosaicOptimization(OWBaseWidget):
             data = data.select(indices)
 
         evaluatedAttrs = self.getEvaluatedAttributes(data)
+        if evaluatedAttrs == []: return
+        
         self.aprioriDistribution = orange.Distribution(data.domain.classVar.name, data)
         #attributes = [self.attributeNameIndex[name] for name in evaluatedAttrs]
         classIndex = self.attributeNameIndex[data.domain.classVar.name]
@@ -381,6 +384,10 @@ class MosaicOptimization(OWBaseWidget):
             return orange.MeasureAttribute_gainRatio(newFeature, data)
         elif self.qualityMeasure == INFORMATION_GAIN:
             return orange.MeasureAttribute_info(newFeature, data)
+        elif self.qualityMeasure == INTERACION_GAIN:
+            new = orange.MeasureAttribute_info(newFeature, data)
+            gains = [orange.MeasureAttribute_info(attr, data) for attr in attrs]
+            return new - sum(gains)
         else:
             aprioriSum = sum(self.aprioriDistribution)
             val = 0.0
