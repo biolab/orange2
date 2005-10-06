@@ -28,7 +28,7 @@ class OWSieveDiagram(OWWidget):
 
         self.controlArea.setMinimumWidth(250)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("Attribute selection", list, self.attributeSelection, 1, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata, Default), ("Attribute selection", list, self.attributeSelection)]
         self.outputs = []
 
         #set default settings

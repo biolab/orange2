@@ -36,7 +36,7 @@ class OWAttributeStatistics(OWWidget):
         self.canvas = None
         self.HighlightedAttribute = None
         #list inputs and outputs
-        self.inputs = [("Examples", ExampleTable, self.data, 1)]
+        self.inputs = [("Examples", ExampleTable, self.data)]
 
         #GUI
 

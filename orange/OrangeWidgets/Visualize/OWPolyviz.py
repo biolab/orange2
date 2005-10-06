@@ -33,7 +33,7 @@ class OWPolyviz(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Polyviz", TRUE)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection), ("VizRank Learner", orange.Learner, self.vizRankLearner, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Attribute Selection List", AttributeList, self.attributeSelection), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass),("Attribute Selection List", AttributeList)]
 
         # local variables

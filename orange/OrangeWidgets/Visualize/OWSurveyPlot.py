@@ -26,7 +26,7 @@ class OWSurveyPlot(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.cdata, Default), ("Attribute Selection List", AttributeList, self.attributeSelection)]
         self.outputs = [("Attribute Selection List", AttributeList)]
 
         #add a graph widget

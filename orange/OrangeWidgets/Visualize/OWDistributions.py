@@ -323,7 +323,7 @@ class OWDistributions(OWWidget):
 
         # inputs
         # data and graph temp variables
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
         
         self.data = None
         self.targetValue = 0

@@ -49,7 +49,7 @@ class OWMosaicDisplay(OWWidget):
         self.names = []     # class values
         self.symbols = []   # squares for class values
         
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdata)]
         self.outputs = []
     
         #load settings
