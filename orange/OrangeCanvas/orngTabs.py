@@ -125,15 +125,13 @@ class WidgetButton(QToolButton):
     def getMinorInputs(self):
         ret = []
         for signal in self.widgetTabs.widgetInfo[self.nameKey]["inputs"]:
-            if signal.minor:
-                ret.append(signal)
+            if not signal.default: ret.append(signal)
         return ret
 
     def getMinorOutputs(self):
         ret = []
         for signal in self.widgetTabs.widgetInfo[self.nameKey]["outputs"]:
-            if signal.minor:
-                ret.append(signal)
+            if not signal.default: ret.append(signal)
         return ret
 
     def clicked(self):

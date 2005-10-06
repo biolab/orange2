@@ -6,19 +6,30 @@
 import sys
 import orange
 
+Single = 1
+Multiple = 2
+
+Default = 8
+NonDefault = 16
+
 class InputSignal:
-    def __init__(self, name, type, handler, single = 1, minor = 0):
+    def __init__(self, name, signalType, handler, parameters = Single + NonDefault):
+        if type(parameters) == str: parameters = eval(parameters)   # in registry, parameters are stored as strings
         self.name = name
-        self.type = type
+        self.type = signalType
         self.handler = handler
-        self.single = int(single)
-        self.minor = int(minor)
+        if not (parameters & Single or parameters & Multiple): parameters += Single
+        if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
+        self.single = parameters & Single
+        self.default = parameters & Default
 
 class OutputSignal:
-    def __init__(self, name, type, minor = 0):
+    def __init__(self, name, signalType, parameters = NonDefault):
+        if type(parameters) == str: parameters = eval(parameters)
         self.name = name
-        self.type = type
-        self.minor = int(minor)
+        self.type = signalType
+        if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
+        self.default = parameters & Default
 
 
 # class that allows to process only one signal at a time
