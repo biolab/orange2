@@ -145,7 +145,7 @@ class OWMosaicDisplay(OWWidget):
 
         if self.attr1Combo.count() > 0:
             self.attr1 = str(self.attr1Combo.text(0))
-            self.attr2 = str(self.attr2Combo.text(1 + (self.attr2Combo.count() > 1)))
+            self.attr2 = str(self.attr2Combo.text(0 + 2*(self.attr2Combo.count() > 2)))
         self.attr3 = str(self.attr3Combo.text(0))
         self.attr4 = str(self.attr4Combo.text(0))
         
