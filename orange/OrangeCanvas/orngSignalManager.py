@@ -6,18 +6,25 @@
 import sys
 import orange
 
-Single = 1
-Multiple = 2
+Single = 2
+Multiple = 4
 
 Default = 8
 NonDefault = 16
 
 class InputSignal:
-    def __init__(self, name, signalType, handler, parameters = Single + NonDefault):
-        if type(parameters) == str: parameters = eval(parameters)   # in registry, parameters are stored as strings
+    def __init__(self, name, signalType, handler, parameters = Single + NonDefault, oldParam = 0):
         self.name = name
         self.type = signalType
         self.handler = handler
+        
+        if type(parameters) == str: parameters = eval(parameters)   # in registry, parameters are stored as strings
+        # if we have the old definition of parameters then transform them
+        if parameters in [0,1]:
+            self.single = parameters
+            self.default = not oldParam
+            return
+        
         if not (parameters & Single or parameters & Multiple): parameters += Single
         if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
         self.single = parameters & Single
@@ -25,9 +32,14 @@ class InputSignal:
 
 class OutputSignal:
     def __init__(self, name, signalType, parameters = NonDefault):
-        if type(parameters) == str: parameters = eval(parameters)
         self.name = name
         self.type = signalType
+        
+        if type(parameters) == str: parameters = eval(parameters)
+        if parameters in [0,1]: # old definition of parameters
+            self.default = not parameters
+            return
+        
         if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
         self.default = parameters & Default
 
