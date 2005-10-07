@@ -29,7 +29,7 @@ class OWTestLearners(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "TestLearners")
         
-        self.inputs = [("Data", ExampleTableWithClass, self.cdata), ("Separate Test Data", ExampleTableWithClass, self.testdata), ("Learner", orange.Learner, self.learner, 0)]
+        self.inputs = [("Data", ExampleTableWithClass, self.cdata, Default), ("Separate Test Data", ExampleTableWithClass, self.testdata), ("Learner", orange.Learner, self.learner, Multiple)]
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 
         # Settings
