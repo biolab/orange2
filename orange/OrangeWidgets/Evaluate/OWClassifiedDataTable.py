@@ -29,7 +29,7 @@ class OWClassifiedDataTable(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Classifications")
 
         self.callbackDeposit = []
-        self.inputs = [("Examples", ExampleTable, self.dataset),("Classifiers", orange.Classifier, self.classifier, 0)]
+        self.inputs = [("Examples", ExampleTable, self.dataset),("Classifiers", orange.Classifier, self.classifier, Multiple)]
         self.outputs = [("Selected Examples", ExampleTableWithClass)]
         self.classifiers = {}
 
@@ -80,7 +80,11 @@ class OWClassifiedDataTable(OWWidget):
         self.sortby = -1
 
         self.layout.add(self.table)
+<<<<<<< OWClassifiedDataTable.py
+#        self.table.hide()
+=======
         self.table.hide()
+>>>>>>> 1.9
 
     # updates the columns associated with the classifiers
     def updateTableOutcomes(self):
@@ -230,6 +234,7 @@ class OWClassifiedDataTable(OWWidget):
             self.classifiers[id] = c
         if self.data:
             self.setTable()
+            self.table.show()
         self.checkenable()
 
     # based on the data and classifiers enables/disables the control boxes
