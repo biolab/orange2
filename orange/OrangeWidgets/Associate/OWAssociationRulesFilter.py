@@ -185,7 +185,7 @@ class OWAssociationRulesFilter(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AssociationRulesFilter")
 
-        self.inputs = [("Association Rules", orange.AssociationRules, self.arules, 1)]
+        self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
 
         # zapomni si glavne karakteristike

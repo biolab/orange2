@@ -21,7 +21,7 @@ class OWAssociationRulesPrint(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Association rules viewer")
         
-        self.inputs = [("AssociationRules", orange.AssociationRules, self.arules, 1)]
+        self.inputs = [("AssociationRules", orange.AssociationRules, self.arules)]
         self.outputs = []
         
         self.rules=[]          # na zacetku nima vhodnih podatkov -v mainu jih dobi

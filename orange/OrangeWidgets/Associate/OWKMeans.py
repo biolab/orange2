@@ -24,7 +24,7 @@ class OWKMeans(OWWidget):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, 'k-Means Clustering') 
         
-        self.inputs = [("Examples", ExampleTable, self.dataset, 1)]
+        self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Classified Examples", ExampleTableWithClass)]
 
         #set default settings

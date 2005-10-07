@@ -37,10 +37,12 @@ class OWExampleDistance(OWWidget):
         #set default settings
         items = [x[0] for x in self.metrics]
         OWGUI.comboBox(self.controlArea, self, "Metrics", box="Distance Metrics", items=items,
-                       tooltip="Choose metrics to measure pairwise distance between examples.", callback=self.computeMatrix)
-        self.labelCombo = OWGUI.comboBox(self.controlArea, self, "Label", box="Example Label", items=[],
-                                         tooltip="Choose attribute which will be used as a label of the example.", callback=self.setLabel,
-                                         sendSelectedValue = 1)
+            tooltip="Choose metrics to measure pairwise distance between examples.",
+            callback=self.computeMatrix)
+        self.labelCombo = OWGUI.comboBox(self.controlArea, self, "Label", box="Example Label",
+            items=[],
+            tooltip="Choose attribute which will be used as a label of the example.",
+            callback=self.setLabel, sendSelectedValue = 1)
         self.labelCombo.setDisabled(1)
         self.resize(100,100)
 
