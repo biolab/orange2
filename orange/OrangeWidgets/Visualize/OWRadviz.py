@@ -734,6 +734,8 @@ class OWRadviz(OWWidget):
     # FREEVIZ FUNCTIONS
     # ###############################################################################################################
 
+        # ####################################
+    # free attribute anchors
     def radialAnchors(self):
         attrList = self.getShownAttributeList()
         phi = 2*math.pi/len(attrList)
@@ -776,30 +778,42 @@ class OWRadviz(OWWidget):
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
         noChange = 0
         notBest = 1
-        while noChange < 5:
+        positions = [Numeric.array([x[:2] for x in self.graph.anchorData])]
+        for ttt in range(50):
             for i in range(iterations):
                 self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, steps, self.graph.normalizeExamples, contClass)
-                self.energyLabel.setText("Energy: %.3f" % E)
-                #self.energyLabel.repaint()
                 self.graph.potentialsBmp = None
                 self.updateGraph()
-                if singleStep:
-                    noChange = 5
-                else:
-                    if E > min(0.999*minE, 1.001*minE):
-                        noChange += 1
-                        notBest = 1
-                    else:
-                        minE = E
-                        bestProjection = self.graph.anchorData
-                        noChange = 0
-                        notBest = 0
+                self.energyLabel.setText("Energy: %.3f" % E)
 
-        if notBest and bestProjection:
-            self.graph.anchorData = bestProjection
-            self.graph.potentialsBmp = None
-            self.updateGraph()
-            self.energyLabel.setText("Energy: %.3f" % minE)
+                positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
+                if len(positions)==50:
+                    #print positions[0]-positions[4]
+                    m = max(Numeric.sum((positions[0]-positions[49])**2, 1))
+                    print m
+                    if m < 1e-4:
+                        break
+                #self.energyLabel.repaint()
+##                if singleStep:
+##                    noChange = 5
+##                else:
+##                    if E > min(0.999*minE, 1.001*minE):
+##                        noChange += 1
+##                        notBest = 1
+##                    else:
+##                        minE = E
+##                        bestProjection = self.graph.anchorData
+##                        noChange = 0
+##                        notBest = 0
+            else:
+                continue
+            break
+            
+##        if notBest and bestProjection:
+##            self.graph.anchorData = bestProjection
+##            self.graph.potentialsBmp = None
+##            self.updateGraph()
+##            self.energyLabel.setText("Energy: %.3f" % minE)
             
     def singleStep(self): self.freeAttributes(1, 1, True)
     def optimize(self):   self.freeAttributes(1, 10)

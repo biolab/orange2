@@ -823,8 +823,6 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
   if (atom.length() || atoms.size())
     atoms.push_back(csv ? trim(atom) : atom);
 
-  ITERATE(vector<string>, ai, atoms) {
-  }
   return atoms.size();
 }
 

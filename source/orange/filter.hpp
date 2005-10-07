@@ -147,9 +147,10 @@ public:
   __REGISTER_CLASS
 
   PValueList values; //P accepted values
+  bool negate;
 
-  TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = -1);
-  TValueFilter_discrete(const int &pos, PVariable, const int &accs = -1);
+  TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = -1, bool negate = false);
+  TValueFilter_discrete(const int &pos, PVariable, const int &accs = -1, bool negate = false);
   virtual int operator()(const TExample &) const;
   virtual PValueFilter deepCopy() const;
 };
@@ -210,8 +211,8 @@ public:
   TValueFilterList::iterator findCondition(PVariable var, const int &varType, int &position);
   void updateCondition(PVariable var, const int &varType, PValueFilter filter);
 
-  void addCondition(PVariable var, const TValue &val);
-  void addCondition(PVariable var, PValueList);
+  void addCondition(PVariable var, const TValue &val, bool negate = false);
+  void addCondition(PVariable var, PValueList, bool negate = false);
   void addCondition(PVariable var, const int &oper, const float &min, const float &max);
   void addCondition(PVariable var, const int &oper, const string &min, const string &maxs);
   void addCondition(PVariable var, PStringList);

@@ -238,7 +238,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
       return NULL;
 
     double *Xi, *X;
-    int *classes;;
+    int *classes;
     TPoint *anci, *anc, *ance;
     PyObject **lli, **ll;
     int nAttrs, nExamples;
@@ -251,7 +251,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
     ance = anc + nAttrs;
 
-    int i, u, v;
+    int i;
     double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
     TPoint *danci, *danc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *dance = danc + nAttrs;
     TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples, *ptsi2, *ptsie;
@@ -284,12 +284,6 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
       }
 
 
-/* XXX   TO OPTIMIZE:
-       - use pointers instead of indexing
-       - sort the examples by classes so you don't have to compare them all the time
-       - if attractive force is 0, you can gain some time by checking only the examples from different classes
-*/
-                     
       for(Fai = Fa; Fai != Fae; Fai++)
         Fai->x = Fai-> y = 0.0;
 
@@ -303,20 +297,28 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
 
       if (contClass) {
-        for(u = 0; u < nExamples; u++) {
-          for(v = u+1; v < nExamples; v++) {
-            double druv;
+        double *classesi, *classesi2;
+        for(ptsi = pts, Fri = Fr, classesi = (double *)classes; ptsi != ptse; ptsi++, Fri++, classesi++)
+          for(ptsi2 = pts, Fri2 = Fr, classesi2 = (double *)classes; ptsi2 != ptsi; ptsi2++, Fri2++, classesi2++) {
+            const double dx = ptsi->x - ptsi2->x;
+            const double dy = ptsi->y - ptsi2->y;
+            double r2 = sqr(dx) + sqr(dy);
+            if (r2 < 1e-20)
+              continue;
 
-              double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
-              if (ruv < 1e-15)
-                ruv = 1e-15;
+            double sr2 = sqrt(r2);
+            double fx = dx /sr2;
+            double fy = dy /sr2;
+            if (r2 < 1e-10)
+              r2 = 1e-10;
 
-              switch(law) {
-                case TPNN::InverseLinear: druv -= fabs(classes[u]-classes[v]) / sqrt(ruv); break;
-                case TPNN::InverseSquare: druv -= fabs(classes[u]-classes[v]) / ruv; break;
-                case TPNN::InverseExponential: druv -= fabs(classes[u]-classes[v]) / exp(sqrt(ruv)); break;
-              }
-            }
+            const double TFr = -fabs(*classesi-*classesi2) / r2;
+            const double FrX = TFr * fx;
+            const double FrY = TFr * fy;
+            Fri->x  += FrX;
+            Fri2->x -= FrX;
+            Fri->y  += FrY;
+            Fri2->y -= FrY;
         }
       }
 
@@ -330,12 +332,13 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
                 const double dx = ptsi->x - ptsi2->x;
                 const double dy = ptsi->y - ptsi2->y;
                 const double r2 = sqr(dx) + sqr(dy);
+                const double sr2 = sqrt(r2);
                 if (r2 < 1e-15)
                   continue;
                 const double TFa = 100 * attractG * r2;
                 FaTot += TFa;
-                const double druvx =  TFa * dx / sqrt(r2);
-                const double druvy = TFa * dy / sqrt(r2);
+                const double druvx =  TFa * dx / sr2;
+                const double druvy = TFa * dy / sr2;
                 Fai->x  += druvx;
                 Fai2->x -= druvx;
                 Fai->y  += druvy;
@@ -348,16 +351,17 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
               for(ptsi2 = ptsie, Fri2 = Fr + classesi[1]; ptsi2 != ptse; ptsi2++, Fri2++) {
                 const double dx = ptsi->x - ptsi2->x;
                 const double dy = ptsi->y - ptsi2->y;
-                double ruv = sqr(dx) + sqr(dy);
-                if (ruv < 1e-20)
+                double r2 = sqr(dx) + sqr(dy);
+                if (r2 < 1e-20)
                   continue;
 
-                double fx = dx /sqrt(ruv);
-                double fy = dy /sqrt(ruv);
-                if (ruv < 1e-10)
-                  ruv = 1e-10;
+                double sr2 = sqrt(r2);
+                double fx = dx /sr2;
+                double fy = dy /sr2;
+                if (r2 < 1e-10)
+                  r2 = 1e-10;
 
-                const double TFr = repelG / ruv;
+                const double TFr = repelG / r2;
                 FrTot += TFr;
                 const double druvx = TFr * fx;
                 Fri->x  += druvx;
@@ -916,3 +920,274 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
 
   PyCATCH
 }
+
+
+
+
+
+
+bool loadRadvizData(PyObject *scaledData, PyObject *anchors, PyObject *pyattrIndices,
+                    int &nAttrs, int &nExamples,
+                    double *&X, TPoint *&anc, PyObject **&ll)
+{
+  if (!PyList_Check(scaledData) || !PyList_Check(anchors))
+    PYERROR(PyExc_TypeError, "scaled data and anchors should be given a lists", false);
+
+  nAttrs = PyList_Size(anchors);
+  nExamples = PyList_Size(scaledData);
+
+  X = (double *)malloc(nExamples * nAttrs * sizeof(double));
+  anc = (TPoint *)malloc(nAttrs * sizeof(TPoint));
+  ll = (PyObject **)malloc(nAttrs * sizeof(PyObject *));
+
+  int *aii, *attrIndices = (int *)malloc(nAttrs * sizeof(int)), *aie = attrIndices + nAttrs;
+  TPoint *anci;
+  PyObject **lli;
+  double *Xi;
+  int i;
+   
+  for(anci = anc, aii = attrIndices, lli = ll, i = 0; i < nAttrs; i++, anci++, aii++, lli++) {
+    *lli = NULL;
+    PyArg_ParseTuple(PyList_GetItem(anchors, i), "dd|O", &anci->x, &anci->y, lli);
+    *aii = PyInt_AsLong(PyList_GetItem(pyattrIndices, i));
+  }
+
+  for(Xi = X, i = 0; i < nExamples; i++) {
+    PyObject *ex = PyList_GetItem(scaledData, i);
+    for(aii = attrIndices; aii < aie; aii++)
+      *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
+  }
+
+  free(attrIndices);
+  return true;
+}
+
+
+#include "symmatrix.hpp"
+
+PyObject *MDSA(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(various)")
+{
+  PyTRY
+    PyObject *scaledData;
+    PyObject *anchors;
+    PyObject *pyattrIndices;
+    PSymMatrix distances;
+    int steps = 1;
+    int normalizeExamples = 1;
+
+    if (!PyArg_ParseTuple(args, "OOOO&|ii:MDSa", &scaledData, &anchors, &pyattrIndices, cc_SymMatrix, &distances, &steps, &normalizeExamples))
+      return NULL;
+
+    double *Xi, *X;
+    TPoint *anci, *anc, *ance;
+    PyObject **lli, **ll;
+    int nAttrs, nExamples;
+
+    if (!loadRadvizData(scaledData, anchors, pyattrIndices, nAttrs, nExamples, X, anc, ll))
+      return PYNULL;
+
+    ance = anc + nAttrs;
+
+    int i;
+    double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
+    TPoint *danci, *danc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *dance = danc + nAttrs;
+    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples, *ptsi2, *ptsie;
+    double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
+    TPoint *Fi, *F = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fe = F + nExamples, *Fi2;
+
+    while (steps--) {
+      if (normalizeExamples) {
+        for(anci = anc, radi = rad; anci != ance; anci++, radi++)
+          *radi = sqrt(sqr(anci->x) + sqr(anci->y));
+      }
+
+      for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
+        ptsi->x = ptsi->y = *sumi = 0.0;
+        for(anci = anc, radi = rad; anci != ance; anci++, Xi++, radi++) {
+          ptsi->x += *Xi * anci->x;
+          ptsi->y += *Xi * anci->y;
+          if (normalizeExamples)
+            *sumi += *Xi * *radi;
+        }
+        if (normalizeExamples)
+          if (*sumi != 0.0) {
+            ptsi->x /= *sumi;
+            ptsi->y /= *sumi;
+          }
+          else
+            *sumi = 1.0; // we also use *sumi later
+      }
+
+                     
+      for(Fi = F; Fi != Fe; Fi++)
+        Fi->x = Fi-> y = 0.0;
+
+      for(danci = danc; danci != dance; danci++)
+        danci->x = danci->y = 0.0;
+
+      float *edistances = distances->elements;
+
+      for(ptsi = pts, Fi = F; ptsi != ptse; ptsi++, Fi++, edistances++ /* skip diagonal */) {
+        for(ptsi2 = pts, Fi2 = F; ptsi2 != ptsi; ptsi2++, edistances++, Fi2++) {
+            const double dx = ptsi->x - ptsi2->x;
+            const double dy = ptsi->y - ptsi2->y;
+            double dist = sqrt(sqr(dx) + sqr(dy));
+            if (dist < 1e-20)
+              continue;
+
+            double fx = dx / dist;
+            double fy = dy / dist;
+            if (dist < 1e-10)
+              dist = 1e-10;
+
+            double F = dist - *edistances;
+//            const int sign = F > 0 ? 1 : -1;
+//            F *= fabs(F);
+//            printf("F%5.3f %f", F, *edistances);
+            const double Fx = F * fx;
+            const double Fy = F * fy;
+            Fi->x += Fx;
+            Fi->y += Fy;
+            Fi2->x -= Fx;
+            Fi2->y -= Fy;
+        }
+      }
+
+      if (normalizeExamples) {
+        for(Fi = F, sumi = sum, Xi = X; Fi != Fe; Fi++, sumi++) {
+          Fi->x /= *sumi;
+          Fi->y /= *sumi;
+          for(danci = danc; danci != dance; danci++, Xi++) {
+            danci->x -= Fi->x * *Xi;
+            danci->y -= Fi->y * *Xi;
+          }
+        }
+      }
+
+      else {
+        for(Fi = F, Xi = X; Fi != Fe; Fi++) {
+          for(danci = danc; danci != dance; danci++, Xi++) {
+            danci->x -= Fi->x * *Xi;
+            danci->y -= Fi->y * *Xi;
+          }
+        }
+      }
+
+  // Scale the changes - normalize the jumps
+      double scaling = 1e10;
+      for(anci = anc, danci = danc; danci != dance; anci++, danci++) {
+        double maxdr = 0.1 * sqrt(sqr(anci->x) + sqr(anci->y));
+        double dr = sqrt(sqr(danci->x) + sqr(danci->y));
+        if ((maxdr > 1e-5) && (dr > 1e-5)) {
+          if (scaling * dr > maxdr)
+            scaling = maxdr / dr;
+        }
+      }
+
+      for(danci = danc; danci != dance; danci++) {
+        danci->x *= scaling;
+        danci->y *= scaling;
+      }
+
+
+  // Move anchors
+      for(anci = anc, danci = danc; danci != dance; danci++, anci++) {
+        anci->x += danci->x;
+        anci->y += danci->y;
+      }
+
+ 
+  //Centering
+      double aax = 0.0, aay = 0.0;
+      for(anci = anc; anci != ance; anci++) {
+        aax += anci->x;
+        aay += anci->y;
+      }
+
+      aax /= nAttrs;
+      aay /= nAttrs;
+
+      for(anci = anc; anci != ance; anci++) {
+        anci->x -= aax;
+        anci->y -= aay;
+      }
+
+   // Scaling, rotating and mirroring
+
+      // find the largest and the second largest not collocated with the largest
+      double maxr = 0.0, maxr2 = 0.0;
+      TPoint *anci_l = NULL, *anci_l2 = NULL;
+/*      for(anci = anc; anci != ance; anci++) {
+        const double r = sqr(anci->x) + sqr(anci->y);
+        if (r > maxr) {
+          maxr2 = maxr;
+          anci_l2 = anci_l;
+          maxr = r;
+          anci_l = anci;
+        }
+        else if ((r > maxr2) && ((anci->x != anci_l->x) || (anci->y != anci_l->y))) {
+          maxr2 = r;
+          anci_l2 = anci;
+        }
+      }
+*/
+      for(anci = anc; anci != ance; anci++) {
+        const double r = sqr(anci->x) + sqr(anci->y);
+        if (r > maxr) {
+          maxr = r;
+          anci_l = anci;
+        }
+      }
+      anci_l = anc;
+      anci_l2 = anc+1;
+
+      if (anci_l2) {
+        maxr = maxr > 0.0 ? sqrt(maxr) : 1.0;
+
+        double phi = atan2(anci_l->y, anci_l->x);
+        double phi2 = atan2(anci_l2->y, anci_l2->x);
+
+        // disabled to avoid the flips
+        // int sign = (phi2>phi) && (phi2-phi < 3.1419265) ? 1 : -1;
+        int sign = 1;
+
+        double dphi = 3.1419265/2.0 - phi;
+        double cs = cos(dphi)/maxr, sn = sin(dphi)/maxr;
+
+        for(anci = anc; anci != ance; anci++) {
+          const double tx = anci->x * cs - anci->y * sn;
+          anci->y = anci->x * sn + anci->y * cs;
+          anci->x = sign * tx;
+        }
+      }
+    }
+
+    anchors = PyList_New(nAttrs);
+    for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
+      PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
+      
+
+    for(anci = anc, radi = rad; anci != ance; anci++, radi++)
+      *radi = sqrt(sqr(anci->x) + sqr(anci->y));
+
+    for(sumi = sum, Xi = X; sumi != sume; sumi++) {
+      *sumi = 0.0;
+      for(radi = rad, i = nAttrs; i--; *sumi += *Xi++ * *radi++);
+      if (*sumi == 0.0)
+        *sumi = 1.0;
+    }
+
+    free(anc);
+    free(danc);
+    free(pts);
+    free(ll);
+    free(X);
+    free(sum);
+    free(F);
+    free(rad);
+
+    return Py_BuildValue("Od", anchors, 0);
+      
+  PyCATCH;
+}
+

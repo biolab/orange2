@@ -1518,11 +1518,23 @@ int Filter_values_setitem(PyObject *self, PyObject *pyvar, PyObject *args)
 
 
     if (var->varType == TValue::INTVAR) {
-      if (PySequence_Check(args) && !PyString_Check(args)) {
+      if (PyList_Check(args)) {
         PValueList vlist = TValueListMethods::P_FromArguments(args, var);
         if (!vlist)
           return -1;
         filter->addCondition(var, vlist);
+      }
+      else if (PyTuple_Check(args)) {
+        int oper;
+        PyObject *obj;
+        if (!PyArg_ParseTuple(args, "iO:Filter_values.__setitem__", &oper, &obj))
+          return -1;
+        if ((oper != TValueFilter::Equal) && (oper != TValueFilter::NotEqual))
+          PYERROR(PyExc_AttributeError, "Filter_values.__setitem__: operations for discrete attributes can be only Equal or NotEqual", -1);
+        PValueList vlist = TValueListMethods::P_FromArguments(obj, var);
+        if (!vlist)
+          return -1;
+        filter->addCondition(var, vlist, oper == TValueFilter::NotEqual);
       }
       else {
         TValue val;

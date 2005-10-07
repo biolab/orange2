@@ -233,26 +233,28 @@ PValueFilter TValueFilter_continuous::deepCopy() const
   return wfilter;
 }
 
-TValueFilter_discrete::TValueFilter_discrete(const int &pos, PValueList bl, const int &accs)
+TValueFilter_discrete::TValueFilter_discrete(const int &pos, PValueList bl, const int &accs, bool neg)
 : TValueFilter(pos, accs),
-  values(bl ? bl : mlnew TValueList())
+  values(bl ? bl : mlnew TValueList()),
+  negate(neg)
 {}
 
-TValueFilter_discrete::TValueFilter_discrete(const int &pos, PVariable var, const int &accs)
+TValueFilter_discrete::TValueFilter_discrete(const int &pos, PVariable var, const int &accs, bool neg)
 : TValueFilter(pos, accs),
-  values(mlnew TValueList(var))
+  values(mlnew TValueList(var)),
+  negate(neg)
 {}
 
 int TValueFilter_discrete::operator()(const TExample &example) const
 { const TValue &val = example[position];
   if (val.isSpecial())
-    return acceptSpecial;
+    return negate ? 1-acceptSpecial : acceptSpecial;
 
   const_PITERATE(TValueList, vi, values)
     if ((*vi).intV == val.intV)
-      return 1;
+      return negate ? 0 : 1;
 
-  return 0;
+  return negate ? 1 : 0;
 }
 
 PValueFilter TValueFilter_discrete::deepCopy() const
@@ -263,11 +265,11 @@ PValueFilter TValueFilter_discrete::deepCopy() const
     PValueList wnewValues = newValues;
     const_PITERATE(TValueList, vi, values) 
       wnewValues->push_back(TValue(*vi));
-    TValueFilter *filter = mlnew TValueFilter_discrete(position,wnewValues,acceptSpecial);
+    TValueFilter *filter = mlnew TValueFilter_discrete(position,wnewValues,acceptSpecial, negate);
     PValueFilter wfilter = filter;
     return wfilter;
   }
-  TValueFilter *filter = mlnew TValueFilter_discrete(position,PValueList(),acceptSpecial);
+  TValueFilter *filter = mlnew TValueFilter_discrete(position,PValueList(),acceptSpecial, negate);
   PValueFilter wfilter = filter;
   return wfilter;
 }
@@ -430,7 +432,7 @@ void TFilter_values::updateCondition(PVariable var, const int &varType, PValueFi
 }
 
 
-void TFilter_values::addCondition(PVariable var, const TValue &val)
+void TFilter_values::addCondition(PVariable var, const TValue &val, bool negate)
 {
   int position;
   TValueFilterList::iterator condi = findCondition(var, TValue::INTVAR, position);
@@ -453,10 +455,12 @@ void TFilter_values::addCondition(PVariable var, const TValue &val)
     valueFilter->values->clear();
     valueFilter->values->push_back(val);
   }
+
+  valueFilter->negate = negate;
 }
 
 
-void TFilter_values::addCondition(PVariable var, PValueList vallist)
+void TFilter_values::addCondition(PVariable var, PValueList vallist, bool negate)
 {
   int position;
   TValueFilterList::iterator condi = findCondition(var, TValue::INTVAR, position);
@@ -470,6 +474,7 @@ void TFilter_values::addCondition(PVariable var, PValueList vallist)
       raiseError("addCondition(Value) can only be used for setting ValueFilter_discrete");
     else
       valueFilter->values = vallist;
+    valueFilter->negate = negate;
   }
 }
 
