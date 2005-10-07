@@ -589,7 +589,7 @@ class OWROC(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "ROC Analysis", 1)
 
         # inputs
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.test_results, 1), ("Target", int, self.target, 1)]
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.test_results, Multiple)]
 
         # default settings
         self.PointWidth = 7

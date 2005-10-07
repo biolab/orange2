@@ -173,7 +173,7 @@ class OWLiftCurve(OWROC):
         OWWidget.__init__(self, parent, signalManager, "Lift Curve Analysis", 1)
 
         # inputs
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, 1), ("Target", int, self.target, 1)]
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, Multiple)]
 
         # default settings
         self.PointWidth = 7
