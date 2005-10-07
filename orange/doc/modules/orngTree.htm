@@ -13,7 +13,7 @@ function called <code>TreeLearner</code> in core Orange which should
 not be confused with the one in orngTree module.</p>
 
 <p>For the tree output, the module implements a textual printout and
-saving of the tree in the DOT format, that is, in a graph description
+saving of the tree in the .dot format, that is, in a graph description
 language as defined and used within <a
 href="http://www.research.att.com/sw/tools/graphviz">GraphViz</a>).</p>
 
@@ -25,7 +25,7 @@ decision trees). It sets a number of parameters used in induction that
 can also be set after the creation of the object, most often through
 the object's attributes. If upon initialization
 <code>TreeLearner</code> is given a set of examples, then an instance
-of <code>TreeClassifier</code> object is returned instead.
+of <code>TreeClassifier</code> object is returned instead.</p>
 
 <p class=section>Attributes</p>
 <dl class=attributes>
@@ -47,7 +47,7 @@ of <code>TreeClassifier</code> object is returned instead.
 
   <dt>sameMajorityPruning</dt>
   <dd>If true, invokes a bottom-up post-pruning by removing the
-  subtrees of which all leaves classify to the same class 
+  subtrees of which all leaves classify to the same class
   (default: False).</dd>
 
   <dt>measure</dt>
@@ -107,12 +107,12 @@ of <code>TreeClassifier</code> object is returned instead.
 </dl>
 
 
-<h2>printTxt</h2>
+<h2>Printing  the Tree</h2>
 
-Prints out the decision tree in plain text.
+<P>Function <code>printTxt</code> prints out the decision tree in plain text.</P>
 
-<p class=section>Attributes</p>
-<dl class=attributes>
+<p class=section>Arguments</p>
+<dl class=arguments>
   <dt>tree</dt>
   <dd>The tree to be printed out.</dd>
 
@@ -156,16 +156,16 @@ Prints out the decision tree in plain text.
   alike (default: 3)</dd>
 </dl>
 
-<h2>printDot</h2>
+<h2>Outputting the Tree in the .dot Format</h2>
 
-<p>Prints the tree to a file in a format used by <a
+<p>Function <code>printDot</code> prints the tree to a file in a format used by <a
 href="http://www.research.att.com/sw/tools/graphviz">GraphViz</a>.
 Uses the same parameters as <code>printTxt</code> defined above, and
 in addition two parameters which define the shape used for internal
 nodes and laves of the tree:
 
-<p class=section>Attributes</p>
-<dl class=attributes>
+<p class=section>Arguments</p>
+<dl class=arguments>
   <dt>leafShape</dt>
   <dd>Shape of the outline around leves of the tree. If "plaintext",
   no outline is used (default: "plaintext")</dd>
@@ -179,22 +179,20 @@ nodes and laves of the tree:
 href="http://www.research.att.com/~erg/graphviz/info/shapes.html">Polygon-based
 Nodes</a> for various outlines supported by GraphViz.</p>
 
-<h2>countNodes</h2>
+<h2>Miscellaneous</h2>
 
-<p>Returns the number of nodes of tree.</p>
+<p><b><code>countNodes(tree)</code></b> returns the number of nodes of tree.</p>
 
-<p class=section>Attributes</p>
-<dl class=attributes>
+<p class=section>Arguments</p>
+<dl class=arguments>
   <dt>tree</dt>
   <dd>The tree for which to count the nodes.</dd>
 </dl>
 
-<h2>countLeaves</h2>
+<p><b><code>countLeaves(tree)</code></b> returns the number of leaves in the tree.</p>
 
-<p>Returns the number of leaves in the tree.</p>
-
-<p class=section>Attributes</p>
-<dl class=attributes>
+<p class=section>Arguments</p>
+<dl class=arguments>
   <dt>tree</dt>
   <dd>The tree for which to count the leaves.</dd>
 </dl>
@@ -203,8 +201,7 @@ Nodes</a> for various outlines supported by GraphViz.</p>
 
 <H2>Examples</H2>
 
-In the first example we show a simple way of controlling the splitting by allowing to split only when
-gainRatio (the default measure) is grater than 0.6.
+In the first example we show a simple way of controlling the splitting by allowing to split only when gainRatio (the default measure) is greater than 0.6.
 <p class="header"><a href="tree1.py">tree1.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
 <XMP class=code>import orange, orngTree
@@ -372,7 +369,9 @@ petal width >=0.800:
 
 <P>You can use any of the common viewers for this file, and see something like the following presentation of the tree:</P>
 
+<center>
 <img src="tree5.gif" alt="tree5.gif" border="0">
+</center>
 
 
 <P>Now, we generate the tree without pre-pruning that uses <code>worstAcceptable=0.6</code>, and print it out tree only to the 3rd level. We also print out class distributions (contingencies) and a proportion (percentages) of examples that belong to the majority class in internal nodes.</P>
@@ -402,8 +401,9 @@ petal width (33.33%; <50, 50, 50>) >=0.800:
 
 <P>The corresponding GIF file we have created using dot is:</P>
 
+<center>
 <img src="tree6.gif" alt="tree6.gif" border="0">
-
+</center>
 <P>And finally, and also to indicate that orngTree can also handle regression trees, let us build a regression tree and print it out. To do this, we use housing data set that uses continuous class.</P>
 
 <p class="header"><a href="tree7.py">tree7.py</a> (uses <a href=
@@ -445,8 +445,9 @@ average value of class variable (price of housing) over the instances
 from training set that belong to this node. A corresponding tree in
 GIF format (again, using Graphwiz's dot) is:</p>
 
+<center>
 <img src="tree7.gif" alt="tree7.gif" border="0">
-
+</center>
 <HR>
 
 <H2>References</H2>
