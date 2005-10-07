@@ -363,73 +363,42 @@ class SignalDialog(QDialog):
         inConnected = self.inWidget.getInConnectedSignalNames()
         outConnected = self.outWidget.getOutConnectedSignalNames()
 
+        """
         # rebuild registry if necessary
+        print "before", inConnected
         for s in allInputs:
-            if s.name in inConnected and s.single == 0:  # if we have already connected signal s and it is not a single type signal, then we don't consider it as connected
+            print s.name
+            if s.name in inConnected:  # if we have already connected signal s and it is not a single type signal, then we don't consider it as connected
                 inConnected.remove(s.name)
             if not self.inWidget.instance.hasInputName(s.name): return -1
         for s in allOutputs:
             if not self.outWidget.instance.hasOutputName(s.name): return -1
+        print "after", inConnected
+        """
 
-        pL1,can1,sameType1 = self.getPossibleConnections(majorOutputs, majorInputs, [], inConnected)
-        pL2,can2,sameType2 = self.getPossibleConnections(majorOutputs, minorInputs, [v[0] for v in pL1], inConnected + [v[1] for v in pL1])
-        pL3,can3,sameType3 = self.getPossibleConnections(minorOutputs, majorInputs, [v[0] for v in pL1+pL2], inConnected + [v[1] for v in pL1+pL2])
-        pL4,can4,sameType4 = self.getPossibleConnections(minorOutputs, minorInputs, [v[0] for v in pL1+pL2+pL3], inConnected + [v[1] for v in pL1+pL2+pL3])
+        pL1,can1,sameType1 = self.getPossibleConnections(majorOutputs, majorInputs, [], [])
+        pL2,can2,sameType2 = self.getPossibleConnections(majorOutputs, minorInputs, [], [v[1] for v in pL1])
+        pL3,can3,sameType3 = self.getPossibleConnections(minorOutputs, majorInputs, [], [v[1] for v in pL1+pL2])
+        pL4,can4,sameType4 = self.getPossibleConnections(minorOutputs, minorInputs, [], [v[1] for v in pL1+pL2+pL3])
 
         all = pL1 + pL2 + pL3 + pL4
-        if all != []:
-            self.addLink(all[0][0], all[0][1])
-        else: return 0
+
+        # try to find if there are links to any inputs that haven't been previously connected
+        for (o,i) in all:
+            if not 1 in [i == s for s in inConnected]:
+                all.remove((o,i))
+                all.insert(0, (o,i))
+                break
+
+        if not all: return 0
+
+        self.addLink(all[0][0], all[0][1])  # add only the best link
 
         same = [sameType1, sameType2, sameType3, sameType4]
         can = [can1, can2, can3, can4]
         self.multiplePossibleConnections = (same[can.index(1)] != 1)
         return len(all) > 0
-        """
-        # try to add links between non minor signals
-        for outS in majorOutputs:
-            if not self.outWidget.instance.hasOutputName(outS.name):   return -1   # rebuild registry
-            outType = self.outWidget.instance.getOutputType(outS.name)
-            if outType == None: return -1                                          # rebuild registry
-            for inS in majorInputs:
-                if not self.inWidget.instance.hasInputName(inS.name):   return -1   # rebuild registry
-                inType = self.inWidget.instance.getInputType(inS.name)
-                if inType == None: return -1                                        # rebuild registry
-                if issubclass(outType, inType):
-                    canConnect = 1
-                    existsBetter, betterOut, betterIn = self.existsABetterLink(outS, inS, majorOutputs, majorInputs)
-                    if existsBetter and betterOut.name not in outConnected and (betterIn.name not in inConnected or not betterIn.single):
-                        #self.multiplePossibleConnections = 1
-                        continue
-                    
-                    if inS.name not in inConnected + addedInLinks or (not inS.single and inS.name not in addedInLinks):
-                        addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
-                        self.addLink(outS.name, inS.name)
-                    elif self.countCompatibleConnections(majorOutputs, majorInputs, self.outWidget.instance, self.inWidget.instance, outType, inType) > 1:
-                        self.multiplePossibleConnections = 1
-
-        # if no connections were maid, try adding connections also to minor signals
-        if len(addedInLinks) == 0:
-            for outS in allOutputs:
-                if not self.outWidget.instance.hasOutputName(outS.name):   return -1   # rebuild registry
-                outType = self.outWidget.instance.getOutputType(outS.name)
-                for inS in allInputs:
-                    if not self.inWidget.instance.hasInputName(inS.name):   return -1   # rebuild registry
-                    inType = self.inWidget.instance.getInputType(inS.name)
-                    if issubclass(outType, inType):
-                        canConnect = 1
-                        existsBetter, betterOut, betterIn = self.existsABetterLink(outS, inS, majorOutputs, majorInputs)
-                        if existsBetter and betterOut.name not in outConnected and (betterIn.name not in inConnected or not betterIn.single):
-                            self.multiplePossibleConnections = 1
-                            continue
-                        
-                        if inS.name not in inConnected + addedInLinks or (not inS.single and inS.name not in addedInLinks):
-                            addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
-                            self.addLink(outS.name, inS.name)
-                        elif self.countCompatibleConnections(allOutputs, allInputs, self.outWidget.instance, self.inWidget.instance, outType, inType) > 1:
-                            self.multiplePossibleConnections = 1
-        return canConnect
-        """
+        
 
 
     def addLink(self, outName, inName):
