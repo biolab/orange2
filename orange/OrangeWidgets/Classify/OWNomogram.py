@@ -89,8 +89,8 @@ class OWNomogram(OWWidget):
 
 
         #inputs
-        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1)] #, ("Target Class Value", int, self.ctarget, 1)]
-
+        self.inputs=[("Classifier", orange.Classifier, self.classifier)]
+        
         # GUI definition
         self.tabs = QTabWidget(self.controlArea, 'tabWidget')
         

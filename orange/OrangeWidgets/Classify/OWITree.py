@@ -23,7 +23,7 @@ class OWITree(OWClassificationTreeViewer):
     
     def __init__(self,parent = None, signalManager = None):
         OWClassificationTreeViewer.__init__(self, parent, signalManager, 'I&nteractive Tree Builder')
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("Tree Learner", orange.Learner, self.learner, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Tree Learner", orange.Learner, self.learner)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("Classifier", orange.TreeClassifier), ("Tree Learner", orange.Learner)]
 
         self.discretizationMethod = 0
