@@ -2,7 +2,7 @@
 <name>Save</name>
 <description>Saves data to a file.</description>
 <icon>icons/Save.png</icon>
-<priority>11</priority>
+<priority>12</priority>
 """
 
 #
