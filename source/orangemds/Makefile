@@ -4,7 +4,7 @@ MODULENAME=ORANGEMDS
 include ../makefile.defs
 include makefile.deps
 
-$(OLD)/orangemds.so: px/stamp $(ORANGEMDS_OBJECTS)
+$(OLD)/orangemds.so: ppp/stamp px/stamp $(ORANGEMDS_OBJECTS)
 	gcc $(ORANGEMDS_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orangemds.so
 
 clean:	cleantemp
