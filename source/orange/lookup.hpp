@@ -129,6 +129,30 @@ private:
 };
 
 
+class ORANGE_API TClassifierByLookupTableN : public TClassifierByLookupTable {
+public:
+  __REGISTER_CLASS
+
+  PVarList variables; //PR attributes
+  PIntList noOfValues; //PR number of values for each attribute
+  PEFMDataDescription dataDescription; //P data description
+
+  TClassifierByLookupTableN(PVariable aclass, PVarList avars, PEFMDataDescription =PEFMDataDescription());
+
+  virtual TValue operator()(const TExample &);
+  virtual PDistribution classDistribution(const TExample &);
+  virtual void predictionAndDistribution(const TExample &example, TValue &value, PDistribution &dist);
+
+  void setLastDomain(PDomain domain);
+  int  getIndex(const TExample &ex, TExample *conv=NULL);
+  void replaceDKs(PExampleGenerator examples, bool useBayes=true);
+  void giveBoundSet(TVarList &boundSet);
+
+private:
+  long    lastDomainVersion;
+  vector<int> lastVarIndices;
+};
+
 
 WRAPPER(DomainContingency);
 WRAPPER(ProbabilityEstimator);

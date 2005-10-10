@@ -46,8 +46,9 @@ TClassifierByLookupTable::TClassifierByLookupTable(PVariable aclass, PValueList 
   lookupTable(vlist),
   distributions(mlnew TDistributionList())
 { 
-  for(int i = lookupTable->size(); i--; )
-    distributions->push_back(TDistribution::create(aclass));
+  if (lookupTable)
+    for(int i = lookupTable->size(); i--; )
+      distributions->push_back(TDistribution::create(aclass));
 }
 
 
@@ -72,7 +73,7 @@ TClassifierByLookupTable1::TClassifierByLookupTable1(PVariable aclass, PVariable
 
 
 void TClassifierByLookupTable1::setLastDomain(PDomain domain)
-{ lastVarIndex = domain->getVarNum(variable1);
+{ lastVarIndex = domain->getVarNum(variable1, false);
   lastDomainVersion = domain->version;
 }
 
@@ -228,8 +229,8 @@ TClassifierByLookupTable2::TClassifierByLookupTable2(PVariable aclass, PVariable
 
 
 void TClassifierByLookupTable2::setLastDomain(PDomain domain)
-{ lastVarIndex1 = domain->getVarNum(variable1);
-  lastVarIndex2 = domain->getVarNum(variable2);
+{ lastVarIndex1 = domain->getVarNum(variable1, false);
+  lastVarIndex2 = domain->getVarNum(variable2, false);
   lastDomainVersion = domain->version;
 }
 
@@ -373,9 +374,9 @@ TClassifierByLookupTable3::TClassifierByLookupTable3(PVariable aclass, PVariable
 
 void TClassifierByLookupTable3::setLastDomain(PDomain domain)
 { 
-  lastVarIndex1 = domain->getVarNum(variable1);
-  lastVarIndex2 = domain->getVarNum(variable2);
-  lastVarIndex3 = domain->getVarNum(variable3);
+  lastVarIndex1 = domain->getVarNum(variable1, false);
+  lastVarIndex2 = domain->getVarNum(variable2, false);
+  lastVarIndex3 = domain->getVarNum(variable3, false);
   lastDomainVersion=domain->version;
 }
 
@@ -498,6 +499,141 @@ void TClassifierByLookupTable3::giveBoundSet(TVarList &boundSet)
   boundSet.push_back(variable2);
   boundSet.push_back(variable3);
 }
+
+
+
+TClassifierByLookupTableN::TClassifierByLookupTableN(PVariable aclass, PVarList avars, PEFMDataDescription adata)
+: TClassifierByLookupTable(aclass, NULL),
+  variables(avars),
+  noOfValues(mlnew TIntList()),
+  dataDescription(adata),
+  lastDomainVersion(-1)
+{ 
+  long int totvals = 1;
+  const_PITERATE(TVarList, ai, avars) {
+    if ((*ai)->varType != TValue::INTVAR)
+      raiseError("lookup tables only work with discrete attributes");
+    noOfValues->push_back((*ai)->noOfValues());
+    totvals *= (*ai)->noOfValues();
+  }
+
+  lookupTable = mlnew TValueList(totvals, aclass->DK(), aclass);
+
+  distributions = mlnew TDistributionList();
+  for(int i = totvals; i--; )
+    distributions->push_back(TDistribution::create(aclass));
+
+  if (!adata)
+    dataDescription = mlnew TEFMDataDescription(mlnew TDomain(PVariable(), avars.getReference())); 
+}
+
+
+void TClassifierByLookupTableN::setLastDomain(PDomain domain)
+{ 
+  lastVarIndices.clear();
+  const_PITERATE(TVarList, vi, variables)
+    lastVarIndices.push_back(domain->getVarNum(*vi, false));
+  lastDomainVersion = domain->version;
+}
+
+
+int TClassifierByLookupTableN::getIndex(const TExample &ex, TExample *conv)
+{
+  if (lastDomainVersion!=ex.domain->version)
+     setLastDomain(ex.domain);
+
+  int index = 0;
+  TVarList::const_iterator vi(variables->begin());
+  int i = 0;
+  vector<int>::const_iterator ii(lastVarIndices.begin()), iie(lastVarIndices.end());
+  vector<int>::const_iterator ni(noOfValues->begin());
+  for(; ii != iie; ii++, vi++, i++, ni++) {
+
+    const TValue val = getValue(ex, *ii, *vi);
+
+    if (val.isSpecial()) {
+      if (conv)
+        for(; ii != iie; (*conv)[i++] = getValue(ex, *ii++, *vi++));
+      return -1;
+    }
+
+    index = index * *ni + val.intV;
+
+    if (conv)
+      (*conv)[i] = val;
+  }
+
+  return index;
+}
+
+
+TValue TClassifierByLookupTableN::operator()(const TExample &ex)
+{ 
+  TExample conv(dataDescription->domain);
+  
+  int index = getIndex(ex, &conv);
+  if (index<0)
+    return TClassifier::operator()(conv, dataDescription);
+  else if (index >= int(lookupTable->size()))
+    return dataDescription->domainDistributions->back()->highestProbValue(ex);
+  else 
+    return lookupTable->operator[](index);
+}
+
+
+PDistribution TClassifierByLookupTableN::classDistribution(const TExample &ex)
+{
+  if (!distributions)
+    return TClassifier::classDistribution(ex);
+
+  TExample conv(dataDescription->domain);
+
+  int index = getIndex(ex, &conv);
+  if (index < 0) 
+    return TClassifier::classDistribution(conv, dataDescription);
+  else if (index >= int(distributions->size()))
+    return CLONE(TDistribution, dataDescription->domainDistributions->back());
+  else
+    return CLONE(TDistribution, distributions->operator[](index));
+}
+
+
+void TClassifierByLookupTableN::predictionAndDistribution(const TExample &ex, TValue &value, PDistribution &dist)
+{ 
+  if (!distributions) {
+    TClassifier::predictionAndDistribution(ex, value, dist);
+    return;
+  }
+
+  TExample conv(dataDescription->domain);
+
+  int index = getIndex(ex, &conv);
+  if (index < 0) {
+    dist = TClassifier::classDistribution(conv, dataDescription);
+    value = dist->highestProbValue(ex);
+  }
+  else if (index >= int(distributions->size())) {
+    dist = CLONE(TDistribution, dataDescription->domainDistributions->back());
+    value = dist->highestProbValue(ex);
+  }
+  else {
+    dist = CLONE(TDistribution, distributions->operator[](index));
+    value = lookupTable->operator[](index);
+  }
+}
+
+
+void TClassifierByLookupTableN::replaceDKs(PExampleGenerator examples, bool useBayes)
+{
+  raiseWarning("ClassifierByLookupTableN does not provide the function for replacing undefined values yet");
+}
+
+void TClassifierByLookupTableN::giveBoundSet(TVarList &boundSet)
+{ 
+  boundSet = variables.getReference();
+}
+
+
 
 
 

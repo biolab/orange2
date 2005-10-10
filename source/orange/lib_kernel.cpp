@@ -4676,8 +4676,59 @@ PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObje
 { 
   static newfunc constructors[] = {ClassifierByLookupTable1_new, ClassifierByLookupTable2_new, ClassifierByLookupTable3_new};
   static TOrangeType *types[] = {&PyOrClassifierByLookupTable1_Type, &PyOrClassifierByLookupTable2_Type, &PyOrClassifierByLookupTable3_Type};
-  if (!args)
+  if (!args || (PyTuple_Size(args)<2))
     PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+
+/* arguments in form (list, classvar ...) */
+
+  
+  PVarList variables = PVarList_FromArguments(PyTuple_GET_ITEM(args, 0));
+
+  if (variables) {
+    int vsize = variables->size();
+    int asize = PyTuple_Size(args);
+    int i;
+
+    if (!PyOrVariable_Check(PyTuple_GET_ITEM(args, 1)))
+      PYERROR(PyExc_TypeError, "the second argument should be the class attribute", PYNULL);
+
+    if (vsize <= 3) {
+      PyObject *newargs = PyTuple_New(vsize + asize-1);
+      PyObject *elm = NULL;
+
+      TVarList::const_iterator vi(variables->begin());
+      for(i = 0; i != vsize; i++, vi++)
+        PyTuple_SetItem(newargs, i, WrapOrange(*vi));
+
+      for(i = 1; i != asize; i++) {
+        elm = PyTuple_GET_ITEM(args, i);
+        Py_INCREF(elm);
+        PyTuple_SetItem(newargs, vsize+i-1, elm);
+      }
+
+      try {
+        PyObject *res = constructors[vsize-1](type == (PyTypeObject *)(&PyOrClassifierByLookupTable_Type) ? (PyTypeObject *)(types[vsize-1]) : type, newargs, kwds);
+        Py_DECREF(newargs);
+        return res;
+      }
+      catch (...) {
+        Py_DECREF(newargs);
+        throw;
+      }
+    }
+
+    /* arguments in form (var1, var2, ..., classvar) */
+
+    else {
+      TClassifierByLookupTableN *cblt = mlnew TClassifierByLookupTableN(PyOrange_AsVariable(PyTuple_GET_ITEM(args, 1)), variables);
+
+      PyObject *pyvl = asize>=3 ? PyTuple_GET_ITEM(args, 2) : PYNULL;
+      PyObject *pydl = asize>=3 ? PyTuple_GET_ITEM(args, 3) : PYNULL;
+      return initializeTables(pyvl, pydl, cblt) ? WrapNewOrange(cblt, type) : PYNULL;
+    }
+  }
+
+  PyErr_Clear();
 
   int i = 0, e = PyTuple_Size(args);
   for(; (i<e) && PyOrVariable_Check(PyTuple_GET_ITEM(args, i)); i++);
