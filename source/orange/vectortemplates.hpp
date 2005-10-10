@@ -208,9 +208,10 @@ public:
     if (!obj || !PyObject_TypeCheck(obj, (PyTypeObject *)_PyElementType)) {
       if (_PyElementType->ot_inherited.tp_new) {
         PyObject *pyel = objectOnTheFly(obj, (PyTypeObject *)_PyElementType);
-        if (pyel)
+        if (pyel) {
           res = PyOrange_AS_Orange(pyel);
           return true;
+        }
       }
         
       PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", _PyElementType->ot_inherited.tp_name, obj ? obj->ob_type->tp_name : "NULL");
