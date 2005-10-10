@@ -80,11 +80,7 @@ class OWClassifiedDataTable(OWWidget):
         self.sortby = -1
 
         self.layout.add(self.table)
-<<<<<<< OWClassifiedDataTable.py
 #        self.table.hide()
-=======
-        self.table.hide()
->>>>>>> 1.9
 
     # updates the columns associated with the classifiers
     def updateTableOutcomes(self):
