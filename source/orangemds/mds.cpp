@@ -112,7 +112,7 @@ void TMDS::optimize(int numIter, PStressFunc fun, float eps){
 		SMACOFstep();
         getDistances();
 		stress=getStress(fun);
-		if(abs(oldStress-stress)<oldStress*eps)
+		if(fabs(oldStress-stress)<oldStress*eps)
 			break;
 		if(progressCallback)
 			if(!progressCallback->call(float(numIter)/float(iter)))
