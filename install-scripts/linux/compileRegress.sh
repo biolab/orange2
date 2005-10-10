@@ -1,6 +1,6 @@
-cd /home/orange
+cd /home/orange/install-scripts
 cvs update
-chmod +x ./install-scripts/linux/downloadinstallregress.sh ./install-scripts/linux/testOrange.sh
+chmod +x linux/testOrange.sh
 
 # prepare sources
 cd /home/orange/daily
@@ -26,21 +26,27 @@ fi
 
 # install
 cd /home/orange/daily/orange
-python setup.py install --orangepath=/home/orange/daily/test_install &> install.log
+if ! python setup.py install --orangepath=/home/orange/daily/test_install > install.log 2>&1 ; then
+  cat install.log >> ../output.log
+  mail -s "Linux: ERROR installing Orange" tomaz.curk@fri.uni-lj.si < ../output.log
+  cat ../output.log
+  echo -e "\n\nERROR installing, see log above"
+  exit 1
+fi
 
 # regression test
 cd /home/orange/daily/orange
-if ! /home/orange/install-scripts/linux/testOrange.sh >> ../regress.log 2>&1; then
-  cd /home/orange/daily
-  mail -s "Linux: ERROR regression tests (compile OK) Orange" tomaz.curk@fri.uni-lj.si < regress.log
-  cat regress.log
+if ! /home/orange/install-scripts/linux/testOrange.sh > regress.log 2>&1 ; then
+  cd /home/orange/daily/orange
+  cat regress.log >> ../output.log
+  mail -s "Linux: ERROR regression tests (compile OK) Orange" tomaz.curk@fri.uni-lj.si < ../output.log
+  cat ../output.log
   echo regression tests failed
 else
-  cd /home/orange/daily
-  cat output.log >> install.log
-  mv install.log ../output.log
+  cd /home/orange/daily/orange
+  cat regress.log >> ../output.log
   mail -s "Linux: Orange compiled successfully" tomaz.curk@fri.uni-lj.si < ../output.log
-  cat output.log
+  cat ../output.log
   echo compiling was successful
 fi
 
