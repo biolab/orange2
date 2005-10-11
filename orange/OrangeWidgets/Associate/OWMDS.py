@@ -1,6 +1,7 @@
 """
 <name>MDS</name>
 <description>Multi dimensional scaling</description>
+<author>Ales Erjavec</author>
 <icon>MDS.png</icon>
 <priority>5000</priority>
 """
