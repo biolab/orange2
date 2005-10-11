@@ -185,17 +185,27 @@ class OWRadvizGraph(OWVisGraph):
                 self.addCurve("hidecircle", QColor(200,200,200), QColor(200,200,200), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
                 
             # draw dots at anchors
-            shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
-            XAnchors = [a[0] for a in shownAnchorData]
-            YAnchors = [a[1] for a in shownAnchorData]
-            shownLabels = [a[2] for a in shownAnchorData]
-        
-            self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, forceFilledSymbols = 1)
 
-            # draw text at anchors
-            if self.showAttributeNames:
-                for i in range(len(shownLabels)):
-                    self.addMarker(shownLabels[i], XAnchors[i]*1.07, YAnchors[i]*1.04, Qt.AlignCenter, bold = 1)
+            shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
+
+            self.anchorsAsVectors = min([x[0]**2+x[1]**2 for x in self.anchorData]) < 0.99
+            self.shownLabels = [a[2] for a in shownAnchorData]
+
+            if self.anchorsAsVectors:
+                r=self.hideRadius**2/100
+                for i,(x,y,a) in enumerate(shownAnchorData):
+                    self.addCurve("l%i" % i, QColor(160, 160, 160), QColor(160, 160, 160), 10, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, x], yData = [0, y], forceFilledSymbols = 1, lineWidth=2)
+                    if self.showAttributeNames:
+                        self.addMarker(a, x*1.07, y*1.04, Qt.AlignCenter, bold=1)
+            else:
+                XAnchors = [a[0] for a in shownAnchorData]
+                YAnchors = [a[1] for a in shownAnchorData]
+                self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, forceFilledSymbols = 1)
+
+                # draw text at anchors
+                if self.showAttributeNames:
+                    for x, y, a in shownAnchorData:
+                        self.addMarker(a, x*1.07, y*1.04, Qt.AlignCenter, bold = 1)
 
         # draw "circle"
         xdata = self.createXAnchors(100)
@@ -481,11 +491,16 @@ class OWRadvizGraph(OWVisGraph):
     def onMousePressed(self, e):
         if self.manualPositioning:
             self.mouseCurrentlyPressed = 1
-            (key, dist, foo1, foo2, index) = self.closestCurve(e.x(), e.y())
-            if dist < 5 and str(self.curve(key).title()) == "dots":
-                self.selectedAnchorIndex = index
+            if self.anchorsAsVectors:
+                key, dist = self.closestMarker(e.x(), e.y())
+                if dist < 15:
+                    self.selectedAnchorIndex = self.shownLabels.index(self.marker(key).label())
             else:
-                self.selectedAnchorIndex = None
+                (key, dist, foo1, foo2, index) = self.closestCurve(e.x(), e.y())
+                if dist < 5 and str(self.curve(key).title()) == "dots":
+                    self.selectedAnchorIndex = index
+                else:
+                    self.selectedAnchorIndex = None
         else:
             OWVisGraph.onMousePressed(self, e)
 
