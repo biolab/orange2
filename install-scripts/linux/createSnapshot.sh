@@ -1,20 +1,23 @@
 #!/bin/sh
 
-#preparing all neccessary things for snapshot to be created and put to the \\estelle\download directory
+cd /home/orange/distribution
 
-if [ $# -lt 4 ]; then
-	echo "Usage: ./createSnapshot <CVS tag> <output filename> <type of build> <daytag> <compile>"
+#preparing all neccessary things for snapshot to be created and put to the \\estelle\download directory
+if [ $# -lt 6 ]; then
+	echo "Usage: ./createSnapshot <CVS tag> <output filename> <type of build> <daytag> <var name in filenames.set> <compile>"
 	exit 1
 fi
 
 VARNAME=$5
 NEWFILE=$2
-
 COMPILE=$6
 /home/orange/mount_estelleDownload
-#echo -n "Preparing $2 filename..."
-sh /home/orange/install-scripts/linux/createOrangeDist.sh $1 $2 $3 $4 $6
-#echo "done!"
+if ! sh /home/orange/install-scripts/linux/createOrangeDist.sh $1 $2 $3 $4 $6 ; then
+        mail -s "Linux: ERROR compiling Orange" tomaz.curk@fri.uni-lj.si < ../output.log
+        cat ../output.log
+        echo -e "\n\nERROR compiling when creating distribution, see log above"
+        exit 1;
+fi
 
 if [ ! -e $NEWFILE ]; then
 	echo "Something went wrong, see log files (new file does not exist)"
@@ -25,7 +28,7 @@ OLDFILE=`grep $VARNAME\= /mnt/estelleDownload/filenames.set | awk -F\= '{print $
 grep -v $VARNAME\= /mnt/estelleDownload/filenames.set > filenames.new.set
 echo $VARNAME=$NEWFILE >> filenames.new.set
 
-rm /mnt/estelleDownload/$OLDFILE > cl.err.log.txt 2>&1
+rm /mnt/estelleDownload/$OLDFILE
 cp $NEWFILE /mnt/estelleDownload/
 cp filenames.new.set /mnt/estelleDownload/filenames.set
 

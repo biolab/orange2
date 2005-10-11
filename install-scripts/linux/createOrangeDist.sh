@@ -16,11 +16,10 @@ if [ $# -lt 4 ]; then
     exit 1
 fi
 
-OUT=$2
 TAG=$1
+OUT=$2
 REL=$3
 VER=$4
- 
 COMPILE=$5
 
 # check which kind of package should build, default is 'normal'
@@ -38,15 +37,6 @@ elif [ $REL == "bcm" ]; then
     REL=2
 else
     REL=0
-fi
-
-
-if [ $REL -eq 1 ]; then
-    ORANGEDIR=Orange-Genomics-$VER
-elif [ $REL -eq 2 ]; then
-    ORANGEDIR=Orange-BCM-$VER
-else
-    ORANGEDIR=Orange-$VER
 fi
 
 rm -rf orange
@@ -72,9 +62,9 @@ find orange -name '*.dll' -type f -exec rm -rf {} \; > /dev/null  2>&1
 # clean everything out of exclude.lst file
 cat orange/exclude.lst | xargs rm -rf
 
-#if [ $REL -eq 1 ]; then # cleanup of BCMonly.lst file
-#    cat orange/OrangeWidgets/Genomics/BCMonly.lst | xargs rm -rf
-#fi
+if [ $REL -eq 1 ]; then # cleanup of BCMonly.lst file
+    cat orange/OrangeWidgets/Genomics/BCMinclude.lst | xargs rm -rf
+fi
 echo "done"
 
 echo -n "Updating Orange version to Orange-$VER..."
@@ -83,9 +73,12 @@ mv -f orange/new.py orange/setup.py
 echo "done"
 
 if [ $COMPILE -eq 1 ]; then
-	cd orange/source
-	make
-	mkdir ../tmp_lib
+	cd orange
+        if ! python setup.py compile > ../output.log 2>&1 ; then
+              exit 1;
+        fi
+        cd source 
+        mkdir ../tmp_lib
 	mv ../*.so ../*.a ../tmp_lib/ 
 	make clean
 	mv ../tmp_lib/* ..
@@ -97,4 +90,3 @@ echo -n "Packing orange to $OUT..."
 tar czpvf $OUT orange > packing.log 2>&1
 echo "done"
 
-#python setup.py install
