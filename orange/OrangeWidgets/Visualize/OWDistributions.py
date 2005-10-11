@@ -1,6 +1,7 @@
 """
 <name>Distributions</name>
 <description>Displays attribute value distributions.</description>
+<author>Tomaz Curk</author>
 <icon>icons/Distribution.png</icon>
 <priority>100</priority>
 """
@@ -323,7 +324,7 @@ class OWDistributions(OWWidget):
 
         # inputs
         # data and graph temp variables
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default)]
         
         self.data = None
         self.targetValue = 0

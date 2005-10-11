@@ -1,6 +1,7 @@
 """
 <name>Attribute Statistics</name>
 <description>Basic attribute statistics.</description>
+<author>Jure Zabkar</author>
 <icon>icons/AttributeStatistics.png</icon>
 <priority>200</priority>
 """
@@ -36,7 +37,7 @@ class OWAttributeStatistics(OWWidget):
         self.canvas = None
         self.HighlightedAttribute = None
         #list inputs and outputs
-        self.inputs = [("Examples", ExampleTable, self.data)]
+        self.inputs = [("Examples", ExampleTable, self.data, Default)]
 
         #GUI
 
@@ -80,7 +81,7 @@ class OWAttributeStatistics(OWWidget):
         self.canvas.update()
         self.LastAttributeSelected = self.dataset.domain.attributes[ind].name
 
-    def data(self,data):
+    def data(self, data):
         self.attributes.clear()
         if data==None:
             self.dataset = None
