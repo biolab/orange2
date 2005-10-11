@@ -294,10 +294,10 @@ class OWMosaicDisplay(OWWidget):
 
             if side % 2 == 0:   # if drawing horizontal
                 if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", usedAttrs + [attr, val])
-                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute + (side%2==0 and val == vals[-1]), usedAttrs + [attr, val])
+                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute + (val == vals[-1]), usedAttrs + [attr, val])
             else:
                 if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", usedAttrs + [attr, val])
-                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute + (side%2==0 and val == vals[-1]), usedAttrs + [attr, val])
+                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute, usedAttrs + [attr, val])
             currPos += size + edge
             del tempData
 
@@ -308,14 +308,14 @@ class OWMosaicDisplay(OWWidget):
     ## DRAW TEXT - draw legend for all attributes in attrList and their possible values
     def DrawText(self, data, side, attr, (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute):
         if self.drawnSides[side]: return
+        if side == RIGHT and lastValueForFirstAttribute != 2: return
+        
         if not data or len(data) == 0:
             if not self.drawPositions.has_key(side): self.drawPositions[side] = (x0, x1, y0, y1)
             return
         else:
             if self.drawPositions.has_key(side): (x0, x1, y0, y1) = self.drawPositions[side]        # restore the positions where we have to draw the attribute values and attribute name
             
-        if side == RIGHT and lastValueForFirstAttribute != 2: return
-        
         self.drawnSides[side] = 1
 
         values = getVariableValuesSorted(data, attr)
@@ -343,8 +343,6 @@ class OWMosaicDisplay(OWWidget):
             else :            currPos += perc*height+ self.cellspace*(totalAttrs-side)
 
             
-            
-        
      # draw the class legend below the square
     def DrawLegend(self, data, (x0, x1), (y0, y1)):
         for name in self.names: name.hide()
