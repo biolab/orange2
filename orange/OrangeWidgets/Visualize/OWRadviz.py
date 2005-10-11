@@ -753,13 +753,14 @@ class OWRadviz(OWWidget):
     def randomAnchors(self):
         import random
         attrList = self.getShownAttributeList()
-        self.graph.anchorData = [self.ranch(a) for a in attrList]
+        anchors = [self.ranch(a) for a in attrList]
         if not self.lockToCircle:
-            self.singleStep() # this won't do much, it's just for normalization
-        else:
-            self.graph.updateData(self.getShownAttributeList())
-            self.graph.repaint()
-            self.recomputeEnergy()
+            maxdist = math.sqrt(max([x[0]**2+x[1]**2 for x in anchors]))
+            anchors = [(x[0]/maxdist, x[1]/maxdist, x[2]) for x in anchors]
+        self.graph.anchorsData = anchors
+        self.graph.updateData(self.getShownAttributeList())
+        self.graph.repaint()
+        self.recomputeEnergy()
 
     def freeAttributes(self, iterations, steps, singleStep = False):
         attrList = self.getShownAttributeList()
@@ -788,32 +789,14 @@ class OWRadviz(OWWidget):
 
                 positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
                 if len(positions)==50:
-                    #print positions[0]-positions[4]
                     m = max(Numeric.sum((positions[0]-positions[49])**2, 1))
                     print m
                     if m < 1e-4:
                         break
-                #self.energyLabel.repaint()
-##                if singleStep:
-##                    noChange = 5
-##                else:
-##                    if E > min(0.999*minE, 1.001*minE):
-##                        noChange += 1
-##                        notBest = 1
-##                    else:
-##                        minE = E
-##                        bestProjection = self.graph.anchorData
-##                        noChange = 0
-##                        notBest = 0
+                self.energyLabel.repaint()
             else:
                 continue
             break
-            
-##        if notBest and bestProjection:
-##            self.graph.anchorData = bestProjection
-##            self.graph.potentialsBmp = None
-##            self.updateGraph()
-##            self.energyLabel.setText("Energy: %.3f" % minE)
             
     def singleStep(self): self.freeAttributes(1, 1, True)
     def optimize(self):   self.freeAttributes(1, 10)
