@@ -187,7 +187,6 @@ class OWRadvizGraph(OWVisGraph):
             # draw dots at anchors
 
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
-
             self.anchorsAsVectors = min([x[0]**2+x[1]**2 for x in self.anchorData]) < 0.99
             self.shownLabels = [a[2] for a in shownAnchorData]
 
@@ -207,10 +206,11 @@ class OWRadvizGraph(OWVisGraph):
                     for x, y, a in shownAnchorData:
                         self.addMarker(a, x*1.07, y*1.04, Qt.AlignCenter, bold = 1)
 
-        # draw "circle"
-        xdata = self.createXAnchors(100)
-        ydata = self.createYAnchors(100)
-        self.addCurve("circle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
+        if self.showAnchors and not self.anchorsAsVectors:
+            # draw "circle"
+            xdata = self.createXAnchors(100)
+            ydata = self.createYAnchors(100)
+            self.addCurve("circle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
         self.potentialsClassifier = None # remove the classifier so that repaint won't recompute it
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
