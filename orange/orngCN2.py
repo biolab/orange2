@@ -131,9 +131,10 @@ class CN2LearnerClass(orange.RuleLearner):
         return CN2Classifier(rules, examples, weight)
 
 class CN2Classifier(orange.RuleClassifier):
-    def __init__(self, rules, examples, weightID = 0):
+    def __init__(self, rules, examples, weightID = 0, **argkw):
         self.rules = rules
         self.examples = examples
+        self.__dict__.update(argkw)
         self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue):
@@ -205,9 +206,11 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
         return CN2UnorderedClassifier(rules, examples, weight)
 
 class CN2UnorderedClassifier(orange.RuleClassifier):
-    def __init__(self, rules, examples, weightID = 0):
+    def __init__(self, rules, examples, weightID = 0, **argkw):
         self.rules = rules
         self.examples = examples
+        self.weightID = weightID
+        self.__dict__.update(argkw)
         self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue):
@@ -240,29 +243,31 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         return retStr
 
 class RuleClassifier_bestRule(orange.RuleClassifier):
-    def __init__(self, rules, examples, weightID = 0):
+    def __init__(self, rules, examples, weightID = 0, **argkw):
         self.rules = rules
         self.examples = examples
+        self.__dict__.update(argkw)
         self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue):
-        for r in self.rules:
-            r.filter.domain = example.domain
-        retDist = None
+        retDist = orange.Distribution(example.domain.classVar)
         bestRule = None
         for r in self.rules:
             if r(example) and (not bestRule or r.quality>bestRule.quality):
-                retDist = r.classDistribution
+                for v_i,v in enumerate(example.domain.classVar):
+                    retDist[v_i] = r.classDistribution[v_i]
                 bestRule = r
-        if not retDist:
+        if not bestRule:
             retDist = self.prior
+        else:
+            bestRule.used += 1
         retDist.normalize()
         # return classifier(example, result_type=result_type)
         if result_type == orange.GetValue:
           return retDist.modus()
         if result_type == orange.GetProbabilities:
           return retDist
-        return (retDist.modus,retDist)
+        return (retDist.modus(),retDist)
 
     def __str__(self):
         retStr = ""
@@ -276,25 +281,24 @@ class CovererAndRemover_multWeights(orange.RuleCovererAndRemover):
     def __call__(self, rule, examples, weights, targetClass):
         if not weights:
             weights = orange.newmetaid()
-            for example in examples:
-                example[weights] = 1.
+            examples.addMetaAttribute(weights,1.)
+            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)))
         newWeightsID = orange.newmetaid()
-        newDomain = orange.Domain(examples.domain)
-        newDomain.addmeta(newWeightsID, orange.FloatVariable("weight"+str(newWeightsID)))
-        newExamples = examples.select(newDomain)
-        for example in newExamples:
+        examples.addMetaAttribute(newWeightsID,1.)
+        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)))
+        for example in examples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 example[newWeightsID]=example[weights]*self.mult
             else:
                 example[newWeightsID]=example[weights]
-        return (newExamples,newWeightsID)
+        return (examples,newWeightsID)
 
 class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
     def __call__(self, rule, examples, weights, targetClass):
         if not weights:
             weights = orange.newmetaid()
-            for example in examples:
-                example[weights] = 1.
+            examples.addMetaAttribute(weights,1.)
+            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)))
         try:
             coverage = examples.domain.getmeta("Coverage")
         except:
@@ -302,6 +306,8 @@ class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
             examples.domain.addmeta(orange.newmetaid(),coverage)
             examples.addMetaAttribute(coverage,0.0)
         newWeightsID = orange.newmetaid()
+        examples.addMetaAttribute(newWeightsID,1.)
+        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)))
         for example in examples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 try:
@@ -311,7 +317,6 @@ class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
                 example[newWeightsID]=1.0/(example[coverage]+1)
             else:
                 example[newWeightsID]=example[weights]
-            #print example[newWeightsID]
         return (examples,newWeightsID)
 
 def rule_in_set(rule,rules):
@@ -376,5 +381,3 @@ class CN2SDUnorderedLearnerClass(CN2UnorderedLearnerClass):
         CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
                                           beamWidth = beamWidth, alpha = alpha, **kwds)
         self.coverAndRemove = CovererAndRemover_multWeights(mult=mult)
-        self.ruleFinder.validator = noDuplicates_validator(alpha = alpha)
-        self.ruleStopping = ruleSt_setRules(self.ruleFinder.validator)
