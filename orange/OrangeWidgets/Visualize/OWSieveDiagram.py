@@ -15,13 +15,14 @@ import orngInteract, OWGUI
 from OWQCanvasFuncts import *
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
+import random
 
 
 ###########################################################################################
 ##### WIDGET : 
 ###########################################################################################
 class OWSieveDiagram(OWWidget):
-    settingsList = ["showLines"]
+    settingsList = ["showLines", "showCases"]
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve diagram", TRUE)
@@ -43,6 +44,7 @@ class OWSieveDiagram(OWWidget):
         self.attrCondition = None
         self.attrConditionValue = None
         self.showLines = 1
+        self.showCases = 0
         self.attributeSelectionList = None
         self.stopCalculating = 0
 
@@ -66,7 +68,10 @@ class OWSieveDiagram(OWWidget):
         self.attrConditionCombo      = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrCondition", "Attribute:", callback = self.updateConditionAttr, sendSelectedValue = 1, valueType = str, labelWidth = 70)
         self.attrConditionValueCombo = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrConditionValue", "Value:", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
 
-        OWGUI.checkBox(self.controlArea, self, "showLines", "Show Lines", box = " Visual Settings ", callback = self.updateData)
+
+        box2 = OWGUI.widgetBox(self.controlArea, box = " Visual Settings ")
+        OWGUI.checkBox(box2, self, "showLines", "Show Lines", callback = self.updateData)
+        OWGUI.checkBox(box2, self, "showCases", "Show Data Examples", callback = self.updateData)
         
         self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = " Interesting Attribute Pairs ")
         
@@ -77,11 +82,10 @@ class OWSieveDiagram(OWWidget):
         self.interestingList = QListBox(self.interestingGroupBox)
         self.connect(self.interestingList, SIGNAL("selectionChanged()"),self.showSelectedPair)
 
-        
-
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
         self.icons = self.createAttributeIconDict()
         self.resize(800, 550)
+        random.seed()
 
     ###############################################################
     # when clicked on a list box item, show selected attribute pair
@@ -166,58 +170,6 @@ class OWSieveDiagram(OWWidget):
                 self.progressBarSet(100.0*current/float(total))
                 qApp.processEvents()
                 
-
-                
-        """
-        conts = {}
-        
-        for attr in data.domain:
-            if attr.varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
-
-            dc = orange.ContingencyAttrAttr(attr, attr, data)   # distribution of X attribute
-            vals = [sum(dc[key]) for key in dc.keys()]          # compute contingency of x attribute
-            conts[attr.name] = (dc, vals)
-
-        for attrX in range(len(data.domain)):
-            if data.domain[attrX].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
-
-            for attrY in range(attrX+1, len(data.domain)):
-                if data.domain[attrY].varType == orange.VarTypes.Continuous: continue  # we can only check discrete attributes
-
-                (contX, valsX) = conts[data.domain[attrX].name]
-                (contY, valsY) = conts[data.domain[attrY].name]
-
-                # create cartesian product of selected attributes and compute contingency 
-                (cart, profit) = FeatureByCartesianProduct(data, [data.domain[attrX], data.domain[attrY]])
-                tempData = data.select(list(data.domain) + [cart])
-                contXY = orange.ContingencyAttrAttr(cart, cart, tempData)   # distribution of the merged attribute
-
-                # compute chi-square
-                chisquare = 0.0
-                for i in range(len(valsX)):
-                    valx = valsX[i]
-                    for j in range(len(valsY)):
-                        valy = valsY[j]
-
-                        actual = 0
-                        try:
-                            for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]: actual += val
-                        except:
-                            actual = 0
-                        expected = float(valx * valy) / float(len(data))
-                        if expected == 0: continue
-                        pearson2 = (actual - expected)*(actual - expected) / expected
-                        chisquare += pearson2
-                self.chisquares.append((chisquare, "%s - %s" % (data.domain[attrX].name, data.domain[attrY].name), data.domain[attrX].name, data.domain[attrY].name))
-
-        ########################
-        # populate list box with highest chisquares
-        self.chisquares.sort()
-        self.chisquares.reverse()
-        for (chisquare, attrs, x, y) in self.chisquares:
-            str = "%s (%.3f)" % (attrs, chisquare)
-            self.interestingList.insertItem(str)
-        """
 
         self.progressBarFinished()
         self.calculateButton.show()
@@ -455,6 +407,14 @@ class OWSieveDiagram(OWWidget):
             r = g = b = 255         # white            
         color = QColor(r,g,b)
         brush = QBrush(color); rect.setBrush(brush)
+
+        if self.showCases and w > 6 and h > 6:
+            if pearson > 0: c = QColor(0,0,255)
+            else: c = QColor(255, 0,0)
+            for i in range(int(actual)):
+                x1 = random.randint(x+1, x + w-4)
+                y1 = random.randint(y+1, y + h-4)
+                self.rects.append(OWCanvasRectangle(self.canvas, x1, y1, 3, 3, z = 100, penColor = c, brushColor = c))
         
         if pearson > 0:
             pearson = min(pearson, 10)
