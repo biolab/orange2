@@ -260,26 +260,34 @@ class FeatureByCartesianProductClass:
     return self
 
   def __call__(self, table, bound, weightID=0):
-    bound = [table.domain[a] for a in bound]
-    newVar = orange.EnumVariable(reduce(lambda x,y:x+"-"+y, [a.name for a in bound]))
     if not len(bound):
       raise AttributeError, "no bound attributes"
-    elif (len(bound)==1):
+
+    bound = [table.domain[a] for a in bound]
+    newVar = orange.EnumVariable("-".join([a.name for a in bound]))
+
+    if (len(bound)==1):
       newVar.values = bound[0].values[:]
       clsfr = orange.ClassifierByLookupTable(newVar, bound[0])
-    elif (len(bound)==2):
-      for v1 in bound[0].values:
-        for v2 in bound[1].values:
-          newVar.values.append(v1+"-"+v2)
-      clsfr = orange.ClassifierByLookupTable2(newVar, bound[0], bound[1])
-    elif (len(bound)==3):
-      for v1 in bound[0].values:
-        for v2 in bound[1].values:
-          for v3 in bound[2].values:
-            newVar.values.append(v1+"-"+v2+"-"+v3)
-      clsfr = orange.ClassifierByLookupTable3(newVar, bound[0], bound[1], bound[2])
     else:
-      raise AttributeError, "cannot deal with more than 3 bound attributes"
+      import orngMisc
+      for vs in orngMisc.LimitedCounter([len(a.values) for a in bound]):
+        newVar.values.append("-".join([bound[i].values[v] for i, v in enumerate(vs)]))
+      clsfr = orange.ClassifierByLookupTable(newVar, bound)
+      
+##    elif (len(bound)==2):
+##      for v1 in bound[0].values:
+##        for v2 in bound[1].values:
+##          newVar.values.append(v1+"-"+v2)
+##      clsfr = orange.ClassifierByLookupTable2(newVar, bound[0], bound[1])
+##    elif (len(bound)==3):
+##      for v1 in bound[0].values:
+##        for v2 in bound[1].values:
+##          for v3 in bound[2].values:
+##            newVar.values.append(v1+"-"+v2+"-"+v3)
+##      clsfr = orange.ClassifierByLookupTable3(newVar, bound[0], bound[1], bound[2])
+##    else:
+##      raise AttributeError, "cannot deal with more than 3 bound attributes"
 
     for i in range(len(newVar.values)):
       clsfr.lookupTable[i] = orange.Value(newVar, i)
