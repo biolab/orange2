@@ -69,8 +69,8 @@ class WidgetButton(QToolButton):
         
         #tooltipText = name + "\nClass name: " + fileName + "\nin: " + formatedInList + "\nout: " + formatedOutList + "\ndescription: " + description
         tooltipText = "<b>%s</b><br><hr>" % (name)
-        author = self.getAuthor()
-        if author: tooltipText += "<b>Author:</b> %s<br><hr>" % (author)
+        #author = self.getAuthor()
+        #if author: tooltipText += "<b>Author:</b> %s<br><hr>" % (author)
         tooltipText += "<b>Description:</b><br> &nbsp &nbsp %s<hr>%s<hr>%s" % (self.getDescription(), formatedInList, formatedOutList)
         QToolTip.add( self, tooltipText)
 
