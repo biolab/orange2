@@ -1381,7 +1381,7 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
     try {
       if (!((TPyOrange *)self)->call_constructed && keywords) {
         const int sze = PyDict_Size(keywords);
-        PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "negate") : NULL;
+        PyObject *neg = sze >= 1 ? PyDict_GetItemString(keywords, "negate") : NULL;
         if ((sze > 1) || !neg)
           NO_KEYWORDS;
         filter->negate = (PyObject_IsTrue(neg) != 0);
@@ -1401,10 +1401,10 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
         if (references) {
           if (!egen.is_derived_from(TExampleTable))
             PYERROR(PyExc_TypeError, "cannot return references to examples that are not in example table", PYNULL);
-          return applyFilterP(filter, egen);
+          res = applyFilterP(filter, egen);
         }
-
-        res = applyFilter(PyOrange_AsFilter(self), egen, false, 0);
+        else
+          res = applyFilter(PyOrange_AsFilter(self), egen, false, 0);
       }
 
       filter->negate = savedNegate;

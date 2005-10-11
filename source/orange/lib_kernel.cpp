@@ -4681,29 +4681,33 @@ PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObje
 
 /* arguments in form (list, classvar ...) */
 
-  
-  PVarList variables = PVarList_FromArguments(PyTuple_GET_ITEM(args, 0));
+  PyObject *g = PyTuple_GET_ITEM(args, 1);
+  PVarList variables = PVarList_FromArguments(PyTuple_GET_ITEM(args, 1));
 
   if (variables) {
     int vsize = variables->size();
     int asize = PyTuple_Size(args);
     int i;
 
-    if (!PyOrVariable_Check(PyTuple_GET_ITEM(args, 1)))
+    if (!PyOrVariable_Check(PyTuple_GET_ITEM(args, 0)))
       PYERROR(PyExc_TypeError, "the second argument should be the class attribute", PYNULL);
 
     if (vsize <= 3) {
       PyObject *newargs = PyTuple_New(vsize + asize-1);
       PyObject *elm = NULL;
+      int el = 0;
 
-      TVarList::const_iterator vi(variables->begin());
-      for(i = 0; i != vsize; i++, vi++)
-        PyTuple_SetItem(newargs, i, WrapOrange(*vi));
+      elm = PyTuple_GET_ITEM(args, 0);
+      Py_INCREF(elm);
+      PyTuple_SetItem(newargs, el++, elm);
 
-      for(i = 1; i != asize; i++) {
+      const_PITERATE(TVarList, vi, variables)
+        PyTuple_SetItem(newargs, el++, WrapOrange(*vi));
+
+      for(i = 2; i != asize; i++) {
         elm = PyTuple_GET_ITEM(args, i);
         Py_INCREF(elm);
-        PyTuple_SetItem(newargs, vsize+i-1, elm);
+        PyTuple_SetItem(newargs, el++, elm);
       }
 
       try {
@@ -4720,7 +4724,7 @@ PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObje
     /* arguments in form (var1, var2, ..., classvar) */
 
     else {
-      TClassifierByLookupTableN *cblt = mlnew TClassifierByLookupTableN(PyOrange_AsVariable(PyTuple_GET_ITEM(args, 1)), variables);
+      TClassifierByLookupTableN *cblt = mlnew TClassifierByLookupTableN(PyOrange_AsVariable(PyTuple_GET_ITEM(args, 0)), variables);
 
       PyObject *pyvl = asize>=3 ? PyTuple_GET_ITEM(args, 2) : PYNULL;
       PyObject *pydl = asize>=3 ? PyTuple_GET_ITEM(args, 3) : PYNULL;

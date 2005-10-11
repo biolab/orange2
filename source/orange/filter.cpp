@@ -588,9 +588,9 @@ bool TFilter_conjunction::operator()(const TExample &ex)
   if (filters)
     PITERATE(TFilterList, fi, filters)
       if (!(*fi)->call(ex))
-        return false;
+        return negate;
 
-  return true;
+  return !negate;
 }
 
 
@@ -609,8 +609,8 @@ bool TFilter_disjunction::operator()(const TExample &ex)
   if (filters)
     PITERATE(TFilterList, fi, filters)
       if ((*fi)->call(ex))
-        return true;
+        return !negate;
 
-  return false;
+  return negate;
 }
 
