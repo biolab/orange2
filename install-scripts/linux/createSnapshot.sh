@@ -4,6 +4,7 @@ cd /home/orange/distribution
 
 #preparing all neccessary things for snapshot to be created and put to the \\estelle\download directory
 if [ $# -lt 6 ]; then
+        echo "only $# parameters given"
 	echo "Usage: ./createSnapshot <CVS tag> <output filename> <type of build> <daytag> <var name in filenames.set> <compile>"
 	exit 1
 fi
