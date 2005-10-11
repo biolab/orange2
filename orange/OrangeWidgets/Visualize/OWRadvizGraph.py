@@ -564,21 +564,34 @@ class OWRadvizGraph(OWVisGraph):
             elif self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                 for (xAnchor,yAnchor,label) in shownAnchorData:
-                    # draw lines
-                    key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
+                    if self.anchorsAsVectors:
+                        attrVal = self.scaledData[self.attributeNameIndex[label]][index]
+                        xa, ya = xAnchor*attrVal, yAnchor*attrVal
+                        key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, xa], yData = [0, ya], lineWidth=3)
+                        markerX, markerY = xa, ya
+                        fontsize = 9
+                        markerAlign = (ya>0 and Qt.AlignTop or Qt.AlignBottom) + (xa>0 and Qt.AlignRight or Qt.AlignLeft)
+                    else:
+                        key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
+                        markerX, markerY = (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0
+                        fontsize = 12
+                        markerAlign = Qt.AlignCenter
+                    
                     self.tooltipCurveKeys.append(key)
 
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][self.attributeNameIndex[label]]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker(str(self.rawdata[index][self.attributeNameIndex[label]]), markerX, markerY, markerAlign, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[label]][index]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[label]][index]), markerX, markerY, markerAlign, bold = 1)
                     font = self.markerFont(marker)
-                    font.setPointSize(12)
+                    font.setPointSize(fontsize)
+                    font.setBold(FALSE)
                     self.setMarkerFont(marker, font)
 
                     self.tooltipMarkers.append(marker)
+
             elif self.tooltipKind == VISIBLE_ATTRIBUTES or self.tooltipKind == ALL_ATTRIBUTES:
                 text = ""
                 if self.tooltipKind == VISIBLE_ATTRIBUTES:
