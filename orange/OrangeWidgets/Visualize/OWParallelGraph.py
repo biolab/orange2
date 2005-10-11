@@ -109,7 +109,7 @@ class OWParallelGraph(OWVisGraph):
             # add a meta attribute if it doesn't exist yet
             if self.metaid == -1:
                 self.metaid = orange.newmetaid()
-                self.rawdata.domain.addmeta(self.metaid, orange.IntVariable("ItemIndex"))
+                #self.rawdata.domain.addmeta(self.metaid, orange.IntVariable("ItemIndex"))
                 for i in range(dataSize): self.rawdata[i].setmeta(self.metaid, i)
 
             for i in range(length):
