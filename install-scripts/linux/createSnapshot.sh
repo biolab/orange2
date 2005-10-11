@@ -1,6 +1,7 @@
 #!/bin/sh
 
 cd /home/orange/distribution
+rm -Rf /home/orange/distribution/*
 
 #preparing all neccessary things for snapshot to be created and put to the \\estelle\download directory
 if [ $# -lt 6 ]; then
@@ -25,13 +26,13 @@ if [ ! -e $NEWFILE ]; then
 	exit 1
 fi
 
-OLDFILE=`grep $VARNAME\= /mnt/estelleDownload/filenames.set | awk -F\= '{print $2}' | tr -d '\r'`
-grep -v $VARNAME\= /mnt/estelleDownload/filenames.set > filenames.new.set
+OLDFILE=`grep $VARNAME\= /home/orange/estelleDownload/filenames.set | awk -F\= '{print $2}' | tr -d '\r'`
+grep -v $VARNAME\= /home/orange/estelleDownload/filenames.set > filenames.new.set
 echo $VARNAME=$NEWFILE >> filenames.new.set
 
-rm /mnt/estelleDownload/$OLDFILE
-cp $NEWFILE /mnt/estelleDownload/
-cp filenames.new.set /mnt/estelleDownload/filenames.set
+rm /home/orange/estelleDownload/$OLDFILE
+cp $NEWFILE /home/orange/estelleDownload/
+cp filenames.new.set /home/orange/estelleDownload/filenames.set
 
 /home/orange/umount_estelleDownload
 
