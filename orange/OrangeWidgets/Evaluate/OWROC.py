@@ -1,6 +1,7 @@
 """
 <name>ROC Anaylsis</name>
 <description>Displays Receiver Operating Characteristics curve based on evaluation of classifiers.</description>
+<author>Tomaz Curk</author>
 <icon>ROCAnalysis.png</icon>
 <priority>1010</priority>
 """
@@ -589,7 +590,7 @@ class OWROC(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "ROC Analysis", 1)
 
         # inputs
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.test_results, Multiple)]
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.test_results, Default)]
 
         # default settings
         self.PointWidth = 7

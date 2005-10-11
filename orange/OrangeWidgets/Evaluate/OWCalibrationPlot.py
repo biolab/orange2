@@ -1,6 +1,7 @@
 """
 <name>Calibration Plot</name>
 <description>Displays callibration plot based on evaluation of classifiers.</description>
+<author>Tomaz Curk</author>
 <icon>CalibrationPlot.png</icon>
 <priority>1030</priority>
 """
@@ -192,7 +193,7 @@ class OWCalibrationPlot(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Calibration Plot", 1)
 
         # inputs
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results)] ##, ("Target", int, self.target, 1)]
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, Default)]
 
         #set default settings
         self.CalibrationCurveWidth = 3

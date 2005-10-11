@@ -1,6 +1,7 @@
 """
 <name>Lift Curve</name>
 <description>Displays a lift curve based on evaluation of classifiers.</description>
+<author>Tomaz Curk</author>
 <icon>LiftCurve.png</icon>
 <priority>1020</priority>
 """
@@ -173,7 +174,7 @@ class OWLiftCurve(OWROC):
         OWWidget.__init__(self, parent, signalManager, "Lift Curve Analysis", 1)
 
         # inputs
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, Multiple)]
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, Default)]
 
         # default settings
         self.PointWidth = 7
