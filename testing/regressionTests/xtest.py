@@ -138,7 +138,7 @@ def parseArguments():
             ind += 1
             if not dir in directories:
                 directories.append(dir)
-                
+
         elif flag == "-platform":
             if ind >= len(sys.argv) or sys.argv[ind][0]=="-":
                 print "Missing argument for -platform"
@@ -165,11 +165,12 @@ def do_help():
     print "  -single    run each file only once (no check for randomness"
     print "  -n t       run each script for t times (default: 3)"
     print "  -dir       directory to test (default: all) "
+    print "  -d         run debug version (python_d, orange_d, ...)"
     print "              (more than one -dir can be given)"
 
 def testScripts(complete):
     global error_status
-    if sys.platform == "win32":
+    if sys.platform == "win32" and sys.executable[-6:].upper() != "_D.EXE":
         import win32process, win32api
         win32process.SetPriorityClass(win32api.GetCurrentProcess(), 64)
 

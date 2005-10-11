@@ -105,17 +105,13 @@ class OWClassificationTree(OWWidget):
         self.learner = orngTree.TreeLearner(measure = self.measures[self.estim][1],
             reliefK = self.relK, reliefM = self.relM,
             binarization = self.bin,
+            minExamples = self.preNodeInst and self.preNodeInstP,
+            minSubset = self.preLeafInst and self.preLeafInstP,
+            maxMajority = self.preNodeMaj and self.preNodeMajP/100.0 or 1.0,
             sameMajorityPruning = self.postMaj,
+            mForPruning = self.postMPruning and self.postM,
             storeExamples = 1)
-        if self.preNodeInst:
-            self.learner.minExamples = self.preNodeInstP
-        if self.preLeafInst:
-            self.learner.minSubset = self.preLeafInstP
-        if self.preNodeMaj:
-            self.learner.maxMajority = self.preNodeMajP / 100.0
-        if self.postMPruning:
-            self.learner.mForPruning = self.postM
-
+                                   
         self.learner.name = self.name
         self.send("Learner", self.learner)
         if self.data <> None:

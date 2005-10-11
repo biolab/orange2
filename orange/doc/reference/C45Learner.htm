@@ -5,25 +5,25 @@
 
 <h1>C4.5 Classifier and Learner</h1>
 
-<P>C4.5 is a standard benchmark in machine learning. For this 
-reason, it is incorporated in Orange, although Orange has its own 
+<P>C4.5 is a standard benchmark in machine learning. For this
+reason, it is incorporated in Orange, although Orange has its own
 implementation of decision trees.</P>
 
 <P><CODE>C45Learner</CODE> uses the original Quinlan's code for learning so the tree you get is exactly like the one that would be build by standalone C4.5. Upon return, however, the original tree is copied to Orange components that contain exactly the same information plus what is needed to make them visible from Python. To be sure that the algorithm behaves just as the original, we use a dedicated class <CODE>orange.C45TreeNode</CODE> instead of reusing the components used by Orange's tree inducer (ie, <CODE>orange.TreeNode</CODE>). This, however, could be done and probably will be done in the future; we shall still retain <CODE>orange.C45TreeNode</CODE> but offer transformation to <CODE>orange.TreeNode</CODE> so that routines that work on Orange trees will also be usable for C45 trees.</P>
 
-<P><CODE>C45Learner</CODE> and <CODE>C45Classifier</CODE> behave 
+<P><CODE>C45Learner</CODE> and <CODE>C45Classifier</CODE> behave
 like any other Orange learner and classifier. Unlike most of Orange learning algorithms, C4.5 does not accepts weighted examples.</P>
 
 
 <H2>Building the C4.5 plug-in</H2>
 
-<P>We haven't been able to obtain the legal rights to distribute 
+<P>We haven't been able to obtain the legal rights to distribute
 C4.5 and therefore couldn't statically link it into Orange. Instead, it's incorporated as a plug-in which you'll need to build yourself. The procedure is trivial, but you'll need a C compiler. On Windows, the scripts we provide work with MS Visual C and the files CL.EXE and LINK.EXE must be on the PATH. On Linux you're equipped with gcc. Mac OS X comes without gcc, but you can download it for free from Apple.</P>
 
 <P>Orange must be installed prior to building C4.5. (This is because the build script will copy the created file next to Orange, which it obviously can't if Orange isn't there yet.)</P>
 
 <OL>
-<LI>Download the <A href="http://www.cse.unsw.edu.au/~quinlan/c4.5r8.tar.gz">C4.5 (Release 8) sources</a> from <a 
+<LI>Download the <A href="http://www.cse.unsw.edu.au/~quinlan/c4.5r8.tar.gz">C4.5 (Release 8) sources</a> from <a
 href="http://www.cse.unsw.edu.au/~quinlan/">R. Quinlan's site</a> and extract them into some temporary directory. The files will be modified in the further process, so don't use your copy of Quinlan's sources that you need for another purpose.</LI>
 
 <LI>Locate files <A href="../../buildC45.py">buildC45.py</A> and <A href="../../ensemble.c">ensemble.c</A>; they are in the same directory as orange.pyd (the default place on Windows would be c:\Python23\lib\site-packages\orange; you can also try clicking the above links). Put them into the directory R8/Src of the Quinlan's stuff (it's the directory that contains, for instance, the file average.c).</LI>
@@ -46,28 +46,28 @@ href="http://www.cse.unsw.edu.au/~quinlan/">R. Quinlan's site</a> and extract th
  <DT>gainRatio (g)</DT>
  <DD>Determines whether to use information gain (<CODE>false</CODE>, default) or gain ratio
  for selection of attributes (<CODE>true</CODE>)</DD>
- 
+
  <DT>batch (b)</DT>
  <DD>Turn on batch mode (no windows, no iterations); this option is not documented in C4.5 manuals. It conflicts with "window", "increment" and "trials".</DD>
- 
+
  <DT>subset (s)</DT>
  <DD>Enables subsetting (default: <CODE>false</CODE>, no subsetting)</DD>
- 
+
  <DT>probThresh (p)</DT>
  <DD>Probabilistic threshold for continuous attributes (default: <CODE>false</CODE>)</DD>
- 
+
  <DT>minObjs (m)</DT>
  <DD>Minimal number of objects (examples) in leaves (default: 2)</DD>
- 
+
  <DT>window (w)</DT>
  <DD>Initial windows size (default: maximum of 20% and twice the square root of the number of data objects)</DD>
 
  <DT>increment (i)</DT>
  <DD>The maximum number of objects that can be added to the window at each iteration (default: 20% of the initial window size)</DD>
 
- <DT>cf (c)</DT> 
+ <DT>cf (c)</DT>
  <DD>Prunning confidence level (default: 25%)</DD>
- 
+
  <DT>trials (t)</DT>
  <DD>Set the number of trials in iterative (i.e. non-batch) mode (default: 10)</DD>
 
@@ -75,9 +75,9 @@ href="http://www.cse.unsw.edu.au/~quinlan/">R. Quinlan's site</a> and extract th
  <DD>Return pruned tree (not an original C4.5 option) (default: <CODE>true</CODE>)</DD>
 </DL>
 
-<P><CODE>C45Learner</CODE> also offers another way for setting 
-the arguments: it provides a function <CODE>commandline</CODE> 
-which is given a string and parses it the same way as C4.5 would 
+<P><CODE>C45Learner</CODE> also offers another way for setting
+the arguments: it provides a function <CODE>commandline</CODE>
+which is given a string and parses it the same way as C4.5 would
 parse its command line.</P>
 
 
@@ -132,7 +132,7 @@ parse its command line.</P>
 <P>The simplest way to use <CODE>C45Learner</CODE> is to call it. This
 script constructs the same learner as you would get by calling the usual C4.5.</P>
 
-<p class="header">part of <a href="c45.py">c45.py</a> (uses <a 
+<p class="header">part of <a href="c45.py">c45.py</a> (uses <a
 href="lenses.tab">lenses.tab</a>)</p>
 <XMP class="code">
 import orange
@@ -168,7 +168,7 @@ tree = lrn(data)
 <XMP class=code>
 def printTree0(node, classvar, lev):
     var = node.tested
-    
+
     if node.nodeType == 0:
         print "%s (%.1f)" % (classvar.values[int(node.leaf)], node.items),
 
@@ -176,13 +176,13 @@ def printTree0(node, classvar, lev):
         for i, val in enumerate(var.values):
             print ("\n"+"|    "*lev + "%s = %s:") % (var.name, val),
             printTree0(node.branch[i], classvar, lev+1)
-            
+
     elif node.nodeType == 2:
         print ("\n"+"|    "*lev + "%s <= %.1f:") % (var.name, node.cut),
         printTree0(node.branch[0], classvar, lev+1)
         print ("\n"+"|    "*lev + "%s > %.1f:") % (var.name, node.cut),
         printTree0(node.branch[1], classvar, lev+1)
-        
+
     elif node.nodeType == 3:
         for i, branch in enumerate(node.branch):
             inset = filter(lambda a:a[1]==i, enumerate(node.mapping))
