@@ -21,6 +21,7 @@ from OWVisGraph import getVariableValuesSorted, getVariableValueIndices
 import random
 import OWGraphTools, OWGUI
 from OWQCanvasFuncts import *
+from OWTools import getHtmlCompatibleString
 
 PEARSON = 0
 CLASS_DISTRIBUTION = 1
@@ -211,8 +212,10 @@ class OWMosaicDisplay(OWWidget):
         self.warning()
         for rect in self.rects: rect.hide()
         for text in self.texts: text.hide()
+        for name in self.names: name.hide()
+        for symbol in self.symbols: symbol.hide()
         for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
-        self.rects = []; self.texts = [];  self.tooltips = []
+        self.rects = []; self.texts = []; self.symbols = []; self.names = []; self.tooltips = []
         
         if self.data == None : return
 
@@ -291,13 +294,14 @@ class OWMosaicDisplay(OWWidget):
             tempData = data.select({attr:val})
             perc = float(len(tempData))/float(len(data))
             size = whole*perc
+            htmlVal = getHtmlCompatibleString(val)
 
             if side % 2 == 0:   # if drawing horizontal
-                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", usedAttrs + [attr, val])
-                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute + (val == vals[-1]), usedAttrs + [attr, val])
+                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + htmlVal + "<br>", usedAttrs + [attr, val])
+                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + htmlVal + "<br>", totalAttrs, lastValueForFirstAttribute + (val == vals[-1]), usedAttrs + [attr, val])
             else:
-                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", usedAttrs + [attr, val])
-                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>", totalAttrs, lastValueForFirstAttribute, usedAttrs + [attr, val])
+                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + htmlVal + "<br>", usedAttrs + [attr, val])
+                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + htmlVal + "<br>", totalAttrs, lastValueForFirstAttribute, usedAttrs + [attr, val])
             currPos += size + edge
             del tempData
 
@@ -346,9 +350,8 @@ class OWMosaicDisplay(OWWidget):
      # draw the class legend below the square
     def DrawLegend(self, data, (x0, x1), (y0, y1)):
         for name in self.names: name.hide()
-        self.names = []
         for symbol in self.symbols: symbol.hide()
-        self.symbols = []
+        self.symbols = []; self.names = []
 
         if self.interiorColoring == CLASS_DISTRIBUTION and (not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous): return
 
