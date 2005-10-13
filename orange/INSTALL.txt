@@ -1,0 +1,58 @@
+Orange - Data Mining Fruitful and Fun
+============================
+
+Installation Instructions
+=========================
+Get the .tar.gz file. After unpacking change to the top-level directory.
+
+Orange can be installed in two ways: locally in a user directory or in the 
+system directories.
+
+1. SYSTEM INSTALLATION
+   Using the python into which you wish to install Orange, execute as root:
+
+     python setup.py install
+
+   Depending on the Linux distribution you are using you should get something like this:
+   /usr/lib/python3.2/site-packages/orange              - Orange files
+   /usr/lib/python3.2/site-packages/orange/orange.pth   - path file to Orange used by Python
+   /usr/share/doc/orange                                - Orange Documentation, data sets, etc.
+   /usr/lib/                                            - links to .so files
+   /usr/bin/orange                                      - shortcut to Canvas
+
+
+2. USER, LOCAL INSTALLATION
+   Using the python into which you wish to install Orange, execute as normal user:
+
+     python setup.py install --orangepath=<target directory where orange directory should be created>
+
+   You should get a similar structure:
+   <target dir>/orange/      - Orange files
+   <target dir>/doc/         - Orange Documentation
+   orange.pth                - path file to Orange used by Python
+
+
+   See the Distutils documentation for many command-line options as to
+   installation locations, etc.
+
+
+
+BUILDING AND INSTALLING Orange FROM SOURCE
+Using the python into which you wish to install Orange, execute:
+
+     python setup.py build
+
+Then follow the general Installation Instructions (see above).
+
+
+
+UNINSTALLING Orange
+Depending on the type of installation you should be root or normal user, execute:
+
+python <DOC installation directory>/setup.py uninstall
+
+<DOC installation directory> is usually /usr/share/doc/orange, buy might be different depending on your Linux distribution.
+
+This will remove Orange, canvas, Orange documentation and links to Orange libraries
+
+  -- Jure Menart and Tomaz Curk, Oct. 13, 2005
