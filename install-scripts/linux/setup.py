@@ -167,10 +167,14 @@ class uninstall(Command):
                 print "Uninstallation should be run as superuser!"
                 sys.exit(1)
             self.orangepath = os.path.join(sys.prefix, self.orangepath)
+            sysBinFile = os.path.join("/", "usr", "bin", "orange")
             print "Performing system uninstallation from: "+self.orangepath
         else:
+            sysBinFile = None
             print "Performing user uninstallation from: "+self.orangepath
-            
+        print "Removing orange.pth file...",
+        os.remove(os.path.join(self.orangepath, "..", "orange.pth"))
+        print "done!"
         print "Removing installation directory "+self.orangepath+" ...",
         self.rmdir(self.orangepath)
         os.rmdir(self.orangepath)
@@ -184,7 +188,9 @@ class uninstall(Command):
             for orngLib in OrangeLibList:
                 os.remove(os.path.join(self.libpath, "lib"+orngLib))
             print "done!"
-
+            print "Removing Orange Canvas shortcut "+sysBinFile+"...",
+            os.remove(sysBinFile);
+            print "done!"
 
     def rmdir(self,top):
         for root, dirs, files in os.walk(top, topdown=False):
@@ -305,6 +311,12 @@ class install_wrap(install):
         install.run(self)
 
         if self.orangepath == None:
+	    binFile = os.path.join(sys.prefix, self.OrangeInstallDir, "OrangeCanvas", "orngCanvas.pyw")
+	    sysBinFile = os.path.join("/", "usr", "bin", "orange")
+	    os.system("echo python "+binFile+" >> "+sysBinFile)
+            os.chmod(sysBinFile,
+                      S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)
+
             print "Linking libraries...",
             for currentLib in OrangeLibList:
                 try:
@@ -318,6 +330,7 @@ class install_wrap(install):
                 os.system("/sbin/ldconfig")
                 print "success"
         else:
+	    sysBinFile = None
             print "Libraries was not exported to the system library path (using 'non-system' installation)"
             
         print "Creating path file...",
@@ -342,6 +355,7 @@ class install_wrap(install):
                 fo.write(os.path.join(root,name)+"\n")
         fo.close()
         print "success"
+
        	print "Preparing filename masks...",
 	for root, dirs, files in os.walk(pthInstallDir):
 	    for name in files:
@@ -388,7 +402,13 @@ class install_wrap(install):
             
         print ""
         print "It will remove Orange, Orange documentation and links to Orange libraries"
-            
+        if sysBinFile != None:
+		print ""
+		print "To run Orange Canvas run: "+sysBinFile
+	else:
+		print ""
+		print "Orange Canvas shortcut not created ('non-system' installation)"
+    
 # preparing data for Distutils
 
 PythonVer = "python"+sys.version[:3]
