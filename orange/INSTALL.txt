@@ -26,7 +26,7 @@ python /usr/lib/python2.3/site-packages/orange/OrangeCanvas/orngCanvas.pyw
 
 Installation Instructions
 ==========================================
-Get the .tar.gz file. After unpacking go to the top-level
+Get the .tgz file. After unpacking go to the top-level
 directory.
 
 The binary distribution is prepared in Fedora Core 3. In case you need
@@ -55,10 +55,10 @@ the system directories.
    Documentation, data sets, etc.:
    /usr/share/doc/orange
 
-   Links to .so files
+   Links to .so files:
    /usr/lib/
 
-   Shortcut to Orange Canvas
+   Shortcut to Orange Canvas:
    /usr/bin/orange
 
 
@@ -71,9 +71,14 @@ the system directories.
 
    You should get the following structure:
 
-   <target dir>/orange/      - Orange files
-   <target dir>/doc/         - Orange Documentation
-   orange.pth                - path file to Orange used by Python
+   Orange files:
+   <target dir>/orange/
+
+   Documentation, data sets, etc.:
+   <target dir>/doc/
+   
+   Path file to Orange used by Python:
+   orange.pth                
 
    See the Distutils documentation for many command-line options as to
    installation locations, etc.
@@ -95,7 +100,7 @@ user, execute:
 
 python <DOC installation directory>/setup.py uninstall
 
-<DOC installation directory> is usually /usr/share/doc/orange, buy
+<DOC installation directory> is usually /usr/share/doc/orange, but
 might be different depending on your Linux distribution.
 
 This will remove Orange, Orange Canvas, Orange documentation and links to
