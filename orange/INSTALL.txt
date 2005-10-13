@@ -1,6 +1,24 @@
 Orange - Data Mining Fruitful and Fun
 ============================
 
+Prerequisites
+=========================
+In order to run Orange Canvas - the visual programming front end of Orange - you will 
+need to have Qt, PyQt installed. On Fedora Core 3 this can be achieved by executing 
+the following command:
+
+     yum groupinstall "KDE Software Development"
+
+
+Running Orange Canvas
+=========================
+The system installation should create a shortcut to Orange Canvas, a script:
+/usr/bin/orange
+which is equivalent to executing the following command (might vary among
+Linux distributions):
+python /usr/lib/python2.3/site-packages/orange/OrangeCanvas/orngCanvas.pyw
+
+
 Installation Instructions
 =========================
 Get the .tar.gz file. After unpacking change to the top-level directory.
