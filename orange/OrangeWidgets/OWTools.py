@@ -10,6 +10,12 @@ from qt import *
 from random import *
 
 
+def getHtmlCompatibleString(strVal):
+    strVal = strVal.replace("<", "&#60;")
+    strVal = strVal.replace(">", "&#62;")
+    return strVal
+
+
 #A 10X10 single color pixmap
 class ColorPixmap (QPixmap):
     def __init__(self,color=Qt.white):
