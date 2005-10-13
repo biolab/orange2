@@ -3,6 +3,7 @@
 <description>Multi dimensional scaling</description>
 <author>Ales Erjavec</author>
 <icon>MDS.png</icon>
+<author>Ales Erjavec (ales.erjevec324(@at@)email.si)</author> 
 <priority>5000</priority>
 """
 
@@ -89,7 +90,7 @@ class OWMDS(OWWidget):
         #OWGUI.button(opt, self, "Redraw graph", callback=self.graph.updateData)
         #OWGUI.checkBox(opt, self, "ReDraw", "Redraw graph after each step")
         #OWGUI.spin(opt, self, "NumIter",box="Num. Iterations per Step",min=1, max=1000)
-        OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh after optimization") 
+        OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh After Optimization") 
         
         
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
@@ -489,8 +490,8 @@ class MDSGraph(OWVisGraph):
                 self.removeCurve(keys[1])
 
         if reset:
-            for k in self.lineKeys:
-                removeCurve(k)
+            #for k in self.lineKeys:
+            #    removeCurve(k)
             self.lineKeys=[]
         if self.NumStressLines<len(self.lineKeys):
             for k in self.lineKeys[self.NumStressLines:]:
