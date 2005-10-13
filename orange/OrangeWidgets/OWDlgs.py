@@ -172,7 +172,7 @@ class ColorPaletteWidget(QVBox):
             self.master.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"passThroughBlack"] = chk
             self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"passThroughBlackCheckbox"].setChecked(chk)
             pallete = self.createPalette(self.rgbToQColor(l), self.rgbToQColor(r), chk) + 5*[Qt.white.rgb()]
-            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"View"].setPalette(pallete)
+            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"View"].setPalette1(pallete)
         self.master.currentState = state
 
     def paletteSelected(self):

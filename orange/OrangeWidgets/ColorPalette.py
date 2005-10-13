@@ -177,7 +177,7 @@ class ColorPalette(QWidget):
 
     def paletteSelected(self):
         schema = self.getCurrentColorSchema()
-        self.interpolationView.setPalette(schema.getPalette())
+        self.interpolationView.setPalette1(schema.getPalette())
         self.colorButton1.setColor(self.rgbToQColor(schema.getPalette()[0]))
         self.colorButton2.setColor(self.rgbToQColor(schema.getPalette()[249]))
 
@@ -211,7 +211,7 @@ class ColorPalette(QWidget):
                                [self.qRgbFromQColor(self.overflowColorButton.getColor())] + \
                                [self.qRgbFromQColor(self.NAColorButton.getColor())]                             
 
-        self.interpolationView.setPalette(palette)
+        self.interpolationView.setPalette1(palette)
 
         additionalColors = {}
         for buttonName in self.additionalColorButtons:
@@ -283,7 +283,7 @@ class InterpolationView(QCanvasView):
         self.setMinimumHeight(colorButtonSize)
         self.setMaximumWidth(135)
 
-    def setPalette(self, palette):
+    def setPalette1(self, palette):
         dx = 140; dy = colorButtonSize
         bmp = chr(252)*dx*2 + reduce(lambda x,y:x+y, [chr(i*250/dx) for i in range(dx)] * (dy-4)) + chr(252)*dx*2 
         image = QImage(bmp, dx, dy, 8, palette, 256, QImage.LittleEndian)
@@ -339,7 +339,6 @@ class ColorButton(QCanvasView):
         self.clicked = FALSE
         self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
         self.update()
-
 
 
 
