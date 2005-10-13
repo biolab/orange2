@@ -5,6 +5,10 @@ Installation Instructions
 =========================
 Get the .tar.gz file. After unpacking change to the top-level directory.
 
+The binary distribution is prepared in Fedora Core 3. In case you need to 
+recompile for your distribution of Linux, follow the instructions on how to
+compile from source. Sources are included in the binary distribution.
+
 Orange can be installed in two ways: locally in a user directory or in the 
 system directories.
 
