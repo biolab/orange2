@@ -1,0 +1,106 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css" MEDIA=screen>
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print></LINK>
+</HEAD>
+
+<BODY>
+<h1>orngMDS</h1>
+<p>The orngMDS module provides the functionality to perform multi dimensional scaling</p>
+
+<h2>MDS</h2>
+<p>MDS is the main class for performing multi dimensional scaling</p>
+<p class=section>Attributes</p>
+<DL class =attributes>
+<DT>points</DT>
+<DD>Holds the current configuration of projected points</DD>
+<DT>distances</DT>
+<DD>An orange.SymMatrix that contains the distances that we want to achieve(<code>LSMT</code> changes these)</DD>
+<DT>projectedDistances<DT>
+<DD>An orange.SymMatrix that contains the distances between the elements of <code>points</code>
+<DT>originalDistances</DT>
+<DD>An orange.SymMatrix that contains the original distances</DD>
+<DT>stress<DT>
+<DD>An orange.SymMatrix holding the stress</DD>
+<DT>dim</DT>
+<DD>An integer holding the dimension of the projected space</DD>
+<DT>n</DT>
+<DD>An integer holding the number of elements</DD>
+<DT>avgStress</DT>
+<DD>An float holding the average stress in <code>stress</code></DD>
+<DT>progressCallback</DT>
+<DD>A function that gets called after each optimization step in the <code>run()</code> method</DD>
+</DL>
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>MDS(diss, dim=2, points=None)</DT>
+<DD>Constructor that takes the original (diss)similarity  and an optional arguments <code>dim</code> indicating the dimension of the projected space  and an initial configuration of <code>points</code></DD>
+<DT>getDistance()</DT>
+<DD>Computes the distances between <code>points</code> and updates the <code>projectedDistances</code> matrix</DD>
+<DT>getStress(stressFunc=orngMDS.SgnRelStress)</DT>
+<DD>Computes the stress between the current <code>projectedDistances</code> and <code>distances</code> matrix using <code>stressFunc</code> and updates the <code>stress</code> matrix and <code>avgStress</code> accordingly</DD>
+<DT>Torgerson()</DT>
+<DD>Runs the torgerson algorithm  that computes an initial analytical solution of the problem </DD>
+<DT>LSMT()</DT>
+<DD>Kruskal monotone transformation</DD>
+<DT>SMACOFstep()</DT>
+<DD>Performs a single iteration of a Smacof algorithm that optimizes stress and updates the <code>points</code></DD>
+<DT>run(numIter, stressFunc=SgnRelStress, eps=1e-3, progressCallback=None)</DT>
+<DD>A convenience function that performs optimization until stopping conditions are met. That is eider optimization runs for <code>numIter</code> iteration of SMACOFstep function, or the stress improvement ratio is smaller then <code>eps</code>(oldStress-newStress smaller then oldStress*eps)</DD>
+<DT>
+<h2>Examples</h2>
+<p>We are going to write a script that is similar to the functionality of the orngMDS.run method, but performs 10 steps of Smacof optimization before computing the stress. This is suitable if you have a large dataset and want to save some time.</p>
+<p>First we load the data and compute the distance matrix</p>
+<p class="header"><a href="mds1.py">mds1.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class= code>
+import orange
+import orngMDS
+import math
+data=orange.ExampleTable("../datasets/iris.tab")
+dist = orange.ExamplesDistanceConstructor_Euclidean(data)
+matrix = orange.SymMatrix(len(data))
+for i in range(len(data)):
+   for j in range(i+1):
+       matrix[i, j] = dist(data[i], data[j])
+</XMP>
+<p>Then we construct the MDS instance and perform the initial torgerson approximation, after which we update the stress matrix using the orngMDS.KruskalStress function</p>
+<XMP class= code>
+mds=orngMDS.MDS(matrix)
+mds.Torgerson()
+mds.getStress(orngMDS.KruskalStress)
+</XMP>
+<p>And finally the main optimization loop, after which we print the projected points  along with the data</p>
+<XMP class= code>
+i=0
+while 100>i:
+	i+=1
+    oldStress=mds.avgStress
+    for j in range(10): mds.SMACOFstep()
+    mds.getStress(orngMDS.KruskalStress)
+    if oldStress*1e-3 > math.fabs(oldStress-mds.avgStress):
+        break;
+for (p, e) in zip(mds.points, data):
+    print p, e
+</XMP>
+
+<h2>Stress function</h2>
+<P><code>StressFunction</code> computes the stress between two points</P>
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>__call__(correct, current, weight=1.0)</DT>
+<DD>computes the stress using the correct and the current distance value(the <code>distances</code> and <code>projectedDistances</code> elements)</DD>
+</DL>
+<p>The orngMDS module provides 4 stress functions</p>
+<p>
+<ul>
+<li>orngMDS.SgnRelStress</li>
+<li>orngMDS.KruskalStress</li>
+<li>orngMDS.SammonStress</li>
+<li>orngMDS.SgnSammonStress</li>
+</ul>
+</p>
+</body>
+</html>
+
+
