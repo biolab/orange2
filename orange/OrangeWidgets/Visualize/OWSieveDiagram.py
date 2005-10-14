@@ -1,7 +1,7 @@
 """
 <name>Sieve Diagram</name>
 <description>Sieve diagram.</description>
-<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
+<contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/SieveDiagram.png</icon>
 <priority>4100</priority>
 """

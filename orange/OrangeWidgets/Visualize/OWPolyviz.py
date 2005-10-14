@@ -1,7 +1,7 @@
 """
 <name>Polyviz</name>
 <description>Polyviz (multiattribute) visualization.</description>
-<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
+<contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/Polyviz.png</icon>
 <priority>3150</priority>
 """

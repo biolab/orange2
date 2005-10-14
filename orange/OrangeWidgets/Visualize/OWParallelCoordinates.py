@@ -1,7 +1,7 @@
 """
 <name>Parallel coordinates</name>
 <description>Parallel coordinates (multiattribute) visualization.</description>
-<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
+<contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/ParallelCoordinates.png</icon>
 <priority>3200</priority>
 """

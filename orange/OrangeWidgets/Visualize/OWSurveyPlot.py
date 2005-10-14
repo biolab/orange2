@@ -1,7 +1,7 @@
 """
 <name>Survey Plot</name>
 <description>Survey plot (multiattribute) visualization.</description>
-<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
+<contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/SurveyPlot.png</icon>
 <priority>3250</priority>
 """

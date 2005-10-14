@@ -3,7 +3,7 @@
 <description>Reads data from a file; can accept an existing domain.</description>
 <icon>icons/AdvancedFile.png</icon>
 <priority>11</priority>
-<author>Janez Demsar</author>
+<contact>Janez Demsar</contact>
 """
 
 #

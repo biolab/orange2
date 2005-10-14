@@ -1,7 +1,7 @@
 """
 <name>Distributions</name>
 <description>Displays attribute value distributions.</description>
-<author>Tomaz Curk</author>
+<contact>Tomaz Curk</contact>
 <icon>icons/Distribution.png</icon>
 <priority>100</priority>
 """

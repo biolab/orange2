@@ -1,7 +1,7 @@
 """
 <name>Lift Curve</name>
 <description>Displays a lift curve based on evaluation of classifiers.</description>
-<author>Tomaz Curk</author>
+<contact>Tomaz Curk</contact>
 <icon>LiftCurve.png</icon>
 <priority>1020</priority>
 """

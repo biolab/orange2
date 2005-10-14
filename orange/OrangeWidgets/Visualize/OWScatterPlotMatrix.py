@@ -1,7 +1,7 @@
 """
 <name>Scatterplot matrix</name>
 <description>Scatterplot matrix visualization.</description>
-<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
+<contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/ScatterPlotMatrix.png</icon>
 <priority>1100</priority>
 """

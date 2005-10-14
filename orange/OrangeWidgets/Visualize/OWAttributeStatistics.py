@@ -1,7 +1,7 @@
 """
 <name>Attribute Statistics</name>
 <description>Basic attribute statistics.</description>
-<author>Jure Zabkar</author>
+<contact>Jure Zabkar</contact>
 <icon>icons/AttributeStatistics.png</icon>
 <priority>200</priority>
 """

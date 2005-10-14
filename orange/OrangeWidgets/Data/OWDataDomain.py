@@ -3,7 +3,7 @@
 <description>Manual selection of attributes.</description>
 <icon>icons/SelectAttributes.png</icon>
 <priority>1100</priority>
-<author>Peter Juvan (peter.juvan@fri.uni-lj.si)</author>
+<contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 
 from OWTools import *

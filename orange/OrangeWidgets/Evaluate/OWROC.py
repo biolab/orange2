@@ -1,7 +1,7 @@
 """
 <name>ROC Anaylsis</name>
 <description>Displays Receiver Operating Characteristics curve based on evaluation of classifiers.</description>
-<author>Tomaz Curk</author>
+<contact>Tomaz Curk</contact>
 <icon>ROCAnalysis.png</icon>
 <priority>1010</priority>
 """

@@ -1,7 +1,7 @@
 """
 <name>Mosaic Display</name>
 <description>Shows a mosaic display.</description>
-<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
+<contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/MosaicDisplay.png</icon>
 <priority>4200</priority>
 """

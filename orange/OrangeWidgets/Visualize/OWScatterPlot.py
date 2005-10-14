@@ -1,7 +1,7 @@
 """
 <name>Scatterplot</name>
 <description>Scatterplot visualization.</description>
-<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
+<contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/ScatterPlot.png</icon>
 <priority>1000</priority>
 """

@@ -3,7 +3,7 @@
 <description>Selects instances from the data set based on conditions over attributes.</description>
 <icon>icons/SelectData.png</icon>
 <priority>1150</priority>
-<author>Peter Juvan (peter.juvan@fri.uni-lj.si)</author>
+<contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 
 import orange

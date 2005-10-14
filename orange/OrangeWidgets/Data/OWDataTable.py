@@ -3,7 +3,7 @@
 <description>Shows data in a spreadsheet.</description>
 <icon>icons/DataTable.png</icon>
 <priority>100</priority>
-<author>Peter Juvan (peter.juvan@fri.uni-lj.si)</author>
+<contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 
 # OWDataTable.py
