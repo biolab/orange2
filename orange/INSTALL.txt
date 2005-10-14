@@ -83,6 +83,9 @@ the system directories.
    See the Distutils documentation for many command-line options as to
    installation locations, etc.
 
+The setup.py script will hint you where to get the various prerequisites 
+needed by Orange and Orange Canvas: Numeric, GSL, Qt, PyQt, PyQwt, etc.
+
 
 Building and Installing Orange from Source
 ==========================================
