@@ -21,7 +21,7 @@ class OWTestLearners(OWWidget):
     stat = ( ('Classification Accuracy', 'CA', 'CA(res)'),
              ('Sensitivity', 'Sens', 'sens(cm)'),
              ('Specificity', 'Spec', 'spec(cm)'),
-             ('Area Under ROC Curve', 'AUC', 'AUCFromCDT(cdt)'),
+             ('Area Under ROC Curve', 'AUC', 'AUC(res)'),
              ('Information Score', 'IS', 'IS(res)'),
              ('Brier Score', 'Brier', 'BrierScore(res)')
            )
@@ -228,14 +228,14 @@ class OWTestLearners(OWWidget):
         if not learner: # remove a learner and corresponding results
             # print 'Remove', id
             indx = self.learners.index(self.learnDict[id])
-            if self.results: # this is to avoid crashes when the widget is removed
+            if self.results:
                 for i,r in enumerate(self.results.results):
                     del r.classes[indx]
                     del r.probabilities[indx]
                 del self.results.classifierNames[indx]
                 self.results.numberOfLearners -= 1
-            for (i, stat) in enumerate(self.stat):
-                del self.scores[i][indx]
+                for (i, stat) in enumerate(self.stat):
+                    del self.scores[i][indx]
             del self.learners[indx]
             del self.learnDict[id]
             self.setStatTable()
@@ -319,35 +319,35 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
     data = orange.ExampleTable('voting')
-    ow.cdata(data)
 
-    l1 = orange.MajorityLearner()
-    l1.name = 'Maj 1'
-    ow.learner(l1, 1)
+    l1 = orange.MajorityLearner(); l1.name = '1 - Majority'
 
     l2 = orange.BayesLearner()
-    l2.name = 'Naive Bayes (m=10)'
     l2.estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=10)
     l2.conditionalEstimatorConstructor = orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=10))
-    ow.learner(l2, 2)
+    l2.name = '2 - NBC (m=10)'
 
-    # now we resend the first learner
-    l3 = orange.BayesLearner()
-    l3.name = 'NB First'
-    ow.learner(l3, 3)
+    l3 = orange.BayesLearner(); l3.name = '3 - NBC (default)'
 
-    l1.name = 'Maj 1 updated'
-    ow.learner(l1, 1)
+    l4 = orange.MajorityLearner(); l4.name = "4 - Majority"
 
-    ow.learner(None, 2)
+    testcase = 0
 
-    l4 = orange.MajorityLearner()
-    l4.name = "Maj 2"
-    ow.learner(l4, 4)
-
-    # and now we kill the first learner    
-    # ow.learner(None, 1)    
-
+    if testcase == 0: # 1(UPD), 3, 4
+        ow.cdata(data)
+        ow.learner(l1, 1)
+        ow.learner(l2, 2)
+        ow.learner(l3, 3)
+        l1.name = l1.name + " UPD"
+        ow.learner(l1, 1)
+        ow.learner(None, 2)
+        ow.learner(l4, 4)
+    if testcase == 1: # no data, all learners removed
+        ow.learner(l1, 1)
+        ow.learner(l2, 2)
+        ow.learner(None, 1)
+        ow.learner(None, 2)
+        
     ow.show()
     a.exec_loop()
     ow.saveSettings()
