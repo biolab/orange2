@@ -136,13 +136,68 @@ class WidgetButton(QToolButton):
 
     def clicked(self):
         win = self.canvasDlg.workspace.activeWindow()
-        if (win != None and isinstance(win, orngDoc.SchemaDoc)):
+        if (win and isinstance(win, orngDoc.SchemaDoc)):
             win.addWidget(self)
         elif (isinstance(win, orngOutput.OutputWindow)):
             QMessageBox.information(self,'Orange Canvas','Unable to add widget instance to Output window. Please select a document window first.',QMessageBox.Ok)
         else:
             QMessageBox.information(self,'Orange Canvas','Unable to add widget instance. Please open a document window first.',QMessageBox.Ok)
 
+    def mouseMoveEvent(self, e):
+### - Semaphore "busy" is needed for some widgets whose loading takes more time, e.g. Select Data
+### - Computation of coordinates is awkward; somebody who knows Qt better may know how to simplify it
+### - Since the active window cannot change during dragging, we wouldn't have to remember the window; but let's leave the code in, it can't hurt
+### - if you move with the widget to the right or down, the window scrolls; if you move left or up, it doesn't
+        if hasattr(self, "busy"):
+            return
+        self.busy = 1
+        win = self.canvasDlg.workspace.activeWindow()
+        vrect = win.visibleRect()
+        tl, br = win.mapToGlobal(vrect.topLeft()), win.mapToGlobal(vrect.bottomRight())
+        wh2, ww2 = self.width()/2, self.height()/2
+        x0, y0, x1, y1 = tl.x(), tl.y(), br.x(), br.y()
+        wx, wy = e.globalX()-x0-ww2, e.globalY()-y0-wh2
+        print x0, y0
+        
+        inwindow = (wx > 0) and (wy > 0) and (wx < vrect.width()-ww2) and (wy < vrect.height()-wh2) and isinstance(win, orngDoc.SchemaDoc)
+        
+        dinwin, widget = getattr(self, "widgetDragging", (None, None))
+        if dinwin and (dinwin != win or not inwindow):
+             dinwin.removeWidget(widget)
+             delattr(self, "widgetDragging")
+             dinwin.canvasView.canvas().update()
+
+        wx += win.canvasView.contentsX()
+        wy += win.canvasView.contentsY()
+        if inwindow:
+            if not widget:
+                widget = win.addWidget(self, wx, wy)
+                self.widgetDragging = win, widget
+            else:
+                widget.setCoords(wx, wy)
+
+            import orngCanvasItems
+            items = win.canvasView.canvas().collisions(widget.rect())
+            count = win.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget)
+            if count > 1:
+                    widget.invalidPosition = TRUE
+                    widget.selected = TRUE
+            else:
+                    widget.invalidPosition = FALSE
+                    widget.selected = FALSE
+            widget.updateLineCoords()
+            win.canvasView.canvas().update()
+        delattr(self, "busy")
+
+    def mouseReleaseEvent(self, e):
+        dinwin, widget = getattr(self, "widgetDragging", (None, None))
+        if widget:
+            if widget.invalidPosition:
+                dinwin.removeWidget(widget)
+                dinwin.canvasView.canvas().update()
+            delattr(self, "widgetDragging")
+        QToolButton.mouseReleaseEvent(self, e)
+            
 class WidgetTab(QWidget):
     def __init__(self, useLargeIcons = 0, *args):
         apply(QWidget.__init__,(self,)+ args)
