@@ -1,8 +1,8 @@
 from HTMLParser import HTMLParser
 from operator import add
-import re, sys
+import re, sys, os
 
-execfile("constants.py")
+#execfile("constants.py")
 
 toCopy = ["ofb", "reference", "modules", "datasets", "style.css", "Orange.hs"]
 
@@ -238,58 +238,142 @@ def writeMapJH():
     map.write("</map>")
     map.close()
 
-import os
+def main():
+    global TOCStack, title
+    tryMk("processed")
+    for dir in toCopy:
+        copydir(dir)
 
-tryMk("processed")
-for dir in toCopy:
-    copydir(dir)
+    for dir, contname in [(".", "Index"), ("modules", "Module"), ("ofb", "Orange for Beginners"), ("reference", "Reference Guide")]:
+        tryMk("processed/"+dir)
 
-for dir, contname in [(".", "Index"), ("modules", "Module"), ("ofb", "Orange for Beginners"), ("reference", "Reference Guide")]:
-    tryMk("processed/"+dir)
+        newentry = TOCEntry(contname, dir+"/default.htm")
+        newID(dir+"/default.htm")
+        TOCStack = [TOCStack[0]]
 
-    newentry = TOCEntry(contname, dir+"/default.htm")
-    newID(dir+"/default.htm")
-    TOCStack = [TOCStack[0]]
+        for fle in file(dir+"/hhstructure.txt"):
+            level = 0
+            while fle[level] == "\t":
+                level += 1
 
-    for fle in file(dir+"/hhstructure.txt"):
-        level = 0
-        while fle[level] == "\t":
-            level += 1
+            arrow = fle.find("--->")
+            title = fle[:arrow].strip()
+            fn = fle[arrow+4:].strip()
 
-        arrow = fle.find("--->")
-        title = fle[:arrow].strip()
-        fn = fle[arrow+4:].strip()
+            dummyLink = fn[0] == "+"
+            if dummyLink:
+                fn = fn[1:]
+            filename = dir+"/"+fn
 
-        dummyLink = fn[0] == "+"
-        if dummyLink:
-            fn = fn[1:]
-        filename = dir+"/"+fn
+            newentry = TOCEntry(title, filename, dummyLink)
 
-        newentry = TOCEntry(title, filename, dummyLink)
+            if level > len(TOCStack)-1:
+                print "Error in '%s/hhstructure.txt' (invalid identation in line '%s')" % (dir, fle.strip())
+                sys.exit()
+            TOCStack = TOCStack[:level+1]
+            TOCStack[-1].subentries.append(newentry)
+            TOCStack.append(newentry)
 
-        if level > len(TOCStack)-1:
-            print "Error in '%s/hhstructure.txt' (invalid identation in line '%s')" % (dir, fle.strip())
-            sys.exit()
-        TOCStack = TOCStack[:level+1]
-        TOCStack[-1].subentries.append(newentry)
-        TOCStack.append(newentry)
+            #print "Processing %s" % filename
 
-        #print "Processing %s" % filename
+            files.append((filename, title))
+            newID(filename)
 
-        files.append((filename, title))
-        newID(filename)
+            l = removeNewlines(open(filename).read())
+            page = findIndices(l, filename, title)
 
-        l = removeNewlines(open(filename).read())
-        page = findIndices(l, filename, title)
-
-        page = addNewlines(page)
-        file("processed/%s/%s" % (dir, fn), "w").write(page)
+            page = addNewlines(page)
+            file("processed/%s/%s" % (dir, fn), "w").write(page)
 
 
-writeIndexHH()
-writeTocHH()
-writeHHP()
+    writeIndexHH()
+    writeTocHH()
+    writeHHP()
 
-writeIndexJH()
-writeTocJH()
-writeMapJH()
+    writeIndexJH()
+    writeTocJH()
+    writeMapJH()
+
+
+hhphead = """
+[OPTIONS]
+Compiled file=orange.chm
+Contents file=orange.hhc
+Default topic=./default.htm
+Display compile progress=No
+Full text search stop list file=../stop.stp
+Full-text search=Yes
+Index file=orange.hhk
+Language=0x409
+Title=Orange Documentation
+"""
+
+hhchead = """
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<!-- Sitemap 1.0 -->
+</HEAD><BODY>
+<OBJECT type="text/site properties">
+    <param name="Window Styles" value="0x801227">
+    <param name="ImageType" value="Folder">
+</OBJECT>
+<UL>
+"""
+
+hhcentry = """%(spc)s<LI><OBJECT type="text/sitemap">
+%(spc)s    <param name="Name" value="%(name)s">
+%(spc)s    <param name="Local" value="%(file)s">
+%(spc)s</OBJECT>
+"""
+
+
+hhkhead = """
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML>
+<HEAD>
+<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+<!-- Sitemap 1.0 -->
+</HEAD><BODY>
+<UL>
+"""
+
+hhkentry = """<LI><OBJECT type="text/sitemap">
+    <param name="Name" value="%s">
+"""
+
+hhksubentry = """
+    <param name="Name" value="%s">
+    <param name="Local" value="%s#HH%i">
+"""
+
+hhkendentry = "</OBJECT>\n\n"
+
+
+jh_idx = """
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+<!DOCTYPE index
+  PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp Index Version 1.0//EN" "index_1_0.dtd">
+
+<index version="1.0">
+"""
+
+jh_toc = """
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+<!DOCTYPE toc
+  PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp Index Version 1.0//EN" "toc_2_0.dtd">
+
+<toc version="1.0">
+"""
+
+jh_map = """
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+<!DOCTYPE map
+  PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp Map Version 1.0//EN"
+  "http://java.sun.com/products/javahelp/map_1_0.dtd">
+  
+<map version="1.0">
+"""
+
+main()
