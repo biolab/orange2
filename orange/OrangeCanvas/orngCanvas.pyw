@@ -5,7 +5,7 @@
 from qt import *
 import sys, os, cPickle, webbrowser
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
-import orange, user
+import orange, user, verbose
 
 TRUE  = 1
 FALSE = 0
@@ -588,6 +588,7 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.snapToGridCB.setChecked(self.snapToGrid)
         dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
+        dlg.verboseCB.setChecked(self.settings["verbose"])
 
         # set current exception settings
         #dlg.catchExceptionCB.setChecked(self.settings["catchException"])
@@ -613,13 +614,9 @@ class OrangeCanvasDlg(QMainWindow):
 
         dlg.exec_loop()
         if dlg.result() == QDialog.Accepted:
-            try:
-                h = int(str(dlg.heightEdit.text())); w = int(str(dlg.widthEdit.text()))
-            except:
-                QMessageBox.critical( None, "Orange Canvas", "Incorrect value type in 'Orange Canvas size' edit boxes. Values must be integers.", QMessageBox.Ok)
-                return
-
-            
+            h = int(str(dlg.heightEdit.text()));
+            w = int(str(dlg.widthEdit.text()))
+                        
             # save general settings
             if self.snapToGrid != dlg.snapToGridCB.isChecked():
                 self.snapToGrid = dlg.snapToGridCB.isChecked()
@@ -642,6 +639,8 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["canvasHeight"] = int(str(dlg.heightEdit.text()))
             self.settings["canvasWidth"] =  int(str(dlg.widthEdit.text()))
             self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
+            self.settings["verbose"] = dlg.verboseCB.isChecked()
+            verbose.verbose = int(self.settings["verbose"])
 
             self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
             self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
@@ -720,6 +719,8 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.has_key("showSignalNames"): self.settings["showSignalNames"] = 0
         if not self.settings.has_key("saveSchemaDir"): self.settings["saveSchemaDir"] = self.outputDir
         if not self.settings.has_key("saveApplicationDir"): self.settings["saveApplicationDir"] = self.outputDir
+        if not self.settings.has_key("verbose"): self.settings["verbose"] = 0
+        verbose.verbose = self.settings["verbose"]
                 
 
     # Saves settings to this widget's .ini file

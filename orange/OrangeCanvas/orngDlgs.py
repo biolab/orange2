@@ -472,23 +472,31 @@ class CanvasOptionsDlg(QDialog):
 
         # #################################################################
         # GENERAL TAB
-        self.snapToGridCB = QCheckBox("Snap widgets to grid", GeneralTab)
-        self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", GeneralTab)
-        self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", GeneralTab)
-        self.showSignalNamesCB = QCheckBox("Show signal names between widgets", GeneralTab)
+        generalBox = QVGroupBox(GeneralTab)
+        generalBox.setTitle("General Options")
+        self.snapToGridCB = QCheckBox("Snap widgets to grid", generalBox)
+        self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", generalBox)
+        self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", generalBox)
+        self.showSignalNamesCB = QCheckBox("Show signal names between widgets", generalBox)
+        self.verboseCB = QCheckBox("Print extra messages to output (Verbose mode)", generalBox)
+
+        validator = QIntValidator(self)
+        validator.setRange(0,10000)
 
         canvasSizeBox = QVGroupBox(GeneralTab)
         canvasSizeBox.setTitle("Default Size of Orange Canvas")
         widthBox = QHBox(canvasSizeBox)
         widthLabel = QLabel("Width:  ", widthBox)
         self.widthEdit = QLineEdit(widthBox)
-
+        self.widthEdit.setValidator(validator)
+        
         heightBox = QHBox(canvasSizeBox)
         heightLabel = QLabel("Height: ", heightBox)
         self.heightEdit = QLineEdit(heightBox)
+        self.heightEdit.setValidator(validator)
 
         colorsBox = QVGroupBox(GeneralTab)
-        colorsBox.setTitle("Set Colors")
+        colorsBox.setTitle("Set Colors For...")
 
         selectedWidgetBox = QHBox(colorsBox)
         self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)
@@ -500,7 +508,7 @@ class CanvasOptionsDlg(QDialog):
 
         lineBox = QHBox(colorsBox)
         self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
-        lineLabel = QLabel(" Line", lineBox)
+        lineLabel = QLabel(" Lines", lineBox)
         
 
         # #################################################################
