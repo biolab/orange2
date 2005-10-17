@@ -165,7 +165,7 @@ tree = lrn(data)
 
 <P>There's nothing special about using <CODE>C45Classifier</CODE> - it's just like any other. To demonstrate what the structure of <CODE>C45TreeNode</CODE>'s looks like, will show a script that prints it out in the same format as C4.5 does. (You can find the script in module orngC45).</P>
 
-<XMP class=code>
+<PRE class=code>
 def printTree0(node, classvar, lev):
     var = node.tested
 
@@ -178,7 +178,7 @@ def printTree0(node, classvar, lev):
             printTree0(node.branch[i], classvar, lev+1)
 
     elif node.nodeType == 2:
-        print ("\n"+"|    "*lev + "%s <= %.1f:") % (var.name, node.cut),
+        print ("\n"+"|    "*lev + "%s &lt;= %.1f:") % (var.name, node.cut),
         printTree0(node.branch[0], classvar, lev+1)
         print ("\n"+"|    "*lev + "%s > %.1f:") % (var.name, node.cut),
         printTree0(node.branch[1], classvar, lev+1)
@@ -197,7 +197,7 @@ def printTree0(node, classvar, lev):
 def printTree(tree):
     printTree0(tree.tree, tree.classVar, 0)
     print
-</XMP>
+</PRE>
 
 <P>Leaves are the simplest. We just print out the value contained in <CODE>node.leaf</CODE>. Since this is not a qualified value (ie., <CODE>C45TreeNode</CODE> does not know to which attribute it belongs), we need to convert it to a string through <CODE>classVar</CODE>, which is passed as an extra argument to the recursive part of <CODE>printTree</CODE>.</P>
 
