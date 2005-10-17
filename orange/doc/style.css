@@ -245,3 +245,4 @@ DL.attributes DT.notcode { font-family: }
 DL.attributes P.header { margin-bottom: 0mm; margin-top: 1em}
 P.header { margin-bottom: 0mm; margin-top: 1em}
 XMP.code { background-color: #FCD179; margin-top: 3px}
+PRE.code { background-color: #FCD179; margin-top: 3px}
