@@ -22,7 +22,7 @@ from OWTools import getHtmlCompatibleString
 ##### WIDGET : 
 ###########################################################################################
 class OWSieveDiagram(OWWidget):
-    settingsList = ["showLines", "showCases"]
+    settingsList = ["showLines", "showCases", "showInColor"]
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve diagram", TRUE)
@@ -45,6 +45,7 @@ class OWSieveDiagram(OWWidget):
         self.attrConditionValue = None
         self.showLines = 1
         self.showCases = 0
+        self.showInColor = 1
         self.attributeSelectionList = None
         self.stopCalculating = 0
 
@@ -71,7 +72,9 @@ class OWSieveDiagram(OWWidget):
 
         box2 = OWGUI.widgetBox(self.controlArea, box = " Visual Settings ")
         OWGUI.checkBox(box2, self, "showLines", "Show Lines", callback = self.updateData)
-        OWGUI.checkBox(box2, self, "showCases", "Show Data Examples", callback = self.updateData)
+        hbox = OWGUI.widgetBox(box2, orientation = "horizontal")
+        OWGUI.checkBox(hbox, self, "showCases", "Show Data Examples...", callback = self.updateData)
+        OWGUI.checkBox(hbox, self, "showInColor", "...In Color", callback = self.updateData)
         
         self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = " Interesting Attribute Pairs ")
         
@@ -409,8 +412,10 @@ class OWSieveDiagram(OWWidget):
         brush = QBrush(color); rect.setBrush(brush)
 
         if self.showCases and w > 6 and h > 6:
-            if pearson > 0: c = QColor(0,0,255)
-            else: c = QColor(255, 0,0)
+            if self.showInColor:
+                if pearson > 0: c = QColor(0,0,255)
+                else: c = QColor(255, 0,0)
+            else: c = Qt.black
             for i in range(int(actual)):
                 x1 = random.randint(x+1, x + w-4)
                 y1 = random.randint(y+1, y + h-4)
