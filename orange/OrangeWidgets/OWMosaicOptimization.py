@@ -2,6 +2,7 @@ from OWBaseWidget import *
 from OWWidget import OWWidget
 import os, orange, orngTest, time, Numeric, math, orngCI
 import OWGUI, OWVisAttrSelection, OWVisFuncts
+import random
 
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
@@ -16,15 +17,23 @@ DIFFERENCE = 1
 MAX_DIFFERENCE = 2
 GAIN_RATIO = 3
 INFORMATION_GAIN = 4
-INTERACION_GAIN = 5
+INTERACTION_GAIN = 5
+
+RELATIVE = 0
+LAPLACE = 1
+M_ESTIMATE = 2
 
 
 class MosaicOptimization(OWBaseWidget):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
-    settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "resultListLen", "percentDataUsed"]
+    settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "resultListLen", "percentDataUsed",
+                    "evaluationTimeIndex", "argumentCountIndex", "VizRankClassifierName", "mValue", "probabilityEstimationIndex"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
+    evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
+    evaluationTimeList = [str(x) for x in evaluationTimeNums]
+    argumentCounts = range(101)[1:]
     
     def __init__(self, parentWidget = None, signalManager = None):
         OWBaseWidget.__init__(self, None, signalManager, "Mosaic Optimization Dialog")
@@ -42,7 +51,11 @@ class MosaicOptimization(OWBaseWidget):
         self.attributeCount = 2
         self.optimizationType = 0
         self.percentDataUsed = 100
-
+        self.evaluationTimeIndex = 3
+        self.argumentCountIndex = 4
+        self.mValue = 2.0
+        self.probabilityEstimationIndex = 2
+        self.VizRankClassifierName = "Mosaic Classifier"
 
         self.aprioriDistribution = None
         self.lastSaveDirName = os.getcwd()
@@ -64,12 +77,12 @@ class MosaicOptimization(OWBaseWidget):
         self.SettingsTab = QVGroupBox(self)
         self.ManageTab = QVGroupBox(self)
         self.ArgumentationTab = QVGroupBox(self)
-        #self.ClassificationTab = QVGroupBox(self)
+        self.ClassificationTab = QVGroupBox(self)
         
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
         self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
-        #self.tabs.insertTab(self.ClassificationTab, "Classification")
+        self.tabs.insertTab(self.ClassificationTab, "Classification")
         self.tabs.insertTab(self.ManageTab, "Manage & Save")        
 
         # ###########################
@@ -128,6 +141,23 @@ class MosaicOptimization(OWBaseWidget):
         self.argumentList.setMinimumSize(200,200)
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
 
+        # ##########################
+        # CLASSIFICATION TAB
+        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'VizRankClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+
+        #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
+        probBox = OWGUI.widgetBox(self.ClassificationTab, box = " Probability Estimation ")
+        self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimationIndex", items = ["Relative Frequency", "Laplace", "m-Estimate"])
+
+        mValid = QDoubleValidator(self)
+        mValid.setRange(0,10000,1)
+        self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='Parameter for m-estimate:   ', orientation='horizontal', valueType = str, validator = mValid)
+
+        b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
+        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTimeIndex", "Time for evaluating projections (minutes):   ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
+        b2 = OWGUI.widgetBox(b, orientation = "horizontal")
+        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = [str(x) for x in self.argumentCounts])
 
         # ##########################
         # SAVE & MANAGE TAB
@@ -164,6 +194,7 @@ class MosaicOptimization(OWBaseWidget):
         self.resize(375,550)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
+        random.seed()
 
         
     # ##############################################################
@@ -315,6 +346,7 @@ class MosaicOptimization(OWBaseWidget):
 
         self.clearResults()
         self.disableControls()
+        self.cancelOptimization = 0
         
         hasMissingData = (len(self.data) != len(orange.Preprocessor_dropMissing(self.data)))
         if self.optimizationType == 0: maxLength = self.attributeCount; minLength = self.attributeCount
@@ -343,12 +375,12 @@ class MosaicOptimization(OWBaseWidget):
         else:
             for i in range(1, self.attributeCount): totalPossibilities += OWVisFuncts.combinationsCount(i, len(evaluatedAttrs))
 
-        for z in range(1, len(evaluatedAttrs)):
+        for z in range(len(evaluatedAttrs)):
             for u in range(minLength-1, maxLength):
                 combinations = OWVisFuncts.combinations(evaluatedAttrs[:z], u)
                 
                 for attrList in combinations:
-                    attrs = [evaluatedAttrs[z]] + attrList  
+                    attrs = [evaluatedAttrs[z]] + attrList
 
                     val = self._Evaluate(data, attrs)
 
@@ -384,7 +416,7 @@ class MosaicOptimization(OWBaseWidget):
             return orange.MeasureAttribute_gainRatio(newFeature, data)
         elif self.qualityMeasure == INFORMATION_GAIN:
             return orange.MeasureAttribute_info(newFeature, data)
-        elif self.qualityMeasure == INTERACION_GAIN:
+        elif self.qualityMeasure == INTERACTION_GAIN:
             new = orange.MeasureAttribute_info(newFeature, data)
             gains = [orange.MeasureAttribute_info(attr, data) for attr in attrs]
             return new - sum(gains)
@@ -637,18 +669,15 @@ class MosaicOptimization(OWBaseWidget):
                 
         if not example and not self.parentWidget.subsetData:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide an example that you wish to classify. \nYou can do this by sending the example to the Mosaic display widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
-            return None
+            return None, None
         if len(self.shownResults) == 0:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
-            return None
-        if self.qualityMeasure in [GAIN_RATIO, INFORMATION_GAIN]:
-            QMessageBox.information( None, "Argumentation", 'For argumentation you can not use Gain ratio or Information gain measure of projection interestingness. Please select a different measure.', QMessageBox.Ok + QMessageBox.Default)
-            return None
-
+            return None, None
+        
         data = self.getData()   # get only the examples that have one of the class values that is selected in the class value list
         if not data:
             QMessageBox.critical(None,'No data','There is no data or no class value is selected in the Manage tab.',QMessageBox.Ok)
-            return None
+            return None, None
 
         if example == None: example = self.parentWidget.subsetData[0]
         
@@ -662,49 +691,95 @@ class MosaicOptimization(OWBaseWidget):
         self.aprioriDistribution = orange.Distribution(data.domain.classVar.name, data)
         currentClassValue = self.classValueList.currentItem()
 
-        for index in range(min(len(self.shownResults), 1000)):       # use only best argumentCount projections for argumentation
+        for index in range(min(len(self.shownResults), self.argumentCounts[self.argumentCountIndex])):       # use only best argumentCount projections for argumentation
             if self.cancelArgumentation: break          # user pressed cancel
             
             qApp.processEvents()
             (accuracy, attrList, tryIndex) = self.allResults[index]
 
             attrVals = [example[attr] for attr in attrList]
-            if "?" in attrVals: continue  # the testExample has a missing value at one of the visualized attributes
+            if "?" in attrVals:
+                self.printVerbose("Missing value in attribute list %s. Projection not used in prediction." % (attrList))
+                continue  # the testExample has a missing value at one of the visualized attributes
 
             d = orange.Preprocessor_take(data, values = dict([(data.domain[attr], example[attr]) for attr in attrList]))
             
-            val, ind = self.getArguments(d, attrVals)
+            vals = self.getArguments(d)
 
-            pos = self.getArgumentIndex(val, ind)
-            self.arguments[ind].insert(pos, (val, accuracy, attrList, index))
-            if ind == currentClassValue:
-                self.argumentList.insertItem("%.2f - %s" %(val, attrList), pos)
+            for i in range(len(vals)):
+                pos = self.getArgumentIndex(vals[i], i)
+                self.arguments[i].insert(pos, (vals[i], accuracy, attrList, index))
+                if i == currentClassValue:
+                    self.argumentList.insertItem("%.3f - %s" %(vals[i], attrList), pos)
+
+        predictions = []
+        for i in range(len(self.aprioriDistribution)):
+            val = self.aprioriDistribution[i]
+            for (v, a, l, ind) in self.arguments[i]: val *= v
+            predictions.append(val)
+
+        # return a randomly selected class value
+        if sum(predictions) == 0:
+            s = "Predicted probabilities for all class values are zero. Try using a different measure for probability estimation."
+            self.setStatusBarText(s)
+            self.printVerbose(s)
+            i = random.randint(0, len(self.aprioriDistribution)-1)
+            arr = [0] * len(self.aprioriDistribution);  arr[i] = 1
+            dist = orange.DiscDistribution(arr); dist.variable = self.data.domain.classVar
+            return self.data.domain.classVar[i], dist
+
+
+        # find the most probable class value and return it with its probability
+        ind = predictions.index(max(predictions))
+        classValue = self.data.domain.classVar[ind]
+        prob = predictions[ind] / sum(predictions)
+        dist = orange.DiscDistribution([val/float(sum(predictions)) for val in predictions])
+        dist.variable = self.data.domain.classVar
 
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
         if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
 
+        s = '<nobr>Based on the projections, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (str(classValue), prob*100)
+        for key in dist.keys():
+            s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
 
-    def getArguments(self, data, attrVals):
+        if showClassification:
+            QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
+
+        """
+        if not example[example.domain.classVar.name].isSpecial() and example.getclass().value != classValue:
+            self.show()
+            QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
+            while self.isVisible():
+                qApp.processEvents()
+        """
+        
+        return (classValue, dist)
+
+    def getConditionalProbability(self, data, index, distribution = None):
+        aprioriSum = sum(self.aprioriDistribution)
+        if not distribution:
+            distribution = orange.Distribution(data.domain.classVar.name, data)
+
+        if self.probabilityEstimationIndex == RELATIVE:
+            if not (len(data) and self.aprioriDistribution[index]):
+                self.printVerbose("empty data subset. Unable to compute relative frequency.")
+                return 0.0      # prevent division by zero
+            return (distribution[index] * aprioriSum) / float(len(data) * self.aprioriDistribution[index])      # P(c_i | a_k) / P(c_i)
+        elif self.probabilityEstimationIndex == LAPLACE:
+            return ((distribution[index]+1) * aprioriSum) / float((len(data)+len(distribution)) * self.aprioriDistribution[index])      # (r+1 / n+c) / P(c_i)
+        elif self.probabilityEstimationIndex == M_ESTIMATE:
+            n = distribution[index]
+            pa = self.aprioriDistribution[index]/float(sum(self.aprioriDistribution))
+            return (pa * self.mValue + n) / float(sum(distribution) + self.mValue)       # p = (pa*m+n)/(N+m)
+            
+
+    def getArguments(self, data):
         actualDistribution = orange.Distribution(data.domain.classVar.name, data)
         aprioriSum = sum(self.aprioriDistribution)
-        arguments = []
-        
-        for i in range(len(self.aprioriDistribution)):
-            actual = actualDistribution.values()[i]
-            expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
-            if not expected or actual <= expected:
-                arguments.append(0)
-                continue
-
-            if self.qualityMeasure == CHI_SQUARE:
-                arguments.append(((actual - expected)**2)/ expected)
-            elif self.qualityMeasure == DIFFERENCE or self.qualityMeasure == MAX_DIFFERENCE:
-                arguments.append((actual-expected) * (aprioriSum/float(self.aprioriDistribution[i])))
-
-        val = max(arguments)
-        ind = arguments.index(val)
-        return (val, ind)
+        arguments = [self.getConditionalProbability(data, i, actualDistribution) for i in range(len(self.aprioriDistribution))]
+        return arguments
     
 
     def getArgumentIndex(self, value, classValue):
@@ -736,6 +811,49 @@ class MosaicOptimization(OWBaseWidget):
         classInd = self.classValueList.currentItem()
         self.showSelectedAttributes(self.arguments[classInd][ind][2])
         
+
+# #############################################################################
+# class that represents kNN classifier that classifies examples based on top evaluated projections
+class MosaicVizRankClassifier(orange.Classifier):
+    def __init__(self, VizRankDlg, data):
+        self.VizRankDlg = VizRankDlg
+
+        self.VizRankDlg.parentWidget.subsetdata(None)
+        self.VizRankDlg.parentWidget.cdata(data)
+
+        self.evaluating = 1
+        t = QTimer(self.VizRankDlg.parentWidget)
+        self.VizRankDlg.connect(t, SIGNAL("timeout()"), self.VizRankDlg.stopOptimizationClick)
+        t.start(self.VizRankDlg.evaluationTimeNums[self.VizRankDlg.evaluationTimeIndex] * 60 * 1000)
+
+        self.VizRankDlg.startProjectionEvaluation()
+        t.stop()
+        self.VizRankDlg.printVerbose("computing %d" % (len(data)))
+
+
+    # for a given example run argumentation and find out to which class it most often fall        
+    def __call__(self, example, returnType):
+        table = orange.ExampleTable(example.domain)
+        table.append(example)
+        self.VizRankDlg.parentWidget.subsetdata(table)
+                
+        classVal, prob = self.VizRankDlg.findArguments(0, 0, example)
+
+        if returnType == orange.GetBoth: return classVal, prob
+        else:                            return classVal
+        
+
+# #############################################################################
+# learner that builds VizRankClassifier
+class MosaicVizRankLearner(orange.Learner):
+    def __init__(self, VizRankDlg):
+        self.VizRankDlg = VizRankDlg
+        self.name = self.VizRankDlg.VizRankClassifierName
+        
+        
+    def __call__(self, examples, weightID = 0):
+        return MosaicVizRankClassifier(self.VizRankDlg, examples)
+
 
 
 

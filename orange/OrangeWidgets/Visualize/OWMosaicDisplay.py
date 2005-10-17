@@ -51,7 +51,7 @@ class OWMosaicDisplay(OWWidget):
         self.symbols = []   # squares for class values
         
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdata)]
-        self.outputs = []
+        self.outputs = [("Learner", orange.Learner)]
     
         #load settings
         self.interiorColoring = 0
@@ -124,6 +124,8 @@ class OWMosaicDisplay(OWWidget):
         self.activateLoadedSettings()
         self.changedInteriorColoring()
 
+        self.VizRankLearner = MosaicVizRankLearner(self.optimizationDlg)
+        self.send("Learner", self.VizRankLearner)
 
         
     ##################################################
@@ -433,7 +435,7 @@ class OWMosaicDisplay(OWWidget):
                 val = dist[values[i]]
                 if self.horizontalDistribution:
                     v = ((x1-x0)* val)/len(data)
-                    r = OWCanvasRectangle(self.canvas, x0+total, y0+1, v, y1-y0, self.colorPalette[i], self.colorPalette[i], z = -20)
+                    r = OWCanvasRectangle(self.canvas, x0+total, y0+1, v, y1-y0-2, self.colorPalette[i], self.colorPalette[i], z = -20)
 
                 else:
                     v = ((y1-y0)* val)/len(data)
@@ -452,14 +454,14 @@ class OWMosaicDisplay(OWWidget):
                         total += ((y1-y0)* originalDist[values[i]])/len(self.data)
                         self.rects.append(OWCanvasLine(self.canvas, x0+1, y0+total, x1-1, y0+total, z = 10))
 
-        if self.subsetData:
+        if self.subsetData and self.subsetData.domain == self.data.domain:
             correctBox = 1
             for i in range(len(usedAttrs)/2):
                 if self.subsetData[0][usedAttrs[2*i]] != usedAttrs[2*i+1]:
                     correctBox = 0
                     break
             if correctBox:
-                rect = OWCanvasRectangle(self.canvas, x0-3, y0-3, x1-x0+6, y1-y0+6, QColor(0,255,0), Qt.white, penWidth = 3, z=-50)
+                rect = OWCanvasRectangle(self.canvas, x0-3, y0-3, x1-x0+7, y1-y0+7, QColor(0,255,0), Qt.white, penWidth = 3, z=-50)
                 self.rects.append(rect)
 
         self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist, pearson, expected)
