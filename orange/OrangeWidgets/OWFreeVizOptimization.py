@@ -167,8 +167,8 @@ class FreeVizOptimization(OWBaseWidget):
         newAnchorData = []
         for i, t in enumerate(self.graph.anchorData):
             if t[0]**2 + t[1]**2 < rad2:
+                self.parentWidget.hiddenAttribsLB.insertItem(self.parentWidget.shownAttribsLB.pixmap(i-rem), self.parentWidget.shownAttribsLB.text(i-rem))
                 self.parentWidget.shownAttribsLB.removeItem(i-rem)
-                self.parentWidget.hiddenAttribsLB.insertItem(t[2])
                 rem += 1
             else:
                 newAnchorData.append(t)
@@ -205,17 +205,14 @@ class FreeVizOptimization(OWBaseWidget):
         ai = self.graph.attributeNameIndex
         attrs = self.parentWidget.getShownAttributeList()
         attrIndices = [ai[label] for label in attrs]
-        steps = 0
         totalSteps = 0
-        while self.cancelOptimization != 1 and nrOfSteps != totalSteps:
+        while not self.cancelOptimization and nrOfSteps != totalSteps:
             self.graph.anchorData = self.optimizationStep(attrIndices, self.graph.anchorData)
             qApp.processEvents()
-            steps += 1
             totalSteps += 1
-            if steps >= self.stepsBeforeUpdate:
+            if not totalSteps % self.stepsBeforeUpdate:
                 self.graph.updateData(attrs, 0)
                 self.graph.repaint()
-                steps = 0
 
         self.stopButton.hide()
         self.optimizeButton.show()
@@ -230,18 +227,15 @@ class FreeVizOptimization(OWBaseWidget):
         
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
         projData = Numeric.transpose(transProjData)
-        x_positions = projData[0]
-        y_positions = projData[1]
-        classData = projData[2]
+        x_positions = projData[0]; x_positions2 = Numeric.array(x_positions)
+        y_positions = projData[1]; y_positions2 = Numeric.array(y_positions)
+        classData = projData[2]  ; classData2 = Numeric.array(classData)
 
         FXs = Numeric.zeros(len(x_positions), Numeric.Float)        # forces
         FYs = Numeric.zeros(len(x_positions), Numeric.Float)
         GXs = Numeric.zeros(len(anchorData), Numeric.Float)        # gradients
         GYs = Numeric.zeros(len(anchorData), Numeric.Float)
-
-        x_positions2 = Numeric.array(x_positions)
-        y_positions2 = Numeric.array(y_positions)
-        classData2 = Numeric.array(classData)
+        
         rotateArray = range(len(x_positions)); rotateArray = rotateArray[1:] + [0]
         for i in range(len(x_positions)-1):
             x_positions2 = Numeric.take(x_positions2, rotateArray)
@@ -255,8 +249,8 @@ class FreeVizOptimization(OWBaseWidget):
             
             F = Numeric.zeros(len(x_positions), Numeric.Float)
             classDiff = Numeric.where(classData == classData2, 1, 0)
-            Numeric.putmask(F, classDiff, 100*self.attractG*rs2)
-            Numeric.putmask(F, 1-classDiff, -self.repelG/rs)
+            Numeric.putmask(F, classDiff, 150*self.attractG*rs2)
+            Numeric.putmask(F, 1-classDiff, -self.repelG/rs2)
             FXs += F * dx / rs
             FYs += F * dy / rs
 
@@ -264,9 +258,8 @@ class FreeVizOptimization(OWBaseWidget):
         GXs = Numeric.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
         GYs = Numeric.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
 
-        m = max(max(GXs), max(GYs))
+        m = max(max(abs(GXs)), max(abs(GYs)))
         GXs /= (20*m); GYs /= (20*m)
-        #print m
         
         newXAnchors = XAnchors + GXs
         newYAnchors = YAnchors + GYs
