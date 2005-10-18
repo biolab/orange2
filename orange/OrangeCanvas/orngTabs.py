@@ -157,7 +157,6 @@ class WidgetButton(QToolButton):
         wh2, ww2 = self.width()/2, self.height()/2
         x0, y0, x1, y1 = tl.x(), tl.y(), br.x(), br.y()
         wx, wy = e.globalX()-x0-ww2, e.globalY()-y0-wh2
-        print x0, y0
         
         inwindow = (wx > 0) and (wy > 0) and (wx < vrect.width()-ww2) and (wy < vrect.height()-wh2) and isinstance(win, orngDoc.SchemaDoc)
         

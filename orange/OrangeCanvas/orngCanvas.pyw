@@ -322,7 +322,6 @@ class OrangeCanvasDlg(QMainWindow):
             return
         win = self.menuItemNewSchema()
         win.loadDocument(str(name))
-        print str(name)
         self.addToRecentMenu(str(name))
 
     def menuItemClose(self):
