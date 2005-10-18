@@ -319,8 +319,10 @@ class OWBaseWidget(QDialog):
                 try:                    
                     for (value, id, nameFrom) in signalData:
                         if self.signalIsOnlySingleConnection(key):
+                            self.printVerbose("ProcessSignals: calling %s with %s" % (handler, value))
                             handler(value)
                         else:
+                            self.printVerbose("ProcessSignals: calling %s with %s (%s, %s)" % (handler, value, nameFrom, id))
                             handler(value, (widgetFrom, nameFrom, id))
                 except:
                     type, val, traceback = sys.exc_info()
@@ -401,7 +403,6 @@ class OWBaseWidget(QDialog):
         self.statusBar.message(text)
 
     def printVerbose(self, text):
-        print verbose.verbose
         verbose.printVerbose(text)
 
     # if we are in debug mode print the event into the file

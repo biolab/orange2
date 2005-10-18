@@ -6,12 +6,12 @@ import random
 
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
-
+# items in the results list
 SCORE = 0
 ATTR_LIST = 1
 TRY_INDEX = 2
 
-
+# quality measures
 CHI_SQUARE = 0
 DIFFERENCE = 1
 MAX_DIFFERENCE = 2
@@ -19,6 +19,7 @@ GAIN_RATIO = 3
 INFORMATION_GAIN = 4
 INTERACTION_GAIN = 5
 
+# conditional probability estimation
 RELATIVE = 0
 LAPLACE = 1
 M_ESTIMATE = 2
@@ -48,7 +49,7 @@ class MosaicOptimization(OWBaseWidget):
         self.attrDisc = 1
         self.qualityMeasure = 1
         self.resultListLen = 1000
-        self.attributeCount = 2
+        self.attributeCount = 1
         self.optimizationType = 0
         self.percentDataUsed = 100
         self.evaluationTimeIndex = 3
@@ -699,12 +700,15 @@ class MosaicOptimization(OWBaseWidget):
 
             attrVals = [example[attr] for attr in attrList]
             if "?" in attrVals:
-                self.printVerbose("Missing value in attribute list %s. Projection not used in prediction." % (attrList))
+                self.printVerbose("OWMosaicOptimization: Missing value in attribute list %s. Projection not used in prediction." % (attrList))
                 continue  # the testExample has a missing value at one of the visualized attributes
 
             d = orange.Preprocessor_take(data, values = dict([(data.domain[attr], example[attr]) for attr in attrList]))
             
             vals = self.getArguments(d)
+            if sum(vals) == 0:
+                self.printVerbose("OWMosaicOptimization: There is a zero probability for all class values. Skipping this argument.")
+                continue     # if there is a zero probability for all class values, than skip this argument
 
             for i in range(len(vals)):
                 pos = self.getArgumentIndex(vals[i], i)
@@ -722,7 +726,7 @@ class MosaicOptimization(OWBaseWidget):
         if sum(predictions) == 0:
             s = "Predicted probabilities for all class values are zero. Try using a different measure for probability estimation."
             self.setStatusBarText(s)
-            self.printVerbose(s)
+            self.printVerbose("OWMosaicOptimization: " + s)
             i = random.randint(0, len(self.aprioriDistribution)-1)
             arr = [0] * len(self.aprioriDistribution);  arr[i] = 1
             dist = orange.DiscDistribution(arr); dist.variable = self.data.domain.classVar
@@ -764,20 +768,20 @@ class MosaicOptimization(OWBaseWidget):
 
         if self.probabilityEstimationIndex == RELATIVE:
             if not (len(data) and self.aprioriDistribution[index]):
-                self.printVerbose("empty data subset. Unable to compute relative frequency.")
+                self.printVerbose("OWMosaicOptimization: Empty data subset. Unable to compute relative frequency.")
                 return 0.0      # prevent division by zero
-            return (distribution[index] * aprioriSum) / float(len(data) * self.aprioriDistribution[index])      # P(c_i | a_k) / P(c_i)
+            val = distribution[index] / float(len(data))      # P(c_i | a_k) / P(c_i)
         elif self.probabilityEstimationIndex == LAPLACE:
-            return ((distribution[index]+1) * aprioriSum) / float((len(data)+len(distribution)) * self.aprioriDistribution[index])      # (r+1 / n+c) / P(c_i)
+            val = (distribution[index]+1) / float(len(data)+len(distribution))      # (r+1 / n+c) / P(c_i)
         elif self.probabilityEstimationIndex == M_ESTIMATE:
             n = distribution[index]
             pa = self.aprioriDistribution[index]/float(sum(self.aprioriDistribution))
-            return (pa * self.mValue + n) / float(sum(distribution) + self.mValue)       # p = (pa*m+n)/(N+m)
-            
+            val = (pa * self.mValue + n) / float(sum(distribution) + self.mValue)       # p = (pa*m+n)/(N+m)
+        
+        return val / (self.aprioriDistribution[index] / float(aprioriSum))
 
     def getArguments(self, data):
         actualDistribution = orange.Distribution(data.domain.classVar.name, data)
-        aprioriSum = sum(self.aprioriDistribution)
         arguments = [self.getConditionalProbability(data, i, actualDistribution) for i in range(len(self.aprioriDistribution))]
         return arguments
     
@@ -828,7 +832,6 @@ class MosaicVizRankClassifier(orange.Classifier):
 
         self.VizRankDlg.startProjectionEvaluation()
         t.stop()
-        self.VizRankDlg.printVerbose("computing %d" % (len(data)))
 
 
     # for a given example run argumentation and find out to which class it most often fall        
