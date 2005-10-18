@@ -45,6 +45,7 @@ echo -n "Checkouting Orange from CVS to orange..."
 cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange orange > cvs.log 2>&1
 cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange/source source >> cvs.log 2>&1
 cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange install-scripts/linux/setup.py >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange install-scripts/linux/INSTALL.txt >> cvs.log 2>&1
 
 if [ ! $REL -eq 0 ]; then
     cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange/OrangeWidgets/Genomics Genomics >> cvs.log 2>&1
