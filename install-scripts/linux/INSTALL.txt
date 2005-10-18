@@ -1,0 +1,112 @@
+ORANGE:
+DATA MINING FRUITFUL AND FUN
+==========================================
+
+Prerequisites
+==========================================
+In order to run Orange Canvas - the visual programming front end of
+Orange - you will need to have Qt, PyQt installed. On Fedora Core 3
+these libraries can be installed by executing the following command:
+
+     yum groupinstall "KDE Software Development"
+
+
+Running Orange Canvas
+==========================================
+The system installation should create a shortcut to Orange Canvas, a
+script: 
+
+/usr/bin/orange 
+
+which is equivalent to executing the following command (the path might
+vary among Linux distributions):
+
+python /usr/lib/python2.3/site-packages/orange/OrangeCanvas/orngCanvas.pyw
+
+
+Installation Instructions
+==========================================
+Get the .tgz file. After unpacking go to the top-level
+directory.
+
+The binary distribution is prepared in Fedora Core 3. In case you need
+to recompile for your distribution of Linux, follow the instructions
+on how to compile from source. Sources are included in the binary
+distribution.
+
+Orange can be installed in two ways: locally in a user directory or in
+the system directories.
+
+1. SYSTEM INSTALLATION
+   Using Python for which you wish to install Orange, execute as
+   root:
+
+     python setup.py install
+
+   Depending on the Linux distribution you are using you should get
+   something like this:
+
+   Orange files:
+   /usr/lib/python3.2/site-packages/orange
+
+   Path file to Orange used by Python:
+   /usr/lib/python3.2/site-packages/orange/orange.pth
+
+   Documentation, data sets, etc.:
+   /usr/share/doc/orange
+
+   Links to .so files:
+   /usr/lib/
+
+   Shortcut to Orange Canvas:
+   /usr/bin/orange
+
+
+2. USER, LOCAL INSTALLATION
+
+   Using Python for which you wish to install Orange, execute as
+   normal user:
+
+     python setup.py install --orangepath=<target directory where orange directory should be created>
+
+   You should get the following structure:
+
+   Orange files:
+   <target dir>/orange/
+
+   Documentation, data sets, etc.:
+   <target dir>/doc/
+   
+   Path file to Orange used by Python:
+   orange.pth                
+
+   See the Distutils documentation for many command-line options as to
+   installation locations, etc.
+
+The setup.py script will hint you where to get the various prerequisites 
+needed by Orange and Orange Canvas: Numeric, GSL, Qt, PyQt, PyQwt, etc.
+
+
+Building and Installing Orange from Source
+==========================================
+Using Python for which you wish to install Orange, execute:
+
+     python setup.py compile
+
+Then follow the Installation Instructions (see above).
+
+
+Uninstalling Orange
+==========================================
+Depending on the type of installation you should be root or normal
+user, execute:
+
+python <DOC installation directory>/setup.py uninstall
+
+<DOC installation directory> is usually /usr/share/doc/orange, but
+might be different depending on your Linux distribution.
+
+This will remove Orange, Orange Canvas, Orange documentation and links to
+Orange libraries.
+
+  -- Jure Menart and Tomaz Curk, Oct. 13, 2005
