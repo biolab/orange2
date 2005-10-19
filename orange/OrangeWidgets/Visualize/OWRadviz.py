@@ -615,8 +615,7 @@ class OWRadviz(OWWidget):
         classVarName = self.data and self.data.domain.classVar.name
         for i in range(count-1, -1, -1):
             if addAll or self.hiddenAttribsLB.isSelected(i):
-                text = self.hiddenAttribsLB.text(i)
-                if text == classVarName: continue
+                if self.hiddenAttribsLB.text(i) == classVarName: continue
                 self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
                 self.hiddenAttribsLB.removeItem(i)
         if self.graph.globalValueScaling == 1:
@@ -809,8 +808,8 @@ class OWRadviz(OWWidget):
         newAnchorData = []
         for i, t in enumerate(self.graph.anchorData):
             if t[0]**2 + t[1]**2 < rad2:
+                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i-rem), self.shownAttribsLB.text(i-rem), self.hiddenAttribsLB.count())
                 self.shownAttribsLB.removeItem(i-rem)
-                self.hiddenAttribsLB.insertItem(t[2])
                 rem += 1
             else:
                 newAnchorData.append(t)
