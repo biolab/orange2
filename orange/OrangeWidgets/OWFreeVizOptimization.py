@@ -63,9 +63,9 @@ class FreeVizOptimization(OWBaseWidget):
         
         vbox = OWGUI.widgetBox(self.MainTab, "Set Anchor Positions")
         hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
-        OWGUI.button(hbox1, self, "Normal", callback = self.radialAnchors)
-        OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
-        self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.setManualPosition)
+        OWGUI.button(hbox1, self, "Normal", callback = self.parentWidget.radialAnchors)
+        OWGUI.button(hbox1, self, "Random", callback = self.parentWidget.randomAnchors)
+        self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.parentWidget.setManualPosition)
         self.manualPositioningButton.setToggleButton(1)
         self.lockCheckbox = OWGUI.checkBox(vbox, self, "lockToCircle", "Restrain anchors to circle", callback = self.setLockToCircle)
 
@@ -76,7 +76,7 @@ class FreeVizOptimization(OWBaseWidget):
         box = OWGUI.widgetBox(self.MainTab, "Show Anchors")
         OWGUI.checkBox(box, self, 'graph.showAnchors', 'Show attribute anchors', callback = self.parentWidget.updateGraph)
         OWGUI.qwtHSlider(box, self, "graph.hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.parentWidget.updateGraph)
-        self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attributes", callback = self.removeHidden)
+        self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attributes", callback = self.parentWidget.removeHidden)
 
         box = OWGUI.widgetBox(self.MainTab, "Differential Evolution")
         self.populationSizeEdit = OWGUI.lineEdit(box, self, "differentialEvolutionPopSize", "Population size: ", orientation = "horizontal", valueType = int)
@@ -113,9 +113,6 @@ class FreeVizOptimization(OWBaseWidget):
     # ##############################################################
     # EVENTS
     # ##############################################################
-    def setManualPosition(self):
-        self.parentWidget.graph.manualPositioning = self.manualPositioningButton.isOn()
-            
     def setData(self, data):
         self.rawdata = data
         self.s2nMixData = None
@@ -135,49 +132,6 @@ class FreeVizOptimization(OWBaseWidget):
     # ###############################################################
     ## FREE VIZ FUNCTIONS
     # ###############################################################
-    def randomAnchors(self):        
-        attrList = self.parentWidget.getShownAttributeList()
-        self.graph.anchorData = [self.ranch(a) for a in attrList]
-        if not self.lockToCircle:
-            ai = self.graph.attributeNameIndex
-            attrIndices = [ai[label] for label in attrList]
-            #self.graph.anchorData = self.optimizationStep(attrIndices, self.graph.anchorData)   # this won't do much, it's just for normalization
-        else:
-            self.graph.updateData(self.parentWidget.getShownAttributeList())
-            self.graph.repaint()
-            self.recomputeEnergy()
-        self.parentWidget.updateGraph()
-        
-
-    def ranch(self, label):            
-        r = self.lockToCircle and 1.0 or 0.3+0.7*random.random()
-        phi = 2 * math.pi * random.random()
-        return (r*math.cos(phi), r*math.sin(phi), label)
-
-    def radialAnchors(self):
-        attrList = self.parentWidget.getShownAttributeList()
-        phi = 2*math.pi/len(attrList)
-        self.graph.anchorData = [(math.cos(i*phi), math.sin(i*phi), a) for i, a in enumerate(attrList)]
-        self.graph.updateData(attrList)
-        self.graph.repaint()
-
-    def removeHidden(self):
-        rad2 = (self.graph.hideRadius/10)**2
-        rem = 0
-        newAnchorData = []
-        for i, t in enumerate(self.graph.anchorData):
-            if t[0]**2 + t[1]**2 < rad2:
-                self.parentWidget.hiddenAttribsLB.insertItem(self.parentWidget.shownAttribsLB.pixmap(i-rem), self.parentWidget.shownAttribsLB.text(i-rem))
-                self.parentWidget.shownAttribsLB.removeItem(i-rem)
-                rem += 1
-            else:
-                newAnchorData.append(t)
-        self.graph.anchorData = newAnchorData
-        attrList = [anchor[2] for anchor in newAnchorData]
-        self.graph.updateData(attrList, 0)
-        self.graph.repaint()
-        self.recomputeEnergy()
-
     def setLockToCircle(self):
         if self.lockToCircle:
             anchorData = self.graph.anchorData
