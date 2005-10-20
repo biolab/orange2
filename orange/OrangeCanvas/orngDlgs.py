@@ -363,6 +363,10 @@ class SignalDialog(QDialog):
         inConnected = self.inWidget.getInConnectedSignalNames()
         outConnected = self.outWidget.getOutConnectedSignalNames()
 
+        for i in inConnected[::-1]:
+            if not self.inWidget.instance.signalIsOnlySingleConnection(i):
+                inConnected.remove(i)
+
         """
         # rebuild registry if necessary
         print "before", inConnected
