@@ -85,6 +85,8 @@ del * /sfqyx
 
 cdd %SCRIPTDIR
 call compileDocumentation.btm
+
+cdd %SCRIPTDIR
 call updateVersionsPy__.btm
 
 popd
