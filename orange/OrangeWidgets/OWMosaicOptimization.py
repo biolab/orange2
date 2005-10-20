@@ -29,12 +29,12 @@ class MosaicOptimization(OWBaseWidget):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
     settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "resultListLen", "percentDataUsed",
-                    "evaluationTimeIndex", "argumentCountIndex", "VizRankClassifierName", "mValue", "probabilityEstimationIndex"]
+                    "evaluationTimeIndex", "argumentCount", "VizRankClassifierName", "mValue", "probabilityEstimationIndex"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
     evaluationTimeList = [str(x) for x in evaluationTimeNums]
-    argumentCounts = range(101)[1:]
+    argumentCounts = range(201)[1:]
     
     def __init__(self, parentWidget = None, signalManager = None):
         OWBaseWidget.__init__(self, None, signalManager, "Mosaic Optimization Dialog")
@@ -53,7 +53,7 @@ class MosaicOptimization(OWBaseWidget):
         self.optimizationType = 0
         self.percentDataUsed = 100
         self.evaluationTimeIndex = 3
-        self.argumentCountIndex = 4
+        self.argumentCount = 5
         self.mValue = 2.0
         self.probabilityEstimationIndex = 2
         self.VizRankClassifierName = "Mosaic Classifier"
@@ -65,7 +65,6 @@ class MosaicOptimization(OWBaseWidget):
         self.data = None
         self.evaluatedAttributes = None   # save last evaluated attributes
         self.allResults = []
-        self.shownResults = []
         self.attrLenDict = {}
         self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
         
@@ -152,13 +151,14 @@ class MosaicOptimization(OWBaseWidget):
 
         mValid = QDoubleValidator(self)
         mValid.setRange(0,10000,1)
-        self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='Parameter for m-estimate:   ', orientation='horizontal', valueType = str, validator = mValid)
+        self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='Parameter for m-estimate:   ', orientation='horizontal', valueType = float, validator = mValid)
 
         b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTimeIndex", "Time for evaluating projections (minutes):   ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
         b2 = OWGUI.widgetBox(b, orientation = "horizontal")
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = [str(x) for x in self.argumentCounts])
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts , sendSelectedValue = 1, valueType = int)
+        OWGUI.button(self.ClassificationTab, self, "Apply Changes", callback = self.resendLearner)
 
         # ##########################
         # SAVE & MANAGE TAB
@@ -177,9 +177,6 @@ class MosaicOptimization(OWBaseWidget):
         self.attrLenList.setMinimumSize(60,60)
         self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
 
-        self.buttonBox4 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.clearButton = OWGUI.button(self.buttonBox4, self, "Reevaluate visualizations", self.reevaluateProjections)
-        
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
         self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
@@ -196,7 +193,6 @@ class MosaicOptimization(OWBaseWidget):
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
         random.seed()
-
         
     # ##############################################################
     # EVENTS
@@ -216,6 +212,8 @@ class MosaicOptimization(OWBaseWidget):
     # result list must be updated accordingly
     def attrLenListChanged(self):
         # check which attribute lengths do we want to show
+        if hasattr(self, "skipUpdate"): return
+        
         self.attrLenDict = {}
         for i in range(self.attrLenList.count()):
             self.attrLenDict[int(str(self.attrLenList.text(i)))] = self.attrLenList.isSelected(i)
@@ -236,8 +234,7 @@ class MosaicOptimization(OWBaseWidget):
         self.finishedAddingResults()
 
     def clearResults(self):
-        del self.allResults; self.allResults = []
-        del self.shownResults; self.shownResults = []
+        self.allResults = []
         self.resultList.clear()
         self.attrLenDict = {}
         self.attrLenList.clear()
@@ -254,22 +251,15 @@ class MosaicOptimization(OWBaseWidget):
 
     def updateShownProjections(self, *args):
         self.resultList.clear()
-        self.shownResults = []
-        i = 0
-        qApp.setOverrideCursor(QWidget.waitCursor)
 
-        while self.resultList.count() < self.resultListLen and i < len(self.allResults):
+        for i in range(len(self.allResults)):
             if self.attrLenDict.has_key(len(self.allResults[i][ATTR_LIST])) and self.attrLenDict[len(self.allResults[i][ATTR_LIST])] == 1:
                 string = ""
                 if self.showRank: string += str(i+1) + ". "
                 if self.showScore: string += "%.2f : " % (self.allResults[i][SCORE])
                 string += self.buildAttrString(self.allResults[i][ATTR_LIST])
-                
                 self.resultList.insertItem(string)
-                self.shownResults.append(self.allResults[i])
-            i+=1
         qApp.processEvents()
-        qApp.restoreOverrideCursor()
         
         if self.resultList.count() > 0: self.resultList.setCurrentItem(0)        
 
@@ -374,7 +364,7 @@ class MosaicOptimization(OWBaseWidget):
         triedPossibilities = 0; totalPossibilities = 0
         if self.optimizationType == 0: totalPossibilities = OWVisFuncts.combinationsCount(self.attributeCount, len(evaluatedAttrs))
         else:
-            for i in range(1, self.attributeCount): totalPossibilities += OWVisFuncts.combinationsCount(i, len(evaluatedAttrs))
+            for i in range(1, self.attributeCount+1): totalPossibilities += OWVisFuncts.combinationsCount(i, len(evaluatedAttrs))
 
         for z in range(len(evaluatedAttrs)):
             for u in range(minLength-1, maxLength):
@@ -391,6 +381,7 @@ class MosaicOptimization(OWBaseWidget):
                         self.parentWidget.progressBarFinished()
                         self.finishedAddingResults()
                         self.enableControls()
+                        del data, evaluatedAttrs
                         return
 
                     self.addResult(val, attrs, triedPossibilities)
@@ -398,7 +389,7 @@ class MosaicOptimization(OWBaseWidget):
                     triedPossibilities += 1
                     qApp.processEvents()        # allow processing of other events
                             
-                    self.parentWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
+                    if totalPossibilities: self.parentWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
                     self.setStatusBarText("Evaluated %s visualizations..." % (OWVisFuncts.createStringFromNumber(triedPossibilities)))
 
                 del combinations
@@ -408,35 +399,37 @@ class MosaicOptimization(OWBaseWidget):
         self.parentWidget.progressBarFinished()
         self.finishedAddingResults()
         self.enableControls()
+        del data, evaluatedAttrs
 
 
     def _Evaluate(self, data, attrs):
         newFeature, quality = orngCI.FeatureByCartesianProduct(data, attrs)
         
         if self.qualityMeasure == GAIN_RATIO:
-            return orange.MeasureAttribute_gainRatio(newFeature, data)
+            retVal = orange.MeasureAttribute_gainRatio(newFeature, data)
         elif self.qualityMeasure == INFORMATION_GAIN:
-            return orange.MeasureAttribute_info(newFeature, data)
+            retVal = orange.MeasureAttribute_info(newFeature, data)
         elif self.qualityMeasure == INTERACTION_GAIN:
             new = orange.MeasureAttribute_info(newFeature, data)
             gains = [orange.MeasureAttribute_info(attr, data) for attr in attrs]
-            return new - sum(gains)
+            retVal = new - sum(gains)
         else:
             aprioriSum = sum(self.aprioriDistribution)
-            val = 0.0
+            retVal = 0.0
 
             for dist in orange.ContingencyAttrClass(newFeature, data):
                 for i in range(len(self.aprioriDistribution)):
                     expected = float(len(data) * self.aprioriDistribution.values()[i]) / float(aprioriSum)
                     
                     if self.qualityMeasure == CHI_SQUARE and expected:
-                        val += (dist[i] - expected)**2 / expected
+                        retVal += (dist[i] - expected)**2 / expected
                     elif self.qualityMeasure == DIFFERENCE:
-                        val += abs(expected-dist[i])
+                        retVal += abs(expected-dist[i])
                     elif self.qualityMeasure == MAX_DIFFERENCE:
-                        val = max(val, abs(expected-dist[i]))
-
-            return val
+                        retVal = max(retVal, abs(expected-dist[i]))
+        del newFeature
+        return retVal
+    
 
     def getProjectionQuality(self, data, attrList):
         if not self.aprioriDistribution:
@@ -444,40 +437,7 @@ class MosaicOptimization(OWBaseWidget):
 
         return self._Evaluate(data, attrList)
 
-    # reevaluate projections in the list using the current settings
-    def reevaluateProjections(self):
-        results = self.shownResults
-        self.clearResults()
-
-        self.parentWidget.progressBarInit()
-        self.disableControls()
-
-        if self.percentDataUsed != 100:
-            indices = orange.MakeRandomIndices2(self.data, 1.0-float(self.percentDataUsed)/100.0)
-            data = self.data.select(indices)
-        else: data = self.data
-
-        self.aprioriDistribution = orange.Distribution(data.domain.classVar.name, data)
-
-        testIndex = 0
-        strTotal = OWVisFuncts.createStringFromNumber(len(results))
-        for (score, attrList, tryIndex) in results:
-            if self.isOptimizationCanceled(): break
-            testIndex += 1
-            self.parentWidget.progressBarSet(100.0*testIndex/float(len(results)))
-
-            newScore = self.getProjectionQuality(data, attrList)
-
-            self.addResult(newScore, attrList, testIndex)
-            self.setStatusBarText("Reevaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(testIndex), strTotal))
-
-        self.setStatusBarText("")
-        self.parentWidget.progressBarFinished()
-        self.enableControls()
-        self.finishedAddingResults()
-    
-    
-    
+   
     def addResult(self, score, attrList, tryIndex):
         self.insertItem(score, attrList, self.findTargetIndex(score, max), tryIndex)
         qApp.processEvents()        # allow processing of other events
@@ -500,37 +460,30 @@ class MosaicOptimization(OWBaseWidget):
     # insert new result - give parameters: score of projection, number of examples in projection and list of attributes.
     # parameter attrReverseList can be a list used by polyviz
     def insertItem(self, score, attrList, index, tryIndex):
-        if index < self.maxResultListLen:
-            self.allResults.insert(index, (score, attrList, tryIndex))
-        if index < self.resultListLen:
-            string = ""
-            if self.showRank: string += str(index+1) + ". "
-            if self.showScore: string += "%.2f : " % (score)
+        self.allResults.insert(index, (score, attrList, tryIndex))
+        string = ""
+        if self.showRank: string += str(index+1) + ". "
+        if self.showScore: string += "%.2f : " % (score)
 
-            string += self.buildAttrString(attrList)
+        string += self.buildAttrString(attrList)
 
-            self.resultList.insertItem(string, index)
-            self.shownResults.insert(index, (score, attrList, tryIndex))
+        self.resultList.insertItem(string, index)
 
-        # remove worst projection if list is too long
-        if self.resultList.count() > self.resultListLen:
-            self.resultList.removeItem(self.resultList.count()-1)
-            self.shownResults.pop()
-    
+   
     def finishedAddingResults(self):
         self.cancelOptimization = 0
+        self.skipUpdate = 1
+        
+        self.attrLenDict = dict([(i,1) for i in range(self.attributeCount+1)])
         
         self.attrLenList.clear()
-        self.attrLenDict = {}
-        for i in range(len(self.allResults)):
-            self.attrLenDict[len(self.allResults[i][ATTR_LIST])] = 1
-
         for i in range(1,5):
             if self.attrLenDict.has_key(i):
                 self.attrLenList.insertItem(str(i))
 
         self.attrLenList.selectAll(1)
-        self.resultList.setCurrentItem(0)
+        #self.resultList.setCurrentItem(0)
+        delattr(self, "skipUpdate")
 
    
     # ##############################################################
@@ -567,11 +520,11 @@ class MosaicOptimization(OWBaseWidget):
         file = open(name, "wt")        
         file.write("%s\n" % (str(dict)))
         file.write("%s\n" % str(self.selectedClasses))
-        for (score, attrList, tryIndex) in self.shownResults:
+        for (score, attrList, tryIndex) in self.allResults:
             file.write("(%.3f, %s, %d\n" % (score, attrList, tryIndex))
         file.flush()
         file.close()
-        self.setStatusBarText("Saved %d visualizations" % (len(self.shownResults)))
+        self.setStatusBarText("Saved %d visualizations" % (len(self.allResults)))
 
 
     # load projections from a file
@@ -643,7 +596,7 @@ class MosaicOptimization(OWBaseWidget):
 
     def getSelectedProjection(self):
         if self.resultList.count() == 0: return None
-        return self.shownResults[self.resultList.currentItem()]
+        return self.allResults[self.resultList.currentItem()]
 
     def stopOptimizationClick(self):
         self.cancelOptimization = 1
@@ -671,7 +624,7 @@ class MosaicOptimization(OWBaseWidget):
         if not example and not self.parentWidget.subsetData:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide an example that you wish to classify. \nYou can do this by sending the example to the Mosaic display widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return None, None
-        if len(self.shownResults) == 0:
+        if len(self.allResults) == 0:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
             return None, None
         
@@ -691,9 +644,11 @@ class MosaicOptimization(OWBaseWidget):
 
         self.aprioriDistribution = orange.Distribution(data.domain.classVar.name, data)
         currentClassValue = self.classValueList.currentItem()
+        argumentsUsed = 0
 
-        for index in range(min(len(self.shownResults), self.argumentCounts[self.argumentCountIndex])):       # use only best argumentCount projections for argumentation
+        for index in range(len(self.allResults)):
             if self.cancelArgumentation: break          # user pressed cancel
+            if argumentsUsed >= self.argumentCount: break     # we have enough arguments. we stop.
             
             qApp.processEvents()
             (accuracy, attrList, tryIndex) = self.allResults[index]
@@ -704,17 +659,18 @@ class MosaicOptimization(OWBaseWidget):
                 continue  # the testExample has a missing value at one of the visualized attributes
 
             d = orange.Preprocessor_take(data, values = dict([(data.domain[attr], example[attr]) for attr in attrList]))
+            if not d or len(d) == 0: continue
             
             vals = self.getArguments(d)
             if sum(vals) == 0:
                 self.printVerbose("OWMosaicOptimization: There is a zero probability for all class values. Skipping this argument.")
-                continue     # if there is a zero probability for all class values, than skip this argument
+                continue     # if there is a zero probability for all class values, then skip this argument
 
             for i in range(len(vals)):
                 pos = self.getArgumentIndex(vals[i], i)
                 self.arguments[i].insert(pos, (vals[i], accuracy, attrList, index))
-                if i == currentClassValue:
-                    self.argumentList.insertItem("%.3f - %s" %(vals[i], attrList), pos)
+                if i == currentClassValue:  self.argumentList.insertItem("%.3f - %s" %(vals[i], attrList), pos)
+            argumentsUsed += 1
 
         predictions = []
         for i in range(len(self.aprioriDistribution)):
@@ -742,7 +698,7 @@ class MosaicOptimization(OWBaseWidget):
 
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
-        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
+        #if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
 
         s = '<nobr>Based on the projections, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (str(classValue), prob*100)
         for key in dist.keys():
@@ -814,7 +770,10 @@ class MosaicOptimization(OWBaseWidget):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
         self.showSelectedAttributes(self.arguments[classInd][ind][2])
-        
+
+
+    def resendLearner(self):
+        self.parentWidget.send("Learner", self.parentWidget.VizRankLearner)
 
 # #############################################################################
 # class that represents kNN classifier that classifies examples based on top evaluated projections
@@ -856,8 +815,6 @@ class MosaicVizRankLearner(orange.Learner):
         
     def __call__(self, examples, weightID = 0):
         return MosaicVizRankClassifier(self.VizRankDlg, examples)
-
-
 
 
 #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\jure\klopi_zeimelLB.tab")
