@@ -63,9 +63,9 @@ class FreeVizOptimization(OWBaseWidget):
         
         vbox = OWGUI.widgetBox(self.MainTab, "Set Anchor Positions")
         hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
-        OWGUI.button(hbox1, self, "Normal", callback = self.parentWidget.radialAnchors)
-        OWGUI.button(hbox1, self, "Random", callback = self.parentWidget.randomAnchors)
-        self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.parentWidget.setManualPosition)
+        OWGUI.button(hbox1, self, "Normal", callback = self.radialAnchors)
+        OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
+        self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.setManualPosition)
         self.manualPositioningButton.setToggleButton(1)
         self.lockCheckbox = OWGUI.checkBox(vbox, self, "lockToCircle", "Restrain anchors to circle", callback = self.setLockToCircle)
 
@@ -76,7 +76,7 @@ class FreeVizOptimization(OWBaseWidget):
         box = OWGUI.widgetBox(self.MainTab, "Show Anchors")
         OWGUI.checkBox(box, self, 'graph.showAnchors', 'Show attribute anchors', callback = self.parentWidget.updateGraph)
         OWGUI.qwtHSlider(box, self, "graph.hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.parentWidget.updateGraph)
-        self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attributes", callback = self.parentWidget.removeHidden)
+        self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attributes", callback = self.removeHidden)
 
         box = OWGUI.widgetBox(self.MainTab, "Differential Evolution")
         self.populationSizeEdit = OWGUI.lineEdit(box, self, "differentialEvolutionPopSize", "Population size: ", orientation = "horizontal", valueType = int)
@@ -113,6 +113,9 @@ class FreeVizOptimization(OWBaseWidget):
     # ##############################################################
     # EVENTS
     # ##############################################################
+    def setManualPosition(self):
+        self.parentWidget.graph.manualPositioning = self.manualPositioningButton.isOn()
+            
     def setData(self, data):
         self.rawdata = data
         self.s2nMixData = None
@@ -132,6 +135,49 @@ class FreeVizOptimization(OWBaseWidget):
     # ###############################################################
     ## FREE VIZ FUNCTIONS
     # ###############################################################
+    def randomAnchors(self):        
+        attrList = self.parentWidget.getShownAttributeList()
+        self.graph.anchorData = [self.ranch(a) for a in attrList]
+        if not self.lockToCircle:
+            ai = self.graph.attributeNameIndex
+            attrIndices = [ai[label] for label in attrList]
+            #self.graph.anchorData = self.optimizationStep(attrIndices, self.graph.anchorData)   # this won't do much, it's just for normalization
+        else:
+            self.graph.updateData(self.parentWidget.getShownAttributeList())
+            self.graph.repaint()
+            self.recomputeEnergy()
+        self.parentWidget.updateGraph()
+        
+
+    def ranch(self, label):            
+        r = self.lockToCircle and 1.0 or 0.3+0.7*random.random()
+        phi = 2 * math.pi * random.random()
+        return (r*math.cos(phi), r*math.sin(phi), label)
+
+    def radialAnchors(self):
+        attrList = self.parentWidget.getShownAttributeList()
+        phi = 2*math.pi/len(attrList)
+        self.graph.anchorData = [(math.cos(i*phi), math.sin(i*phi), a) for i, a in enumerate(attrList)]
+        self.graph.updateData(attrList)
+        self.graph.repaint()
+
+    def removeHidden(self):
+        rad2 = (self.graph.hideRadius/10)**2
+        rem = 0
+        newAnchorData = []
+        for i, t in enumerate(self.graph.anchorData):
+            if t[0]**2 + t[1]**2 < rad2:
+                self.parentWidget.hiddenAttribsLB.insertItem(self.parentWidget.shownAttribsLB.pixmap(i-rem), self.parentWidget.shownAttribsLB.text(i-rem))
+                self.parentWidget.shownAttribsLB.removeItem(i-rem)
+                rem += 1
+            else:
+                newAnchorData.append(t)
+        self.graph.anchorData = newAnchorData
+        attrList = [anchor[2] for anchor in newAnchorData]
+        self.graph.updateData(attrList, 0)
+        self.graph.repaint()
+        self.recomputeEnergy()
+
     def setLockToCircle(self):
         if self.lockToCircle:
             anchorData = self.graph.anchorData
@@ -155,13 +201,17 @@ class FreeVizOptimization(OWBaseWidget):
         self.optimizeButton.hide()
         self.stopButton.show()
         self.cancelOptimization = 0
+        XAnchors = None; YAnchors = None
 
         ai = self.graph.attributeNameIndex
         attrs = self.parentWidget.getShownAttributeList()
         attrIndices = [ai[label] for label in attrs]
         totalSteps = 0
+
+        self.graph.anchorData, (XAnchors, YAnchors) = self.optimizationStepLeban(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
+
         while not self.cancelOptimization and nrOfSteps != totalSteps:
-            self.graph.anchorData = self.optimizationStep(attrIndices, self.graph.anchorData)
+            self.graph.anchorData, (XAnchors, YAnchors) = self.optimizationStepLeban(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
             qApp.processEvents()
             totalSteps += 1
             if not totalSteps % self.stepsBeforeUpdate:
@@ -170,14 +220,110 @@ class FreeVizOptimization(OWBaseWidget):
 
         self.stopButton.hide()
         self.optimizeButton.show()
+
+    def optimizationStepLeban(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
+        dataSize = len(self.rawdata)
+        classCount = len(self.parentWidget.data.domain.classVar.values)
+        validData = self.graph.getValidList(attrIndices)
+        selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
+
+        if not XAnchors: XAnchors = Numeric.array([a[0] for a in anchorData], Numeric.Float)
+        if not YAnchors: YAnchors = Numeric.array([a[1] for a in anchorData], Numeric.Float)
+        
+        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
+        projData = Numeric.transpose(transProjData)
+        x_positions = projData[0]; y_positions = projData[1]
+        classData = projData[2]
+
+        averages = []
+        for i in range(classCount):
+            ind = classData == i
+            xpos = Numeric.compress(ind, x_positions);  ypos = Numeric.compress(ind, y_positions)
+            xave = Numeric.sum(xpos)/len(xpos);         yave = Numeric.sum(ypos)/len(ypos)
+            averages.append((xave, yave))
+
+        # compute the positions of all the points. we will try to move all points so that the center will be in the (0,0)
+        xCenterVector = -Numeric.sum(x_positions) / len(x_positions)   
+        yCenterVector = -Numeric.sum(y_positions) / len(y_positions)
+        centerVectorLength = math.sqrt(xCenterVector*xCenterVector + yCenterVector*yCenterVector)
+
+        meanDestinationVectors = []
+        
+        for i in range(classCount):
+            xDir = 0.0; yDir = 0.0; rs = 0.0
+            for j in range(classCount):
+                if i==j: continue
+                r = math.sqrt((averages[i][0] - averages[j][0])**2 + (averages[i][1] - averages[j][1])**2)
+                if r == 0.0:
+                    xDir += math.cos((i/float(classCount))*2*math.pi)
+                    yDir += math.sin((i/float(classCount))*2*math.pi)
+                    r = 0.0001
+                else:
+                    xDir += (1/r**3) * ((averages[i][0] - averages[j][0]))
+                    yDir += (1/r**3) * ((averages[i][1] - averages[j][1]))
+                #rs += 1/r
+            #actualDirAmpl = math.sqrt(xDir**2 + yDir**2)
+            #s = abs(xDir)+abs(yDir)
+            #xDir = rs * (xDir/s)
+            #yDir = rs * (yDir/s)
+            meanDestinationVectors.append((xDir, yDir))
             
-    def optimizationStep(self, attrIndices, anchorData):
+
+        maxLength = math.sqrt(max([x**2 + y**2 for (x,y) in meanDestinationVectors]))
+        meanDestinationVectors = [(x/(2*maxLength), y/(2*maxLength)) for (x,y) in meanDestinationVectors]     # normalize destination vectors to some normal values
+        meanDestinationVectors = [(meanDestinationVectors[i][0]+averages[i][0], meanDestinationVectors[i][1]+averages[i][1]) for i in range(len(meanDestinationVectors))]    # add destination vectors to the class averages
+        #meanDestinationVectors = [(x + xCenterVector/5, y + yCenterVector/5) for (x,y) in meanDestinationVectors]   # center mean values
+        meanDestinationVectors = [(x + xCenterVector, y + yCenterVector) for (x,y) in meanDestinationVectors]   # center mean values
+        #print meanDestinationVectors
+
+        FXs = Numeric.zeros(len(x_positions), Numeric.Float)        # forces
+        FYs = Numeric.zeros(len(x_positions), Numeric.Float)
+        
+        for c in range(classCount):
+            ind = (classData == c)
+            Numeric.putmask(FXs, ind, meanDestinationVectors[c][0] - x_positions)
+            Numeric.putmask(FYs, ind, meanDestinationVectors[c][1] - y_positions)
+            
+        # compute gradient for all anchors
+        GXs = Numeric.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
+        GYs = Numeric.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
+
+        m = max(max(abs(GXs)), max(abs(GYs)))
+        GXs /= (20*m); GYs /= (20*m)
+        
+        newXAnchors = XAnchors + GXs
+        newYAnchors = YAnchors + GYs
+
+        # normalize so that the anchor most far away will lie on the circle        
+        m = math.sqrt(max(newXAnchors**2 + newYAnchors**2))
+        newXAnchors /= m
+        newYAnchors /= m
+
+        self.parentWidget.updateGraph()
+
+        """
+        for a in range(len(anchorData)):
+            x = anchorData[a][0]; y = anchorData[a][1]; 
+            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x, x+GXs[a]], yData = [y, y+GYs[a]], forceFilledSymbols = 1, lineWidth=3)
+        
+        for i in range(classCount):
+            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [averages[i][0], meanDestinationVectors[i][0]], yData = [averages[i][1], meanDestinationVectors[i][1]], forceFilledSymbols = 1, lineWidth=3)
+            self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtCurve.Lines, xData = [averages[i][0], averages[i][0]], yData = [averages[i][1], averages[i][1]], forceFilledSymbols = 1, lineWidth=5)
+        """
+        #self.parentWidget.graph.repaint()
+        #self.graph.anchorData = [(newXAnchors[i], newYAnchors[i], anchorData[i][2]) for i in range(len(anchorData))]
+        #self.graph.updateData(attrs, 0)
+        return [(newXAnchors[i], newYAnchors[i], anchorData[i][2]) for i in range(len(anchorData))], (newXAnchors, newYAnchors)
+
+        
+            
+    def optimizationStepJanez(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
         dataSize = len(self.rawdata)
         validData = self.graph.getValidList(attrIndices)
         selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
 
-        XAnchors = Numeric.array([a[0] for a in anchorData], Numeric.Float)
-        YAnchors = Numeric.array([a[1] for a in anchorData], Numeric.Float)
+        if not XAnchors: XAnchors = Numeric.array([a[0] for a in anchorData], Numeric.Float)
+        if not YAnchors: YAnchors = Numeric.array([a[1] for a in anchorData], Numeric.Float)
         
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
         projData = Numeric.transpose(transProjData)
@@ -222,8 +368,9 @@ class FreeVizOptimization(OWBaseWidget):
         m = math.sqrt(max(newXAnchors**2 + newYAnchors**2))
         newXAnchors /= m
         newYAnchors /= m
-        return [(newXAnchors[i], newYAnchors[i], anchorData[i][2]) for i in range(len(anchorData))]
-        
+        return [(newXAnchors[i], newYAnchors[i], anchorData[i][2]) for i in range(len(anchorData))], (newXAnchors, newYAnchors)
+
+    
     def stopOptimization(self):
         self.cancelOptimization = 1
 
