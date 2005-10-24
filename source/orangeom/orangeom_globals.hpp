@@ -22,8 +22,8 @@
     #define EXPIMP_TEMPLATE
 #endif
 
-#define OMWRAPPER(x) BASIC_WRAPPER(x, ORANGENE_API)
-#define OMVWRAPPER(x) BASIC_VWRAPPER(x, ORANGENE_API)
+#define OMWRAPPER(x) BASIC_WRAPPER(x, ORANGEOM_API)
+#define OMVWRAPPER(x) BASIC_VWRAPPER(x, ORANGEOM_API)
 
 
 #include "../pyxtract/pyxtract_macros.hpp"
