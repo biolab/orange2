@@ -10,20 +10,20 @@
 
 <H2>A simple example: Exporting function(s)</H2>
 
-<P>If you think about developing your own extensions for Orange, you'll need Orange sources. Besides headers, you will certainly need the C files to steal parts of the code from. So download it if you don't already have it. The example shown in this section is in directory orange/orangeom, files triangulate.cpp and orangeom.cpp.</P>
+<P>If you plan to develop your own extensions for Orange, you'll need the Orange sources. Besides headers, you will certainly need the C files for stealing parts of the code from them. So download them if you haven't already done so. The example shown in this section is from directory orange/orangeom, files triangulate.cpp and orangeom.cpp.</P>
 
-<P>We also assume that you have at least a vague idea of how Python's extensions in C++ look like. If you don't, read the Python documentation on this first; don't be afraid, it is fairly easy.</P>
+<P>We also assume that you have at least a vague idea about the Python API. If you don't, read the Python documentation first. Don't be afraid, API is fairly simple and very nicely organized.</P>
 
 <P>We shall write a function that gets examples, indices/names/descriptors of two attributes and the number edge types (see documentation on <A href="graph.htm">graphs</A>). The two attributes need to be discrete; the function treats the values of these two attributes for each example as a point in a plane and computes the Delaunay triangulation, which is returned as <CODE>orange.Graph</CODE>.</P>
 
-<P>The function should begin like this:</P>
+<P>The function should be declared like this:</P>
 <XMP class="code">
 PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(examples[, attr1, attr2, nEdgeTypes]) -> Graph")
 </XMP>
 
-<P>Despite of what your browser may show this: this should be written in a single line. Function arguments and result are like for any Python function, while the macro PYARGS marks the function for export to Python. Later you'll see how this is done.</P>
+<P>This all should be written in a single line. Function arguments and result are like for any Python function (as you have learned while reading Python's documentation), while the macro PYARGS marks the function for export to Python. The macro is dummy and serves only as a marker. The first argument tells Python about the types of arguments (again, you've seen the constant METH_VARARGS in Python's docs), and the second string describes the functions arguments and/or what the function does.</P>
 
-<P>We shall close the function in <CODE>PyTRY</CODE> - <CODE>PyCATCH</CODE> block. This catches any C++ exceptions that Orange might throw and turns them into Python error messages. You should do this with any function that calls Orange.</P>
+<P>We shall close the function in <CODE>PyTRY</CODE> - <CODE>PyCATCH</CODE> block. This catches any C++ exceptions that Orange might throw and turns them into Python error messages. You should do this with any your function that calls orange's functions to be sure that you catch anything that's thrown from in there.</P>
 <XMP class=code>
 {
   PyTRY
@@ -32,7 +32,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
 }
 </XMP>
 
-<P>First we need to get the arguments and check their types.</P>
+<P>Now for the real code. First we need to get the arguments and check their types.</P>
 <XMP class=code>
     PExampleGenerator egen;
     int nEdgeTypes = 1;
@@ -44,17 +44,17 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
       return NULL;
 
     if (  (egen->domain->attributes->at(attr1)->varType != TValue::FLOATVAR)
-	     || (egen->domain->attributes->at(attr2)->varType != TValue::FLOATVAR))
+         || (egen->domain->attributes->at(attr2)->varType != TValue::FLOATVAR))
       PYERROR(PyExc_TypeError, "triangulate expects continuous attributes", NULL);
 </XMP>
 
-<P>For the arguments of <CODE>PyArg_ParseTuple</CODE> see the corresponding Python documentation. Here we accept one to four arguments. The first is a table of examples, which get converted to <CODE>PExampleGenerator</CODE> by a converter function <CODE>pt_ExampleGenerator</CODE>. The next two are read as Python objects and can be, as far as <CODE>PyArg_ParseTuple</CODE> is concerned, of any type. The last argument is an integer.</P> 
+<P>For the arguments of <CODE>PyArg_ParseTuple</CODE> see the corresponding Python documentation. Here we accept from one to four arguments. The first is a table of examples, which gets converted to <CODE>PExampleGenerator</CODE> by a converter function <CODE>pt_ExampleGenerator</CODE>. The next two are read as Python objects and can be, as far as <CODE>PyArg_ParseTuple</CODE> is concerned, of any type. The last argument is an integer.</P>
 
-<P>We use Orange's function <CODE>varNumFromVarDom</CODE> to convert what the user passed as an attribute to an attribute index. If this is already an integer, it is returned as such; otherwise the example table's domain (<CODE>egen->domain</CODE>) is used to convert a name or an attribute descriptor to an integer index. There are many similar utility functions, but to find them you will need to browse the Orange's code and see how Orange does it. No documentation is provided.</P>
+<P>We use Orange's function <CODE>varNumFromVarDom</CODE> to convert what the user passed as an attribute to an attribute index. (This function is not documented anywhere, but you can discover such functions by looking at the orange's functions that do similar things as the function you plan to write.) If the argument is already an integer, it is returned as such; otherwise the example table's domain (<CODE>egen->domain</CODE>) is used to convert a name or an attribute descriptor to an integer index.</P>
 
-<P>We then check the attribute type and complain if they are not continuous. Macro <CODE>PYERROR</CODE>, defined in Orange, is used to set the error type (<CODE>PyExc_TypeError</CODE>) and message, and to send the corresponding result (in Python <CODE>NULL</CODE> always signifies an error).</P>
+<P>We then check the attribute's type and complain if they are not continuous. Macro <CODE>PYERROR</CODE>, defined in Orange, is used to set the error type (<CODE>PyExc_TypeError</CODE>) and message, and to send the corresponding result (in Python <CODE>NULL</CODE> always signifies an error).</P>
 
-<P>Now for the real work. For actual triangulation we shall use Wml, which expects the arguments in a structure <CODE>Vector2&lt;float&gt;</CODE>.</P>
+<P>For the actual triangulation we shall use Wml, which expects the arguments in a structure <CODE>Vector2&lt;float&gt;</CODE>.</P>
 
 <XMP class=code>
     const int nofex = egen->numberOfExamples();
@@ -75,7 +75,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
     delete adjacent;
 </XMP>
 
-<P>We have used a macro <CODE>PEITERATE(ei, egen)</CODE> for iteration across the example table, where <CODE>egen</CODE> is an example generator and <CODE>ei</CODE> is an iterator (declared inside the macro itself). If we wanted, we could use an equivalent <CODE>for</CODE> loop: <CODE>for(TExampleIterator ei(egen->begin()); ei; ++ei)</CODE>. Of the two results computed by <CODE>Delaunay2a&lt;float&gt;</CODE>, we immediately discard <CODE>adjacent</CODE>, while from <CODE>triangles</CODE> we shall construct the graph.</P>
+<P>We have used a macro <CODE>PEITERATE(ei, egen)</CODE> for iteration across the example table, where <CODE>egen</CODE> is an example generator and <CODE>ei</CODE> is an iterator (declared by the macro). If we wanted, we could use an equivalent <CODE>for</CODE> loop: <CODE>for(TExampleIterator ei(egen->begin()); ei; ++ei)</CODE>. Of the two results computed by <CODE>Delaunay2a&lt;float&gt;</CODE>, we immediately discard <CODE>adjacent</CODE>, while from <CODE>triangles</CODE> we shall construct the graph.</P>
 
 <XMP class=code>
     TGraph *graph = new TGraphAsList(nofex, nEdgeTypes, 0);
@@ -95,7 +95,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
     delete triangles;
 </XMP>
 
-<P>The <CODE>graph</CODE> is immediately wrapped into an instance of <CODE>PGraph</CODE>. If anything fails, for instance, if an exception occurs in the code that follows, <CODE>graph</CODE> will be deallocated automatically so we don't need to (and mustn't!) care about it. However, we have to be careful about the <CODE>triangles</CODE>, we need another <CODE>try</CODE>-<CODE>catch</CODE> to deallocate it in case of errors. The follows copying the data from <CODE>triangles</CODE> into <CODE>graph</CODE> (we won't explain it here, look at Wml's documentation if you need to know everything).</P>
+<P>The <CODE>graph</CODE> is immediately wrapped into an instance of <CODE>PGraph</CODE>. If anything fails, for instance, if an exception occurs in the code that follows, <CODE>graph</CODE> will be deallocated automatically so we don't need to (and even mustn't!) care about it. However, we have to be careful about the <CODE>triangles</CODE>, we need another <CODE>try</CODE>-<CODE>catch</CODE> to deallocate it in case of errors. Then follows copying the data from <CODE>triangles</CODE> into <CODE>graph</CODE> (we won't explain it here, look at Wml's documentation if you are that curious).</P>
 
 <P><CODE>TGraph</CODE> is Orange's class and <CODE>PGraph</CODE> is a wrapper around it. Python can use neither of them, the only type of result that the function can return is a Python object, so we conclude by:</P>
 <XMP class=code>
@@ -107,19 +107,19 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
 
 <P>There's another detail in the actual function <CODE>triangulate</CODE> which is rather dirty and quite specific and rare, so we won't explain it here. If you're looking at triangulate.cpp and wonder what it means, just ignore it. It's not important.</P>
 
-<P>We have omitted a few #includes above the function. We need a few wml headers. Besides that, all extensions should include orange_api.hpp that defines several macros and similar. In our case, we also need to include graph.hpp and examplegen.hpp which define the classes used in our function.</P>
+<P>We have omitted a few #includes above the function. We need a few wml headers. Besides that, all extensions should include orange_api.hpp that defines several macros and similar. In our case, we also needed to include graph.hpp and examplegen.hpp which define the classes used in our function.</P>
 
-<P>Now comes the interface to Python. We need to construct a module, it's name will be <CODE>orangeom</CODE> and it will export the function triangulate. We've already mentioned that this has something to do with <CODE>PYARGS</CODE> macro. It has two arguments, the first, <CODE>METH_VARARGS</CODE> giving the number and type of arguments, while the second is the documentation string. We now need to compile an interface. Assuming that <CODE>triangulate.cpp</CODE> is in directory source/orangeom, so source/orange is its neighbour, we need to run ../pyxtract/pyxtract.py like this:</P>
+<P>What remains is to export this function to Python. We need to construct a new module, it's name will be <CODE>orangeom</CODE> and it will export the function triangulate. We've already mentioned that this has something to do with <CODE>PYARGS</CODE> macro. It has two arguments, the first, <CODE>METH_VARARGS</CODE> giving the number and type of arguments, while the second is the documentation string. Assuming that <CODE>triangulate.cpp</CODE> is in directory source/orangeom, so source/orange is its sibling directory, we need to run ../pyxtract/pyxtract.py like this:</P>
 
 <XMP class=code>
 python ../pyxtract/pyxtract.py -m -n orangeom -l ../orange/px/stamp triangulate.cpp
 </XMP>
 
-<P>Do yourself a favour and put this line in a batch file. See the <CODE>_pyxtract.bat</CODE> files in various Orange's directories.</P>
+<P>Do yourself a favour and put this line into a batch file. See the <CODE>_pyxtract.bat</CODE> files in various Orange's directories.</P>
 
-<P>Option <CODE>-m</CODE> tells pyxtract to <CODE>m</CODE>ake the file, <CODE>-n orangeom</CODE> gives the name of the module to be produced and <CODE>-l ../orange/px/stamp</CODE> is similar to gcc's <CODE>-l</CODE> - it tells pyxtract to include a "library" with all Orange's objects. Then follow the names of the files with any exported functions and classes. In our case, this is a single file, triangulate.cpp.</P>
+<P>Option <CODE>-m</CODE> tells pyxtract to <CODE>m</CODE>ake the file, <CODE>-n orangeom</CODE> gives the name of the module to be produced and <CODE>-l ../orange/px/stamp</CODE> is similar to gcc's <CODE>-l</CODE> - it tells pyxtract to include a "library" with all Orange's objects (don't worry, it's not code, there are just things that pyxtract has written down for himself). Then follow the names of the files with any exported functions and classes. In our case, this is a single file, triangulate.cpp.</P>
 
-<P>What do we get from pyxtract? A few files we don't need and one more we don't care about. The only file of real interest is initialization.px. You can see the file for yourself, but omitting a few unimportant points, it looks like this.</P>
+<P>What do we get from pyxtract? A few files we don't need and one more we don't care about. The only file of real interest for us is initialization.px. You can see the file for yourself, but omitting a few unimportant points, it looks like this.</P>
 
 <XMP class=code>
 PyMethodDef orangeomFunctions[]={
@@ -130,12 +130,12 @@ PyMethodDef orangeomFunctions[]={
 PyObject *orangeomModule;
 
 extern "C" ORANGEOM_API void initorangeom()
-{ 
+{
   if (!initExceptions())
     return;
 
   gcUnsafeStaticInitialization();
-  orangeomModule = Py_InitModule("orangeom", orangeomFunctions);  
+  orangeomModule = Py_InitModule("orangeom", orangeomFunctions);
 }
 </XMP>
 
@@ -143,7 +143,7 @@ extern "C" ORANGEOM_API void initorangeom()
 
 <P>Functions <CODE>initExceptions</CODE>, <CODE>gcUnsafeInitialization</CODE> initialize the exceptions your module will throw to Python and initializes the stuff that cannot be initialized before the class types are ready. Both functions need to be provided by our module, but since we don't have any work for them, we'll just define them empty.</P>
 
-<P>So, the file that will include initialization.px should be like this.</P>
+<P>So, we need to write a file that will include initialization.px. It should be like this.</P>
 <XMP class=code>
 #include "orange_api.hpp"
 
@@ -163,34 +163,34 @@ void gcUnsafeStaticInitialization()
 #include "px/initialization.px"
 </XMP>
 
-<P>We simplified the definition of <CODE>ORANGEOM_API</CODE> for this guide. If you ever wrote a DLL yourself, you probably know what the complete definition would look like, but for our module this will suffice. Then follow the two functions we don't need but they are called by <CODE>initorangeom</CODE>. Finally, we include initialization.px which takes care of the rest.</P>
+<P>We simplified the definition of <CODE>ORANGEOM_API</CODE> for this guide. If you ever wrote a DLL yourself, you probably know what the complete definition would look like, but for our module this will suffice. You can see the complete definition in <code>orangeom.cpp</code> if you want to. Then follow the two functions that we need to provide only because they are called by <CODE>initorangeom</CODE>. Finally, we include initialization.px which takes care of the rest.</P>
 
-<P>Setting the compiler options? Eh, just copy them from some project that is delivered together with Orange. If you want to do it yourself, this is complete recipe (unless we've forgotten about something)
+<P>Setting the compiler options? Eh, just copy them from some project that is delivered together with Orange. If you want to do it yourself, this is the complete recipe (unless we've forgotten about something :)
 
-<OL> 
+<OL>
 <LI>Add an environment variable <CODE>PYTHON=c:\python23</CODE>, or wherever your
 Python is installed. This will simplify the options and also help
 you upgrade to a newer version. (If you don't want to do this,
 just replace the below reference <CODE>$(PYTHON)</CODE> with <CODE>c:\python23</CODE>.)</LI>
 
 <LI>Open the Orange workspace (sources/orange.dsw) and add your stuff as new projects.
-Add new project into workspace". It will be a "Win32 Dynamic-link
-Library", create is as an empty or simple project.
+Add new project into workspace". You need a "Win32 Dynamic-link
+Library"; create it as an empty or simple project.
 This document will suppose you've put it into a subdirectory
 of <CODE>orange/source</CODE> (eg <CODE>orange/source/myproject</CODE>)</LI>
 
 <LI>Edit the project settings. Make sure to edit the settings for
-both Release and Debug version - or for Release, if you don't
-intend to debug.
+both Release and Debug version - or for Release, in the unlikely case that you won't
+need to debug.
   <UL>
-  <LI>In C/C++, Preprocessor add include directories <CODE>../include, 
+  <LI>In C/C++, Preprocessor add include directories <CODE>../include,
       ../orange,px,ppp,$(PYTHON)/include</CODE>.
-      If VC later complains it cannot find Python.h, locate the
+      If VC later complains that it cannot find Python.h, locate the
       file yourself and fix the last include directory accordingly.
   </LI>
-      
+
   <LI>In C/C++, C++ Language, check Enable Run-Time Type Information.</LI>
-   
+
   <LI>In C/C++, Code generation, under Use run-time library choose
       Multithread DLL for Release and Debug Multithread DLL for Debug
       version.</LI>
@@ -204,33 +204,33 @@ intend to debug.
 
 <H1>A more complex example: extending Orange class hierarchi</H1>
 
-<P>To demonstrate how to 
+<P>To demonstrate how to
 
 
 <H1>General mechanism and tools used in Orange's C to Python interface</H1>
 
 
-<P>This page is not meant to be a comprehensive and self-sufficient guide to exporting C++ classes into Python using the Orange's machinery. To learn how to export your functions and classes to Python, you should open some Orange's files (the .cpp files that begin with lib_ and cls_) and search for examples, while this page will hopefully help you to understand them. The easiest way to write your interfaces will be to copy and modify Orange's code.</P>
+<P>This page is not meant to be a comprehensive and self-sufficient guide to exporting C++ classes into Python using the Orange's machinery. To learn how to export your functions and classes to Python, you should open some Orange's files (lib_*.cpp and cls_*.cpp) and search for examples there, while this page will hopefully help you to understand them. The easiest way to write your interfaces will be to copy and modify the existing Orange's code. (This is what we do all the time. :)</P>
 
-<P>If you are writing extension modules for Python, you by no means have to use Orange's scripts for interfacing. Compile your interface with any tool you want. The only possible complications would arise if you are deriving and exporting new C++ classes from Orange's classes (to those that know something on the topic: Orange uses a slightly extended version of <CODE>PyTypeObject</CODE>, and the derived classes can't return to the original). If need be, ask and we shall provide some more insight and help to overcome them.</P>
+<P>If you are writing extension modules for Python, you by no means have to use Orange's scripts (pyxtract, pyprops) compiling the interface. Compile your interface with any tool you want, e.g. Swig. The only possible complications would arise if you are deriving and exporting new C++ classes from Orange's classes (to those that know something on the topic: Orange uses a slightly extended version of <CODE>PyTypeObject</CODE>, and the derived classes can't return to the original). If need be, ask and we may try to provide some more insight and help to overcome them.</P>
 
 
 <H1>Orange's C++ to Python interface</H1>
 
 <P>Instead of general 3rd party tools (Swig, Sip, PyBoost...) for interfacing between C++ and Python, Orange uses it's own set of tools. (We are working towards making them general, ie also useful for other applications.) These tools (two Python scripts, actually, pyprops and pyxtract) require more manual programming than other tools, but on the other hand, the result is a tighter and nicer coupling of Orange with Python.</P>
 
-<P>In short, to expose a C++ object to Python, we mark the attributes to be exported by a comment line starting with <CODE>//P</CODE>. Besides, we need to either declare which general constructor to use or program a special one, and program the interfaces to those C++ member functions that we want exported. In order for pyxtract to recognize them, the function name should be composed of the class name and method name, separated by an underscore, and followed by a certain keyword. When we simply give the access to unaltered C++ functionality, the interface functions are a few-liners. When we want to make the "Python" version of the function more friendly, eg. allow various types of arguments or fitting the default arguments according to the given, these functions will be longer, but the pay-off is evident. We argue that a few-line function is not more of inconvenience than having to write export declarations (as is the case with Sip at least, I guess), so that's why we do it the way we do it.</P>
+<P>In short, to expose a C++ object to Python, we mark the attributes to be exported by a comment line starting with <CODE>//P</CODE>. Besides, we need to either declare which general constructor to use or program a special one (this constructor will be in place of what would in Python be defined as the function __new__), and program the interfaces to those C++ member functions that we want exported. In order for pyxtract to recognize them, the function name should be composed of the class name and method name, separated by an underscore, and followed by a certain keyword. When we simply give the access to unaltered C++ functionality, the interface functions will only have a few-lines. When we want to make the "Python" version of the function more friendly, eg. allow various types of arguments or fitting the default arguments according to the given, these functions will be longer, but the pay-off is evident. We argue that a few-line function is not more of inconvenience than having to write export declarations (as is the case with Sip at least, I guess).</P>
 
 <P>To define a non-member function, we write the function itself according to the instructions in Python's manual (see the first chapter of "Extending and Embedding the Python Interpreter") and then mark it with a specific keyword. Pyxtract will recognize the keyword and add it to the list of exported functions.</P>
 
-<P>If you only export non-member function, that is, if you don't intend to declare any new Python classes, you can proceed directly to the section on <A href="#nonmember">exporting non-member functions</A>.</P>
+<P>If you only export non-member functions, that is, if you don't intend to declare any new Python classes, you can proceed directly to the section on <A href="#nonmember">exporting non-member functions</A>.</P>
 
 
-<P>For the rest, here's some more introductory description. Orange's core C++ objects are essentially unaware of Python above them. However, to facilitate easier interface with Python, each Orange class contains a static pointer to a list of its ``properties'' (attributes, in Python terminology). Accessing the object's attributes from Python goes through that list. These lists, however, are general and would be equally useful if we were to interface Orange to some other language (eg Perl) or technology (ActiveX, Corba).</P>
+<P>For the others, here's some more introductory description. Orange's core C++ objects are essentially unaware of Python above them. However, to facilitate easier interface with Python, each Orange class contains a static pointer to a list of its ``properties'' (attributes, in Python terminology). Accessing the object's attributes from Python goes through that list. These lists, however, are general and would be equally useful if we were to interface Orange to some other language (eg Perl) or technology (ActiveX, Corba).</P>
 
 <P>The only exception to the Orange's independency of Python is garbage collection: Orange uses Python's garbage collection for the sake of efficiency and simplicity. Each Orange's pointer (except for the short-term ones) is wrapped into a wrapper of type <CODE>PyObject *</CODE>. Dependency of Orange on Python is not strong - if we wanted to get rid of it, we'd only need to write our own garbage collection (or steal the Python's). <CODE>PyObject *</CODE> is the basic Python's type which stores some garbage collection related stuff, a pointer to the class type (<CODE>PyTypeObject *</CODE>) and the class specific data. The specific data is, in Orange's case, a pointer to the Orange object. Class type is a structure that contains the class name, pointers to function that implement the class special methods (such as indexing, printing, memory allocation, mathematical operations) and class members.</P>
 
-<P>We won't go deeper into explaining <CODE>PyTypeObject</CODE> since this is done in Python documentation. What you need to know is that for each Orange class that is accessible from Python, there is a corresponding <CODE>PyTypeObject</CODE> that defines its methods. For instance, the elements of <CODE>ExampleTable</CODE> (examples) can be accessed through indexing because we defined a C function that gets an index (and the table, of course) and returns the corresponding example, and we've put a pointer to this method into the <CODE>ExampleTable</CODE>'s <CODE>PyTypeObject</CODE>. This is equivalent to overloading the operator [] in C++. Here's the function (with error detection removed for the sake of clarity).
+<P>We won't go deeper into explaining <CODE>PyTypeObject</CODE> since this is done in Python documentation. What you need to know is that for each Orange class that is accessible from Python, there is a corresponding <CODE>PyTypeObject</CODE> that defines its methods. For instance, the elements of <CODE>ExampleTable</CODE> (examples) can be accessed through indexing because we defined a C function that gets an index (and the table, of course) and returns the corresponding example, and we've put a pointer to this method into the <CODE>ExampleTable</CODE>'s <CODE>PyTypeObject</CODE> (actually, we didn't do it manually, this is what pyxtract is responsible for). This is equivalent to overloading the operator [] in C++. Here's the function (with error detection removed for the sake of clarity).
 
 <XMP class=code>
 PyObject *ExampleTable_getitem_sq(PyObject *self, int idx)
@@ -245,7 +245,7 @@ Also, <CODE>ExampleTable</CODE> has a method <CODE>sort([list-of-attributes])</C
 
 <XMP class=code>
 PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
-{ 
+{
   CAST_TO(TExampleTable, table);
 
   if (!args || !PyTuple_Size(args)) {
@@ -259,7 +259,7 @@ PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
   for(TVarList::reverse_iterator vi(attributes.rbegin()), ve(attributes.rend());
       vi!=ve; vi++)
     order.push_back(table->domain->getVarNum(*vi));
-        
+
   table->sort(order);
   RETURN_NONE;
 }
@@ -270,9 +270,9 @@ PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 <P>There seem to be a lot of manual work involved in interfacing. Indeed there is, but this is exactly why Orange is so user friendly. The manual control of argument conversion gives a programmer the opportunity to program a function which accepts many different forms of arguments. The above function, for instances, can accept the list where the attributes can be specified by indices, names or descriptors, all corresponding to the <CODE>ExampleTable</CODE> which is being sorted. Inheritance of methods, on the other hand, ensures that only the methods that are truly specific for a class need to be coded.</P>
 
 
-<P>The part of the interface that is programmed automatically is taken care of by two scripts. <CODE>pyprops.py</CODE> parses all Orange's header files and extracts all the class built-in properties. The result are lists of properties (attributes); nothing needs to be done for the <CODE>ExampleTable</CODE>'s attribute <CODE>domain</CODE> to be visible in Python (OK, except for putting a <CODE>// P</CODE> after its declaration.</P>
+<P>The part of the interface that is programmed automatically is taken care of by two scripts. <CODE>pyprops.py</CODE> parses all Orange's header files and extracts all the class built-in properties. The result are lists of properties (attributes); nothing else needs to be done for the <CODE>ExampleTable</CODE>'s attribute <CODE>domain</CODE> to be visible in Python, except for putting a <CODE>// P</CODE> after its declaration.</P>
 
-<P>The second script is <CODE>pyxtract.py</CODE> is goes through the C++ files that contain the interface functions, such as those above. It recognizes the functions that implement special or member methods and constructs the corresponding <CODE>PyTypeObject</CODE>s. It therefore relieves us from the most boring part of work, but permits us to program things like more intelligent argument or error handling.</P>
+<P>The second script is <CODE>pyxtract.py</CODE>. It goes through the C++ files that contain the interface functions, such as those above. It recognizes the functions that implement special or member methods and constructs the corresponding <CODE>PyTypeObject</CODE>s. It therefore relieves us from the most boring part of work, but permits us to program things like more intelligent arguments or error handling.</P>
 
 
 <H2>pyprops</H2>
@@ -290,54 +290,63 @@ PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 
 <P>Pyprops doesn't check the type and won't object if you use other types than those listed above. Linker will complain about missing symbols, though. <CODE>//P</CODE> signals that we want to export the property. If followed by R or O, the property is read-only or obsolete. The property can also have an alias name; > renames it and + adds an alias. Description is not used at the time, but it is nevertheless a good practice to provide it.</P>
 
-<P>Components are wrapped Orange objects which we don't want the Python programmer to know about. Pyprops prepares a list of components so that the cyclic garbage collector can count them in (and throw them out, if need be). If a class directly or indirectly holds references to any wrapped objects that are neither properties nor components, it will need to declare <CODE>traverse</CODE> and <CODE>clear</CODE> to include them in the garbage collection.</P>
+Each property needs to be declared in a separate line, e.g.
+<xmp class="code">int x; //P;
+int y; //P;
+</xmp>
 
-<P>The ppp files that pyprops creates first #include the corresponding hpp file and then declare the necessary definition for each exported file. A list of properties store their names, descriptions, typeid's (RTTI), a class description for the properties' type, the properties' offset and the flags denoting read-only and obsolete properties.</P>
+<P>If we don't want to export a certain property, we don't need to. Just omit the <code>//P</code>. An exception to this are wrapped Orange objects: for instance, if a class has a (wrapped) pointer to the domain, <CODE>PDomain</CODE> and it doesn't export it, pyxtract should still now about them because of the cyclic garbage collection. You should mark them by <CODE>//C</CODE> so that they are put into the list of objects that need to be counted. If you fail to do so, you'll have a memory leak. Luckily, this is a very rare situation; there are only two such components in relief.hpp.
 
-<P>Then comes a list of components' offsets, followed by a definition of classes static field <CODE>st_classDescription</CODE> and a virtual function <CODE>classDescription</CODE> that return a pointer to it. Finally, if the class is not abstract, a virtual function <CODE>clone</CODE> is defined that returns a <CODE>new</CODE> instance of this class initialized, through a copy constructor, with an existing one.</P>
+If a class directly or indirectly holds references to any wrapped objects that are neither properties nor components, it will need to declare <CODE>traverse</CODE> and <CODE>clear</CODE> to include them in the garbage collection. Python documentation will tell you what these functions need to do, and you can look at several instances where we needed them in Orange.</P>
 
-<P>ppp file contains definitions, so it has to be compiled only ones. The most convenient way to do it is to include it in the corresponding cpp file. For instance, domain.ppp is generated from domain.hpp. Various Orange cpp files include domain.hpp, while domain.ppp is included by domain.cpp.</P>
+<P>Pyprops creates a ppp file for each hpp. The ppp file first <code>#include</code>s the corresponding hpp file and then declares the necessary definition for each exported file. A list of properties store their names, descriptions, typeid's (RTTI), a class description for the properties' type, the properties' offset and the flags denoting read-only and obsolete properties.</P>
+
+<P>Then comes a list of components' offsets, followed by a definition of classes static field <CODE>st_classDescription</CODE> and a virtual function <CODE>classDescription</CODE> that returns a pointer to it. Finally, if the class is not abstract, a virtual function <CODE>clone</CODE> is defined that returns a <CODE>new</CODE> instance of this class initialized, through a copy constructor, with an existing one.</P>
+
+<P>ppp file contains definitions, so it has to be compiled only once. The most convenient way to do it is to include it in the corresponding cpp file. For instance, while many Orange's cpp files include domain.hpp, only domain.cpp includes domain.ppp instead.</P>
 
 
 <h2>pyxtract</h2>
 
-<P>Pyxtract job is to detect the functions that define special methods (such as printing, conversion, sequence and arithmetic related operations...) and member functions. Based on what it finds for each specific class, it constructs the corresponding <CODE>PyTypeObject</CODE>s. For the functions to be recognized, they must follow a specific syntax.</P>
+<P>Pyxtract's job is to detect the functions that define special methods (such as printing, conversion, sequence and arithmetic related operations...) and member functions. Based on what it finds for each specific class, it constructs the corresponding <CODE>PyTypeObject</CODE>s. For the functions to be recognized, they must follow a specific syntax.</P>
 
 <P>There are two basic mechanisms used. Special functions are recognized by their definition (they need to return <CODE>PyObject *</CODE>, <CODE>void</CODE> or <CODE>int</CODE> and their name must be of form &lt;classname&gt;_&lt;functionname&gt;). Member functions, inheritance relations, constants etc. are marked by macros such as <CODE>PYARGS</CODE> in the above definition of <CODE>ExampleTable_sort</CODE>. These macros usually don't do anything, so C++ compiler ignores them - they are just markups for pyxtract.</P>
 
 <H3>Class declaration</H3>
 
-<P>Each class needs to be declared: pyxtract must know from which parent class the class it's derived or, if it's a base class, it must be given a type "derived" from <CODE>PyObject</CODE> which will store the instances of the class (the quotation mark are here because Python is written in C++, so the subclasses are not derived in the C++ sense). It should also know how the class is constructed - it can have a specific constructor, one of the general constructors or no constructor at all.</P>
+<P>Each class needs to be declared: pyxtract must know from which parent class the class it's derived. If it's a base class, pyxtract need to know the data structure for the instances of this class. As for all Python objects the structure must be "derived" from <CODE>PyObject</CODE> (the quotation mark are here because Python is written in C, so the subclasses are not derived in the C++ sense). Most objects are derived from Orange; the only classes that are not are <code>orange.Example</code>, <code>orange.Value</code> and <code>orange.DomainDepot</code> (I forgot why the depot, but there had to be a strong reason).
+
+Pyxtract should also know how the class is constructed - it can have a specific constructor, one of the general constructors or no constructor at all.</P>
 
 
 <P>The class is declared in one of the following ways.
 <DL>
 <DT><CODE>BASED_ON(Variable, Orange)</CODE></DT>
-<DD>This tells pyxtract that <CODE>Variable</CODE> is an abstract class derived from <CODE>Orange</CODE>. The statement is put in C++ code; <CODE>BASED_ON</CODE> is defined as a two-argument macro that does nothing.</DD>
+<DD>This tells pyxtract that <CODE>Variable</CODE> is an abstract class derived from <CODE>Orange</CODE>. (<CODE>BASED_ON</CODE> is really a two-argument macro that does nothing.)</DD>
 
 <DT><CODE>C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")</CODE></DT>
 <DD><CODE>EnumVariable</CODE> is derived from <CODE>Variable</CODE>. Pyxtract will also create a constructor which will as an optional argument accept the object's name. The third argument is a string that describes the constructor, eg. gives a list of arguments. IDEs for Python, such as PythonWin, will show this string in a balloon help while the programmer is typing.</DD>
 
 <DT><CODE>C_UNNAMED(RandomGenerator, Orange, "() -> RandomGenerator")</CODE></DT>
-<DD>This is similar as <CODE>C_NAMED</CODE>, except the constructor accepts no name. This form is rather rare since all Orange objects can be named.</DD>
+<DD>This is similar as <CODE>C_NAMED</CODE>, except that the constructor accepts no name. This form is rather rare since all Orange objects can be named.</DD>
 
 <DT><CODE>C_CALL(BayesLearner, Learner, "([examples], [weight=, estimate=] -/-> Classifier")</CODE></DT>
 <DD><CODE>BayesLearner</CODE> is derived from <CODE>Learner</CODE>. It will have a peculiar constructor. It will, as usual, first construct an instance of <CODE>BayesLearner</CODE>. If no arguments are given (except for, possibly, keyword arguments), it will return the constructed instance. Otherwise, it will call the <CODE>Learner</CODE>'s call operator and return its result instead of <CODE>BayesLearner</CODE>.</CODE>
 
 <DT><CODE>C_CALL3(MakeRandomIndices2, MakeRandomIndices2, MakeRandomIndices, "[n | gen [, p0]], [p0=, stratified=, randseed=] -/-> [int]")</CODE></DT>
-<DD><CODE>MakeRandomIndices2</CODE> is derived from <CODE>MakeRandomIndices</CODE> (the third argument). For a contrast from the above, the corresponding constructor won't call <CODE>MakeRandomIndices</CODE> call operator, but the call operator of <CODE>MakeRandomIndices2</CODE> (the second argument). This constructor is often used when the parent class doesn't provide a suitable call operator.</DD>
+<DD><CODE>MakeRandomIndices2</CODE> is derived from <CODE>MakeRandomIndices</CODE> (the third argument). For a contrast from the <CODE>C_CALL</CODE> above, the corresponding constructor won't call <CODE>MakeRandomIndices</CODE> call operator, but the call operator of <CODE>MakeRandomIndices2</CODE> (the second argument). This constructor is often used when the parent class doesn't provide a suitable call operator.</DD>
 
 <DT><CODE>HIDDEN(TreeStopCriteria_Python, TreeStopCriteria)</CODE></DT>
 <DD><CODE>TreeStopCriteria_Python</CODE> is derived from <CODE>TreeStopCriteria</CODE>, but we would like to hide this class from the user. We use this definition when it is elegant for us to have some intermediate class or a class that implements some specific functionality, but don't want to bother the user with it. The class is not completely hidden - the user can reach it through the <CODE>type</CODE> operator on an instance of it. This is thus very similar to a <CODE>BASED_ON</CODE>.</DD>
 
 <DT><CODE>DATASTRUCTURE(Orange, TPyOrange, orange_dict)</CODE></DT>
-<DD>This is for the base classes. <CODE>Orange</CODE> has no parent class. The C++ structure that stores it is <CODE>TPyOrange</CODE>; <CODE>TPyOrange</CODE> is essentially <CODE>PyObject</CODE> (this is a rule: the structure always has to be based on <CODE>PyObject</CODE>!) but with several additional fields, among them a pointer to an instance of <CODE>TOrange</CODE> (the C++ base class for all Orange's classes). <CODE>orange_dict</CODE> is a name of <CODE>TPyOrange</CODE>'s field that points to a Python dictionary; when you have an instance <CODE>bayesClassifier</CODE> and you type, in Python, <CODE>bayesClassifier.someMyData=15</CODE>, this gets stored in <CODE>orange_dict</CODE>. The actual mechanism behind this is rather complicated and you most probably won't need to use it. If you happen to need to define a class with <CODE>DATASTRUCTURE</CODE>, you can simply omit the last argument by giving a 0 instead.</DD>
+<DD>This is for the base classes. <CODE>Orange</CODE> has no parent class. The C++ structure that stores it is <CODE>TPyOrange</CODE>; <CODE>TPyOrange</CODE> is essentially <CODE>PyObject</CODE> (again, the structure always has to be based on <CODE>PyObject</CODE>) but with several additional fields, among them a pointer to an instance of <CODE>TOrange</CODE> (the C++ base class for all Orange's classes). <CODE>orange_dict</CODE> is a name of <CODE>TPyOrange</CODE>'s field that points to a Python dictionary; when you have an instance <CODE>bayesClassifier</CODE> and you type, in Python, <CODE>bayesClassifier.someMyData=15</CODE>, this gets stored in <CODE>orange_dict</CODE>. The actual mechanism behind this is rather complicated and you most probably won't need to use it. If you happen to need to define a class with <CODE>DATASTRUCTURE</CODE>, you can simply omit the last argument and give a 0 instead.</DD>
 
 <DT><CODE>PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, descriptor)")</CODE></DT>
-<DD><CODE>ClassifierByLookupTable1_new</CODE> has a specific constructor. The general ones above couldn't be used since the constructor need to have some arguments or for some other reason (eg. the user doesn't need to specify the arguments, but the C++ constructor requires them, so this interface function will provide the defaults). The constructor function needs to be like above (ie. &lt;classname&gt;_new), followed by a <CODE>BASED_ON</CODE> macro giving the parent class and the comment. The declaration must be written in a single line. Just for the illustration, the (simplified, no error handling) constructor looks like this
+<DD><CODE>ClassifierByLookupTable1_new</CODE> has a specific constructor. The general ones above couldn't be used since this constructor needs to have some arguments or for some other reason (eg. the user doesn't need to specify the arguments, but the C++ constructor for the corresponding C++ class requires them, so this interface function will provide the defaults). The constructor function needs to be defined like above (ie. &lt;classname&gt;_new), followed by a <CODE>BASED_ON</CODE> macro giving the parent class and the comment. The declaration must be written in a single line. Just for the illustration, the (simplified, no error handling) constructor looks like this
 <XMP class=code>
 PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, descriptor)")
-{ 
+{
   PyTRY
     PVariable vcl, vvl;
     PyObject *pyvlist = NULL, *pydlist = NULL;
@@ -371,25 +380,25 @@ CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStor
 
 <P><CODE>init</CODE> will ignore all the keywords from the list.</P>
 
-<P>Talking about attributes, here's another macro. You know you can assign arbitrary attributes to Orange classes. If you do it directly, eg. <CODE>ba.myAttribute = 12</CODE>, you will get a warning (you should use the object's method <CODE>setattr(name, value)</CODE> to avoid it). Some objects have some attributes that cannot be implemented in C++ code, yet they are usual and useful. For instance, <CODE>Graph</CODE> has attributes <CODE>objects</CODE>, <CODE>forceMapping</CODE> and <CODE>returnIndices</CODE>; if you take a look at the documentation on <CODE>Graph</CODE>, you will see why these cannot be implemented in C++. Yet, since these attributes are so common, we don't want to give warnings. We achieve this by
+<P>Talking about attributes, here's another macro. You know you can assign arbitrary attributes to Orange classes. Let <code>ba</code> be an orange object, say <code>orange.BayesLearner</code>. If you assign new attributes as usual directly, eg. <CODE>ba.myAttribute = 12</CODE>, you will get a warning (you should use the object's method <CODE>setattr(name, value)</CODE> to avoid it; you can read more about it on a page about <a href="peculiarities.htm">Orange peculiarities</a>). Some objects have some attributes that cannot be implemented in C++ code, yet they are usual and useful. For instance, <CODE>Graph</CODE> can use attributes <CODE>objects</CODE>, <CODE>forceMapping</CODE> and <CODE>returnIndices</CODE>, which can only be set from Python (if you take a look at the documentation on <CODE>Graph</CODE> you will see why these cannot be implemented in C++). Yet, since user are allowed to set these attributes and will do so often, we don't want to give warnings. We achieve this by
 </P>
 
 <XMP class=code>
 RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
 </XMP>
 
-<P>How do these things function? Well, it is not hard to imagine: pyxtract catches all such exceptions and stores the corresponding lists for each particular class. The <CODE>init</CODE> constructor then checks the list prior to setting attributes and the method for setting attributes that issues warnings for unknown attributes checks it prior to complaining.</P>
+<P>How do these things function? Well, it is not hard to imagine: pyxtract catches all such exceptions and stores the corresponding lists for each particular class. The <CODE>init</CODE> constructor then checks the list prior to setting attributes. Also the method for setting attributes that issues warnings for unknown attributes checks the list prior to complaining.</P>
 
 
 <H3>Special methods</H3>
 
-<P>Special methods are class built-in methods. They essentially define the type: if it, for instance, supports multiplication, it should define the operator that gets the object itself and another object and return the product (or throw an exception). If it allows for indexing, it defines an operator that gets the object itself and the index and returns the element. These operators are low-level; most can be called from Python scripts but they are also internally by Python. For instance, if <CODE>table</CODE> is an <CODE>ExampleTable</CODE>, then <CODE>for e in table:</CODE> or <CODE>reduce(f, table)</CODE> will both work by calling the indexing operator for each table's element.</P>
+<P>Special methods act as the class built-in methods. They define what the type can do: if it, for instance, supports multiplication, it should define the operator that gets the object itself and another object and return the product (or throw an exception). If it allows for indexing, it defines an operator that gets the object itself and the index and returns the element. These operators are low-level; most can be called from Python scripts but they are also internally by Python. For instance, if <CODE>table</CODE> is an <CODE>ExampleTable</CODE>, then <CODE>for e in table:</CODE> or <CODE>reduce(f, table)</CODE> will both work by calling the indexing operator for each table's element.</P>
 
 <P>We shall here avoid the further discussion of this since the topic is adequately described in Python manuals (see "Extending and Embedding the Python Interpreter", chapter 2, "Defining New Types").</P>
 
 <P>To define a method for Orange class, you need to define a function named, <CODE>&lt;classname&gt;_&lt;methodname&gt;</CODE>; the function should return either <CODE>PyObject *</CODE>, <CODE>int</CODE> or <CODE>void</CODE>. The function's head has to be written in a single line. Regarding the arguments and the result, it should conform to Python's specifications. Pyxtract will detect the methods and set the pointers in <CODE>PyTypeObject</CODE> correspondingly.</P>
 
-<P>Here's a list of methods: the left column represents a method name that triggers pyxtract (these names generally correspond to special method names of Python classes as a Python programmer sees them) and the second next is the name of the field in <CODE>PyTypeObject</CODE> or subjugated structures. See Python documentation for description of functions arguments and results. Not all methods can be directly defined; for those that can't, it is because we either use an alternative method (eg. <CODE>setattro</CODE> instead of <CODE>setattr</CODE>) or pyxtract gets or computes the data from this field otherwise. If you miss something, just modify pyxtract...</P>
+<P>Here's a list of methods: the left column represents a method name that triggers pyxtract (these names generally correspond to special method names of Python classes as a programmer in Python sees them) and the second next is the name of the field in <CODE>PyTypeObject</CODE> or subjugated structures. See Python documentation for description of functions' arguments and results. Not all methods can be directly defined; for those that can't, it is because we either use an alternative method (eg. <CODE>setattro</CODE> instead of <CODE>setattr</CODE>) or pyxtract gets or computes the data for this field in some other way. If you really miss something ... wasn't the idea of open source that you are allowed to modify the code (e.g. of pyxtract) yourself?</P>
 
 <H4>General methods</H4>
 
@@ -404,13 +413,13 @@ RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
 <TR><TD><CODE>cmp</CODE></TD><TD><CODE>tp_compare</CODE></TD></TR>
 <TR><TD><CODE>repr</CODE></TD><TD><CODE>tp_repr</CODE></TD></TR>
 
-<TR VALIGN=TOP><TD>.</TD><TD><CODE>as_number</CODE></TD><TD>(don't care about it; if you give any of the methods from the number interface, pyxtract will initialize this field)</TD></TR>
+<TR VALIGN=TOP><TD>.</TD><TD><CODE>as_number</CODE></TD><TD>(pyxtract will initialize this field if you give any of the methods from the number protocol; you needn't care about this field)</TD></TR>
 
-<TR VALIGN=TOP><TD>.</TD><TD><CODE>as_sequence</CODE></TD><TD>(don't care about it; if you give any of the methods from the sequence interface, pyxtract will initialize this field)</TD></TR>
+<TR VALIGN=TOP><TD>.</TD><TD><CODE>as_sequence</CODE></TD><TD>(pyxtract will initialize this field if you give any of the methods from the sequence protocol)</TD></TR>
 
-<TR VALIGN=TOP><TD>.</TD><TD><CODE>as_mapping</CODE></TD><TD>(don't care about it; if you give any of the methods from the mapping interface, pyxtract will initialize this field)</TD></TR>
+<TR VALIGN=TOP><TD>.</TD><TD><CODE>as_mapping</CODE></TD><TD>(pyxtract will initialize this field if you give any of the methods from the mapping protocol)</TD></TR>
 
-<TR VALIGN=TOP><TD><CODE>hash</CODE></TD><TD><CODE>tp_hash</CODE></TD><TD>Class <CODE>Orange</CODE> computed a hash value from the pointer; you don't need to overload it if your object inherits the function. If you write an independent class, just copy the code.</TD></TR>
+<TR VALIGN=TOP><TD><CODE>hash</CODE></TD><TD><CODE>tp_hash</CODE></TD><TD>Class <CODE>Orange</CODE> computes a hash value from the pointer; you don't need to overload it if your object inherits the function. If you write an independent class, just copy the code.</TD></TR>
 
 <TR><TD><CODE>call</CODE></TD><TD><CODE>tp_call</CODE></TD></TR>
 
@@ -423,7 +432,7 @@ RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
 <TR><TD><CODE>.</CODE></TD><TD><CODE>tp_flags</CODE></TD><TD>Flags are set by pyxtract.</TD></TR>
 <TR VALIGN=TOP><TD><CODE>.</CODE></TD><TD><CODE>tp_doc</CODE></TD><TD>Documentation is read from the constructor definition (see above).</TR>
 
-<TR VALIGN=TOP><TD><CODE>traverse</CODE></TD><TD><CODE>tp_traverse</CODE></TD><TD>Traverse is tricky (as is garbage collection in general). There's something on it in a comment in root.hpp; besides that, study the examples. In general, if a wrapped member is exported to Python (just as, for instance, <CODE>Classifier</CODE> contains a <CODE>Variable</CODE> named <CODE>classVar</CODE>), you don't need to care about it. You should manually take care of any wrapped objects not exported to Python).
+<TR VALIGN=TOP><TD><CODE>traverse</CODE></TD><TD><CODE>tp_traverse</CODE></TD><TD>Traverse is tricky (as is garbage collection in general). There's something on it in a comment in root.hpp; besides that, study the examples. In general, if a wrapped member is exported to Python (just as, for instance, <CODE>Classifier</CODE> contains a <CODE>Variable</CODE> named <CODE>classVar</CODE>), you don't need to care about it. You should manually take care of any wrapped objects not exported to Python. You probably won't come across such cases.
 </TR>
 
 <TR><TD><CODE>clear</CODE></TD><TD><CODE>tp_clear</CODE></TD></TR>
@@ -433,9 +442,9 @@ RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
 <TR><TD><CODE>iternext</CODE></TD><TD><CODE>tp_iternext</CODE></TD></TR>
 <TR><TD><CODE>.</CODE></TD><TD><CODE>tp_methods</CODE></TD><TD>Set by pyxtract if any methods are given.</TR>
 <TR><TD><CODE>.</CODE></TD><TD><CODE>tp_members</CODE></TD></TR>
-<TR><TD><CODE>.</CODE></TD><TD><CODE>getset</CODE></TD><TD>Pyxtract initialized this by a pointer to manually written getters/setters (see below).</TD></TR>
+<TR><TD><CODE>.</CODE></TD><TD><CODE>getset</CODE></TD><TD>Pyxtract initializes this by a pointer to manually written getters/setters (see below).</TD></TR>
 <TR><TD><CODE>.</CODE></TD><TD><CODE>tp_base</CODE></TD><TD>Set by pyxtract to a class specified in constructor (see above).</TR>
-<TR><TD><CODE>.</CODE></TD><TD><CODE>tp_dict</CODE></TD><TD>Used for class constants (eg. <CODE>Classifier.GetBoth</CODE></TD></TR>
+<TR><TD><CODE>.</CODE></TD><TD><CODE>tp_dict</CODE></TD><TD>Used for class constants (eg. <CODE>Classifier.GetBoth</CODE>)</TD></TR>
 <TR><TD><CODE>.</CODE></TD><TD><CODE>tp_descrget</CODE></TD></TR>
 <TR><TD><CODE>.</CODE></TD><TD><CODE>tp_descrset</CODE></TD></TR>
 <TR VALIGN=TOP><TD><CODE>.</CODE></TD><TD><CODE>tp_dictoffset</CODE></TD><TD>Set by pyxtract to the field given in <CODE>DATASTRUCTURE</CODE> (if there is any).</TR>
@@ -544,7 +553,7 @@ RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
 
 <P>For example, here's what gets called when you want to know the length of an example table.</P>
 <XMP class=code>
-int ExampleTable_len_sq(PyObject *self) 
+int ExampleTable_len_sq(PyObject *self)
 { PyTRY
     return SELF_AS(TExampleGenerator).numberOfExamples();
   PyCATCH_1
@@ -556,13 +565,13 @@ int ExampleTable_len_sq(PyObject *self)
 
 <H3>Getting and Setting Class Attributes</H3>
 
-<P>Exporting of most of C++ class fields is already taken care by the lists that are compiled by pyprops. There are only a few cases in whole Orange where we needed to manually write specific handlers for setting and getting the attributes. This need to be done if setting needs some special processing or when simulating an attribute that does not exist in the underlying C++ class.</P>
+<P>Exporting of most of C++ class fields is already taken care by the lists that are compiled by pyprops. There are only a few cases in the entire Orange where we needed to manually write specific handlers for setting and getting the attributes. This needs to be done if setting needs some special processing or when simulating an attribute that does not exist in the underlying C++ class.</P>
 
 <P>An example for this is class <CODE>HierarchicalCluster</CODE>. It contains results of a general, not necessarily binary clustering, so each node in the tree has a list <CODE>branches</CODE> with all the node's children. Yet, as the usual clustering is binary, it would be nice if the node would also support attributes <CODE>left</CODE> and <CODE>right</CODE>. They are not present in C++, but we can write a function that check the number of branches; if there are none, it returns <CODE>None</CODE>, if there are more than two, it complains, while otherwise it returns the first branch.</P>
 
 <XMP class=code>
 PyObject *HierarchicalCluster_get_left(PyObject *self)
-{ 
+{
   PyTRY
     CAST_TO(THierarchicalCluster, cluster);
 
@@ -592,33 +601,32 @@ PyObject *HierarchicalCluster_get_left(PyObject *self)
 PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
 </XMP>
 
-<P>Argument type can be any of the usual Python constants stating the number and the kind of arguments, such as <CODE>METH_VARARGS</CODE> or <CODE>METH_O</CODE> - this constant get copied to the corresponding list (browse Python documentation for <CODE>PyMethodDef</CODE>).</P>
+<P>Argument type can be any of the usual Python constants stating the number and the kind of arguments, such as <CODE>METH_VARARGS</CODE> or <CODE>METH_O</CODE> - this constant gets copied to the corresponding list (browse Python documentation for <CODE>PyMethodDef</CODE>).</P>
 
 <P>If you want more examples, just search Orange's files for the keyword <CODE>PYARGS</CODE>.</P>
 
 
 <H3>Class constants</H3>
 
-<P>This 
 <P>Orange classes, as seen from Python, can also have constants, such as <CODE>orange.Classifier.GetBoth</CODE>. Classifier's <CODE>GetBoth</CODE> is visible as a member of the class, the derived classes and all their instances (eg. <CODE>BayesClassifier.GetBoth</CODE> and <CODE>bayes.GetBoth</CODE>).</P>
 
 <P>There are several ways to define such constants. If they are simple integers or floats, you can use <CODE>PYCLASSCONSTANT_INT</CODE> or <CODE>PYCLASSCONSTANT_FLOAT</CODE>, like in
 <XMP class=code>PYCLASSCONSTANT_INT(Classifier, GetBoth, 2)</XMP>
-You can also use the enums from the class, like 
+You can also use the enums from the class, like
 <XMP class=code>PYCLASSCONSTANT_INT(C45TreeNode, Leaf, TC45TreeNode::Leaf)</XMP>
 Pyxtract will convert the given constant to a Python object (using <CODE>PyInt_FromLong</CODE> or <CODE>PyFloat_FromDouble></CODE>).</P>
 
-<P>When the constant is an object of some other type, use <CODE>PYCLASSCONSTANT</CODE>. In this form (not used in Orange yet), the third argument can be either an instance of <CODE>PyObject *</CODE> or a function call. In either case, the object or function must be known at the point where the pyxtract generated file is included.</P>
+<P>When the constant is an object of some other type, use <CODE>PYCLASSCONSTANT</CODE>. In this form (not used in Orange so far), the third argument can be either an instance of <CODE>PyObject *</CODE> or a function call. In either case, the object or function must be known at the point where the pyxtract generated file is included.</P>
 
 
-<A name="nonmember">
+<A name="nonmember"></A>
 <H3>Non-member functions and constants</H3>
 
 <P>Most Orange's functions are members of classes. About the only often used exception to this is <CODE>orange.newmetaid</CODE> which returns a new ID for a meta attribute. These functions are defined in the same way as member function except that the function name doesn't have the class name (and the underscore - that's how pyxtract distinguishes between the two). Here's the <CODE>newmetaid</CODE> function.</P>
 
 <XMP class=code>PyObject *newmetaid(PyObject *, PyObject *) PYARGS(0,"() -> int")
 { PyTRY
-    return PyInt_FromLong(getMetaID()); 
+    return PyInt_FromLong(getMetaID());
   PyCATCH
 }
 </XMP>
@@ -660,11 +668,11 @@ PYCONSTANTFUNC(VarTypes, VarTypes)
 
 <H3>How does it all fit together</H3>
 
-<P>This part of the text's main purpose is to remind the pyxtract author of the structure of the files pyxtract creates. (I hate it when I don't know how my programs work :-) If you think you can profit from reading it, you're welcome.</P>
+<P>This part of the text's main purpose is to remind the pyxtract author of the structure of the files pyxtract creates. (I'm annoyed when I don't know how my programs work. And I happen to be annoyed quite frequently. :-) If you think you can profit from reading it, you are welcome.</P>
 
 <H4>File specific px files</H4>
 
-<P>For each compiled cpp file, pyxtract creates a px file of the same name. The file starts with externs declaring the base classes for the classes whose types are defined later on.</P>
+<P>For each compiled cpp file, pyxtract creates a px file with the same name. The file starts with externs declaring the base classes for the classes whose types are defined later on.</P>
 
 <P>Then follow class type definitions.
 <UL>
@@ -684,7 +692,7 @@ If the class is abstract, pyxtract defines a constructor that will call <CODE>Py
 
 <LI>Aliases. A list of renamed attributes.</LI>
 
-<LI>Structures for general function (<CODE>PyTypeObject</CODE>) and the numeric, sequence and mapping protocols. <CODE>PyTypeObject</CODE> is named <CODE>PyOr&lt;classname&gt;_Type_inh</CODE>.</LI>
+<LI><CODE>PyTypeObject</CODE> and the numeric, sequence and mapping protocols. <CODE>PyTypeObject</CODE> is named <CODE>PyOr&lt;classname&gt;_Type_inh</CODE>.</LI>
 
 <LI>Definition of conversion functions. This is done by macro <CODE>DEFINE_cc(&lt;classname&gt;)</CODE> which defines <CODE>int ccn_&lt;classname&gt;(PyObject *obj, void *ptr)</CODE> - functions that can be used in <CODE>PyArg_ParseTuple</CODE> for converting an argument (given as <CODE>PyObject *</CODE> to an instance of <CODE>&lt;classname&gt;</CODE>. Nothing needs to be programmed for the conversion, it is just a cast: <CODE>*(GCPtr< T##type > *)(ptr) = PyOrange_As##type(obj);</CODE>). The difference between <CODE>cc</CODE> and <CODE>ccn</CODE> is that the latter accepts null pointers.</LI>
 
