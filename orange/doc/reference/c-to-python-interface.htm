@@ -131,17 +131,17 @@ PyObject *orangeomModule;
 
 extern "C" ORANGEOM_API void initorangeom()
 {
-  if (!initExceptions())
+  if (!initorangeomExceptions())
     return;
 
-  gcUnsafeStaticInitialization();
+  gcorangeomUnsafeStaticInitialization();
   orangeomModule = Py_InitModule("orangeom", orangeomFunctions);
 }
 </XMP>
 
-<P><CODE>initorangeom</CODE> is a function that will be called by Python when the module is initialized. Basically, it calls <CODE>initExceptions</CODE>, <CODE>gcUnsafeInitialization</CODE> and then <CODE>Py_InitModule</CODE> whom it tells the module name and gives it the list of function that the module exports - in our case, <CODE>orangeomFunctions</CODE> has only a pointer to <CODE>triangulate</CODE> we wrote above.</P>
+<P><CODE>initorangeom</CODE> is a function that will be called by Python when the module is initialized. Basically, it calls <CODE>initorangeomExceptions</CODE>, <CODE>gcorangeomUnsafeInitialization</CODE> and then <CODE>Py_InitModule</CODE> whom it tells the module name and gives it the list of function that the module exports - in our case, <CODE>orangeomFunctions</CODE> has only a pointer to <CODE>triangulate</CODE> we wrote above.</P>
 
-<P>Functions <CODE>initExceptions</CODE>, <CODE>gcUnsafeInitialization</CODE> initialize the exceptions your module will throw to Python and initializes the stuff that cannot be initialized before the class types are ready. Both functions need to be provided by our module, but since we don't have any work for them, we'll just define them empty.</P>
+<P>Functions <CODE>initorangeomExceptions</CODE>, <CODE>gcorangeomUnsafeInitialization</CODE> initialize the exceptions your module will throw to Python and initializes the stuff that cannot be initialized before the class types are ready. Both functions need to be provided by our module, but since we don't have any work for them, we'll just define them empty.</P>
 
 <P>So, we need to write a file that will include initialization.px. It should be like this.</P>
 <XMP class=code>
@@ -198,11 +198,17 @@ need to debug.
   <LI>In Link, Input, add <CODE>$(PYTHON)\libs<CODE> and <CODE>../../lib</CODE> to
       Additional Library Path. (The first is the path to Python.lib,
       and the second to orange.lib; locate them manually if you need to.)</LI>
+      
+  <LI>In Link, General, change the Output file name to ../../mymodule.pyd for the Release Build and to ../../mymodule_d.pyd for debug. You can use .dll instead of .pyd.
+
+  <LI>In Post-build step, add "copy Release\orangeom.lib ..\..\lib\orangeom.lib" for the Release version, and "copy Debug\orangeom_d.lib ..\..\lib\orangeom_d.lib" for the Debug.
+  
+  <LI>In Debug Build, go to tab Debug, General, set the Executable for debug session to "c:\python23\python_d.exe".
   </UL>
 </OL>
 
 
-<H1>A more complex example: extending Orange class hierarchi</H1>
+<H1>A more complex example: extending Orange class hierarchy</H1>
 
 <P>To demonstrate how to
 
@@ -283,7 +289,7 @@ PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 <XMP class=code>class [ORANGE_API] <classname>; [: public <parentclass> ]
 </XMP>
 
-<P>This should be in a single line. To mark the class for export, this should be followed by <CODE>REGISTER_CLASS</CODE> or <CODE>REGISTER_ABSTRACT_CLASS</CODE> before any properties or components are defined. The difference between the two, as far as pyprops is concerned, is that abstract classes don't define the <CODE>clone</CODE> method.</P>
+<P>This should be in a single line. To mark the class for export, this should be followed by <CODE>__REGISTER_CLASS</CODE> or <CODE>__REGISTER_ABSTRACT_CLASS</CODE> before any properties or components are defined. The difference between the two, as far as pyprops is concerned, is that abstract classes don't define the <CODE>clone</CODE> method.</P>
 
 <P>To export a property, it should be defined like this.</P>
 <XMP class=code><type> <name> //P[R|O] [>|+<alias>] <description></XMP>
@@ -728,3 +734,9 @@ int ccn_Domain(PyObject *, void *);
 <P>As already mentioned, ppp files should be included (at the beginning) of the corresponding cpp files, instead of the hpp file. For instance, domain.ppp is included in domain.cpp. Each ppp should be compiled only once, all other files needing the definition of <CODE>TDomain</CODE> should still include domain.hpp as usual.</P>
 
 <P>File-specific px files are included in the corresponding cpp files. lib_kernel.px is included at the end of lib_kernel.cpp, from which it was generated. initialization.px should preferably be included in the file that initializes the module (function <CODE>initorange</CODE> needs to call <CODE>addConstants</CODE>, which is declared in initialization.px. These px files contain definitions and must be compiled only once. externs.px contains declarations and can be included wherever needed.</P> 
+
+Some steps in these instructions are only for Visual Studio 6.0. If you use a newer version of Visual Studio or if you use Linux, adapt them.
+<li>Create a new, blank workspace. If your orange sources are in d:\ai\orange\source (as are mine :), specify this directory as a "Location". Add a new project of type "Win 32 Dynamic-Link Library"; change the location back to d:\ai\orange\source. Make it an empty DLL project.</P>
+
+<P>Whatever names you give your module, make sure that the .cpp and .hpp files you create as you go on are in orange\source\something (replace "something" with something), since the further instructions will suppose it.</li>
+
