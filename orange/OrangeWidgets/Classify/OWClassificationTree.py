@@ -2,6 +2,7 @@
 <name>Classification Tree</name>
 <description>Classification tree learner/classifier.</description>
 <icon>icons/ClassificationTree.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>30</priority>
 """
 

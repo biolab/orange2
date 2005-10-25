@@ -2,7 +2,7 @@
 <name>MDS</name>
 <description>Multi dimensional scaling</description>
 <icon>MDS.png</icon>
-<contact>Ales Erjavec (ales.erjevec324(@at@)email.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec324(@at@)email.si)</contact> 
 <priority>5000</priority>
 """
 

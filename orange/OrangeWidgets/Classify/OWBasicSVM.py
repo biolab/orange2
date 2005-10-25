@@ -2,6 +2,7 @@
 <name>SVM</name>
 <description>Support Vector Machines learner/classifier.</description>
 <icon>icons/BasicSVM.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>100</priority>
 """
 

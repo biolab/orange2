@@ -2,6 +2,7 @@
 <name>Interaction Graph</name>
 <description>Interaction graph construction and viewer.</description>
 <icon>icons/InteractionGraph.png</icon>
+<contact>Aleks Jakulin</contact> 
 <priority>4000</priority>
 """
 # InteractionGraph.py

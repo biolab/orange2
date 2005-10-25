@@ -2,6 +2,7 @@
 <name>Association Rules Viewer</name>
 <description>Association rules viewer.</description>
 <icon>icons/AssociationRulesViewer.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>300</priority>
 """
 

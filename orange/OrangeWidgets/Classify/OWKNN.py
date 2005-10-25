@@ -2,6 +2,7 @@
 <name>k Nearest Neighbours</name>
 <description>K-nearest neighbours learner/classifier.</description>
 <icon>icons/kNN.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>25</priority>
 """
 

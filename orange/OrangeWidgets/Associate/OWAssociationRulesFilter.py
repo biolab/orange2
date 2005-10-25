@@ -2,6 +2,7 @@
 <name>Association Rules Filter</name>
 <description>Association rules filter.</description>
 <icon>icons/AssociationRulesFilter.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>200</priority>
 """
 

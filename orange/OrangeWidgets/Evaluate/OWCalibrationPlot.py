@@ -1,6 +1,6 @@
 """
 <name>Calibration Plot</name>
-<description>Displays callibration plot based on evaluation of classifiers.</description>
+<description>Displays calibration plot based on evaluation of classifiers.</description>
 <contact>Tomaz Curk</contact>
 <icon>CalibrationPlot.png</icon>
 <priority>1030</priority>

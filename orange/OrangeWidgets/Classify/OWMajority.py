@@ -2,6 +2,7 @@
 <name>Majority</name>
 <description>Majority class learner/classifier.</description>
 <icon>icons/Majority.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>20</priority>
 """
 

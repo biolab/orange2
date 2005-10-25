@@ -3,6 +3,7 @@
 <description>Textual display of association rules.</description>
 <category>Associations</category>
 <icon>icons/AssociationRulesPrint.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>400</priority>
 """
 

@@ -2,6 +2,7 @@
 <name>Interactive Tree Builder</name>
 <description>Interactive Tree Builder</description>
 <icon>icons/ITree.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>50</priority>
 """
 from OWWidget import *

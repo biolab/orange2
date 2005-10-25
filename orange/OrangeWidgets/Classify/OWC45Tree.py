@@ -2,6 +2,7 @@
 <name>C4.5</name>
 <description>C45 (classification tree) learner/classifier.</description>
 <icon>icons/C45.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>35</priority>
 """
 

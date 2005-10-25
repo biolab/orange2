@@ -2,6 +2,7 @@
 <name>Naive Bayes</name>
 <description>Naive Bayesian learner/classifier.</description>
 <icon>icons/NaiveBayes.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>10</priority>
 """
 #

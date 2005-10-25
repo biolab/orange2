@@ -156,7 +156,8 @@ class OWVisGraph(OWGraph):
         arr = transpose(data.toMA("ac")[0])
         averages = MA.average(arr, 1)
         averages = MA.filled(averages, 1)   # replace missing values with 1
-        self.validDataArray = Numeric.array(1-arr.mask(), Numeric.Int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
+#        self.validDataArray = Numeric.array(1-arr.mask(), Numeric.Int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
+        self.validDataArray = Numeric.ones([len(data.domain), len(data)], Numeric.Int)
         self.averages = averages.tolist()
         arr = Numeric.array(MA.filled(arr, averages))
         self.originalData = arr
