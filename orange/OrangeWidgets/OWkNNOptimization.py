@@ -1,7 +1,7 @@
 from OWBaseWidget import *
 from OWWidget import OWWidget
 import os, orange, orngTest
-import OWGUI, OWDlgs, OWVisAttrSelection, OWVisTools
+import OWGUI, OWDlgs, OWVisAttrSelection, OWVisTools, OWVisFuncts
 from copy import copy
 from math import sqrt
 from OWVisGraph import *
@@ -49,7 +49,7 @@ class kNNOptimization(OWBaseWidget):
     settingsList = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod",
                     "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances",
                     "evaluationAlgorithm", "createSnapshots", "evaluationTimeIndex", "parentWidget.VizRankClassifierName",
-                    "argumentCountIndex", "canUseMoreArguments", "moreArgumentsIndex", "reevaluateProjections",
+                    "argumentCount", "canUseMoreArguments", "moreArgumentsIndex", "reevaluateProjections",
                     "optimizeBestProjection", "optimizeBestProjectionIndex",
                     "useHeuristicToFindAttributeOrders", "argumentValueFormula", "localOptimizeMaxAttrs", "localOptimizeProjectionCount"]
     resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
@@ -58,8 +58,8 @@ class kNNOptimization(OWBaseWidget):
     resultsListLenList = [str(x) for x in resultsListLenNums]
     percentDataList = [str(x) for x in percentDataNums]
     kNeighboursList = [str(x) for x in kNeighboursNums]
-    #argumentCounts = [1, 3, 5, 10, 15, 20, 30, 50, 100, 200, 500]
-    argumentCounts = range(21)[1:]
+    argumentCounts = [1, 3, 5, 10, 15, 20, 30, 50, 100, 200]
+    #argumentCounts = range(21)[1:]
 
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
     evaluationTimeList = [str(x) for x in evaluationTimeNums]
@@ -118,7 +118,7 @@ class kNNOptimization(OWBaseWidget):
         self.attrLenDict = {}
         self.datasetName = ""
         self.cancelOptimization = 0
-        self.argumentCountIndex = 1     # when classifying use 10 best arguments
+        self.argumentCount = 1     # when classifying use 1 argument
         #self.autoSetTheKValue = 1       # automatically set the value k
         self.autoSetTheKValue = 1       # automatically set the value k
 
@@ -231,7 +231,7 @@ class kNNOptimization(OWBaseWidget):
         self.optimizeBestProjectionCombo = OWGUI.comboBox(b2, self, "optimizeBestProjectionIndex", items = self.evaluationTimeList)
         self.reevaluateProjectionsCheck = OWGUI.checkBox(b, self, "reevaluateProjections", "Only reevaluate projections for each learning fold", tooltip = "Do you want to compute projections from start for each data fold or do you just want to reevaluate projections from the list?")
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = [str(x) for x in self.argumentCounts])
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts, sendSelectedValue = 1, valueType = int)
         projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
         self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
         self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsIndex", items = self.moreArgumentsList, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
@@ -771,7 +771,7 @@ class kNNOptimization(OWBaseWidget):
         self.disableControls()
 
         testIndex = 0
-        strTotal = createStringFromNumber(len(results))
+        strTotal = OWVisFuncts.createStringFromNumber(len(results))
         for (acc, other, tableLen, attrList, tryIndex, attrReverseList) in results:
             if self.isOptimizationCanceled(): break
             testIndex += 1
@@ -780,7 +780,7 @@ class kNNOptimization(OWBaseWidget):
             if attrReverseList != []: accuracy, other_results = self.graph.getProjectionQuality(attrList, attrReverseList)
             else:                     accuracy, other_results = self.graph.getProjectionQuality(attrList)            
             self.addResult(accuracy, other_results, tableLen, attrList, tryIndex, attrReverseList)
-            self.setStatusBarText("Reevaluated %s/%s projections..." % (createStringFromNumber(testIndex), strTotal))
+            self.setStatusBarText("Reevaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(testIndex), strTotal))
 
         self.setStatusBarText("")
         self.parentWidget.progressBarFinished()
@@ -1049,16 +1049,15 @@ class kNNOptimization(OWBaseWidget):
 
         if example == None: example = self.subsetdata[0]
         scaleFunction = self.parentWidget.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
-        testExample = [scaleFunction(example, i) for i in range(len(example.domain.attributes))]
+        #testExample = [scaleFunction(example, i) for i in range(len(example.domain.attributes))]
+        testExample = ["?"] * len(example.domain.attributes)
 
         self.findArgumentsButton.hide()
         self.stopArgumentationButton.show()
         if snapshots: self.parentWidget.setMinimalGraphProperties()
 
-        #vals = [0.0 for i in range(len(self.arguments))]
         argumentList = []
 
-        argumentCount = self.argumentCounts[self.argumentCountIndex]
         foundArguments = 0
         for index in range(min(len(self.shownResults), 1000)):       # use only best argumentCount projections for argumentation
             if self.cancelArgumentation: break          # user pressed cancel
@@ -1067,37 +1066,47 @@ class kNNOptimization(OWBaseWidget):
 
             qApp.processEvents()
             (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList) = self.allResults[index]
-            attrVals = [testExample[self.graph.attributeNameIndex[attrList[i]]] for i in range(len(attrList))]
-            if "?" in attrVals: # the testExample has a missing value at one of the visualized attributes
-                print "Warning: OWkNNOptimization.py:findArguments: Tested example has a missing value at one of the visualized attributes. Skipping the projection."
+            
+            validExample = 1
+            for attr in attrList:
+                if example[attr].isSpecial():
+                    validExample = 0
+                    continue
+
+            if not validExample:
+                self.printVerbose("Warning: OWkNNOptimization.py:findArguments: Tested example has a missing value at one of the visualized attributes. Skipping the projection.")
                 continue
+
+            attrVals = []
+            for i in range(len(attrList)):
+                attrIndex = self.graph.attributeNameIndex[attrList[i]]
+                if testExample[attrIndex] == "?":
+                    testExample[attrIndex] = scaleFunction(example, attrIndex)
+                attrVals.append(testExample[attrIndex])
+                        
             if min(attrVals) < 0.0 or max(attrVals) > 1.0:
-                print "Warning: OWkNNOptimization.py:findArguments: Scaled example value out of 0-1 range. Min value: %.3f, max value: %.3f." % (min(attrVals), max(attrVals))
+                self.printVerbose("Warning: OWkNNOptimization.py:findArguments: Scaled example value out of 0-1 range. Min value: %.3f, max value: %.3f." % (min(attrVals), max(attrVals)))
             
             [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals)
             table = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList])
-            if self.externalLearner: learner = self.externalLearner
-            else: learner = self.learner
+            learner = self.externalLearner or self.learner
             classifier = learner(table)
             (classValue, prob) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
             del classifier
             classValue = int(classValue)
             if self.argumentValueFormula == 0:
                 value = accuracy
-                if index > argumentCount: self.cancelArgumentation = 1   # we stop searching for arguments if argumentValueFormula = 0 and we already considered enough top projections
+                if index >= self.argumentCount-1: self.cancelArgumentation = 1   # we stop searching for arguments if argumentValueFormula = 0 and we already considered enough top projections
             elif self.argumentValueFormula == 1:
                 value = 0.5 * accuracy + 50.0 * prob[classValue]
             else:
                 value = 100.0 * prob[classValue]
 
-            #if self.argumentValueFormula == 0:
-            #    for i in range(len(prob)): vals[i] += prob[prob.keys()[i]]
-            #else: vals[classValue] += 1
-
             pic = None
             if snapshots:            
                 # if the point lies inside a cluster -> save this figure into a pixmap
-                self.parentWidget.updateGraph(attrList)
+                if self.parentName == "Radviz": self.parentWidget.updateGraph(attrList, setAnchors = 1)
+                else:                           self.parentWidget.updateGraph(attrList)
                 painter = QPainter()
                 pic = QPixmap(QSize(120,120))
                 painter.begin(pic)
@@ -1105,11 +1114,9 @@ class kNNOptimization(OWBaseWidget):
                 self.graph.printPlot(painter, pic.rect())
                 painter.flush();  painter.end()
 
-            #value = 0.5 * accuracy + 50.0 * prob[classValue]
             ind = self.getArgumentIndex(value, classValue)
             self.arguments[classValue].insert(ind, (pic, value, accuracy, 100.0 * prob[classValue], prob, attrList, index))
             argumentList.append((value, classValue))
-            #foundArguments += 1
             if classValue == self.classValueList.currentItem():
                 if snapshots: self.argumentList.insertItem(pic, "%.2f (%.2f, %.2f) - %s" %(value, accuracy, 100.0*prob[classValue], attrList), ind)
                 else:         self.argumentList.insertItem("%.2f (%.2f, %.2f) - %s" %(value, accuracy, 100.0*prob[classValue], attrList), ind)
@@ -1124,11 +1131,11 @@ class kNNOptimization(OWBaseWidget):
         argumentList.sort()
         argumentList.reverse()
         vals = [0.0 for i in range(len(self.arguments))]
-        for i in range(min(argumentCount, len(argumentList))):
+        for i in range(min(self.argumentCount, len(argumentList))):
             vals[argumentList[i][1]] += argumentList[i][0]
 
         if self.canUseMoreArguments and (max(vals)*100.0 / sum(vals) < self.moreArgumentsNums[self.moreArgumentsIndex]):
-            for i in range(argumentCount, min(argumentCount + 100, len(self.shownResults))):
+            for i in range(self.argumentCount, min(self.argumentCount + 100, len(self.shownResults))):
                 if max(vals)*100.0 / sum(vals) > self.moreArgumentsNums[self.moreArgumentsIndex]: break
                 vals[argumentList[i][1]] += argumentList[i][0]
 
@@ -1138,8 +1145,8 @@ class kNNOptimization(OWBaseWidget):
         s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
         for key in dist.keys():
             s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
-        if foundArguments > argumentCount:
-            s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (foundArguments, argumentCount)
+        if foundArguments > self.argumentCount:
+            s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (foundArguments, self.argumentCount)
         s = s[:-4]
         #print s
         """
@@ -1180,7 +1187,8 @@ class kNNOptimization(OWBaseWidget):
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
-        self.parentWidget.updateGraph(self.arguments[classInd][ind][5])
+        if self.parentName == "Radviz": self.parentWidget.updateGraph(self.arguments[classInd][ind][5], setAnchors = 1)
+        else:                           self.parentWidget.updateGraph(self.arguments[classInd][ind][5])
         
     def setStatusBarText(self, text):
         self.statusBar.message(text)
@@ -1746,7 +1754,7 @@ class OWGraphIdentifyOutliers(OWWidget):
                 Numeric.put(self.matrixOfPredictions[(existing + index)*classCount + i], validDataIndices, probabilities[i])            
 
             index += 1
-            self.statusBar.message("Evaluated %s/%s projections..." % (createStringFromNumber(existing + index), projCount))
+            self.statusBar.message("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(existing + index), projCount))
             self.widget.progressBarSet(100.0*(index)/float(projCount-existing))
 
         self.widget.progressBarFinished()
