@@ -263,7 +263,7 @@ class OWPolyviz(OWWidget):
                 self.graph.triedPossibilities = 0
 
                 if self.graph.totalPossibilities > 200000:
-                    print "Warning: There are %s possible polyviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities))
+                    self.printVerbose("OWPolyviz: Warning: There are %s possible polyviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities)))
 
                 self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
 

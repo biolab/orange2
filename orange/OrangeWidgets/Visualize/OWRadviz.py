@@ -328,7 +328,7 @@ class OWRadviz(OWWidget):
                 self.graph.triedPossibilities = 0
             
                 if self.graph.totalPossibilities > 200000:
-                    print "Warning: There are %s possible radviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities))
+                    self.printVerbose("OWRadviz: Warning: There are %s possible radviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities)))
                                 
                 self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
         except:
@@ -372,7 +372,7 @@ class OWRadviz(OWWidget):
                 l = len(proj)
                 for i in range(len(proj)-2, 0, -1):
                     if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-                print "Warning: There are %s possible radviz projections using currently visualized attributes"% (proj)
+                self.printVerbose("OWRadviz: Warning: There are %s possible radviz projections using currently visualized attributes"% (proj))
             
             self.clusterDlg.disableControls()
             
@@ -745,7 +745,6 @@ class OWRadviz(OWWidget):
     def ranch(self, label):
         import random
         r = self.lockToCircle and 1.0 or 0.3+0.7*random.random()
-        #print r
         phi = 2*pi*random.random()
         return (r*math.cos(phi), r*math.sin(phi), label)
 
@@ -789,7 +788,6 @@ class OWRadviz(OWWidget):
                 positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
                 if len(positions)==50:
                     m = max(Numeric.sum((positions[0]-positions[49])**2, 1))
-                    print m
                     if m < 1e-4:
                         break
                 self.energyLabel.repaint()
