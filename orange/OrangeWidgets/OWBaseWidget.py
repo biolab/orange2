@@ -59,7 +59,7 @@ class ExampleList(list):
 class OWBaseWidget(QDialog):
     def __init__(self, parent = None, signalManager = None, title="Qt Orange BaseWidget", modal=FALSE):
         self.title = title.replace("&","")
-        self.savedContextSettings = {}
+        self.savedContextSettings = []
         
         QDialog.__init__(self, parent, self.title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize + Qt.WStyle_Maximize)
         
@@ -462,21 +462,35 @@ class OWBaseWidget(QDialog):
             self.widgetStateHandler()
 
 
-    def saveContext(self, contextName, encodedValue, *attrs):
-        if encodedValue: 
-            self.savedContextSettings[contextName+encodedValue] = [(attr, mygetattr(self, attr)) for attr in attrs]
-
+    def findContextIndex(self, contextName, encodedValue):
+        cn = contextName + encodedValue
+        for i, c in enumerate(self.savedContextSettings):
+            if c[0] == cn:
+                return i
+        return -1
+    
     def saveContextValue(self, contextName, encodedValue, value):
         if encodedValue:
-            self.savedContextSettings[contextName+encodedValue] = value
+            ci = self.findContextIndex(contextName, encodedValue)
+            if ci >= 0:
+                self.savedContextSettings[ci] = (contextName+encodedValue, value)
+            else:
+                self.savedContextSettings = (self.savedContextSettings + [(contextName+encodedValue, value)])[-50:]
+
+    def saveContext(self, contextName, encodedValue, *attrs):
+        if encodedValue: 
+            self.saveContextValue(contextName, encodedValue, [(attr, mygetattr(self, attr)) for attr in attrs])
 
     def loadContext(self, contextName, encodedValue):
-        saved = self.savedContextSettings.get(contextName+encodedValue, [])
-        for attr, val in saved:
-            self.__setattr__(attr, val)
+        ci = self.findContextIndex(contextName, encodedValue)
+        if ci >= 0:
+            for attr, val in self.savedContextSettings[ci][1]:
+                self.__setattr__(attr, val)
         
     def loadContextValue(self, contextName, encodedValue):
-        return self.savedContextSettings[contextName+encodedValue]
+        ci = self.findContextIndex(contextName, encodedValue)
+        if ci >= 0:
+            return self.savedContextValue[ci][1]
 
     def __setattr__(self, name, value):
         if name.count(".") > 0:
