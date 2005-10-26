@@ -17,6 +17,16 @@ import time, user, verbose
 ERROR = 0
 WARNING = 1
 
+class DummyError:
+    pass
+dummyError = DummyError
+
+def encodeDomain(domain):
+    import md5
+    return md5.md5(str([i for i in domain])).hexdigest()
+   
+def encodeDataDomain(data):
+    return data and encodeDomain(data.domain) or "None"
 
 def mygetattr(obj, attr, default = None):
     if attr.count(".") > 0:     # in case that we want to access an attribute that is not directly in this class we have to go like this
@@ -47,7 +57,9 @@ class ExampleList(list):
 
 class OWBaseWidget(QDialog):
     def __init__(self, parent = None, signalManager = None, title="Qt Orange BaseWidget", modal=FALSE):
-        self.title = title.replace("&","")          
+        self.title = title.replace("&","")
+        self.savedContextSettings = {}
+        
         QDialog.__init__(self, parent, self.title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize + Qt.WStyle_Maximize)
         
         # directories are better defined this way, otherwise .ini files get written in many places
@@ -180,14 +192,17 @@ class OWBaseWidget(QDialog):
                     settings = {}
             else:
                 settings = cPickle.load(file)
-            
+
+            if settings.has_key("savedContextSettings"):
+                self.savedContextSettings = settings["savedContextSettings"]
+                del settings["savedContextSettings"]
             self.setSettings(settings)
 
         
     def saveSettings(self, file = None):
         if hasattr(self, "settingsList"):
             #settings = dict([(name, mygetattr(self, name)) for name in self.settingsList])
-            settings = {}
+            settings = {"savedContextSettings": self.savedContextSettings}
             for name in self.settingsList:
                 try:
                     settings[name] =  mygetattr(self, name)
@@ -197,10 +212,7 @@ class OWBaseWidget(QDialog):
             if file==None: file = os.path.join(self.outputDir, self.title + ".ini")
             if type(file) == str:
                 file = open(file, "w")
-                cPickle.dump(settings, file)
-                file.close()
-            else:
-                cPickle.dump(settings, file)
+            cPickle.dump(settings, file)
 
     # Loads settings from string str which is compatible with cPickle
     def loadSettingsStr(self, str):
@@ -447,6 +459,21 @@ class OWBaseWidget(QDialog):
 
         if self.widgetStateHandler:
             self.widgetStateHandler()
+
+
+    def saveContext(self, contextName, encodedValue, *attrs):
+        self.savedContextSettings[contextName+encodedValue] = [(attr, mygetattr(self, attr)) for attr in attrs]
+
+    def saveContextValue(self, contextName, encodedValue, value):
+        self.savedContextSettings[contextName+encodedValue] = value
+
+    def loadContext(self, contextName, encodedValue):
+        saved = self.savedContextSettings.get(contextName+encodedValue, [])
+        for attr, val in saved:
+            self.__setattr__(attr, val)
+        
+    def loadContextValue(self, contextName, encodedValue):
+        return self.savedContextSettings[contextName+encodedValue]
 
     def __setattr__(self, name, value):
         if name.count(".") > 0:
