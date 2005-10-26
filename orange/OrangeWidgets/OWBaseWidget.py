@@ -22,11 +22,12 @@ class DummyError:
 dummyError = DummyError
 
 def encodeDomain(domain):
+    if not domain: return ""
     import md5
     return md5.md5(str([i for i in domain])).hexdigest()
    
 def encodeDataDomain(data):
-    return data and encodeDomain(data.domain) or "None"
+    return data and encodeDomain(data.domain) or ""
 
 def mygetattr(obj, attr, default = None):
     if attr.count(".") > 0:     # in case that we want to access an attribute that is not directly in this class we have to go like this
@@ -462,10 +463,12 @@ class OWBaseWidget(QDialog):
 
 
     def saveContext(self, contextName, encodedValue, *attrs):
-        self.savedContextSettings[contextName+encodedValue] = [(attr, mygetattr(self, attr)) for attr in attrs]
+        if encodedValue: 
+            self.savedContextSettings[contextName+encodedValue] = [(attr, mygetattr(self, attr)) for attr in attrs]
 
     def saveContextValue(self, contextName, encodedValue, value):
-        self.savedContextSettings[contextName+encodedValue] = value
+        if encodedValue:
+            self.savedContextSettings[contextName+encodedValue] = value
 
     def loadContext(self, contextName, encodedValue):
         saved = self.savedContextSettings.get(contextName+encodedValue, [])
