@@ -2,6 +2,7 @@
 <name>Categorize</name>
 <description>Performs attribute discretization.</description>
 <icon>icons/Categorize.png</icon>
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
 <priority>2100</priority>
 """
 #

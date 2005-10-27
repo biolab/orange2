@@ -2,6 +2,7 @@
 <name>Classification Tree Viewer 2D</name>
 <description>Classification tree viewer (graph view).</description>
 <icon>icons/ClassificationTreeViewer2D.png</icon>
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
 <priority>2110</priority>
 """
 

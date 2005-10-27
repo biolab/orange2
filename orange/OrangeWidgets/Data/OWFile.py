@@ -2,6 +2,7 @@
 <name>File</name>
 <description>Reads data from a file.</description>
 <icon>icons/File.png</icon>
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>10</priority>
 """
 

@@ -2,6 +2,7 @@
 <name>Classifications</name>
 <description>Shows prediction of classifiers on a data set.</description>
 <icon>icons/Classifications.png</icon>
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
 <priority>300</priority>
 """
 

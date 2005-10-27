@@ -2,6 +2,7 @@
 <name>Logistic Regression</name>
 <description>Logistic regression learner/classifier.</description>
 <icon>icons/LogisticRegression.png</icon>
+<contact>Martin Mozina (martin.mozina(@at@)fri.uni-lj.si)</contact> 
 <priority>15</priority>
 """
 

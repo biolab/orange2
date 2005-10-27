@@ -2,6 +2,7 @@
 <name>Attribute Distance</name>
 <description>Computes attribute distance for given data set.</description>
 <icon>icons/AttributeDistance.png</icon>
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
 <priority>1100</priority>
 """
 

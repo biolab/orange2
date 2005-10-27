@@ -2,6 +2,7 @@
 <name>K-Means Clustering</name>
 <description>K-means clustering.</description>
 <icon>icons/KMeans.png</icon>
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
 <priority>2000</priority>
 """
 

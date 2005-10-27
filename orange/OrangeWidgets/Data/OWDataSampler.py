@@ -2,6 +2,7 @@
 <name>Data Sampler</name>
 <description>Selects a subset of instances from the data set.</description>
 <icon>icons/DataSampler.png</icon>
+<contact>Aleksander Sadikov (aleksander.sadikov(@at@)fri.uni-lj.si)</contact> 
 <priority>1125</priority>
 """
 from OWWidget import *

@@ -2,6 +2,7 @@
 <name>Test Learners</name>
 <description>Estimates the predictive performance of learners on a data set.</description>
 <icon>icons/TestLearners.png</icon>
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
 <priority>200</priority>
 """
 #

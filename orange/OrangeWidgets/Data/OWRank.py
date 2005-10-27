@@ -2,6 +2,7 @@
 <name>Rank</name>
 <description>Ranks attributes by their relevance.</description>
 <icon>icons/Rank.png</icon>
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
 <priority>2150</priority>
 """
 #
