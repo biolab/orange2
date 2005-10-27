@@ -33,9 +33,9 @@
 #include "som.hpp"
 
 C_CALL(SOMLearner, Learner, "([examples[, weight=]]) -/-> Classifier")
-C_NAMED(SOMClassifier, Classifier, "")
-C_NAMED(SOMMap, Orange, "")
-C_NAMED(SOMNode, Orange, "")
+C_NAMED(SOMClassifier, Classifier, " ")
+C_NAMED(SOMMap, Orange, " ")
+C_NAMED(SOMNode, Orange, " ")
 
 PyObject *SOMNode_getDistance(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(example)->float")
 {
@@ -106,6 +106,12 @@ PyObject *SOMNodeList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(SO
 PyObject *SOMNodeList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_reverse(self); }
 PyObject *SOMNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_sort(self, args); }
 
+PYCLASSCONSTANT_INT(SOMLearner, HexagonalTopology, TSOMLearner::HexagonalTopology)
+PYCLASSCONSTANT_INT(SOMLearner, RectangularTopology, TSOMLearner::RectangularTopology)
+PYCLASSCONSTANT_INT(SOMLearner, BubbleNeighborhood, TSOMLearner::BubbleNeighborhood)
+PYCLASSCONSTANT_INT(SOMLearner, GaussianNeighborhood, TSOMLearner::GaussianNeighborhood)
+PYCLASSCONSTANT_INT(SOMLearner, LinearFunction, TSOMLearner::LinearFunction)
+PYCLASSCONSTANT_INT(SOMLearner, InverseFunction, TSOMLearner::InverseFunction)
 
 
 /*************** MDS ***************/

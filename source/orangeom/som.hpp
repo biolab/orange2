@@ -50,6 +50,7 @@ extern "C"{
 #endif
 
 WRAPPER(ExampleTable)
+WRAPPER(Classifier)
 OMWRAPPER(DefaultClassifier)
 OMWRAPPER(MajorityLearner)
 WRAPPER(ProbabilityEstimatorConstructor)
@@ -82,11 +83,7 @@ OMVWRAPPER(SOMNodeList)
 class ORANGEOM_API TSOMLearner : public TLearner{
 public:
    __REGISTER_CLASS
-   /*
-   enum {RectangularTopology, HexagonalTopology};
-   enum {BubbleNeighborhood, GaussianNeighborhood};
-   enum {LinearFunction, InverseFunction};
-   */
+   
    static const int RectangularTopology;
    static const int HexagonalTopology;
    static const int BubbleNeighborhood;
@@ -98,10 +95,11 @@ public:
    int yDim;    //P yDim
    int steps;   //P number of steps
    int topology;//P topology
+   int neighborhood; //P neighborhood
+   int alphaType;	//P alphaType
+
    PIntList iterations; //P list of iterations for each step
-   PIntList neighborhood;   //P neighbourhood function type list
    PIntList radius; //P neighbourghood radius list
-   PIntList alphaType;  //P alpha function type list
    PFloatList alpha;    //P initial alpha values list
    
    PDomainContinuizer domainContinuizer;    //P domain continuizer used to transform the domain

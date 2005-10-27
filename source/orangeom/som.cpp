@@ -59,15 +59,11 @@ TSOMLearner::TSOMLearner(){
     iterations=mlnew TIntList();
     iterations->push_back(1000);
     iterations->push_back(10000); 
-    neighborhood=mlnew TIntList();
-    neighborhood->push_back(BubbleNeighborhood);
-    neighborhood->push_back(BubbleNeighborhood);
+    neighborhood=BubbleNeighborhood;
     radius=mlnew TIntList();
     radius->push_back(10);
     radius->push_back(5);
-    alphaType=mlnew TIntList();
-    alphaType->push_back(LinearFunction);
-    alphaType->push_back(LinearFunction);
+    alphaType=LinearFunction;
     alpha=mlnew TFloatList();
     alpha->push_back(0.05f);
     alpha->push_back(0.03f);
@@ -81,11 +77,13 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     transformedDomain=domainContinuizer->call(examples,-1,-1);
     PExampleTable ex=mlnew TExampleTable(transformedDomain, examples);
     transformedDomain=ex->domain;
-    struct entries *data, *codes;
+
+	PSOMClassifier classifier;
+    struct entries *data=NULL, *codes=NULL;
 	struct data_entry *ent;
 
+	try{
     data=examplesToEntries(ex);
-    
     struct teach_params params;
     struct  typelist *type;
     type=get_type_by_id(alpha_list, ALPHA_LINEAR);
@@ -109,13 +107,13 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     set_som_params(&params);
     float qerror=find_qerror2(&params);
     
-    PSOMClassifier classifier;
 	if(examples->domain->classVar){
         classifier=mlnew TSOMClassifier();
 		classifier->classVar=examples->domain->classVar;
 	}
     else
         classifier=mlnew TSOMMap();
+
     PSOMNodeList nodes=mlnew TSOMNodeList(xDim*yDim);
     int i=0;
     for(ent=codes->dentries; ent!=NULL; ent=ent->next, i++){
@@ -156,7 +154,13 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
 	classifier->som_pak_codes=codes;
 	classifier->som_pak_data=data;
 	classifier->params=params;
-
+	}catch(...){
+		if(codes)
+			close_entries(codes);
+		if(data)
+			close_entries(data);
+		throw;
+	}
     return classifier; 
 }
 /*
