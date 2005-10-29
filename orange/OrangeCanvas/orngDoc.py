@@ -48,7 +48,7 @@ class SchemaDoc(QMainWindow):
     # we are about to close document
     # ask user if he is sure
     def closeEvent(self,ce):
-        if not self.canSave:
+        if not self.canSave or self.canvasDlg.dontAskBeforeClose:
             self.clear()
             ce.accept()
             QMainWindow.closeEvent(self, ce)

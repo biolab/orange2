@@ -81,11 +81,13 @@ class OrangeCanvasDlg(QMainWindow):
         self.rebuildSignals()    # coloring of signals - unused!
         self.useLargeIcons = FALSE
         self.snapToGrid = TRUE
+        self.dontAskBeforeClose = FALSE
 
         self.loadSettings()
         
         self.useLargeIcons = self.settings["useLargeIcons"]
         self.snapToGrid = self.settings["snapToGrid"]
+        self.dontAskBeforeClose = self.settings["dontAskBeforeClose"]
         
         self.widgetSelectedColor = QColor(self.settings["widgetSelectedColor"][0], self.settings["widgetSelectedColor"][1], self.settings["widgetSelectedColor"][2])
         self.widgetActiveColor   = QColor(self.settings["widgetActiveColor"][0], self.settings["widgetActiveColor"][1], self.settings["widgetActiveColor"][2])
@@ -588,6 +590,7 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
         dlg.verboseCB.setChecked(self.settings["verbose"])
+        dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
 
         # set current exception settings
         #dlg.catchExceptionCB.setChecked(self.settings["catchException"])
@@ -639,7 +642,9 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["canvasWidth"] =  int(str(dlg.widthEdit.text()))
             self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
             self.settings["verbose"] = dlg.verboseCB.isChecked()
+            self.settings["dontAskBeforeClose"] = dlg.dontAskBeforeCloseCB.isChecked()
             verbose.verbose = int(self.settings["verbose"])
+            self.dontAskBeforeClose = self.settings["dontAskBeforeClose"]
 
             self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
             self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
@@ -704,6 +709,7 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.has_key("useLargeIcons"):  self.settings["useLargeIcons"] = 0
         if not self.settings.has_key("snapToGrid"): self.settings["snapToGrid"] = 1
         if not self.settings.has_key("writeLogFile"): self.settings["writeLogFile"] = 1
+        self.settings.setdefault("dontAskBeforeClose", FALSE)
 
         if not self.settings.has_key("widgetSelectedColor"): self.settings["widgetSelectedColor"] = (0, 255, 0)
         if not self.settings.has_key("widgetActiveColor"):   self.settings["widgetActiveColor"] = (0,0,255)
