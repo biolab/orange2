@@ -518,8 +518,7 @@ class FreeVizClassifier(orange.Classifier):
     def __init__(self, radvizWidget, data):
         self.radvizWidget = radvizWidget
 
-        keepMinMaxVals = self.radvizWidget.data != None and str(self.radvizWidget.data.domain.attributes) == str(data.domain.attributes)
-        self.radvizWidget.cdata(data, keepMinMaxVals = keepMinMaxVals)
+        self.radvizWidget.cdata(data)
 
         self.radvizWidget.optimize()
         domain = orange.Domain([a[2] for a in self.radvizWidget.graph.anchorData]+[self.radvizWidget.data.domain.classVar], self.radvizWidget.data.domain)
@@ -536,7 +535,7 @@ class FreeVizClassifier(orange.Classifier):
 class FreeVizLearner(orange.Learner):
     def __init__(self, radvizWidget):
         self.radvizWidget = radvizWidget
-        self.name = "FreeViz"
+        self.name = "FreeViz Learner"
         
     def __call__(self, examples, weightID = 0):
         return FreeVizClassifier(self.radvizWidget, examples)
@@ -549,10 +548,7 @@ class S2NHeuristicClassifier(orange.Classifier):
         self.optimizationDlg = optimizationDlg
         self.radvizWidget = radvizWidget
 
-        keepMinMaxVals = self.radvizWidget.data != None and str(self.radvizWidget.data.domain.attributes) == str(data.domain.attributes)
-        self.radvizWidget.cdata(data, keepMinMaxVals = keepMinMaxVals)
-        #self.radvizWidget.cdata(data)
-
+        self.radvizWidget.cdata(data)
         self.optimizationDlg.s2nMixAnchorsAutoSet()
 
         if nrOfFreeVizSteps > 0:

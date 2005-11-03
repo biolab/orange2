@@ -8,6 +8,13 @@ from OWTools import *
 from qwt import *
 from OWGraphTools import *      # color palletes, user defined curves, ...
 from OWDlgs import OWChooseImageSizeDlg
+import qtcanvas, orange
+
+NOTHING = 0
+ZOOMING = 1
+SELECT_RECTANGLE = 2
+SELECT_POLYGON = 3
+
 
 class OWGraph(QwtPlot):
     def __init__(self, parent = None, name = None):
@@ -49,6 +56,47 @@ class OWGraph(QwtPlot):
         self.YLaxisTitle = None
         self.showYRaxisTitle = FALSE
         self.YRaxisTitle = None
+
+
+        self.state = ZOOMING
+        self.tooltip = MyQToolTip(self)
+        self.zoomKey = None
+        self.tempSelectionCurve = None
+        self.selectionCurveKeyList = []
+        self.autoSendSelectionCallback = None   # callback function to call when we add new selection polygon or rectangle
+
+        self.enableGridX(FALSE)
+        self.enableGridY(FALSE)
+
+        self.mouseCurrentlyPressed = 0
+        self.mouseCurrentButton = 0
+        self.blankClick = 0
+        self.noneSymbol = QwtSymbol()
+        self.noneSymbol.setStyle(QwtSymbol.None)
+        self.tips = TooltipManager(self)
+        self.statusBar = None
+        self.canvas().setMouseTracking(1)
+        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.onMouseMoved)
+        self.zoomStack = []
+        self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
+        self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
+        self.optimizedDrawing = 1
+        self.pointWidth = 5
+        self.showFilledSymbols = 1
+        self.showLegend = 1
+        self.scaleFactor = 1.0              # used in some visualizations to "stretch" the data - see radviz, polviz
+        self.setCanvasColor(QColor(Qt.white.name()))
+        self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
+        self.ypos = 0
+        self.zoomStack = []
+        self.colorNonTargetValue = QColor(200,200,200)
+        self.colorTargetValue = QColor(0,0,255)
+        self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
+        #self.curveSymbols = [QwtSymbol.Triangle, QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
+
+        # uncomment this if you want to use printer friendly symbols
+        #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
+
 
     # call to update dictionary with settings
     def updateSettings(self, **settings):
@@ -280,3 +328,353 @@ class OWGraph(QwtPlot):
     def setCanvasColor(self, c):
         self.setCanvasBackground(c)
         self.repaint()   
+
+    # ############################################################
+    # functions that were previously in OWVisGraph
+    # ############################################################
+    def setData(self, data):
+        # clear all curves, markers, tips
+        self.removeAllSelections(0)  # clear all selections
+        self.removeCurves()
+        self.removeMarkers()
+        self.tips.removeAll()
+
+    # ####################################################################
+    # return string with attribute names and their values for example example
+    def getExampleText(self, data, example):
+        text = ""
+        for i in range(len(data.domain)):
+            if example[i].isSpecial():
+                text += "%s = ?; " % (data.domain[i].name)
+            else:
+                text += "%s = %s; " % (data.domain[i].name, str(example[i]))
+        return text
+
+    # ####################################################################
+    # return string with attribute names and their values for example example
+    def getExampleTextWithMeta(self, data, example, indices):
+        text = ""
+        try:
+            for index in indices:
+                if example[index].isSpecial():
+                    text += "%s = ?; " % (data.domain[index].name)
+                else:
+                    text += "%s = %s; " % (data.domain[index].name, str(example[index]))
+
+            # show values of meta attributes
+            for key in data.domain.getmetas():
+                try: text += "%s = %s; " % (data.domain[key].name, str(example[data.domain[key]]))
+                except: pass
+        except:
+            print "Unable to set tooltip"
+            text = ""
+        return text
+
+    def changeClassAttr(self, selected, unselected):
+        classVar = orange.EnumVariable("Selection", values = ["Selected data", "Unselected data"])
+        classVar.getValueFrom = lambda ex,what: 0  # orange.Value(classVar, 0)
+        if selected:
+            domain = orange.Domain(selected.domain.variables + [classVar])
+            table = orange.ExampleTable(domain, selected)
+            if unselected:
+                classVar.getValueFrom = lambda ex,what: 1
+                table.extend(unselected)
+        elif unselected:
+            domain = orange.Domain(unselected.domain.variables + [classVar])
+            classVar.getValueFrom = lambda ex,what: 1
+            table = orange.ExampleTable(domain, unselected)
+        else: table = None
+        return table
+
+
+    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], forceFilledSymbols = 0, lineWidth = 1, pen = None):
+        newCurveKey = self.insertCurve(name)
+        if self.showFilledSymbols or forceFilledSymbols:
+            newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
+        else:
+            newSymbol = QwtSymbol(symbol, QBrush(), QPen(penColor), QSize(size, size))
+        self.setCurveSymbol(newCurveKey, newSymbol)
+        self.setCurveStyle(newCurveKey, style)
+        if not pen:
+            self.setCurvePen(newCurveKey, QPen(penColor, lineWidth))
+        else:
+            self.setCurvePen(newCurveKey, pen)
+        self.enableLegend(enableLegend, newCurveKey)
+        if xData != [] and yData != []:
+            self.setCurveData(newCurveKey, xData, yData)
+            
+        return newCurveKey
+
+    def addMarker(self, name, x, y, alignment = -1, bold = 0):
+        mkey = self.insertMarker(name)
+        self.marker(mkey).setXValue(x)
+        self.marker(mkey).setYValue(y)
+        if alignment != -1:
+            self.marker(mkey).setLabelAlignment(alignment)
+        if bold:
+            font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
+        return mkey
+
+    # show a tooltip at x,y with text. if the mouse will move for more than 2 pixels it will be removed
+    def showTip(self, x, y, text):
+        MyQToolTip.tip(self.tooltip, QRect(x+self.canvas().frameGeometry().x()-3, y+self.canvas().frameGeometry().y()-3, 6, 6), text)
+       
+    # mouse was only pressed and released on the same spot. visualization methods might want to process this event
+    def staticMouseClick(self, e):
+        pass
+
+    def activateZooming(self):
+        self.state = ZOOMING
+        if self.tempSelectionCurve: self.removeLastSelection()
+
+    def activateRectangleSelection(self):
+        self.state = SELECT_RECTANGLE
+        if self.tempSelectionCurve: self.removeLastSelection()
+
+    def activatePolygonSelection(self):
+        self.state = SELECT_POLYGON
+        if self.tempSelectionCurve: self.removeLastSelection()
+
+    def removeDrawingCurves(self):
+        for key in self.curveKeys():
+            curve = self.curve(key)
+            if not isinstance(curve, SelectionCurve):
+                self.removeCurve(key)
+
+    def removeLastSelection(self):
+        removed = 0
+        if self.selectionCurveKeyList != []:
+            lastCurve = self.selectionCurveKeyList.pop()
+            self.removeCurve(lastCurve)
+            self.tempSelectionCurve = None
+            removed = 1
+        self.replot()
+        if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+        return removed
+        
+    def removeAllSelections(self, send = 1):
+        for key in self.selectionCurveKeyList: self.removeCurve(key)
+        self.selectionCurveKeyList = []
+        self.replot()
+        if send and self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+
+    def zoomOut(self):
+        if len(self.zoomStack):
+            (xmin, xmax, ymin, ymax) = self.zoomStack.pop()
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
+            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+            self.replot()
+            return 1
+        return 0
+
+
+    # ###############################################
+    # HANDLING MOUSE EVENTS
+    # ###############################################
+    def onMousePressed(self, e):
+        self.mouseCurrentlyPressed = 1
+        self.mouseCurrentButton = e.button()
+        self.xpos = e.x()
+        self.ypos = e.y()
+
+        # ####
+        # ZOOM
+        if e.button() == Qt.LeftButton and self.state == ZOOMING:
+            self.tempSelectionCurve = SelectionCurve(self, pen = Qt.DashLine)
+            self.zoomKey = self.insertCurve(self.tempSelectionCurve)
+
+        # ####
+        # SELECT RECTANGLE
+        elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
+            self.tempSelectionCurve = SelectionCurve(self)
+            key = self.insertCurve(self.tempSelectionCurve)
+            self.selectionCurveKeyList.append(key)
+
+        # ####
+        # SELECT POLYGON
+        elif e.button() == Qt.LeftButton and self.state == SELECT_POLYGON:
+            if self.tempSelectionCurve == None:
+                self.tempSelectionCurve = SelectionCurve(self)
+                key = self.insertCurve(self.tempSelectionCurve)
+                self.selectionCurveKeyList.append(key)
+                self.tempSelectionCurve.addPoint(self.invTransform(QwtPlot.xBottom, self.xpos), self.invTransform(QwtPlot.yLeft, self.ypos))
+            self.tempSelectionCurve.addPoint(self.invTransform(QwtPlot.xBottom, self.xpos), self.invTransform(QwtPlot.yLeft, self.ypos))
+
+            if self.tempSelectionCurve.closed():    # did we intersect an existing line. if yes then close the curve and finish appending lines
+                self.tempSelectionCurve = None
+                self.replot()
+                if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+
+        # fake a mouse move to show the cursor position
+        self.onMouseMoved(e)
+        self.event(e)
+
+    # only needed to show the message in statusbar
+    def onMouseMoved(self, e):
+        xFloat = self.invTransform(QwtPlot.xBottom, e.x())
+        yFloat = self.invTransform(QwtPlot.yLeft, e.y())
+
+        text = ""
+        if not self.mouseCurrentlyPressed:
+            (text, x, y) = self.tips.maybeTip(xFloat, yFloat)
+            if type(text) == int: text = self.buildTooltip(text)
+        
+        if self.statusBar != None:  self.statusBar.message(text)
+        if text != "": self.showTip(self.transform(QwtPlot.xBottom, x), self.transform(QwtPlot.yLeft, y), text[:-2].replace("; ", "\n"))
+
+        if self.tempSelectionCurve != None and (self.state == ZOOMING or self.state == SELECT_RECTANGLE):
+            x1 = self.invTransform(QwtPlot.xBottom, self.xpos)
+            y1 = self.invTransform(QwtPlot.yLeft, self.ypos)
+            self.tempSelectionCurve.setData([x1, x1, xFloat, xFloat, x1], [y1, yFloat, yFloat, y1, y1])
+            self.replot()
+
+        elif self.state == SELECT_POLYGON and self.tempSelectionCurve != None:
+            self.tempSelectionCurve.replaceLastPoint(xFloat,yFloat)
+            self.repaint()
+            
+        self.event(e)
+
+
+    def onMouseReleased(self, e):
+        self.mouseCurrentlyPressed = 0
+        self.mouseCurrentButton = 0
+        staticClick = 0
+
+        if e.button() != Qt.RightButton:
+            if self.xpos == e.x() and self.ypos == e.y():
+                self.staticMouseClick(e)
+                staticClick = 1
+
+        if e.button() == Qt.LeftButton:
+            if self.state == ZOOMING:            
+                xmin = min(self.xpos, e.x());  xmax = max(self.xpos, e.x())
+                ymin = min(self.ypos, e.y());  ymax = max(self.ypos, e.y())
+                
+                if self.zoomKey: self.removeCurve(self.zoomKey)
+                self.zoomKey = None
+                self.tempSelectionCurve = None
+
+                if staticClick or (xmax-xmin)+(ymax-ymin) < 4: return
+
+                xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
+                ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
+                
+                self.blankClick = 0
+                self.zoomStack.append((self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(), self.axisScale(QwtPlot.yLeft).hBound()))
+                self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
+                self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+                self.replot()
+
+            elif self.state == SELECT_RECTANGLE:
+                if self.tempSelectionCurve:
+                    self.tempSelectionCurve = None
+                if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+
+        elif e.button() == Qt.RightButton:
+            if self.state == ZOOMING:
+                ok = self.zoomOut()
+                if not ok:
+                    self.removeLastSelection()                
+                    self.blankClick = 1 # we just clicked and released the button at the same position
+                    return
+
+            elif self.state == SELECT_RECTANGLE:
+                ok = self.removeLastSelection()      # remove the rectangle
+                if not ok: self.zoomOut()
+
+            elif self.state == SELECT_POLYGON:
+                if self.tempSelectionCurve:
+                    self.tempSelectionCurve.removeLastPoint()
+                    if self.tempSelectionCurve.dataSize() == 0: # remove the temp curve
+                        self.tempSelectionCurve = None
+                        self.removeLastSelection()
+                    else:   # set new last point 
+                        self.tempSelectionCurve.replaceLastPoint(self.invTransform(QwtPlot.xBottom, e.x()), self.invTransform(QwtPlot.yLeft, e.y()))
+                    self.replot()
+                else:
+                    ok = self.removeLastSelection()
+                    if not ok: self.zoomOut()
+                
+        #self.replot()
+        self.event(e)
+
+    # does a point (x,y) lie inside one of the selection rectangles (polygons)
+    def isPointSelected(self, x,y):
+        for curveKey in self.selectionCurveKeyList:
+            if self.curve(curveKey).isInside(x,y): return 1
+        return 0
+
+
+
+
+class MyQToolTip(QToolTip):
+    def __init__(self, parent):
+        QToolTip.__init__(self, parent)
+        self.rect = None
+        self.text = None
+
+    def setRect(self, rect, text):
+        self.rect = rect
+        self.text = text
+
+    def maybeTip(self, p):
+        if self.rect and self.text:
+            if self.rect.contains(p):
+                self.tip(self.rect, text)
+        
+# ###########################################################
+# a class that is able to draw arbitrary polygon curves.
+# data points are specified by a standard call to graph.setCurveData(key, xArray, yArray)
+# brush and pen can also be set by calls to setPen and setBrush functions
+class PolygonCurve(QwtPlotCurve):
+    def __init__(self, parent, pen = QPen(Qt.black), brush = QBrush(Qt.white)):
+        QwtPlotCurve.__init__(self, parent)
+        self.pen = pen
+        self.brush = brush
+
+    def setPen(self, pen):
+        self.pen = pen
+
+    def setBrush(self, brush):
+        self.brush = brush
+
+    # Draws rectangles with the corners taken from the x- and y-arrays.        
+    def draw(self, painter, xMap, yMap, start, stop):
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
+        if stop == -1: stop = self.dataSize()
+        start = max(start, 0)
+        stop = max(stop, 0)
+        array = QPointArray(stop-start)
+        for i in range(start, stop):
+            array.setPoint(i-start, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
+
+        if stop-start > 2:
+            painter.drawPolygon(array)
+
+
+class MyMarker(QwtPlotMarker):
+    def __init__(self, parent, label = "", x = 0.0, y = 0.0, rotationDeg = 0):
+        QwtPlotMarker.__init__(self, parent)
+        self.rotationDeg = rotationDeg
+        self.x = x
+        self.y = y
+        self.setXValue(x)
+        self.setYValue(y)
+        self.parent = parent
+        
+        self.setLabel(label)
+
+    def setRotation(self, rotationDeg):
+        self.rotationDeg = rotationDeg
+
+    def draw(self, painter, x, y, rect):
+        rot = math.radians(self.rotationDeg)
+       
+        x2 = x * math.cos(rot) - y * math.sin(rot)
+        y2 = x * math.sin(rot) + y * math.cos(rot)
+        
+        painter.rotate(-self.rotationDeg)
+        QwtPlotMarker.draw(self, painter, x2, y2, rect)
+        painter.rotate(self.rotationDeg)
+            
