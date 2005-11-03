@@ -4,11 +4,16 @@
 </HEAD>
 <BODY>
 
-<p><a href="output.log">Full log for Orange daily build</a></p>
+<p><a href="output.log">Full log for Orange daily build</a> (<!--#flastmod file="output.log" -->)</p>
 
-<p><a href="compiling.log">compile log</a><br>
-<a href="install.log">local install log</a><br>
-<a href="regress.log">regression tests log</a></p>
+<p><a href="compiling.log">compile log</a> (<!--#flastmod file="compiling.log" -->)<br>
+<a href="install.log">local install log</a> (<!--#flastmod file="install.log" -->)<br>
+<a href="regress.log">regression tests log</a> (<!--#flastmod file="regress.log" -->)</p>
+
+<h3>Full log</h3>
+<pre>
+<!--#include FILE="output.log" -->
+</pre>
 
 </BODY>
 </HTML>
