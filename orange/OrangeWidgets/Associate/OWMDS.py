@@ -20,7 +20,7 @@ import OWGraphTools
 import OWToolbars
 from random import random
 from OWWidget import *
-from OWVisGraph import *
+from OWGraph import *
 from sets import Set
 
 try:
@@ -393,9 +393,9 @@ class OWMDS(OWWidget):
             data=[(name, [d for d in filter(lambda a:a.strain==name, datasets)]) for name in names]
             self.send("Structured Data Files",data)
 
-class MDSGraph(OWVisGraph):
+class MDSGraph(OWGraph):
     def __init__(self, parent=None, name=None):
-        OWVisGraph.__init__(self, parent, name)
+        OWGraph.__init__(self, parent, name)
         self.data=None
         self.mds=None
         self.PointSize=5
