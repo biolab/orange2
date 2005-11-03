@@ -19,8 +19,9 @@ mv -f new.py setup.py
 
 echo `date` > ../output.log
 if ! python setup.py compile >> ../output.log 2>&1 ; then
+  cd /home/orange/daily/orange
   cat compiling.log >> ../output.log
-  mail -s "Linux: ERROR compiling Orange" janez.demsar@fri.uni-lj.si < ../output.log
+  mail -s "Linux: ERROR compiling Orange" janez.demsar@fri.uni-lj.si < ../compiling.log
   mail -s "Linux: ERROR compiling Orange" tomaz.curk@fri.uni-lj.si < ../output.log
   mail -s "Linux: ERROR compiling Orange" jurem@insilica.com < ../output.log
   cat ../output.log
@@ -30,8 +31,10 @@ fi
 
 # install
 cd /home/orange/daily/orange
+cat compiling.log >> ../output.log
 echo `date` > install.log
 if ! python setup.py install --orangepath=/home/orange/daily/test_install >> install.log 2>&1 ; then
+  cd /home/orange/daily/orange
   cat install.log >> ../output.log
   mail -s "Linux: ERROR installing Orange" tomaz.curk@fri.uni-lj.si < ../output.log
   mail -s "Linux: ERROR installing Orange" jurem@insilica.com < ../output.log
@@ -42,11 +45,12 @@ fi
 
 # regression test
 cd /home/orange/daily/orange
+cat install.log >> ../output.log
 echo `date` > regress.log
 if ! /home/orange/install-scripts/linux/testOrange.sh >> regress.log 2>&1 ; then
   cd /home/orange/daily/orange
   cat regress.log >> ../output.log
-  mail -s "Linux: ERROR regression tests (compile and install OK) Orange" janez.demsar@fri.uni-lj.si < ../output.log
+  mail -s "Linux: ERROR regression tests (compile and install OK) Orange" janez.demsar@fri.uni-lj.si < ../regress.log
   mail -s "Linux: ERROR regression tests (compile and install OK) Orange" tomaz.curk@fri.uni-lj.si < ../output.log
   mail -s "Linux: ERROR regression tests (compile and install OK) Orange" jurem@insilica.com  < ../output.log
   cat ../output.log
