@@ -30,7 +30,8 @@ fi
 
 # install
 cd /home/orange/daily/orange
-if ! python setup.py install --orangepath=/home/orange/daily/test_install > install.log 2>&1 ; then
+echo `date` > install.log
+if ! python setup.py install --orangepath=/home/orange/daily/test_install >> install.log 2>&1 ; then
   cat install.log >> ../output.log
   mail -s "Linux: ERROR installing Orange" tomaz.curk@fri.uni-lj.si < ../output.log
   mail -s "Linux: ERROR installing Orange" jurem@insilica.com < ../output.log
@@ -41,7 +42,8 @@ fi
 
 # regression test
 cd /home/orange/daily/orange
-if ! /home/orange/install-scripts/linux/testOrange.sh > regress.log 2>&1 ; then
+echo `date` > regress.log
+if ! /home/orange/install-scripts/linux/testOrange.sh >> regress.log 2>&1 ; then
   cd /home/orange/daily/orange
   cat regress.log >> ../output.log
   mail -s "Linux: ERROR regression tests (compile and install OK) Orange" janez.demsar@fri.uni-lj.si < ../output.log
