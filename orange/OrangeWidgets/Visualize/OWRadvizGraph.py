@@ -9,7 +9,6 @@ from math import *
 from OWClusterOptimization import *
 from orngScaleRadvizData import *
 
-
 # indices in curveData
 SYMBOL = 0
 PENCOLOR = 1
@@ -493,7 +492,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
             else:
                 if self.selectedAnchorIndex != None:
                     if self.radvizWidget.lockToCircle:
-                        rad = math.sqrt(xFloat**2 + yFloat**2)
+                        rad = sqrt(xFloat**2 + yFloat**2)
                         xFloat /= rad
                         yFloat /= rad
                     self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2]) 
