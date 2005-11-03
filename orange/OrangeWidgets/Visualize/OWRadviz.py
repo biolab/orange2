@@ -664,7 +664,7 @@ class OWRadviz(OWWidget):
         noChange = 0
         notBest = 1
         positions = [Numeric.array([x[:2] for x in self.graph.anchorData])]
-        for ttt in range(50):
+        while 1:
             for i in range(iterations):
                 self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, steps, self.graph.normalizeExamples, contClass)
                 self.graph.potentialsBmp = None
@@ -674,7 +674,8 @@ class OWRadviz(OWWidget):
                 positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
                 if len(positions)==50:
                     m = max(Numeric.sum((positions[0]-positions[49])**2, 1))
-                    if m < 1e-4:
+                    print m
+                    if m < 1e-2:
                         break
                 self.energyLabel.repaint()
             else:

@@ -517,18 +517,28 @@ class RadvizSolver(DESolver.DESolver):
 class FreeVizClassifier(orange.Classifier):
     def __init__(self, radvizWidget, data):
         self.radvizWidget = radvizWidget
+        graph = radvizWidget.graph
 
         self.radvizWidget.cdata(data)
 
+        self.radvizWidget.radialAnchors()
         self.radvizWidget.optimize()
-        domain = orange.Domain([a[2] for a in self.radvizWidget.graph.anchorData]+[self.radvizWidget.data.domain.classVar], self.radvizWidget.data.domain)
-        self.classifier = orange.P2NN(data, self.radvizWidget.graph.anchorData, self.radvizWidget.normalizeExamples, domain)
-
+        labels = [a[2] for a in self.radvizWidget.graph.anchorData]
+        domain = orange.Domain(labels+[self.radvizWidget.data.domain.classVar], self.radvizWidget.data.domain)
+        #self.classifier = orange.P2NN(data, self.radvizWidget.graph.anchorData, self.radvizWidget.graph.normalizeExamples, domain)
+        indices = [graph.attributeNameIndex[label] for label in labels]
+        offsets = [graph.offsets[i] for i in indices]
+        normalizers = [graph.normalizers[i] for i in indices]
+        averages = [graph.averages[i] for i in indices]
+        self.classifier = orange.P2NN(domain,
+                                      Numeric.transpose(Numeric.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawdata]])),
+                                      graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=radvizWidget.law
+                                     )
     # for a given example run argumentation and find out to which class it most often fall        
     def __call__(self, example, returnType):
         example.setclass(0)
         v = self.classifier(example, returnType)
-        print "XX", v, v[0], v[1], type(v[0]), type(v[1]), "YY"
+#        print "XX", v, v[0], v[1], type(v[0]), type(v[1]), "YY"
         return v
 
 

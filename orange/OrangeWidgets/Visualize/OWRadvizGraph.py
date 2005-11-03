@@ -82,12 +82,12 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
         if not getattr(self, "potentialsBmp", None) \
            or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.radvizWidget.law):
             if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
-                imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+                imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, 2*rx, 2*ry, rx, ry, self.trueScaleFactor/rx, -self.trueScaleFactor/ry, 3)
 #                palette = [QColor(int(i/254.0*ColorPaletteHSV.maxHueVal), 255, 255, QColor.Hsv).rgb() for i in range(255)] + [qRgb(255, 255, 255)]
 #                palette = [qRgb(i, i, 255) for i in range(0, 254, 2)] + [qRgb(254, i, i) for i in range(255, 0, -2)] + [qRgb(255, 255, 255)]*2
                 palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
             else:
-                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+                imagebmp, nShades = orangeom.potentialsBitmapSquare(self.potentialsClassifier, 2*rx, 2*ry, rx, ry, self.trueScaleFactor/rx, -self.trueScaleFactor/ry, 3)
                 classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
                 colors = [(i.red(), i.green(), i.blue()) for i in classColors]
 
@@ -742,7 +742,9 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
         file.write("  \\setcoordinatesystem units <0.4\columnwidth, 0.4\columnwidth>\n")
         file.write("  \\setplotarea x from -1.1 to 1.1, y from -1 to 1.1\n")
 
-        file.write("\\circulararc 360 degrees from 1 0 center at 0 0\n")
+        if not self.anchorsAsVectors:
+            file.write("\\circulararc 360 degrees from 1 0 center at 0 0\n")
+            
         if self.showAnchors:
             if self.hideRadius > 0:
                 file.write("\\setdashes\n")
@@ -751,9 +753,14 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
 
             if self.showAttributeNames:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
-                file.write("\\multiput {\\small $\\odot$} at %s /\n" % (" ".join(["%5.3f %5.3f" % tuple(i[:2]) for i in shownAnchorData])))
-                for x,y,l in shownAnchorData:
-                    file.write("\\put {{\\footnotesize %s}} [b] at %5.3f %5.3f\n" % (l.replace("_", "-"), x*1.07, y*1.04))
+                if self.anchorsAsVectors:
+                    for x,y,l in shownAnchorData:
+                        file.write("\\plot 0 0 %5.3f %5.3f /\n" % (x, y))
+                        file.write("\\put {{\\footnotesize %s}} [b] at %5.3f %5.3f\n" % (l.replace("_", "-"), x*1.07, y*1.04))
+                else:
+                    file.write("\\multiput {\\small $\\odot$} at %s /\n" % (" ".join(["%5.3f %5.3f" % tuple(i[:2]) for i in shownAnchorData])))
+                    for x,y,l in shownAnchorData:
+                        file.write("\\put {{\\footnotesize %s}} [b] at %5.3f %5.3f\n" % (l.replace("_", "-"), x*1.07, y*1.04))
         
         symbols = ("{\\small $\\circ$}", "{\\tiny $\\times$}", "{\\tiny $+$}", "{\\small $\\star$}",
                    "{\\small $\\ast$}", "{\\tiny $\\div$}", "{\\small $\\bullet$}", ) + tuple([chr(x) for x in range(97, 123)])
