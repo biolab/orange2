@@ -13,7 +13,7 @@
 
 from OWTools import *
 from OWWidget import *
-from OWVisGraph import *
+from OWGraph import *
 import OWGUI
 import math
 
@@ -44,9 +44,9 @@ class distribErrorBarQwtPlotCurve(QwtPlotCurve):
             QwtPlotCurve.draw(self, p, xMap, yMap, f, t)
 
 
-class OWDistributionGraph(OWVisGraph):
+class OWDistributionGraph(OWGraph):
     def __init__(self, settingsWidget = None, parent = None, name = None):
-        OWVisGraph.__init__(self, parent, name)
+        OWGraph.__init__(self, parent, name)
         self.parent = parent
         
         # initialize settings

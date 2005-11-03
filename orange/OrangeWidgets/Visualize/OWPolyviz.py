@@ -53,7 +53,7 @@ class OWPolyviz(OWWidget):
         self.box.addWidget(self.graph)
 
         # optimization dlg
-        self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "Polyviz")
+        self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, 3, "Polyviz")
         self.graph.kNNOptimization = self.optimizationDlg
         self.optimizationDlg.optimizeGivenProjectionButton.show()        
 
@@ -181,7 +181,6 @@ class OWPolyviz(OWWidget):
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
-        self.optimizationDlg.changeLearnerName(self.VizRankClassifierName)
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -224,14 +223,12 @@ class OWPolyviz(OWWidget):
     def optimizeSeparation(self):
         if self.data == None: return
         
-        text = str(self.optimizationDlg.attributeCountCombo.currentText())
-        if text == "ALL": maxLen = len(listOfAttributes)
-        else:             maxLen = int(text)
+        maxLen = self.optimizationDlg.attributeCount
 
         if self.rotateAttributes: reverseList = None
         else: reverseList = self.attributeReverse
         
-        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
+        if self.optimizationDlg.getOptimizationType() == EXACT_NUMBER_OF_ATTRS: minLen = maxLen
         else: minLen = 3
 
         self.optimizationDlg.clearResults()
@@ -440,7 +437,7 @@ class OWPolyviz(OWWidget):
     
     # ###### CDATA signal ################################
     # receive new data and update all fields
-    def cdata(self, data, keepMinMaxVals = 0):
+    def cdata(self, data):
         if data:
             name = getattr(data, "name", "")
             data = orange.Preprocessor_dropMissingClasses(data)
@@ -449,7 +446,7 @@ class OWPolyviz(OWWidget):
         
         exData = self.data
         self.data = data
-        self.graph.setData(self.data, keepMinMaxVals)
+        self.graph.setData(self.data)
         self.optimizationDlg.setData(data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)):    # preserve attribute choice if the domain is the same

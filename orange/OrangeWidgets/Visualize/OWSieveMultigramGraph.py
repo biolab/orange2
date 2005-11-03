@@ -1,12 +1,14 @@
-from OWVisGraph import *
+from OWGraph import *
+from orngScaleData import *
 
 ###########################################################################################
 ##### CLASS : OWSieveMultigram graph
 ###########################################################################################
-class OWSieveMultigramGraph(OWVisGraph):
+class OWSieveMultigramGraph(OWGraph, orngScaleData):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
-        OWVisGraph.__init__(self, parent, name)
+        OWGraph.__init__(self, parent, name)
+        orngScaleData.__init__(self)
         self.maxLineWidth = 5
         self.pearsonMinRes = 2
         self.pearsonMaxRes = 10
@@ -15,6 +17,10 @@ class OWSieveMultigramGraph(OWVisGraph):
         self.maxLineWidth = maxLineWidth
         self.pearsonMaxRes = pearsonMaxRes
         self.pearsonMinRes = pearsonMinRes
+
+    def setData(self, data):
+        OWGraph.setData(self, data)
+        orngScaleData.setData(self, data)
 
     #
     # update shown data. Set labels, coloring by className ....

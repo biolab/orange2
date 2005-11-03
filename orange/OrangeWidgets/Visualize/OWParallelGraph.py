@@ -2,8 +2,9 @@
 # OWParallelGraph.py
 #
 
-from OWVisGraph import *
+from OWGraph import *
 from OWDistributions import *
+from orngScaleData import *
 #from qt import *
 #from OWTools import *
 #from qwt import *
@@ -16,10 +17,11 @@ NO_STATISTICS = 0
 MEANS  = 1
 MEDIAN = 2
 
-class OWParallelGraph(OWVisGraph):
+class OWParallelGraph(OWGraph, orngScaleData):
     def __init__(self, parallelDlg, parent = None, name = None):
         "Constructs the graph"
-        OWVisGraph.__init__(self, parent, name)
+        OWGraph.__init__(self, parent, name)
+        orngScaleData.__init__(self)
 
         self.parallelDlg = parallelDlg
         self.showDistributions = 0
@@ -36,7 +38,8 @@ class OWParallelGraph(OWVisGraph):
         self.dataKeys = []
 
     def setData(self, data):
-        OWVisGraph.setData(self, data)
+        OWGraph.setData(self, data)
+        orngScaleData.setData(self, data)
         self.metaid = -1
         
     #
@@ -109,7 +112,7 @@ class OWParallelGraph(OWVisGraph):
             # add a meta attribute if it doesn't exist yet
             if self.metaid == -1:
                 self.metaid = orange.newmetaid()
-                #self.rawdata.domain.addmeta(self.metaid, orange.IntVariable("ItemIndex"))
+                self.rawdata.domain.addmeta(self.metaid, orange.IntVariable("ItemIndex"))
                 for i in range(dataSize): self.rawdata[i].setmeta(self.metaid, i)
 
             for i in range(length):
@@ -132,7 +135,6 @@ class OWParallelGraph(OWVisGraph):
                         if val != tempData[ind][classNameIndex]: break
                         ind += 1
 
-
                     # if all examples belong to one class we repair the meta variable values
                     if ind >= len(tempData):
                         for item in tempData:
@@ -141,15 +143,13 @@ class OWParallelGraph(OWVisGraph):
                                 dataStop[index] = indices[i]
 
         # first create all curves
-        if targetValue != None:
-            curves = [[],[]]
+        if targetValue != None: curves = [[],[]]
 
         # ############################################
         # draw the data
         # ############################################
         
         validData = self.getValidList(indices + [self.attributeNameIndex[self.rawdata.domain.classVar.name]])
-        #validData = [1] * dataSize
         for i in range(dataSize):
             if not validData[i]:
                 self.curvePoints.append([]) # add an empty list
@@ -458,13 +458,13 @@ class OWParallelGraph(OWVisGraph):
             self.parallelDlg.sendAttributeSelection([str(axis.label(x1)), str(axis.label(x1+1))])
 
     def updateLayout(self):
-        OWVisGraph.updateLayout(self)
+        OWGraph.updateLayout(self)
         self.removeTooltips()
         self.addTooltips()
 
     """
     def updateAxes(self):
-        OWVisGraph.updateAxes()        
+        OWGraph.updateAxes()        
         self.removeTooltips()
         self.addTooltips()
     """
@@ -474,12 +474,12 @@ class OWParallelGraph(OWVisGraph):
 
     # if we zoomed, we have to update tooltips    
     def onMouseReleased(self, e):
-        OWVisGraph.onMouseReleased(self, e)
+        OWGraph.onMouseReleased(self, e)
         self.updateTooltips()
 
     def onMouseMoved(self, e):
         if self.mouseCurrentlyPressed:
-            OWVisGraph.onMouseMoved(self, e)
+            OWGraph.onMouseMoved(self, e)
             return
         else:
             (key, foo1, x, y, foo2) = self.closestCurve(e.pos().x(), e.pos().y())
@@ -501,11 +501,11 @@ class OWParallelGraph(OWVisGraph):
                     self.setCurvePen(key, QPen(colorPalette[classValueSorted.index(self.rawdata[ind].getclass().value)], 3))
                     self.lastSelectedKey = key
             else:
-                OWVisGraph.onMouseMoved(self, e)
+                OWGraph.onMouseMoved(self, e)
                 return
             
             
-            OWVisGraph.onMouseMoved(self, e)
+            OWGraph.onMouseMoved(self, e)
             self.replot()
 
     # ####################################

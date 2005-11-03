@@ -1,14 +1,16 @@
-from OWVisGraph import *
+from OWGraph import *
+from orngScaleData import *
 
 DONT_SHOW_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
 ALL_ATTRIBUTES = 2
 
 
-class OWSurveyPlotGraph(OWVisGraph):
+class OWSurveyPlotGraph(OWGraph, orngScaleData):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
-        OWVisGraph.__init__(self, parent, name)
+        OWGraph.__init__(self, parent, name)
+        orngScaleData.__init__(self)
         self.selectedRectangle = 0
         self.exampleTracking = 1
         self.length = 0 # number of shown attributes - we need it also in mouse movement
@@ -16,6 +18,10 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.tooltipKind = 1
         self.yDataIndices = []  # array of indices that show the index in self.rawdata - if there are no missing values then array[i] = i
         self.attrLabels = []
+
+    def setData(self, data):
+        OWGraph.setData(self, data)
+        orngScaleData.setData(self, data)
         
     #
     # update shown data. Set labels, coloring by className ....
@@ -101,7 +107,7 @@ class OWSurveyPlotGraph(OWVisGraph):
     def onMouseMoved(self, e):
         self.hideSelectedRectangle()
         if self.mouseCurrentlyPressed:
-            OWVisGraph.onMouseMoved(self, e)
+            OWGraph.onMouseMoved(self, e)
         elif not self.rawdata:
             return
         else:
@@ -115,7 +121,7 @@ class OWSurveyPlotGraph(OWVisGraph):
                 self.setCurveStyle(self.selectedRectangle, QwtCurve.Lines)
                 self.replot()
             else:
-                OWVisGraph.onMouseMoved(self, e)
+                OWGraph.onMouseMoved(self, e)
 
             if (self.tooltipKind == VISIBLE_ATTRIBUTES and self.attrLabels != []) or self.tooltipKind == ALL_ATTRIBUTES:
                 if int(yFloat) >= len(self.rawdata): return
@@ -126,7 +132,7 @@ class OWSurveyPlotGraph(OWVisGraph):
                 y1Int = self.transform(QwtPlot.yLeft, yFloat)
                 y2Int = self.transform(QwtPlot.yLeft, yFloat+1.0)
                 MyQToolTip.tip(self.tooltip, QRect(e.x()+self.canvas().frameGeometry().x()-10, y2Int+self.canvas().frameGeometry().y(), 20, y1Int-y2Int), text[:-2].replace("; ", "\n"))
-                OWVisGraph.onMouseMoved(self, e)
+                OWGraph.onMouseMoved(self, e)
 
             
             

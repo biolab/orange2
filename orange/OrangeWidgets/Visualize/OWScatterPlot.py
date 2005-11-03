@@ -13,8 +13,11 @@
 from OWWidget import *
 from OWScatterPlotGraph import *
 from OWkNNOptimization import *
+import orngVizRank
 from OWClusterOptimization import *
 import OWGUI, OWToolbars, OWDlgs
+from orngScaleData import *
+from OWGraph import OWGraph
 
 ###########################################################################################
 ##### WIDGET : Scatterplot visualization
@@ -46,7 +49,7 @@ class OWScatterPlot(OWWidget):
         self.colorSettings = None
 
         self.graph = OWScatterPlotGraph(self, self.mainArea)
-        self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "ScatterPlot")
+        self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
         self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
        
         self.data = None
@@ -93,17 +96,6 @@ class OWScatterPlot(OWWidget):
         self.attrSize = ""
         self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
-        # optimization
-        self.optimizationDlg.optimizeGivenProjectionButton.show()
-        self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
-        self.optimizationDlg.label1.hide()
-        self.optimizationDlg.optimizationTypeCombo.hide()
-        self.optimizationDlg.attributeCountCombo.hide()
-        self.optimizationDlg.attributeLabel.hide()
-        self.optimizationDlg.optimizeBestProjectionCheck.hide()
-        self.optimizationDlg.optimizeBestProjectionCombo.hide()
-        self.graph.kNNOptimization = self.optimizationDlg
-
         # cluster dialog
         self.clusterDlg.label1.hide()
         self.clusterDlg.optimizationTypeCombo.hide()
@@ -123,19 +115,7 @@ class OWScatterPlot(OWWidget):
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         # ####################################
-        #K-NN OPTIMIZATION functionality
-        #self.optimizationDlg.localOptimizationSettingsBox.hide()
-        self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
-        self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
-        self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
-
-        self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        
-        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
-
-        # ####################################
         # SETTINGS TAB
-
         # point width
         OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
 
@@ -190,8 +170,8 @@ class OWScatterPlot(OWWidget):
 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
-        self.optimizationDlg.changeLearnerName(self.VizRankClassifierName)
         self.clusterDlg.changeLearnerName(self.clusterClassifierName)
+        self.learnersArray[1] = VizRankLearner(SCATTERPLOT, self.optimizationDlg, self.graph)
         self.setActiveLearner(self.learnerIndex)
 
     # ##############################################################################################################################################################
@@ -272,29 +252,7 @@ class OWScatterPlot(OWWidget):
     def setActiveLearner(self, idx):
         self.send("Learner", self.learnersArray[self.learnerIndex])
    
-    # evaluate knn accuracy on current projection
-    def evaluateCurrentProjection(self):
-        acc, other_results = self.graph.getProjectionQuality([self.attrX, self.attrY])
-        if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
-            QMessageBox.information( None, "Scatterplot", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
-        else:
-            if self.optimizationDlg.getQualityMeasure() == CLASS_ACCURACY:
-                QMessageBox.information( None, "Scatterplot", 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
-            elif self.optimizationDlg.getQualityMeasure() == AVERAGE_CORRECT:
-                QMessageBox.information( None, "Scatterplot", 'Average probability of correct classification is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
-            else:
-                QMessageBox.information( None, "Scatterplot", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
-
-    def showKNNCorect(self):
-        self.optimizationDlg.showKNNWrongButton.setOn(0)
-        self.showSelectedAttributes()
-
-    # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
-    def showKNNWrong(self):
-        self.optimizationDlg.showKNNCorrectButton.setOn(0) 
-        self.showSelectedAttributes()
-
-
+    
     # ################################################################################################
     # find projections where different class values are well separated
     def optimizeSeparation(self):

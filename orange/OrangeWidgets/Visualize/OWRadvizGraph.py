@@ -1,42 +1,13 @@
 #
 # OWRadvizGraph.py
 #
-from OWVisGraph import *
+from OWGraph import *
 from copy import copy
 import time
 from operator import add
 from math import *
-from OWkNNOptimization import *
 from OWClusterOptimization import *
-
-
-# build a list (in currList) of different permutations of elements in list of elements
-# elements contains a list of indices [1,2..., n]
-def buildPermutationIndexList(elements, tempPerm, currList):
-    for i in range(len(elements)):
-        el =  elements[i]
-        elements.remove(el)
-        tempPerm.append(el)
-        buildPermutationIndexList(elements, tempPerm, currList)
-
-        elements.insert(i, el)
-        tempPerm.pop()
-
-    if elements == []:
-        temp = copy(tempPerm)
-        # in tempPerm we have a permutation. Check if it already exists in the currList
-        for i in range(len(temp)):
-            el = temp.pop()
-            temp.insert(0, el)
-            if str(temp) in currList: return
-            
-        # also try the reverse permutation
-        temp.reverse()
-        for i in range(len(temp)):
-            el = temp.pop()
-            temp.insert(0, el)
-            if str(temp) in currList: return
-        currList[str(tempPerm)] = copy(tempPerm)
+from orngScaleRadvizData import *
 
 
 # indices in curveData
@@ -54,10 +25,11 @@ TOOLTIPS_SHOW_SPRINGS = 1
 ###########################################################################################
 ##### CLASS : OWRADVIZGRAPH
 ###########################################################################################
-class OWRadvizGraph(OWVisGraph):
+class OWRadvizGraph(OWGraph, orngScaleRadvizData):
     def __init__(self, radvizWidget, parent = None, name = None):
-        "Constructs the graph"
-        OWVisGraph.__init__(self, parent, name)
+        OWGraph.__init__(self, parent, name)
+        orngScaleRadvizData.__init__(self)
+        
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
         self.triedPossibilities = 0 # how many possibilities did we already try
         self.startTime = time.time()
@@ -66,7 +38,6 @@ class OWRadvizGraph(OWVisGraph):
         self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
-        self.kNNOptimization = None
         self.clusterOptimization = None
         self.radvizWidget = radvizWidget
 
@@ -77,6 +48,7 @@ class OWRadvizGraph(OWVisGraph):
         self.hideRadius = 0
         self.showAnchors = 1
         
+        self.onlyOnePerSubset = 1
         self.showLegend = 1
         self.useDifferentSymbols = 0
         self.useDifferentColors = 1
@@ -87,9 +59,7 @@ class OWRadvizGraph(OWVisGraph):
         self.clusterClosure = None
         self.showClusters = 0
         self.showAttributeNames = 1
-        self.normalizeExamples = 1
         self.showProbabilities = 0
-
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
@@ -101,6 +71,10 @@ class OWRadvizGraph(OWVisGraph):
         self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
+
+    def setData(self, data):
+        OWGraph.setData(self, data)
+        orngScaleRadvizData.setData(self, data)
 
     def computePotentials(self):
         rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
@@ -139,23 +113,8 @@ class OWRadvizGraph(OWVisGraph):
         if self.showProbabilities and getattr(self, "potentialsClassifier", None):
             self.computePotentials()
             painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1)), self.potentialsBmp)
-        OWVisGraph.drawCanvasItems(self, painter, rect, map, pfilter)
-
-    # create anchors around the circle
-    def createAnchors(self, numOfAttr, labels = None):
-        xAnchors = self.createXAnchors(numOfAttr)
-        yAnchors = self.createYAnchors(numOfAttr)
-        if labels:
-            return [(xAnchors[i], yAnchors[i], labels[i]) for i in range(numOfAttr)]
-        else:
-            return [(xAnchors[i], yAnchors[i]) for i in range(numOfAttr)]
-        
-    def createXAnchors(self, numOfAttrs):
-        return Numeric.cos(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs))
-
-    def createYAnchors(self, numOfAttrs):
-        return Numeric.sin(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs))
-            
+        OWGraph.drawCanvasItems(self, painter, rect, map, pfilter)
+    
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
     def updateData(self, labels, setAnchors = 0, **args):
@@ -502,7 +461,7 @@ class OWRadvizGraph(OWVisGraph):
                 else:
                     self.selectedAnchorIndex = None
         else:
-            OWVisGraph.onMousePressed(self, e)
+            OWGraph.onMousePressed(self, e)
 
 
     def onMouseReleased(self, e):
@@ -510,7 +469,7 @@ class OWRadvizGraph(OWVisGraph):
             self.mouseCurrentlyPressed = 0
             self.selectedAnchorIndex = None
         else:
-            OWVisGraph.onMouseReleased(self, e)
+            OWGraph.onMouseReleased(self, e)
 
     # ############################################################## 
     # draw tooltips
@@ -529,7 +488,7 @@ class OWRadvizGraph(OWVisGraph):
         # because it would then fail to draw the rectangle
         if self.mouseCurrentlyPressed:
             if not self.manualPositioning:
-                OWVisGraph.onMouseMoved(self, e)
+                OWGraph.onMouseMoved(self, e)
                 if redraw: self.replot()
             else:
                 if self.selectedAnchorIndex != None:
@@ -620,19 +579,10 @@ class OWRadvizGraph(OWVisGraph):
 
                 self.showTip(intX, intY, text)
                 
-        OWVisGraph.onMouseMoved(self, e)
+        OWGraph.onMouseMoved(self, e)
         self.replot()
  
-    # ############################################################## 
-    # try to find the optimal attribute order by trying all diferent circular permutations
-    # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getProjectionQuality(self, attrList, useAnchorData = 0):
-        return self.kNNOptimization.kNNComputeAccuracy(self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], useAnchorData = useAnchorData))
-
-     # save projection (xAttr, yAttr, classVal) into a filename fileName
-    def saveProjectionAsTabData(self, fileName, attrList, useAnchorData = 0):
-        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], useAnchorData = useAnchorData))
-
+    
     # ############################################################## 
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, useAnchorData = 1):
@@ -675,369 +625,7 @@ class OWRadvizGraph(OWVisGraph):
 
         return indices
     
-    
-
-    
-    # for attributes in attrIndices and values of these attributes in values compute point positions
-    # function is called from OWClusterOptimization.py
-    # this function has more sense in radviz and polyviz methods
-    # NOTE: the computed x and y positions are not yet scaled. probably you have to use self.scaleFactor or trueScaleFactor to scale them!!!
-    def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0, anchorRadius = None, normalizeExample = None):
-        if useAnchorData:
-            XAnchors = Numeric.array([val[0] for val in self.anchorData])
-            YAnchors = Numeric.array([val[1] for val in self.anchorData])
-            if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
-        else:
-            XAnchors = self.createXAnchors(len(attrIndices))
-            YAnchors = self.createYAnchors(len(attrIndices))
-            anchorRadius = Numeric.ones(len(attrIndices), Numeric.Float)
-
-        if normalizeExample == 1 or (normalizeExample == None and self.normalizeExamples):
-            s = sum(Numeric.array(values)*anchorRadius)
-            if s == 0: return [0.0, 0.0]
-        else: s = 1
-
-        x = Numeric.matrixmultiply(XAnchors*anchorRadius, values) / float(s)
-        y = Numeric.matrixmultiply(YAnchors*anchorRadius, values) / float(s)
-        return [x,y]
-
-    # ##############################################################
-    # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0):
-        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, normalize, jitterSize, useAnchorData)
-        return orange.ExampleTable(domain, data)
-        
-        
-    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0, removeMissingData = 1):
-        # if we want to use anchor data we can get attrIndices from the anchorData
-        if useAnchorData:
-            attrIndices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
-
-        if not validData and removeMissingData: validData = self.getValidList(attrIndices)
-
-        # if jitterSize is set below zero we use scaledData that has already jittered data
-        if jitterSize < 0.0: data = self.scaledData
-        else:                data = self.noJitteringScaledData
-
-        if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(data, attrIndices))
-        else:                 selectedData = Numeric.take(data, attrIndices)
-        
-        if not classList:
-            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-            if removeMissingData: classList = Numeric.compress(validData, classList)    
-
-        if useAnchorData:
-            XAnchors = Numeric.array([val[0] for val in self.anchorData])
-            YAnchors = Numeric.array([val[1] for val in self.anchorData])
-            r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
-            if normalize == 1 or (normalize == None and self.normalizeExamples):
-                XAnchors *= r                                               
-                YAnchors *= r
-        elif (XAnchors and YAnchors):
-            r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
-        else:
-            XAnchors = self.createXAnchors(len(attrIndices))
-            YAnchors = self.createYAnchors(len(attrIndices))
-            r = Numeric.ones(len(XAnchors), Numeric.Float)
-    
-        x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
-        y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
-
-        if normalize == 1 or (normalize == None and self.normalizeExamples):
-            if not sum_i: sum_i = self._getSum_i(selectedData, useAnchorData, r)
-            x_positions /= sum_i
-            y_positions /= sum_i
-            self.trueScaleFactor = scaleFactor
-        else:
-            self.trueScaleFactor = scaleFactor / sqrt(max(x_positions*x_positions + y_positions*y_positions))
-
-        self.unscaled_x_positions, self.unscaled_y_positions = Numeric.array(x_positions), Numeric.array(y_positions)
-
-        if self.trueScaleFactor != 1.0:
-            x_positions *= self.trueScaleFactor
-            y_positions *= self.trueScaleFactor
-    
-        if jitterSize > 0.0:
-            x_positions += (RandomArray.random(len(x_positions))-0.5)*jitterSize
-            y_positions += (RandomArray.random(len(y_positions))-0.5)*jitterSize
-        
-        return Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
-
-    
-    # ##############################################################
-    # function to compute the sum of all values for each element in the data. used to normalize.
-    def _getSum_i(self, data, useAnchorData = 0, anchorRadius = None):
-        if useAnchorData:
-            if not anchorRadius:
-                anchorRadius = Numeric.sqrt([a[0]**2+a[1]**2 for a in self.anchorData])
-            sum_i = Numeric.add.reduce(Numeric.transpose(Numeric.transpose(data)*anchorRadius))
-        else:
-            sum_i = Numeric.add.reduce(data)
-        if len(Numeric.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
-            sum_i += Numeric.where(sum_i == 0, 1.0, 0.0)
-        return sum_i        
-
-
-    # #######################################################################################################
-    # ####    GET OPTIMAL SEPARATION #####################################################################
-    # #######################################################################################################
-    def getOptimalSeparation(self, attributes, minLength, maxLength, addResultFunct):
-        self.triedPossibilities = 0
-
-        # replace attribute names with indices in domain - faster searching
-        attributes = [self.attributeNameIndex[name] for name in attributes]
-        classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-
-        # variables and domain for the table
-        xVar = orange.FloatVariable("xVar")
-        yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
-
-        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
-
-        self.radvizWidget.progressBarInit()
-        startTime = time.time()
-        self.triedPossibilities = 0
-
-        # build list of indices for permutations of different number of attributes
-        permutationIndices = {}
-        for i in range(3, maxLength+1):
-            indices = {}
-            buildPermutationIndexList(range(0, i), [], indices)
-            permutationIndices[i] = indices
-
-        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-        for z in range(minLength-1, len(attributes)):
-            for u in range(minLength-1, maxLength):
-                combinations = OWVisFuncts.combinations(attributes[:z], u)
-
-                XAnchors = anchorList[u+1-minLength][0]
-                YAnchors = anchorList[u+1-minLength][1]
-                
-                for attrList in combinations:
-                    attrs = attrList + [attributes[z]] # remove the value of this attribute subset
-                    permIndices = permutationIndices[len(attrs)]
-                    
-                    validData = self.getValidList(attrs)
-                    classList = Numeric.compress(validData, classListFull)
-                    selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
-                    sum_i = self._getSum_i(selectedData)
-
-                    tempList = []
-
-                    # for every permutation compute how good it separates different classes            
-                    for ind in permIndices.values():
-                        permutation = [attrs[val] for val in ind]
-                        if self.kNNOptimization.isOptimizationCanceled():
-                            secs = time.time() - startTime
-                            self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-                            self.radvizWidget.progressBarFinished()
-                            return
-
-                        table = self.createProjectionAsExampleTable(permutation, validData, classList, sum_i, XAnchors, YAnchors, domain)
-                        accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                        
-                        # save the permutation
-                        if not self.kNNOptimization.onlyOnePerSubset:
-                            addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], self.triedPossibilities)
-                        else:
-                            tempList.append((accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation]))
-                            
-                        self.triedPossibilities += 1
-                        qApp.processEvents()        # allow processing of other events
-                        del permutation, table
-                            
-                    self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                    #self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), z))
-                    self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities)))
-
-                    if self.kNNOptimization.onlyOnePerSubset:   # return only the best attribute placements
-                        (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
-                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities)
-
-                    del permIndices, validData, classList, selectedData, sum_i, tempList
-                del combinations
-                
-        secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-        self.radvizWidget.progressBarFinished()
-
-
-    def getOptimalSeparationUsingHeuristicSearch(self, attributes, attrsByClass, minLength, maxLength, addResultFunct):
-        # variables and domain for the table
-        xVar = orange.FloatVariable("xVar")
-        yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
-        self.triedPossibilities = 0
-
-        # replace attribute names with indices in domain - faster searching
-        attributes = [self.attributeNameIndex[name] for name in attributes]
-        attrsByClass = [[self.attributeNameIndex[name] for name in arr] for arr in attrsByClass]
-
-        numClasses = len(self.rawdata.domain.classVar.values)
-        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
-        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-        startTime = time.time()
-
-        for z in range(minLength-1, len(attributes)):
-            for u in range(minLength-1, maxLength):
-                projs = OWVisFuncts.createProjections(numClasses, u+1)
-                
-                combinations = OWVisFuncts.combinations(range(z), u)
-
-                XAnchors = anchorList[u+1-minLength][0]
-                YAnchors = anchorList[u+1-minLength][1]
-                
-                for comb in combinations:
-                    comb += [z]  # remove the value of this attribute subset
-                    counts = [0 for i in range(numClasses)]
-                    for v in comb: counts[v%numClasses] += 1
-                    if min(counts) < (u+1) / numClasses: continue   # ignore combinations that don't have good attributes for all class values
-
-                    attrList = [[] for i in range(numClasses)]
-                    for v in comb:
-                        attrList[v%numClasses].append(attributes[v])
-
-                    attrs = [attributes[c] for c in comb]
-
-                    validData = self.getValidList(attrs)
-                    classList = Numeric.compress(validData, classListFull)
-                    selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
-                    sum_i = self._getSum_i(selectedData)
-
-                    tempList = []
-
-                    # for every permutation compute how good it separates different classes
-                    for proj in projs:
-                        if self.kNNOptimization.isOptimizationCanceled():
-                            secs = time.time() - startTime
-                            self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-                            return
-                        try:
-                            permutation = [attrList[i][j] for (i,j) in proj]
-                            table = self.createProjectionAsExampleTable(permutation, validData, classList, sum_i, XAnchors, YAnchors, domain)
-                            accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                            
-                            # save the permutation
-                            if not self.kNNOptimization.onlyOnePerSubset:
-                                addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], self.triedPossibilities)
-                            else:
-                                tempList.append((accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation]))
-
-                            self.triedPossibilities += 1
-                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), z+1))
-                            qApp.processEvents()        # allow processing of other events
-                            del permutation, table
-                        except:
-                            pass
-
-                    if self.kNNOptimization.onlyOnePerSubset and len(tempList) > 0:   # return only the best attribute placements
-                        (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
-                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities)
-
-                    del validData, classList, selectedData, sum_i, tempList
-                del projs, combinations
-                
-        secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-        self.radvizWidget.progressBarFinished()
-
-
-    # #######################################################################################################
-    # ####    OPTIMIZE GIVEN PROJECTION      ################################################################
-    # #######################################################################################################
-    def optimizeGivenProjection(self, attrLists, accuracys, attributes, addResultFunct, restartWhenImproved = 1, maxProjectionLen = -1):
-        classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-        self.triedPossibilities = 0
-
-        # replace attribute names with indices in domain - faster searching
-        attributes = [self.attributeNameIndex[name] for name in attributes]
-        lenOfAttributes = len(attributes)
-        attrLists = [[self.attributeNameIndex[name] for name in projection] for projection in attrLists]
-
-        # variables and domain for the table
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
-        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-        startTime = time.time()
-
-        for i in range(len(attrLists)):
-            projection = attrLists[i]
-            accuracy = accuracys[i]
-            optimizedProjection = 1
-            
-            while optimizedProjection:
-                optimizedProjection = 0
-                significantImprovement = 0
-                
-                # in the first step try to find a better projection by substituting an existent attribute with a new one
-                # in the second step try to find a better projection by adding a new attribute to the circle
-                for iteration in range(2):
-                    if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue    
-                    if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
-                    strTotalAtts = OWVisFuncts.createStringFromNumber(lenOfAttributes)
-                    listOfCanditates = []
-                    for (attrIndex, attr) in enumerate(attributes):
-                        if attr in projection: continue
-                        if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
-
-                        projections = [copy(projection) for i in range(len(projection))]
-                        if iteration == 0:  # replace one attribute in each projection with attribute attr
-                            count = len(projection)
-                            for i in range(count): projections[i][i] = attr
-                        elif iteration == 1:
-                            count = len(projection) + 1
-                            for i in range(count-1): projections[i].insert(i, attr)
-
-                        if len(anchorList) < count-3: anchorList.append((self.createXAnchors(count), self.createYAnchors(count)))
-
-                        XAnchors = anchorList[count-3][0]
-                        YAnchors = anchorList[count-3][1]
-                        validData = self.getValidList(projections[0])
-                        classList = Numeric.compress(validData, classListFull)
-                        
-                        tempList = []
-                        for testProj in projections:
-                            if self.kNNOptimization.isOptimizationCanceled(): return
-
-                            table = self.createProjectionAsExampleTable(testProj, validData, classList, None, XAnchors, YAnchors, domain)
-                            acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                            
-                            # save the permutation
-                            tempList.append((acc, other_results, len(table), testProj))
-
-                            del table
-                            self.triedPossibilities += 1
-                            qApp.processEvents()        # allow processing of other events
-                            if self.kNNOptimization.isOptimizationCanceled(): return
-
-                        # return only the best attribute placements
-                        (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
-                        if self.kNNOptimization.getMaxFunct()(acc, accuracy) == acc:
-                            addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0)
-                            self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                            if max(acc, accuracy)/min(acc, accuracy) > 1.0001: optimizedProjection = 1
-                            #optimizedProjection = 1
-                            listOfCanditates.append((acc, attrList))
-                            if max(acc, accuracy)/min(acc, accuracy) > 1.005: significantImprovement = 1
-                        else:
-                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
-                            if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
-                                addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1)
-
-                        del validData, classList, projections
-
-                    # select the best new projection and say this is now our new projection to optimize    
-                    if len(listOfCanditates) > 0:
-                        (accuracy, projection) = self.kNNOptimization.getMaxFunct()(listOfCanditates)
-                        self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
-
-        secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-
-
-
+      
     # #######################################################################################################
     # ####    GET OPTIMAL CLUSTERS      #####################################################################
     # #######################################################################################################
@@ -1097,7 +685,7 @@ class OWRadvizGraph(OWVisGraph):
                         graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 
                         classesDict = {}
-                        if not self.clusterOptimization.onlyOnePerSubset:
+                        if not self.onlyOnePerSubset:
                             allValue = 0.0
                             for key in valueDict.keys():
                                 addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
@@ -1117,7 +705,7 @@ class OWRadvizGraph(OWVisGraph):
                     self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
                     self.clusterOptimization.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities)))
 
-                    if self.clusterOptimization.onlyOnePerSubset:
+                    if self.onlyOnePerSubset:
                         (value, valueDict, closureDict, polygonVerticesDict, attrs, enlargedClosureDict, otherDict) = max(tempList)
                         allValue = 0.0
                         classesDict = {}

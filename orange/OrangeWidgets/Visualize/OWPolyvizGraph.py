@@ -1,7 +1,8 @@
-from OWVisGraph import *
+from OWGraph import *
 from copy import copy, deepcopy
 import time, math
 from OWkNNOptimization import *
+from orngScaleData import *
 import OWVisFuncts
 #import orange
 
@@ -63,10 +64,11 @@ TOOLTIPS_SHOW_SPRINGS = 1
 ###########################################################################################
 ##### CLASS : OWPolyvizGRAPH
 ###########################################################################################
-class OWPolyvizGraph(OWVisGraph):
+class OWPolyvizGraph(OWGraph, orngScaleData):
     def __init__(self, polyvizWidget, parent = None, name = None):
         "Constructs the graph"
-        OWVisGraph.__init__(self, parent, name)
+        OWGraph.__init__(self, parent, name)
+        orngScaleData.__init__(self)
         self.attrLocalValues = {}
         self.lineLength = 2*0.05
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
@@ -85,6 +87,7 @@ class OWPolyvizGraph(OWVisGraph):
         self.tooltipMarkers   = []
         self.validData = []
         self.showLegend = 1
+        self.onlyOnePerSubset = 1
 
     def setLineLength(self, len):
         self.lineLength = len*0.05
@@ -107,9 +110,11 @@ class OWPolyvizGraph(OWVisGraph):
     #
     # if we use globalScaling we must also create a copy of localy scaled data
     #
-    def setData(self, data, keepMinMaxVals = 0):
+    def setData(self, data):
         # first call the original function to scale data
-        OWVisGraph.setData(self, data, keepMinMaxVals)
+        OWGraph.setData(self, data)
+        orngScaleData.setData(self, data)
+        
         if data == None: return
 
         for index in range(len(data.domain)):
@@ -417,7 +422,7 @@ class OWPolyvizGraph(OWVisGraph):
         # in case we are drawing a rectangle, we don't draw enhanced tooltips
         # because it would then fail to draw the rectangle
         if self.mouseCurrentlyPressed:
-            OWVisGraph.onMouseMoved(self, e)
+            OWGraph.onMouseMoved(self, e)
             if redraw: self.replot()
             return 
             
@@ -476,7 +481,7 @@ class OWPolyvizGraph(OWVisGraph):
                         
                 self.showTip(intX, intY, text[:-2].replace("; ", "\n"))
 
-        OWVisGraph.onMouseMoved(self, e)
+        OWGraph.onMouseMoved(self, e)
         self.update()
         # -----------------------------------------------------------
         # -----------------------------------------------------------
@@ -713,7 +718,7 @@ class OWPolyvizGraph(OWVisGraph):
                             accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                         
                             # save the permutation
-                            if not self.kNNOptimization.onlyOnePerSubset:
+                            if not self.onlyOnePerSubset:
                                 addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
                             else:
                                 tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
@@ -723,7 +728,7 @@ class OWPolyvizGraph(OWVisGraph):
                             self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities)))
                             del table
 
-                    if self.kNNOptimization.onlyOnePerSubset:
+                    if self.onlyOnePerSubset:
                         (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
                         addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, attrOrder)
 
@@ -816,7 +821,7 @@ class OWPolyvizGraph(OWVisGraph):
                                 accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                             
                                 # save the permutation
-                                if not self.kNNOptimization.onlyOnePerSubset:
+                                if not self.onlyOnePerSubset:
                                     addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
                                 else:
                                     tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
@@ -827,7 +832,7 @@ class OWPolyvizGraph(OWVisGraph):
                         except:
                             pass
                             
-                    if self.kNNOptimization.onlyOnePerSubset:
+                    if self.onlyOnePerSubset:
                         (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
                         addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, attrOrder)
 

@@ -17,7 +17,7 @@ import orngInteract
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
 from copy import copy
-from OWVisGraph import getVariableValuesSorted, getVariableValueIndices
+from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 import random
 import OWGraphTools, OWGUI
 from OWQCanvasFuncts import *
@@ -173,7 +173,7 @@ class OWMosaicDisplay(OWWidget):
             
         self.initCombos(self.data)
         
-        self.updateData()
+        #self.updateData()
 
     def subsetdata(self, data):
         self.subsetData = data
@@ -181,7 +181,7 @@ class OWMosaicDisplay(OWWidget):
         if data and len(data) > 1: self.setStatusBarText("The data set received on the 'Example subset' input contains more than one example. Only the first example will be considered.")
         else:                      self.setStatusBarText("")
 
-        self.updateData()
+        #self.updateData()
         
 
 

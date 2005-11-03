@@ -1,43 +1,13 @@
 #
 # OWScatterPlotGraph.py
 #
-from OWVisGraph import *
+from OWGraph import *
 import time
 from orngCI import FeatureByCartesianProduct
-import OWkNNOptimization, OWClusterOptimization
+import OWClusterOptimization
 import RandomArray
 import OWVisFuncts
-
-class QwtPlotCurvePieChart(QwtPlotCurve):
-    def __init__(self, parent = None, text = None):
-        QwtPlotCurve.__init__(self, parent, text)
-        self.color = Qt.black
-        self.penColor = Qt.black
-
-    def draw(self, p, xMap, yMap, f, t):
-        # save ex settings
-        back = p.backgroundMode()
-        pen = p.pen()
-        brush = p.brush()
-        colors = ColorPaletteHSV(self.dataSize())
-
-        p.setBackgroundMode(Qt.OpaqueMode)
-        #p.setBackgroundColor(self.color)
-        for i in range(self.dataSize()-1):
-            p.setBrush(QBrush(colors.getColor(i)))
-            p.setPen(QPen(colors.getColor(i)))
-
-            factor = self.percentOfTotalData * self.percentOfTotalData
-            px1 = xMap.transform(self.x(0)-0.1 - 0.5*factor)
-            py1 = yMap.transform(self.x(1)-0.1 - 0.5*factor)
-            px2 = xMap.transform(self.x(0)+0.1 + 0.5*factor)
-            py2 = yMap.transform(self.x(1)+0.1 + 0.5*factor)
-            p.drawPie(px1, py1, px2-px1, py2-py1, self.y(i)*16*360, (self.y(i+1)-self.y(i))*16*360)
-
-        # restore ex settings
-        p.setBackgroundMode(back)
-        p.setPen(pen)
-        p.setBrush(brush)
+from orngScaleScatterPlotData import *
 
 DONT_SHOW_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
@@ -45,13 +15,15 @@ ALL_ATTRIBUTES = 2
 
 MIN_SHAPE_SIZE = 6
 
+
 ###########################################################################################
 ##### CLASS : OWSCATTERPLOTGRAPH
 ###########################################################################################
-class OWScatterPlotGraph(OWVisGraph):
+class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
     def __init__(self, scatterWidget, parent = None, name = None):
         "Constructs the graph"
-        OWVisGraph.__init__(self, parent, name)
+        OWGraph.__init__(self, parent, name)
+        orngScaleScatterPlotData.__init__(self)
     
         self.pointWidth = 5
         self.jitterContinuous = 0
@@ -69,11 +41,14 @@ class OWScatterPlotGraph(OWVisGraph):
         self.toolRects = []
         self.tooltipData = []
         self.scatterWidget = scatterWidget
-        self.kNNOptimization = None
         self.clusterOptimization = None
         self.insideColors = None
         self.clusterClosure = None
         self.shownAttributeIndices = []
+
+    def setData(self, data):
+        OWGraph.setData(self, data)
+        orngScaleScatterPlotData.setData(self, data)
 
     #########################################################
     # update shown data. Set labels, coloring by className ....
@@ -559,77 +534,7 @@ class OWScatterPlotGraph(OWVisGraph):
             text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[exampleIndex], range(len(self.rawdata.domain)))
         return text
 
-    # ##############################################################
-    # compute how good is a specific projection with given xAttr and yAttr
-    # ##############################################################
-    def getProjectionQuality(self, attrList):
-        [xAttr, yAttr] = attrList
-        xArray = self.noJitteringScaledData[self.attributeNameIndex[xAttr]]
-        yArray = self.noJitteringScaledData[self.attributeNameIndex[yAttr]]
-
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        table = orange.ExampleTable(domain)
-        valid = self.validDataArray[self.attributeNameIndex[xAttr]] + self.validDataArray[self.attributeNameIndex[yAttr]] - 1
-        
-        for i in range(len(self.rawdata)):
-            if not valid[i]: continue
-            table.append(orange.Example(domain, [xArray[i], yArray[i], self.rawdata[i].getclass()]))
-        
-        return self.kNNOptimization.kNNComputeAccuracy(table)
-
-
-    # ##############################################################
-    # create x-y projection of attributes in attrList
-    # ##############################################################
-    def createProjection(self, xAttr, yAttr):
-        xAttrIndex, yAttrIndex = self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]
-
-        xData = self.scaledData[xAttrIndex].copy()
-        yData = self.scaledData[yAttrIndex].copy()
-        valid = self.getValidList([xAttrIndex, yAttrIndex])
-
-        if self.rawdata.domain[xAttrIndex].varType == orange.VarTypes.Discrete: xData = ((xData * 2*len(self.rawdata.domain[xAttrIndex].values)) - 1.0) / 2.0
-        else:  xData = xData * (self.attrValues[xAttr][1] - self.attrValues[xAttr][0]) + float(self.attrValues[xAttr][0])
-
-        if self.rawdata.domain[yAttrIndex].varType == orange.VarTypes.Discrete: yData = ((yData * 2*len(self.rawdata.domain[yAttrIndex].values)) - 1.0) / 2.0
-        else:  yData = yData * (self.attrValues[yAttr][1] - self.attrValues[yAttr][0]) + float(self.attrValues[yAttr][0])
-
-        return (xData, yData)
-
-
-    # for attributes in attrIndices and values of these attributes in values compute point positions
-    # function is called from OWClusterOptimization.py
-    # this function has more sense in radviz and polyviz methods
-    def getProjectedPointPosition(self, attrIndices, values):
-        return values
-
-
-    # ##############################################################
-    # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
-        if not domain: domain = orange.Domain([orange.FloatVariable(self.rawdata.domain[attrIndices[0]].name), orange.FloatVariable(self.rawdata.domain[attrIndices[1]].name), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, jitterSize)
-        return orange.ExampleTable(domain, data)
     
-
-    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, jitterSize = 0.0):
-        if not validData: validData = self.getValidList(attrIndices)
-
-        if not classList:
-            #classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-            #if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: classList = (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0  # remove data with missing values and convert floats back to ints
-            #else:                                                                classList = self.noJitteringScaledData[classIndex]  # for continuous attribute just add the values
-            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-
-        xArray = self.noJitteringScaledData[attrIndices[0]]
-        yArray = self.noJitteringScaledData[attrIndices[1]]
-        if jitterSize > 0.0:
-            xArray += (RandomArray.random(len(xArray))-0.5)*jitterSize
-            yArray += (RandomArray.random(len(yArray))-0.5)*jitterSize
-        data = Numeric.compress(validData, Numeric.array((xArray, yArray, classList)))
-        data = Numeric.transpose(data)
-        return data
-
     # ##############################################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     # ##############################################################
@@ -668,176 +573,7 @@ class OWScatterPlotGraph(OWVisGraph):
         return indices
     
         
-    # ##############################################################
-    # evaluate the class separation for attribute pairs in the projections list
-    # ##############################################################
-    def getOptimalSeparation(self, attributeNameOrder, addResultFunct):
-        # it is better to use scaled data - in case of ordinal discrete attributes we take into account that the attribute is ordinal.
-        # create a dataset with scaled data
-        contVars = [orange.FloatVariable(attr.name) for attr in self.rawdata.domain.attributes]
-        contDomain = orange.Domain(contVars + [self.rawdata.domain.classVar])
-        fullData = orange.ExampleTable(contDomain)
-        attrCount = len(self.rawdata.domain.attributes)
-        for i in range(len(self.rawdata)):
-            fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i].getclass()])
-
-        # if we want to use heuristics, we first discretize all attributes
-        # this way we discretize the attributes only once
-        if self.kNNOptimization.evaluationAlgorithm == OWkNNOptimization.ALGORITHM_HEURISTIC:
-            attrs = []
-            for i in range(len(fullData.domain.attributes)):
-                attrs.append(orange.EquiDistDiscretization(fullData.domain[i], fullData, numberOfIntervals = OWkNNOptimization.NUMBER_OF_INTERVALS))
-            for attr in attrs: attr.name = attr.name[2:]    # remove the "D_" in front of the attribute name
-            fullData = fullData.select(attrs + [fullData.domain.classVar])
-        
-        self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
-        startTime = time.time()
-        count = len(attributeNameOrder)*(len(attributeNameOrder)-1)/2
-        strCount = OWVisFuncts.createStringFromNumber(count)
-        testIndex = 0
-
-        for i in range(len(attributeNameOrder)):
-            for j in range(i):
-                attr1 = self.attributeNameIndex[attributeNameOrder[j]]
-                attr2 = self.attributeNameIndex[attributeNameOrder[i]]
-                testIndex += 1
-                if self.kNNOptimization.isOptimizationCanceled():
-                    secs = time.time() - startTime
-                    self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
-                    self.scatterWidget.progressBarFinished()
-                    return
-                
-                valid = self.validDataArray[attr1] + self.validDataArray[attr2] - 1
-                table = fullData.select([attr1, attr2, self.rawdata.domain.classVar.name])
-                table = table.select(list(valid))
-                
-                accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                self.kNNOptimization.setStatusBarText("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(testIndex), strCount))
-                addResultFunct(accuracy, other_results, len(table), [self.rawdata.domain[attr1].name, self.rawdata.domain[attr2].name], testIndex)
-                
-                self.scatterWidget.progressBarSet(100.0*testIndex/float(count))
-                del valid, table
-
-        secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
-        self.scatterWidget.progressBarFinished()
-            
-
-    def getOptimalClusters(self, attributeNameOrder, addResultFunct):
-        jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        
-        self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
-        startTime = time.time()
-        count = len(attributeNameOrder)*(len(attributeNameOrder)-1)/2
-        testIndex = 0
-        testIndex = 0
-
-        for i in range(len(attributeNameOrder)):
-            for j in range(i):
-                try:
-                    attr1 = self.attributeNameIndex[attributeNameOrder[j]]
-                    attr2 = self.attributeNameIndex[attributeNameOrder[i]]
-                    testIndex += 1
-                    if self.clusterOptimization.isOptimizationCanceled():
-                        secs = time.time() - startTime
-                        self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
-                        self.scatterWidget.progressBarFinished()
-                        return
-
-                    data = self.createProjectionAsExampleTable([attr1, attr2], domain = domain, jitterSize = jitterSize)
-                    graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
-
-                    allValue = 0.0
-                    classesDict = {}
-                    for key in valueDict.keys():
-                        addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attributeNameOrder[i], attributeNameOrder[j]], int(graph.objects[polygonVerticesDict[key][0]].getclass()), enlargedClosureDict[key], otherDict[key])
-                        classesDict[key] = int(graph.objects[polygonVerticesDict[key][0]].getclass())
-                        allValue += valueDict[key]
-                    addResultFunct(allValue, closureDict, polygonVerticesDict, [attributeNameOrder[i], attributeNameOrder[j]], classesDict, enlargedClosureDict, otherDict)     # add all the clusters
-                    
-                    self.clusterOptimization.setStatusBarText("Evaluated %d projections..." % (testIndex))
-                    self.scatterWidget.progressBarSet(100.0*testIndex/float(count))
-                    del data, graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict, classesDict
-                except:
-                    type, val, traceback = sys.exc_info()
-                    sys.excepthook(type, val, traceback)  # print the exception
-        
-        secs = time.time() - startTime
-        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
-        self.scatterWidget.progressBarFinished()
-
-    # #######################################################################################################
-    # ####    OPTIMIZE GIVEN PROJECTION      ################################################################
-    # #######################################################################################################
-    def optimizeGivenProjection(self, attrLists, accuracys, attributes, addResultFunct, restartWhenImproved = 1):
-        classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-        self.triedPossibilities = 0
-
-        # replace attribute names with indices in domain - faster searching
-        attributes = [self.attributeNameIndex[name] for name in attributes]
-        lenOfAttributes = len(attributes)
-        attrLists = [[self.attributeNameIndex[name] for name in projection] for projection in attrLists]
-
-        # variables and domain for the table
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-        startTime = time.time()
-
-        for i in range(len(attrLists)):
-            projection = attrLists[i]
-            accuracy = accuracys[i]
-            optimizedProjection = 1
-            
-            while optimizedProjection:
-                significantImprovement = 0
-                
-                strTotalAtts = OWVisFuncts.createStringFromNumber(lenOfAttributes)
-                listOfCanditates = []
-                for (attrIndex, attr) in enumerate(attributes):
-                    if attr in projection: continue
-                    if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
-
-                    projections = [[projection[0], attr], [attr, projection[1]]]
-                    
-                    tempList = []
-                    for testProj in projections:
-                        table = self.createProjectionAsExampleTable(testProj, domain = domain)
-                        acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                        
-                        # save the permutation
-                        tempList.append((acc, other_results, len(table), testProj))
-
-                        del table
-                        self.triedPossibilities += 1
-                        qApp.processEvents()        # allow processing of other events
-                        if self.kNNOptimization.isOptimizationCanceled(): return
-
-                    # return only the best attribute placements
-                    (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
-                    if self.kNNOptimization.getMaxFunct()(acc, accuracy) == acc:
-                        addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0)
-                        self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                        if max(acc, accuracy)/min(acc, accuracy) > 1.0001: optimizedProjection = 1
-                        #optimizedProjection = 1
-                        listOfCanditates.append((acc, attrList))
-                        if max(acc, accuracy)/min(acc, accuracy) > 1.005: significantImprovement = 1
-                    else:
-                        self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
-                        if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
-                            addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1)
-
-                    del projections
-
-                # select the best new projection and say this is now our new projection to optimize    
-                if len(listOfCanditates) > 0:
-                    (accuracy, projection) = self.kNNOptimization.getMaxFunct()(listOfCanditates)
-                    self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
-
-        secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-
-
+    
            
 
     # ##############################################################
@@ -858,8 +594,40 @@ class OWScatterPlotGraph(OWVisGraph):
 
 
     def onMouseReleased(self, e):
-        OWVisGraph.onMouseReleased(self, e)
+        OWGraph.onMouseReleased(self, e)
         self.updateLayout()
+
+
+class QwtPlotCurvePieChart(QwtPlotCurve):
+    def __init__(self, parent = None, text = None):
+        QwtPlotCurve.__init__(self, parent, text)
+        self.color = Qt.black
+        self.penColor = Qt.black
+
+    def draw(self, p, xMap, yMap, f, t):
+        # save ex settings
+        back = p.backgroundMode()
+        pen = p.pen()
+        brush = p.brush()
+        colors = ColorPaletteHSV(self.dataSize())
+
+        p.setBackgroundMode(Qt.OpaqueMode)
+        #p.setBackgroundColor(self.color)
+        for i in range(self.dataSize()-1):
+            p.setBrush(QBrush(colors.getColor(i)))
+            p.setPen(QPen(colors.getColor(i)))
+
+            factor = self.percentOfTotalData * self.percentOfTotalData
+            px1 = xMap.transform(self.x(0)-0.1 - 0.5*factor)
+            py1 = yMap.transform(self.x(1)-0.1 - 0.5*factor)
+            px2 = xMap.transform(self.x(0)+0.1 + 0.5*factor)
+            py2 = yMap.transform(self.x(1)+0.1 + 0.5*factor)
+            p.drawPie(px1, py1, px2-px1, py2-py1, self.y(i)*16*360, (self.y(i+1)-self.y(i))*16*360)
+
+        # restore ex settings
+        p.setBackgroundMode(back)
+        p.setPen(pen)
+        p.setBrush(brush)
 
         
 if __name__== "__main__":

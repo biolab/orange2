@@ -13,12 +13,13 @@
 from OWWidget import *
 from random import betavariate 
 from OWRadvizGraph import *
-from OWkNNOptimization import *
+from OWkNNOptimization import OWVizRank
 from OWClusterOptimization import *
 from OWFreeVizOptimization import *
 import time
 import OWToolbars, OWGUI, orngTest, orangeom
 import OWVisFuncts, OWDlgs
+import orngVizRank
 
 ###########################################################################################
 ##### WIDGET : Radviz visualization
@@ -69,11 +70,9 @@ class OWRadviz(OWWidget):
         self.graph.clusterOptimization = self.clusterDlg
 
         # optimization dialog
-        self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "Radviz")
-        self.graph.kNNOptimization = self.optimizationDlg
-        self.optimizationDlg.optimizeGivenProjectionButton.show()
+        self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, "Radviz")
+        self.learnersArray[0] = VizRankLearner(RADVIZ, self.optimizationDlg, self.graph)
         self.learnersArray[2] = FreeVizLearner(self)
-        self.learnersArray[2].name = "FreeViz Learner"
 
         # freeviz dialog
         self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, "Radviz")
@@ -217,15 +216,6 @@ class OWRadviz(OWWidget):
         
         # ####################################
         # K-NN OPTIMIZATION functionality
-        self.optimizationDlg.useHeuristicToFindAttributeOrderCheck.show()
-        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
-        self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
-        self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        
-        self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
-        self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
-        self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
-
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
 
@@ -248,7 +238,6 @@ class OWRadviz(OWWidget):
                 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
-        self.optimizationDlg.changeLearnerName(self.VizRankClassifierName)
         self.clusterDlg.changeLearnerName(self.clusterClassifierName)
         
         self.cbShowAllAttributes()
@@ -266,79 +255,6 @@ class OWRadviz(OWWidget):
             name = name + ".tab"
         self.graph.saveProjectionAsTabData(name, self.getShownAttributeList())
 
-    def showKNNCorect(self):
-        self.optimizationDlg.showKNNWrongButton.setOn(0)
-        self.updateGraph()
-
-    # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
-    def showKNNWrong(self):
-        self.optimizationDlg.showKNNCorrectButton.setOn(0) 
-        self.updateGraph()
-
-
-    # evaluate knn accuracy on current projection
-    def evaluateCurrentProjection(self):
-        acc, other_results = self.graph.getProjectionQuality(self.getShownAttributeList())
-        if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
-            QMessageBox.information( None, "Radviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
-        else:
-            if self.optimizationDlg.getQualityMeasure() == CLASS_ACCURACY:
-                QMessageBox.information( None, "Radviz", 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
-            elif self.optimizationDlg.getQualityMeasure() == AVERAGE_CORRECT:
-                QMessageBox.information( None, "Radviz", 'Average probability of correct classification is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
-            else:
-                QMessageBox.information( None, "Radviz", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
-            
-       
-    # ################################################################################################
-    # find projections where different class values are well separated
-    def optimizeSeparation(self):
-        if self.data == None: return
-        if not self.data.domain.classVar:
-            QMessageBox.critical( None, "VizRank Dialog", 'Projections can be evaluated only in datasets with a class value.', QMessageBox.Ok)
-            return
-        
-        text = str(self.optimizationDlg.attributeCountCombo.currentText())
-        if text == "ALL": maxLen = len(listOfAttributes)
-        else:             maxLen = int(text)
-        
-        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
-        else: minLen = 3
-
-        self.optimizationDlg.clearResults()
-        self.optimizationDlg.disableControls()
-
-        try:
-            # use the heuristic to test only most interesting attribute orders
-            if self.optimizationDlg.useHeuristicToFindAttributeOrders:
-                if not self.optimizationDlg.evaluatedAttributes or not self.optimizationDlg.evaluatedAttributesByClass:
-                    self.optimizationDlg.setStatusBarText("Evaluating attributes...")
-                    self.optimizationDlg.evaluatedAttributes, self.optimizationDlg.evaluatedAttributesByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix())
-                    self.optimizationDlg.setStatusBarText("")
-                self.graph.getOptimalSeparationUsingHeuristicSearch(self.optimizationDlg.evaluatedAttributes, self.optimizationDlg.evaluatedAttributesByClass, minLen, maxLen, self.optimizationDlg.addResult)
-
-            # evaluate all attribute orders
-            else:
-                listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-                possibilities = 0
-                for i in range(minLen, maxLen+1):
-                    possibilities += OWVisFuncts.combinationsCount(i, len(listOfAttributes)) * OWVisFuncts.fact(i-1)/2
-                    
-                self.graph.totalPossibilities = possibilities
-                self.graph.triedPossibilities = 0
-            
-                if self.graph.totalPossibilities > 200000:
-                    self.printVerbose("OWRadviz: Warning: There are %s possible radviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities)))
-                                
-                self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
-        except:
-            type, val, traceback = sys.exc_info()
-            sys.excepthook(type, val, traceback)  # print the exception
-
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.finishedAddingResults()
-        self.showSelectedAttributes()
-    
 
     # ################################################################################################
     # find projections that have tight clusters of points that belong to the same class value
@@ -385,36 +301,6 @@ class OWRadviz(OWWidget):
         self.clusterDlg.finishedAddingResults()
         self.showSelectedCluster()
    
-
-    # ################################################################################################
-    # try to find a better projection than the currently shown projection by adding other attributes to the projection and evaluating projections
-    def optimizeGivenProjectionClick(self, numOfBestAttrs = -1, maxProjLen = -1, removeTooSimilar = 0):
-        if numOfBestAttrs == -1:
-            if self.data and len(self.data.domain.attributes) > 1000:
-                (text, ok) = QInputDialog.getText('Qt Optimize Current Projection', 'How many of the best ranked attributes do you wish to test?')
-                if not ok: return
-                numOfBestAttrs = int(str(text))
-            else: numOfBestAttrs = 10000
-        self.optimizationDlg.disableControls()
-
-        if self.optimizationDlg.localOptimizeProjectionCount == 1:
-            accs = [self.graph.getProjectionQuality(self.getShownAttributeList())[0]]
-            attrLists = [self.getShownAttributeList()]
-        else:
-            attrLists = []; accs = []
-            for i in range(len(self.optimizationDlg.allResults)):
-                if not self.optimizationDlg.existsABetterSimilarProjection(i):
-                    accs.append(self.graph.getProjectionQuality(self.optimizationDlg.allResults[i][ATTR_LIST])[0])
-                    attrLists.append(self.optimizationDlg.allResults[i][ATTR_LIST])
-                if len(accs) >= self.optimizationDlg.localOptimizeProjectionCount:
-                    break
-        self.graph.optimizeGivenProjection(attrLists, accs, self.optimizationDlg.getEvaluatedAttributes(self.data)[:numOfBestAttrs], self.optimizationDlg.addResult, restartWhenImproved = 1, maxProjectionLen = self.optimizationDlg.localOptimizeMaxAttrs)
-
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.finishedAddingResults()
-        if removeTooSimilar:
-            self.optimizationDlg.removeTooSimilarProjections()  # remove projections that are too similar
-        self.showSelectedAttributes()
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
@@ -511,7 +397,7 @@ class OWRadviz(OWWidget):
     # ###############################################################################################################
     
     # receive new data and update all fields
-    def cdata(self, data, clearResults = 1, keepMinMaxVals = 0):
+    def cdata(self, data, clearResults = 1):
         if data:
             name = getattr(data, "name", "")
             data = orange.Preprocessor_dropMissingClasses(data)
@@ -519,7 +405,7 @@ class OWRadviz(OWWidget):
         if self.data and data and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         exData = self.data
         self.data = data
-        self.graph.setData(self.data, keepMinMaxVals)
+        self.graph.setData(self.data)
         self.optimizationDlg.setData(data)  
         self.clusterDlg.setData(data, clearResults)
         self.freeVizDlg.setData(data)
