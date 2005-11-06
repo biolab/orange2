@@ -116,12 +116,13 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
     
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
-    def updateData(self, labels, setAnchors = 0, **args):
+    def updateData(self, labels = None, setAnchors = 0, **args):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         #self.removeCurves()
         self.removeMarkers()
 
         self.__dict__.update(args)
+        if not labels: labels = [anchor[2] for anchor in self.anchorData]
         self.shownAttributes = labels
         self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
 
