@@ -641,9 +641,8 @@ class OWRadviz(OWWidget):
         if not self.lockToCircle:
             maxdist = math.sqrt(max([x[0]**2+x[1]**2 for x in anchors]))
             anchors = [(x[0]/maxdist, x[1]/maxdist, x[2]) for x in anchors]
-        self.graph.anchorsData = anchors
-        self.graph.updateData(self.getShownAttributeList())
-        self.graph.repaint()
+        self.graph.anchorData = anchors
+        self.updateGraph()
         self.recomputeEnergy()
 
     def freeAttributes(self, iterations, steps, singleStep = False):
@@ -674,7 +673,6 @@ class OWRadviz(OWWidget):
                 positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
                 if len(positions)==50:
                     m = max(Numeric.sum((positions[0]-positions[49])**2, 1))
-                    print m
                     if m < 1e-2:
                         break
                 self.energyLabel.repaint()
