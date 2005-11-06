@@ -118,11 +118,9 @@ class VizRank:
 
 
     def clearResults(self):
-        del self.allResults;
         self.allResults = []
 
     def clearArguments(self):
-        del self.arguments
         self.arguments = []
 
     def removeTooSimilarProjections(self):
@@ -252,8 +250,6 @@ class VizRank:
 
                 prediction = [prediction[i] / float(max(1, currentClassDistribution[i])) for i in range(len(prediction))] # turn to probabilities
 
-                if self.percentDataUsed != 100: del testTable        # remove the table that we created
-                del results
                 return val/float(s), (acc, prediction, list(currentClassDistribution))
                 
             # for continuous class we can't compute brier score and classification accuracy
@@ -262,8 +258,6 @@ class VizRank:
                 if not results.results or not results.results[0].probabilities[0]: return 0,0
                 for res in results.results:  val += res.probabilities[0].density(res.actualClass)
                 val/= float(len(results.results))
-                if self.percentDataUsed != 100: del testTable
-                del results
                 return 100.0*val, (100.0*val)
 
         # ###############################
@@ -296,7 +290,6 @@ class VizRank:
             for index in self.selectedClasses:                          # compute accuracy for selected classes
                 val += prediction[index]; s += currentClassDistribution[index]
             for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
-            if self.percentDataUsed != 100: del testTable
             return val/float(s), (acc, prediction, currentClassDistribution)
 
 
@@ -319,7 +312,7 @@ class VizRank:
         testExample = ["?"] * len(example.domain.attributes)
         
         foundArguments = 0
-        for index in range(min(len(self.allResults), 1000)):       # use only best argumentCount projections for argumentation
+        for index in range(min(len(self.allResults), self.argumentCount+300)):       # use only best argumentCount projections for argumentation
             (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList) = self.allResults[index]
             
             validExample = 1
@@ -368,7 +361,7 @@ class VizRank:
             vals[argumentList[i][1]] += argumentList[i][0]
 
         if self.canUseMoreArguments and (max(vals)*100.0 / sum(vals) < self.moreArgumentsCount):
-            for i in range(self.argumentCount, min(self.argumentCount + 100, len(self.allResults))):
+            for i in range(self.argumentCount, len(argumentList)):
                 if max(vals)*100.0 / sum(vals) > self.moreArgumentsCount: break
                 vals[argumentList[i][1]] += argumentList[i][0]
 
@@ -443,7 +436,6 @@ class VizRank:
                     if self.__class__ != VizRank:
                         self.setStatusBarText("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections), strCount))
                         self.parentWidget.progressBarSet(100.0*evaluatedProjections/float(count))
-                    del valid, table
 
         # #################### RADVIZ ################################
         elif self.visualizationMethod == RADVIZ:
@@ -513,7 +505,6 @@ class VizRank:
                                     if self.__class__ != VizRank:
                                         self.setStatusBarText("Evaluated %s projections (%d attributes)..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections), z+1))
                                         qApp.processEvents()        # allow processing of other events
-                                    del permutation, table
                                 except:
                                     pass
 
@@ -521,8 +512,6 @@ class VizRank:
                                 (acc, other_results, lenTable, attrList) = maxFunct(tempList)
                                 self.addResult(acc, other_results, lenTable, attrList, evaluatedProjections)
 
-                            del validData, classList, selectedData, sum_i, tempList
-                        del projs, combinations
                         
 
             # ################### WITHOUT HEURISTIC ##########################
@@ -576,7 +565,6 @@ class VizRank:
                                     
                                 evaluatedProjections += 1
                                 if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
-                                del permutation, table
                                     
                             if self.__class__ != VizRank:
                                 self.parentWidget.progressBarSet(100.0*evaluatedProjections/float(self.totalPossibilities))
@@ -585,9 +573,6 @@ class VizRank:
                             if self.onlyOnePerSubset:   # return only the best attribute placements
                                 (acc, other_results, lenTable, attrList) = maxFunct(tempList)
                                 self.addResult(acc, other_results, lenTable, attrList, evaluatedProjections)
-
-                            del permIndices, validData, classList, selectedData, sum_i, tempList
-                        del combinations
 
         self.finishEvaluation(evaluatedProjections)
                         
@@ -654,7 +639,6 @@ class VizRank:
                             
                             tempList.append((acc, other_results, len(table), testProj))  # save the permutation
 
-                            del table
                             evaluatedProjections += 1
                             if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
                             if self.isOptimizationCanceled():
@@ -673,8 +657,6 @@ class VizRank:
                             if self.__class__ != VizRank:                      self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
                             # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
                             if min(acc, accuracy)/max(acc, accuracy) > 0.98:   self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], 1)
-
-                        del projections
 
                     # select the best new projection and say this is now our new projection to optimize    
                     if len(listOfCanditates) > 0:
@@ -729,7 +711,6 @@ class VizRank:
                                 acc, other_results = self.kNNComputeAccuracy(table)
                                 tempList.append((acc, other_results, len(table), testProj))
 
-                                del table
                                 evaluatedProjections += 1
                                 if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
                                 if self.isOptimizationCanceled():
@@ -748,8 +729,6 @@ class VizRank:
                                 if self.__class__ != VizRank:                     self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
                                 # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
                                 if min(acc, accuracy)/max(acc, accuracy) > 0.98:  self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], 1)
-
-                            del validData, classList, projections
 
                         # select the best new projection and say this is now our new projection to optimize    
                         if len(listOfCanditates) > 0:
