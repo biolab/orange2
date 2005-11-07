@@ -132,7 +132,9 @@ def button(widget, master, label, callback = None, disabled=0, tooltip=None):
     return btn
 
 def separator(widget, width=0, height=8):
-    QWidget(widget).setFixedSize(width, height)
+    sep = QWidget(widget)
+    sep.setFixedSize(width, height)
+    return sep
 
 # btnLabels is a list of either char strings or pixmaps
 def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None):
