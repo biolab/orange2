@@ -29,18 +29,17 @@ def encodeDomain(domain):
 def encodeDataDomain(data):
     return data and encodeDomain(data.domain) or ""
 
-def mygetattr(obj, attr, default = None):
-    if attr.count(".") > 0:     # in case that we want to access an attribute that is not directly in this class we have to go like this
-        try:
-            names = attr.split(".")
-            lastobj = obj
-            for name in names[:-1]:
-                lastobj = getattr(lastobj, name)
-            return getattr(lastobj, names[-1], default)
-        except:
-            return default
-    else:
-        return getattr(obj, attr, default)
+def mygetattr(obj, attr, **argkw):
+    robj = obj
+    try:
+        for name in attr.split("."):
+            robj = getattr(robj, name)
+        return robj
+    except:
+        if argkw.has_key("default"):
+            return argkw[default]
+        else:
+            raise AttributeError, "'%s' has no attribute '%s'" % (obj, attr)
 
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
