@@ -3,92 +3,41 @@
 #include "pnn.hpp"
 #include "../orange/px/externs.px"
 
-//#include "rconversions.hpp"
-
 inline double sqr(const double &x)
 { return x*x; }
 
+#define xfree(x) { if (x) free(x); }
 
 typedef struct {double x, y; } TPoint;
 
 
-float computeEnergyLow(const int &nExamples, const int &nAttrs, const int &contClass, double *X, int *classes, TPoint *pts, TPoint *anc, double *sum, const double attractG, const double repelG, const int law)
-{
-  double *Xi;
-  double *sumi, *sume = sum + nExamples;
-  TPoint *anci, *ance = anc + nAttrs;
-  TPoint *ptsi, *ptsj, *ptse = pts + nExamples, *ptsie;
+/* loadRadvizData converts the Python lists and matrices into C++ structures.
+                  It can choose a subset of attributes.
+                  For discrete classes it also sorts the examples by the class value.
 
-  for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
-    ptsi->x = ptsi->y = 0.0;
-    for(anci = anc; anci != ance; anci++, Xi++) {
-      ptsi->x += *Xi * anci->x;
-      ptsi->y += *Xi * anci->y;
-    }
-    ptsi->x /= *sumi;
-    ptsi->y /= *sumi;
-  }
+   INPUT:
+     scaledData:    scaledData from the graph (continuous attribute values - no missing!)
+     pyclasses:     class for each example in 'scaledData'
+     anchors:       anchor positions (Python list of lists with 2 or 3 elements)
+     pyattrIndices: indices of attributes to be used
 
-  double E = 0.0;
+     scaledData and pyclasses must be of same length, and anchors and pyattrIndices also.
+     scaledData can have more attributes than the length of anchors; pyattrIndices says which are chosen
 
-  if (contClass) {
-    double *dclassesi, *dclassesj;
-    double *&dclasses = (double *&)classes;
-
-    switch(law) {
-      case TPNN::InverseLinear:
-        for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
-          for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
-            const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            E -= fabs(*dclassesi - *dclassesj) * log(dist < 1e-15 ? 1e-15 : dist);
-          }
-        E /= 2.0; // this is needed since we omitted a sqrt inside log or inside .5x^2
-        break;
-
-      case TPNN::InverseSquare:
-        for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
-          for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
-            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            E += fabs(*dclassesi - *dclassesj) / (dist < 1e-15 ? 1e-15 : sqrt(dist));
-          }
-        break;
-
-      case TPNN::InverseExponential:
-        for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
-          for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
-            E += fabs(*dclassesi - *dclassesj) / exp(-sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
-          }
-        break;
-
-    }
-  }
-
-  else {
-    for(int *classesi = classes; classesi[1]; classesi++) {
-      if (attractG != 0.0) {
-        for(ptsi = pts + *classesi, ptsie = pts + classesi[1]; ptsi != ptsie; ptsi++)
-          for(ptsj = pts + *classesi; ptsj != ptsi; ptsj++) {
-            const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            if (dist > 1e-15)
-              E += 150 * attractG * exp(1.5 * log(dist))/3.0;
-          }
-      }
-
-      if ((repelG != 0.0) && classesi[2]) {
-        for(ptsi = pts + *classesi, ptsie = pts + classesi[1]; ptsi != ptsie; ptsi++)
-          for(ptsj = ptsie; ptsj != ptse; ptsj++) {
-            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            E -= repelG / (dist < 1e-15 ? 1e-15 : sqrt(dist));
-          }
-
-      }
-    }
-  }
-
-  return E;
-}
-
-
+   OUTPUT:
+     nExamples      number of examples (length of 'scaledData'
+     nAttrs         number of attributes (length of 'anchors')
+     X              a list of attribute values (one-dimensional - flattened two-dim)
+                    - contains only the chosen attributes
+                    - for discrete classes, the list is sorted by class values
+     classes        for discrete classes, this is an (int *) with indices of class groups in X;
+                       therefore, the length of classes equals the number of classes+1
+                    for continuous, it contains the class values
+     anc            anchor coordinates
+     ll             anchor labels (stored for when the anchor list needs to be reconstructed)
+     minClass       the minimal value encountered (for continuous only)
+     maxClass       for continuous classes it is the maximal value, for discrete it is the number of classes-1
+*/
 
 bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors, PyObject *pyattrIndices,
                     int &nAttrs, int &nExamples, int &contClass,
@@ -98,6 +47,12 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
   if (!PyList_Check(scaledData) || !PyList_Check(pyclasses) || !PyList_Check(anchors))
     PYERROR(PyExc_TypeError, "scaled data, classes and anchors should be given a lists", false);
 
+  if (PyList_Size(scaledData) != PyList_Size(pyclasses))
+    PYERROR(PyExc_TypeError, "'scaledData' and 'classes' have different lengths", false);
+
+  if (PyList_Size(anchors) != PyList_Size(pyattrIndices))
+    PYERROR(PyExc_TypeError, "'anchors' and 'attrIndices' have different lengths", false);
+
   nAttrs = PyList_Size(anchors);
   nExamples = PyList_Size(scaledData);
 
@@ -106,6 +61,7 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
   anc = (TPoint *)malloc(nAttrs * sizeof(TPoint));
   ll = (PyObject **)malloc(nAttrs * sizeof(PyObject *));
 
+  // indices of the chosen attributes
   int *aii, *attrIndices = (int *)malloc(nAttrs * sizeof(int)), *aie = attrIndices + nAttrs;
   TPoint *anci;
   PyObject **lli;
@@ -119,9 +75,11 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
   }
 
   if (contClass) {
+    // read the classes
     double *dclassesi;
     for(dclassesi = (double *)classes, i = 0; i < nExamples; *dclassesi++ = PyFloat_AsDouble(PyList_GetItem(pyclasses, i++)));
 
+    // read the attribute values
     for(Xi = X, i = 0; i < nExamples; i++) {
       PyObject *ex = PyList_GetItem(scaledData, i);
       for(aii = attrIndices; aii < aie; aii++)
@@ -130,20 +88,23 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
   }
 
   else {
+    // read the classes
     int *classesi, *classese;
     int maxCls = 0;
-    for(classesi = classes, i = 0; i < nExamples; classesi++) {
-      *classesi = PyInt_AsLong(PyList_GetItem(pyclasses, i++));
+    for(classesi = classes, i = 0; i < nExamples; classesi++, i++) {
+      *classesi = PyInt_AsLong(PyList_GetItem(pyclasses, i));
       if (*classesi > maxCls)
         maxCls = *classesi;
     }
 
-    // we need maxCls+3: beginning of each of maxCls+1 classes, end of the last class, sentinel
+    // prepare the indices for counting sort algorithm
+    //   (we need maxCls+3: beginning of each of maxCls+1 classes, end of the last class, sentinel)
     int *rcls = (int *)malloc((maxCls+3) * sizeof(int));
     memset(rcls, 0, (maxCls+3) * sizeof(int));
     for(classesi = classes, classese = classes+nExamples; classesi != classese; rcls[1 + *classesi++]++);
     for(int *rclsi = rcls+1, *rclse = rcls+maxCls+2; rclsi != rclse; *rclsi += rclsi[-1], rclsi++);
 
+    // read the examples and sort them by classes at the same time (put them at the correct indices)
     for(classesi = classes, i = 0; i < nExamples; i++, classesi++) {
       PyObject *ex = PyList_GetItem(scaledData, i);
       Xi = X + nAttrs * rcls[*classesi]++;
@@ -151,6 +112,7 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
         *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
     }
 
+    // shift the class indices to the right, insert 0 at the beginning
     memmove(rcls+1, rcls, (maxCls+1) * sizeof(int));
     *rcls = 0;
 
@@ -158,277 +120,355 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
     classes = rcls;
   }
 
+  // we don't need and don't return this
   free(attrIndices);
 
   return true;
 }
 
 
-PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, ".... ... ..")
+/* Given coordinates of anchors and the symmetry type, it rotates the anchors
+   so that the first lies at phi=0 and the second (if symmetry==2) is on the
+   upper half-plane */
+
+void symmetricTransformation(TPoint *anc, TPoint *ance, bool mirrorSymmetry)
 {
-  PyTRY
-    PyObject *scaledData;
-    PyObject *pyclasses;
-    PyObject *anchors;
-    PyObject *pyattrIndices;
-    double attractG = 1.0, repelG = -1.0;
-    int steps = 1;
-    int law = 0;
-    int contClass = 0;
+   const double phi = atan2(anc[0].y, anc[0].x);
+   const double phi2 = atan2(anc[1].y, anc[1].x);
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddii:computeEnergy", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &contClass))
-      return NULL;
+   const int sign = mirrorSymmetry && ((phi2<phi) || (phi2-phi > 3.1419265)) ? -1 : 1;
+   const double dphi = /*3.1419265/2.0*/ - phi;
+   const double cs = cos(dphi), sn = sin(dphi);
 
-    double *X, *Xi;
-    int *classes;
-    TPoint *anci, *anc, *ance;
-    PyObject **ll;
-    int nAttrs, nExamples;
-    double minClass, maxClass;
-
-    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
-      return PYNULL;
-
-    ance = anc + nAttrs;
-
-    TPoint *pts = (TPoint *)malloc(nExamples * sizeof(TPoint));
-    double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
-    double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
-
-    for(anci = anc, radi = rad; anci != ance; anci++, radi++)
-      *radi = sqrt(sqr(anci->x) + sqr(anci->y));
-
-    for(sumi = sum, Xi = X; sumi != sume; sumi++) {
-      *sumi = 0.0;
-      for(radi = rad; radi != rade; *sumi += *Xi++ * *radi++);
-      if (*sumi == 0.0)
-        *sumi = 1.0;
-    }
-
-    double E = computeEnergyLow(nExamples, nAttrs, contClass, X, classes, pts, anc, sum, attractG, repelG, law);
-
-    free(X);
-    free(classes);
-    free(anc);
-    free(ll);
-    free(sum);
-    free(pts);
-    free(rad);
-
-    return PyFloat_FromDouble(E);
-  PyCATCH
+   for(TPoint *anci = anc; anci != ance; anci++) {
+     anci->y = sign * (anci->x * sn + anci->y * cs);
+     anci->x =        (anci->x * cs - anci->y * sn);
+   }
 }
 
 
+/* Computes forces for continuous class
+   UNTESTED! DOESN'T USE THE LAW!
+
+   INPUT:
+     pts           projections of examples
+     classes       example classes
+     nExamples     number of examples (the length of above arrays and of Fr)
+     law           0=Linear, 1=Square, 2=Gaussian
+
+   OUTPUT:
+     F            forces acting on each example (memory should be allocated by the caller!)
+*/
+
+void computeForcesContinuous(TPoint *pts, const TPoint *ptse, const double *classes, 
+                             const int &law,
+                             TPoint *F)
+{
+  TPoint *Fi, *Fi2, *ptsi, *ptsi2;
+  const double *classesi, *classesi2;
+  for(ptsi = pts, Fi = F, classesi = classes; ptsi != ptse; ptsi++, Fi++, classesi++) {
+
+    Fi->x = Fi-> y = 0.0;
+    for(ptsi2 = pts, Fi2 = F, classesi2 = classes; ptsi2 != ptsi; ptsi2++, Fi2++, classesi2++) {
+      const double dx = ptsi->x - ptsi2->x;
+      const double dy = ptsi->y - ptsi2->y;
+      double r2 = sqr(dx) + sqr(dy);
+      if (r2 < 1e-20)
+        continue;
+
+      double sr2 = sqrt(r2);
+      double fx = dx /sr2;
+      double fy = dy /sr2;
+      if (r2 < 1e-10)
+        r2 = 1e-10;
+
+      const double TFr = -fabs(*classesi-*classesi2) / r2;
+      const double FrX = TFr * fx;
+      const double FrY = TFr * fy;
+      Fi->x  += FrX;
+      Fi2->x -= FrX;
+      Fi->y  += FrY;
+      Fi2->y -= FrY;
+    }
+  }
+}
+
+
+/* Computes forces for discrete class
+
+   INPUT:
+     pts               projections of examples
+     classes           example classes
+     nExamples         number of examples (the length of above arrays and of Fr)
+
+     law               0=Linear, 1=Square, 2=Gaussian
+     sigma2            sigma**2 for Gaussian law
+
+     attractG          the factor to multiply the attractive forces with
+     repelG            the factor to multiply the repulsive forces with
+     dynamicBalancing  if true, the forces are balanced (prior to multiplying with the above factors
+                          so that the total sum of the attractive equals the sum of repulsive)
+
+     Comments:
+       Fa is used to return the forces, but should be allocated by the caller
+       Fr is used as a temporary, but should be allocated by the caller if both types of forces are used
+       attractG, repelG, dynamicBalancing are used only if both types of forces are used
+
+
+   OUTPUT:
+     Fa                forces acting on each example (memory should be allocated by the caller!)
+*/
+
+void computeForcesDiscrete(TPoint *pts, const TPoint *ptse, const int *classes,
+                           int law, const double &sigma2, const double &attractG, const double &repelG, const bool dynamicBalancing,
+                           TPoint *Fa, TPoint *Fr
+                          )
+{
+  TPoint *Fai, *Fri, *Fri2, *Fai2, *Fe, *ptsi, *ptsie, *ptsi2;
+
+  if (attractG == 0.0)
+    Fr = Fa; // if we have only repulsive forces, we can compute them directly into Fa
+  else if (repelG)
+    for(Fri = Fr, Fe = Fr + (ptse-pts); Fri != Fe; Fri++)
+      Fri->x = Fri->y = 0.0;
+
+
+  for(const int *classesi = classes; classesi[1]; classesi++) {
+
+    /**** Attractive forces ****/
+
+    if (attractG != 0.0) {
+
+      if (law == TPNN::InverseSquare) {
+        for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fai = Fa + *classesi; ptsi != ptsie; ptsi++, Fai++) {
+          Fai->x = Fai-> y = 0.0;
+          for(ptsi2 = pts + *classesi,                         Fai2 = Fa + *classesi; ptsi2 != ptsi; ptsi2++, Fai2++) {
+            const double dx = ptsi->x - ptsi2->x;
+            const double dy = ptsi->y - ptsi2->y;
+            const double r = sqrt(sqr(dx) + sqr(dy));
+
+            const double druvx = dx * r;
+            Fai->x  += druvx;
+            Fai2->x -= druvx;
+
+            const double druvy = dy * r;
+            Fai->y  += druvy;
+            Fai2->y -= druvy;
+          }
+        }
+      }
+
+      else {
+        double sumx = 0, sumy = 0;
+        const double n = classesi[1] - *classesi;
+        for(ptsi = pts + *classesi, ptsie = pts + classesi[1]; ptsi != ptsie; ptsi++) {
+          sumx += ptsi->x;
+          sumy += ptsi->y;
+        }
+
+        for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fai = Fa + *classesi; ptsi != ptsie; ptsi++, Fai++) {
+          Fai->x = sumx - n * ptsi->x;
+          Fai->y = sumy - n * ptsi->y;
+        }
+      }
+    }
+
+
+    /**** Repulsive forces ****/
+
+    if ((repelG != 0.0) && classesi[2]) {
+
+      for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fri = Fr + *classesi; ptsi != ptsie; ptsi++, Fri++) {
+        for(ptsi2 = ptsie, Fri2 = Fr + classesi[1]; ptsi2 != ptse; ptsi2++, Fri2++) {
+          const double dx = ptsi->x - ptsi2->x;
+          const double dy = ptsi->y - ptsi2->y;
+          double r2 = sqr(dx) + sqr(dy);
+          if (r2 < 1e-20)
+            continue;
+
+          double fct;
+          switch (law) {
+            case TPNN::InverseLinear:
+              fct = 1 / r2;
+              break;
+            case TPNN::InverseSquare:
+              fct = 1 / (r2 * sqrt(r2));
+              break;
+            case TPNN::InverseExponential:
+              fct = 1 / (exp(r2/sigma2) - 1);
+          }
+
+          const double druvx = - dx * fct;
+          Fri->x  += druvx;
+          Fri2->x -= druvx;
+
+          const double druvy = - dy * fct;
+          Fri->y  += druvy;
+          Fri2->y -= druvy;
+        }
+      }
+    }
+  }
+  
+  // if both types of forces are used, balance them and mix them into Fa in the right proportions
+  if ((repelG != 0.0) && (attractG != 0.0)) {
+    double repelGk;
+
+    if (dynamicBalancing) {
+      double FrTot = 0;
+      for(Fri = Fr, Fe = Fr + (ptse-pts); Fri != Fe; Fri++)
+        FrTot += sqr(Fri->x) + sqr(Fri->y);
+
+      double FaTot = 0;
+      for(Fai = Fa, Fe = Fa + (ptse-pts); Fai != Fe; Fai++)
+        FaTot += sqr(Fai->x) + sqr(Fai->y);
+
+      repelGk = FrTot > 0.001 ? repelG * fabs(FaTot / FrTot) : repelG;
+    }
+    else
+      repelGk = repelG;
+
+    for(Fai = Fa, Fri = Fr, Fe = Fr + (ptse-pts); Fri != Fe; Fai++, Fri++) {
+      Fai->x = attractG * Fai->x  +  repelGk * Fri->x;
+      Fai->y = attractG * Fai->y  +  repelGk * Fri->y;
+    }
+  }
+}
+
+
+
+
      
-PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, law=InverseLinear, steps=1, normalizeExamples=1]) -> new-anchors")
+PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, law=InverseLinear, steps=1, normalizeExamples=1]) -> new-anchors")
 {
   PyTRY
-    PyObject *scaledData;
-    PyObject *pyclasses;
-    PyObject *anchors;
-    PyObject *pyattrIndices;
-    double attractG = 1.0, repelG = -1.0;
-    int law = TPNN::InverseLinear;
-    int steps = 1;
-    int normalizeExamples = 1;
-    int contClass = 0;
+    // get the arguments from Python
+    PyObject *scaledData, *pyclasses, *anchors, *pyattrIndices;
+    double attractG = 1.0,              repelG = -1.0,          sigma2 = 1.0;
+    int    law = TPNN::InverseLinear,   steps = 1,              normalizeExamples = 0,
+           contClass = 0,               dynamicBalancing = 0,   mirrorSymmetry = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddiiii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &steps, &normalizeExamples, &contClass))
+    static char *kwlist[] = {"scaledData", "classes", "anchors", "attrIndices", "attractG", "repelG", "law", "sigma2", "dynamicBalancing", "steps", "normalizeExamples", "contClass", "mirrorSymmetry", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, "OOOO|ddidiiiii:optimizeAnchors", kwlist, &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &sigma2, &dynamicBalancing, &steps, &normalizeExamples, &contClass, &mirrorSymmetry))
       return NULL;
 
-    double *Xi, *X;
-    int *classes;
-    TPoint *anci, *anc, *ance;
-    PyObject **lli, **ll;
-    int nAttrs, nExamples;
 
-    double minClass, maxClass;
-    double *&dclasses = (double *&)classes;
+    double *Xi, *X;            // values of the chosen attributes
+    int *classes;              // classes (for continuous) or indices for groups of classes (for discrete);
+    int nAttrs, nExamples;     // number of (chosen) attributes and of examples
+    TPoint *anci, *anc, *ance; // anchor coordinates
+    PyObject **lli, **ll;      // anchor labels
+    double minClass, maxClass; // minimal and maximal class values (for cont), #classes+1 (for disc)
 
+    // convert the examples, classes and anchors from Python lists
     if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
-
     ance = anc + nAttrs;
 
     int i;
-    double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
-    TPoint *danci, *danc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *dance = danc + nAttrs;
-    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples, *ptsi2, *ptsie;
-    double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
-    TPoint *Fai, *Fa = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fae = Fa + nExamples, *Fai2;
-    TPoint *Fri, *Fr = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fre = Fr + nExamples, *Fri2;
-    double FaTot, FrTot;
+    TPoint *danci, *danc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *dance = danc + nAttrs;   // anchors' moves
+    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples; // projections of examples
+    TPoint *Fai, *Fa = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fae = Fa + nExamples;     // forces on examples
+
+    TPoint *Fr = !contClass && (attractG != 0.0) && (repelG != 0.0) 
+                     ? (TPoint *)malloc(nExamples * sizeof(TPoint)) : NULL;    // temporary array for computeForces
+
+    double *radi, *rad = NULL, *sumi, *sum = NULL, *sume;
+    if (normalizeExamples) {
+      rad = (double *)malloc(nAttrs * sizeof(double));                         // radii of anchors
+      sum = (double *)malloc(nExamples * sizeof(double));                      // sums of attr values for each example
+      sume = sum + nExamples;
+    }
+
 
     while (steps--) {
+      // compute the projection
       if (normalizeExamples) {
         for(anci = anc, radi = rad; anci != ance; anci++, radi++)
           *radi = sqrt(sqr(anci->x) + sqr(anci->y));
-      }
 
-      for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
-        ptsi->x = ptsi->y = *sumi = 0.0;
-        for(anci = anc, radi = rad; anci != ance; anci++, Xi++, radi++) {
-          ptsi->x += *Xi * anci->x;
-          ptsi->y += *Xi * anci->y;
-          if (normalizeExamples)
+        for(sumi = sum, Xi = X, ptsi = pts; ptsi != ptse; sumi++, ptsi++) {
+          ptsi->x = ptsi->y = *sumi = 0.0;
+          for(anci = anc, radi = rad; anci != ance; anci++, Xi++, radi++) {
+            ptsi->x += *Xi * anci->x;
+            ptsi->y += *Xi * anci->y;
             *sumi += *Xi * *radi;
-        }
-        if (normalizeExamples)
+          }
           if (*sumi != 0.0) {
             ptsi->x /= *sumi;
             ptsi->y /= *sumi;
           }
           else
             *sumi = 1.0; // we also use *sumi later
+        }
+      }
+      else {
+        for(Xi = X, ptsi = pts; ptsi != ptse; ptsi++) {
+          ptsi->x = ptsi->y = 0.0;
+          for(anci = anc; anci != ance; anci++, Xi++) {
+            ptsi->x += *Xi * anci->x;
+            ptsi->y += *Xi * anci->y;
+          }
+        }
       }
 
 
-      for(Fai = Fa; Fai != Fae; Fai++)
-        Fai->x = Fai-> y = 0.0;
+      // Compute the forces
+      if (contClass)
+        computeForcesContinuous(pts, ptse, (double *)classes, law, Fa);
+      else
+        computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
 
-      for(Fri = Fr; Fri != Fre; Fri++)
-        Fri->x = Fri-> y = 0.0;
 
-      FaTot = FrTot = 0;
+      // Normalize forces if needed (why?! instead of dividing each *Xi?)
+      if (normalizeExamples)
+        for(Fai = Fa, sumi = sum; Fai != Fae; Fai++, sumi++) {
+          Fai->x /= *sumi;
+          Fai->y /= *sumi;
+        }
 
+
+      // Transmit forces on particles to the anchors
       for(danci = danc; danci != dance; danci++)
         danci->x = danci->y = 0.0;
 
-
-      if (contClass) {
-        double *classesi, *classesi2;
-        for(ptsi = pts, Fri = Fr, classesi = (double *)classes; ptsi != ptse; ptsi++, Fri++, classesi++)
-          for(ptsi2 = pts, Fri2 = Fr, classesi2 = (double *)classes; ptsi2 != ptsi; ptsi2++, Fri2++, classesi2++) {
-            const double dx = ptsi->x - ptsi2->x;
-            const double dy = ptsi->y - ptsi2->y;
-            double r2 = sqr(dx) + sqr(dy);
-            if (r2 < 1e-20)
-              continue;
-
-            double sr2 = sqrt(r2);
-            double fx = dx /sr2;
-            double fy = dy /sr2;
-            if (r2 < 1e-10)
-              r2 = 1e-10;
-
-            const double TFr = -fabs(*classesi-*classesi2) / r2;
-            const double FrX = TFr * fx;
-            const double FrY = TFr * fy;
-            Fri->x  += FrX;
-            Fri2->x -= FrX;
-            Fri->y  += FrY;
-            Fri2->y -= FrY;
+      for(Fai = Fa, Xi = X; Fai != Fae; Fai++) {            // loop over examples
+        for(danci = danc; danci != dance; danci++, Xi++) {  // loop over anchors
+          danci->x -= Fai->x * *Xi;
+          danci->y -= Fai->y * *Xi;
         }
       }
 
-      else {
-        for(int *classesi = classes; classesi[1]; classesi++) {
 
-          if (attractG != 0.0) {
-            
-            for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fai = Fa + *classesi; ptsi != ptsie; ptsi++, Fai++)
-              for(ptsi2 = pts + *classesi,                         Fai2 = Fa + *classesi; ptsi2 != ptsi; ptsi2++, Fai2++) {
-                const double dx = ptsi->x - ptsi2->x;
-                const double dy = ptsi->y - ptsi2->y;
-                const double r2 = sqr(dx) + sqr(dy);
-                const double sr2 = sqrt(r2);
-                if (r2 < 1e-15)
-                  continue;
-                const double TFa = 100 * attractG * r2;
-                FaTot += TFa;
-                const double druvx =  TFa * dx / sr2;
-                const double druvy = TFa * dy / sr2;
-                Fai->x  += druvx;
-                Fai2->x -= druvx;
-                Fai->y  += druvy;
-                Fai2->y -= druvy;
-              }
-          }
-
-          if ((repelG != 0.0) && classesi[2]) {
-            for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fri = Fr + *classesi; ptsi != ptsie; ptsi++, Fri++)
-              for(ptsi2 = ptsie, Fri2 = Fr + classesi[1]; ptsi2 != ptse; ptsi2++, Fri2++) {
-                const double dx = ptsi->x - ptsi2->x;
-                const double dy = ptsi->y - ptsi2->y;
-                double r2 = sqr(dx) + sqr(dy);
-                if (r2 < 1e-20)
-                  continue;
-
-                double sr2 = sqrt(r2);
-                double fx = dx /sr2;
-                double fy = dy /sr2;
-                if (r2 < 1e-10)
-                  r2 = 1e-10;
-
-                const double TFr = repelG / r2;
-                FrTot += TFr;
-                const double druvx = TFr * fx;
-                Fri->x  += druvx;
-                Fri2->x -= druvx;
-
-                const double druvy = TFr * fy;
-                Fri->y  += druvy;
-                Fri2->y -= druvy;
-              }
-          }
-        }
-      }
-
-      if (normalizeExamples) {
-        for(Fai = Fa, Fri = Fr, sumi = sum, Xi = X; Fri != Fre; Fai++, Fri++, sumi++) {
-          Fai->x /= *sumi;
-          Fai->y /= *sumi;
-          Fri->x /= *sumi;
-          Fri->y /= *sumi;
-          for(danci = danc; danci != dance; danci++, Xi++) {
-            danci->x -= (Fai->x+Fri->x) * *Xi; // previously, Xi was here additionally divided by *sumi -- don't know why
-            danci->y -= (Fai->y+Fri->y) * *Xi;
-          }
-        }
-      }
-
-      else {
-        const double k =  /*FrTot > 0.001 ? fabs(FaTot / FrTot) : */1.0;
-        for(Fai = Fa, Fri = Fr, Xi = X; Fri != Fre; Fri++, Fai++) {
-          for(danci = danc; danci != dance; danci++, Xi++) {
-            danci->x -= (Fai->x+k*Fri->x) * *Xi;
-            danci->y -= (Fai->y+k*Fri->y) * *Xi;
-          }
-        }
-      }
-
-  // Scale the changes - normalize the jumps
+      // Scale the changes (the largest is anchor move is 0.1*radius)
       double scaling = 1e10;
       for(anci = anc, danci = danc; danci != dance; anci++, danci++) {
-        double maxdr = 0.1 * sqrt(sqr(anci->x) + sqr(anci->y));
-        double dr = sqrt(sqr(danci->x) + sqr(danci->y));
-        if ((maxdr > 1e-5) && (dr > 1e-5)) {
-          if (scaling * dr > maxdr)
-            scaling = maxdr / dr;
-        }
+        double maxdr = 0.01 * (sqr(anci->x) + sqr(anci->y));
+        double dr = sqr(danci->x) + sqr(danci->y);
+        if (scaling * dr > maxdr)
+          scaling = maxdr / dr;
       }
 
+      scaling = sqrt(scaling);
       for(danci = danc; danci != dance; danci++) {
         danci->x *= scaling;
         danci->y *= scaling;
       }
 
 
-  // Move anchors
+      // Move anchors
       for(anci = anc, danci = danc; danci != dance; danci++, anci++) {
-        anci->x += danci->x;
-        anci->y += danci->y;
+        anci->x +=  danci->x;
+        anci->y +=  danci->y;
       }
 
- 
-  //Centering
+  
+      // Center anchors (so that the average is in the middle)
       double aax = 0.0, aay = 0.0;
       for(anci = anc; anci != ance; anci++) {
         aax += anci->x;
         aay += anci->y;
       }
-
       aax /= nAttrs;
       aay /= nAttrs;
 
@@ -437,201 +477,149 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
         anci->y -= aay;
       }
 
-   // Scaling, rotating and mirroring
 
-      // find the largest and the second largest not collocated with the largest
-      double maxr = 0.0, maxr2 = 0.0;
-      TPoint *anci_l = NULL, *anci_l2 = NULL;
-/*      for(anci = anc; anci != ance; anci++) {
-        const double r = sqr(anci->x) + sqr(anci->y);
-        if (r > maxr) {
-          maxr2 = maxr;
-          anci_l2 = anci_l;
-          maxr = r;
-          anci_l = anci;
-        }
-        else if ((r > maxr2) && ((anci->x != anci_l->x) || (anci->y != anci_l->y))) {
-          maxr2 = r;
-          anci_l2 = anci;
-        }
-      }
-*/
+      // Scale (so that the largest radius is 1)
+      double maxr = 0.0;
       for(anci = anc; anci != ance; anci++) {
         const double r = sqr(anci->x) + sqr(anci->y);
-        if (r > maxr) {
+        if (r > maxr)
           maxr = r;
-          anci_l = anci;
-        }
       }
-      anci_l = anc;
-      anci_l2 = anc+1;
 
-      if (anci_l2) {
-        maxr = maxr > 0.0 ? sqrt(maxr) : 1.0;
-
-        double phi = atan2(anci_l->y, anci_l->x);
-        double phi2 = atan2(anci_l2->y, anci_l2->x);
-
-        // disabled to avoid the flips
-        // int sign = (phi2>phi) && (phi2-phi < 3.1419265) ? 1 : -1;
-        int sign = 1;
-
-        double dphi = 3.1419265/2.0 - phi;
-        double cs = cos(dphi)/maxr, sn = sin(dphi)/maxr;
-
+      if (maxr > 0.001) {
+        maxr = sqrt(maxr);
         for(anci = anc; anci != ance; anci++) {
-          const double tx = anci->x * cs - anci->y * sn;
-          anci->y = anci->x * sn + anci->y * cs;
-          anci->x = sign * tx;
+          anci->x /= maxr;
+          anci->y /= maxr;
         }
       }
     }
+
+    symmetricTransformation(anc, ance, mirrorSymmetry != 0);
 
     anchors = PyList_New(nAttrs);
     for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
-      PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
+      PyList_SetItem(anchors, i, *lli ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
       
-
-    for(anci = anc, radi = rad; anci != ance; anci++, radi++)
-      *radi = sqrt(sqr(anci->x) + sqr(anci->y));
-
-    for(sumi = sum, Xi = X; sumi != sume; sumi++) {
-      *sumi = 0.0;
-      for(radi = rad, i = nAttrs; i--; *sumi += *Xi++ * *radi++);
-      if (*sumi == 0.0)
-        *sumi = 1.0;
-    }
-
-    double E = computeEnergyLow(nExamples, nAttrs, contClass, X, classes, pts, anc, sum, attractG, repelG, law);
-
+    free(X);
+    free(classes);
     free(anc);
+    free(ll);
+
     free(danc);
     free(pts);
-    free(ll);
-    free(classes);
-    free(X);
-    free(sum);
     free(Fa);
-    free(Fr);
-    free(rad);
+    xfree(Fr);
+    xfree(sum);
+    xfree(rad);
 
-    return Py_BuildValue("Od", anchors, E);
+    return anchors;
       
   PyCATCH;
 }
 
 
 
-PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, law=InverseLinear, steps=1, normalizeExamples=1]) -> new-anchors")
+PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, law=InverseLinear, steps=1, normalizeExamples=1]) -> new-anchors")
 {
   PyTRY
-    PyObject *scaledData;
-    PyObject *pyclasses;
-    PyObject *anchors;
-    PyObject *pyattrIndices;
-    double attractG = 1.0, repelG = -1.0;
-    int law = TPNN::InverseLinear;
-    int steps = 1;
-    int contClass = 0;
+    // get the arguments from Python
+    PyObject *scaledData, *pyclasses, *anchors, *pyattrIndices;
+    double attractG = 1.0,              repelG = -1.0,          sigma2 = 1.0;
+    int law = TPNN::InverseLinear,      steps = 1,              normalizeExamples = 0,
+        contClass = 0,                  dynamicBalancing = 0,   mirrorSymmetry = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddiii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &steps, &contClass))
+    static char *kwlist[] = {"scaledData", "classes", "anchors", "attrIndices", "attractG", "repelG", "law", "sigma2", "dynamicBalancing", "steps", "normalizeExamples", "contClass", "mirrorSymmetry", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, "OOOO|ddidiiiii:optimizeAnchors", kwlist, &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &sigma2, &dynamicBalancing, &steps, &normalizeExamples, &contClass, &mirrorSymmetry))
       return NULL;
 
-    double *Xi, *X;
-    int *classes;;
-    TPoint *anci, *anc, *ance;
-    PyObject **lli, **ll;
-    int nAttrs, nExamples;
+    double *Xi, *X;            // values of the chosen attributes
+    int *classes;              // classes (for continuous) or indices for groups of classes (for discrete);
+    TPoint *anci, *anc, *ance; // anchor coordinates
+    int nAttrs, nExamples;     // number of (chosen) attributes and of examples
+    PyObject **lli, **ll;      // anchor labels
+    double minClass, maxClass; // minimal and maximal class values (for cont), #classes+1 (for disc)
 
-    double minClass, maxClass;
-
+    // convert the examples, classes and anchors from Python lists
     if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
-
     ance = anc + nAttrs;
 
-    int u, v, i;
-    double *dphii, *dphi = (double *)malloc(nAttrs * sizeof(double)), *dphie = dphi + nAttrs;
-    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples;
-    double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
-    TPoint *Ki, *K = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Ke = K + nExamples;
+    int i;
+    double *dphii, *dphi = (double *)malloc(nAttrs * sizeof(double)), *dphie = dphi + nAttrs;    // changes of angles of anchors
+    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples;  // projections of examples
+    TPoint *Fai, *Fa = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fae = Fa + nExamples;      // forces on examples
 
-    for(sumi = sum, Xi = X; sumi != sume; sumi++) {
-      *sumi = 0.0;
-      for(i = nAttrs; i--; *sumi += *Xi++);
-      if (*sumi == 0.0)
-        *sumi = 1.0;
+    TPoint *Fr = !contClass && (attractG != 0.0) && (repelG != 0.0) 
+                     ? (TPoint *)malloc(nExamples * sizeof(TPoint)) : NULL;    // temporary array for computeForces
+
+    double *sumi, *sum = NULL, *sume;
+    if (normalizeExamples) {
+      sum = (double *)malloc(nExamples * sizeof(double));                      // sums of attr values for each example
+      sume = sum + nExamples;
     }
 
     while (steps--) {
-      for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
-        ptsi->x = ptsi->y = 0.0;
-        for(anci = anc; anci != ance; anci++, Xi++) {
-          ptsi->x += *Xi * anci->x;
-          ptsi->y += *Xi * anci->y;
-        }
-        ptsi->x /= *sumi;
-        ptsi->y /= *sumi;
-      }
-
-
-/* XXX   TO OPTIMIZE:
-       - use pointers instead of indexing
-       - sort the examples by classes so you don't have to compare them all the time
-       - if attractive force are 0, you can gain some time by checking only the examples from different classes
-*/
-                     
-      for(Ki = K; Ki != Ke; Ki++)
-        Ki->x = Ki-> y = 0.0;
-
-      for(dphii = dphi; dphii != dphie; dphii++)
-        *dphii = 0.0;
-
-      for(u = 0; u < nExamples; u++) {
-        for(v = u+1; v < nExamples; v++) {
-          const double duv = classes[u] == classes[v] ? attractG : repelG;
-          if (duv == 0.0)
-            continue;
-
-          const double dx = pts[u].x - pts[v].x;
-          const double dy = pts[u].y - pts[v].y;
-          double ruv = sqr(dx) + sqr(dy);
-          if (ruv < 1e-15)
-            ruv = 1e-15;
-
-          double druv;
-          switch(law) {
-            case TPNN::InverseLinear: druv = duv / sqrt(ruv); break;
-            case TPNN::InverseSquare: druv = duv / ruv; break;
-            case TPNN::InverseExponential: druv = duv / exp(-sqrt(ruv)); break;
+      // compute the projection
+      if (normalizeExamples) {
+        for(sumi = sum, Xi = X, ptsi = pts; ptsi != ptse; sumi++, ptsi++) {
+          ptsi->x = ptsi->y = *sumi = 0.0;
+          for(anci = anc; anci != ance; anci++, Xi++) {
+            ptsi->x += *Xi * anci->x;
+            ptsi->y += *Xi * anci->y;
+            *sumi += *Xi;
           }
-
-          const double Kefx = dx * druv;
-          K[u].x += Kefx;
-          K[v].x -= Kefx;
-
-          const double Kefy = dy * druv;
-          K[u].y += Kefy;
-          K[v].y -= Kefy;
+          if (*sumi != 0.0) {
+            ptsi->x /= *sumi;
+            ptsi->y /= *sumi;
+          }
+          else
+            *sumi = 1.0; // we also use *sumi later
         }
-
-        K[u].x /= sum[u];
-        K[u].y /= sum[u];
-
-        double *Xu = X + u * nAttrs;
-        for(i = 0; i < nAttrs; i++, Xu++)
-          dphi[i] -= *Xu/sum[u] * (K[u].y * anc[i].x - K[u].x * anc[i].y);
+      }
+      else {
+        for(Xi = X, ptsi = pts; ptsi != ptse; ptsi++) {
+          ptsi->x = ptsi->y = 0.0;
+          for(anci = anc; anci != ance; anci++, Xi++) {
+            ptsi->x += *Xi * anci->x;
+            ptsi->y += *Xi * anci->y;
+          }
+        }
       }
 
 
-  // Scale the changes - normalize the jumps
+
+      // Compute the forces
+      if (contClass)
+        computeForcesContinuous(pts, ptse, (double *)classes, law, Fa);
+      else
+        computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing!=0, Fa, Fr);
+
+
+      // Normalize forces if needed (why?! instead of dividing each *Xi?)
+      if (normalizeExamples)
+        for(Fai = Fa, sumi = sum; Fai != Fae; Fai++, sumi++) {
+          Fai->x /= *sumi;
+          Fai->y /= *sumi;
+        }
+
+
+      // Transmit the forces to the anchors
+      for(dphii = dphi; dphii != dphie; *dphii++ = 0.0);
+
+      for(Fai = Fa, Xi = X; Fai != Fae; Fai++)                                 // loop over examples
+        for(dphii = dphi, anci = anc; dphii != dphie; dphii++, Xi++, anci++)   // loop over anchors
+          *dphii -= *Xi * (Fai->y * anci->x - Fai->x * anci->y);
+
+
+      // Scale the changes - normalize the jumps
       double scaling = 1e10;
       for(dphii = dphi; dphii != dphie ; dphii++) {
-        if (fabs(*dphii * scaling) > 0.1)
+        if (fabs(*dphii * scaling) > 0.01)
           scaling = fabs(0.01 / *dphii);
       }
 
-  // Move anchors
+      // Move anchors
       for(anci = anc, dphii = dphi; dphii != dphie; dphii++, anci++) {
         double tphi = atan2(anci->y, anci->x) + *dphii * scaling;
         anci->x = cos(tphi);
@@ -639,120 +627,126 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
       }
     }
 
-    anchors = PyList_New(nAttrs);
-    for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
-      PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
-      
-    double E = computeEnergyLow(nExamples, nAttrs, contClass, X, classes, pts, anc, sum, attractG, repelG, law);
+    symmetricTransformation(anc, ance, mirrorSymmetry != 0);
 
+    anchors = PyList_New(nAttrs);
+    for(i = 0, anci = anc, lli = ll; anci != ance; lli++, i++, anci++) 
+      PyList_SetItem(anchors, i, *lli ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
+      
+    free(X);
+    free(classes);
     free(anc);
+    free(ll);
+
     free(dphi);
     free(pts);
-    free(ll);
-    free(classes);
-    free(X);
-    free(sum);
-    free(K);
+    free(Fa);
+    xfree(Fr);
+    xfree(sum);
 
-    return Py_BuildValue("Od", anchors, E);
+    return anchors;
       
   PyCATCH;
 }
 
 
-PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0]) -> new-anchors")
+
+
+PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, law=InverseLinear, steps=1, normalizeExamples=1]) -> new-anchors")
 {
   PyTRY
-    PyObject *scaledData;
-    PyObject *pyclasses;
-    PyObject *anchors;
-    PyObject *pyattrIndices;
-    double attractG = 1.0, repelG = -1.0;
-    int steps = 1;
-    int contClass = 0;
+    // get the arguments from Python
+    PyObject *scaledData, *pyclasses, *anchors, *pyattrIndices;
+    double attractG = 1.0,              repelG = -1.0,          sigma2 = 1.0;
+    int    law = TPNN::InverseLinear,   steps = 1,              normalizeExamples = 0,
+           contClass = 0,               dynamicBalancing = 0,   mirrorSymmetry = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps, &contClass))
+    static char *kwlist[] = {"scaledData", "classes", "anchors", "attrIndices", "attractG", "repelG", "law", "sigma2", "dynamicBalancing", "steps", "normalizeExamples", "contClass", "mirrorSymmetry", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, "OOOO|ddidiiiii:optimizeAnchors", kwlist, &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &sigma2, &dynamicBalancing, &steps, &normalizeExamples, &contClass, &mirrorSymmetry))
       return NULL;
 
-    double *Xi, *X;
-    int *classes;;
-    TPoint *anci, *anc, *ance;
-    PyObject **lli, **ll;
-    int nAttrs, nExamples;
-    double minClass, maxClass;
 
+    double *Xi, *X;            // values of the chosen attributes
+    int *classes;              // classes (for continuous) or indices for groups of classes (for discrete);
+    int nAttrs, nExamples;     // number of (chosen) attributes and of examples
+    TPoint *anci, *anc, *ance; // anchor coordinates
+    PyObject **lli, **ll;      // anchor labels
+    double minClass, maxClass; // minimal and maximal class values (for cont), #classes+1 (for disc)
+
+    // convert the examples, classes and anchors from Python lists
     if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
-
     ance = anc + nAttrs;
 
-    int i, u, v;
-    double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
-    double *dri, *dr = (double *)malloc(nAttrs * sizeof(double)), *dre = dr + nAttrs;
-    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples;
-    double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
-    TPoint *Ki, *K = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Ke = K + nExamples;
+    int i;
+    double *dri, *dr = (double *)malloc(nAttrs * sizeof(double)), *dre = dr + nAttrs;           // anchors' moves
+    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples; // projections of examples
+    double *radi, *rad = (double *)malloc(nAttrs * sizeof(double));                       // radii of anchors
+    TPoint *Fai, *Fa = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fae = Fa + nExamples;     // forces on examples
+
+    TPoint *Fr = !contClass && (attractG != 0.0) && (repelG != 0.0) 
+                     ? (TPoint *)malloc(nExamples * sizeof(TPoint)) : NULL;    // temporary array for computeForces
+
+    
+    double *sumi, *sum = NULL, *sume;
+    if (normalizeExamples) {
+      sum = (double *)malloc(nExamples * sizeof(double));                      // sums of attr values for each example
+      sume = sum + nExamples;
+    }
 
     while (steps--) {
+      // compute the projection
       for(anci = anc, radi = rad; anci != ance; anci++, radi++)
         *radi = sqrt(sqr(anci->x) + sqr(anci->y));
 
-      for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
-        ptsi->x = ptsi->y = *sumi = 0.0;
-        for(anci = anc, radi = rad; anci != ance; anci++, Xi++, radi++) {
-          ptsi->x += *Xi * anci->x;
-          ptsi->y += *Xi * anci->y;
-          *sumi += *Xi * *radi;
+      if (normalizeExamples) {
+        for(sumi = sum, Xi = X, ptsi = pts; ptsi != ptse; sumi++, ptsi++) {
+          ptsi->x = ptsi->y = *sumi = 0.0;
+          for(anci = anc, radi = rad; anci != ance; anci++, Xi++, radi++) {
+            ptsi->x += *Xi * anci->x;
+            ptsi->y += *Xi * anci->y;
+            *sumi += *Xi * *radi;
+          }
+          if (*sumi != 0.0) {
+            ptsi->x /= *sumi;
+            ptsi->y /= *sumi;
+          }
+          else
+            *sumi = 1.0; // we also use *sumi later
         }
-        if (*sumi == 0.0)
-          *sumi = 1.0;
-        ptsi->x /= *sumi;
-        ptsi->y /= *sumi;
+      }
+      else {
+        for(Xi = X, ptsi = pts; ptsi != ptse; ptsi++) {
+          ptsi->x = ptsi->y = 0.0;
+          for(anci = anc; anci != ance; anci++, Xi++) {
+            ptsi->x += *Xi * anci->x;
+            ptsi->y += *Xi * anci->y;
+          }
+        }
       }
 
 
-/* XXX   TO OPTIMIZE:
-       - use pointers instead of indexing
-       - sort the examples by classes so you don't have to compare them all the time
-       - if attractive force are 0, you can gain some time by checking only the examples from different classes
-*/
-                     
-      for(Ki = K; Ki != Ke; Ki++)
-        Ki->x = Ki-> y = 0.0;
+      // Compute the forces
+      if (contClass)
+        computeForcesContinuous(pts, ptse, (double *)classes, law, Fa);
+      else
+        computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
 
-      for(dri = dr; dri != dre; *(dri++) = 0.0);
 
-      for(u = 0; u < nExamples; u++) {
-        for(v = u+1; v < nExamples; v++) {
-          const double duv = classes[u] == classes[v] ? attractG : repelG;
-          if (duv == 0.0)
-            continue;
-
-          double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
-          if (ruv < 1e-15)
-            ruv = 1e-15;
-
-          //const double druv = duv / exp(0.3 * log(ruv));
-          //const double druv = duv / sqrt(ruv);
-          const double druv = duv / ruv;
-
-          const double druvx = druv * (pts[u].x - pts[v].x);
-          K[u].x += druvx;
-          K[v].x -= druvx;
-
-          const double druvy = druv * (pts[u].y - pts[v].y);
-          K[u].y += druvy;
-          K[v].y -= druvy;
+      // Normalize forces if needed (why?! instead of dividing each *Xi?)
+      if (normalizeExamples)
+        for(Fai = Fa, sumi = sum; Fai != Fae; Fai++, sumi++) {
+          Fai->x /= *sumi;
+          Fai->y /= *sumi;
         }
 
-        K[u].x /= sum[u];
-        K[u].y /= sum[u];
 
-        double *Xu = X + u * nAttrs;
-        for(i = 0; i < nAttrs; i++, Xu++)
-          dr[i] -= *Xu/sum[u] * (K[u].x * anc[i].x + K[u].y * anc[i].y);
-      }
+      // Transmit forces on particles to the anchors
+      for(dri = dr; dri != dre; *dri++ = 0.0);
 
+      for(Fai = Fa, Xi = X; Fai != Fae; Fai++)                                 // loop over examples
+        for(dri = dr, anci = anc; dri != dre; dri++, anci++, Xi++)             // loop over anchors
+          *dri -= *Xi * (Fai->x * anc->x + Fai->y * anci->y);
 
       double scaling = 1e10;
       for(anci = anc, dri = dr; dri != dre; anci++, dri++) {
@@ -763,63 +757,47 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
         }
       }
 
-      for(dri = dr; dri != dre; *dri++ *= scaling);
-
-  // Move anchors
+      // Move anchors
+      double maxr = 0.0;
       for(anci = anc, dri = dr, radi = rad; dri != dre; dri++, anci++, radi++) {
-        double rat = (*radi + *dri) / *radi;
+        const double newr = *radi + *dri * scaling;
+        double rat = newr / *radi;
         anci->x *= rat;
         anci->y *= rat;
-      }
-
-       //Centering and scaling
-      double aax = 0.0, aay = 0.0;
-      for(anci = anc; anci != ance; anci++) {
-        aax += anci->x;
-        aay += anci->y;
-      }
-
-      aax /= nAttrs;
-      aay /= nAttrs;
-
-      for(anci = anc; anci != ance; anci++) {
-        anci->x -= aax;
-        anci->y -= aay;
+        if (newr > maxr)
+          maxr = newr;
       }
 
 
-      double maxr = 0.0;
-      for(anci = anc; anci != ance; anci++) {
-        const double r = sqr(anci->x) + sqr(anci->y);
-        if (r > maxr)
-          maxr = r;
-      }
-
-      if (maxr > 0) {
+      // Scale (so that the largest radius is 1)
+      if (maxr > 0.001) {
         maxr = sqrt(maxr);
         for(anci = anc; anci != ance; anci++) {
           anci->x /= maxr;
           anci->y /= maxr;
         }
       }
-     }
+    }
+
+    symmetricTransformation(anc, ance, mirrorSymmetry != 0);
+    
 
     anchors = PyList_New(nAttrs);
-    for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
-      PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
-      
-    double E = computeEnergyLow(nExamples, nAttrs, contClass, X, classes, pts, anc, sum, attractG, repelG, 0);
+    for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++) 
+      PyList_SetItem(anchors, i, *lli ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
 
-    free(anc);
-    free(dr);
-    free(pts);
-    free(ll);
-    free(classes);
     free(X);
-    free(sum);
-    free(K);
+    free(classes);
+    free(anc);
+    free(ll);
 
-    return Py_BuildValue("Od", anchors, E);
+    free(pts);
+    free(rad);
+    free(Fa);
+    xfree(Fr);
+    xfree(sum);
+
+    return anchors;
       
   PyCATCH;
 }
@@ -831,7 +809,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
 #pragma warning (disable: 4305 4309)
 #endif
 
-PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, rx, ry, cellsize, scaleFactor) -> bitmap as string")
+PyObject *potentialsBitmapCircle(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, rx, ry, cellsize, scaleFactor) -> bitmap as string")
 {
   PyTRY
     PyObject *cls;
@@ -923,6 +901,83 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
 
 
 
+PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, rx, ry, cellsize, scaleFactor) -> bitmap as string")
+{
+  PyTRY
+    PyObject *cls;
+    int rx, ry, cell;
+    double offx, offy;
+    double scaleX, scaleY;
+    if (!PyArg_ParseTuple(args, "Oiiddddi:potentialsBitmap", &cls, &rx, &ry, &offx, &offy, &scaleX, &scaleY, &cell))
+      return PYNULL;
+
+    TP2NN *tp2nn = &dynamic_cast<TP2NN &>(PyOrange_AsOrange(cls).getReference());
+
+    bool contClass = tp2nn->classVar->varType == TValue::FLOATVAR;
+
+    const int nClasses = contClass ? 0 : tp2nn->classVar->noOfValues();
+    const int nShades = contClass ? 0 : 255/nClasses;
+
+    const int oneLine = (rx + 3) & 0xfffffffc;
+    const int bitmapSize = oneLine * ry;
+    char *bitmap = new char[bitmapSize];
+    memset(bitmap, 255, bitmapSize);
+
+    rx -= 1;
+    ry -= 1;
+
+    float *probs = new float[nClasses], *pe = probs + nClasses;
+    const double minClass = tp2nn->minClass;
+    const double divClass = tp2nn->maxClass == minClass ? 0.0 : 255.0 / (tp2nn->maxClass - minClass);
+
+    for(int y = 0; y < ry; y+=cell) {
+      const double realy = (y-offy)*scaleY;
+      for(int x = 0; x < rx; x+=cell) {
+        const double realx = (x-offx)*scaleX;
+
+        unsigned char color;
+
+        if (contClass) {
+          const int icolor = (tp2nn->averageClass(realx, realy) - minClass) * divClass;
+          if (icolor < 0)
+            color = 0;
+          else if (icolor > 255)
+            color = 255;
+          else
+            color = icolor;
+        }
+        else {
+          tp2nn->classDistribution(realx, realy, probs, nClasses);
+          double sprobs = *probs;
+          float *largest = probs;
+          for(float *pi = probs+1; pi != pe; pi++) {
+            sprobs += *pi;
+            if (*pi > *largest)
+              largest = pi;
+          }
+          color = floor(0.5 + nShades * (*largest/sprobs*nClasses - 1) / (nClasses - 1));
+          if (color >= nShades)
+            color = nShades - 1;
+          else if (color < 0)
+            color = 0;
+          color += nShades * (largest - probs);
+        }
+
+        const int ys = y+cell < ry ? cell : ry-y;
+        char *yy = bitmap + y*oneLine + x;
+
+        for(char *yye = yy + (ys-1)*oneLine; yy < yye; yy += oneLine)
+          memset(yy, color, cell-1);
+      }
+    }
+
+    return contClass ? Py_BuildValue("s#", bitmap, bitmapSize)
+                     : Py_BuildValue("s#i", bitmap, bitmapSize, nShades);
+
+  PyCATCH
+}
+
+
 
 
 
@@ -991,7 +1046,7 @@ PyObject *MDSA(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARAR
     int i;
     double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
     TPoint *danci, *danc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *dance = danc + nAttrs;
-    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples, *ptsi2, *ptsie;
+    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples, *ptsi2;
     double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
     TPoint *Fi, *F = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fe = F + nExamples, *Fi2;
 
