@@ -131,7 +131,7 @@ class orngScaleRadvizData(orngScaleData):
             y_positions /= sum_i
             self.trueScaleFactor = scaleFactor
         else:
-            self.trueScaleFactor = scaleFactor / sqrt(max(x_positions*x_positions + y_positions*y_positions))
+            self.trueScaleFactor = scaleFactor / math.sqrt(max(x_positions*x_positions + y_positions*y_positions))
 
         self.unscaled_x_positions, self.unscaled_y_positions = Numeric.array(x_positions), Numeric.array(y_positions)
 

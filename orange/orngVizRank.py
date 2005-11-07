@@ -609,8 +609,11 @@ class VizRank:
         self.startTime = time.time()
         evaluatedProjections = 0
         lenOfAttributes = len(attributes)
-        if self.__class__ != VizRank: from qt import qApp
         maxFunct = self.getMaxFunct()
+
+        if self.__class__ != VizRank:
+            self.disableControls()
+            from qt import qApp
         
         if self.visualizationMethod == SCATTERPLOT:
             classIndex = self.attributeNameIndex[self.data.domain.classVar.name]
@@ -723,12 +726,12 @@ class VizRank:
                                 listOfCanditates.append((acc, attrList))
                                 self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], 0)
                                 if self.__class__ != VizRank: self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                                if max(acc, accuracy)/min(acc, accuracy) > 1.0001: optimizedProjection = 1
+                                if max(acc, accuracy)/min(acc, accuracy) > 1.001:  optimizedProjection = 1
                                 if max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
                             else:
                                 if self.__class__ != VizRank:                     self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
-                                # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
-                                if min(acc, accuracy)/max(acc, accuracy) > 0.98:  self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], 1)
+                                # if the found projection is at least 99% as good as the one optimized, add it to the list of projections anyway
+                                if min(acc, accuracy)/max(acc, accuracy) > 0.99:  self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], 1)
 
                         # select the best new projection and say this is now our new projection to optimize    
                         if len(listOfCanditates) > 0:
