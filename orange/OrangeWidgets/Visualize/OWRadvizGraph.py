@@ -146,7 +146,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
             # draw dots at anchors
 
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
-            self.anchorsAsVectors = min([x[0]**2+x[1]**2 for x in self.anchorData]) < 0.99
+            self.anchorsAsVectors = not self.normalizeExamples # min([x[0]**2+x[1]**2 for x in self.anchorData]) < 0.99
             self.shownLabels = [a[2] for a in shownAnchorData]
 
             if self.anchorsAsVectors:
@@ -492,10 +492,15 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
                 if redraw: self.replot()
             else:
                 if self.selectedAnchorIndex != None:
-                    if self.radvizWidget.lockToCircle:
+                    if self.radvizWidget.restrain == 1:
                         rad = sqrt(xFloat**2 + yFloat**2)
                         xFloat /= rad
                         yFloat /= rad
+                    elif self.radvizWidget.restrain == 2:
+                        rad = sqrt(xFloat**2 + yFloat**2)
+                        phi = 2 * self.selectedAnchorIndex * math.pi / len(self.anchorData)
+                        xFloat = rad * cos(phi)
+                        yFloat = rad * sin(phi)
                     self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2]) 
                     self.updateData(self.shownAttributes)
                     self.replot()
