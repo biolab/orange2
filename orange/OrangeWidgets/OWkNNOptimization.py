@@ -792,11 +792,11 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.cancelEvaluation = 1
 
     def isOptimizationCanceled(self):
-        if hasattr(self, "useTimeLimit"):   return (time.time() - self.startTime) / 60 >= self.optimizeBestProjectionTime
+        if hasattr(self, "useTimeLimit"):   return VizRank.isOptimizationCanceled(self)
         else:                               return self.cancelOptimization
 
     def isEvaluationCanceled(self):
-        if hasattr(self, "useTimeLimit"): return (time.time() - self.startTime) / 60 >= self.evaluationTime
+        if hasattr(self, "useTimeLimit"): return VizRank.isEvaluationCanceled(self)
         else:                             return self.cancelOptimization
 
     def destroy(self, dw = 1, dsw = 1):
