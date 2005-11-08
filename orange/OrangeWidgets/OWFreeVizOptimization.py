@@ -9,10 +9,13 @@ from orngScaleRadvizData import *
 from orngFreeViz import *
 
 class FreeVizOptimization(OWBaseWidget, FreeViz):
-    settingsList = ["stepsBeforeUpdate", "lockToCircle", "attractG", "repelG", "differentialEvolutionPopSize",
-                    "s2nSpread", "s2nPlaceAttributes", "autoSetParameters"]
+    settingsList = ["stepsBeforeUpdate", "restrain", "attractG", "repelG", "differentialEvolutionPopSize",
+                    "s2nSpread", "s2nPlaceAttributes", "autoSetParameters", "mirrorSymmetry"]
     attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000]
     #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
+
+    forceRelValues = ["4 : 1", "3 : 1", "2 : 1", "3 : 2", "1 : 1", "2 : 3", "1 : 2", "1 : 3", "1 : 4"]
+    attractRepelValues = [(4, 1), (3, 1), (2, 1), (3, 2), (1, 1), (2, 3), (1, 2), (1, 3), (1, 4)]
     
     def __init__(self, parentWidget = None, signalManager = None, graph = None, parentName = "Visualization widget"):
         OWBaseWidget.__init__(self, None, signalManager, "FreeViz Dialog")
@@ -23,7 +26,11 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.setCaption("Qt FreeViz Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
         self.cancelOptimization = 0
-
+        self.mirrorSymmetry = 1
+        self.forceRelation = 5
+        self.disableAttractive = 0
+        self.disableRepulsive = 0
+        
         self.graph = graph
         
         if self.graph:
@@ -65,6 +72,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         f = self.optimizeButton.font(); f.setBold(1)
         self.optimizeButton.setFont(f)
         self.stopButton.setFont(f); self.stopButton.hide()
+        OWGUI.checkBox(box, self, "mirrorSymmetry", "Keep mirror symmetry", tooltip = "'Rotational' keeps the second anchor upside")
         
         vbox = OWGUI.widgetBox(self.MainTab, "Set Anchor Positions")
         hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
@@ -72,11 +80,28 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
         self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.setManualPosition)
         self.manualPositioningButton.setToggleButton(1)
-        self.lockCheckbox = OWGUI.checkBox(vbox, self, "lockToCircle", "Restrain anchors to circle", callback = self.setLockToCircle)
+        OWGUI.comboBox(vbox, self, "restrain", label="Restrain anchors", orientation = "horizontal", items = ["Unrestrained", "Fixed length", "Fixed angle"], callback = self.setRestraints)
 
-        box2 = OWGUI.widgetBox(self.MainTab, "Forces")
-        OWGUI.qwtHSlider(box2, self, "attractG", label="attractive", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
-        OWGUI.qwtHSlider(box2, self, "repelG", label = "repellant", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
+        box2 = OWGUI.widgetBox(self.MainTab, "Forces", orientation = "vertical")
+
+        self.cbLaw = OWGUI.comboBox(box2, self, "law", label="Law", labelWidth = 40, orientation="horizontal", items=["Linear", "Square", "Gaussian"], callback = self.forceLawChanged)
+
+        hbox2 = QHBox(box2); OWGUI.separator(hbox2, 20, 0); vbox2 = QVBox(hbox2)
+        
+        validSigma = QDoubleValidator(self); validSigma.setBottom(0.01)
+        self.spinSigma = OWGUI.lineEdit(vbox2, self, "forceSigma", label = "Kernel width (sigma) ", labelWidth = 110, orientation = "horizontal", valueType = float)
+        self.spinSigma.setFixedSize(60, self.spinSigma.sizeHint().height())
+        self.spinSigma.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed))
+
+        OWGUI.separator(box2, 20)
+
+        self.cbforcerel = OWGUI.comboBox(box2, self, "forceRelation", label= "Attractive : Repulsive  ",orientation = "horizontal", items=self.forceRelValues, callback = self.updateForces)
+        self.cbforcebal = OWGUI.checkBox(box2, self, "forceBalancing", "Dynamic force balancing", tooltip="If set, the forces are normalized so that the total sums of the\nrepulsive and attractive are in the above proportion.")
+
+        OWGUI.separator(box2, 20)
+
+        self.cbDisableAttractive = OWGUI.checkBox(box2, self, "disableAttractive", "Disable attractive forces", callback = self.setDisableAttractive)
+        self.cbDisableRepulsive = OWGUI.checkBox(box2, self, "disableRepulsive", "Disable repulsive forces", callback = self.setDisableRepulsive)
 
         box = OWGUI.widgetBox(self.MainTab, "Show Anchors")
         OWGUI.checkBox(box, self, 'graph.showAnchors', 'Show attribute anchors', callback = self.parentWidget.updateGraph)
@@ -108,7 +133,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.controlArea.addWidget(self.statusBar)
         self.controlArea.activate()
 
-        self.resize(310,500)
+        self.resize(310,600)
         self.setMinimumWidth(310)
         self.tabs.setMinimumWidth(310)
 
@@ -136,6 +161,45 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
     def setStatusBarText(self, text):
         self.statusBar.message(text)
         qApp.processEvents()
+
+    def updateForces(self):
+        if self.disableAttractive:  self.attractG, self.repelG = 0, 1
+        elif self.disableRepulsive: self.attractG, self.repelG = 1, 0
+        else:                       self.attractG, self.repelG = self.attractRepelValues[self.forceRelation]
+
+    def forceLawChanged(self):
+        self.spinSigma.setDisabled(self.cbLaw.currentItem() != 2)
+
+    def setRestraints(self):
+        if self.restrain:
+            positions = Numeric.array([x[:2] for x in self.graph.anchorData])
+            attrList = self.getShownAttributeList()
+
+            if self.restrain == 1:
+                positions = Numeric.transpose(positions) * Numeric.sum(positions**2,1)**-0.5
+                self.graph.anchorData = [(positions[0][i], positions[1][i], a) for i, a in enumerate(attrList)]
+            else:
+                r = Numeric.sqrt(Numeric.sum(positions**2, 1))
+                phi = 2*math.pi/len(r)
+                self.graph.anchorData = [(r[i] * math.cos(i*phi), r[i] * math.sin(i*phi), a) for i, a in enumerate(attrList)]
+
+            self.graph.updateData()
+            self.graph.repaint()
+
+
+    def setDisableAttractive(self):
+        value = self.cbDisableAttractive.isChecked()
+        if value:
+            self.disableRepulsive = 0
+        self.cbforcerel.setDisabled(value)
+        self.cbforcebal.setDisabled(value)
+            
+    def setDisableRepulsive(self):
+        value = self.cbDisableRepulsive.isChecked()
+        if value:
+            self.disableAttractive = 0
+        self.cbforcerel.setDisabled(value)
+        self.cbforcebal.setDisabled(value)
 
     # ###############################################################
     ## FREE VIZ FUNCTIONS
@@ -168,17 +232,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.repaint()
         self.recomputeEnergy()
 
-    def setLockToCircle(self):
-        if self.lockToCircle:
-            anchorData = self.graph.anchorData
-            for i, anchor in enumerate(anchorData):
-                rad = math.sqrt(anchor[0]**2 + anchor[1]**2)
-                anchorData[i] = (anchor[0]/rad, anchor[1]/rad) + anchor[2:]
-            self.graph.updateData(self.parentWidget.getShownAttributeList(), 0)
-            self.graph.repaint()
-        self.recomputeEnergy()
-
-    
+   
     def optimizeSeparation(self, steps = 10, singleStep = False):
         self.optimizeButton.hide()
         self.stopButton.show()
