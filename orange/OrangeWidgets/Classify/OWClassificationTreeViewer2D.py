@@ -178,7 +178,7 @@ BodyCasesColor_Default = QColor(0, 0, 128)
 class OWClassificationTreeViewer2D(OWTreeViewer2D):
     def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
-        self.settingsList=self.settingsList+["ShowPie","TargetClassIndex"]
+        self.settingsList=self.settingsList+["ShowPies","TargetClassIndex"]
         
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("Examples", ExampleTable)]
