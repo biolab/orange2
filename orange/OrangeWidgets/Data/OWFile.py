@@ -86,13 +86,20 @@ class OWSubFile(OWWidget):
             self.info[i].setText(s)            
 
     # Open a file, create data from it and send it over the data channel
-    def openFile(self,fn, throughReload = 0):
+    def openFileBase(self,fn, throughReload = 0, DK=None, DC=None):
         dontCheckStored = throughReload and self.resetDomain
         self.resetDomain = self.domain != None
         if fn != "(none)":
             fileExt=lower(os.path.splitext(fn)[1])
             if fileExt in (".txt",".tab",".xls"):
-                data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain)
+                if DK and DC:
+                    data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain, DK=DK, DC=DC)
+                elif DK and not DC:
+                    data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain, DK=DK)
+                elif not DK and DC:
+                    data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain, DC=DC)
+                else:
+                    data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain)
             elif fileExt in (".c45",):
                 data = orange.C45ExampleGenerator(fn, dontCheckStored = dontCheckStored, use = self.domain)
             else:
@@ -169,6 +176,10 @@ class OWFile(OWSubFile):
         self.filecombo.insertItem("Browse documentation data sets...")
         #self.filecombo.adjustSize() #doesn't work properly :(
         self.filecombo.updateGeometry()
+
+
+    def openFile(self,fn, throughReload = 0):
+        self.openFileBase(fn, throughReload=throughReload)
 
 
     

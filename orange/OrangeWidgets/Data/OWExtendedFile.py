@@ -13,6 +13,7 @@
 from OWFile import *
 
 class OWExtendedFile(OWSubFile):
+    settingsList=["recentFiles", "symbolDC", "symbolDK"]
     def __init__(self,parent=None, signalManager = None):
         OWSubFile.__init__(self, parent, signalManager, "AdvancedFile")
 
@@ -23,6 +24,8 @@ class OWExtendedFile(OWSubFile):
         self.recentFiles=["(none)"]
         self.resetDomain = 0
         self.domain = None
+        self.symbolDC = "?"
+        self.symbolDK = "~"
         #get settings from the ini file, if they exist
         self.loadSettings()
         
@@ -32,6 +35,11 @@ class OWExtendedFile(OWSubFile):
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0)
         button.setMaximumWidth(25)
+
+        # settings
+        box = QVGroupBox("Settings", self.controlArea)
+        OWGUI.lineEdit(box, self, "symbolDC", "Don't care symbol:  ", orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+        OWGUI.lineEdit(box, self, "symbolDK", "Don't know symbol:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
 
         # info
         box = QVGroupBox("Info", self.controlArea)
@@ -82,3 +90,19 @@ class OWExtendedFile(OWSubFile):
         #self.filecombo.adjustSize() #doesn't work properly :(
         self.filecombo.updateGeometry()
 
+
+    def openFile(self,fn, throughReload = 0):
+        self.openFileBase(fn, throughReload=throughReload, DK=self.symbolDK, DC=self.symbolDC)
+        
+
+if __name__ == "__main__":
+    a=QApplication(sys.argv)
+    ow=OWAdvancedFile()
+    ow.activateLoadedSettings()
+    a.setMainWidget(ow)
+    ow.show()
+    ow.symbolDK = "<NO DATA>"
+    ow.openFile(r"C:\Documents and Settings\peterjuv\My Documents\STEROLTALK\array-pro\experiments\Tadeja 2nd image analysis\10vs10mg original data\0449.txt")
+    a.exec_loop()
+    #save settings 
+    ow.saveSettings()
