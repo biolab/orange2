@@ -10,7 +10,8 @@ from orngFreeViz import *
 
 class FreeVizOptimization(OWBaseWidget, FreeViz):
     settingsList = ["stepsBeforeUpdate", "restrain", "attractG", "repelG", "differentialEvolutionPopSize",
-                    "s2nSpread", "s2nPlaceAttributes", "autoSetParameters", "mirrorSymmetry"]
+                    "s2nSpread", "s2nPlaceAttributes", "autoSetParameters",
+                    "forceBalancing", "mirrorSymmetry", "forceSigma", "restrain", "law", "forceRelation", "disableAttractive", "disableRepulsive"]
     attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000]
     #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
 
@@ -26,7 +27,6 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.setCaption("Qt FreeViz Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
         self.cancelOptimization = 0
-        self.mirrorSymmetry = 1
         self.forceRelation = 5
         self.disableAttractive = 0
         self.disableRepulsive = 0
@@ -65,13 +65,14 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         OWGUI.comboBox(self.MainTab, self, "implementation", box = "FreeViz Implementation", items = ["Fast (C) implementation", "Slow (Python) implementation", "LDA"])
         
         box = OWGUI.widgetBox(self.MainTab, "Gradient Optimization")
-        self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(box, self, "stepsBeforeUpdate", "Number of steps before update: ", tooltip = "Set the number of optimization steps that will be executed before the updated anchor positions will be visualized", items = [1, 3, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300], sendSelectedValue = 1, valueType = int)
         
         self.optimizeButton = OWGUI.button(box, self, "Optimize Separation", callback = self.optimizeSeparation)
         self.stopButton = OWGUI.button(box, self, "Stop optimization", callback = self.stopOptimization)
+        self.singleStepButton = OWGUI.button(box, self, "Single Step", callback = self.singleStepOptimization)
         f = self.optimizeButton.font(); f.setBold(1)
         self.optimizeButton.setFont(f)
         self.stopButton.setFont(f); self.stopButton.hide()
+        self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(box, self, "stepsBeforeUpdate", "Number of steps before updating graph: ", tooltip = "Set the number of optimization steps that will be executed before the updated anchor positions will be visualized", items = [1, 3, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300], sendSelectedValue = 1, valueType = int)
         OWGUI.checkBox(box, self, "mirrorSymmetry", "Keep mirror symmetry", tooltip = "'Rotational' keeps the second anchor upside")
         
         vbox = OWGUI.widgetBox(self.MainTab, "Set Anchor Positions")
@@ -80,7 +81,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
         self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.setManualPosition)
         self.manualPositioningButton.setToggleButton(1)
-        OWGUI.comboBox(vbox, self, "restrain", label="Restrain anchors", orientation = "horizontal", items = ["Unrestrained", "Fixed length", "Fixed angle"], callback = self.setRestraints)
+        OWGUI.comboBox(vbox, self, "restrain", label="Restrain anchors:", orientation = "horizontal", items = ["Unrestrained", "Fixed length", "Fixed angle"], callback = self.setRestraints)
 
         box2 = OWGUI.widgetBox(self.MainTab, "Forces", orientation = "vertical")
 
@@ -114,8 +115,8 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 ##        self.createPopulationButton = OWGUI.button(box2, self, "Create population", callback = self.createPopulation)
 ##        self.evolvePopulationButton = OWGUI.button(box2, self, "Evolve population", callback = self.evolvePopulation)
 ##    
-        box = OWGUI.widgetBox(self.MainTab, 1)
-        self.energyLabel = QLabel(box, "Energy: ")
+        #box = OWGUI.widgetBox(self.MainTab, 1)
+        #self.energyLabel = QLabel(box, "Energy: ")
 
         # ##########################
         # S2N HEURISTIC TAB
@@ -208,13 +209,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         FreeViz.randomAnchors(self)
         self.graph.updateData()
         self.graph.repaint()
-        self.recomputeEnergy()
+        #self.recomputeEnergy()
         
     def radialAnchors(self):
         FreeViz.radialAnchors(self)
         self.graph.updateData()
         self.graph.repaint()
-        self.recomputeEnergy()
+        #self.recomputeEnergy()
 
     def removeHidden(self):
         rad2 = (self.graph.hideRadius/10)**2
@@ -230,8 +231,12 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.anchorData = newAnchorData
         self.graph.updateData()
         self.graph.repaint()
-        self.recomputeEnergy()
+        #self.recomputeEnergy()
 
+    def singleStepOptimization(self):
+        FreeViz.optimizeSeparation(self, 1, 1)
+        self.graph.potentialsBmp = None
+        self.graph.updateData()
    
     def optimizeSeparation(self, steps = 10, singleStep = False):
         self.optimizeButton.hide()

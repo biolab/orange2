@@ -9,7 +9,7 @@ LDA_IMPLEMENTATION = 2
 
 LAW_LINEAR = 0
 LAW_SQUARE = 1
-LAW_EXPONENTIAL = 2
+LAW_GAUSSIAN = 2
 
 class FreeViz:
     def __init__(self, graph = None):
@@ -21,7 +21,10 @@ class FreeViz:
         self.attractG = 1.0
         self.repelG = 1.0
         self.law = LAW_LINEAR
-        self.lockToCircle = 0
+        self.restrain = 0
+        self.forceBalancing = 0
+        self.forceSigma = 1.0
+        self.mirrorSymmetry = 1
 
     def showAllAttributes(self):
         self.graph.anchorData = [(0,0, a.name) for a in self.graph.rawdata.domain.attributes]
@@ -35,16 +38,37 @@ class FreeViz:
         phi = 2*math.pi/len(attrList)
         self.graph.anchorData = [(math.cos(i*phi), math.sin(i*phi), a) for i, a in enumerate(attrList)]
 
-    def ranch(self, label):
-        r = self.lockToCircle and 1.0 or 0.3+0.7*random.random()
-        phi = 2*math.pi*random.random()
-        return (r*math.cos(phi), r*math.sin(phi), label)
 
     def randomAnchors(self):
-        anchors = [self.ranch(a) for a in self.getShownAttributeList()]
-        if not self.lockToCircle:
+        if not self.graph.rawdata: return
+
+        if self.restrain == 0:
+            def ranch(i, label):
+                r = 0.3+0.7*random.random()
+                phi = 2*math.pi*random.random()
+                return (r*math.cos(phi), r*math.sin(phi), label)
+
+        elif self.restrain == 1:
+            def ranch(i, label):
+                phi = 2*math.pi*random.random()
+                return (math.cos(phi), math.sin(phi), label)
+
+        else:
+            def ranch(i, label):
+                r = 0.3+0.7*random.random()
+                phi = 2*math.pi * i / n
+                return (r*math.cos(phi), r*math.sin(phi), label)
+
+        anchors = [ranch(*a) for a in enumerate(self.getShownAttributeList())]
+
+        if not self.restrain == 1:
             maxdist = math.sqrt(max([x[0]**2+x[1]**2 for x in anchors]))
             anchors = [(x[0]/maxdist, x[1]/maxdist, x[2]) for x in anchors]
+
+        if not self.restrain == 2 and self.mirrorSymmetry:
+            #### Need to rotate and mirror here
+            pass
+            
         self.graph.anchorData = anchors
 
     def optimizeSeparation(self, steps = 10, singleStep = False):
@@ -60,32 +84,37 @@ class FreeViz:
             XAnchors = None; YAnchors = None
             if self.__class__ != FreeViz: from qt import qApp
             
-            for c in range(50):                
+            for c in range((singleStep and 1) or 50):                
                 for i in range(steps):
                     if self.__class__ != FreeViz and self.cancelOptimization == 1: return
                     self.graph.anchorData, (XAnchors, YAnchors) = impl(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
                 if self.graph.__class__ != orngScaleRadvizData:
                     qApp.processEvents()
                     self.graph.updateData()
-                self.recomputeEnergy()
+                #self.recomputeEnergy()
 
     def optimize_FAST_Separation(self, steps = 10, singleStep = False):
         classes = [int(x.getclass()) for x in self.graph.rawdata]
-        optimizer = self.lockToCircle and orangeom.optimizeAnchorsRadial or orangeom.optimizeAnchors
+        optimizer = [orangeom.optimizeAnchors, orangeom.optimizeAnchorsRadial, orangeom.optimizeAnchorsR][self.restrain]
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
-        contClass = self.graph.rawdata.domain.classVar.varType == orange.VarTypes.Continuous
         if self.__class__ != FreeViz: from qt import qApp
        
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
         positions = [Numeric.array([x[:2] for x in self.graph.anchorData])]
         while 1:
-            self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, steps, self.graph.normalizeExamples, contClass)
+            self.graph.anchorData = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices,
+                                              attractG = self.attractG, repelG = self.repelG, law = self.law,
+                                              sigma2 = self.forceSigma, dynamicBalancing = self.forceBalancing, steps = steps,
+                                              normalizeExamples = self.graph.normalizeExamples,
+                                              contClass = self.graph.rawdata.domain.classVar.varType == orange.VarTypes.Continuous,
+                                              mirrorSymmetry = self.mirrorSymmetry)
+
             if self.graph.__class__ != orngScaleRadvizData:
                 qApp.processEvents()
                 self.graph.potentialsBmp = None
                 self.graph.updateData()
-            self.recomputeEnergy(E)
+            #self.recomputeEnergy()
                 
             positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
             if len(positions)==50:
@@ -242,16 +271,15 @@ class FreeViz:
         return [(newXAnchors[i], newYAnchors[i], anchorData[i][2]) for i in range(len(anchorData))], (newXAnchors, newYAnchors)
 
             
-    def recomputeEnergy(self, newEnergy = None):
-        if not newEnergy:
-            classes = [int(x.getclass()) for x in self.graph.rawdata]
-            ai = self.graph.attributeNameIndex
-            attrIndices = [ai[label] for label in self.getShownAttributeList()]
-            newEnergy = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
-        if self.__class__ != FreeViz:
-            self.energyLabel.setText("Energy: %.3f" % newEnergy)
-            self.energyLabel.repaint()
-        return newEnergy
+##    def recomputeEnergy(self, newEnergy = None):
+##        if not newEnergy:
+##            classes = [int(x.getclass()) for x in self.rawdata]
+##            ai = self.graph.attributeNameIndex
+##            attrIndices = [ai[label] for label in self.parentWidget.getShownAttributeList()]
+##            newEnergy = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
+##        if self.__class__ != FreeViz:
+##            self.energyLabel.setText("Energy: %.3f" % newEnergy)
+##            self.energyLabel.repaint()
 
 
 # #############################################################################
@@ -267,7 +295,7 @@ class FreeVizClassifier(orange.Classifier):
             self.FreeViz.graph.setData(data)
             self.FreeViz.showAllAttributes()
             
-        self.FreeViz.randomAnchors()
+        #self.radvizWidget.randomAnchors()
         #self.radvizWidget.radialAnchors()
         self.FreeViz.optimizeSeparation()
         
