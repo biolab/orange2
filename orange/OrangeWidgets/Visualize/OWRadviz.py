@@ -29,9 +29,8 @@ class OWRadviz(OWWidget):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor", "graph.normalizeExamples",
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "VizRankClassifierName", "clusterClassifierName",
-                    "forceRelation", "forceBalancing", "forceSigma", "law", "animate",
-                    "showOptimizationSteps", "mirrorSymmetry", "restrain", "valueScalingType", "graph.showProbabilities", "showAllAttributes",
-                    "learnerIndex", "colorSettings", "forceRelation"]
+                    "showOptimizationSteps", "valueScalingType", "graph.showProbabilities", "showAllAttributes",
+                    "learnerIndex", "colorSettings"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
@@ -47,7 +46,6 @@ class OWRadviz(OWWidget):
         # local variables
         self.learnersArray = [None, None, None, None]   # VizRank, Cluster, FreeViz, S2N Heuristic Learner
         self.showAllAttributes = 0
-        self.restrain = 0
         self.showOptimizationSteps = 0
         self.valueScalingType = 0
         self.autoSendSelection = 1
@@ -61,15 +59,6 @@ class OWRadviz(OWWidget):
         self.learnerIndex = 0
         self.colorSettings = None
 
-        self.forceRelation = 5
-        self.forceBalancing = 1
-        self.forceSigma = 1.0
-        self.mirrorSymmetry = 1
-        self.disableAttractive = 0
-        self.disableRepulsive = 0
-        self.animate = 0
-        self.law = 0
-        
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWRadvizGraph(self, self.mainArea)
@@ -113,10 +102,8 @@ class OWRadviz(OWWidget):
         self.GeneralTab = QVGroupBox(self)
         #self.GeneralTab.setFrameShape(QFrame.NoFrame)
         self.SettingsTab = QVGroupBox(self)
-        self.AnchorsTab = QVGroupBox(self)
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
-        self.tabs.insertTab(self.AnchorsTab, "Anchors")
  
         #add controls to self.controlArea widget
         self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Shown Attributes " )
@@ -192,57 +179,6 @@ class OWRadviz(OWWidget):
         self.selectionChanged()
 
         # ####################################
-        # ANCHORS TAB
-        # #####
-        vbox = OWGUI.widgetBox(self.AnchorsTab, "Anchor Positions")
-        hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
-        #self.setAnchorButtons = QHButtonGroup("Set Anchor Positions", self.AnchorsTab)
-        self.radialAnchorsButton = OWGUI.button(hbox1, self, "Radial", callback = self.radialAnchors)
-        self.randomAnchorsButton = OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
-        self.manualPositioningButton = OWGUI.button(vbox, self, "Manual positioning", callback = self.setManualPosition)
-        self.manualPositioningButton.setToggleButton(1)
-        OWGUI.comboBox(vbox, self, "restrain", label="Restrain anchors", orientation = "horizontal", items = ["Unrestrained", "Fixed length", "Fixed angle"], callback = self.setRestraints)
-
-        box = OWGUI.widgetBox(self.AnchorsTab, " FreeViz Optimization ")
-        OWGUI.button(box, self, "Single Step", callback = self.singleStep)
-        OWGUI.button(box, self, "Optimize", callback = self.optimize)
-        OWGUI.checkBox(box, self, "animate", "Show snapshots during optimization")
-        OWGUI.checkBox(box, self, "mirrorSymmetry", "Keep mirror symmetry", tooltip = "'Rotational' keeps the second anchor upside")
-        
-
-        box2 = OWGUI.widgetBox(self.AnchorsTab, "Forces", orientation = "vertical")
-
-        self.cbLaw = OWGUI.comboBox(box2, self, "law", label="Law", labelWidth = 40, orientation="horizontal", items=["Linear", "Square", "Gaussian"], callback = self.forceLawChanged)
-
-        hbox2 = QHBox(box2)
-        OWGUI.separator(hbox2, 20, 0)
-        vbox2 = QVBox(hbox2)
-        
-        validSigma = QDoubleValidator(self.controlArea)
-        validSigma.setBottom(0.01)
-        self.spinSigma = OWGUI.lineEdit(vbox2, self, "forceSigma", label = "Kernel width (sigma) ", labelWidth = 110, orientation = "horizontal", valueType = float)
-        self.spinSigma.setFixedSize(60, self.spinSigma.sizeHint().height())
-        self.spinSigma.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed))
-
-        OWGUI.separator(box2, 20)
-
-        self.cbforcerel = OWGUI.comboBox(box2, self, "forceRelation", label= "Attractive : Repulsive  ",orientation = "horizontal", items=self.forceRelValues)
-        
-        self.cbforcebal = OWGUI.checkBox(box2, self, "forceBalancing", "Dynamic force balancing",
-                       tooltip="If set, the forces are normalized so that the total sums of the\nrepulsive and attractive are in the above proportion.")
-
-        OWGUI.separator(box2, 20)
-
-        self.cbDisableAttractive = OWGUI.checkBox(box2, self, "disableAttractive", "Disable attractive forces", callback = self.setDisableAttractive)
-        self.cbDisableRepulsive = OWGUI.checkBox(box2, self, "disableRepulsive", "Disable repulsive forces", callback = self.setDisableRepulsive)
-
-        box = OWGUI.widgetBox(self.AnchorsTab, " Anchors ")
-        OWGUI.checkBox(box, self, 'graph.showAnchors', 'Show anchors', callback = self.updateGraph)
-        OWGUI.qwtHSlider(box, self, "graph.hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.updateGraph)
-        self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attributes", callback = self.removeHidden)
-
-        
-        # ####################################
         # K-NN OPTIMIZATION functionality
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
@@ -270,8 +206,6 @@ class OWRadviz(OWWidget):
         
         self.cbShowAllAttributes()
         self.setActiveLearner(self.learnerIndex)
-
-        self.forceLawChanged()
         
 
     # #########################
@@ -645,158 +579,6 @@ class OWRadviz(OWWidget):
         OWWidget.destroy(self, dw, dsw)
 
 
-    # ###############################################################################################################
-    # FREEVIZ FUNCTIONS
-    # ###############################################################################################################
-
-        # ####################################
-    # free attribute anchors
-    def radialAnchors(self):
-        attrList = self.getShownAttributeList()
-        phi = 2*math.pi/len(attrList)
-        self.graph.anchorData = [(cos(i*phi), sin(i*phi), a) for i, a in enumerate(attrList)]
-        self.graph.updateData(attrList)
-        self.graph.repaint()
-        
-
-    def randomAnchors(self):
-        if not self.data:
-            return
-        
-        import random
-
-        if self.restrain == 0:
-            def ranch(i, label):
-                r = 0.3+0.7*random.random()
-                phi = 2*pi*random.random()
-                return (r*math.cos(phi), r*math.sin(phi), label)
-
-        elif self.restrain == 1:
-            def ranch(i, label):
-                phi = 2*pi*random.random()
-                return (math.cos(phi), math.sin(phi), label)
-
-        else:
-            def ranch(i, label):
-                r = 0.3+0.7*random.random()
-                phi = 2*math.pi * i / n
-                return (r*math.cos(phi), r*math.sin(phi), label)
-
-        attrList = self.getShownAttributeList()
-        n = len(attrList)
-        anchors = [ranch(*a) for a in enumerate(attrList)]
-
-        if not self.restrain == 1:
-            maxdist = math.sqrt(max([x[0]**2+x[1]**2 for x in anchors]))
-            anchors = [(x[0]/maxdist, x[1]/maxdist, x[2]) for x in anchors]
-
-        if not self.restrain == 2 and self.mirrorSymmetry:
-            #### Need to rotate and mirror here
-            pass
-            
-        self.graph.anchorData = anchors
-        self.graph.updateData(self.getShownAttributeList())
-        self.graph.repaint()
-
-    def freeAttributes(self, singleStep = False):
-        if not self.data:
-            return
-        
-        classes = [int(x.getclass()) for x in self.graph.rawdata]
-        ai = self.graph.attributeNameIndex
-        attrIndices = [ai[label] for label in self.getShownAttributeList()]
-        optimizer = [orangeom.optimizeAnchors, orangeom.optimizeAnchorsRadial, orangeom.optimizeAnchorsR][self.restrain]
-
-        positions = [Numeric.array([x[:2] for x in self.graph.anchorData])]
-        while 1:
-            if self.disableAttractive:
-                self.attractG, self.repelG = 0, 1
-            elif self.disableRepulsive:
-                self.attractG, self.repelG = 1, 0
-            else:
-                self.attractG, self.repelG = self.attractRepelValues[self.forceRelation]
-                
-            self.graph.anchorData = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices,
-                                              attractG = self.attractG, repelG = self.repelG, law = self.law,
-                                              sigma2 = self.forceSigma, dynamicBalancing = self.forceBalancing,
-                                              steps = 10,
-                                              normalizeExamples = self.graph.normalizeExamples,
-                                              contClass = self.data.domain.classVar.varType == orange.VarTypes.Continuous,
-                                              mirrorSymmetry = self.mirrorSymmetry)
-
-            positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
-            if len(positions)==50:
-                m = max(Numeric.sum((positions[0]-positions[49])**2, 1))
-            elif singleStep:
-                m = 0
-            else:
-                m = 1
-
-            if self.animate or m < 1e-2:
-                self.graph.potentialsBmp = None
-                self.updateGraph()
-                if m < 1e-2:
-                    break
-            
-    def singleStep(self): self.freeAttributes(True)
-    def optimize(self):   self.freeAttributes()
-
-    def removeHidden(self):
-        rad2 = (self.graph.hideRadius/10)**2
-        rem = 0
-        newAnchorData = []
-        for i, t in enumerate(self.graph.anchorData):
-            if t[0]**2 + t[1]**2 < rad2:
-                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i-rem), self.shownAttribsLB.text(i-rem), self.hiddenAttribsLB.count())
-                self.shownAttribsLB.removeItem(i-rem)
-                rem += 1
-            else:
-                newAnchorData.append(t)
-        if rem:
-            self.showAllAttributes = 0
-        self.graph.anchorData = newAnchorData
-        attrList = self.getShownAttributeList()
-        self.graph.updateData(attrList, 0)
-        self.graph.repaint()
-
-    def forceLawChanged(self):
-        self.spinSigma.setDisabled(self.cbLaw.currentItem() != 2)
-
-
-    def setRestraints(self):
-        if self.restrain:
-            positions = Numeric.array([x[:2] for x in self.graph.anchorData])
-            attrList = self.getShownAttributeList()
-
-            if self.restrain == 1:
-                positions = Numeric.transpose(positions) * Numeric.sum(positions**2,1)**-0.5
-                self.graph.anchorData = [(positions[0][i], positions[1][i], a) for i, a in enumerate(attrList)]
-            else:
-                r = Numeric.sqrt(Numeric.sum(positions**2, 1))
-                phi = 2*math.pi/len(r)
-                self.graph.anchorData = [(r[i] * cos(i*phi), r[i] * sin(i*phi), a) for i, a in enumerate(attrList)]
-
-            self.graph.updateData(attrList)
-            self.graph.repaint()
-
-
-    def setDisableAttractive(self):
-        value = self.cbDisableAttractive.isChecked()
-        if value:
-            self.disableRepulsive = 0
-        self.cbforcerel.setDisabled(value)
-        self.cbforcebal.setDisabled(value)
-            
-    def setDisableRepulsive(self):
-        value = self.cbDisableRepulsive.isChecked()
-        if value:
-            self.disableAttractive = 0
-        self.cbforcerel.setDisabled(value)
-        self.cbforcebal.setDisabled(value)
-            
-        
-
-    
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
