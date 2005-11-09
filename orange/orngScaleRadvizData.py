@@ -76,9 +76,7 @@ class orngScaleRadvizData(orngScaleData):
         m = min(values); M = max(values)
         if m < 0.0 or M > 1.0:  # we have to do rescaling of values so that all the values will be in the 0-1 interval
             m = min(m, 0.0); M = max(M, 1.0); diff = M-m
-            print values, 
             values = [(val-m) / float(diff) for val in values]
-            print values
 
         if normalizeExample == 1 or (normalizeExample == None and self.normalizeExamples):
             s = sum(Numeric.array(values)*anchorRadius)
