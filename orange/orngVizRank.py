@@ -41,7 +41,7 @@ NUMBER_OF_INTERVALS = 6  # number of intervals to use when discretizing. used wh
 # attrCont
 CONT_MEAS_NONE = 0
 CONT_MEAS_RELIEFF = 1
-CONT_MEAS_S2N = 3
+CONT_MEAS_S2N = 2
 CONT_MEAS_S2NMIX = 3
 
 # attrDisc
