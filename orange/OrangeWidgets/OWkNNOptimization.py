@@ -539,7 +539,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
-        acc, other_results = self.getProjectionQuality(self.parentWidget.getShownAttributeList())
+        acc, other_results = self.getProjectionQuality(self.parentWidget.getShownAttributeList(), 1)
 
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, self.parentName, 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
