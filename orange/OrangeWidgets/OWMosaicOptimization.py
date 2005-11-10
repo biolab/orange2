@@ -324,7 +324,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             (accuracy, attrList, tryIndex) = self.results[index]
 
             args = self.evaluateArgument(data, example, attrList)
-            print args
             if not args: continue
 
             for i in range(len(args)):
