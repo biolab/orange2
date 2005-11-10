@@ -41,6 +41,10 @@ import piddle, piddlePIL, math
 
 _defaultfont = 'Courier'
 
+
+#
+# the values to be colorized are between 0 and 1
+#
 def _colorize0(cc):
     #bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
     #redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))
