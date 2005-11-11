@@ -112,9 +112,10 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
         wclassifier = classifier;
 		classifier->classVar=examples->domain->classVar;
 	}
-    else
+    else {
         classifier=mlnew TSOMMap();
         wclassifier = classifier;
+    }
 
     PSOMNodeList nodes=mlnew TSOMNodeList(xDim*yDim);
     int i=0;
