@@ -1487,14 +1487,14 @@ class OWGraphIdentifyOutliers(OWWidget):
 
     def updateIndexFromGraph(self):
         if self.VizRankDialog.parentName == "Polyviz":
-            indices = self.projectionGraph.getSelectionsAsIndices(self.widget.getShownAttributeList(), self.widget.attributeReverse)
+            selected, unselected = self.projectionGraph.getSelectionsAsIndices(self.widget.getShownAttributeList(), self.widget.attributeReverse)
         else:            
-            indices = self.projectionGraph.getSelectionsAsIndices(self.widget.getShownAttributeList())
+            selected, unselected = self.projectionGraph.getSelectionsAsIndices(self.widget.getShownAttributeList())
 
-        if len(indices) != 1:
+        if len(selected) != 1:
             QMessageBox.information( None, "Outlier Identification", 'Exactly one example must be selected in the graph in order to complete this operation.', QMessageBox.Ok + QMessageBox.Default)
             return
-        self.selectedExampleIndex = indices[0]
+        self.selectedExampleIndex = selected[0]
         self.selectedExampleChanged()
 
     def evaluateAllExamples(self):
