@@ -124,8 +124,8 @@ class OWScatterPlot(OWWidget):
         box2 = OWGUI.widgetBox(self.SettingsTab, " Jittering Options ")
         box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
         self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
-        self.jitterSizeCombo = OWGUI.comboBox(box3, self, "graph.jitterSize", callback = self.updateGraph, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
-        OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.updateGraph, tooltip = "Does jittering apply also on continuous attributes?")
+        self.jitterSizeCombo = OWGUI.comboBox(box3, self, "graph.jitterSize", callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
         
         # general graph settings
         box4 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
@@ -177,6 +177,10 @@ class OWScatterPlot(OWWidget):
     # ##############################################################################################################################################################
     # SCATTERPLOT SIGNALS
     # ##############################################################################################################################################################
+
+    def resetGraphData(self):
+        self.graph.setData(self.data)
+        self.updateGraph()
 
     # receive new data and update all fields
     def cdata(self, data, clearResults = 1):
@@ -254,25 +258,6 @@ class OWScatterPlot(OWWidget):
    
     
     # ################################################################################################
-    # find projections where different class values are well separated
-    def optimizeSeparation(self):
-        if self.data == None: return
-        
-        self.optimizationDlg.clearResults()
-        self.optimizationDlg.disableControls()
-
-        try:
-            attributeNameOrder = self.optimizationDlg.getEvaluatedAttributes(self.data) # sort attributes according to the heuristic
-            self.graph.getOptimalSeparation(attributeNameOrder, self.optimizationDlg.addResult) # evaluate projections
-        except:
-            type, val, traceback = sys.exc_info()
-            sys.excepthook(type, val, traceback)  # print the exception
-
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.finishedAddingResults()
-
-
-    # ################################################################################################
     # find projections that have tight clusters of points that belong to the same class value
     def optimizeClusters(self):
         if self.data == None: return
@@ -291,31 +276,6 @@ class OWScatterPlot(OWWidget):
 
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
-
-    # ################################################################################################
-    # try to improve best projections by replacing one of the attributes in the projections with a different one
-    def optimizeGivenProjectionClick(self, numOfBestAttrs = -1):
-        if numOfBestAttrs == -1:
-            if self.data and len(self.data.domain.attributes) > 1000:
-                (text, ok) = QInputDialog.getText('Qt Optimize Current Projection', 'How many of the best ranked attributes do you wish to test?')
-                if not ok: return
-                numOfBestAttrs = int(str(text))
-            else: numOfBestAttrs = 10000
-        self.optimizationDlg.disableControls()
-
-        if self.optimizationDlg.localOptimizeProjectionCount == 1:
-            accs = [self.graph.getProjectionQuality([self.attrX, self.attrY])[0]]
-            attrLists = [[self.attrX, self.attrY]]
-        else:
-            attrLists = []; accs = []
-            for i in range(min(len(self.optimizationDlg.allResults), self.optimizationDlg.localOptimizeProjectionCount)):
-                accs.append(self.graph.getProjectionQuality(self.optimizationDlg.allResults[i][ATTR_LIST])[0])
-                attrLists.append(self.optimizationDlg.allResults[i][ATTR_LIST])
-        self.graph.optimizeGivenProjection(attrLists, accs, self.optimizationDlg.getEvaluatedAttributes(self.data)[:numOfBestAttrs], self.optimizationDlg.addResult, restartWhenImproved = 1)
-
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.finishedAddingResults()
-        self.showSelectedAttributes()
 
 
     def showSelectedAttributes(self):

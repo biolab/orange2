@@ -141,10 +141,20 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.shownAttributeIndices = attrIndices
         
 
+        xData = self.scaledData[xAttrIndex].copy()
+        yData = self.scaledData[yAttrIndex].copy()
+        validData = self.getValidList([xAttrIndex, yAttrIndex])
+
+        if self.rawdata.domain[xAttrIndex].varType == orange.VarTypes.Discrete: xData = ((xData * 2*len(self.rawdata.domain[xAttrIndex].values)) - 1.0) / 2.0
+        else:  xData = xData * (self.attrValues[xAttr][1] - self.attrValues[xAttr][0]) + float(self.attrValues[xAttr][0])
+
+        if self.rawdata.domain[yAttrIndex].varType == orange.VarTypes.Discrete: yData = ((yData * 2*len(self.rawdata.domain[yAttrIndex].values)) - 1.0) / 2.0
+        else:  yData = yData * (self.attrValues[yAttr][1] - self.attrValues[yAttr][0]) + float(self.attrValues[yAttr][0])
+
+
         # #######################################################
         # show clusters
         if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            validData = self.getValidList([xAttrIndex, yAttrIndex])
             data = self.createProjectionAsExampleTable([xAttrIndex, yAttrIndex], validData = validData, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
             graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             
@@ -220,13 +230,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 # variables and domain for the table
                 classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
-                #shortData = self.rawdata.select([self.rawdata.domain[xAttrIndex], self.rawdata.domain[yAttrIndex], self.rawdata.domain.classVar])
-                #shortData = orange.Preprocessor_dropMissing(shortData)
                 if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
                 else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
 
                 (insideData, stringData) = self.insideColors
-                validData = self.getValidList([xAttrIndex, yAttrIndex])
                 j = 0
                 equalSize = len(self.rawdata) == len(insideData)
                 for i in range(len(self.rawdata)):
@@ -237,39 +244,23 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j])
                     edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
 
-                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
-                    else:                           x = self.rawdata[i][xAttrIndex].value
-
-                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
-                    else:                           y = self.rawdata[i][yAttrIndex].value
+                    x = xData[i]
+                    y = yData[i]
+##                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+##                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
+##                    else:                           x = self.rawdata[i][xAttrIndex].value
+##
+##                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+##                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
+##                    else:                           y = self.rawdata[i][yAttrIndex].value
 
                     key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
 
                     # we add a tooltip for this point
                     self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[j], attrIndices) + stringData %(100*insideData[j]) + "; ")
+                    #self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[i], attrIndices) + stringData %(100*insideData[i]) + "; ")
                     j+=1
                     
-                """
-                for j in range(len(self.insideColors)):
-                    fillColor = classColors.getColor(classValueIndices[shortData[j].getclass().value], 255*self.insideColors[j])
-                    edgeColor = classColors.getColor(classValueIndices[shortData[j].getclass().value])
-                    
-                    if discreteX == 1: x = attrXIndices[shortData[j][0].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-                    elif self.jitterContinuous:     x = shortData[j][0].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
-                    else:                           x = shortData[j][0].value
-
-                    if discreteY == 1: y = attrYIndices[shortData[j][1].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-                    elif self.jitterContinuous:     y = shortData[j][1].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
-                    else:                           y = shortData[j][1].value
-
-                    key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
-
-                    # we add a tooltip for this point
-                    self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[j], attrIndices) + "; Point value : " + "%.3f; "%(self.insideColors[j]))
-                """
-
             # ##############################################################
             # create a small number of curves which will make drawing much faster
             # ##############################################################
@@ -286,13 +277,15 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 for i in range(len(self.rawdata)):
                     if not validData[i]: continue
 
-                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
-                    else:                           x = self.rawdata[i][xAttrIndex].value
-
-                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
-                    else:                           y = self.rawdata[i][yAttrIndex].value
+##                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+##                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
+##                    else:                           x = self.rawdata[i][xAttrIndex].value
+##
+##                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+##                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
+##                    else:                           y = self.rawdata[i][yAttrIndex].value
+                    x = xData[i]
+                    y = yData[i]
 
                     if colorIndex != -1: index = colorIndices[self.rawdata[i][colorIndex].value]
                     else: index = 0
@@ -337,21 +330,29 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 elif colorIndex != -1:                                                                          classColors = ColorPaletteHSV(len(self.rawdata.domain[colorIndex].values))
 
                 shownSubsetCount = 0
+                attrs = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
+                while -1 in attrs: attrs.remove(-1)
+                validData = self.getValidList(attrs)
+                
                 for i in range(len(self.rawdata)):
-                    if self.rawdata[i][xAttrIndex].isSpecial() == 1: continue
-                    if self.rawdata[i][yAttrIndex].isSpecial() == 1: continue
-                    if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
-                    if shapeIndex != -1 and self.rawdata[i][shapeIndex].isSpecial() == 1: continue
-                    if sizeShapeIndex != -1 and self.rawdata[i][sizeShapeIndex].isSpecial() == 1: continue
+                    if not validData[i]: continue
+##                    if self.rawdata[i][xAttrIndex].isSpecial() == 1: continue
+##                    if self.rawdata[i][yAttrIndex].isSpecial() == 1: continue
+##                    if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
+##                    if shapeIndex != -1 and self.rawdata[i][shapeIndex].isSpecial() == 1: continue
+##                    if sizeShapeIndex != -1 and self.rawdata[i][sizeShapeIndex].isSpecial() == 1: continue
                     
-                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
-                    else:                           x = self.rawdata[i][xAttrIndex].value
+##                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+##                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
+##                    else:                           x = self.rawdata[i][xAttrIndex].value
+##
+##                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+##                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
+##                    else:                           y = self.rawdata[i][yAttrIndex].value
 
-                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
-                    else:                           y = self.rawdata[i][yAttrIndex].value
-
+                    x = xData[i]
+                    y = yData[i]
+                    
                     if colorIndex != -1:
                         if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
                             newColor = QColor();
@@ -379,11 +380,11 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 if haveSubsetData and len(self.subsetData) != shownSubsetCount:
                     self.showFilledSymbols = 1
                     for i in range(len(self.subsetData)):
-                        if self.subsetData[i] in self.rawdata: continue
                         if self.subsetData[i][xAttrIndex].isSpecial() or self.subsetData[i][yAttrIndex].isSpecial() : continue
                         if colorIndex != -1 and self.subsetData[i][colorIndex].isSpecial() : continue
                         if shapeIndex != -1 and self.subsetData[i][shapeIndex].isSpecial() : continue
                         if sizeShapeIndex != -1 and self.subsetData[i][sizeShapeIndex].isSpecial() : continue
+                        if self.subsetData[i] in self.rawdata: continue
                         
                         if discreteX == 1: x = attrXIndices[self.subsetData[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
                         elif self.jitterContinuous:     x = self.subsetData[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
