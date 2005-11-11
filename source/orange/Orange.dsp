@@ -123,7 +123,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /machine:I386 /out:"c:\temp\orange\release\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
 # SUBTRACT BASE LINK32 /debug
-# ADD LINK32 libgslcblas.a libgsl.a oleaut32.lib ole32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"..\..\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+# ADD LINK32 oleaut32.lib ole32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"..\..\orange.pyd" /libpath:"$(PYTHON)\libs" /WARN:0
 
 !ENDIF 
 

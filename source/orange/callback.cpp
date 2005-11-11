@@ -38,7 +38,7 @@
 #include "callback.ppp"
 
 
-inline PyObject *callCallback(PyObject *self, PyObject *args)
+PyObject *callCallback(PyObject *self, PyObject *args)
 { PyObject *result;
   
   if (PyObject_HasAttrString(self, "__callback")) {

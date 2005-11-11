@@ -1,11 +1,8 @@
 #include "ppp/mds.ppp"
-#include "px/externs.px"
 #include <math.h>
 #include <iostream>
 #include <stdlib.h>
 using namespace std; 
-
-DEFINE_TOrangeVector_classDescription(PFloatList, "TFloatListList", true, ORANGEMDS_API)
 
 void resize(PFloatListList &array, int dim1, int dim2){
 	//cout<<"allocating"<<endl;
@@ -120,3 +117,124 @@ void TMDS::optimize(int numIter, PStressFunc fun, float eps){
 		oldStress=stress;
 	}
 }
+
+
+
+#include "externs.px"
+
+
+/*************** PYTHON INTERFACE ***************/
+
+#include "externs.px"
+#include "orange_api.hpp"
+
+C_NAMED(MDS, Orange, "(distanceMatrix [dim, points])->MDS")
+BASED_ON(StressFunc, Orange)
+C_CALL(KruskalStress, StressFunc, "(float, float[,float])->float")
+C_CALL(SammonStress, StressFunc, "(float, float[,float])->float")
+C_CALL(SgnSammonStress, StressFunc, "(float, float[,float])->float")
+C_CALL(SgnRelStress, StressFunc, "(float, float[,float])->float")
+C_CALL(StressFunc_Python, StressFunc,"")
+
+
+PyObject* StressFunc_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrStressFunc_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TStressFunc_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TStressFunc_Python(), type);
+}
+
+PyObject *MDS_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(dissMatrix[, dim, points])")
+{
+    PyTRY
+    int dim=2;
+    PSymMatrix matrix;
+    PFloatListList points;
+    if(!PyArg_ParseTuple(args, "O&|iO&", cc_SymMatrix, &matrix, &dim, cc_FloatListList, &points))
+        return NULL;
+
+    PMDS mds=mlnew TMDS(matrix, dim);
+    if(points && points->size()==matrix->dim)
+        mds->points=points;
+    else{
+        PRandomGenerator rg=mlnew TRandomGenerator();
+        for(int i=0;i<mds->n; i++)
+            for(int j=0; j<mds->dim; j++)
+                mds->points->at(i)->at(j)=rg->randfloat();
+    }
+
+    return WrapOrange(mds);
+    PyCATCH
+}
+
+PyObject *MDS_SMACOFstep(PyTypeObject  *self) PYARGS(METH_NOARGS, "()")
+{
+    PyTRY
+    SELF_AS(TMDS).SMACOFstep();
+    RETURN_NONE;
+    PyCATCH
+}
+
+PyObject *MDS_getDistance(PyTypeObject *self) PYARGS(METH_NOARGS, "()")
+{
+    PyTRY
+    SELF_AS(TMDS).getDistances();
+    RETURN_NONE;
+    PyCATCH
+}
+
+PyObject *MDS_getStress(PyTypeObject *self, PyObject *args) PYARGS(METH_VARARGS, "([stressFunc=SgnRelStress])")
+{
+    PyTRY
+    PStressFunc sf;
+    PyObject *callback=NULL;
+    if(PyTuple_Size(args)==1){
+        /*
+        if(!PyArg_ParseTuple(args, "O&", cc_StressFunc, &sf))
+            if(!(PyArg_ParseTuple(args, "O", &callback) &&
+                (sf=PyOrange_AsStressFunc(mysetCallbackFunction(WrapNewOrange(mlnew TStressFunc_Python(),
+                (PyTypeObject*)&PyOrStressFunc_Type), args)))))
+                return NULL;
+                */
+        sf=PyOrange_AsStressFunc(StressFunc_new((PyTypeObject*)&PyOrStressFunc_Type, args, NULL));
+        SELF_AS(TMDS).getStress(sf);
+    }else
+        SELF_AS(TMDS).getStress(mlnew TSgnRelStress());
+    RETURN_NONE;
+    PyCATCH
+}
+
+PyObject *MDS_optimize(PyObject* self, PyObject* args, PyObject* kwds) PYARGS(METH_VARARGS, "(numSteps[, stressFunc=orangemds.SgnRelStress, progressCallback=None])->None")
+{
+    PyTRY
+    int iter;
+    float eps=1e-3f;
+    PProgressCallback callback;
+    PStressFunc stress;
+    PyObject *pyStress=NULL;
+    if(!PyArg_ParseTuple(args, "i|O&f", &iter, cc_StressFunc, &stress, &eps))
+        if(PyArg_ParseTuple(args, "i|Of", &iter, &pyStress, &eps) && pyStress){
+            PyObject *arg=Py_BuildValue("(O)", pyStress);
+            stress=PyOrange_AsStressFunc(StressFunc_new((PyTypeObject*)&PyOrStressFunc_Type, arg, NULL));
+        } else
+            return NULL;
+
+    SELF_AS(TMDS).optimize(iter, stress, eps);
+    RETURN_NONE;
+    PyCATCH
+}
+
+PyObject *StressFunc_call(PyTypeObject *self, PyObject *args)
+{
+    PyTRY
+    float cur, cor, w;
+    if(!PyArg_ParseTuple(args, "ff|f:KruskalStress.__call__", &cur, &cor, &w))
+        return NULL;
+    if(PyTuple_Size(args)==2)
+        return Py_BuildValue("f",SELF_AS(TStressFunc).operator ()(cur,cor));
+    else
+        return Py_BuildValue("f",SELF_AS(TStressFunc).operator ()(cur, cor, w));
+    PyCATCH
+}
+
+#include "mds.px"

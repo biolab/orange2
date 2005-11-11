@@ -33,6 +33,7 @@ DEFINE_TOrangeVector_classDescription(long, "TLongList", false, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(float, "TFloatList", false, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(double, "TDoubleList", false, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(string, "TStringList", false, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(PFloatList, "TFloatListList", true, ORANGE_API)
 
 
 // TValueList's properties are defined in vars.cpp

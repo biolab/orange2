@@ -1,7 +1,6 @@
 #include "ppp/som.ppp"
 
 #include <limits>
-#include <iostream>
 using namespace std;
 
 DEFINE_TOrangeVector_classDescription(PSOMNode, "TSOMNodeList", true, ORANGEOM_API)
@@ -78,7 +77,9 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     PExampleTable ex=mlnew TExampleTable(transformedDomain, examples);
     transformedDomain=ex->domain;
 
-	PSOMClassifier classifier;
+	PClassifier wclassifier;
+  TSOMClassifier *classifier = NULL;
+
     struct entries *data=NULL, *codes=NULL;
 	struct data_entry *ent;
 
@@ -95,7 +96,6 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     params.data=data;
     
     for(int step=0; step<steps; step++){
-        cout <<"step:"<<step<<endl;
         params.length=iterations->at(step);
         params.alpha=alpha->at(step);
         params.radius=radius->at(step);
@@ -109,10 +109,12 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     
 	if(examples->domain->classVar){
         classifier=mlnew TSOMClassifier();
+        wclassifier = classifier;
 		classifier->classVar=examples->domain->classVar;
 	}
     else
         classifier=mlnew TSOMMap();
+        wclassifier = classifier;
 
     PSOMNodeList nodes=mlnew TSOMNodeList(xDim*yDim);
     int i=0;
@@ -139,7 +141,7 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
         node->examples->addExample(*iter);
     }
    
-    PMajorityLearner learner=mlnew TMajorityLearner();
+    PLearner learner=mlnew TMajorityLearner();
 
     PITERATE(TSOMNodeList, nodeiter, classifier->nodes){
         if((*nodeiter)->examples && classifier->classVar)
@@ -161,7 +163,7 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
 			close_entries(data);
 		throw;
 	}
-    return classifier; 
+    return wclassifier; 
 }
 /*
 TValue TSOMClassifier::operator()(const TExample &example){
@@ -216,3 +218,96 @@ TSOMClassifier::~TSOMClassifier(){
 		close_entries(som_pak_data);
 }
 
+
+
+/************ PYTHON INTERFACE **************/
+
+#include "externs.px"
+#include "orange_api.hpp"
+
+C_CALL(SOMLearner, Learner, "([examples[, weight=]]) -/-> Classifier")
+C_NAMED(SOMClassifier, Classifier, " ")
+C_NAMED(SOMMap, Orange, " ")
+C_NAMED(SOMNode, Orange, " ")
+
+PyObject *SOMNode_getDistance(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(example)->float")
+{
+    PyTRY
+    PExample ex;
+    if(!PyArg_ParseTuple(args, "O&:getDistance", cc_Example, &ex))
+        return NULL;
+    float res=SELF_AS(TSOMNode).getDistance(ex.getReference());
+    return Py_BuildValue("f", res);
+    PyCATCH
+}
+
+PyObject *SOMClassifier_getWinner(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(example)->SOMNode")
+{
+    PyTRY
+    PExample ex;
+    if(!PyArg_ParseTuple(args, "O&:getWinner", cc_Example, &ex))
+        return NULL;
+    return WrapOrange(SELF_AS(TSOMClassifier).getWinner(ex.getReference()));
+    PyCATCH
+}
+
+PyObject *SOMClassifier_getError(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples)->float")
+{
+    PyTRY
+    PExampleGenerator egen;
+    if(!PyArg_ParseTuple(args, "O&", cc_ExampleGenerator, &egen))
+        return NULL;
+    float res=SELF_AS(TSOMClassifier).getError(egen);
+    return Py_BuildValue("f", res);
+    PyCATCH
+}
+
+PyObject *SOMMap_getWinner(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(example)->SOMNode")
+{
+    PyTRY
+    PExample ex;
+    if(!PyArg_ParseTuple(args, "O&:getWinner", cc_Example, &ex))
+        return NULL;
+    return WrapOrange(SELF_AS(TSOMMap).getWinner(ex.getReference()));
+    PyCATCH
+}
+
+#include "orvector.hpp"
+#include "vectortemplates.hpp"
+
+extern ORANGEOM_API TOrangeType PyOrSOMNode_Type;
+
+PSOMNodeList PSOMNodeList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::P_FromArguments(arg); }
+PyObject *SOMNodeList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_FromArguments(type, arg); }
+PyObject *SOMNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of SOMNode>)") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_new(type, arg, kwds); }
+PyObject *SOMNodeList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_getitem(self, index); }
+int       SOMNodeList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_setitem(self, index, item); }
+PyObject *SOMNodeList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_getslice(self, start, stop); }
+int       SOMNodeList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_setslice(self, start, stop, item); }
+int       SOMNodeList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_len(self); }
+PyObject *SOMNodeList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_richcmp(self, object, op); }
+PyObject *SOMNodeList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_concat(self, obj); }
+PyObject *SOMNodeList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_repeat(self, times); }
+PyObject *SOMNodeList_str(TPyOrange *self) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_str(self); }
+PyObject *SOMNodeList_repr(TPyOrange *self) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_str(self); }
+int       SOMNodeList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_contains(self, obj); }
+PyObject *SOMNodeList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(SOMNode) -> None") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_append(self, item); }
+PyObject *SOMNodeList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(SOMNode) -> int") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_count(self, obj); }
+PyObject *SOMNodeList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> SOMNodeList") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_filter(self, args); }
+PyObject *SOMNodeList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(SOMNode) -> int") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_index(self, obj); }
+PyObject *SOMNodeList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_insert(self, args); }
+PyObject *SOMNodeList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_native(self); }
+PyObject *SOMNodeList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> SOMNode") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_pop(self, args); }
+PyObject *SOMNodeList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(SOMNode) -> None") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_remove(self, obj); }
+PyObject *SOMNodeList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_reverse(self); }
+PyObject *SOMNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PSOMNodeList, TSOMNodeList, PSOMNode, &PyOrSOMNode_Type>::_sort(self, args); }
+
+PYCLASSCONSTANT_INT(SOMLearner, HexagonalTopology, TSOMLearner::HexagonalTopology)
+PYCLASSCONSTANT_INT(SOMLearner, RectangularTopology, TSOMLearner::RectangularTopology)
+PYCLASSCONSTANT_INT(SOMLearner, BubbleNeighborhood, TSOMLearner::BubbleNeighborhood)
+PYCLASSCONSTANT_INT(SOMLearner, GaussianNeighborhood, TSOMLearner::GaussianNeighborhood)
+PYCLASSCONSTANT_INT(SOMLearner, LinearFunction, TSOMLearner::LinearFunction)
+PYCLASSCONSTANT_INT(SOMLearner, InverseFunction, TSOMLearner::InverseFunction)
+
+
+#include "som.px"

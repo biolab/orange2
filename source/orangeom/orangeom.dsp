@@ -44,7 +44,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /YX /FD /Zm700 /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -74,7 +74,7 @@ PostBuild_Cmds=del ..\..\orangeom.pyd	"c:\program files\upx" "obj\release\orange
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../orange" /I "../include" /I "../orange/px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /YX /FD /GZ /Zm700 /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -105,7 +105,7 @@ PostBuild_Cmds=copy obj\Debug\orangeom_d.lib ..\..\lib\orangeom_d.lib
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /YX /FD /Zm700 /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -195,11 +195,56 @@ SOURCE=.\wml\WmlVector3.h
 SOURCE=.\wml\WmlVector3.inl
 # End Source File
 # End Group
+# Begin Group "som"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\som\datafile.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\som\fileio.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\som\labels.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\som\lvq_pak.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\som\som_rout.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\som\version.c
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE=.\mds.cpp
+
+!IF  "$(CFG)" == "orangeom - Win32 Release"
+
+# ADD CPP /D "NO_PIPED_COMANDS"
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"
+
+!ENDIF 
+
+# End Source File
 # Begin Source File
 
 SOURCE=.\optimizeAnchors.cpp
 
 !IF  "$(CFG)" == "orangeom - Win32 Release"
+
+# ADD CPP /D "NO_PIPED_COMANDS"
 
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
 
@@ -216,6 +261,7 @@ SOURCE=.\orangeom.cpp
 
 !IF  "$(CFG)" == "orangeom - Win32 Release"
 
+# ADD CPP /D "NO_PIPED_COMANDS"
 # SUBTRACT CPP /nologo /YX
 
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
@@ -230,12 +276,46 @@ SOURCE=.\orangeom.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\som.cpp
+
+!IF  "$(CFG)" == "orangeom - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\triangulate.cpp
+
+!IF  "$(CFG)" == "orangeom - Win32 Release"
+
+# ADD CPP /D "NO_PIPED_COMANDS"
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"
+
+!ENDIF 
+
 # End Source File
 # End Group
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=.\mds.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\som.hpp
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 

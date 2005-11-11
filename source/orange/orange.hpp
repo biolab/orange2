@@ -151,10 +151,10 @@ public:
   argconverter       ot_converter;
   argconverter       ot_nconverter;
 
-  TOrangeType()
+  /*TOrangeType()
   : ot_classinfo(typeid(TOrangeType))
   { raiseErrorWho("TOrangeType", "Internal error: invalid constructor called"); }
-
+*/
   TOrangeType(const PyTypeObject &inh, const type_info &cinf, defaultconstrproc dc,
               argconverter otc, argconverter otcn,
               char **ck = NULL, char **ra = NULL, TAttributeAlias *ali = NULL

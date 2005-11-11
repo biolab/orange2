@@ -26,18 +26,11 @@
 #include "orvector.hpp"
 #include "symmatrix.hpp"
 #include "progress.hpp"
-#include <iostream>
+#include "callback.hpp"
 
 #define MMAX(a,b) (((a)>(b))? a :b)
 
-#if _MSC_VER!=0 && _MSC_VER <1300
-OMVWRAPPER(FloatList)
-#else 
-VWRAPPER(FloatList)
-#endif
-
-#define TFloatListList TOrangeVector<PFloatList>
-OMVWRAPPER(FloatListList)
+//V WR AP PE R(FloatList)
 
 class ORANGEOM_API TStressFunc: public TOrange{
 public:
@@ -58,7 +51,6 @@ class ORANGEOM_API TSammonStress : public TStressFunc{
 public:
     __REGISTER_CLASS
     virtual float operator() (float current, float correct, float weight=1.0){
-		//std::cout<<current<<", "<<correct<<std::endl;
        float d=current-correct;
        return d*d*weight/MMAX(1e-6,current);
    }
@@ -83,28 +75,6 @@ public:
 };
 
 OMWRAPPER(StressFunc)
-OMWRAPPER(KruskalStress)
-OMWRAPPER(SammonStress)
-OMWRAPPER(SgnSammonStress)        
-OMWRAPPER(SgnRelStress)
-
-/*this is copy paste form callback.cpp */
-inline PyObject *callCallback(PyObject *self, PyObject *args)
-{ PyObject *result;
-  
-  if (PyObject_HasAttrString(self, "__callback")) {
-      PyObject *callback = PyObject_GetAttrString(self, "__callback");
-      result = PyObject_CallObject(callback, args);
-      Py_DECREF(callback);
-  }
-  else 
-      result = PyObject_CallObject(self, args);
-  /*
-  if (!result)
-      throw pyexception();
-  */
-  return result;
-}
 
 
 class ORANGEOM_API TStressFunc_Python : public TStressFunc{
@@ -120,7 +90,6 @@ public:
     }    
 };
 
-OMWRAPPER(StressFunc_Python)
 
 class ORANGEOM_API TMDS : public TOrange{
 public:

@@ -24,9 +24,10 @@
 #define __CALLBACK_HPP
 
 #include "Python.h"
+#include "garbage.hpp"
 
-
-PyObject *setCallbackFunction(PyObject *self, PyObject *func);
+ORANGE_API PyObject *callCallback(PyObject *self, PyObject *args);
+ORANGE_API PyObject *setCallbackFunction(PyObject *self, PyObject *func);
 
 #include "filter.hpp"
 class ORANGE_API TFilter_Python : public TFilter {

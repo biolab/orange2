@@ -30,6 +30,7 @@
 #include "transval.hpp"
 #include "examplegen.hpp"
 #include "imputation.hpp"
+#include "root.hpp"
 
 #ifdef _MSC_VER
 #define NO_PIPED_COMMANDS
@@ -51,8 +52,6 @@ extern "C"{
 
 WRAPPER(ExampleTable)
 WRAPPER(Classifier)
-OMWRAPPER(DefaultClassifier)
-OMWRAPPER(MajorityLearner)
 WRAPPER(ProbabilityEstimatorConstructor)
 VWRAPPER(FloatList)
 VWRAPPER(IntList)
@@ -70,7 +69,7 @@ public:
    PDomainContinuizer domainContinuizer;    //P domain continuizer used to transform the domain
    PDomain transformedDomain;  //P transformed domain
    
-   PDefaultClassifier classifier; //P
+   PClassifier classifier; //P
     
    float getDistance(const TExample &example);
 };
@@ -130,7 +129,7 @@ public:
     
     PSOMNodeList nodes; //P list of SOMNodes
     
-    PDefaultClassifier classifier;
+    PClassifier classifier;
 	
 	TSOMClassifier(): TClassifier(true){};
 	TSOMClassifier(PVariable v, bool cp=true): TClassifier(v, cp){};
@@ -147,7 +146,7 @@ public:
     PSOMNode getWinner(const TExample &example);
 };
 
-OMWRAPPER(SOMClassifier)
+//OMWRAPPER(SOMClassifier)
 
 class ORANGEOM_API TSOMMap : public TSOMClassifier{
 public:

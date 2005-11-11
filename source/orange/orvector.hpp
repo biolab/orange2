@@ -439,12 +439,15 @@ EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<string, false>;
 #define TDoubleList TOrangeVector<double, false>
 #define TStringList TOrangeVector<string, false>
 
+#define TFloatListList TOrangeVector<PFloatList>
+
 VWRAPPER(BoolList)
 VWRAPPER(IntList)
 VWRAPPER(LongList)
 VWRAPPER(FloatList)
 VWRAPPER(IntFloatList)
 VWRAPPER(FloatFloatList)
+VWRAPPER(FloatListList)
 VWRAPPER(DoubleList)
 VWRAPPER(StringList)
 

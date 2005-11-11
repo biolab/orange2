@@ -30,7 +30,7 @@ using namespace std;
 
 extern long metaID;
 
-long getMetaID();
+ORANGE_API long getMetaID();
 
 WRAPPER(Variable)
 
