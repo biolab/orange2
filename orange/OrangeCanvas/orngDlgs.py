@@ -326,20 +326,23 @@ class SignalDialog(QDialog):
         for outS in outputs:
             outType = self.outWidget.instance.getOutputType(outS.name)
             if outType == None:
-                print "Unable to find signal type for signal %s. Check the definition of the widget." % (outS.name)
-                return None                                         # report error
+                #print "Unable to find signal type for signal %s. Check the definition of the widget." % (outS.name)
+                #return []                                         # report error
+                continue
             for inS in inputs:
                 inType = self.inWidget.instance.getInputType(inS.name)
                 if inType == None:
-                    print "Unable to find signal type for signal %s. Check the definition of the widget." % (inS.name)
-                    return None                                        # report error
+                    continue
+                    #print "Unable to find signal type for signal %s. Check the definition of the widget." % (inS.name)
+                    #return None                                        # report error
                 if issubclass(outType, inType):
                     canConnect = 1
                     if (outS.name in outConnected) or (inS.name in inConnected): continue
                     if issubclass(inType, outType):
                         possibleLinks.insert(sameType, (outS.name, inS.name))
                         sameType += 1
-                    else:   possibleLinks.append((outS.name, inS.name))
+                    else:
+                        possibleLinks.append((outS.name, inS.name))
         return possibleLinks, canConnect, sameType
 
     def addDefaultLinks(self):
@@ -367,18 +370,11 @@ class SignalDialog(QDialog):
             if not self.inWidget.instance.signalIsOnlySingleConnection(i):
                 inConnected.remove(i)
 
-        """
         # rebuild registry if necessary
-        print "before", inConnected
         for s in allInputs:
-            print s.name
-            if s.name in inConnected:  # if we have already connected signal s and it is not a single type signal, then we don't consider it as connected
-                inConnected.remove(s.name)
             if not self.inWidget.instance.hasInputName(s.name): return -1
         for s in allOutputs:
             if not self.outWidget.instance.hasOutputName(s.name): return -1
-        print "after", inConnected
-        """
 
         pL1,can1,sameType1 = self.getPossibleConnections(majorOutputs, majorInputs, [], [])
         pL2,can2,sameType2 = self.getPossibleConnections(majorOutputs, minorInputs, [], [v[1] for v in pL1])
