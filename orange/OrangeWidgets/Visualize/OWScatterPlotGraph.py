@@ -541,39 +541,37 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
     # ##############################################################
     def getSelectionsAsExampleTables(self, attrList):
         [xAttr, yAttr] = attrList
-        if not self.rawdata: return (None, None, None)
-        selected = orange.ExampleTable(self.rawdata.domain)
-        unselected = orange.ExampleTable(self.rawdata.domain)
+        #if not self.rawdata: return (None, None, None)
+        if not self.rawdata: return (None, None)
+        if not self.selectionCurveKeyList: return (None, self.rawdata)       # if no selections exist
+        
+        selIndices, unselIndices = self.getSelectionsAsIndices(attrList)
 
-        (xArray, yArray) = self.createProjection(xAttr, yAttr)
-        validData = self.getValidList([self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]])
-                 
-        for i in range(len(self.rawdata)):
-            if not validData[i]: continue
-            
-            if self.isPointSelected(xArray[i], yArray[i]): selected.append(self.rawdata[i])
-            else:                                          unselected.append(self.rawdata[i])
+        selected = orange.ExampleTable(self.rawdata.domain, self.rawdata.getitems(selIndices))
+        unselected = orange.ExampleTable(self.rawdata.domain, self.rawdata.getitems(unselIndices))
+        
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
-        merged = self.changeClassAttr(selected, unselected)
-        return (selected, unselected, merged)
+        #merged = self.changeClassAttr(selected, unselected)
+        #return (selected, unselected, merged)
+        return (selected, unselected)
 
     # ############################################################## 
-    def getSelectionsAsIndices(self, attrList):
+    def getSelectionsAsIndices(self, attrList, validData = None):
         [xAttr, yAttr] = attrList
-        if not self.rawdata: return []
+        if not self.rawdata: return [], []
+
+        attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
+        if not validData: validData = self.getValidList(attrIndices)
         
         (xArray, yArray) = self.createProjection(xAttr, yAttr)
-        validData = self.getValidList([self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]])
                  
-        indices = []
+        selIndices = []; unselIndices = []
         for i in range(len(self.rawdata)):
-            if not validData[i]: continue
-            if self.isPointSelected(xArray[i], yArray[i]): indices.append(i)
+            if validData[i] and self.isPointSelected(xArray[i], yArray[i]): selIndices.append(i)
+            else: unselIndices.append(i)
 
-        return indices
-    
-        
+        return selIndices, unselIndices
     
            
 

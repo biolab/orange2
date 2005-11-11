@@ -34,7 +34,7 @@ class OWScatterPlot(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
 
         self.inputs =  [("Examples", ExampleTable, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdata), ("Attribute selection", list, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Learner", orange.Learner)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Learner", orange.Learner)]
 
         # local variables    
         self.showGridlines = 0
@@ -243,10 +243,11 @@ class OWScatterPlot(OWWidget):
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
-        (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
+        #(selected, unselected, merged) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
+        (selected, unselected) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
         self.send("Selected Examples",selected)
         self.send("Unselected Examples",unselected)
-        self.send("Example Distribution", merged)
+        #self.send("Example Distribution", merged)
 
 
     # ##############################################################################################################################################################

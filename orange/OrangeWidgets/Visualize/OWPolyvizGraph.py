@@ -509,10 +509,11 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         data = self.createProjectionAsNumericArray(attrList, attributeReverse, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, jitterSize)
         return orange.ExampleTable(domain, data)
 
-    def createProjectionAsNumericArray(self, attrIndices, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0):
+    def createProjectionAsNumericArray(self, attrIndices, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, removeMissingData = 1):
         if not validData: validData = self.getValidList(attrIndices)
 
-        selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
+        if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
+        else:                 selectedData = Numeric.take(self.noJitteringScaledData, attrIndices)
         
         if not classList:
             classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
@@ -557,51 +558,62 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
 
     # ####################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
-    def getSelectionsAsExampleTables(self, attrList, attributeReverse):
-        if not self.rawdata: return (None, None, None)
-        selected = orange.ExampleTable(self.rawdata.domain)
-        unselected = orange.ExampleTable(self.rawdata.domain)
+    def getSelectionsAsExampleTables(self, attrList, attributeReverse, addProjectedPositions = 0):
+        if not self.rawdata: return (None, None)
+        if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawdata)       # if no selections exist
+
+        xAttr=orange.FloatVariable("X Positions")
+        yAttr=orange.FloatVariable("Y Positions")
+        if addProjectedPositions == 1:
+            domain=orange.Domain([xAttr,yAttr] + [v for v in self.rawdata.domain.variables])
+        elif addProjectedPositions == 2:
+            domain=orange.Domain(self.rawdata.domain)
+            domain.addmeta(orange.newmetaid(), xAttr)
+            domain.addmeta(orange.newmetaid(), yAttr)
+        else:
+            domain = orange.Domain(self.rawdata.domain)
+
+        domain.addmetas(self.rawdata.domain.getmetas())
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         validData = self.getValidList(attrIndices)
-        proj = self.createProjectionAsNumericArray(attrIndices, [attributeReverse[attr] for attr in attrList], validData = validData, scaleFactor = self.scaleFactor)
+        
+        array = self.createProjectionAsNumericArray(attrIndices, [attributeReverse[attr] for attr in attrList], validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
+        selIndices, unselIndices = self.getSelectionsAsIndices(attrList, attributeReverse, validData)
+                 
+        selected = orange.ExampleTable(domain, self.rawdata.getitems(selIndices))
+        unselected = orange.ExampleTable(domain, self.rawdata.getitems(unselIndices))
 
-        missing = 0
-        for i in range(len(self.rawdata)):
-            if not validData[i]:
-                missing += 1
-                continue
-            
-            if self.isPointSelected(proj[i-missing][0], proj[i-missing][1]): selected.append(self.rawdata[i])
-            else:                                          unselected.append(self.rawdata[i])
+        if addProjectedPositions:
+            for i in range(len(selIndices)):
+                selected[i][xAttr] = array[selIndices[i]][0]
+                selected[i][yAttr] = array[selIndices[i]][1]
+
+            for i in range(len(unselIndices)):
+                unselected[i][xAttr] = array[unselIndices[i]][0]
+                unselected[i][yAttr] = array[unselIndices[i]][1]
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
-        merged = self.changeClassAttr(selected, unselected)
-        return (selected, unselected, merged)
+        #merged = self.changeClassAttr(selected, unselected)
+        #return (selected, unselected, merged)
+        return (selected, unselected)
+    
 
-    def getSelectionsAsIndices(self, attrList, attributeReverse):
-        if not self.rawdata: return (None, None, None)
-        selected = orange.ExampleTable(self.rawdata.domain)
-        unselected = orange.ExampleTable(self.rawdata.domain)
+    def getSelectionsAsIndices(self, attrList, attributeReverse, validData = None):
+        if not self.rawdata: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
-        validData = self.getValidList(attrIndices)
-        proj = self.createProjectionAsNumericArray(attrIndices, [attributeReverse[attr] for attr in attrList], validData = validData, scaleFactor = self.scaleFactor)
-
-        if useAnchorData: indices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
-        else:             indices = [self.attributeNameIndex[label] for label in attrList]
-        validData = self.getValidList(indices)
+        if not validData: validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
+        array = self.createProjectionAsNumericArray(attrIndices, [attributeReverse[attr] for attr in attrList], validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
+        selIndices = []; unselIndices = []
                  
-        indices = []
         for i in range(len(validData)):
-            if not validData[i]: continue
-            
-            if self.isPointSelected(array[i][0], array[i][1]): indices.append(i)
+            if validData[i] and self.isPointSelected(array[i][0], array[i][1]): selIndices.append(i)
+            else:                                                               unselIndices.append(i)
 
-        return indices
+        return selIndices, unselIndices
 
 
     """

@@ -24,7 +24,8 @@ import OWVisAttrSelection, OWToolbars, OWVisFuncts, OWDlgs
 class OWPolyviz(OWWidget):
     settingsList = ["graph.pointWidth", "lineLength", "graph.jitterSize", "graph.globalValueScaling", "graph.scaleFactor",
                     "graph.enabledLegend", "graph.showFilledSymbols", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection",
-                    "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankClassifierName", "colorSettings"]
+                    "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankClassifierName",
+                    "colorSettings", "addProjectedPositions"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -34,7 +35,7 @@ class OWPolyviz(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Polyviz", TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Attribute Selection List", AttributeList, self.attributeSelection), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass),("Attribute Selection List", AttributeList)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
 
         # local variables
         self.lineLength = 2
@@ -46,6 +47,7 @@ class OWPolyviz(OWWidget):
         self.outlierValues = None
         self.kNNExampleAccuracy = None
         self.colorSettings = None
+        self.addProjectedPositions = 0
 
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -109,12 +111,12 @@ class OWPolyviz(OWWidget):
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         self.hbox = OWGUI.widgetBox(self.shownAttribsGroup, "", orientation = "horizontal")
-        self.buttonUPAttr = QPushButton("Attr Up", self.hbox)
-        self.buttonDOWNAttr = QPushButton("Attr Down", self.hbox)
+        self.buttonUPAttr =   OWGUI.button(self.hbox, self, "Attr Up", callback = self.moveAttrUP)
+        self.buttonDOWNAttr = OWGUI.button(self.hbox, self, "Attr Down", callback = self.moveAttrDOWN)
 
-        self.attrAddButton = QPushButton("Add attr", self.hbox2)
-        self.attrRemoveButton = QPushButton("Remove attr", self.hbox2)
-
+        self.attrAddButton =    OWGUI.button(self.hbox2, self, "Add attr", callback = self.addAttribute)
+        self.attrRemoveButton = OWGUI.button(self.hbox2, self, "Remove attr", callback = self.removeAttribute)
+        
         # ####################################
         # SETTINGS TAB
         # #####
@@ -143,6 +145,7 @@ class OWPolyviz(OWWidget):
 
         box4 = OWGUI.widgetBox(self.SettingsTab, " Sending Selection ")
         OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
+        OWGUI.comboBox(box4, self, "addProjectedPositions", items = ["Do not modify the domain", "Append projection as attributes", "Append projection as meta attributes"], callback = self.sendSelections)
 
        
         # ####################################
@@ -157,12 +160,6 @@ class OWPolyviz(OWWidget):
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.reverseSelectedAttribute)
-
-        self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
-        self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
-
-        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
-        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         self.icons = self.createAttributeIconDict()
@@ -335,10 +332,11 @@ class OWPolyviz(OWWidget):
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):   
         if not self.data: return
-        (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList(), self.attributeReverse)
+        #(selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList(), self.attributeReverse)
+        (selected, unselected) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList(), self.attributeReverse, addProjectedPositions = self.addProjectedPositions)
         self.send("Selected Examples",selected)
         self.send("Unselected Examples",unselected)
-        self.send("Example Distribution", merged)
+        #self.send("Example Distribution", merged)
 
     def sendShownAttributes(self):
         self.send("Attribute Selection List", self.getShownAttributeList())
@@ -355,6 +353,7 @@ class OWPolyviz(OWWidget):
                 self.shownAttribsLB.removeItem(i+1)
                 self.shownAttribsLB.setSelected(i-1, TRUE)
         self.updateGraph()
+        self.graph.removeAllSelections()
 
     # move selected attribute in "Attribute Order" list one place down  
     def moveAttrDOWN(self):
@@ -365,6 +364,7 @@ class OWPolyviz(OWWidget):
                 self.shownAttribsLB.removeItem(i)
                 self.shownAttribsLB.setSelected(i+1, TRUE)
         self.updateGraph()
+        self.graph.removeAllSelections()
 
     def addAttribute(self):
         count = self.hiddenAttribsLB.count()
@@ -378,6 +378,7 @@ class OWPolyviz(OWWidget):
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         #self.graph.replot()
+        self.graph.removeAllSelections()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
@@ -390,6 +391,7 @@ class OWPolyviz(OWWidget):
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         #self.graph.replot()
+        self.graph.removeAllSelections()
 
     # #####################
 
@@ -432,8 +434,6 @@ class OWPolyviz(OWWidget):
                 
         self.sendShownAttributes()
     
-    ##############################################
-    
     
     # ###### CDATA signal ################################
     # receive new data and update all fields
@@ -458,7 +458,7 @@ class OWPolyviz(OWWidget):
         self.updateGraph()
         self.sendSelections()
 
-    ####### SELECTION signal ################################
+    # ###### SELECTION signal ################################
     # receive info about which attributes to show
     def attributeSelection(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
