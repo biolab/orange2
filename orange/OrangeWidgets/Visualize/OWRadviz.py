@@ -68,13 +68,13 @@ class OWRadviz(OWWidget):
         self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "Radviz")
         self.graph.clusterOptimization = self.clusterDlg
 
+        # freeviz dialog
+        self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, "Radviz")    
+
         # optimization dialog
         self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, "Radviz")
         self.learnersArray[0] = VizRankLearner(RADVIZ, self.optimizationDlg, self.graph)
-        self.learnersArray[2] = FreeVizLearner(self)
-
-        # freeviz dialog
-        self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, "Radviz")
+        self.learnersArray[2] = FreeVizLearner(self.freeVizDlg)
 
         # graph variables
         self.graph.manualPositioning = 0
@@ -200,7 +200,7 @@ class OWRadviz(OWWidget):
         self.clusterDlg.changeLearnerName(self.clusterClassifierName)
         
         self.cbShowAllAttributes()
-        self.setActiveLearner(self.learnerIndex)
+        self.setActiveLearner()
         
 
     # #########################
@@ -490,7 +490,7 @@ class OWRadviz(OWWidget):
         self.graph.potentialsBmp = None
         self.updateGraph()
 
-    def setActiveLearner(self, idx):
+    def setActiveLearner(self):
         self.send("Learner", self.learnersArray[self.learnerIndex])
         
     def setManualPosition(self):

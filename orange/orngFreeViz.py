@@ -295,8 +295,8 @@ class FreeVizClassifier(orange.Classifier):
             self.FreeViz.graph.setData(data)
             self.FreeViz.showAllAttributes()
             
-        #self.radvizWidget.randomAnchors()
-        #self.radvizWidget.radialAnchors()
+        #self.FreeViz.randomAnchors()
+        self.FreeViz.radialAnchors()
         self.FreeViz.optimizeSeparation()
         
         graph = self.FreeViz.graph
