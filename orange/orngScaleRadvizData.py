@@ -1,6 +1,6 @@
 from orngScaleData import *
 from copy import copy
-
+from math import sqrt
 
 # build a list (in currList) of different permutations of elements in list of elements
 # elements contains a list of indices [1,2..., n]
