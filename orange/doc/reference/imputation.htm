@@ -82,10 +82,22 @@ imputer.defaults["LENGTH"] = 1234
 
 <P>The <CODE>Imputer_default</CODE>'s constructor will accept an argument of type <CODE>Domain</CODE> (in which case it will construct an empty example for <CODE>defaults</CODE>) or an example. (Be careful with this: <CODE>Imputer_default</CODE> will have a reference to the example and not a copy. But you can make a copy yourself to avoid problems: instead of <CODE>orange.Imputer_default(data[0])</CODE> you may want to write <CODE>orange.Imputer_default(orange.Example(data[0]))</CODE>.</P>
 
+
+<H2>Random imputation</H2>
+
+<P><CODE>Imputer_Random</CODE> imputes random values. The corresponding constructor is <CODE>ImputerConstructor_Random</CODE>.</p>
+
+<DL class=attributes>
+<DT>imputeClass</DT>
+<DD>Tells whether to impute the class values or not (default: true).</DD>
+
+<DT>deterministic</DT>
+<DD>If true (default is false), random generator is initialized for each example using the example's hash value as a seed. This results in same examples being always imputed the same values.</DD>
+
 <A name="model">
 <H2>Model-based imputation</H2>
 
-<P>Model-based imputers learn to predict the attribute's value from values of other attributes. <CODE>ImputerConstructor_model</CODE> are given a learning algoritm (two, actually - one for discrete and one for continuous attributes) and they construct a classifier for each attribute. The constructed imputer <CODE>Imputer_model</CODE> stores a list of classifiers which are used when needed.</P>
+<P>Model-based imputers learn to predict the attribute's value from values of other attributes. <CODE>ImputerConstructor_model</CODE> are given a learning algorithm (two, actually - one for discrete and one for continuous attributes) and they construct a classifier for each attribute. The constructed imputer <CODE>Imputer_model</CODE> stores a list of classifiers which are used when needed.</P>
 
 <P class=section>Attributes of <CODE>ImputerConstructor_model</CODE></P>
 <DL class=attributes>
@@ -157,7 +169,7 @@ orngTree.printTxt(len_tree)
 
 <XMP class=code>
 SPAN SHORT: 1157.523
-SPAN MEDIUM: 
+SPAN MEDIUM:
 |   ERECTED <1908.500: 1324.754
 |   ERECTED >=1908.500: 1528.385
 SPAN LONG: 1906.677
@@ -235,7 +247,7 @@ print
 MATERIAL, SPAN, REL-L, TYPE]
 
 [RIVER, ERECTED_def, ERECTED, PURPOSE, LENGTH_def, LENGTH,
-LANES_def, LANES, CLEAR-G, T-OR-D, 
+LANES_def, LANES, CLEAR-G, T-OR-D,
 MATERIAL, SPAN, REL-L, TYPE]
 
 

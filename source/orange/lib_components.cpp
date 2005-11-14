@@ -1683,6 +1683,7 @@ C_NAMED(TransformValue_IsDefined, TransformValue, "([value=])")
 BASED_ON(Imputer, Orange)
 C_NAMED(Imputer_asValue, Imputer, "() -> Imputer_asValue")
 C_NAMED(Imputer_model, Imputer, "() -> Imputer_model")
+C_NAMED(Imputer_random, Imputer, "() -> Imputer_random")
 
 PyObject *Imputer_defaults_new(PyTypeObject *tpe, PyObject *args) BASED_ON(Imputer, "(domain | example) -> Imputer_defaults")
 {
@@ -1705,6 +1706,7 @@ C_CALL(ImputerConstructor_minimal, ImputerConstructor, "(examples[, weightID]) -
 C_CALL(ImputerConstructor_maximal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 C_CALL(ImputerConstructor_model, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 C_CALL(ImputerConstructor_asValue, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_random, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 
 PyObject *Imputer_call(PyObject *self, PyObject *args, PyObject *keywords)
 {

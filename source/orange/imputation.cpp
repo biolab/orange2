@@ -147,6 +147,42 @@ TExample *TImputer_model::operator ()(TExample &example)
 }
 
 
+
+TImputer_random::TImputer_random(const bool ic, const bool dete)
+: imputeClass(ic),
+  deterministic(dete)
+{}
+
+TExample *TImputer_random::operator()(TExample &example)
+{
+  TExample *imputed = CLONE(TExample, &example);
+
+  bool initialized = !deterministic; // if deterministic, randgen is initialized with crc32 for each exapmle
+  TVarList::iterator vi(imputed->domain->variables->begin()), ve(imputed->domain->variables->end());
+  if (vi==ve)
+    return imputed;
+  if (!imputeClass && imputed->domain->classVar) {
+    if (vi == --ve)
+      return imputed;
+  }
+
+  for(TExample::iterator ei(imputed->begin()); vi!=ve; vi++, ei++)
+    if ((*ei).isSpecial()) {
+      if (!initialized) {
+        randgen.initseed = imputed->sumValues();
+        randgen.reset();
+        initialized = true;
+      }
+      *ei = (*vi)->randomValue(randgen.randint());
+    }
+
+  return imputed;
+}
+
+
+
+
+
 TImputerConstructor::TImputerConstructor()
 : imputeClass(true)
 {}
@@ -350,4 +386,16 @@ PImputer TImputerConstructor_model::operator()(PExampleGenerator egen, const int
   }
 
   return wimputer;
+}
+
+
+
+TImputerConstructor_random::TImputerConstructor_random(const bool dete)
+: deterministic(dete)
+{}
+
+
+PImputer TImputerConstructor_random::operator()(PExampleGenerator egen, const int &weightID)
+{
+  return mlnew TImputer_random(imputeClass, deterministic);
 }

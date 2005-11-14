@@ -88,6 +88,21 @@ public:
 };
 
 
+class ORANGE_API TImputer_random : public TImputer
+{
+public:
+  __REGISTER_CLASS
+  bool imputeClass;   //P Tells whether to impute the class values, too (default: true)
+  bool deterministic; //P tells whether to initialize random by example's CRC (default: false)
+
+  TImputer_random(const bool imputeClass = true, const bool deterministic = false);
+  virtual TExample *operator()(TExample &example);
+
+private:
+  TRandomGenerator randgen;
+};
+
+
 class ORANGE_API TImputerConstructor : public TOrange
 {
 public:
@@ -156,5 +171,18 @@ public:
   TImputerConstructor_model();
   virtual PImputer operator()(PExampleGenerator, const int &);
 };
+
+
+class ORANGE_API TImputerConstructor_random : public TImputerConstructor
+{
+public:
+  __REGISTER_CLASS
+  bool deterministic; //P tells whether to initialize random by example's CRC (default: false)
+
+  TImputerConstructor_random(const bool deterministic = false);
+  virtual PImputer operator()(PExampleGenerator, const int &);
+};
+
+
 
 #endif
