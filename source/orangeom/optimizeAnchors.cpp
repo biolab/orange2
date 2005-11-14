@@ -155,19 +155,20 @@ void symmetricTransformation(TPoint *anc, TPoint *ance, bool mirrorSymmetry)
      classes       example classes
      nExamples     number of examples (the length of above arrays and of Fr)
      law           0=Linear, 1=Square, 2=Gaussian
+     sigma2        sigma**2 for Gaussian law
 
    OUTPUT:
      F            forces acting on each example (memory should be allocated by the caller!)
 */
 
 void computeForcesContinuous(TPoint *pts, const TPoint *ptse, const double *classes, 
-                             const int &law,
+                             const int &law, const double &sigma2,
                              TPoint *F)
 {
   TPoint *Fi, *Fi2, *ptsi, *ptsi2;
   const double *classesi, *classesi2;
-  for(ptsi = pts, Fi = F, classesi = classes; ptsi != ptse; ptsi++, Fi++, classesi++) {
 
+  for(ptsi = pts, Fi = F, classesi = classes; ptsi != ptse; ptsi++, Fi++, classesi++) {
     Fi->x = Fi-> y = 0.0;
     for(ptsi2 = pts, Fi2 = F, classesi2 = classes; ptsi2 != ptsi; ptsi2++, Fi2++, classesi2++) {
       const double dx = ptsi->x - ptsi2->x;
@@ -176,19 +177,25 @@ void computeForcesContinuous(TPoint *pts, const TPoint *ptse, const double *clas
       if (r2 < 1e-20)
         continue;
 
-      double sr2 = sqrt(r2);
-      double fx = dx /sr2;
-      double fy = dy /sr2;
-      if (r2 < 1e-10)
-        r2 = 1e-10;
+      double fct = sqr(*classesi-*classesi2);
+      switch (law) {
+        case TPNN::InverseLinear:
+          fct /= r2;
+          break;
+        case TPNN::InverseSquare:
+          fct /=  (r2 * sqrt(r2));
+          break;
+        case TPNN::InverseExponential:
+          fct /=  (exp(r2/sigma2) - 1);
+      }
 
-      const double TFr = -fabs(*classesi-*classesi2) / r2;
-      const double FrX = TFr * fx;
-      const double FrY = TFr * fy;
-      Fi->x  += FrX;
-      Fi2->x -= FrX;
-      Fi->y  += FrY;
-      Fi2->y -= FrY;
+      const double druvx = - dx * fct;
+      Fi->x  += druvx;
+      Fi2->x -= druvx;
+
+      const double druvy = - dy * fct;
+      Fi->y  += druvy;
+      Fi2->y -= druvy;
     }
   }
 }
@@ -415,7 +422,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
       // Compute the forces
       if (contClass)
-        computeForcesContinuous(pts, ptse, (double *)classes, law, Fa);
+        computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
       else
         computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
 
@@ -591,7 +598,7 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
 
       // Compute the forces
       if (contClass)
-        computeForcesContinuous(pts, ptse, (double *)classes, law, Fa);
+        computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
       else
         computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing!=0, Fa, Fr);
 
@@ -728,7 +735,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
 
       // Compute the forces
       if (contClass)
-        computeForcesContinuous(pts, ptse, (double *)classes, law, Fa);
+        computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
       else
         computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
 
