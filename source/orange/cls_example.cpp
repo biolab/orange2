@@ -372,6 +372,16 @@ PyObject *Example_getmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id 
 }
 
 
+PyObject *Example_hasmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id | var) -> bool")
+{ PyTRY
+    PVariable var;
+    int idx = getMetaIdFromPy(PyExample_AS_Example(pex), index, var);
+    PyErr_Clear();
+    return PyInt_FromLong(idx && PyExample_AS_Example(pex)->hasMeta(idx) ? 1 : 0);
+  PyCATCH
+}
+
+
 PyObject *Example_setvalue(TPyExample *pex, PyObject *vala) PYARGS(METH_O, "(Value) -> None")
 { PyTRY
     if (!PyOrValue_Check(vala))
