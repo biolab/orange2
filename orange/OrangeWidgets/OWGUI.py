@@ -461,9 +461,15 @@ class Disabler:
             
         for w in self.widget.disables:
             if type(w) == tuple:
-                w[0].setDisabled(disabled)
-                if hasattr(w[0], "makeConsistent"):
-                    w[0].makeConsistent()
+                if type(w[0]) == int:
+                    i = 1
+                    if w[0] == -1:
+                        disabled = not disabled
+                else:
+                    i = 0
+                w[i].setDisabled(disabled)
+                if hasattr(w[i], "makeConsistent"):
+                    w[i].makeConsistent()
             else:
                 w.setDisabled(disabled)
         
