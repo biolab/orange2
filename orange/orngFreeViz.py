@@ -114,13 +114,15 @@ class FreeViz:
                 qApp.processEvents()
                 self.graph.potentialsBmp = None
                 self.graph.updateData()
-            #self.recomputeEnergy()
                 
             positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
             if len(positions)==50:
                 m = max(Numeric.sum((positions[0]-positions[49])**2, 1))
-                if m < 1e-2: break
-            if singleStep or (self.__class__ != FreeViz and self.cancelOptimization): break
+                print m
+                if m < 1e-3: break
+            if singleStep or (self.__class__ != FreeViz and self.cancelOptimization):
+                print "XX canceled"
+                break
 
 
     def optimize_LDA_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
