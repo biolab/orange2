@@ -159,8 +159,11 @@ class VizRank:
         if not data: return
 
         if self.autoSetTheKValue:
-            if self.kValueFormula == 0:     self.kValue = int(sqrt(len(data)))                                 # k = sqrt(N)
-            elif self.kValueFormula == 1:   self.kValue = int(len(data) / len(data.domain.classVar.values))    # k = N / c (c = # of class values)
+            if data.domain.classVar.varType == orange.VarTypes.Discrete:
+                if self.kValueFormula == 0:     self.kValue = int(sqrt(len(data)))                                 # k = sqrt(N)
+                elif self.kValueFormula == 1:   self.kValue = int(len(data) / len(data.domain.classVar.values))    # k = N / c (c = # of class values)
+            else:
+                self.kValue = 10
 
         self.attributeNameIndex = dict([(data.domain[i].name, i) for i in range(len(data.domain))])
 
