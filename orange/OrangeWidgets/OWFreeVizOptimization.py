@@ -9,9 +9,9 @@ from orngScaleRadvizData import *
 from orngFreeViz import *
 
 class FreeVizOptimization(OWBaseWidget, FreeViz):
-    settingsList = ["stepsBeforeUpdate", "restrain", "attractG", "repelG", "differentialEvolutionPopSize",
+    settingsList = ["stepsBeforeUpdate", "restrain", "differentialEvolutionPopSize",
                     "s2nSpread", "s2nPlaceAttributes", "autoSetParameters",
-                    "forceBalancing", "mirrorSymmetry", "forceSigma", "restrain", "law", "forceRelation", "disableAttractive", "disableRepulsive"]
+                    "forceRelation", "mirrorSymmetry", "forceSigma", "restrain", "law", "forceRelation", "disableAttractive", "disableRepulsive"]
     attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000]
     #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
 
@@ -134,13 +134,20 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.controlArea.addWidget(self.statusBar)
         self.controlArea.activate()
 
-        self.resize(310,600)
+        self.resize(310,650)
         self.setMinimumWidth(310)
         self.tabs.setMinimumWidth(310)
 
         self.parentWidget.learnersArray[3] = S2NHeuristicLearner(self, self.parentWidget)
+        self.activateLoadedSettings()
     
         
+    def activateLoadedSettings(self):
+        self.forceLawChanged()
+        self.updateForces()
+
+        self.cbforcebal.setDisabled(self.cbDisableAttractive.isChecked() or self.cbDisableRepulsive.isChecked())
+
     # ##############################################################
     # EVENTS
     # ##############################################################
@@ -164,9 +171,16 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         qApp.processEvents()
 
     def updateForces(self):
-        if self.disableAttractive:  self.attractG, self.repelG = 0, 1
-        elif self.disableRepulsive: self.attractG, self.repelG = 1, 0
-        else:                       self.attractG, self.repelG = self.attractRepelValues[self.forceRelation]
+        if self.disableAttractive or self.disableRepulsive:
+            self.attractG, self.repelG = 1 - self.disableAttractive, 1 - self.disableRepulsive
+            self.cbforcerel.setDisabled(True)
+            self.cbforcebal.setDisabled(True)
+        else:
+            self.attractG, self.repelG = self.attractRepelValues[self.forceRelation]
+            self.cbforcerel.setDisabled(False)
+            self.cbforcebal.setDisabled(False)
+            
+        print "Updated: %i, %i" % (self.attractG, self.repelG)
 
     def forceLawChanged(self):
         self.spinSigma.setDisabled(self.cbLaw.currentItem() != 2)
@@ -189,18 +203,14 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
 
     def setDisableAttractive(self):
-        value = self.cbDisableAttractive.isChecked()
-        if value:
+        if self.cbDisableAttractive.isChecked():
             self.disableRepulsive = 0
-        self.cbforcerel.setDisabled(value)
-        self.cbforcebal.setDisabled(value)
+        self.updateForces()
             
     def setDisableRepulsive(self):
-        value = self.cbDisableRepulsive.isChecked()
-        if value:
+        if self.cbDisableRepulsive.isChecked():
             self.disableAttractive = 0
-        self.cbforcerel.setDisabled(value)
-        self.cbforcebal.setDisabled(value)
+        self.updateForces()
 
     # ###############################################################
     ## FREE VIZ FUNCTIONS
