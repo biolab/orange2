@@ -78,7 +78,7 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     transformedDomain=ex->domain;
 
 	PClassifier wclassifier;
-  TSOMClassifier *classifier = NULL;
+	TSOMClassifier *classifier = NULL;
 
     struct entries *data=NULL, *codes=NULL;
 	struct data_entry *ent;
@@ -122,14 +122,19 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     for(ent=codes->dentries; ent!=NULL; ent=ent->next, i++){
         nodes->at(i)=mlnew TSOMNode();
         nodes->at(i)->vector=mlnew TFloatList(codes->dimension);
-        for(int j=0; j<codes->dimension; j++)
+		nodes->at(i)->referenceExample=mlnew TExample(transformedDomain, ex->at(0));
+		nodes->at(i)->referenceExample->setClass(TValue(TValue::NONE, valueDK));
+		for(int j=0; j<codes->dimension; j++){
             nodes->at(i)->vector->at(j)=ent->points[j];
-        nodes->at(i)->x=i/yDim;
-        nodes->at(i)->y=i%xDim;
+			nodes->at(i)->referenceExample->operator[](j).floatV=ent->points[j];
+		}
+        nodes->at(i)->x=i%xDim;
+        nodes->at(i)->y=i/xDim;
         nodes->at(i)->transformedDomain=transformedDomain;
     }
     classifier->nodes=nodes;
     classifier->xDim=xDim;
+	classifier->examples=examples;
     classifier->yDim=yDim;
     classifier->topology=topology;          
     classifier->trainingError=qerror;

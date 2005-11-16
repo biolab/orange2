@@ -29,7 +29,7 @@
 #include "classify.hpp"
 #include "transval.hpp"
 #include "examplegen.hpp"
-#include "imputation.hpp"
+#include "values.hpp"
 #include "root.hpp"
 
 #ifdef _MSC_VER
@@ -68,6 +68,8 @@ public:
     
    PDomainContinuizer domainContinuizer;    //P domain continuizer used to transform the domain
    PDomain transformedDomain;  //P transformed domain
+
+   PExample referenceExample;	//P reference example
    
    PClassifier classifier; //P
     
@@ -126,6 +128,8 @@ public:
     
     PDomainContinuizer domainContinuizer;   //P domain continuizer used to transform the domain
     PDomain transformedDomain;  //P transformed domain
+
+	PExampleTable examples;	//P examples
     
     PSOMNodeList nodes; //P list of SOMNodes
     

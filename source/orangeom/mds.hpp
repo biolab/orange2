@@ -30,7 +30,14 @@
 
 #define MMAX(a,b) (((a)>(b))? a :b)
 
+#include "px/externs.px"
+
 //V WR AP PE R(FloatList)
+#if _MSC_VER!=0 && _MSC_VER<1300
+OMVWRAPPER(FloatListList)
+#else
+VWRAPPER(FloatListList)
+#endif
 
 class ORANGEOM_API TStressFunc: public TOrange{
 public:
@@ -87,7 +94,7 @@ public:
         double f=PyFloat_AsDouble(result);
         Py_DECREF(result);
         return (float)f;
-    }    
+    }
 };
 
 
@@ -97,7 +104,7 @@ public:
     PSymMatrix distances; //P SymMatrix that holds the original real distances
     PSymMatrix projectedDistances; //P SymMatrix that holds the projected distances
     PSymMatrix stress;    //P SymMatrix that holds the pointwise stress values
-    PFloatListList points;    //P holds the current projected point configuration
+    PFloatListList points;    //P Holds the current projected point configuration
     PProgressCallback progressCallback; //P progressCallback function
     bool freshD;    //PR
     float avgStress;   //PR
@@ -106,7 +113,7 @@ public:
 
     TMDS(PSymMatrix matrix, int dim);
     TMDS(){};
-    void SMACOFstep();  
+    void SMACOFstep();
     void getDistances();
     float getStress(PStressFunc fun);
 	void optimize(int numIter, PStressFunc fun, float eps=1e-3);

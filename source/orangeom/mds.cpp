@@ -31,16 +31,16 @@ TMDS::TMDS(PSymMatrix matrix, int dim=2){
 void TMDS::SMACOFstep(){
     PSymMatrix R = mlnew TSymMatrix(n);
     getDistances();
-    float sum=0, s, t;
+    double sum=0, s, t;
     for(int i=0;i<n;i++){
         sum=0;
         for(int j=0;j<n;j++){
             if(j==i)
                 continue;
-            if(projectedDistances->getitem(i,j)>1e-6)
-                s=1.0/projectedDistances->getitem(i,j);
-            else
-                s=0.0;
+            //if(projectedDistances->getitem(i,j)>1e-6)
+                s=1.0/MMAX((double)projectedDistances->getitem(i,j),1e-6);
+            //else
+            //    s=0.0;
             t=distances->getitem(i,j)*s;
             R->getref(i,j)=-t;
             sum+=t;
@@ -84,7 +84,7 @@ float TMDS::getStress(PStressFunc fun){
 	float s=0, total=0;
 	if(!fun)
 		return 0.0;
-	cout<<"getStress"<<endl;
+	//cout<<"getStress"<<endl;
 	for(int i=0; i<n; i++){
 		for(int j=0; j<n; j++){
             s=fun->operator()(projectedDistances->getitem(i,j), distances->getitem(i,j));
@@ -95,7 +95,7 @@ float TMDS::getStress(PStressFunc fun){
         stress->getref(i,i)=0;
 	}
 	avgStress=total/(n*n);
-	cout<<"avg. stress: "<<avgStress<<endl;
+	//cout<<"avg. stress: "<<avgStress<<endl;
 	return avgStress;
 }
 
@@ -112,7 +112,7 @@ void TMDS::optimize(int numIter, PStressFunc fun, float eps){
 		if(fabs(oldStress-stress)<oldStress*eps)
 			break;
 		if(progressCallback)
-			if(!progressCallback->call(float(numIter)/float(iter)))
+			if(!progressCallback->call(float(iter)/float(numIter)))
 				break;
 		oldStress=stress;
 	}
