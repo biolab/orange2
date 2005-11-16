@@ -1,5 +1,5 @@
 import orange
-import orangemds
+import orangeom as orangemds
 from math import *
 from Numeric import *
 from LinearAlgebra import *
@@ -9,8 +9,8 @@ SammonStress=orangemds.SammonStress()
 SgnSammonStress=orangemds.SgnSammonStress()
 SgnRelStress=orangemds.SgnRelStress()
 
-PointList=orangemds.FloatListList
-FloatListList=orangemds.FloatListList
+PointList=orange.FloatListList
+FloatListList=orange.FloatListList
 
 def _mycompare((a,aa),(b,bb)):
     if a==b:
@@ -85,7 +85,7 @@ class MDS:
         Lt = take(L,idx)   # take those singular values
         Ut = take(U,idx,1) # take those columns that are enabled
         Dt = identity(self.dim)*sqrt(Lt)  # make a diagonal matrix, with squarooted values
-        self.points = orangemds.FloatListList(matrixmultiply(Ut,Dt))
+        self.points = orange.FloatListList(matrixmultiply(Ut,Dt))
         self.freshD = 0
         
 #        D = identity(self.n)*sqrt(L)  # make a diagonal matrix, with squarooted values
@@ -151,7 +151,7 @@ class MDS:
         sum = 0.0
         for i in d:
             sum += i[2]*i[2]*i[1]
-        f = sqrt(distnorm/sum)
+        f = sqrt(distnorm/max(sum,1e-6))
         # transform O
         k = 0
         for i in d:
