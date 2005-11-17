@@ -2,7 +2,7 @@
 <name>MDS</name>
 <description>Multi dimensional scaling</description>
 <icon>MDS.png</icon>
-<contact>Ales Erjavec (ales.erjavec324(@at@)email.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>5000</priority>
 """
 
@@ -66,7 +66,8 @@ class OWMDS(OWWidget):
         self.sizeCombo=OWGUI.comboBox(graph, self, "graph.SizeAttr", box="Size", callback=self.graph.updateData)
         self.shapeCombo=OWGUI.comboBox(graph, self, "graph.ShapeAttr", box="Shape", callback=self.graph.updateData)
         self.nameCombo=OWGUI.comboBox(graph, self, "graph.NameAttr", box="Label", callback=self.graph.updateData)
-        OWGUI.spin(graph, self, "graph.NumStressLines", label="Number of stress lines", min=0, max=1000, callback=self.graph.updateLines)
+        OWGUI.checkWithSpin(graph, self, checked="graph.ShowStress", value="graph.NumStressLines",label="Show", min=0, max=1000,
+                            posttext="lines",spinCallback=self.graph.updateLines, checkCallback=self.graph.updateData)
 
         self.zoomToolbar=OWToolbars.ZoomSelectToolbar(self, graph, self.graph, self.autoSendSelection)
         self.connect(self.zoomToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
@@ -403,7 +404,7 @@ class MDSGraph(OWGraph):
         self.SizeAttr=0
         self.ShapeAttr=0
         self.NameAttr=0
-        self.ShowStress=True
+        self.ShowStress=False
         self.NumStressLines=10
         self.ShowName=True
         self.curveKeys=[]
@@ -439,7 +440,8 @@ class MDSGraph(OWGraph):
         if self.mds:
             self.clear()
             self.setPoints()
-            self.setLines(True)
+            if self.ShowStress:
+                self.setLines(True)
         for axis in [QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight]:
             self.setAxisAutoScale(axis)
         self.updateAxes()
@@ -470,7 +472,7 @@ class MDSGraph(OWGraph):
                 else:
                     dict[c.hsv()]=[i]
             for color in set:
-                print len(dict[color.hsv()]), color.name()
+                #print len(dict[color.hsv()]), color.name()
                 X=[self.mds.points[i][0] for i in dict[color.hsv()]]
                 Y=[self.mds.points[i][1] for i in dict[color.hsv()]]
                 self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y)
