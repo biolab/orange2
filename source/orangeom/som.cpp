@@ -8,6 +8,7 @@ DEFINE_TOrangeVector_classDescription(PSOMNode, "TSOMNodeList", true, ORANGEOM_A
 struct entries* examplesToEntries(PExampleTable ex){
 	struct entries *data;
 	data=alloc_entries();
+	data->fi=NULL;
     if(!data)
         raiseError("SOM_PAK alloc_entries error");
     data->dimension=ex->domain->attributes->size();
@@ -91,6 +92,7 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     params.alpha_type=type->id;
     params.alpha_func=(ALPHA_FUNC*)type->data;
     codes=randinit_codes(data, topology, neighborhood, xDim, yDim);
+	codes->fi=NULL;
     set_teach_params(&params, codes, NULL, 0);
     set_som_params(&params);
     params.data=data;
