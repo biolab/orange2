@@ -495,11 +495,11 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
                 if redraw: self.replot()
             else:
                 if self.selectedAnchorIndex != None:
-                    if self.radvizWidget.restrain == 1:
+                    if self.radvizWidget.freeVizDlg.restrain == 1:
                         rad = sqrt(xFloat**2 + yFloat**2)
                         xFloat /= rad
                         yFloat /= rad
-                    elif self.radvizWidget.restrain == 2:
+                    elif self.radvizWidget.freeVizDlg.restrain == 2:
                         rad = sqrt(xFloat**2 + yFloat**2)
                         phi = 2 * self.selectedAnchorIndex * math.pi / len(self.anchorData)
                         xFloat = rad * cos(phi)
