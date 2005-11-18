@@ -15,7 +15,7 @@ from OWWidget import *
 import sys
 
 class OWRegressionTree(OWWidget):
-    settingsList=["Name","MinInstCheck", "MinInstVal", "MinNodeCheck", "MinNodeVal,"
+    settingsList=["Name","MinInstCheck", "MinInstVal", "MinNodeCheck", "MinNodeVal",
                   "MaxMajCheck", "MaxMajVal", "PostMaj", "PostMPCheck", "PostMPVal", "Bin"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):

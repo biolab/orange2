@@ -14,7 +14,7 @@ from OWWidget import *
 import OWGUI
 
 class OWContinuize(OWWidget):
-    settingsList = ["multinomialTreatment", "classTreatment", "zeroBased", "normalizeContinuous", "autosend"]
+    settingsList = ["multinomialTreatment", "classTreatment", "zeroBased", "continuousTreatment", "autosend"]
     
     multinomialTreats = (("Target or First value as base", orange.DomainContinuizer.LowestIsBase),
                          ("Most frequent value as base", orange.DomainContinuizer.FrequentIsBase),

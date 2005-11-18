@@ -31,7 +31,7 @@ except:
 
 class OWMDS(OWWidget):
     settingsList=["graph.ColorAttr", "graph.SizeAttr", "graph.ShapeAttr", "graph.NameAttr", "graph.ShowStress", "graph.NumStressLines", "graph.ShowName",
-                  "StressFunc", "graph.LineStyle", "toolbarSelection", "autoSendSelection", "selectionOptions", "computeStress"]
+                  "StressFunc", "toolbarSelection", "autoSendSelection", "selectionOptions", "computeStress"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None, name="Multi Dimensional Scaling"):
         OWWidget.__init__(self, parent, signalManager, name)
