@@ -280,8 +280,6 @@ SOURCE=.\som.cpp
 
 !IF  "$(CFG)" == "orangeom - Win32 Release"
 
-# PROP Exclude_From_Build 1
-
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
 
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"

@@ -1,5 +1,6 @@
 #include "orange_api.hpp"
 #include "examplegen.hpp"
+#include "symmatrix.hpp"
 #include "pnn.hpp"
 #include "../orange/px/externs.px"
 
@@ -17,9 +18,10 @@ typedef struct {double x, y; } TPoint;
 
    INPUT:
      scaledData:    scaledData from the graph (continuous attribute values - no missing!)
-     pyclasses:     class for each example in 'scaledData'
+     pyclasses:     class for each example in 'scaledData', or SymMatrix
      anchors:       anchor positions (Python list of lists with 2 or 3 elements)
      pyattrIndices: indices of attributes to be used
+     contClass      0=discrete, 1=continuous, 2=no class, MDS
 
      scaledData and pyclasses must be of same length, and anchors and pyattrIndices also.
      scaledData can have more attributes than the length of anchors; pyattrIndices says which are chosen
@@ -33,22 +35,40 @@ typedef struct {double x, y; } TPoint;
      classes        for discrete classes, this is an (int *) with indices of class groups in X;
                        therefore, the length of classes equals the number of classes+1
                     for continuous, it contains the class values
+                    for MDS, it will return a pointer to symmatrix
+                    IMPORTANT: 'classes' should be freed by the caller for discrete and continuous,
+                               but mustn't be freed for MDS
      anc            anchor coordinates
      ll             anchor labels (stored for when the anchor list needs to be reconstructed)
      minClass       the minimal value encountered (for continuous only)
      maxClass       for continuous classes it is the maximal value, for discrete it is the number of classes-1
 */
 
-bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors, PyObject *pyattrIndices,
-                    int &nAttrs, int &nExamples, int &contClass,
+bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors, PyObject *pyattrIndices, int &contClass,
+                    int &nAttrs, int &nExamples,
                     double *&X, int *&classes, TPoint *&anc, PyObject **&ll,
                     double &minClass, double &maxClass)
 {
-  if (!PyList_Check(scaledData) || !PyList_Check(pyclasses) || !PyList_Check(anchors))
-    PYERROR(PyExc_TypeError, "scaled data, classes and anchors should be given a lists", false);
+  if (!PyList_Check(scaledData) || !PyList_Check(anchors))
+    PYERROR(PyExc_TypeError, "scaled data and anchors should be given as lists", false);
 
-  if (PyList_Size(scaledData) != PyList_Size(pyclasses))
-    PYERROR(PyExc_TypeError, "'scaledData' and 'classes' have different lengths", false);
+  if (contClass < 2) {
+    if (!PyList_Check(pyclasses))
+      PYERROR(PyExc_TypeError, "classes should be given as a list", false);
+
+    if (PyList_Size(scaledData) != PyList_Size(pyclasses))
+      PYERROR(PyExc_TypeError, "'scaledData' and 'classes' have different lengths", false);
+  }
+
+  else {
+    if (!PyOrSymMatrix_Check(pyclasses))
+      PYERROR(PyExc_TypeError, "distance matrix should be given as a SymMatrix", false);
+
+    TSymMatrix *&distances = (TSymMatrix *&)classes;
+    distances = PyOrange_AsSymMatrix(pyclasses).getUnwrappedPtr();
+    if (distances->dim != PyList_Size(scaledData))
+      PYERROR(PyExc_TypeError, "the number of examples mismatches the distance matrix size", false);
+  }
 
   if (PyList_Size(anchors) != PyList_Size(pyattrIndices))
     PYERROR(PyExc_TypeError, "'anchors' and 'attrIndices' have different lengths", false);
@@ -57,9 +77,11 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
   nExamples = PyList_Size(scaledData);
 
   X = (double *)malloc(nExamples * nAttrs * sizeof(double));
-  classes = (int *)malloc(nExamples * (contClass ? sizeof(double) : sizeof(int)));
   anc = (TPoint *)malloc(nAttrs * sizeof(TPoint));
   ll = (PyObject **)malloc(nAttrs * sizeof(PyObject *));
+
+  if (contClass < 2)
+    classes = (int *)malloc(nExamples * (contClass ? sizeof(double) : sizeof(int)));
 
   // indices of the chosen attributes
   int *aii, *attrIndices = (int *)malloc(nAttrs * sizeof(int)), *aie = attrIndices + nAttrs;
@@ -74,20 +96,8 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
     *aii = PyInt_AsLong(PyList_GetItem(pyattrIndices, i));
   }
 
-  if (contClass) {
-    // read the classes
-    double *dclassesi;
-    for(dclassesi = (double *)classes, i = 0; i < nExamples; *dclassesi++ = PyFloat_AsDouble(PyList_GetItem(pyclasses, i++)));
 
-    // read the attribute values
-    for(Xi = X, i = 0; i < nExamples; i++) {
-      PyObject *ex = PyList_GetItem(scaledData, i);
-      for(aii = attrIndices; aii < aie; aii++)
-        *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
-    }
-  }
-
-  else {
+  if (contClass == 0) {
     // read the classes
     int *classesi, *classese;
     int maxCls = 0;
@@ -120,6 +130,22 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
     classes = rcls;
   }
 
+
+  else if (contClass == 1) {
+    // read the classes
+    double *dclassesi;
+    for(dclassesi = (double *)classes, i = 0; i < nExamples; *dclassesi++ = PyFloat_AsDouble(PyList_GetItem(pyclasses, i++)));
+
+    // read the attribute values
+    for(Xi = X, i = 0; i < nExamples; i++) {
+      PyObject *ex = PyList_GetItem(scaledData, i);
+      for(aii = attrIndices; aii < aie; aii++)
+        *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
+    }
+  }
+
+  // nothing to do if contClass == 2 - we have already set the classes to symmatrix above
+
   // we don't need and don't return this
   free(attrIndices);
 
@@ -148,7 +174,6 @@ void symmetricTransformation(TPoint *anc, TPoint *ance, bool mirrorSymmetry)
 
 
 /* Computes forces for continuous class
-   UNTESTED! DOESN'T USE THE LAW!
 
    INPUT:
      pts           projections of examples
@@ -189,11 +214,11 @@ void computeForcesContinuous(TPoint *pts, const TPoint *ptse, const double *clas
           fct /=  (exp(r2/sigma2) - 1);
       }
 
-      const double druvx = - dx * fct;
+      const double druvx = dx * fct;
       Fi->x  += druvx;
       Fi2->x -= druvx;
 
-      const double druvy = - dy * fct;
+      const double druvy = dy * fct;
       Fi->y  += druvy;
       Fi2->y -= druvy;
     }
@@ -254,11 +279,11 @@ void computeForcesDiscrete(TPoint *pts, const TPoint *ptse, const int *classes,
             const double dy = ptsi->y - ptsi2->y;
             const double r = sqrt(sqr(dx) + sqr(dy));
 
-            const double druvx = dx * r;
+            const double druvx = - dx * r;
             Fai->x  += druvx;
             Fai2->x -= druvx;
 
-            const double druvy = dy * r;
+            const double druvy = - dy * r;
             Fai->y  += druvy;
             Fai2->y -= druvy;
           }
@@ -305,11 +330,11 @@ void computeForcesDiscrete(TPoint *pts, const TPoint *ptse, const int *classes,
               fct = 1 / (exp(r2/sigma2) - 1);
           }
 
-          const double druvx = - dx * fct;
+          const double druvx = dx * fct;
           Fri->x  += druvx;
           Fri2->x -= druvx;
 
-          const double druvy = - dy * fct;
+          const double druvy = dy * fct;
           Fri->y  += druvy;
           Fri2->y -= druvy;
         }
@@ -345,6 +370,55 @@ void computeForcesDiscrete(TPoint *pts, const TPoint *ptse, const int *classes,
 
 
 
+
+
+/* Computes forces for MDS-like FreeViz
+   ALWAYS OPTIMIZES THE CLASSIC MDS STRESS REGARDLESS OF LAW
+
+   INPUT:
+     pts           projections of examples
+     distances     a distance matrix
+     nExamples     number of examples (the length of above arrays and of Fr)
+     law           0=Linear, 1=Square, 2=Gaussian
+     sigma2        sigma**2 for Gaussian law
+
+   OUTPUT:
+     F            forces acting on each example (memory should be allocated by the caller!)
+*/
+
+void computeForcesMDS(TPoint *pts, const TPoint *ptse, TSymMatrix *distances, 
+                      const int &law, const double &sigma2,
+                      TPoint *F)
+{
+  TPoint *Fi, *Fi2, *ptsi, *ptsi2;
+  float *edistances = distances->elements;
+ 
+  for(ptsi = pts, Fi = F; ptsi != ptse; ptsi++, Fi++, edistances++ /* skip diagonal */) {
+    Fi->x = Fi-> y = 0.0;
+    for(ptsi2 = pts, Fi2 = F; ptsi2 != ptsi; ptsi2++, edistances++, Fi2++) {
+
+      const double dx = ptsi->x - ptsi2->x;
+      const double dy = ptsi->y - ptsi2->y;
+      double r2 = sqr(dx) + sqr(dy);
+      if (r2 < 1e-20)
+        continue;
+
+      double fct;
+      const double r = sqrt(r2);
+      fct = (*edistances - r) /* / (*edistances > 1e-3 ? *edistances : 1e-3) */;
+
+      const double druvx = dx * fct;
+      Fi->x  += druvx;
+      Fi2->x -= druvx;
+
+      const double druvy = dy * fct;
+      Fi->y  += druvy;
+      Fi2->y -= druvy;
+    }
+  }
+}
+
+
      
 PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, law=InverseLinear, steps=1, normalizeExamples=1]) -> new-anchors")
 {
@@ -368,7 +442,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     double minClass, maxClass; // minimal and maximal class values (for cont), #classes+1 (for disc)
 
     // convert the examples, classes and anchors from Python lists
-    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
+    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, contClass, nAttrs, nExamples, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
     ance = anc + nAttrs;
 
@@ -420,12 +494,17 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
       }
 
 
-      // Compute the forces
-      if (contClass)
-        computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
-      else
-        computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
-
+      switch (contClass) {
+        case 0:
+          computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
+          break;
+        case 1:
+          computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
+          break;
+        case 2:
+          computeForcesMDS(pts, ptse, (TSymMatrix *)classes, law, sigma2, Fa);
+          break;
+      };
 
       // Normalize forces if needed (why?! instead of dividing each *Xi?)
       if (normalizeExamples)
@@ -441,8 +520,8 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
       for(Fai = Fa, Xi = X; Fai != Fae; Fai++) {            // loop over examples
         for(danci = danc; danci != dance; danci++, Xi++) {  // loop over anchors
-          danci->x -= Fai->x * *Xi;
-          danci->y -= Fai->y * *Xi;
+          danci->x += Fai->x * *Xi;
+          danci->y += Fai->y * *Xi;
         }
       }
 
@@ -509,9 +588,10 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
       PyList_SetItem(anchors, i, *lli ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
       
     free(X);
-    free(classes);
     free(anc);
     free(ll);
+    if (contClass < 2)
+      free(classes);
 
     free(danc);
     free(pts);
@@ -548,7 +628,7 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
     double minClass, maxClass; // minimal and maximal class values (for cont), #classes+1 (for disc)
 
     // convert the examples, classes and anchors from Python lists
-    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
+    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, contClass, nAttrs, nExamples, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
     ance = anc + nAttrs;
 
@@ -594,14 +674,17 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
         }
       }
 
-
-
-      // Compute the forces
-      if (contClass)
-        computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
-      else
-        computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing!=0, Fa, Fr);
-
+      switch (contClass) {
+        case 0:
+          computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
+          break;
+        case 1:
+          computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
+          break;
+        case 2:
+          computeForcesMDS(pts, ptse, (TSymMatrix *)classes, law, sigma2, Fa);
+          break;
+      };
 
       // Normalize forces if needed (why?! instead of dividing each *Xi?)
       if (normalizeExamples)
@@ -616,7 +699,7 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
 
       for(Fai = Fa, Xi = X; Fai != Fae; Fai++)                                 // loop over examples
         for(dphii = dphi, anci = anc; dphii != dphie; dphii++, Xi++, anci++)   // loop over anchors
-          *dphii -= *Xi * (Fai->y * anci->x - Fai->x * anci->y);
+          *dphii += *Xi * (Fai->y * anci->x - Fai->x * anci->y);
 
 
       // Scale the changes - normalize the jumps
@@ -641,9 +724,10 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
       PyList_SetItem(anchors, i, *lli ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
       
     free(X);
-    free(classes);
     free(anc);
     free(ll);
+    if (contClass < 2)
+      free(classes);
 
     free(dphi);
     free(pts);
@@ -669,7 +753,10 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
            contClass = 0,               dynamicBalancing = 0,   mirrorSymmetry = 0;
 
     static char *kwlist[] = {"scaledData", "classes", "anchors", "attrIndices", "attractG", "repelG", "law", "sigma2", "dynamicBalancing", "steps", "normalizeExamples", "contClass", "mirrorSymmetry", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, keywords, "OOOO|ddidiiiii:optimizeAnchors", kwlist, &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &sigma2, &dynamicBalancing, &steps, &normalizeExamples, &contClass, &mirrorSymmetry))
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, "OOOO|ddidiiiii:optimizeAnchors", kwlist,
+                                         &scaledData, &pyclasses, &anchors, &pyattrIndices,
+                                         &attractG, &repelG, &law, &sigma2, &dynamicBalancing,
+                                         &steps, &normalizeExamples, &contClass, &mirrorSymmetry))
       return NULL;
 
 
@@ -681,7 +768,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
     double minClass, maxClass; // minimal and maximal class values (for cont), #classes+1 (for disc)
 
     // convert the examples, classes and anchors from Python lists
-    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
+    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, contClass, nAttrs, nExamples, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
     ance = anc + nAttrs;
 
@@ -732,13 +819,17 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
         }
       }
 
-
-      // Compute the forces
-      if (contClass)
-        computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
-      else
-        computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
-
+      switch (contClass) {
+        case 0:
+          computeForcesDiscrete(pts, ptse, classes, law, sigma2, attractG, repelG, dynamicBalancing != 0, Fa, Fr);
+          break;
+        case 1:
+          computeForcesContinuous(pts, ptse, (double *)classes, law, sigma2, Fa);
+          break;
+        case 2:
+          computeForcesMDS(pts, ptse, (TSymMatrix *)classes, law, sigma2, Fa);
+          break;
+      };
 
       // Normalize forces if needed (why?! instead of dividing each *Xi?)
       if (normalizeExamples)
@@ -753,7 +844,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
 
       for(Fai = Fa, Xi = X; Fai != Fae; Fai++)                                 // loop over examples
         for(dri = dr, anci = anc; dri != dre; dri++, anci++, Xi++)             // loop over anchors
-          *dri -= *Xi * (Fai->x * anc->x + Fai->y * anci->y);
+          *dri += *Xi * (Fai->x * anc->x + Fai->y * anci->y);
 
       double scaling = 1e10;
       for(anci = anc, dri = dr; dri != dre; anci++, dri++) {
@@ -794,9 +885,10 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
       PyList_SetItem(anchors, i, *lli ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
 
     free(X);
-    free(classes);
     free(anc);
     free(ll);
+    if (contClass < 2)
+      free(classes);
 
     free(pts);
     free(rad);
@@ -983,273 +1075,3 @@ PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(
 
   PyCATCH
 }
-
-
-
-
-
-bool loadRadvizData(PyObject *scaledData, PyObject *anchors, PyObject *pyattrIndices,
-                    int &nAttrs, int &nExamples,
-                    double *&X, TPoint *&anc, PyObject **&ll)
-{
-  if (!PyList_Check(scaledData) || !PyList_Check(anchors))
-    PYERROR(PyExc_TypeError, "scaled data and anchors should be given a lists", false);
-
-  nAttrs = PyList_Size(anchors);
-  nExamples = PyList_Size(scaledData);
-
-  X = (double *)malloc(nExamples * nAttrs * sizeof(double));
-  anc = (TPoint *)malloc(nAttrs * sizeof(TPoint));
-  ll = (PyObject **)malloc(nAttrs * sizeof(PyObject *));
-
-  int *aii, *attrIndices = (int *)malloc(nAttrs * sizeof(int)), *aie = attrIndices + nAttrs;
-  TPoint *anci;
-  PyObject **lli;
-  double *Xi;
-  int i;
-   
-  for(anci = anc, aii = attrIndices, lli = ll, i = 0; i < nAttrs; i++, anci++, aii++, lli++) {
-    *lli = NULL;
-    PyArg_ParseTuple(PyList_GetItem(anchors, i), "dd|O", &anci->x, &anci->y, lli);
-    *aii = PyInt_AsLong(PyList_GetItem(pyattrIndices, i));
-  }
-
-  for(Xi = X, i = 0; i < nExamples; i++) {
-    PyObject *ex = PyList_GetItem(scaledData, i);
-    for(aii = attrIndices; aii < aie; aii++)
-      *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
-  }
-
-  free(attrIndices);
-  return true;
-}
-
-
-#include "symmatrix.hpp"
-
-PyObject *MDSA(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(various)")
-{
-  PyTRY
-    PyObject *scaledData;
-    PyObject *anchors;
-    PyObject *pyattrIndices;
-    PSymMatrix distances;
-    int steps = 1;
-    int normalizeExamples = 1;
-
-    if (!PyArg_ParseTuple(args, "OOOO&|ii:MDSa", &scaledData, &anchors, &pyattrIndices, cc_SymMatrix, &distances, &steps, &normalizeExamples))
-      return NULL;
-
-    double *Xi, *X;
-    TPoint *anci, *anc, *ance;
-    PyObject **lli, **ll;
-    int nAttrs, nExamples;
-
-    if (!loadRadvizData(scaledData, anchors, pyattrIndices, nAttrs, nExamples, X, anc, ll))
-      return PYNULL;
-
-    ance = anc + nAttrs;
-
-    int i;
-    double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
-    TPoint *danci, *danc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *dance = danc + nAttrs;
-    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples, *ptsi2;
-    double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
-    TPoint *Fi, *F = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fe = F + nExamples, *Fi2;
-
-    while (steps--) {
-      if (normalizeExamples) {
-        for(anci = anc, radi = rad; anci != ance; anci++, radi++)
-          *radi = sqrt(sqr(anci->x) + sqr(anci->y));
-      }
-
-      for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
-        ptsi->x = ptsi->y = *sumi = 0.0;
-        for(anci = anc, radi = rad; anci != ance; anci++, Xi++, radi++) {
-          ptsi->x += *Xi * anci->x;
-          ptsi->y += *Xi * anci->y;
-          if (normalizeExamples)
-            *sumi += *Xi * *radi;
-        }
-        if (normalizeExamples)
-          if (*sumi != 0.0) {
-            ptsi->x /= *sumi;
-            ptsi->y /= *sumi;
-          }
-          else
-            *sumi = 1.0; // we also use *sumi later
-      }
-
-                     
-      for(Fi = F; Fi != Fe; Fi++)
-        Fi->x = Fi-> y = 0.0;
-
-      for(danci = danc; danci != dance; danci++)
-        danci->x = danci->y = 0.0;
-
-      float *edistances = distances->elements;
-
-      for(ptsi = pts, Fi = F; ptsi != ptse; ptsi++, Fi++, edistances++ /* skip diagonal */) {
-        for(ptsi2 = pts, Fi2 = F; ptsi2 != ptsi; ptsi2++, edistances++, Fi2++) {
-            const double dx = ptsi->x - ptsi2->x;
-            const double dy = ptsi->y - ptsi2->y;
-            double dist = sqrt(sqr(dx) + sqr(dy));
-            if (dist < 1e-20)
-              continue;
-
-            double fx = dx / dist;
-            double fy = dy / dist;
-            if (dist < 1e-10)
-              dist = 1e-10;
-
-            double F = dist - *edistances;
-//            const int sign = F > 0 ? 1 : -1;
-//            F *= fabs(F);
-//            printf("F%5.3f %f", F, *edistances);
-            const double Fx = F * fx;
-            const double Fy = F * fy;
-            Fi->x += Fx;
-            Fi->y += Fy;
-            Fi2->x -= Fx;
-            Fi2->y -= Fy;
-        }
-      }
-
-      if (normalizeExamples) {
-        for(Fi = F, sumi = sum, Xi = X; Fi != Fe; Fi++, sumi++) {
-          Fi->x /= *sumi;
-          Fi->y /= *sumi;
-          for(danci = danc; danci != dance; danci++, Xi++) {
-            danci->x -= Fi->x * *Xi;
-            danci->y -= Fi->y * *Xi;
-          }
-        }
-      }
-
-      else {
-        for(Fi = F, Xi = X; Fi != Fe; Fi++) {
-          for(danci = danc; danci != dance; danci++, Xi++) {
-            danci->x -= Fi->x * *Xi;
-            danci->y -= Fi->y * *Xi;
-          }
-        }
-      }
-
-  // Scale the changes - normalize the jumps
-      double scaling = 1e10;
-      for(anci = anc, danci = danc; danci != dance; anci++, danci++) {
-        double maxdr = 0.1 * sqrt(sqr(anci->x) + sqr(anci->y));
-        double dr = sqrt(sqr(danci->x) + sqr(danci->y));
-        if ((maxdr > 1e-5) && (dr > 1e-5)) {
-          if (scaling * dr > maxdr)
-            scaling = maxdr / dr;
-        }
-      }
-
-      for(danci = danc; danci != dance; danci++) {
-        danci->x *= scaling;
-        danci->y *= scaling;
-      }
-
-
-  // Move anchors
-      for(anci = anc, danci = danc; danci != dance; danci++, anci++) {
-        anci->x += danci->x;
-        anci->y += danci->y;
-      }
-
- 
-  //Centering
-      double aax = 0.0, aay = 0.0;
-      for(anci = anc; anci != ance; anci++) {
-        aax += anci->x;
-        aay += anci->y;
-      }
-
-      aax /= nAttrs;
-      aay /= nAttrs;
-
-      for(anci = anc; anci != ance; anci++) {
-        anci->x -= aax;
-        anci->y -= aay;
-      }
-
-   // Scaling, rotating and mirroring
-
-      // find the largest and the second largest not collocated with the largest
-      double maxr = 0.0, maxr2 = 0.0;
-      TPoint *anci_l = NULL, *anci_l2 = NULL;
-/*      for(anci = anc; anci != ance; anci++) {
-        const double r = sqr(anci->x) + sqr(anci->y);
-        if (r > maxr) {
-          maxr2 = maxr;
-          anci_l2 = anci_l;
-          maxr = r;
-          anci_l = anci;
-        }
-        else if ((r > maxr2) && ((anci->x != anci_l->x) || (anci->y != anci_l->y))) {
-          maxr2 = r;
-          anci_l2 = anci;
-        }
-      }
-*/
-      for(anci = anc; anci != ance; anci++) {
-        const double r = sqr(anci->x) + sqr(anci->y);
-        if (r > maxr) {
-          maxr = r;
-          anci_l = anci;
-        }
-      }
-      anci_l = anc;
-      anci_l2 = anc+1;
-
-      if (anci_l2) {
-        maxr = maxr > 0.0 ? sqrt(maxr) : 1.0;
-
-        double phi = atan2(anci_l->y, anci_l->x);
-        double phi2 = atan2(anci_l2->y, anci_l2->x);
-
-        // disabled to avoid the flips
-        // int sign = (phi2>phi) && (phi2-phi < 3.1419265) ? 1 : -1;
-        int sign = 1;
-
-        double dphi = 3.1419265/2.0 - phi;
-        double cs = cos(dphi)/maxr, sn = sin(dphi)/maxr;
-
-        for(anci = anc; anci != ance; anci++) {
-          const double tx = anci->x * cs - anci->y * sn;
-          anci->y = anci->x * sn + anci->y * cs;
-          anci->x = sign * tx;
-        }
-      }
-    }
-
-    anchors = PyList_New(nAttrs);
-    for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
-      PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
-      
-
-    for(anci = anc, radi = rad; anci != ance; anci++, radi++)
-      *radi = sqrt(sqr(anci->x) + sqr(anci->y));
-
-    for(sumi = sum, Xi = X; sumi != sume; sumi++) {
-      *sumi = 0.0;
-      for(radi = rad, i = nAttrs; i--; *sumi += *Xi++ * *radi++);
-      if (*sumi == 0.0)
-        *sumi = 1.0;
-    }
-
-    free(anc);
-    free(danc);
-    free(pts);
-    free(ll);
-    free(X);
-    free(sum);
-    free(F);
-    free(rad);
-
-    return Py_BuildValue("Od", anchors, 0);
-      
-  PyCATCH;
-}
-
