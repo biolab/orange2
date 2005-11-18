@@ -33,7 +33,7 @@
 >>> domain = data.domain
 >>> for attr in domain:
 ...    print attr.name, attr.values
-...    
+...
 age <young, pre-presbyopic, presbyopic>
 prescription <myope, hypermetrope>
 astigmatic <no, yes>
@@ -187,7 +187,7 @@ young
 
 <P>For contrast from ordinary attributes, examples from the same domain (or even the same <CODE>ExampleTable</CODE>) can have varying number of meta-values. Ordinary attributes are addressed by positions (eg <CODE>example[0]</CODE> is the first and <CODE>example[4]</CODE> is the fifth value in the example). Meta-attributes are addressed by id's; id's are really negative integers, but you should see them as "keys". An example can have any number of meta-values with distinct id's. Domain descriptor can, but doesn't need to know about them.</P>
 
-<P>Id's are "created" by function <CODE>orange.newmetaid()</CODE>. (The function uses a very elaborate procedure for generating unique negative integers; the procedure might reveal itself only to brightest minds if they make a few calls to the function and carefully observe the returned values.) So, if you want to assign meta-values to examples, you need to obtain an id from <CODE>orange.newmetaid()</CODE>; afterwards, you can use it on any examples you want.</P>
+<P>Id's are "created" by function <CODE>orange.newmetaid()</CODE>. (The function uses a very elaborate procedure for generating unique negative integers; the procedure might reveal itself only to the brightest if they make a few calls to the function and carefully observe the returned values.) So, if you want to assign meta-values to examples, you need to obtain an id from <CODE>orange.newmetaid()</CODE>; afterwards, you can use it on any examples you want.</P>
 
 <P>Meta-values can also be loaded from files in tab-delimited or Excel format. In this case, you only need to know the names of corresponding meta-attributes; id's and stuff will be taken care of while loading the data. See documentation on <a href="fileformats.htm">file format</A>.</P>
 
@@ -296,6 +296,8 @@ TypeError: cannot convert 'yes' to a value of an unknown attribute
 <DT>setmeta(value), getmeta()</DT>
 <DD>Obsolete functions for setting and getting meta-values.</DD>
 
+<DT>hasmeta(id | attribute-descriptor | name)</DT>
+<DD>Returns True if the example has the meta-attribute.</DD>
 
 <DT>removemeta(id | attribute-descriptor | name)</DT>
 <DD>Removes a meta-value. To use an attribute-descriptor or name, the corresponding attribute must be registered.</DD>
