@@ -5,10 +5,15 @@ chmod +x linux/compileRegress.sh
 
 # prepare sources
 cd /home/orange/daily
+rm *.log
 rm -Rf orange
 rm -Rf test_install
 cvs -Q -d :pserver:cvso@estelle.fri.uni-lj.si:/cvs checkout -d orange orange
-cvs -Q -d :pserver:cvso@estelle.fri.uni-lj.si:/cvs checkout -d orange/source source
+mkdir orange
+mkdir orange/source
+cd orange
+cvs -Q -d :pserver:cvso@estelle.fri.uni-lj.si:/cvs checkout -d source source
+cd ..
 cp /home/orange/install-scripts/linux/setup.py /home/orange/daily/orange
 
 # build

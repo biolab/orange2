@@ -15,7 +15,11 @@ echo
 rm -Rf orange
 rm -Rf orange/source
 cvs -q -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS checkout -r $TAG -f orange
-cvs -q -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS checkout -r $TAG -f -d orange/source source
+mkdir orange
+mkdir orange/source
+cd orange
+cvs -q -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS checkout -r $TAG -f -d source source
+cd ..
 
 START_WD=`pwd`
 cd orange
