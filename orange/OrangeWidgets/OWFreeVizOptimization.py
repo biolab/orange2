@@ -56,9 +56,12 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         
         self.MainTab = QVGroupBox(self)
         self.S2NHeuristicTab = QVGroupBox(self)
+        self.LinearTransformationTab = QVGroupBox(self)
         
         self.tabs.insertTab(self.MainTab, "Main")
-        self.tabs.insertTab(self.S2NHeuristicTab, "S2N Heuristic") 
+        self.tabs.insertTab(self.S2NHeuristicTab, "S2N Heuristic")
+        self.tabs.insertTab(self.LinearTransformationTab, "Linear Transform")
+        
 
         # ###########################
         # MAIN TAB
@@ -128,6 +131,11 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         OWGUI.comboBoxWithCaption(box, self, "s2nPlaceAttributes", "Attributes to place: ", tooltip = "Set the number of top ranked attributes to place. You can select a higher value than the actual number of attributes", items = self.attrsNum, callback = self.s2nMixAnchors, sendSelectedValue = 1, valueType = int)
         OWGUI.checkBox(box, self, 'autoSetParameters', 'Automatically find optimal parameters')
         self.s2nMixButton = OWGUI.button(box, self, "Place anchors", callback = self.s2nMixAnchorsAutoSet)        
+
+        # ##########################
+        # LINEAR TRANSFORMATION TAB
+        OWGUI.button(self.LinearTransformationTab, self, "Find The Best Linear Projection", callback = self.findLinearProjection)        
+
 
         # ###########################
         self.statusBar = QStatusBar(self)
@@ -377,6 +385,57 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         if setAttributeListInRadviz:
             self.parentWidget.setShownAttributeList(self.rawdata, attrNames)
         self.graph.updateData(attrNames)
+        self.graph.repaint()
+
+
+    def findLinearProjection(self):
+        import LinearAlgebra
+        
+        self.graph.normalizeExamples = 0
+        ai = self.graph.attributeNameIndex
+        attributes = self.getShownAttributeList()
+        attrIndices = [ai[label] for label in attributes]
+        validData = self.graph.getValidList(attrIndices)
+        selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
+        classData = Numeric.compress(validData, self.graph.noJitteringScaledData[ai[self.rawdata.domain.classVar.name]])
+        selectedData = Numeric.transpose(selectedData)
+        if len(attrIndices) > len(selectedData):
+            self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
+            return
+        
+        s = Numeric.sum(selectedData)/float(len(selectedData))  
+        selectedData -= s       # substract average value to get zero mean
+
+        #for i in range(len(attrIndices)):
+        #    self.graph.noJitteringScaledData[attrIndices[i]] -= s[i]
+
+        # define the Laplacian matrix
+        L = Numeric.zeros((len(selectedData), len(selectedData)))
+        for i in range(len(selectedData)):
+            for j in range(i+1, len(selectedData)):
+                L[i,j] = -(classData[i] != classData[j])
+                L[j,i] = -(classData[i] != classData[j])
+        
+        s = Numeric.sum(L)
+        for i in range(len(selectedData)):
+            L[i,i] = -s[i]
+        print L[0]
+
+        # compute selectedDataT * L * selectedData
+        matrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), L)
+        matrix = Numeric.matrixmultiply(matrix, selectedData)
+        vals, vectors = LinearAlgebra.eigenvectors(matrix)
+        firstInd  = list(vals).index(max(vals)); vals[firstInd] = -1   # save the index of the largest eigenvector
+        secondInd = list(vals).index(max(vals));                       # save the index of the second largest eigenvector
+
+        xAnchors = vectors[firstInd]
+        yAnchors = vectors[secondInd]
+
+        m = math.sqrt(max(xAnchors**2 + yAnchors**2))
+        xAnchors /= m
+        yAnchors /= m
+        self.graph.anchorData = [(xAnchors[i], yAnchors[i], attributes[i]) for i in range(len(attributes))]
+        self.graph.updateData()
         self.graph.repaint()
 
 
