@@ -247,7 +247,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.updateShownProjections()
 
     def classesListChanged(self):
-        results = self.allResults
+        results = self.results
         self.clearResults()
         
         self.selectedClasses = self.getSelectedClassValues()
@@ -301,7 +301,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         while i < self.resultList.count():
             qApp.processEvents()
             if self.existsABetterSimilarProjection(i):
-                self.allResults.pop(i)
+                self.results.pop(i)
                 self.shownResults.pop(i)
                 self.resultList.removeItem(i)
             else:
@@ -315,17 +315,17 @@ class OWVizRank(VizRank, OWBaseWidget):
         i = 0
         qApp.setOverrideCursor(QWidget.waitCursor)
 
-        while self.resultList.count() < self.resultListLen and i < len(self.allResults):
-            if self.attrLenDict[len(self.allResults[i][ATTR_LIST])] == 1:
+        while self.resultList.count() < self.resultListLen and i < len(self.results):
+            if self.attrLenDict[len(self.results[i][ATTR_LIST])] == 1:
                 string = ""
                 if self.showRank: string += str(i+1) + ". "
-                if self.showAccuracy: string += "%.2f" % (self.allResults[i][ACCURACY])
+                if self.showAccuracy: string += "%.2f" % (self.results[i][ACCURACY])
                 if not self.showInstances and self.showAccuracy: string += " : "
-                elif self.showInstances: string += " (%d) : " % (self.allResults[i][LEN_TABLE])
-                string += self.buildAttrString(self.allResults[i][ATTR_LIST], self.allResults[i][REVERSE_LIST])
+                elif self.showInstances: string += " (%d) : " % (self.results[i][LEN_TABLE])
+                string += self.buildAttrString(self.results[i][ATTR_LIST], self.results[i][REVERSE_LIST])
                 
                 self.resultList.insertItem(string)
-                self.shownResults.append(self.allResults[i])
+                self.shownResults.append(self.results[i])
             i+=1
         qApp.processEvents()
         qApp.restoreOverrideCursor()
@@ -429,7 +429,7 @@ class OWVizRank(VizRank, OWBaseWidget):
     # parameter attrReverseList can be a list used by polyviz
     def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, attrReverseList = []):
         if index < self.maxResultListLen:
-            self.allResults.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList))
+            self.results.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList))
             
         if index < self.resultListLen:
             string = ""
@@ -456,9 +456,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.attrLenList.clear()
         self.attrLenDict = {}
         maxLen = -1
-        for i in range(len(self.allResults)):
-            if len(self.allResults[i][ATTR_LIST]) > maxLen:
-                maxLen = len(self.allResults[i][ATTR_LIST])
+        for i in range(len(self.results)):
+            if len(self.results[i][ATTR_LIST]) > maxLen:
+                maxLen = len(self.results[i][ATTR_LIST])
         if maxLen == -1: return
         if maxLen == 2: vals = [2]
         else: vals = range(3, maxLen+1)
@@ -735,12 +735,12 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     def graphProjectionQuality(self):
         dialog = OWGraphProjectionQuality(self, signalManager = self.signalManager)
-        dialog.setResults(self.allResults, VIZRANK)
+        dialog.setResults(self.results, VIZRANK)
         dialog.show()
 
     def identifyOutliers(self):
         dialog = OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.parentWidget, graph = self.graph)
-        dialog.setData(self.allResults, self.data, VIZRANK)
+        dialog.setData(self.results, self.data, VIZRANK)
         dialog.show()
 
     # ######################################################
@@ -776,7 +776,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         else: return "Brier score"
 
     def getAllResults(self):
-        return self.allResults
+        return self.results
 
     def getShownResults(self):
         return self.shownResults
@@ -841,7 +841,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             #if foundArguments >= argumentCount and (not self.canUseMoreArguments or (max(vals)*100.0 / sum(vals) > self.moreArgumentsNums[self.moreArgumentsIndex]) or foundArguments >= argumentCount + 100): break
 
             qApp.processEvents()
-            (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList) = self.allResults[index]
+            (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList) = self.results[index]
             
             validExample = 1
             for attr in attrList:
