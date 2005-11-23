@@ -3,6 +3,7 @@
 <description>Constructs a tree regression learner and given data a regression tree classifier
 </description>
 <icon>RegressionTree.png</icon>
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>100</priority>
 """
 

@@ -2,7 +2,7 @@
 <name>CN2 Rules Viewer</name>
 <description>Viewer of classification rules.</description>
 <icon>CN2RulesViewer.png</icon>
-<contact>Ales Erjavec (ales324(@at@)email.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>2120</priority>
 """
 

@@ -2,6 +2,7 @@
 <name> Regression Tree Viewer 2D</name>
 <description>Regression tree viewer (graph view).</description>
 <icon>icons/RegressionTreeViewer2D.png</icon>
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>2120</priority>
 """
 from OWTreeViewer2D import *
