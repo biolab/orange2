@@ -102,8 +102,8 @@ class OWGraph(QwtPlot):
     def updateSettings(self, **settings):
         self.__dict__.update(settings)
 
-    def saveToFile(self):
-        sizeDlg = OWChooseImageSizeDlg(self)
+    def saveToFile(self, extraButtons = []):
+        sizeDlg = OWChooseImageSizeDlg(self, extraButtons)
         sizeDlg.exec_loop()
 
     def saveToFileDirect(self, fileName, ext, size = QSize(), overwriteExisting = 0):
@@ -604,8 +604,78 @@ class OWGraph(QwtPlot):
             if self.curve(curveKey).isInside(x,y): return 1
         return 0
 
+    # save graph in matplotlib python file
+    def saveToMatplotlib(self, fileName, size = QSize(400,400)):
+        f = open(fileName, "wt")
 
+        f.write("from pylab import *\n\nfigure(facecolor = 'w', figsize = (%f,%f), dpi = 80)\nhold(True)\n" % (size.width()/80., size.height()/80.))
 
+        # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
+        linestyles = ["o", "-", "-.", "--", ":", "-", "-"]
+
+        # curveSymbols = [None, Ellipse, Rect, Triangle, Diamond, DTriangle, UTriangle, LTriangle, RTriangle, XCross, Cross]
+        markers = ["None", "o", "s", "^", "d", "v", "^", "<", ">", "x", "+"]
+    
+        f.write("#add curves\n")
+        for key in self.curveKeys():
+            c = self.curve(key)
+            xData = [c.x(i) for i in range(c.dataSize())]
+            yData = [c.y(i) for i in range(c.dataSize())]
+            marker = markers[c.symbol().style()]
+            linestyle = linestyles[c.style()]
+            markersize = c.symbol().size().width()
+            markeredgecolor = self._getColorFromObject(c.symbol().pen()) 
+            markerfacecolor = self._getColorFromObject(c.symbol().brush())
+            color = self._getColorFromObject(c.pen())
+            linewidth = c.pen().width()
+            #markeredgewidth
+            f.write("plot(%s, %s, marker = '%s', linestyle = '%s', markersize = %d, markeredgecolor = %s, markerfacecolor = %s, color = %s, linewidth = %d)\n" % (xData, yData, marker, linestyle, markersize, markeredgecolor, markerfacecolor, color, linewidth))
+            
+        f.write("\n# add markers\n")
+        for key in self.markerKeys():
+            marker = self.marker(key)
+            x = marker.xValue()
+            y = marker.yValue()
+            text = str(marker.label())
+            align = marker.labelAlignment()
+            xalign = (align & Qt.AlignLeft and "right") or (align & Qt.AlignHCenter and "center") or (align & Qt.AlignRight and "left")
+            yalign = (align & Qt.AlignBottom and "bottom") or (align & Qt.AlignTop and "top") or (align & Qt.AlignVCenter and "center")
+            vertAlign = (yalign and ", verticalalignment = '%s'" % yalign) or ""
+            horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
+            color = [marker.labelColor().red(), marker.labelColor().green(), marker.labelColor().blue()]; color = tuple([v/float(255) for v in color])
+            name = str(marker.font().family())
+            weight = marker.font().bold() and "bold" or "normal"
+            f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s')\n" % (x, y, text, vertAlign, horAlign, color, name, weight))
+
+        # grid
+        f.write("# enable grid\ngrid(%s)\n\n" % (self.grid().xEnabled() and self.grid().yEnabled() and "True" or "False"))
+
+        x1 = self.axisScale(QwtPlot.xBottom).lBound(); x2 = self.axisScale(QwtPlot.xBottom).hBound()
+        y1 = self.axisScale(QwtPlot.yLeft).lBound();   y2 = self.axisScale(QwtPlot.yLeft).hBound()
+
+        # axis
+        if not (self.axisScaleDraw(QwtPlot.xBottom).options() and self.axisScaleDraw(QwtPlot.yLeft).options()):
+            f.write("#hide axis\naxis('off')\naxis([%f, %f, %f, %f])\ngca().set_position([0.01,0.01,0.98,0.98])\n" % (x1, x2, y1, y2))
+        else:
+            if self.axisScaleDraw(QwtPlot.yLeft).__class__ == DiscreteAxisScaleDraw:
+                labels = self.axisScaleDraw(QwtPlot.yLeft).labels
+                f.write("pos, labels = yticks(%s, %s)\nfor l in labels: l.set_rotation('vertical')\n" % (range(len(labels)), labels))
+            if self.axisScaleDraw(QwtPlot.xBottom).__class__ == DiscreteAxisScaleDraw:
+                labels = self.axisScaleDraw(QwtPlot.xBottom).labels
+                f.write("xticks(%s, %s)\n" % (range(len(labels)), labels))
+
+            f.write("#set axis labels\nxlabel('%s', weight = 'bold')\nylabel('%s', weight = 'bold')\n\n" % (str(self.axisTitle(QwtPlot.xBottom)), str(self.axisTitle(QwtPlot.yLeft))))
+            f.write("\naxis([%f, %f, %f, %f])\ngca().set_position([0.08,0.08,0.85,0.85])\n" % (x1, x2, y1, y2))
+        
+        f.write("show()")
+        f.close()
+
+    def _getColorFromObject(self, obj):
+        if obj.__class__ == QBrush and obj.style() == Qt.NoBrush: return "'none'"
+        if obj.__class__ == QPen   and obj.style() == Qt.NoPen: return "'none'"
+        col = [obj.color().red(), obj.color().green(), obj.color().blue()];
+        col = tuple([v/float(255) for v in col])
+        return col
 
 class MyQToolTip(QToolTip):
     def __init__(self, parent):

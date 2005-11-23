@@ -17,6 +17,7 @@ from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
 import random
 from OWTools import getHtmlCompatibleString
+from OWDlgs import OWChooseImageSizeDlg
 
 ###########################################################################################
 ##### WIDGET : 
@@ -476,20 +477,8 @@ class OWSieveDiagram(OWWidget):
     ## SAVING GRAPHS
     ##################################################
     def saveToFileCanvas(self):
-        size = self.canvas.size()
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        ext = ext.upper()
-        
-        buffer = QPixmap(size) # any size can do, now using the window size
-        painter = QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        self.canvasView.drawContents(painter, 0,0, size.width(), size.height())
-        painter.end()
-        buffer.save(fileName, ext)
+        sizeDlg = OWChooseImageSizeDlg(self.canvas)
+        sizeDlg.exec_loop()
 
         
 #test widget appearance

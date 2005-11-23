@@ -388,8 +388,8 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
                     if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
                     else:                             curveSymbol = self.curveSymbols[index]
 
-                    self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
-                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
+                    self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95], yData = [y])
+                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignVCenter)
             # show legend for continuous class
             else:
                 xs = [1.15, 1.20, 1.20, 1.15]

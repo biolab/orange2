@@ -1,7 +1,7 @@
 """
 <name>Attribute Statistics</name>
 <description>Basic attribute statistics.</description>
-<contact>Jure Zabkar</contact>
+<contact>Jure Zabkar (jure.zabkar@fri.uni-lj.si)</contact>
 <icon>icons/AttributeStatistics.png</icon>
 <priority>200</priority>
 """
@@ -13,6 +13,7 @@
 from qtcanvas import *
 from OWWidget import *
 from OWGUI import *
+from OWDlgs import OWChooseImageSizeDlg
 
 class OWAttributeStatistics(OWWidget):
     settingsList=["LastAttributeSelected"]
@@ -57,7 +58,9 @@ class OWAttributeStatistics(OWWidget):
         self.layout.addWidget ( self.canvasview )
         self.canvasview.show()
 
-        self.icons = self.createAttributeIconDict()    
+        self.icons = self.createAttributeIconDict()
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
+        
 
     def resizeEvent(self, event):
         if self.canvas and self.HighlightedAttribute>=0:
@@ -105,6 +108,10 @@ class OWAttributeStatistics(OWWidget):
                 ind = 0
             self.attributes.setCurrentItem(ind)
             self.attributeHighlighted(ind)
+
+    def saveToFileCanvas(self):
+        sizeDlg = OWChooseImageSizeDlg(self.canvas)
+        sizeDlg.exec_loop()
 
 """
 class DisplayStatistics

@@ -179,8 +179,7 @@ class OWRadviz(OWWidget):
         self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = " Set Active Learner ", items = ["VizRank Learner", "Cluster Learner", "FreeViz Learner", "S2N Feature Selection Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.", callback = self.setActiveLearner)
 
         # ####################################
-        # K-NN OPTIMIZATION functionality
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
 
         self.icons = self.createAttributeIconDict()
 
@@ -189,6 +188,8 @@ class OWRadviz(OWWidget):
         self.setValueScaling() # XXX is there any better way to do this?!
         self.resize(900, 700)
 
+    def saveToFile(self):
+        self.graph.saveToFile([("Save PixTex", self.graph.savePicTeX)])
 
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()

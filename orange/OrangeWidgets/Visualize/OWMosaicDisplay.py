@@ -16,6 +16,7 @@ from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 import OWGUI
 from OWQCanvasFuncts import *
 from OWGraphTools import ColorPaletteHSV, ColorPaletteBrewer
+from OWDlgs import OWChooseImageSizeDlg
 
 PEARSON = 0
 CLASS_DISTRIBUTION = 1
@@ -366,7 +367,7 @@ class OWMosaicDisplay(OWWidget):
         totalWidth = sum([self.names[i].boundingRect().width() for i in range(len(self.names))])
 
         # compute the x position of the center of the legend
-        y = y1 + self.attributeNameOffset + 15
+        y = y1 + self.attributeNameOffset + 20
         distance = 30
         startX = (x0+x1)/2 - (totalWidth + (len(names))*distance)/2
 
@@ -379,9 +380,9 @@ class OWMosaicDisplay(OWWidget):
             if self.interiorColoring == PEARSON: edgeColor = Qt.black
             else: edgeColor = colors[i]
 
-            OWCanvasRectangle(self.canvas, startX + xOffset, y, size, size, edgeColor, colors[i])
+            OWCanvasRectangle(self.canvas, startX + xOffset, y-size/2, size, size, edgeColor, colors[i])
 
-            self.names[i].move(startX + xOffset + 18, y+1)
+            self.names[i].move(startX + xOffset + 18, y)
 
             xOffset += distance + self.names[i].boundingRect().width()
             
@@ -394,7 +395,7 @@ class OWMosaicDisplay(OWWidget):
 
         if x1-x0 + y1-y0 == 2: y1+=1        # if we want to show a rectangle of width and height 1 it doesn't show anything. in such cases we therefore have to increase size of one edge
 
-        rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = -10)            
+        rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 5)            
 
         # show subset example
         if self.subsetData and self.subsetData.domain == self.data.domain:
@@ -426,7 +427,7 @@ class OWMosaicDisplay(OWWidget):
 
             if pearson > 0: color = self.blueColors[ind]
             else: color = self.redColors[ind]
-            rect = OWCanvasRectangle(self.canvas, x0, y0+1, x1-x0, y1-y0, color, color, z = -20)
+            rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, color, color, z = -20)
         else:
             originalDist = orange.Distribution(self.data.domain.classVar.name, self.data)
             values = getVariableValuesSorted(self.data, self.data.domain.classVar.name)
@@ -436,10 +437,10 @@ class OWMosaicDisplay(OWWidget):
                 val = self.conditionalDict[attrVals + "-" + classValue]
                 if self.horizontalDistribution:
                     v = ((x1-x0)* val)/self.conditionalDict[attrVals]
-                    r = OWCanvasRectangle(self.canvas, x0+total, y0+1, v, y1-y0-2, self.colorPalette[i], self.colorPalette[i], z = -20)
+                    OWCanvasRectangle(self.canvas, x0+total, y0, v, y1-y0, self.colorPalette[i], self.colorPalette[i], z = -20)
                 else:
                     v = ((y1-y0)* val)/self.conditionalDict[attrVals]
-                    r = OWCanvasRectangle(self.canvas, x0, y0+total, x1-x0, v, self.colorPalette[i], self.colorPalette[i], z = -20)
+                    OWCanvasRectangle(self.canvas, x0, y0+total, x1-x0, v, self.colorPalette[i], self.colorPalette[i], z = -20)
                 total += v
 
             if self.showAprioriDistribution and abs(x1 - x0) > 1 and abs(y1 - y0) > 1:
@@ -447,10 +448,10 @@ class OWMosaicDisplay(OWWidget):
                 for i in range(len(originalDist)-1):
                     if self.horizontalDistribution:
                         total += ((x1-x0)* originalDist[values[i]])/len(self.data) 
-                        OWCanvasLine(self.canvas, x0+total, y0+1, x0+total, y1-1, z = 10)
+                        OWCanvasLine(self.canvas, x0+total, y0, x0+total, y1, z = 10)
                     else:
                         total += ((y1-y0)* originalDist[values[i]])/len(self.data)
-                        OWCanvasLine(self.canvas, x0+1, y0+total, x1-1, y0+total, z = 10)
+                        OWCanvasLine(self.canvas, x0, y0+total, x1, y0+total, z = 10)
 
         self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist, pearson, expected)
 
@@ -481,23 +482,9 @@ class OWMosaicDisplay(OWWidget):
     ## SAVING GRAPHS
     ##################################################
     def saveToFileCanvas(self):
-        size = self.canvas.size()
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG);;Windows Bitmap (.BMP);;Graphics Interchange Format (.GIF)", None, "Save to..")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        ext = ext.upper()
-        
-        buffer = QPixmap(size) # any size can do, now using the window size
-        #buffer = QPixmap(QSize(200,200)) # any size can do, now using the window size
-        painter = QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        self.canvasView.drawContents(painter, 0,0, buffer.rect().width(), buffer.rect().height())
-        painter.end()
-        buffer.save(fileName, ext)
-
-        
+        sizeDlg = OWChooseImageSizeDlg(self.canvas)
+        sizeDlg.exec_loop()
+    
 
 #test widget appearance
 if __name__=="__main__":

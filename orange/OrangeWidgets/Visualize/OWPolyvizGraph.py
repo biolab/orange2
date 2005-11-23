@@ -364,7 +364,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                     else:                             curveSymbol = self.curveSymbols[index]
 
                     self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
-                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
+                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignVCenter)
             # show legend for continuous class
             else:
                 xs = [1.15, 1.20, 1.20, 1.15]
