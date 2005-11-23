@@ -75,6 +75,9 @@ class VizRank:
             elif visualizationMethod == RADVIZ:
                 import orngScaleRadvizData
                 graph = orngScaleRadvizData.orngScaleRadvizData()
+            else:
+                print "an invalid visualization method was specified. VizRank can not run."
+                return
         self.graph = graph
         self.visualizationMethod = visualizationMethod
         
@@ -108,7 +111,7 @@ class VizRank:
         self.locOptProjCount = 20           # consider this number of best ranked projections
         self.attributeNameIndex = {}        # dict with indices to attributes
         
-        self.allResults = []
+        self.results = []
         self.datasetName = ""
         
         # 0 - set to sqrt(N)
@@ -118,22 +121,22 @@ class VizRank:
 
 
     def clearResults(self):
-        self.allResults = []
+        self.results = []
 
     def clearArguments(self):
         self.arguments = []
 
     def removeTooSimilarProjections(self):
         i=0
-        while i < len(self.allResults):
-            if self.existsABetterSimilarProjection(i):  self.allResults.pop(i)
+        while i < len(self.results):
+            if self.existsABetterSimilarProjection(i):  self.results.pop(i)
             else:                                       i += 1
 
-    # test if one of the projections in self.allResults[0:index] are similar to the self.allResults[index] projection
+    # test if one of the projections in self.results[0:index] are similar to the self.results[index] projection
     def existsABetterSimilarProjection(self, index):
-        testAttrs = self.allResults[index][ATTR_LIST]
+        testAttrs = self.results[index][ATTR_LIST]
         for i in range(index):
-            attrs = self.allResults[i][ATTR_LIST]
+            attrs = self.results[i][ATTR_LIST]
             if len(attrs) != len(testAttrs): continue
             diffArr = [testAttrs[j] != attrs[j] for j in range(len(attrs))]
             if sum(diffArr) < int((len(attrs)+4) * 0.20): return 1
@@ -151,6 +154,7 @@ class VizRank:
 
         self.clearResults()
         self.clearArguments()
+        self.graph.setData(data)
         
         self.selectedClasses = []
         if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -181,15 +185,15 @@ class VizRank:
 
     # use bisection to find correct index
     def findTargetIndex(self, accuracy, funct):
-        top = 0; bottom = len(self.allResults)
+        top = 0; bottom = len(self.results)
 
         while (bottom-top) > 1:
             mid  = (bottom + top)/2
-            if funct(accuracy, self.allResults[mid][ACCURACY]) == accuracy: bottom = mid
+            if funct(accuracy, self.results[mid][ACCURACY]) == accuracy: bottom = mid
             else: top = mid
 
-        if len(self.allResults) == 0: return 0
-        if funct(accuracy, self.allResults[top][ACCURACY]) == accuracy:
+        if len(self.results) == 0: return 0
+        if funct(accuracy, self.results[top][ACCURACY]) == accuracy:
             return top
         else: 
             return bottom
@@ -198,7 +202,7 @@ class VizRank:
     # parameter attrReverseList can be a list used by polyviz
     def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, attrReverseList = None):
         if index < self.maxResultListLen:
-            self.allResults.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList))
+            self.results.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList))
 
     # kNNEvaluate - evaluate class separation in the given projection using a heuristic or k-NN method
     def kNNComputeAccuracy(self, table):
@@ -307,15 +311,15 @@ class VizRank:
         self.arguments = [[] for i in range(len(self.data.domain.classVar.values))]
         argumentList = []
                 
-        if len(self.allResults) == 0:
+        if len(self.results) == 0:
             print 'VizRank Argumentation: To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.'
             return (None,None)
 
         testExample = ["?"] * len(example.domain.attributes)
         
         foundArguments = 0
-        for index in range(min(len(self.allResults), self.argumentCount+300)):       # use only best argumentCount projections for argumentation
-            (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList) = self.allResults[index]
+        for index in range(min(len(self.results), self.argumentCount+300)):       # use only best argumentCount projections for argumentation
+            (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList) = self.results[index]
             
             validExample = 1
             for attr in attrList:
@@ -602,10 +606,10 @@ class VizRank:
 
 
     def optimizeBestProjections(self, bestFeatureSubsetSize = 200, restartWhenImproved = 1):
-        count = min(len(self.allResults), self.locOptProjCount)
-        attrLists = [self.allResults[i][ATTR_LIST] for i in range(count)]                                   # create a list of attributes that are in the top projections
+        count = min(len(self.results), self.locOptProjCount)
+        attrLists = [self.results[i][ATTR_LIST] for i in range(count)]                                   # create a list of attributes that are in the top projections
         attrLists = [[self.attributeNameIndex[name] for name in projection] for projection in attrLists]    # find indices from the attribute names
-        accuracys = [self.getProjectionQuality(self.allResults[i][ATTR_LIST])[0] for i in range(count)]
+        accuracys = [self.getProjectionQuality(self.results[i][ATTR_LIST])[0] for i in range(count)]
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
         attributes = [self.attributeNameIndex[name] for name in OWVisAttrSelection.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])[:bestFeatureSubsetSize]]
         self.startTime = time.time()
@@ -760,7 +764,6 @@ class VizRankClassifier(orange.Classifier):
         if vizrank.__class__ != VizRank:
             self.VizRank.parentWidget.cdata(data, clearResults = 1)
         else:
-            self.VizRank.graph.setData(data)
             self.VizRank.setData(data)
 
         if self.VizRank.__class__ != VizRank: self.VizRank.useTimeLimit = 1                
