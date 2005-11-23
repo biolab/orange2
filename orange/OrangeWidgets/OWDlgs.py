@@ -8,7 +8,7 @@ from ColorPalette import *
         
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName"]
-    def __init__(self, graph):
+    def __init__(self, graph, extraButtons = []):
         OWBaseWidget.__init__(self, None, None, "Image settings", modal = TRUE)
 
         self.graph = graph
@@ -16,7 +16,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.customX = 400
         self.customY = 400
         self.saveAllSizes = 0
-        self.lastSaveDirName = os.getcwd() + "/"
+        self.lastSaveDirName = "./"
 
         self.loadSettings()
         
@@ -25,30 +25,104 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.layout.addWidget(self.space)
         
         box = QVButtonGroup("Image Size", self.space)
-        size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"], callback = self.updateGUI)
-        
-        self.customXEdit = OWGUI.lineEdit(box, self, "customX", "       Weight:  ", orientation = "horizontal", valueType = int)
-        self.customYEdit = OWGUI.lineEdit(box, self, "customY", "       Height:   ", orientation = "horizontal", valueType = int)
-
-        self.printButton = OWGUI.button(self.space, self, "Print", callback = self.printPic)
-        self.okButton = OWGUI.button(self.space, self, "Save image", callback = self.accept)
-        self.cancelButton = OWGUI.button(self.space, self, "Cancel", callback = self.reject)
+        if isinstance(graph, QwtPlot):
+            size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"], callback = self.updateGUI)
+            
+            self.customXEdit = OWGUI.lineEdit(box, self, "customX", "       Width:  ", orientation = "horizontal", valueType = int)
+            self.customYEdit = OWGUI.lineEdit(box, self, "customY", "       Height:   ", orientation = "horizontal", valueType = int)
+        elif isinstance(graph, QCanvas):
+            OWGUI.widgetLabel(box, "Image size will be set automatically.")
+            
+        OWGUI.button(self.space, self, "Print", callback = self.printPic)
+        OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
+        OWGUI.button(self.space, self, "Save Graph As matplotlib Script", callback = self.saveToMatplotlib)
+        for (text, funct) in extraButtons:
+            butt = OWGUI.button(self.space, self, text, callback = funct)
+            self.connect(butt, SIGNAL("clicked()"), self.accept)        # also connect the button to accept so that we close the dialog
+        OWGUI.button(self.space, self, "Cancel", callback = self.reject)
                                        
         self.resize(200,270)
         self.updateGUI()
 
-    def updateGUI(self):
-        self.customXEdit.setEnabled(self.selectedSize == 4)
-        self.customYEdit.setEnabled(self.selectedSize == 4)
+    def saveImage(self):
+        filename = self.getFileName("graph.png", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", ".png")
+        if not filename: return
+        
+        (fil,ext) = os.path.splitext(filename)
+        ext = ext[1:].upper()
+        if ext == "" or ext not in ("BMP", "GIF", "PNG") :	
+        	ext = "PNG"  	# if no format was specified, we choose png
+        	filename = filename + ".png"
 
-    def accept(self):
-        self.saveToFile()
-        self.saveSettings()
+        size = self.getSize()
+        painter = QPainter()
+        if size.isEmpty(): buffer = QPixmap(self.graph.size()) # any size can do, now using the window size
+        else:              buffer = QPixmap(size)
+        painter.begin(buffer)
+        painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+        self.fillPainter(painter, buffer.rect())
+        painter.flush()
+        painter.end()
+        buffer.save(filename, ext)
         QDialog.accept(self)
-        self.hide()
+        #self.hide()
+
+    def saveToMatplotlib(self):
+        filename = self.getFileName("graph.py","Python Script (*.py)", ".py")
+        if filename:
+            if isinstance(self.graph, QwtPlot):
+                self.graph.saveToMatplotlib(filename, self.getSize())
+            else:
+                minx,maxx,miny,maxy = self.getQCanvasBoundaries()
+                f = open(filename, "wt")
+                f.write("from pylab import *\nfrom matplotlib.patches import Rectangle\n\nfigure(facecolor = 'w', figsize = (%f,%f), dpi = 80)\na = gca()\nhold(True)\n\n\n" % ((maxx-minx)/80, (maxy-miny)/80))
+                print miny
+                maxy+= miny
+                
+                #maxy += 20
+
+                sortedList = [(item.z(), item) for item in self.graph.allItems()]
+                sortedList.sort()   # sort items by z value
+                
+                for (z, item) in sortedList:
+                    if not item.visible(): continue
+                    if item.__class__ in [QCanvasEllipse, QCanvasLine, QCanvasPolygon and QCanvasRectangle]:
+                        penc   = self._getColorFromObject(item.pen())
+                        brushc = self._getColorFromObject(item.brush())
+                        penWidth = item.pen().width()
+                        
+                        if   isinstance(item, QCanvasEllipse): continue
+                        elif isinstance(item, QCanvasPolygon): continue
+                        elif isinstance(item, QCanvasRectangle):
+                            x,y,w,h = item.rect().x(), maxy-item.rect().y()-item.rect().height(), item.rect().width(), item.rect().height()
+                            f.write("a.add_patch(Rectangle((%d, %d), %d, %d, edgecolor=%s, facecolor = %s, linewidth = %d, fill = %d))\n" % (x,y,w,h, penc, brushc, penWidth, type(brushc) == tuple))
+                        elif isinstance(item, QCanvasLine):
+                            x1,y1, x2,y2 = item.startPoint().x(), maxy-item.startPoint().y(), item.endPoint().x(), maxy-item.endPoint().y()
+                            f.write("plot(%s, %s, marker = 'None', linestyle = '-', color = %s, linewidth = %d)\n" % ([x1,x2], [y1,y2], penc, penWidth))
+                    elif item.__class__ == QCanvasText:
+                        align = item.textFlags()
+                        xalign = (align & Qt.AlignLeft and "left") or (align & Qt.AlignHCenter and "center") or (align & Qt.AlignRight and "right")
+                        yalign = (align & Qt.AlignBottom and "bottom") or (align & Qt.AlignTop and "top") or (align & Qt.AlignVCenter and "center")
+                        vertAlign = (yalign and ", verticalalignment = '%s'" % yalign) or ""
+                        horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
+                        color = tuple([item.color().red()/255., item.color().green()/255., item.color().blue()/255.])
+                        weight = item.font().bold() and "bold" or "normal"
+                        f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s')\n" % (item.x(), maxy-item.y(), str(item.text()), vertAlign, horAlign, color, str(item.font().family()), weight))
+
+                f.write("# disable grid\ngrid(False)\n\n")
+                f.write("#hide axis\naxis('off')\naxis([%f, %f, %f, %f])\ngca().set_position([0.01,0.01,0.98,0.98])\n" % (minx, maxx, miny, maxy-miny))
+                f.write("show()")
+                f.close()
+
+            try:
+                import matplotlib
+            except:
+                QMessageBox.information(self,'Matplotlib missing',"File was saved, but you will not be able to run it because you don't have matplotlib installed.\nYou can download matplotlib for free at matplotlib.sourceforge.net.",'Close')
+
+        QDialog.accept(self)
+
 
     def printPic(self):
-        self.saveSettings()
         printer = QPrinter()
         size = self.getSize()
         buffer = QPixmap(size)
@@ -67,42 +141,9 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             else:                       rect = QRect(printer.margins().width(),printer.margins().height(), width*sizeKvoc/pageKvoc, height)
             self.fillPainter(painter, rect)
             painter.end()
+        self.saveSettings()
         QDialog.accept(self)
 
-    def saveToFile(self):
-        qfileName = QFileDialog.getSaveFileName(self.lastSaveDirName + "graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to..")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext[1:].upper()
-        if ext == "" or ext not in ("BMP", "GIF", "PNG") :	
-        	ext = "PNG"  	# if no format was specified, we choose png
-        	fileName = fileName + ".png"
-
-        dirName, shortFileName = os.path.split(fileName)
-        self.lastSaveDirName = dirName + "/"
-        self.saveToFileDirect(fileName, ext, self.getSize())
-
-    def getSize(self):
-        if self.selectedSize == 0: size = self.graph.size()
-        elif self.selectedSize == 4: size = QSize(self.customX, self.customY)
-        else: size = QSize(200 + self.selectedSize*200, 200 + self.selectedSize*200)
-        return size
-        
-    def saveToFileDirect(self, fileName, ext, size, overwriteExisting = 0):
-        if os.path.exists(fileName) and not overwriteExisting:
-            res = QMessageBox.information(self,'Save picture','File already exists. Overwrite?','Yes','No', QString.null,0,1)
-            if res == 1: return
-        painter = QPainter()
-        if size.isEmpty(): buffer = QPixmap(self.graph.size()) # any size can do, now using the window size
-        else:              buffer = QPixmap(size)
-        painter.begin(buffer)
-        painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
-        self.fillPainter(painter, buffer.rect())
-        painter.flush()
-        painter.end()
-        buffer.save(fileName, ext)
-        
 
     def fillPainter(self, painter, rect):
         if isinstance(self.graph, QwtPlot):
@@ -110,19 +151,67 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         elif isinstance(self.graph, QCanvas):
             # draw background
             self.graph.drawBackground(painter, rect)
+            minx,maxx,miny,maxy = self.getQCanvasBoundaries()
 
             # draw items
-            items = self.graph.allItems()
-            sortedList = []
-            for item in items:
-                sortedList.append((item.z(), item))
+            sortedList = [(item.z(), item) for item in self.graph.allItems()]
             sortedList.sort()   # sort items by z value
             for (z, item) in sortedList:
-                if item.visible(): item.draw(painter)
+                if item.visible():
+                    item.move(item.x()-minx, item.y()-miny)
+                    item.draw(painter)
+                    item.move(item.x()+minx, item.y()+miny)
 
             # draw foreground
             self.graph.drawForeground(painter, rect)
 
+    # ############################################################
+    # EXTRA FUNCTIONS ############################################
+    def getQCanvasBoundaries(self):
+        minx,maxx,miny,maxy = 10000000,0,10000000,0
+        for item in self.graph.allItems():
+            if not item.visible(): continue
+            br = item.boundingRect()
+            minx = min(br.left(), minx)
+            maxx = max(maxx, br.right())
+            miny = min(br.top(), miny)
+            maxy = max(maxy, br.bottom())
+        return minx-10, maxx+10, miny-10, maxy+10
+
+        
+    def getFileName(self, defaultName, mask, extension):        
+        fileName = str(QFileDialog.getSaveFileName(self.lastSaveDirName + defaultName, mask, None, "Save to..", "Save to.."))
+        if not fileName: return None
+        if not os.path.splitext(fileName)[1][1:]: fileName = fileName + extension
+
+        if os.path.exists(fileName):
+            res = QMessageBox.information(self,'Save picture','File already exists. Overwrite?','Yes','No', QString.null,0,1)
+            if res == 1: return None
+
+        self.lastSaveDirName = os.path.split(fileName)[0] + "/"
+        self.saveSettings()
+        return fileName
+
+    def getSize(self):
+        if isinstance(self.graph, QCanvas):
+            minx,maxx,miny,maxy = self.getQCanvasBoundaries()
+            size = QSize(maxx-minx, maxy-miny)
+        elif self.selectedSize == 0: size = self.graph.size()
+        elif self.selectedSize == 4: size = QSize(self.customX, self.customY)
+        else: size = QSize(200 + self.selectedSize*200, 200 + self.selectedSize*200)
+        return size
+
+    def updateGUI(self):
+        if isinstance(self.graph, QwtPlot):        
+            self.customXEdit.setEnabled(self.selectedSize == 4)
+            self.customYEdit.setEnabled(self.selectedSize == 4)
+
+    def _getColorFromObject(self, obj):
+        if obj.__class__ == QBrush and obj.style() == Qt.NoBrush: return "'none'"
+        if obj.__class__ == QPen   and obj.style() == Qt.NoPen: return "'none'"
+        col = [obj.color().red(), obj.color().green(), obj.color().blue()];
+        col = tuple([v/float(255) for v in col])
+        return col
 
 class ColorPaletteWidget(QVBox):
     def __init__(self, parent, master, label = "Colors", callback = None):
@@ -319,6 +408,7 @@ class ColorPalette(OWBaseWidget):
 
 if __name__== "__main__":
     a = QApplication(sys.argv)
+    """
     c = ColorPalette(None, modal = FALSE)
     c.createColorPalette("colorPalette", "Palette")
     box = c.createBox("otherColors", "Colors")
@@ -333,4 +423,7 @@ if __name__== "__main__":
     a.setMainWidget(c)
     c.show()
     a.exec_loop()
-
+    """
+    c = OWChooseImageSizeDlg(None)
+    c.show()
+    a.exec_loop()
