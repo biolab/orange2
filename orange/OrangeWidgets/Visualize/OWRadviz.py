@@ -94,7 +94,7 @@ class OWRadviz(OWWidget):
         #load settings
         self.loadSettings()
 
-        OWGUI.button(self.buttonBackground, self, "Save PicTeX", callback=self.graph.savePicTeX)
+        #OWGUI.button(self.buttonBackground, self, "Save PicTeX", callback=self.graph.savePicTeX)
 
         #GUI
         # add a settings dialog and initialize its values

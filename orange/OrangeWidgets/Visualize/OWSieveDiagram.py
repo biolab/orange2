@@ -35,10 +35,6 @@ class OWSieveDiagram(OWWidget):
 
         #set default settings
         self.data = None
-        self.rects = []
-        self.texts = []
-        self.lines = []
-        self.tooltips = []
 
         self.attrX = ""
         self.attrY = ""
@@ -49,6 +45,7 @@ class OWSieveDiagram(OWWidget):
         self.showInColor = 1
         self.attributeSelectionList = None
         self.stopCalculating = 0
+        self.tooltips = []
 
         #load settings
         self.loadSettings()
@@ -270,12 +267,8 @@ class OWSieveDiagram(OWWidget):
 
 
     def clearGraph(self):
-        for rect in self.rects: rect.hide()
-        for text in self.texts: text.hide()
-        for line in self.lines: line.hide()
+        for item in self.canvas.allItems(): item.setCanvas(None)    # remove all canvas items
         for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
-        self.rects = []; self.texts = [];  self.lines = []; self.tooltips = []
-    
 
 
     ######################################################################
@@ -326,9 +319,8 @@ class OWSieveDiagram(OWWidget):
                     actualProb = 0
                 probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualProb, len(data))
 
-        # get text width of Y attribute name        
-        text = QCanvasText(data.domain[self.attrY].name, self.canvas);
-        font = text.font(); font.setBold(1); text.setFont(font)
+        # get text width of Y attribute name
+        text = OWCanvasText(self.canvas, data.domain[self.attrY].name, x  = 0, y = 0, bold = 1, show = 0)
         xOff = text.boundingRect().right() - text.boundingRect().left() + 40
         yOff = 50
         sqareSize = min(self.canvasView.size().width() - xOff - 35, self.canvasView.size().height() - yOff - 30)
@@ -339,8 +331,8 @@ class OWSieveDiagram(OWWidget):
             name  = "P(%s, %s) =\\= P(%s)*P(%s)" %(self.attrX, self.attrY, self.attrX, self.attrY)
         else:
             name = "P(%s, %s | %s = %s) =\\= P(%s | %s = %s)*P(%s | %s = %s)" %(self.attrX, self.attrY, self.attrCondition, getHtmlCompatibleString(self.attrConditionValue), self.attrX, self.attrCondition, getHtmlCompatibleString(self.attrConditionValue), self.attrY, self.attrCondition, getHtmlCompatibleString(self.attrConditionValue))
-        self.texts.append(OWCanvasText(self.canvas, name , xOff+ sqareSize/2, 10, Qt.AlignHCenter, bold = 1))
-        self.texts.append(OWCanvasText(self.canvas, "N = " + str(len(data)), xOff+ sqareSize/2, 30, Qt.AlignHCenter, bold = 0))
+        OWCanvasText(self.canvas, name , xOff+ sqareSize/2, 20, Qt.AlignCenter, bold = 1)
+        #OWCanvasText(self.canvas, "N = " + str(len(data)), xOff+ sqareSize/2, 30, Qt.AlignCenter, bold = 0)
 
         ######################
         # compute chi-square
@@ -369,21 +361,19 @@ class OWSieveDiagram(OWWidget):
 
                 # create rectangle
                 rect = OWCanvasRectangle(self.canvas, currX+2, currY+2, width-4, height-4, z = -10)
-                self.rects.append(rect)
-
                 self.addRectIndependencePearson(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
                 self.addTooltip(currX+1, currY+1, width-2, height-2, (xAttr, xVal),(yAttr, yVal), actual, sum, chisquare)
 
                 currY += height
                 if currX == xOff:
-                    self.texts.append(OWCanvasText(self.canvas, data.domain[self.attrY].values[j], xOff - 10, currY - height/2, Qt.AlignRight+Qt.AlignVCenter, bold = 0))
+                    OWCanvasText(self.canvas, data.domain[self.attrY].values[j], xOff - 10, currY - height/2, Qt.AlignRight+Qt.AlignVCenter, bold = 0)
 
-            self.texts.append(OWCanvasText(self.canvas, data.domain[self.attrX].values[i], currX + width/2, yOff + sqareSize + 5, Qt.AlignCenter, bold = 0))
+            OWCanvasText(self.canvas, data.domain[self.attrX].values[i], currX + width/2, yOff + sqareSize + 5, Qt.AlignCenter, bold = 0)
             currX += width
 
         # show attribute names
-        self.texts.append(OWCanvasText(self.canvas, self.attrY, 5, yOff + sqareSize/2, Qt.AlignLeft, bold = 1))
-        self.texts.append(OWCanvasText(self.canvas, self.attrX, xOff + sqareSize/2, yOff + sqareSize + 15, Qt.AlignCenter, bold = 1))
+        OWCanvasText(self.canvas, self.attrY, 5, yOff + sqareSize/2, Qt.AlignLeft, bold = 1)
+        OWCanvasText(self.canvas, self.attrX, xOff + sqareSize/2, yOff + sqareSize + 15, Qt.AlignCenter, bold = 1)
 
         self.canvas.update()
 
@@ -395,19 +385,19 @@ class OWSieveDiagram(OWWidget):
         
         if pearson > 0:     # if there are more examples that we would expect under the null hypothesis
             intPearson = floor(pearson)
-            pen = QPen(QColor(0,0,255)); rect.setPen(pen)
+            pen = QPen(QColor(0,0,255), 1); rect.setPen(pen)
             b = 255
             r = g = 255 - intPearson*20
             r = g = max(r, 55)  #
         elif pearson < 0:
             intPearson = ceil(pearson)
-            pen = QPen(QColor(255,0,0))
+            pen = QPen(QColor(255,0,0), 1)
             rect.setPen(pen)
             r = 255
             b = g = 255 + intPearson*20
             b = g = max(b, 55)
         else:
-            pen = QPen(QColor(255,255,255))
+            pen = QPen(QColor(255,255,255), 1)
             r = g = b = 255         # white            
         color = QColor(r,g,b)
         brush = QBrush(color); rect.setBrush(brush)
@@ -420,7 +410,7 @@ class OWSieveDiagram(OWWidget):
             for i in range(int(actual)):
                 x1 = random.randint(x+1, x + w-4)
                 y1 = random.randint(y+1, y + h-4)
-                self.rects.append(OWCanvasRectangle(self.canvas, x1, y1, 3, 3, z = 100, penColor = c, brushColor = c))
+                OWCanvasRectangle(self.canvas, x1, y1, 3, 3, penColor = c, brushColor = c, z = 100)
         
         if pearson > 0:
             pearson = min(pearson, 10)
@@ -456,20 +446,12 @@ class OWSieveDiagram(OWWidget):
         dist = dist * diff
         temp = dist
         while (temp < w):
-            line = QCanvasLine(self.canvas)
-            line.setPoints(temp+x, y+1, temp+x, y+h-2)
-            line.setPen(pen)
-            line.show()
-            self.lines.append(line)
+            OWCanvasLine(self.canvas, temp+x, y+1, temp+x, y+h-2, 1, pen.color())
             temp += dist
 
         temp = dist
         while (temp < h):
-            line = QCanvasLine(self.canvas)
-            line.setPoints(x+1, y+temp, x+w-2, y+temp)
-            line.setPen(pen)
-            line.show()
-            self.lines.append(line)
+            OWCanvasLine(self.canvas, x+1, y+temp, x+w-2, y+temp, 1, pen.color())
             temp += dist
 
 

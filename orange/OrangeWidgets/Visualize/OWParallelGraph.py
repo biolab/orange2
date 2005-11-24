@@ -172,7 +172,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 else:                                newColor = colorPalette[classValueIndices[self.rawdata[i].getclass().value]]
                 key = self.insertCurve(curve)
                 self.dataKeys.append(key)
-            curve.setPen(QPen(newColor))
+            curve.setPen(QPen(newColor, 1))
             ys = []
             for index in indices:
                 ys.append(self.scaledData[index][i])
@@ -212,11 +212,11 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     strVal = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][0])
                     mkey1 = self.insertMarker(strVal)
                     self.marker(mkey1).setXValue(i)
-                    self.marker(mkey1).setYValue(0.0)
+                    self.marker(mkey1).setYValue(0.0-0.01)
                     strVal = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][1])
                     mkey2 = self.insertMarker(strVal)
                     self.marker(mkey2).setXValue(i)
-                    self.marker(mkey2).setYValue(1.0)
+                    self.marker(mkey2).setYValue(1.0+0.01)
                     if i == 0:
                         self.marker(mkey1).setLabelAlignment(Qt.AlignRight + Qt.AlignBottom)
                         self.marker(mkey2).setLabelAlignment(Qt.AlignRight + Qt.AlignTop)
@@ -224,8 +224,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
                         self.marker(mkey1).setLabelAlignment(Qt.AlignLeft + Qt.AlignBottom)
                         self.marker(mkey2).setLabelAlignment(Qt.AlignLeft + Qt.AlignTop)
                     else:
-                        self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
-                        self.marker(mkey2).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
+                        self.marker(mkey1).setLabelAlignment(Qt.AlignHCenter + Qt.AlignBottom)
+                        self.marker(mkey2).setLabelAlignment(Qt.AlignHCenter + Qt.AlignTop)
                 elif attr.varType == orange.VarTypes.Discrete:
                     attrVals = getVariableValuesSorted(self.rawdata, attributes[i])
                     valsLen = len(attrVals)
@@ -234,7 +234,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                         mkey = self.insertMarker(nonTransparentMarker(QColor(255,255,255), self))
                         self.marker(mkey).setLabel(attrVals[pos])
                         font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
-                        self.marker(mkey).setXValue(i)
+                        self.marker(mkey).setXValue(i+0.01)
                         self.marker(mkey).setYValue(float(1+2*pos)/float(2*valsLen))
                         self.marker(mkey).setLabelAlignment(Qt.AlignRight + Qt.AlignVCenter)
 

@@ -619,6 +619,8 @@ class OWGraph(QwtPlot):
         f.write("#add curves\n")
         for key in self.curveKeys():
             c = self.curve(key)
+            if c.style() >= len(linestyles): continue   # a user curve case
+            
             xData = [c.x(i) for i in range(c.dataSize())]
             yData = [c.y(i) for i in range(c.dataSize())]
             marker = markers[c.symbol().style()]
@@ -639,7 +641,7 @@ class OWGraph(QwtPlot):
             text = str(marker.label())
             align = marker.labelAlignment()
             xalign = (align & Qt.AlignLeft and "right") or (align & Qt.AlignHCenter and "center") or (align & Qt.AlignRight and "left")
-            yalign = (align & Qt.AlignBottom and "bottom") or (align & Qt.AlignTop and "top") or (align & Qt.AlignVCenter and "center")
+            yalign = (align & Qt.AlignBottom and "top") or (align & Qt.AlignTop and "bottom") or (align & Qt.AlignVCenter and "center")
             vertAlign = (yalign and ", verticalalignment = '%s'" % yalign) or ""
             horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
             color = [marker.labelColor().red(), marker.labelColor().green(), marker.labelColor().blue()]; color = tuple([v/float(255) for v in color])

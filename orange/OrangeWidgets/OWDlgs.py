@@ -75,11 +75,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             else:
                 minx,maxx,miny,maxy = self.getQCanvasBoundaries()
                 f = open(filename, "wt")
-                f.write("from pylab import *\nfrom matplotlib.patches import Rectangle\n\nfigure(facecolor = 'w', figsize = (%f,%f), dpi = 80)\na = gca()\nhold(True)\n\n\n" % ((maxx-minx)/80, (maxy-miny)/80))
-                print miny
-                maxy+= miny
+                f.write("from pylab import *\nfrom matplotlib.patches import Rectangle\n\nfigure(facecolor = 'w', figsize = (%f,%f), dpi = 80)\na = gca()\nhold(True)\n\n\n" % ((maxx-minx)/80., (maxy-miny)/80.))
                 
-                #maxy += 20
 
                 sortedList = [(item.z(), item) for item in self.graph.allItems()]
                 sortedList.sort()   # sort items by z value
@@ -110,7 +107,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                         f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s')\n" % (item.x(), maxy-item.y(), str(item.text()), vertAlign, horAlign, color, str(item.font().family()), weight))
 
                 f.write("# disable grid\ngrid(False)\n\n")
-                f.write("#hide axis\naxis('off')\naxis([%f, %f, %f, %f])\ngca().set_position([0.01,0.01,0.98,0.98])\n" % (minx, maxx, miny, maxy-miny))
+                f.write("#hide axis\naxis('off')\naxis([%f, %f, %f, %f])\ngca().set_position([0.01,0.01,0.98,0.98])\n" % (minx, maxx, miny, maxy))
                 f.write("show()")
                 f.close()
 
