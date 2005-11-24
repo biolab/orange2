@@ -33,7 +33,7 @@ def finddeps(filename):
       ppp_timestamp_dep.append(depname[:-4]+".hpp")
       mydeps.append(depname[:-4]+".hpp")
     else:
-      if (depname[-3:]==".px"):
+      if depname[-3:]==".px" and filename[-4:]!=".hpp":
         if depname not in px_files:
           px_files.append( depname)
           print depname
