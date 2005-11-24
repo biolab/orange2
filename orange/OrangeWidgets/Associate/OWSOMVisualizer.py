@@ -2,119 +2,207 @@
 <name>SOMVisualizer</name>
 <description>SOM visualizer</description>
 <icon>SOMVisualizer.png</icon>
-<contact>Ales Erjavec (ales.erjevec324(@at@)email.si)</contact> 
+<contact>Ales Erjavec (ales.erjevec(@at@)fri.uni-lj.si)</contact> 
 <priority>5020</priority>
 """
 import orngSOM, orange, orangeom
 import math, Numeric
-import OWGUI
+import OWGUI, OWGraphTools
 from OWWidget import *
 from qt import *
-from qtcanvas import * 
+from qtcanvas import *
+from OWTreeViewer2D import CanvasBubbleInfo
 
-
-class Hexagon(QCanvasPolygon):
+class CanvasSOMItem(QCanvasPolygon):
+    startAngle=0
+    segment=6
     def __init__(self, *args):
         apply(QCanvasPolygon.__init__,(self,)+args)
-        self.hasNode=False
         self.node=None
+        self.hasNode=False
         self.isSelected=False
-        self.label=QCanvasText("",self.canvas())
-        self.label.setTextFlags(Qt.AlignCenter)
-        self.dot=QCanvasEllipse(5,5,self.canvas())
-        self.dot.setBrush(QBrush(Qt.black))
-        self.obj=[self.label, self.dot]
-        for o in self.obj:
-            o.setZ(self.z()+10)
-            
-    def setSize(self, size):
-        r=size #*2/(math.cos(math.pi/3)+1)
-        points=QPointArray(6)
-        for i in range(6):
-            x=math.cos(i*math.pi/3.0)*r
-            y=math.sin(i*math.pi/3.0)*r
-            points.setPoint(i, x,y)
-        self.setPoints(points)
-        
-    def move(self, x, y):
-        apply(QCanvasPolygon.move, (self, x,y))
-        for o in self.obj:
-            o.move(x,y)
-            
-    def setNode(self, node=None):
-        self.node=node
-        self.hasNode=True
-        if node:
-            for o in self.obj:
-                o.show()
-                
-    def setSelected(self, bool=False):
-        self.isSelected=bool
-        if bool:
-            self.dot.setBrush(QBrush(Qt.red))
-        else:
-            self.dot.setBrush(QBrush(Qt.black))
+        self.labelText=""
+        self.textColor=Qt.black
+        self.outlinePoints=None
+        self.innerPoints=None
+        self.setSize(10)
 
-    def setLabel(self, label):
-        self.label.setText(label)
-    
-    def setCanvas(self, canvas):
-        apply(QCanvasPolygon.setCanvas,(self, canvas))
-        for o in self.obj:
-            o.setCanvas(canvas)
-            
-class Rectangle(QCanvasRectangle):
-    def __init__(self, *args):
-        apply(QCanvasRectangle.__init__,(self,)+args)
-        self.hasNode=False
-        self.node=None
-        self.isSelected=False
-        self.label=QCanvasText("",self.canvas())
-        self.label.setTextFlags(Qt.AlignCenter)
-        self.dot=QCanvasEllipse(5,5,self.canvas())
-        self.dot.setBrush(QBrush(Qt.black))
-        self.obj=[self.label, self.dot]
-        for o in self.obj:
-            o.setZ(self.z()+10)
-            
-    def setLabel(self, label):
-        self.label.setText(label)
-        
+    def boundingRect(self):
+        return self.outlinePoints.boundingRect()
+
     def move(self, x, y):
-        apply(QCanvasRectangle.move, (self, x-self.width()/2, y-self.height()/2))
-        for o in self.obj:
-            o.move(x, y)
-      
-    def setSize(self, w,h):
-        x=self.x()+self.width()/2
-        y=self.y()+self.height()/2
-        apply(QCanvasRectangle.setSize, (self,w,h))
-        self.move(x,y)
+        ox, oy=self.x(), self.y()
+        dx, dy=ox-x, oy-y
+        self.outlinePoints.translate(x,y)
+        QCanvasPolygon.move(self, x, y)
+
+    def areaPoints(self):
+        return self.outlinePoints
+    
+    def setSize(self, size):
+        self.outlinePoints=QPointArray(self.segments)
+        for i in range(self.segments):
+            x=int(math.cos(2*math.pi/self.segments*i+self.startAngle)*size)
+            y=int(math.sin(2*math.pi/self.segments*i+self.startAngle)*size)
+            self.outlinePoints.setPoint(i,x,y)
+        if not self.innerPoints:
+            self.setInnerSize(size)
+            
+    def setInnerSize(self, size):
+        self.innerPoints=QPointArray(self.segments)
+        for i in range(self.segments):
+            x=int(math.cos(2*math.pi/self.segments*i+self.startAngle)*size)
+            y=int(math.sin(2*math.pi/self.segments*i+self.startAngle)*size)
+            self.innerPoints.setPoint(i,x,y)
+        self.setPoints(self.innerPoints)
+        if not self.outlinePoints:
+            self.setSize(size)
         
-    def setNode(self, node=None):
+    def setLabel(self, label):
+        self.labelText=label
+
+    def setColor(self, color):
+        self.color=color
+        if color.hsv()[2]<100:
+            self.textColor=Qt.white
+        self.setBrush(QBrush(color))
+
+    def setNode(self, node):
         self.node=node
         self.hasNode=True
-        if node:
-            for o in self.obj:
-                o.show()
-                
-    def setSelected(self, bool=False):
-        self.isSelected=bool
-        if bool:
-            self.dot.setBrush(QBrush(Qt.red))
-        else:
-            self.dot.setBrush(QBrush(Qt.black))
-                      
-    def setCanvas(self, canvas):
-        apply(QCanvasRectangle.setCanvas,(self, canvas))
-        for o in self.obj:
-            o.setCanvas(canvas)
-    
+
+    def setSelected(self, bool=True):
+        if self.isSelected!=bool:
+            self.isSelected=bool
+            self.setChanged()
+            self.setZ(bool and (self.z()+1) or (self.z()-1))
+
+    def advancement(self):
+        pass
+
+    def setChanged(self):
+        self.canvas().setChanged(self.boundingRect())
+        
+    def drawShape(self, painter):
+        QCanvasPolygon.drawShape(self, painter)
+        if self.canvas().showGrid:
+            color=self.isSelected and Qt.red or Qt.black
+            p=QPen(color)
+            if self.isSelected:
+                p.setWidth(2)
+            painter.setPen(p)
+            painter.drawPolyline(self.outlinePoints)
+            painter.drawLine(self.outlinePoints.point(0)[0],self.outlinePoints.point(0)[1],
+                             self.outlinePoints.point(self.segments-1)[0],self.outlinePoints.point(self.segments-1)[1])
+        if self.node:
+            painter.setPen(QPen(self.isSelected and Qt.red or self.textColor))
+            if self.labelText:
+                painter.drawText(self.boundingRect(), Qt.AlignVCenter | Qt.AlignLeft, " "+self.labelText)
+            else:
+                painter.setBrush(QBrush(self.isSelected and Qt.red or self.textColor))
+                painter.drawPie(self.x()-2,self.y()-2,4,4,0,5760)
+        #self.setChanged()
+        
+class CanvasHexagon(CanvasSOMItem):
+    startAngle=0
+    segments=6
+    def __init__(self, *args):
+        apply(CanvasSOMItem.__init__,(self,)+args)
+    def advancement(self):
+        width=self.outlinePoints.point(0)[0]-self.outlinePoints.point(3)[0]
+        line=self.outlinePoints.point(1)[0]-self.outlinePoints.point(2)[0]
+        x=width-(width-line)/2
+        y=self.outlinePoints.point(2)[1]-self.outlinePoints.point(5)[1]
+        return (x,y)
+
+    #def drawShape(self, painter):
+    #    print "a"
+
+class CanvasRectangle(CanvasSOMItem):
+    startAngle=math.pi/4
+    segments=4
+    def advancement(self):
+        x=self.outlinePoints.point(0)[0]-self.outlinePoints.point(1)[0]
+        y=self.outlinePoints.point(0)[1]-self.outlinePoints.point(3)[1]
+        return (x,y)
+
 class SOMCanvasView(QCanvasView):
     def __init__(self, master, canvas, *args):
         apply(QCanvasView.__init__, (self,canvas)+args)
         self.master=master
         self.selectionList=[]
+        self.bubble=None
+        self.bubbleNode=None
+        self.showBubbleInfo=True
+        self.includeCodebook=True
+        self.viewport().setMouseTracking(True)
+        
+    def buildBubble(self, node):
+        b=CanvasBubbleInfo(node,None,self.canvas())
+        b.setZ(20)
+        s="Items: "+str(len(node.examples))
+        b.addTextLine(s)
+        
+        if self.includeCodebook:
+            b.addTextLine()
+            b.addTextLine("Codebook vector:")
+            for a in node.referenceExample:
+                b.addTextLine(a.variable.name+": "+str(a))
+            #b.addTextLine()    
+            
+        if node.examples.domain.classVar and len(node.examples):
+            b.addTextLine()
+            dist=orange.Distribution(node.examples.domain.classVar, node.examples)
+            if node.examples.domain.classVar.__class__==orange.FloatVariable:
+                s="Avg "+node.examples.domain.classVar.name+":"+("%.3f" % dist.average())
+                b.addTextLine(s)
+            else:
+                colors=OWGraphTools.ColorPaletteHSV(len(node.examples.domain.classVar.values))
+                for i in range(len(node.examples.domain.classVar.values)):
+                    s=str(node.examples.domain.classVar.values[i])+": "+str(dist[i])
+                    b.addTextLine(s, colors[i])
+        b.fitSquare()
+        b.show()
+        return b
+    def fitBubble(self):
+        bRect=self.bubble.boundingRect()
+        #cRect=self.canvas().rect()
+        flipX=flipY=False
+        if self.canvas().width()<bRect.right():
+            flipX=True
+        if self.canvas().height()<bRect.bottom():
+            flipY=True
+        self.bubble.move(self.bubble.x()-(flipX and self.bubble.width()+20 or 0),
+                         self.bubble.y()-(flipY and self.bubble.height()+20 or 0))
+        
+    def contentsMouseMoveEvent(self, event):
+        pos=event.pos()
+        obj=self.canvas().collisions(pos)
+        if obj and (obj[-1].__class__==CanvasHexagon or obj[-1].__class__==CanvasRectangle) and obj[-1].hasNode:
+            if not self.showBubbleInfo:
+                if self.bubble:
+                    self.bubble.hide()
+                self.canvas().update()
+                return
+            node=obj[-1].node
+            if self.bubbleNode:
+                if node==self.bubbleNode:
+                    self.bubble.move(pos.x()+10,pos.y()+10)
+                else:
+                    self.bubble.setCanvas(None)
+                    self.bubble=self.buildBubble(node)
+                    self.bubble.move(pos.x()+10,pos.y()+10)
+                    self.bubbleNode=node
+            else:
+                self.bubble=self.buildBubble(node)
+                self.bubble.move(pos.x()+10,pos.y()+10)
+                self.bubbleNode=node
+            self.fitBubble()
+        elif self.bubble:
+            self.bubble.setCanvas(None)
+            self.bubble=None
+            self.bubbleNode=None
+        self.canvas().update()
         
     def contentsMousePressEvent(self, event):
         obj=self.canvas().collisions(event.pos())
@@ -131,6 +219,7 @@ class SOMCanvasView(QCanvasView):
                 else:
                     self.clearSelection()
                     self.addSelection(obj[-1])
+            obj[-1].setChanged()
         else:
             self.clearSelection()
         self.master.updateSelection([a.node for a in self.selectionList])
@@ -151,7 +240,7 @@ class SOMCanvasView(QCanvasView):
         
     def invertSelection(self):
         for n in self.canvas().canvasObj:
-            if hasattr(n, "hasNode") and n.hasNode:
+            if n.hasNode:
                 if not n.isSelected:
                     self.addSelection(n)
                 else:
@@ -166,6 +255,7 @@ class SOMCanvas(QCanvas):
     def __init__(self, *args):
         apply(QCanvas.__init__, (self,)+args)
         self.drawMode=1
+        self.showGrid=True
         self.component=0
         self.objSize=25
         self.canvasObj=[]
@@ -198,11 +288,11 @@ class SOMCanvas(QCanvas):
                 self.drawHex()
             else:
                 self.drawRect()
-            minVal=min([float(n.referenceExample[self.component]) for n in self.somMap.nodes])
-            maxVal=max([float(n.referenceExample[self.component]) for n in self.somMap.nodes])
+            minVal=min([n.vector[self.component] for n in self.somMap.nodes])
+            maxVal=max([n.vector[self.component] for n in self.somMap.nodes])
             for o in self.canvasObj:
-                val=255-max(min(255*(float(o.node.referenceExample[self.component])-minVal)/(maxVal-minVal),245),10)
-                o.setBrush(QBrush(QColor(val,val,val)))
+                val=255-max(min(255*(o.node.vector[self.component]-minVal)/(maxVal-minVal),245),10)
+                o.setColor(QColor(val,val,val))
         self.updateLabels()
         
     def redrawSom(self):    #for redrawing without clearing the selection 
@@ -219,111 +309,116 @@ class SOMCanvas(QCanvas):
         self.parent().canvasView.selectionList=newSelection
         self.update()
                 
-    
     def drawHex(self):
-        size=self.objSize
-        x,y=size, size*2
+        size=self.objSize*2-1
+        x,y=size*2, size*2
         for n in self.somMap.nodes:
-            offset=offset=1-abs(n.x%2-2)
-            h=Hexagon(self)
-            h.move(x+n.x*size*2*0.733, y+(n.y*size*2+offset*size)*0.834)
-            h.setNode(n)
+            offset=1-abs(n.x%2-2)
+            h=CanvasHexagon(self)
             h.setSize(size)
+            h.setInnerSize(size)
+            h.setNode(n)
+            (xa,ya)=h.advancement()
+            h.move(x+n.x*xa, y+n.y*ya+offset*ya/2)
             h.show()
-            #h.setBrush(QBrush(Qt.darkGray.light(160-60*len(n.examples)/maxVal)))
             self.canvasObj.append(h)
-        self.resize((self.somMap.xDim+1)*size*2*0.733, (self.somMap.yDim+1)*size*2*0.834)
+        self.resize(x+self.somMap.xDim*xa, y+self.somMap.yDim*ya)
         self.update()
-            
     
     def drawRect(self):
-        size=self.objSize
-        x,y=size, size
+        size=self.objSize*2-1
+        x,y=size*2, size*2
+        self.resize(1,1)    # crashes at update without this line !!!
         for n in self.somMap.nodes:
-            r=Rectangle(self)
-            r.move(x+n.x*size*2, y+n.y*size*2)
-            r.setSize(size*2, size*2)
+            r=CanvasRectangle(self)
+            r.setSize(size)
+            r.setInnerSize(size)
             r.setNode(n)
+            (xa,ya)=r.advancement()
+            r.move(x+n.x*xa, y+n.y*ya)
             r.show()
-            r.setPen(QPen(Qt.NoPen))
             self.canvasObj.append(r)
-        self.resize((self.somMap.xDim+1)*size*2, (self.somMap.yDim+1)*size*2)
+        self.resize(self.somMap.xDim*xa, self.somMap.yDim*ya)
         self.update()
-          
+    
     def drawHistogramHex(self):
-        size=self.objSize
-        x,y=size, size*2
+        size=self.objSize*2-1
+        x,y=size*2, size*2
         maxVal=max([len(n.examples) for n in self.somMap.nodes])
         for n in self.somMap.nodes:
             offset=offset=1-abs(n.x%2-2)
-            h=Hexagon(self)
-            h.move(x+n.x*size*2*0.733, y+(n.y*size*2+offset*size)*0.834)
+            h=CanvasHexagon(self)
             h.setNode(n)
-            h.setSize(size*max(float(len(n.examples))/maxVal,1.0/5.0))
+            h.setSize(size)
+            h.setInnerSize(size*float(len(n.examples))/maxVal)
+            (xa,ya)=h.advancement()
+            h.move(x+n.x*xa, y+n.y*ya+offset*ya/2)
             h.show()
             h.setBrush(QBrush(Qt.darkGray.light(160-60*len(n.examples)/maxVal)))
             self.canvasObj.append(h)
-        self.resize((self.somMap.xDim+1)*size*2*0.733, (self.somMap.yDim+1)*size*2*0.834)
+        self.resize(x+self.somMap.xDim*xa, y+self.somMap.yDim*ya)
         self.update()
-            
     
     def drawHistogramRect(self):
-        size=self.objSize
-        x,y=size, size
+        size=self.objSize*2-1
+        x,y=size*2, size*2
         maxVal=max([len(n.examples) for n in self.somMap.nodes]+[1])
         for n in self.somMap.nodes:
-            r=Rectangle(self)
-            r.move(x+n.x*size*2, y+n.y*size*2)
-            s=max(float(len(n.examples))/maxVal,1.0/5.0)
-            r.setSize(size*2*s, size*2*s)
+            r=CanvasRectangle(self)
+            r.setSize(size)
+            r.setInnerSize(size*len(n.examples)/maxVal)
             r.setNode(n)
+            (xa, ya)=r.advancement()
+            r.move(y+n.x*xa, y+n.y*ya)
             r.show()
-            r.setBrush(QBrush(Qt.darkGray.light(160-60*len(n.examples)/maxVal)))
-            r.setPen(QPen(Qt.NoPen))
+            r.setColor((Qt.darkGray.light(160-60*len(n.examples)/maxVal)))
             self.canvasObj.append(r)
-        self.resize((self.somMap.xDim+1)*size*2, (self.somMap.yDim+1)*size*2)
+        self.resize(self.somMap.xDim*xa, self.somMap.yDim*ya)
         self.update()
+        
     
     def drawUMatHex(self):
-        size=self.objSize
-        x,y=size, size
-        #rr=math.sin(2*size/(math.cos(math.pi/3)+1))
+        size=self.objSize*2-1
+        x,y=size*2, size*2
         maxDist=max(reduce(Numeric.maximum, [a for a in self.uMat]))
         minDist=max(reduce(Numeric.minimum, [a for a in self.uMat]))
         for i in range(len(self.uMat)):
             offset=2-abs(i%4-2)
             for j in range(len(self.uMat[i])):
-                h=Hexagon(self)
-                h.move(x+i*size*2*0.733,y+(j*size*2+offset*size)*0.834)
+                h=CanvasHexagon(self)
                 h.setSize(size)
+                h.setInnerSize(size)
+                (xa,ya)=h.advancement()
+                h.move(x+i*xa, y+j*ya+offset*ya/2)
                 if i%2==0 and j%2==0:
                     h.setNode(self.somNodeMap[(i/2,j/2)])
                 h.show()
                 val=255-min(max(255*(self.uMat[i][j]-minDist)/(maxDist-minDist),10),245)
-                h.setBrush(QBrush(QColor(val, val, val)))
+                h.setColor(QColor(val, val, val))
                 self.canvasObj.append(h)
-        self.resize(2*size*(2*self.somMap.xDim)*0.733, 2*size*(2*self.somMap.yDim)*0.834)
+        self.resize(x+self.somMap.xDim*xa*2, y+self.somMap.yDim*ya*2)
         self.update()
         
     def drawUMatRect(self):
-        size=self.objSize
-        x,y=size, size
+        size=self.objSize*2-1
+        x,y=size*2, size*2
         
         maxDist=max(reduce(Numeric.maximum, [a for a in self.uMat]))
         minDist=max(reduce(Numeric.minimum, [a for a in self.uMat]))
         for i in range(len(self.uMat)):
             for j in range(len(self.uMat[i])):
-                r=Rectangle(self)
-                r.move(x+i*size*2,y+j*size*2)
-                r.setSize(size*2, size*2)
+                r=CanvasRectangle(self)
+                r.setSize(size)
+                r.setInnerSize(size)
                 if i%2==0 and j%2==0:
                     r.setNode(self.somNodeMap[(i/2,j/2)])
+                (xa,ya)=r.advancement()
+                r.move(x+i*xa, y+j*ya)
                 r.show()
                 val=255-min(max(255*(self.uMat[i][j]-minDist)/(maxDist-minDist),10),245)
-                r.setBrush(QBrush(QColor(val, val, val)))
-                r.setPen(QPen(Qt.NoPen))
+                r.setColor(QColor(val, val, val))
                 self.canvasObj.append(r)
-        self.resize(2*size*(2*self.somMap.xDim), 2*size*(2*self.somMap.yDim))
+        self.resize(x+self.somMap.xDim*xa*2, y+self.somMap.yDim*ya*2)
         self.update()
         
     def updateLabels(self):
@@ -335,6 +430,10 @@ class SOMCanvas(QCanvas):
                     o.setLabel("")
             else:
                 o.setLabel("")
+        self.updateAll()
+
+    def updateAll(self):
+        self.setAllChanged()
         self.update()
         
     def clear(self):
@@ -372,12 +471,18 @@ class OWSOMVisualizer(OWWidget):
         QRadioButton
         b1=QVBox(box)
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        b=OWGUI.hSlider(b1, self, "canvas.objSize","Size", 25,40, callback=call)
+        b=OWGUI.hSlider(b1, self, "canvas.objSize","Size", 10,20,step=2,ticks=10, callback=call)
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         OWGUI.checkBox(box, self, "labelNodes", "Node Labeling", callback=self.canvas.updateLabels)
+        OWGUI.checkBox(box, self, "canvas.showGrid", "Show Grid", callback=self.canvas.updateAll)
+        b1=OWGUI.widgetBox(box, "Bubble Info")
+        OWGUI.checkBox(b1, self, "canvasView.showBubbleInfo","Show")
+        OWGUI.checkBox(b1, self, "canvasView.includeCodebook", "Include codebook vector")
+        b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         OWGUI.checkBox(box, self, "commitOnChange", "Commit on change")
         OWGUI.button(box, self, "&Invert selection", callback=self.canvasView.invertSelection)
         OWGUI.button(box, self, "&Commit", callback=self.commit)
+        OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph)
         
         self.selectionList=[]
         self.ctrlPressed=False
@@ -430,6 +535,21 @@ class OWSOMVisualizer(OWWidget):
             self.send("Examples",ex)
         else:
             self.send("Examples",None)
+
+    def saveGraph(self):
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        fileName = str(qfileName)
+        if fileName == "": return
+        (fil,ext) = os.path.splitext(fileName)
+        ext = ext.replace(".","")
+        ext = ext.upper()
+        dSize=self.canvas.size()
+        buffer = QPixmap(dSize.width(),dSize.height()) # any size can do, now using the window size
+        painter=QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+        self.canvasView.drawContents(painter,0,0,dSize.width(), dSize.height())
+        painter.end()
+        buffer.save(fileName, ext)
         
     def keyPressEvent(self, event):
         if event.key()==Qt.Key_Control:
