@@ -147,7 +147,13 @@ class CanvasBubbleInfo(CanvasTextContainer):
         
     def setSize(self, w, h):
         CanvasTextContainer.setSize(self, w, h)
-        self.shadow.setSize(w,h)    
+        self.shadow.setSize(w,h)
+
+    def fitSquare(self):
+        w=max([t.boundingRect().width() for t in self.textObj]+[2])
+        h=self.textOffset+2
+        CanvasBubbleInfo.setSize(self, w+2, h)
+
 
 class CanvasNode(CanvasTextContainer):
     def __init__(self, tree, parent=None, *args):
