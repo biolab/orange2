@@ -1,7 +1,8 @@
 TAG=HEAD
 
 cd /home/orange/daily/test_install/orange
-cvs -Q -d :pserver:cvso@estelle.fri.uni-lj.si:/cvs checkout -d . -r $TAG -f regressionTests
+cvs -Q -d :pserver:cvso@estelle.fri.uni-lj.si:/cvs checkout -r $TAG -f regressionTests
+mv regressionTests/* .
 
 # fix the path for the regression test from ../doc to ../orange/doc
 cat xtest.py | sed s/"\.\.\/doc"/"\.\.\/doc\/orange"/ > new.py
