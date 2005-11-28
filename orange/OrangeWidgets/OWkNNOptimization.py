@@ -185,8 +185,8 @@ class OWVizRank(VizRank, OWBaseWidget):
         OWGUI.button(self.buttonBox8, self, "Identify outliers", self.identifyOutliers)
 
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
-        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
+        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.loadProjections)
+        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.saveProjections)
 
         self.buttonBox9 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.saveBestButton = OWGUI.button(self.buttonBox9, self, "Save best graphs", self.exportMultipleGraphs)
@@ -557,60 +557,27 @@ class OWVizRank(VizRank, OWBaseWidget):
     # ##############################################################
 
     # save the list into a file - filename can be set if you want to call this function without showing the dialog
-    def save(self, filename = None):
-        if filename == None:
-            # get file name
-            if self.datasetName != "":
-                filename = "%s - %s" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], self.parentName)
-            else:
-                filename = "%s" % (self.parentName)
-            qname = QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Interesting projections (*.proj)", self, "", "Save Projections")
-            if qname.isEmpty(): return
-            name = str(qname)
-        else:
-            name = filename
+    def saveProjections(self):
         self.setStatusBarText("Saving projections")
 
-        # take care of extension
-        if os.path.splitext(name)[1] != ".proj":
-            name = name + ".proj"
+        # get file name
+        if self.datasetName != "":
+            filename = "%s - %s" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], self.parentName)
+        else:
+            filename = "%s" % (self.parentName)
+        qname = QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Interesting projections (*.proj)", self, "", "Save Projections")
+        if qname.isEmpty(): return
+        name = str(qname)
 
-        dirName, shortFileName = os.path.split(name)
-        self.lastSaveDirName = dirName
+        self.lastSaveDirName = os.path.split(name)[0]
 
-        # open, write and save file
-        file = open(name, "wt")
-        attrs = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm"]
-        dict = {}
-        for attr in attrs: dict[attr] = self.__dict__[attr]
-        dict["dataCheckSum"] = self.data.checksum()
-        
-        file.write("%s\n" % (str(dict)))
-        file.write("%s\n" % str(self.selectedClasses))
-        for (acc, other_results, lenTable, attrList, tryIndex, attrReverseList) in self.shownResults:
-            s = "(%.3f, (" % (acc)
-            for val in other_results:
-                if type(val) == float: s += "%.3f ," % val
-                elif type(val) == list:
-                    s += "["
-                    for el in val:
-                        if type(el) == float: s += "%.3f, " % (el)
-                        elif type(el) == int: s += "%d, " % (el)
-                        else: s += "%s, " % str(el)
-                    if s[-2] == ",": s = s[:-2]
-                    s += "], "
-            if s[-2] == ",": s = s[:-2]
-            s += "), %d, %s, %d, %s)" % (lenTable, str(attrList), tryIndex, attrReverseList)
-            file.write(s + "\n")
-        file.flush()
-        file.close()
+        VizRank.save(self, name, self.shownResults, len(self.shownResults))
+
         self.setStatusBarText("Saved %d projections" % (len(self.shownResults)))
 
 
     # load projections from a file
-    def load(self, name = None, ignoreCheckSum = 0):
-        self.clearResults()
-        self.clearArguments()
+    def loadProjections(self, name = None, ignoreCheckSum = 0):
         self.setStatusBarText("Loading projections")
         if self.data == None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
@@ -624,36 +591,10 @@ class OWVizRank(VizRank, OWBaseWidget):
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
 
-        file = open(name, "rt")
-        settings = eval(file.readline()[:-1])
-        if settings.has_key("parentName") and settings["parentName"] != self.parentName:
-            QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), QMessageBox.Ok)
-            file.close()
-            return
+        selectedClasses, count = VizRank.load(self, name, ignoreCheckSum)
 
-        if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
-            if QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
-                file.close()
-                return
-
-        self.setSettings(settings)
-
-        # find if it was computed for specific class values        
-        line = file.readline()[:-1]
-        selectedClasses = eval(line)
-        for i in range(len(self.data.domain.classVar.values)):
-            self.classesList.setSelected(i, i in selectedClasses)
-
-        ind = 0
-        for line in file.xreadlines():
-            (acc, other_results, lenTable, attrList, tryIndex, attrReverseList) = eval(line)
-            self.insertItem(acc, other_results, lenTable, attrList, ind, tryIndex, attrReverseList)
-            ind+=1
-        file.close()
-
-        # update loaded results
-        self.finishedAddingResults()
-        self.setStatusBarText("Loaded %d projections" % (ind))
+        for i in range(len(self.data.domain.classVar.values)): self.classesList.setSelected(i, i in selectedClasses)
+        self.setStatusBarText("Loaded %d projections" % (count))
 
     def showKNNCorect(self):
         self.showKNNWrongButton.setOn(0)

@@ -749,6 +749,90 @@ class VizRank:
             self.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
             self.parentWidget.progressBarFinished()
 
+    # ##############################################################
+    # Loading and saving projection files
+    # ##############################################################
+
+    # save the list into a file - filename can be set if you want to call this function without showing the dialog
+    def save(self, name, results = None, count = 1000):
+        # take care of extension
+        if os.path.splitext(name)[1] != ".proj": name = name + ".proj"
+
+        if not results: results = self.results
+
+        dirName, shortFileName = os.path.split(name)
+        self.lastSaveDirName = dirName
+
+        # open, write and save file
+        file = open(name, "wt")
+        attrs = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm"]
+        dict = {}
+        for attr in attrs: dict[attr] = self.__dict__[attr]
+        dict["dataCheckSum"] = self.data.checksum()
+        
+        file.write("%s\n%s\n" % (str(dict), str(self.selectedClasses)))
+
+        for i in range(len(results)):
+            if i >= count: break
+
+            (acc, other_results, lenTable, attrList, tryIndex, attrReverseList) = results[i]
+            
+            s = "(%.3f, (" % (acc)
+            for val in other_results:
+                if type(val) == float: s += "%.3f ," % val
+                elif type(val) == list:
+                    s += "["
+                    for el in val:
+                        if type(el) == float: s += "%.3f, " % (el)
+                        elif type(el) == int: s += "%d, " % (el)
+                        else: s += "%s, " % str(el)
+                    if s[-2] == ",": s = s[:-2]
+                    s += "], "
+            if s[-2] == ",": s = s[:-2]
+            s += "), %d, %s, %d, %s)" % (lenTable, str(attrList), tryIndex, attrReverseList)
+            file.write(s + "\n")
+        file.flush()
+        file.close()
+        return i
+
+
+    # load projections from a file
+    def load(self, name, ignoreCheckSum = 1):
+        self.clearResults()
+        self.clearArguments()
+        
+        file = open(name, "rt")
+        settings = eval(file.readline()[:-1])
+        if settings.has_key("parentName") and settings["parentName"] != self.parentName:
+            if self.__class__ != VizRank:
+                print 'Unable to load projection file. It was saved for %s method'%(settings["parentName"])
+            else:
+                QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), QMessageBox.Ok)
+            file.close()
+            return
+
+        if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
+            if self.__class__ != VizRank:
+                print "'The current data set has a different checksum than the data set that was used to evaluate projections in this file. Continuing loading the file anyway..."
+            elif QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
+                file.close()
+                return
+
+        self.setSettings(settings)
+
+        # find if it was computed for specific class values        
+        selectedClasses = eval(file.readline()[:-1])
+        
+        count = 0
+        for line in file.xreadlines():
+            (acc, other_results, lenTable, attrList, tryIndex, attrReverseList) = eval(line)
+            self.insertItem(acc, other_results, lenTable, attrList, count, tryIndex, attrReverseList)
+            count+=1
+        file.close()
+
+        # update loaded results
+        self.finishedAddingResults()
+        return selectedClasses, count
 
 
 # ###############################################################################################################################################
