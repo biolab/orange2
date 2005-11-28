@@ -608,7 +608,13 @@ class OWGraph(QwtPlot):
     def saveToMatplotlib(self, fileName, size = QSize(400,400)):
         f = open(fileName, "wt")
 
-        f.write("from pylab import *\n\nfigure(facecolor = 'w', figsize = (%f,%f), dpi = 80)\nhold(True)\n" % (size.width()/80., size.height()/80.))
+        x1 = self.axisScale(QwtPlot.xBottom).lBound(); x2 = self.axisScale(QwtPlot.xBottom).hBound()
+        y1 = self.axisScale(QwtPlot.yLeft).lBound();   y2 = self.axisScale(QwtPlot.yLeft).hBound()
+
+        if not (self.axisScaleDraw(QwtPlot.xBottom).options() and self.axisScaleDraw(QwtPlot.yLeft).options()): edgeOffset = 0.01
+        else: edgeOffset = 0.08
+
+        f.write("from pylab import *\n\n#constants\nx1 = %f; x2 = %f\ny1 = %f; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = %f\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\nhold(True)\n" % (x1,x2,y1,y2,size.width(), size.height(), edgeOffset))
 
         # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
         linestyles = ["o", "-", "-.", "--", ":", "-", "-"]
@@ -652,12 +658,9 @@ class OWGraph(QwtPlot):
         # grid
         f.write("# enable grid\ngrid(%s)\n\n" % (self.grid().xEnabled() and self.grid().yEnabled() and "True" or "False"))
 
-        x1 = self.axisScale(QwtPlot.xBottom).lBound(); x2 = self.axisScale(QwtPlot.xBottom).hBound()
-        y1 = self.axisScale(QwtPlot.yLeft).lBound();   y2 = self.axisScale(QwtPlot.yLeft).hBound()
-
         # axis
         if not (self.axisScaleDraw(QwtPlot.xBottom).options() and self.axisScaleDraw(QwtPlot.yLeft).options()):
-            f.write("#hide axis\naxis('off')\naxis([%f, %f, %f, %f])\ngca().set_position([0.01,0.01,0.98,0.98])\n" % (x1, x2, y1, y2))
+            f.write("#hide axis\naxis('off')\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n")
         else:
             if self.axisScaleDraw(QwtPlot.yLeft).__class__ == DiscreteAxisScaleDraw:
                 labels = self.axisScaleDraw(QwtPlot.yLeft).labels
@@ -667,7 +670,7 @@ class OWGraph(QwtPlot):
                 f.write("xticks(%s, %s)\n" % (range(len(labels)), labels))
 
             f.write("#set axis labels\nxlabel('%s', weight = 'bold')\nylabel('%s', weight = 'bold')\n\n" % (str(self.axisTitle(QwtPlot.xBottom)), str(self.axisTitle(QwtPlot.yLeft))))
-            f.write("\naxis([%f, %f, %f, %f])\ngca().set_position([0.08,0.08,0.85,0.85])\n" % (x1, x2, y1, y2))
+            f.write("\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n")
         
         f.write("show()")
         f.close()
