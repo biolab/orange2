@@ -472,6 +472,7 @@ class OWGraph(QwtPlot):
     # HANDLING MOUSE EVENTS
     # ###############################################
     def onMousePressed(self, e):
+        print "onmousepressed", e
         self.mouseCurrentlyPressed = 1
         self.mouseCurrentButton = e.button()
         self.xpos = e.x()
@@ -536,6 +537,7 @@ class OWGraph(QwtPlot):
 
 
     def onMouseReleased(self, e):
+        if not self.mouseCurrentlyPressed: return   # this might happen if we double clicked the widget titlebar
         self.mouseCurrentlyPressed = 0
         self.mouseCurrentButton = 0
         staticClick = 0
