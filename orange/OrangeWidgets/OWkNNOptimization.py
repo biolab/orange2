@@ -3,6 +3,7 @@ from OWWidget import OWWidget
 import OWGUI, OWDlgs, OWVisTools
 from OWGraph import *
 from orngVizRank import *
+from orngScaleData import getVariableValuesSorted
 
 
 class OWVizRank(VizRank, OWBaseWidget):
@@ -1006,18 +1007,18 @@ class OWInteractionAnalysis(OWWidget):
                     color = QColor(v,v,v)
                 else: color = black
                 
-                curve = PolygonCurve(self.graph, QPen(color), QBrush(color))
+                curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
                 key = self.graph.insertCurve(curve)
                 self.graph.setCurveData(key, [x+eps, x+1-eps, x+1-eps, x+eps], [y+eps, y+eps, y+1-eps, y+1-eps])
 
                 if not self.onlyLower:
-                    curve = PolygonCurve(self.graph, QPen(color), QBrush(color))
+                    curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
                     key = self.graph.insertCurve(curve)
                     self.graph.setCurveData(key, [num-1-y+eps, num-1-y+eps, num-y-eps, num-y-eps], [num-1-x+eps, num-x-eps, num-x-eps, num-1-x+eps] )
 
         # draw empty boxes at the diagonal
         for x in range(num):
-            curve = PolygonCurve(self.graph, QPen(black), QBrush(white))
+            curve = PolygonCurve(self.graph, QPen(black, 1), QBrush(white))
             key = self.graph.insertCurve(curve)
             self.graph.setCurveData(key, [x+eps, x+1-eps, x+1-eps, x+eps], [num-x-1+eps, num-x-1+eps, num-x-eps, num-x-eps])
 
@@ -1143,16 +1144,17 @@ class OWGraphAttributeHistogram(OWWidget):
             else:
                 color = black
             
-            curve = PolygonCurve(self.graph, QPen(color), QBrush(color))
+            curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
             key = self.graph.insertCurve(curve)
             #print type(ind+eps), type(eps), type(count)
-            self.graph.setCurveData(key, [ind+eps, ind + 1 - eps, ind + 1 - eps, ind+eps], [0, 0, count, count])
+            self.graph.setCurveData(key, [ind+eps, ind + 1 - eps, ind + 1 - eps, ind+eps, ind+eps], [0, 0, count, count, 0])
 
             # draw attribute names
-            if self.rotateXAttributes: marker = MyMarker(self.graph, attr, ind + 0.5, -0.3, 90)
-            else: marker = MyMarker(self.graph, attr, ind + 0.5, -0.3, 0)
+            y = -attrs[0][0] * 0.03
+            if self.rotateXAttributes: marker = MyMarker(self.graph, attr, ind + 0.5, y, 90)
+            else: marker = MyMarker(self.graph, attr, ind + 0.5, y, 0)
             mkey = self.graph.insertMarker(marker)
-            if self.rotateXAttributes: self.graph.marker(mkey).setLabelAlignment(Qt.AlignLeft+ Qt.AlignCenter)
+            if self.rotateXAttributes: self.graph.marker(mkey).setLabelAlignment(Qt.AlignLeft+ Qt.AlignVCenter)
             else: self.graph.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
         
         self.graph.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())

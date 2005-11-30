@@ -8,7 +8,7 @@ from OWTools import *
 from qwt import *
 from OWGraphTools import *      # color palletes, user defined curves, ...
 from OWDlgs import OWChooseImageSizeDlg
-import qtcanvas, orange
+import qtcanvas, orange, math
 
 NOTHING = 0
 ZOOMING = 1
@@ -472,7 +472,6 @@ class OWGraph(QwtPlot):
     # HANDLING MOUSE EVENTS
     # ###############################################
     def onMousePressed(self, e):
-        print "onmousepressed", e
         self.mouseCurrentlyPressed = 1
         self.mouseCurrentButton = e.button()
         self.xpos = e.x()
@@ -706,19 +705,23 @@ class MyQToolTip(QToolTip):
 class PolygonCurve(QwtPlotCurve):
     def __init__(self, parent, pen = QPen(Qt.black), brush = QBrush(Qt.white)):
         QwtPlotCurve.__init__(self, parent)
-        self.pen = pen
-        self.brush = brush
-
+        self.setPen(pen)
+        self.setBrush(brush)
+        self.Pen = pen
+        self.Brush = brush
+    """
     def setPen(self, pen):
-        self.pen = pen
+        self.Pen = pen
 
     def setBrush(self, brush):
-        self.brush = brush
-
+        self.Brush = brush
+    """
     # Draws rectangles with the corners taken from the x- and y-arrays.        
     def draw(self, painter, xMap, yMap, start, stop):
-        painter.setPen(self.pen)
-        painter.setBrush(self.brush)
+        #painter.setPen(self.Pen)
+        #painter.setBrush(self.Brush)
+        painter.setPen(self.pen())
+        painter.setBrush(self.brush())
         if stop == -1: stop = self.dataSize()
         start = max(start, 0)
         stop = max(stop, 0)

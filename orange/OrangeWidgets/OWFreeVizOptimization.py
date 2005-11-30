@@ -189,7 +189,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
             self.cbforcerel.setDisabled(False)
             self.cbforcebal.setDisabled(False)
             
-        print "Updated: %i, %i" % (self.attractG, self.repelG)
+        self.printVerbose("Updated: %i, %i" % (self.attractG, self.repelG))
 
     def forceLawChanged(self):
         self.spinSigma.setDisabled(self.cbLaw.currentItem() != 2)
