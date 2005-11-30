@@ -83,7 +83,10 @@ public:
   static const TIdentifierDeclaration typeIdentifiers[] ;
 
   TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old);
-  TTabDelimExampleGenerator(const string &, bool autoDetect, bool csv, PVarList sourceVars = PVarList(), TMetaVector *sourceMetas = NULL, PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false, const char *aDK = NULL, const char *aDC = NULL);
+  TTabDelimExampleGenerator(const string &, bool autoDetect, bool csv, PVarList sourceVars = PVarList(),
+                            TMetaVector *sourceMetas = NULL, PDomain sourceDomain = PDomain(),
+                            bool dontCheckStored = false, bool dontStore = false,
+                            const char *aDK = NULL, const char *aDC = NULL, bool noCodedDiscrete = false, bool noClass = false);
   ~TTabDelimExampleGenerator();
 
   virtual bool readExample (TFileExampleIteratorData &, TExample &);
@@ -91,8 +94,8 @@ public:
   void atomList2Example(vector<string> &atoms, TExample &exam, const TFileExampleIteratorData &fei);
 
   char *mayBeTabFile(const string &stem);
-  PDomain readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
-  PDomain domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
+  PDomain readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore, bool noCodedDiscrete, bool noClass);
+  PDomain domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool noCodedDiscrete, bool noClass);
   PDomain domainWithoutDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
 
 private:

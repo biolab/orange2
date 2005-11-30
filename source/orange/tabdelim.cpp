@@ -64,7 +64,7 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGener
 {}
 
 
-TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool autoDetect, bool acsv, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore, const char *aDK, const char *aDC)
+TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool autoDetect, bool acsv, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore, const char *aDK, const char *aDC, bool noCodedDiscrete, bool noClass)
 : TFileExampleGenerator(afname, PDomain()),
   attributeTypes(mlnew TIntList()),
   DCs(),
@@ -75,7 +75,7 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool 
   csv(acsv)
 { 
   // domain needs to be initialized after attributeTypes, DCs, classPos, headerLines
-  domain = readDomain(afname, autoDetect, sourceVars, sourceMetas, sourceDomain, dontCheckStored, dontStore);
+  domain = readDomain(afname, autoDetect, sourceVars, sourceMetas, sourceDomain, dontCheckStored, dontStore, noCodedDiscrete, noClass);
 
   TFileExampleIteratorData fei(afname);
   
@@ -295,7 +295,7 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
   return NULL;
 }
 
-PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore, bool noCodedDiscrete, bool noClass)
 { 
   // non-NULL when this cannot be tab file (reason given as result)
   // NULL if this seems a valid tab file
@@ -307,7 +307,7 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
     else
       mldelete isNotTab;
 
-    return domainWithDetection(stem, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
+    return domainWithDetection(stem, sourceVars, sourceMetas, sourceDomain, dontCheckStored, noCodedDiscrete, noClass);
   }
 
   else {
@@ -359,7 +359,7 @@ class TSearchWarranty
   {}
 };
 
-PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
+PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool noCodedDiscrete, bool noClass)
 { 
   headerLines = 1;
 
@@ -476,8 +476,10 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
     if (classType<0)
       searchWarranties.push_back(TSearchWarranty(classPos, attributeDescriptions.size()-1));
   }
-  else
-    classPos = attributeDescriptions.size()-1;
+  else {
+    if (!noClass)
+      classPos = attributeDescriptions.size()-1;
+  }
 
   if (!searchWarranties.empty()) {
     vector<string> atoms;
@@ -551,7 +553,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
       if ((*wi).suspectedType == 3)
         raiseWarning("cannot determine type for attribute '%s'; the attribute will be ignored", name.c_str());
 
-      int type = (*wi).suspectedType == 2 ? TValue::INTVAR : TValue::FLOATVAR;
+      int type = (*wi).suspectedType == 2 && !noCodedDiscrete ? TValue::INTVAR : TValue::FLOATVAR;
       if ((*wi).posInDomain<0)
         metas[-(*wi).posInDomain - 1].varType = type;
       else
@@ -566,14 +568,14 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
   }
 
   if (sourceDomain) {
-    if (!domainDepot_txt.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+    if (!domainDepot_txt.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, classPos>-1, NULL))
       raiseError("given domain does not match the file");
     else
       return sourceDomain;
   }
 
   int *metaIDs = mlnew int[metas.size()];
-  PDomain newDomain = domainDepot_txt.prepareDomain(&attributeDescriptions, true, &metas, sourceVars, sourceMetas, false, dontCheckStored, NULL, metaIDs);
+  PDomain newDomain = domainDepot_txt.prepareDomain(&attributeDescriptions, classPos>-1, &metas, sourceVars, sourceMetas, false, dontCheckStored, NULL, metaIDs);
 
   int *mid = metaIDs;
   PITERATE(TIntList, ii, attributeTypes)

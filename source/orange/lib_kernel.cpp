@@ -1988,7 +1988,7 @@ PyObject *ExampleGeneratorList_sort(TPyOrange *self, PyObject *args) PYARGS(METH
 #include "numeric_interface.hpp"
 #endif
 
-TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC);
+TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noCodedDiscrete, bool noClass);
 
 
 TExampleTable *readListOfExamples(PyObject *args)
@@ -2197,7 +2197,7 @@ bool hasFlag(PyObject *keywords, char *flag)
 }
 
 
-CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA")
+CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA noClass noCodedDiscrete")
 
 
 
@@ -2232,7 +2232,7 @@ PyObject *loadDataByPython(PyTypeObject *type, char *filename, PyObject *argstup
 
 bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC);
 
-TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false);
+TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false);
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
 {  
@@ -2257,7 +2257,7 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
       if (!readUndefinedSpecs(keywords, DK, DC))
         return PYNULL;
 
-      TExampleTable *table = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, true);
+      TExampleTable *table = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, true, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"));
       if (table)
         return WrapNewOrange(table, type);
 
