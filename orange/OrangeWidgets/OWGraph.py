@@ -697,7 +697,7 @@ class MyQToolTip(QToolTip):
     def maybeTip(self, p):
         if self.rect and self.text:
             if self.rect.contains(p):
-                self.tip(self.rect, text)
+                self.tip(self.rect, self.text)
         
 # ###########################################################
 # a class that is able to draw arbitrary polygon curves.
