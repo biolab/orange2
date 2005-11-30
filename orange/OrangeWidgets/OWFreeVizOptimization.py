@@ -30,6 +30,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.forceRelation = 5
         self.disableAttractive = 0
         self.disableRepulsive = 0
+        self.useGeneralizedEigenvectors = 0
         
         self.graph = graph
         
@@ -134,8 +135,8 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         # ##########################
         # LINEAR TRANSFORMATION TAB
-        OWGUI.button(self.LinearTransformationTab, self, "Find The Best Linear Projection", callback = self.findLinearProjection)        
-
+        OWGUI.button(self.LinearTransformationTab, self, "Separate Different Classes", callback = self.findLinearProjection)        
+        OWGUI.checkBox(self.LinearTransformationTab, self, "useGeneralizedEigenvectors", "Try to merge examples with same class value")
 
         # ###########################
         self.statusBar = QStatusBar(self)
@@ -419,10 +420,17 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         s = Numeric.sum(L)
         for i in range(len(selectedData)):
             L[i,i] = -s[i]
-        print L[0]
+        #print L[0]
 
+        if self.useGeneralizedEigenvectors:
+            covarMatrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), selectedData)
+            matrix = LinearAlgebra.inverse(covarMatrix)
+            matrix = Numeric.matrixmultiply(matrix, Numeric.transpose(selectedData))
+        else:
+            matrix = Numeric.transpose(selectedData)
+        
         # compute selectedDataT * L * selectedData
-        matrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), L)
+        matrix = Numeric.matrixmultiply(matrix, L)
         matrix = Numeric.matrixmultiply(matrix, selectedData)
         vals, vectors = LinearAlgebra.eigenvectors(matrix)
         firstInd  = list(vals).index(max(vals)); vals[firstInd] = -1   # save the index of the largest eigenvector
