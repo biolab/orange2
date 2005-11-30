@@ -6,9 +6,6 @@ from operator import add
 def sum(x):
     return reduce(add, x)
 
-def boostrapSample(examples, rand, returnOutOfBag=0):
-    
-
 ########################################################################
 # Boosting
 
