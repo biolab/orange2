@@ -25,6 +25,8 @@ class FreeViz:
         self.forceBalancing = 0
         self.forceSigma = 1.0
         self.mirrorSymmetry = 1
+        self.useGeneralizedEigenvectors = 1
+
 
     def showAllAttributes(self):
         self.graph.anchorData = [(0,0, a.name) for a in self.graph.rawdata.domain.attributes]
@@ -72,7 +74,6 @@ class FreeViz:
         self.graph.anchorData = anchors
 
     def optimizeSeparation(self, steps = 10, singleStep = False):
-
         if self.implementation == FAST_IMPLEMENTATION:
             self.optimize_FAST_Separation(steps, singleStep)
         else:
@@ -215,10 +216,9 @@ class FreeViz:
         #self.graph.updateData(attrs, 0)
         return [(newXAnchors[i], newYAnchors[i], anchorData[i][2]) for i in range(len(anchorData))], (newXAnchors, newYAnchors)
 
-        
             
     def optimize_SLOW_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
-        dataSize = len(self.rawdata)
+        dataSize = len(self.graph.rawdata)
         validData = self.graph.getValidList(attrIndices)
         selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
 
@@ -273,13 +273,87 @@ class FreeViz:
             
 ##    def recomputeEnergy(self, newEnergy = None):
 ##        if not newEnergy:
-##            classes = [int(x.getclass()) for x in self.rawdata]
+##            classes = [int(x.getclass()) for x in self.graph.rawdata]
 ##            ai = self.graph.attributeNameIndex
 ##            attrIndices = [ai[label] for label in self.parentWidget.getShownAttributeList()]
 ##            newEnergy = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
 ##        if self.__class__ != FreeViz:
 ##            self.energyLabel.setText("Energy: %.3f" % newEnergy)
 ##            self.energyLabel.repaint()
+
+    def findLinearProjection(self, attrIndices = None):
+        import LinearAlgebra
+
+        ai = self.graph.attributeNameIndex
+        if not attrIndices:
+            attributes = self.getShownAttributeList()
+            attrIndices = [ai[label] for label in attributes]
+            
+        validData = self.graph.getValidList(attrIndices)
+        if sum(validData) <= len(attrIndices):
+            print "More attributes than examples. Singular matrix. Exiting..."
+            return
+        
+        self.graph.normalizeExamples = 0
+        
+        selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
+        classData = Numeric.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
+        selectedData = Numeric.transpose(selectedData)
+        
+        s = Numeric.sum(selectedData)/float(len(selectedData))  
+        selectedData -= s       # substract average value to get zero mean
+
+        #for i in range(len(attrIndices)):
+        #    self.graph.noJitteringScaledData[attrIndices[i]] -= s[i]
+
+        # define the Laplacian matrix
+        L = Numeric.zeros((len(selectedData), len(selectedData)))
+        for i in range(len(selectedData)):
+            for j in range(i+1, len(selectedData)):
+                L[i,j] = -(classData[i] != classData[j])
+                L[j,i] = -(classData[i] != classData[j])
+        
+        s = Numeric.sum(L)
+        for i in range(len(selectedData)):
+            L[i,i] = -s[i]
+        #print L[0]
+
+        if self.useGeneralizedEigenvectors:
+            covarMatrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), selectedData)
+            matrix = LinearAlgebra.inverse(covarMatrix)
+            matrix = Numeric.matrixmultiply(matrix, Numeric.transpose(selectedData))
+        else:
+            matrix = Numeric.transpose(selectedData)
+        
+        # compute selectedDataT * L * selectedData
+        matrix = Numeric.matrixmultiply(matrix, L)
+        matrix = Numeric.matrixmultiply(matrix, selectedData)
+        vals, vectors = LinearAlgebra.eigenvectors(matrix)
+        firstInd  = list(vals).index(max(vals)); vals[firstInd] = -1   # save the index of the largest eigenvector
+        secondInd = list(vals).index(max(vals));                       # save the index of the second largest eigenvector
+
+        xAnchors = vectors[firstInd]
+        yAnchors = vectors[secondInd]
+
+        lengthArr = xAnchors**2 + yAnchors**2
+        m = math.sqrt(max(lengthArr))
+        xAnchors /= m
+        yAnchors /= m
+        names = self.graph.attributeNames
+        attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
+
+        temp = [(lengthArr[i], i) for i in range(len(lengthArr))]
+        temp.sort()
+
+        newXAnchors = []; newYAnchors = []; newAttributes = []
+        for i in range(len(temp))[::-1]:        # move from the longest attribute to the shortest
+            newXAnchors.append(xAnchors[temp[i][1]])
+            newYAnchors.append(yAnchors[temp[i][1]])
+            newAttributes.append(attributes[temp[i][1]])
+        
+        self.graph.setAnchors(newXAnchors, newYAnchors, newAttributes)
+
+        return newAttributes, newXAnchors, newYAnchors
 
 
 # #############################################################################

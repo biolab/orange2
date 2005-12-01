@@ -11,7 +11,8 @@ from orngFreeViz import *
 class FreeVizOptimization(OWBaseWidget, FreeViz):
     settingsList = ["stepsBeforeUpdate", "restrain", "differentialEvolutionPopSize",
                     "s2nSpread", "s2nPlaceAttributes", "autoSetParameters",
-                    "forceRelation", "mirrorSymmetry", "forceSigma", "restrain", "law", "forceRelation", "disableAttractive", "disableRepulsive"]
+                    "forceRelation", "mirrorSymmetry", "forceSigma", "restrain", "law", "forceRelation", "disableAttractive",
+                    "disableRepulsive", "useGeneralizedEigenvectors"]
     attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000]
     #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
 
@@ -30,9 +31,8 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.forceRelation = 5
         self.disableAttractive = 0
         self.disableRepulsive = 0
-        self.useGeneralizedEigenvectors = 0
-        
         self.graph = graph
+        self.rawdata = None
         
         if self.graph:
             self.graph.hideRadius = 0
@@ -201,7 +201,8 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
             if self.restrain == 1:
                 positions = Numeric.transpose(positions) * Numeric.sum(positions**2,1)**-0.5
-                self.graph.anchorData = [(positions[0][i], positions[1][i], a) for i, a in enumerate(attrList)]
+                self.graph.setAnchors(positions[0], positions[1], attrList)
+                #self.graph.anchorData = [(positions[0][i], positions[1][i], a) for i, a in enumerate(attrList)]
             else:
                 r = Numeric.sqrt(Numeric.sum(positions**2, 1))
                 phi = 2*math.pi/len(r)
@@ -391,58 +392,17 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
     def findLinearProjection(self):
         import LinearAlgebra
-        
-        self.graph.normalizeExamples = 0
+
         ai = self.graph.attributeNameIndex
         attributes = self.getShownAttributeList()
         attrIndices = [ai[label] for label in attributes]
         validData = self.graph.getValidList(attrIndices)
-        selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
-        classData = Numeric.compress(validData, self.graph.noJitteringScaledData[ai[self.rawdata.domain.classVar.name]])
-        selectedData = Numeric.transpose(selectedData)
-        if len(attrIndices) > len(selectedData):
+        if sum(validData) <= len(attrIndices):
             self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
             return
         
-        s = Numeric.sum(selectedData)/float(len(selectedData))  
-        selectedData -= s       # substract average value to get zero mean
-
-        #for i in range(len(attrIndices)):
-        #    self.graph.noJitteringScaledData[attrIndices[i]] -= s[i]
-
-        # define the Laplacian matrix
-        L = Numeric.zeros((len(selectedData), len(selectedData)))
-        for i in range(len(selectedData)):
-            for j in range(i+1, len(selectedData)):
-                L[i,j] = -(classData[i] != classData[j])
-                L[j,i] = -(classData[i] != classData[j])
+        FreeViz.findLinearProjection(self, attrIndices)
         
-        s = Numeric.sum(L)
-        for i in range(len(selectedData)):
-            L[i,i] = -s[i]
-        #print L[0]
-
-        if self.useGeneralizedEigenvectors:
-            covarMatrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), selectedData)
-            matrix = LinearAlgebra.inverse(covarMatrix)
-            matrix = Numeric.matrixmultiply(matrix, Numeric.transpose(selectedData))
-        else:
-            matrix = Numeric.transpose(selectedData)
-        
-        # compute selectedDataT * L * selectedData
-        matrix = Numeric.matrixmultiply(matrix, L)
-        matrix = Numeric.matrixmultiply(matrix, selectedData)
-        vals, vectors = LinearAlgebra.eigenvectors(matrix)
-        firstInd  = list(vals).index(max(vals)); vals[firstInd] = -1   # save the index of the largest eigenvector
-        secondInd = list(vals).index(max(vals));                       # save the index of the second largest eigenvector
-
-        xAnchors = vectors[firstInd]
-        yAnchors = vectors[secondInd]
-
-        m = math.sqrt(max(xAnchors**2 + yAnchors**2))
-        xAnchors /= m
-        yAnchors /= m
-        self.graph.anchorData = [(xAnchors[i], yAnchors[i], attributes[i]) for i in range(len(attributes))]
         self.graph.updateData()
         self.graph.repaint()
 
