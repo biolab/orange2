@@ -300,8 +300,7 @@ class SchemaDoc(QMainWindow):
         self.enableSave(TRUE)
 
     def clear(self):
-        while self.widgets != []:
-            self.removeWidget(self.widgets[0])
+        for widget in self.widgets[::-1]:   self.removeWidget(widget)   # remove widgets from last to first
         self.canvas.update()
 
     def enableAllLines(self):
