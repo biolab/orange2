@@ -90,27 +90,28 @@ class OutputWindow(QMainWindow):
         #if len(text) > 7 and text[0:7] == "<extra>":
         #    if not self.printExtraOutput: return
         #    text = text[7:]
-        if text == "\n": return
-
+        text = str(text)
         text = text.replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
         text = text.replace("(br)", "<br>")
         text = text.replace("(nobr)", "<nobr>").replace("(/nobr)", "</nobr>")
         text = text.replace("(b)", "<b>").replace("(/b)", "</b>")
         text = text.replace("(i)", "<i>").replace("(/i)", "</i>")
         text = text.replace("(hr)", "<hr>")
-        text = text.replace("\n", "<br>/n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
-        text = "<nobr>" + text + "</nobr>"  
+        text = text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
+        #text = "<nobr>" + text + "</nobr>"  
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
             self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         if self.writeLogFile:
-            self.logFile.write(str(text) + "<br>\n")
+            #self.logFile.write(str(text) + "<br>\n")
+            self.logFile.write(text)
             
-        self.textOutput.append(str(text))
+        #self.textOutput.append(text)
+        self.textOutput.setText(str(self.textOutput.text()) + text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
-        if self.printOutput:
+        if self.printOutput and text != "<br>\n":
             self.canvasDlg.setStatusBarEvent(text)
         
     def writelines(self, lines):
@@ -131,7 +132,7 @@ class OutputWindow(QMainWindow):
 
         text = ""
         t = localtime()
-        text += "<nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
+        text += "<hr><nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
 
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
@@ -155,7 +156,7 @@ class OutputWindow(QMainWindow):
             
         text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr><br>"
         text += "<nobr>" + totalSpace + "Exception value: <b>" + str(value)+ "</b></nobr><br><hr>"
-        self.textOutput.append(text)
+        self.textOutput.setText(str(self.textOutput.text()) + text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 
         if self.writeLogFile:
