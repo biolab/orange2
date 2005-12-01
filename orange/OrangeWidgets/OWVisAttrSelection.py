@@ -201,7 +201,8 @@ class S2NMeasure:
                 temp = 0.0
                 for j in cls:
                     for k in range(j+1, clsCount):
-                        temp += abs((stats[j][i].avg - stats[k][i].avg) / (stats[j][i].dev + stats[k][i].dev))
+                        if (stats[j][i].dev + stats[k][i].dev) > 0:
+                            temp += abs((stats[j][i].avg - stats[k][i].avg) / (stats[j][i].dev + stats[k][i].dev))
                 self.attrInfo[data.domain.attributes[i].name] = temp
                 
         if self.attrInfo.has_key(data.domain[attr].name):
