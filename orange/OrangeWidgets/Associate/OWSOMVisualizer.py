@@ -12,6 +12,7 @@ from OWWidget import *
 from qt import *
 from qtcanvas import *
 from OWTreeViewer2D import CanvasBubbleInfo
+from OWDlgs import OWChooseImageSizeDlg
 
 class CanvasSOMItem(QCanvasPolygon):
     startAngle=0
@@ -33,7 +34,7 @@ class CanvasSOMItem(QCanvasPolygon):
     def move(self, x, y):
         ox, oy=self.x(), self.y()
         dx, dy=ox-x, oy-y
-        self.outlinePoints.translate(x,y)
+        self.outlinePoints.translate(-dx,-dy)
         QCanvasPolygon.move(self, x, y)
 
     def areaPoints(self):
@@ -99,6 +100,7 @@ class CanvasSOMItem(QCanvasPolygon):
             if self.labelText:
                 painter.drawText(self.boundingRect(), Qt.AlignVCenter | Qt.AlignLeft, " "+self.labelText)
             else:
+                #return 
                 painter.setBrush(QBrush(self.isSelected and Qt.red or self.textColor))
                 painter.drawPie(self.x()-2,self.y()-2,4,4,0,5760)
         #self.setChanged()
@@ -114,9 +116,6 @@ class CanvasHexagon(CanvasSOMItem):
         x=width-(width-line)/2
         y=self.outlinePoints.point(2)[1]-self.outlinePoints.point(5)[1]
         return (x,y)
-
-    #def drawShape(self, painter):
-    #    print "a"
 
 class CanvasRectangle(CanvasSOMItem):
     startAngle=math.pi/4
@@ -147,7 +146,8 @@ class SOMCanvasView(QCanvasView):
             b.addTextLine()
             b.addTextLine("Codebook vector:")
             for a in node.referenceExample:
-                b.addTextLine(a.variable.name+": "+str(a))
+                if a.variable!=node.referenceExample.domain.classVar:
+                    b.addTextLine(a.variable.name+": "+str(a))
             #b.addTextLine()    
             
         if node.examples.domain.classVar and len(node.examples):
@@ -338,13 +338,15 @@ class SOMCanvas(QCanvas):
             r.move(x+n.x*xa, y+n.y*ya)
             r.show()
             self.canvasObj.append(r)
-        self.resize(self.somMap.xDim*xa, self.somMap.yDim*ya)
+        self.resize(x+self.somMap.xDim*xa, y+self.somMap.yDim*ya)
         self.update()
     
     def drawHistogramHex(self):
         size=self.objSize*2-1
         x,y=size*2, size*2
         maxVal=max([len(n.examples) for n in self.somMap.nodes])
+        colors=OWGraphTools.ColorPaletteHSV(len(n.examples.domain.classVar.values))
+        self.resize(1,1)    # crashes at update without this line !!!
         for n in self.somMap.nodes:
             offset=offset=1-abs(n.x%2-2)
             h=CanvasHexagon(self)
@@ -354,7 +356,7 @@ class SOMCanvas(QCanvas):
             (xa,ya)=h.advancement()
             h.move(x+n.x*xa, y+n.y*ya+offset*ya/2)
             h.show()
-            h.setBrush(QBrush(Qt.darkGray.light(160-60*len(n.examples)/maxVal)))
+            h.setColor(Qt.lightGray) #colors[int(n.classifier.defaultVal)])
             self.canvasObj.append(h)
         self.resize(x+self.somMap.xDim*xa, y+self.somMap.yDim*ya)
         self.update()
@@ -363,6 +365,7 @@ class SOMCanvas(QCanvas):
         size=self.objSize*2-1
         x,y=size*2, size*2
         maxVal=max([len(n.examples) for n in self.somMap.nodes]+[1])
+        colors=OWGraphTools.ColorPaletteHSV(len(n.examples.domain.classVar.values))
         for n in self.somMap.nodes:
             r=CanvasRectangle(self)
             r.setSize(size)
@@ -371,9 +374,9 @@ class SOMCanvas(QCanvas):
             (xa, ya)=r.advancement()
             r.move(y+n.x*xa, y+n.y*ya)
             r.show()
-            r.setColor((Qt.darkGray.light(160-60*len(n.examples)/maxVal)))
+            r.setColor(colors[int(n.classifier.defaultVal)])
             self.canvasObj.append(r)
-        self.resize(self.somMap.xDim*xa, self.somMap.yDim*ya)
+        self.resize(x+self.somMap.xDim*xa, y+self.somMap.yDim*ya)
         self.update()
         
     
@@ -537,6 +540,9 @@ class OWSOMVisualizer(OWWidget):
             self.send("Examples",None)
 
     def saveGraph(self):
+        sizeDlg = OWChooseImageSizeDlg(self.canvas)
+        sizeDlg.exec_loop()
+        return
         qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
         fileName = str(qfileName)
         if fileName == "": return
