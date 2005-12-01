@@ -393,7 +393,7 @@ class DisplayStatistics (QCanvas):
 					maxi_txt.move (self.hbias+self.bar_width_pixels+textoffset, val)
 					maxi_txtL.move (self.hbias-textoffset, val)
 					l = QCanvasLine(self)
-					print max_line
+					#print max_line
 					l.setPoints (self.hbias+self.bar_width_pixels+5, self.vbias, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
 					l.show()
 					l = QCanvasLine(self)

@@ -232,7 +232,6 @@ class orngMosaic:
             return bottom
 
     # insert new result - give parameters: score of projection, number of examples in projection and list of attributes.
-    # parameter attrReverseList can be a list used by polyviz
     def insertItem(self, score, attrList, index, tryIndex):
         self.results.insert(index, (score, attrList, tryIndex))
         

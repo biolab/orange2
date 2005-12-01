@@ -282,7 +282,7 @@ class OWScatterPlot(OWWidget):
     def showSelectedAttributes(self):
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, other_results, tableLen, attrs, tryIndex, strList) = val
+        (accuracy, other_results, tableLen, attrs, tryIndex, generalDict) = val
 
         if self.data.domain.classVar:
             self.attrColor = self.data.domain.classVar.name

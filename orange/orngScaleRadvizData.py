@@ -36,7 +36,10 @@ class orngScaleRadvizData(orngScaleData):
     def __init__(self):
         orngScaleData.__init__(self)
         self.normalizeExamples = 1
+        self.anchorData =[]        # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
         
+    def setAnchors(self, xAnchors, yAnchors, attributes):
+        self.anchorData = [(xAnchors[i], yAnchors[i], attributes[i]) for i in range(len(attributes))]
 
     # create anchors around the circle
     def createAnchors(self, numOfAttr, labels = None):
@@ -60,11 +63,12 @@ class orngScaleRadvizData(orngScaleData):
 
         
     # for attributes in attrIndices and values of these attributes in values compute point positions
-    # function is called from OWClusterOptimization.py
     # this function has more sense in radviz and polyviz methods
     # NOTE: the computed x and y positions are not yet scaled. probably you have to use self.scaleFactor or trueScaleFactor to scale them!!!
-    def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0, anchorRadius = None, normalizeExample = None):
-        if useAnchorData:
+    def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0, XAnchors = None, YAnchors = None, anchorRadius = None, normalizeExample = None):
+        if XAnchors and YAnchors:
+            if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
+        elif useAnchorData:
             XAnchors = Numeric.array([val[0] for val in self.anchorData])
             YAnchors = Numeric.array([val[1] for val in self.anchorData])
             if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)

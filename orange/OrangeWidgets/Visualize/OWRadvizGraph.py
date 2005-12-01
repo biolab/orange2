@@ -33,7 +33,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
         self.triedPossibilities = 0 # how many possibilities did we already try
         self.startTime = time.time()
         self.p = None
-        self.anchorData =[]        # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
+        
         self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
@@ -70,51 +70,10 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
         self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
-
     def setData(self, data):
         OWGraph.setData(self, data)
         orngScaleRadvizData.setData(self, data)
 
-    def computePotentials(self):
-        rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
-        ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
-        if not getattr(self, "potentialsBmp", None) \
-           or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor):
-            if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
-                imagebmp = orangeom.potentialsBitmapCircle(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
-#                imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, 2*rx, 2*ry, rx, ry, self.trueScaleFactor/rx, -self.trueScaleFactor/ry, 3)
-#                palette = [QColor(int(i/254.0*ColorPaletteHSV.maxHueVal), 255, 255, QColor.Hsv).rgb() for i in range(255)] + [qRgb(255, 255, 255)]
-#                palette = [qRgb(i, i, 255) for i in range(0, 254, 2)] + [qRgb(254, i, i) for i in range(255, 0, -2)] + [qRgb(255, 255, 255)]*2
-                palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
-            else:
-                imagebmp, nShades = orangeom.potentialsBitmapCircle(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
-#                imagebmp, nShades = orangeom.potentialsBitmapSquare(self.potentialsClassifier, 2*rx, 2*ry, rx, ry, self.trueScaleFactor/rx, -self.trueScaleFactor/ry, 3)
-                classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
-                colors = [(i.red(), i.green(), i.blue()) for i in classColors]
-
-                palette = []
-                sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
-                for cls in self.potentialsClassifier.classVar.values:
-                    color = colors[sortedClasses.index(cls)]
-                    towhite = [255-c for c in color]
-                    for s in range(nShades):
-                        si = 1-float(s)/nShades
-                        palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
-                palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
-
-            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
-            self.potentialsBmp = QPixmap()
-            self.potentialsBmp.convertFromImage(image)
-            self.potentialContext = (rx, ry, self.trueScaleFactor)
-
-
-    def drawCanvasItems(self, painter, rect, map, pfilter):
-        #print rect.x(), rect.y(), rect.width(), rect.height()
-        #painter.drawPixmap (QPoint(100,30), QPixmap(r"E:\Development\Python23\Lib\site-packages\Orange\orangeWidgets\icons\2DInteractions.png"))
-        if self.showProbabilities and getattr(self, "potentialsClassifier", None):
-            self.computePotentials()
-            painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1)), self.potentialsBmp)
-        OWGraph.drawCanvasItems(self, painter, rect, map, pfilter)
     
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
@@ -842,6 +801,48 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
 
         file.write("\\endpicture\n}\n")
         file.close()
+
+    def computePotentials(self):
+        rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
+        ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
+        if not getattr(self, "potentialsBmp", None) \
+           or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor):
+            if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
+                imagebmp = orangeom.potentialsBitmapCircle(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+#                imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, 2*rx, 2*ry, rx, ry, self.trueScaleFactor/rx, -self.trueScaleFactor/ry, 3)
+#                palette = [QColor(int(i/254.0*ColorPaletteHSV.maxHueVal), 255, 255, QColor.Hsv).rgb() for i in range(255)] + [qRgb(255, 255, 255)]
+#                palette = [qRgb(i, i, 255) for i in range(0, 254, 2)] + [qRgb(254, i, i) for i in range(255, 0, -2)] + [qRgb(255, 255, 255)]*2
+                palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
+            else:
+                imagebmp, nShades = orangeom.potentialsBitmapCircle(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+#                imagebmp, nShades = orangeom.potentialsBitmapSquare(self.potentialsClassifier, 2*rx, 2*ry, rx, ry, self.trueScaleFactor/rx, -self.trueScaleFactor/ry, 3)
+                classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
+                colors = [(i.red(), i.green(), i.blue()) for i in classColors]
+
+                palette = []
+                sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
+                for cls in self.potentialsClassifier.classVar.values:
+                    color = colors[sortedClasses.index(cls)]
+                    towhite = [255-c for c in color]
+                    for s in range(nShades):
+                        si = 1-float(s)/nShades
+                        palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+                palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+
+            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
+            self.potentialsBmp = QPixmap()
+            self.potentialsBmp.convertFromImage(image)
+            self.potentialContext = (rx, ry, self.trueScaleFactor)
+
+
+    def drawCanvasItems(self, painter, rect, map, pfilter):
+        #print rect.x(), rect.y(), rect.width(), rect.height()
+        #painter.drawPixmap (QPoint(100,30), QPixmap(r"E:\Development\Python23\Lib\site-packages\Orange\orangeWidgets\icons\2DInteractions.png"))
+        if self.showProbabilities and getattr(self, "potentialsClassifier", None):
+            self.computePotentials()
+            painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1)), self.potentialsBmp)
+        OWGraph.drawCanvasItems(self, painter, rect, map, pfilter)
+
 
 if __name__== "__main__":
     #Draw a simple graph

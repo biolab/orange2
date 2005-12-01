@@ -311,11 +311,12 @@ class OWPolyviz(OWWidget):
     def showSelectedAttributes(self):
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, other_results, tableLen, attrList, tryIndex, attrReverseList) = val
+        (accuracy, other_results, tableLen, attrList, tryIndex, generalDict) = val
         
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
-
+    
+        attrReverseList = generalDict["reverse"]
         reverseDict = dict([(attrList[i], attrReverseList[i]) for i in range(len(attrList))])
 
         for attr in self.data.domain:
