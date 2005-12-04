@@ -284,8 +284,8 @@ class orngScaleData:
     # get array of 0 and 1 of len = len(self.rawdata). if there is a missing value at any attribute in indices return 0 for that example
     def getValidList(self, indices):
         selectedArray = Numeric.take(self.validDataArray, indices)
-        arr = Numeric.add.reduce(selectedArray) - len(indices)
-        return Numeric.equal(arr, 0)
+        arr = Numeric.add.reduce(selectedArray)
+        return Numeric.equal(arr, len(indices))
 
     # get array with numbers that represent the example indices that have a valid data value
     def getValidIndices(self, indices):
