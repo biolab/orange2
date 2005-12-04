@@ -428,17 +428,8 @@ class VizRank:
             evaluatedAttributes = OWVisAttrSelection.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
             contVars = [orange.FloatVariable(attr.name) for attr in self.data.domain.attributes]
             contDomain = orange.Domain(contVars + [self.data.domain.classVar])
-            fullData = orange.ExampleTable(contDomain)
             attrCount = len(self.data.domain.attributes)
-            for i in range(len(self.data)):
-                fullData.append([self.graph.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.data[i].getclass()])
 
-            # if we want to use heuristics, we first discretize all attributes - this way we discretize the attributes only once
-            if self.evaluationAlgorithm == ALGORITHM_HEURISTIC:
-                attrs = [orange.EquiDistDiscretization(fullData.domain[attr], fullData, numberOfIntervals = NUMBER_OF_INTERVALS) for attr in fullData.domain.attributes]
-                for attr in attrs: attr.name = attr.name[2:]    # remove the "D_" in front of the attribute name
-                fullData = fullData.select(attrs + [fullData.domain.classVar])
-            
             count = len(evaluatedAttributes)*(len(evaluatedAttributes)-1)/2
             strCount = OWVisFuncts.createStringFromNumber(count)
             
@@ -450,10 +441,7 @@ class VizRank:
                         self.finishEvaluation(evaluatedProjections)
                         return
                     
-                    valid = self.graph.validDataArray[attr1] + self.graph.validDataArray[attr2] - 1
-                    table = fullData.select([attr1, attr2, self.data.domain.classVar.name])
-                    table = table.select(list(valid))
-                    
+                    table = self.graph.createProjectionAsExampleTable([attr1, attr2])
                     accuracy, other_results = self.kNNComputeAccuracy(table)
                     self.addResult(accuracy, other_results, len(table), [self.data.domain[attr1].name, self.data.domain[attr2].name], evaluatedProjections)
                     
@@ -638,6 +626,7 @@ class VizRank:
 
         if self.visualizationMethod == SCATTERPLOT:
             table = self.graph.createProjectionAsExampleTable(attrIndices)
+            orange.saveTabDelimited("C:\\%s-%s-projQ.tab" % (table.domain[0].name, table.domain[1].name), table)
         elif self.visualizationMethod == RADVIZ:
             table = self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = useAnchorData)
         return self.kNNComputeAccuracy(table)
