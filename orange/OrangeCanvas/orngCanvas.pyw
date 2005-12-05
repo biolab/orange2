@@ -113,6 +113,8 @@ class OrangeCanvasDlg(QMainWindow):
         if hasattr(self.widgetsToolBar, "setHorizontalStretchable"): self.widgetsToolBar.setHorizontalStretchable(TRUE)        
         else: self.widgetsToolBar.setHorizontallyStretchable(TRUE)
         self.createWidgetsToolbar(not os.path.exists(self.registryFileName))
+
+        self.readShortcuts()
         
         # read recent files
         self.recentDocs = []
@@ -185,6 +187,18 @@ class OrangeCanvasDlg(QMainWindow):
             widgetTabList.append(str(self.tabs.tabLabel(tab)))
         self.settings["WidgetTabs"] = widgetTabList
             
+
+    def readShortcuts(self):
+        self.widgetShortcuts = {}
+        shfn = os.path.join(self.canvasDir, "shortcuts.txt")
+        if os.path.exists(shfn):
+            for t in file(shfn).readlines():
+                key, button = [x.strip() for x in t.split(":")]
+                widget = self.tabs.widgetInfo.get(button)
+                if widget:
+                    self.widgetShortcuts[key] = widget["button"]
+                else:
+                    print "Warning: invalid shortcut %s (%s)" % (key, button)
         
     def initMenu(self):
         # ###################

@@ -1,0 +1,3 @@
+Ctrl-F:	Data - File
+Ctrl-T:	Data - Data Table
+Ctrl-R:	Visualize - Radviz

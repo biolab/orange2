@@ -373,7 +373,7 @@ class WidgetTabs(QTabWidget):
         exIndex = 0
         for i in range(len(priorityList)):            
             button = WidgetButton(tab)
-            self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i]}
+            self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button}
             button.setValue(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg, self.useLargeIcons)
             self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
             if exIndex != priorityList[i] / 1000:

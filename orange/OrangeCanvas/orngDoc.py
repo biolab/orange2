@@ -744,6 +744,23 @@ ow.saveSettings()
             for val in v:
                 self.canvasDlg.output.write("%s = %s" % (val, getattr(widget.instance, val)))
 
+
+    def keyPressEvent(self, e):
+        if e.key() > 127:
+            e.ignore()
+            return
+
+        # the list could include (e.ShiftButton, "Shift") if the shift key didn't have the special meaning
+        pressed = "-".join(filter(None, [e.state() & x and y for x, y in [(e.ControlButton, "Ctrl"), (e.AltButton, "Alt")]]) + [chr(e.key())])
+        widgetToAdd = self.canvasDlg.widgetShortcuts.get(pressed)
+        if widgetToAdd:
+            widgetToAdd.clicked()
+            if e.state() & e.ShiftButton and len(self.widgets) > 1:
+                self.addLine(self.widgets[-2], self.widgets[-1])
+        else:
+            e.ignore()
+        
+
 if __name__=='__main__': 
     app = QApplication(sys.argv)
     dlg = SchemaDoc()
