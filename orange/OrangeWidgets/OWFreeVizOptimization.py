@@ -89,7 +89,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         box2 = OWGUI.widgetBox(self.MainTab, "Forces", orientation = "vertical")
 
-        self.cbLaw = OWGUI.comboBox(box2, self, "law", label="Law", labelWidth = 40, orientation="horizontal", items=["Linear", "Square", "Gaussian"], callback = self.forceLawChanged)
+        self.cbLaw = OWGUI.comboBox(box2, self, "law", label="Law", labelWidth = 40, orientation="horizontal", items=["Linear", "Square", "Gaussian", "KNN", "Variance"], callback = self.forceLawChanged)
 
         hbox2 = QHBox(box2); OWGUI.separator(hbox2, 20, 0); vbox2 = QVBox(hbox2)
         
@@ -192,7 +192,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.printVerbose("Updated: %i, %i" % (self.attractG, self.repelG))
 
     def forceLawChanged(self):
-        self.spinSigma.setDisabled(self.cbLaw.currentItem() != 2)
+        self.spinSigma.setDisabled(self.cbLaw.currentItem() not in [2, 3])
 
     def setRestraints(self):
         if self.restrain:
@@ -263,8 +263,9 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.stopButton.show()
         self.cancelOptimization = 0
         qApp.processEvents()
-        
-        FreeViz.optimizeSeparation(self, self.stepsBeforeUpdate, singleStep)
+
+        ns = FreeViz.optimizeSeparation(self, self.stepsBeforeUpdate, singleStep)
+        print "Steps: %i" % ns
 
         self.graph.potentialsBmp = None
         self.graph.updateData()

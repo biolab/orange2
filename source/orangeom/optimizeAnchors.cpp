@@ -271,26 +271,7 @@ void computeForcesDiscrete(TPoint *pts, const TPoint *ptse, const int *classes,
 
     if (attractG != 0.0) {
 
-      if (law == TPNN::InverseSquare) {
-        for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fai = Fa + *classesi; ptsi != ptsie; ptsi++, Fai++) {
-          Fai->x = Fai-> y = 0.0;
-          for(ptsi2 = pts + *classesi,                         Fai2 = Fa + *classesi; ptsi2 != ptsi; ptsi2++, Fai2++) {
-            const double dx = ptsi->x - ptsi2->x;
-            const double dy = ptsi->y - ptsi2->y;
-            const double r = sqrt(sqr(dx) + sqr(dy));
-
-            const double druvx = - dx * r;
-            Fai->x  += druvx;
-            Fai2->x -= druvx;
-
-            const double druvy = - dy * r;
-            Fai->y  += druvy;
-            Fai2->y -= druvy;
-          }
-        }
-      }
-
-      else {
+      if ((law == TPNN::InverseLinear) || (law == TPNN::InverseExponential) || (law == TPNN::Linear)) {
         double sumx = 0, sumy = 0;
         const double n = classesi[1] - *classesi;
         for(ptsi = pts + *classesi, ptsie = pts + classesi[1]; ptsi != ptsie; ptsi++) {
@@ -301,6 +282,32 @@ void computeForcesDiscrete(TPoint *pts, const TPoint *ptse, const int *classes,
         for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fai = Fa + *classesi; ptsi != ptsie; ptsi++, Fai++) {
           Fai->x = sumx - n * ptsi->x;
           Fai->y = sumy - n * ptsi->y;
+        }
+      }
+
+      else {
+        for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fai = Fa + *classesi; ptsi != ptsie; ptsi++, Fai++) {
+          Fai->x = Fai-> y = 0.0;
+          for(ptsi2 = pts + *classesi,                         Fai2 = Fa + *classesi; ptsi2 != ptsi; ptsi2++, Fai2++) {
+            const double dx = ptsi->x - ptsi2->x;
+            const double dy = ptsi->y - ptsi2->y;
+
+            double fct;
+            if (law == TPNN::InverseSquare)
+              fct = - sqrt(sqr(dx) + sqr(dy));
+            else {
+              const double r2 = sqr(dx) + sqr(dy);
+              fct = - sqrt(r2) * exp(-r2/sigma2);
+            }
+
+            const double druvx = dx * fct;
+            Fai->x  += druvx;
+            Fai2->x -= druvx;
+
+            const double druvy = dy * fct;
+            Fai->y  += druvy;
+            Fai2->y -= druvy;
+          }
         }
       }
     }
@@ -323,11 +330,18 @@ void computeForcesDiscrete(TPoint *pts, const TPoint *ptse, const int *classes,
             case TPNN::InverseLinear:
               fct = 1 / r2;
               break;
+            case TPNN::Linear:
+              fct = 1;
+              break;
             case TPNN::InverseSquare:
               fct = 1 / (r2 * sqrt(r2));
               break;
             case TPNN::InverseExponential:
               fct = 1 / (exp(r2/sigma2) - 1);
+              break;
+            case TPNN::KNN:
+              fct = sqrt(r2) * exp(-r2/sigma2);
+              break;
           }
 
           const double druvx = dx * fct;

@@ -10,6 +10,8 @@ LDA_IMPLEMENTATION = 2
 LAW_LINEAR = 0
 LAW_SQUARE = 1
 LAW_GAUSSIAN = 2
+LAW_KNN = 3
+LAW_LINEAR_PLUS = 4
 
 class FreeViz:
     def __init__(self, graph = None):
@@ -75,7 +77,7 @@ class FreeViz:
 
     def optimizeSeparation(self, steps = 10, singleStep = False):
         if self.implementation == FAST_IMPLEMENTATION:
-            self.optimize_FAST_Separation(steps, singleStep)
+            return self.optimize_FAST_Separation(steps, singleStep)
         else:
             if singleStep: steps = 1
             if self.implementation == SLOW_IMPLEMENTATION:  impl = self.optimize_SLOW_Separation
@@ -84,7 +86,7 @@ class FreeViz:
             attrIndices = [ai[label] for label in self.getShownAttributeList()]
             XAnchors = None; YAnchors = None
             if self.__class__ != FreeViz: from qt import qApp
-            
+
             for c in range((singleStep and 1) or 50):                
                 for i in range(steps):
                     if self.__class__ != FreeViz and self.cancelOptimization == 1: return
@@ -103,13 +105,16 @@ class FreeViz:
        
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
         positions = [Numeric.array([x[:2] for x in self.graph.anchorData])]
+        neededSteps = 0
         while 1:
+            print "Law: ", self.law
             self.graph.anchorData = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices,
                                               attractG = self.attractG, repelG = self.repelG, law = self.law,
                                               sigma2 = self.forceSigma, dynamicBalancing = self.forceBalancing, steps = steps,
                                               normalizeExamples = self.graph.normalizeExamples,
                                               contClass = self.graph.rawdata.domain.classVar.varType == orange.VarTypes.Continuous,
                                               mirrorSymmetry = self.mirrorSymmetry)
+            neededSteps += steps
 
             if self.graph.__class__ != orngScaleRadvizData:
                 qApp.processEvents()
@@ -122,7 +127,7 @@ class FreeViz:
                 if m < 1e-3: break
             if singleStep or (self.__class__ != FreeViz and self.cancelOptimization):
                 break
-
+        return neededSteps
 
     def optimize_LDA_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
         dataSize = len(self.graph.rawdata)

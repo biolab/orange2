@@ -274,7 +274,8 @@ PDistribution TPNN::classDistribution(const TExample &example)
       switch(law) {
         case InverseLinear: cprob[int(*(proj++))] += 1/sqrt(dist); break;
         case InverseSquare: cprob[int(*(proj++))] += 1/dist; break;
-        case InverseExponential: cprob[int(*(proj++))] += exp(-sqrt(dist)); break;
+        case InverseExponential: 
+        case KNN: cprob[int(*(proj++))] += exp(-sqrt(dist)); break;
       }
     }
 
@@ -574,6 +575,7 @@ void TP2NN::classDistribution(const double &x, const double &y, float *distribut
 
   switch(law) {
     case InverseLinear:
+    case Linear:
       for(; proj != proje; proj += 3) {
         const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
         distribution[int(proj[2])] += dist<1e-8 ? 1e4 : 1.0/sqrt(dist);
@@ -588,6 +590,7 @@ void TP2NN::classDistribution(const double &x, const double &y, float *distribut
       return;
 
     case InverseExponential:
+    case KNN:
       for(; proj != proje; proj += 3) {
         const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
         distribution[int(proj[2])] += exp(-sqrt(dist));
@@ -605,6 +608,7 @@ double TP2NN::averageClass(const double &x, const double &y) const
 
   switch(law) {
     case InverseLinear:
+    case Linear:
       for(; proj != proje; proj += 3) {
         const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
         const double w = dist<1e-8 ? 1e4 : 1.0/sqrt(dist);
@@ -623,6 +627,7 @@ double TP2NN::averageClass(const double &x, const double &y) const
       break;
 
     case InverseExponential:
+    case KNN:
       for(; proj != proje; proj += 3) {
         const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
         const double w = dist<1e-8 ? 1e4 : exp(-sqrt(dist));

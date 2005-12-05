@@ -44,7 +44,7 @@ public:
   double *projections; // projections of examples + class
   double minClass, maxClass; //PR the minimal and maximal class value (for regression problems only)
 
-  enum { InverseLinear, InverseSquare, InverseExponential };
+  enum { InverseLinear, InverseSquare, InverseExponential, KNN, Linear };
   int law; //P law
 
   TPNN(PDomain domain, const int &law = InverseLinear, const bool normalizeExamples = true);
