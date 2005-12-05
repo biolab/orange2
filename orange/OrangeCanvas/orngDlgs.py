@@ -564,7 +564,125 @@ class CanvasOptionsDlg(QDialog):
                 self.tabOrderList.setSelected(i+1, TRUE)
 
 
+
+##########
+### Widget registry editor
+####
+
+class KeyEdit(QLineEdit):
+    def __init__(self, parent, key, invdict, widget, invInvDict):
+        QLineEdit.__init__(self, parent)
+        self.setText(key)
+        #self.setReadOnly(True)
+        self.invdict = invdict
+        self.widget = widget
+        self.invInvDict = invInvDict
+
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Delete or e.key() == Qt.Key_Backspace:
+            pressed = "<none>"
+            self.setText(pressed)
+            prevkey = self.invdict.get(self.widget)
+            if prevkey:
+                del self.invdict[self.widget]
+                del self.invInvDict[prevkey]
+            return
+            
+        if e.key() not in range(32, 128): # + range(Qt.Key_F1, Qt.Key_F35+1): -- this wouldn't work, see the line below, and also writing to file etc.
+            e.ignore()
+            return
+
+        pressed = "-".join(filter(None, [e.state() & x and y for x, y in [(e.ControlButton, "Ctrl"), (e.AltButton, "Alt")]]) + [chr(e.key())])
+
+        assigned = self.invInvDict.get(pressed, None)
+        if assigned == self:
+            return
         
+        if assigned:
+            dlg = QMessageBox("Confirmation", "'%s' is already assigned to '%s'. Override?" % (pressed, assigned.widget.nameKey),
+                              QMessageBox.Warning, QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape, 0)
+            dlg.exec_loop()
+            if dlg.result() == QMessageBox.No:
+                return
+            
+        self.setText(pressed)
+        self.invdict[self.widget] = pressed
+        self.invInvDict[pressed] = self
+        if assigned:
+            assigned.setText("<none>")
+            del self.invdict[assigned.widget]
+        
+        
+class WidgetRegistryDlg(QDialog):
+    def __init__(self, canvasDlg, *args):
+        import orngTabs
+
+        apply(QDialog.__init__,(self,) + args)
+        self.canvasDlg = canvasDlg
+        self.setCaption("Qt Widget Shortcuts")
+        self.topLayout = QVBoxLayout( self, 10 )
+        self.resize(500,500)
+
+        self.invDict = dict([(y, x) for x, y in canvasDlg.widgetShortcuts.items()])
+        invInvDict = {}
+        
+        self.tabs = QTabWidget(self, 'tabWidget')
+        for tab in canvasDlg.tabs.tabs:
+            wtab = QWidget(self.tabs)
+            self.tabs.insertTab(wtab, canvasDlg.tabs.tabLabel(tab))
+
+            widgets = filter(lambda x:x.__class__ == orngTabs.WidgetButton, tab.widgets)
+            rows = (len(widgets)+2) / 3
+            layout = QGridLayout(wtab, 2*rows+2, 9, 10)
+
+            for i in range(2, 9, 3):
+                layout.addColSpacing(i, 20)
+            for i in range(0, 2*rows, 2):
+                layout.addRowSpacing(i, 20)
+                
+            for i, w in enumerate(widgets):
+                y, x = 1 + 2 * (i % rows), 3 * (i/rows)
+                pixmap = w.iconSet().pixmap(QIconSet.Large, QIconSet.Normal)
+                label = QLabel(wtab)
+                label.setPixmap(pixmap)
+                layout.addWidget(label, y, x)
+                
+                optionsw = QVBox(wtab)
+                layout.addWidget(optionsw, y, x+1, Qt.AlignLeft + Qt.AlignVCenter)
+
+                QLabel(w.name, optionsw)
+                QWidget(optionsw).setFixedHeight(8)
+                shb = QHBox(optionsw)
+                #QLabel("Shortcut: ", shb)
+                key = self.invDict.get(w, "<none>")
+                le = KeyEdit(shb, key, self.invDict, w, invInvDict)
+                invInvDict[key] = le
+                le.setFixedWidth(60)
+                sep = QWidget(shb)
+                sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+
+            sep = QWidget(wtab)
+            sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+            layout.addMultiCellWidget(sep, 2*rows+1, 2*rows+1, 0, 8)
+
+        # OK, Cancel buttons
+        hbox = QHBox(self)
+        sep = QWidget(hbox)
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
+        
+        self.okButton = QPushButton("OK", hbox)
+        self.okButton.setFixedWidth(110)
+        self.okButton.setDefault(TRUE)
+        self.cancelButton = QPushButton("Cancel", hbox)
+        self.cancelButton.setFixedWidth(110)
+
+        self.topLayout.addWidget(self.tabs)
+        self.topLayout.addWidget(hbox)
+
+        self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
+        self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
+
+
 # #######################################
 # # Preferences dialog - preferences for signals
 # #######################################

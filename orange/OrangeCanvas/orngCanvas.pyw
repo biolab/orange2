@@ -248,6 +248,7 @@ class OrangeCanvasDlg(QMainWindow):
         #self.menuOptions.insertItem( "Channel preferences",  self.menuItemPreferences)
         #self.menuOptions.insertSeparator()
         self.menuOptions.insertItem( "&Rebuild Widget Registry",  self.menuItemRebuildWidgetRegistry)
+        self.menuOptions.insertItem( "&Edit Widget Shortcuts",  self.menuItemEditWidgetShortcuts)
         self.menuOptions.insertSeparator()
         self.menuOptions.insertItem( "Canvas &Options...",  self.menuItemCanvasOptions)
         
@@ -543,6 +544,15 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemRebuildWidgetRegistry(self):
         self.createWidgetsToolbar(TRUE)
         
+    def menuItemEditWidgetShortcuts(self):
+        dlg = orngDlgs.WidgetRegistryDlg(self, None, "", TRUE)
+        dlg.exec_loop()
+        if dlg.result() == QDialog.Accepted:
+            self.widgetShortcuts = dict([(y, x) for x, y in dlg.invDict.items()])
+            shf = file(os.path.join(self.canvasDir, "shortcuts.txt"), "wt")
+            for k, v in self.widgetShortcuts.items():
+                shf.write("%s: %s\n" % (k, v.nameKey))
+
     def menuCloseAll(self):
         wins = self.workspace.getDocumentList()
         for win in wins:
