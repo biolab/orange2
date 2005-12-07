@@ -490,7 +490,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     def getProjectionQuality(self, attrList, attributeReverse):
-        return self.kNNOptimization.kNNComputeAccuracy(self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], [attributeReverse[attr] for attr in attrList]))
+        return self.kNNOptimization.kNNComputeAccuracy(self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList]}))
 
     def generateAttrReverseLists(self, attrList, fullAttribList, tempList):
         if attrList == []: return tempList
@@ -502,14 +502,29 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
    
     # save projection (xAttr, yAttr, classVal) into a filename fileName
     def saveProjectionAsTabData(self, fileName, attrList, attributeReverse):
-        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], [attributeReverse[attr] for attr in attrList]))
+        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList]}))
 
-    def createProjectionAsExampleTable(self, attrList, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0):
+    # attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0
+    def createProjectionAsExampleTable(self, attrList, settingsDict = {}):
+        domain = settingsDict.get("domain")
         if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrList, attributeReverse, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, jitterSize)
+        data = self.createProjectionAsNumericArray(attrList, settingsDict)
         return orange.ExampleTable(domain, data)
 
-    def createProjectionAsNumericArray(self, attrIndices, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, removeMissingData = 1):
+    #def createProjectionAsNumericArray(self, attrIndices, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, removeMissingData = 1):
+    def createProjectionAsNumericArray(self, attrIndices, settingsDict = {}):
+
+        # load the elements from the settings dict
+        attributeReverse = settingsDict.get("reverse", [0]*len(attrIndices))
+        validData = settingsDict.get("validData")
+        classList = settingsDict.get("classList")
+        sum_i     = settingsDict.get("sum_i")
+        XAnchors = settingsDict.get("XAnchors")
+        YAnchors = settingsDict.get("YAnchors")
+        scaleFactor = settingsDict.get("scaleFactor", 1.0)
+        jitterSize = settingsDict.get("jitterSize", 0.0)
+        removeMissingData = settingsDict.get("removeMissingData", 1)
+        
         if not validData: validData = self.getValidList(attrIndices)
 
         if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
@@ -520,7 +535,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
             classList = Numeric.compress(validData, classList)
             
         if not sum_i: sum_i = self._getSum_i(selectedData)
-        if not XAnchors or not YAnchors:
+        if not (XAnchors and YAnchors):
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
 
@@ -578,7 +593,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrIndices, [attributeReverse[attr] for attr in attrList], validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
+        array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList], "validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, attributeReverse, validData)
                  
         selected = orange.ExampleTable(domain, self.rawdata.getitems(selIndices))
@@ -606,7 +621,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         if not validData: validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrIndices, [attributeReverse[attr] for attr in attrList], validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
+        array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList], "validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
         selIndices = []; unselIndices = []
                  
         for i in range(len(validData)):
@@ -615,23 +630,6 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
 
         return selIndices, unselIndices
 
-
-    """
-    def createCombinations(self, currCombination, count, attrList, combinations):
-        if count > attrList: return combinations
-
-        if count == 0 and len(currCombination) > 2:
-            combinations.append(currCombination)
-            return combinations
-
-        if len(attrList) == 0: return combinations
-        temp = list(currCombination) + [attrList[0][1]]
-        temp[0] += attrList[0][0]
-        combinations = self.createCombinations(temp, count-1, attrList[1:], combinations)
-
-        combinations = self.createCombinations(currCombination, count, attrList[1:], combinations)
-        return combinations
-    """
 
     def createCombinations(self, attrList, count):
         if count > len(attrList): return []
@@ -726,26 +724,22 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                                 return
                             permutationIndex += 1
 
-                            table = self.createProjectionAsExampleTable(permutation, attrOrder, validData, classList, sum_i, XAnchors, YAnchors, domain)
+                            table = self.createProjectionAsExampleTable(permutation, settingsDict = {"reverse": attrOrder, "validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
                             accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                         
                             # save the permutation
                             if not self.onlyOnePerSubset:
-                                addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
+                                addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], self.triedPossibilities, generalDict = {"reverse": attrOrder})
                             else:
                                 tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
                                 
                             self.triedPossibilities += 1
                             self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
                             self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities)))
-                            del table
 
                     if self.onlyOnePerSubset:
-                        (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
-                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, attrOrder)
-
-                    del validData, selectedData, classList, sum_i, tempList, indPermutations
-                del combinations
+                        (acc, other_results, lenTable, attrList, order) = self.kNNOptimization.getMaxFunct()(tempList)
+                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": order})
 
         secs = time.time() - startTime
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
@@ -829,28 +823,24 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                                     return
                                 permutationIndex += 1
 
-                                table = self.createProjectionAsExampleTable(permutation, attrOrder, validData, classList, sum_i, XAnchors, YAnchors, domain)
+                                table = self.createProjectionAsExampleTable(permutation, settingsDict = {"reverse": attrOrder, "validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
                                 accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                             
                                 # save the permutation
                                 if not self.onlyOnePerSubset:
-                                    addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
+                                    addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], self.triedPossibilities, generalDict = {"reverse": attrOrder})
                                 else:
                                     tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
                                     
                                 self.triedPossibilities += 1
                                 self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), z))
-                                del table
                         except:
                             pass
                             
                     if self.onlyOnePerSubset:
                         (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
-                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, attrOrder)
-
-                    del validData, classList, selectedData, sum_i, tempList
-                del combinations
-                
+                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": attrOrder})
+               
         secs = time.time() - startTime
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.polyvizWidget.progressBarFinished()
@@ -871,7 +861,6 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
         classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
         allAttrReverse = {}
-        print restartWhenImproved
         
         optimizedProjection = 1
         while optimizedProjection:
@@ -927,13 +916,12 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                     for (testProj, reverse) in projections:
                         if self.kNNOptimization.isOptimizationCanceled(): return
 
-                        table = self.createProjectionAsExampleTable(testProj, reverse, validData, classList, None, XAnchors, YAnchors, domain)
+                        table = self.createProjectionAsExampleTable(testProj, settingsDict = {"reverse": reverse, "validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
                         acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                         
                         # save the permutation
                         tempList.append((acc, other_results, len(table), testProj, reverse))
 
-                        del table
                         self.triedPossibilities += 1
                         qApp.processEvents()        # allow processing of other events
                         if self.kNNOptimization.isOptimizationCanceled(): return
@@ -942,7 +930,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                     # return only the best attribute placements
                     (acc, other_results, lenTable, attrList, reverse) = self.kNNOptimization.getMaxFunct()(tempList)
                     if self.kNNOptimization.getMaxFunct()(acc, accuracy) == acc:
-                        addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0, reverse)
+                        addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0, generalDict = {"reverse": reverse})
                         self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
                         optimizedProjection = 1
                         listOfCanditates.append((acc, attrList, reverse))
@@ -950,9 +938,8 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                     else:
                         self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
                         if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
-                            addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1, reverse)
+                            addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1, generalDict = {"reverse": reverse})
 
-                    del validData, classList, projections
 
                 # select the best new projection and say this is now our new projection to optimize    
                 if len(listOfCanditates) > 0:

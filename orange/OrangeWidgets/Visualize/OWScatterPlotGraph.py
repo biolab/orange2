@@ -155,7 +155,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         # #######################################################
         # show clusters
         if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            data = self.createProjectionAsExampleTable([xAttrIndex, yAttrIndex], validData = validData, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
+            data = self.createProjectionAsExampleTable([xAttrIndex, yAttrIndex], settingsDict = {"validData": validData, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation})
             graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             
             classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))

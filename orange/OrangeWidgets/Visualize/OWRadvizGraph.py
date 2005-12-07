@@ -154,7 +154,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
 
         dataSize = len(self.rawdata)
         validData = self.getValidList(indices)
-        transProjData = self.createProjectionAsNumericArray(indices, validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0)
+        transProjData = self.createProjectionAsNumericArray(indices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "normalize": self.normalizeExamples, "jitterSize": -1, "useAnchorData": 1, "removeMissingData": 0})
         projData = Numeric.transpose(transProjData)
         x_positions = projData[0]
         y_positions = projData[1]
@@ -171,7 +171,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
            
         # do we have cluster closure information
         if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            data = self.createProjectionAsExampleTable(indices, validData = validData, scaleFactor = self.trueScaleFactor, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
+            data = self.createProjectionAsExampleTable(indices, settingsDict = {"validData": validData, "scaleFactor": self.trueScaleFactor, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation})
             graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             for key in valueDict.keys():
@@ -381,7 +381,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
 
     def showClusterLines(self, attributeIndices, validData, width = 1):
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous: return
-        shortData = self.createProjectionAsExampleTable(attributeIndices, validData = validData, scaleFactor = self.scaleFactor)
+        shortData = self.createProjectionAsExampleTable(attributeIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor})
         classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
         classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])
 
@@ -574,7 +574,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
         else:             indices = [self.attributeNameIndex[label] for label in attrList]
         validData = self.getValidList(indices)
         
-        array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
+        array = self.createProjectionAsNumericArray(attrList, settingsDict = {"scaleFactor": self.scaleFactor, "useAnchorData": useAnchorData, "removeMissingData": 0})
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, useAnchorData, validData)
                  
         selected = orange.ExampleTable(domain, self.rawdata.getitems(selIndices))
@@ -602,7 +602,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         if not validData: validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
+        array = self.createProjectionAsNumericArray(attrList, settingsDict = {"scaleFactor": self.scaleFactor, "useAnchorData": useAnchorData, "removeMissingData": 0})
         selIndices = []
         unselIndices = []
                  
@@ -669,7 +669,7 @@ class OWRadvizGraph(OWGraph, orngScaleRadvizData):
                             self.radvizWidget.progressBarFinished()
                             return
 
-                        data = self.createProjectionAsExampleTable(permutation, validData, classList, sum_i, XAnchors, YAnchors, domain)
+                        data = self.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
                         graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 
                         classesDict = {}

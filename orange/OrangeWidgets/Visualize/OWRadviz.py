@@ -279,14 +279,11 @@ class OWRadviz(OWWidget):
     # show selected interesting projection
     def showSelectedAttributes(self):
         val = self.optimizationDlg.getSelectedProjection()
-        if not val: return
-        (accuracy, other_results, tableLen, attrList, tryIndex, generalDict) = val
-        if generalDict.has_key("anchors"):
-            self.graph.setAnchors(generalDict["anchors"][0], generalDict["anchors"][1], attrList)
-            self.updateGraph(attrList, setAnchors = 0)
-        else:
-            self.updateGraph(attrList, setAnchors = 1)
-        self.graph.removeAllSelections()
+        if val:
+            (accuracy, other_results, tableLen, attrList, tryIndex, generalDict) = val
+            self.graph.setAnchors(generalDict.get("XAnchors"), generalDict.get("YAnchors"), attrList)
+            self.updateGraph(attrList, setAnchors = not (generalDict.get("XAnchors") and generalDict.get("YAnchors")))
+            self.graph.removeAllSelections()
 
 
     def showSelectedCluster(self):
@@ -336,7 +333,7 @@ class OWRadviz(OWWidget):
             self.setShownAttributeList(self.data, attrList)
         
         if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
-            shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList], useAnchorData = 1)
+            shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList], settingsDict = {"useAnchorData": 1})
             kNNExampleAccuracy, probabilities = self.optimizationDlg.kNNClassifyData(shortData)
             if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
             else:   kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")

@@ -155,6 +155,7 @@ class OWPolyviz(OWWidget):
         self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.reshow)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
         self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
+        self.optimizationDlg.disconnect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.optimizationDlg.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         #self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
@@ -194,6 +195,7 @@ class OWPolyviz(OWWidget):
 
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
+        print "my evaluation"
         acc, results = self.graph.getProjectionQuality(self.getShownAttributeList(), self.attributeReverse)
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Polyviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
@@ -207,13 +209,13 @@ class OWPolyviz(OWWidget):
             
     # show quality of knn model by coloring accurate predictions with darker color and bad predictions with light color        
     def showKNNCorect(self):
-        self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 1)
+        self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = self.optimizationDlg.showKNNCorrectButton.isOn(), showCorrect = 1)
         self.graph.update()
         self.repaint()
 
     # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
     def showKNNWrong(self):
-        self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 0)
+        self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = self.optimizationDlg.showKNNWrongButton.isOn(), showCorrect = 0)
         self.graph.update()
         self.repaint()
         
@@ -316,17 +318,17 @@ class OWPolyviz(OWWidget):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
     
-        attrReverseList = generalDict["reverse"]
+        attrReverseList = generalDict.get("reverse", [0]*len(attrList))
         reverseDict = dict([(attrList[i], attrReverseList[i]) for i in range(len(attrList))])
 
+        for attr in attrList:
+            self.shownAttribsLB.insertItem(self.icons[self.data.domain[attr].varType], attr + (reverseDict[attr] and " -" or " +"))
+            self.attributeReverse[attr] = reverseDict[attr]
+
         for attr in self.data.domain:
-            if attr.name in attrList:
-                if reverseDict[attr.name]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr + " -")
-                else: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
-                self.attributeReverse[attr.name] = reverseDict[attr.name]
-            else:
-                self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
-                self.attributeReverse[attr.name] = 0
+            if attr.name in attrList: continue
+            self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
+            self.attributeReverse[attr.name] = 0
 
         self.updateGraph()
 
