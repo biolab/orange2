@@ -651,10 +651,12 @@ class OWGraph(QwtPlot):
             yalign = (align & Qt.AlignBottom and "top") or (align & Qt.AlignTop and "bottom") or (align & Qt.AlignVCenter and "center")
             vertAlign = (yalign and ", verticalalignment = '%s'" % yalign) or ""
             horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
-            color = [marker.labelColor().red(), marker.labelColor().green(), marker.labelColor().blue()]; color = tuple([v/float(255) for v in color])
+            color = (marker.labelColor().red()/255., marker.labelColor().green()/255., marker.labelColor().blue()/255.)
             name = str(marker.font().family())
             weight = marker.font().bold() and "bold" or "normal"
-            f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s')\n" % (x, y, text, vertAlign, horAlign, color, name, weight))
+            if marker.__class__ == RotatedMarker: extra = ", rotation = %f" % (marker.rotation)
+            else: extra = ""
+            f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s'%s)\n" % (x, y, text, vertAlign, horAlign, color, name, weight, extra))
 
         # grid
         f.write("# enable grid\ngrid(%s)\n\n" % (self.grid().xEnabled() and self.grid().yEnabled() and "True" or "False"))
@@ -733,28 +735,30 @@ class PolygonCurve(QwtPlotCurve):
             painter.drawPolygon(array)
 
 
-class MyMarker(QwtPlotMarker):
-    def __init__(self, parent, label = "", x = 0.0, y = 0.0, rotationDeg = 0):
+class RotatedMarker(QwtPlotMarker):
+    def __init__(self, parent, label = "", x = 0.0, y = 0.0, rotation = 0):
         QwtPlotMarker.__init__(self, parent)
-        self.rotationDeg = rotationDeg
+        self.rotation = rotation
+        self.parent = parent
         self.x = x
         self.y = y
         self.setXValue(x)
         self.setYValue(y)
         self.parent = parent
-        
-        self.setLabel(label)
 
-    def setRotation(self, rotationDeg):
-        self.rotationDeg = rotationDeg
+        if rotation != 0: self.setLabel(label + "  ")        
+        else:             self.setLabel(label)
+
+    def setRotation(self, rotation):
+        self.rotation = rotation
 
     def draw(self, painter, x, y, rect):
-        rot = math.radians(self.rotationDeg)
+        rot = math.radians(self.rotation)
        
         x2 = x * math.cos(rot) - y * math.sin(rot)
         y2 = x * math.sin(rot) + y * math.cos(rot)
-        
-        painter.rotate(-self.rotationDeg)
+                
+        painter.rotate(-self.rotation)
         QwtPlotMarker.draw(self, painter, x2, y2, rect)
-        painter.rotate(self.rotationDeg)
+        painter.rotate(self.rotation)
             
