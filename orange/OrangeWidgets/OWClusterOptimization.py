@@ -414,35 +414,36 @@ class ClusterOptimization(OWBaseWidget):
     # for each point in the data set compute how often does if appear inside a cluster
     # for each point then return a float between 0 and 1
     def evaluatePointsInClusters(self):
-        if not self.clusterStabilityButton.isOn(): return
-        self.pointStability = Numeric.zeros(len(self.rawdata), Numeric.Float)
-        self.pointStabilityCount = [0 for i in range(len(self.rawdata.domain.classVar.values))]       # for each class value create a counter that will count the number of clusters for it
-        
-        (text, ok) = QInputDialog.getText('Qt Projection count', 'How many of the best projections do you want to consider?')
-        if not ok: return
-        nrOfProjections = int(str(text)) 
+        if self.clusterStabilityButton.isOn():
+            self.pointStability = Numeric.zeros(len(self.rawdata), Numeric.Float)
+            self.pointStabilityCount = [0 for i in range(len(self.rawdata.domain.classVar.values))]       # for each class value create a counter that will count the number of clusters for it
+            
+            (text, ok) = QInputDialog.getText('Qt Projection count', 'How many of the best projections do you want to consider?')
+            if not ok: return
+            nrOfProjections = int(str(text)) 
 
-        considered = 0
-        for i in range(len(self.allResults)):
-            if considered > nrOfProjections: break
-            if type(self.allResults[i][CLASS]) != dict: continue    # ignore all projections except the ones that show all clusters in the picture
-            considered += 1
-            clusterClasses = [0 for j in range(len(self.rawdata.domain.classVar.values))]
-            for key in self.allResults[i][VERTICES].keys():
-                clusterClasses[self.allResults[i][CLASS][key]] = 1
-                vertices = self.allResults[i][VERTICES][key]
-                validData = self.graph.getValidList([self.graph.attributeNameIndex[self.allResults[i][ATTR_LIST][0]], self.graph.attributeNameIndex[self.allResults[i][ATTR_LIST][1]]])
-                indices = Numeric.compress(validData, Numeric.array(range(len(self.rawdata))))
-                indicesToOriginalTable = Numeric.take(indices, vertices)
-                tempArray = Numeric.zeros(len(self.rawdata))
-                Numeric.put(tempArray, indicesToOriginalTable, Numeric.ones(len(indicesToOriginalTable)))
-                self.pointStability += tempArray
-            for j in range(len(clusterClasses)):        # some projections may contain more clusters of the same class. we make sure we don't process this wrong
-                self.pointStabilityCount[j] += clusterClasses[j]
-    
-        for i in range(len(self.rawdata)):
-            if self.pointStabilityCount[int(self.rawdata[i].getclass())] != 0:
-                self.pointStability[i] /= float(self.pointStabilityCount[int(self.rawdata[i].getclass())])
+            considered = 0
+            for i in range(len(self.allResults)):
+                if considered > nrOfProjections: break
+                if type(self.allResults[i][CLASS]) != dict: continue    # ignore all projections except the ones that show all clusters in the picture
+                considered += 1
+                clusterClasses = [0 for j in range(len(self.rawdata.domain.classVar.values))]
+                for key in self.allResults[i][VERTICES].keys():
+                    clusterClasses[self.allResults[i][CLASS][key]] = 1
+                    vertices = self.allResults[i][VERTICES][key]
+                    validData = self.graph.getValidList([self.graph.attributeNameIndex[self.allResults[i][ATTR_LIST][0]], self.graph.attributeNameIndex[self.allResults[i][ATTR_LIST][1]]])
+                    indices = Numeric.compress(validData, Numeric.array(range(len(self.rawdata))))
+                    indicesToOriginalTable = Numeric.take(indices, vertices)
+                    tempArray = Numeric.zeros(len(self.rawdata))
+                    Numeric.put(tempArray, indicesToOriginalTable, Numeric.ones(len(indicesToOriginalTable)))
+                    self.pointStability += tempArray
+                for j in range(len(clusterClasses)):        # some projections may contain more clusters of the same class. we make sure we don't process this wrong
+                    self.pointStabilityCount[j] += clusterClasses[j]
+        
+            for i in range(len(self.rawdata)):
+                if self.pointStabilityCount[int(self.rawdata[i].getclass())] != 0:
+                    self.pointStability[i] /= float(self.pointStabilityCount[int(self.rawdata[i].getclass())])
+
         #self.pointStability = [1.0 - val for val in self.pointStability]
         if self.parentWidget: self.parentWidget.showSelectedCluster()
 
@@ -1021,7 +1022,7 @@ class clusterClassifier(orange.Classifier):
 
                         qApp.processEvents()
                         attrIndices = [self.visualizationWidget.graph.attributeNameIndex[attr] for attr in attrList]
-                        data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, jitterSize = 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation)
+                        data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"jitterSize": 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation})
                         graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimizationDlg.evaluateClusters(data)
                         for key in valueDict.keys():
                             if classValue != otherDict[key][OTHER_CLASS]: continue
@@ -1063,7 +1064,7 @@ class clusterClassifier(orange.Classifier):
                 qApp.processEvents()
 
                 attrIndices = [self.visualizationWidget.graph.attributeNameIndex[attr] for attr in attrList]
-                data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, jitterSize = 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation)
+                data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"jitterSize": 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation})
                 graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimizationDlg.evaluateClusters(data)
                 evaluation = []
                 for key in valueDict.keys():

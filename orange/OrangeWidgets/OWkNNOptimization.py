@@ -10,15 +10,13 @@ class OWVizRank(VizRank, OWBaseWidget):
     settingsList = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod",
                     "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances",
                     "evaluationAlgorithm", "createSnapshots", "evaluationTime", "learnerName",
-                    "argumentCount", "canUseMoreArguments", "moreArgumentsCount", 
-                    "optimizeBestProjection", "optimizeBestProjectionTime",
-                    "useHeuristicToFindAttributeOrders", "argumentValueFormula", "locOptMaxAttrsInProj",
-                    "locOptProjCount", "useExampleWeighting", "useSupervisedPCA"]
+                    "argumentCount", "canUseMoreArguments", "moreArgumentsCount", "optimizeBestProjection", "optimizeBestProjectionTime",
+                    "useHeuristicToFindAttributeOrders", "argumentValueFormula", "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount",
+                    "useExampleWeighting", "useSupervisedPCA"]
     resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30,35, 40, 50, 60, 70, 80, 100, 120, 150, 200]
     argumentCounts = [1, 3, 5, 10, 15, 20, 30, 50, 100, 200]
-    #argumentCounts = range(21)[1:]
     evaluationTimeNums = [0.1, 0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
     moreArgumentsNums = [50, 55, 60, 65, 70, 75, 80, 85, 90, 95]
 
@@ -120,6 +118,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         self.localOptimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Local Optimization Settings ")
         self.localOptimizationProjCountCombo = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptProjCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
+        self.localOptimizationAttrsCount = OWGUI.lineEdit(self.localOptimizationSettingsBox, self, "locOptAttrsToTry", "Number of best attributes to try:                       ", orientation = "horizontal", tooltip = "How many of the top ranked attributes do you want to try in the projections?", valueType = int, validator = QIntValidator(self))
         self.localOptimizationProjMaxAttr    = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptMaxAttrsInProj", "Maximum number of attributes in a projection: ", items = range(3,50), tooltip = "What is the number of attributes when local optimization should stop optimizing projections?", sendSelectedValue = 1, valueType = int)
 
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Length of the Projection List ")
@@ -207,12 +206,13 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.clearButton = OWGUI.button(self.buttonBox5, self, "Clear results", self.clearResults)
             
         # ###########################
-        self.statusBar = QStatusBar(self)
-        self.controlArea.addWidget(self.statusBar)
+        self.statusBox = OWGUI.widgetBox(self, orientation = "horizontal")
+        self.statusBar = QStatusBar(self.statusBox)
+        self.controlArea.addWidget(self.statusBox)
         self.controlArea.activate()
 
         self.removeEvaluatedAttributes()
-        self.resize(375,550)
+        self.resize(375,600)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
 
@@ -428,7 +428,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     
     # insert new result - give parameters: accuracy of projection, number of examples in projection and list of attributes.
-    def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, generalDict = {}):
+    def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, generalDict = {}, updateStatusBar = 0):
         if index < self.maxResultListLen:
             self.results.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, generalDict))
             
@@ -448,6 +448,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             if self.resultList.count() > self.resultListLen:
                 self.resultList.removeItem(self.resultList.count()-1)
                 self.shownResults.pop()
+            if updateStatusBar: self.setStatusBarText("Inserted %s projections" % (OWVisFuncts.createStringFromNumber(index)))
             qApp.processEvents()        # allow processing of other events
 
     
@@ -528,7 +529,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             testIndex += 1
             self.parentWidget.progressBarSet(100.0*testIndex/float(len(results)))
 
-            accuracy, other_results = self.getProjectionQuality(attrList)         # TO DO: this does not work with polyviz with attrReverseList   
+            accuracy, other_results = self.getProjectionQuality(attrList, generalDict)         # TO DO: this does not work with polyviz with attrReverseList   
 
             self.addResult(accuracy, other_results, tableLen, attrList, tryIndex, generalDict)
             self.setStatusBarText("Reevaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(testIndex), strTotal))
@@ -556,6 +557,8 @@ class OWVizRank(VizRank, OWBaseWidget):
     # ##############################################################
     # Loading and saving projection files
     # ##############################################################
+    def abortOperation(self):
+        self.abortCurrentOperation = 1
 
     # save the list into a file - filename can be set if you want to call this function without showing the dialog
     def saveProjections(self):
@@ -572,13 +575,19 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         self.lastSaveDirName = os.path.split(name)[0]
 
+        # show button to stop saving
+        butt = OWGUI.button(self.statusBox, self, "Stop Saving", callback = self.abortOperation); butt.show()
+        
         VizRank.save(self, name, self.shownResults, len(self.shownResults))
 
-        self.setStatusBarText("Saved %d projections" % (len(self.shownResults)))
+        self.setStatusBarText("Saved %s projections" % (OWVisFuncts.createStringFromNumber(len(self.shownResults))))
+        butt.hide()
 
 
     # load projections from a file
     def loadProjections(self, name = None, ignoreCheckSum = 0):
+        self.abortCurrentOperation = 0
+        
         self.setStatusBarText("Loading projections")
         if self.data == None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
@@ -592,10 +601,15 @@ class OWVizRank(VizRank, OWBaseWidget):
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
 
+        # show button to stop loading
+        butt = OWGUI.button(self.statusBox, self, "Stop Loading", callback = self.abortOperation); butt.show()
+
         selectedClasses, count = VizRank.load(self, name, ignoreCheckSum)
 
         for i in range(len(self.data.domain.classVar.values)): self.classesList.setSelected(i, i in selectedClasses)
-        self.setStatusBarText("Loaded %d projections" % (count))
+
+        self.setStatusBarText("Loaded %s projections" % (OWVisFuncts.createStringFromNumber(count)))
+        butt.hide()
 
     def showKNNCorect(self):
         self.showKNNWrongButton.setOn(0)
@@ -805,10 +819,11 @@ class OWVizRank(VizRank, OWBaseWidget):
             if min(attrVals) < 0.0 or max(attrVals) > 1.0:
                 self.printVerbose("Warning: OWkNNOptimization.py:findArguments: Scaled example value out of 0-1 range. Min value: %.3f, max value: %.3f." % (min(attrVals), max(attrVals)))
 
-            if generalDict.has_key("anchors"): xanchors = generalDict["anchors"][0]; yanchors = generalDict["anchors"][1]
-            else:   xanchors = None; yanchors = None
-            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, XAnchors = xanchors, YAnchors = yanchors)
-            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], XAnchors = xanchors, YAnchors = yanchors)
+            xanchors = generalDict.get("XAnchors")
+            yanchors = generalDict.get("YAnchors")
+
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = {"XAnchors": xanchors, "YAnchors": yanchors})
+            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"XAnchors": xanchors, "YAnchors": yanchors})
             
             learner = self.externalLearner or self.createkNNLearner()
             classifier = learner(table)
@@ -931,8 +946,8 @@ class OWInteractionAnalysis(OWWidget):
         b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Projections')
         b3 = OWGUI.widgetBox(self.controlArea, "Settings")
         
-        OWGUI.hSlider(b1, self, 'attributeCount', minValue=5, maxValue = 200, step=1, callback = self.updateGraph, ticks=5)
-        self.projectionCountSlider = OWGUI.hSlider(b2, self, 'projectionCount', minValue=1, maxValue = 100000, step=1, callback = self.updateGraph, ticks=5)
+        OWGUI.hSlider(b1, self, 'attributeCount', minValue=5, maxValue = 100, step=1, callback = self.updateGraph, ticks=5)
+        self.projectionCountSlider = OWGUI.hSlider(b2, self, 'projectionCount', minValue=1, maxValue = 10000, step=1, callback = self.updateGraph, ticks=5)
         OWGUI.checkBox(b3, self, 'rotateXAttributes', label = "Rotate X labels", callback = self.updateGraph)
         OWGUI.checkBox(b3, self, 'onlyLower', label = "Show only lower diagonal", callback = self.updateGraph)
         OWGUI.checkBox(b3, self, 'useDarkness', label = "Use color to represent projection quality", callback = self.updateGraph)
@@ -1028,7 +1043,7 @@ class OWInteractionAnalysis(OWWidget):
 
         # draw x markers
         for x in range(num):
-            marker = MyMarker(self.graph, attributes[x], x + 0.5, -0.3, 90*self.rotateXAttributes)
+            marker = RotatedMarker(self.graph, attributes[x], x + 0.5, -0.3, 90*self.rotateXAttributes)
             mkey = self.graph.insertMarker(marker)
             if self.rotateXAttributes: self.graph.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
             else: self.graph.marker(mkey).setLabelAlignment(Qt.AlignCenter)
@@ -1079,9 +1094,9 @@ class OWGraphAttributeHistogram(OWWidget):
         box = OWGUI.widgetBox(self.controlArea)
 
         OWGUI.checkBox(b1, self, 'colorAttributes', label = "Color attributes according to class vote", callback = self.updateGraph)
-        OWGUI.hSlider(b2, self, 'attributeCount', minValue=0, maxValue = 2000, step = 10, callback = self.updateGraph, ticks = 50)
-        OWGUI.hSlider(b3, self, 'projectionCount', minValue = 0, maxValue = 100000, step=50, callback = self.updateGraph, ticks = 1000)
-        OWGUI.checkBox(b4, self, 'rotateXAttributes', label = "Rotate X Labels", callback = self.updateGraph)
+        OWGUI.hSlider(b2, self, 'attributeCount', minValue=0, maxValue = 500, step = 10, callback = self.updateGraph, ticks = 10)
+        OWGUI.hSlider(b3, self, 'projectionCount', minValue = 0, maxValue = 10000, step=50, callback = self.updateGraph, ticks = 500)
+        OWGUI.checkBox(b4, self, 'rotateXAttributes', label = "Show Labels Vertically", callback = self.updateGraph)
         
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
@@ -1154,8 +1169,8 @@ class OWGraphAttributeHistogram(OWWidget):
 
             # draw attribute names
             y = -attrs[0][0] * 0.03
-            if self.rotateXAttributes: marker = MyMarker(self.graph, attr, ind + 0.5, y, 90)
-            else: marker = MyMarker(self.graph, attr, ind + 0.5, y, 0)
+            if self.rotateXAttributes: marker = RotatedMarker(self.graph, attr, ind + 0.5, y, 90)
+            else: marker = RotatedMarker(self.graph, attr, ind + 0.5, y, 0)
             mkey = self.graph.insertMarker(marker)
             if self.rotateXAttributes: self.graph.marker(mkey).setLabelAlignment(Qt.AlignLeft+ Qt.AlignVCenter)
             else: self.graph.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
@@ -1369,7 +1384,7 @@ class OWGraphIdentifyOutliers(OWWidget):
         for (acc, other, tableLen, attrList, tryIndex, generalDict) in results:
             attrIndices = [self.projectionGraph.attributeNameIndex[attr] for attr in attrList]
             validDataIndices = self.projectionGraph.getValidIndices(attrIndices)
-            table = self.projectionGraph.createProjectionAsExampleTable(attrIndices)    # TO DO: this does not work with polyviz!!!
+            table = self.projectionGraph.createProjectionAsExampleTable(attrIndices, generalDict)    # TO DO: this does not work with polyviz!!!
             acc, probabilities = self.VizRankDialog.kNNClassifyData(table)
 
             #self.matrixOfPredictions[(existing + index)*classCount:(existing + index +1)*classCount] = Numeric.transpose(probabilities)
@@ -1378,7 +1393,7 @@ class OWGraphIdentifyOutliers(OWWidget):
                 Numeric.put(self.matrixOfPredictions[(existing + index)*classCount + i], validDataIndices, probabilities[i])            
 
             index += 1
-            self.statusBar.message("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(existing + index), projCount))
+            self.statusBar.message("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(existing + index), OWVisFuncts.createStringFromNumber(projCount)))
             self.widget.progressBarSet(100.0*(index)/float(projCount-existing))
 
         self.widget.progressBarFinished()
@@ -1415,8 +1430,8 @@ class OWGraphIdentifyOutliers(OWWidget):
 
     def showGraphUpdate(self):
         if self.showGraph:
-            self.evaluateProjections()
             self.graph.show()
+            self.evaluateProjections()
             self.resize(self.controlArea.size().width() + 400, self.size().height())
             self.selectedExampleChanged()
         else:
@@ -1430,6 +1445,11 @@ class OWGraphIdentifyOutliers(OWWidget):
             classCount = len(self.data.domain.classVar.values)
             self.graphMatrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, self.selectedExampleIndex], (projCount, classCount)))
             self.updateGraph()
+        valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in self.widget.getShownAttributeList()])
+        insideColors = Numeric.zeros(len(self.data))
+        insideColors[self.selectedExampleIndex] = 1
+        
+        self.widget.updateGraph(insideColors = (Numeric.compress(valid, insideColors), "Focused example: %d"))
         
 
     def updateIndexFromGraph(self):
@@ -1456,7 +1476,8 @@ class OWGraphIdentifyOutliers(OWWidget):
             matrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, i], (projCount, classCount)))
             valid = Numeric.where(matrix[int(self.data[i].getclass())] != -1, 1, 0)
             data = Numeric.compress(valid, matrix[int(self.data[i].getclass())])
-            ave_acc = Numeric.sum(data) / float(len(data))
+            if len(data): ave_acc = Numeric.sum(data) / float(len(data))
+            else: ave_acc = 0
             self.insertItemToExampleList(ave_acc, i)
             
             

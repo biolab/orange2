@@ -39,7 +39,8 @@ class orngScaleRadvizData(orngScaleData):
         self.anchorData =[]        # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
         
     def setAnchors(self, xAnchors, yAnchors, attributes):
-        self.anchorData = [(xAnchors[i], yAnchors[i], attributes[i]) for i in range(len(attributes))]
+        if xAnchors and yAnchors and attributes:
+            self.anchorData = [(xAnchors[i], yAnchors[i], attributes[i]) for i in range(len(attributes))]
 
     # create anchors around the circle
     def createAnchors(self, numOfAttr, labels = None):
@@ -59,13 +60,22 @@ class orngScaleRadvizData(orngScaleData):
 
      # save projection (xAttr, yAttr, classVal) into a filename fileName
     def saveProjectionAsTabData(self, fileName, attrList, useAnchorData = 0):
-        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], useAnchorData = useAnchorData))
+        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], settingsDict = {"useAnchorData":useAnchorData}))
 
         
     # for attributes in attrIndices and values of these attributes in values compute point positions
     # this function has more sense in radviz and polyviz methods
     # NOTE: the computed x and y positions are not yet scaled. probably you have to use self.scaleFactor or trueScaleFactor to scale them!!!
-    def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0, XAnchors = None, YAnchors = None, anchorRadius = None, normalizeExample = None):
+    #def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0, XAnchors = None, YAnchors = None, anchorRadius = None, normalizeExample = None):
+    def getProjectedPointPosition(self, attrIndices, values, settingsDict = {}):
+        
+        # load the elements from the settings dict
+        useAnchorData = settingsDict.get("useAnchorData")
+        XAnchors = settingsDict.get("XAnchors")
+        YAnchors = settingsDict.get("YAnchors")
+        anchorRadius = settingsDict.get("anchorRadius")
+        normalizeExample = settingsDict.get("normalizeExample")
+        
         if XAnchors and YAnchors:
             if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
         elif useAnchorData:
@@ -93,25 +103,41 @@ class orngScaleRadvizData(orngScaleData):
 
     # ##############################################################
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0):
+    #def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0):
+    def createProjectionAsExampleTable(self, attrIndices, settingsDict = {}):
+        domain = settingsDict.get("domain")
         if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, normalize, jitterSize, useAnchorData)
+        data = self.createProjectionAsNumericArray(attrIndices, settingsDict)
         return orange.ExampleTable(domain, data)
         
+
+    #def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0, removeMissingData = 1):
+    def createProjectionAsNumericArray(self, attrIndices, settingsDict = {}):
+
+        # load the elements from the settings dict
+        validData = settingsDict.get("validData")
+        classList = settingsDict.get("classList")
+        sum_i     = settingsDict.get("sum_i")
+        XAnchors = settingsDict.get("XAnchors")
+        YAnchors = settingsDict.get("YAnchors")
+        scaleFactor = settingsDict.get("scaleFactor", 1.0)
+        normalize = settingsDict.get("normalize")
+        jitterSize = settingsDict.get("jitterSize", 0.0)
+        useAnchorData = settingsDict.get("useAnchorData", 0)
+        removeMissingData = settingsDict.get("removeMissingData", 1)
         
-    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0, removeMissingData = 1):
         # if we want to use anchor data we can get attrIndices from the anchorData
         if useAnchorData:
             attrIndices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
 
-        if not validData and removeMissingData: validData = self.getValidList(attrIndices)
+        if not validData: validData = self.getValidList(attrIndices)
 
         # if jitterSize is set below zero we use scaledData that has already jittered data
         if jitterSize < 0.0: data = self.scaledData
         else:                data = self.noJitteringScaledData
 
-        if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(data, attrIndices))
-        else:                 selectedData = Numeric.take(data, attrIndices)
+        selectedData = Numeric.take(data, attrIndices)
+        if removeMissingData: selectedData = Numeric.compress(validData, selectedData)
         
         if not classList:
             classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
@@ -130,7 +156,7 @@ class orngScaleRadvizData(orngScaleData):
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
             r = Numeric.ones(len(XAnchors), Numeric.Float)
-    
+
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
 
@@ -140,7 +166,9 @@ class orngScaleRadvizData(orngScaleData):
             y_positions /= sum_i
             self.trueScaleFactor = scaleFactor
         else:
-            self.trueScaleFactor = scaleFactor / math.sqrt(max(x_positions*x_positions + y_positions*y_positions))
+            if not removeMissingData: x_validData = Numeric.compress(validData, x_positions); y_validData = Numeric.compress(validData, y_positions)
+            else:                     x_validData = x_positions; y_validData = y_positions
+            self.trueScaleFactor = scaleFactor / math.sqrt(max(x_validData*x_validData + y_validData*y_validData))
 
         self.unscaled_x_positions, self.unscaled_y_positions = Numeric.array(x_positions), Numeric.array(y_positions)
 

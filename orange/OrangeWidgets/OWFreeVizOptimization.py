@@ -135,7 +135,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         # ##########################
         # LINEAR TRANSFORMATION TAB
-        OWGUI.button(self.LinearTransformationTab, self, "Separate Different Classes", callback = self.findLinearProjection)        
+        OWGUI.button(self.LinearTransformationTab, self, "Separate Different Classes", callback = self.findSPCAProjection)        
         OWGUI.checkBox(self.LinearTransformationTab, self, "useGeneralizedEigenvectors", "Try to merge examples with same class value")
 
         # ###########################
@@ -321,7 +321,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
                     self.s2nPlaceAttributes = val
                     self.s2nMixAnchors(0)
                     qApp.processEvents()
-                    acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
+                    acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, settingsDict = {"useAnchorData": 1}))
                     if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
                     else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
                                                              
@@ -336,7 +336,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
             attrIndices = [attributeNameIndex[val[2]] for val in anchors]
             for val in range(10):
                 self.s2nSpread = val
-                acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = 1))
+                acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"useAnchorData": 1}))
                 results.append(acc)
                 if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
                 else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
@@ -391,7 +391,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.repaint()
 
 
-    def findLinearProjection(self):
+    def findSPCAProjection(self):
         import LinearAlgebra
 
         ai = self.graph.attributeNameIndex
@@ -402,7 +402,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
             self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
             return
         
-        FreeViz.findLinearProjection(self, attrIndices)
+        FreeViz.findSPCAProjection(self, attrIndices, setGraphAnchors = 1)
         
         self.graph.updateData()
         self.graph.repaint()
@@ -465,7 +465,7 @@ class S2NHeuristicClassifier(orange.Classifier):
         xTest*= self.radvizWidget.graph.trueScaleFactor
         yTest*= self.radvizWidget.graph.trueScaleFactor
         
-        table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, scaleFactor = self.radvizWidget.graph.trueScaleFactor, useAnchorData = 1)
+        table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, settingsDict = {"scaleFactor": self.radvizWidget.graph.trueScaleFactor, "useAnchorData": 1})
         knn = self.radvizWidget.optimizationDlg.createkNNLearner()(table)
         (classVal, prob) = knn(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
 

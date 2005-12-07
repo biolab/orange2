@@ -31,13 +31,20 @@ class orngScaleScatterPlotData(orngScaleData):
 
     # ##############################################################
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
+    #def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
+    def createProjectionAsExampleTable(self, attrIndices, settingsDict = {}):
+        domain = settingsDict.get("domain")
         if not domain: domain = orange.Domain([orange.FloatVariable(self.rawdata.domain[attrIndices[0]].name), orange.FloatVariable(self.rawdata.domain[attrIndices[1]].name), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, jitterSize)
+        data = self.createProjectionAsNumericArray(attrIndices, settingsDict)
         return orange.ExampleTable(domain, data)
     
 
-    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, jitterSize = 0.0):
+    #def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, jitterSize = 0.0):
+    def createProjectionAsNumericArray(self, attrIndices, settingsDict = {}):
+        validData = settingsDict.get("validData")
+        classList = settingsDict.get("classList")
+        jitterSize = settingsDict.get("jitterSize", 0.0)
+        
         if not validData: validData = self.getValidList(attrIndices)
 
         if not classList:
@@ -77,7 +84,7 @@ class orngScaleScatterPlotData(orngScaleData):
                         self.scatterWidget.progressBarFinished()
                         return
 
-                    data = self.createProjectionAsExampleTable([attr1, attr2], domain = domain, jitterSize = jitterSize)
+                    data = self.createProjectionAsExampleTable([attr1, attr2], settingsDict = {"domain": domain, "jitterSize": jitterSize})
                     graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 
                     allValue = 0.0

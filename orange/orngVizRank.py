@@ -108,11 +108,13 @@ class VizRank:
         self.learnerName = "VizRank Learner"
         self.onlyOnePerSubset = 1                           # save only the best placement of attributes in radviz
         self.maxResultListLen = 100000                      # number of projections to store in a list
+        self.abortCurrentOperation = 0
 
         self.argumentCount = 1              # number of arguments used when classifying 
         self.argumentValueFormula = 1       # how to compute argument value
 
         self.locOptMaxAttrsInProj = 20      # maximum number of attributes in projection
+        self.locOptAttrsToTry = 100         # number of best ranked attributes to try 
         self.locOptProjCount = 20           # consider this number of best ranked projections
         self.attributeNameIndex = {}        # dict with indices to attributes
         
@@ -204,7 +206,7 @@ class VizRank:
             return bottom
 
     # insert new result - give parameters: accuracy of projection, number of examples in projection and list of attributes.
-    def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, generalDict = {}):
+    def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, generalDict = {}, updateStatusBar = 0):
         if index < self.maxResultListLen:
             self.results.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, generalDict))
 
@@ -355,10 +357,12 @@ class VizRank:
                     testExample[attrIndex] = self.graph.scaleExampleValue(example, attrIndex)
                 attrVals.append(testExample[attrIndex])
                         
-            if generalDict.has_key("anchors"): xanchors = generalDict["anchors"][0]; yanchors = generalDict["anchors"][1]
-            else:   xanchors = None; yanchors = None
-            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, XAnchors = xanchors, YAnchors = yanchors)
-            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], XAnchors = xanchors, YAnchors = yanchors)
+            xanchors = generalDict.get("XAnchors")
+            yanchors = generalDict.get("YAnchors")
+
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = {"XAnchors": xanchors, "YAnchors": yanchors})
+            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"XAnchors": xanchors, "YAnchors": yanchors})
+            
             learner = self.externalLearner or self.createkNNLearner()
             classifier = learner(table)
             (classValue, prob) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
@@ -491,11 +495,11 @@ class VizRank:
 
                             attrIndices = [attributes[c] for c in comb]
                             if self.useSupervisedPCA:
-                                attrNames, xanchors, yanchors = self.freeviz.findLinearProjection(attrIndices)
-                                table = self.graph.createProjectionAsExampleTable([], domain = domain, useAnchorData = 1)
-                                accuracy, other_results = self.kNNComputeAccuracy(table)
-                                self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"anchors": (xanchors, yanchors)})
+                                attrNames, xanchors, yanchors = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
+                                table = self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"domain": domain, "useAnchorData": 1})
                                 evaluatedProjections += 1
+                                accuracy, other_results = self.kNNComputeAccuracy(table)
+                                self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
                                 if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
                                 if self.__class__ != VizRank: self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
                             else:
@@ -514,7 +518,7 @@ class VizRank:
                                     
                                     try:
                                         permutation = [attrList[i][j] for (i,j) in proj]
-                                        table = self.graph.createProjectionAsExampleTable(permutation, validData, classList, sum_i, XAnchors, YAnchors, domain)
+                                        table = self.graph.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
                                         accuracy, other_results = self.kNNComputeAccuracy(table)
                                         
                                         # save the permutation
@@ -557,21 +561,21 @@ class VizRank:
                     for u in range(minLength-1, maxLength):
                         combinations = OWVisFuncts.combinations(attributes[:z], u)
                         if not combinations: continue
-
-                        if self.useSupervisedPCA:
-                            attrIndices = [attributes[c] for c in (combinations[0] + [attributes[z]])]
-                            attrNames, xanchors, yanchors = self.freeviz.findLinearProjection(attrIndices)
-                            table = self.graph.createProjectionAsExampleTable([], domain = domain, useAnchorData = 1)
-                            accuracy, other_results = self.kNNComputeAccuracy(table)
-                            self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"anchors": (xanchors, yanchors)})
-                            evaluatedProjections += 1
-                            if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
-                            if self.__class__ != VizRank:   self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
-                        else:
-                            XAnchors = anchorList[u+1-minLength][0]
-                            YAnchors = anchorList[u+1-minLength][1]
-                            
-                            for attrList in combinations:
+                    
+                        for attrList in combinations:
+                            if self.useSupervisedPCA:
+                                attrIndices = [attributes[c] for c in (attrList + [attributes[z]])]
+                                attrNames, xanchors, yanchors = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
+                                table = self.graph.createProjectionAsExampleTable([attrIndices], settingsDict = {"domain": domain, "useAnchorData": 1})
+                                evaluatedProjections += 1
+                                accuracy, other_results = self.kNNComputeAccuracy(table)
+                                self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
+                                if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
+                                if self.__class__ != VizRank:   self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
+                            else:
+                                XAnchors = anchorList[u+1-minLength][0]
+                                YAnchors = anchorList[u+1-minLength][1]
+                                
                                 attrIndices = attrList + [attributes[z]] # remove the value of this attribute subset
                                 permIndices = permutationIndices[len(attrIndices)]
                                 
@@ -586,7 +590,7 @@ class VizRank:
                                     permutation = [attrIndices[val] for val in ind]
                                     if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
 
-                                    table = self.graph.createProjectionAsExampleTable(permutation, validData, classList, sum_i, XAnchors, YAnchors, domain)
+                                    table = self.graph.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
                                     accuracy, other_results = self.kNNComputeAccuracy(table)
                                     
                                     # save the permutation
@@ -612,7 +616,7 @@ class VizRank:
     def finishEvaluation(self, evaluatedProjections):
         if self.__class__ != VizRank:
             secs = time.time() - self.startTime
-            self.setStatusBarText("Finished evaluation (evaluated %d projections in %d min, %d sec)" % (evaluatedProjections, secs/60, secs%60))
+            self.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
             self.parentWidget.progressBarFinished()
             self.enableControls()
             self.finishedAddingResults()
@@ -621,24 +625,17 @@ class VizRank:
 
     def getProjectionQuality(self, attrList, useAnchorData = 1):
         if not self.data: return 0.0, None
-
-        attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
-
-        if self.visualizationMethod == SCATTERPLOT:
-            table = self.graph.createProjectionAsExampleTable(attrIndices)
-            orange.saveTabDelimited("C:\\%s-%s-projQ.tab" % (table.domain[0].name, table.domain[1].name), table)
-        elif self.visualizationMethod == RADVIZ:
-            table = self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = useAnchorData)
+        table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"useAnchorData": useAnchorData})
         return self.kNNComputeAccuracy(table)
 
 
-    def optimizeBestProjections(self, bestFeatureSubsetSize = 200, restartWhenImproved = 1):
+    def optimizeBestProjections(self, restartWhenImproved = 1):
         count = min(len(self.results), self.locOptProjCount)
         attrLists = [self.results[i][ATTR_LIST] for i in range(count)]                                   # create a list of attributes that are in the top projections
         attrLists = [[self.attributeNameIndex[name] for name in projection] for projection in attrLists]    # find indices from the attribute names
         accuracys = [self.getProjectionQuality(self.results[i][ATTR_LIST])[0] for i in range(count)]
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
-        attributes = [self.attributeNameIndex[name] for name in OWVisAttrSelection.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])[:bestFeatureSubsetSize]]
+        attributes = [self.attributeNameIndex[name] for name in OWVisAttrSelection.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])[:self.locOptAttrsToTry]]
         self.startTime = time.time()
         evaluatedProjections = 0
         lenOfAttributes = len(attributes)
@@ -670,7 +667,7 @@ class VizRank:
                         
                         tempList = []
                         for testProj in projections:
-                            table = self.graph.createProjectionAsExampleTable(testProj, domain = domain)
+                            table = self.graph.createProjectionAsExampleTable(testProj, settingsDict = {"domain": domain})
                             acc, other_results = self.kNNComputeAccuracy(table)
                             
                             tempList.append((acc, other_results, len(table), testProj))  # save the permutation
@@ -737,11 +734,11 @@ class VizRank:
                                 for proj in projections:
                                     if newProjDict.has_key(str(proj)): continue
                                     newProjDict[str(proj)] = 1
+                                    attrNames, xanchors, yanchors = self.freeviz.findSPCAProjection(proj, setGraphAnchors = 0)
+                                    table = self.graph.createProjectionAsExampleTable([], settingsDict = {"domain": domain, "useAnchorData": 1})
                                     evaluatedProjections += 1
-                                    attrNames, xanchors, yanchors = self.freeviz.findLinearProjection(proj)
-                                    table = self.graph.createProjectionAsExampleTable([], domain = domain, useAnchorData = 1)
                                     acc, other_results = self.kNNComputeAccuracy(table)
-                                    tempList.append((acc, other_results, len(table), [self.attributeNameIndex[name] for name in attrNames], {"anchors": (xanchors, yanchors)}))
+                                    tempList.append((acc, other_results, len(table), [self.attributeNameIndex[name] for name in attrNames], {"XAnchors": xanchors, "YAnchors": yanchors}))
                                     if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
                                     if self.isOptimizationCanceled(): self.finishEvaluation(evaluatedProjections); return
 
@@ -766,7 +763,7 @@ class VizRank:
                                     if newProjDict.has_key(str(testProj)): continue
                                     newProjDict[str(testProj)] = 1
                                     
-                                    table = self.graph.createProjectionAsExampleTable(testProj, validData, classList, None, XAnchors, YAnchors, domain)
+                                    table = self.graph.createProjectionAsExampleTable(testProj, settingsDict = {"validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
                                     acc, other_results = self.kNNComputeAccuracy(table)
                                     tempList.append((acc, other_results, len(table), testProj, {}))
 
@@ -837,6 +834,10 @@ class VizRank:
             if s[-2] == ",": s = s[:-2]
             s += "), %d, %s, %d, %s)" % (lenTable, str(attrList), tryIndex, generalDict)
             file.write(s + "\n")
+
+            if self.abortCurrentOperation: break
+            if self.__class__ == VizRank: self.setStatusBarText("Saved %s projections" % (OWVisFuncts.createStringFromNumber(i)))
+
         file.flush()
         file.close()
         return i
@@ -855,14 +856,14 @@ class VizRank:
             else:
                 QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), QMessageBox.Ok)
             file.close()
-            return
+            return [], 0
 
         if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
             if self.__class__ != VizRank:
                 print "'The current data set has a different checksum than the data set that was used to evaluate projections in this file. Continuing loading the file anyway..."
             elif QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                 file.close()
-                return
+                return [], 0
 
         self.setSettings(settings)
 
@@ -872,11 +873,10 @@ class VizRank:
         count = 0
         for line in file.xreadlines():
             (acc, other_results, lenTable, attrList, tryIndex, temp) = eval(line)
-            generalDict = {}
-            if type(temp) == dict: generalDict = temp
-            elif type(temp) == list and temp != []: generalDict = {"reverse": temp}
-            self.insertItem(acc, other_results, lenTable, attrList, count, tryIndex, generalDict)
+            generalDict = dict(temp)
+            self.insertItem(acc, other_results, lenTable, attrList, count, tryIndex, generalDict, updateStatusBar = 1)
             count+=1
+            if self.abortCurrentOperation: break
         file.close()
 
         # update loaded results
@@ -891,7 +891,7 @@ class VizRank:
 # #############################################################################
 # class that represents kNN classifier that classifies examples based on top evaluated projections
 class VizRankClassifier(orange.Classifier):
-    def __init__(self, vizrank, data, bestFeatureSubsetSize = 200):
+    def __init__(self, vizrank, data):
         self.VizRank = vizrank
 
         if vizrank.__class__ != VizRank:
@@ -905,14 +905,14 @@ class VizRankClassifier(orange.Classifier):
         
         # do we want to optimize current projection. if yes then spend the same amount of time to optimize it            
         if self.VizRank.optimizeBestProjection:
-            self.VizRank.optimizeBestProjections(bestFeatureSubsetSize)
+            self.VizRank.optimizeBestProjections()
             self.VizRank.removeTooSimilarProjections()
 
         if self.VizRank.__class__ != VizRank: del self.VizRank.useTimeLimit
 
 
     # for a given example run argumentation and find out to which class it most often fall        
-    def __call__(self, example, returnType):
+    def __call__(self, example, returnType = orange.GetBoth):
         if self.VizRank.__class__ != VizRank:
             table = orange.ExampleTable(example.domain)
             table.append(example)
@@ -936,6 +936,6 @@ class VizRankLearner(orange.Learner):
         self.name = self.VizRank.learnerName
         
         
-    def __call__(self, examples, weightID = 0, bestFeatureSubsetSize = 200):
-        return VizRankClassifier(self.VizRank, examples, bestFeatureSubsetSize)
+    def __call__(self, examples, weightID = 0):
+        return VizRankClassifier(self.VizRank, examples)
 

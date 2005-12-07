@@ -138,7 +138,7 @@ class FreeViz:
         if not XAnchors: XAnchors = Numeric.array([a[0] for a in anchorData], Numeric.Float)
         if not YAnchors: YAnchors = Numeric.array([a[1] for a in anchorData], Numeric.Float)
         
-        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
+        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "XAnchors": XAnchors, "YAnchors": YAnchors, "scaleFactor": self.graph.scaleFactor, "normalize": self.graph.normalizeExamples, "useAnchorData": 1})
         projData = Numeric.transpose(transProjData)
         x_positions = projData[0]; y_positions = projData[1]; classData = projData[2]
 
@@ -230,7 +230,7 @@ class FreeViz:
         if not XAnchors: XAnchors = Numeric.array([a[0] for a in anchorData], Numeric.Float)
         if not YAnchors: YAnchors = Numeric.array([a[1] for a in anchorData], Numeric.Float)
         
-        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
+        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "XAnchors": XAnchors, "YAnchors": YAnchors, "scaleFactor": self.graph.scaleFactor, "normalize": self.graph.normalizeExamples, "useAnchorData": 1})
         projData = Numeric.transpose(transProjData)
         x_positions = projData[0]; x_positions2 = Numeric.array(x_positions)
         y_positions = projData[1]; y_positions2 = Numeric.array(y_positions)
@@ -286,79 +286,86 @@ class FreeViz:
 ##            self.energyLabel.setText("Energy: %.3f" % newEnergy)
 ##            self.energyLabel.repaint()
 
-    def findLinearProjection(self, attrIndices = None):
-        import LinearAlgebra
+    def findSPCAProjection(self, attrIndices = None, setGraphAnchors = 1):
+        try:
+            import LinearAlgebra
 
-        ai = self.graph.attributeNameIndex
-        if not attrIndices:
-            attributes = self.getShownAttributeList()
-            attrIndices = [ai[label] for label in attributes]
+            ai = self.graph.attributeNameIndex
+            if not attrIndices:
+                attributes = self.getShownAttributeList()
+                attrIndices = [ai[label] for label in attributes]
+                
+            validData = self.graph.getValidList(attrIndices)
+##            if sum(validData) <= len(attrIndices):
+##                print "More attributes than examples. Singular matrix. Exiting..."
+##                return None
             
-        validData = self.graph.getValidList(attrIndices)
-        if sum(validData) <= len(attrIndices):
-            print "More attributes than examples. Singular matrix. Exiting..."
-            return
-        
-        self.graph.normalizeExamples = 0
-        
-        selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
-        classData = Numeric.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
-        selectedData = Numeric.transpose(selectedData)
-        
-        s = Numeric.sum(selectedData)/float(len(selectedData))  
-        selectedData -= s       # substract average value to get zero mean
+            self.graph.normalizeExamples = 0
+            
+            selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
+            classData = Numeric.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
+            selectedData = Numeric.transpose(selectedData)
+            
+            s = Numeric.sum(selectedData)/float(len(selectedData))  
+            selectedData -= s       # substract average value to get zero mean
 
-        #for i in range(len(attrIndices)):
-        #    self.graph.noJitteringScaledData[attrIndices[i]] -= s[i]
+            #for i in range(len(attrIndices)):
+            #    self.graph.noJitteringScaledData[attrIndices[i]] -= s[i]
 
-        # define the Laplacian matrix
-        L = Numeric.zeros((len(selectedData), len(selectedData)))
-        for i in range(len(selectedData)):
-            for j in range(i+1, len(selectedData)):
-                L[i,j] = -(classData[i] != classData[j])
-                L[j,i] = -(classData[i] != classData[j])
-        
-        s = Numeric.sum(L)
-        for i in range(len(selectedData)):
-            L[i,i] = -s[i]
-        #print L[0]
+            # define the Laplacian matrix
+            L = Numeric.zeros((len(selectedData), len(selectedData)))
+            for i in range(len(selectedData)):
+                for j in range(i+1, len(selectedData)):
+                    L[i,j] = -(classData[i] != classData[j])
+                    L[j,i] = -(classData[i] != classData[j])
+            
+            s = Numeric.sum(L)
+            for i in range(len(selectedData)):
+                L[i,i] = -s[i]
+            #print L[0]
 
-        if self.useGeneralizedEigenvectors:
-            covarMatrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), selectedData)
-            matrix = LinearAlgebra.inverse(covarMatrix)
-            matrix = Numeric.matrixmultiply(matrix, Numeric.transpose(selectedData))
-        else:
-            matrix = Numeric.transpose(selectedData)
-        
-        # compute selectedDataT * L * selectedData
-        matrix = Numeric.matrixmultiply(matrix, L)
-        matrix = Numeric.matrixmultiply(matrix, selectedData)
-        vals, vectors = LinearAlgebra.eigenvectors(matrix)
-        firstInd  = list(vals).index(max(vals)); vals[firstInd] = -1   # save the index of the largest eigenvector
-        secondInd = list(vals).index(max(vals));                       # save the index of the second largest eigenvector
+            if self.useGeneralizedEigenvectors:
+                covarMatrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), selectedData)
+                matrix = LinearAlgebra.inverse(covarMatrix)
+                matrix = Numeric.matrixmultiply(matrix, Numeric.transpose(selectedData))
+            else:
+                matrix = Numeric.transpose(selectedData)
+            
+            # compute selectedDataT * L * selectedData
+            matrix = Numeric.matrixmultiply(matrix, L)
+            matrix = Numeric.matrixmultiply(matrix, selectedData)
+            vals, vectors = LinearAlgebra.eigenvectors(matrix)
+            firstInd  = list(vals).index(max(vals)); vals[firstInd] = -1   # save the index of the largest eigenvector
+            secondInd = list(vals).index(max(vals));                       # save the index of the second largest eigenvector
 
-        xAnchors = vectors[firstInd]
-        yAnchors = vectors[secondInd]
+            xAnchors = vectors[firstInd]
+            yAnchors = vectors[secondInd]
 
-        lengthArr = xAnchors**2 + yAnchors**2
-        m = math.sqrt(max(lengthArr))
-        xAnchors /= m
-        yAnchors /= m
-        names = self.graph.attributeNames
-        attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
+            lengthArr = xAnchors**2 + yAnchors**2
+            m = math.sqrt(max(lengthArr))
+            xAnchors /= m
+            yAnchors /= m
+            names = self.graph.attributeNames
+            attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
 
-        temp = [(lengthArr[i], i) for i in range(len(lengthArr))]
-        temp.sort()
+            temp = [(lengthArr[i], i) for i in range(len(lengthArr))]
+            temp.sort()
 
-        newXAnchors = []; newYAnchors = []; newAttributes = []
-        for i in range(len(temp))[::-1]:        # move from the longest attribute to the shortest
-            newXAnchors.append(xAnchors[temp[i][1]])
-            newYAnchors.append(yAnchors[temp[i][1]])
-            newAttributes.append(attributes[temp[i][1]])
-        
-        self.graph.setAnchors(newXAnchors, newYAnchors, newAttributes)
+            newXAnchors = []; newYAnchors = []; newAttributes = []
+            for i in range(len(temp))[::-1]:        # move from the longest attribute to the shortest
+                newXAnchors.append(xAnchors[temp[i][1]])
+                newYAnchors.append(yAnchors[temp[i][1]])
+                newAttributes.append(attributes[temp[i][1]])
 
-        return newAttributes, newXAnchors, newYAnchors
+            if setGraphAnchors: self.graph.setAnchors(newXAnchors, newYAnchors, newAttributes)
+
+            return newAttributes, newXAnchors, newYAnchors
+        except:
+            print "unable to compute the inverse of a singular matrix."
+            names = self.graph.attributeNames
+            attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
+            if setGraphAnchors: self.graph.anchorData = self.graph.createAnchors(len(attributes), attributes)
+            return attributes, [self.graph.anchorData[i][0] for i in range(len(attributes))], [self.graph.anchorData[i][1] for i in range(len(attributes))]
 
 
 # #############################################################################
@@ -387,7 +394,7 @@ class FreeVizClassifier(orange.Classifier):
         normalizers = [graph.normalizers[i] for i in indices]
         averages = [graph.averages[i] for i in indices]
 
-        self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)
+        self.FreeViz.graph.createProjectionAsNumericArray(indices, settingsDict = {"useAnchorData": 1})
         self.classifier = orange.P2NN(domain,
                                       Numeric.transpose(Numeric.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawdata]])),
                                       graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=self.FreeViz.law)
