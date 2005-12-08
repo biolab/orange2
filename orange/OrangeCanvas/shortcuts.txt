@@ -1,3 +1,4 @@
-Ctrl-F:	Data - File
-Ctrl-T:	Data - Data Table
-Ctrl-R:	Visualize - Radviz
+A: Data - Select Attributes
+D: Data - Select Data
+T: Data - Data Table
+F: Data - File
