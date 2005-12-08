@@ -131,6 +131,7 @@ class ExperimentResults:
 
 #### Experimental procedures
 def leaveOneOut(learners, examples, pps=[], **argkw):
+    (examples, weight) = demangleExamples(examples)
     return testWithIndices(learners, examples, range(len(examples)), pps)
 
 
