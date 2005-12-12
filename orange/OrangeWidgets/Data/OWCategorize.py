@@ -1,28 +1,25 @@
 """
-<name>Categorize</name>
-<description>Performs attribute discretization.</description>
-<icon>icons/Categorize.png</icon>
+<name>Discretize</name>
+<description>Discretization of continuous attributes.</description>
+<icon>icons/Discretize.png</icon>
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
 <priority>2100</priority>
 """
-#
-# OWDataTable.py
-#
-# wishes:
-# ignore attributes, filter examples by attribute values, do
-# all sorts of preprocessing (including discretization) on the table,
-# output a new table and export it in variety of formats.
 
 from qttable import *
 from OWWidget import *
+import OWGUI, warnings
 
 ##############################################################################
 
+warnings.filterwarnings("ignore", ".*'numberOfIntervals' is not a builtin attribute of 'EntropyDiscretization'", orange.AttributeWarning)
+
 class OWCategorize(OWWidget):
-    settingsList = ["Categorization", "NumberOfIntervals", "ShowIntervals"]
-    
+    settingsList = ["Categorization", "NumberOfIntervals", "ShowIntervals", "DiscretizeClass"]
+
+
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Categorize")
+        OWWidget.__init__(self, parent, signalManager, "Discretize")
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.data)]
         self.outputs = [("Classified Examples", ExampleTableWithClass)]
@@ -32,45 +29,38 @@ class OWCategorize(OWWidget):
         self.Categorization = 0  # default to entropy
         self.NumberOfIntervals = 5
         self.ShowIntervals = 0
+        self.DiscretizeClass = 0 # applies only for regression data sets
         self.loadSettings()
-        
+
+        self.methods = [("Entropy-based discretization", orange.EntropyDiscretization()),
+                        ("Equal-Frequency Intervals", orange.EquiNDiscretization()),
+                        ("Equal-Width Intervals", orange.EquiDistDiscretization())]
+
         # GUI: CATEGORIZATION DETAILS
-        self.catBox = QVGroupBox(self.controlArea)
-        self.catBox.setTitle('Categorization Method')
-        QToolTip.add(self.catBox,"Method that will be used for categorization")
+        box = OWGUI.widgetBox(self.controlArea, "Discretization")
 
-        self.catMethods=["Entropy-based discretization", "Equal-Frequency Intervals", "Equal-Width Intervals"]
-        self.cat = QComboBox(self.catBox)
-        for cm in self.catMethods:
-            self.cat.insertItem(cm)
-        self.cat.setCurrentItem(self.Categorization)
+        items = [x[0] for x in self.methods]
+        self.methodBtns = OWGUI.radioButtonsInBox(box, self, "Categorization", items, callback=self.setCatMethod, box="Method")
 
-        self.nIntLab = QLabel("Number of intervals: %i" % self.NumberOfIntervals, self.controlArea)
-        self.nInt = QSlider(2, 20, 1, self.NumberOfIntervals, QSlider.Horizontal, self.controlArea)
-        self.nInt.setTickmarks(QSlider.Below)
-
-        self.nIntLab.setDisabled(self.Categorization==0)
+        self.nInt = OWGUI.qwtHSlider(box, self, "NumberOfIntervals", label="Intervals: ", 
+                                     minValue=2, maxValue=20, step=1, precision=0, maxWidth=120).box
         self.nInt.setDisabled(self.Categorization==0)
 
-        QWidget(self.controlArea).setFixedSize(16, 16)
-        sp = QSpacerItem(20,20)
+#        self.discClassBtn = OWGUI.checkBox(box, self, "DiscretizeClass", "Discretize Class", disabled=1)
+
+        OWGUI.button(box, self, "&Apply", callback = self.categorize)
+
+        #sp = QSpacerItem(20,20)
         #self.controlArea.addItem(sp)
 
-        self.applyBtn = QPushButton("&Apply", self.controlArea)
-
-        QWidget(self.controlArea).setFixedSize(16, 16)
-
-        self.showInt = QCheckBox("Show &Intervals", self.controlArea)
-        self.showInt.setChecked(self.ShowIntervals)
-
-        # GUI: DISPLAY THE RESULTS        
-        #self.resBox = QVGroupBox(self.mainArea)
-        #self.resBox.setTitle('Categorization Results')
+        #OWGUI.checkBox(self.controlArea, self, "ShowIntervals", "Show &Intervals", callback=self.setTable)
+        OWGUI.radioButtonsInBox(self.controlArea, self, "ShowIntervals", ["Cut-Off Points", "Intervals"], box="Show",
+                                callback=self.setTable)
 
         # set the table widget
         self.layout=QVBoxLayout(self.mainArea)
         self.g = QVGroupBox(self.mainArea)
-        self.g.setTitle('Categorization Results')
+        self.g.setTitle('Discretization Results')
         self.res=QTable(self.g)
         self.res.setSelectionMode(QTable.NoSelection)
         
@@ -82,39 +72,41 @@ class OWCategorize(OWWidget):
         self.lab.setText('Atributes Removed:')
         self.remList=QListBox(self.g)
         
+        self.resize(600,300)
 
-        # event handling
-        self.connect(self.cat,SIGNAL("activated(int)"), self.setCatMethod)
-        self.connect(self.nInt,SIGNAL("valueChanged(int)"), self.setNInt)
-        #self.connect(self.nInt,SIGNAL("textChanged(const QString &)"), self.setNInt)
-        #self.connect(self.freqInt,SIGNAL("stateChanged(int)"), self.setIntMethod)
-        #self.connect(self.widthInt,SIGNAL("stateChanged(int)"), self.setIntMethod)
-        self.connect(self.applyBtn,SIGNAL("clicked()"),self.categorize)
-        self.connect(self.showInt,SIGNAL("toggled(bool)"), self.showIntervals)
-
-        self.resize(500,500)
-        
-    def data(self,dataset):
+    def data(self, dataset):
         self.dataset=dataset
+        if not self.dataset:
+            self.res.setNumRows(0)
+            self.remList.clear()
+            return
+        
+        if self.dataset.domain.classVar and self.dataset.domain.classVar.varType == orange.VarTypes.Continuous:
+#            self.discClassBtn.setDisabled(0)
+            self.methodBtns.buttons[0].setDisabled(1)
+            if self.Categorization == 0:
+                self.setCatMethod(1)
+
         self.categorize()
         self.setTable()
 
     def setTable(self):
         self.res.setNumCols(2)
-        self.res.setNumRows(len(self.discretizedAtts) - len(self.removedAtt))
+        self.res.setNumRows(len(self.discretizedAtts) - len(self.removed))
 
         self.resHeader=self.res.horizontalHeader()
         self.resHeader.setLabel(0, 'Attribute')
-        self.resHeader.setLabel(1, 'Values')
+        self.resHeader.setLabel(1, ["Cut-Off Values", "Intervals"][self.ShowIntervals])
 
         i=0
+        removed = [x.name for x in self.removed]
         for att in self.discretizedAtts:
-            if 'D_' + att not in self.removedAtt:
-                self.res.setText(i, 0, att)
+            if 'D_' + att.name not in removed:
+                self.res.setText(i, 0, att.name)
                 if self.ShowIntervals:
-                    values = reduce(lambda x,y: x+', '+y,  self.catData.domain['D_'+att].values)
+                    values = reduce(lambda x,y: x+', '+y, self.discData.domain['D_'+att.name].values)
                 else:
-                    discretizer = self.catData.domain['D_'+att].getValueFrom.transformer
+                    discretizer = self.discData.domain['D_'+att.name].getValueFrom.transformer
                     if type(discretizer)==orange.EquiDistDiscretizer:
                         values = reduce(lambda x,y: x+', '+y, ["%.2f" % (discretizer.firstVal + t*discretizer.step) for t in range(1, discretizer.numberOfIntervals)])
                     elif type(discretizer)==orange.IntervalDiscretizer:
@@ -128,11 +120,11 @@ class OWCategorize(OWWidget):
         self.res.adjustColumn(1)
 
         self.remList.clear()
-        if len(self.removedAtt)==0:
+        if len(self.removed)==0:
             self.remList.insertItem('(none)')
         else:
-            for i in self.removedAtt:
-                self.remList.insertItem(i[2:])
+            for i in self.removed:
+                self.remList.insertItem(i.name[2:])
 
     # data categorization (what this widget does)
     
@@ -140,57 +132,25 @@ class OWCategorize(OWWidget):
         if self.dataset == None: return
 
         # remember which attributes will be discretized
-        self.discretizedAtts = []
-        for a in self.dataset.domain.attributes:
-            if a.varType == orange.VarTypes.Continuous:
-                self.discretizedAtts.append(a.name)
+        self.discretizedAtts = filter(lambda x: x.varType == orange.VarTypes.Continuous, self.dataset.domain.attributes)
 
-        # set appropriate discretizer object
-        catMethod = self.Categorization
-        if catMethod == 0:
-            discretizer = orange.EntropyDiscretization()
-        else:
-            nInt = self.NumberOfIntervals
-            if catMethod==1:
-                discretizer = orange.EquiNDiscretization(numberOfIntervals=nInt)
-            else:
-                discretizer = orange.EquiDistDiscretization(numberOfIntervals=nInt)
-
-        self.catData = orange.Preprocessor_discretize(self.dataset, method=discretizer)
+        discretizer = self.methods[self.Categorization][1]
+        discretizer.numberOfIntervals=int(self.NumberOfIntervals)
+        self.discData = orange.Preprocessor_discretize(self.dataset, method=discretizer)
 
         # remove attributes that were discretized to a constant
-        attrlist = []
-        self.removedAtt = []
-        nrem=0
-        for i in self.catData.domain.attributes:
-            if (len(i.values)>1):
-                attrlist.append(i)
-            else:
-                self.removedAtt.append(i.name)
-
-        attrlist.append(self.catData.domain.classVar)
-        self.newData = self.catData.select(attrlist)
+        self.kept = filter(lambda x: len(x.values)>1, self.discData.domain.attributes)
+        self.removed = filter(lambda x: len(x.values)<=1, self.discData.domain.attributes)
+        self.kept.append(self.discData.domain.classVar)
+        self.newData = self.discData.select(self.kept)
 
         self.send("Classified Examples", self.newData)
         self.setTable()
 
-    # management of signals (parameter setting)    
-
-    def setCatMethod(self, value):
-        self.Categorization = value
-        self.nIntLab.setDisabled(value==0)
-        self.nInt.setDisabled(value==0)
-
-    def setNInt(self, value):
-        if str(value) == '': value = '5'
-        v = int(str(value))
-        if (v<2) or (v>20): v = 5
-        self.nIntLab.setText ("Number Of Intervals: %i" % self.NumberOfIntervals)
-        self.NumberOfIntervals = v
-
-    def showIntervals(self, value):
-        self.ShowIntervals = value
-        self.setTable()
+    def setCatMethod(self, method = None):
+        if method <> None:
+            self.Categorization = method
+        self.nInt.setDisabled(self.Categorization==0)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
@@ -202,9 +162,10 @@ if __name__=="__main__":
     ow=OWCategorize()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable(r'..\datasets\adult_sample')
-    ow.cdata(dataset)
-
+    dataset = orange.ExampleTable(r'../../doc/datasets/adult_sample')
+#    dataset = orange.ExampleTable(r'../../doc/datasets/auto-mpg')
+    ow.data(dataset)
     ow.show()
+    ow.data(None)
     a.exec_loop()
     ow.saveSettings()
