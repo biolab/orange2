@@ -495,8 +495,8 @@ class VizRank:
 
                             attrIndices = [attributes[c] for c in comb]
                             if self.useSupervisedPCA:
-                                attrNames, xanchors, yanchors = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
-                                table = self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"domain": domain, "useAnchorData": 1})
+                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
+                                table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
                                 evaluatedProjections += 1
                                 accuracy, other_results = self.kNNComputeAccuracy(table)
                                 self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
@@ -565,10 +565,11 @@ class VizRank:
                         for attrList in combinations:
                             if self.useSupervisedPCA:
                                 attrIndices = [attributes[c] for c in (attrList + [attributes[z]])]
-                                attrNames, xanchors, yanchors = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
-                                table = self.graph.createProjectionAsExampleTable([attrIndices], settingsDict = {"domain": domain, "useAnchorData": 1})
+                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
+                                table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
                                 evaluatedProjections += 1
                                 accuracy, other_results = self.kNNComputeAccuracy(table)
+                                #print accuracy, attrIndices, newIndices, xanchors, yanchors
                                 self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
                                 if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
                                 if self.__class__ != VizRank:   self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
@@ -734,11 +735,12 @@ class VizRank:
                                 for proj in projections:
                                     if newProjDict.has_key(str(proj)): continue
                                     newProjDict[str(proj)] = 1
-                                    attrNames, xanchors, yanchors = self.freeviz.findSPCAProjection(proj, setGraphAnchors = 0)
-                                    table = self.graph.createProjectionAsExampleTable([], settingsDict = {"domain": domain, "useAnchorData": 1})
+                                    xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(proj, setGraphAnchors = 0)
+                                    table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
                                     evaluatedProjections += 1
                                     acc, other_results = self.kNNComputeAccuracy(table)
-                                    tempList.append((acc, other_results, len(table), [self.attributeNameIndex[name] for name in attrNames], {"XAnchors": xanchors, "YAnchors": yanchors}))
+                                    tempList.append((acc, other_results, len(table), newIndices, {"XAnchors": xanchors, "YAnchors": yanchors}))
+                                    #self.addResult(acc, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
                                     if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
                                     if self.isOptimizationCanceled(): self.finishEvaluation(evaluatedProjections); return
 
@@ -808,7 +810,7 @@ class VizRank:
 
         # open, write and save file
         file = open(name, "wt")
-        attrs = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting"]
+        attrs = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "useSupervisedPCA"]
         dict = {}
         for attr in attrs: dict[attr] = self.__dict__[attr]
         dict["dataCheckSum"] = self.data.checksum()

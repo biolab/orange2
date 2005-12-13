@@ -151,6 +151,7 @@ class orngScaleRadvizData(orngScaleData):
                 XAnchors *= r                                               
                 YAnchors *= r
         elif (XAnchors and YAnchors):
+            XAnchors = Numeric.array(XAnchors); YAnchors = Numeric.array(YAnchors)
             r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
         else:
             XAnchors = self.createXAnchors(len(attrIndices))
