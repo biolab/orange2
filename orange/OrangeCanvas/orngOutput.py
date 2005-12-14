@@ -138,7 +138,6 @@ class OutputWindow(QMainWindow):
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
 
         # TO DO:repair this code to shown full traceback. when 2 same errors occur, only the first one gets full traceback, the second one gets only 1 item
-        
         list = traceback.extract_tb(tracebackInfo, 10)
         space = "&nbsp &nbsp "
         totalSpace = space
@@ -153,9 +152,10 @@ class OutputWindow(QMainWindow):
             else:
                 text += "<nobr>" + totalSpace + "Code: " + code + "</nobr><br>"
                 totalSpace += space
-            
+
+        value = str(value).replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
         text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr><br>"
-        text += "<nobr>" + totalSpace + "Exception value: <b>" + str(value)+ "</b></nobr><br><hr>"
+        text += "<nobr>" + totalSpace + "Exception value: <b>" + value+ "</b></nobr><br><hr>"
         self.textOutput.setText(str(self.textOutput.text()) + text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 
