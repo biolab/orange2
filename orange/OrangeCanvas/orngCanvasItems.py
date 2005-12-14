@@ -202,6 +202,11 @@ class CanvasLine(QCanvasLine):
             painter.setPen(QPen(QColor(self.colors[2]), 2*fact, lineStyle))
             painter.drawLine(QPoint(startX, startY+1), QPoint(endX, endY+1))
     """
+
+    def moveBy(self, dx, dy):
+        x1 = self.startPoint().x(); y1 = self.startPoint().y()
+        x2 = self.endPoint().x(); y2 = self.endPoint().y()
+        self.setPoints(x1 + dx, y1 + dy, x2 + dx, y2 + dy)
         
     # set the line positions based on the position of input and output widgets
     def updateLinePos(self):
