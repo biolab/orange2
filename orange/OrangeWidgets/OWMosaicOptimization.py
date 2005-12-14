@@ -25,6 +25,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.parentWidget = parentWidget
         self.showRank = 0
         self.showScore = 1
+        self.VizRankClassifierName = "Mosaic Learner"
         
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
