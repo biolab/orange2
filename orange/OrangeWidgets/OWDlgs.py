@@ -154,9 +154,9 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             sortedList.sort()   # sort items by z value
             for (z, item) in sortedList:
                 if item.visible():
-                    item.move(item.x()-minx, item.y()-miny)
+                    item.moveBy(-minx, -miny)
                     item.draw(painter)
-                    item.move(item.x()+minx, item.y()+miny)
+                    item.moveBy(minx, miny)
 
             # draw foreground
             self.graph.drawForeground(painter, rect)
