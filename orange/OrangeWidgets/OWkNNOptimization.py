@@ -529,7 +529,9 @@ class OWVizRank(VizRank, OWBaseWidget):
             testIndex += 1
             self.parentWidget.progressBarSet(100.0*testIndex/float(len(results)))
 
-            accuracy, other_results = self.getProjectionQuality(attrList, generalDict)         # TO DO: this does not work with polyviz with attrReverseList   
+            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = generalDict)
+            accuracy, other_results = self.kNNComputeAccuracy(table)
+            #accuracy, other_results = self.getProjectionQuality(attrList, generalDict)         # TO DO: this does not work with polyviz with attrReverseList   
 
             self.addResult(accuracy, other_results, tableLen, attrList, tryIndex, generalDict)
             self.setStatusBarText("Reevaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(testIndex), strTotal))
