@@ -39,6 +39,7 @@ class SchemaDoc(QMainWindow):
         self.applicationpath = canvasDlg.settings["saveApplicationDir"]
         self.applicationname = str(self.caption())
         self.documentnameValid = FALSE
+        self.loadedSettingsDict = {}
         self.canvas = QCanvas(2000,2000)
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
         self.setCentralWidget(self.canvasView)
@@ -48,7 +49,11 @@ class SchemaDoc(QMainWindow):
     # we are about to close document
     # ask user if he is sure
     def closeEvent(self,ce):
+        newSettings = self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
+        self.canSave = self.canSave or newSettings
+
         if not self.canSave or self.canvasDlg.dontAskBeforeClose:
+            if newSettings: self.saveDocument()
             self.clear()
             ce.accept()
             QMainWindow.closeEvent(self, ce)
@@ -458,19 +463,8 @@ class SchemaDoc(QMainWindow):
             (self.documentpath, self.documentname) = os.path.split(filename)
             (self.applicationpath, self.applicationname) = os.path.split(filename)
             self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
-
-            # #################
-            # open settings
-            settingsList = []
-            if len(settings) == 0:  # if settings are not in .ows file
-                settingsFile = os.path.join(self.documentpath, os.path.splitext(self.documentname)[0] + ".sav")
-                if os.path.exists(settingsFile):
-                    file = open(settingsFile, "rt")
-                    settingsList = cPickle.load(file)
-                    file.close()
-            else:
-                settingsList = eval(str(settings[0].getAttribute("settingsDictionary")))
-                
+            settingsDict = eval(str(settings[0].getAttribute("settingsDictionary")))
+            self.loadedSettingsDict = settingsDict
 
             # ##################
             # read widgets
@@ -481,8 +475,8 @@ class SchemaDoc(QMainWindow):
                 if not tempWidget:
                     QMessageBox.information(self,'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
                 else:
-                    if tempWidget.caption in settingsList:
-                        tempWidget.instance.loadSettingsStr(settingsList[tempWidget.caption])
+                    if tempWidget.caption in settingsDict.keys():
+                        tempWidget.instance.loadSettingsStr(settingsDict[tempWidget.caption])
                         tempWidget.instance.activateLoadedSettings()
                 qApp.processEvents()
 

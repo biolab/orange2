@@ -480,6 +480,7 @@ class CanvasOptionsDlg(QDialog):
         self.showSignalNamesCB = QCheckBox("Show signal names between widgets", generalBox)
         self.verboseCB = QCheckBox("Print extra messages to output (Verbose mode)", generalBox)
         self.dontAskBeforeCloseCB= QCheckBox("Don't ask to save schema before closing", generalBox)
+        self.saveSettingsBeforeCloseCB = QCheckBox("Save changes to loaded schema before closing it", generalBox)
 
         validator = QIntValidator(self)
         validator.setRange(0,10000)

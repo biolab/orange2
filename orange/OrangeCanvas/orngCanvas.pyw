@@ -82,12 +82,14 @@ class OrangeCanvasDlg(QMainWindow):
         self.useLargeIcons = FALSE
         self.snapToGrid = TRUE
         self.dontAskBeforeClose = FALSE
+        self.saveSettingsBeforeClose = TRUE
 
         self.loadSettings()
         
         self.useLargeIcons = self.settings["useLargeIcons"]
         self.snapToGrid = self.settings["snapToGrid"]
         self.dontAskBeforeClose = self.settings["dontAskBeforeClose"]
+        self.saveSettingsBeforeClose = self.settings["saveSettingsBeforeClose"]
         
         self.widgetSelectedColor = QColor(self.settings["widgetSelectedColor"][0], self.settings["widgetSelectedColor"][1], self.settings["widgetSelectedColor"][2])
         self.widgetActiveColor   = QColor(self.settings["widgetActiveColor"][0], self.settings["widgetActiveColor"][1], self.settings["widgetActiveColor"][2])
@@ -619,6 +621,7 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
         dlg.verboseCB.setChecked(self.settings["verbose"])
         dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
+        dlg.saveSettingsBeforeCloseCB.setChecked(self.settings["saveSettingsBeforeClose"])
 
         # set current exception settings
         #dlg.catchExceptionCB.setChecked(self.settings["catchException"])
@@ -629,12 +632,8 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
         dlg.printOutputInStatusBarCB.setChecked(self.settings["printOutputInStatusBar"])
 
-        width  = 700
-        height = 700
-        if self.settings.has_key("canvasWidth"): width = self.settings["canvasWidth"]
-        if self.settings.has_key("canvasHeight"): height = self.settings["canvasHeight"]
-        dlg.heightEdit.setText(str(height))
-        dlg.widthEdit.setText(str(width))
+        dlg.heightEdit.setText(str(self.settings.get("canvasHeight", 600)))
+        dlg.widthEdit.setText(str(self.settings.get("canvasWidth", 700)))
 
         # fill categories tab list
         oldTabList = []
@@ -671,12 +670,16 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
             self.settings["verbose"] = dlg.verboseCB.isChecked()
             self.settings["dontAskBeforeClose"] = dlg.dontAskBeforeCloseCB.isChecked()
-            verbose.verbose = int(self.settings["verbose"])
-            self.dontAskBeforeClose = self.settings["dontAskBeforeClose"]
+            self.settings["saveSettingsBeforeClose"] = dlg.saveSettingsBeforeCloseCB.isChecked()
 
             self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
             self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
             self.settings["lineColor"]           = (dlg.lineIcon.color.red(), dlg.lineIcon.color.green(), dlg.lineIcon.color.blue())
+
+            verbose.verbose = int(self.settings["verbose"])
+
+            self.dontAskBeforeClose = self.settings["dontAskBeforeClose"]
+            self.saveSettingsBeforeClose = self.settings["saveSettingsBeforeClose"]
 
             self.widgetSelectedColor = dlg.selectedWidgetIcon.color
             self.widgetActiveColor   = dlg.activeWidgetIcon.color
@@ -734,25 +737,30 @@ class OrangeCanvasDlg(QMainWindow):
         else:
             self.settings = {}
 
-        if not self.settings.has_key("useLargeIcons"):  self.settings["useLargeIcons"] = 0
-        if not self.settings.has_key("snapToGrid"): self.settings["snapToGrid"] = 1
-        if not self.settings.has_key("writeLogFile"): self.settings["writeLogFile"] = 1
-        self.settings.setdefault("dontAskBeforeClose", FALSE)
-
-        if not self.settings.has_key("widgetSelectedColor"): self.settings["widgetSelectedColor"] = (0, 255, 0)
-        if not self.settings.has_key("widgetActiveColor"):   self.settings["widgetActiveColor"] = (0,0,255)
-        if not self.settings.has_key("lineColor"):           self.settings["lineColor"] = (0,255,0)
+        self.settings.setdefault("useLargeIcons", 0)
+        self.settings.setdefault("snapToGrid", 1)
+        self.settings.setdefault("writeLogFile", 1)
+        self.settings.setdefault("dontAskBeforeClose", 0)
+        self.settings.setdefault("saveSettingsBeforeClose", 1)
+        
+        self.settings.setdefault("widgetSelectedColor", (0, 255, 0))
+        self.settings.setdefault("widgetActiveColor", (0,0,255))
+        self.settings.setdefault("lineColor", (0,255,0))
 
         #if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
         #if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
-        if not self.settings.has_key("focusOnCatchException"): self.settings["focusOnCatchException"] = 1
-        if not self.settings.has_key("focusOnCatchOutput"): self.settings["focusOnCatchOutput"] = 0
-        if not self.settings.has_key("printOutputInStatusBar"): self.settings["printOutputInStatusBar"] = 1
-        if not self.settings.has_key("printExceptionInStatusBar") : self.settings["printExceptionInStatusBar"] = 1
-        if not self.settings.has_key("showSignalNames"): self.settings["showSignalNames"] = 0
-        if not self.settings.has_key("saveSchemaDir"): self.settings["saveSchemaDir"] = self.outputDir
-        if not self.settings.has_key("saveApplicationDir"): self.settings["saveApplicationDir"] = self.outputDir
-        if not self.settings.has_key("verbose"): self.settings["verbose"] = 0
+        self.settings.setdefault("focusOnCatchException", 1)
+        self.settings.setdefault("focusOnCatchOutput" , 0)
+        self.settings.setdefault("printOutputInStatusBar", 1)
+        self.settings.setdefault("printExceptionInStatusBar", 1)
+        self.settings.setdefault("showSignalNames", 0)
+        self.settings.setdefault("saveSchemaDir", self.outputDir)
+        self.settings.setdefault("saveApplicationDir", self.outputDir)
+        self.settings.setdefault("verbose", 0)
+
+        self.settings.setdefault("canvasWidth", 700)
+        self.settings.setdefault("canvasHeight", 600)
+        
         verbose.verbose = self.settings["verbose"]
                 
 
