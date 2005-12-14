@@ -26,7 +26,7 @@ class OWParallelCoordinates(OWWidget):
     attributeContOrder = ["None", "ReliefF", "Fisher discriminant", "Signal to Noise", "Signal to Noise For Each Class"]
     attributeDiscOrder = ["None", "ReliefF", "GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
-    linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
+    linesDistanceNums = [0, 10, 20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Parallel Coordinates", TRUE)
@@ -122,7 +122,7 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
-        self.connect(self.slider, SIGNAL("valueChanged(int)"), self.updateGraph)
+        self.connect(self.slider, SIGNAL("valueChanged(int)"), self.updateGraphSlider)
 
         # ####################################
         # SETTINGS functionality
@@ -262,11 +262,18 @@ class OWParallelCoordinates(OWWidget):
 
         targetVal = str(self.targetValueCombo.currentText())
         if targetVal == "(None)": targetVal = None
-        self.graph.updateData(attrs[start:start+maxAttrs], targetVal, self.buildMidLabels(attrs[start:start+maxAttrs]))
+        #self.graph.updateData(attrs[start:start+maxAttrs], targetVal, self.buildMidLabels(attrs[start:start+maxAttrs]))
+        self.graph.updateData(attrs, targetVal, self.buildMidLabels(attrs), start, start + maxAttrs)
         self.slider.repaint()
         self.graph.update()
         #self.graph.repaint()
 
+    def updateGraphSlider(self, *args):
+        attrs = self.getShownAttributeList()
+        maxAttrs = self.mainArea.width() / self.linesDistance
+        start = min(self.slider.value(), len(attrs)-maxAttrs)
+        self.graph.setAxisScale(QwtPlot.xBottom, start, start + maxAttrs - 1, 1)
+        self.graph.update()
 
     # build a list of strings that will be shown in the middle of the parallel axis
     def buildMidLabels(self, attrs):
@@ -275,13 +282,13 @@ class OWParallelCoordinates(OWWidget):
         elif self.middleLabels == "Correlations":
             for i in range(len(attrs)-1):
                 corr = None
-                if attrs[i] + "-" + attrs[i+1] in self.correlationDict.keys():   corr = self.correlationDict[attrs[i] + "-" + attrs[i+1]]
-                elif attrs[i+1] + "-" + attrs[i] in self.correlationDict.keys(): corr = self.correlationDict[attrs[i+1] + "-" + attrs[i]]
+                if (attrs[i], attrs[i+1]) in self.correlationDict.keys():   corr = self.correlationDict[(attrs[i], attrs[i+1])]
+                elif (attrs[i+1], attrs[i]) in self.correlationDict.keys(): corr = self.correlationDict[(attrs[i+1], attrs[i])]
                 else:
                     corr = OWVisAttrSelection.computeCorrelation(self.data, attrs[i], attrs[i+1])
-                    self.correlationDict[attrs[i] + "-" + attrs[i+1]] = corr
-                if corr and len(self.graph.attributeFlipInfo.keys()) > 0 and (self.graph.attributeFlipInfo[attrs[i]] == self.graph.attributeFlipInfo[attrs[i+1]]): corr = - corr
-                if corr != None: labels.append("%2.3f" % (corr))
+                    self.correlationDict[(attrs[i], attrs[i+1])] = corr
+                if corr and len(self.graph.attributeFlipInfo.keys()) > 0 and (self.graph.attributeFlipInfo[attrs[i]] != self.graph.attributeFlipInfo[attrs[i+1]]): corr = -corr
+                if corr: labels.append("%2.3f" % (corr))
                 else: labels.append("")
         elif self.middleLabels == "VizRank":
             for i in range(len(attrs)-1):
@@ -396,7 +403,9 @@ class OWParallelCoordinates(OWWidget):
                     self.targetValueCombo.insertItem(val)
                 self.targetValueCombo.setCurrentItem(0)
             
-            self.setShownAttributeList(self.data, self.attributeSelectionList)
+            attrs = self.attributeSelectionList
+            if not attrs and data and data.domain.attributes: attrs = [attr.name for attr in data.domain.attributes[:10]]
+            self.setShownAttributeList(self.data, attrs)
 
         self.updateGraph()
         self.sendSelections()
@@ -510,10 +519,12 @@ VIZRANK = 1
 # Find attribute subsets that are interesting to visualize using parallel coordinates
 class ParallelOptimization(OWBaseWidget):
     resultListList = [50, 100, 200, 500, 1000]
-    settingsList = ["attributeCount", "fileBuffer", "lastSaveDirName", "optimizationMeasure", "numberOfAttributes", "orderAllAttributes"]
     qualityMeasure =  ["Classification accuracy", "Average correct", "Brier score"]
     testingMethod = ["Leave one out", "10-fold cross validation", "Test on learning set"]
-
+    
+    settingsList = ["attributeCount", "fileBuffer", "lastSaveDirName", "optimizationMeasure",
+                    "numberOfAttributes", "orderAllAttributes", "optimizationMeasure"]
+    
     def __init__(self, parallelWidget, parent=None, signalManager = None):
         OWBaseWidget.__init__(self, parent, signalManager, "Parallel Optimization Dialog", FALSE)
 
@@ -538,7 +549,7 @@ class ParallelOptimization(OWBaseWidget):
 
         self.loadSettings()
 
-        self.measureBox = OWGUI.radioButtonsInBox(self, self, "optimizationMeasure", ["Correlation", "VizRank"], box = " Select optimization measure ")
+        self.measureBox = OWGUI.radioButtonsInBox(self, self, "optimizationMeasure", ["Correlation", "VizRank"], box = " Select optimization measure ", callback = self.updateGUI)
         self.vizrankSettingsBox = OWGUI.widgetBox(self, " VizRank settings ")
         self.optimizeBox = OWGUI.widgetBox(self, " Optimize ")
         self.manageBox = OWGUI.widgetBox(self, " Manage results ")
@@ -606,12 +617,15 @@ class ParallelOptimization(OWBaseWidget):
         self.closeButton = OWGUI.button(self.manageBox, self, "Close dialog", self.hide)
 
         self.changeProjectionFile()
+        self.updateGUI()
         self.activateLoadedSettings()
 
-    
     def activateLoadedSettings(self):
         if self.orderAllAttributes: self.setAllAttributeRadio()
         else:                       self.setSubsetAttributeRadio()
+
+    def updateGUI(self):
+        self.vizrankSettingsBox.setEnabled(self.optimizationMeasure)
 
     def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()

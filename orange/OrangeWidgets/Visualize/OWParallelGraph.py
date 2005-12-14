@@ -45,7 +45,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
     #
     # update shown data. Set attributes, coloring by className ....
     #
-    def updateData(self, attributes, targetValue, midLabels = None):
+    def updateData(self, attributes, targetValue, midLabels = None, startIndex = 0, stopIndex = 0):
         #self.removeCurves()
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeTooltips()
@@ -61,9 +61,11 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
         if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete:
             #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-0.5, 1)
-            self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1, 1)   # changed because of qwtplot's bug. only every second attribute label was shown if -0.5 was used
+            #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1, 1)   # changed because of qwtplot's bug. only every second attribute label was shown if -0.5 was used
+            self.setAxisScale(QwtPlot.xBottom, startIndex, stopIndex-1, 1)   # changed because of qwtplot's bug. only every second attribute label was shown if -0.5 was used
         else:
-            self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)
+            #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)
+            self.setAxisScale(QwtPlot.xBottom, startIndex, stopIndex-1, 1)
 
         if self.showAttrValues or midLabels:       self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
         else:                                      self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
