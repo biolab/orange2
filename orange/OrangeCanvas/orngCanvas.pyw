@@ -121,7 +121,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.readRecentFiles()
 
         width  = self.settings.get("canvasWidth", 700)
-        height = self.settings.get("canvasHeight", 700)
+        height = self.settings.get("canvasHeight", 600)
         self.resize(width, height)
         
         # center window in the desktop
@@ -322,7 +322,10 @@ class OrangeCanvasDlg(QMainWindow):
     def activateWindowById(self, id):
         self.windowsDict[id].setFocus()
 
-    def menuItemNewSchema(self):
+    def menuItemNewSchema(self, forceNew = 1):
+        if not forceNew:
+            for doc in self.workspace.getDocumentList():
+                if doc.widgets == []: return doc
         win = orngDoc.SchemaDoc(self, self.workspace, "", Qt.WDestructiveClose)
         self.workspace.setDefaultDocPosition(win)
         return win
@@ -337,7 +340,7 @@ class OrangeCanvasDlg(QMainWindow):
         name = QFileDialog.getOpenFileName( self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)", self, "", "Open File")
         if name.isEmpty():
             return
-        win = self.menuItemNewSchema()
+        win = self.menuItemNewSchema(0)
         win.loadDocument(str(name))
         self.addToRecentMenu(str(name))
 
@@ -399,7 +402,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def openRecentFile(self, index):
         if len(self.settings["RecentFiles"]) >= index:
-            win = self.menuItemNewSchema()
+            win = self.menuItemNewSchema(0)
             win.loadDocument(self.settings["RecentFiles"][index-1])
             self.addToRecentMenu(self.settings["RecentFiles"][index-1])
 
