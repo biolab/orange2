@@ -1,0 +1,24 @@
+call updateSetConstants__.btm
+
+rem ************************************************
+rem *** update snapshot
+cdd %UPDATEDIR
+if errorlevel == 0 goto changedirok2
+@pause "Cannot change directory to %UPDATEDIR, terminating"
+cancel
+
+:changedirok2
+cd ..
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r snapshot -f -d update orange
+cd update
+mkdir OrangeWidgets
+cd OrangeWidgets
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r snapshot -f Genomics
+rem cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -kb -r snapshot source -d orange\source
+cdd %UPDATEDIR
+cp ..\orange.chm doc
+
+rem ************************************************
+REM *** build whatsup.txt list
+cdd %SCRIPTDIR
+python whatsUp.py
