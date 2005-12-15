@@ -67,6 +67,7 @@ class updateOrangeDlg(QMainWindow):
 
         import updateOrange
         self.orangeDir = os.path.split(os.path.abspath(updateOrange.__file__))[0]
+        os.chdir(self.orangeDir)        # we have to set the current dir to orange dir since we can call update also from orange canvas
         iconsDir = os.path.join(self.orangeDir, "OrangeCanvas/icons")
         updateIcon = os.path.join(iconsDir, "update.png")
         foldersIcon = os.path.join(iconsDir, "folders.png")
@@ -92,9 +93,7 @@ class updateOrangeDlg(QMainWindow):
             vf = open(self.downfile)
             self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
-            #self.addText("Versions of local Orange files were successfully located.")
         except:
-            #self.addText("Orange Update failed to locate '%s' file, which should contain information about current versions of Orange files." %(self.downfile), nobr = 0)
             pass
         self.addText("To check for newer versions of files click the 'Update Files' button.", nobr = 0)
 
@@ -122,7 +121,6 @@ class updateOrangeDlg(QMainWindow):
             vf.close()
         except:
             self.addText("Failed to locate file '%s'. There is no information on installed Orange files." %(self.downfile), nobr = 0)
-            #self.addText("No folders found.")
             return
 
 
@@ -214,8 +212,7 @@ class updateOrangeDlg(QMainWindow):
         vf = open(self.downfile, "wt")
         itms = self.downstuff.items()
         itms.sort(lambda x,y:cmp(x[0], y[0]))
-        #for g in self.updateGroups:
-        #    vf.write("+%s\n" % g)
+
         for g in self.dontUpdateGroups:
             vf.write("-%s\n" % g)
         for fname, (version, md) in itms:
@@ -224,7 +221,6 @@ class updateOrangeDlg(QMainWindow):
 
 
     def executeUpdate(self):
-        #self.addText("Starting updating new files")
         self.addText("Reading file status from web server")
 
         self.updateGroups = [];  self.dontUpdateGroups = []; self.newGroups = []
@@ -237,16 +233,7 @@ class updateOrangeDlg(QMainWindow):
             self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
         except:
-            #self.addText("Failed to locate file '%s'." %(self.downfile))
-            #res = QMessageBox.information(self,'Update Orange',"There is no 'whatsdown.txt' file. This file contains information about versions of your local Orange files.\n\nIf you press 'Replace all' you will replace your local files with the latest versions from the web.\nIf you press 'Keep all' you will keep all your local files (this will not update any files).\n\nWe suggest that you press 'Replace all' button.\n",'Replace all','Keep all', "Cancel", 0, 2)
             res = QMessageBox.information(self,'Update Orange',"There is no 'whatsdown.txt' file. This file contains information about versions of your local Orange files.\nIf you press 'Download Latest Files' you will replace all your local Orange files with the latest versions from the web.\n",'Download Latest Files', "Cancel", 0, 1)
-##            if res == 0:    # replace all
-##                self.addText("User chose to replace all files")
-##            elif res == 1:
-##                self.downstuff = upstuff
-##                self.addText("User chose to keep all local files")
-##                return
-##            elif res == 2: return
             if res == 1: return
 
         itms = upstuff.items()
@@ -285,7 +272,7 @@ class updateOrangeDlg(QMainWindow):
             if len(dirs) >= 1 and dirs[0].lower() == "orangecanvas" and "Orange Canvas" in self.dontUpdateGroups: continue
             if len(dirs) == 1 and "Orange Root" in self.dontUpdateGroups: continue
 
-            if self.downstuff.has_key(fname) and self.downstuff[fname][0] < upstuff[fname][0]:      # there is a newer version
+            if os.path.exists(fname) and self.downstuff.has_key(fname) and self.downstuff[fname][0] < upstuff[fname][0]:      # there is a newer version
                 updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1], "Updating")
             elif not os.path.exists(fname):
                 if self.downloadNewFilesCB.isChecked():
@@ -307,14 +294,13 @@ class updateOrangeDlg(QMainWindow):
     def download(self, fname):
         try:
             self.httpconnection.request("GET", urllib.quote(fname))
-        except: # in case of exception "connection reset by peer"
+        except:             # in case of exception "connection reset by peer"
             self.httpconnection = httplib.HTTPConnection('www.ailab.si')
             self.httpconnection.request("GET", urllib.quote(fname))
             
         r = self.httpconnection.getresponse()
         resp = r.read()
         if r.status != 200:
-            #self.addText("Got '%s' while downloading '%s'" % (r.reason, fname))
             raise Exception("Got '%s'" % (r.reason))
         return resp
 
@@ -327,6 +313,7 @@ class updateOrangeDlg(QMainWindow):
     def updatefile(self, fname, location, version, md, type = "Downloading"):
         self.addText(type + " %s ... " % fname, addBreak = 0)
         qApp.processEvents()
+
         try:
             newscript = self.download("/orange/download/lastStable/" + location)
         except Exception, inst:
@@ -359,9 +346,12 @@ class updateOrangeDlg(QMainWindow):
         
         if createBackup:
             try:
-                if os.path.exists(fname+".bak"):
-                    os.remove(fname+".bak")
-                os.rename(fname, fname+".bak")  # create backup
+                ext = ".bak"
+                if os.path.exists(fname+ext):
+                    i = 1
+                    while os.path.exists(fname + ext + str(i)): i += 1
+                    ext = ext+str(i)
+                os.rename(fname, fname+ext)  # create backup
             except:
                 self.addText('<font color="#FF0000">Failed</font> (%s)' % (inst[0]))
                 self.addText('Unable to update file <font color="#FF0000">%s</font>. Please close all programs that are using it.' % (os.path.split(fname)[1]))
@@ -386,7 +376,9 @@ class updateOrangeDlg(QMainWindow):
         if addBreak: self.text.setText(str(self.text.text()) + "<br>")
         self.text.ensureVisible(0, self.text.contentsHeight())
 
-        
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Escape: self.close()
+        else: QMainWindow.keyPressEvent(self, e)
 
 
 # show application dlg
