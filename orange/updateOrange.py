@@ -30,11 +30,20 @@ class foldersDlg(QDialog):
         self.folders = []
         self.checkBoxes = []
 
-    def addCategory(self, text, checked = 1):
-        check = QCheckBox(text, self.topLayout)
-        self.checkBoxes.append(check)
+    def addCategory(self, text, checked = 1, indent = 0):
+        if indent:
+            box = QHBox(self.topLayout)
+            QWidget(box).setFixedSize(19, 8)
+            check = QCheckBox(text, box)
+        else:
+            check = QCheckBox(text, self.topLayout)
         check.setChecked(checked)
+        self.checkBoxes.append(check)
         self.folders.append(text)
+
+    def addLabel(self, text):
+        label = QLabel(text, self.topLayout)
+        
 
     def finishedAdding(self, ok = 1, cancel = 1):
         if ok:
@@ -47,11 +56,12 @@ class foldersDlg(QDialog):
 class updateOrangeDlg(QMainWindow):
     def __init__(self,*args):
         apply(QMainWindow.__init__,(self,) + args)
-        self.resize(500,500)
+        self.resize(600,600)
         self.setCaption("Qt Orange Update")
         self.toolbar = QToolBar(self, 'toolbar')
         self.statusBar = QStatusBar(self)
         self.text = QTextView (self)
+        font = self.text.font(); font.setPointSize(11); self.text.setFont(font)
         self.setCentralWidget(self.text)
         self.statusBar.message('Ready')
 
@@ -82,10 +92,11 @@ class updateOrangeDlg(QMainWindow):
             vf = open(self.downfile)
             self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
-            self.addText("Current versions of Orange files were successfully located.")
+            #self.addText("Versions of local Orange files were successfully located.")
         except:
-            self.addText("Orange update failed to locate file '%s'. There is no information about current versions of Orange files." %(self.downfile), 0)
-        self.addText("To check for newer versions of files click the 'Update Files' button.")
+            #self.addText("Orange Update failed to locate '%s' file, which should contain information about current versions of Orange files." %(self.downfile), nobr = 0)
+            pass
+        self.addText("To check for newer versions of files click the 'Update Files' button.", nobr = 0)
 
         # create buttons
         self.toolUpdate  = QToolButton(QPixmap(updateIcon), "Update Files" , QString.null, self.executeUpdate, self.toolbar, 'Update Files')
@@ -94,8 +105,8 @@ class updateOrangeDlg(QMainWindow):
         self.toolFolders = QToolButton(QPixmap(foldersIcon), "Folders" , QString.null, self.showFolders, self.toolbar, 'Show Folders')
         self.toolFolders.setUsesTextLabel (1)
         self.toolbar.addSeparator()
-        self.updateMissingFilesCB = QCheckBox("Update missing files", self.toolbar)
-        self.updateMissingFilesCB.setChecked(1)
+        self.downloadNewFilesCB = QCheckBox("Download new files", self.toolbar)
+        self.downloadNewFilesCB.setChecked(1)
         self.move((qApp.desktop().width()-self.width())/2, (qApp.desktop().height()-self.height())/2)   # center the window
         self.show()
         
@@ -110,16 +121,25 @@ class updateOrangeDlg(QMainWindow):
             self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
         except:
-            self.addText("Failed to locate file '%s'. There is no information on Orange folders that need to be updated." %(self.downfile), 0)
-            self.addText("No folders found.")
+            self.addText("Failed to locate file '%s'. There is no information on installed Orange files." %(self.downfile), nobr = 0)
+            #self.addText("No folders found.")
             return
+
+
+        groups = [(name, 1) for name in self.updateGroups] + [(name, 0) for name in self.dontUpdateGroups]
+        groups.sort()
+        groupDict = dict(groups)
             
-        dlg = foldersDlg("Check the list of folders you wish to update:", None, "", 1)
-        for group in self.updateGroups:
-            # a category can show up in both groups since you can have files for a category already installed
-            # locally and only then you choose not to update the group anymore
-            if group not in self.dontUpdateGroups: dlg.addCategory(group, 1)    
-        for group in self.dontUpdateGroups: dlg.addCategory(group, 0)
+        dlg = foldersDlg("Check Orange folders that you wish to update:", None, "", 1)
+
+        dlg.addCategory("Orange Canvas", groupDict.get("Orange Canvas", 1))
+        dlg.addCategory("Documentation", groupDict.get("Documentation", 1))
+        dlg.addCategory("Orange Root", groupDict.get("Orange Root", 1))
+        dlg.addLabel("Orange Widgets:")
+        for (group, sel) in groups:
+            if group in ["Orange Canvas", "Documentation", "Orange Root"]: continue
+            dlg.addCategory(group, sel, indent = 1)
+        
         dlg.finishedAdding(cancel = 1)
         dlg.move((qApp.desktop().width()-dlg.width())/2, (qApp.desktop().height()-400)/2)   # center dlg window
         
@@ -132,16 +152,6 @@ class updateOrangeDlg(QMainWindow):
                 else:                             self.dontUpdateGroups.append(dlg.folders[i])
             self.writeVersionFile()
         return                
-    
-
-
-    def addText(self, text, nobr = 1):
-        if nobr:
-            self.text.append("<nobr>" + text + "</nobr>\n")
-        else:
-            self.text.append(text)
-        self.text.ensureVisible(0, self.text.contentsHeight())
-
 
     def readLocalVersionFile(self, data, updateGroups = 1):
         versions = {}
@@ -165,8 +175,11 @@ class updateOrangeDlg(QMainWindow):
                     
                     # add widget category if not already in updateGroups
                     dirs = splitDirs(fname)
-                    if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups and dirs[1].lower() != "icons":
+                    if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups + dontUpdateGroups and dirs[1].lower() != "icons":
                         updateGroups.append(dirs[1])
+                    if len(dirs) >= 1 and dirs[0].lower() == "doc" and "Documentation" not in updateGroups + dontUpdateGroups: updateGroups.append("Documentation")
+                    if len(dirs) >= 1 and dirs[0].lower() == "orangecanvas" and "Orange Canvas" not in updateGroups + dontUpdateGroups: updateGroups.append("Orange Canvas")
+                    if len(dirs) == 1 and "Orange Root" not in updateGroups + dontUpdateGroups: updateGroups.append("Orange Root")
 
         return versions, updateGroups, dontUpdateGroups
 
@@ -211,8 +224,8 @@ class updateOrangeDlg(QMainWindow):
 
 
     def executeUpdate(self):
-        self.addText("Starting updating new files")
-        self.addText("Reading file status from server")
+        #self.addText("Starting updating new files")
+        self.addText("Reading file status from web server")
 
         self.updateGroups = [];  self.dontUpdateGroups = []; self.newGroups = []
         self.downstuff = {}
@@ -224,23 +237,24 @@ class updateOrangeDlg(QMainWindow):
             self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
         except:
-            self.addText("Failed to locate file '%s'." %(self.downfile))
-            res = QMessageBox.information(self,'Update Orange',"We were unable to locate file 'whatsdown.txt'. This file contains information about versions of your local Orange files.\nThere are 2 solutions. \nIf you press 'Replace all' you will replace all your local files with the latest version.\nIf you press 'Keep all' you will keep all your local files (this way you won't get any updated files).\nWe advise you to press 'Replace all' button.",'Replace all','Keep all')
-            if res == 0:    # replace all
-                self.addText("User chose to replace all files")
-            elif res == 1:
-                self.downstuff = upstuff
-                self.addText("User chose to keep all local files")
-                
+            #self.addText("Failed to locate file '%s'." %(self.downfile))
+            #res = QMessageBox.information(self,'Update Orange',"There is no 'whatsdown.txt' file. This file contains information about versions of your local Orange files.\n\nIf you press 'Replace all' you will replace your local files with the latest versions from the web.\nIf you press 'Keep all' you will keep all your local files (this will not update any files).\n\nWe suggest that you press 'Replace all' button.\n",'Replace all','Keep all', "Cancel", 0, 2)
+            res = QMessageBox.information(self,'Update Orange',"There is no 'whatsdown.txt' file. This file contains information about versions of your local Orange files.\nIf you press 'Download Latest Files' you will replace all your local Orange files with the latest versions from the web.\n",'Download Latest Files', "Cancel", 0, 1)
+##            if res == 0:    # replace all
+##                self.addText("User chose to replace all files")
+##            elif res == 1:
+##                self.downstuff = upstuff
+##                self.addText("User chose to keep all local files")
+##                return
+##            elif res == 2: return
+            if res == 1: return
 
         itms = upstuff.items()
         itms.sort(lambda x,y:cmp(x[0], y[0]))
 
-        self.addText("Searching for new widget categories...")
         for category in upUpdateGroups: #+ upDontUpdateGroups:
             if category not in self.updateGroups + self.dontUpdateGroups:
                 self.newGroups.append(category)
-                self.addText("New category found: <b>%s</b>" % (category))
 
         # show dialog with new groups
         if self.newGroups != []:
@@ -255,40 +269,35 @@ class updateOrangeDlg(QMainWindow):
                 else:
                     self.dontUpdateGroups.append(dlg.folders[i])
             self.newGroups = []
-        else:
-            self.addText("No new categories were found.")
 
         # update new files
         updatedFiles = 0; newFiles = 0
-        self.addText("<hr>\nUpdating files...")
+        self.addText("<hr>Updating files...")
         self.statusBar.message("Updating files")
+
         for fname, (version, location) in itms:
             qApp.processEvents()
             
             # check if it is a widget directory that we don't want to update
             dirs = splitDirs(fname)
             if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] in self.dontUpdateGroups: continue
+            if len(dirs) >= 1 and dirs[0].lower() == "doc" and "Documentation" in self.dontUpdateGroups: continue
+            if len(dirs) >= 1 and dirs[0].lower() == "orangecanvas" and "Orange Canvas" in self.dontUpdateGroups: continue
+            if len(dirs) == 1 and "Orange Root" in self.dontUpdateGroups: continue
 
-            if not os.path.exists(fname):
-                if self.updateMissingFilesCB.isChecked():
-                    updatedFiles += self.updatefile(fname, location, version, "", "updating missing file")
+            if self.downstuff.has_key(fname) and self.downstuff[fname][0] < upstuff[fname][0]:      # there is a newer version
+                updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1], "Updating")
+            elif not os.path.exists(fname):
+                if self.downloadNewFilesCB.isChecked():
+                    updatedFiles += self.updatefile(fname, location, version, "", "Downloading new file")
                 else:
-                    self.addText("Skipping missing file %s" % (fname))
-                continue
-            
-            if self.downstuff.has_key(fname):
-                # there is a newer version
-                if self.downstuff[fname][0] < upstuff[fname][0]:
-                    updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1], "updating")
-            else:
-                self.updatefile(fname, location, version, "")
-                newFiles += 1
+                    self.addText("Skipping new file %s" % (fname))
 
         self.writeVersionFile()
-        self.addText("Finished updating new files. New files: <b>%d</b>. Updated files: <b>%d</b>\n<hr>" %(newFiles, updatedFiles))
+        self.addText("Finished updating new files. New files: <b>%d</b>. Updated files: <b>%d</b>\n<hr>" %(newFiles, updatedFiles), addBreak = 0)
 
         # remove widgetregistry.xml in orangeCanvas directory
-        if os.path.exists(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml")):
+        if os.path.exists(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml")) and newFiles + updatedFiles > 0:
             os.remove(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml"))
         
         self.statusBar.message("Finished...")
@@ -296,12 +305,18 @@ class updateOrangeDlg(QMainWindow):
     # #####################################################
     # download a file with filename fname from the internet
     def download(self, fname):
-        self.httpconnection.request("GET", urllib.quote(fname))
+        try:
+            self.httpconnection.request("GET", urllib.quote(fname))
+        except: # in case of exception "connection reset by peer"
+            self.httpconnection = httplib.HTTPConnection('www.ailab.si')
+            self.httpconnection.request("GET", urllib.quote(fname))
+            
         r = self.httpconnection.getresponse()
+        resp = r.read()
         if r.status != 200:
-            self.addText("Got '%s' while downloading '%s'" % (r.reason, fname))
-            raise "Got '%s' while downloading '%s'" % (r.reason, fname)
-        return r.read()
+            #self.addText("Got '%s' while downloading '%s'" % (r.reason, fname))
+            raise Exception("Got '%s'" % (r.reason))
+        return resp
 
     # #########################################################
     # get new file from the internet and overwrite the old file
@@ -309,11 +324,13 @@ class updateOrangeDlg(QMainWindow):
     # location = location on the web, where the file can be found
     # version = the newest file version
     # md = hash value of the local file when it was downloaded from the internet - needed to compare if the user has changed the local version of the file
-    def updatefile(self, fname, location, version, md, type = "downloading"):
-        self.addText(type + " <b>%s</b>" % fname)
+    def updatefile(self, fname, location, version, md, type = "Downloading"):
+        self.addText(type + " %s ... " % fname, addBreak = 0)
+        qApp.processEvents()
         try:
-            newscript = self.download("/orange/download/lastStable/"+location)
-        except:
+            newscript = self.download("/orange/download/lastStable/" + location)
+        except Exception, inst:
+            self.addText('<font color="#FF0000">Failed</font> (%s)' % (inst[0]))
             return 0
 
         dname = os.path.dirname(fname)
@@ -321,33 +338,33 @@ class updateOrangeDlg(QMainWindow):
             os.makedirs(dname)
 
         # read existing file
-        saveFile = 1
+        createBackup = 0
         if md != "" and os.path.exists(fname):
             existing = open(fname, "rb")
             currmd = md5.new()
             currmd.update(existing.read())
             existing.close()
             if currmd.hexdigest() != md:   # the local file has changed
-                res = QMessageBox.information(self,'Update Orange',"Local file '%s' was changed. Do you wish to overwrite local copy \nwith newest version (a backup of current file will be created) or keep current file?" % (os.path.split(fname)[1]),'Overwrite with newest','Keep current file')
+                res = QMessageBox.information(self,'Update Orange',"Your local file '%s' was edited. A newer version of this file is available on the web.\nDo you wish to overwrite local copy with newest version (a backup of current file will be created) or keep your current file?" % (os.path.split(fname)[1]),'Overwrite With Newest','Keep Current File')
                 if res == 0:    # overwrite
-                    saveFile = 2
+                    createBackup = 1
                     currmd = md5.new()
                     currmd.update(newscript)
                 if res == 1:    # keep local
-                    saveFile = 0
+                    self.addText('<font color="#0000FF">Skipping</font>')
+                    return 0
         else:
             currmd = md5.new()
             currmd.update(newscript)
-
-        if saveFile == 0:
-            return 0
-        elif saveFile == 2:
+        
+        if createBackup:
             try:
                 if os.path.exists(fname+".bak"):
                     os.remove(fname+".bak")
                 os.rename(fname, fname+".bak")  # create backup
             except:
-                self.addText("Unable to rename file <b>'%s'</b> to <b>'%s'</b>. Please close all programs that are using it." % (os.path.split(fname)[1], os.path.split(fname)[1]+'.bak'))
+                self.addText('<font color="#FF0000">Failed</font> (%s)' % (inst[0]))
+                self.addText('Unable to update file <font color="#FF0000">%s</font>. Please close all programs that are using it.' % (os.path.split(fname)[1]))
                 return 0
 
         try:
@@ -355,10 +372,20 @@ class updateOrangeDlg(QMainWindow):
             nf.write(newscript)
             nf.close()
             self.downstuff[fname] = (version, currmd.hexdigest())
+            self.addText('<font color="#0000FF">OK</font>')
             return 1
         except:
-            self.addText("Unable to write file <b>'%s'</b>. Please close all programs that are using it." % (os.path.split(fname)[1]))
+            self.addText('<font color="#FF0000">Failed</font> (%s)' % (inst[0]))
+            self.addText('Unable to update file <font color="#FF0000">%s</font>. Please close all programs that are using it.' % (os.path.split(fname)[1]))
             return 0
+
+
+    def addText(self, text, nobr = 1, addBreak = 1):
+        if nobr: self.text.setText(str(self.text.text()) + '<nobr>' + text + '</nobr>')
+        else:    self.text.setText(str(self.text.text()) + text)
+        if addBreak: self.text.setText(str(self.text.text()) + "<br>")
+        self.text.ensureVisible(0, self.text.contentsHeight())
+
         
 
 
