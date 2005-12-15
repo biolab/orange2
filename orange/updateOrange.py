@@ -2,6 +2,12 @@ import os, re, httplib, urllib, sys
 from qt import *
 import md5
 
+# This is Orange Update program. It can check on the web if there are any updates available and download them.
+# User can select a list of folders that he wants to update and a list of folders that he wants to ignore.
+# In case that a file was locally changed and a new version of the same file is available, the program offers the user
+# to update to the new file or to keep the old one.
+#
+
 
 defaultIcon = ['16 13 5 1', '. c #040404', '# c #808304', 'a c None', 'b c #f3f704', 'c c #f3f7f3',  'aaaaaaaaa...aaaa',  'aaaaaaaa.aaa.a.a',  'aaaaaaaaaaaaa..a',
     'a...aaaaaaaa...a', '.bcb.......aaaaa', '.cbcbcbcbc.aaaaa', '.bcbcbcbcb.aaaaa', '.cbcb...........', '.bcb.#########.a', '.cb.#########.aa', '.b.#########.aaa', '..#########.aaaa', '...........aaaaa']
@@ -120,7 +126,7 @@ class updateOrangeDlg(QMainWindow):
             self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
         except:
-            self.addText("Failed to locate file '%s'. There is no information on installed Orange files." %(self.downfile), nobr = 0)
+            self.addText("Failed to locate file 'whatsdown.txt'. There is no information on installed Orange files.", nobr = 0)
             return
 
 
@@ -274,7 +280,7 @@ class updateOrangeDlg(QMainWindow):
 
             if os.path.exists(fname) and self.downstuff.has_key(fname) and self.downstuff[fname][0] < upstuff[fname][0]:      # there is a newer version
                 updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1], "Updating")
-            elif not os.path.exists(fname):
+            elif not os.path.exists(fname) or not self.downstuff.has_key(fname):
                 if self.downloadNewFilesCB.isChecked():
                     updatedFiles += self.updatefile(fname, location, version, "", "Downloading new file")
                 else:
@@ -315,7 +321,7 @@ class updateOrangeDlg(QMainWindow):
         qApp.processEvents()
 
         try:
-            newscript = self.download("/orange/download/lastStable/" + location)
+            newscript = self.download("/orange/download/update/" + location)
         except Exception, inst:
             self.addText('<font color="#FF0000">Failed</font> (%s)' % (inst[0]))
             return 0
