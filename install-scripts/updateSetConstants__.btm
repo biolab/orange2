@@ -5,6 +5,7 @@ set WEBDOCDIR=%WEBDIR\doc
 
 set STABLEDIR=%DOWNLOADDIR\lastStable
 set SNAPSHOTDIR=%DOWNLOADDIR\snapshot
+set UPDATEDIR=%DOWNLOADDIR\update
 
 set MNT_DOWNLOAD=/wwwUsers/orange/download
 

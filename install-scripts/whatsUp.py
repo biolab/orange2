@@ -3,9 +3,9 @@ import os, re
 file_re = re.compile(r'[^/D]*/(?P<fname>.*)/(?P<version>.*)/(?P<date>.*)/.*/')
 dir_re = re.compile(r'[^/]*D/(?P<dname>.*)////')
 
-os.chdir("c:/inetpub/wwwusers/orange/download/lastStable")
-exclude = [x.lower().replace("\\", "/")[:-1] for x in open("orange/exclude.lst", "rt").readlines()]
-#exclude.append("orange/doc/datasets")
+os.chdir("c:/inetpub/wwwusers/orange/download/update")
+exclude = [x.lower().replace("\\", "/")[:-1] for x in open("exclude.lst", "rt").readlines()]
+#exclude.append("doc/datasets")
 
 def listfiles(baseurl, basedir, subdir):
     if os.path.isdir(baseurl+subdir+"CVS"):
@@ -20,6 +20,7 @@ def listfiles(baseurl, basedir, subdir):
                         if (basedir+subdir+fname).lower() not in exclude:
 #                            print "XXX " + basedir+subdir+fname
                             outf.write("%s=%s:%s\n" % (basedir[7:]+subdir+fname, version, baseurl+subdir+fname))
+#                            print "%s=%s:%s\n" % (basedir[7:]+subdir+fname, version, baseurl+subdir+fname)
                         else:
                             print "EXC " + basedir+subdir+fname
                             continue
@@ -38,6 +39,6 @@ def listfiles(baseurl, basedir, subdir):
 
 outf = open(r"../whatsup.txt", "wt")
 
-listfiles("orange/", "orange/", "")
-listfiles("Genomics/", "orange/OrangeWidgets/Genomics/", "")
+listfiles("./", "orange/", "")
+listfiles("./OrangeWidgets/Genomics/", "orange/OrangeWidgets/Genomics/", "")
 outf.close()
