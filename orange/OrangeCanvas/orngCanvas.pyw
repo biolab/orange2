@@ -3,7 +3,7 @@
 #    main file, that creates the MDI environment
 
 from qt import *
-import sys, os, cPickle, webbrowser
+import sys, os, cPickle
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
 import orange, user, verbose
 
@@ -292,10 +292,14 @@ class OrangeCanvasDlg(QMainWindow):
         if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")) or os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")):
             if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")): self.menuHelp.insertItem("Orange Help", self.menuOpenLocalOrangeHelp)
             if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")): self.menuHelp.insertItem("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
-            self.menuHelp.insertSeparator()
         
-        self.menuHelp.insertItem("Orange On-line help", self.menuOpenOnlineOrangeHelp)
-        #self.menuHelp.insertItem("Orange Canvas On-line help", self.menuOpenOnlineCanvasHelp)
+        self.menuHelp.insertItem("Orange Online Help", self.menuOpenOnlineOrangeHelp)
+        #self.menuHelp.insertItem("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)
+        
+        if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
+            self.menuHelp.insertSeparator()
+            self.menuHelp.insertItem("Check for updates", self.menuCheckForUpdates)
+
         #self.menuHelp.insertSeparator()
         #self.menuHelp.insertItem("About Orange Canvas", self.menuHelpAbout)
         
@@ -376,7 +380,7 @@ class OrangeCanvasDlg(QMainWindow):
         try:
             import OWDlgs
         except:
-            print "Missing file OWDlgs.py. This file should be in widget directory. Unable to print/save image."
+            print "Missing file 'OWDlgs.py'. This file should be in OrangeWidgets folder. Unable to print/save image."
             return
         win = self.workspace.activeWindow()
         if not isinstance(win, orngDoc.SchemaDoc):
@@ -575,17 +579,25 @@ class OrangeCanvasDlg(QMainWindow):
             win.showNormal()
 
     def menuOpenLocalOrangeHelp(self):
+        import webbrowser
         webbrowser.open("file:///" + os.path.join(self.orangeDir, "doc/reference/default.htm"))
 
     def menuOpenLocalCanvasHelp(self):
+        import webbrowser
         webbrowser.open(os.path.join(self.orangeDir, "doc/canvas/default.htm"))
 
     def menuOpenOnlineOrangeHelp(self):
+        import webbrowser
         webbrowser.open("http://www.ailab.si/orange")
 
     def menuOpenOnlineCanvasHelp(self):
+        import webbrowser
         #webbrowser.open("http://www.ailab.si/orange/orangeCanvas") # to be added on the web
         webbrowser.open("http://www.ailab.si/orange")
+
+    def menuCheckForUpdates(self):
+        import updateOrange
+        self.updateDlg = updateOrange.updateOrangeDlg(None, "", Qt.WDestructiveClose)
 
     def menuHelpAbout(self):
         pass    
