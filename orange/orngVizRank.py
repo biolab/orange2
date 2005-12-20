@@ -66,16 +66,15 @@ RADVIZ = 1
 EXACT_NUMBER_OF_ATTRS = 0
 MAXIMUM_NUMBER_OF_ATTRS = 1
 
+import orngScaleScatterPlotData
+import orngScaleRadvizData
+
 class VizRank:
     
     def __init__(self, visualizationMethod = SCATTERPLOT, graph = None):
         if not graph:
-            if visualizationMethod == SCATTERPLOT:
-                import orngScaleScatterPlotData
-                graph = orngScaleScatterPlotData.orngScaleScatterPlotData()
-            elif visualizationMethod == RADVIZ:
-                import orngScaleRadvizData
-                graph = orngScaleRadvizData.orngScaleRadvizData()
+            if visualizationMethod == SCATTERPLOT: graph = orngScaleScatterPlotData.orngScaleScatterPlotData()
+            elif visualizationMethod == RADVIZ:    graph = orngScaleRadvizData.orngScaleRadvizData()
             else:
                 print "an invalid visualization method was specified. VizRank can not run."
                 return
@@ -109,6 +108,10 @@ class VizRank:
         self.onlyOnePerSubset = 1                           # save only the best placement of attributes in radviz
         self.maxResultListLen = 100000                      # number of projections to store in a list
         self.abortCurrentOperation = 0
+        if visualizationMethod == SCATTERPLOT or (graph and isinstance(graph, orngScaleScatterPlotData.orngScaleScatterPlotData)):
+            self.parentName = "Scatterplot"
+        elif visualizationMethod == RADVIZ or (graph and isinstance(graph, orngScaleRadvizData.orngScaleRadvizData)):
+            self.parentName = "Radviz"
 
         self.argumentCount = 1              # number of arguments used when classifying 
         self.argumentValueFormula = 1       # how to compute argument value
@@ -810,7 +813,7 @@ class VizRank:
 
         # open, write and save file
         file = open(name, "wt")
-        attrs = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "useSupervisedPCA"]
+        attrs = ["kValue", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "useSupervisedPCA"]
         dict = {}
         for attr in attrs: dict[attr] = self.__dict__[attr]
         dict["dataCheckSum"] = self.data.checksum()
@@ -838,7 +841,7 @@ class VizRank:
             file.write(s + "\n")
 
             if self.abortCurrentOperation: break
-            if self.__class__ == VizRank: self.setStatusBarText("Saved %s projections" % (OWVisFuncts.createStringFromNumber(i)))
+            if self.__class__ != VizRank: self.setStatusBarText("Saved %s projections" % (OWVisFuncts.createStringFromNumber(i)))
 
         file.flush()
         file.close()
@@ -853,7 +856,7 @@ class VizRank:
         file = open(name, "rt")
         settings = eval(file.readline()[:-1])
         if settings.has_key("parentName") and settings["parentName"] != self.parentName:
-            if self.__class__ != VizRank:
+            if self.__class__ == VizRank:
                 print 'Unable to load projection file. It was saved for %s method'%(settings["parentName"])
             else:
                 QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), QMessageBox.Ok)
@@ -861,7 +864,7 @@ class VizRank:
             return [], 0
 
         if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
-            if self.__class__ != VizRank:
+            if self.__class__ == VizRank:
                 print "'The current data set has a different checksum than the data set that was used to evaluate projections in this file. Continuing loading the file anyway..."
             elif QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                 file.close()
