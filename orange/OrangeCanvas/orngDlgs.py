@@ -396,7 +396,7 @@ class SignalDialog(QDialog):
 
         same = [sameType1, sameType2, sameType3, sameType4]
         can = [can1, can2, can3, can4]
-        self.multiplePossibleConnections = (same[can.index(1)] != 1)
+        self.multiplePossibleConnections = (same[can.index(1)] != 1 and sum(can) > 1)
         return len(all) > 0
         
 
