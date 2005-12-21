@@ -855,20 +855,23 @@ class VizRank:
         
         file = open(name, "rt")
         settings = eval(file.readline()[:-1])
-        if settings.has_key("parentName") and settings["parentName"] != self.parentName:
+        if settings.get("parentName", "").lower() != self.parentName.lower():
             if self.__class__ == VizRank:
                 print 'Unable to load projection file. It was saved for %s method'%(settings["parentName"])
             else:
-                QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), QMessageBox.Ok)
+                import qt
+                qt.QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), qt.QMessageBox.Ok)
             file.close()
             return [], 0
 
         if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
             if self.__class__ == VizRank:
                 print "'The current data set has a different checksum than the data set that was used to evaluate projections in this file. Continuing loading the file anyway..."
-            elif QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
-                file.close()
-                return [], 0
+            else:
+                import qt
+                if qt.QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
+                    file.close()
+                    return [], 0
 
         self.setSettings(settings)
 
