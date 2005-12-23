@@ -12,7 +12,7 @@ class OWVizRank(VizRank, OWBaseWidget):
                     "evaluationAlgorithm", "createSnapshots", "evaluationTime", "learnerName",
                     "argumentCount", "canUseMoreArguments", "moreArgumentsCount", "optimizeBestProjection", "optimizeBestProjectionTime",
                     "useHeuristicToFindAttributeOrders", "argumentValueFormula", "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount",
-                    "useExampleWeighting", "useSupervisedPCA"]
+                    "useExampleWeighting", "useSupervisedPCA", "useGammaDistribution", "optimizationType", "attributeCount", "useHeuristicToFindAttributeOrders"]
     resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30,35, 40, 50, 60, 70, 80, 100, 120, 150, 200]
@@ -49,8 +49,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         
         self.shownResults = []
         self.attrLenDict = {}
-        
+
         self.loadSettings()
+        self.attrCont = min(self.attrCont, 3)
 
         self.tabs = QTabWidget(self, 'tabWidget')
         self.controlArea.addWidget(self.tabs)
@@ -112,6 +113,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ranking ")
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ranking of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ranking of Discrete Attributes: ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBox(self.heuristicsSettingsBox, self, "useGammaDistribution", items = ["Exhaustively test possible attribute subsets", "Generate attribute subset according using gamma distribution"])
 
         self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
         self.testingCombo = OWGUI.comboBox(self.SettingsTab, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")        
@@ -228,7 +230,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         
         # update heuristic check box
         self.useHeuristicToFindAttributeOrderCheck.setEnabled(contMeasures[self.attrCont][0] == "Signal to Noise OVA")
-        if not self.data or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete or contMeasures[self.attrCont][0] != "Signal to Noise OVA":
+        
+        if not self.data: return
+        if not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete or self.attrCont != CONT_MEAS_S2NMIX:
             self.useHeuristicToFindAttributeOrders = 0
             self.useHeuristicToFindAttributeOrderCheck.setEnabled(0)
         
@@ -929,6 +933,7 @@ class OWInteractionAnalysis(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Interaction Analysis", wantGraph = 1)
 
+        self.parent = parent
         self.attributeCount = 10
         self.projectionCount = 50
         self.rotateXAttributes = 1
@@ -985,6 +990,10 @@ class OWInteractionAnalysis(OWWidget):
 
         best = self.results[0][ACCURACY]
         worst= self.results[min(len(self.results)-1, self.projectionCount)][ACCURACY]
+
+        if self.parent.useHeuristicToFindAttributeOrders: attributes, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.parent.data, OWVisAttrSelection.S2NMeasureMix())
+        else:   attributes = OWVisAttrSelection.evaluateAttributes(self.parent.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+        attributes = attributes[:self.attributeCount]
         
         while index < len(self.results):
             if self.dialogType != VIZRANK:
@@ -996,18 +1005,17 @@ class OWInteractionAnalysis(OWWidget):
             
             attrs = self.results[index][ATTR_LIST]
 
+            """"
             if len(attributes) < self.attributeCount:
                 for attr in attrs:
                     if attr not in attributes and len(attributes) < self.attributeCount:
                         attributes.append(attr)
-
+            """
             for i in range(len(attrs)):
                 for j in range(i+1, len(attrs)):
                     if attrs[i] not in attributes or attrs[j] not in attributes: continue
                     if not attrDict.has_key((attrs[i], attrs[j])) and not attrDict.has_key((attrs[j], attrs[i])):
                         attrDict[(attrs[i], attrs[j])] = self.results[index][ACCURACY]
-                        if attrs[i] not in attributes: attributes.append(attrs[i])
-                        if attrs[j] not in attributes: attributes.append(attrs[j])
             index += 1
    
         eps = 0.05
