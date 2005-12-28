@@ -41,10 +41,6 @@ import piddle, piddlePIL, math
 
 _defaultfont = 'Courier'
 
-
-#
-# the values to be colorized are between 0 and 1
-#
 def _colorize0(cc):
     #bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
     #redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))
@@ -530,6 +526,90 @@ def Matrix(diss = [], hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 1
 ##    for x in xrange(125,130):
 ##        colo = _colorize(x/255.0)
 ##        canvas.drawRect(x*2,y-block,x*2+1,y+block,edgeColor=colo,fillColor=colo)
+
+# a more vertically oriented matrix, with vertical columns of density
+def YDensityMatrix(diss = [], hlabels=[], vlabels=[], margin = 10, hook = 10, block = None,
+                  line_size = 2.0, ysize = 100, ticklen = 3, color_mode=0, canvas = None):
+    # prevent divide-by-zero...
+    if len(hlabels) < 2:
+        return canvas
+
+    ## ADJUST DIMENSIONS ###        
+
+    if canvas == None:
+        tcanvas = piddlePIL.PILCanvas()
+    else:
+        tcanvas = canvas
+
+    normal = piddle.Font(face=_defaultfont)
+    bold = piddle.Font(face=_defaultfont,bold=1)
+
+    if len(diss) > 0:
+        yd = len(diss)
+        xd = len(diss[0])
+
+    if len(vlabels) == 0:
+        vlabels = ["" for i in xrange(xd)]
+    else:
+        assert(xd==len(vlabels))
+
+    if len(hlabels) < 2:
+        hlabels = ["0.0","1.0"]
+
+    dh = ysize/float(len(hlabels)-1)
+    
+    # compute the height
+    lineskip = int(line_size*tcanvas.fontHeight(normal)+1)
+    labellen = [tcanvas.stringWidth(s,font=normal) for s in hlabels]
+    vlabellen = [tcanvas.stringWidth(s,font=normal) for s in vlabels]
+    maxlabelx = max(labellen)
+    maxlabely = max(vlabellen)
+    width = int(1 + 2.0*margin + hook + maxlabelx + lineskip*(len(vlabels)) + tcanvas.fontHeight(normal))
+    height = int(1 + 2.0*margin + hook + maxlabely +  ysize)
+
+    if block == None:
+        block = lineskip/2-1
+
+    if canvas == None:
+        canvas = piddlePIL.PILCanvas(size=(width,height))
+
+    _colorize = _color_picker(color_mode)
+
+    ### DRAWING ###
+            
+    offsetx = maxlabelx+margin
+    offsety = maxlabely+margin
+    halfline = canvas.fontAscent(normal)/2.0
+
+    for i in xrange(len(vlabels)):
+        x2 = offsetx + lineskip*(i) + hook
+        y2 = offsety 
+        # vertical
+        if vlabels[i][0] == '*':
+            canvas.drawString(vlabels[i][1:], x2+block+halfline, y2, angle=90,font=bold)
+        else:
+            canvas.drawString(vlabels[i], x2+block+halfline, y2, angle=90,font=normal)
+
+    for i in xrange(len(hlabels)):
+        x = offsetx - labellen[i]
+        y = offsety + hook + i*dh
+        # horizontal
+        if hlabels[-i-1][0] == '*':
+            canvas.drawString(hlabels[-i-1][1:], x, y + halfline ,font=bold)
+        else:
+            canvas.drawString(hlabels[-i-1], x,y + halfline, font=normal)
+        # tick
+        canvas.drawLine(offsetx-ticklen+hook,y,offsetx+hook,y,width=1)
+
+    dy = ysize/float(len(diss))
+    for i in xrange(len(diss)):
+        for j in xrange(len(vlabels)):
+            x = offsetx+hook+lineskip*(j)+block
+            y = offsety+hook+i*dy
+            colo = _colorize(diss[i][j])
+            canvas.drawRect(x-block,y,x+block,y+dy,edgeColor=colo,fillColor=colo)
+    canvas.flush()
+    return canvas
 
 
 class GDHClustering(DendrogramPlot,orngCluster.DHClustering):
