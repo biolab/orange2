@@ -265,7 +265,6 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         qApp.processEvents()
 
         ns = FreeViz.optimizeSeparation(self, self.stepsBeforeUpdate, singleStep)
-        print "Steps: %i" % ns
 
         self.graph.potentialsBmp = None
         self.graph.updateData()
@@ -326,6 +325,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
                     else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
                                                              
                     results[acc] = (perm, val)
+            if results.keys() == []: return
             self.classPermutationList, self.s2nPlaceAttributes = results[max(results.keys())]
             qApp.processEvents()
             self.s2nMixAnchors(0)        # update the best number of attributes

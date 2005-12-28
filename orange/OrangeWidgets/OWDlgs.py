@@ -33,9 +33,9 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         elif isinstance(graph, QCanvas):
             OWGUI.widgetLabel(box, "Image size will be set automatically.")
             
-        OWGUI.button(self.space, self, "Print", callback = self.printPic)
-        OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
-        OWGUI.button(self.space, self, "Save Graph As matplotlib Script", callback = self.saveToMatplotlib)
+        self.printButton =     OWGUI.button(self.space, self, "Print", callback = self.printPic)
+        self.saveImageButton = OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
+        self.saveMatplotlibButton = OWGUI.button(self.space, self, "Save Graph As matplotlib Script", callback = self.saveToMatplotlib)
         for (text, funct) in extraButtons:
             butt = OWGUI.button(self.space, self, text, callback = funct)
             self.connect(butt, SIGNAL("clicked()"), self.accept)        # also connect the button to accept so that we close the dialog
@@ -44,9 +44,10 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.resize(200,270)
         self.updateGUI()
 
-    def saveImage(self):
-        filename = self.getFileName("graph.png", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", ".png")
-        if not filename: return
+    def saveImage(self, filename = None, size = None, closeDialog = 1):
+        if not filename:
+            filename = self.getFileName("graph.png", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", ".png")
+            if not filename: return
         
         (fil,ext) = os.path.splitext(filename)
         ext = ext[1:].upper()
@@ -54,7 +55,9 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         	ext = "PNG"  	# if no format was specified, we choose png
         	filename = filename + ".png"
 
-        size = self.getSize()
+        if not size:
+            size = self.getSize()
+            
         painter = QPainter()
         if size.isEmpty(): buffer = QPixmap(self.graph.size()) # any size can do, now using the window size
         else:              buffer = QPixmap(size)
@@ -64,9 +67,10 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         painter.flush()
         painter.end()
         buffer.save(filename, ext)
-        QDialog.accept(self)
-        #self.hide()
 
+        if closeDialog:
+            QDialog.accept(self)
+        
     def saveToMatplotlib(self):
         filename = self.getFileName("graph.py","Python Script (*.py)", ".py")
         if filename:
