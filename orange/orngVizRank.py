@@ -422,10 +422,12 @@ class VizRank:
         return (time.time() - self.startTime) / 60 >= self.evaluationTime
 
 
+    # get a new subset of attributes. if attributes are not evaluated yet then evaluate them and save info to evaluationData dict.
     def selectNextAttributeSubset(self, minLength, maxLength):
         z = self.evaluationData.get("z", minLength-1)
         u = self.evaluationData.get("u", minLength-1)
         self.evaluationData["combinations"] = []
+        self.evaluationData["index"] = 0
 
         # if we use heuristic to find attribute orders
         if self.useHeuristicToFindAttributeOrders:
@@ -490,10 +492,11 @@ class VizRank:
             self.evaluationData["z"] = (u >= maxLength and z+1) or z
             
         self.evaluationData["combinations"] = combinations
-        self.evaluationData["index"] = 0
         return combinations
 
-
+    # use gamma distribution to select a subset of attrCount attributes. if we want to use heuristic to find attribute order then
+    # apply gamma distribution on attribute lists for each class value.
+    # before returning a subset of attributes also test if this subset was already tested. if yes, then try to generate a new subset (repeat this max 50 times)
     def getAttributeSubsetUsingGammaDistribution(self, attrCount):
         maxTries = 50
         triedDict = self.evaluationData.get("triedCombinations", {})
@@ -504,14 +507,14 @@ class VizRank:
             for i in range(maxTries):
                 attrList = [[] for c in range(numClasses)]; attrs = []
                 placed = 0; tried = 0
-                while placed < attrCount:
+                while placed < min(attrCount, len(self.data.domain.attributes)):
                     ind = tried%numClasses
                     attr = attrsByClass[ind][int(random.gammavariate(1,10))%len(attrsByClass[ind])]
                     if attr not in attrList[ind]:
                         attrList[ind].append(attr); placed += 1; attrs.append(attr)
                     tried += 1
                 attrs.sort()
-                if not triedDict.has_key(tuple(attrs)):
+                if not triedDict.has_key(tuple(attrs)) and len(attrs) == attrCount:
                     triedDict[tuple(attrs)] = 1
                     self.evaluationData["triedCombinations"] = triedDict
                     return [attrList]
@@ -531,9 +534,11 @@ class VizRank:
                     return [attrList]
         return None
 
+    # generate possible permutations of the current attribute subset. use evaluationData dict to find which attribute subset to use. 
     def getNextPermutations(self):
         combinations = self.evaluationData["combinations"]
         index = self.evaluationData["index"]
+        if not combinations: return None
         if index >= len(combinations): return None  # did we test all the projections
         combination = combinations[index]
         permutations = []        
@@ -604,7 +609,15 @@ class VizRank:
             anchorList = [(self.graph.createXAnchors(i), self.graph.createYAnchors(i)) for i in range(minLength, maxLength+1)]
             classListFull = Numeric.transpose(self.data.toNumeric("c")[0])[0]
 
-            while self.selectNextAttributeSubset(minLength, maxLength) != None:
+            # each call to selectNextAttributeSubset gets a new combination of attributes in a range from minLength to maxLength. if we return None for a given number of attributes this
+            # doesn't mean yet that there are no more possible combinations. it may be just that we wanted a combination of 6 attributes in a domain with 4 attributes. therefore we have
+            # to try maxLength-minLength+1 times and if we fail every time then there are no more valid projections
+
+            newProjectionsExist = 1
+            while newProjectionsExist:
+                for experiment in range(maxLength-minLength+1):     
+                    if self.selectNextAttributeSubset(minLength, maxLength) != None: break
+                    newProjectionsExist = 0         
                 permutations = self.getNextPermutations()
                 while permutations:
                     attrIndices = permutations[0]
