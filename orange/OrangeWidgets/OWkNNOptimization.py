@@ -661,8 +661,10 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.bestGraphsCount = int(str(text))
 
         self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.graph)
-        self.sizeDlg.disconnect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.sizeDlg.accept)
-        self.sizeDlg.connect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.saveToFileAccept)
+        self.sizeDlg.printButton.setEnabled(0)
+        self.sizeDlg.saveMatplotlibButton.setEnabled(0)
+        self.sizeDlg.disconnect(self.sizeDlg.saveImageButton, SIGNAL("clicked()"), self.sizeDlg.saveImage)
+        self.sizeDlg.connect(self.sizeDlg.saveImageButton, SIGNAL("clicked()"), self.saveToFileAccept)
         self.sizeDlg.exec_loop()
 
     def saveToFileAccept(self):
@@ -676,12 +678,11 @@ class OWVizRank(VizRank, OWBaseWidget):
         ext = ext.upper()
 
         (fil, extension) = os.path.splitext(fileName)
-        size = self.sizeDlg.getSize()
         for i in range(1, min(self.resultList.count(), self.bestGraphsCount+1)):
             self.resultList.setSelected(i-1, 1)
             self.graph.replot()
-            name = fil + " (%02d)" % i + extension
-            self.sizeDlg.saveToFileDirect(name, ext, size)
+            name = fil + " (%02d, %.2f, %d)" % (i, self.shownResults[i][ACCURACY], self.shownResults[i][LEN_TABLE]) + extension
+            self.sizeDlg.saveImage(name, closeDialog = 0)
         QDialog.accept(self.sizeDlg)
 
     def interactionAnalysis(self):
@@ -991,6 +992,10 @@ class OWInteractionAnalysis(OWWidget):
         best = self.results[0][ACCURACY]
         worst= self.results[min(len(self.results)-1, self.projectionCount)][ACCURACY]
 
+        if self.parent.useHeuristicToFindAttributeOrders: attributes, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.parent.data, OWVisAttrSelection.S2NMeasureMix())
+        else:   attributes = OWVisAttrSelection.evaluateAttributes(self.parent.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+        attributes = attributes[:self.attributeCount]
+        
         if self.parent.useHeuristicToFindAttributeOrders: attributes, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.parent.data, OWVisAttrSelection.S2NMeasureMix())
         else:   attributes = OWVisAttrSelection.evaluateAttributes(self.parent.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
         attributes = attributes[:self.attributeCount]
