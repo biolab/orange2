@@ -59,22 +59,27 @@ discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10,
 testingMethods = [orngTest.leaveOneOut, orngTest.crossValidation, orngTest.learnAndTestOnLearnData]
 
 # visualization methods
-SCATTERPLOT = 0
-RADVIZ = 1
+SCATTERPLOT = 1
+RADVIZ = 2
+LINEAR_PROJECTION = 3
 
 # optimization type
 EXACT_NUMBER_OF_ATTRS = 0
 MAXIMUM_NUMBER_OF_ATTRS = 1
 
 import orngScaleScatterPlotData
-import orngScaleRadvizData
+import orngScaleLinProjData
 
 class VizRank:
-    
-    def __init__(self, visualizationMethod = SCATTERPLOT, graph = None):
+    def __init__(self, visualizationMethod, graph = None):
         if not graph:
             if visualizationMethod == SCATTERPLOT: graph = orngScaleScatterPlotData.orngScaleScatterPlotData()
-            elif visualizationMethod == RADVIZ:    graph = orngScaleRadvizData.orngScaleRadvizData()
+            elif visualizationMethod == RADVIZ:
+                graph = orngScaleLinProjData.orngScaleLinProjData()
+                graph.normalizeExamples = 1
+            elif visualizationMethod == LINEAR_PROJECTION:
+                graph = orngScaleLinProjData.orngScaleLinProjData()
+                graph.normalizeExamples = 0
             else:
                 print "an invalid visualization method was specified. VizRank can not run."
                 return
@@ -110,10 +115,10 @@ class VizRank:
         self.onlyOnePerSubset = 1                           # save only the best placement of attributes in radviz
         self.maxResultListLen = 100000                      # number of projections to store in a list
         self.abortCurrentOperation = 0
-        if visualizationMethod == SCATTERPLOT or (graph and isinstance(graph, orngScaleScatterPlotData.orngScaleScatterPlotData)):
-            self.parentName = "Scatterplot"
-        elif visualizationMethod == RADVIZ or (graph and isinstance(graph, orngScaleRadvizData.orngScaleRadvizData)):
-            self.parentName = "Radviz"
+        
+        if visualizationMethod == SCATTERPLOT: self.parentName = "Scatterplot"
+        elif visualizationMethod == RADVIZ:    self.parentName = "Radviz"
+        elif visualizationMethod == LINEAR_PROJECTION: self.parentName = "Linear Projection"
 
         self.argumentCount = 1              # number of arguments used when classifying 
         self.argumentValueFormula = 1       # how to compute argument value
@@ -352,7 +357,7 @@ class VizRank:
                     continue
 
             if not validExample:
-                self.printVerbose("Warning: orngVizRank.py:findArguments: Tested example has a missing value at one of the visualized attributes. Skipping the projection.")
+                #self.printVerbose("Warning: orngVizRank.py:findArguments: Tested example has a missing value at one of the visualized attributes. Skipping the projection.")
                 continue
 
             attrVals = []
@@ -468,7 +473,7 @@ class VizRank:
                 permutationIndices = {}
                 for i in range(minLength, maxLength+1):
                     indices = {}
-                    orngScaleRadvizData.buildPermutationIndexList(range(0, i), [], indices)
+                    orngScaleLinProjData.buildPermutationIndexList(range(0, i), [], indices)
                     permutationIndices[i] = indices
                 self.evaluationData["permutationIndices"] = permutationIndices
 
@@ -593,8 +598,8 @@ class VizRank:
                         self.setStatusBarText("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections), strCount))
                         self.parentWidget.progressBarSet(100.0*evaluatedProjections/float(count))
 
-        # #################### RADVIZ ################################
-        elif self.visualizationMethod == RADVIZ:
+        # #################### RADVIZ, LINEAR_PROJECTION  ################################
+        elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION):
             if self.useSupervisedPCA:
                 self.freeviz.useGeneralizedEigenvectors = 1
                 self.graph.normalizeExamples = 0
@@ -754,7 +759,8 @@ class VizRank:
                         if self.__class__ != VizRank:
                             self.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
-        elif self.visualizationMethod == RADVIZ:
+        # #################### RADVIZ, LINEAR_PROJECTION  ################################
+        elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION):
             numClasses = len(self.data.domain.classVar.values)
             anchorList = [(self.graph.createXAnchors(i), self.graph.createYAnchors(i)) for i in range(3, self.locOptMaxAttrsInProj+1)]
             classListFull = Numeric.transpose(self.data.toNumeric("c")[0])[0]
@@ -1000,147 +1006,3 @@ class VizRankLearner(orange.Learner):
         
     def __call__(self, examples, weightID = 0):
         return VizRankClassifier(self.VizRank, examples)
-
-"""
-            # ################### WITH HEURISTIC ##########################
-            if self.useHeuristicToFindAttributeOrders:
-                attributes, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix())
-                attributes = [self.attributeNameIndex[name] for name in attributes]
-                attrsByClass = [[self.attributeNameIndex[name] for name in arr] for arr in attrsByClass]
-                numClasses = len(self.data.domain.classVar.values)
-
-                for z in range(minLength-1, len(attributes)):
-                    for u in range(minLength-1, maxLength):
-                        combinations = OWVisFuncts.combinations(range(z), u)
-
-                        projs = OWVisFuncts.createProjections(numClasses, u+1)                        
-                        XAnchors = anchorList[u+1-minLength][0]
-                        YAnchors = anchorList[u+1-minLength][1]
-                        
-                        for comb in combinations:
-                            comb += [z]  # remove the value of this attribute subset
-                            counts = [0 for i in range(numClasses)]
-                            for v in comb: counts[v%numClasses] += 1
-                            if min(counts) < (u+1) / numClasses: continue   # ignore combinations that don't have good attributes for all class values
-
-                            attrList = [[] for i in range(numClasses)]
-                            for v in comb: attrList[v%numClasses].append(attributes[v])
-
-                            attrIndices = [attributes[c] for c in comb]
-                            if self.useSupervisedPCA:
-                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
-                                table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
-                                evaluatedProjections += 1
-                                accuracy, other_results = self.kNNComputeAccuracy(table)
-                                self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
-                                if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
-                                if self.__class__ != VizRank: self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
-                            else:
-                                validData = self.graph.getValidList(attrIndices)
-                                classList = Numeric.compress(validData, classListFull)
-                                selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
-                                sum_i = self.graph._getSum_i(selectedData)
-
-                                tempList = []
-
-                                # for every permutation compute how good it separates different classes
-                                for proj in projs:
-                                    if self.isEvaluationCanceled():
-                                        self.finishEvaluation(evaluatedProjections)
-                                        return
-                                    
-                                    try:
-                                        permutation = [attrList[i][j] for (i,j) in proj]
-                                        table = self.graph.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                                        accuracy, other_results = self.kNNComputeAccuracy(table)
-                                        
-                                        # save the permutation
-                                        if not self.onlyOnePerSubset:
-                                            self.addResult(accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation], evaluatedProjections)
-                                        else:
-                                            tempList.append((accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation]))
-
-                                        evaluatedProjections += 1
-                                        if self.__class__ != VizRank:
-                                            self.setStatusBarText("Evaluated %s projections (%d attributes)..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections), z+1))
-                                            qApp.processEvents()        # allow processing of other events
-                                    except:
-                                        pass
-
-                                if self.onlyOnePerSubset and len(tempList) > 0:   # return only the best attribute placements
-                                    (acc, other_results, lenTable, attrList) = maxFunct(tempList)
-                                    self.addResult(acc, other_results, lenTable, attrList, evaluatedProjections)
-
-                        
-
-            # ################### WITHOUT HEURISTIC ##########################
-            else:
-                import orngScaleRadvizData
-                evaluatedAttributes = OWVisAttrSelection.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
-                attributes = [self.attributeNameIndex[name] for name in evaluatedAttributes]
-                self.totalPossibilities = 0
-                for i in range(minLength, maxLength+1): self.totalPossibilities += OWVisFuncts.combinationsCount(i, len(attributes)) * OWVisFuncts.fact(i-1)/2
-            
-                #if self.totalPossibilities > 200000: self.printVerbose("OWRadviz: Warning: There are %s possible radviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities)))
-
-                # build list of indices for permutations of different number of attributes
-                permutationIndices = {}
-                for i in range(minLength, maxLength+1):
-                    indices = {}
-                    orngScaleRadvizData.buildPermutationIndexList(range(0, i), [], indices)
-                    permutationIndices[i] = indices
-
-                for z in range(minLength-1, len(attributes)):
-                    for u in range(minLength-1, maxLength):
-                        combinations = OWVisFuncts.combinations(attributes[:z], u)
-                        if not combinations: continue
-                    
-                        for attrList in combinations:
-                            if self.useSupervisedPCA:
-                                attrIndices = [attributes[c] for c in (attrList + [attributes[z]])]
-                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
-                                table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
-                                evaluatedProjections += 1
-                                accuracy, other_results = self.kNNComputeAccuracy(table)
-                                #print accuracy, attrIndices, newIndices, xanchors, yanchors
-                                self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
-                                if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
-                                if self.__class__ != VizRank:   self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
-                            else:
-                                XAnchors = anchorList[u+1-minLength][0]
-                                YAnchors = anchorList[u+1-minLength][1]
-                                
-                                attrIndices = attrList + [attributes[z]] # remove the value of this attribute subset
-                                permIndices = permutationIndices[len(attrIndices)]
-                                
-                                validData = self.graph.getValidList(attrIndices)
-                                classList = Numeric.compress(validData, classListFull)
-                                selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
-                                sum_i = self.graph._getSum_i(selectedData)
-                                tempList = []
-
-                                # for every permutation compute how good it separates different classes            
-                                for ind in permIndices.values():
-                                    permutation = [attrIndices[val] for val in ind]
-                                    if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
-
-                                    table = self.graph.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                                    accuracy, other_results = self.kNNComputeAccuracy(table)
-                                    
-                                    # save the permutation
-                                    if self.onlyOnePerSubset:
-                                        tempList.append((accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation]))
-                                    else:
-                                        self.addResult(accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation], evaluatedProjections)
-                                        
-                                    evaluatedProjections += 1
-                                    if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
-                                        
-                                if self.__class__ != VizRank:
-                                    self.parentWidget.progressBarSet(100.0*evaluatedProjections/float(self.totalPossibilities))
-                                    self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
-
-                                if self.onlyOnePerSubset:   # return only the best attribute placements
-                                    (acc, other_results, lenTable, attrList) = maxFunct(tempList)
-                                    self.addResult(acc, other_results, lenTable, attrList, evaluatedProjections)
-"""
