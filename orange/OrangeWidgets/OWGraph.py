@@ -17,9 +17,10 @@ SELECT_POLYGON = 3
 
 
 class OWGraph(QwtPlot):
-    def __init__(self, parent = None, name = None):
+    def __init__(self, parent = None, name = "None"):
         "Constructs the graph"
         QwtPlot.__init__(self, parent, name)
+        self.parentName = name
         self.setWFlags(Qt.WResizeNoErase) #this works like magic.. no flicker during repaint!
 
         self.setAutoReplot(FALSE)

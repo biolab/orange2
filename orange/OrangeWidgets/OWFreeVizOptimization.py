@@ -5,7 +5,7 @@ import orange, math, random, orangeom
 import OWGUI, OWVisAttrSelection, OWVisTools, DESolver, Numeric
 from math import sqrt
 
-from orngScaleRadvizData import *
+from orngScaleLinProjData import *
 from orngFreeViz import *
 
 class FreeVizOptimization(OWBaseWidget, FreeViz):
@@ -57,13 +57,14 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         
         self.MainTab = QVGroupBox(self)
         self.S2NHeuristicTab = QVGroupBox(self)
-        self.LinearTransformationTab = QVGroupBox(self)
-        
+                
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.S2NHeuristicTab, "S2N Heuristic")
-        self.tabs.insertTab(self.LinearTransformationTab, "Linear Transform")
-        
 
+        if parentName.lower() != "radviz":
+            self.LinearTransformationTab = QVGroupBox(self)
+            self.tabs.insertTab(self.LinearTransformationTab, "Supervised PCA")
+        
         # ###########################
         # MAIN TAB
         OWGUI.comboBox(self.MainTab, self, "implementation", box = "FreeViz Implementation", items = ["Fast (C) implementation", "Slow (Python) implementation", "LDA"])
@@ -134,9 +135,10 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.s2nMixButton = OWGUI.button(box, self, "Place anchors", callback = self.s2nMixAnchorsAutoSet)        
 
         # ##########################
-        # LINEAR TRANSFORMATION TAB
-        OWGUI.button(self.LinearTransformationTab, self, "Separate Different Classes", callback = self.findSPCAProjection)        
-        OWGUI.checkBox(self.LinearTransformationTab, self, "useGeneralizedEigenvectors", "Try to merge examples with same class value")
+        # SUPERVISED PCA TAB
+        if parentName.lower() != "radviz":
+            OWGUI.button(self.LinearTransformationTab, self, "Separate Different Classes", callback = self.findSPCAProjection)        
+            OWGUI.checkBox(self.LinearTransformationTab, self, "useGeneralizedEigenvectors", "Try to merge examples with same class value")
 
         # ###########################
         self.statusBar = QStatusBar(self)

@@ -1,6 +1,6 @@
 import orangeom, orange
 import math, random, Numeric
-from orngScaleRadvizData import orngScaleRadvizData
+from orngScaleLinProjData import orngScaleLinProjData
 
 #implementation
 FAST_IMPLEMENTATION = 0
@@ -16,7 +16,7 @@ LAW_LINEAR_PLUS = 4
 class FreeViz:
     def __init__(self, graph = None):
         if not graph:
-            graph = orngScaleRadvizData()
+            graph = orngScaleLinProjData()
         self.graph = graph
 
         self.implementation = 0
@@ -91,7 +91,7 @@ class FreeViz:
                 for i in range(steps):
                     if self.__class__ != FreeViz and self.cancelOptimization == 1: return
                     self.graph.anchorData, (XAnchors, YAnchors) = impl(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
-                if self.graph.__class__ != orngScaleRadvizData:
+                if self.graph.__class__ != orngScaleLinProjData:
                     qApp.processEvents()
                     self.graph.updateData()
                 #self.recomputeEnergy()
@@ -107,7 +107,6 @@ class FreeViz:
         positions = [Numeric.array([x[:2] for x in self.graph.anchorData])]
         neededSteps = 0
         while 1:
-            print "Law: ", self.law
             self.graph.anchorData = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices,
                                               attractG = self.attractG, repelG = self.repelG, law = self.law,
                                               sigma2 = self.forceSigma, dynamicBalancing = self.forceBalancing, steps = steps,
@@ -116,7 +115,7 @@ class FreeViz:
                                               mirrorSymmetry = self.mirrorSymmetry)
             neededSteps += steps
 
-            if self.graph.__class__ != orngScaleRadvizData:
+            if self.graph.__class__ != orngScaleLinProjData:
                 qApp.processEvents()
                 self.graph.potentialsBmp = None
                 self.graph.updateData()

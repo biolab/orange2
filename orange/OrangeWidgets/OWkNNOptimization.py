@@ -26,6 +26,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         self.parentWidget = parentWidget
         self.parentName = parentName
+        self.visualizationMethod = visualizationMethod
         self.setCaption("Qt VizRank Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
 
@@ -107,8 +108,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
         OWGUI.checkBox(self.optimizationSettingsBox, self, 'useExampleWeighting', 'Use example weighting (in case of uneven class distribution)', tooltip = "Don't try all possible permutations of an attribute subset but only those,\nthat will most likely produce interesting projections.")
 
-        if visualizationMethod == RADVIZ:
+        if visualizationMethod == LINEAR_PROJECTION:
             OWGUI.checkBox(self.SettingsTab, self, 'useSupervisedPCA', 'Optimize class separation using supervised PCA', box = " Supervised PCA ")
+        else: self.useSupervisedPCA = 0
         
         self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ranking ")
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ranking of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
@@ -848,7 +850,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             pic = None
             if snapshots:            
                 # if the point lies inside a cluster -> save this figure into a pixmap
-                if self.parentName == "Radviz": self.parentWidget.updateGraph(attrList, setAnchors = 1)
+                if self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION): self.parentWidget.updateGraph(attrList, setAnchors = 1)
                 else:                           self.parentWidget.updateGraph(attrList)
                 painter = QPainter()
                 pic = QPixmap(QSize(120,120))
@@ -917,8 +919,9 @@ class OWVizRank(VizRank, OWBaseWidget):
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
-        if self.parentName == "Radviz": self.parentWidget.updateGraph(self.arguments[classInd][ind][5], setAnchors = 1)
-        else:                           self.parentWidget.updateGraph(self.arguments[classInd][ind][5])
+        if self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION):
+                self.parentWidget.updateGraph(self.arguments[classInd][ind][5], setAnchors = 1)
+        else:   self.parentWidget.updateGraph(self.arguments[classInd][ind][5])
         
     def setStatusBarText(self, text):
         self.statusBar.message(text)
