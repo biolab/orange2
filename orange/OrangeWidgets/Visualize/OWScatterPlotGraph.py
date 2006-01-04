@@ -20,7 +20,7 @@ MIN_SHAPE_SIZE = 6
 ##### CLASS : OWSCATTERPLOTGRAPH
 ###########################################################################################
 class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
-    def __init__(self, scatterWidget, parent = None, name = None):
+    def __init__(self, scatterWidget, parent = None, name = "None"):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
         orngScaleScatterPlotData.__init__(self)

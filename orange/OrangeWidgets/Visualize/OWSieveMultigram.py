@@ -11,13 +11,13 @@ from random import betavariate
 from OWSieveMultigramGraph import *
 import OWVisAttrSelection
 from orngCI import FeatureByCartesianProduct
-
+import OWGUI
 
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWSieveMultigram(OWWidget):
-    settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes"]
+    settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes", "showAllAttributes"]
             
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", TRUE)
@@ -31,6 +31,7 @@ class OWSieveMultigram(OWWidget):
         self.maxLineWidth = 3
         self.pearsonMinRes = 2
         self.pearsonMaxRes = 10
+        self.showAllAttributes = 0
         
         # add a settings dialog and initialize its values
         self.loadSettings()
@@ -54,23 +55,34 @@ class OWSieveMultigram(OWWidget):
                 
         #add controls to self.controlArea widget
         self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
+        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
         self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
         self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
         self.shownAttribsGroup.setTitle("Shown attributes")
         self.hiddenAttribsGroup.setTitle("Hidden attributes")
 
-        self.shownAttribsLB = QListBox(self.shownAttribsGroup)
+        self.shownAttribsLB = QListBox(hbox)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
 
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
-        self.attrButtonGroup = QHButtonGroup(self.shownAttribsGroup)
-        self.buttonUPAttr = QPushButton("Attr UP", self.attrButtonGroup)
-        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.attrButtonGroup)
+        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
+        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
+        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
+        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonUPAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonDOWNAttr.setMaximumWidth(20)
+        self.buttonUPAttr.setMaximumWidth(20)
 
-        self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
-        self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
+        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
+        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
+        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+        OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
 
         self.interestingButton =QPushButton("Find interesting attr.", self.GeneralTab)
         self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection) 
@@ -80,11 +92,6 @@ class OWSieveMultigram(OWWidget):
         self.connect(self.SettingsTab.pearsonMaxResCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
         self.connect(self.SettingsTab.applyButton, SIGNAL("clicked()"), self.updateGraph)
 
-        self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
-        self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
-
-        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
-        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         # add a settings dialog and initialize its values
@@ -99,7 +106,9 @@ class OWSieveMultigram(OWWidget):
         index = self.SettingsTab.pearsonMaxNums.index(self.pearsonMaxRes)
         self.SettingsTab.pearsonMaxResCombo.setCurrentItem(index)
         self.SettingsTab.minResidualEdit.setText(str(self.pearsonMinRes))
+        self.cbShowAllAttributes()
 
+        
     # ####################
     # LIST BOX FUNCTIONS
     # ####################
@@ -125,16 +134,21 @@ class OWSieveMultigram(OWWidget):
                 self.shownAttribsLB.setSelected(i+1, TRUE)
         self.updateGraph()
 
-    def addAttribute(self):
+    def cbShowAllAttributes(self):
+        if self.showAllAttributes:
+            self.addAttribute(True)
+        self.attrRemoveButton.setDisabled(self.showAllAttributes)
+        self.attrAddButton.setDisabled(self.showAllAttributes)
+
+    def addAttribute(self, addAll = False):
         count = self.hiddenAttribsLB.count()
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
-            if self.hiddenAttribsLB.isSelected(i):
+            if addAll or self.hiddenAttribsLB.isSelected(i):
                 text = self.hiddenAttribsLB.text(i)
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
         self.updateGraph()
-        #self.graph.replot()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()

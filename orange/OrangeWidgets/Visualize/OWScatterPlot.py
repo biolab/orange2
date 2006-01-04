@@ -48,7 +48,7 @@ class OWScatterPlot(OWWidget):
         self.learnersArray = [None, None]   # VizRank, Cluster
         self.colorSettings = None
 
-        self.graph = OWScatterPlotGraph(self, self.mainArea)
+        self.graph = OWScatterPlotGraph(self, self.mainArea, "ScatterPlot")
         self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
         self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
        

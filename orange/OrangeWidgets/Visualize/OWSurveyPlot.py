@@ -19,7 +19,7 @@ import OWGUI
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend", "graph.tooltipKind"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend", "graph.tooltipKind", "showAllAttributes"]
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
 
@@ -38,6 +38,7 @@ class OWSurveyPlot(OWWidget):
 
         #set default settings
         self.data = None
+        self.showAllAttributes = 0
         self.graph.globalValueScaling = 0
         self.graph.exampleTracking = 0
         self.graph.enabledLegend = 1
@@ -60,6 +61,7 @@ class OWSurveyPlot(OWWidget):
         #add controls to self.controlArea widget
         self.sortingAttrGB = QVGroupBox(self.GeneralTab)
         self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
+        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
         self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
         self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
         self.sortingAttrGB.setTitle("Sorting")
@@ -79,24 +81,28 @@ class OWSurveyPlot(OWWidget):
         self.primarySortCB.setChecked(0)
         self.secondarySortCB.setChecked(0)
 
-        self.shownAttribsLB = QListBox(self.shownAttribsGroup)
+        self.shownAttribsLB = QListBox(hbox)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
 
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
-        self.hbox = QHBox(self.shownAttribsGroup)
-        self.buttonUPAttr = QPushButton("Attr UP", self.hbox)
-        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox)
+        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
+        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
+        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
+        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonUPAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonDOWNAttr.setMaximumWidth(20)
+        self.buttonUPAttr.setMaximumWidth(20)
 
-        self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
-        self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
-
-        self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
-        self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
-
-        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
-        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
+        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
+        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
+        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+        OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
 
         # ##################################
         # survey plot settings
@@ -127,6 +133,7 @@ class OWSurveyPlot(OWWidget):
     # #########################
     def activateLoadedSettings(self):
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
+        self.cbShowAllAttributes()
 
     # ####################
     # LIST BOX FUNCTIONS
@@ -151,17 +158,26 @@ class OWSurveyPlot(OWWidget):
                 self.shownAttribsLB.setSelected(i+1, TRUE)
         self.updateGraph()
 
-    def addAttribute(self):
+    def cbShowAllAttributes(self):
+        if self.showAllAttributes:
+            self.addAttribute(True)
+        self.attrRemoveButton.setDisabled(self.showAllAttributes)
+        self.attrAddButton.setDisabled(self.showAllAttributes)
+
+    def addAttribute(self, addAll = False):
         count = self.hiddenAttribsLB.count()
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
-            if self.hiddenAttribsLB.isSelected(i):
+            if addAll or self.hiddenAttribsLB.isSelected(i):
                 self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
                 self.hiddenAttribsLB.removeItem(i)
                 
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+
+        self.sendShownAttributes()
         self.updateGraph()
+        self.graph.removeAllSelections()
         #self.graph.replot()
 
     def removeAttribute(self):
@@ -175,6 +191,7 @@ class OWSurveyPlot(OWWidget):
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
+        self.sendShownAttributes()
         #self.graph.replot()
 
     # #####################

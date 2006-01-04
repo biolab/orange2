@@ -25,7 +25,7 @@ class OWPolyviz(OWWidget):
     settingsList = ["graph.pointWidth", "lineLength", "graph.jitterSize", "graph.globalValueScaling", "graph.scaleFactor",
                     "graph.enabledLegend", "graph.showFilledSymbols", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection",
                     "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankClassifierName",
-                    "colorSettings", "addProjectedPositions"]
+                    "colorSettings", "addProjectedPositions", "showAllAttributes"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -48,6 +48,7 @@ class OWPolyviz(OWWidget):
         self.kNNExampleAccuracy = None
         self.colorSettings = None
         self.addProjectedPositions = 0
+        self.showAllAttributes = 0
 
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -93,29 +94,41 @@ class OWPolyviz(OWWidget):
 
         #add controls to self.controlArea widget
         self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Shown Attributes ")
-        self.hbox2 = OWGUI.widgetBox(self.GeneralTab, "", orientation = "horizontal")
+        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
+        self.addRemoveGroup = OWGUI.widgetBox(self.GeneralTab, 1, orientation = "horizontal" )
         self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Hidden Attributes ")
         self.attrOrderingButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialog ")
 
-        self.shownAttribsLB = QListBox(self.shownAttribsGroup)
+        self.shownAttribsLB = QListBox(hbox)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
 
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
         self.optimizationDlgButton = QPushButton('VizRank', self.attrOrderingButtons)
-        OWGUI.checkBox(self.attrOrderingButtons, self, "rotateAttributes", "Rotate attributes", tooltip = "When searching for optimal projections also evaluate projections with rotated attributes. \nThis will significantly increase the number of possible projections.")
+        OWGUI.checkBox(self.attrOrderingButtons, self, "rotateAttributes", "Try flipping attributes", tooltip = "When searching for optimal projections also evaluate projections with rotated attributes. \nThis will significantly increase the number of possible projections.")
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.graph.autoSendSelectionCallback = self.selectionChanged
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
-        self.hbox = OWGUI.widgetBox(self.shownAttribsGroup, "", orientation = "horizontal")
-        self.buttonUPAttr =   OWGUI.button(self.hbox, self, "Attr Up", callback = self.moveAttrUP)
-        self.buttonDOWNAttr = OWGUI.button(self.hbox, self, "Attr Down", callback = self.moveAttrDOWN)
+        vbox = OWGUI.widgetBox(hbox, "", orientation = "vertical")
+        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
+        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
+        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonUPAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonDOWNAttr.setMaximumWidth(20)
+        self.buttonUPAttr.setMaximumWidth(20)
 
-        self.attrAddButton =    OWGUI.button(self.hbox2, self, "Add attr", callback = self.addAttribute)
-        self.attrRemoveButton = OWGUI.button(self.hbox2, self, "Remove attr", callback = self.removeAttribute)
+        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
+        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
+        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+        OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
+
         
         # ####################################
         # SETTINGS TAB
@@ -179,6 +192,7 @@ class OWPolyviz(OWWidget):
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
+        self.cbShowAllAttributes()
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -369,18 +383,24 @@ class OWPolyviz(OWWidget):
         self.updateGraph()
         self.graph.removeAllSelections()
 
-    def addAttribute(self):
+    def cbShowAllAttributes(self):
+        if self.showAllAttributes:
+            self.addAttribute(True)
+        self.attrRemoveButton.setDisabled(self.showAllAttributes)
+        self.attrAddButton.setDisabled(self.showAllAttributes)
+
+    def addAttribute(self, addAll = False):
         count = self.hiddenAttribsLB.count()
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
-            if self.hiddenAttribsLB.isSelected(i):
+            if addAll or self.hiddenAttribsLB.isSelected(i):
                 self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
                 self.hiddenAttribsLB.removeItem(i)
 
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        #self.graph.replot()
+        self.sendShownAttributes()
         self.graph.removeAllSelections()
 
     def removeAttribute(self):

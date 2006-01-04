@@ -22,7 +22,7 @@ class OWParallelCoordinates(OWWidget):
     settingsList = ["attrContOrder", "attrDiscOrder", "graph.jitterSize", "graph.showDistributions",
                     "graph.showAttrValues", "graph.hidePureExamples", "graph.globalValueScaling", "linesDistance",
                     "graph.useSplines", "graph.lineTracking", "graph.enabledLegend", "autoSendSelection",
-                    "toolbarSelection", "graph.showStatistics", "colorSettings"]
+                    "toolbarSelection", "graph.showStatistics", "colorSettings", "showAllAttributes"]
     attributeContOrder = ["None", "ReliefF", "Fisher discriminant", "Signal to Noise", "Signal to Noise For Each Class"]
     attributeDiscOrder = ["None", "ReliefF", "GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
@@ -39,10 +39,11 @@ class OWParallelCoordinates(OWWidget):
         self.sliderRange = 0
         self.slider.setRange(0, 0)
         self.slider.setTickmarks(QSlider.Below)
-        self.isResizing = 0 
+        self.isResizing = 0
+        self.showAllAttributes = 0
+        
         self.box.addWidget(self.graph)
         self.box.addWidget(self.slider)
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Selection List", ExampleList, self.exampleSelection), ("Attribute Selection List", AttributeList, self.attributeSelection)]  # ExampleList and AttributeList are defined in OWBaseWidget
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Example selection", ExampleList), ("Attribute Selection List", AttributeList)]
@@ -89,25 +90,36 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.targetValueCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
         
         self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
+        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
         self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
         self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
         self.shownAttribsGroup.setTitle("Shown attributes")
         self.hiddenAttribsGroup.setTitle("Hidden attributes")
 
-        self.shownAttribsLB = QListBox(self.shownAttribsGroup)
+        self.shownAttribsLB = QListBox(hbox)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.flipAttribute)
 
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
-        self.hbox = QHBox(self.shownAttribsGroup)
-        self.buttonUPAttr = QPushButton("Attr UP", self.hbox)
-        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox)
-
-        self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
-        self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
-
+        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
+        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
+        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
+        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonUPAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonDOWNAttr.setMaximumWidth(20)
+        self.buttonUPAttr.setMaximumWidth(20)
+        
+        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
+        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
+        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+        OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
+        
         self.optimizationDlg = ParallelOptimization(self, signalManager = self.signalManager)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
         self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "Optimization dialog", callback = self.optimizationDlg.reshow)
@@ -116,13 +128,8 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         #connect controls to appropriate functions
-        self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
-        self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
-
-        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
-        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
-
         self.connect(self.slider, SIGNAL("valueChanged(int)"), self.updateGraphSlider)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         # ####################################
         # SETTINGS functionality
@@ -173,8 +180,8 @@ class OWParallelCoordinates(OWWidget):
         dlg = self.createColorDialog()
         self.colorPalette = dlg.getColorPalette("colorPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-       
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
+        self.cbShowAllAttributes()
 
     def targetValueChanged(self):
         self.updateGraph()
@@ -203,17 +210,25 @@ class OWParallelCoordinates(OWWidget):
                 self.shownAttribsLB.setSelected(i+1, TRUE)
         self.updateGraph()
 
-    def addAttribute(self):
+    def cbShowAllAttributes(self):
+        if self.showAllAttributes:
+            self.addAttribute(True)
+        self.attrRemoveButton.setDisabled(self.showAllAttributes)
+        self.attrAddButton.setDisabled(self.showAllAttributes)
+
+    def addAttribute(self, addAll = False):
         count = self.hiddenAttribsLB.count()
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
-            if self.hiddenAttribsLB.isSelected(i):
+            if addAll or self.hiddenAttribsLB.isSelected(i):
                 self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
                 self.hiddenAttribsLB.removeItem(i)
 
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+        self.sendShownAttributes()
         self.updateGraph()
+        self.graph.removeAllSelections()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()

@@ -277,10 +277,10 @@ class OWMosaicDisplay(OWWidget):
         values = getVariableValuesSorted(self.data, attr)
         if side%2: values = values[::-1]        # reverse names if necessary
 
-        if side%2 == 0:
+        if side%2 == 0:                                     # we are drawing on the x axis
             whole = max(0, (x1-x0)-edge*(len(values)-1))  # we remove the space needed for separating different attr. values
             if whole == 0: edge = (x1-x0)/float(len(values)-1)
-        else:
+        else:                                               # we are drawing on the y axis
             whole = max(0, (y1-y0)-edge*(len(values)-1))
             if whole == 0: edge = (y1-y0)/float(len(values)-1)
 
