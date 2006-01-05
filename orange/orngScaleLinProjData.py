@@ -32,7 +32,7 @@ def buildPermutationIndexList(elements, tempPerm, currList):
 
 
 
-class orngScaleRadvizData(orngScaleData):
+class orngScaleLinProjData(orngScaleData):
     def __init__(self):
         orngScaleData.__init__(self)
         self.normalizeExamples = 1
@@ -68,7 +68,6 @@ class orngScaleRadvizData(orngScaleData):
     # NOTE: the computed x and y positions are not yet scaled. probably you have to use self.scaleFactor or trueScaleFactor to scale them!!!
     #def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0, XAnchors = None, YAnchors = None, anchorRadius = None, normalizeExample = None):
     def getProjectedPointPosition(self, attrIndices, values, settingsDict = {}):
-        
         # load the elements from the settings dict
         useAnchorData = settingsDict.get("useAnchorData")
         XAnchors = settingsDict.get("XAnchors")
@@ -77,6 +76,8 @@ class orngScaleRadvizData(orngScaleData):
         normalizeExample = settingsDict.get("normalizeExample")
         
         if XAnchors and YAnchors:
+            XAnchors = Numeric.array(XAnchors)
+            YAnchors = Numeric.array(YAnchors)
             if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
         elif useAnchorData:
             XAnchors = Numeric.array([val[0] for val in self.anchorData])
