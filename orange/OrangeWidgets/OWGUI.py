@@ -9,7 +9,9 @@ from qt import *
 from qttable import *
 import qwt
 import math
+import OWBaseWidget
 from OWBaseWidget import mygetattr
+import orange
 
 ##############################################################################
 # Some common rutines
@@ -135,6 +137,160 @@ def separator(widget, width=0, height=8):
     sep = QWidget(widget)
     sep.setFixedSize(width, height)
     return sep
+
+
+def createAttributePixmap(char, color = Qt.black):
+    pixmap = QPixmap()
+    pixmap.resize(13,13)
+    painter = QPainter()
+    painter.begin(pixmap)
+    painter.setPen( color );
+    painter.setBrush( color );
+    painter.drawRect( 0, 0, 13, 13 );
+    painter.setPen( Qt.white)
+    painter.drawText(3, 11, char)
+    painter.end()
+    return pixmap
+
+
+attributeIconDict = None
+
+def getAttributeIcons():
+    global attributeIconDict
+    if not attributeIconDict:
+        attributeIconDict = {orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202,0,32)),
+                     orange.VarTypes.Discrete: createAttributePixmap("D", QColor(26,150,65)),
+                     orange.VarTypes.String: createAttributePixmap("S", Qt.black),
+                     -1: createAttributePixmap("?", QColor(128, 128, 128))}
+    return attributeIconDict
+
+
+class ControlledList(list):
+    def __init__(self, content, listBox):
+        list.__init__(self, content)
+        self.listBox = listBox
+
+    def item2name(self, item):
+        item = self.listBox.labels[item]
+        if type(item) == tuple:
+            return item[1]
+        else:
+            return item
+        
+    def __setitem__(self, index, item):
+        self.listBox.setSelected(list.__getitem__(self, index), 0)
+        self.listBox.setSelected(item, 1)
+        list.__setitem__(self, index, item)
+        
+    def __delitem__(self, index):
+        self.listBox.setSelected(__getitem__(self, index), 0)
+        list.__delitem__(self, index)
+
+    def __setslice__(self, start, end, slice):
+        for i in list.__getslice__(self, start, end):
+            self.listBox.setSelected(i, 0)
+        for i in slice:
+            self.listBox.setSelected(i, 1)
+        list.__setslice__(self, start, end, slice)
+
+    def __delslice__(self, start, end):
+        if not start and end==len(self):
+            for i in range(self.listBox.count()):
+                self.listBox.setSelected(i, 0)
+        else:
+            for i in list.__getslice__(self, start, end):
+                self.listBox.setSelected(i, 0)
+        list.__delslice__(self, start, end)
+        
+    def append(self, item):
+        list.append(self, item)
+        self.listBox.setSelected(item, 1)
+
+    def extend(self, slice):
+        list.extend(self, slice)
+        for i in slice:
+            self.listBox.setSelected(i, 1)
+
+    def insert(self, index, item):
+        self.listBox.setSelected(item, 1)
+        list.insert(self, index, item)
+
+    def pop(self, index=-1):
+        self.listBox.setSelected(list.__getitem__(self, index), 0)
+        list.pop(self, index)
+                                 
+    def remove(self, item):
+        self.listBox.setSelected(item, 0)
+        list.remove(self, item)
+        
+
+class CallFront_ListBox:
+    def __init__(self, control):
+        self.control = control
+
+    def __call__(self, value):
+        if value == None:
+            return
+        if not type(value) <= ControlledList:
+            setattr(self.control.ogMaster, self.control.ogValue, ControlledList(value, self.control))
+        for i in range(self.control.count()):
+            self.control.setSelected(i, 0)
+        for i in value:
+            self.control.setSelected(i, 1)
+
+class CallFront_ListBoxLabels:
+    def __init__(self, control):
+        self.control = control
+
+    def __call__(self, value):
+        icons = getAttributeIcons()
+        self.control.clear()
+        if value:
+            for i in value:
+                if type(i) == tuple:
+                    self.control.insertItem(icons.get(i[1], icons[-1]), i[0])
+                else:
+                    self.control.insertItem(i)
+            
+
+class ListBoxCallback:
+    def __init__(self, control, widget, attribute):
+        self.control = control
+        self.widget = widget
+
+    def __call__(self): # triggered by selectionChange()
+        clist = mygetattr(self.widget, self.control.ogValue)
+        list.__delslice__(clist, 0, len(clist))
+        control = self.control
+        for i in range(control.count()):
+            if control.isSelected(i):
+                list.append(clist, i)
+        
+
+def listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single):
+    bg = box and QHButtonGroup(box, widget) or widget
+    lb = QListBox(bg)
+    lb.setSelectionMode(selectionMode)
+
+    clist = mygetattr(master, value)
+    if type(clist) >= ControlledList:
+        clist = ControlledList(clist, lb)
+        master.__setattr__(value, clist)
+
+    lb.ogValue = value
+    lb.ogLabels = labels
+    lb.ogMaster = master
+    
+    master.connect(lb, SIGNAL("selectionChanged()"), ListBoxCallback(lb, master, value))
+    master.controledAttributes[value] = CallFront_ListBox(lb)
+    master.controledAttributes[labels] = CallFront_ListBoxLabels(lb)
+
+    if callback:
+        master.connect(lb, SIGNAL("selectionChanged()"), callback)
+    if tooltip:
+        QToolTip.add(lb, tooltip)
+    return lb
+    
 
 # btnLabels is a list of either char strings or pixmaps
 def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None):
