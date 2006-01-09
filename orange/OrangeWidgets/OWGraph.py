@@ -107,9 +107,9 @@ class OWGraph(QwtPlot):
         sizeDlg = OWChooseImageSizeDlg(self, extraButtons)
         sizeDlg.exec_loop()
 
-    def saveToFileDirect(self, fileName, ext, size = QSize(), overwriteExisting = 0):
+    def saveToFileDirect(self, fileName, size = None):
         sizeDlg = OWChooseImageSizeDlg(self)
-        sizeDlg.saveToFileDirect(fileName, ext, size, overwriteExisting)
+        sizeDlg.saveImage(fileName, size)
         
     def setYLlabels(self, labels):
         "Sets the Y-axis labels on the left."
