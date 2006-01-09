@@ -85,7 +85,7 @@ class VizRank:
                 print "an invalid visualization method was specified. VizRank can not run."
                 return
 
-        random.seed()
+        random.seed(0)      # always use the same seed to make results repeatable
         self.graph = graph
         self.freeviz = FreeViz(graph)
         self.visualizationMethod = visualizationMethod
