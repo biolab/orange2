@@ -322,7 +322,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
                     self.s2nPlaceAttributes = val
                     self.s2nMixAnchors(0)
                     qApp.processEvents()
-                    acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, settingsDict = {"useAnchorData": 1}))
+                    acc, other, resultsByFolds = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, settingsDict = {"useAnchorData": 1}))
                     if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
                     else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
                                                              
@@ -338,7 +338,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
             attrIndices = [attributeNameIndex[val[2]] for val in anchors]
             for val in range(10):
                 self.s2nSpread = val
-                acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"useAnchorData": 1}))
+                acc, other, resultsByFolds = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"useAnchorData": 1}))
                 results.append(acc)
                 if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
                 else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
