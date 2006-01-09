@@ -70,9 +70,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
-    def setData(self, data):
+    def setData(self, data, keepMinMaxVals = 0):
         OWGraph.setData(self, data)
-        orngScaleLinProjData.setData(self, data)
+        orngScaleLinProjData.setData(self, data, keepMinMaxVals)
 
     
     # ####################################################################
