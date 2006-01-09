@@ -1,5 +1,5 @@
 import orange, sys, random
-import OWVisAttrSelection, orngTest
+import OWVisAttrSelection, orngTest, orngStat
 import OWVisFuncts
 #from orngMisc import getobjectname
 from math import sqrt
@@ -13,9 +13,8 @@ from orngFreeViz import FreeViz
 CLASS_ACCURACY = 0
 AVERAGE_CORRECT = 1
 BRIER_SCORE = 2
-#ENTROPY_BASED = 3
-measuresDict = {CLASS_ACCURACY: "Classification accuracy", AVERAGE_CORRECT: "Average probability of correct classification", BRIER_SCORE: "Brier score"}
-
+AUC = 3
+measuresDict = {CLASS_ACCURACY: "Classification accuracy", AVERAGE_CORRECT: "Average probability of correct classification", BRIER_SCORE: "Brier score", AUC: "Area under curve (AUC)"}
 
 # testing method
 LEAVE_ONE_OUT = 0
@@ -385,6 +384,8 @@ class VizRank:
                 resultsByFolds[res.iterationNumber] += res.classes[0]==res.actualClass
                 countsByFold[res.iterationNumber] += 1
             prediction = [val*100.0 for val in prediction]
+        elif self.qualityMeasure == AUC:
+            return orngStat.AROCFromCDT(orngStat.computeCDT(results)[0])[7], None, None
             
         # compute accuracy only for classes that are selected as interesting. other class values do not participate in projection evaluation
         acc = sum(prediction) / float(len(results.results))                 # accuracy over all class values

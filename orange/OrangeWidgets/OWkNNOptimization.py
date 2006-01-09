@@ -118,7 +118,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ranking of Discrete Attributes: ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
         OWGUI.comboBox(self.heuristicsSettingsBox, self, "useGammaDistribution", items = ["Exhaustively test possible attribute subsets", "Generate attribute subset according using gamma distribution"])
 
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score", "Area under curve (AUC)"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
         self.testingCombo = OWGUI.comboBox(self.SettingsTab, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")        
 
         self.localOptimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Local Optimization Settings ")
