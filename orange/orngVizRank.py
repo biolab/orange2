@@ -227,11 +227,12 @@ class VizRank:
         if self.results == []: return
 
         if not self.saveResultsFromFolds or self.results[0][GENERAL_DICT].get("resultsByFolds", {}) == {}:
-            if self.__class__ != VizRank:
+            if self.__class__.__name__ == "OWVizRank":
                 import qt; qt.QMessageBox.information(self, 'VizRank', "To compute VizRank's accuracy you have to check 'Save results for each fold' checkbox and then evaluate projections.", 'OK')
             else: print "To compute VizRank's accuracy you have to set variable saveResultsFromFolds to 1 and then evaluate projections."
             return
 
+        if hasattr(self, "setStatusBarText"): self.setStatusBarText("Examining evaluated projections...")
         nrFolds = len(self.results[0][GENERAL_DICT]["resultsByFolds"])
         folds = [[] for i in range(nrFolds)]
         for i in range(len(self.results)):
@@ -266,21 +267,21 @@ class VizRank:
                 if indices[i] != fold: continue
                 classValue, dist = VizRank.findArguments(self, data[i])
                 testResults.results[i].setResult(0, classValue, dist)
-            if self.__class__ != VizRank: self.setStatusBarText("Evaluated %d/%d folds..." % (fold, nrFolds ))
+            if hasattr(self, "setStatusBarText"): self.setStatusBarText("Evaluated %d/%d folds..." % (fold, nrFolds ))
 
             self.data = fullData
             self.results = fullResults
 
         self.graph.setData(fullData)
         if hasattr(self, "parentWidget"): self.parentWidget.showSelectedAttributes()
-        if self.__class__ != VizRank: self.setStatusBarText("")
+        if hasattr(self, "setStatusBarText"): self.setStatusBarText("")
 
         acc, other_results, resultsByFolds = self.computeAccuracyFromResults(self.data, testResults)
 
         if showResults:
             s = "%s of the VizRank on this list of evaluated projections is %.3f" % (measuresDict[self.qualityMeasure], acc)
             if self.qualityMeasure in (CLASS_ACCURACY, AVERAGE_CORRECT): s += "%"
-            if self.__class__ != VizRank:
+            if self.__class__.__name__ == "OWVizRank":
                 import qt; qt.QMessageBox.information(self, "VizRank's accuracy", s, 'OK')
             else: print s
         return acc
@@ -600,7 +601,7 @@ class VizRank:
         maxFunct = self.getMaxFunct()
         self.clearResults()
         self.clearArguments()
-        if self.__class__ != VizRank:
+        if self.__class__.__name__ == "OWVizRank":
             self.disableControls()
             self.parentWidget.progressBarInit()
             from qt import qApp
@@ -626,7 +627,7 @@ class VizRank:
                     accuracy, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
                     self.addResult(accuracy, other_results, len(table), [self.data.domain[attr1].name, self.data.domain[attr2].name], evaluatedProjections, (resultsByFolds and {"resultsByFolds" : resultsByFolds}) or {})
                     
-                    if self.__class__ != VizRank:
+                    if self.__class__.__name__ == "OWVizRank":
                         self.setStatusBarText("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections), strCount))
                         self.parentWidget.progressBarSet(100.0*evaluatedProjections/float(count))
 
@@ -666,7 +667,7 @@ class VizRank:
                         accuracy, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
                         self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})  # here we don't save resultsByFolds since this would be cheating - models would be different for each fold.
                         if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
-                        if self.__class__ != VizRank: self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
+                        if self.__class__.__name__ == "OWVizRank": self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
                     else:
                         XAnchors = anchorList[len(attrIndices)-minLength][0]
                         YAnchors = anchorList[len(attrIndices)-minLength][1]
@@ -693,7 +694,7 @@ class VizRank:
                                 tempList.append((accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation]))
 
                             evaluatedProjections += 1
-                            if self.__class__ != VizRank:
+                            if self.__class__.__name__ == "OWVizRank":
                                 self.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(evaluatedProjections)))
                                 qApp.processEvents()        # allow processing of other events
 
@@ -708,7 +709,7 @@ class VizRank:
     
 
     def finishEvaluation(self, evaluatedProjections):
-        if self.__class__ != VizRank:
+        if self.__class__.__name__ == "OWVizRank":
             secs = time.time() - self.startTime
             self.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
             self.parentWidget.progressBarFinished()
@@ -735,7 +736,7 @@ class VizRank:
         lenOfAttributes = len(attributes)
         maxFunct = self.getMaxFunct()
 
-        if self.__class__ != VizRank:
+        if self.__class__.__name__ == "OWVizRank": 
             self.disableControls()
             from qt import qApp
         
@@ -781,17 +782,16 @@ class VizRank:
                         
                         if maxFunct(acc, accuracy) == acc:
                             listOfCandidates.append((acc, attrList))
-                            if self.__class__ != VizRank: self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
+                            if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
                             if max(acc, accuracy)/min(acc, accuracy) > 1.0001: optimizedProjection = 1
                             if max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
-                        elif self.__class__ != VizRank:     self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
+                        elif hasattr(self, "setStatusBarText"): self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
                             
 
                     # select the best new projection and say this is now our new projection to optimize    
                     if len(listOfCandidates) > 0:
                         (accuracy, projection) = maxFunct(listOfCandidates)
-                        if self.__class__ != VizRank:
-                            self.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
+                        if hasattr(self, "setStatusBarText"):  self.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
         # #################### RADVIZ, LINEAR_PROJECTION  ################################
         elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION):
@@ -885,17 +885,17 @@ class VizRank:
                             
                             if maxFunct(acc, accuracy) == acc:
                                 listOfCandidates.append((acc, attrList))
-                                if self.__class__ != VizRank: self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
+                                if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
                                 if max(acc, accuracy)/min(acc, accuracy) > 1.001:  optimizedProjection = 1
                                 if max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
-                            elif self.__class__ != VizRank:         self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
+                            elif hasattr(self, "setStatusBarText"): self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
                                 
                                 
 
                         # select the best new projection and say this is now our new projection to optimize    
                         if len(listOfCandidates) > 0:
                             (accuracy, projection) = maxFunct(listOfCandidates)
-                            if self.__class__ != VizRank: self.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
+                            if hasattr(self, "setStatusBarText"): self.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
         self.finishEvaluation(evaluatedProjections)
 
@@ -943,12 +943,13 @@ class VizRank:
             file.write(s + "\n")
 
             if self.abortCurrentOperation: break
-            if self.__class__ != VizRank: self.setStatusBarText("Saved %s projections" % (OWVisFuncts.createStringFromNumber(i)))
+            if hasattr(self, "setStatusBarText"): self.setStatusBarText("Saved %s projections" % (OWVisFuncts.createStringFromNumber(i)))
 
         file.flush()
         file.close()
         return i
 
+    #def setSettings(self, foo): pass        # function that is otherwise defined in OWBaseWidget
 
     # load projections from a file
     def load(self, name, ignoreCheckSum = 1):
@@ -958,24 +959,22 @@ class VizRank:
         file = open(name, "rt")
         settings = eval(file.readline()[:-1])
         if settings.get("parentName", "").lower() != self.parentName.lower():
-            if self.__class__ == VizRank:
-                print 'Unable to load projection file. It was saved for %s method'%(settings["parentName"])
-            else:
-                import qt
-                qt.QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), qt.QMessageBox.Ok)
+            if self.__class__.__name__ == "OWVizRank":
+                import qt; qt.QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), qt.QMessageBox.Ok)
+            else: print 'Unable to load projection file. It was saved for %s method'%(settings["parentName"])
             file.close()
             return [], 0
 
         if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
-            if self.__class__ == VizRank:
-                print "'The current data set has a different checksum than the data set that was used to evaluate projections in this file. Continuing loading the file anyway..."
-            else:
+            if self.__class__.__name__ == "OWVizRank":
                 import qt
                 if qt.QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                     file.close()
                     return [], 0
+            else: print "'The current data set has a different checksum than the data set that was used to evaluate projections in this file. Continuing loading the file anyway..."
+                
 
-        self.setSettings(settings)
+        if hasattr(self, "setSettings"): self.setSettings(settings)
 
         # find if it was computed for specific class values        
         selectedClasses = eval(file.readline()[:-1])
@@ -990,7 +989,7 @@ class VizRank:
         file.close()
 
         # update loaded results
-        self.finishedAddingResults()
+        if hasattr(self, "finishedAddingResults"): self.finishedAddingResults()
         return selectedClasses, count
 
 
@@ -1004,12 +1003,11 @@ class VizRankClassifier(orange.Classifier):
     def __init__(self, vizrank, data):
         self.VizRank = vizrank
 
-        if vizrank.__class__ != VizRank:
+        if self.VizRank.__class__.__name__ == "OWVizRank":
             self.VizRank.parentWidget.cdata(data, clearResults = 1)
+            self.VizRank.useTimeLimit = 1                
         else:
             self.VizRank.setData(data)
-
-        if self.VizRank.__class__ != VizRank: self.VizRank.useTimeLimit = 1                
 
         self.VizRank.evaluateProjections()
         
@@ -1018,12 +1016,12 @@ class VizRankClassifier(orange.Classifier):
             self.VizRank.optimizeBestProjections()
             self.VizRank.removeTooSimilarProjections()
 
-        if self.VizRank.__class__ != VizRank: del self.VizRank.useTimeLimit
+        if self.VizRank.__class__.__name__ == "OWVizRank": del self.VizRank.useTimeLimit
 
 
     # for a given example run argumentation and find out to which class it most often fall        
     def __call__(self, example, returnType = orange.GetBoth):
-        if self.VizRank.__class__ != VizRank:
+        if self.VizRank.__class__.__name__ == "OWVizRank":
             table = orange.ExampleTable(example.domain)
             table.append(example)
             self.VizRank.parentWidget.subsetdata(table, 0)       # show the example is we use the widget
