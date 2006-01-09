@@ -725,7 +725,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                             permutationIndex += 1
 
                             table = self.createProjectionAsExampleTable(permutation, settingsDict = {"reverse": attrOrder, "validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                            accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
+                            accuracy, other_results, resultsByFolds = self.kNNOptimization.kNNComputeAccuracy(table)
                         
                             # save the permutation
                             if not self.onlyOnePerSubset:
@@ -824,7 +824,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                                 permutationIndex += 1
 
                                 table = self.createProjectionAsExampleTable(permutation, settingsDict = {"reverse": attrOrder, "validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                                accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
+                                accuracy, other_results, resultsByFolds = self.kNNOptimization.kNNComputeAccuracy(table)
                             
                                 # save the permutation
                                 if not self.onlyOnePerSubset:
@@ -917,7 +917,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                         if self.kNNOptimization.isOptimizationCanceled(): return
 
                         table = self.createProjectionAsExampleTable(testProj, settingsDict = {"reverse": reverse, "validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                        acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
+                        acc, other_results, resultsByFolds = self.kNNOptimization.kNNComputeAccuracy(table)
                         
                         # save the permutation
                         tempList.append((acc, other_results, len(table), testProj, reverse))
