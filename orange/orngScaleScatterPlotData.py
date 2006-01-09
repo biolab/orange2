@@ -25,7 +25,7 @@ class orngScaleScatterPlotData(orngScaleData):
     # for attributes in attrIndices and values of these attributes in values compute point positions
     # function is called from OWClusterOptimization.py
     # this function has more sense in radviz and polyviz methods
-    def getProjectedPointPosition(self, attrIndices, values):
+    def getProjectedPointPosition(self, attrIndices, values, settingsDict = {}): # settingsDict has to be because radviz and polyviz have this parameter
         return values
 
 
