@@ -10,9 +10,10 @@ class OWVizRank(VizRank, OWBaseWidget):
     settingsList = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod",
                     "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances",
                     "evaluationAlgorithm", "createSnapshots", "evaluationTime", "learnerName",
-                    "argumentCount", "canUseMoreArguments", "moreArgumentsCount", "optimizeBestProjection", "optimizeBestProjectionTime",
-                    "useHeuristicToFindAttributeOrders", "argumentValueFormula", "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount",
-                    "useExampleWeighting", "useSupervisedPCA", "useGammaDistribution", "optimizationType", "attributeCount", "useHeuristicToFindAttributeOrders"]
+                    "argumentCount", "canUseMoreArguments", "optimizeBestProjection", "optimizeBestProjectionTime",
+                    "useHeuristicToFindAttributeOrders", "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount",
+                    "useExampleWeighting", "useSupervisedPCA", "useGammaDistribution", "optimizationType", "attributeCount",
+                    "useHeuristicToFindAttributeOrders", "saveResultsFromFolds"]
     resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30,35, 40, 50, 60, 70, 80, 100, 120, 150, 200]
@@ -125,6 +126,11 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.localOptimizationAttrsCount = OWGUI.lineEdit(self.localOptimizationSettingsBox, self, "locOptAttrsToTry", "Number of best attributes to try:                       ", orientation = "horizontal", tooltip = "How many of the top ranked attributes do you want to try in the projections?", valueType = int, validator = QIntValidator(self))
         self.localOptimizationProjMaxAttr    = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptMaxAttrsInProj", "Maximum number of attributes in a projection: ", items = range(3,50), tooltip = "What is the number of attributes when local optimization should stop optimizing projections?", sendSelectedValue = 1, valueType = int)
 
+        self.saveResultsFromFoldsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank's classification accuracy ")
+        hbox = OWGUI.widgetBox(self.saveResultsFromFoldsBox, orientation = "horizontal")
+        OWGUI.checkBox(hbox, self, 'saveResultsFromFolds', 'Save results for each fold', tooltip = "Save the accuracy for each tested fold for each tested projection.\nThis information will be used when pressing 'Compute accuracy' which will\ncompute the VizRank's accuracy, if it would be used as a classifier.")
+        OWGUI.button(hbox, self, "Compute accuracy", callback = self.computeVizRanksAccuracy)
+
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Length of the Projection List ")
         self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)        
 
@@ -133,9 +139,6 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
         self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
-        self.stopArgumentationButton = OWGUI.button(self.argumentationBox, self, "Stop Searching", callback = self.stopArgumentationClick)
-        self.stopArgumentationButton.setFont(f)
-        self.stopArgumentationButton.hide()
         self.createSnapshotCheck = OWGUI.checkBox(self.argumentationBox, self, 'createSnapshots', 'Create snapshots of projections (a bit slower)', tooltip = "Show each argument with a projections screenshot.\nTakes a bit more time, since the projection has to be created.")
         self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments For Class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
         self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for The Selected Class Value ")
@@ -147,7 +150,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         # CLASSIFICATION TAB
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'learnerName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
-        self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
+        #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
 
         b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Time for evaluating projections (minutes):                ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
@@ -156,9 +159,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.optimizeBestProjectionCombo = OWGUI.comboBox(b2, self, "optimizeBestProjectionTime", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
         self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts, sendSelectedValue = 1, valueType = int)
-        projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
-        self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
-        self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsCount", items = self.moreArgumentsNums, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box", sendSelectedValue = 1, valueType = int)
+        #projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
+        #self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
+        #self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsCount", items = self.moreArgumentsNums, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box", sendSelectedValue = 1, valueType = int)
 
         # ##########################
         # SAVE & MANAGE TAB
@@ -216,7 +219,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.controlArea.activate()
 
         self.removeEvaluatedAttributes()
-        self.resize(375,600)
+        self.resize(375,640)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
 
@@ -536,9 +539,11 @@ class OWVizRank(VizRank, OWBaseWidget):
             self.parentWidget.progressBarSet(100.0*testIndex/float(len(results)))
 
             table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = generalDict)
-            accuracy, other_results = self.kNNComputeAccuracy(table)
-            #accuracy, other_results = self.getProjectionQuality(attrList, generalDict)         # TO DO: this does not work with polyviz with attrReverseList   
+            accuracy, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
+            #accuracy, other_results, resultsByFolds = self.getProjectionQuality(attrList, generalDict)         # TO DO: this does not work with polyviz with attrReverseList   
 
+            if self.saveResultsFromFolds: generalDict["resultsByFolds"] = resultsByFolds
+            
             self.addResult(accuracy, other_results, tableLen, attrList, tryIndex, generalDict)
             self.setStatusBarText("Reevaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(testIndex), strTotal))
 
@@ -549,7 +554,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
-        acc, other_results = self.getProjectionQuality(self.parentWidget.getShownAttributeList())
+        acc, other_results, resultsByFolds = self.getProjectionQuality(self.parentWidget.getShownAttributeList(), useAnchorData = 1)
 
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, self.parentName, 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
@@ -776,11 +781,9 @@ class OWVizRank(VizRank, OWBaseWidget):
     # Argumentation functions
     # ######################################################
     def findArguments(self, example = None, selectBest = 1, showClassification = 1):
-        self.cancelArgumentation = 0
         self.clearArguments()
-        self.arguments = [[] for i in range(self.classValueList.count())]
-        snapshots = self.createSnapshots
-        
+        self.arguments = [[] for i in range(len(self.data.domain.classVar.values))]
+
         if not example and self.subsetdata == None:
             QMessageBox.information( None, "VizRank Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return (None,None)
@@ -790,62 +793,25 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         if example == None: example = self.subsetdata[0]
         scaleFunction = self.parentWidget.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
-        #testExample = [scaleFunction(example, i) for i in range(len(example.domain.attributes))]
-        testExample = ["?"] * len(example.domain.attributes)
+        self.findArgumentsButton.setEnabled(0)
+        if self.createSnapshots: self.parentWidget.setMinimalGraphProperties()
 
-        self.findArgumentsButton.hide()
-        self.stopArgumentationButton.show()
-        if snapshots: self.parentWidget.setMinimalGraphProperties()
-
-        argumentList = []
-
-        foundArguments = 0
-        for index in range(min(len(self.shownResults), 1000)):       # use only best argumentCount projections for argumentation
-            if self.cancelArgumentation: break          # user pressed cancel
-            # we also stop if we are not allowed to search for more than argumentCount arguments or we are allowed and we have a reliable prediction or we have used a 100 additional arguments
-            #if foundArguments >= argumentCount and (not self.canUseMoreArguments or (max(vals)*100.0 / sum(vals) > self.moreArgumentsNums[self.moreArgumentsIndex]) or foundArguments >= argumentCount + 100): break
-
+        usedArguments = 0; index = 0
+        vals = [0.0 for i in range(len(self.arguments))]
+        while usedArguments < self.argumentCount and index < len(self.results):
             qApp.processEvents()
             (accuracy, other_results, lenTable, attrList, tryIndex, generalDict) = self.results[index]
-            
-            validExample = 1
-            for attr in attrList:
-                if example[attr].isSpecial():
-                    validExample = 0
-                    continue
 
-            if not validExample:
-                self.printVerbose("Warning: OWkNNOptimization.py:findArguments: Tested example has a missing value at one of the visualized attributes. Skipping the projection.")
-                continue
+            if 1 in [example[attr].isSpecial() for attr in attrList]: index+=1; continue
+            attrVals = [self.graph.scaleExampleValue(example, self.graph.attributeNameIndex[attr]) for attr in attrList]
+                                    
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = {"XAnchors": generalDict.get("XAnchors"), "YAnchors": generalDict.get("YAnchors")})
+            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"XAnchors": generalDict.get("XAnchors"), "YAnchors": generalDict.get("YAnchors")})
 
-            attrVals = []
-            for i in range(len(attrList)):
-                attrIndex = self.graph.attributeNameIndex[attrList[i]]
-                if testExample[attrIndex] == "?":
-                    testExample[attrIndex] = scaleFunction(example, attrIndex)
-                attrVals.append(testExample[attrIndex])
-                        
-            if min(attrVals) < 0.0 or max(attrVals) > 1.0:
-                self.printVerbose("Warning: OWkNNOptimization.py:findArguments: Scaled example value out of 0-1 range. Min value: %.3f, max value: %.3f." % (min(attrVals), max(attrVals)))
-
-            xanchors = generalDict.get("XAnchors")
-            yanchors = generalDict.get("YAnchors")
-
-            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = {"XAnchors": xanchors, "YAnchors": yanchors})
-            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"XAnchors": xanchors, "YAnchors": yanchors})
-            
             learner = self.externalLearner or self.createkNNLearner()
             classifier = learner(table)
-            (classValue, prob) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
-            del classifier
+            (classValue, dist) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
             classValue = int(classValue)
-            if self.argumentValueFormula == 0:
-                value = accuracy
-                if index >= self.argumentCount-1: self.cancelArgumentation = 1   # we stop searching for arguments if argumentValueFormula = 0 and we already considered enough top projections
-            elif self.argumentValueFormula == 1:
-                value = 0.5 * accuracy + 50.0 * prob[classValue]
-            else:
-                value = 100.0 * prob[classValue]
 
             pic = None
             if snapshots:            
@@ -859,54 +825,33 @@ class OWVizRank(VizRank, OWBaseWidget):
                 self.graph.printPlot(painter, pic.rect())
                 painter.flush();  painter.end()
 
-            ind = self.getArgumentIndex(value, classValue)
-            self.arguments[classValue].insert(ind, (pic, value, accuracy, 100.0 * prob[classValue], prob, attrList, index))
-            argumentList.append((value, classValue))
-            if classValue == self.classValueList.currentItem():
-                if snapshots: self.argumentList.insertItem(pic, "%.2f (%.2f, %.2f) - %s" %(value, accuracy, 100.0*prob[classValue], attrList), ind)
-                else:         self.argumentList.insertItem("%.2f (%.2f, %.2f) - %s" %(value, accuracy, 100.0*prob[classValue], attrList), ind)
+            for i in range(len(self.arguments)):
+                pos = self.getArgumentIndex(dist[i], i)
+                if self.createSnapshots:  self.argumentList.insertItem(pic, "%.3f - %s" %(dist[i], attrList), pos)
+                else:                     self.argumentList.insertItem("%.3f - %s" %(dist[i], attrList), pos)
+                self.arguments[i].insert(pos, (None, dist[i], dist, attrList, index))
+                vals[i] += dist[i]
+            
+            index += 1; usedArguments += 1
 
-        self.stopArgumentationButton.hide()
-        self.findArgumentsButton.show()
         self.parentWidget.restoreGraphProperties()
-        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
-        if len(argumentList) == 0: return (None, None)
-
-        # sort all arguments and compute the outcome
-        argumentList.sort()
-        argumentList.reverse()
-        vals = [0.0 for i in range(len(self.arguments))]
-        for i in range(min(self.argumentCount, len(argumentList))):
-            vals[argumentList[i][1]] += argumentList[i][0]
-
-        if self.canUseMoreArguments and (max(vals)*100.0 / sum(vals) < self.moreArgumentsCount):
-            for i in range(self.argumentCount, min(self.argumentCount + 100, len(self.shownResults))):
-                if max(vals)*100.0 / sum(vals) > self.moreArgumentsCount: break
-                vals[argumentList[i][1]] += argumentList[i][0]
-
-        suma = sum(vals)
-        dist = orange.DiscDistribution([val/float(suma) for val in vals]);  dist.variable = self.data.domain.classVar
-        classValue = example.domain.classVar[vals.index(max(vals))]
-        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
-        for key in dist.keys():
-            s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
-        if foundArguments > self.argumentCount:
-            s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (foundArguments, self.argumentCount)
-        s = s[:-4]
-        #print s
-##        if showClassification or (not example[example.domain.classVar.name].isSpecial() and example.getclass().value != classValue):
-##            self.show()
-##            QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
-##            while self.isVisible():
-##                qApp.processEvents()
-        # TO DO
-        if showClassification:
-            QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
-        return classValue, dist
        
-    def stopArgumentationClick(self):
-        self.cancelArgumentation = 1
+        suma = sum(vals)
+        if suma == 0: return (None, None)
+        if selectBest: self.argumentList.setCurrentItem(0)
+
+        classValue = example.domain.classVar[vals.index(max(vals))]
+        dist = orange.DiscDistribution([val/float(suma) for val in vals]);  dist.variable = self.data.domain.classVar
+
+        if showClassification:
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+            for key in dist.keys(): s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
+            QMessageBox.information(None, "Classification results", s[:-4], QMessageBox.Ok + QMessageBox.Default)
+        
+        self.findArgumentsButton.setEnabled(1)
+        return classValue, dist
     
+
     def argumentationClassChanged(self):
         self.argumentList.clear()
         if len(self.arguments) == 0: return
