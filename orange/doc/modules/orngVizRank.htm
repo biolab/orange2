@@ -25,16 +25,16 @@
 <xmp class="code">>>> import orange
 >>> data = orange.ExampleTable("wine.tab")
 >>> from orngVizRank import *
->>> vizrank = VizRank(SCATTERPLOT)     # use SCATTERPLOT or RADVIZ
+>>> vizrank = VizRank(SCATTERPLOT)     # options are: SCATTERPLOT, RADVIZ or LINEAR_PROJECTION
 >>> vizrank.setData(data)     # set the data set
 >>> vizrank.evaluateProjections()      # evaluate possible projections
 >>> print vizrank.results[0]
 (86.88861657813024, (86.88861657813024, [87.603105074268271, 82.08174408531525, 93.120556697249413], 
-	[59, 71, 48]), 178, ['A7', 'A10'], 5, [])
+	[59, 71, 48]), 178, ['A7', 'A10'], 5, {})
 </xmp>
 
 
-<p>In this example we created a VizRank instance, evaluated scatterplot projections of the UCI wine data set and printed the information about the best ranked projection. The best projection scored a value of 86.88 (in a range between 0 and 100) and is showing attributes 'A7' and 'A10'. There is also other information for each item in the result list, but it is not relevant for a casual user.</p>
+<p>In this example we created a VizRank instance, evaluated scatterplot projections of the UCI wine data set and printed the information about the best ranked projection. The best projection scored a value of 86.88 (in a range between 0 and 100) and is showing attributes 'A7' and 'A10'. There is also lots of other information for each projections in the result list, but it is not relevant for a casual user.</p>
 
 <p>Below is a list of functions and settings, that can be used in order to modify VizRank's behaviour.</p>
 
@@ -58,11 +58,15 @@ specify a value between 0 and 100. Default: 100</DD>
 <DT><B>attrDisc</b>
 <DD class=ddfun>which method for evaluating discrete attributes do we want to use. Attributes are ranked and projections with top ranked attributes are evaluated first. Possible options are ReliefF (<CODE>DISC_MEAS_RELIEFF</CODE>), Gain ratio(<CODE>DISC_MEAS_GAIN</CODE>), Gini index (<CODE>DISC_MEAS_GINI</CODE>) or no measure (<CODE>DISC_MEAS_NONE</CODE>). Default: <CODE>DISC_MEAS_RELIEFF</CODE></DD>
 
+<DT><B>useGammaDistribution</b>
+<DD class=ddfun>this parameter determines the order in which the heuristic will select attributes that will be then evaluated using VizRank. If value is set to 0, heuristic will start with selecting top ranked attributes (as ranked by measures specified by <CODE>attrCont</CODE> and <CODE>attrDist</CODE> variables) and when tested all possible combinations progress to worse ranked attributes. If value set to 1, heuristic will also first rank attributes but will then randomly select attributes according to gamma distribution - this way the better ranked attributes will still be selected more often, but sometimes they will be tested in a combination with attributes that are poorly ranked but can in the end produce high-ranked projection. In domains with a larger set of attributes (&gt;20) it is advisable to use gamma distribution, otherwise we never come to evaluate projections with proorly ranked attributes. Default: 0</DD>
+
+
 <DT><B>useExampleWeighting</b>
 <DD class=ddfun> if class distribution is very uneven example weighting can be used. Default: 0</DD>
 
 <DT><B>evaluationTime</b>
-<DD class=ddfun> time in minutes that we want to spend in evaluating projections. Since there might be a large number of possible projections we can this way stop evaluation before it evaluates all projetions. Because of the seach heuristic (attrCont and attrDisc) we will most likely evaluate top ranked projections at the beginning of the evaluation. Default: 2</DD>
+<DD class=ddfun> time in minutes that we want to spend in evaluating projections. Since there might be a large number of possible projections we can this way stop evaluation before it evaluates all projetions. Because of the seach heuristic (<CODE>attrCont</CODE> and <CODE>attrDisc</CODE>) we will most likely find projections with the highest scores at the beginning of the evaluation. Default: 2</DD>
 
 </DL>
 
@@ -115,13 +119,6 @@ specify a value between 0 and 100. Default: 100</DD>
 <DT><B>argumentCount</b>
 <DD class=ddfun> number of arguments (projections) used when predicting the class value<br>
 
-<DT><B>argumentValueFormula</b>
-<DD class=ddfun> the way how argument values are computed. For argument values, two different things are important: the score of the projection and the class probability distribution computed using the kNN on the given projection. It makes sense that the argument is stronger if the projection has a high score or if probability for one class value is high. There are three ways how the argument values can be computed:<br>
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 - argument value is the same as projection score<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1 - argument value is 0.5* projection score + 0.5* predicted class probability<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2 - argument value is the same as predicted class probability</p>
-
 </DL>
 
 <p>A simple example:</p>
@@ -129,7 +126,7 @@ specify a value between 0 and 100. Default: 100</DD>
 
 <xmp class="code">>>> import orange
 >>> from orngVizRank import *
->>> data = orange.ExampleTable(&quot;iris.tab&quot;)
+>>> data = orange.ExampleTable("iris.tab")
 >>> learner = VizRankLearner(SCATTERPLOT)
 >>> learner.VizRank.argumentCount = 3
 >>> classifier = learner(data)
@@ -148,5 +145,5 @@ specify a value between 0 and 100. Default: 100</DD>
 by machine learning. <i>Bioinformatics</i> <b>21</b>, 413-414 (2005).</p>
 <p>Leban, G., Mramor, M., Bratko, I., Zupan, B.: Simple and Effective Visual Models for Gene Expression Cancer Diagnostics, <i>KDD-2005</i> 
 167--177 (Chicago, 2005).</p>
-
+<p>Hoffman, P. E., Grinstein, G. G., Marx, K., Grosse, I. & Stanley, E.: DNA Visual and Analytic Data Mining. <i>IEEE Visualization 1997</i> 1, 437-441 (1997).</p>
 </body> </html>
