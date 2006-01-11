@@ -16,7 +16,7 @@ from OWGUI import *
 from OWDlgs import OWChooseImageSizeDlg
 
 class OWAttributeStatistics(OWWidget):
-    settingsList=["LastAttributeSelected"]
+    contextHandlers = {"": DomainContextHandler("", [], ["HighlightedAttribute"], findImperfect = False)}
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AttributeStatistics", TRUE)
@@ -31,7 +31,6 @@ class OWAttributeStatistics(OWWidget):
         self.ch = self.height()-self.chbias
 
         #load settings
-        self.LastAttributeSelected = None
         self.loadSettings()
 
         self.dataset = None
@@ -82,9 +81,11 @@ class OWAttributeStatistics(OWWidget):
         self.canvas.displayStat(self.dataset, ind, self.dist)
         self.canvasview.setCanvas(self.canvas)
         self.canvas.update()
-        self.LastAttributeSelected = self.dataset.domain.attributes[ind].name
 
+       
     def data(self, data):
+        self.closeContext()
+        
         self.attributes.clear()
         if data==None:
             self.dataset = None
@@ -101,13 +102,10 @@ class OWAttributeStatistics(OWWidget):
             for a in self.dataset.domain.attributes:
                 self.attributes.insertItem(self.icons[a.varType], a.name)
                 
-            atts = [x.name for x in self.dataset.domain.attributes]
-            if self.LastAttributeSelected in atts:
-                ind = atts.index(self.LastAttributeSelected)
-            else:
-                ind = 0
-            self.attributes.setCurrentItem(ind)
-            self.attributeHighlighted(ind)
+        self.HighlightedAttribute = 0
+        self.openContext("", data)
+        self.attributes.setCurrentItem(self.HighlightedAttribute)
+
 
     def saveToFileCanvas(self):
         sizeDlg = OWChooseImageSizeDlg(self.canvas)
@@ -520,6 +518,7 @@ class DisplayStatistics (QCanvas):
 					l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
 					l.show()
 		#print
+
 
 #test widget appearance
 if __name__=="__main__":
