@@ -250,6 +250,7 @@ class CallFront_ListBoxLabels:
                 if type(i) == tuple:
                     self.control.insertItem(icons.get(i[1], icons[-1]), i[0])
                 else:
+                    print type(i)
                     self.control.insertItem(i)
             
 
