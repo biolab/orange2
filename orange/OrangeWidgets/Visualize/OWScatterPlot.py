@@ -29,6 +29,8 @@ class OWScatterPlot(OWWidget):
                     "VizRankClassifierName", "clusterClassifierName", "learnerIndex", "colorSettings"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
+
+    contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY", (["attrLabel", "attrShape", "attrSize"], DomainContextHandler.Optional)])}
     
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
@@ -184,7 +186,7 @@ class OWScatterPlot(OWWidget):
 
     # receive new data and update all fields
     def cdata(self, data, clearResults = 1):
-        self.saveContext("cdata", encodeDataDomain(self.data), "attrX", "attrY")
+        self.closeContext()
 
         if data:
             name = ""
@@ -204,7 +206,7 @@ class OWScatterPlot(OWWidget):
         if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
             self.initAttrValues()
 
-        self.loadContext("cdata", encodeDataDomain(data))
+        self.openContext("", data)
 
         self.updateGraph()
         self.sendSelections()
@@ -352,7 +354,8 @@ class OWScatterPlot(OWWidget):
     def updateGraph(self, attrList = None, insideColors = None, clusterClosure = None, *args):
         self.graph.removeAllSelections()
         
-        if not self.data: return
+        if not self.data:
+            return
     
         if attrList:
             self.attrX = attrList[0]

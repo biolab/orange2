@@ -11,55 +11,53 @@ from OWWidget import *
 from OWGraph import *
 import OWGUI
 
-import sys
-
-
-AVAILABLE_ATTR = 0
-ATTRIBUTE  = 1
-CLASS_ATTR = 2
-META_ATTR  = 3
-
 class OWDataDomain(OWWidget):
+    contextHandlers = {"": DomainContextHandler("", [ContextField("chosenAttributes",
+                                                                  DomainContextHandler.RequiredList,
+                                                                  selected="selectedChosen", reservoir="inputAttributes"),
+                                                     ContextField("classAttribute",
+                                                                  DomainContextHandler.RequiredList,
+                                                                  selected="selectedClass", reservoir="inputAttributes"),
+                                                     ContextField("metaAttributes",
+                                                                  DomainContextHandler.RequiredList,
+                                                                  selected="selectedMeta", reservoir="inputAttributes")
+                                                     ])}
 
-    ############################################################################################################################################################
-    ## Class initialization ####################################################################################################################################
-    ############################################################################################################################################################
+
     def __init__(self,parent = None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Domain") #initialize base class
+
+        self.inputs = [("Examples", ExampleTable, self.onDataInput), ("Attribute Subset", AttributeList, self.onAttributeList)]
+        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
 
         buttonWidth = 50
         applyButtonWidth = 101
 
-        # set member variables
         self.data = None
-        self.attributes = {}
-        self.internalSelectionUpdateFlag = 0
-        self.attributesButtonLeft = False
-        self.classButtonLeft = False
-        self.metaButtonLeft = False        
         self.receivedAttrList = None
-        
-        # set channels
-        self.inputs = [("Examples", ExampleTable, self.onDataInput), ("Attribute Subset", AttributeList, self.onAttributeList)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
 
-        # GUI
+        self.selectedInput = []
+        self.inputAttributes = []
+        self.selectedChosen = []
+        self.chosenAttributes = []
+        self.selectedClass = []
+        self.classAttribute = []
+        self.metaAttributes = []
+        self.selectedMeta = []
+
+        self.loadSettings()
+        
         self.mainArea.setFixedWidth(0)
-        #self.buttonBackground.hide()
-        ca=QFrame(self.controlArea)
+        ca = QFrame(self.controlArea)
         ca.adjustSize()
         gl=QGridLayout(ca,4,3,5)
 
-        # available attributes
         boxAvail = QVGroupBox(ca)
         boxAvail.setTitle('Available Attributes')
         gl.addMultiCellWidget(boxAvail, 0,2,0,0)
-        self.inputAttributesList = QListBox(boxAvail,'InputAttributes')
-        self.inputAttributesList.setSelectionMode(QListBox.Extended)
-        self.connect(self.inputAttributesList, SIGNAL('selectionChanged()'), self.onInputAttributesSelectionChange)
-        self.connect(self.inputAttributesList, SIGNAL('currentChanged(QListBoxItem*)'), self.onInputAttributesCurrentChange)
 
-        # attributes
+        self.inputAttributesList = OWGUI.listBox(boxAvail, self, "selectedInput", "inputAttributes", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
+
         vbAttr = QVBox(ca)
         gl.addWidget(vbAttr, 0,1)
         self.attributesButtonUp = OWGUI.button(vbAttr, self, "Up", self.onAttributesButtonUpClick)
@@ -68,16 +66,12 @@ class OWDataDomain(OWWidget):
         self.attributesButton.setMaximumWidth(buttonWidth)
         self.attributesButtonDown = OWGUI.button(vbAttr, self, "Down", self.onAttributesButtonDownClick)
         self.attributesButtonDown.setMaximumWidth(buttonWidth)
+        
         boxAttr = QVGroupBox(ca)
         boxAttr.setTitle('Attributes')
         gl.addWidget(boxAttr, 0,2)
-        self.attributesList = QListBox(boxAttr,'Attributes')
-        self.attributesList.setSelectionMode(QListBox.Extended)
-        self.connect(self.attributesList, SIGNAL('selectionChanged()'), self.onAttributesSelectionChange)
-        self.connect(self.attributesList, SIGNAL('currentChanged(QListBoxItem*)'), self.onAttributesCurrentChange)
-        self.connect(self.attributesList, SIGNAL('doubleClicked(QListBoxItem*)'), self.onAttributesDoubleClick)
+        self.attributesList = OWGUI.listBox(boxAttr, self, "selectedChosen", "chosenAttributes", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
 
-        # class        
         self.classButton = OWGUI.button(ca, self, ">", self.onClassButtonClicked)
         self.classButton.setMaximumWidth(buttonWidth)
         gl.addWidget(self.classButton, 1,1)
@@ -85,13 +79,8 @@ class OWDataDomain(OWWidget):
         boxClass.setTitle('Class')
         boxClass.setFixedHeight(46)
         gl.addWidget(boxClass, 1,2)
-        self.classList = QListBox(boxClass,'ClassAttribute')
-        self.classList.setSelectionMode(QListBox.Extended)
-        self.connect(self.classList, SIGNAL('selectionChanged()'), self.onClassSelectionChange)
-        self.connect(self.classList, SIGNAL('currentChanged(QListBoxItem*)'), self.onClassCurrentChange)
-        self.connect(self.classList, SIGNAL('doubleClicked(QListBoxItem*)'), self.onClassDoubleClick)
+        self.classList = OWGUI.listBox(boxClass, self, "selectedClass", "classAttribute", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
         
-        # meta
         vbMeta = QVBox(ca)
         gl.addWidget(vbMeta, 2,1)
         self.metaButtonUp = OWGUI.button(vbMeta, self, "Up", self.onMetaButtonUpClick)
@@ -103,13 +92,8 @@ class OWDataDomain(OWWidget):
         boxMeta = QVGroupBox(ca)
         boxMeta.setTitle('Meta Attributes')
         gl.addWidget(boxMeta, 2,2)
-        self.metaList = QListBox(boxMeta,'MetaAttributes')
-        self.metaList.setSelectionMode(QListBox.Extended)
-        self.connect(self.metaList, SIGNAL('selectionChanged()'), self.onMetaSelectionChange)
-        self.connect(self.metaList, SIGNAL('currentChanged(QListBoxItem*)'), self.onMetaCurrentChange)         
-        self.connect(self.metaList, SIGNAL('doubleClicked(QListBoxItem*)'), self.onMetaDoubleClick)
+        self.metaList = OWGUI.listBox(boxMeta, self, "selectedMeta", "metaAttributes", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
         
-        # apply/reset buttons
         boxApply = QHBox(ca)
         gl.addMultiCellWidget(boxApply, 3,3,0,2)
         self.applyButton = OWGUI.button(boxApply, self, "Apply", callback = self.setOutput)
@@ -118,99 +102,98 @@ class OWDataDomain(OWWidget):
         self.resetButton = OWGUI.button(boxApply, self, "Reset", callback = self.reset)
         self.resetButton.setMaximumWidth(applyButtonWidth)
 
-        # icons
         self.icons = self.createAttributeIconDict()
 
+        self.inChange = False
         self.resize(400,480)       
 
 
-    ############################################################################################################################################################
-    ## Data input and output management ########################################################################################################################
-    ############################################################################################################################################################
     def onAttributeList(self, attrList):
         self.receivedAttrList = attrList
         self.onDataInput(self.data)
-        
+
+    def onSelectionChange(self):
+        if not self.inChange:
+            self.inChange = True
+            for lb, co in [(self.inputAttributesList, "selectedInput"),
+                       (self.attributesList, "selectedChosen"),
+                       (self.classList, "selectedClass"),
+                       (self.metaList, "selectedMeta")]:
+                if not lb.hasFocus():
+                    setattr(self, co, [])
+            self.inChange = False
+
+        self.updateInterfaceState()            
+
 
     def onDataInput(self, data):
-        if self.data and data and self.data.checksum() == data.checksum(): return   # we received the same dataset again
+        if self.data and data and self.data.checksum() == data.checksum():
+            return   # we received the same dataset again
+
+        self.closeContext()
+##        print "LOCAL"
+##        for c in self.localContexts:
+##            print c.values["chosenAttributes"]
+##        print "GLOBAL"
+##        for c in self.localContexts:
+##            print c.values["chosenAttributes"]
+##        print "END"
         
         self.data = data
         self.attributes = {}
         
-        if self.receivedAttrList:
-            self.onAttributeList(self.receivedAttrList)
-            return
+        if data:
+            if data.domain.classVar:
+                self.classAttribute = [(data.domain.classVar.name, data.domain.classVar.varType)]
+            else:
+                self.classAttribute = []
+            self.metaAttributes = [(a.name, a.varType) for a in data.domain.getmetas().values()]
 
-        self.inputAttributesList.clear()
-        self.attributesList.clear()
-        self.classList.clear()
-        self.metaList.clear()        
+            if self.receivedAttrList:
+                self.chosenAttributes = [(a.name, a.varType) for a in self.receivedAttrList]
+                self.addToUsed(self.receivedAttrList)
+            else:
+                self.chosenAttributes = [(a.name, a.varType) for a in data.domain.attributes]
+                self.inputAttributes = []
+        else:
+            self.inputAttributes = []
+            self.chosenAttributes = []
+            self.classAttribute = []
+            self.metaAttributes = []
 
-        if data and self.receivedAttrList:
-            for attr in self.data.domain.attributes:
-                self.attributes[attr.name] = (attr.name in self.receivedAttrList)
-                if attr.name in self.receivedAttrList:      self.attributesList.insertItem(self.icons[attr.varType], attr.name)
-                else:                                       self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
+        self.openContext("", data)
 
-            #set up class variable
-            if self.data.domain.classVar and self.data.domain.classVar.name not in self.receivedAttrList:
-                self.attributes[self.data.domain.classVar.name] = CLASS_ATTR
-                self.classList.insertItem(self.icons[self.data.domain.classVar.varType], self.data.domain.classVar.name)
-
-            #set up meta attributes
-            for attr in self.data.domain.getmetas().values():
-                self.attributes[attr.name] = META_ATTR
-                if attr.name not in self.receivedAttrList:
-                    self.metaList.insertItem(self.icons[attr.varType], attr.name)
-                    
-        elif data:
-            #set up normal attributes
-            for attr in data.domain.attributes:
-                self.attributes[attr.name] = ATTRIBUTE
-                self.attributesList.insertItem(self.icons[attr.varType], attr.name)
-
-            #set up class variable
-            if data and data.domain.classVar:
-                self.attributes[data.domain.classVar.name] = CLASS_ATTR
-                self.classList.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
-
-            #set up meta attriutes
-            for attr in data.domain.getmetas().values():
-                self.attributes[attr.name] = META_ATTR
-                self.metaList.insertItem(self.icons[attr.varType], attr.name)
-
-            self.setInputAttributesListElements()
+        self.usedAttributes = dict.fromkeys(self.chosenAttributes + self.classAttribute + self.metaAttributes, 1)
+        self.setInputAttributes()
 
         self.setOutput()
         self.updateInterfaceState()
+
         
     def setOutput(self):
         if self.data:
             self.applyButton.setEnabled(False)
-            attributes = [];
-            for i in range(0, self.attributesList.count()):
-                attributes.append(self.data.domain[str(self.attributesList.text(i))])
-                
-            #create domain without class attribute
-            if self.classList.count()>0:
-                domain = orange.Domain(attributes, self.data.domain[str(self.classList.text(0))],self.data.domain)
-            else:
-                domain = orange.Domain(attributes, None,self.data.domain)
-            for i in range(0,self.metaList.count()):
-                domain.addmeta(orange.newmetaid(), self.data.domain[str(self.metaList.text(i))])
+
+            attributes = [self.data.domain[x[0]] for x in self.chosenAttributes]
+            classVar = self.classAttribute and self.data.domain[self.classAttribute[0][0]] or None
+            domain = orange.Domain(attributes, classVar)
+            for meta in self.metaAttributes:
+                domain.addmeta(orange.newmetaid(), self.data.domain[meta[0]])
+
             newdata = orange.ExampleTable(domain, self.data)
             newdata.name = self.data.name
             self.send("Examples", newdata)
 
-            #create domaing with  class atribute
-            if self.classList.count()>0:
+            if classVar:
                 self.send("Classified Examples", newdata)
             else:
                 self.send("Classified Examples", None)
+
+            print domain
         else:
             self.send("Examples", None)
             self.send("Classified Examples", None)
+
         
     def reset(self):
         data = self.data
@@ -218,293 +201,157 @@ class OWDataDomain(OWWidget):
         self.onDataInput(data)
 
         
-    ############################################################################################################################################################
-    ## List box selection change handlers ######################################################################################################################
-    ############################################################################################################################################################
+    def disableButtons(self, *arg):
+        for b in arg:
+            b.setEnabled(False)
+
+    def setButton(self, button, dir):
+        button.setText(dir)
+        button.setEnabled(True)
+
         
-    def onInputAttributesSelectionChange(self):
-        self.handleListSelectionChange(self.inputAttributesList)
-        
-    def onInputAttributesCurrentChange(self, item):
-        self.handleListSelectionChange(self.inputAttributesList)
-            
-    def onAttributesSelectionChange(self):
-        self.handleListSelectionChange(self.attributesList)
-
-    def onAttributesCurrentChange(self, item):
-        self.handleListSelectionChange(self.attributesList)
-        
-    def onClassSelectionChange(self):
-        self.handleListSelectionChange(self.classList)
-        
-    def onClassCurrentChange(self, item):
-        self.handleListSelectionChange(self.classList)        
-            
-    def onMetaSelectionChange(self):
-        self.handleListSelectionChange(self.metaList)
-
-    def onMetaCurrentChange(self, item):
-        self.handleListSelectionChange(self.metaList)
-
-
-    def onAttributesDoubleClick(self, item):
-        self.onAttributesButtonClicked()
-
-    def onClassDoubleClick(self, item):
-        self.onClassButtonClicked()
-
-    def onMetaDoubleClick(self, item):
-        self.onMetaButtonClicked()
-
-    ############################################################################################################################################################
-    ## Interface state management - updates interface elements based on selection in list boxes ################################################################
-    ############################################################################################################################################################
-            
     def updateInterfaceState(self):
+        if self.selectedInput:
+            self.setButton(self.attributesButton, ">")
+            self.setButton(self.metaButton, ">")
+            self.disableButtons(self.attributesButtonUp, self.attributesButtonDown, self.metaButtonUp, self.metaButtonDown)
 
-        #set buttons for adding or removing attributes in lists
-        self.attributesButton.setEnabled(False)
-        self.metaButton.setEnabled(False)
-        self.classButton.setEnabled(False)
-        if (self.computeSelectionCount(self.inputAttributesList)>0):
-            self.attributesButton.setText(">")
-            self.attributesButton.setEnabled(True)
-            self.attributesButtonLeft = False
-
-            self.metaButton.setText(">")
-            self.metaButton.setEnabled(True)
-            self.metaButtonLeft = False
-         
-        if (self.computeSelectionCount(self.inputAttributesList)==1):
-            text = self.getSelectedItemText(self.inputAttributesList)
-
-            if (self.data.domain[text].varType<>orange.VarTypes.String):
-                self.classButton.setText(">")
-                self.classButton.setEnabled(True)
-                self.classButtonLeft = False
-
-        if (self.computeSelectionCount(self.attributesList)>0):
-            self.attributesButton.setText("<")
-            self.attributesButton.setEnabled(True)
-            self.attributesButtonLeft = True
-
-        if (self.computeSelectionCount(self.metaList)>0):
-            self.metaButton.setText("<")
-            self.metaButton.setEnabled(True)
-            self.metaButtonLeft = True
+            if len(self.selectedInput) == 1 and self.inputAttributes[self.selectedInput[0]][1] in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
+                self.setButton(self.classButton, ">")
+            else:
+                self.classButton.setEnabled(False)
             
-        if (self.computeSelectionCount(self.classList)>0):
-            self.classButton.setText("<")
-            self.classButton.setEnabled(True)
-            self.classButtonLeft = True
+        elif self.selectedChosen:
+            self.setButton(self.attributesButton, "<")
+            self.disableButtons(self.classButton, self.metaButton, self.metaButtonUp, self.metaButtonDown)
 
-        #set buttons for moving selection up or down in list
-        self.attributesButtonUp.setEnabled(False)
-        self.attributesButtonDown.setEnabled(False)
-        if (self.computeSelectionCount(self.attributesList)>0 and self.isConsecutiveSelection(self.attributesList)):
-            if (not self.attributesList.isSelected(0)):
-                self.attributesButtonUp.setEnabled(True)
-            if (not self.attributesList.isSelected(self.attributesList.count()-1)):
-                self.attributesButtonDown.setEnabled(True)
+            mini, maxi = min(self.selectedChosen), max(self.selectedChosen)
+            cons = maxi - mini == len(self.selectedChosen) - 1
+            self.attributesButtonUp.setEnabled(cons and mini)
+            self.attributesButtonDown.setEnabled(cons and maxi < len(self.chosenAttributes)-1)
 
-        self.metaButtonUp.setEnabled(False)
-        self.metaButtonDown.setEnabled(False)  
-        if (self.computeSelectionCount(self.metaList)>0 and self.isConsecutiveSelection(self.metaList)):
-            if (not self.metaList.isSelected(0)):
-                self.metaButtonUp.setEnabled(True)
-            if (not self.metaList.isSelected(self.metaList.count()-1)):                
-                self.metaButtonDown.setEnabled(True)
-          
+        elif self.selectedClass:
+            self.setButton(self.classButton, "<")
+            self.disableButtons(self.attributesButtonUp, self.attributesButtonDown, self.metaButtonUp, self.metaButtonDown,
+                                self.attributesButton, self.metaButton)
 
-    ############################################################################################################################################################
-    ## Button click handlers ###################################################################################################################################
-    ############################################################################################################################################################
-            
-    def onAttributesButtonClicked(self):
-        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
-        if self.attributesButtonLeft:
-            self.removeSelectedItems(self.attributesList)
+        elif self.selectedMeta:
+            self.setButton(self.metaButton, "<")
+            self.disableButtons(self.attributesButton, self.classButton, self.attributesButtonDown, self.attributesButtonUp)
+
+            mini, maxi, leni = min(self.selectedMeta), max(self.selectedMeta), len(self.selectedMeta)
+            cons = maxi - mini == leni - 1
+            self.metaButtonUp.setEnabled(cons and mini)
+            self.metaButtonDown.setEnabled(cons and maxi < len(self.metaAttributes)-1)
+
         else:
-            for i in range(0, self.inputAttributesList.count()):
-                if (self.inputAttributesList.isSelected(i)):
-                    itemText = str(self.inputAttributesList.text(i))
-                    itemType = self.data.domain[itemText].varType
-                    self.attributesList.insertItem(self.icons[itemType],itemText)
-                    self.attributes[itemText] = ATTRIBUTE
+            self.disableButtons(self.attributesButtonUp, self.attributesButtonDown, self.metaButtonUp, self.metaButtonDown,
+                                self.attributesButton, self.metaButton, self.classButton)
 
-        self.inputAttributesList.clearSelection()                                
-        self.attributesList.clearSelection()
-        self.classList.clearSelection()
-        self.metaList.clearSelection()
-        
-        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
-        self.setInputAttributesListElements()
+
+    def splitSelection(self, alist, selected):
+        selected.sort()
+
+        i, sele = 0, selected[0]
+        selList, restList = [], []
+        for j, attr in enumerate(alist):
+            if j == sele:
+                selList.append(attr)
+                i += 1
+                sele = i<len(selected) and selected[i] or None
+                print i, sele
+            else:
+                restList.append(attr)
+        return selList, restList
+
+
+    def setInputAttributes(self):
+        self.selectedInput = []
+        self.inputAttributes = filter(lambda x:not self.usedAttributes.has_key(x), [(attr.name, attr.varType) for attr in self.data.domain])
+
+    def removeFromUsed(self, attributes):
+        for attr in attributes:
+            del self.usedAttributes[attr]
+        self.setInputAttributes()
+
+    def addToUsed(self, attributes):
+        self.usedAttributes.update(dict.fromkeys(attributes))
+        self.setInputAttributes()
+
+       
+    def onAttributesButtonClicked(self):
+        if self.selectedInput:
+            selList, restList = self.splitSelection(self.inputAttributes, self.selectedInput)
+            self.chosenAttributes = self.chosenAttributes + selList
+            self.addToUsed(selList)
+        else:
+            selList, restList = self.splitSelection(self.chosenAttributes, self.selectedChosen)
+            print selList
+            print restList
+            self.chosenAttributes = restList
+            self.removeFromUsed(selList)
+
         self.updateInterfaceState()
+        self.applyButton.setEnabled(True)
 
-        self.applyButton.setEnabled(True)        
 
     def onClassButtonClicked(self):
-        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
-        if self.classList.count() > 0: self.attributes[str(self.classList.text(0))] = AVAILABLE_ATTR
-        self.classList.clear()
-        if not self.classButtonLeft:
-            for i in range(0, self.inputAttributesList.count()):
-                if (self.inputAttributesList.isSelected(i)):
-                    itemText = str(self.inputAttributesList.text(i))
-                    itemType = self.data.domain[itemText].varType
-                    self.classList.insertItem(self.icons[itemType],itemText)
-                    self.attributes[itemText] = CLASS_ATTR
+        if self.selectedInput:
+            selected = self.inputAttributes[self.selectedInput[0]]
+            if self.classAttribute:
+                self.removeFromUsed(self.classAttribute)
+            self.addToUsed([selected])
+            self.classAttribute = [selected]
+        else:
+            self.removeFromUsed(self.classAttribute)
+            self.selectedClass = []
+            self.classAttribute = []
 
-        self.inputAttributesList.clearSelection()                                
-        self.attributesList.clearSelection()
-        self.classList.clearSelection()
-        self.metaList.clearSelection()
-        
-        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
-        self.setInputAttributesListElements()
         self.updateInterfaceState()
-
         self.applyButton.setEnabled(True)        
+
 
     def onMetaButtonClicked(self):
-        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
-        if self.metaButtonLeft:
-            self.removeSelectedItems(self.metaList)
+        if self.selectedInput:
+            selList, restList = self.splitSelection(self.inputAttributes, self.selectedInput)
+            self.metaAttributes = self.metaAttributes + selList
+            self.addToUsed(selList)
         else:
-            for i in range(0, self.inputAttributesList.count()):
-                if (self.inputAttributesList.isSelected(i)):
-                    itemText = str(self.inputAttributesList.text(i))
-                    itemType = self.data.domain[itemText].varType
-                    self.metaList.insertItem(self.icons[itemType],itemText)
-                    self.attributes[itemText] = META_ATTR
+            selList, restList = self.splitSelection(self.metaAttributes, self.selectedMeta)
+            self.metaAttributes = restList
+            self.removeFromUsed(selList)
 
-        self.inputAttributesList.clearSelection()                                
-        self.attributesList.clearSelection()
-        self.classList.clearSelection()
-        self.metaList.clearSelection()
-        
-        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
-        self.setInputAttributesListElements()        
         self.updateInterfaceState()
+        self.applyButton.setEnabled(True)
 
-        self.applyButton.setEnabled(True)        
+
+    def moveSelection(self, labels, selection, dir):
+        labs = getattr(self, labels)
+        sel = getattr(self, selection)
+        mini, maxi = min(sel), max(sel)+1
+        if dir == -1:
+            setattr(self, labels, labs[:mini-1] + labs[mini:maxi] + [labs[mini-1]] + labs[maxi:])
+        else:
+            setattr(self, labels, labs[:mini] + [labs[maxi]] + labs[mini:maxi] + labs[maxi+1:])
+        setattr(self, selection, map(lambda x:x+dir, sel))
+        self.updateInterfaceState()
+        self.applyButton.setEnabled(True)
 
     def onMetaButtonUpClick(self):
-        self.moveSelectionUp(self.metaList)
-        self.applyButton.setEnabled(True)
+        self.moveSelection("metaAttributes", "selectedMeta", -1)
 
     def onMetaButtonDownClick(self):
-        self.moveSelectionDown(self.metaList)
-        self.applyButton.setEnabled(True)
+        self.moveSelection("metaAttributes", "selectedMeta", 1)
         
     def onAttributesButtonUpClick(self):
-        self.moveSelectionUp(self.attributesList)
-        self.applyButton.setEnabled(True)
+        self.moveSelection("chosenAttributes", "selectedChosen", -1)
         
     def onAttributesButtonDownClick(self):
-        self.moveSelectionDown(self.attributesList)
-        self.applyButton.setEnabled(True)
+        self.moveSelection("chosenAttributes", "selectedChosen", 1)
         
-    ############################################################################################################################################################
-    ## Utility functions #######################################################################################################################################
-    ############################################################################################################################################################
 
-    def computeSelectionCount(self, listBox):
-        result = 0
-        for i in range(0, listBox.count()):
-            if (listBox.isSelected(i)):
-                result = result + 1
-
-        return result
-
-    def getSelectedItemText(self, listBox):
-        result = 0
-        for i in range(0, listBox.count()):
-            if (listBox.isSelected(i)):
-                result = str(listBox.text(i))
-                break
-        return result
-
-    def removeSelectedItems(self, listBox):
-        for i in range(listBox.count(), -1, -1):
-            if (listBox.isSelected(i)):
-                self.attributes[str(listBox.text(i))] = AVAILABLE_ATTR
-                listBox.removeItem(i)
-
-    def isConsecutiveSelection(self, listBox):
-        next = -1
-        result = True
-        for i in range(0, listBox.count()):
-            if (listBox.isSelected(i)):
-                if (i<>next and next<>-1):
-                    result = False
-                    break
-                else:
-                    next = i + 1
-        return result
-
-    def moveSelectionUp(self, listBox):
-        selection = []
-        for i in range(0, listBox.count()):
-            if (listBox.isSelected(i)):
-                selection.append(i)
-        for i in selection:
-            txt1 = str(listBox.text(i-1))
-            txt2 = str(listBox.text(i))
-            listBox.changeItem(self.icons[self.data.domain[txt1].varType], txt1, i)
-            listBox.changeItem(self.icons[self.data.domain[txt2].varType], txt2, i-1)
-        listBox.clearSelection()
-        for i in selection:
-            listBox.setSelected(i-1, True)
-            
-        
-    def moveSelectionDown(self, listBox):
-        selection = []
-        for i in range(0, listBox.count()):
-            if (listBox.isSelected(i)):
-                selection.append(i)
-
-        selection.reverse()        
-        for i in selection:
-            txt1 = str(listBox.text(i))
-            txt2 = str(listBox.text(i+1))
-            listBox.changeItem(self.icons[self.data.domain[txt1].varType], txt1, i+1)
-            listBox.changeItem(self.icons[self.data.domain[txt2].varType], txt2, i)
-        listBox.clearSelection()
-        for i in selection:
-            listBox.setSelected(i+1, True)
-
-    def setInputAttributesListElements(self):
-        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
-        self.inputAttributesList.clear()
-        if self.data:
-            #set up normal attributes + class
-            for attr in self.data.domain:
-                if self.attributes[attr.name] == AVAILABLE_ATTR: self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
-
-            #set up meta attributes
-            for attr in self.data.domain.getmetas().values():
-                if self.attributes[attr.name] == AVAILABLE_ATTR: self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
-
-        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
-        
-    def handleListSelectionChange(self, listBox):
-        if (self.internalSelectionUpdateFlag==0):
-            self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
-            if (self.inputAttributesList<>listBox):
-                self.inputAttributesList.clearSelection()
-            if (self.attributesList<>listBox):
-                self.attributesList.clearSelection()
-            if (self.classList<>listBox):
-                self.classList.clearSelection()
-                
-            if (self.metaList<>listBox):
-                self.metaList.clearSelection()
-
-            self.updateInterfaceState()
-            self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
-            
 if __name__=="__main__":
+    import sys
     data = orange.ExampleTable(r'..\..\doc\datasets\iris.tab')
     # add meta attribute
     data.domain.addmeta(orange.newmetaid(), orange.StringVariable("name"))
@@ -517,4 +364,5 @@ if __name__=="__main__":
     ow.show()
     ow.onDataInput(data)
     a.exec_loop()
-        
+    print "CHOSEN: ", ow.chosenAttributes
+    ow.saveSettings()

@@ -4,11 +4,11 @@
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
 
-import sys
+import sys, time
 import os, os.path
 import orange
 from string import *
-import cPickle
+import cPickle, copy
 from OWTools import *
 from OWAbout import *
 from orngSignalManager import *
@@ -16,18 +16,6 @@ import time, user, verbose
 
 ERROR = 0
 WARNING = 1
-
-class DummyError:
-    pass
-dummyError = DummyError
-
-def encodeDomain(domain):
-    if not domain: return ""
-    import md5
-    return md5.md5(str([i for i in domain])).hexdigest()
-   
-def encodeDataDomain(data):
-    return data and encodeDomain(data.domain) or ""
 
 def mygetattr(obj, attr, **argkw):
     robj = obj
@@ -41,6 +29,293 @@ def mygetattr(obj, attr, **argkw):
         else:
             raise AttributeError, "'%s' has no attribute '%s'" % (obj, attr)
 
+
+class Context:
+    def __init__(self, **argkw):
+        self.time = time.time()
+        self.__dict__.update(argkw)
+
+    def __getstate__(self):
+        s = dict(self.__dict__)
+        for nc in getattr(self, "noCopy", []):
+            if s.has_key(nc):
+                del s[nc]
+        return s
+
+    
+class ContextHandler:
+    maxSavedContexts = 50
+    
+    def __init__(self, contextName = "", cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, **args):
+        self.contextName = contextName
+        self.localContextName = "localContexts"+contextName
+        self.cloneIfImperfect, self.loadImperfect, self.findImperfect = cloneIfImperfect, loadImperfect, findImperfect
+        self.syncWithGlobal = syncWithGlobal
+        self.globalContexts = []
+        self.__dict__.update(args)
+
+    def newContext(self):
+        return Context()
+
+    def openContext(self, widget, *arg, **argkw):
+        if not hasattr(widget, self.localContextName):
+            if self.syncWithGlobal:
+                setattr(widget, self.localContextName, self.globalContexts)
+            else:
+                setattr(widget, self.localContextName, copy.deepcopy(self.globalContexts))
+
+        index, context, score = self.findMatch(widget, self.findImperfect and self.loadImperfect, *arg, **argkw)
+        if context:
+            self.settingsToWidget(widget, context)
+            self.moveContextUp(widget, index)
+        else:
+            context = self.newContext()
+            self.addContext(widget, context)
+        return context
+
+    def closeContext(self, context, widget):
+        self.settingsFromWidget(context, widget)
+
+    def fastSave(self, context, widget, name):
+        pass
+
+    def settingsToWidget(self, widget, context):
+        if hasattr(self, "settingsToWidgetCallback"):
+            self.settingsToWidgetCallback(widget, self, context) # self.settingsToWidgetCallback is a unbound method, so 'widget' is sent for the 'self'...
+                   
+    def settingsFromWidget(self, widget, context):
+        if hasattr(self, "settingsFromWidgetCallback"):
+            self.settingsFromWidgetCallback(widget, self, context) # self.settingsFromWidgetCallback is a unbound method, so 'widget' is sent for the 'self'...
+                   
+    def findMatch(self, widget, imperfect = True, *arg, **argkw):
+        bestI, bestContext, bestScore = -1, None, -1
+        for i, c in enumerate(getattr(widget, self.localContextName)):
+            score = self.match(c, imperfect, *arg, **argkw)
+            if score == 2:
+                return i, c, score
+            if score and score > bestScore:
+                bestI, bestContext, bestScore = i, c, score
+                
+        if bestContext and self.cloneIfImperfect:
+            if hasattr(self, "cloneContext"):
+                bestContext = self.cloneContext(bestContext, *arg, **argkw)
+            else:
+                import copy
+                bestContext = copy.deepcopy(bestContext)
+                
+        return bestI, bestContext, bestScore
+            
+    def moveContextUp(self, widget, index):
+        localContexts = getattr(widget, self.localContextName)
+        l = getattr(widget, self.localContextName)
+        l.insert(0, l.pop(index))
+
+    def addContext(self, widget, context):
+        l = getattr(widget, self.localContextName)
+        l.insert(0, context)
+        while len(l) > self.maxSavedContexts:
+            del l[-1]
+
+    def mergeBack(self, widget):
+        if not self.syncWithGlobal:
+            self.globalContexts.extend(getattr(widget, self.localContextName))
+            self.globalContexts.sort(lambda c1,c2: -cmp(c1.time, c2.time))
+            self.globalContexts = self.globalContexts[:self.maxSavedContexts]
+
+
+class ContextField:
+    def __init__(self, name, flags, **argkw):
+        self.name = name
+        self.flags = flags
+        self.__dict__.update(argkw)
+    
+class DomainContextHandler(ContextHandler):
+    Optional, SelectedRequired, Required = range(3)
+    RequirementMask = 3
+    NotAttribute = 4
+    List = 8
+    RequiredList = Required + List
+    
+    def __init__(self, contextName, fields = [],
+                 cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, **args):
+        ContextHandler.__init__(self, contextName, cloneIfImperfect, loadImperfect, findImperfect, syncWithGlobal, **args)
+        self.fields = []
+        for field in fields:
+            if isinstance(field, ContextField):
+                self.fields.append(field)
+            elif type(field)==str:
+                self.fields.append(ContextField(field, self.Required))
+            # else it's a tuple
+            else:
+                flags = field[1]
+                if type(field[0]) == list:
+                    self.fields.extend([ContextField(x, flags) for x in field[0]])
+                else:
+                    self.fields.append(ContextField(field[0], flags))
+        
+    def encodeDomain(self, domain):
+        return dict([(attr.name, attr.varType) for attr in domain])
+
+    def openContext(self, widget, domain):
+        if not domain:
+            return
+        if not type(domain) < orange.Domain:
+            domain = domain.domain
+        encodedDomain = self.encodeDomain(domain)
+        context = ContextHandler.openContext(self, widget, domain, encodedDomain)
+        context.encodedDomain = encodedDomain
+        context.orderedDomain = [(attr.name, attr.varType) for attr in domain]
+        context.values = {}
+        return context
+
+    def settingsToWidget(self, widget, context):
+        ContextHandler.settingsToWidget(self, widget, context)
+        excluded = {}
+        for field in self.fields:
+            name, flags = field.name, field.flags
+            if not context.values.has_key(name):
+                continue
+            
+            value = context.values[name]
+            excludes = getattr(field, "reservoir", [])
+            if excludes and type(excludes) != list:
+                excludes = [excludes]
+
+            if not flags & self.List:
+                setattr(widget, name, value[0])
+                for exclude in excludes:
+                    excluded.setdefault(exclude, [])
+                    excluded[exclude].append(value)
+
+            else:
+                newLabels, newSelected = [], []
+                oldSelected = hasattr(field, "selected") and context.values.get(field.selected, []) or []
+                for i, saved in enumerate(value):
+                    if saved in context.orderedDomain:
+                        if i in oldSelected:
+                            newSelected.append(len(newLabels))
+                        newLabels.append(saved)
+
+                context.values[name] = newLabels
+                setattr(widget, name, value)
+
+                if hasattr(field, "selected"):
+                    context.values[field.selected] = newSelected
+                    setattr(widget, field.selected, context.values[field.selected])
+
+                for exclude in excludes:
+                    excluded.setdefault(exclude, [])
+                    excluded[exclude].extend(value)
+
+        for name, values in excluded.items():
+            setattr(widget, name, filter(lambda a: a not in values, context.orderedDomain))
+            
+
+    def settingsFromWidget(self, context, widget):
+        ContextHandler.settingsToWidget(self, widget, context)
+        context.values = {}
+        for field in self.fields:
+            if not field.flags & self.List:
+                self.saveLow(context, widget, field.name, mygetattr(widget, field.name))
+            else:
+                context.values[field.name] = mygetattr(widget, field.name)
+                if hasattr(field, "selected"):
+                    context.values[field.selected] = list(mygetattr(widget, field.selected))
+
+    def fastSave(self, context, widget, name, value):
+        if context:
+            for field in self.fields:
+                if name == field.name:
+                    if field.flags & self.List:
+                        context.values[field.name] = value
+                    else:
+                        self.saveLow(context, widget, name, value)
+                    return
+                if name == getattr(field, "selected", None):
+                    context.values[field.selected] = list(value)
+                    return
+
+    def saveLow(self, context, widget, field, value):
+        if type(value) == str:
+            context.values[field] = value, context.encodedDomain.get(value, -1) # -1 means it's not an attribute
+        else:
+            context.values[field] = value, -2
+
+    def match(self, context, imperfect, domain, encodedDomain):
+        if encodedDomain == context.encodedDomain:
+            return 2
+        if not imperfect:
+            return 0
+
+        filled = potentiallyFilled = 0
+        for field in self.fields:
+            value = context.values.get(field.name, None)
+            if value:
+                if field.flags & self.List:
+                    potentiallyFilled += len(value)
+                    if field.flags & self.RequirementMask == self.Required:
+                        filled += len(value)
+                        for item in value:
+                            if encodedDomain.get(item[0], None) != item[1]:
+                                return 0
+                    else:
+                        selectedRequired = field.flags & self.RequirementMask == self.SelectedRequired
+                        for i in context.values.get(field.selected, []):
+                            if value[i] in encodedDomain:
+                                filled += 1
+                            else:
+                                if selectedRequired:
+                                    return 0
+                else:
+                    potentiallyFilled += 1
+                    if value[1] >= 0:
+                        if encodedDomain.get(value[0], None) == value[1]:
+                            filled += 1
+                        else:
+                            if field.flags & self.Required:
+                                return 0
+
+            if not potentiallyFilled:
+                return 1.0
+            else:
+                return filled / float(potentiallyFilled)
+
+    def cloneContext(self, context, domain, encodedDomain):
+        import copy
+        context = copy.deepcopy(context)
+        
+        for field in self.fields:
+            value = context.values.get(field.name, None)
+            if value:
+                if field.flags & self.List:
+                    i = j = realI = 0
+                    selected = context.values.get(field.selected, [])
+                    selected.sort()
+                    nextSel = selected and selected[0] or None
+                    while i < len(value):
+                        if encodedDomain.get(value[i][0], None) != value[i][1]:
+                            del value[i]
+                            if nextSel == realI:
+                                del selected[j]
+                                nextSel = j < len(selected) and selected[j] or None
+                        else:
+                            if nextSel == realI:
+                                selected[j] -= realI - i
+                                j += 1
+                                nextSel = j < len(selected) and selected[j] or None
+                            i += 1
+                        realI += 1
+                    if hasattr(field, "selected"):
+                        context.values[field.selected] = selected[:j]
+                else:
+                    if value[1] >= 0 and encodedDomain.get(value[0], None) != value[1]:
+                        del context.values[field.name]
+                        
+        context.encodedDomain = encodedDomain
+        context.orderedDomain = [(attr.name, attr.varType) for attr in domain]
+        return context
+
+    
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
 class ExampleTable(orange.ExampleTable):
@@ -57,9 +332,10 @@ class ExampleList(list):
 
 class OWBaseWidget(QDialog):
     def __init__(self, parent = None, signalManager = None, title="Qt Orange BaseWidget", modal=FALSE):
+        # the "currentContexts" MUST be the first thing assigned to a widget
+        self.currentContexts = {}
         self.title = title.replace("&","")
-        self.savedContextSettings = []
-        
+
         QDialog.__init__(self, parent, self.title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize + Qt.WStyle_Maximize)
         
         # directories are better defined this way, otherwise .ini files get written in many places
@@ -71,6 +347,8 @@ class OWBaseWidget(QDialog):
         if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
         self.outputDir = os.path.join(self.outputDir, "widgetSettings")
         if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
+        
+        self.loadContextSettings()
         
         self.captionTitle = title.replace("&","")     # used for widget caption
 
@@ -124,30 +402,8 @@ class OWBaseWidget(QDialog):
 
     # ##############################################
     def createAttributeIconDict(self):
-        return {orange.VarTypes.Continuous: self.createAttributePixmap("C", QColor(202,0,32)),
-                      orange.VarTypes.Discrete: self.createAttributePixmap("D", QColor(26,150,65)),
-                      orange.VarTypes.String: self.createAttributePixmap("S", Qt.black)}
-
-    def createAttributePixmap(self, char, color = Qt.black):
-        pixmap = QPixmap()
-        pixmap.resize(13,13)
-        painter = QPainter()
-        painter.begin(pixmap)
-        """
-        painter.setPen( color );
-        painter.setBrush( Qt.white );
-        painter.drawRect( 0, 0, 13, 13 );
-        painter.drawText(3, 11, char)
-        painter.end()
-        """
-        painter.setPen( color );
-        painter.setBrush( color );
-        painter.drawRect( 0, 0, 13, 13 );
-        painter.setPen( Qt.white)
-        painter.drawText(3, 11, char)
-        painter.end()
-        return pixmap
-    # ###############################################
+        import OWGUI
+        return OWGUI.getAttributeIcons()
 
     def setCaption(self, caption):
         if self.parent != None and isinstance(self.parent, QTabWidget): self.parent.changeTab(self, caption)
@@ -180,61 +436,100 @@ class OWBaseWidget(QDialog):
     # Get all settings
     # returns map with all settings
     def getSettings(self):
-        return dict([(x, mygetattr(self, x, None)) for x in settingsList])
-
-    # Loads settings from the widget's .ini file 
-    def loadSettings(self, file = None):
+        settings = {}
         if hasattr(self, "settingsList"):
-            if file==None:
-                if os.path.exists(os.path.join(self.outputDir, self.title + ".ini")):
-                    file = os.path.join(self.outputDir, self.title + ".ini")
-                else:
-                    return
-            if type(file) == str:
-                if os.path.exists(file):
-                    file = open(file, "r")
-                    settings = cPickle.load(file)
-                    file.close()
-                else:
-                    settings = {}
-            else:
-                settings = cPickle.load(file)
-
-            if settings.has_key("savedContextSettings"):
-                self.savedContextSettings = settings["savedContextSettings"]
-                del settings["savedContextSettings"]
-            self.setSettings(settings)
-
-        
-    def saveSettings(self, file = None):
-        if hasattr(self, "settingsList"):
-            #settings = dict([(name, mygetattr(self, name)) for name in self.settingsList])
-            settings = {"savedContextSettings": self.savedContextSettings}
             for name in self.settingsList:
                 try:
                     settings[name] =  mygetattr(self, name)
                 except:
                     print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.title)
-                    
-            if file==None: file = os.path.join(self.outputDir, self.title + ".ini")
+        return settings
+
+
+    def getSettingsFile(self, file):
+        if file==None:
+            if os.path.exists(os.path.join(self.outputDir, self.title + ".ini")):
+                file = os.path.join(self.outputDir, self.title + ".ini")
+            else:
+                return
+        if type(file) == str:
+            if os.path.exists(file):
+                return open(file, "r")
+        else:
+            return file
+
+        
+    # Loads settings from the widget's .ini file 
+    def loadSettings(self, file = None):
+        file = self.getSettingsFile(file)
+        if file:
+            settings = cPickle.load(file)
+
+            if hasattr(self, "settingsList"):
+                self.setSettings(settings)
+
+            contextHandlers = getattr(self, "contextHandlers", {})
+            for contextHandler in contextHandlers.values():
+                if not getattr(contextHandler, "globalContexts", False): # don't have it or empty
+                    contexts = settings.get(contextHandler.localContextName, False)
+                    for c in contexts:
+                        print c.values
+                    if contexts:
+                        contextHandler.globalContexts = contexts
+
+        
+    def loadContextSettings(self, file = None):
+        if not hasattr(self.__class__, "savedContextSettings"):
+            file = self.getSettingsFile(file)
+            if file:
+                settings = cPickle.load(file)
+                if settings.has_key("savedContextSettings"):
+                    self.__class__.savedContextSettings = settings["savedContextSettings"]
+                    return
+            self.__class__.savedContextSettings = {}
+
+
+    def saveSettings(self, file = None):
+        settings = self.getSettings()
+        
+        contextHandlers = getattr(self, "contextHandlers", {})
+        for contextHandler in contextHandlers.values():
+            contextHandler.mergeBack(self)
+            settings[contextHandler.localContextName] = contextHandler.globalContexts
+##            print "SAVE"
+##            for c in contextHandler.globalContexts:
+##                print c.values
+##            print "END SAVE"
+
+        if settings:                    
+            if file==None:
+                file = os.path.join(self.outputDir, self.title + ".ini")
             if type(file) == str:
                 file = open(file, "w")
             cPickle.dump(settings, file)
 
     # Loads settings from string str which is compatible with cPickle
     def loadSettingsStr(self, str):
-        if str == None or str == "": return
-        if hasattr(self, "settingsList"):
-            settings = cPickle.loads(str)
-            self.setSettings(settings)
+        if str == None or str == "":
+            return
+        
+        settings = cPickle.loads(str)
+        self.setSettings(settings)
+
+        contextHandlers = getattr(self, "contextHandlers", {})
+        for contextHandler in contextHandlers.values():
+            setattr(self, contextHandler.localContextName, settings[contextHandler.localContextName])
 
     # return settings in string format compatible with cPickle
     def saveSettingsStr(self):
         str = ""
-        if hasattr(self, "settingsList"):
-            settings = dict([(name, mygetattr(self, name)) for name in self.settingsList])
-            str = cPickle.dumps(settings)
-        return str
+        settings = self.getSettings()
+        
+        contextHandlers = getattr(self, "contextHandlers", {})
+        for contextHandler in contextHandlers.values():
+            settings[contextHandler.localContextName] = getattr(self, contextHandler.localContextName)
+
+        return cPickle.dumps(settings)
 
     # this function is only intended for derived classes to send appropriate signals when all settings are loaded
     def activateLoadedSettings(self):
@@ -468,56 +763,63 @@ class OWBaseWidget(QDialog):
             self.widgetStateHandler()
 
 
-    def findContextIndex(self, contextName, encodedValue):
-        cn = contextName + encodedValue
-        for i, c in enumerate(self.savedContextSettings):
-            if c[0] == cn:
-                return i
-        return -1
-    
-    def saveContextValue(self, contextName, encodedValue, value):
-        if encodedValue:
-            ci = self.findContextIndex(contextName, encodedValue)
-            if ci >= 0:
-                self.savedContextSettings[ci] = (contextName+encodedValue, value)
-            else:
-                self.savedContextSettings = (self.savedContextSettings + [(contextName+encodedValue, value)])[-50:]
+##    def destroy(self, dw = True, dsw = True):
+##        for contextName, context in self.currentContexts.items():
+##            self.contextHandlers[contextName].untieContext(context, self)
+##        QDialog.destroy(self, dw, dsw)
+            
+    def openContext(self, contextName="", *arg):
+        self.closeContext(contextName)
+        handler = self.contextHandlers[contextName]
+        context = handler.openContext(self, *arg)
+        if context:
+            handler.settingsFromWidget(context, self)  # this is needed to sync a semi-matching context with the widget
+            self.currentContexts[contextName] = context
 
-    def saveContext(self, contextName, encodedValue, *attrs):
-        if encodedValue: 
-            self.saveContextValue(contextName, encodedValue, [(attr, mygetattr(self, attr)) for attr in attrs])
 
-    def loadContext(self, contextName, encodedValue):
-        ci = self.findContextIndex(contextName, encodedValue)
-        if ci >= 0:
-            for attr, val in self.savedContextSettings[ci][1]:
-                self.__setattr__(attr, val)
-        
-    def loadContextValue(self, contextName, encodedValue):
-        ci = self.findContextIndex(contextName, encodedValue)
-        if ci >= 0:
-            return self.savedContextValue[ci][1]
+    def closeContext(self, contextName=""):
+        curcontext = self.currentContexts.get(contextName)
+        if curcontext:
+            self.contextHandlers[contextName].closeContext(curcontext, self)
+            del self.currentContexts[contextName]
+
 
     def __setattr__(self, name, value):
-        if name.count(".") > 0:
-            try:
-                names = name.split(".")
-                lastobj = self
-                for n in names[:-1]:
-                    lastobj = getattr(lastobj, n)
-                lastobj.__dict__[names[-1]] = value
-            except:
-                print "unable to set setting ", name, " to value ", value
+        if hasattr(self, "attributeControler"):
+            self.attributeControler(name, value)
+
         else:
-            if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
-            else:                               self.__dict__[name] = value             # for windows platform
+            if name.count(".") > 0:
+                try:
+                    names = name.split(".")
+                    lastobj = self
+                    for n in names[:-1]:
+                        lastobj = getattr(lastobj, n)
+                    lastobj.__dict__[names[-1]] = value
+                except:
+                    print "unable to set setting ", name, " to value ", value
+            else:
+                if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
+                else:                               self.__dict__[name] = value             # for windows platform
 
-        if not hasattr(self, "controledAttributes"): return
+            if hasattr(self, "controledAttributes") and self.controledAttributes.has_key(name):
+                self.controledAttributes[name](value)
 
-        if self.controledAttributes.has_key(name):
-            self.controledAttributes[name](value)
+            if hasattr(self, "contextHandlers"):# and hasattr(self, "currentContexts"):
+                for contextName, contextHandler in self.contextHandlers.items():
+                    contextHandler.fastSave(self.currentContexts.get(contextName), self, name, value)
 
-    
+
+class ControlerCallback:
+    def __init__(self, parent, childname):
+        self.parent = parent
+        self.childname = childname
+
+    def __call__(self, name, value):
+        self.parent.__setattr__(self.childname+"."+name, value)
+
+#    self.graph.controlerOfMyAttributes = ControlerCallback(self, "graph")
+
 if __name__ == "__main__":  
     a=QApplication(sys.argv)
     oww=OWBaseWidget()
