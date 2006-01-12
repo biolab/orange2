@@ -42,14 +42,12 @@ fi
 rm -rf orange
 
 echo -n "Checkouting Orange from CVS to orange..."
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange orange > cvs.log 2>&1
-mkdir orange
-mkdir orange/source
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f orange > cvs.log 2>&1
 cd orange
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d source source >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f source >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f install-scripts/linux/setup.py >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f install-scripts/linux/INSTALL.txt >> cvs.log 2>&1
 cd ..
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange install-scripts/linux/setup.py >> cvs.log 2>&1
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange install-scripts/linux/INSTALL.txt >> cvs.log 2>&1
 
 if [ ! $REL -eq 0 ]; then
     mkdir orange
