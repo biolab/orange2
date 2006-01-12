@@ -10,7 +10,7 @@ ACTIONS=all clean cleantemp
 
 $(ACTIONS):
 	(for MODULE in $(MODULES) ; \
-	   do $(MAKE) $@ -C $$MODULE OLD=$(ORANGE_LIBDIR); done)
+	   do if ! $(MAKE) $@ -C $$MODULE OLD=$(ORANGE_LIBDIR); then exit 1; fi; done)
 
 install: # all orange.pth canvas bininstall docinstall
 	@echo "Please use Python Distutils to install Orange."
