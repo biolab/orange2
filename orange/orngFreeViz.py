@@ -363,11 +363,12 @@ class FreeViz:
 
             return newXAnchors, newYAnchors, (newAttributes, newIndices)
         except:
-            print "unable to compute the inverse of a singular matrix."
+            #print "unable to compute the inverse of a singular matrix."
             names = self.graph.attributeNames
             attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
+            anchors = self.graph.createAnchors(len(attributes), attributes)
             if setGraphAnchors: self.graph.anchorData = self.graph.createAnchors(len(attributes), attributes)
-            return [self.graph.anchorData[i][0] for i in range(len(attributes))], [self.graph.anchorData[i][1] for i in range(len(attributes))], (attributes, attrIndices)
+            return [anchors[i][0] for i in range(len(attributes))], [anchors[i][1] for i in range(len(attributes))], (attributes, attrIndices)
 
 
 # #############################################################################
