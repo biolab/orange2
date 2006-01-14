@@ -351,7 +351,7 @@ class OWScatterPlot(OWWidget):
         self.attrSize= "(One size)"
 
 
-    def updateGraph(self, attrList = None, insideColors = None, clusterClosure = None, *args):
+    def updateGraph(self, attrList = None, insideColors = None, clusterClosure = None, **args):
         self.graph.removeAllSelections()
         
         if not self.data:
