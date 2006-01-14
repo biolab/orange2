@@ -10,7 +10,6 @@ import orange
 from string import *
 import cPickle, copy
 from OWTools import *
-from OWAbout import *
 from orngSignalManager import *
 import time, user, verbose
 
