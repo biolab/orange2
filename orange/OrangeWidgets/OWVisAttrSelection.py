@@ -1,8 +1,6 @@
-
 import orange
 import orngFSS
 import statc
-import orngCI
 from Numeric import *
 from LinearAlgebra import *
 
@@ -18,6 +16,8 @@ def replaceAttributes(index1, index2, merged, data):
 
 
 def getFunctionalList(data):
+    import orngCI
+    
     bestQual = -10000000
     bestAttr = -1
     testAttrs = []
