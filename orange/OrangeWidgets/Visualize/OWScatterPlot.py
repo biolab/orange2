@@ -24,7 +24,7 @@ from OWGraph import OWGraph
 ###########################################################################################
 class OWScatterPlot(OWWidget):
     settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
-                    "graph.enabledLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
+                    "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
                     "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
                     "VizRankClassifierName", "clusterClassifierName", "learnerIndex", "colorSettings"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
@@ -134,7 +134,7 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
-        OWGUI.checkBox(box4, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
         #OWGUI.checkBox(box4, self, 'graph.showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
         OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.optimizedDrawing', 'Optimize drawing', callback = self.updateGraph, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
@@ -432,11 +432,11 @@ class OWScatterPlot(OWWidget):
         return self.colorPalette
 
     def setMinimalGraphProperties(self):
-        attrs = ["graph.pointWidth", "graph.enabledLegend", "graph.showClusters", "showXAxisTitle", "showYAxisTitle", "showGridlines", "graph.showAxisScale", "autoSendSelection"]
+        attrs = ["graph.pointWidth", "graph.showLegend", "graph.showClusters", "showXAxisTitle", "showYAxisTitle", "showGridlines", "graph.showAxisScale", "autoSendSelection"]
         self.oldSettings = dict([(attr, mygetattr(self, attr)) for attr in attrs])
 
         self.graph.pointWidth = 4
-        self.graph.enabledLegend = 0
+        self.graph.showLegend = 0
         self.graph.showClusters = 0
         self.graph.showXaxisTitle = 0
         self.graph.showYLaxisTitle = 0

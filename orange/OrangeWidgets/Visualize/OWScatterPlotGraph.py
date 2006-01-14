@@ -31,7 +31,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.showAxisScale = 1
         self.showXaxisTitle= 1
         self.showYLaxisTitle = 1
-        self.enabledLegend = 1
+        self.showLegend = 1
         self.showDistributions = 0        
         self.optimizedDrawing = 1
         self.showClusters = 0
@@ -56,7 +56,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
         self.tips.removeAll()
-        if not self.enabledLegend: self.enableLegend(0)
+        if not self.showLegend: self.enableLegend(0)
         #self.enableLegend(0)
         #self.removeTooltips()
         self.tooltipData = []
@@ -410,7 +410,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         
         # ##############################################################
         # show legend if necessary
-        if self.enabledLegend == 1:
+        if self.showLegend == 1:
             legendKeys = {}
             if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete:
                 num = len(self.rawdata.domain[colorIndex].values)
