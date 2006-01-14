@@ -435,7 +435,9 @@ class VizRank:
             index += 1; usedArguments += 1
             
         suma = sum(vals)
-        if suma == 0: return (None, None)
+        if suma == 0:
+            dist = orange.Distribution(self.data.domain.classVar.name, self.data)
+            vals = [dist[i] for i in range(len(dist))]; suma = sum(vals)
 
         classValue = example.domain.classVar[vals.index(max(vals))]
         dist = orange.DiscDistribution([val/float(suma) for val in vals]);  dist.variable = self.data.domain.classVar
@@ -715,6 +717,7 @@ class VizRank:
             self.parentWidget.progressBarFinished()
             self.enableControls()
             self.finishedAddingResults()
+            from qt import qApp;  qApp.processEvents()
             if self.parentWidget: self.parentWidget.showSelectedAttributes()
             
 
