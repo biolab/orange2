@@ -7,7 +7,6 @@
 """
 from OWWidget import *
 from OWFile import *
-from OWIRankOptions import *
 from OWClassificationTreeViewer import *
 import OWGUI, sys, orngTree
 
