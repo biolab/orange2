@@ -471,8 +471,6 @@ class OWBaseWidget(QDialog):
             for contextHandler in contextHandlers.values():
                 if not getattr(contextHandler, "globalContexts", False): # don't have it or empty
                     contexts = settings.get(contextHandler.localContextName, False)
-                    for c in contexts:
-                        print c.values
                     if contexts:
                         contextHandler.globalContexts = contexts
 
