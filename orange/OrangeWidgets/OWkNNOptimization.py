@@ -10,7 +10,7 @@ class OWVizRank(VizRank, OWBaseWidget):
     settingsList = ["kValue", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod",
                     "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances",
                     "evaluationAlgorithm", "createSnapshots", "evaluationTime", "learnerName",
-                    "argumentCount", "canUseMoreArguments", "optimizeBestProjection", "optimizeBestProjectionTime",
+                    "argumentCount", "optimizeBestProjection", "optimizeBestProjectionTime",
                     "useHeuristicToFindAttributeOrders", "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount",
                     "useExampleWeighting", "useSupervisedPCA", "useGammaDistribution", "optimizationType", "attributeCount",
                     "useHeuristicToFindAttributeOrders", "saveResultsFromFolds"]
