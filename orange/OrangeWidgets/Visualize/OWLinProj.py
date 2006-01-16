@@ -290,8 +290,7 @@ class OWLinProj(OWWidget):
         val = self.optimizationDlg.getSelectedProjection()
         if val:
             (accuracy, other_results, tableLen, attrList, tryIndex, generalDict) = val
-            self.graph.setAnchors(generalDict.get("XAnchors"), generalDict.get("YAnchors"), attrList)
-            self.updateGraph(attrList, setAnchors = not (generalDict.get("XAnchors") and generalDict.get("YAnchors")))
+            self.updateGraph(attrList, setAnchors= 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
             self.graph.removeAllSelections()
 
 
@@ -335,7 +334,7 @@ class OWLinProj(OWWidget):
             if data.domain.classVar: self.hiddenAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
         self.sendShownAttributes()
     
-    def updateGraph(self, attrList = None, setAnchors = 0, insideColors = None, clusterClosure = None, *args):
+    def updateGraph(self, attrList = None, setAnchors = 0, insideColors = None, clusterClosure = None, **args):
         if not attrList:
             attrList = self.getShownAttributeList()
         else:
@@ -352,18 +351,12 @@ class OWLinProj(OWWidget):
         self.graph.insideColors = insideColors or self.classificationResults or kNNExampleAccuracy or self.outlierValues
         self.graph.clusterClosure = clusterClosure
 
-        self.graph.updateData(attrList, setAnchors)
+        self.graph.updateData(attrList, setAnchors, **args)
         self.graph.repaint()
         
-        """
-        self.graph.updateData(self.getShownAttributeList(), setAnchors)
-        self.graph.update()
-        self.repaint()
-        """
 
     # ###############################################################################################################
     # INPUT SIGNALS
-    # ###############################################################################################################
     
     # receive new data and update all fields
     def cdata(self, data, clearResults = 1):
@@ -427,7 +420,6 @@ class OWLinProj(OWWidget):
 
     # ###############################################################################################################
     # EVENTS
-    # ###############################################################################################################
 
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
@@ -556,7 +548,6 @@ class OWLinProj(OWWidget):
 
     # ###############################################################################################################
     # functions used by OWClusterOptimization class
-    # ###############################################################################################################
     def setMinimalGraphProperties(self):
         attrs = ["graph.pointWidth", "graph.showLegend", "graph.showClusters", "autoSendSelection"]
         self.oldSettings = dict([(attr, mygetattr(self, attr)) for attr in attrs])

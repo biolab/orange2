@@ -899,7 +899,6 @@ class ClusterOptimization(OWBaseWidget):
         if foundArguments > argumentCount:
             s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (foundArguments, argumentCount)
         s = s[:-4]
-        print s
         if showClassification:
             QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
         return classValue, dist
@@ -909,9 +908,10 @@ class ClusterOptimization(OWBaseWidget):
         testExampleAttrVals = [scaledExampleVals[self.graph.attributeNameIndex[attrList[i]]] for i in range(len(attrList))]
         if min(testExampleAttrVals) < 0.0 or max(testExampleAttrVals) > 1.0: return 0
 
-        [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, testExampleAttrVals)
         array = self.graph.createProjectionAsNumericArray([self.graph.attributeNameIndex[attr] for attr in attrList])
         short = Numeric.transpose(Numeric.take(array, vertices))
+        
+        [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, testExampleAttrVals)
 
         #if xTest < min(short[0]) or xTest > max(short[0]) or yTest < min(short[1]) or yTest > max(short[1]):
         #    del array, short; return 0       # the point is definitely not inside the cluster
@@ -1044,7 +1044,6 @@ class clusterClassifier(orange.Classifier):
                 dist = orange.DiscDistribution([1/float(len(classProjectionVals)) for i in classProjectionVals]); dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
                 return (self.clusterOptimizationDlg.rawdata.domain.classVar[0], dist)
 
-        
             ind = classProjectionVals.index(max(classProjectionVals))
             s = sum(classProjectionVals)
             dist = orange.DiscDistribution([val/float(s) for val in classProjectionVals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
@@ -1580,7 +1579,6 @@ def getSortedClosurePoints(graph, closure):
         pointDict[p] = split
 
     lists = []
-    #print pointDict
     while pointDict.keys() != []:
         for start in pointDict.keys():
             if len(pointDict[start]) == 1:

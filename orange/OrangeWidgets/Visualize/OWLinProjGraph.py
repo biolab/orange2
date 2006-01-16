@@ -93,9 +93,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 
         # store indices to shown attributes
         indices = [self.attributeNameIndex[label] for label in labels]
-        if setAnchors:
+        if setAnchors or (args.has_key("XAnchors") and args.has_key("YAnchors")):
             self.potentialsBmp = None
-            self.anchorData = self.createAnchors(len(labels), labels)    # used for showing tooltips
+            self.setAnchors(args.get("XAnchors"), args.get("YAnchors"), labels)
+            #self.anchorData = self.createAnchors(len(labels), labels)    # used for showing tooltips
 
         # do we want to show anchors and their labels
         if self.showAnchors:
@@ -105,7 +106,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 self.addCurve("hidecircle", QColor(200,200,200), QColor(200,200,200), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
                 
             # draw dots at anchors
-
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
             self.anchorsAsVectors = not self.normalizeExamples # min([x[0]**2+x[1]**2 for x in self.anchorData]) < 0.99
             self.shownLabels = [a[2] for a in shownAnchorData]
@@ -258,13 +258,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     
                     # scale data values for example i
                     dataVals = [self.scaleExampleValue(self.subsetData[i], ind) for ind in indices]
-                    if min(dataVals) < 0.0 or max(dataVals) > 1.0:
-                        self.widget.information("Subset data values are in different range than the original data values. Points can be therefore a bit displaced.")
-                        #for j in range(len(dataVals)):  dataVals[j] = min(1.0, max(0.0, dataVals[j]))    # scale to 0-1 interval
+                    #if min(dataVals) < 0.0 or max(dataVals) > 1.0:
+                    #    #self.widget.information("Subset data values are in different range than the original data values. Points can be therefore a bit displaced.")
+                    #    #for j in range(len(dataVals)):  dataVals[j] = min(1.0, max(0.0, dataVals[j]))    # scale to 0-1 interval
 
-                    [x,y] = self.getProjectedPointPosition(indices, dataVals, useAnchorData = 1, anchorRadius = anchorRadius)  # compute position of the point
-                    x *= self.trueScaleFactor
-                    y *= self.trueScaleFactor
+                    [x,y] = self.getProjectedPointPosition(indices, dataVals, settingsDict = {"useAnchorData": 1, "anchorRadius" : anchorRadius})  # compute position of the point
 
                     if colors and not self.subsetData[i].getclass().isSpecial():
                         newColor = colors[classValueIndices[self.subsetData[i].getclass().value]]
@@ -550,10 +548,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.replot()
  
     
-    # ############################################################## 
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, useAnchorData = 1, addProjectedPositions = 0):
-        #if not self.rawdata: return (None, None, None)
         if not self.rawdata: return (None, None)
         if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawdata)       # if no selections exist
 
@@ -591,11 +587,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
-        #merged = self.changeClassAttr(selected, unselected)
-        #return (selected, unselected, merged)
         return (selected, unselected)
     
-    # ############################################################## 
+
     def getSelectionsAsIndices(self, attrList, useAnchorData = 1, validData = None):
         if not self.rawdata: return [], []
 
@@ -613,10 +607,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         return selIndices, unselIndices
     
         
-      
-    # #######################################################################################################
-    # ####    GET OPTIMAL CLUSTERS      #####################################################################
-    # #######################################################################################################
     def getOptimalClusters(self, attributes, minLength, maxLength, addResultFunct):
         self.triedPossibilities = 0
 
@@ -710,7 +700,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.widget.progressBarFinished()
 
-    # ####################################################################
+
     # update shown data. Set labels, coloring by className ....
     def savePicTeX(self):
         lastSave = getattr(self, "lastPicTeXSave", "C:\\")
@@ -836,8 +826,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
 
     def drawCanvasItems(self, painter, rect, map, pfilter):
-        #print rect.x(), rect.y(), rect.width(), rect.height()
-        #painter.drawPixmap (QPoint(100,30), QPixmap(r"E:\Development\Python23\Lib\site-packages\Orange\orangeWidgets\icons\2DInteractions.png"))
         if self.showProbabilities and getattr(self, "potentialsClassifier", None):
             self.computePotentials()
             painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1)), self.potentialsBmp)
@@ -853,10 +841,8 @@ if __name__== "__main__":
     if os.path.exists(fname):
         table = orange.ExampleTable(fname)
         attrs = [attr.name for attr in table.domain.attributes]
-        start = time.time()
         graph.setData(table)
         graph.updateData(attrs, 1)
-        print time.time() - start
     a.setMainWidget(graph)
     graph.show()
     a.exec_loop()

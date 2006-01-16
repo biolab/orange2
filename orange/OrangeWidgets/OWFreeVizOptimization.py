@@ -450,7 +450,6 @@ class S2NHeuristicClassifier(orange.Classifier):
 
         if nrOfFreeVizSteps > 0:
             self.optimizationDlg.optimize(nrOfFreeVizSteps)
-            #self.radvizWidget.optimize()
 
     # for a given example run argumentation and find out to which class it most often fall        
     def __call__(self, example, returnType):        
@@ -460,15 +459,11 @@ class S2NHeuristicClassifier(orange.Classifier):
 
         attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
         attrVals = [scaleFunction(example, index) for index in attrListIndices]
-        if max(attrVals) > 1 or min(attrVals) < 0:
-            print "values out of 0-1 range"
-        
-        [xTest, yTest] = self.radvizWidget.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
-        xTest*= self.radvizWidget.graph.trueScaleFactor
-        yTest*= self.radvizWidget.graph.trueScaleFactor
-        
+                
         table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, settingsDict = {"scaleFactor": self.radvizWidget.graph.trueScaleFactor, "useAnchorData": 1})
         knn = self.radvizWidget.optimizationDlg.createkNNLearner()(table)
+
+        [xTest, yTest] = self.radvizWidget.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
         (classVal, prob) = knn(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
 
         if returnType == orange.GetBoth: return classVal, prob

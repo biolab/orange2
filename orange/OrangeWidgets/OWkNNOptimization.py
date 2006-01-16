@@ -95,7 +95,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.resultList = QListBox(self.resultsBox)
         #self.resultList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
         self.resultList.setMinimumSize(200,200)
-        if self.parentWidget: self.connect(self.resultList, SIGNAL("selectionChanged()"),self.parentWidget.showSelectedAttributes)
+        if self.parentWidget: self.connect(self.resultList, SIGNAL("selectionChanged()"), self.parentWidget.showSelectedAttributes)
 
         self.showRankCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showRank', 'Rank', callback = self.updateShownProjections, tooltip = "Show projection ranks")
         self.showAccuracyCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showAccuracy', 'Score', callback = self.updateShownProjections, tooltip = "Show prediction accuracy of a k-NN classifier on the projection")
@@ -279,7 +279,6 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.attrLenList.clear()
 
     def clearArguments(self):
-        del self.arguments
         self.arguments = []
         self.argumentList.clear()
 
@@ -402,26 +401,6 @@ class OWVizRank(VizRank, OWBaseWidget):
                     data2 = orange.ExampleTable(d1, shortData2)
                     data1.extend(data2)
                     data = data1
-            
-
-##            # is this the radviz widget, where anchors are not on the circle. if yes, then use the distance from the center of the circle as an indication of attribute usefulness. more distant attributes
-##            # are expected to be more important for discriminating between classes
-##            if self.parentName == "Radviz" and self.parentWidget.graph.anchorData != []:
-##                for i in range(min(5, self.parentWidget.shownAttribsLB.count())):
-##                    if attrs == None and abs(self.parentWidget.graph.anchorData[i][0]**2 + self.parentWidget.graph.anchorData[i][1]**2 -1) > 0.001:
-##                        c = self.parentWidget.shownAttribsLB.count()
-##                        attrs = [(self.graph.anchorData[j][0]**2 + self.graph.anchorData[j][1]**2, self.graph.anchorData[j][2]) for j in range(len(self.graph.anchorData))]
-##                        attrs.sort()
-##                        attrs.reverse()
-##                        attrs = [attr for (val, attr) in attrs]
-##
-##            # evaluate attributes using the selected attribute measure
-##            if attrs == None:
-##                if self.evaluatedAttributes[0] != self.attrCont or self.evaluatedAttributes[1] != self.attrDisc or self.evaluatedAttributes[2] == None: 
-##                    attrs = OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
-##                    self.evaluatedAttributes = (self.attrCont, self.attrDisc, attrs)
-##                else:
-##                    attrs = self.evaluatedAttributes[2]
             
             # evaluate attributes using the selected attribute measure
             self.evaluatedAttributes = OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
@@ -661,7 +640,6 @@ class OWVizRank(VizRank, OWBaseWidget):
         
     # ##############################################################
     # exporting multiple pictures
-    # ##############################################################
     def exportMultipleGraphs(self):
         (text, ok) = QInputDialog.getText('Qt Graph count', 'How many of the best projections do you wish to save?')
         if not ok: return
@@ -692,6 +670,8 @@ class OWVizRank(VizRank, OWBaseWidget):
             self.sizeDlg.saveImage(name, closeDialog = 0)
         QDialog.accept(self.sizeDlg)
 
+    # ##############################################################
+    # create different dialogs
     def interactionAnalysis(self):
         dialog = OWInteractionAnalysis(self, signalManager = self.signalManager)
         dialog.setResults(self.shownResults, VIZRANK)
@@ -715,7 +695,6 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     # ######################################################
     # Auxiliary functions
-    # ######################################################
     
     # from a list of attributes build a nice string with attribute names
     def buildAttrString(self, attrList, attrReverseList = []):
@@ -779,7 +758,6 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     # ######################################################
     # Argumentation functions
-    # ######################################################
     def findArguments(self, example = None, selectBest = 1, showClassification = 1):
         self.clearArguments()
         self.arguments = [[] for i in range(len(self.data.domain.classVar.values))]
@@ -805,19 +783,17 @@ class OWVizRank(VizRank, OWBaseWidget):
             if 1 in [example[attr].isSpecial() for attr in attrList]: index+=1; continue
             attrVals = [self.graph.scaleExampleValue(example, self.graph.attributeNameIndex[attr]) for attr in attrList]
                                     
-            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = {"XAnchors": generalDict.get("XAnchors"), "YAnchors": generalDict.get("YAnchors")})
-            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"XAnchors": generalDict.get("XAnchors"), "YAnchors": generalDict.get("YAnchors")})
-
+            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = generalDict)
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = generalDict)
+            
             learner = self.externalLearner or self.createkNNLearner()
             classifier = learner(table)
             (classValue, dist) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
             classValue = int(classValue)
 
             pic = None
-            if snapshots:            
-                # if the point lies inside a cluster -> save this figure into a pixmap
-                if self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION): self.parentWidget.updateGraph(attrList, setAnchors = 1)
-                else:                           self.parentWidget.updateGraph(attrList)
+            if self.createSnapshots:
+                self.graph.updateData(attrList, setAnchors = 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
                 painter = QPainter()
                 pic = QPixmap(QSize(120,120))
                 painter.begin(pic)
@@ -827,10 +803,12 @@ class OWVizRank(VizRank, OWBaseWidget):
 
             for i in range(len(self.arguments)):
                 pos = self.getArgumentIndex(dist[i], i)
-                if self.createSnapshots:  self.argumentList.insertItem(pic, "%.3f - %s" %(dist[i], attrList), pos)
-                else:                     self.argumentList.insertItem("%.3f - %s" %(dist[i], attrList), pos)
-                self.arguments[i].insert(pos, (None, dist[i], dist, attrList, index))
+                self.arguments[i].insert(pos, (pic, dist[i], dist, attrList, index))
                 vals[i] += dist[i]
+                # add the item to the argument list
+                if i == self.classValueList.currentItem():
+                    if self.createSnapshots:  self.argumentList.insertItem(pic, "%.3f - %s" %(dist[i], attrList), pos)
+                    else:                     self.argumentList.insertItem("%.3f - %s" %(dist[i], attrList), pos)
             
             index += 1; usedArguments += 1
 
@@ -858,15 +836,14 @@ class OWVizRank(VizRank, OWBaseWidget):
         ind = self.classValueList.currentItem()
         for i in range(len(self.arguments[ind])):
             val = self.arguments[ind][i]
-            if val[0] != None:  self.argumentList.insertItem(val[0], "%.2f (%.2f, %.2f) - %s" %(val[1], val[2], val[3], val[5]))
-            else:               self.argumentList.insertItem("%.2f (%.2f, %.2f) - %s" %(val[1], val[2], val[3], val[5]))
+            if val[0] != None:  self.argumentList.insertItem(val[0], "%.2f - %s" %(val[1], val[3]))
+            else:               self.argumentList.insertItem("%.2f - %s" %(val[1], val[3]))
 
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
-        if self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION):
-                self.parentWidget.updateGraph(self.arguments[classInd][ind][5], setAnchors = 1)
-        else:   self.parentWidget.updateGraph(self.arguments[classInd][ind][5])
+        generalDict = self.results[self.arguments[classInd][ind][4]][GENERAL_DICT]
+        self.graph.updateData(self.arguments[classInd][ind][3], setAnchors = 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
         
     def setStatusBarText(self, text):
         self.statusBar.message(text)
@@ -973,8 +950,7 @@ class OWInteractionAnalysis(OWWidget):
    
         eps = 0.05
         num = len(attributes)
-        #for x in range(num-1):
-        #    for y in range(num-x-1):
+
         for x in range(num):
             for y in range(num-x):
                 yy = num-y-1
@@ -1127,7 +1103,6 @@ class OWGraphAttributeHistogram(OWWidget):
             
             curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
             key = self.graph.insertCurve(curve)
-            #print type(ind+eps), type(eps), type(count)
             self.graph.setCurveData(key, [ind+eps, ind + 1 - eps, ind + 1 - eps, ind+eps, ind+eps], [0, 0, count, count, 0])
 
             # draw attribute names
@@ -1309,7 +1284,7 @@ class OWGraphIdentifyOutliers(OWWidget):
         self.evaluatedExamples = []
         
         if self.projectionCount == "Other...":
-            (text, ok) = QInputDialog.getText('Qt Projection count', 'How many of the best projections do you wish to consider?')
+            (text, ok) = QInputDialog.getText('Qt Projection Count', 'How many of the best projections do you wish to consider?')
             if ok and str(text).isdigit():
                 text = str(text)
                 if text not in self.projectionCountList:
