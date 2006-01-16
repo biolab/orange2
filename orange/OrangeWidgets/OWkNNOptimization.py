@@ -783,8 +783,9 @@ class OWVizRank(VizRank, OWBaseWidget):
             if 1 in [example[attr].isSpecial() for attr in attrList]: index+=1; continue
             attrVals = [self.graph.scaleExampleValue(example, self.graph.attributeNameIndex[attr]) for attr in attrList]
                                     
-            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = generalDict)
-            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = generalDict)
+            attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
+            table = self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = generalDict)
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrIndices, attrVals, settingsDict = generalDict)
             
             learner = self.externalLearner or self.createkNNLearner()
             classifier = learner(table)
