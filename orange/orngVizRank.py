@@ -1,7 +1,6 @@
 import orange, sys, random
 import OWVisAttrSelection, orngTest, orngStat
 import OWVisFuncts
-#from orngMisc import getobjectname
 from math import sqrt
 import os, orange
 from math import sqrt
@@ -418,8 +417,8 @@ class VizRank:
             if 1 in [example[attr].isSpecial() for attr in attrList]: index+=1; continue
             attrVals = [self.graph.scaleExampleValue(example, self.graph.attributeNameIndex[attr]) for attr in attrList]
                                     
-            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = {"XAnchors": generalDict.get("XAnchors"), "YAnchors": generalDict.get("YAnchors")})
-            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"XAnchors": generalDict.get("XAnchors"), "YAnchors": generalDict.get("YAnchors")})
+            table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = generalDict)
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals, settingsDict = generalDict)
             
             learner = self.externalLearner or self.createkNNLearner()
             if self.useExampleWeighting: table, weightID = orange.Preprocessor_addClassWeight(table, equalize=1)
@@ -952,8 +951,6 @@ class VizRank:
         file.close()
         return i
 
-    #def setSettings(self, foo): pass        # function that is otherwise defined in OWBaseWidget
-
     # load projections from a file
     def load(self, name, ignoreCheckSum = 1):
         self.clearResults()
@@ -964,7 +961,7 @@ class VizRank:
         if settings.get("parentName", "").lower() != self.parentName.lower():
             if self.__class__.__name__ == "OWVizRank":
                 import qt; qt.QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), qt.QMessageBox.Ok)
-            else: print 'Unable to load projection file. It was saved for %s method'%(settings["parentName"])
+            else: print 'Unable to load projection file. It was saved for %s method' % (settings["parentName"])
             file.close()
             return [], 0
 
@@ -1000,7 +997,6 @@ class VizRank:
 # ######       VIZRANK LEARNERS, CLASSIFIERS       ##############################################################################################
 # ###############################################################################################################################################
 
-# #############################################################################
 # class that represents kNN classifier that classifies examples based on top evaluated projections
 class VizRankClassifier(orange.Classifier):
     def __init__(self, vizrank, data):

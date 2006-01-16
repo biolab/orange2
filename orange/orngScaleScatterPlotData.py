@@ -1,11 +1,8 @@
 from orngScaleData import *
 
 class orngScaleScatterPlotData(orngScaleData):
-                    
-    
-    # ##############################################################
+
     # create x-y projection of attributes in attrList
-    # ##############################################################
     def createProjection(self, xAttr, yAttr):
         xAttrIndex, yAttrIndex = self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]
 
@@ -23,13 +20,11 @@ class orngScaleScatterPlotData(orngScaleData):
 
 
     # for attributes in attrIndices and values of these attributes in values compute point positions
-    # function is called from OWClusterOptimization.py
     # this function has more sense in radviz and polyviz methods
     def getProjectedPointPosition(self, attrIndices, values, settingsDict = {}): # settingsDict has to be because radviz and polyviz have this parameter
         return values
 
 
-    # ##############################################################
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
     #def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
     def createProjectionAsExampleTable(self, attrIndices, settingsDict = {}):
@@ -39,7 +34,6 @@ class orngScaleScatterPlotData(orngScaleData):
         return orange.ExampleTable(domain, data)
     
 
-    #def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, jitterSize = 0.0):
     def createProjectionAsNumericArray(self, attrIndices, settingsDict = {}):
         validData = settingsDict.get("validData")
         classList = settingsDict.get("classList")

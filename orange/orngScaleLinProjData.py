@@ -37,11 +37,15 @@ class orngScaleLinProjData(orngScaleData):
         orngScaleData.__init__(self)
         self.normalizeExamples = 1
         self.anchorData =[]        # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
+        self.lastAttrIndices = None
         
     def setAnchors(self, xAnchors, yAnchors, attributes):
-        if xAnchors and yAnchors and attributes:
-            self.anchorData = [(xAnchors[i], yAnchors[i], attributes[i]) for i in range(len(attributes))]
-
+        if attributes:
+            if xAnchors and yAnchors:
+                self.anchorData = [(xAnchors[i], yAnchors[i], attributes[i]) for i in range(len(attributes))]
+            else:
+                self.anchorData = self.createAnchors(len(attributes), attributes)
+        
     # create anchors around the circle
     def createAnchors(self, numOfAttr, labels = None):
         xAnchors = self.createXAnchors(numOfAttr)
@@ -62,11 +66,8 @@ class orngScaleLinProjData(orngScaleData):
     def saveProjectionAsTabData(self, fileName, attrList, useAnchorData = 0):
         orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], settingsDict = {"useAnchorData":useAnchorData}))
 
-        
     # for attributes in attrIndices and values of these attributes in values compute point positions
     # this function has more sense in radviz and polyviz methods
-    # NOTE: the computed x and y positions are not yet scaled. probably you have to use self.scaleFactor or trueScaleFactor to scale them!!!
-    #def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0, XAnchors = None, YAnchors = None, anchorRadius = None, normalizeExample = None):
     def getProjectedPointPosition(self, attrIndices, values, settingsDict = {}):
         # load the elements from the settings dict
         useAnchorData = settingsDict.get("useAnchorData")
@@ -74,6 +75,9 @@ class orngScaleLinProjData(orngScaleData):
         YAnchors = settingsDict.get("YAnchors")
         anchorRadius = settingsDict.get("anchorRadius")
         normalizeExample = settingsDict.get("normalizeExample")
+
+        if attrIndices != self.lastAttrIndices:
+            print "getProjectedPointPosition. Warning: Possible bug. The set of attributes is not the same as when computing the whole projection"
         
         if XAnchors and YAnchors:
             XAnchors = Numeric.array(XAnchors)
@@ -88,23 +92,21 @@ class orngScaleLinProjData(orngScaleData):
             YAnchors = self.createYAnchors(len(attrIndices))
             anchorRadius = Numeric.ones(len(attrIndices), Numeric.Float)
 
-        m = min(values); M = max(values)
-        if m < 0.0 or M > 1.0:  # we have to do rescaling of values so that all the values will be in the 0-1 interval
-            m = min(m, 0.0); M = max(M, 1.0); diff = M-m
-            values = [(val-m) / float(diff) for val in values]
-
         if normalizeExample == 1 or (normalizeExample == None and self.normalizeExamples):
+            m = min(values); M = max(values)
+            if m < 0.0 or M > 1.0:  # we have to do rescaling of values so that all the values will be in the 0-1 interval
+                m = min(m, 0.0); M = max(M, 1.0); diff = M-m
+                values = [(val-m) / float(diff) for val in values]
+            
             s = sum(Numeric.array(values)*anchorRadius)
             if s == 0: return [0.0, 0.0]
         else: s = 1
 
-        x = Numeric.matrixmultiply(XAnchors*anchorRadius, values) / float(s)
-        y = Numeric.matrixmultiply(YAnchors*anchorRadius, values) / float(s)
+        x = self.trueScaleFactor * Numeric.matrixmultiply(XAnchors*anchorRadius, values) / float(s)
+        y = self.trueScaleFactor * Numeric.matrixmultiply(YAnchors*anchorRadius, values) / float(s)
         return [x,y]
 
-    # ##############################################################
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    #def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0):
     def createProjectionAsExampleTable(self, attrIndices, settingsDict = {}):
         domain = settingsDict.get("domain")
         if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
@@ -112,9 +114,7 @@ class orngScaleLinProjData(orngScaleData):
         return orange.ExampleTable(domain, data)
         
 
-    #def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0, removeMissingData = 1):
     def createProjectionAsNumericArray(self, attrIndices, settingsDict = {}):
-
         # load the elements from the settings dict
         validData = settingsDict.get("validData")
         classList = settingsDict.get("classList")
@@ -181,7 +181,8 @@ class orngScaleLinProjData(orngScaleData):
         if jitterSize > 0.0:
             x_positions += (RandomArray.random(len(x_positions))-0.5)*jitterSize
             y_positions += (RandomArray.random(len(y_positions))-0.5)*jitterSize
-        
+
+        self.lastAttrIndices = attrIndices
         return Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
 
     
