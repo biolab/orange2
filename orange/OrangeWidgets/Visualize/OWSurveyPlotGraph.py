@@ -125,17 +125,13 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
 
             if (self.tooltipKind == VISIBLE_ATTRIBUTES and self.attrLabels != []) or self.tooltipKind == ALL_ATTRIBUTES:
                 if int(yFloat) >= len(self.rawdata): return
-                if self.tooltipKind == VISIBLE_ATTRIBUTES:
-                    text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[int(yFloat)], self.attrLabels)
-                else:
-                    text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[int(yFloat)], [attr.name for attr in self.rawdata.domain])
+                if self.tooltipKind == VISIBLE_ATTRIBUTES:      text = self.getExampleTooltipText(self.rawdata, self.rawdata[int(yFloat)], self.attrLabels)
+                else:                                           text = self.getExampleTooltipText(self.rawdata, self.rawdata[int(yFloat)], [])
                 y1Int = self.transform(QwtPlot.yLeft, yFloat)
                 y2Int = self.transform(QwtPlot.yLeft, yFloat+1.0)
-                MyQToolTip.tip(self.tooltip, QRect(e.x()+self.canvas().frameGeometry().x()-10, y2Int+self.canvas().frameGeometry().y(), 20, y1Int-y2Int), text[:-2].replace("; ", "\n"))
+                MyQToolTip.tip(self.tooltip, QRect(e.x()+self.canvas().frameGeometry().x()-10, y2Int+self.canvas().frameGeometry().y(), 20, y1Int-y2Int), text)
                 OWGraph.onMouseMoved(self, e)
 
-            
-            
 
     def hideSelectedRectangle(self):
         if self.selectedRectangle != 0:
