@@ -184,7 +184,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
             
         elif self.clusterClosure: self.showClusterLines(xAttr, yAttr)
-        # #######################################################
 
         # ##############################################################
         # show the distributions
@@ -221,7 +220,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     self.curve(key).percentOfTotalData = float(tempSum) / float(sum)
                     self.tooltipData.append((tooltipText, i, j))
             self.addTooltips()
-        # #######################################################
 
         # ##############################################################
         # show normal scatterplot with dots
@@ -257,8 +255,8 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
 
                     # we add a tooltip for this point
-                    self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[j], attrIndices) + stringData %(100*insideData[j]) + "; ")
-                    #self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[i], attrIndices) + stringData %(100*insideData[i]) + "; ")
+                    self.addTip(x, y, text = self.getExampleTooltipText(self.rawdata, self.rawdata[j], attrIndices))
+                    #self.addTip(x, y, text = self.getExampleTooltipText(self.rawdata, self.rawdata[j], attrIndices) + stringData %(100*insideData[j]))
                     j+=1
                     
             # ##############################################################
@@ -333,23 +331,11 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 attrs = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
                 while -1 in attrs: attrs.remove(-1)
                 validData = self.getValidList(attrs)
+                if self.subsetData:
+                    subsetReferencesToDraw = [example.reference() for example in self.subsetData]
                 
                 for i in range(len(self.rawdata)):
                     if not validData[i]: continue
-##                    if self.rawdata[i][xAttrIndex].isSpecial() == 1: continue
-##                    if self.rawdata[i][yAttrIndex].isSpecial() == 1: continue
-##                    if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
-##                    if shapeIndex != -1 and self.rawdata[i][shapeIndex].isSpecial() == 1: continue
-##                    if sizeShapeIndex != -1 and self.rawdata[i][sizeShapeIndex].isSpecial() == 1: continue
-                    
-##                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-##                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
-##                    else:                           x = self.rawdata[i][xAttrIndex].value
-##
-##                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-##                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
-##                    else:                           y = self.rawdata[i][yAttrIndex].value
-
                     x = xData[i]
                     y = yData[i]
                     
@@ -365,11 +351,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
                     size = self.pointWidth
                     if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * self.pointWidth)
-
-                    selected = 1
-                    if haveSubsetData and self.rawdata[i] not in self.subsetData: selected = 0
-                    if haveSubsetData:  self.showFilledSymbols = selected
-                    shownSubsetCount += selected
+                    
+                    if haveSubsetData:
+                        self.showFilledSymbols = self.rawdata[i].reference() in subsetReferencesToDraw
+                        shownSubsetCount += self.showFilledSymbols
 
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
                         
@@ -377,14 +362,14 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     self.tips.addToolTip(x, y, i)
 
                 # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-                if haveSubsetData and len(self.subsetData) != shownSubsetCount:
+                if haveSubsetData and shownSubsetCount < len(self.subsetData):
                     self.showFilledSymbols = 1
                     for i in range(len(self.subsetData)):
+                        if not self.subsetData[i].reference() in subsetReferencesToDraw: continue
                         if self.subsetData[i][xAttrIndex].isSpecial() or self.subsetData[i][yAttrIndex].isSpecial() : continue
                         if colorIndex != -1 and self.subsetData[i][colorIndex].isSpecial() : continue
                         if shapeIndex != -1 and self.subsetData[i][shapeIndex].isSpecial() : continue
                         if sizeShapeIndex != -1 and self.subsetData[i][sizeShapeIndex].isSpecial() : continue
-                        if self.subsetData[i] in self.rawdata: continue
                         
                         if discreteX == 1: x = attrXIndices[self.subsetData[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
                         elif self.jitterContinuous:     x = self.subsetData[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
@@ -448,7 +433,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 val = legendKeys[key]
                 for i in range(len(val[1])):
                     self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
-        # ##############################################################
             
         # ##############################################################
         # draw color scale for continuous coloring attribute
@@ -469,16 +453,13 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             (colorVarMin, colorVarMax) = self.attrValues[colorAttr]
             self.addMarker("%s = %%.%df" % (colorAttr, self.rawdata.domain[colorAttr].numberOfDecimals) % (colorVarMin), x0 - xVar*1./100.0, yVarMin + yVar*0.04, Qt.AlignLeft)
             self.addMarker("%s = %%.%df" % (colorAttr, self.rawdata.domain[colorAttr].numberOfDecimals) % (colorVarMax), x0 - xVar*1./100.0, yVarMin + yVar*0.96, Qt.AlignLeft)
-        # ##############################################################
 
         # restore the correct showFilledSymbols
         if haveSubsetData:  self.showFilledSymbols = oldShowFilledSymbols 
 
 
     # ##############################################################
-    # ######                      ##################################
     # ######  SHOW CLUSTER LINES  ##################################
-    # ######                      ##################################
     # ##############################################################
     def showClusterLines(self, xAttr, yAttr, width = 1):
         classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
@@ -516,29 +497,23 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + (xVarMax - xVarMin) * enlargedClosure[i][0], xVarMin + (xVarMax - xVarMin) * enlargedClosure[(i+1)%len(enlargedClosure)][0]], yData = [yVarMin + (yVarMax - yVarMin) * enlargedClosure[i][1], yVarMin + (yVarMax - yVarMin) * enlargedClosure[(i+1)%len(enlargedClosure)][1]], lineWidth = 2)
             """
         
-    # ##############################################################
-    # add tooltip for point at x,y
-    # ##############################################################
     def addTip(self, x, y, attrIndices = None, dataindex = None, text = None):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return
         if text == None:
-            if self.tooltipKind == VISIBLE_ATTRIBUTES:
-                text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[dataindex], attrIndices)
-            elif self.tooltipKind == ALL_ATTRIBUTES:
-                text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[dataindex], range(len(self.attributeNames)))
+            if self.tooltipKind == VISIBLE_ATTRIBUTES:  text = self.getExampleTooltipText(self.rawdata, self.rawdata[dataindex], attrIndices)
+            elif self.tooltipKind == ALL_ATTRIBUTES:    text = self.getExampleTooltipText(self.rawdata, self.rawdata[dataindex], range(len(self.attributeNames)))
         self.tips.addToolTip(x, y, text)
 
+
+    # override the default buildTooltip function defined in OWGraph
     def buildTooltip(self, exampleIndex):
-        if self.tooltipKind == VISIBLE_ATTRIBUTES:
-            text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[exampleIndex], self.shownAttributeIndices)
-        elif self.tooltipKind == ALL_ATTRIBUTES:
-            text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[exampleIndex], range(len(self.rawdata.domain)))
+        if self.tooltipKind == VISIBLE_ATTRIBUTES:      text = self.getExampleTooltipText(self.rawdata, self.rawdata[exampleIndex], self.shownAttributeIndices)
+        elif self.tooltipKind == ALL_ATTRIBUTES:        text = self.getExampleTooltipText(self.rawdata, self.rawdata[exampleIndex], range(len(self.rawdata.domain)))
         return text
 
     
     # ##############################################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
-    # ##############################################################
     def getSelectionsAsExampleTables(self, attrList):
         [xAttr, yAttr] = attrList
         #if not self.rawdata: return (None, None, None)
@@ -547,16 +522,15 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList)
 
-        selected = orange.ExampleTable(self.rawdata.domain, self.rawdata.getitems(selIndices))
-        unselected = orange.ExampleTable(self.rawdata.domain, self.rawdata.getitems(unselIndices))
+        selected = self.rawdata.getitemsref(selIndices)
+        unselected = self.rawdata.getitemsref(unselIndices)
         
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
-        #merged = self.changeClassAttr(selected, unselected)
-        #return (selected, unselected, merged)
+
         return (selected, unselected)
 
-    # ############################################################## 
+
     def getSelectionsAsIndices(self, attrList, validData = None):
         [xAttr, yAttr] = attrList
         if not self.rawdata: return [], []
@@ -574,10 +548,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         return selIndices, unselIndices
     
            
-
-    # ##############################################################
     # add tooltips for pie charts
-    # ##############################################################
     def addTooltips(self):
         for (text, i, j) in self.tooltipData:
             x_1 = self.transform(QwtPlot.xBottom, i-0.5); x_2 = self.transform(QwtPlot.xBottom, i+0.5)

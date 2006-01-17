@@ -218,15 +218,20 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
         # ############################################################## 
         # do we have a subset data to show?
-        # ############################################################## 
+        # ##############################################################
         elif haveSubsetData:
             showFilled = self.showFilledSymbols
             shownSubsetCount = 0
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: colors = ColorPaletteHSV(valLen)
             else: colors = ColorPaletteHSV()
+            subsetReferencesToDraw = [example.reference() for example in self.subsetData]
+            
+            # draw the rawdata data set. examples that exist also in the subset data draw full, other empty
             for i in range(dataSize):
-                self.showFilledSymbols = (self.rawdata[i] in self.subsetData)
-                shownSubsetCount += self.showFilledSymbols
+                self.showFilledSymbols = self.rawdata[i].reference() in subsetReferencesToDraw
+                if self.showFilledSymbols:
+                    shownSubsetCount += 1
+                    subsetReferencesToDraw.remove(self.rawdata[i].reference())
                 
                 if not validData[i]: continue
                 if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -242,25 +247,21 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
 
             # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-            if len(self.subsetData) != shownSubsetCount:
+            if shownSubsetCount < len(self.subsetData):
                 self.showFilledSymbols = 1
-                failedToShowCount = 0           # number of point that we were unable to show
-                
                 XAnchors = Numeric.array([val[0] for val in self.anchorData])
                 YAnchors = Numeric.array([val[1] for val in self.anchorData])
                 anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
                 
                 for i in range(len(self.subsetData)):
-                    if self.subsetData[i] in self.rawdata: continue
+                    if not self.subsetData[i].reference() in subsetReferencesToDraw: continue
+                    subsetReferencesToDraw.remove(self.subsetData[i].reference())
 
                     # check if has missing values
                     if 1 in [self.subsetData[i][ind].isSpecial() for ind in indices]: continue
                     
                     # scale data values for example i
                     dataVals = [self.scaleExampleValue(self.subsetData[i], ind) for ind in indices]
-                    #if min(dataVals) < 0.0 or max(dataVals) > 1.0:
-                    #    #self.widget.information("Subset data values are in different range than the original data values. Points can be therefore a bit displaced.")
-                    #    #for j in range(len(dataVals)):  dataVals[j] = min(1.0, max(0.0, dataVals[j]))    # scale to 0-1 interval
 
                     [x,y] = self.getProjectedPointPosition(indices, dataVals, settingsDict = {"useAnchorData": 1, "anchorRadius" : anchorRadius})  # compute position of the point
 
@@ -273,7 +274,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.subsetData[i].getclass().value]]
                     else: curveSymbol = self.curveSymbols[0]
                     self.addCurve("", newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x], yData = [y])
-                if failedToShowCount > 0: self.widget.warning("We were unable to show %d points from the data subset, since their values were out of range." % (failedToShowCount))
+                
             self.showFilledSymbols = showFilled                    
 
         # ############################################################## 
@@ -471,7 +472,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if self.dataMap.has_key(dictValue):
             points = self.dataMap[dictValue]
             bestDist = 100.0
-            nearestPoint = ()
             for (x_i, y_i, color, index, extraString) in points:
                 currDist = sqrt((xFloat-x_i)*(xFloat-x_i) + (yFloat-y_i)*(yFloat-y_i))
                 if currDist < bestDist:
@@ -481,7 +481,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             (x_i, y_i, color, index, extraString) = nearestPoint
             intX = self.transform(QwtPlot.xBottom, x_i)
             intY = self.transform(QwtPlot.yLeft, y_i)
-            if len(self.anchorData) > 100:
+            if len(self.anchorData) > 50:
                 text = "Too many attributes.<hr>Example index = %d" % (index+1)
                 self.showTip(intX, intY, text)
 
@@ -490,11 +490,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 for (xAnchor,yAnchor,label) in shownAnchorData:
                     if self.anchorsAsVectors:
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
-                        xa, ya = xAnchor*attrVal, yAnchor*attrVal
-                        key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, xa], yData = [0, ya], lineWidth=3)
-                        markerX, markerY = xa, ya
+                        markerX, markerY = xAnchor*attrVal, yAnchor*attrVal
+                        key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, markerX], yData = [0, markerY], lineWidth=3)
                         fontsize = 9
-                        markerAlign = (ya>0 and Qt.AlignTop or Qt.AlignBottom) + (xa>0 and Qt.AlignRight or Qt.AlignLeft)
+                        markerAlign = (markerY>0 and Qt.AlignTop or Qt.AlignBottom) + (markerX>0 and Qt.AlignRight or Qt.AlignLeft)
                     else:
                         key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
                         markerX, markerY = (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0
@@ -506,7 +505,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][self.attributeNameIndex[label]]), markerX, markerY, markerAlign, bold = 1)
+                        marker = self.addMarker(str(self.rawdata[index][label]), markerX, markerY, markerAlign, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                         marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[label]][index]), markerX, markerY, markerAlign, bold = 1)
                     font = self.markerFont(marker)
@@ -517,28 +516,14 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     self.tooltipMarkers.append(marker)
 
             elif self.tooltipKind == VISIBLE_ATTRIBUTES or self.tooltipKind == ALL_ATTRIBUTES:
-                text = ""
                 if self.tooltipKind == VISIBLE_ATTRIBUTES:
                     shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                     labels = [s for (xA, yA, s) in shownAnchorData]
                 else:
-                    labels = self.attributeNames
+                    labels = []
 
-                if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                    text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[index], labels)
-
-                elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                    for label in labels: text += "%s = %.3f; " % (label, self.scaledData[self.attributeNameIndex[label]][index])
-                    
-                    # show values of meta attributes
-                    if len(self.rawdata.domain.getmetas()) != 0:
-                        for m in self.rawdata.domain.getmetas().values():
-                            try:
-                                text += "%s = %s; " % (m.name, str(self.rawdata[index][m]))
-                            except:
-                                pass
-                text = text[:-2].replace("; ", "<br>")
-                text += "<hr>Example index = %d" % (index+1)
+                text = self.getExampleTooltipText(self.rawdata, self.rawdata[index], labels)
+                text += "<br><hr>Example index = %d" % (index+1)
                 if extraString:
                     text += "<hr>" + extraString
 
@@ -572,9 +557,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         
         array = self.createProjectionAsNumericArray(attrList, settingsDict = {"scaleFactor": self.scaleFactor, "useAnchorData": useAnchorData, "removeMissingData": 0})
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, useAnchorData, validData)
-                 
-        selected = orange.ExampleTable(domain, self.rawdata.getitems(selIndices))
-        unselected = orange.ExampleTable(domain, self.rawdata.getitems(unselIndices))
+
+        selected = self.rawdata.getitemsref(selIndices)
+        unselected = self.rawdata.getitemsref(unselIndices)
 
         if addProjectedPositions:
             for i in range(len(selIndices)):

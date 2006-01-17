@@ -340,36 +340,30 @@ class OWGraph(QwtPlot):
         self.removeMarkers()
         self.tips.removeAll()
 
-    # ####################################################################
-    # return string with attribute names and their values for example example
-    def getExampleText(self, data, example):
-        text = ""
-        for i in range(len(data.domain)):
-            if example[i].isSpecial():
-                text += "%s = ?; " % (data.domain[i].name)
-            else:
-                text += "%s = %s; " % (data.domain[i].name, str(example[i]))
-        return text
 
     # ####################################################################
     # return string with attribute names and their values for example example
-    def getExampleTextWithMeta(self, data, example, indices):
-        text = ""
-        try:
-            for index in indices:
-                if example[index].isSpecial():
-                    text += "%s = ?; " % (data.domain[index].name)
-                else:
-                    text += "%s = %s; " % (data.domain[index].name, str(example[index]))
+    def getExampleTooltipText(self, data, example, indices = None):
+        if not indices: indices = range(len(data.domain.attributes))
 
+        text = "<b>Attributes:</b><br>"
+        for index in indices:
+            if example[index].isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (data.domain[index].name)
+            else:                          text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain[index].name, str(example[index]))
+
+        if data.domain.classVar:
+            text += "<hr><b>Class:</b><br>"
+            if example.getclass().isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (data.domain.classVar.name)
+            else:                              text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain.classVar.name, str(example.getclass().value))
+    
+        if len(self.rawdata.domain.getmetas()) != 0:
+            text += "<hr><b>Meta attributes:</b><br>"
             # show values of meta attributes
             for key in data.domain.getmetas():
-                try: text += "%s = %s; " % (data.domain[key].name, str(example[data.domain[key]]))
+                try: text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain[key].name, str(example[data.domain[key]]))
                 except: pass
-        except:
-            print "Unable to set tooltip"
-            text = ""
-        return text
+
+        return text[:-4]        # remove the last <br>
 
     def changeClassAttr(self, selected, unselected):
         classVar = orange.EnumVariable("Selection", values = ["Selected data", "Unselected data"])
@@ -521,7 +515,7 @@ class OWGraph(QwtPlot):
             if type(text) == int: text = self.buildTooltip(text)
         
         if self.statusBar != None:  self.statusBar.message(text)
-        if text != "": self.showTip(self.transform(QwtPlot.xBottom, x), self.transform(QwtPlot.yLeft, y), text[:-2].replace("; ", "\n"))
+        if text != "": self.showTip(self.transform(QwtPlot.xBottom, x), self.transform(QwtPlot.yLeft, y), text)
 
         if self.tempSelectionCurve != None and (self.state == ZOOMING or self.state == SELECT_RECTANGLE):
             x1 = self.invTransform(QwtPlot.xBottom, self.xpos)

@@ -450,7 +450,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][self.attributeNameIndex[self.shownAttributes[i]]]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker(str(self.rawdata[index][self.shownAttributes[i]]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                         marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[self.shownAttributes[i]]][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
@@ -459,32 +459,15 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                     self.tooltipMarkers.append(marker)
                     
             elif self.tooltipKind == VISIBLE_ATTRIBUTES or self.tooltipKind == ALL_ATTRIBUTES:
-                intX = self.transform(QwtPlot.xBottom, x_i)
-                intY = self.transform(QwtPlot.yLeft, y_i)
-                text = ""
-                if self.tooltipKind == VISIBLE_ATTRIBUTES:
-                    labels = self.shownAttributes
-                else:
-                    labels = self.attributeNames
+                if self.tooltipKind == VISIBLE_ATTRIBUTES: labels = self.shownAttributes
+                else:                                      labels = self.attributeNames
 
-                if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                    text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[index], labels)
-
-                elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                    for label in labels: text += "%s = %.3f; " % (label, self.scaledData[self.attributeNameIndex[label]][index])
-
-                    # show values of meta attributes
-                    if len(self.rawdata.domain.getmetas()) != 0:
-                        for m in self.rawdata.domain.getmetas().values():
-                            text += "%s = %s; " % (m.name, str(self.rawdata[index][m]))
-
-                        
-                self.showTip(intX, intY, text[:-2].replace("; ", "\n"))
+                text = self.getExampleTooltipText(self.rawdata, self.rawdata[index], labels)
+                self.showTip(self.transform(QwtPlot.xBottom, x_i), self.transform(QwtPlot.yLeft, y_i), text)
 
         OWGraph.onMouseMoved(self, e)
         self.update()
-        # -----------------------------------------------------------
-        # -----------------------------------------------------------
+        
 
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
@@ -577,8 +560,8 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         if not self.rawdata: return (None, None)
         if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawdata)       # if no selections exist
 
-        xAttr=orange.FloatVariable("X Positions")
-        yAttr=orange.FloatVariable("Y Positions")
+        xAttr = orange.FloatVariable("X Positions")
+        yAttr = orange.FloatVariable("Y Positions")
         if addProjectedPositions == 1:
             domain=orange.Domain([xAttr,yAttr] + [v for v in self.rawdata.domain.variables])
         elif addProjectedPositions == 2:
@@ -596,8 +579,8 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList], "validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, attributeReverse, validData)
                  
-        selected = orange.ExampleTable(domain, self.rawdata.getitems(selIndices))
-        unselected = orange.ExampleTable(domain, self.rawdata.getitems(unselIndices))
+        selected = self.rawdata.getitemsref(selIndices)
+        unselected = self.rawdata.getitemsref(unselIndices)
 
         if addProjectedPositions:
             for i in range(len(selIndices)):
@@ -610,8 +593,6 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
-        #merged = self.changeClassAttr(selected, unselected)
-        #return (selected, unselected, merged)
         return (selected, unselected)
     
 

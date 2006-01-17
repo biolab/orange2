@@ -53,13 +53,8 @@ class TooltipManager:
     #Decides whether to pop up a tool tip and which text to pop up
     def maybeTip(self, x, y):
         if len(self.positions) == 0: return ("", -1, -1)
-        nearestIndex = 0
-        dist = abs(x-self.positions[0][0]) + abs(y-self.positions[0][1])
-        for i in range(1, len(self.positions)):
-            ithDist = abs(x-self.positions[i][0]) + abs(y-self.positions[i][1])
-            if ithDist < dist:
-                nearestIndex = i
-                dist = ithDist
+        dists = [abs(x-position[0]) + abs(y-position[1]) for position in self.positions]
+        nearestIndex = dists.index(min(dists))
 
         intX = abs(self.qwtplot.transform(self.qwtplot.xBottom, x) - self.qwtplot.transform(self.qwtplot.xBottom, self.positions[nearestIndex][0]))
         intY = abs(self.qwtplot.transform(self.qwtplot.xBottom, y) - self.qwtplot.transform(self.qwtplot.xBottom, self.positions[nearestIndex][1]))
