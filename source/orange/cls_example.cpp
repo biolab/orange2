@@ -293,6 +293,12 @@ int weightIndex(const TExample &example, PyObject *pyindex)
 }
 
 
+PyObject *Example_reference(TPyExample *pex) PYARGS(METH_NOARGS, "unique reference (pointer to) the object")
+{
+  return PyInt_FromLong(int(&PyExample_AS_ExampleReference(pex)));
+}
+
+
 PyObject *Example_getweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "(id) -> weight; Returns example's weight")
 {
   PyTRY

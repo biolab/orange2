@@ -417,14 +417,26 @@ PVariable varFromArg_byDomain(PyObject *obj, PDomain domain, bool checkForInclud
 { PVariable var;
   if (domain) {
     PyTRY
-      if (PyString_Check(obj))
-        return domain->getVar(PyString_AS_STRING(obj), true);
+      if (PyString_Check(obj)) {
+        const char *attr = PyString_AS_STRING(obj);
+        PVariable res = domain->getVar(attr, true, false);
+        if (!res)
+          PyErr_Format(PyExc_IndexError, "attribute '%s' not found", attr);
+        return res;
+      }
       if (PyInt_Check(obj)) {
-        int idx=PyInt_AsLong(obj);
-        if (idx<0) 
-          return domain->getMetaVar(idx);
+        int idx = PyInt_AsLong(obj);
+
+        if (idx<0) {
+          PVariable res = domain->getMetaVar(idx, false);
+          if (!res)
+            PyErr_Format(PyExc_IndexError, "meta attribute %i not found", idx);
+          return res;
+        }
+
         if (idx>=int(domain->variables->size()))
           PYERROR(PyExc_IndexError, "index out of range", PVariable());
+
         return domain->getVar(idx);
       }
     PyCATCH_r(PVariable())
@@ -968,6 +980,17 @@ PyObject *Domain_index(PyObject *self, PyObject *arg) PYARGS(METH_O, "(variable)
   PyCATCH
 }
 
+
+int Domain_contains(PyObject *self, PyObject *arg)
+{
+  PyTRY
+    CAST_TO_err(TDomain, domain, -1);
+
+    PVariable variable = varFromArg_byDomain(arg, domain, true);
+    PyErr_Clear();
+    return variable ? 1 : 0;
+  PyCATCH_1
+}
 
 CONSTRUCTOR_KEYWORDS(Domain, "source")
 
