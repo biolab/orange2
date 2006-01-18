@@ -29,6 +29,62 @@ def mygetattr(obj, attr, **argkw):
             raise AttributeError, "'%s' has no attribute '%s'" % (obj, attr)
 
 
+def unisetattr(self, name, value, grandparent):
+    if "." in name:
+        names = name.split(".")
+        lastname = names.pop()
+        obj = reduce(lambda o, n: getattr(o, n, None),  names, self)
+    else:
+        lastname, obj = name, self
+
+    if not obj:
+        print "unable to set setting ", name, " to value ", value
+    else:
+        if hasattr(grandparent, "__setattr__"):
+            grandparent.__setattr__(obj, lastname,  value)
+        else:
+            obj.__dict__[lastname] = value
+
+    controlledAttributes = getattr(self, "controlledAttributes", None)
+    controlCallback = controlledAttributes and controlledAttributes.get(name, None)
+    if controlCallback:
+        controlCallback(value)
+
+    # controlled things (checkboxes...) never have __attributeControllers
+    else:
+#        print "NO CALLBACK: %s (%s / %s)" % (lastname, self.__class__.__name__.split(".")[-1], obj.__class__.__name__.split(".")[-1])
+        if hasattr(self, "__attributeControllers"):
+#            print "ATTRIBUTE CONTROLLERS"
+            for controller, myself in self.__attributeControllers.keys():
+                if getattr(controller, myself, None) != self:
+                    del self.__attributeControllers[(controller, myself)]
+                    continue
+
+#                print "MYSELF %s" % myself                
+                controlledAttributes = getattr(controller, "controlledAttributes", None)
+                if controlledAttributes:
+                    fullName = myself + "." + name
+                    
+                    controlCallback = controlledAttributes.get(fullName, None)
+                    if controlCallback:
+                        controlCallback(value)
+#                        print "CALLBACK FOUND"
+
+                    else:
+                        lname = fullName + "."
+                        dlen = len(lname)
+                        for controlled in controlledAttributes.keys():
+                            if controlled[:dlen] == lname:
+                                self.setControllers(value, controlled[dlen:], controller, fullName)
+                                # no break -- can have a.b.c.d and a.e.f.g; needs to set controller for all!
+
+
+    # if there are any context handlers, call the fastsave to write the value into the context
+    if hasattr(self, "contextHandlers"):
+        for contextName, contextHandler in self.contextHandlers.items():
+            contextHandler.fastSave(self.currentContexts.get(contextName), self, name, value)
+
+
 class Context:
     def __init__(self, **argkw):
         self.time = time.time()
@@ -128,6 +184,16 @@ class ContextField:
         self.flags = flags
         self.__dict__.update(argkw)
     
+
+class ControlledAttributesDict(dict):
+    def __init__(self, master):
+        self.master = master
+
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, key, value)
+        self.master.setControllers(self.master, key, self.master, "")
+        
+        
 class DomainContextHandler(ContextHandler):
     Optional, SelectedRequired, Required = range(3)
     RequirementMask = 3
@@ -153,12 +219,14 @@ class DomainContextHandler(ContextHandler):
                     self.fields.append(ContextField(field[0], flags))
         
     def encodeDomain(self, domain):
-        return dict([(attr.name, attr.varType) for attr in domain])
-
+        d = dict([(attr.name, attr.varType) for attr in domain])
+        d.update(dict([(attr.name, attr.varType) for attr in domain.getmetas().values()]))
+        return d
+    
     def openContext(self, widget, domain):
         if not domain:
             return
-        if not type(domain) < orange.Domain:
+        if type(domain) != orange.Domain:
             domain = domain.domain
         encodedDomain = self.encodeDomain(domain)
         context = ContextHandler.openContext(self, widget, domain, encodedDomain)
@@ -368,7 +436,7 @@ class OWBaseWidget(QDialog):
         self.linksIn = {}      # signalName : (dirty, widgetFrom, handler, signalData)
         self.linksOut = {}       # signalName: (signalData, id)
         self.connections = {}   # dictionary where keys are (control, signal) and values are wrapper instances. Used in connect/disconnect
-        self.controledAttributes = {}
+        self.controlledAttributes = ControlledAttributesDict(self)
         self.progressBarHandler = None  # handler for progress bar events
         self.processingHandler = None   # handler for processing events
         self.eventHandler = None
@@ -493,10 +561,6 @@ class OWBaseWidget(QDialog):
         for contextHandler in contextHandlers.values():
             contextHandler.mergeBack(self)
             settings[contextHandler.localContextName] = contextHandler.globalContexts
-##            print "SAVE"
-##            for c in contextHandler.globalContexts:
-##                print c.values
-##            print "END SAVE"
 
         if settings:                    
             if file==None:
@@ -760,11 +824,6 @@ class OWBaseWidget(QDialog):
             self.widgetStateHandler()
 
 
-##    def destroy(self, dw = True, dsw = True):
-##        for contextName, context in self.currentContexts.items():
-##            self.contextHandlers[contextName].untieContext(context, self)
-##        QDialog.destroy(self, dw, dsw)
-            
     def openContext(self, contextName="", *arg):
         self.closeContext(contextName)
         handler = self.contextHandlers[contextName]
@@ -781,41 +840,24 @@ class OWBaseWidget(QDialog):
             del self.currentContexts[contextName]
 
 
+    def setControllers(self, obj, controlledName, controller, prefix):
+        while obj:
+            if prefix:
+#                print "SET CONTROLLERS: %s %s + %s" % (obj.__class__.__name__, prefix, controlledName)
+                if obj.__dict__.has_key("attributeController"):
+                    obj.__dict__["__attributeControllers"][(controller, prefix)] = True
+                else:
+                    obj.__dict__["__attributeControllers"] = {(controller, prefix): True}
+
+            parts = controlledName.split(".", 1)
+            if len(parts) < 2:
+                break
+            obj = getattr(obj, parts[0], None)
+            prefix += parts[0]
+            controlledName = parts[1]
+        
     def __setattr__(self, name, value):
-        if hasattr(self, "attributeControler"):
-            self.attributeControler(name, value)
-
-        else:
-            if name.count(".") > 0:
-                try:
-                    names = name.split(".")
-                    lastobj = self
-                    for n in names[:-1]:
-                        lastobj = getattr(lastobj, n)
-                    lastobj.__dict__[names[-1]] = value
-                except:
-                    print "unable to set setting ", name, " to value ", value
-            else:
-                if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
-                else:                               self.__dict__[name] = value             # for windows platform
-
-            if hasattr(self, "controledAttributes") and self.controledAttributes.has_key(name):
-                self.controledAttributes[name](value)
-
-            if hasattr(self, "contextHandlers"):# and hasattr(self, "currentContexts"):
-                for contextName, contextHandler in self.contextHandlers.items():
-                    contextHandler.fastSave(self.currentContexts.get(contextName), self, name, value)
-
-
-class ControlerCallback:
-    def __init__(self, parent, childname):
-        self.parent = parent
-        self.childname = childname
-
-    def __call__(self, name, value):
-        self.parent.__setattr__(self.childname+"."+name, value)
-
-#    self.graph.controlerOfMyAttributes = ControlerCallback(self, "graph")
+        return unisetattr(self, name, value, QDialog)
 
 if __name__ == "__main__":  
     a=QApplication(sys.argv)

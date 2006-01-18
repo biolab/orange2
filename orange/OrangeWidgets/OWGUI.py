@@ -53,7 +53,7 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
     if tooltip: QToolTip.add(wa, tooltip)
 
     master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
-    master.controledAttributes[value] = CallFront_spin(wa)
+    master.controlledAttributes[value] = CallFront_spin(wa)
     if callback:
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
     return b
@@ -67,7 +67,7 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     if tooltip: QToolTip.add(wa, tooltip)
 
     master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value, wa.clamp))
-    master.controledAttributes[value] = CallFront_doubleSpin(wa)
+    master.controlledAttributes[value] = CallFront_doubleSpin(wa)
     if callback:
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
     return b
@@ -80,7 +80,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     wa.setChecked(mygetattr(master, value))
     if disabled: wa.setDisabled(1)
     master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, value))
-    master.controledAttributes[value] = CallFront_checkBox(wa)
+    master.controlledAttributes[value] = CallFront_checkBox(wa)
     
     wa.disables = disables
     wa.makeConsistent = Disabler(wa, master, value)
@@ -99,7 +99,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     if tooltip: QToolTip.add(wa, tooltip)
     if validator: wa.setValidator(validator)
     master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallbackLineEdit(wa, master, value, valueType))
-    master.controledAttributes[value] = CallFront_lineEdit(wa)
+    master.controlledAttributes[value] = CallFront_lineEdit(wa)
     if callback:
         master.connect(wa, SIGNAL("textChanged(const QString &)"), FunctionCallback(master, callback))
     wa.box = b
@@ -119,7 +119,7 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
     wa.makeConsistent()
     
     master.connect(wb, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
-    master.controledAttributes[value] = CallFront_spin(wb)
+    master.controlledAttributes[value] = CallFront_spin(wb)
 
     if spinCallback:
         master.connect(wb, SIGNAL("valueChanged(int)"), FunctionCallback(master, spinCallback, widget=wb, getwidget=getwidget))
@@ -283,8 +283,8 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
     lb.ogMaster = master
     
     master.connect(lb, SIGNAL("selectionChanged()"), ListBoxCallback(lb, master, value))
-    master.controledAttributes[value] = CallFront_ListBox(lb)
-    master.controledAttributes[labels] = CallFront_ListBoxLabels(lb)
+    master.controlledAttributes[value] = CallFront_ListBox(lb)
+    master.controlledAttributes[labels] = CallFront_ListBoxLabels(lb)
 
     if callback:
         master.connect(lb, SIGNAL("selectionChanged()"), callback)
@@ -313,7 +313,7 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
         if tooltips:
             QToolTip.add(w, tooltips[i])
     master.connect(bg, SIGNAL("clicked(int)"), ValueCallback(master, value))
-    master.controledAttributes[value] = CallFront_radioButtons(bg)
+    master.controlledAttributes[value] = CallFront_radioButtons(bg)
     if callback:
         master.connect(bg, SIGNAL("clicked(int)"), FunctionCallback(master, callback))
     return bg
@@ -334,7 +334,7 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
     if tooltip:
         QToolTip.add(w, tooltip)
     master.connect(w, SIGNAL("stateChanged(int)"), ValueCallback(master, value))
-    master.controledAttributes[value] = CallFront_checkBox(w)
+    master.controlledAttributes[value] = CallFront_checkBox(w)
     if callback:
         master.connect(w, SIGNAL("stateChanged(int)"), FunctionCallback(master, callback))
     return w
@@ -361,7 +361,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
     if callback:
         master.connect(slider, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
-    master.controledAttributes[value] = CallFront_hSlider(slider)
+    master.controlledAttributes[value] = CallFront_hSlider(slider)
     
     return slider
 
@@ -440,8 +440,8 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
 
     if callback:
         master.connect(combo, SIGNAL(signal), FunctionCallback(master, callback))
-    if sendSelectedValue: master.controledAttributes[value] = CallFront_comboBox(combo, valueType)
-    else:                   master.controledAttributes[value] = CallFront_comboBox(combo)
+    if sendSelectedValue: master.controlledAttributes[value] = CallFront_comboBox(combo, valueType)
+    else:                   master.controlledAttributes[value] = CallFront_comboBox(combo)
     return combo
 
 def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tooltip=None, callback = None, sendSelectedValue=0, valueType = int, labelWidth = None):
@@ -549,6 +549,7 @@ class CallFront_checkBox:
 
     def __call__(self, value):
         if value==None: return
+#        print "CF_cb", value
         self.control.setChecked(value)
 
 class CallFront_comboBox:

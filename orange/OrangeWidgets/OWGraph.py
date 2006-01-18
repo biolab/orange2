@@ -9,6 +9,7 @@ from qwt import *
 from OWGraphTools import *      # color palletes, user defined curves, ...
 from OWDlgs import OWChooseImageSizeDlg
 import qtcanvas, orange, math
+from OWBaseWidget import unisetattr
 
 NOTHING = 0
 ZOOMING = 1
@@ -99,6 +100,9 @@ class OWGraph(QwtPlot):
         #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
 
 
+    def __setattr__(self, name, value):
+        unisetattr(self, name, value, QwtPlot)
+                                
     # call to update dictionary with settings
     def updateSettings(self, **settings):
         self.__dict__.update(settings)

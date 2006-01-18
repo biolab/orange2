@@ -2,7 +2,7 @@
 <name>Linear Projection</name>
 <description>Create a linear projection.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/Radviz.png</icon>
+<icon>icons/LinProj.png</icon>
 <priority>2000</priority>
 """
 # LinProj.py
@@ -33,6 +33,8 @@ class OWLinProj(OWWidget):
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
+
+    contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
         
     def __init__(self,parent=None, signalManager = None, name = "Linear Projection"):
         OWWidget.__init__(self, parent, signalManager, name, TRUE)
@@ -56,6 +58,11 @@ class OWLinProj(OWWidget):
         self.learnerIndex = 0
         self.colorSettings = None
         self.addProjectedPositions = 0
+
+        self.shownAttributes = []
+        self.selectedShown = []
+        self.hiddenAttributes = []
+        self.selectedHidden = []
 
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -110,12 +117,8 @@ class OWLinProj(OWWidget):
         self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Hidden Attributes ")
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialogs ", orientation = "horizontal")
         
-        #self.shownAttribsLB = QListBox(self.shownAttribsGroup)
-        self.shownAttribsLB = QListBox(hbox)
-        self.shownAttribsLB.setSelectionMode(QListBox.Extended)
-
-        self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
-        self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
+        self.shownAttribsLB = OWGUI.listBox(hbox, self, "selectedShown", "shownAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
+        self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
 
         self.optimizationDlgButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.")
         self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow)
@@ -146,7 +149,7 @@ class OWLinProj(OWWidget):
         self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
         self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
         self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
-        OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
+        self.showAllCB = OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
 
         # ####################################
         # SETTINGS TAB
@@ -282,7 +285,7 @@ class OWLinProj(OWWidget):
         #self.send("Example Distribution", merged)
 
     def sendShownAttributes(self):
-        self.send("Attribute Selection List", [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())])
+        self.send("Attribute Selection List", [a[0] for a in self.shownAttributes])
 
 
     # show selected interesting projection
@@ -309,29 +312,34 @@ class OWLinProj(OWWidget):
 
 
     def getShownAttributeList(self):
-        return [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())]        
+        return [a[0] for a in self.shownAttributes]        
 
     def setShownAttributeList(self, data, shownAttributes = None):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
+        shown = []
+        hidden = []
 
-        if data == None: return
-
-        if shownAttributes:
-            for attr in shownAttributes:
-                self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
-                
-            for attr in data.domain:
-                if attr.name not in shownAttributes:
-                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-        else:
-            if self.showAllAttributes:
-                for attr in data.domain.attributes: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+        if data:
+            if shownAttributes:
+                if type(self.shownAttributes[0]) == tuple:
+                    shown = shownAttributes
+                else:
+                    shown = [(a.name, a.varType) for a in shownAttributes]
+                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
             else:
-                for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-                if len(data.domain.attributes) > 10:
-                    for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-            if data.domain.classVar: self.hiddenAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
+                shown = [(a.name, a.varType) for a in data.domain.attributes]
+                if not self.showAllAttributes:
+                    hidden = shown[10:]
+                    shown = shown[:10]
+
+            if data.domain.classVar:
+                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
+
+        self.shownAttributes = shown
+        self.hiddenAttributes = hidden
+        self.selectedHidden = []
+        self.selectedShown = []
+        self.resetAttrManipulation()
+
         self.sendShownAttributes()
     
     def updateGraph(self, attrList = None, setAnchors = 0, insideColors = None, clusterClosure = None, **args):
@@ -364,7 +372,11 @@ class OWLinProj(OWWidget):
             name = getattr(data, "name", "")
             data = orange.Preprocessor_dropMissingClasses(data)
             data.name = name
-        if self.data and data and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+            
+        if self.data and data and self.data.checksum() == data.checksum():
+            return    # check if the new data set is the same as the old one
+
+        self.closeContext()        
         exData = self.data
         self.data = data
         self.graph.setData(self.data)
@@ -374,12 +386,13 @@ class OWLinProj(OWWidget):
         self.graph.clusterClosure = None
         self.graph.insideColors = None
         
-        if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
+        reset = not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)) # preserve attribute choice if the domain is the same
+        if reset:
             self.setShownAttributeList(self.data, self.attributeSelectionList)
-            self.updateGraph(setAnchors = 1)            
-        else:        
-            self.updateGraph(setAnchors = 0)
             
+        self.openContext("", data)
+        self.resetAttrManipulation()
+        self.updateGraph(setAnchors = reset)            
         self.sendSelections()
 
     def subsetdata(self, data, update = 1):
@@ -421,14 +434,28 @@ class OWLinProj(OWWidget):
     # ###############################################################################################################
     # EVENTS
 
+    def resetAttrManipulation(self):
+        cannotMove = not self.shownAttributes or len(self.selectedShown) != 1
+        self.buttonUPAttr.setDisabled(cannotMove or not self.selectedShown[0])
+        self.buttonDOWNAttr.setDisabled(cannotMove or self.selectedShown[0] >= len(self.shownAttributes)-1)
+        self.attrAddButton.setDisabled(not self.selectedHidden or self.showAllAttributes)
+        self.attrRemoveButton.setDisabled(not self.selectedShown or self.showAllAttributes)
+        if self.hiddenAttributes and self.hiddenAttributes[0][0]!=self.data.domain.classVar.name:
+            self.showAllCB.setChecked(0)
+        
+
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        for i in range(1, self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
-                self.shownAttribsLB.removeItem(i+1)
-                self.shownAttribsLB.setSelected(i-1, TRUE)
+        self.graph.insideColors = None
+        self.graph.clusterClosure = None
+
+        selected = self.selectedShown[0]
+        if selected:
+            print self.selectedShown
+            self.shownAttributes = self.shownAttributes[:selected-1] + [self.shownAttributes[selected], self.shownAttributes[selected-1]] + self.shownAttributes[selected+1:]
+            self.selectedShown[0] -= 1
+            print self.selectedShown
+
         self.sendShownAttributes()
         self.graph.potentialsBmp = None
         self.updateGraph(setAnchors = 1)
@@ -437,12 +464,12 @@ class OWLinProj(OWWidget):
     # move selected attribute in "Attribute Order" list one place down  
     def moveAttrDOWN(self):
         self.graph.insideColors = None; self.graph.clusterClosure = None
-        count = self.shownAttribsLB.count()
-        for i in range(count-2,-1,-1):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.setSelected(i+1, TRUE)
+
+        selected = self.selectedShown[0]
+        if selected < len(self.shownAttributes) - 1:
+            self.shownAttributes = self.shownAttributes[:selected] + [self.shownAttributes[selected+1], self.shownAttributes[selected]] + self.shownAttributes[selected+2:]
+            self.selectedShown[0] += 1
+
         self.sendShownAttributes()
         self.graph.potentialsBmp = None
         self.updateGraph(setAnchors = 1)
@@ -451,34 +478,39 @@ class OWLinProj(OWWidget):
     def cbShowAllAttributes(self):
         if self.showAllAttributes:
             self.addAttribute(True)
-        self.attrRemoveButton.setDisabled(self.showAllAttributes)
-        self.attrAddButton.setDisabled(self.showAllAttributes)
+        self.resetAttrManipulation()
 
     def addAttribute(self, addAll = False):
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        count = self.hiddenAttribsLB.count()
-        pos   = self.shownAttribsLB.count()
-        classVarName = self.data and self.data.domain.classVar.name
-        for i in range(count-1, -1, -1):
-            if addAll or self.hiddenAttribsLB.isSelected(i):
-                if self.hiddenAttribsLB.text(i) == classVarName: continue
-                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
-                self.hiddenAttribsLB.removeItem(i)
+        self.graph.insideColors = None
+        self.graph.clusterClosure = None
+
+        if addAll:
+            if self.data and self.data.domain.classVar:
+                self.shownAttributes = self.shownAttributes + self.hiddenAttributes[:-1]
+                self.hiddenAttributes = [self.hiddenAttributes[-1]]
+        else:
+            self.setShownAttributeList(self.data, self.shownAttributes + [self.hiddenAttributes[i] for i in self.selectedHidden])
+        self.selectedHidden = []
+        self.selectedShown = []
+        self.resetAttrManipulation()
+                
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+
         self.sendShownAttributes()
         self.updateGraph(setAnchors = 1)
         self.graph.replot()
         self.graph.removeAllSelections()
 
     def removeAttribute(self):
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        count = self.shownAttribsLB.count()
-        pos   = self.hiddenAttribsLB.count()
-        for i in range(count-1, -1, -1):
-            if self.shownAttribsLB.isSelected(i):
-                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
-                self.shownAttribsLB.removeItem(i)
+        self.graph.insideColors = None
+        self.graph.clusterClosure = None
+
+        newShown = self.shownAttributes[:]
+        self.selectedShown.sort(lambda x,y:-cmp(x, y))
+        for i in self.selectedShown:
+            del newShown[i]
+        self.setShownAttributeList(self.data, newShown)
                 
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
@@ -581,6 +613,7 @@ if __name__=="__main__":
     ow=OWLinProj()
     a.setMainWidget(ow)
     ow.show()
+    ow.cdata(orange.ExampleTable("..\\..\\doc\\datasets\\zoo"))
     a.exec_loop()
 
     #save settings 
