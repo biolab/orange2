@@ -956,25 +956,26 @@ class VizRank:
     def load(self, name, ignoreCheckSum = 1):
         self.clearResults()
         self.clearArguments()
+
+        if self.__class__.__name__ == "OWVizRank":
+            import qt
         
         file = open(name, "rt")
         settings = eval(file.readline()[:-1])
         if settings.get("parentName", "").lower() != self.parentName.lower():
             if self.__class__.__name__ == "OWVizRank":
-                import qt; qt.QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), qt.QMessageBox.Ok)
+                qt.QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), qt.QMessageBox.Ok)
             else: print 'Unable to load projection file. It was saved for %s method' % (settings["parentName"])
             file.close()
             return [], 0
 
         if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
             if self.__class__.__name__ == "OWVizRank":
-                import qt
                 if qt.QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                     file.close()
                     return [], 0
             else: print "'The current data set has a different checksum than the data set that was used to evaluate projections in this file. Continuing loading the file anyway..."
                 
-
         if hasattr(self, "setSettings"): self.setSettings(settings)
 
         # find if it was computed for specific class values        
@@ -982,15 +983,16 @@ class VizRank:
         
         count = 0
         for line in file.xreadlines():
-            (acc, other_results, lenTable, attrList, tryIndex, temp) = eval(line)
-            generalDict = dict(temp)
-            self.insertItem(acc, other_results, lenTable, attrList, count, tryIndex, generalDict, updateStatusBar = 1)
+            (acc, other_results, lenTable, attrList, tryIndex, generalDict) = eval(line)
+            VizRank.insertItem(self, acc, other_results, lenTable, attrList, count, tryIndex, generalDict)
             count+=1
             if self.abortCurrentOperation: break
+            if count % 100 == 0 and hasattr(self, "setStatusBarText"):
+                self.setStatusBarText("Loaded %s projections" % (OWVisFuncts.createStringFromNumber(count)))
+                qt.qApp.processEvents()        # allow processing of other events
         file.close()
 
         # update loaded results
-        if hasattr(self, "finishedAddingResults"): self.finishedAddingResults()
         return selectedClasses, count
 
 

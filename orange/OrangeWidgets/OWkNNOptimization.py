@@ -260,8 +260,8 @@ class OWVizRank(VizRank, OWBaseWidget):
         
         self.selectedClasses = self.getSelectedClassValues()
         if len(self.selectedClasses) in [self.classesList.count(), 0]:
-            for result in results:
-                self.addResult(result[OTHER_RESULTS][0], result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[GENERAL_DICT])
+            for i in range(len(results)):
+                self.insertItem(results[i][OTHER_RESULTS][0], results[i][OTHER_RESULTS], results[i][LEN_TABLE], results[i][ATTR_LIST], i, results[i][TRY_INDEX], results[i][GENERAL_DICT])
         else: 
             for result in results:
                 acc = 0.0; sum = 0.0
@@ -320,6 +320,8 @@ class OWVizRank(VizRank, OWBaseWidget):
 
 
     def updateShownProjections(self, *args):
+        if hasattr(self, "dontUpdate"): return
+        
         self.resultList.clear()
         self.shownResults = []
         i = 0
@@ -378,7 +380,6 @@ class OWVizRank(VizRank, OWBaseWidget):
         
         self.setStatusBarText("Evaluating attributes...")
         qApp.setOverrideCursor(QWidget.waitCursor)
-        #attrs = None
 
         try:
             if data.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -598,7 +599,10 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         selectedClasses, count = VizRank.load(self, name, ignoreCheckSum)
 
+        self.dontUpdate = 1
         for i in range(len(self.data.domain.classVar.values)): self.classesList.setSelected(i, i in selectedClasses)
+        del self.dontUpdate
+        self.finishedAddingResults()
 
         self.setStatusBarText("Loaded %s projections" % (OWVisFuncts.createStringFromNumber(count)))
         butt.hide()
