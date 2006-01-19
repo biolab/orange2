@@ -10,27 +10,14 @@
 # Show a radviz projection of the data
 # 
 
-from OWWidget import *
 from OWLinProj import *
-#from random import betavariate 
-#from OWLinProjGraph import *
-#from OWkNNOptimization import OWVizRank
-#from OWClusterOptimization import *
-#from OWFreeVizOptimization import *
-#import time
-#import OWToolbars, OWGUI, orngTest, orangeom
-#import OWVisFuncts, OWDlgs
-#import orngVizRank
 
-###########################################################################################
-##### WIDGET : Linear Projection
-###########################################################################################
 class OWRadviz(OWLinProj):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
-                    "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "VizRankClassifierName", "clusterClassifierName",
+                    "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "clusterClassifierName",
                     "showOptimizationSteps", "valueScalingType", "graph.showProbabilities", "showAllAttributes",
-                    "learnerIndex", "colorSettings", "addProjectedPositions"]
+                    "learnerIndex", "colorSettings", "addProjectedPositions", "VizRankLearnerName"]
             
     def __init__(self, parent=None, signalManager = None):
         OWLinProj.__init__(self, parent, signalManager, "Radviz")

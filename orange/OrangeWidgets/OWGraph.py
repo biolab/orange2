@@ -386,9 +386,9 @@ class OWGraph(QwtPlot):
         return table
 
 
-    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], forceFilledSymbols = 0, lineWidth = 1, pen = None):
+    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None, lineWidth = 1, pen = None):
         newCurveKey = self.insertCurve(name)
-        if self.showFilledSymbols or forceFilledSymbols:
+        if showFilledSymbols or (showFilledSymbols == None and self.showFilledSymbols):
             newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
         else:
             newSymbol = QwtSymbol(symbol, QBrush(), QPen(penColor), QSize(size, size))

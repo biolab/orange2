@@ -1,4 +1,5 @@
 #
+#
 # OWLinProjGraph.py
 #
 from OWGraph import *
@@ -113,13 +114,13 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             if self.anchorsAsVectors:
                 r=self.hideRadius**2/100
                 for i,(x,y,a) in enumerate(shownAnchorData):
-                    self.addCurve("l%i" % i, QColor(160, 160, 160), QColor(160, 160, 160), 10, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, x], yData = [0, y], forceFilledSymbols = 1, lineWidth=2)
+                    self.addCurve("l%i" % i, QColor(160, 160, 160), QColor(160, 160, 160), 10, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, x], yData = [0, y], showFilledSymbols = 1, lineWidth=2)
                     if self.showAttributeNames:
                         self.addMarker(a, x*1.07, y*1.04, Qt.AlignCenter, bold=1)
             else:
                 XAnchors = [a[0] for a in shownAnchorData]
                 YAnchors = [a[1] for a in shownAnchorData]
-                self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, forceFilledSymbols = 1)
+                self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1)
 
                 # draw text at anchors
                 if self.showAttributeNames:
@@ -220,7 +221,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # do we have a subset data to show?
         # ##############################################################
         elif haveSubsetData:
-            showFilled = self.showFilledSymbols
             shownSubsetCount = 0
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: colors = ColorPaletteHSV(valLen)
             else: colors = ColorPaletteHSV()
@@ -228,8 +228,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             
             # draw the rawdata data set. examples that exist also in the subset data draw full, other empty
             for i in range(dataSize):
-                self.showFilledSymbols = self.rawdata[i].reference() in subsetReferencesToDraw
-                if self.showFilledSymbols:
+                showFilled = self.rawdata[i].reference() in subsetReferencesToDraw
+                if showFilled:
                     shownSubsetCount += 1
                     subsetReferencesToDraw.remove(self.rawdata[i].reference())
                 
@@ -243,12 +243,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
                 else: curveSymbol = self.curveSymbols[0]
                 
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x_positions[i]], yData = [y_positions[i]])
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x_positions[i]], yData = [y_positions[i]], showFilledSymbols = showFilled)
                 self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
 
             # if we have a data subset that contains examples that don't exist in the original dataset we show them here
             if shownSubsetCount < len(self.subsetData):
-                self.showFilledSymbols = 1
                 XAnchors = Numeric.array([val[0] for val in self.anchorData])
                 YAnchors = Numeric.array([val[1] for val in self.anchorData])
                 anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
@@ -273,10 +272,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
                     if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.subsetData[i].getclass().value]]
                     else: curveSymbol = self.curveSymbols[0]
-                    self.addCurve("", newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x], yData = [y])
+                    self.addCurve("", newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x], yData = [y], showFilledSymbols = 1)
                 
-            self.showFilledSymbols = showFilled                    
-
         # ############################################################## 
         # CONTINUOUS class
         # ############################################################## 

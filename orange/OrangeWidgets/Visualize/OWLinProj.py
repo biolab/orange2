@@ -27,9 +27,9 @@ import orngVizRank
 class OWLinProj(OWWidget):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
-                    "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "VizRankClassifierName", "clusterClassifierName",
+                    "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "clusterClassifierName",
                     "showOptimizationSteps", "valueScalingType", "graph.showProbabilities", "showAllAttributes",
-                    "learnerIndex", "colorSettings", "addProjectedPositions"]
+                    "learnerIndex", "colorSettings", "addProjectedPositions", "VizRankLearnerName"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
@@ -50,7 +50,7 @@ class OWLinProj(OWWidget):
         self.autoSendSelection = 1
         self.data = None
         self.toolbarSelection = 0
-        self.VizRankClassifierName = "VizRank classifier (Linear Projection)"
+        self.VizRankLearnerName = "VizRank (%s)" % name
         self.clusterClassifierName = "Visual cluster classifier (Linear Projection)"
         self.classificationResults = None
         self.outlierValues = None
@@ -58,6 +58,7 @@ class OWLinProj(OWWidget):
         self.learnerIndex = 0
         self.colorSettings = None
         self.addProjectedPositions = 0
+        
 
         self.shownAttributes = []
         self.selectedShown = []
@@ -277,12 +278,10 @@ class OWLinProj(OWWidget):
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
         if not self.data: return
-        #(selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList())
         (selected, unselected) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList(), addProjectedPositions = self.addProjectedPositions)
     
         self.send("Selected Examples",selected)
         self.send("Unselected Examples",unselected)
-        #self.send("Example Distribution", merged)
 
     def sendShownAttributes(self):
         self.send("Attribute Selection List", [a[0] for a in self.shownAttributes])
@@ -312,7 +311,10 @@ class OWLinProj(OWWidget):
 
 
     def getShownAttributeList(self):
-        return [a[0] for a in self.shownAttributes]        
+        return [a[0] for a in self.shownAttributes]
+        #if self.shownAttributes != [] and type(self.shownAttributes[0]) == tuple:
+        #    return [a[0] for a in self.shownAttributes]
+        #else: return self.shownAttributes
 
     def setShownAttributeList(self, data, shownAttributes = None):
         shown = []
@@ -320,10 +322,11 @@ class OWLinProj(OWWidget):
 
         if data:
             if shownAttributes:
-                if type(self.shownAttributes[0]) == tuple:
+                if type(shownAttributes[0]) == tuple:
                     shown = shownAttributes
                 else:
-                    shown = [(a.name, a.varType) for a in shownAttributes]
+                    domain = self.data.domain
+                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
                 hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
             else:
                 shown = [(a.name, a.varType) for a in data.domain.attributes]
@@ -401,6 +404,7 @@ class OWLinProj(OWWidget):
         if update: self.updateGraph()
         self.optimizationDlg.setSubsetData(data)
         self.clusterDlg.setSubsetData(data)
+        qApp.processEvents()
        
 
     # attribute selection signal - info about which attributes to show
@@ -451,10 +455,8 @@ class OWLinProj(OWWidget):
 
         selected = self.selectedShown[0]
         if selected:
-            print self.selectedShown
             self.shownAttributes = self.shownAttributes[:selected-1] + [self.shownAttributes[selected], self.shownAttributes[selected-1]] + self.shownAttributes[selected+1:]
             self.selectedShown[0] -= 1
-            print self.selectedShown
 
         self.sendShownAttributes()
         self.graph.potentialsBmp = None

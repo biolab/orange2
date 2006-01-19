@@ -26,7 +26,7 @@ class OWScatterPlot(OWWidget):
     settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
                     "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
                     "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
-                    "VizRankClassifierName", "clusterClassifierName", "learnerIndex", "colorSettings"]
+                    "clusterClassifierName", "learnerIndex", "colorSettings", "VizRankLearnerName"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
@@ -42,8 +42,8 @@ class OWScatterPlot(OWWidget):
         self.showGridlines = 0
         self.autoSendSelection = 1
         self.toolbarSelection = 0
-        self.VizRankClassifierName = "VizRank classifier (Scatterplot)"
         self.clusterClassifierName = "Visual cluster classifier (Scatterplot)"
+        self.VizRankLearnerName = "VizRank (Scatterplot)"
         self.classificationResults = None
         self.outlierValues = None
         self.learnerIndex = 0

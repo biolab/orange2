@@ -24,7 +24,7 @@ import OWVisAttrSelection, OWToolbars, OWVisFuncts, OWDlgs
 class OWPolyviz(OWWidget):
     settingsList = ["graph.pointWidth", "lineLength", "graph.jitterSize", "graph.globalValueScaling", "graph.scaleFactor",
                     "graph.enabledLegend", "graph.showFilledSymbols", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection",
-                    "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankClassifierName",
+                    "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankLearnerName",
                     "colorSettings", "addProjectedPositions", "showAllAttributes"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
@@ -43,7 +43,7 @@ class OWPolyviz(OWWidget):
         self.autoSendSelection = 1
         self.rotateAttributes = 0
         self.toolbarSelection = 0
-        self.VizRankClassifierName = "VizRank classifier (Polyviz)"
+        self.VizRankLearnerName = "VizRank (Polyviz)"
         self.outlierValues = None
         self.kNNExampleAccuracy = None
         self.colorSettings = None

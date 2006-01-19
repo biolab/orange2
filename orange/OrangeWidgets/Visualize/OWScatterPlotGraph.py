@@ -62,11 +62,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.tooltipData = []
         
         # if we have some subset data then we show the examples in the data set with full symbols, others with empty
-        haveSubsetData = 0
-        if self.subsetData and self.rawdata and self.subsetData.domain == self.rawdata.domain:
-            oldShowFilledSymbols = self.showFilledSymbols
-            self.showFilledSymbols = 1
-            haveSubsetData = 1
+        haveSubsetData = (self.subsetData and self.rawdata and self.subsetData.domain == self.rawdata.domain)
             
         if self.scaledData == None or len(self.scaledData) == 0:
             #self.setAxisScale(QwtPlot.xBottom, 0, 1, 1); self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
@@ -333,6 +329,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 validData = self.getValidList(attrs)
                 if self.subsetData:
                     subsetReferencesToDraw = [example.reference() for example in self.subsetData]
+                showFilled = self.showFilledSymbols
                 
                 for i in range(len(self.rawdata)):
                     if not validData[i]: continue
@@ -353,17 +350,16 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * self.pointWidth)
                     
                     if haveSubsetData:
-                        self.showFilledSymbols = self.rawdata[i].reference() in subsetReferencesToDraw
-                        shownSubsetCount += self.showFilledSymbols
+                        showFilled = self.rawdata[i].reference() in subsetReferencesToDraw
+                        shownSubsetCount += showFilled
 
-                    self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
+                    self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y], showFilledSymbols = showFilled)
                         
                     # we add a tooltip for this point
                     self.tips.addToolTip(x, y, i)
 
                 # if we have a data subset that contains examples that don't exist in the original dataset we show them here
                 if haveSubsetData and shownSubsetCount < len(self.subsetData):
-                    self.showFilledSymbols = 1
                     for i in range(len(self.subsetData)):
                         if not self.subsetData[i].reference() in subsetReferencesToDraw: continue
                         if self.subsetData[i][xAttrIndex].isSpecial() or self.subsetData[i][yAttrIndex].isSpecial() : continue
@@ -390,7 +386,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
                         size = self.pointWidth
                         if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * self.pointWidth)
-                        self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
+                        self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y], showFilledSymbols = 1)
 
         
         # ##############################################################
@@ -453,9 +449,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             (colorVarMin, colorVarMax) = self.attrValues[colorAttr]
             self.addMarker("%s = %%.%df" % (colorAttr, self.rawdata.domain[colorAttr].numberOfDecimals) % (colorVarMin), x0 - xVar*1./100.0, yVarMin + yVar*0.04, Qt.AlignLeft)
             self.addMarker("%s = %%.%df" % (colorAttr, self.rawdata.domain[colorAttr].numberOfDecimals) % (colorVarMax), x0 - xVar*1./100.0, yVarMin + yVar*0.96, Qt.AlignLeft)
-
-        # restore the correct showFilledSymbols
-        if haveSubsetData:  self.showFilledSymbols = oldShowFilledSymbols 
 
 
     # ##############################################################
