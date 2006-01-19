@@ -261,13 +261,15 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.selectedClasses = self.getSelectedClassValues()
         if len(self.selectedClasses) in [self.classesList.count(), 0]:
             for i in range(len(results)):
-                self.insertItem(results[i][OTHER_RESULTS][0], results[i][OTHER_RESULTS], results[i][LEN_TABLE], results[i][ATTR_LIST], i, results[i][TRY_INDEX], results[i][GENERAL_DICT])
-        else: 
+                VizRank.insertItem(self, i, results[i][OTHER_RESULTS][0], results[i][OTHER_RESULTS], results[i][LEN_TABLE], results[i][ATTR_LIST], results[i][TRY_INDEX], results[i][GENERAL_DICT])
+        else:
+            funct = self.qualityMeasure != BRIER_SCORE and max or min
             for result in results:
                 acc = 0.0; sum = 0.0
                 for index in self.selectedClasses:
-                    acc += result[OTHER_RESULTS][OTHER_PREDICTIONS][index] * result[OTHER_RESULTS][OTHER_DISTRIBUTION][index]; sum += result[OTHER_RESULTS][OTHER_DISTRIBUTION][index]
-                self.addResult(acc/sum, result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[GENERAL_DICT])
+                    acc += result[OTHER_RESULTS][OTHER_PREDICTIONS][index] * result[OTHER_RESULTS][OTHER_DISTRIBUTION][index]
+                    sum += result[OTHER_RESULTS][OTHER_DISTRIBUTION][index]
+                VizRank.insertItem(self, self.findTargetIndex(acc/sum, funct), acc/sum, result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[GENERAL_DICT])
                 
         self.finishedAddingResults()
 
@@ -342,7 +344,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         qApp.processEvents()
         qApp.restoreOverrideCursor()
         
-        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)        
+        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)
 
     # set value of k to sqrt(n)
     def setData(self, data):
@@ -417,7 +419,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     
     # insert new result - give parameters: accuracy of projection, number of examples in projection and list of attributes.
-    def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, generalDict = {}, updateStatusBar = 0):
+    def insertItem(self, index, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}, updateStatusBar = 0):
         if index < self.maxResultListLen:
             self.results.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, generalDict))
             
@@ -465,8 +467,6 @@ class OWVizRank(VizRank, OWBaseWidget):
     def kNNClassifyData(self, table):
         qApp.processEvents()        # allow processing of other events
         
-        #knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
-        #results = apply(testingMethods[self.testingMethod], [[knn], table])
         if self.externalLearner: learner = self.externalLearner
         else:                    learner = self.createkNNLearner()
         results = apply(testingMethods[self.testingMethod], [[learner], table])
@@ -520,7 +520,6 @@ class OWVizRank(VizRank, OWBaseWidget):
 
             table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = generalDict)
             accuracy, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
-            #accuracy, other_results, resultsByFolds = self.getProjectionQuality(attrList, generalDict)         # TO DO: this does not work with polyviz with attrReverseList   
 
             if self.saveResultsFromFolds: generalDict["resultsByFolds"] = resultsByFolds
             

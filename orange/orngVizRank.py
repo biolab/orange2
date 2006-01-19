@@ -199,7 +199,7 @@ class VizRank:
 
     def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}):
         funct = self.qualityMeasure != BRIER_SCORE and max or min
-        self.insertItem(accuracy, other_results, lenTable, attrList, self.findTargetIndex(accuracy, funct), tryIndex, generalDict)
+        self.insertItem(self.findTargetIndex(accuracy, funct), accuracy, other_results, lenTable, attrList, tryIndex, generalDict)
 
     # use bisection to find correct index
     def findTargetIndex(self, accuracy, funct):
@@ -217,7 +217,7 @@ class VizRank:
             return bottom
 
     # insert new result - give parameters: accuracy of projection, number of examples in projection and list of attributes.
-    def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, generalDict = {}, updateStatusBar = 0):
+    def insertItem(self, index, accuracy, other_results, lenTable, attrList, tryIndex, generalDict = {}, updateStatusBar = 0):
         if index < self.maxResultListLen:
             self.results.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, generalDict))
 
@@ -984,7 +984,7 @@ class VizRank:
         count = 0
         for line in file.xreadlines():
             (acc, other_results, lenTable, attrList, tryIndex, generalDict) = eval(line)
-            VizRank.insertItem(self, acc, other_results, lenTable, attrList, count, tryIndex, generalDict)
+            VizRank.insertItem(self, count, acc, other_results, lenTable, attrList, tryIndex, generalDict)
             count+=1
             if self.abortCurrentOperation: break
             if count % 100 == 0 and hasattr(self, "setStatusBarText"):
