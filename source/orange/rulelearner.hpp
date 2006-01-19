@@ -45,6 +45,7 @@ public:
   PFilter filter; //P stored filter for this rule
   PClassifier classifier; //P classifies an example
   PLearner learner; //P learns a classifier from data
+  PRule parentRule; //P
 
   PDistribution classDistribution; //P distribution of classes covered by the rule
 

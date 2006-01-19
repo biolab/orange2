@@ -156,10 +156,10 @@ As ruleLearner is derived from orange Learner class, it has the classical call m
             for cand in candidates:
                 newRules = self.<b>refiner</b>(cand,examples,weightID,targetClass)
                 for newRule in newRules:
-                    newRule.quality = self.<b>evaluator</b>(newRule,examples,weightID,targetClass,prior)
-                    rulesStar.append(newRule)
-                        if self.<b>validator</b>(newRule,examples,weightID,targetClass,prior) and newRule.quality>bestRule.quality:
-                            bestRule = newRule
+                    if self.<b>ruleStoppingValidator</b>(newRule,examples,weightID,targetClass,cand.classDistribution)	      	                    newRule.quality = self.<b>evaluator</b>(newRule,examples,weightID,targetClass,prior)
+    	                rulesStar.append(newRule)
+        	                if self.<b>validator</b>(newRule,examples,weightID,targetClass,prior) and 	newRule.quality>bestRule.quality:
+	                            bestRule = newRule
             rulesStar = self.<b>ruleFilter</b>(rulesStar,examples,weightID)
         return bestRule  
 </PRE>
@@ -269,13 +269,32 @@ If baseRules are not set, this class will return rulesStar with rule that covers
 </table>
 </DD>
 
- <DT>validator</DT>
-<DD>Validates, whether this rule should be further specialized. By default, likelihood ratio statistics is used, which estimates, if rule is statistically better than the default rule.
+ <DT>ruleStoppingValidator</DT>
+<DD>Validates whether the rule is specialized enough comparing it to its parent. The parent of a rule is a rule from which this rule was specialized. 
 <br><br>
 <table border="0">
   <tr> 
     <td> Default class: </td>
-    <td> orange.RuleValidator_LRS(alpha=0.05)</td>
+    <td> None</td>
+  </tr>
+  <tr> 
+    <td> Derived from: </td>
+    <td> orange.RuleValidator </td>
+  </tr>
+  <tr> 
+    <td> Format: </td>
+    <td> ruleStoppingValidator(rule,examples,weigthID,targetClass,priorOfParentRule) </td>
+  </tr>
+</table>
+
+</DD>
+ <DT>validator</DT>
+<DD>Validates, whether the rule is good enough to be considered as the best rule, i.e. the rule is good enough to be returned by rulefinder. By default, likelihood ratio statistics is used that gives an estimate if rule is statistically better than the default rule.
+<br><br>
+<table border="0">
+  <tr> 
+    <td> Default class: </td>
+    <td> orange.RuleValidator_LRS(alpha=1.0)</td>
   </tr>
   <tr> 
     <td> Derived from: </td>
@@ -356,3 +375,38 @@ If baseRules are not set, this class will return rulesStar with rule that covers
 
 <A name="examples"></A>
 <H2>Examples</H2>
+
+<p> This last section is used to give some examples how we can replace the default components. All examples are from <a href="testRulelearner.py">testRuleLearner.py</a> (uses <a href="titanic.tab">titanic.tab</a>). </p>
+
+<xmp type="code">
+learner = orange.RuleLearner()
+cl = learner(data)
+
+# print rules
+for r in cl.rules:
+    print orngCN2.ruleToString(r)
+</xmp>
+In the first row we initialize the learner, in the second run learner on data that returns a rule classifier, and in the last two lines, the induced rules are printed on screen (uses orngCN2 module). This learner uses only default components, but we wish to change that now. The following two lines, for instance, 
+<xmp type="code">
+learner.ruleFinder = orange.RuleBeamFinder()
+learner.ruleFinder.evaluator = orngCN2.mEstimate(m=50)
+
+# print rules
+cl = learner(data)
+for r in cl.rules:
+    print orngCN2.ruleToString(r)
+</xmp>
+would change the evaluation function of learner to m-estimate of probability with m set to 50. This evaluation function is implemented in orngCN2 module (orngCN2.py). Notice that we first need to set the ruleFinder component, because the default components are not constructed when the learner is constructed, but only when we run it on data. At that time, the algorithm checks which components are necessary and sets defaults. Similarly, when the learner finishes, it destructs all default components. 
+
+Continuing with our example, assume that we wish to set a different validation function and a different bean width. This is simply written as:
+<xmp type="code">
+learner.ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha=0.01,min_coverage=10,max_rule_complexity = 2)
+learner.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = 50)
+
+# print rules
+cl = learner(data)
+for r in cl.rules:
+    print orngCN2.ruleToString(r)
+</xmp>
+
+

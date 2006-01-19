@@ -39,7 +39,8 @@ TRule::TRule()
   quality(ILLEGAL_FLOAT),
   complexity(ILLEGAL_FLOAT),
   coveredExamples(NULL),
-  coveredExamplesLength(-1)
+  coveredExamplesLength(-1),
+  parentRule(NULL)
 {}
 
 
@@ -52,7 +53,8 @@ TRule::TRule(PFilter af, PClassifier cl, PLearner lr, PDistribution dist, PExamp
   weightID(w),
   quality(qu),
   coveredExamples(NULL),
-  coveredExamplesLength(-1)
+  coveredExamplesLength(-1),
+  parentRule(NULL)
 {}
 
 
@@ -66,7 +68,8 @@ TRule::TRule(const TRule &other, bool copyData)
   weightID(copyData ? other.weightID : 0),
   quality(copyData ? other.quality : ILLEGAL_FLOAT),
   coveredExamples(copyData && other.coveredExamples && (other.coveredExamplesLength >= 0) ? (int *)memcpy(new int[other.coveredExamplesLength], other.coveredExamples, other.coveredExamplesLength) : NULL),
-  coveredExamplesLength(copyData ? other.coveredExamplesLength : -1)
+  coveredExamplesLength(copyData ? other.coveredExamplesLength : -1),
+  parentRule(other.parentRule)
 {}
 
 
@@ -331,7 +334,7 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
 
   const TDiscDistribution &exp_dist = dynamic_cast<const TDiscDistribution &>(apriori.getReference());
 
-  if (obs_dist.cases == exp_dist.cases) //it turns out that this happens quite often
+  if (obs_dist.abs == exp_dist.abs) //it turns out that this happens quite often
     return false; 
 
   if (targetClass == -1) {
@@ -370,14 +373,14 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
 
 float TRuleEvaluator_Entropy::operator()(PRule rule, PExampleTable, const int &, const int &targetClass, PDistribution apriori) const
 {
+  const TDiscDistribution &obs_dist = dynamic_cast<const TDiscDistribution &>(rule->classDistribution.getReference());
+  if (!obs_dist.cases)
+    return -numeric_limits<float>::min();
+
   if (targetClass == -1)
     return -getEntropy(dynamic_cast<TDiscDistribution &>(rule->classDistribution.getReference()));
 
   const TDiscDistribution &exp_dist = dynamic_cast<const TDiscDistribution &>(apriori.getReference());
-
-  const TDiscDistribution &obs_dist = dynamic_cast<const TDiscDistribution &>(rule->classDistribution.getReference());
-  if (!obs_dist.cases)
-    return false;
 
   float p = (targetClass < obs_dist.size()) ? obs_dist[targetClass] : 0.0;
   const float P = (targetClass < exp_dist.size()) && (exp_dist[targetClass] > 0.0) ? exp_dist[targetClass] : 1e-5;
@@ -534,6 +537,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
             TValue value = TValue(v);
             newCondition->values->push_back(value);
             newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
+            newRule->parentRule = wrule;
           }
       }
     }
@@ -558,6 +562,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
           newRule = mlnew TRule(rule, false);
           PRule wnewRule = newRule;
           newRule->complexity++;
+          newRule->parentRule = wrule;
 
           newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::LessEqual, cutoffs.front(), 0, 0));
           newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
@@ -568,6 +573,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
             newRule = mlnew TRule(rule, false);
             PRule wnewRule = newRule;
             newRule->complexity++;
+            newRule->parentRule = wrule;
 
             filter = newRule->filter.AS(TFilter_values);
             filter->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::Greater, *ci, 0, 0));
@@ -583,6 +589,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
 
           newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::Greater, cutoffs.back(), 0, 0));
           newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
+          newRule->parentRule = wrule;
         } 
       }
       else

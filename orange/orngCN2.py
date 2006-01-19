@@ -79,16 +79,16 @@ class mEstimate(orange.RuleEvaluator):
     def __call__(self, rule, data, weightID, targetClass, apriori):
         if not rule.classDistribution:
             return 0.
-        sumDist = rule.classDistribution.cases
+        sumDist = rule.classDistribution.abs
         if self.m == 0 and not sumDist:
             return 0.
         # get distribution
         if targetClass>-1:
-            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.cases
-            p = p / (rule.classDistribution.cases + self.m)
+            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.abs
+            p = p / (rule.classDistribution.abs + self.m)
         else:
-            p = max(rule.classDistribution)+2*self.m*apriori[rule.classDistribution.modus()]/apriori.cases
-            p = p / (rule.classDistribution.cases + self.m)      
+            p = max(rule.classDistribution)+self.m*apriori[rule.classDistribution.modus()]/apriori.abs
+            p = p / (rule.classDistribution.abs + self.m)      
         return p
 
 class RuleStopping_apriori(orange.RuleStoppingCriteria):
@@ -213,7 +213,7 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         self.__dict__.update(argkw)
         self.prior = orange.Distribution(examples.domain.classVar, examples)
 
-    def __call__(self, example, result_type=orange.GetValue):
+    def __call__(self, example, result_type=orange.GetValue, retRules = False):
         def add(disc1, disc2):
             disc = orange.DiscDistribution(disc1)
             for i,d in enumerate(disc):
@@ -222,14 +222,23 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
 
         # create empty distribution
         retDist = orange.DiscDistribution(example.domain.classVar)
+        covRules = orange.RuleList()
         # iterate through examples - add distributions
         for r in self.rules:
             if r(example) and r.classDistribution:
                 retDist = add(retDist, r.classDistribution)
+                covRules.append(r)
         if not retDist.abs:
             retDist = self.prior
         retDist.normalize()
         # return classifier(example, result_type=result_type)
+        if retRules:
+            if result_type == orange.GetValue:
+              return (retDist.modus(), covRules)
+            if result_type == orange.GetProbabilities:
+              return (retDist, covRules)
+            return (retDist.modus(),retDist,covRules)
+        
         if result_type == orange.GetValue:
           return retDist.modus()
         if result_type == orange.GetProbabilities:
