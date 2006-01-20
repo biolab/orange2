@@ -6,7 +6,7 @@ import os, orange
 from math import sqrt
 import Numeric, time
 from copy import copy
-from orngFreeViz import FreeViz
+from orngLinProj import FreeViz
 
 # quality measure
 CLASS_ACCURACY = 0

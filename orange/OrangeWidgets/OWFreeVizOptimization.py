@@ -6,7 +6,7 @@ import OWGUI, OWVisAttrSelection, OWVisTools, DESolver, Numeric
 from math import sqrt
 
 from orngScaleLinProjData import *
-from orngFreeViz import *
+from orngLinProj import *
 
 class FreeVizOptimization(OWBaseWidget, FreeViz):
     settingsList = ["stepsBeforeUpdate", "restrain", "differentialEvolutionPopSize",
