@@ -239,3 +239,6 @@ class BasicSVMClassifier(orange.Classifier):
           return (v,p)
       if format == orange.GetProbabilities:
           return p
+
+  def __del__(self):
+    orngCRS.svm_destroy_model(self.cmodel)
