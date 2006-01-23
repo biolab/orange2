@@ -1,4 +1,7 @@
-A: Data - Select Attributes
+A: Visualize - Attribute Statistics
 D: Data - Select Data
-T: Data - Data Table
 F: Data - File
+Ctrl-Alt-S: Data - Data Sampler
+S: Visualize - Scatterplot
+R: Visualize - Radviz
+T: Data - Data Table

@@ -1,10 +1,3 @@
-##############################################################################
-# this came out after about a 1000 lines of really boring code (thanks
-# to being lazy, now we can use this)
-
-# before we change other widgets to use this, see OWClassificationTree.py
-# for an example
-
 from qt import *
 from qttable import *
 import qwt
@@ -12,9 +5,8 @@ import math
 import OWBaseWidget
 from OWBaseWidget import mygetattr
 import orange
+import sys, traceback
 
-##############################################################################
-# Some common rutines
 
 # constructs a box (frame) if not none, and returns the right master widget
 def widgetBox(widget, box=None, orientation='vertical'):
@@ -32,6 +24,7 @@ def widgetBox(widget, box=None, orientation='vertical'):
             b = QVBox(widget)
     return b
 
+
 def widgetLabel(widget, label=None, labelWidth=None):
     if label:
         lbl = QLabel(label, widget)
@@ -41,8 +34,6 @@ def widgetLabel(widget, label=None, labelWidth=None):
         lbl = None
     return lbl
 
-##############################################################################
-# Orange GUI Widgets
 
 def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None):
     b = widgetBox(widget, box, orientation)
@@ -50,13 +41,12 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
     
     wa = QSpinBox(min, max, step, b)
     wa.setValue(mygetattr(master, value))
-    if tooltip: QToolTip.add(wa, tooltip)
+    if tooltip:
+        QToolTip.add(wa, tooltip)
 
-    master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
-    master.controlledAttributes[value] = CallFront_spin(wa)
-    if callback:
-        master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
+    connectControl(wa, master, value, callback, "valueChanged(int)", CallFront_spin(wa))
     return b
+
 
 def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None):
     b = widgetBox(widget, box, orientation)
@@ -64,13 +54,12 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     
     wa = DoubleSpinBox(min, max, step, value, master, b)
     wa.setValue(mygetattr(master, value))
-    if tooltip: QToolTip.add(wa, tooltip)
+    if tooltip:
+        QToolTip.add(wa, tooltip)
 
-    master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value, wa.clamp))
-    master.controlledAttributes[value] = CallFront_doubleSpin(wa)
-    if callback:
-        master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
+    connectControl(wa, master, value, callback, "valueChanged(int)", CallFront_doubleSpin(wa), fvcb=wa.clamp)
     return b
+
 
 def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = []):
     b = widgetBox(widget, box, orientation=None)
@@ -78,32 +67,33 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     if labelWidth:
         wa.setFixedSize(labelWidth, wa.sizeHint().height())
     wa.setChecked(mygetattr(master, value))
-    if disabled: wa.setDisabled(1)
-    master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, value))
-    master.controlledAttributes[value] = CallFront_checkBox(wa)
-    
+    if disabled:
+        wa.setDisabled(1)
+    if tooltip:
+        QToolTip.add(wa, tooltip)
+
+    cfront, cback, cfunc = connectControl(wa, master, value, None, "toggled(bool)", CallFront_checkBox(wa),
+                                          cfunc = callback and FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
     wa.disables = disables
     wa.makeConsistent = Disabler(wa, master, value)
     master.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
-
-    if tooltip: QToolTip.add(wa, tooltip)
-    if callback:
-        master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
     return wa
+
 
 def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = str, validator=None):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     wa = QLineEdit(b)
     wa.setText(str(mygetattr(master,value)))
-    if tooltip: QToolTip.add(wa, tooltip)
-    if validator: wa.setValidator(validator)
-    master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallbackLineEdit(wa, master, value, valueType))
-    master.controlledAttributes[value] = CallFront_lineEdit(wa)
-    if callback:
-        master.connect(wa, SIGNAL("textChanged(const QString &)"), FunctionCallback(master, callback))
+    if tooltip:
+        QToolTip.add(wa, tooltip)
+    if validator:
+        wa.setValidator(validator)
+
+    connectControl(wa, master, value, callback, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = valueType)
     wa.box = b
     return wa
+
 
 def checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None):
     hb = QHBox(widget)
@@ -117,21 +107,21 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
 
     wa.disables = [wb]
     wa.makeConsistent()
-    
-    master.connect(wb, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
-    master.controlledAttributes[value] = CallFront_spin(wb)
 
-    if spinCallback:
-        master.connect(wb, SIGNAL("valueChanged(int)"), FunctionCallback(master, spinCallback, widget=wb, getwidget=getwidget))
-    
+    connectControl(wb, master, value, None, "valueChanged(int)", CallFront_spin(wb),
+                   cfunc = spinCallback and FunctionCallback(master, spinCallback, widget=wb, getwidget=getwidget))
     return wa, wb
+
 
 def button(widget, master, label, callback = None, disabled=0, tooltip=None):
     btn = QPushButton(label, widget)
     btn.setDisabled(disabled)
-    if callback: master.connect(btn, SIGNAL("clicked()"), callback)
-    if tooltip: QToolTip.add(btn, tooltip)
+    if callback:
+        master.connect(btn, SIGNAL("clicked()"), callback)
+    if tooltip:
+        QToolTip.add(btn, tooltip)
     return btn
+
 
 def separator(widget, width=0, height=8):
     sep = QWidget(widget)
@@ -163,6 +153,183 @@ def getAttributeIcons():
                      orange.VarTypes.String: createAttributePixmap("S", Qt.black),
                      -1: createAttributePixmap("?", QColor(128, 128, 128))}
     return attributeIconDict
+
+
+def listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single):
+    bg = box and QHButtonGroup(box, widget) or widget
+    lb = QListBox(bg)
+    lb.setSelectionMode(selectionMode)
+
+    clist = mygetattr(master, value)
+    if type(clist) >= ControlledList:
+        clist = ControlledList(clist, lb)
+        master.__setattr__(value, clist)
+
+    lb.ogValue = value
+    lb.ogLabels = labels
+    lb.ogMaster = master
+    if tooltip:
+        QToolTip.add(lb, tooltip)
+
+    connectControl(lb, master, value, None, "selectionChanged()", CallFront_ListBox(lb), ListBoxCallback(lb, master, value))
+    master.controlledAttributes[labels] = CallFront_ListBoxLabels(lb)
+    return lb
+    
+
+# btnLabels is a list of either char strings or pixmaps
+def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None):
+    if box:
+        bg = QVButtonGroup(box, widget)
+    else:
+        bg = widget
+
+    bg.setRadioButtonExclusive(1)
+    bg.buttons = []
+    for i in range(len(btnLabels)):
+        if type(btnLabels[i]) == str:
+            w = QRadioButton(btnLabels[i], bg)
+        else:
+            w = QRadioButton(str(i), bg)
+            w.setPixmap(btnLabels[i])
+        w.setOn(mygetattr(master, value) == i)
+        bg.buttons.append(w)
+        if tooltips:
+            QToolTip.add(w, tooltips[i])
+
+    connectControl(bg, master, value, callback, "clicked(int)", CallFront_radioButtons(bg))
+    return bg
+
+
+def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None):
+    if box:
+        bg = QHButtonGroup(box, widget)
+    else:
+        bg = widget
+
+    if type(label) == str:
+        w = QRadioButton(label, bg)
+    else:
+        w = QRadioButton("X")
+        w.setPixmap(label)
+    w.setOn(mygetattr(master, value))
+    if tooltip:
+        QToolTip.add(w, tooltip)
+
+    connectControl(w, master, value, callback, "stateChanged(int)", CallFront_checkBox(w))
+    return w
+
+
+def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0):
+    if box:
+        sliderBox = QHButtonGroup(box, widget)
+    else:
+        sliderBox = QHBox(widget)
+        
+    slider = QSlider(minValue, maxValue, step, mygetattr(master, value), QSlider.Horizontal, sliderBox)
+    if ticks:
+        slider.setTickmarks(QSlider.Below)
+        slider.setTickInterval(ticks)
+        
+    label = QLabel(sliderBox)
+    label.setText(labelFormat % minValue)
+    width1 = label.sizeHint().width()
+    label.setText(labelFormat % maxValue)
+    width2 = label.sizeHint().width()
+    label.setFixedSize(max(width1, width2), label.sizeHint().height())
+    txt = labelFormat % (mygetattr(master, value)/divideFactor)
+    label.setText(txt)
+    label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
+
+    connectControl(slider, master, value, callback, "valueChanged(int)", CallFront_hSlider(slider))
+    QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
+    return slider
+
+
+def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80):
+    init = mygetattr(master, value)
+    if box:
+        sliderBox = QHButtonGroup(box, widget)
+    else:
+        sliderBox = widget
+
+    hb = QHBox(sliderBox)
+    if label:
+        lbl = QLabel(label, hb)
+        if labelWidth:
+            lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
+    if ticks:
+        slider = qwt.QwtSlider(hb, "", Qt.Horizontal, qwt.QwtSlider.Bottom, qwt.QwtSlider.BgSlot)
+    else:
+        slider = qwt.QwtSlider(hb, "", Qt.Horizontal, qwt.QwtSlider.None, qwt.QwtSlider.BgSlot)
+    slider.setScale(minValue, maxValue, logarithmic) # the third parameter for logaritmic scale
+    slider.setScaleMaxMinor(10)
+    slider.setThumbWidth(20)
+    slider.setThumbLength(12)
+    if maxWidth:
+        slider.setMaximumSize(maxWidth,40)
+    if logarithmic:
+        slider.setRange(math.log10(minValue), math.log10(maxValue), step)
+        slider.setValue(math.log10(init))
+    else:
+        slider.setRange(minValue, maxValue, step)
+        slider.setValue(init)
+        
+##    format = "%s%d.%df" % ("%", precision+3, precision)
+    format = " %s.%df" % ("%", precision)
+    
+    lbl = QLabel(hb)
+    lbl.setText(format % minValue)
+    width1 = lbl.sizeHint().width()
+    lbl.setText(format % maxValue)
+    width2 = lbl.sizeHint().width()
+    lbl.setFixedSize(max(width1, width2), lbl.sizeHint().height())
+    lbl.setText(format % init)
+
+    
+    if logarithmic:
+        cfront = CallFront_logSlider(slider)
+        cback = ValueCallback(master, value, f=lambda x: 10**x)
+        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format, f=lambda x: 10**x))
+    else:
+        cfront = CallFront_hSlider(slider)
+        cback = ValueCallback(master, value)
+        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
+    connectControl(slider, master, value, callback, "valueChanged(double)", cfront, cback)
+
+    slider.box = hb
+    return slider
+
+
+def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str):
+    hb = widgetBox(widget, box, orientation)
+    widgetLabel(hb, label, labelWidth)
+    if tooltip: QToolTip.add(hb, tooltip)
+    combo = QComboBox(hb)
+
+    if items:
+        for i in items:
+            combo.insertItem(str(i))
+        if len(items)>0:
+                if sendSelectedValue and mygetattr(master, value) in items: combo.setCurrentItem(items.index(mygetattr(master, value)))
+                elif not sendSelectedValue: combo.setCurrentItem(mygetattr(master, value))
+        else:
+            combo.setDisabled(True)
+
+    if sendSelectedValue:
+        connectControl(combo, master, value, callback, "activated( const QString & )", CallFront_comboBox(combo, valueType), fvcb = valueType)
+    else:
+        connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo))
+    return combo
+
+
+def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tooltip=None, callback = None, sendSelectedValue=0, valueType = int, labelWidth = None):
+    hbox = widgetBox(widget, box = box, orientation="horizontal")
+    lab = widgetLabel(hbox, label, labelWidth)
+    combo = comboBox(hbox, master, value, items = items, tooltip = tooltip, callback = callback, sendSelectedValue = sendSelectedValue, valueType = valueType)
+    return combo
+
+##############################################################################
+# callback handlers
 
 
 class ControlledList(list):
@@ -222,27 +389,232 @@ class ControlledList(list):
     def remove(self, item):
         self.listBox.setSelected(item, 0)
         list.remove(self, item)
-        
 
-class CallFront_ListBox:
-    def __init__(self, control):
-        self.control = control
 
-    def __call__(self, value):
-        if value == None:
+
+def connectControl(control, master, value, f, signal, cfront, cback = None, cfunc = None, fvcb = None):
+    master.controlledAttributes[value] = cfront    
+
+    cback = cback or ValueCallback(master, value, fvcb)
+    master.connect(control, SIGNAL(signal), cback)
+    cback.opposite = cfront
+
+    cfunc = cfunc or f and FunctionCallback(master, f)
+    if cfunc:
+        master.connect(control, SIGNAL(signal), cfunc)
+        cfront.opposite = cback, cfunc
+    else:
+        cfront.opposite = (cback,)
+
+    return cfront, cback, cfunc
+
+
+class ControlledCallback:
+    def __init__(self, widget, attribute, f = None):
+        self.widget = widget
+        self.attribute = attribute
+        self.f = f
+        widget.callbackDeposit.append(self)
+        self.disabled = False
+
+    def acyclic_setattr(self, value):
+        if self.disabled:
             return
-        if not type(value) <= ControlledList:
-            setattr(self.control.ogMaster, self.control.ogValue, ControlledList(value, self.control))
-        for i in range(self.control.count()):
-            self.control.setSelected(i, 0)
-        for i in value:
-            self.control.setSelected(i, 1)
 
-class CallFront_ListBoxLabels:
-    def __init__(self, control):
+        if isinstance(value, QString):
+            value = str(value)
+        if self.f:
+           value = self.f(value)
+
+        opposite = getattr(self, "opposite", None)
+        if opposite:
+            try:
+                opposite.disabled = True
+                setattr(self.widget, self.attribute, value)
+            finally:
+                opposite.disabled = False
+        else:
+            setattr(self.widget, self.attribute, value)
+                
+    
+class ValueCallback(ControlledCallback):
+    def __call__(self, value):
+        if value != None:
+            try:
+                self.acyclic_setattr(value)
+            except:
+                print "OWGUI.ValueCallback: %s", value
+#                traceback.print_exception(*sys.exc_info())
+
+
+class ValueCallbackLineEdit(ControlledCallback):
+    def __init__(self, control, widget, attribute, f = None):
+        ControlledCallback.__init__(self, widget, attribute, f)
         self.control = control
 
     def __call__(self, value):
+        if value != None:
+            try:
+                pos = self.control.cursorPosition()
+                acyclic_setattr(value)
+                self.control.setCursorPosition(pos)
+            except:
+                print "invalid value ", value, type(value)            
+
+
+class SetLabelCallback:
+    def __init__(self, widget, label, format = "%5.2f", f = None):
+        self.widget = widget
+        self.label = label
+        self.format = format
+        self.f = f
+        widget.callbackDeposit.append(self)
+        self.disabled = False
+        
+    def __call__(self, value):
+        if not self.disabled and value != None:
+            if self.f:
+                value = self.f(value)
+            self.label.setText(self.format % value)
+
+
+class FunctionCallback:
+    def __init__(self, master, f, widget=None, id=None, getwidget=None):
+        self.master = master
+        self.widget = widget
+        self.f = f
+        self.id = id
+        self.getwidget = getwidget
+        master.callbackDeposit.append(self)
+        self.disabled = False
+
+    def __call__(self, value):
+        if not self.disabled and value!=None:
+            kwds = {}
+            if self.id <> None:
+                kwds['id'] = self.id
+            if self.getwidget:
+                kwds['widget'] = self.widget
+            if type(self.f)==type([]):
+                for f in self.f:
+                    apply(f, (), kwds)
+            else:
+                apply(self.f, (), kwds)
+
+
+class ListBoxCallback:
+    def __init__(self, control, widget, attribute):
+        self.control = control
+        self.widget = widget
+        self.disabled = False
+
+    def __call__(self): # triggered by selectionChange()
+        if not self.disabled:
+            clist = mygetattr(self.widget, self.control.ogValue)
+            list.__delslice__(clist, 0, len(clist))
+            control = self.control
+            for i in range(control.count()):
+                if control.isSelected(i):
+                    list.append(clist, i)
+
+        
+##############################################################################
+# call fronts (through this a change of the attribute value changes the related control)
+
+
+class ControlledCallFront:
+    def __init__(self, control):
+        self.control = control
+        self.disabled = False
+
+    def __call__(self, *args):
+        if not self.disabled:
+            opposite = getattr(self, "opposite", None)
+            if opposite:
+                try:
+                    for op in opposite:
+                        op.disabled = True
+                    self.action(*args)
+                finally:
+                    for op in opposite:
+                        op.disabled = False
+            else:
+                self.action(*args)
+            
+        
+class CallFront_spin(ControlledCallFront):
+    def action(self, value):
+        if value != None:
+            self.control.setValue(value)
+
+
+class CallFront_doubleSpin(ControlledCallFront):
+    def action(self, value):
+        if value != None:
+            self.control.setValue(self.control.expand(value))
+
+
+class CallFront_checkBox(ControlledCallFront):
+    def action(self, value):
+        if value != None:
+            self.control.setChecked(value)
+
+
+class CallFront_comboBox(ControlledCallFront):
+    def __init__(self, control, valType = None):
+        ControlledCallFront.__init__(self, control)
+        self.valType = valType
+
+    def action(self, value):
+        if value != None:
+            if self.valType: 
+                for i in range(self.control.count()):
+                    if self.valType(str(self.control.text(i))) == value:
+                        self.control.setCurrentItem(i)
+                        return
+                print "unable to set ", self.control, " to value ", value
+            else:
+                self.control.setCurrentItem(value)
+
+        
+class CallFront_hSlider(ControlledCallFront):
+    def action(self, value):
+        if value != None:
+            self.control.setValue(value)
+
+
+class CallFront_logSlider(ControlledCallFront):
+    def action(self, value):
+        if value != None:
+            if value < 1e-30:
+                print "unable to set ", self.control, "to value ", value, " (value too small)"
+            else:
+                self.control.setValue(math.log10(value))
+
+                
+class CallFront_lineEdit(ControlledCallFront):
+    def action(self, value):
+        self.control.setText(str(value))
+
+
+class CallFront_radioButtons(ControlledCallFront):
+    def action(self, value):
+        self.control.buttons[value].setOn(1)
+
+
+class CallFront_ListBox(ControlledCallFront):
+    def action(self, value):
+        if value != None:
+            if not type(value) <= ControlledList:
+                setattr(self.control.ogMaster, self.control.ogValue, ControlledList(value, self.control))
+            for i in range(self.control.count()):       
+                self.control.setSelected(i, 0)
+            for i in value:
+                self.control.setSelected(i, 1)
+
+
+class CallFront_ListBoxLabels(ControlledCallFront):
+    def action(self, value):
         icons = getAttributeIcons()
         self.control.clear()
         if value:
@@ -253,342 +625,6 @@ class CallFront_ListBoxLabels:
                     print type(i)
                     self.control.insertItem(i)
             
-
-class ListBoxCallback:
-    def __init__(self, control, widget, attribute):
-        self.control = control
-        self.widget = widget
-
-    def __call__(self): # triggered by selectionChange()
-        clist = mygetattr(self.widget, self.control.ogValue)
-        list.__delslice__(clist, 0, len(clist))
-        control = self.control
-        for i in range(control.count()):
-            if control.isSelected(i):
-                list.append(clist, i)
-        
-
-def listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single):
-    bg = box and QHButtonGroup(box, widget) or widget
-    lb = QListBox(bg)
-    lb.setSelectionMode(selectionMode)
-
-    clist = mygetattr(master, value)
-    if type(clist) >= ControlledList:
-        clist = ControlledList(clist, lb)
-        master.__setattr__(value, clist)
-
-    lb.ogValue = value
-    lb.ogLabels = labels
-    lb.ogMaster = master
-    
-    master.connect(lb, SIGNAL("selectionChanged()"), ListBoxCallback(lb, master, value))
-    master.controlledAttributes[value] = CallFront_ListBox(lb)
-    master.controlledAttributes[labels] = CallFront_ListBoxLabels(lb)
-
-    if callback:
-        master.connect(lb, SIGNAL("selectionChanged()"), callback)
-    if tooltip:
-        QToolTip.add(lb, tooltip)
-    return lb
-    
-
-# btnLabels is a list of either char strings or pixmaps
-def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None):
-    if box:
-        bg = QVButtonGroup(box, widget)
-    else:
-        bg = widget
-
-    bg.setRadioButtonExclusive(1)
-    bg.buttons = []
-    for i in range(len(btnLabels)):
-        if type(btnLabels[i]) == str:
-            w = QRadioButton(btnLabels[i], bg)
-        else:
-            w = QRadioButton(str(i), bg)
-            w.setPixmap(btnLabels[i])
-        w.setOn(mygetattr(master, value) == i)
-        bg.buttons.append(w)
-        if tooltips:
-            QToolTip.add(w, tooltips[i])
-    master.connect(bg, SIGNAL("clicked(int)"), ValueCallback(master, value))
-    master.controlledAttributes[value] = CallFront_radioButtons(bg)
-    if callback:
-        master.connect(bg, SIGNAL("clicked(int)"), FunctionCallback(master, callback))
-    return bg
-
-
-def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None):
-    if box:
-        bg = QHButtonGroup(box, widget)
-    else:
-        bg = widget
-
-    if type(label) == str:
-        w = QRadioButton(label, bg)
-    else:
-        w = QRadioButton("X")
-        w.setPixmap(label)
-    w.setOn(mygetattr(master, value))
-    if tooltip:
-        QToolTip.add(w, tooltip)
-    master.connect(w, SIGNAL("stateChanged(int)"), ValueCallback(master, value))
-    master.controlledAttributes[value] = CallFront_checkBox(w)
-    if callback:
-        master.connect(w, SIGNAL("stateChanged(int)"), FunctionCallback(master, callback))
-    return w
-
-def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0):
-    if box:
-        sliderBox = QHButtonGroup(box, widget)
-    else:
-        sliderBox = QHBox(widget)
-    slider = QSlider(minValue, maxValue, step, mygetattr(master, value), QSlider.Horizontal, sliderBox)
-    if ticks:
-        slider.setTickmarks(QSlider.Below)
-        slider.setTickInterval(ticks)
-    label = QLabel(sliderBox)
-    label.setText(labelFormat % minValue)
-    width1 = label.sizeHint().width()
-    label.setText(labelFormat % maxValue)
-    width2 = label.sizeHint().width()
-    label.setFixedSize(max(width1, width2), label.sizeHint().height())
-    txt = labelFormat % (mygetattr(master, value)/divideFactor)
-    label.setText(txt)
-    label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
-    master.connect(slider, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
-    QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
-    if callback:
-        master.connect(slider, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
-    master.controlledAttributes[value] = CallFront_hSlider(slider)
-    
-    return slider
-
-def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80):
-    init = mygetattr(master, value)
-    if box:
-        sliderBox = QHButtonGroup(box, widget)
-    else:
-        sliderBox = widget
-
-    hb = QHBox(sliderBox)
-    if label:
-        lbl = QLabel(label, hb)
-        if labelWidth:
-            lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
-    if ticks:
-        slider = qwt.QwtSlider(hb, "", Qt.Horizontal, qwt.QwtSlider.Bottom, qwt.QwtSlider.BgSlot)
-    else:
-        slider = qwt.QwtSlider(hb, "", Qt.Horizontal, qwt.QwtSlider.None, qwt.QwtSlider.BgSlot)
-    slider.setScale(minValue, maxValue, logarithmic) # the third parameter for logaritmic scale
-    slider.setScaleMaxMinor(10)
-    slider.setThumbWidth(20)
-    slider.setThumbLength(12)
-    if maxWidth:
-        slider.setMaximumSize(maxWidth,40)
-    if logarithmic:
-        slider.setRange(math.log10(minValue), math.log10(maxValue), step)
-        slider.setValue(math.log10(init))
-    else:
-        slider.setRange(minValue, maxValue, step)
-        slider.setValue(init)
-        
-##    format = "%s%d.%df" % ("%", precision+3, precision)
-    format = " %s.%df" % ("%", precision)
-    
-    lbl = QLabel(hb)
-    lbl.setText(format % minValue)
-    width1 = lbl.sizeHint().width()
-    lbl.setText(format % maxValue)
-    width2 = lbl.sizeHint().width()
-    lbl.setFixedSize(max(width1, width2), lbl.sizeHint().height())
-    lbl.setText(format % init)
-
-    if logarithmic:    
-        master.connect(slider, SIGNAL("valueChanged(double)"), ValueCallback(master, value, f=lambda x: 10**x))
-        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format, f=lambda x: 10**x))
-    else:
-        master.connect(slider, SIGNAL("valueChanged(double)"), ValueCallback(master, value))
-        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
-    if callback:
-        master.connect(slider, SIGNAL("valueChanged(double)"), FunctionCallback(master, callback))
-    slider.box = hb
-    return slider
-
-def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str):
-    hb = widgetBox(widget, box, orientation)
-    widgetLabel(hb, label, labelWidth)
-    if tooltip: QToolTip.add(hb, tooltip)
-    combo = QComboBox(hb)
-
-    if items:
-        for i in items:
-            combo.insertItem(str(i))
-        if len(items)>0:
-                if sendSelectedValue and mygetattr(master, value) in items: combo.setCurrentItem(items.index(mygetattr(master, value)))
-                elif not sendSelectedValue: combo.setCurrentItem(mygetattr(master, value))
-        else:
-            combo.setDisabled(True)
-
-    if sendSelectedValue:
-        signal = "activated( const QString & )"
-        master.connect(combo, SIGNAL(signal), ValueCallback(master, value, valueType))
-    else:
-        signal = "activated(int)"
-        master.connect(combo, SIGNAL(signal), ValueCallback(master, value))
-
-    if callback:
-        master.connect(combo, SIGNAL(signal), FunctionCallback(master, callback))
-    if sendSelectedValue: master.controlledAttributes[value] = CallFront_comboBox(combo, valueType)
-    else:                   master.controlledAttributes[value] = CallFront_comboBox(combo)
-    return combo
-
-def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tooltip=None, callback = None, sendSelectedValue=0, valueType = int, labelWidth = None):
-    hbox = widgetBox(widget, box = box, orientation="horizontal")
-    lab = widgetLabel(hbox, label, labelWidth)
-    combo = comboBox(hbox, master, value, items = items, tooltip = tooltip, callback = callback, sendSelectedValue = sendSelectedValue, valueType = valueType)
-    return combo
-
-##############################################################################
-# callback handlers
-
-import sys
-
-class ValueCallback:
-    def __init__(self, widget, attribute, f = None):
-        self.widget = widget
-        self.attribute = attribute
-        self.f = f
-        widget.callbackDeposit.append(self)
-
-    def __call__(self, value):
-        if value==None: return
-        if isinstance(value, QString): value = str(value)
-        try:
-           if self.f: setattr(self.widget, self.attribute, self.f(value))
-           else:        setattr(self.widget, self.attribute, value)
-        except:
-           print "OWGUI.ValueCallback: %s" % sys.exc_info()[1]
-
-class ValueCallbackLineEdit:
-    def __init__(self, control, widget, attribute, f = None):
-        self.control = control
-        self.widget = widget
-        self.attribute = attribute
-        self.f = f
-        widget.callbackDeposit.append(self)
-
-    def __call__(self, value):
-        if value==None: return
-        if isinstance(value, QString): value = str(value)
-        try:
-            pos = self.control.cursorPosition()
-            if self.f: setattr(self.widget, self.attribute, self.f(value))
-            else:        setattr(self.widget, self.attribute, value)
-            self.control.setCursorPosition(pos)
-        except:
-            print "invalid value ", value, type(value)            
-
-class SetLabelCallback:
-    def __init__(self, widget, label, format = "%5.2f", f = None):
-        self.widget = widget
-        self.label = label
-        self.format = format
-        self.f = f
-        widget.callbackDeposit.append(self)
-    def __call__(self, value):
-        if value==None: return
-        if self.f:
-            value = self.f(value)
-        self.label.setText(self.format % value)
-
-class FunctionCallback:
-    def __init__(self, master, f, widget=None, id=None, getwidget=None):
-        self.master = master
-        self.widget = widget
-        self.f = f
-        self.id = id
-        self.getwidget = getwidget
-        master.callbackDeposit.append(self)
-
-    def __call__(self, value):
-        if value==None: return
-        kwds = {}
-        if self.id <> None: kwds['id'] = self.id
-        if self.getwidget: kwds['widget'] = self.widget
-        if type(self.f)==type([]):
-            for f in self.f:
-                apply(f, (), kwds)
-        else:
-            apply(self.f, (), kwds)
-
-##############################################################################
-# call fronts (this allows that change of the value of the variable
-# changes the related widget
-
-class CallFront_spin:
-    def __init__(self, control):
-        self.control = control
-
-    def __call__(self, value):
-        if value==None: return
-        self.control.setValue(value)
-
-class CallFront_doubleSpin:
-    def __init__(self, control):
-        self.control = control
-
-    def __call__(self, value):
-        if value==None: return
-        self.control.setValue(self.control.expand(value))
-
-class CallFront_checkBox:
-    def __init__(self, control):
-        self.control = control
-
-    def __call__(self, value):
-        if value==None: return
-#        print "CF_cb", value
-        self.control.setChecked(value)
-
-class CallFront_comboBox:
-    def __init__(self, control, valType = None):
-        self.control = control
-        self.valType = valType
-
-    def __call__(self, value):
-        if value==None: return
-        if self.valType: 
-            for i in range(self.control.count()):
-                if self.valType(str(self.control.text(i))) == value:
-                    self.control.setCurrentItem(i)
-                    return
-            print "unable to set ", self.control, " to value ", value
-        else:
-            self.control.setCurrentItem(value)
-        
-class CallFront_hSlider:
-    def __init__(self, control):
-        self.control = control
-
-    def __call__(self, value):
-        if value==None: return
-        self.control.setValue(value)
-        
-class CallFront_lineEdit:
-    def __init__(self, control):
-        self.control = control
-
-    def __call__(self, value):
-        self.control.setText(str(value))
-
-class CallFront_radioButtons:
-    def __init__ (self, control):
-        self.control = control
-
-    def __call__(self, value):
-        self.control.buttons[value].setOn(1)
 
 ##############################################################################
 ## Disabler is a call-back class for check box that can disable/enable other

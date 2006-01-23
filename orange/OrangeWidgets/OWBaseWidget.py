@@ -52,15 +52,12 @@ def unisetattr(self, name, value, grandparent):
 
     # controlled things (checkboxes...) never have __attributeControllers
     else:
-#        print "NO CALLBACK: %s (%s / %s)" % (lastname, self.__class__.__name__.split(".")[-1], obj.__class__.__name__.split(".")[-1])
         if hasattr(self, "__attributeControllers"):
-#            print "ATTRIBUTE CONTROLLERS"
             for controller, myself in self.__attributeControllers.keys():
                 if getattr(controller, myself, None) != self:
                     del self.__attributeControllers[(controller, myself)]
                     continue
 
-#                print "MYSELF %s" % myself                
                 controlledAttributes = getattr(controller, "controlledAttributes", None)
                 if controlledAttributes:
                     fullName = myself + "." + name
@@ -68,7 +65,6 @@ def unisetattr(self, name, value, grandparent):
                     controlCallback = controlledAttributes.get(fullName, None)
                     if controlCallback:
                         controlCallback(value)
-#                        print "CALLBACK FOUND"
 
                     else:
                         lname = fullName + "."
@@ -114,9 +110,12 @@ class ContextHandler:
 
     def openContext(self, widget, *arg, **argkw):
         if not hasattr(widget, self.localContextName):
+#            print "CONTEXT FOUND"
             if self.syncWithGlobal:
+#                print "TAKING GLOBAL"
                 setattr(widget, self.localContextName, self.globalContexts)
             else:
+#                print "COPYING GLOBAL"
                 setattr(widget, self.localContextName, copy.deepcopy(self.globalContexts))
 
         index, context, score = self.findMatch(widget, self.findImperfect and self.loadImperfect, *arg, **argkw)
