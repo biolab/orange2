@@ -23,113 +23,114 @@
 #ifndef __SVM_HPP
 #define __SVM_HPP
 
-#include "classify.hpp"
-#include "learn.hpp"
+/*##########################################
+##########################################*/
 
-class TlibSVM {
-public:
-	struct svm_parameter
-	{
-		int svm_type;
-		int kernel_type;
-		double degree;	// for poly
-		double gamma;	// for poly/rbf/sigmoid
-		double coef0;	// for poly/sigmoid
+#ifndef _LIBSVM_H
+#define _LIBSVM_H
 
-		// these are for training only
-		double cache_size; // in MB
-		double eps;	// stopping criteria
-		double C;	// for C_SVC and C_SVR (cost)
-		double nu;	// for NU_SVC and ONE_CLASS
-		double p;	// for C_SVR
-		
-		int max_iter;
-		double iter_mult;
-	};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-	struct svm_node
-	{
-		int index;
-		double value;
-	};
-
-	struct svm_problem
-	{
-		int l;
-		double *y;
-		struct svm_node **x;
-	};
-
-	//
-	// svm_model
-	//
-	struct svm_model
-	{
-		int n;						// number of SVs
-		double *sv_coef;			// sv_coef[i] is the coefficient of SV[i]
-		struct svm_node **SV;		// SVs
-    struct svm_node *x;
-		double rho;					// the constant in the decision function
-
-		struct svm_parameter param;	// parameter
-	};
-
-	struct svm_problem *problem;
-	struct svm_model *model;
-
-	void svm_train();
-	void svm_classify(const struct svm_node *x, double *decision_value);
-
-	TlibSVM();
-
-	TlibSVM(struct svm_model *omodel) {
-		model = omodel;
-	};
-
-	~TlibSVM() {
-		if (model != NULL) {
-			// mldelete the problem
-			if (model->SV != NULL) {
-        if (*(model->SV)!= NULL) {
-				  free(*(model->SV));
-				  *(model->SV) = NULL;
-        }
-				free(model->sv_coef);
-				model->sv_coef = NULL;
-				free(model->SV);
-				model->SV = NULL;
-			}
-			mldelete model;
-			model = NULL;
-		}
-	};
-private:
-	class Kernel;
-	class Cache;
-	class Solver;
-	class C_SVC_Q;
-	class NU_SVC_Q;
-	class ONE_CLASS_Q;
-	class C_SVR_Q;
-	void solve_c_svr(const svm_problem *prob, const svm_parameter *param,double *alpha, double& obj, double& rho);
-	void solve_c_svc(const svm_problem *prob, const svm_parameter* param,double *alpha, double& obj, double& rho);
-	void solve_nu_svc(const svm_problem *prob, const svm_parameter* param,double *alpha, double& obj, double& rho);
-	void solve_one_class(const svm_problem *prob, const svm_parameter* param,double *alpha, double& obj, double& rho);
+struct svm_node
+{
+	int index;
+	double value;
 };
 
-// A wrapper for libsvm
-class ORANGE_API TSVMLearner : public TLearner {
+struct svm_problem
+{
+	int l;
+	double *y;
+	struct svm_node **x;
+};
+
+enum { C_SVC, NU_SVC, ONE_CLASS, EPSILON_SVR, NU_SVR };	/* svm_type */
+enum { LINEAR, POLY, RBF, SIGMOID };	/* kernel_type */
+
+struct svm_parameter
+{
+	int svm_type;
+	int kernel_type;
+	double degree;	/* for poly */
+	double gamma;	/* for poly/rbf/sigmoid */
+	double coef0;	/* for poly/sigmoid */
+
+	/* these are for training only */
+	double cache_size; /* in MB */
+	double eps;	/* stopping criteria */
+	double C;	/* for C_SVC, EPSILON_SVR and NU_SVR */
+	int nr_weight;		/* for C_SVC */
+	int *weight_label;	/* for C_SVC */
+	double* weight;		/* for C_SVC */
+	double nu;	/* for NU_SVC, ONE_CLASS, and NU_SVR */
+	double p;	/* for EPSILON_SVR */
+	int shrinking;	/* use the shrinking heuristics */
+	int probability; /* do probability estimates */
+};
+
+struct svm_model *svm_train(const struct svm_problem *prob, const struct svm_parameter *param);
+void svm_cross_validation(const struct svm_problem *prob, const struct svm_parameter *param, int nr_fold, double *target);
+
+int svm_save_model(const char *model_file_name, const struct svm_model *model);
+struct svm_model *svm_load_model(const char *model_file_name);
+
+int svm_get_svm_type(const struct svm_model *model);
+int svm_get_nr_class(const struct svm_model *model);
+void svm_get_labels(const struct svm_model *model, int *label);
+double svm_get_svr_probability(const struct svm_model *model);
+
+void svm_predict_values(const struct svm_model *model, const struct svm_node *x, double* dec_values);
+double svm_predict(const struct svm_model *model, const struct svm_node *x);
+double svm_predict_probability(const struct svm_model *model, const struct svm_node *x, double* prob_estimates);
+
+void svm_destroy_model(struct svm_model *model);
+void svm_destroy_param(struct svm_parameter *param);
+
+const char *svm_check_parameter(const struct svm_problem *prob, const struct svm_parameter *param);
+int svm_check_probability_model(const struct svm_model *model);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _LIBSVM_H */
+
+/*##########################################
+##########################################*/
+
+#include <iostream>
+#include "classify.hpp"
+#include "learn.hpp"
+#include "orange.hpp"
+#include "domain.hpp"
+#include "examplegen.hpp"
+#include "table.hpp"
+#include "examples.hpp"
+
+WRAPPER(ExampleGenerator)
+WRAPPER(KernelFunc)
+WRAPPER(SVMLearner)
+WRAPPER(SVMClassifier)
+WRAPPER(ExampleTable)
+
+class ORANGE_API TKernelFunc: public TOrange{
 public:
-  __REGISTER_CLASS
+	__REGISTER_ABSTRACT_CLASS
+	virtual operator()(TExample &, TExample &)=0;
+};
 
-  // model definition
+
+//#include "callback.hpp"
+
+class ORANGE_API TSVMLearner : public TLearner{
+public:
+	__REGISTER_CLASS
 	
-  TSVMLearner();
-  TlibSVM *svm;
-
-  // definition of the parameters
-	int svm_type; //P (>type) SVM type (C_SVC=0, NU_SVC, ONE_CLASS, C_SVR=3)
-	int kernel_type; //P (>kernel) kernel type (LINEAR=0, POLY, RBF, SIGMOID=3)
+	//parameters
+	int svm_type; //P  SVM type (C_SVC=0, NU_SVC, ONE_CLASS, EPSILON_SVR=3, NU_SVR=4)
+	int kernel_type; //P  kernel type (LINEAR=0, POLY, RBF, SIGMOID=3)
 	float degree;	//P polynomial kernel degree
 	float gamma;	//P poly/rbf/sigm parameter
 	float coef0;	//P poly/sigm parameter
@@ -140,32 +141,35 @@ public:
 	float p;	//P for C_SVR
 	int max_iter; //P maximal number of iterations
 	float iter_mult; //P epsilon multiplier
-
-  virtual PClassifier operator()(PExampleGenerator, const int & =0);
-};
-
-
-class ORANGE_API TSVMClassifier : public TClassifierFD {
-public:
-  __REGISTER_CLASS
-
-  TlibSVM *svm;
-  
-	TSVMClassifier() {};
-
-  ~TSVMClassifier() {
-    mldelete svm;
-  }
+	int shrinking;	//P shrinking
+	int probability;	//P probability
 	
-	TSVMClassifier(PDomain, TlibSVM *mod);
+	PKernelFunc kernelFunc;
 
-	virtual TValue operator ()(const TExample &);
+	TSVMLearner();
+
+	PClassifier operator()(PExampleGenerator, const int & = 0);
 };
 
 
-//////////////////////////////////////////////////////////////
 
+class ORANGE_API TSVMClassifier : public TClassifier{
+public:
+	__REGISTER_CLASS
 
+	TSVMClassifier(PVariable, PExampleTable, svm_model*, svm_node*);
+	~TSVMClassifier();
+
+	TValue operator()(const TExample&);
+	PDistribution classDistribution(const TExample &);
+
+	PExampleTable supportVectors; //P support vectors
+	PExampleTable examples;	//P examples used to train the classifier
+
+private:
+	svm_model *model;
+	svm_node *x_space;
+};
 
 
 #endif
