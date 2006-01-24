@@ -27,6 +27,7 @@ if ! python setup.py compile >> ../output.log 2>&1 ; then
   cd /home/orange/daily/orange
   cat compiling.log >> ../output.log
   mail -s "Linux: ERROR compiling Orange" janez.demsar@fri.uni-lj.si < ../compiling.log
+  mail -s "Linux: ERROR compiling Orange" ales.erjavec@fri.uni-lj.si < ../output.log
   mail -s "Linux: ERROR compiling Orange" tomaz.curk@fri.uni-lj.si < ../output.log
   mail -s "Linux: ERROR compiling Orange" jurem@insilica.com < ../output.log
   cat ../output.log
