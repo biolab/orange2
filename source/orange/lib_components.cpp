@@ -3058,16 +3058,19 @@ PyObject *DistanceMap_getPercentileInterval(PyObject *self, PyObject *args, PyOb
 
 extern PyTypeObject PyEdge_Type;
 
+/* If objectsOnEdges==true, this is a proxy object; double's are actualy PyObject *,
+   but the references are owned by the graph. */
 class TPyEdge {
 public:
   PyObject_HEAD
 
   PGraph graph;
   int v1, v2;
-  float *weights;
+  double *weights;
+  bool objectsOnEdges;
   int weightsVersion;
 
-  inline float *getWeights()
+  inline double *getWeights()
   {
     if (weightsVersion != (weights ? graph->lastAddition : graph->lastRemoval)) {
       weights = graph->getEdge(v1, v2);
@@ -3078,6 +3081,7 @@ public:
 };
 
 
+#define DOUBLE_AS_PYOBJECT(x) (*(PyObject **)(void *)(&(x)))
 PyObject *PyEdge_Getitem(TPyEdge *self, int ind)
 {
   PyTRY
@@ -3086,11 +3090,20 @@ PyObject *PyEdge_Getitem(TPyEdge *self, int ind)
       return PYNULL;
     }
 
-    if (self->getWeights())
-      if (self->weights[ind] == GRAPH__NO_CONNECTION)
-        RETURN_NONE
+    if (self->getWeights()) {
+      const double w = self->weights[ind];
+
+      if (!CONNECTED(w))
+        RETURN_NONE;
+
+      if (self->objectsOnEdges) {
+        Py_INCREF(DOUBLE_AS_PYOBJECT(w));
+        return DOUBLE_AS_PYOBJECT(w);
+      }
       else
-        return PyFloat_FromDouble(self->weights[ind]);
+        return PyFloat_FromDouble(w);
+    }
+
     else
       RETURN_NONE;
   PyCATCH
@@ -3109,7 +3122,7 @@ int PyEdge_Contains(TPyEdge *self, PyObject *pyind)
       return -1;
     }
 
-    return self->getWeights() && (self->weights[ind] != GRAPH__NO_CONNECTION) ? 1 : 0;
+    return self->getWeights() && CONNECTED(self->weights[ind]) ? 1 : 0;
   PyCATCH_1
 }
 
@@ -3122,19 +3135,33 @@ int PyEdge_Setitem(TPyEdge *self, int ind, PyObject *item)
       return -1;
     }
 
-    float w;
-    if (!item || (item == Py_None))
-      w = GRAPH__NO_CONNECTION;
-    else
-      if (!PyNumber_ToFloat(item, w))
+    double w;
+    bool noConnection = !item || (item == Py_None);
+    if (noConnection)
+      DISCONNECT(w);
+    else {
+      if (!self->objectsOnEdges && !PyNumber_ToDouble(item, w))
         PYERROR(PyExc_TypeError, "a number expected for edge weight", -1);
+    }
+
 
     if (self->getWeights()) {
-      self->weights[ind] = w;
+      if (self->objectsOnEdges) {
+        // watch the order: first INCREF, then DECREF!
+        if (!noConnection)
+          Py_INCREF(item);
+        if (CONNECTED(self->weights[ind]))
+          Py_DECREF(DOUBLE_AS_PYOBJECT(self->weights[ind]));
 
-      if (w == GRAPH__NO_CONNECTION) {
-        float *w, *we;
-        for(w = self->weights, we = self->weights + self->graph->nEdgeTypes; (w != we) && (*w == GRAPH__NO_CONNECTION); w++);
+        DOUBLE_AS_PYOBJECT(self->weights[ind]) = item;
+      }
+
+      else
+        self->weights[ind] = w;
+
+      if (noConnection) {
+        double *w, *we;
+        for(w = self->weights, we = self->weights + self->graph->nEdgeTypes; (w != we) && !CONNECTED(*w); w++);
         if (w == we) {
           self->graph->removeEdge(self->v1, self->v2);
           self->weights = NULL;
@@ -3144,8 +3171,16 @@ int PyEdge_Setitem(TPyEdge *self, int ind, PyObject *item)
     }
 
     else {
-      if (w != GRAPH__NO_CONNECTION) {
-        (self->weights = self->graph->getOrCreateEdge(self->v1, self->v2))[ind] = w;
+      if (!noConnection) {
+        double *weights = self->weights = self->graph->getOrCreateEdge(self->v1, self->v2);
+
+        if (self->objectsOnEdges) {
+          DOUBLE_AS_PYOBJECT(weights[ind]) = item;
+          Py_INCREF(item);
+        }
+        else
+          weights[ind] = w;
+
         self->weightsVersion = self->graph->currentVersion;
       }
     }
@@ -3181,7 +3216,7 @@ PyObject *PyEdge_Str(TPyEdge *self)
     else {
       PyObject *res = PyTuple_New(nEdgeTypes);
       int i = 0;
-      for(float weights = self->weights; i != nEdgeTypes; weights++, i++)
+      for(double weights = self->weights; i != nEdgeTypes; weights++, i++)
         PyTuple_SET_ITEM(res, i, PyFloat_FromDouble(*weights));
       return res;
     }
@@ -3211,32 +3246,50 @@ PyObject *PyEdge_Str(TPyEdge *self)
        }
     }
 
-    else { 
-      if (nEdgeTypes == 1) {
-        buf = new char[20];
-        char *b2 = buf;
-        sprintf(b2, "%-10g", *self->weights);
-        for(; *b2 > 32; b2++);
-        *b2 = 0;
+    else {
+      if (self->objectsOnEdges) {
+        if (nEdgeTypes == 1)
+          return PyObject_Str(DOUBLE_AS_PYOBJECT(*self->weights));
+        else {
+          PyObject *dump = PyString_FromString("(");
+          PyString_ConcatAndDel(&dump, PyObject_Str(DOUBLE_AS_PYOBJECT(*self->weights)));
+
+          for(double *wi = self->weights+1, *we = self->weights + self->graph->nEdgeTypes; wi != we; wi++) {
+            PyString_ConcatAndDel(&dump, PyString_FromString(", "));
+            PyString_ConcatAndDel(&dump, PyObject_Str(DOUBLE_AS_PYOBJECT(*wi)));
+          }
+
+          PyString_ConcatAndDel(&dump, PyString_FromString(")"));
+          return dump;
+        }
       }
       else {
-        buf = new char[nEdgeTypes*20];
-        char *b2 = buf;
-        *b2++ = '(';
-        for(float *weights = self->weights, *wee = weights + nEdgeTypes; weights != wee; weights++) {
-          if (*weights != GRAPH__NO_CONNECTION) {
-            sprintf(b2, "%-10g", *weights);
-            for(; *b2 > 32; b2++);
-            *b2++ = ',';
-            *b2++ = ' ';
-          }
-          else {
-            strcpy(b2, "None, ");
-            b2 += 6;
-          }
+        if (nEdgeTypes == 1) {
+          buf = new char[20];
+          char *b2 = buf;
+          sprintf(b2, "%-10g", *self->weights);
+          for(; *b2 > 32; b2++);
+          *b2 = 0;
         }
-        b2[-1] = 0;
-        b2[-2] = ')';
+        else {
+          buf = new char[nEdgeTypes*20];
+          char *b2 = buf;
+          *b2++ = '(';
+          for(double *weights = self->weights, *wee = weights + nEdgeTypes; weights != wee; weights++) {
+            if (CONNECTED(*weights)) {
+              sprintf(b2, "%-10g", *weights);
+              for(; *b2 > 32; b2++);
+              *b2++ = ',';
+              *b2++ = ' ';
+            }
+            else {
+              strcpy(b2, "None, ");
+              b2 += 6;
+            }
+          }
+          b2[-1] = 0;
+          b2[-2] = ')';
+        }
       }
     }
 
@@ -3275,17 +3328,23 @@ void PyEdge_Dealloc(TPyEdge *self)
 
 PyObject *PyEdge_Richcmp(TPyEdge *self, PyObject *j, int op)
 {
-  float ref;
-  if (!PyNumber_ToFloat(j, ref))
-    PYERROR(PyExc_TypeError, "edge weights can only be compared to floats", PYNULL);
+  double ref;
+  if (self->graph->nEdgeTypes != 1)
+    PYERROR(PyExc_TypeError, "multiple-type edges cannot be compared", PYNULL);
 
   if (self->graph->nEdgeTypes != 1)
     PYERROR(PyExc_TypeError, "multiple-type edges cannot be compared to floats", PYNULL);
 
-  if (!self->getWeights() || (*self->weights == GRAPH__NO_CONNECTION))
+  if (!self->getWeights() || !CONNECTED(*self->weights))
     PYERROR(PyExc_TypeError, "edge does not exist", PYNULL);
 
-  const float &f = *self->weights;
+  if (self->objectsOnEdges)
+    return PyObject_RichCompare(DOUBLE_AS_PYOBJECT(*self->weights), j, op);
+
+  if (!PyNumber_ToDouble(j, ref))
+    PYERROR(PyExc_TypeError, "edge weights can only be compared to floats", PYNULL);
+
+  const double &f = *self->weights;
 
   int cmp;
   switch (op) {
@@ -3315,10 +3374,10 @@ PyObject *PyEdge_Float(TPyEdge *self)
   if (self->graph->nEdgeTypes != 1)
     PYERROR(PyExc_TypeError, "multiple-type edges cannot be cast to floats", PYNULL);
 
-  if (!self->getWeights() || (*self->weights == GRAPH__NO_CONNECTION))
+  if (!self->getWeights() || !CONNECTED(*self->weights))
     PYERROR(PyExc_TypeError, "edge does not exist", PYNULL);
 
-  return PyFloat_FromDouble(*self->weights);
+  return self->objectsOnEdges ? PyNumber_Float(DOUBLE_AS_PYOBJECT(*self->weights)) : PyFloat_FromDouble(*self->weights);
 }
 
 
@@ -3388,20 +3447,55 @@ PyTypeObject PyEdge_Type = {
 };
 
 
-PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, float *weights)
+int Orange_traverse(TPyOrange *self, visitproc visit, void *arg);
+int Orange_clear(TPyOrange *self);
+void Orange_dealloc(TPyOrange *self);
+
+
+inline bool hasObjectsOnEdges(PyObject *graph)
+{
+  PyObject *dict = ((TPyOrange *)graph)->orange_dict;
+  PyObject *ooe = dict ? PyDict_GetItemString(dict, "objectsOnEdges") : PYNULL;
+  return ooe && (PyObject_IsTrue(ooe) != 0);
+}
+
+inline bool hasObjectsOnEdges(PGraph graph)
+{
+  PyObject *dict = graph->myWrapper->orange_dict;
+  PyObject *ooe = dict ? PyDict_GetItemString(dict, "objectsOnEdges") : NULL;
+  return ooe && (PyObject_IsTrue(ooe) != 0);
+}
+
+inline bool hasObjectsOnEdges(const TGraph *graph)
+{
+  PyObject *dict = graph->myWrapper->orange_dict;
+  PyObject *ooe = dict ? PyDict_GetItemString(dict, "objectsOnEdges") : NULL;
+  return ooe && (PyObject_IsTrue(ooe) != 0);
+}
+
+void decrefEdge(double *weights, const int &nEdgeTypes)
+{
+  if (weights)
+    for(double *we = weights, *wee = weights + nEdgeTypes; we != wee; we++)
+      if (CONNECTED(*we))
+        Py_DECREF(DOUBLE_AS_PYOBJECT(*we));
+}
+
+PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, double *weights)
 {
   TPyEdge *self = PyObject_GC_New(TPyEdge, &PyEdge_Type);
   if (self == NULL)
     return NULL;
 
   // The object constructor has never been called, so we must initialize it
-  // before assignign to it
+  // before assigning to it
   self->graph.init();
 
   self->graph = graph;
   self->v1 = v1;
   self->v2 = v2;
   self->weights = weights;
+  self->objectsOnEdges = hasObjectsOnEdges(graph);
 
 	PyObject_GC_Track(self);
 	return (PyObject *)self;
@@ -3409,7 +3503,7 @@ PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, float *weights)
 
 
 BASED_ON(Graph, Orange)
-RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
+RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices objectsOnEdges")
 
 int Graph_getindex(TGraph *graph, PyObject *index)
 {
@@ -3543,11 +3637,18 @@ PyObject *Graph_getitem(PyObject *self, PyObject *args)
         PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", type, graph->nEdgeTypes);
         return PYNULL;
       }
-      float *weights = graph->getEdge(v1, v2);
-      if (!weights || (weights[type] == GRAPH__NO_CONNECTION))
+      double *weights = graph->getEdge(v1, v2);
+      if (!weights || !CONNECTED(weights[type]))
         RETURN_NONE
-      else
-        return PyFloat_FromDouble(weights[type]);
+      else {
+        if (hasObjectsOnEdges(graph)) {
+          PyObject *res = DOUBLE_AS_PYOBJECT(weights[type]);
+          Py_INCREF(res);
+          return res;
+        }
+        else
+          return PyFloat_FromDouble(weights[type]);
+      }
     }
   PyCATCH
 }
@@ -3575,8 +3676,8 @@ PyObject *Graph_edgeExists(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, 
         PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", type, graph->nEdgeTypes);
         return PYNULL;
       }
-      float *weights = graph->getEdge(v1, v2);
-      return PyInt_FromLong(!weights || (weights[type] == GRAPH__NO_CONNECTION) ? 0 : 1);
+      double *weights = graph->getEdge(v1, v2);
+      return PyInt_FromLong(!weights || !CONNECTED(weights[type]) ? 0 : 1);
     }
   PyCATCH
 }
@@ -3585,6 +3686,7 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
 {
   PyTRY
     CAST_TO_err(TGraph, graph, -1);
+    bool objectsOnEdges = hasObjectsOnEdges(graph);
 
     PyObject *py1, *py2;
     int v1, v2, type = -1;
@@ -3600,67 +3702,97 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
         return -1;
       }
 
-      float w;
+      double w;
 
-      if (!item || (item == Py_None))
-        w = GRAPH__NO_CONNECTION;
+      bool noConnection = !item || (item == Py_None);
+
+      if (noConnection)
+        DISCONNECT(w);
       else
-        if (!PyNumber_ToFloat(item, w))
+        if (!objectsOnEdges && !PyNumber_ToDouble(item, w))
           PYERROR(PyExc_TypeError, "a number expected for edge weight", -1);
 
       // we call getOrCreateEdge only after we check all arguments, so we don't end up
       // with a half-created edge
-      float *weights = graph->getOrCreateEdge(v1, v2);
-      weights[type] = w;
+      double *weights = graph->getOrCreateEdge(v1, v2);
 
-      float *we, *wee;
-      for(we = weights, wee = weights + graph->nEdgeTypes; (we != wee) && (*we == GRAPH__NO_CONNECTION); we++);
-      if (we == wee)
-        graph->removeEdge(v1, v2);
+      if (objectsOnEdges) {
+        if (!noConnection)
+          Py_INCREF(item);
+        if (CONNECTED(weights[type]))
+          Py_DECREF(DOUBLE_AS_PYOBJECT(weights[type]));
+
+        DOUBLE_AS_PYOBJECT(weights[type]) = item;
+      }
+      else
+        weights[type] = w;
+
+      if (noConnection) {
+        double *we, *wee;
+        for(we = weights, wee = weights + graph->nEdgeTypes; (we != wee) && !CONNECTED(*we); we++);
+        if (we == wee)
+          graph->removeEdge(v1, v2);
+      }
 
       return 0;
     }
 
     else {
       if (!item || (item == Py_None)) {
+        if (objectsOnEdges)
+          decrefEdge(graph->getEdge(v1, v2), graph->nEdgeTypes);
         graph->removeEdge(v1, v2);
         return 0;
       }
 
       if (graph->nEdgeTypes == 1) {
-        float w;
-        if (PyNumber_ToFloat(item, w))
-          // first convert, then create the edge
-          *graph->getOrCreateEdge(v1, v2) = w;
+        double w;
+        if (objectsOnEdges || PyNumber_ToDouble(item, w)) {
+          double *weights = graph->getOrCreateEdge(v1, v2);
+          if (objectsOnEdges) {
+            DOUBLE_AS_PYOBJECT(*weights) = item;
+            Py_INCREF(item);
+          }
+          else
+            *weights = w;
           return 0;
+        }
       }
 
       if (PySequence_Check(item)) {
         if (PySequence_Size(item) != graph->nEdgeTypes)
           PYERROR(PyExc_AttributeError, "invalid size of the list of edge weights", -1);
 
-        float *ww = new float[graph->nEdgeTypes];
-        float *wwi = ww;
+        double *ww = new double[graph->nEdgeTypes];
+        double *wwi = ww;
         PyObject *iterator = PyObject_GetIter(item);
         if (iterator) {
           for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
             if (item == Py_None)
-              *(wwi++) = GRAPH__NO_CONNECTION;
+              DISCONNECT(*(wwi++));
             else
-              if (!PyNumber_ToFloat(item, *(wwi++))) {
-                Py_DECREF(item);
-                Py_DECREF(iterator);
-                PyErr_Format(PyExc_TypeError, "invalid number for edge type %i", wwi-ww-1);
-                delete ww;
-                return -1;
+              if (objectsOnEdges) {
+                DOUBLE_AS_PYOBJECT(*wwi++) = item;
               }
-            Py_DECREF(item);
+              else {
+                if (!PyNumber_ToDouble(item, *(wwi++))) {
+                  Py_DECREF(item);
+                  Py_DECREF(iterator);
+                  PyErr_Format(PyExc_TypeError, "invalid number for edge type %i", wwi-ww-1);
+                  delete ww;
+                  return -1;
+                }
+                Py_DECREF(item); // no Py_DECREF if objectsOnEdges!
+              }
           }
           Py_DECREF(iterator);
-
-          memcpy(graph->getOrCreateEdge(v1, v2), ww, graph->nEdgeTypes * sizeof(float));
-          return 0;
         }
+
+        double *weights = graph->getOrCreateEdge(v1, v2);
+        if (objectsOnEdges)
+          decrefEdge(weights, graph->nEdgeTypes);
+        memcpy(weights, ww, graph->nEdgeTypes * sizeof(double));
+        return 0;
       }
     }
 
@@ -3781,6 +3913,54 @@ PyObject *GraphAsMatrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds) 
   PyCATCH
 }
 
+int GraphAsMatrix_traverse(PyObject *self, visitproc visit, void *arg)
+{ 
+  int err = Orange_traverse((TPyOrange *)self, visit, arg);
+  if (err || !hasObjectsOnEdges(self))
+    return err;
+
+  CAST_TO_err(TGraphAsMatrix, graph, -1);
+  for(double *ei = graph->edges, *ee = ei + graph->msize; ei != ee; ei++)
+    if (CONNECTED(*ei)) {
+      err = visit(DOUBLE_AS_PYOBJECT(*ei), arg);
+      if (err)
+        return err;
+    }
+
+  return 0;
+}
+
+
+void decrefGraph(TGraphAsMatrix &graph)
+{
+  for(double *ei = graph.edges, *ee = ei + graph.msize; ei != ee; ei++)
+    if (CONNECTED(*ei)) {
+      Py_DECREF(DOUBLE_AS_PYOBJECT(*ei));
+      DISCONNECT(*ei);
+    }
+}
+
+int GraphAsMatrix_clear(PyObject *self)
+{ 
+  if (hasObjectsOnEdges(self))
+    decrefGraph(SELF_AS(TGraphAsMatrix));
+
+  return Orange_clear((TPyOrange *)self);
+}
+
+
+void PyGraphAsMatrix_dealloc(PyObject *self)
+{
+  if (hasObjectsOnEdges(self))
+    decrefGraph(SELF_AS(TGraphAsMatrix));
+
+  Orange_dealloc((TPyOrange *)self);  
+}
+
+
+
+
+
 PyObject *GraphAsList_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
 {
   PyTRY
@@ -3791,6 +3971,60 @@ PyObject *GraphAsList_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
     return WrapNewOrange(mlnew TGraphAsList(nVertices, nEdgeTypes, directed != 0), type);
   PyCATCH
 }
+
+
+int GraphAsList_traverse(PyObject *self, visitproc visit, void *arg)
+{ 
+  int err = Orange_traverse((TPyOrange *)self, visit, arg);
+  if (err || !hasObjectsOnEdges(self))
+    return err;
+
+  CAST_TO_err(TGraphAsList, graph, -1);
+  for(TGraphAsList::TEdge **ei = graph->edges, **ee = ei + graph->nVertices; ei != ee; ei++)
+    for(TGraphAsList::TEdge *e = *ei; e; e = e->next)
+      for(double *w = &e->weights, *we = w + graph->nEdgeTypes; w != we; w++)
+        if (CONNECTED(*w)) {
+          err = visit(DOUBLE_AS_PYOBJECT(*w), arg);
+          if (err)
+            return err;
+        }
+
+  return 0;
+}
+
+
+void decrefGraph(TGraphAsList &graph)
+{
+  for(TGraphAsList::TEdge **ei = graph.edges, **ee = ei + graph.nVertices; ei != ee; ei++)
+    for(TGraphAsList::TEdge *e = *ei; e; e = e->next)
+      for(double *w = &e->weights, *we = w + graph.nEdgeTypes; w != we; w++)
+        if (CONNECTED(*w)) {
+          Py_DECREF(DOUBLE_AS_PYOBJECT(*w));
+          DISCONNECT(*w);
+        }
+}
+
+int GraphAsList_clear(PyObject *self)
+{ 
+  if (hasObjectsOnEdges(self))
+    decrefGraph(SELF_AS(TGraphAsList));
+
+  return Orange_clear((TPyOrange *)self);
+}
+
+
+void PyGraphAsList_dealloc(PyObject *self)
+{
+  if (hasObjectsOnEdges(self))
+    decrefGraph(SELF_AS(TGraphAsList));
+
+  Orange_dealloc((TPyOrange *)self);  
+}
+
+
+
+
+
 
 PyObject *GraphAsTree_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
 {
@@ -3803,5 +4037,80 @@ PyObject *GraphAsTree_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
   PyCATCH
 }
 
+
+int traverse(TGraphAsTree::TEdge *edge, visitproc visit, void *arg, const int nEdgeTypes)
+{
+  int err;
+
+  for(double *w = &edge->weights, *we = w + nEdgeTypes; w != we; w++)
+    if (CONNECTED(*w)) {
+      err = visit(DOUBLE_AS_PYOBJECT(*w), arg);
+      if (err)
+        return err;
+    }
+
+  err = edge->left ? traverse(edge->left, visit, arg, nEdgeTypes) : 0;
+  if (!err)
+    err = edge->right ? traverse(edge->right, visit, arg, nEdgeTypes) : 0;
+
+  return err;
+}
+
+int GraphAsTree_traverse(PyObject *self, visitproc visit, void *arg)
+{ 
+  int err = Orange_traverse((TPyOrange *)self, visit, arg);
+  if (err || !hasObjectsOnEdges(self))
+    return err;
+
+  CAST_TO_err(TGraphAsTree, graph, -1);
+  for(TGraphAsTree::TEdge **ei = graph->edges, **ee = ei + graph->nVertices; ei != ee; ei++)
+    if (*ei) {
+      err = traverse(*ei, visit, arg, graph->nEdgeTypes);
+      if (err)
+        return err;
+    }
+
+  return 0;
+}
+
+
+void decrefGraph(TGraphAsTree::TEdge *edge, const int &nEdgeTypes)
+{
+  for(double *w = &edge->weights, *we = w + nEdgeTypes; w != we; w++)
+    if (CONNECTED(*w)) {
+      Py_DECREF(DOUBLE_AS_PYOBJECT(*w));
+      DISCONNECT(*w);
+    }
+
+  if (edge->left)
+    decrefGraph(edge->left, nEdgeTypes);
+  if (edge->right)
+    decrefGraph(edge->right, nEdgeTypes);
+}
+
+
+void decrefGraph(TGraphAsTree &graph)
+{
+  for(TGraphAsTree::TEdge **ei = graph.edges, **ee = ei + graph.nVertices; ei != ee; ei++)
+    if (*ei)
+      decrefGraph(*ei, graph.nEdgeTypes);
+}
+
+int GraphAsTree_clear(PyObject *self)
+{ 
+  if (hasObjectsOnEdges(self))
+    decrefGraph(SELF_AS(TGraphAsTree));
+
+  return Orange_clear((TPyOrange *)self);
+}
+
+
+void PyGraphAsTree_dealloc(PyObject *self)
+{
+  if (hasObjectsOnEdges(self))
+    decrefGraph(SELF_AS(TGraphAsTree));
+
+  Orange_dealloc((TPyOrange *)  self);  
+}
 
 #include "lib_components.px"
