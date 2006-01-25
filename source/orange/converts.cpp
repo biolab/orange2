@@ -166,6 +166,18 @@ bool PyNumber_ToFloat(PyObject *o, float &res)
 }
 
 
+bool PyNumber_ToDouble(PyObject *o, double &res)
+{ PyObject *number=PyNumber_Float(o);
+  if (!number) {
+    PyErr_Clear();
+    return false;
+  }
+  res = PyFloat_AsDouble(number);
+  Py_DECREF(number);
+  return true;
+}
+
+
 PyObject *convertToPython(const vector<int> &v)
 {
   const int e = v.size();

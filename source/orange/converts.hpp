@@ -61,6 +61,7 @@ class TOrangeType;
 bool convertFromPythonWithML(PyObject *obj, string &str, const TOrangeType &base);
 
 bool PyNumber_ToFloat(PyObject *o, float &);
+bool PyNumber_ToDouble(PyObject *o, double &);
 
 template<class T>
 PyObject *convertToPython(const T &);
