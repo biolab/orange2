@@ -26,7 +26,19 @@
 #include <vector>
 #include "root.hpp"
 
-#define GRAPH__NO_CONNECTION 1e-30f
+/* Because we sometimes interpret the edge weight as a pointer,
+   the weight for no connection should be a pointer that can never occur.
+   0xfff...fff, which represents double NaN is a good idea. */
+
+extern double _disconbuf;
+extern double _disconbuf;
+
+#define DISCONNECT(d) (d) = _disconbuf
+
+// If anybody knows a better way to do this, please tell me ;)
+#define CONNECTED(d) memcmp((void *)&d, (void *)&_disconbuf, sizeof(double))
+
+
 
 class ORANGE_API TGraph : public TOrange
 {
@@ -42,8 +54,8 @@ public:
   int currentVersion;
 
   TGraph(const int &nVert, const int &nEdge, const bool dir);
-  virtual float *getEdge(const int &v1, const int &v2) = 0;
-  virtual float *getOrCreateEdge(const int &v1, const int &v2) = 0;
+  virtual double *getEdge(const int &v1, const int &v2) = 0;
+  virtual double *getOrCreateEdge(const int &v1, const int &v2) = 0;
   virtual void removeEdge(const int &v1, const int &v2) = 0;
 
   virtual void getNeighbours(const int &v, vector<int> &) = 0;
@@ -65,13 +77,14 @@ class ORANGE_API TGraphAsMatrix : public TGraph
 public:
   __REGISTER_CLASS
 
-  float *edges;
+  double *edges;
+  const int msize;
 
   TGraphAsMatrix(const int &nVert, const int &nEdge, const bool dir);
   ~TGraphAsMatrix();
 
-  virtual float *getEdge(const int &v1, const int &v2);
-  virtual float *getOrCreateEdge(const int &v1, const int &v2);
+  virtual double *getEdge(const int &v1, const int &v2);
+  virtual double *getOrCreateEdge(const int &v1, const int &v2);
   virtual void removeEdge(const int &v1, const int &v2);
 
   virtual void getNeighbours(const int &v, vector<int> &);
@@ -85,7 +98,7 @@ public:
   virtual void getNeighboursFrom_Single(const int &v, vector<int> &);
   virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &);
 
-  float *findEdge(const int &v1, const int &v2);
+  double *findEdge(const int &v1, const int &v2);
   void getNeighbours_Undirected(const int &v, vector<int> &neighbours);
   void getNeighbours_Undirected(const int &v, const int &edgeType, vector<int> &neighbours);
 };
@@ -101,7 +114,7 @@ public:
   public:
     TEdge *next;
     int vertex;
-    float weights;
+    double weights;
   };
 
 
@@ -110,8 +123,8 @@ public:
   TGraphAsList(const int &nVert, const int &nEdge, const bool dir);
   ~TGraphAsList();
 
-  virtual float *getEdge(const int &v1, const int &v2);
-  virtual float *getOrCreateEdge(const int &v1, const int &v2);
+  virtual double *getEdge(const int &v1, const int &v2);
+  virtual double *getOrCreateEdge(const int &v1, const int &v2);
   virtual void removeEdge(const int &v1, const int &v2);
 
   virtual void getNeighbours(const int &v, vector<int> &);
@@ -141,7 +154,7 @@ public:
   public:
     TEdge *left, *right;
     unsigned int vertex; // 0x7ffffff for number, high bit=set -> node is red
-    float weights;
+    double weights;
 
     ~TEdge();
   };
@@ -151,8 +164,8 @@ public:
   TGraphAsTree(const int &nVert, const int &nEdge, const bool dir);
   ~TGraphAsTree();
 
-  virtual float *getEdge(const int &v1, const int &v2);
-  virtual float *getOrCreateEdge(const int &v1, const int &v2);
+  virtual double *getEdge(const int &v1, const int &v2);
+  virtual double *getOrCreateEdge(const int &v1, const int &v2);
   virtual void removeEdge(const int &v1, const int &v2);
 
   virtual void getNeighbours(const int &v, vector<int> &);
@@ -166,7 +179,7 @@ public:
   virtual void getNeighboursFrom_Single(const int &v, vector<int> &);
   virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &);
 
-  float *getEdge(TEdge *node, const int &subvert);
+  double *getEdge(TEdge *node, const int &subvert);
   TEdge *createEdge(const int &vertex);
   void sortIndices(const int &v1, const int &v2, TEdge **&e, int &subvert) const;
 

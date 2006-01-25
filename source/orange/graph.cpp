@@ -22,6 +22,16 @@
 
 #include "graph.ppp"
 
+double _disconbuf;
+
+bool set_disconbuf() { 
+  DISCONNECT(_disconbuf);
+return true;
+}
+
+bool _foognc = set_disconbuf();
+
+
 //template ORANGE_API GCPtr<TGraph>::GCPtr<TGraph>(TGraph *);
 
 #define GN_INIT \
@@ -67,11 +77,11 @@ TGraph::TGraph(const int &nVert, const int &nTypes, const bool dir)
 
 
 TGraphAsMatrix::TGraphAsMatrix(const int &nVert, const int &nTypes, const bool dir)
-: TGraph(nVert, nTypes, dir)  
+: TGraph(nVert, nTypes, dir),
+  msize(nEdgeTypes * (directed ? nVertices * nVertices : (nVertices*(nVertices+1)) >> 1))
 {
-  const int &msize = nEdgeTypes * (directed ? nVertices * nVertices : (nVertices*(nVertices+1)) >> 1);
-  edges = new float[msize];
-  for(float *vt = edges, *ve = edges + msize; vt != ve; *(vt++) = GRAPH__NO_CONNECTION);
+  edges = new double[msize];
+  for(double *vt = edges, *ve = edges + msize; vt != ve; DISCONNECT(*(vt++)));
 }
 
 TGraphAsMatrix::~TGraphAsMatrix()
@@ -80,17 +90,17 @@ TGraphAsMatrix::~TGraphAsMatrix()
 }
 
 
-float *TGraphAsMatrix::getEdge(const int &v1, const int &v2)
+double *TGraphAsMatrix::getEdge(const int &v1, const int &v2)
 { 
-  float *edge = findEdge(v1, v2);
-  for(float *e = edge, *ee = edge+nEdgeTypes; e!=ee; e++)
-    if (*e != GRAPH__NO_CONNECTION)
+  double *edge = findEdge(v1, v2);
+  for(double *e = edge, *ee = edge+nEdgeTypes; e!=ee; e++)
+    if (CONNECTED(*e))
       return edge;
   return NULL;
 }
       
 
-float *TGraphAsMatrix::findEdge(const int &v1, const int &v2)
+double *TGraphAsMatrix::findEdge(const int &v1, const int &v2)
 { 
   if (v1>v2)
     if ((v1>=nVertices) || (v2<0))
@@ -107,9 +117,9 @@ float *TGraphAsMatrix::findEdge(const int &v1, const int &v2)
 }
 
 
-float *TGraphAsMatrix::getOrCreateEdge(const int &v1, const int &v2)
+double *TGraphAsMatrix::getOrCreateEdge(const int &v1, const int &v2)
 { 
-  float *res = findEdge(v1, v2);
+  double *res = findEdge(v1, v2);
   lastAddition = ++currentVersion;
   return res;
 }
@@ -117,24 +127,24 @@ float *TGraphAsMatrix::getOrCreateEdge(const int &v1, const int &v2)
 
 void TGraphAsMatrix::removeEdge(const int &v1, const int &v2)
 {
-  float *edge = getEdge(v1, v2);
+  double *edge = getEdge(v1, v2);
   if (edge) {
-    for(float *eedge = edge + nEdgeTypes; edge != eedge; *(edge++) = GRAPH__NO_CONNECTION);
+    for(double *eedge = edge + nEdgeTypes; edge != eedge; DISCONNECT(*edge++));
     lastRemoval = ++currentVersion;
   }
 }
 
 
 #define CHECK_NONEMPTY(weights) \
-{ for(swe = (weights), ne = nEdgeTypes; ne-- && (*swe++ == GRAPH__NO_CONNECTION); ); \
+{ for(swe = (weights), ne = nEdgeTypes; ne-- && !CONNECTED(*swe++); ); \
   if (ne >= 0) { neighbours.push_back(v2); continue; } }
 
 
 void TGraphAsMatrix::getNeighbours_Undirected(const int &v, vector<int> &neighbours)
 {
   int v2 = 0, ne;
-  float *swe;
-  float *weights = edges + nEdgeTypes * ((v * (v+1)) >> 1);
+  double *swe;
+  double *weights = edges + nEdgeTypes * ((v * (v+1)) >> 1);
 
   for(; v2<=v; weights += nEdgeTypes, v2++)
     CHECK_NONEMPTY(weights)
@@ -149,10 +159,10 @@ void TGraphAsMatrix::getNeighbours(const int &v, vector<int> &neighbours)
 {
   GN_INIT
   int v2 = 0, ne;
-  float *swe;
+  double *swe;
   int llen = nVertices * nEdgeTypes;
-  float *weightsFrom = edges + nEdgeTypes * v * nVertices;
-  float *weightsTo = edges + nEdgeTypes * v;
+  double *weightsFrom = edges + nEdgeTypes * v * nVertices;
+  double *weightsTo = edges + nEdgeTypes * v;
   for(; v2 < nVertices; weightsFrom += nEdgeTypes, weightsTo += llen, v2++) {
     CHECK_NONEMPTY(weightsFrom)
     CHECK_NONEMPTY(weightsTo)
@@ -165,7 +175,7 @@ void TGraphAsMatrix::getNeighboursFrom(const int &v, vector<int> &neighbours)
   GN_INIT
   getNeighboursFrom_Single(v, neighbours);
   int v2 = 0, ne;
-  for(float *swe, *weights = edges + nEdgeTypes * v * nVertices; v2 < nVertices; weights += nEdgeTypes, v2++)
+  for(double *swe, *weights = edges + nEdgeTypes * v * nVertices; v2 < nVertices; weights += nEdgeTypes, v2++)
     CHECK_NONEMPTY(weights)
 }
 
@@ -174,7 +184,7 @@ void TGraphAsMatrix::getNeighboursFrom_Single(const int &v, vector<int> &neighbo
 {
   neighbours.clear();
   int v2 = 0, ne;
-  for(float *swe, *weights = edges + nEdgeTypes * (directed ? (v * nVertices) : ((v*(v+1)) >> 1)); v2 <= v; weights += nEdgeTypes, v2++)
+  for(double *swe, *weights = edges + nEdgeTypes * (directed ? (v * nVertices) : ((v*(v+1)) >> 1)); v2 <= v; weights += nEdgeTypes, v2++)
     CHECK_NONEMPTY(weights)
 }
 
@@ -184,7 +194,7 @@ void TGraphAsMatrix::getNeighboursTo(const int &v, vector<int> &neighbours)
   GN_INIT
   int v2 = 0, ne;
   int llen = nVertices * nEdgeTypes;
-  for(float *swe, *weights = edges + nEdgeTypes * v; v2 < nVertices; weights += llen, v2++)
+  for(double *swe, *weights = edges + nEdgeTypes * v; v2 < nVertices; weights += llen, v2++)
     CHECK_NONEMPTY(weights)
 }
 
@@ -196,14 +206,14 @@ void TGraphAsMatrix::getNeighboursTo(const int &v, vector<int> &neighbours)
 // later, which works for other representations)
 
 #define CHECK_EDGE(weights) \
-  if (*(weights) != GRAPH__NO_CONNECTION) \
+  if (CONNECTED(*weights)) \
     neighbours.push_back((v2));
 
 void TGraphAsMatrix::getNeighbours_Undirected(const int &v, const int &edgeType, vector<int> &neighbours)
 {
   GN_INIT_EDGETYPE
   int v2 = 0;
-  float *weights = edges + nEdgeTypes * ((v * (v+1)) >> 1) + edgeType, *we = weights + nEdgeTypes * (v+1);
+  double *weights = edges + nEdgeTypes * ((v * (v+1)) >> 1) + edgeType, *we = weights + nEdgeTypes * (v+1);
 
   for(; weights != we; weights += nEdgeTypes, v2++)
     CHECK_EDGE(weights)
@@ -218,10 +228,10 @@ void TGraphAsMatrix::getNeighbours(const int &v, const int &edgeType, vector<int
 {
   GN_INIT_EDGETYPE
   int v2 = 0;
-  float *weightsFrom = edges + nEdgeTypes * v * nVertices + edgeType;
-  float *weightsTo = edges + nEdgeTypes * v + edgeType;
+  double *weightsFrom = edges + nEdgeTypes * v * nVertices + edgeType;
+  double *weightsTo = edges + nEdgeTypes * v + edgeType;
   for(; v2 < nVertices; weightsFrom += nEdgeTypes, weightsTo += nEdgeTypes * nVertices, v2++)
-    if ((*weightsFrom != GRAPH__NO_CONNECTION) || (*weightsTo != GRAPH__NO_CONNECTION))
+    if (CONNECTED(*weightsFrom) || CONNECTED(*weightsTo))
       neighbours.push_back(v2);
 }
 
@@ -230,7 +240,7 @@ void TGraphAsMatrix::getNeighboursFrom(const int &v, const int &edgeType, vector
 {
   GN_INIT_EDGETYPE
   int v2 = 0;
-  for(float *weights = edges + nEdgeTypes * v * nVertices + edgeType; v2 < nVertices; weights += nEdgeTypes, v2++)
+  for(double *weights = edges + nEdgeTypes * v * nVertices + edgeType; v2 < nVertices; weights += nEdgeTypes, v2++)
     CHECK_EDGE(weights)
 }
 
@@ -239,7 +249,7 @@ void TGraphAsMatrix::getNeighboursFrom_Single(const int &v, const int &edgeType,
 {
   neighbours.clear();
   int v2 = 0;
-  for(float *weights = edges + nEdgeTypes * (directed ? (v * nVertices) : ((v*(v+1)) >> 1)) + edgeType; v2 <=v; weights += nEdgeTypes, v2++)
+  for(double *weights = edges + nEdgeTypes * (directed ? (v * nVertices) : ((v*(v+1)) >> 1)) + edgeType; v2 <=v; weights += nEdgeTypes, v2++)
     CHECK_EDGE(weights)
 }
 
@@ -249,7 +259,7 @@ void TGraphAsMatrix::getNeighboursTo(const int &v, const int &edgeType, vector<i
   GN_INIT_EDGETYPE
   int v2 = 0;
   int llen = nVertices * nEdgeTypes;
-  for(float *weights = edges + nEdgeTypes * v + edgeType; v2 < nVertices; weights += llen, v2++)
+  for(double *weights = edges + nEdgeTypes * v + edgeType; v2 < nVertices; weights += llen, v2++)
     CHECK_EDGE(weights)
 }
 
@@ -257,11 +267,11 @@ void TGraphAsMatrix::getNeighboursTo(const int &v, const int &edgeType, vector<i
 
 TGraphAsList::TEdge *TGraphAsList::createEdge(TEdge *next, const int &vertex)
 {
-  TEdge *newedge = (TEdge *)malloc(sizeof(TEdge) + (nEdgeTypes-1)*sizeof(float));
+  TEdge *newedge = (TEdge *)malloc(sizeof(TEdge) + (nEdgeTypes-1)*sizeof(double));
   newedge->next = next;
   newedge->vertex = vertex;
-  float *w = &newedge->weights;
-  for(int i = nEdgeTypes; i--; *w++ = GRAPH__NO_CONNECTION);
+  double *w = &newedge->weights;
+  for(int i = nEdgeTypes; i--; DISCONNECT(*w++));
   return newedge;
 }
 
@@ -327,7 +337,7 @@ bool TGraphAsList::findEdgePtr(const int &v1, const int &v2, TEdge **&e, int &su
 }
 
 
-float *TGraphAsList::getEdge(const int &v1, const int &v2)
+double *TGraphAsList::getEdge(const int &v1, const int &v2)
 {
   TEdge **e;
   int subvert;
@@ -335,7 +345,7 @@ float *TGraphAsList::getEdge(const int &v1, const int &v2)
 }
 
 
-float *TGraphAsList::getOrCreateEdge(const int &v1, const int &v2)
+double *TGraphAsList::getOrCreateEdge(const int &v1, const int &v2)
 {
   TEdge **e;
   int subvert;
@@ -429,7 +439,7 @@ void TGraphAsList::getNeighboursTo(const int &v, vector<int> &neighbours)
 // useful for GraphAsList (this is not the same as the ones defined
 // for GraphAsMatrix and for GraphAsTree)
 
-#define CHECK_EDGE(e,v2) { if ((&(e)->weights)[edgeType] != GRAPH__NO_CONNECTION) neighbours.push_back((v2)); }
+#define CHECK_EDGE(e,v2) { if (CONNECTED((&(e)->weights)[edgeType])) neighbours.push_back((v2)); }
 #define CHECK_EDGE_TO(e) { if (e->vertex==v) { CHECK_EDGE(e, v2); break; }}
 
 void TGraphAsList::getNeighbours_Undirected(const int &v, const int &edgeType, vector<int> &neighbours)
@@ -492,11 +502,11 @@ void TGraphAsList::getNeighboursTo(const int &v, const int &edgeType, vector<int
 
 TGraphAsTree::TEdge *TGraphAsTree::createEdge(const int &vertex)
 {
-  TEdge *newedge = (TEdge *)malloc(sizeof(TEdge) + (nEdgeTypes-1)*sizeof(float));
+  TEdge *newedge = (TEdge *)malloc(sizeof(TEdge) + (nEdgeTypes-1)*sizeof(double));
   newedge->vertex = vertex;
   newedge->left = newedge->right = NULL;
-  float *w = &newedge->weights;
-  for(int i = nEdgeTypes; i--; *w++ = GRAPH__NO_CONNECTION);
+  double *w = &newedge->weights;
+  for(int i = nEdgeTypes; i--; DISCONNECT(*w++));
   return newedge;
 }
 
@@ -559,7 +569,7 @@ void TGraphAsTree::sortIndices(const int &v1, const int &v2, TEdge **&e, int &su
   }
 }
 
-float *TGraphAsTree::getEdge(TEdge *node, const int &subvert)
+double *TGraphAsTree::getEdge(TEdge *node, const int &subvert)
 {
   while(node) {
     const int nvert = (int)(node->vertex & 0x7fffffff);
@@ -572,7 +582,7 @@ float *TGraphAsTree::getEdge(TEdge *node, const int &subvert)
 }
 
 
-float *TGraphAsTree::getEdge(const int &v1, const int &v2)
+double *TGraphAsTree::getEdge(const int &v1, const int &v2)
 {
   TEdge **pnode;
   int subvert;
@@ -586,7 +596,7 @@ float *TGraphAsTree::getEdge(const int &v1, const int &v2)
 #define IS_RED(x) ((x)->vertex > 0x7fffffff)
 #define IS_BLACK(x) ((x)->vertex < 0x80000000)
 
-float *TGraphAsTree::getOrCreateEdge(const int &v1, const int &v2)
+double *TGraphAsTree::getOrCreateEdge(const int &v1, const int &v2)
 {
   TEdge **node;
   int subvert;
@@ -606,7 +616,7 @@ float *TGraphAsTree::getOrCreateEdge(const int &v1, const int &v2)
 
   vector<TEdge **>::const_iterator sptr(stack.end()-1), stop(stack.begin());
   **sptr = createEdge(subvert | 0x80000000);
-  float *res = &((***sptr).weights);
+  double *res = &((***sptr).weights);
 
   // while the current node's parent is red
   while((sptr!=stop) && IS_RED(*sptr[-1])) { 
@@ -727,7 +737,7 @@ void TGraphAsTree::removeEdge(const int &v1, const int &v2)
 
   if (*node != temp) {
     temp->vertex = (temp->vertex & 0x80000000) | ((*node)->vertex & 0x7fffffff);
-    memcpy(&temp->weights, &(*node)->weights, nEdgeTypes * sizeof(float));
+    memcpy(&temp->weights, &(*node)->weights, nEdgeTypes * sizeof(double));
   }
 
   bool removedRed = IS_RED(*node);
@@ -968,10 +978,10 @@ void TGraphAsTree::getNeighboursTo(const int &v, vector<int> &neighbours)
 // useful for GraphAsTree (this is not the same as the ones defined
 // for GraphAsMatrix and for GraphAsList)
 
-#define CHECK_EDGE(e,v2) { if ((&(e)->weights)[edgeType] != GRAPH__NO_CONNECTION) neighbours.push_back((v2)); }
+#define CHECK_EDGE(e,v2) { if (CONNECTED((&(e)->weights)[edgeType])) neighbours.push_back((v2)); }
 #define CHECK_EDGE_TO(v2) { \
-  float *w = *node ? getEdge(*node,v) : NULL; \
-  if (w && (w[edgeType] != GRAPH__NO_CONNECTION)) \
+  double *w = *node ? getEdge(*node,v) : NULL; \
+  if (w && CONNECTED(w[edgeType])) \
     neighbours.push_back(v2); \
   }
 
