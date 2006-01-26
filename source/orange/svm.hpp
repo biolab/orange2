@@ -15,11 +15,12 @@
     along with Orange; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    Authors: Janez Demsar, Blaz Zupan, 1996--2002
-    Contact: janez.demsar@fri.uni-lj.si
+    Authors: Janez Demsar, Blaz Zupan, 1996--2006
+    Contact: ales.erjavec@fri.uni-lj.si
 */
-
-
+/**
+ *using: Chih-Chung Chang and Chih-Jen Lin, LIBSVM : a library for support vector machines, 2001. Software available at http://www.csie.ntu.edu.tw/~cjlin/libsvm
+*/
 #ifndef __SVM_HPP
 #define __SVM_HPP
 
@@ -115,12 +116,13 @@ WRAPPER(SVMLearner)
 WRAPPER(SVMClassifier)
 WRAPPER(ExampleTable)
 
+/*
 class ORANGE_API TKernelFunc: public TOrange{
 public:
 	__REGISTER_ABSTRACT_CLASS
 	virtual operator()(TExample &, TExample &)=0;
 };
-
+*/
 
 //#include "callback.hpp"
 
@@ -136,15 +138,13 @@ public:
 	float coef0;	//P poly/sigm parameter
 	float cache_size; //P cache size in MB
 	float eps;	//P stopping criteria
-	float C;	//P for C_SVC and C_SVR
+	float C;	//P for C_SVC and EPSILON_SVR
 	float nu;	//P for NU_SVC and ONE_CLASS
-	float p;	//P for C_SVR
-	int max_iter; //P maximal number of iterations
-	float iter_mult; //P epsilon multiplier
+	float p;	//P for EPSILON_SVR
 	int shrinking;	//P shrinking
 	int probability;	//P probability
 	
-	PKernelFunc kernelFunc;
+	//PKernelFunc kernelFunc;
 
 	TSVMLearner();
 

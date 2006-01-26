@@ -26,7 +26,8 @@
 
 /* CHANGES TO LIBSVM-2.81
  *-#include "svm.h" to #include"svm.hpp"
- *-#commented the swap function definition due to conflict with std::swap
+ *-commented the swap function definition due to conflict with std::swap
+ *-added #ifdef around min max definitions
 /*##########################################
 ##########################################*/
 
@@ -41,7 +42,7 @@
 #include "svm.ppp"
 typedef float Qfloat;
 typedef signed char schar;
-
+#if _MSC_VER!=0 && _MSC_VER<1300
 #ifndef min
 template <class T> inline T min(T x,T y) { return (x<y)?x:y; }
 #endif
@@ -49,7 +50,7 @@ template <class T> inline T min(T x,T y) { return (x<y)?x:y; }
 template <class T> inline T max(T x,T y) { return (x>y)?x:y; }
 #endif
 //template <class T> inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
-
+#endif
 template <class S, class T> inline void clone(T*& dst, S* src, int n)
 {
 	dst = new T[n];
@@ -3129,7 +3130,6 @@ TSVMLearner::TSVMLearner(){
 	cache_size = 100;
 	C = 1;
 	eps = 1e-3f;
-	max_iter=1000;
 	p = 0.1f;
 	shrinking = 1;
 	probability = 0;
@@ -3280,3 +3280,4 @@ TValue TSVMClassifier::operator()(const TExample & example){
 	else
 		return TValue(int(v));
 }
+

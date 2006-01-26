@@ -1,0 +1,85 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css" MEDIA=screen>
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<h1>Support Vector Machines</h1>
+
+<p>SVM is a popular method for classification, regression and distribution estimation that can learn a problem in a higher dimensional space through the use of a kernel trick.
+Orange interfaces the libsvm-8.1 library (Chih-Chung Chang and Chih-Jen Lin, LIBSVM : a library for support vector machines, 2001. Software available at <a href=http://www.csie.ntu.edu.tw/~cjlin/libsvm>http://www.csie.ntu.edu.tw/~cjlin/libsvm</a>)
+witch supports:
+<ul>
+ <li>C support vector classification (C_SVC)</li>
+ <li>NU support vector classification (NU_SVC)</li>
+ <li>ONE CLASS distribution estimation (ONE_CLASS)</li>
+ <li>EPSILON support vector regression (EPSILON_SVR)</li>
+ <li>NU support vector regression (NU_SVR)</li>
+</ul>
+Additionally you can use the following kernel functions:
+<ul>
+ <li>linear: u'*v</li>
+ <li>polynomial: (gamma*u'*v + coef0)^degree</li>
+ <li>radial basis function: exp(-gamma*|u-v|^2)</li>
+ <li>sigmoid: tanh(gamma*u'*v + coef0)</li>
+</ul>
+</p>
+<h2>SVMLearner</h2>
+<p>SVMLearner class constructs a SVMClassiifier </p>
+<p class=section >Attributes</p>
+<dl class=attributes>
+  <dt>svm_type</dt>
+  <dd>Defines the type of SVM (can be SVMLearner.C_SVC (default), SVMLearner.NU_SVC, SVMLearner.ONE_CLASS, SVMLearner.EPSILON_SVR, SVMLearner.NU_SVR)</dd>
+  <dt>kernel_type</dt>
+  <dd>Defines the type of a kernel to use for learning (can be SVMLearner.RBF (default), SVMLearner.LINEAR, SVMLearner.POLY, SVMLearner.SIGMOID)</dd>
+  <dt>degree</dt>
+  <dd>Kernel parameter (default 3)</dd>
+  <dt>gamma</dt>
+  <dd>Kernel parameter (default 1/number_of_examples)</dd>
+  <dt>coef0</dt>
+  <dd>Kernel parameter (default 0)</dd>
+  <dt>C</dt>
+  <dd>C parameter for C_SVC, EPSILON_SVR, NU_SVR</dd>
+  <dt>nu</dt>
+  <dd>Nu parameter for NU_SVC, NU_SVR and ONE_CLASS (default 0.5)</dd>
+  <dt>epsilon</dt>
+  <dd>Epsilon in loss-function for EPSILON_SVR</dd>
+  <dt>cache_size</dt>
+  <dd>Cache memory size in MB (default 100)</dd>
+  <dt>eps</dt>
+  <dd>Tolerance of termination criterion (default 0.001)</dd>
+  <dt>shrinking</dt>
+  <dd>Determines whether to use shrinking heuristics (default True)</dd>
+  <dt>probability</dt>
+  <dd>Determines if a probability model should be build (default False)</dd>
+</dl>
+<h2>SVMClassifier</h2>
+<dl class=attributes>
+  <dt>examples</dt>
+  <dd>Holds the examples used for training</dd>
+  <dt>supportVectors</dt>
+  <dd>Holds the support vectors</dd>
+</dl>
+<h2>Examples</h2>
+<xmp class=code>
+>>> import orange
+>>> data=orange.ExampleTable("iris.tab")
+>>> l=orange.SVMLearner()
+>>> l.svm_type=SVMLearner.NU_SVC
+>>> l.nu=0.3
+>>> l.probability=True
+>>> c=l(data)
+training
+*
+...
+>>> for e in data:
+...  print e[-1], c(e), c(e, c.GetProbabilities)
+...
+Iris-setosa Iris-setosa <0.971, 0.015, 0.014>
+Iris-setosa Iris-setosa <0.964, 0.019, 0.016>
+Iris-setosa Iris-setosa <0.968, 0.016, 0.016>
+...
+</xmp>
+
+</body></html>
+
+
