@@ -866,6 +866,16 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 #include "svm.hpp"
 C_CALL(SVMLearner, Learner, "([examples] -/-> Classifier)")
 BASED_ON(SVMClassifier, Classifier)
+PYCLASSCONSTANT_INT(SVMLearner, LINEAR, 0)
+PYCLASSCONSTANT_INT(SVMLearner, POLY, 1)
+PYCLASSCONSTANT_INT(SVMLearner, RBF, 2)
+PYCLASSCONSTANT_INT(SVMLearner, SIGMOID, 3)
+
+PYCLASSCONSTANT_INT(SVMLearner, C_SVC, 0)
+PYCLASSCONSTANT_INT(SVMLearner, NU_SVC, 1)
+PYCLASSCONSTANT_INT(SVMLearner, ONE_CLASS, 2)
+PYCLASSCONSTANT_INT(SVMLearner, EPSILON_SVR, 3)
+PYCLASSCONSTANT_INT(SVMLearner, NU_SVR, 4)
 
 
 /************* BAYES ************/
