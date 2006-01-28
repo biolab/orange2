@@ -3447,9 +3447,9 @@ PyTypeObject PyEdge_Type = {
 };
 
 
-int Orange_traverse(TPyOrange *self, visitproc visit, void *arg);
-int Orange_clear(TPyOrange *self);
-void Orange_dealloc(TPyOrange *self);
+PYXTRACT_IGNORE int Orange_traverse(TPyOrange *self, visitproc visit, void *arg);
+PYXTRACT_IGNORE int Orange_clear(TPyOrange *self);
+PYXTRACT_IGNORE void Orange_dealloc(TPyOrange *self);
 
 
 inline bool hasObjectsOnEdges(PyObject *graph)

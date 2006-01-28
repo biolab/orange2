@@ -141,11 +141,6 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
     if ((hash-ext==4) && !strncmp(ext, ".xls", 4))
       return readExcelFile(filename, hash, knownVars, knownDomain, dontCheckStored, dontStore);
     #endif
-
-    if (noExcOnUnknown)
-      return NULL;
-    else
-      raiseError("unknown file format for file '%s'", filename);    
   }
 
   /* If no filename is given at all, assume that the stem equals the last
@@ -205,7 +200,10 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
     if (noExcOnUnknown)
       return NULL;
     else
-      raiseError("file '%s' not found", filename);
+      if (ext)
+        raiseError("unknown file format for file '%s' or file not found", filename);    
+      else
+        raiseError("file '%s' is not found or has unknown extension", filename);
   }
 
 

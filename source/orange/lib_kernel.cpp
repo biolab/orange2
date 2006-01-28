@@ -1911,46 +1911,46 @@ PyObject *ExampleGenerator_save(PyObject *self, PyObject *args, PyObject *keyws)
     PYERROR(PyExc_TypeError, "file name must have an extension", PYNULL);
 
 
-  vector<TFiletypeDefinition>::iterator fi = findFiletypeByExtension(filename, false, true, false);
-  if (fi != filetypeDefinitions.end()) {
-    PyObject *newargs = PyTuple_New(PyTuple_Size(args) + 1);
-    PyObject *el;
+  PyObject *newargs = PyTuple_New(PyTuple_Size(args) + 1);
+  PyObject *el;
 
-    el = PyTuple_GET_ITEM(args, 0);
+  el = PyTuple_GET_ITEM(args, 0);
+  Py_INCREF(el);
+  PyTuple_SetItem(newargs, 0, el);
+
+  Py_INCREF(self);
+  PyTuple_SetItem(newargs, 1, self);
+
+  for(int i = 1, e = PyTuple_Size(args); i < e; i++) {
+    el = PyTuple_GET_ITEM(args, i);
     Py_INCREF(el);
-    PyTuple_SetItem(newargs, 0, el);
-
-    Py_INCREF(self);
-    PyTuple_SetItem(newargs, 1, self);
-
-    for(int i = 1, e = PyTuple_Size(args); i < e; i++) {
-      el = PyTuple_GET_ITEM(args, i);
-      Py_INCREF(el);
-      PyTuple_SetItem(newargs, i+1, el);
-    }
-
-    PyObject *res = PyObject_Call((*fi).saver, newargs, keyws);
-    Py_DECREF(newargs);
-    return res;
+    PyTuple_SetItem(newargs, i+1, el);
   }
-  
-  if (!strcmp(extension, ".tab"))
-    return saveTabDelimited(NULL, args, keyws);
-  if (!strcmp(extension, ".txt"))
-    return saveTxt(NULL, args, keyws);
-  if (!strcmp(extension, ".csv"))
-    return saveCsv(NULL, args, keyws);
-  if (!strcmp(extension, ".names") || !strcmp(extension, ".data") || !strcmp(extension, ".test"))
-    return saveC45(NULL, args);
-  if (!strcmp(extension, ".rda") || !strcmp(extension, ".rdo"))
-    return saveRetis(NULL, args);
-  if (!strcmp(extension, ".dat"))
-    return saveAssistant(NULL, args);
-  if (!strcmp(extension, ".basket"))
-    return saveAssistant(NULL, args);
 
-  PyErr_Format(PyExc_AttributeError, "unknown file format (%s)", extension);
-  return PYNULL;
+  PyObject *res = PYNULL;
+
+  vector<TFiletypeDefinition>::iterator fi = findFiletypeByExtension(filename, false, true, false);
+  if (fi != filetypeDefinitions.end())
+    res = PyObject_Call((*fi).saver, newargs, keyws);
+  else if (!strcmp(extension, ".tab"))
+    res = saveTabDelimited(NULL, newargs, keyws);
+  else if (!strcmp(extension, ".txt"))
+    res = saveTxt(NULL, newargs, keyws);
+  else if (!strcmp(extension, ".csv"))
+    res = saveCsv(NULL, newargs, keyws);
+  else if (!strcmp(extension, ".names") || !strcmp(extension, ".data") || !strcmp(extension, ".test"))
+    res = saveC45(NULL, newargs);
+  else if (!strcmp(extension, ".rda") || !strcmp(extension, ".rdo"))
+    res = saveRetis(NULL, newargs);
+  else if (!strcmp(extension, ".dat"))
+    res = saveAssistant(NULL, newargs);
+  else if (!strcmp(extension, ".basket"))
+    res = saveBasket(NULL, newargs);
+  else
+    PyErr_Format(PyExc_AttributeError, "unknown file format (%s)", extension);
+
+  Py_DECREF(newargs);
+  return res;
 }
 
 
@@ -2280,9 +2280,15 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
       if (!readUndefinedSpecs(keywords, DK, DC))
         return PYNULL;
 
-      TExampleTable *table = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, true, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"));
-      if (table)
-        return WrapNewOrange(table, type);
+      char *errs = NULL;
+      try {
+        TExampleTable *table = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, false, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"));
+        if (table)
+          return WrapNewOrange(table, type);
+      }
+      catch (mlexception err) { 
+        errs = strdup(err.what());
+      }
 
       res = loadDataByPython(type, filename, argstuple, keywords, true, pythonFileFound);
       if (res)
@@ -2292,7 +2298,9 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
         PYERROR(PyExc_SystemError, "cannot load the file", PYNULL);
       }
       else {
-        PYERROR(PyExc_SystemError, "file not found", PYNULL);
+        PyErr_SetString(PyExc_SystemError, errs);
+        free(errs);
+        return PYNULL;
       }
     }
 

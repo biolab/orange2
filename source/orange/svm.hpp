@@ -117,9 +117,9 @@ WRAPPER(SVMClassifier)
 WRAPPER(ExampleTable)
 
 /*
-class ORANGE_API TKernelFunc: public TOrange{
+class O R A N G E _ A  P I TKernelFunc: public TOrange{
 public:
-	__REGISTER_ABSTRACT_CLASS
+	__R E G I S TER_ABSTRACT_CLASS
 	virtual operator()(TExample &, TExample &)=0;
 };
 */

@@ -378,8 +378,11 @@ def parseFiles():
   return functions, constants, classdefs, aliases
 
 def findDataStructure(classdefs, typename):
+  rtypename = typename
   while typename and typename!="ROOT" and classdefs.has_key(typename) and not classdefs[typename].datastructure:
     typename = classdefs[typename].basetype
+    if not classdefs.has_key(typename):
+      return None
     if classdefs[typename].imported:
       classdefs[typename].used = True
   if not typename or not classdefs.has_key(typename) or typename=="ROOT":

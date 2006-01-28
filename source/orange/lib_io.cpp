@@ -166,6 +166,17 @@ void tabDelim_writeDomain(FILE *, PDomain, bool autodetect, char delim = '\t', b
 void tabDelim_writeExamples(FILE *, PExampleGenerator, char delim = '\t', const char *DK = NULL, const char *DC = NULL);
 
 
+FILE *openWReplacedExtension(const char *filename, const char *extension, const char *oldExtension)
+{
+  const char *newname = replaceExtension(filename, extension, oldExtension);
+  FILE *ostr = fopen(newname, "wt");
+  if (!ostr)
+    PyErr_Format(PyExc_SystemError, "cannot open file '%s'", newname);
+  mldelete const_cast<char *>(newname);
+  return ostr;
+}
+
+    
 FILE *openExtended(const char *filename, const char *defaultExtension)
 {
   const char *extension = getExtension(filename);
@@ -286,22 +297,16 @@ PyObject *saveC45(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, e
 
     const char *oldExtension = getExtension(filename);
 
-    char *namesname = replaceExtension(filename, "names", oldExtension);
-    FILE *ostr = fopen(namesname, "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot create file '%s'", namesname);
-      mldelete namesname;
+    FILE *ostr;
+    ostr = openWReplacedExtension(filename, "names", oldExtension);
+    if (!ostr)
       return PYNULL;
-    }
-    mldelete namesname;
-
     c45_writeDomain(ostr, gen->domain);
     fclose(ostr);
 
-    ostr = openExtended(filename, "data");
+    ostr = openWReplacedExtension(filename, "data", oldExtension);
     if (!ostr)
       return PYNULL;
-
     c45_writeExamples(ostr, gen);
     fclose(ostr);
 

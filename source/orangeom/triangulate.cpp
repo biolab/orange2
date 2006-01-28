@@ -44,7 +44,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
     try {
       for(int *ti = triangles, *te = ti+nTriangles*3; ti!=te; ti+=3) {
         for(int se = 3; se--; ) {
-          float *gedge = graph->getOrCreateEdge(ti[se], ti[(se+1) % 3]);
+          double *gedge = graph->getOrCreateEdge(ti[se], ti[(se+1) % 3]);
           for(int et = nEdgeTypes; et--; *gedge++ = 1.0);
         }
       }
