@@ -171,7 +171,7 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
     if tooltip:
         QToolTip.add(lb, tooltip)
 
-    connectControl(lb, master, value, None, "selectionChanged()", CallFront_ListBox(lb), ListBoxCallback(lb, master, value))
+    connectControl(lb, master, value, callback, "selectionChanged()", CallFront_ListBox(lb), ListBoxCallback(lb, master, value))
     master.controlledAttributes[labels] = CallFront_ListBoxLabels(lb)
     return lb
     
@@ -488,7 +488,7 @@ class FunctionCallback:
         master.callbackDeposit.append(self)
         self.disabled = False
 
-    def __call__(self, value):
+    def __call__(self, *value):
         if not self.disabled and value!=None:
             kwds = {}
             if self.id <> None:
