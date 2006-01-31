@@ -16,10 +16,10 @@ def OWCanvasText(canvas, text, x  = 0, y = 0, alignment = Qt.AlignLeft + Qt.Alig
     
     return text
 
-def OWCanvasRectangle(canvas, x, y, width, height, penColor = Qt.black, brushColor = None, penWidth = 1, z = 0, show = 1):
+def OWCanvasRectangle(canvas, x, y, width, height, penColor = Qt.black, brushColor = None, penWidth = 1, z = 0, penStyle = Qt.SolidLine, show = 1):
     rect = QCanvasRectangle(x, y, width, height, canvas)
     if brushColor: rect.setBrush(QBrush(brushColor))
-    rect.setPen(QPen(penColor, penWidth))
+    rect.setPen(QPen(penColor, penWidth, penStyle))
     rect.setZ(z)
     if show: rect.show()
     

@@ -572,7 +572,10 @@ class CallFront_comboBox(ControlledCallFront):
                     if self.valType(str(self.control.text(i))) == value:
                         self.control.setCurrentItem(i)
                         return
-                print "unable to set ", self.control, " to value ", value
+                values = ""
+                for i in range(self.control.count()):
+                    values += str(self.control.text(i)) + (i < self.control.count()-1 and ", " or ".")
+                print "unable to set %s to value '%s'. Possible values are %s" % (self.control, value, values)
             else:
                 self.control.setCurrentItem(value)
 
