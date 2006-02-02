@@ -82,6 +82,7 @@ class orngScaleData:
             self.attrValues = {}
 
         self.rawdata = data
+        RandomArray.seed(1,1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
                 
         if data == None or len(data) == 0:
             self.originalData = self.scaledData = self.noJitteringScaledData = self.validDataArray = None
