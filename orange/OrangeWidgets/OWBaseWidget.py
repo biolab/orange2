@@ -578,7 +578,8 @@ class OWBaseWidget(QDialog):
 
         contextHandlers = getattr(self, "contextHandlers", {})
         for contextHandler in contextHandlers.values():
-            setattr(self, contextHandler.localContextName, settings[contextHandler.localContextName])
+            if settings.has_key(contextHandler.localContextName):
+                setattr(self, contextHandler.localContextName, settings[contextHandler.localContextName])
 
     # return settings in string format compatible with cPickle
     def saveSettingsStr(self):
