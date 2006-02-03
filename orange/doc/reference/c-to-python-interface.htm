@@ -6,7 +6,11 @@
 
 <H1>Writing Orange Extensions in C++</H1>
 
-<P>This page starts with a simple example of a C function that gets the data from Orange's example table and computes Delaunay triangulation for a chosen pair of (continuous) attributes. The result is returned as <CODE>orange.Graph</CODE>. Then follows a more complex example that shows how to derive a new class from one of Orange's classes and make it accessible from Python. Finally, there's a more concise description of Orange's interface to Python and the tools we developed for making our lives easier (we don't care about yours :-).</P>
+<P>This page is a draft of documentation for writing Orange extensions in C++. It has been written quite a while ago and never really polished, but we publishe it due to requests and questions about the topic.</P>
+
+<P>There is an additional example module in C++ with a trivial learner and classifier, which you can easily extended into something serious. The example is not included in this documentation yet, but you can download it (<a href="mymodule.zip">mymodule.zip</a>). It includes the workspace file for Visual Studio, but no makefiles for Linux. There's not much to build anyway. Do not forget to run the included <code>_pyxtract.bat</code> before compiling.</P>
+
+<P>This page starts with a simple example of a C function that gets the data from Orange's example table and computes Delaunay triangulation for a chosen pair of (continuous) attributes. The result is returned as <CODE>orange.Graph</CODE>. Then follows a more complex example that shows how to derive a new class from one of Orange's classes and make it accessible from Python. Finally, there's a more concise description of Orange's interface to Python and the tools we developed for making our lives easier.</P>
 
 <H2>A simple example: Exporting function(s)</H2>
 
@@ -198,11 +202,11 @@ need to debug.
   <LI>In Link, Input, add <CODE>$(PYTHON)\libs<CODE> and <CODE>../../lib</CODE> to
       Additional Library Path. (The first is the path to Python.lib,
       and the second to orange.lib; locate them manually if you need to.)</LI>
-      
+
   <LI>In Link, General, change the Output file name to ../../mymodule.pyd for the Release Build and to ../../mymodule_d.pyd for debug. You can use .dll instead of .pyd.
 
   <LI>In Post-build step, add "copy Release\orangeom.lib ..\..\lib\orangeom.lib" for the Release version, and "copy Debug\orangeom_d.lib ..\..\lib\orangeom_d.lib" for the Debug.
-  
+
   <LI>In Debug Build, go to tab Debug, General, set the Executable for debug session to "c:\python23\python_d.exe".
   </UL>
 </OL>
@@ -733,7 +737,7 @@ int ccn_Domain(PyObject *, void *);
 
 <P>As already mentioned, ppp files should be included (at the beginning) of the corresponding cpp files, instead of the hpp file. For instance, domain.ppp is included in domain.cpp. Each ppp should be compiled only once, all other files needing the definition of <CODE>TDomain</CODE> should still include domain.hpp as usual.</P>
 
-<P>File-specific px files are included in the corresponding cpp files. lib_kernel.px is included at the end of lib_kernel.cpp, from which it was generated. initialization.px should preferably be included in the file that initializes the module (function <CODE>initorange</CODE> needs to call <CODE>addConstants</CODE>, which is declared in initialization.px. These px files contain definitions and must be compiled only once. externs.px contains declarations and can be included wherever needed.</P> 
+<P>File-specific px files are included in the corresponding cpp files. lib_kernel.px is included at the end of lib_kernel.cpp, from which it was generated. initialization.px should preferably be included in the file that initializes the module (function <CODE>initorange</CODE> needs to call <CODE>addConstants</CODE>, which is declared in initialization.px. These px files contain definitions and must be compiled only once. externs.px contains declarations and can be included wherever needed.</P>
 
 Some steps in these instructions are only for Visual Studio 6.0. If you use a newer version of Visual Studio or if you use Linux, adapt them.
 <li>Create a new, blank workspace. If your orange sources are in d:\ai\orange\source (as are mine :), specify this directory as a "Location". Add a new project of type "Win 32 Dynamic-Link Library"; change the location back to d:\ai\orange\source. Make it an empty DLL project.</P>
