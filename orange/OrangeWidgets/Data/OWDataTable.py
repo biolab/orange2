@@ -179,7 +179,7 @@ class OWDataTable(OWWidget):
                 elif data.domain.classVar.varType == orange.VarTypes.Continuous:
                     self.infoClass.setText('Continuous class.')
                 else:
-                    self.infoClass.setText("Class neither descrete nor continuous.")
+                    self.infoClass.setText("Class neither discrete nor continuous.")
             else:
                 self.infoClass.setText('Classless domain.')
 

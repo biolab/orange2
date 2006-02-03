@@ -226,7 +226,7 @@ class OWSieveDiagram(OWWidget):
             self.attrXCombo.insertItem(self.icons[self.data.domain[i].varType], self.data.domain[i].name)
             self.attrYCombo.insertItem(self.icons[self.data.domain[i].varType], self.data.domain[i].name)
             self.attrConditionCombo.insertItem(self.icons[self.data.domain[i].varType], self.data.domain[i].name)
-        self.attrCondition = self.attrConditionCombo.text(0)
+        self.attrCondition = str(self.attrConditionCombo.text(0))
 
         if self.attrXCombo.count() > 0:
             self.attrX = str(self.attrXCombo.text(0))

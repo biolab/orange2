@@ -84,19 +84,19 @@ class OWScatterPlot(OWWidget):
         self.attrColor = ""
         box = OWGUI.widgetBox(self.GeneralTab, " Color Attribute")
         OWGUI.checkBox(box, self, 'showColorLegend', 'Show color legend', callback = self.updateGraph)
-        self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
+        self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One color)")
         
         # labelling
         self.attrLabel = ""
-        self.attrLabelCombo = OWGUI.comboBox(self.GeneralTab, self, "attrLabel", " Point labelling ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrLabelCombo = OWGUI.comboBox(self.GeneralTab, self, "attrLabel", " Point labelling ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str, emptyString = "(No labels)")
 
         # shaping
         self.attrShape = ""
-        self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", " Shape Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
+        self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", " Shape Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One shape)")
                 
         # sizing
         self.attrSize = ""
-        self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
+        self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One size)")
         
         # cluster dialog
         self.clusterDlg.label1.hide()
@@ -345,10 +345,13 @@ class OWScatterPlot(OWWidget):
         if self.attrYCombo.count() > 1: self.attrY = str(self.attrYCombo.text(1))
         else:                           self.attrY = str(self.attrYCombo.text(0))
             
-        if self.data.domain.classVar: self.attrColor = self.data.domain.classVar.name
-        else:                         self.attrColor = "(One color)"
-        self.attrShape = "(One shape)"
-        self.attrSize= "(One size)"
+        if self.data.domain.classVar:
+            self.attrColor = self.data.domain.classVar.name
+        else:
+            self.attrColor = ""
+        self.attrShape = ""
+        self.attrSize= ""
+        self.attrLabel = ""
 
 
     def updateGraph(self, attrList = None, insideColors = None, clusterClosure = None, **args):

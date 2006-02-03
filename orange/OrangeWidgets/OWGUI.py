@@ -300,7 +300,7 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     return slider
 
 
-def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str):
+def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str, control2attributeDict = {}, emptyString = None):
     hb = widgetBox(widget, box, orientation)
     widgetLabel(hb, label, labelWidth)
     if tooltip: QToolTip.add(hb, tooltip)
@@ -316,9 +316,14 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
             combo.setDisabled(True)
 
     if sendSelectedValue:
-        connectControl(combo, master, value, callback, "activated( const QString & )", CallFront_comboBox(combo, valueType), fvcb = valueType)
+        control2attributeDict = dict(control2attributeDict)
+        if emptyString:
+            control2attributeDict[emptyString] = ""
+        connectControl(combo, master, value, callback, "activated( const QString & )",
+                       CallFront_comboBox(combo, valueType, control2attributeDict),
+                       ValueCallbackCombo(master, value, valueType, control2attributeDict))
     else:
-        connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo))
+        connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo, None, control2attributeDict))
     return combo
 
 
@@ -447,6 +452,17 @@ class ValueCallback(ControlledCallback):
 #                traceback.print_exception(*sys.exc_info())
 
 
+class ValueCallbackCombo(ValueCallback):
+    def __init__(self, widget, attribute, f = None, control2attributeDict = {}):
+        ValueCallback.__init__(self, widget, attribute, f)
+        self.control2attributeDict = control2attributeDict
+
+    def __call__(self, value):
+        value = str(value)
+        return ValueCallback.__call__(self, self.control2attributeDict.get(value, value))
+
+                                       
+
 class ValueCallbackLineEdit(ControlledCallback):
     def __init__(self, control, widget, attribute, f = None):
         ControlledCallback.__init__(self, widget, attribute, f)
@@ -561,12 +577,14 @@ class CallFront_checkBox(ControlledCallFront):
 
 
 class CallFront_comboBox(ControlledCallFront):
-    def __init__(self, control, valType = None):
+    def __init__(self, control, valType = None, control2attributeDict = {}):
         ControlledCallFront.__init__(self, control)
         self.valType = valType
+        self.attribute2controlDict = dict([(y, x) for x, y in control2attributeDict.items()])
 
     def action(self, value):
         if value != None:
+            value = self.attribute2controlDict.get(value, value)
             if self.valType: 
                 for i in range(self.control.count()):
                     if self.valType(str(self.control.text(i))) == value:
