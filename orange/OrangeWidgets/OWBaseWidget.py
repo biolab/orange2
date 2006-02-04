@@ -278,7 +278,7 @@ class DomainContextHandler(ContextHandler):
             
 
     def settingsFromWidget(self, context, widget):
-        ContextHandler.settingsToWidget(self, widget, context)
+        ContextHandler.settingsFromWidget(self, widget, context)
         context.values = {}
         for field in self.fields:
             if not field.flags & self.List:
@@ -679,6 +679,14 @@ class OWBaseWidget(QDialog):
                 return widget
                
         return None
+
+    # set all inputs of a widget to None. usually called before closing widgets, so that all contexts get properly closed
+    def clearAllInputSignals(self):
+        for key in self.linksIn.keys():
+            data = []
+            for (dirty, widgetFrom, handler, signalData) in self.linksIn[key]:
+                data.append((1, widgetFrom, handler, signalData + [(None, widgetFrom, "")]))
+            self.linksIn[key] = data
         
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
