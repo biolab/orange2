@@ -53,7 +53,9 @@ class SchemaDoc(QMainWindow):
         self.canSave = self.canSave or newSettings
 
         if not self.canSave or self.canvasDlg.dontAskBeforeClose:
-            if newSettings: self.saveDocument()
+            if newSettings:
+                self.clearWidgetSignals()
+                self.saveDocument()
             self.clear()
             ce.accept()
             QMainWindow.closeEvent(self, ce)
@@ -62,6 +64,7 @@ class SchemaDoc(QMainWindow):
         #QMainWindow.closeEvent(self, ce)
         res = QMessageBox.information(self,'Orange Canvas','Do you want to save changes made to schema?','&Yes','&No','&Cancel',0)
         if res == 0:
+            self.clearWidgetSignals()
             self.saveDocument()
             ce.accept()
             self.clear()
@@ -79,6 +82,12 @@ class SchemaDoc(QMainWindow):
 
     def focusInEvent(self, ev):
         self.canvasDlg.enableSave(self.canSave)
+
+    # called to properly close all widget contexts
+    def clearWidgetSignals(self):
+        for widget in self.widgets[::-1]:
+            widget.clearAllInputSignals()
+            widget.processSignals()
 
     # add line connecting widgets outWidget and inWidget
     # if necessary ask which signals to connect
@@ -563,6 +572,7 @@ if os.path.exists(widgetDir):
         loadSett = ""
         saveSett = ""
         signals = "#set event and progress handler\n"+t+t
+        clearData = ""
 
         sepCount = 1
         # gui for shown widgets
@@ -591,6 +601,7 @@ if os.path.exists(widgetDir):
                 loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
                 loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
                 saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
+                clearData = "self.ow%s.clearAllInputSignals(); self.ow%s.processSignals()\n" % (name, name) +t+t + clearData
             else:
                 buttons += "frameSpace%s = QFrame(self);  frameSpace%s.setMinimumHeight(10); frameSpace%s.setMaximumHeight(10)\n" % (str(sepCount), str(sepCount), str(sepCount)) +t+t
                 sepCount += 1
@@ -694,8 +705,9 @@ if os.path.exists(widgetDir):
         saveSettings = """
         
     def saveSettings(self):
+        %s
         strSettings = {}
-        """ + saveSett + "\n" + t+t + """file = open("%s", "w")
+        """ % (clearData) + saveSett + "\n" + t+t + """file = open("%s", "w")
         cPickle.dump(strSettings, file)
         file.close()
         """ % (fileName + ".sav")
