@@ -59,7 +59,6 @@ class OWGraph(QwtPlot):
         self.showYRaxisTitle = FALSE
         self.YRaxisTitle = None
 
-
         self.state = ZOOMING
         self.tooltip = MyQToolTip(self)
         self.zoomKey = None
@@ -90,7 +89,6 @@ class OWGraph(QwtPlot):
         self.setCanvasColor(QColor(Qt.white.name()))
         self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
         self.ypos = 0
-        self.zoomStack = []
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
         self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
@@ -343,6 +341,7 @@ class OWGraph(QwtPlot):
         self.removeCurves()
         self.removeMarkers()
         self.tips.removeAll()
+        self.zoomStack = []
 
 
     # ####################################################################
