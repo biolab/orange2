@@ -5,13 +5,8 @@
 from OWGraph import *
 from OWDistributions import *
 from orngScaleData import *
-#from qt import *
-#from OWTools import *
-#from qwt import *
-#from Numeric import *
-#from LinearAlgebra import *
 from statc import pearsonr
-import MLab
+from MLab import mean, std
 
 NO_STATISTICS = 0
 MEANS  = 1
@@ -67,20 +62,21 @@ class OWParallelGraph(OWGraph, orngScaleData):
             #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)
             self.setAxisScale(QwtPlot.xBottom, startIndex, stopIndex-1, 1)
 
-        if self.showAttrValues or midLabels:       self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
-        else:                                      self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+        if self.showAttrValues: self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
+        elif midLabels:         self.setAxisScale(QwtPlot.yLeft, 0, 1.04, 1)
+        else:                   self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
 
 ##        if (self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous and self.enabledLegend) or (len(attributes) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete and (self.showDistributionValues or self.showAttrValues)):
 ##            self.addCurve("edge", self.canvasBackground(), self.canvasBackground(), 1, QwtCurve.Lines, QwtSymbol.None, xData = [len(attributes),len(attributes)], yData = [1,1])
 
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw([self.getAttributeLabel(attr) for attr in attributes]))
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
+        self.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)  # hide ticks
+        self.axisScaleDraw(QwtPlot.xBottom).setOptions(0)           # hide horizontal line representing x axis
+        self.axisScaleDraw(QwtPlot.yLeft).setTickLength(0, 0, 0)
+        self.axisScaleDraw(QwtPlot.yLeft).setOptions(0) 
         
-        scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setOptions(0) 
-        scaleDraw.setTickLength(0, 0, 0)
-
-        self.setAxisMaxMajor(QwtPlot.xBottom, len(attributes)-1.0)        
+        self.setAxisMaxMajor(QwtPlot.xBottom, len(attributes))
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
         classNameIndex = -1
@@ -251,9 +247,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 
                 if classNameIndex == -1 or continuousClass:    # no class
                     if self.showStatistics == MEANS:
-                        mean = MLab.mean(array)
-                        dev = MLab.std(array)
-                        data.append([(mean-dev, mean, mean+dev)])
+                        m = mean(array)
+                        dev = std(array)
+                        data.append([(m-dev, m, m+dev)])
                     elif self.showStatistics == MEDIAN:
                         sorted = Numeric.sort(array)
                         data.append([(sorted[int(len(sorted)/4.0)], sorted[int(len(sorted)/2.0)], sorted[int(len(sorted)*0.75)])])
@@ -267,9 +263,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
                         if len(arr_c) == 0:
                             curr.append(()); continue
                         if self.showStatistics == MEANS:
-                            mean = MLab.mean(arr_c)
-                            dev = MLab.std(arr_c)
-                            curr.append((mean-dev, mean, mean+dev))
+                            m = mean(arr_c)
+                            dev = std(arr_c)
+                            curr.append((m-dev, m, m+dev))
                         elif self.showStatistics == MEDIAN:
                             sorted = Numeric.sort(arr_c)
                             curr.append((sorted[int(len(arr_c)/4.0)], sorted[int(len(arr_c)/2.0)], sorted[int(len(arr_c)*0.75)]))
