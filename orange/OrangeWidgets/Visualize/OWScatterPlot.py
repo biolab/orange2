@@ -19,6 +19,7 @@ import OWGUI, OWToolbars, OWDlgs
 from orngScaleData import *
 from OWGraph import OWGraph
 
+       
 ###########################################################################################
 ##### WIDGET : Scatterplot visualization
 ###########################################################################################
@@ -73,11 +74,11 @@ class OWScatterPlot(OWWidget):
 
         #x attribute
         self.attrX = ""
-        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " X Axis Attribute ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " X Axis Attribute ", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
 
         # y attribute
         self.attrY = ""
-        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Y Axis Attribute ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Y Axis Attribute ", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
 
         # coloring
         self.showColorLegend = 0
@@ -176,13 +177,29 @@ class OWScatterPlot(OWWidget):
         self.learnersArray[1] = VizRankLearner(SCATTERPLOT, self.optimizationDlg, self.graph)
         self.setActiveLearner(self.learnerIndex)
 
+    def settingsFromWidgetCallback(self, handler, context):
+        context.selectionPolygons = []
+        for key in self.graph.selectionCurveKeyList:
+            curve = self.graph.curve(key)
+            xs = [curve.x(i) for i in range(curve.dataSize())]
+            ys = [curve.y(i) for i in range(curve.dataSize())]
+            context.selectionPolygons.append((xs, ys))
+
+    def settingsToWidgetCallback(self, handler, context):
+        selections = getattr(context, "selectionPolygons", [])
+        for (xs, ys) in selections:
+            c = SelectionCurve(self.graph)
+            c.setData(xs,ys)
+            key = self.graph.insertCurve(c)
+            self.graph.selectionCurveKeyList.append(key)
+
     # ##############################################################################################################################################################
     # SCATTERPLOT SIGNALS
     # ##############################################################################################################################################################
 
     def resetGraphData(self):
         self.graph.setData(self.data)
-        self.updateGraph()
+        self.majorUpdateGraph()
 
     # receive new data and update all fields
     def cdata(self, data, clearResults = 1):
@@ -207,8 +224,8 @@ class OWScatterPlot(OWWidget):
             self.initAttrValues()
 
         self.openContext("", data)
-
         self.updateGraph()
+
         self.sendSelections()
 
     # set an example table with a data subset subset of the data. if called by a visual classifier, the update parameter will be 0
@@ -226,7 +243,7 @@ class OWScatterPlot(OWWidget):
         if not self.data or not list or len(list) < 2: return
         self.attrX = list[0]
         self.attrY = list[1]
-        self.updateGraph()
+        self.majorUpdateGraph()
 
 
     # visualize the results of the classification
@@ -289,7 +306,7 @@ class OWScatterPlot(OWWidget):
         if self.data.domain.classVar:
             self.attrColor = self.data.domain.classVar.name
 
-        self.updateGraph(attrs)
+        self.majorUpdateGraph(attrs)
         
 
     def showSelectedCluster(self):
@@ -302,7 +319,7 @@ class OWScatterPlot(OWWidget):
             insideColors = (Numeric.compress(validData, self.clusterDlg.pointStability), "Point inside a cluster in %.2f%%")
         else: insideColors = None
 
-        self.updateGraph(attrList, insideColors, (closure, enlargedClosure, classValue))
+        self.majorUpdateGraph(attrList, insideColors, (closure, enlargedClosure, classValue))
 
        
     # ##############################################################################################################################################################
@@ -353,10 +370,12 @@ class OWScatterPlot(OWWidget):
         self.attrSize= ""
         self.attrLabel = ""
 
+    def majorUpdateGraph(self, attrList = None, insideColors = None, clusterClosure = None, **args):
+        self.graph.removeAllSelections()
+        self.updateGraph(attrList, insideColors, clusterClosure, **args)
 
     def updateGraph(self, attrList = None, insideColors = None, clusterClosure = None, **args):
-        self.graph.removeAllSelections()
-        
+        self.graph.zoomStack = []
         if not self.data:
             return
     
@@ -375,7 +394,6 @@ class OWScatterPlot(OWWidget):
         self.graph.clusterClosure = clusterClosure
 
         self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.attrLabel)
-        #self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
 
     
