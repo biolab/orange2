@@ -854,10 +854,10 @@ class OWBaseWidget(QDialog):
             self.contextHandlers[contextName].closeContext(curcontext, self)
             del self.currentContexts[contextName]
 
-    def settingsToWidgetCallback(self, cont1, cont2):
+    def settingsToWidgetCallback(self, handler, context):
         pass
 
-    def settingsFromWidgetCallback(self, cont1, cont2):
+    def settingsFromWidgetCallback(self, handler, context):
         pass
 
     def setControllers(self, obj, controlledName, controller, prefix):
