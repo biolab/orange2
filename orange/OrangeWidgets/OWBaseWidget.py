@@ -134,13 +134,13 @@ class ContextHandler:
         pass
 
     def settingsToWidget(self, widget, context):
-        if hasattr(self, "settingsToWidgetCallback"):
-            self.settingsToWidgetCallback(widget, self, context) # self.settingsToWidgetCallback is a unbound method, so 'widget' is sent for the 'self'...
-                   
+        cb = getattr(widget, "settingsToWidgetCallback" + self.contextName, None)
+        return cb and cb(self, context)
+
     def settingsFromWidget(self, widget, context):
-        if hasattr(self, "settingsFromWidgetCallback"):
-            self.settingsFromWidgetCallback(widget, self, context) # self.settingsFromWidgetCallback is a unbound method, so 'widget' is sent for the 'self'...
-                   
+        cb = getattr(widget, "settingsFromWidgetCallback" + self.contextName, None)
+        return cb and cb(self, context)
+
     def findMatch(self, widget, imperfect = True, *arg, **argkw):
         bestI, bestContext, bestScore = -1, None, -1
         for i, c in enumerate(getattr(widget, self.localContextName)):
@@ -680,14 +680,6 @@ class OWBaseWidget(QDialog):
                
         return None
 
-    # set all inputs of a widget to None. usually called before closing widgets, so that all contexts get properly closed
-    def clearAllInputSignals(self):
-        for key in self.linksIn.keys():
-            data = []
-            for (dirty, widgetFrom, handler, signalData) in self.linksIn[key]:
-                data.append((1, widgetFrom, handler, signalData + [(None, widgetFrom, "")]))
-            self.linksIn[key] = data
-        
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
         if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
@@ -831,6 +823,12 @@ class OWBaseWidget(QDialog):
         if self.widgetStateHandler:
             self.widgetStateHandler()
 
+    def synchronizeContexts(self):
+        if hasattr(self, "contextHandlers"):
+            for contextName, handler in self.contextHandlers.items():
+                context = self.currentContexts.get(contextName, None)
+                if context:
+                    handler.settingsFromWidget(context, self)
 
     def openContext(self, contextName="", *arg):
         self.closeContext(contextName)
@@ -847,6 +845,11 @@ class OWBaseWidget(QDialog):
             self.contextHandlers[contextName].closeContext(curcontext, self)
             del self.currentContexts[contextName]
 
+    def settingsToWidgetCallback(self, cont1, cont2):
+        pass
+
+    def settingsFromWidgetCallback(self, cont1, cont2):
+        pass
 
     def setControllers(self, obj, controlledName, controller, prefix):
         while obj:
