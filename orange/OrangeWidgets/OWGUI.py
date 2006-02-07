@@ -692,9 +692,12 @@ class Disabler:
 # some table related widgets
 
 class tableItem(QTableItem):
-    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white, sortingKey=None, wordWrap=False):
+    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white, sortingKey=None, wordWrap=False, pixmap=None):
         self.background = background
-        QTableItem.__init__(self, table, editType, text)
+        if pixmap:
+            QTableItem.__init__(self, table, editType, text, pixmap)
+        else:
+            QTableItem.__init__(self, table, editType, text)
         table.setItem(x, y, self)
         self.sortingKey = sortingKey
 
