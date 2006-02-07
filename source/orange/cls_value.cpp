@@ -324,7 +324,7 @@ PyObject *Value_FromArguments(PyTypeObject *type, PyObject *args)
         return Value_FromVariableType(type, PyOrange_AsVariable(obj1));
       else {
         TValue val;
-        return convertFromPython(obj1, val) ? Value_FromValueType(type, val) : PYNULL;
+        return convertFromPython(obj1, val) ? Value_FromVariableValueType(type, PyValue_AS_Variable(obj1), val) : PYNULL;
       }
 
     TValue val;
