@@ -228,7 +228,7 @@ void TExampleForMissing::resetExample()
   vector<float>::const_iterator ai(dataDescription->averages.begin());
   for(; vi!=vie; ei++, vi++, ai++)
     if ((*ei).isSpecial()) {
-      if ((*ei).varType==TValue::FLOATVAR)
+      if ((*vi)->varType==TValue::FLOATVAR)
         *ei=TValue(*ai);
       else if (dataDescription->missingWeight && (*ei).isDK()) {
         DKs.push_back(ei-bei);
