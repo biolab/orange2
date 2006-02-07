@@ -228,9 +228,9 @@ class OWDataTable(OWWidget):
             valIdx = [(ex[key].native(),idx) for idx,ex in enumerate(data)]
             valIdx.sort()
             # generate a dictionary where key: instance index, value: rank
-            idx2rankDict = dict(zip([valIdx[1] for valIdx in valIdx], range(numEx)))
+            idx2rankDict = dict(zip([x[1] for x in valIdx], range(numEx)))
             for i in range(numEx):
-                # set sorting key to str(rank) with leading spaces, i.e. 001, 002, ...
+                # set sorting key to ranks
                 OWGUI.tableItem(table, i, j, str(data[i][key]), editType=QTableItem.Never, background=bgColor, sortingKey=self.sortingKey(idx2rankDict[i], numSpaces))
             # adjust the width of the table
             table.adjustColumn(j)
