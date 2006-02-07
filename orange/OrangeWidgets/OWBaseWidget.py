@@ -110,19 +110,27 @@ class ContextHandler:
 
     def openContext(self, widget, *arg, **argkw):
         if not hasattr(widget, self.localContextName):
-#            print "CONTEXT FOUND"
+            print "CONTEXT FOUND"
             if self.syncWithGlobal:
-#                print "TAKING GLOBAL"
+                print "TAKING GLOBAL"
                 setattr(widget, self.localContextName, self.globalContexts)
             else:
-#                print "COPYING GLOBAL"
+                print "COPYING GLOBAL"
                 setattr(widget, self.localContextName, copy.deepcopy(self.globalContexts))
 
         index, context, score = self.findMatch(widget, self.findImperfect and self.loadImperfect, *arg, **argkw)
         if context:
+            print "settings to widget"
             self.settingsToWidget(widget, context)
-            self.moveContextUp(widget, index)
+            print "index", index
+            if index < 0:
+                print "add context"
+                self.addContext(widget, context)
+            else:
+                print "context up"
+                self.moveContextUp(widget, index)            
         else:
+            print "settings from widget"
             context = self.newContext()
             self.addContext(widget, context)
         return context
@@ -149,13 +157,14 @@ class ContextHandler:
                 return i, c, score
             if score and score > bestScore:
                 bestI, bestContext, bestScore = i, c, score
-                
+
         if bestContext and self.cloneIfImperfect:
             if hasattr(self, "cloneContext"):
                 bestContext = self.cloneContext(bestContext, *arg, **argkw)
             else:
                 import copy
                 bestContext = copy.deepcopy(bestContext)
+            bestI = -1
                 
         return bestI, bestContext, bestScore
             
