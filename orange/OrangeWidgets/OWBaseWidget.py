@@ -110,27 +110,19 @@ class ContextHandler:
 
     def openContext(self, widget, *arg, **argkw):
         if not hasattr(widget, self.localContextName):
-            print "CONTEXT FOUND"
             if self.syncWithGlobal:
-                print "TAKING GLOBAL"
                 setattr(widget, self.localContextName, self.globalContexts)
             else:
-                print "COPYING GLOBAL"
                 setattr(widget, self.localContextName, copy.deepcopy(self.globalContexts))
 
         index, context, score = self.findMatch(widget, self.findImperfect and self.loadImperfect, *arg, **argkw)
         if context:
-            print "settings to widget"
             self.settingsToWidget(widget, context)
-            print "index", index
             if index < 0:
-                print "add context"
                 self.addContext(widget, context)
             else:
-                print "context up"
                 self.moveContextUp(widget, index)            
         else:
-            print "settings from widget"
             context = self.newContext()
             self.addContext(widget, context)
         return context
@@ -190,6 +182,7 @@ class ContextField:
     def __init__(self, name, flags, **argkw):
         self.name = name
         self.flags = flags
+        print self.name, self.flags
         self.__dict__.update(argkw)
     
 
