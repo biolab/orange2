@@ -125,27 +125,31 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     def printPic(self):
         printer = QPrinter()
         size = self.getSize()
-        buffer = QPixmap(size)
 
         if printer.setup():
             painter = QPainter(printer)
             metrics = QPaintDeviceMetrics(printer)
             height = metrics.height() - 2*printer.margins().height()
             width = metrics.width() - 2*printer.margins().width()
+
+            minx,maxx,miny,maxy = self.getQCanvasBoundaries()
+            factor = min(float(width)/(maxx-minx), float(height)/(maxy-miny))
+            
             if height == 0:
                 print "Error. Height is zero. Preventing division by zero."
                 return
             pageKvoc = width / float(height)
             sizeKvoc = size.width() / float(size.height())
-            if pageKvoc < sizeKvoc:     rect = QRect(printer.margins().width(),printer.margins().height(), width, height*pageKvoc/sizeKvoc)
-            else:                       rect = QRect(printer.margins().width(),printer.margins().height(), width*sizeKvoc/pageKvoc, height)
-            self.fillPainter(painter, rect)
+            if pageKvoc < sizeKvoc:     rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
+            else:                       rect = QRect(printer.margins().width(),printer.margins().height(), width, height)
+            
+            self.fillPainter(painter, rect, factor)
             painter.end()
         self.saveSettings()
         QDialog.accept(self)
 
 
-    def fillPainter(self, painter, rect):
+    def fillPainter(self, painter, rect, scale = 1.0):
         if isinstance(self.graph, QwtPlot):
             self.graph.printPlot(painter, rect)
         elif isinstance(self.graph, QCanvas):
@@ -156,10 +160,21 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             # draw items
             sortedList = [(item.z(), item) for item in self.graph.allItems()]
             sortedList.sort()   # sort items by z value
+
             for (z, item) in sortedList:
                 if item.visible():
                     item.moveBy(-minx, -miny)
-                    item.draw(painter)
+                    if isinstance(item, QCanvasText):
+                        rect = item.boundingRect()
+                        x,y,w,h = int(rect.x()*scale), int(rect.y()*scale), int(rect.width()*scale), int(rect.height()*scale)
+                        painter.setFont(item.font())
+                        painter.setPen(item.color())
+                        painter.drawText(x,y,w,h,item.textFlags(), item.text())
+                        #painter.drawText(int(scale*item.x()), int(scale*item.y()), str(item.text()))
+                    else:
+                        painter.scale(scale, scale)
+                        item.draw(painter)
+                        painter.scale(1.0/scale, 1.0/scale)
                     item.moveBy(minx, miny)
 
             # draw foreground
