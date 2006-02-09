@@ -15,14 +15,17 @@
     along with Orange; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    Authors: Janez Demsar, Blaz Zupan, 1996--2006
-    Contact: ales.erjavec@fri.uni-lj.si
+    Authors: Janez Demsar, Blaz Zupan, 1996--2002
+    Contact: janez.demsar@fri.uni-lj.si
 */
-/**
- *using: Chih-Chung Chang and Chih-Jen Lin, LIBSVM : a library for support vector machines, 2001. Software available at http://www.csie.ntu.edu.tw/~cjlin/libsvm
-*/
+
+
 #ifndef __SVM_HPP
 #define __SVM_HPP
+
+#include "table.hpp"
+class TSVMLearner;
+class TSVMClassifier;
 
 /*##########################################
 ##########################################*/
@@ -48,7 +51,7 @@ struct svm_problem
 };
 
 enum { C_SVC, NU_SVC, ONE_CLASS, EPSILON_SVR, NU_SVR };	/* svm_type */
-enum { LINEAR, POLY, RBF, SIGMOID };	/* kernel_type */
+enum { LINEAR, POLY, RBF, SIGMOID, CUSTOM };	/* kernel_type */
 
 struct svm_parameter
 {
@@ -69,6 +72,10 @@ struct svm_parameter
 	double p;	/* for EPSILON_SVR */
 	int shrinking;	/* use the shrinking heuristics */
 	int probability; /* do probability estimates */
+
+	TExampleTable *examples;
+	TSVMLearner *learner;
+	TSVMClassifier *classifier;
 };
 
 struct svm_model *svm_train(const struct svm_problem *prob, const struct svm_parameter *param);
@@ -109,6 +116,7 @@ int svm_check_probability_model(const struct svm_model *model);
 #include "examplegen.hpp"
 #include "table.hpp"
 #include "examples.hpp"
+#include "distance.hpp"
 
 WRAPPER(ExampleGenerator)
 WRAPPER(KernelFunc)
@@ -116,13 +124,13 @@ WRAPPER(SVMLearner)
 WRAPPER(SVMClassifier)
 WRAPPER(ExampleTable)
 
-/*
-class O R A N G E _ A  P I TKernelFunc: public TOrange{
+class ORANGE_API TKernelFunc: public TOrange{
 public:
-	__R E G I S TER_ABSTRACT_CLASS
-	virtual operator()(TExample &, TExample &)=0;
+	__REGISTER_ABSTRACT_CLASS
+	virtual float operator()(const TExample &, const TExample &)=0;
 };
-*/
+
+WRAPPER(KernelFunc)
 
 //#include "callback.hpp"
 
@@ -132,19 +140,21 @@ public:
 	
 	//parameters
 	int svm_type; //P  SVM type (C_SVC=0, NU_SVC, ONE_CLASS, EPSILON_SVR=3, NU_SVR=4)
-	int kernel_type; //P  kernel type (LINEAR=0, POLY, RBF, SIGMOID=3)
+	int kernel_type; //P  kernel type (LINEAR=0, POLY, RBF, SIGMOID, CUSTOM=4)
 	float degree;	//P polynomial kernel degree
 	float gamma;	//P poly/rbf/sigm parameter
 	float coef0;	//P poly/sigm parameter
 	float cache_size; //P cache size in MB
 	float eps;	//P stopping criteria
-	float C;	//P for C_SVC and EPSILON_SVR
+	float C;	//P for C_SVC and C_SVR
 	float nu;	//P for NU_SVC and ONE_CLASS
-	float p;	//P for EPSILON_SVR
+	float p;	//P for C_SVR
 	int shrinking;	//P shrinking
 	int probability;	//P probability
 	
-	//PKernelFunc kernelFunc;
+	PKernelFunc kernelFunc;	//P custom kernel function
+
+	PExampleTable tempExamples;
 
 	TSVMLearner();
 
@@ -165,6 +175,8 @@ public:
 
 	PExampleTable supportVectors; //P support vectors
 	PExampleTable examples;	//P examples used to train the classifier
+	PKernelFunc kernelFunc;	//P custom kernel function
+	const TExample *curentExample;
 
 private:
 	svm_model *model;
