@@ -21,6 +21,7 @@ Additionally you can use the following kernel functions:
  <li>polynomial: (gamma*u'*v + coef0)^degree</li>
  <li>radial basis function: exp(-gamma*|u-v|^2)</li>
  <li>sigmoid: tanh(gamma*u'*v + coef0)</li>
+ <li>custom kernel (any function that remotely resembles a distance measure between two examples that can be implemented in python)</li>
 </ul>
 </p>
 <h2>SVMLearner</h2>
@@ -30,18 +31,20 @@ Additionally you can use the following kernel functions:
   <dt>svm_type</dt>
   <dd>Defines the type of SVM (can be SVMLearner.C_SVC (default), SVMLearner.NU_SVC, SVMLearner.ONE_CLASS, SVMLearner.EPSILON_SVR, SVMLearner.NU_SVR)</dd>
   <dt>kernel_type</dt>
-  <dd>Defines the type of a kernel to use for learning (can be SVMLearner.RBF (default), SVMLearner.LINEAR, SVMLearner.POLY, SVMLearner.SIGMOID)</dd>
+  <dd>Defines the type of a kernel to use for learning (can be SVMLearner.RBF (default), SVMLearner.LINEAR, SVMLearner.POLY, SVMLearner.SIGMOID, SVMLearner.CUSTOM)</dd>
   <dt>degree</dt>
-  <dd>Kernel parameter (default 3)</dd>
+  <dd>Kernel parameter (POLY) (default 3)</dd>
   <dt>gamma</dt>
-  <dd>Kernel parameter (default 1/number_of_examples)</dd>
+  <dd>Kernel parameter (POLY/RBF/SIGMOID) (default 1/number_of_examples)</dd>
   <dt>coef0</dt>
-  <dd>Kernel parameter (default 0)</dd>
+  <dd>Kernel parameter (POLY/SIGMOID) (default 0)</dd>
+  <dt>kernelFunc</dt>
+  <dd>Function that will be called if <code>kernel_type</code> is SVMLearner.CUSTOM. It must accept two orange.Example argument and return a float.</dd>
   <dt>C</dt>
   <dd>C parameter for C_SVC, EPSILON_SVR, NU_SVR</dd>
   <dt>nu</dt>
   <dd>Nu parameter for NU_SVC, NU_SVR and ONE_CLASS (default 0.5)</dd>
-  <dt>epsilon</dt>
+  <dt>p</dt>
   <dd>Epsilon in loss-function for EPSILON_SVR</dd>
   <dt>cache_size</dt>
   <dd>Cache memory size in MB (default 100)</dd>
