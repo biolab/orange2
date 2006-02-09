@@ -866,16 +866,46 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 #include "svm.hpp"
 C_CALL(SVMLearner, Learner, "([examples] -/-> Classifier)")
 BASED_ON(SVMClassifier, Classifier)
-PYCLASSCONSTANT_INT(SVMLearner, LINEAR, 0)
-PYCLASSCONSTANT_INT(SVMLearner, POLY, 1)
-PYCLASSCONSTANT_INT(SVMLearner, RBF, 2)
-PYCLASSCONSTANT_INT(SVMLearner, SIGMOID, 3)
 
 PYCLASSCONSTANT_INT(SVMLearner, C_SVC, 0)
 PYCLASSCONSTANT_INT(SVMLearner, NU_SVC, 1)
 PYCLASSCONSTANT_INT(SVMLearner, ONE_CLASS, 2)
 PYCLASSCONSTANT_INT(SVMLearner, EPSILON_SVR, 3)
 PYCLASSCONSTANT_INT(SVMLearner, NU_SVR, 4)
+
+PYCLASSCONSTANT_INT(SVMLearner, LINEAR, 0)
+PYCLASSCONSTANT_INT(SVMLearner, POLY, 1)
+PYCLASSCONSTANT_INT(SVMLearner, RBF, 2)
+PYCLASSCONSTANT_INT(SVMLearner, SIGMOID, 3)
+PYCLASSCONSTANT_INT(SVMLearner, CUSTOM, 4)
+
+
+PyObject *KernelFunc_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrKernelFunc_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TKernelFunc_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TKernelFunc_Python(), type);
+}
+
+
+PyObject *KernelFunc_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(Example, Example) -> float")
+{
+  PyTRY
+    NO_KEYWORDS
+
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrKernelFunc_Type) {
+      PyErr_Format(PyExc_SystemError, "KernelFunc.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
+    float f;
+    PExample e1,e2;
+	if (!PyArg_ParseTuple(args, "O&O&", cc_Example, &e1, cc_Example, &e2))
+		return NULL;
+	f=SELF_AS(TKernelFunc)(e1.getReference(),e2.getReference());
+	return Py_BuildValue("f", f);
+  PyCATCH
+}
 
 
 /************* BAYES ************/
@@ -1309,7 +1339,6 @@ PyObject *RuleList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "()
 PyObject *RuleList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Rule) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_remove(self, obj); }
 PyObject *RuleList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_reverse(self); }
 PyObject *RuleList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_sort(self, args); }
-
 
 
 #include "lib_learner.px"

@@ -214,6 +214,14 @@ public:
   virtual PRuleClassifier operator ()(PRuleList, PExampleTable, const int &weightID);
 };
 
+#include "svm.hpp"
+
+class ORANGE_API TKernelFunc_Python : public TKernelFunc{
+public:
+	__REGISTER_CLASS
+	virtual float operator()(const TExample &, const TExample &);
+};
+
 /*
 Not verified yet:
 

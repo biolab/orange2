@@ -678,6 +678,16 @@ PRuleClassifier TRuleClassifierConstructor_Python::operator()(PRuleList rules, P
   return res;
 }
 
+
+float TKernelFunc_Python::operator ()(const TExample &e1, const TExample &e2){
+	PyObject *args=Py_BuildValue("(NN)", Example_FromExampleCopyRef(e1), Example_FromExampleCopyRef(e2));
+	PyObject *result=callCallback((PyObject *)myWrapper, args);
+	Py_DECREF(args);
+	float res=PyFloat_AsDouble(result);
+	Py_DECREF(result);
+	return res;
+}
+
 /*
 PIM TConstructIM_Python::operator()(PExampleGenerator gen, const vector<bool> &bound, const TVarList &boundSet, const vector<bool> &free, const int &weightID)
 { if (!gen)
