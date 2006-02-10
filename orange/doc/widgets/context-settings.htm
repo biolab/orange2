@@ -30,9 +30,13 @@
     self.classAttribute = None
     self.loadSettings()
 
-    OWGUI.listBox(self.controlArea, self, "selectedAttributes", "attributeList", box="Selected attributes", selectionMode = QListBox.Extended)
+    OWGUI.listBox(self.controlArea, self, "selectedAttributes", "attributeList",
+                  box="Selected attributes", selectionMode = QListBox.Extended)
+
     OWGUI.separator(self.controlArea)
-    self.classAttrCombo = OWGUI.comboBox(self.controlArea, self, "classAttribute", box="Class attribute")
+    self.classAttrCombo = OWGUI.comboBox(self.controlArea, self, "classAttribute",
+                  box="Class attribute")
+
     OWGUI.separator(self.controlArea)
     OWGUI.button(self.controlArea, self, "Apply", callback = self.outputData)
 
@@ -63,7 +67,8 @@ def outputData(self):
     if not self.data:
         self.send("Examples", None)
     else:
-        newDomain = orange.Domain([self.data.domain[i] for i in self.selectedAttributes], self.data.domain[self.classAttribute])
+        newDomain = orange.Domain([self.data.domain[i] for i in self.selectedAttributes],
+                                  self.data.domain[self.classAttribute])
         newData = orange.ExampleTable(newDomain, self.data)
         print newDomain
         self.send("Examples", newData)
@@ -76,7 +81,8 @@ def outputData(self):
 <P>So, put
 <xmp class="code">contextHandlers = {"": DomainContextHandler("", [
             ContextField("classAttribute", DomainContextHandler.Required),
-            ContextField("attributeList", DomainContextHandler.List + DomainContextHandler.SelectedRequired,
+            ContextField("attributeList", DomainContextHandler.List +
+                                          DomainContextHandler.SelectedRequired,
                          selected="selectedAttributes")])}
 </xmp>
 at the same place where you would declare <code>settingsList</code>. It declares a context handler of type <code>DomainContextHandler</code>. "Contexts" may be defined by different things, but settings most commonly depend on the domain of the examples and will be taken care by the <code>DomainContextHandler</code>. We then list the fields that are context dependent: the first is <code>classAttribute</code>, and the other two form a pair, <code>attributeList</code> contains the attributes and <code>selectedAttributes</code> is the selection. The latter has the flag <code>DomainContextHandler.List</code> which tells the context handler that the property in question is a list, not an ordinary field.</P>
