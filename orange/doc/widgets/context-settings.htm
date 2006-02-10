@@ -6,13 +6,13 @@
 
 <H1>Context-Dependent Settings</H1>
 
-<P>You have already learned about saving widget <a href="settings.htm">settings</a>. But there's more: some settings are context dependent. Open Orange Canvas and observe the scatter plot - feed it some data, select the two attributes for x- and y-axis, select some examples... and then feed it some other data. Your settings get lost. Or do they? Well, change back to the original data and you will see the same two attributes on the axes and even the same examples selected.</P>
+<P>You have already learned about <a href="settings.htm">storing widget settings</a>. But there's more: some settings are context dependent. Open Orange Canvas and observe the scatter plot - feed it some data, select two attributes for x- and y-axis, select some examples... and then give it some other data. Your settings get lost. Or do they? Well, change back to the original data and you will see the same two attributes on the axes and even the same examples selected.</P>
 
-<P>What happens in behind is that Orange remembers the settings (chosen attributes etc.) and ties them with the domain. The next time it gets the data from the same (or similar enough) domain, the settings get reused. The history for an arbitrary number of domains can be stored in this way.</P>
+<P>What happens in behind is that Orange remembers the settings (chosen attributes etc.) and ties them with the domain. The next time it gets the data from the same (or similar enough) domain, the settings get reused. The history for an arbitrary number of domains can be stored in this manner.</P>
 
 <P>To learn how to do it yourself, consider the below widget for selecting a subset of attributes and the class attributes (note that there is a better widget for this purpose already supplied in the canvas).</P>
 
-<center><img src="attributesampler.png"></center><
+<img src="attributesampler.png">
 
 <P>The widget gets examples on the input and outputs the same examples with the attributes and the class chosen by the user. We'd like to somehow store the user's selection.</P>
 
@@ -94,7 +94,8 @@ at the same place where you would declare <code>settingsList</code>. It declares
 <P>The default flag is <code>DomainContextHandler.Required</code>, and there are other shortcuts for declaring the context, too. The above code could be simplified as
 <xmp class="code">contextHandlers = {"": DomainContextHandler("", [
             "classAttribute",
-            ContextField("attributeList", DomainContextHandler.SelectedRequiredList, selected="selectedAttributes")])}
+            ContextField("attributeList", DomainContextHandler.SelectedRequiredList,
+                         selected="selectedAttributes")])}
 </xmp>
 
 <P>Why the dictionary and the empty string as the key? A widget can have multiple contexts, depending, usually, on multiple input signals. These contexts can be named, but the default name is empty string. A case in which we would really need multiple contexts is yet to appear, so you shall mostly declare the contexts as above. (Note that we gave the name twice - first empty string is for the key in the dictionary and with the second we tell the context handler its own name.)</P>
