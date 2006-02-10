@@ -1,0 +1,125 @@
+<html>
+<head>
+<title>Orange Widgets: Settings and Controls</title>
+</head>
+<body>
+
+<H1>Context-Dependent Settings</H1>
+
+<P>You have already learned about saving widget <a href="settings.htm">settings</a>. But there's more: some settings are context dependent. Open Orange Canvas and observe the scatter plot - feed it some data, select the two attributes for x- and y-axis, select some examples... and then feed it some other data. Your settings get lost. Or do they? Well, change back to the original data and you will see the same two attributes on the axes and even the same examples selected.</P>
+
+<P>What happens in behind is that Orange remembers the settings (chosen attributes etc.) and ties them with the domain. The next time it gets the data from the same (or similar enough) domain, the settings get reused. The history for an arbitrary number of domains can be stored in this way.</P>
+
+<P>To learn how to do it yourself, consider the below widget for selecting a subset of attributes and the class attributes (note that there is a better widget for this purpose already supplied in the canvas).</P>
+
+<img src="attributesampler.png">
+
+<P>The widget gets examples on the input and outputs the same examples with the attributes and the class chosen by the user. We'd like to somehow store the user's selection.</P>
+
+<P>Here's the widget's <code>__init__</code> function.
+<xmp class="code">def __init__(self, parent=None, signalManager=None):
+    OWWidget.__init__(self, parent, signalManager, 'AttributeSampler')
+
+    self.inputs = [("Examples", ExampleTable, self.dataset)]
+    self.outputs = [("Examples", ExampleTableWithClass)]
+
+    self.icons = self.createAttributeIconDict()
+
+    self.attributeList = []
+    self.selectedAttributes = []
+    self.classAttribute = None
+    self.loadSettings()
+
+    OWGUI.listBox(self.controlArea, self, "selectedAttributes", "attributeList", box="Selected attributes", selectionMode = QListBox.Extended)
+    OWGUI.separator(self.controlArea)
+    self.classAttrCombo = OWGUI.comboBox(self.controlArea, self, "classAttribute", box="Class attribute")
+    OWGUI.separator(self.controlArea)
+    OWGUI.button(self.controlArea, self, "Apply", callback = self.outputData)
+
+    self.resize(150,400)
+</xmp>
+
+<P>Note that we are strictly using controls from OWGUI. As for the usual settings, if you use Qt controls directly, their state won't get synchronized with the widget's internal variables and vice versa. The list box is associated with two variables, <code>attributeList</code> contains the attributes (as tuples with the name and the type), and <code>selectedAttributes</code> is a list with indices of selected attributes. Combo box will put the index of the chosen class attribute into <code>classAttribute</code>.</P>
+
+<P>When the widget gets the data, <code>dataset</code> is called.</P>
+
+<xmp class="code">def dataset(self, data):
+    self.classAttrCombo.clear()
+    if data:
+        self.attributeList = [(attr.name, attr.varType) for attr in data.domain]
+        self.selectedAttributes = []
+        for attrName, attrType in self.attributeList:
+            self.classAttrCombo.insertItem(self.icons[attrType], attrName)
+        self.classAttribute = len(self.attributeList)-1
+    else:
+        self.attributeList = []
+        self.selectedAttributes = []
+        self.classAttrCombo.insertItem("")
+
+    self.data = data
+    self.outputData()
+
+def outputData(self):
+    if not self.data:
+        self.send("Examples", None)
+    else:
+        newDomain = orange.Domain([self.data.domain[i] for i in self.selectedAttributes], self.data.domain[self.classAttribute])
+        newData = orange.ExampleTable(newDomain, self.data)
+        print newDomain
+        self.send("Examples", newData)
+</xmp>
+
+<P>Nothing special here (yet). We fill the list box, deselect all attributes and set the last attribute to be the class attribute. Output data is put into a separate function because it's called by <code>dataset</code> and as a callback function when the user presses the "Apply" button.</P>
+
+<P>The widgets essentially works, but it doesn't remember anything. You can try to list the three variables (<code>attributeList</code>, <code>selectedAttributes</code> and <code>classAttribute</code> in the <code>settingsList</code>, as you've seen on the page about settings, but it won't work. It can't: settings are saved and loaded only when the widget is created, not every time it gets a new signal. Besides, the ordinary settings in the <code>settingsList</code> are not context dependent, so the widget would usually try to assign, say, the class attribute which doesn't exist in the actual domain at all.</P>
+
+<P>So, put
+<xmp class="code">contextHandlers = {"": DomainContextHandler("", [
+            ContextField("classAttribute", DomainContextHandler.Required),
+            ContextField("attributeList", DomainContextHandler.List + DomainContextHandler.SelectedRequired,
+                         selected="selectedAttributes")])}
+</xmp>
+at the same place where you would declare <code>settingsList</code>. It declares a context handler of type <code>DomainContextHandler</code>. "Contexts" may be defined by different things, but settings most commonly depend on the domain of the examples and will be taken care by the <code>DomainContextHandler</code>. We then list the fields that are context dependent: the first is <code>classAttribute</code>, and the other two form a pair, <code>attributeList</code> contains the attributes and <code>selectedAttributes</code> is the selection. The latter has the flag <code>DomainContextHandler.List</code> which tells the context handler that the property in question is a list, not an ordinary field.</P>
+
+<P>And what is "<code>Required</code>" and "<code>SelectedRequired</code>"? These are important in domain matching. Say that you loaded the car data, selected attributes <code>price</code>, <code>maint</code> and <code>lug_boot</code> and set the class attribute to <code>acc</code>. Now you load a modified car data in which the attribute <code>doors</code> is missing. Can the settings be reused? Sure, <code>doors</code> was not selected, so this attribute is not really needed. A different thing is if the new set misses attributes <code>price</code> or <code>acc</code>; in this case, the old settings cannot and should not be reused. So, this is the meaning of <code>DomainContextHandler.Required</code> and <code>DomainContextHandler.SelectedRequired</code>: a stored context doesn't match the new data if the data lacks the attribute that the context stores as "<code>classAttribute</code>". And, the new data also has to have all the attributes that were selected in the stored context. If any of the other attributes misses, it doesn't matter, the context will still match and be used.</P>
+
+<P>As you have guessed, we can also have optional attributes (<code>DomainContextHandler.Optional</code>); sometimes certain attribute doesn't really matter, so if it is present in the domain, it's gonna be used, otherwise not. And for the list, we could say <code>DomainContextHandler.List + DomainContextHandler.Required</code> in which case all the attributes on the list would be required for the domain to match.</P>
+
+<P>The default flag is <code>DomainContextHandler.Required</code>, and there are other shortcuts for declaring the context, too. The above code could be simplified as
+<xmp class="code">contextHandlers = {"": DomainContextHandler("", [
+            "classAttribute",
+            ContextField("attributeList", DomainContextHandler.SelectedRequiredList, selected="selectedAttributes")])}
+</xmp>
+
+<P>Why the dictionary and the empty string as the key? A widget can have multiple contexts, depending, usually, on multiple input signals. These contexts can be named, but the default name is empty string. A case in which we would really need multiple contexts is yet to appear, so you shall mostly declare the contexts as above. (Note that we gave the name twice - first empty string is for the key in the dictionary and with the second we tell the context handler its own name.)</P>
+
+<P>So much for declaration of contexts. The ordinary, context independent settings load and save automatically as the widget is created and destroyed. Context dependent settings are stored and restored when the context changes, usually due to receiving a signal with a new data set. This unfortunately cannot be handled automatically - you have to add the calls of the appropriate context changing functions yourself. Here's what you have to do with the function <code>dataset</code>
+
+<xmp class="code">def dataset(self, data):
+    self.closeContext()
+    
+    self.classAttrCombo.clear()
+    if data:
+        self.attributeList = [(attr.name, attr.varType) for attr in data.domain]
+        self.selectedAttributes = []
+        for attrName, attrType in self.attributeList:
+            self.classAttrCombo.insertItem(self.icons[attrType], attrName)
+        self.classAttribute = len(self.attributeList)-1
+    else:
+        self.attributeList = []
+        self.selectedAttributes = []
+        self.classAttrCombo.insertItem("")
+
+    self.data = data
+    
+    self.openContext("", data)
+    
+    self.outputData()
+</xmp>
+
+<P>First, before you change any controls in the widget, you need to call <code>self.closeContext</code> (the function has an optional argument, the context name, but since we use the default name, an empty string, we can omit it). This reads the data from the widget into the stored context. Then the function proceeds as before: the controls (the list box and combo box) are filled in as if there were no context handling. When the controls are put in a consistent state, we call <code>self.openContext</code>. The first argument is the context name and the second is the object from which the handler reads the context. In case of <code>DomainContextHandler</code> this can be either a domain or the data. <code>openContext</code> will make the context handler search through the stored context for one that (best) matches the data, and if one is find the widget's state is set accordingly (that is, the list boxes are filled, attributes in it are selected etc.). If not context is found, a new context is established and the data from widget is copied to the context.</P>
+
+
+
+</body>
+</html>
