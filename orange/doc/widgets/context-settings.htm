@@ -16,7 +16,9 @@
 
 <P>The widget gets examples on the input and outputs the same examples with the attributes and the class chosen by the user. We'd like to somehow store the user's selection.</P>
 
-<P>Here's the widget's <code>__init__</code> function.
+<P>Here's the widget's <code>__init__</code> function.</P>
+
+<p class="header">part of <a href="OWAttributeSampler.py">OWAttributeSampler.py</a></p>
 <xmp class="code">def __init__(self, parent=None, signalManager=None):
     OWWidget.__init__(self, parent, signalManager, 'AttributeSampler')
 
@@ -47,6 +49,7 @@
 
 <P>When the widget gets the data, <code>dataset</code> is called.</P>
 
+<p class="header">part of <a href="OWAttributeSampler.py">OWAttributeSampler.py</a></p>
 <xmp class="code">def dataset(self, data):
     self.classAttrCombo.clear()
     if data:
@@ -107,9 +110,10 @@ at the same place where you would declare <code>settingsList</code>.</P>
 
 <P>So much for declaration of contexts. The ordinary, context independent settings load and save automatically as the widget is created and destroyed. Context dependent settings are stored and restored when the context changes, usually due to receiving a signal with a new data set. This unfortunately cannot be handled automatically - you have to add the calls of the appropriate context changing functions yourself. Here's what you have to do with the function <code>dataset</code>
 
+<p class="header">part of <a href="OWAttributeSampler.py">OWAttributeSampler.py</a></p>
 <xmp class="code">def dataset(self, data):
     self.closeContext()
-    
+
     self.classAttrCombo.clear()
     if data:
         self.attributeList = [(attr.name, attr.varType) for attr in data.domain]
@@ -123,9 +127,9 @@ at the same place where you would declare <code>settingsList</code>.</P>
         self.classAttrCombo.insertItem("")
 
     self.data = data
-    
+
     self.openContext("", data)
-    
+
     self.outputData()
 </xmp>
 
@@ -134,8 +138,8 @@ at the same place where you would declare <code>settingsList</code>.</P>
 <P>What can be stored as a context dependent setting? Anything, even the state of check boxes if you want to. But don't do that. Make <em>some</em> of your checkboxes context dependent (so that they will change when the new data arrives) and the use of the widget will be completely chaotic since nobody will know what changes and what stays the same. Make <em>all</em> your controls context dependent and the widget will become useless as it will reset to the defaults every time some new data arrives. Bottom line, regarding to controls, make as little context dependent settings as possible - the context dependent controls will usually be limited to list boxes and combo boxes that store attribute names.
 
 <P>But there are other things that you can put into the context. Just remember the scatter plot's ability to remember the example selection - which is surely not stored in a simple list box. How does it do it? Here are two methods it defines:
-<xmp class="code">
-    def settingsFromWidgetCallback(self, handler, context):
+
+<xmp class="code">def settingsFromWidgetCallback(self, handler, context):
         context.selectionPolygons = []
         for key in self.graph.selectionCurveKeyList:
             curve = self.graph.curve(key)
