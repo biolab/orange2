@@ -65,7 +65,6 @@ class OWAttributeSampler(OWWidget):
         else:
             newDomain = orange.Domain([self.data.domain[i] for i in self.selectedAttributes], self.data.domain[self.classAttribute])
             newData = orange.ExampleTable(newDomain, self.data)
-            print newDomain
             self.send("Examples", newData)
             
 
