@@ -73,7 +73,6 @@ struct svm_parameter
 	int shrinking;	/* use the shrinking heuristics */
 	int probability; /* do probability estimates */
 
-	TExampleTable *examples;
 	TSVMLearner *learner;
 	TSVMClassifier *classifier;
 };
@@ -176,7 +175,7 @@ public:
 	PExampleTable supportVectors; //P support vectors
 	PExampleTable examples;	//P examples used to train the classifier
 	PKernelFunc kernelFunc;	//P custom kernel function
-	const TExample *curentExample;
+	const TExample *currentExample;
 
 private:
 	svm_model *model;

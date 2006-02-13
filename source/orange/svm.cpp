@@ -396,9 +396,12 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 				y++;
 			while(x->index!=-1)
 				x++;
+			if(!param.classifier)
+				return param.learner->kernelFunc->operator()(param.learner->tempExamples->at((int)x->value),
+			param.learner->tempExamples->at((int)y->value));
 			TExample *ex;
 			memcpy((void *)&ex, (void*)&x->value, sizeof(TExample *));
-			return param.classifier->kernelFunc->operator()(*param.classifier->curentExample,
+			return param.classifier->kernelFunc->operator()(*param.classifier->currentExample,
 				param.classifier->examples->at((int)y->value));
 		}
 			
@@ -3117,7 +3120,7 @@ int svm_check_probability_model(const svm_model *model)
 //#_i_nclu_sde "svm.ppp"
 
 svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0){
-	if(type==0)
+	//if(type==0)
 		for(int i=0;i<ex.domain->attributes->size();i++){
 			if(ex[i].isRegular()){
 				if(ex[i].varType==TValue::FLOATVAR)
@@ -3125,23 +3128,23 @@ svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int
 				else
 					node->value=int(ex[i]);
 				node->index=i+1;
-				if(!(node->value==numeric_limits<float>::signaling_NaN() || 
-					node->value==numeric_limits<int>::max()))
+				if(node->value==numeric_limits<float>::signaling_NaN() || 
+					node->value==numeric_limits<int>::max())
 					node--;
 				node++;
 			}
 		}
-	if(type==0 || type==1){
+	//if(type==0 || type==1){
 		node->index=-1;
 		node->value=last;
 		node++;
-	}
+	/*}
 	else{
 		node->index=-1;
 		const TExample *e=&ex;
 		memcpy((void *)&node->value, (void *)&e, sizeof(TExample*));
 		node++;
-	}
+	}*/
 	return node;
 }
 /*
@@ -3196,6 +3199,8 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	param.weight_label = NULL;
 	param.weight = NULL;
 	param.learner=this;
+	param.classifier=NULL;
+	cout<<param.kernel_type<<endl;
 	
 	tempExamples=examples;
 	int exlen=examples->domain->attributes->size();
@@ -3221,7 +3226,7 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	svm_node *node=x_space;
 	PEITERATE(iter, examples){
 		prob.x[k]=node;
-		node=example_to_svm(*iter, node, k, (param.kernel_type==CUSTOM)? 1:0);
+		node=example_to_svm(*iter, node, k);//, (param.kernel_type==CUSTOM)? 1:0);
 		if(node>&x_space[2*prob.l*(exlen+1)-1])
 			raiseError("TTT");
 		switch(classVarType){
@@ -3260,6 +3265,7 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 	examples=_examples;
 	model->param.classifier=this;
 	kernelFunc=model->param.learner->kernelFunc;
+	currentExample=NULL;
 	computesProbabilities=bool((model &&model->param.svm_type!=EPSILON_SVR &&
 		model->param.svm_type!=NU_SVR)? model->param.probability: 0);
 	if(!classVar && model->param.svm_type==ONE_CLASS)
@@ -3286,7 +3292,7 @@ PDistribution TSVMClassifier::classDistribution(const TExample & example){
 	if(!model->param.probability)
 		raiseError("Model does not support probabilities");
 		//return  TDistribution::create(example.domain->classVar);
-	curentExample=&example;
+	currentExample=&example;
 	int exlen=example.domain->attributes->size();
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
@@ -3297,8 +3303,9 @@ PDistribution TSVMClassifier::classDistribution(const TExample & example){
 	svm_node *x=Malloc(svm_node, exlen+1);
 	svm_get_labels(model,labels);
 	prob_estimates = (double *) malloc(nr_class*sizeof(double));
-	example_to_svm(example, x, 1.0, (model->param.kernel_type==CUSTOM)? 2:0);
+	example_to_svm(example, x, 1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
 	svm_predict_probability(model,x,prob_estimates);
+	currentExample=NULL;
 	PDistribution dist=TDistribution::create(example.domain->classVar);
 	int i=0;
 	for(i=0;i<nr_class;i++)
@@ -3312,13 +3319,14 @@ PDistribution TSVMClassifier::classDistribution(const TExample & example){
 TValue TSVMClassifier::operator()(const TExample & example){
 	if(!model)
 		raiseError("No Model");
-	curentExample=&example;
+	currentExample=&example;
 	int exlen=example.domain->attributes->size();
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
 	svm_node *x=Malloc(svm_node, exlen+1);
-	example_to_svm(example, x, 1.0, (model->param.kernel_type==3)? 2:0);
+	example_to_svm(example, x, 1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
 	double v=svm_predict(model,x);
+	currentExample=NULL;
 	free(x);
 	TValue value;
 	if(svm_type==NU_SVR || svm_type==EPSILON_SVR || svm_type==ONE_CLASS)
