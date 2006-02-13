@@ -132,8 +132,10 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             height = metrics.height() - 2*printer.margins().height()
             width = metrics.width() - 2*printer.margins().width()
 
-            minx,maxx,miny,maxy = self.getQCanvasBoundaries()
-            factor = min(float(width)/(maxx-minx), float(height)/(maxy-miny))
+            factor = 1.0
+            if isinstance(self.graph, QCanvas):
+                minx,maxx,miny,maxy = self.getQCanvasBoundaries()
+                factor = min(float(width)/(maxx-minx), float(height)/(maxy-miny))
             
             if height == 0:
                 print "Error. Height is zero. Preventing division by zero."
@@ -141,7 +143,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             pageKvoc = width / float(height)
             sizeKvoc = size.width() / float(size.height())
             if pageKvoc < sizeKvoc:     rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
-            else:                       rect = QRect(printer.margins().width(),printer.margins().height(), width, height)
+            else:                       rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
             
             self.fillPainter(painter, rect, factor)
             painter.end()
