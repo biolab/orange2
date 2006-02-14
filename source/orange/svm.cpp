@@ -3325,7 +3325,13 @@ TValue TSVMClassifier::operator()(const TExample & example){
 	int nr_class=svm_get_nr_class(model);
 	svm_node *x=Malloc(svm_node, exlen+1);
 	example_to_svm(example, x, 1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
-	double v=svm_predict(model,x);
+	double v;
+	if(model->param.probability){
+		double *prob=(double *) malloc(nr_class*sizeof(double));
+		v=svm_predict_probability(model,x, prob);
+		free(prob);
+	} else
+		v=svm_predict(model, x);
 	currentExample=NULL;
 	free(x);
 	TValue value;
