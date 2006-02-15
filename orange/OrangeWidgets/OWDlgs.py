@@ -7,7 +7,7 @@ from ColorPalette import *
 
         
 class OWChooseImageSizeDlg(OWBaseWidget):
-    settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName"]
+    settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName", "penWidthFactor"]
     def __init__(self, graph, extraButtons = []):
         OWBaseWidget.__init__(self, None, None, "Image settings", modal = TRUE)
 
@@ -16,6 +16,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.customX = 400
         self.customY = 400
         self.saveAllSizes = 0
+        self.penWidthFactor = 1
         self.lastSaveDirName = "./"
 
         self.loadSettings()
@@ -24,12 +25,15 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.layout = QVBoxLayout(self, 4)
         self.layout.addWidget(self.space)
         
-        box = QVButtonGroup("Image Size", self.space)
+        box = QVButtonGroup(" Image Size ", self.space)
         if isinstance(graph, QwtPlot):
             size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"], callback = self.updateGUI)
             
             self.customXEdit = OWGUI.lineEdit(box, self, "customX", "       Width:  ", orientation = "horizontal", valueType = int)
             self.customYEdit = OWGUI.lineEdit(box, self, "customY", "       Height:   ", orientation = "horizontal", valueType = int)
+
+            OWGUI.comboBoxWithCaption(self.space, self, "penWidthFactor", label = 'Factor:   ', box = " Pen width multiplication factor ",  tooltip = "Set the pen width factor for all curves in the plot\n(Useful for example when the lines in the plot look to thin)\nDefault: 1", sendSelectedValue = 1, valueType = int, items = range(1,20))
+
         elif isinstance(graph, QCanvas):
             OWGUI.widgetLabel(box, "Image size will be set automatically.")
             
@@ -153,7 +157,16 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
     def fillPainter(self, painter, rect, scale = 1.0):
         if isinstance(self.graph, QwtPlot):
+            if self.penWidthFactor != 1:
+                for key in self.graph.curveKeys():
+                    pen = self.graph.curve(key).pen(); pen.setWidth(self.penWidthFactor*pen.width()); self.graph.curve(key).setPen(pen)
+
             self.graph.printPlot(painter, rect)
+
+            if self.penWidthFactor != 1:
+                for key in self.graph.curveKeys():
+                    pen = self.graph.curve(key).pen(); pen.setWidth(pen.width()/self.penWidthFactor); self.graph.curve(key).setPen(pen)
+
         elif isinstance(self.graph, QCanvas):
             # draw background
             self.graph.drawBackground(painter, rect)
