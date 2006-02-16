@@ -45,8 +45,8 @@ class OWParallelCoordinates(OWWidget):
         self.box.addWidget(self.graph)
         self.box.addWidget(self.slider)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Selection List", ExampleList, self.exampleSelection), ("Attribute Selection List", AttributeList, self.attributeSelection)]  # ExampleList and AttributeList are defined in OWBaseWidget
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Example selection", ExampleList), ("Attribute Selection List", AttributeList)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Selection List", ExampleList, self.exampleSelection), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
     
         #set default settings
         self.data = None
@@ -133,13 +133,11 @@ class OWParallelCoordinates(OWWidget):
 
         # ####################################
         # SETTINGS functionality
-        # jittering options
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "graph.jitterSize", 'Jittering size (% of size):  ', box = " Jittering options ", callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
 
-        # attribute axis distance
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "linesDistance", 'Minimum distance: ', box = " Attribute axis distance ", callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "What is the minimum distance between two adjecent attribute axis", sendSelectedValue = 1, valueType = int)
+        boxX = OWGUI.widgetBox(self.SettingsTab, " Graph settings ")
+        OWGUI.comboBox(boxX, self, "graph.jitterSize", label = 'Jittering size (% of size):  ', orientation='horizontal', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.comboBox(boxX, self, "linesDistance", label = 'Minimum axis distance:  ', orientation='horizontal', callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "What is the minimum distance between two adjecent attribute axis", sendSelectedValue = 1, valueType = int)
         
-        # ####
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
         OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateValues)
@@ -152,6 +150,8 @@ class OWParallelCoordinates(OWWidget):
         box3 = OWGUI.widgetBox(self.SettingsTab, " Statistics ")
         OWGUI.comboBox(box3, self, "graph.showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateValues, sendSelectedValue = 0, valueType = int)
         OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
+
+        OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = " Middle labels ", items = ["Off", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "What information do you wish to view on top in the middle of coordinate axes?", sendSelectedValue = 1, valueType = str)
         
         hbox4 = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(hbox4, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables")
@@ -159,8 +159,6 @@ class OWParallelCoordinates(OWWidget):
         box2 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
         OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
 
-        OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = " Middle labels ", items = ["Off", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "What information do you wish to view on top in the middle of coordinate axes?", sendSelectedValue = 1, valueType = str)
-        
         # continuous attribute ordering
         OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
         OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = " Discrete attribute ordering ", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
@@ -449,18 +447,16 @@ class OWParallelCoordinates(OWWidget):
         if not self.data:
             self.send("Selected Examples", None)
             self.send("Unselected Examples", None)
-            self.send("Example Distribution", None)
             return
 
         targetVal = str(self.targetValueCombo.currentText())
         if targetVal == "(None)": targetVal = None
         else: targetVal = self.data.domain.classVar.values.index(targetVal)
-        (selected, unselected, merged, indices) = self.graph.getSelectionsAsExampleTables(len(self.data), targetVal)
+
+        (selected, unselected) = self.graph.getSelectionsAsExampleTables(targetVal)
         
         self.send("Selected Examples", selected)
         self.send("Unselected Examples", unselected)
-        self.send("Example Distribution", merged)
-        self.send("Example selection", indices)
 
     def sendAttributeSelection(self, attrs):
         self.send("Attribute selection", attrs)

@@ -14,7 +14,6 @@ MEDIAN = 2
 
 class OWParallelGraph(OWGraph, orngScaleData):
     def __init__(self, parallelDlg, parent = None, name = None):
-        "Constructs the graph"
         OWGraph.__init__(self, parent, name)
         orngScaleData.__init__(self)
 
@@ -37,11 +36,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
         orngScaleData.setData(self, data)
         self.metaid = -1
         
-    #
+
     # update shown data. Set attributes, coloring by className ....
-    #
     def updateData(self, attributes, targetValue, midLabels = None, startIndex = 0, stopIndex = 0):
-        #self.removeCurves()
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeTooltips()
         self.removeMarkers()
@@ -500,35 +497,28 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 OWGraph.onMouseMoved(self, e)
                 return
             
-            
             OWGraph.onMouseMoved(self, e)
             self.replot()
 
-    # ####################################
-    # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
-    def getSelectionsAsExampleTables(self, tableLen, targetValue = None):
+    def getSelectionsAsExampleTables(self, targetValue = None):
         if not self.rawdata:
             print "no data"
-            return (None, None, None, None)
-        selected = orange.ExampleTable(self.rawdata.domain)
-        unselected = orange.ExampleTable(self.rawdata.domain)
-        indices = [0 for i in range(tableLen)]
+            return (None, None)
+        
+        selIndices = []
+        unselIndices = range(len(self.rawdata))
 
         for i in range(len(self.curvePoints)):
-            inside = 0
             for j in range(len(self.curvePoints[i])):
-                if self.isPointSelected(j, self.curvePoints[i][j]): inside = 1
+                if self.isPointSelected(j, self.curvePoints[i][j]):
+                    if targetValue and targetValue != int(self.rawdata[i].getclass()): continue
+                    selIndices.append(i)
+                    unselIndices.pop(i)
             
-            if inside:
-                if targetValue and targetValue != int(self.rawdata[i].getclass()): continue
-                selected.append(self.rawdata[i])
-                indices[i] = 1
-            else:      unselected.append(self.rawdata[i])
-
+        selected = self.rawdata.getitemsref(selIndices)
+        unselected = self.rawdata.getitemsref(unselIndices)
+        
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
-        merged = self.changeClassAttr(selected, unselected)
-        return (selected, unselected, merged, indices)
 
-    
-    
+        return (selected, unselected)
