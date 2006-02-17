@@ -3,12 +3,13 @@ from OWWidget import OWWidget
 import os
 import OWGUI, OWVisFuncts
 from orngMosaic import *
+from orngScaleData import getVariableValuesSorted
 
 class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
     settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "percentDataUsed",
-                    "evaluationTime", "argumentCount", "VizRankClassifierName", "mValue", "probabilityEstimation"]
+                    "evaluationTime", "argumentCount", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
@@ -25,7 +26,9 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.parentWidget = parentWidget
         self.showRank = 0
         self.showScore = 1
+        self.showConfidence = 1
         self.VizRankClassifierName = "Mosaic Learner"
+        self.resultListIndices = []
         
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
@@ -68,8 +71,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopOptimizationClick)
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
-##        self.optimizeGivenProjectionButton = OWGUI.button(self.optimizationBox, self, "Optimize current projection")
-##        self.optimizeGivenProjectionButton.hide()
 
         self.resultList = QListBox(self.resultsBox)
         self.resultList.setMinimumSize(200,200)
@@ -80,7 +81,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Sum of differences between expected and actual counts", "Maximum of differences between expected and actual counts", "Gain Ratio", "Information Gain", "Interaction Gain"], tooltip = "What is interesting?")
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Gain Ratio", "Information Gain", "Interaction Gain", "Average probability of correct classification"], tooltip = "What is interesting?")
 
         self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
@@ -93,16 +94,18 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         # ##########################
         # ARGUMENTATION TAB
         self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
-        self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments)
+        self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments, tooltip = "Evaluate arguments for each possible class value using settings in the Classification tab.")
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
         self.stopArgumentationButton = OWGUI.button(self.argumentationBox, self, "Stop Searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
-        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments For Class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
-        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for The Selected Class Value ")
+        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments For Class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.updateShownArguments)
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments/Odds Ratios For The Selected Class Value ")
         self.argumentList = QListBox(self.argumentBox)
         self.argumentList.setMinimumSize(200,200)
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
+        self.resultsDetailsBox = OWGUI.widgetBox(self.ArgumentationTab, " Shown Details in Arguments List " , orientation = "horizontal")
+        self.showConfidenceCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showConfidence', '95% Confidence Interval', callback = self.updateShownArguments, tooltip = "Show confidence interval of the argument.")
 
         # ##########################
         # CLASSIFICATION TAB
@@ -110,17 +113,17 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
         probBox = OWGUI.widgetBox(self.ClassificationTab, box = " Probability Estimation ")
-        self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimation", items = ["Relative Frequency", "Laplace", "m-Estimate"])
+        self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimation", items = ["Relative Frequency", "Laplace", "m-Estimate"], callback = self.updateMestimateComboState)
 
         mValid = QDoubleValidator(self)
         mValid.setRange(0,10000,1)
-        self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='Parameter for m-estimate:   ', orientation='horizontal', valueType = float, validator = mValid)
+        self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='              Parameter for m-estimate:   ', orientation='horizontal', valueType = float, validator = mValid)
 
         b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
-        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Time for evaluating projections (minutes):   ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
+        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Maximum time for evaluating projections (minutes):  ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
         b2 = OWGUI.widgetBox(b, orientation = "horizontal")
-        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts , sendSelectedValue = 1, valueType = int)
+        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Argument Count ")
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of top arguments used when classifying:     ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts , sendSelectedValue = 1, valueType = int)
         OWGUI.button(self.ClassificationTab, self, "Apply Changes", callback = self.resendLearner)
 
         # ##########################
@@ -155,7 +158,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.resize(375,550)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
-        random.seed()
+        self.updateMestimateComboState()
+
         
     # ##############################################################
     # EVENTS
@@ -166,6 +170,9 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         if not attrs: (score, attrs, index) = self.getSelectedProjection()
         self.parentWidget.setShownAttributes(attrs)
     
+
+    def updateMestimateComboState(self):
+        self.mEditBox.setEnabled(self.probabilityEstimation == M_ESTIMATE)
         
     def removeEvaluatedAttributes(self):
         self.evaluatedAttributes = None
@@ -187,13 +194,9 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.clearResults()
         
         self.selectedClasses = self.getSelectedClassValues()
-        if len(self.selectedClasses) in [self.classesList.count(), 0]:
-            for result in results:
+        for result in results:
+            if self.attrLenDict[len(result[ATTR_LIST])] == 1:
                 self.insertItem(result[SCORE], result[ATTR_LIST], self.findTargetIndex(result[SCORE], max), result[TRY_INDEX])
-        else: 
-            for result in results:
-                if self.attrLenDict[len(result[ATTR_LIST])] == 1:
-                    self.insertItem(result[SCORE], result[ATTR_LIST], self.findTargetIndex(result[SCORE], max), result[TRY_INDEX])
         self.finishedAddingResults()
 
 
@@ -215,6 +218,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def updateShownProjections(self, *args):
         self.resultList.clear()
+        self.resultListIndices = []
 
         for i in range(len(self.results)):
             if self.attrLenDict.has_key(len(self.results[i][ATTR_LIST])) and self.attrLenDict[len(self.results[i][ATTR_LIST])] == 1:
@@ -223,23 +227,25 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                 if self.showScore: string += "%.2f : " % (self.results[i][SCORE])
                 string += self.buildAttrString(self.results[i][ATTR_LIST])
                 self.resultList.insertItem(string)
+                self.resultListIndices.append(i)
         qApp.processEvents()
         
-        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)        
+        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)
 
 
     def setData(self, data):
         orngMosaic.setData(self, data)
         self.setStatusBarText("")
         self.classValueList.clear()
-       
+        self.argumentList.clear()
+        self.classesList.clear()
+        self.selectedClasses = []
+        self.arguments = []
+        
         if not data: return
         
         if hasattr(data, "name"): self.datasetName = data.name
         else: self.datasetName = ""
-
-        self.classesList.clear()
-        self.selectedClasses = []
 
         if not data or not (data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete): return
 
@@ -282,10 +288,9 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         if self.evaluatedAttributes == None: return []
         else:   return self.evaluatedAttributes
 
-        
+
     # ######################################################
     # Argumentation functions
-    # ######################################################
     def findArguments(self, example = None, selectBest = 1, showClassification = 1):
         self.cancelArgumentation = 0
 
@@ -308,58 +313,23 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         
         self.findArgumentsButton.hide()
         self.stopArgumentationButton.show()
-
-        if self.percentDataUsed != 100:
-            indices = orange.MakeRandomIndices2(data, 1.0-float(self.percentDataUsed)/100.0)
-            data = data.select(indices)
-
-        self.aprioriDistribution = orange.Distribution(data.domain.classVar.name, data)
-        currentClassValue = self.classValueList.currentItem()
-        argumentsUsed = 0
-
-        for index in range(len(self.results)):
-            if self.cancelArgumentation: break          # user pressed cancel
-            if argumentsUsed >= self.argumentCount: break     # we have enough arguments. we stop.
-            
-            qApp.processEvents()
-            (accuracy, attrList, tryIndex) = self.results[index]
-
-            args = self.evaluateArgument(data, example, attrList)
-            if not args: continue
-
-            for i in range(len(args)):
-                pos = self.getArgumentIndex(args[i], i)
-                self.arguments[i].insert(pos, (args[i], accuracy, attrList, index))
-                if i == currentClassValue:  self.argumentList.insertItem("%.3f - %s" %(args[i], attrList), pos)
-            argumentsUsed += 1
-
-        predictions = []
-        for i in range(len(self.aprioriDistribution)):
-            val = self.aprioriDistribution[i]
-            for (v, a, l, ind) in self.arguments[i]: val *= v
-            predictions.append(val)
-
-        # return a randomly selected class value
-        classValue, dist = self.classifyExampleFromPredictions(predictions)
-
+       
+        classValue, dist = orngMosaic.findArguments(self, example)
+        
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
-        #if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
-
-        s = '<nobr>Based on the projections, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (str(classValue), max(dist)*100. / float(sum(dist)))
-        for key in dist.keys():
-            s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
+        
+        values = getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+        self.argumentationClassValue = values.index(classValue)     # activate the class that has the highest probability
+        self.updateShownArguments()
+        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
 
         if showClassification:
+            s = '<nobr>Based on the projections, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (str(classValue), max(dist)*100. / float(sum(dist)))
+            for key in values:
+                s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
+            
             QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
-
-        """
-        if not example[example.domain.classVar.name].isSpecial() and example.getclass().value != classValue:
-            self.show()
-            QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
-            while self.isVisible():
-                qApp.processEvents()
-        """
         
         return (classValue, dist)
 
@@ -377,6 +347,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         self.attrLenList.selectAll(1)
         delattr(self, "skipUpdate")
+        self.updateShownProjections()
         self.resultList.setCurrentItem(0)
 
    
@@ -480,7 +451,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     
     def getSelectedProjection(self):
         if self.resultList.count() == 0: return None
-        return self.results[self.resultList.currentItem()]
+        return self.results[self.resultListIndices[self.resultList.currentItem()]]      # we have to look into resultListIndices, since perhaps not all projections from the self.results are shown
 
     def stopOptimizationClick(self):
         self.cancelOptimization = 1
@@ -496,14 +467,19 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.statusBar.message(text)
         qApp.processEvents()
 
+    def insertArgument(self, argScore, error, attrList, index):
+        s = "%.3f " % argScore
+        if self.showConfidence: s += "+-%.2f " % error
+        s += "- " + self.buildAttrString(attrList)
+        self.argumentList.insertItem(s, index)
            
-    def argumentationClassChanged(self):
+    def updateShownArguments(self):
         self.argumentList.clear()
         if len(self.arguments) == 0: return
         ind = self.classValueList.currentItem()
         for i in range(len(self.arguments[ind])):
-            (val, accuracy, attrList, index) = self.arguments[ind][i]
-            self.argumentList.insertItem("%.2f - %s" %(val, attrList), i)
+            (argScore, accuracy, attrList, index, error) = self.arguments[ind][i]
+            self.insertArgument(argScore, error, attrList, i)
             
 
     def argumentSelected(self):
@@ -517,10 +493,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def stopArgumentationClick(self):
         self.cancelArgumentation = 1
-
-#data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\jure\klopi_zeimelLB.tab")
-#apri = orange.Distribution(data.domain.classVar.name, data)
-#getDifference(data, apri, ["IGG1"])
 
 #test widget appearance
 if __name__=="__main__":

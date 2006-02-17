@@ -10,13 +10,15 @@
 
 from OWWidget import *
 from qtcanvas import *
+import OWGUI
 from OWMosaicOptimization import *
 from math import sqrt, floor, ceil, pow
 from orngScaleData import getVariableValuesSorted, getVariableValueIndices
-import OWGUI
 from OWQCanvasFuncts import *
 from OWGraphTools import ColorPaletteHSV, ColorPaletteBrewer
 from OWDlgs import OWChooseImageSizeDlg
+from OWVisFuncts import permutations
+from copy import copy
 
 PEARSON = 0
 CLASS_DISTRIBUTION = 1
@@ -26,13 +28,60 @@ LEFT = 1
 TOP = 2
 RIGHT = 3
 
+class SortAttributeValuesDlg(OWBaseWidget):
+    def __init__(self, parentWidget = None, attrList = []):
+        OWBaseWidget.__init__(self, None, None, "Sort Attribute Values", modal = TRUE)
 
-###########################################################################################
-##### WIDGET : 
-###########################################################################################
+        self.space = QVBox(self)
+        self.layout = QVBoxLayout(self, 4)
+        self.layout.addWidget(self.space)
+        
+        box1 = OWGUI.widgetBox(self.space, 1, orientation = "horizontal")
+        
+        self.attributeList = QListBox(box1)
+        self.attributeList.setSelectionMode(QListBox.Extended)
+
+        vbox = OWGUI.widgetBox(box1, "", orientation = "vertical")
+        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attribute values up")
+        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attribute values down")
+        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonUPAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonDOWNAttr.setMaximumWidth(20)
+        self.buttonUPAttr.setMaximumWidth(20)
+
+        box2 = OWGUI.widgetBox(self.space, 1, orientation = "horizontal")
+        self.okButton =     OWGUI.button(box2, self, "OK", callback = self.accept)
+        self.cancelButton = OWGUI.button(box2, self, "Cancel", callback = self.reject)
+
+        for attr in attrList:
+            self.attributeList.insertItem(attr)
+
+        self.resize(300, 300)
+
+    # move selected attribute values
+    def moveAttrUP(self):
+        for i in range(1, self.attributeList.count()):
+            if self.attributeList.isSelected(i):
+                self.attributeList.insertItem(self.attributeList.text(i), i-1)
+                self.attributeList.removeItem(i+1)
+                self.attributeList.setSelected(i-1, TRUE)
+
+    def moveAttrDOWN(self):
+        for i in range(self.attributeList.count()-2,-1,-1):
+            if self.attributeList.isSelected(i):
+                self.attributeList.insertItem(self.attributeList.text(i), i+2)
+                self.attributeList.removeItem(i)
+                self.attributeList.setSelected(i+1, TRUE)
+
 class OWMosaicDisplay(OWWidget):
-    settingsList = ["horizontalDistribution", "showAprioriDistribution", "interiorColoring" ]
-    
+    settingsList = ["horizontalDistribution", "showAprioriDistributionLines", "horizontalDistribution", "showAprioriDistributionBoxes", "interiorColoring", "boxSize" ]
+
+    contextHandlers = {"": DomainContextHandler("", ["attributeValuesDict"], loadImperfect = 0)}
+
+        
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Mosaic display", TRUE, TRUE)
 
@@ -42,13 +91,16 @@ class OWMosaicDisplay(OWWidget):
         self.tooltips = []
         self.names = []     # class values
         
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdataHander)]
+        self.inputs = [("Examples", ExampleTable, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdataHander)]
         self.outputs = [("Learner", orange.Learner)]
     
         #load settings
         self.interiorColoring = 0
-        self.showAprioriDistribution = 1
+        self.showAprioriDistributionLines = 1
+        self.showAprioriDistributionBoxes = 1
         self.horizontalDistribution = 1
+        self.showSubsetDistributions = 1
+        self.boxSize = 5
         self.attr1 = ""
         self.attr2 = ""
         self.attr3 = ""
@@ -59,6 +111,8 @@ class OWMosaicDisplay(OWWidget):
         self.residuals = [] # residual values if the residuals are visualized
         self.aprioriDistributions = []
         self.colorPalette = None
+        self.permutationDict = {}
+        self.attributeValuesDict = {}
 
         #self.blueColors = [QColor(255, 255, 255), QColor(117, 149, 255), QColor(38, 43, 232), QColor(1,5,173)]
         self.blueColors = [QColor(255, 255, 255), QColor(210, 210, 255), QColor(110, 110, 255), QColor(0,0,255)]
@@ -79,14 +133,23 @@ class OWMosaicDisplay(OWWidget):
         #GUI
         #add controls to self.controlArea widget
         self.controlArea.setMinimumWidth(220)
-        box1 = OWGUI.widgetBox(self.controlArea, " 1st Attribute ")
-        box2 = OWGUI.widgetBox(self.controlArea, " 2nd Attribute ")
-        box3 = OWGUI.widgetBox(self.controlArea, " 3rd Attribute ")
-        box4 = OWGUI.widgetBox(self.controlArea, " 4th Attribute ")
-        self.attr1Combo = OWGUI.comboBox(box1, self, "attr1", None, callback = self.updateData, sendSelectedValue = 1, valueType = str)
-        self.attr2Combo = OWGUI.comboBox(box2, self, "attr2", None, callback = self.updateData, sendSelectedValue = 1, valueType = str)
-        self.attr3Combo = OWGUI.comboBox(box3, self, "attr3", None, callback = self.updateData, sendSelectedValue = 1, valueType = str)
-        self.attr4Combo = OWGUI.comboBox(box4, self, "attr4", None, callback = self.updateData, sendSelectedValue = 1, valueType = str)
+        box1 = OWGUI.widgetBox(self.controlArea, " 1st Attribute ", orientation = "horizontal")
+        box2 = OWGUI.widgetBox(self.controlArea, " 2nd Attribute ", orientation = "horizontal")
+        box3 = OWGUI.widgetBox(self.controlArea, " 3rd Attribute ", orientation = "horizontal")
+        box4 = OWGUI.widgetBox(self.controlArea, " 4th Attribute ", orientation = "horizontal")
+        self.attr1Combo = OWGUI.comboBox(box1, self, "attr1", None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
+        self.attr2Combo = OWGUI.comboBox(box2, self, "attr2", None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
+        self.attr3Combo = OWGUI.comboBox(box3, self, "attr3", None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
+        self.attr4Combo = OWGUI.comboBox(box4, self, "attr4", None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
+
+        self.sort1 = OWGUI.button(box1, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values"); self.sort1.setToggleButton(1); self.sort1.setMaximumWidth(26)
+        self.sort2 = OWGUI.button(box2, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values"); self.sort2.setToggleButton(1); self.sort2.setMaximumWidth(26)
+        self.sort3 = OWGUI.button(box3, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values"); self.sort3.setToggleButton(1); self.sort3.setMaximumWidth(26)
+        self.sort4 = OWGUI.button(box4, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values"); self.sort4.setToggleButton(1); self.sort4.setMaximumWidth(26)
+        self.sort1.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
+        self.sort2.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
+        self.sort3.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
+        self.sort4.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
 
         box1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         box2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
@@ -98,30 +161,75 @@ class OWMosaicDisplay(OWWidget):
         optimizationButtons.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow)
 
-        box6 = OWGUI.widgetBox(self.controlArea, "Visualize...")
-        OWGUI.comboBox(box6, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.changedInteriorColoring)
-        box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        box5 = OWGUI.widgetBox(self.controlArea, " Cell Colors Represent... ")
+        OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.changedInteriorColoring)
+        box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         
-        self.box5 = OWGUI.widgetBox(self.controlArea, "Class Distribution Settings")
-        OWGUI.checkBox(self.box5, self, 'showAprioriDistribution', 'Show Apriori Distribution', callback = self.updateData, tooltip = "Show the lines that represent the apriori class distribution")
-        OWGUI.checkBox(self.box5, self, 'horizontalDistribution', 'Show Distribution Horizontally', callback = self.updateData, tooltip = "Do you wish to see class distribution drawn horizontally or vertically?")
-        self.box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        self.box6 = OWGUI.widgetBox(self.controlArea, " Class Distribution Settings ")
+        OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateData)
+        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show Apriori Distribution with Lines', callback = self.updateData, tooltip = "Show the lines that represent the apriori class distribution")
+        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionBoxes', 'Show Apriori Distribution with Boxes', callback = self.updateData, tooltip = "Show the lines that represent the apriori class distribution")
+        OWGUI.spin(self.box6, self, 'boxSize', 1, 15, 1, '', "       Box Size: (pixels): ", orientation = "horizontal", callback = self.updateData)
+        self.box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
-        b = QVBox(self.controlArea)
+        OWGUI.separator(self.controlArea, height = 10)
+        
+        self.permButton = OWGUI.button(self.controlArea, self, "Explore Attribute Permutations", callback = self.permutationListToggle)
+        self.permButton.setToggleButton(1)
+        OWGUI.separator(self.controlArea, height = 5)
+
+        self.box7 = OWGUI.widgetBox(self.controlArea, " Possible permutations ")
+        self.permutationList = QListBox(self.box7)
+        self.connect(self.permutationList, SIGNAL("selectionChanged()"), self.setSelectedPermutation)
+        self.box7.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding))
+        self.box7.hide()
+
+        box = OWGUI.widgetBox(self.controlArea, "")
+        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
         self.icons = self.createAttributeIconDict()
         self.resize(680, 480)
 
-        #connect controls to appropriate functions
         self.activateLoadedSettings()
         self.changedInteriorColoring()
+        self.permutationListToggle()
 
         self.VizRankLearner = MosaicVizRankLearner(self.optimizationDlg)
         self.send("Learner", self.VizRankLearner)
-
         
-    ##################################################
+    def permutationListToggle(self):
+        if self.permButton.isOn():
+            self.box7.show()
+        else:
+            self.box7.hide()
+
+    def setSelectedPermutation(self):
+        if self.permutationList.count() > 0:
+            index = self.permutationList.currentItem()
+            attrList = self.permutationDict.get(str(self.permutationList.text(index)), None)
+            if attrList:
+                if len(attrList) > 0: self.attr1 = attrList[0]
+                if len(attrList) > 1: self.attr2 = attrList[1]
+                if len(attrList) > 2: self.attr3 = attrList[2]
+                if len(attrList) > 3: self.attr4 = attrList[3]
+            self.updateData()
+
+    def orderAttributeValues(self):
+        attr = None
+        if self.sort1.isOn():   attr = self.attr1
+        elif self.sort2.isOn(): attr = self.attr2
+        elif self.sort3.isOn(): attr = self.attr3
+        elif self.sort4.isOn(): attr = self.attr4
+        if attr  != "" and attr != "(None)": 
+            dlg = SortAttributeValuesDlg(self, self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr))
+            if dlg.exec_loop() == QDialog.Accepted:
+                self.attributeValuesDict[attr] = [str(dlg.attributeList.text(i)) for i in range(dlg.attributeList.count())]
+
+        for control in [self.sort1, self.sort2, self.sort3, self.sort4]:
+            control.setOn(0)
+        self.updateData()
+        
     # initialize combo boxes with discrete attributes
     def initCombos(self, data):
         self.attr1Combo.clear(); self.attr2Combo.clear(); self.attr3Combo.clear(); self.attr4Combo.clear()
@@ -145,19 +253,17 @@ class OWMosaicDisplay(OWWidget):
         self.attr3 = str(self.attr3Combo.text(0))
         self.attr4 = str(self.attr4Combo.text(0))
         
-
-    ######################################################################
-    ##  when we resize the widget, we have to redraw the data
+    #  when we resize the widget, we have to redraw the data
     def resizeEvent(self, e):
         OWWidget.resizeEvent(self,e)
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
         self.updateData()
 
-    ######################################################################
-    ## DATA signal
-    # receive new data and update all fields
+    # # DATA signal - receive new data and update all fields
     def cdata(self, data):
+        self.closeContext()
         self.data = None
+        self.attributeValuesDict = {}
         self.optimizationDlg.setData(data)
 
         if data:
@@ -166,10 +272,12 @@ class OWMosaicDisplay(OWWidget):
             if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.colorPalette = ColorPaletteBrewer(len(data.domain.classVar.values))
                 #self.colorPalette = ColorPaletteHSV(len(data.domain.classVar.values))
+            else: self.interiorColoring = PEARSON
             
         self.initCombos(self.data)
-        
-        self.updateData()
+        self.openContext("", data)
+
+        self.updateDataAndPermList()
 
     def subsetdataHander(self, data):
         self.subsetData = data
@@ -177,9 +285,8 @@ class OWMosaicDisplay(OWWidget):
         if data and len(data) > 1: self.setStatusBarText("The data set received on the 'Example subset' input contains more than one example. Only the first example will be considered.")
         else:                      self.setStatusBarText("")
 
-        self.updateData()
+        self.updateDataAndPermList()
         
-
 
     def setShownAttributes(self, attrList):
         if not attrList: return
@@ -194,15 +301,30 @@ class OWMosaicDisplay(OWWidget):
         if len(attrList) > 3: self.attr4 = attrList[3]
         else: self.attr4 = "(None)"
 
-        self.updateData()
+        self.updateDataAndPermList()
         
 
     def changedInteriorColoring(self):
-        self.box5.setEnabled(self.interiorColoring)
+        self.box6.setEnabled(self.interiorColoring)
         self.updateData()
 
-    ######################################################################
-    ## UPDATEDATA - gets called every time the graph has to be updated
+
+    def updateDataAndPermList(self, *args):
+        self.permutationList.clear()
+
+        attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
+        while "(None)" in attrList: attrList.remove("(None)")
+        while "" in attrList:       attrList.remove("")
+
+        items = copy(attrList)
+        items.sort()
+        perms = permutations(items)
+        self.permutationDict = dict([(str(item), item) for item in perms])
+        for item in perms: self.permutationList.insertItem(str(item))
+
+        self.updateData()
+
+    # UPDATEDATA - gets called every time the graph has to be updated
     def updateData(self, *args):
         # hide all rectangles
         self.warning()
@@ -213,8 +335,11 @@ class OWMosaicDisplay(OWWidget):
         if self.data == None : return
 
         attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
-        while "(None)" in attrList:
-            attrList.remove("(None)")
+        while "(None)" in attrList: attrList.remove("(None)")
+        while "" in attrList:       attrList.remove("")
+
+        if attrList == []:  self.setStatusBarText("The data contains no discrete attribute to show."); return
+        else:               self.setStatusBarText("")
 
         selectList = attrList
         data = self.optimizationDlg.getData()   # get the selected class values
@@ -252,10 +377,16 @@ class OWMosaicDisplay(OWWidget):
         self.drawnSides = dict([(0,0),(1,0),(2,0),(3,0)])
         self.drawPositions = {}
 
-        # draw rectangles
+        # compute distributions
         self.conditionalDict = self.optimizationDlg.getConditionalDistributions(data, attrList)
         self.conditionalDict[""] = len(data)
-        
+
+        if self.showSubsetDistributions and self.subsetData:
+            subData = orange.Preprocessor_dropMissing(self.subsetData)
+            self.conditionalSubsetDict = self.optimizationDlg.getConditionalDistributions(subData, attrList)
+            self.conditionalSubsetDict[""] = len(subData)
+
+        # draw rectangles
         self.DrawData(attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 0, "", len(attrList))
 
         # draw class legend
@@ -274,7 +405,7 @@ class OWMosaicDisplay(OWWidget):
         
         attr = attrList[0]
         edge = len(attrList) * self.cellspace  # how much smaller rectangles do we draw
-        values = getVariableValuesSorted(self.data, attr)
+        values = self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr)
         if side%2: values = values[::-1]        # reverse names if necessary
 
         if side%2 == 0:                                     # we are drawing on the x axis
@@ -297,11 +428,11 @@ class OWMosaicDisplay(OWWidget):
             else:              newAttrVals = val
 
             if side % 2 == 0:   # if drawing horizontal
-                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + htmlVal + "<br>", usedAttrs + [attr, val], newAttrVals)
-                else:                   self.DrawData(attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + htmlVal + "<br>", totalAttrs, lastValueForFirstAttribute + int(val == values[-1]), usedAttrs + [attr, val], newAttrVals)
+                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, condition + 4*"&nbsp;" + "<b>" + attr + ":</b> " + htmlVal + "<br>", usedAttrs + [attr, val], newAttrVals)
+                else:                   self.DrawData(attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*"&nbsp;" + "<b>" + attr + ":</b> " + htmlVal + "<br>", totalAttrs, lastValueForFirstAttribute + int(val == values[-1]), usedAttrs + [attr, val], newAttrVals)
             else:
-                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + htmlVal + "<br>", usedAttrs + [attr, val], newAttrVals)
-                else:                   self.DrawData(attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + htmlVal + "<br>", totalAttrs, lastValueForFirstAttribute, usedAttrs + [attr, val], newAttrVals)
+                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, condition + 4*"&nbsp;" + "<b>" + attr + ":</b> " + htmlVal + "<br>", usedAttrs + [attr, val], newAttrVals)
+                else:                   self.DrawData(attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*"&nbsp;" + "<b>" + attr + ":</b> " + htmlVal + "<br>", totalAttrs, lastValueForFirstAttribute, usedAttrs + [attr, val], newAttrVals)
             currPos += size + edge
 
         self.DrawText(side, attrList[0], (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute, attrVals)
@@ -321,7 +452,7 @@ class OWMosaicDisplay(OWWidget):
             
         self.drawnSides[side] = 1
 
-        values = getVariableValuesSorted(self.data, attr)
+        values = self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr)
         if side % 2:  values = values[::-1]
 
         width  = x1-x0 - (side % 2 == 0) * self.cellspace*(totalAttrs-side)*(len(values)-1)
@@ -358,7 +489,7 @@ class OWMosaicDisplay(OWWidget):
             names = ["<-8", "-8:-4", "-4:-2", "-2:2", "2:4", "4:8", ">8", "Residuals:"]
             colors = self.redColors[::-1] + self.blueColors[1:]
         else:
-            names = getVariableValuesSorted(data, data.domain.classVar.name) + [data.domain.classVar.name+":"]
+            names = (self.attributeValuesDict.get(data.domain.classVar.name, None) or getVariableValuesSorted(data, data.domain.classVar.name)) + [data.domain.classVar.name+":"]
             colors = [self.colorPalette[i] for i in range(len(data.domain.classVar.values))]
         
         for name in names:
@@ -381,11 +512,9 @@ class OWMosaicDisplay(OWWidget):
             else: edgeColor = colors[i]
 
             OWCanvasRectangle(self.canvas, startX + xOffset, y-size/2, size, size, edgeColor, colors[i])
-
             self.names[i].move(startX + xOffset + 18, y)
-
             xOffset += distance + self.names[i].boundingRect().width()
-            
+
 
     # draw a rectangle, set it to back and add it to rect list                
     def addRect(self, x0, x1, y0, y1, condition = "", usedAttrs = [], attrVals = ""):
@@ -395,25 +524,30 @@ class OWMosaicDisplay(OWWidget):
 
         if x1-x0 + y1-y0 == 2: y1+=1        # if we want to show a rectangle of width and height 1 it doesn't show anything. in such cases we therefore have to increase size of one edge
 
-        rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 5)            
+        rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 30)   
 
-        # show subset example
-        if self.subsetData and self.subsetData.domain == self.data.domain:
+        # show a rectangle that will represent the example in the subset
+        if self.subsetData and self.subsetData.domain == self.data.domain and self.conditionalDict[attrVals] > 0:
             correctBox = 1
             for i in range(len(usedAttrs)/2):
                 if self.subsetData[0][usedAttrs[2*i]] != usedAttrs[2*i+1]:
                     correctBox = 0
                     break
             if correctBox:
-                rect = OWCanvasRectangle(self.canvas, x0-3, y0-3, x1-x0+7, y1-y0+7, QColor(0,255,0), Qt.white, penWidth = 3, z=-50)
+                if len(self.subsetData) > 1 or self.subsetData[0].getclass().isSpecial(): color = QColor(0,0,0)
+                else:
+                    values = self.attributeValuesDict.get(self.data.domain.classVar.name, None) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+                    color = self.colorPalette[values.index(self.subsetData[0].getclass().value)]
+                rect = OWCanvasRectangle(self.canvas, x0-3, y0-3, x1-x0+7, y1-y0+7, color, Qt.white, penWidth = 3, z=-50, penStyle = Qt.DashLine)
         
 
         if not self.conditionalDict[attrVals]: return rect
         if self.interiorColoring == CLASS_DISTRIBUTION and (not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete):
             return rect
 
-        originalDist = None; dist = None; pearson = None; expected = None
-        
+        aprioriDist = None; actualDist = None; pearson = None; expected = None
+
+        # draw pearsons residuals
         if self.interiorColoring == PEARSON or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete:
             vals = usedAttrs[1::2]
             s = sum(self.aprioriDistributions[0])
@@ -428,13 +562,14 @@ class OWMosaicDisplay(OWWidget):
             if pearson > 0: color = self.blueColors[ind]
             else: color = self.redColors[ind]
             rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, color, color, z = -20)
+
+        # draw class distribution - apriori and actual
         else:
-            originalDist = orange.Distribution(self.data.domain.classVar.name, self.data)
-            values = getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+            aprioriDist = orange.Distribution(self.data.domain.classVar.name, self.data)
+            values = self.attributeValuesDict.get(self.data.domain.classVar.name, None) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
             total = 0
-            for i in range(len(originalDist)):
-                classValue = self.data.domain.classVar.values[i]
-                val = self.conditionalDict[attrVals + "-" + classValue]
+            for i in range(len(aprioriDist)):
+                val = self.conditionalDict[attrVals + "-" + values[i]]
                 if self.horizontalDistribution:
                     v = ((x1-x0)* val)/self.conditionalDict[attrVals]
                     OWCanvasRectangle(self.canvas, x0+total, y0, v, y1-y0, self.colorPalette[i], self.colorPalette[i], z = -20)
@@ -443,44 +578,58 @@ class OWMosaicDisplay(OWWidget):
                     OWCanvasRectangle(self.canvas, x0, y0+total, x1-x0, v, self.colorPalette[i], self.colorPalette[i], z = -20)
                 total += v
 
-            if self.showAprioriDistribution and abs(x1 - x0) > 1 and abs(y1 - y0) > 1:
+            if (self.showAprioriDistributionLines or self.showAprioriDistributionBoxes) and abs(x1 - x0) > 1 and abs(y1 - y0) > 1:
                 total = 0
-                for i in range(len(originalDist)-1):
+                for i in range(len(aprioriDist)):
                     if self.horizontalDistribution:
-                        total += ((x1-x0)* originalDist[values[i]])/len(self.data) 
-                        OWCanvasLine(self.canvas, x0+total, y0, x0+total, y1, z = 10)
+                        val = ((x1-x0)* aprioriDist[values[i]])/len(self.data)
+                        if self.showAprioriDistributionBoxes:
+                            OWCanvasRectangle(self.canvas, x0+total, y0, val+1, self.boxSize, brushColor = self.colorPalette[i], z = 0)
+                        total += val
+                        if i < len(aprioriDist)-1 and self.showAprioriDistributionLines: OWCanvasLine(self.canvas, x0+total, y0, x0+total, y1, z = 10)
                     else:
-                        total += ((y1-y0)* originalDist[values[i]])/len(self.data)
-                        OWCanvasLine(self.canvas, x0, y0+total, x1, y0+total, z = 10)
+                        val = ((y1-y0)* aprioriDist[values[i]])/len(self.data)
+                        if self.showAprioriDistributionBoxes:
+                            OWCanvasRectangle(self.canvas, x0, y0+total, self.boxSize, val+1, brushColor = self.colorPalette[i], z = 0)
+                        total += val
+                        if i < len(aprioriDist)-1 and self.showAprioriDistributionLines: OWCanvasLine(self.canvas, x0, y0+total, x1, y0+total, z = 10)
 
-        self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist, pearson, expected)
+            if self.showSubsetDistributions and self.subsetData and len(self.subsetData) > 1:
+                total = 0
+                for i in range(len(aprioriDist)):
+                    val = self.conditionalSubsetDict[attrVals + "-" + values[i]]
+                    if not self.conditionalSubsetDict[attrVals]: continue
+                    if self.horizontalDistribution:
+                        v = ((x1-x0)* val)/self.conditionalSubsetDict[attrVals]
+                        OWCanvasRectangle(self.canvas, x0+total, y1-self.boxSize, v+(x0+total+v<x1), self.boxSize, brushColor = self.colorPalette[i], z = 15)
+                    else:
+                        v = ((y1-y0)* val)/self.conditionalSubsetDict[attrVals]
+                        OWCanvasRectangle(self.canvas, x1-self.boxSize, y0+total, self.boxSize, v+(y0+total+v<y1), brushColor = self.colorPalette[i], z = 15)
+                    total += v
 
-    #################################################
+        self.addTooltip(x0, y0, x1-x0, y1-y0, condition, aprioriDist, attrVals, pearson, expected)
+
+
     # add tooltips
-    def addTooltip(self, x, y, w, h, condition, apriori = None, actual = None, pearson = None, expected = None):
+    def addTooltip(self, x, y, w, h, condition, apriori = None, attrVals = None, pearson = None, expected = None):
         tooltipText = "<b>Examples in this area have:</b><br>" + condition
-        if apriori and actual:
-            examples = sum(list(actual))
-            apriori = [val*100.0/float(sum(apriori)) for val in apriori]
-            actual = [val*100.0/float(sum(actual)) for val in actual]
-            aprioriText = ""; actualText = ""
-            for i in range(len(apriori)):
-                aprioriText += "%.1f%%, " %(apriori[i])
-                actualText += "%.1f%%, " %(actual[i])
-            aprioriText = "[ " + aprioriText[:-2] + " ]"
-            actualText = "[ " +  actualText[:-2] + " ]"
-        
-            tooltipText += "<hr>Number of examples: " + str(int(examples)) + "<br>Apriori distribution: " + aprioriText + "<br>Actual distribution: " + actualText
-        if pearson and expected:
+        if apriori:
+            values = self.attributeValuesDict.get(self.data.domain.classVar.name, None) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+            actual = [self.conditionalDict[attrVals + "-" + values[i]] for i in range(len(apriori))]
+            if sum(actual) > 0: 
+                apriori = [apriori[key] for key in values]
+                aprioriText = ""; actualText = ""
+                text = ""
+                for i in range(len(values)):
+                    text += 4*"&nbsp;" + "<b>%s</b>: %d / %.1f%% (Expected %.1f / %.1f%%)<br>" % (values[i], actual[i], 100.0*actual[i]/float(sum(actual)), (apriori[i]*actual[i])/float(sum(apriori)), 100.0*apriori[i]/float(sum(apriori)))
+                tooltipText += "<b>Number of examples:</b> " + str(int(sum(actual))) + "<br><b>Class distribution:</b><br>" + text[:-4]
+        elif pearson and expected:
             tooltipText += "<hr>Expected number of examples: %.1f<br>Standardized (Pearson) residual: %.1f" % (expected, pearson)
         tipRect = QRect(x, y, w, h)
         QToolTip.add(self.canvasView, tipRect, tooltipText)
         self.tooltips.append(tipRect)
 
    
-     ##################################################
-    ## SAVING GRAPHS
-    ##################################################
     def saveToFileCanvas(self):
         sizeDlg = OWChooseImageSizeDlg(self.canvas)
         sizeDlg.exec_loop()
@@ -489,7 +638,7 @@ class OWMosaicDisplay(OWWidget):
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWMosaicDisplay()
+    ow=SortAttributeValuesDlg()
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()
