@@ -110,8 +110,9 @@ public:
   float alpha; //P
   float min_coverage; //P
   float max_rule_complexity; //P
+  float min_quality; //P
 
-  TRuleValidator_LRS(const float &alpha = 0.05, const float &min_coverage = 0.0, const float &max_rule_complexity = 0.0);
+  TRuleValidator_LRS(const float &alpha = 0.05, const float &min_coverage = 0.0, const float &max_rule_complexity = 0.0, const float &min_quality = numeric_limits<float>::min());
   virtual bool operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution ) const;
 };
 

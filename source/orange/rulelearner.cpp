@@ -313,10 +313,11 @@ bool TRule::operator ==(const TRule &other) const
 
 
 
-TRuleValidator_LRS::TRuleValidator_LRS(const float &a, const float &min_coverage, const float &max_rule_complexity)
+TRuleValidator_LRS::TRuleValidator_LRS(const float &a, const float &min_coverage, const float &max_rule_complexity, const float &min_quality)
 : alpha(a),
   min_coverage(min_coverage),
-  max_rule_complexity(max_rule_complexity)
+  max_rule_complexity(max_rule_complexity),
+  min_quality(min_quality)
 {}
 
 bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, const int &targetClass, PDistribution apriori) const
@@ -331,11 +332,16 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
   if (max_rule_complexity > 0.0 && rule->complexity > max_rule_complexity)
     return false;
 
+  if (min_quality>rule->quality)
+    return false;
 
   const TDiscDistribution &exp_dist = dynamic_cast<const TDiscDistribution &>(apriori.getReference());
 
   if (obs_dist.abs == exp_dist.abs) //it turns out that this happens quite often
     return false; 
+
+  if (alpha >= 1.0)
+    return true;
 
   if (targetClass == -1) {
     float lrs = 0.0;
@@ -356,6 +362,9 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
   float n = obs_dist.abs - p;
   float N = exp_dist.abs - P;
 
+  if (n>=N)
+    return false;
+
   if (N<=0.0)
     N = 1e-6f;
   if (p<=0.0)
@@ -375,7 +384,7 @@ float TRuleEvaluator_Entropy::operator()(PRule rule, PExampleTable, const int &,
 {
   const TDiscDistribution &obs_dist = dynamic_cast<const TDiscDistribution &>(rule->classDistribution.getReference());
   if (!obs_dist.cases)
-    return -numeric_limits<float>::min();
+    return numeric_limits<float>::min();
 
   if (targetClass == -1)
     return -getEntropy(dynamic_cast<TDiscDistribution &>(rule->classDistribution.getReference()));
@@ -464,10 +473,11 @@ PRuleList TRuleBeamInitializer_Default::operator()(PExampleTable data, const int
 
   if (baseRules && baseRules->size())
     PITERATE(TRuleList, ri, baseRules) {
-      TRule *newRule = mlnew TRule((*ri).getReference(), false);
+      TRule *newRule = mlnew TRule((*ri).getReference(), true);
       PRule wNewRule = newRule;
       ruleList->push_back(wNewRule);
-      newRule->filterAndStore(data,weightID,targetClass);
+      if (!newRule->examples)
+        newRule->filterAndStore(data,weightID,targetClass);
       newRule->quality = evaluator->call(wNewRule, data, weightID, targetClass, apriori);
       if (!bestRule || (newRule->quality > bestRule->quality)) {
         bestRule = wNewRule;
@@ -571,12 +581,20 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
 
           for(vector<float>::const_iterator ci(cutoffs.begin()), ce(cutoffs.end()-1); ci != ce; ci++) {
             newRule = mlnew TRule(rule, false);
-            PRule wnewRule = newRule;
+            wnewRule = newRule;
             newRule->complexity++;
             newRule->parentRule = wrule;
-
             filter = newRule->filter.AS(TFilter_values);
             filter->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::Greater, *ci, 0, 0));
+            newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
+            if (wrule->classDistribution->cases > wnewRule->classDistribution->cases)
+              ruleList->push_back(newRule);
+
+            newRule = mlnew TRule(rule, false);
+            wnewRule = newRule;
+            newRule->complexity++;
+            newRule->parentRule = wrule;
+            filter = newRule->filter.AS(TFilter_values);
             filter->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::LessEqual, *(ci+1), 0, 0));
             newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
             if (wrule->classDistribution->cases > wnewRule->classDistribution->cases)
@@ -670,8 +688,8 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
     PITERATE(TRuleList, ri, candidateRules) {
       PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);      
       PITERATE(TRuleList, ni, newRules) {
+        (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
         if (!ruleStoppingValidator || ruleStoppingValidator->call(*ni, (*ri)->examples, weightID, targetClass, (*ri)->classDistribution)) {
-          (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
           ruleList->push_back(*ni);
           if ((*ni)->quality >= bestRule->quality && (!validator || validator->call(*ni, data, weightID, targetClass, apriori)))
             _selectBestRule(*ni, bestRule, wins, rgen);

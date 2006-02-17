@@ -951,7 +951,7 @@ C_NAMED(LWRClassifier, ClassifierFD, "([findNearestConstructor=, linRegLearner=,
 
 C_NAMED(Rule, Orange, "()")
 
-C_NAMED(RuleValidator_LRS, RuleValidator, "([alpha=0.05,min_coverage=0,max_rule_complexity=0])")
+C_NAMED(RuleValidator_LRS, RuleValidator, "([alpha=0.05,min_coverage=0,max_rule_complexity=0,min_quality=numeric_limits<float>::min()])")
 
 C_NAMED(RuleEvaluator_Entropy, RuleEvaluator, "()")
 C_NAMED(RuleEvaluator_Laplace, RuleEvaluator, "()")
