@@ -58,7 +58,7 @@ TExample::TExample(PDomain dom, bool initMetas)
 
   if (initMetas)
     ITERATE(TMetaVector, mi, dom->metas)
-      setMeta((*mi).id, (*mi).variable->DC());
+      setMeta((*mi).id, (*mi).variable->DK());
 }
 
 
