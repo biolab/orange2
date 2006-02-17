@@ -12,7 +12,6 @@ def createStringFromNumber(num):
     return s
         
 
-
 # factoriela
 def fact(i):
         ret = 1
@@ -20,14 +19,18 @@ def fact(i):
         return ret
 
 # compute permutations of elements in alist
-def permutations(alist, blist=[], retList = []):
-    if not len(alist): return [copy(blist)]
-    retList = []
-    for i in range(len(alist)):
-        blist.append(alist.pop(i))
-        retList += permutations(alist, blist)
-        alist.insert(i, blist.pop())
-    return retList
+def permutations(alist):
+    if len(alist) == 0: return []
+    
+    def perm(alist, blist = []):
+        if not len(alist): return [copy(blist)]
+        retList = []
+        for i in range(len(alist)):
+            blist.append(alist.pop(i))
+            retList += perm(alist, blist)
+            alist.insert(i, blist.pop())
+        return retList
+    return perm(alist)
 
 
 # return number of combinations where we select "select" from "total"
