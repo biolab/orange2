@@ -131,40 +131,40 @@ class OWDataDomain(OWWidget):
             return   # we received the same dataset again
 
         self.closeContext()
-##        print "LOCAL"
-##        for c in self.localContexts:
-##            print c.values["chosenAttributes"]
-##        print "GLOBAL"
-##        for c in self.localContexts:
-##            print c.values["chosenAttributes"]
-##        print "END"
         
         self.data = data
         self.attributes = {}
         
         if data:
-            if data.domain.classVar:
-                self.classAttribute = [(data.domain.classVar.name, data.domain.classVar.varType)]
+            domain = data.domain
+            
+            if domain.classVar:
+                self.classAttribute = [(domain.classVar.name, domain.classVar.varType)]
             else:
                 self.classAttribute = []
-            self.metaAttributes = [(a.name, a.varType) for a in data.domain.getmetas().values()]
+            self.metaAttributes = [(a.name, a.varType) for a in domain.getmetas().values()]
 
             if self.receivedAttrList:
                 self.chosenAttributes = [(a.name, a.varType) for a in self.receivedAttrList]
                 self.addToUsed(self.receivedAttrList)
             else:
-                self.chosenAttributes = [(a.name, a.varType) for a in data.domain.attributes]
+                self.chosenAttributes = [(a.name, a.varType) for a in domain.attributes]
                 self.inputAttributes = []
+
+            metaIds = domain.getmetas().keys()
+            metaIds.sort()
+            self.allAttributes = [(attr.name, attr.varType) for attr in domain] + [(domain[i].name, domain[i].varType) for i in metaIds]
         else:
             self.inputAttributes = []
             self.chosenAttributes = []
             self.classAttribute = []
             self.metaAttributes = []
+            self.allAttributes = []
 
         self.openContext("", data)
 
         self.usedAttributes = dict.fromkeys(self.chosenAttributes + self.classAttribute + self.metaAttributes, 1)
-        self.setInputAttributes()
+#        self.setInputAttributes()
 
         self.setOutput()
         self.updateInterfaceState()
@@ -189,7 +189,6 @@ class OWDataDomain(OWWidget):
             else:
                 self.send("Classified Examples", None)
 
-            print domain
         else:
             self.send("Examples", None)
             self.send("Classified Examples", None)
@@ -259,7 +258,6 @@ class OWDataDomain(OWWidget):
                 selList.append(attr)
                 i += 1
                 sele = i<len(selected) and selected[i] or None
-                print i, sele
             else:
                 restList.append(attr)
         return selList, restList
@@ -267,7 +265,10 @@ class OWDataDomain(OWWidget):
 
     def setInputAttributes(self):
         self.selectedInput = []
-        self.inputAttributes = filter(lambda x:not self.usedAttributes.has_key(x), [(attr.name, attr.varType) for attr in self.data.domain])
+        if self.data:
+            self.inputAttributes = filter(lambda x:not self.usedAttributes.has_key(x), self.allAttributes)
+        else:
+            self.inputAttributes = []
 
     def removeFromUsed(self, attributes):
         for attr in attributes:
@@ -286,8 +287,6 @@ class OWDataDomain(OWWidget):
             self.addToUsed(selList)
         else:
             selList, restList = self.splitSelection(self.chosenAttributes, self.selectedChosen)
-            print selList
-            print restList
             self.chosenAttributes = restList
             self.removeFromUsed(selList)
 
@@ -364,5 +363,4 @@ if __name__=="__main__":
     ow.show()
     ow.onDataInput(data)
     a.exec_loop()
-    print "CHOSEN: ", ow.chosenAttributes
     ow.saveSettings()
