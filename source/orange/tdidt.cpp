@@ -237,8 +237,10 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
                                           apriorClass ? apriorClass : classDistribution,
                                           candidates, utreeNode->nodeClassifier);
 
+  isLeaf = !utreeNode->branchSelector;
+  bool hasNullNodes = false;
 
-  if (utreeNode->branchSelector) {
+  if (!isLeaf) {
     if (spentAttribute>=0)
       if (candidates[spentAttribute])
         candidates[spentAttribute] = false;
@@ -271,16 +273,13 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
         else if ((nwi!=nwe) && *nwi && (*nwi != weightID))
             examples->removeMetaAttribute(*nwi);
       }
-      else
+      else {
         utreeNode->branches->push_back(PTreeNode());
+        hasNullNodes = true;
+      }
 
       if (nwi!=nwe)
         nwi++;
-    }
-
-    if (utreeNode->branches->size() != utreeNode->branchDescriptions->size()) {
-      int i=2;
-      i++;
     }
 
     /* If I set it to false, it must had been true before
@@ -290,12 +289,15 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
       candidates[spentAttribute] = true;
   }
 
-  else { // no split constructed
-    if (!storeContingencies)
+  else {  // no split constructed
+    if (!utreeNode->contingency)
       utreeNode->contingency = PDomainContingency();
     if (!storeDistributions)
       utreeNode->distribution = PDistribution();
+  }
 
+
+  if (isLeaf || hasNullNodes) {
     if (!utreeNode->nodeClassifier)
       utreeNode->nodeClassifier = nodeLearner
                               ? nodeLearner->smartLearn(examples, weightID, contingency, domainDistributions, classDistribution)
@@ -359,6 +361,41 @@ TTreeClassifier::TTreeClassifier(PDomain dom, PTreeNode atree, PTreeDescender ad
    and 'classDistribution' - not at all levels of the tree but
    only at those where descender takes a break... */
 
+
+PDistribution TTreeClassifier::findNodeDistribution(PTreeNode node, const TExample &exam)
+{
+  if (node->distribution)
+    return node->distribution;
+
+  if (node->contingency && node->contingency->classes)
+    return node->contingency->classes;
+
+  if (node->nodeClassifier) {
+    PDistribution dist = node->nodeClassifier->classDistribution(exam);
+    if (dist)
+      return dist;
+  }
+
+  if (classVar->varType == TValue::INTVAR) {
+    const int nval = classVar->noOfValues();
+    if (nval)
+      return mlnew TDiscDistribution(nval, 1.0/nval);
+  }
+
+  return PDistribution();
+}
+
+
+float TTreeClassifier::findNodeValue(PTreeNode node, const TExample &exam)
+{
+  PDistribution dist = findNodeDistribution(node, exam);
+  if (dist)
+    return dist->highestProbValue(exam);
+  else
+    return 0.0;
+}
+
+
 TValue TTreeClassifier::operator()(const TExample &exam)
 {
   checkProperty(descender);
@@ -368,12 +405,18 @@ TValue TTreeClassifier::operator()(const TExample &exam)
   const TExample &refexam = convertEx ? convex : exam;
   PDiscDistribution branchWeights;
   PTreeNode node = descender->call(tree, refexam, branchWeights);
-  if (!branchWeights)
-    return node->nodeClassifier ? node->nodeClassifier->call(refexam) : classVar->DK();
+  if (!branchWeights) {
+    if (node->nodeClassifier) 
+      return node->nodeClassifier->call(refexam);
+  }
   else {
     PDistribution decision = vote(node, refexam, branchWeights);
-    return decision ? decision->highestProbValue(exam) : classVar->DK();
+    if (decision)
+      decision->highestProbValue(exam);
   }
+
+  // couldn't classify, so we'll return something a priori
+  return findNodeValue(node, refexam);
 }
 
 
@@ -388,10 +431,14 @@ PDistribution TTreeClassifier::classDistribution(PTreeNode node, const TExample 
 { PDiscDistribution branchWeights;
   node = descender->call(node, exam, branchWeights);
 
-  if (!branchWeights)
-    return node->nodeClassifier ? node->nodeClassifier->classDistribution(exam) : PDistribution();
+  if (!branchWeights) {
+    if (node->nodeClassifier)
+      return node->nodeClassifier->classDistribution(exam);
+  }
   else 
     return vote(node, exam, branchWeights);
+
+  return CLONE(TDistribution, findNodeDistribution(node, exam));
 }
 
 
@@ -426,10 +473,8 @@ void TTreeClassifier::predictionAndDistribution(const TExample &exam, TValue &va
   if (!splitDecision) {
     if (node->nodeClassifier)
       node->nodeClassifier->predictionAndDistribution(refexam, val, distr);
-    else {
-      val = classVar->DK();
-      distr = PDistribution();
-    }
+    else
+      distr = CLONE(TDistribution, findNodeDistribution(node, refexam));
   }
   else {
     distr = vote(node, refexam, splitDecision);
@@ -440,7 +485,8 @@ void TTreeClassifier::predictionAndDistribution(const TExample &exam, TValue &va
 
 
 PTreeNode TTreeDescender_UnknownToNode::operator()(PTreeNode node, const TExample &ex, PDiscDistribution &distr)
-{ while (node->branchSelector && node->branches) {
+{ 
+  while (node->branchSelector && node->branches) {
     TValue val = node->branchSelector->call(ex);
     int nBranches = node->branches->size()-1;
     if (val.isSpecial() || (val.intV<0) || (val.intV>=nBranches) || !node->branches->at(val.intV))

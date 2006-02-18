@@ -131,6 +131,9 @@ public:
 
   virtual PDistribution classDistribution(PTreeNode, const TExample &);
   virtual PDistribution vote(PTreeNode, const TExample &, PDiscDistribution branchWeights);
+
+  virtual PDistribution findNodeDistribution(PTreeNode, const TExample &);
+  virtual float findNodeValue(PTreeNode, const TExample &);
 };
 
 WRAPPER(TreeClassifier)
