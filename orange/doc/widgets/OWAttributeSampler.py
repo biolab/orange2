@@ -36,8 +36,6 @@ class OWAttributeSampler(OWWidget):
 
         self.resize(150,400)
 
-    ##############################################################################    
-    # slots: handle input signals        
 
     def dataset(self, data):
         self.closeContext()
@@ -58,6 +56,7 @@ class OWAttributeSampler(OWWidget):
            
         self.data = data
         self.outputData()
+
 
     def outputData(self):
         if not self.data:
