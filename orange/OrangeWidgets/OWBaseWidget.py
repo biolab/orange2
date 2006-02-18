@@ -109,6 +109,15 @@ class ContextHandler:
         return Context()
 
     def openContext(self, widget, *arg, **argkw):
+        context, isNew = self.findOrCreateContext(widget, *arg, **argkw)
+        if context:
+            if isNew:
+                self.settingsFromWidget(widget, context)
+            else:
+                self.settingsToWidget(widget, context)
+        return context
+
+    def findOrCreateContext(self, widget, *arg, **argkw):        
         if not hasattr(widget, self.localContextName):
             if self.syncWithGlobal:
                 setattr(widget, self.localContextName, self.globalContexts)
@@ -117,18 +126,18 @@ class ContextHandler:
 
         index, context, score = self.findMatch(widget, self.findImperfect and self.loadImperfect, *arg, **argkw)
         if context:
-            self.settingsToWidget(widget, context)
             if index < 0:
                 self.addContext(widget, context)
             else:
-                self.moveContextUp(widget, index)            
+                self.moveContextUp(widget, index)
+            return context, False
         else:
             context = self.newContext()
             self.addContext(widget, context)
-        return context
+            return context, True
 
-    def closeContext(self, context, widget):
-        self.settingsFromWidget(context, widget)
+    def closeContext(self, widget, context):
+        self.settingsFromWidget(widget, context)
 
     def fastSave(self, context, widget, name):
         pass
@@ -182,7 +191,6 @@ class ContextField:
     def __init__(self, name, flags, **argkw):
         self.name = name
         self.flags = flags
-        print self.name, self.flags
         self.__dict__.update(argkw)
     
 
@@ -201,6 +209,7 @@ class DomainContextHandler(ContextHandler):
     NotAttribute = 4
     List = 8
     RequiredList = Required + List
+    SelectedRequiredList = SelectedRequired + List
     
     def __init__(self, contextName, fields = [],
                  cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, **args):
@@ -224,35 +233,49 @@ class DomainContextHandler(ContextHandler):
         d.update(dict([(attr.name, attr.varType) for attr in domain.getmetas().values()]))
         return d
     
-    def openContext(self, widget, domain):
+    def findOrCreateContext(self, widget, domain):
         if not domain:
-            return
+            return None, False
         if type(domain) != orange.Domain:
             domain = domain.domain
+            
         encodedDomain = self.encodeDomain(domain)
-        context = ContextHandler.openContext(self, widget, domain, encodedDomain)
+        context, isNew = ContextHandler.findOrCreateContext(self, widget, domain, encodedDomain)
+        if not context:
+            return None, False
+        
         context.encodedDomain = encodedDomain
-        context.orderedDomain = [(attr.name, attr.varType) for attr in domain]
-        context.values = {}
-        return context
+
+        metaIds = domain.getmetas().keys()
+        metaIds.sort()
+        context.orderedDomain = [(attr.name, attr.varType) for attr in domain] + [(domain[i].name, domain[i].varType) for i in metaIds]
+
+        if isNew:
+            context.values = {}
+            context.noCopy = ["orderedDomain"]
+        return context, isNew
 
     def settingsToWidget(self, widget, context):
         ContextHandler.settingsToWidget(self, widget, context)
         excluded = {}
         for field in self.fields:
             name, flags = field.name, field.flags
+
+            excludes = getattr(field, "reservoir", [])
+            if excludes:
+                if type(excludes) != list:
+                    excludes = [excludes]
+                for exclude in excludes:
+                    excluded.setdefault(exclude, [])
+
             if not context.values.has_key(name):
                 continue
             
             value = context.values[name]
-            excludes = getattr(field, "reservoir", [])
-            if excludes and type(excludes) != list:
-                excludes = [excludes]
 
             if not flags & self.List:
                 setattr(widget, name, value[0])
                 for exclude in excludes:
-                    excluded.setdefault(exclude, [])
                     excluded[exclude].append(value)
 
             else:
@@ -272,14 +295,14 @@ class DomainContextHandler(ContextHandler):
                     setattr(widget, field.selected, context.values[field.selected])
 
                 for exclude in excludes:
-                    excluded.setdefault(exclude, [])
                     excluded[exclude].extend(value)
 
         for name, values in excluded.items():
-            setattr(widget, name, filter(lambda a: a not in values, context.orderedDomain))
+            ll = filter(lambda a: a not in values, context.orderedDomain)
+            setattr(widget, name, ll)
             
 
-    def settingsFromWidget(self, context, widget):
+    def settingsFromWidget(self, widget, context):
         ContextHandler.settingsFromWidget(self, widget, context)
         context.values = {}
         for field in self.fields:
@@ -830,21 +853,20 @@ class OWBaseWidget(QDialog):
             for contextName, handler in self.contextHandlers.items():
                 context = self.currentContexts.get(contextName, None)
                 if context:
-                    handler.settingsFromWidget(context, self)
+                    handler.settingsFromWidget(self, context)
 
     def openContext(self, contextName="", *arg):
-        self.closeContext(contextName)
+        #self.closeContext(contextName)
         handler = self.contextHandlers[contextName]
         context = handler.openContext(self, *arg)
         if context:
-            handler.settingsFromWidget(context, self)  # this is needed to sync a semi-matching context with the widget
             self.currentContexts[contextName] = context
 
 
     def closeContext(self, contextName=""):
         curcontext = self.currentContexts.get(contextName)
         if curcontext:
-            self.contextHandlers[contextName].closeContext(curcontext, self)
+            self.contextHandlers[contextName].closeContext(self, curcontext)
             del self.currentContexts[contextName]
 
     def settingsToWidgetCallback(self, handler, context):
