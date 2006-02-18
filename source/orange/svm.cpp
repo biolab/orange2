@@ -3266,8 +3266,8 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 	model->param.classifier=this;
 	kernelFunc=model->param.learner->kernelFunc;
 	currentExample=NULL;
-	computesProbabilities=bool((model &&model->param.svm_type!=EPSILON_SVR &&
-		model->param.svm_type!=NU_SVR)? model->param.probability: 0);
+	computesProbabilities = model && model->param.svm_type!=EPSILON_SVR &&
+		model->param.svm_type!=NU_SVR &&  (model->param.probability != 0);
 	if(!classVar && model->param.svm_type==ONE_CLASS)
 		classVar=mlnew TFloatVariable();
 	supportVectors=mlnew TExampleTable(examples->domain);
