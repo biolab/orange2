@@ -72,6 +72,7 @@ PyObject *convertToPythonNative(const TPyValue *value)
    If value is known (e.g. not DC, DK...)
     - continuous values are returned as ordinary python floats
     - discrete are returned as strings (variable is required)
+    - string values are returned as strings
     - other values are return as ordinary orange objects
    If value is special 
     - if the variable is given, its val2str is used to get a string
@@ -90,6 +91,12 @@ PyObject *convertToPythonNative(const TValue &val, PVariable var)
     PyObject *res = val.svalV ? ((TPythonValue &)(val.svalV.getReference())).value : Py_None;
     Py_INCREF(res);
     return res;
+  }
+
+  if ((val.varType == STRINGVAR) && val.svalV) {
+    string s;
+    val.svalV.AS(TStringValue)->val2str(s);
+    return PyString_FromString(s.c_str());
   }
 
   if ((val.varType!=TValue::INTVAR) && val.svalV)
