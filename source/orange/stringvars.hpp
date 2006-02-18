@@ -67,6 +67,9 @@ public:
 
   virtual void str2val(const string &valname, TValue &valu);
   virtual void val2str(const TValue &valu, string &vname) const;
+
+  virtual void val2filestr(const TValue &val, string &str, const TExample &) const;
+  virtual void filestr2val(const string &valname, TValue &valu, TExample &);
 };
 
 #endif

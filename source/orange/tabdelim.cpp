@@ -139,12 +139,10 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
             break;
           }
 
-      if (valstr != "?") {
-        if (!valstr.length() || (valstr == "NA") || (valstr == ".") || (DC && (valstr == DC)))
-          valstr = "?";
-        else if ((valstr == "*") || (DK && (valstr == DK)))
-          valstr = "~";
-      }
+      if (!valstr.length() || (valstr == "NA") || (valstr == ".") || (DC && (valstr == DC)))
+        valstr = "?";
+      else if ((valstr == "*") || (DK && (valstr == DK)))
+        valstr = "~";
 
       try {
         if (*si==-1)

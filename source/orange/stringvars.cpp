@@ -41,12 +41,15 @@ TStringValue::TStringValue(const TStringValue &other)
 {}
 
 
+
 void TStringValue::val2str(string &s) const
 { s = value; }
 
 
 void TStringValue::str2val(const string &s)
-{ value = s; }
+{ 
+  value = s;
+}
 
 
 #define DYNCAST (dynamic_cast<const TStringValue &>(v)).value
@@ -113,12 +116,42 @@ void TStringVariable::str2val(const string &valname, TValue &valu)
 
 void TStringVariable::val2str(const TValue &valu, string &vname) const
 { 
-  if (!valu.svalV)
+  if (special2str(valu, vname))
+    return;
+
+  if (!valu.svalV) {
     vname = "";
+  }
 
-  const TStringValue *sv = dynamic_cast<const TStringValue *>(valu.svalV.getUnwrappedPtr());
-  if (!sv)
-    raiseErrorWho("val2str", "invalid value type");
+  else {
+    const TStringValue *sv = dynamic_cast<const TStringValue *>(valu.svalV.getUnwrappedPtr());
+    if (!sv)
+      raiseErrorWho("val2str", "invalid value type");
 
-  vname = sv->value;
+    vname = sv->value;
+  }
+}
+
+
+
+void TStringVariable::val2filestr(const TValue &val, string &str, const TExample &) const
+{
+  if (!special2str(val, str)) {
+    val2str(val, str);
+    if (!str.length())
+      str = "\"\"";
+  }
+}
+
+
+void TStringVariable::filestr2val(const string &valname, TValue &valu, TExample &)
+{
+  if (!str2special(valname, valu)) {
+    if ((valname.length()>=2) && (valname[0] == '"') && (valname[valname.length()-1] == '"')) {
+      valu = TValue(mlnew TStringValue(string(valname.begin()+1, valname.end()-1)), STRINGVAR);
+      return;
+    }
+
+    valu = TValue(mlnew TStringValue(valname), STRINGVAR);
+  }
 }
