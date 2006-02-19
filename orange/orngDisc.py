@@ -2,43 +2,31 @@ import orange
 
 def entropyDiscretization(data):
   """
-  Discretizes the continuous attributes using the entropy based discretization.
+  Discretizes continuous attributes using the entropy based discretization.
   It removes the attributes discretized to a single interval and prints their names.
-  Arguments: data         an example table
-  Results:   a table of examples with discretized atributes. attributes that are
-             categorized to a single value (constant) are removed
+  Arguments: data
+  Returns:   table of examples with discretized atributes. Attributes that are
+             categorized to a single value (constant) are removed.
   """
   orange.setrandseed(0)
   tablen=orange.Preprocessor_discretize(data, method=orange.EntropyDiscretization())
 
-  # print "\nAttributes removed by discretization:\n",
   attrlist=[]
   nrem=0
   for i in tablen.domain.attributes:
     if (len(i.values)>1):
       attrlist.append(i)
     else:
-      # if nrem: print ", %s" % i.name[2:],
-      # else: print "%s" % i.name[2:],
       nrem=nrem+1
-  # if not nrem: print "(None)",
-  # print
 
   attrlist.append(tablen.domain.classVar)
-
-  # print "Retained attributes:"
-  # for i in attrlist: print i.name,
-  # print
-  
   return tablen.select(attrlist)
 
-#
 
 class EntropyDiscretization:
   def __call__(self, data):
     return entropyDiscretization(data)
 
-#
 
 def DiscretizedLearner(baseLearner, examples=None, weight=0, **kwds):
   learner = apply(DiscretizedLearner_Class, [baseLearner], kwds)
