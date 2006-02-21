@@ -86,7 +86,7 @@ class SchemaDoc(QMainWindow):
     # called to properly close all widget contexts
     def synchronizeContexts(self):
         for widget in self.widgets[::-1]:
-            widget.synchronizeContexts()
+            widget.instance.synchronizeContexts()
 
     # add line connecting widgets outWidget and inWidget
     # if necessary ask which signals to connect
