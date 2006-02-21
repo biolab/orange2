@@ -54,7 +54,14 @@ for i in range(len(learners)):
         orngStat.CA(results)[i], orngStat.BrierScore(results)[i])
 </xmp>
 
-<p>Most of the code is used for defining and naming objects that learn, and the last piece of code is to report evaluation results. Notice that to bag or boost a learner, it takes only a single line of code (like, <code>bagged_knn = orngEnsemble.BaggedLearner(knn, t=10)</code>)! Parameter <code>t</code> in bagging and boosting refers to number of classifiers that will be used for voiting (or, if you like better, number of iterations by boosting/bagging). Depending on your random generator, you may get something like:</p>
+<p>Most of the code is used for defining and naming objects that
+learn, and the last piece of code is to report evaluation
+results. Notice that to bag or boost a learner, it takes only a single
+line of code (like, <code>bagged_knn = orngEnsemble.BaggedLearner(knn,
+t=10)</code>)! Parameter <code>t</code> in bagging and boosting refers
+to number of classifiers that will be used for voiting (or, if you
+like better, number of iterations by boosting/bagging). Depending on
+your random generator, you may get something like:</p>
 
 <XMP class=code>        Learner   CA     Brier Score
         default:  0.473  0.501
@@ -131,9 +138,18 @@ class WinnerClassifier:
       return (c, pmatrix[classifier_index])
 </xmp>
 
-<p><code>WinnerLearner_Class</code> store the learners and, when called with a data set, constructs the classifiers and passes them to <code>WinnerClassifier</code>. When this is called with a data instance, it computes class probabilities, finds a maximum probability for some class, and accordingly reports on either the class, probabilities or both. Notice that we have also took care that this learner/classifier confirms to everything that is expected from such objects in Orange, so it may be used by other modules, most importantly for classifier validation.</p>
+<p><code>WinnerLearner_Class</code> store the learners and, when
+called with a data set, constructs the classifiers and passes them to
+<code>WinnerClassifier</code>. When this is called with a data
+instance, it computes class probabilities, finds a maximum probability
+for some class, and accordingly reports on either the class,
+probabilities or both. Notice that we have also took care that this
+learner/classifier confirms to everything that is expected from such
+objects in Orange, so it may be used by other modules, most
+importantly for classifier validation.</p>
 
-<p>An example of how our new learner is used is exemplified by the following script:
+<p>An example of how our new learner is used is exemplified by the
+following script:
 
 <p class="header">part of <a href="ensemble2.py">ensemble2.py</a> (uses <a href=
 "promoters.tab">promoters.tab</a>)</p>
@@ -156,7 +172,9 @@ for i in range(len(learners)):
     print ("%15s: %5.3f") % (learners[i].name, orngStat.CA(results)[i])
 </xmp>
 
-<p>Notice again that invoking our new objects and using them for machine learning is just as easy as using any other learner. When running this script, it may report something like:</p>
+<p>Notice again that invoking our new objects and using them for
+machine learning is just as easy as using any other learner. When
+running this script, it may report something like:</p>
 
 <XMP class=code>Classification Accuracy:
         default: 0.472
@@ -165,7 +183,12 @@ for i in range(len(learners)):
          winner: 0.877
 </XMP>
 
-<p>The example script above that implements WinnerLearner and WinnerClassifiers may easily be adapted to something that you need for ensemble learner. For an exercise, change the learner such that it uses cross-validation to estimate the probability that the classifier will predict correctly, and when classifying use this probability to weight the classifiers and change winner-schema to voting.
+<p>The example script above that implements WinnerLearner and
+WinnerClassifiers may easily be adapted to something that you need for
+ensemble learner. For an exercise, change the learner such that it
+uses cross-validation to estimate the probability that the classifier
+will predict correctly, and when classifying use this probability to
+weight the classifiers and change winner-schema to voting.
 </P>
 
 <hr><br><p class="Path">
