@@ -327,6 +327,38 @@ PyObject *Variable_call(PyObject *self, PyObject *args, PyObject *keywords) PYDO
 }
 
 
+PyObject *Variable_DC(PyObject *self) PYARGS(METH_NOARGS, "() -> DC")
+{
+  PyTRY
+    PVariable var = PyOrange_AsVariable(self);
+    return Value_FromVariableValue(var, var->DC());
+  PyCATCH
+}
+
+
+
+PyObject *Variable_DK(PyObject *self) PYARGS(METH_NOARGS, "() -> DK")
+{
+  PyTRY
+    PVariable var = PyOrange_AsVariable(self);
+    return Value_FromVariableValue(var, var->DK());
+  PyCATCH
+}
+
+
+PyObject *Variable_specialValue(PyObject *self, PyObject *arg) PYARGS(METH_O, "(int) -> special value")
+{
+  PyTRY
+    int valType;
+    if (!convertFromPython(arg, valType))
+      return PYNULL;
+    PVariable var = PyOrange_AsVariable(self);
+    return Value_FromVariableValue(var, var->specialValue(valType));
+  PyCATCH
+}
+
+
+
 PyObject *EnumVariable_getitem_sq(PyObject *self, int index)
 { PyTRY
     CAST_TO(TEnumVariable, var)
