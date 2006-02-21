@@ -12,6 +12,11 @@ from qttable import *
 import OWGUI
 
 
+########################################################
+## TODO: crashes if the same data is sent to both inputs
+########################################################
+
+
 class OWMergeData(OWWidget):
 
 ##    settingsList = ["memberName"]
@@ -63,11 +68,6 @@ class OWMergeData(OWWidget):
         self.lblDataBExamples = OWGUI.widgetLabel(boxDataB, "num examples")
         self.lblDataBAttributes = OWGUI.widgetLabel(boxDataB, "num attributes")
 
-##        # settings
-##        boxSettings = QVGroupBox('Settings', ca)
-##        gl.addMultiCellWidget(boxSettings, 2,2,0,1)
-##        OWGUI.button(boxSettings, self, "Clear selection", callback=self.onClearSelectionClick)
-
         # icons
         self.icons = self.createAttributeIconDict()
 
@@ -80,10 +80,23 @@ class OWMergeData(OWWidget):
     ############################################################################################################################################################
 
     def onDataAInput(self, data):
-        # update self.dataA, self.varListA and self.varA
-        self.dataA = data
-        if data:
-            self.varListA = data.domain.variables.native() + data.domain.getmetas().values()
+        # set self.dataA, generate new domain if it is the same as of self.dataB.domain 
+        if data and self.dataB and data.domain == self.dataB.domain:
+            if data.domain.classVar:
+                classVar = data.domain.classVar.clone()
+            else:
+                classVar = None
+            dc = orange.Domain([x.clone() for x in data.domain], classVar)
+            for i, a in enumerate(dc):
+                a.getValueFrom = lambda ex,f,i=i: ex[i]
+            # no need to clone meta attributes: dc.addmetas(dict([(orange.newmetaid(), x.clone()) for x in data.domain.getmetas().values()])); for i,id,a in enumerate(dc.getmetas().items()): ...
+            dc.addmetas(data.domain.getmetas())
+            self.dataA = orange.ExampleTable(dc, data)
+        else:
+            self.dataA = data
+        # update self.varListA and self.varA
+        if self.dataA:
+            self.varListA = self.dataA.domain.variables.native() + self.dataA.domain.getmetas().values()
         else:
             self.varListA = []
         if not self.varA in self.varListA:
@@ -98,10 +111,23 @@ class OWMergeData(OWWidget):
 
 
     def onDataBInput(self, data):
-        # update self.dataB, self.varListB and self.varB
-        self.dataB = data
-        if data:
-            self.varListB = data.domain.variables.native() + data.domain.getmetas().values()
+        # set self.dataB, generate new domain if it is the same as of self.dataA.domain 
+        if data and self.dataA and data.domain == self.dataA.domain:
+            if data.domain.classVar:
+                classVar = data.domain.classVar.clone()
+            else:
+                classVar = None
+            dc = orange.Domain([x.clone() for x in data.domain.attributes], classVar)
+            for i, a in enumerate(dc):
+                a.getValueFrom = lambda ex,f,i=i: ex[i]
+            # no need to clone meta attributes: dc.addmetas(dict([(orange.newmetaid(), x.clone()) for x in data.domain.getmetas().values()])); for i,id,a in enumerate(dc.getmetas().items()): ...
+            dc.addmetas(data.domain.getmetas())
+            self.dataB = orange.ExampleTable(dc, data)
+        else:
+            self.dataB = data
+        # update self.varListB and self.varB
+        if self.dataB:
+            self.varListB = self.dataB.domain.variables.native() + self.dataB.domain.getmetas().values()
         else:
             self.varListB = []
         if not self.varB in self.varListB:
@@ -143,23 +169,32 @@ class OWMergeData(OWWidget):
         if self.varA and self.varB:
             # create dictionaries: attribute values -> example index
             val2idxDictA = {}
-            if self.varA.varType == orange.VarTypes.String:
-                # odstrani, ko Janez popravi bug #60
-                for eIdx, e in enumerate(self.dataA):
-                    val2idxDictA[str(e[self.varA])] = eIdx
-            else:
-                for eIdx, e in enumerate(self.dataA):
-                    val2idxDictA[e[self.varA].native()] = eIdx
+            for eIdx, e in enumerate(self.dataA):
+                val2idxDictA[e[self.varA].native()] = eIdx
             val2idxDictB = {}
-            if self.varB.varType == orange.VarTypes.String:
-                # odstrani, ko Janez popravi bug #60
-                for eIdx, e in enumerate(self.dataB):
-                    val2idxDictB[str(e[self.varB])] = eIdx
-            else:
-                for eIdx, e in enumerate(self.dataB):
-                    val2idxDictB[e[self.varB].native()] = eIdx
-##            print val2idxDictA
-##            print val2idxDictB
+            for eIdx, e in enumerate(self.dataB):
+                val2idxDictB[e[self.varB].native()] = eIdx
+            # remove DC and DK from dictionaries (change when bug 62 is fixed)
+##            if val2idxDictA.has_key(orange.Value(self.varA.varType, orange.ValueTypes.DC).native()):
+##                val2idxDictA.pop(orange.Value(self.varA.varType, orange.ValueTypes.DC).native())
+##            if val2idxDictA.has_key(orange.Value(self.varA.varType, orange.ValueTypes.DK).native()):
+##                val2idxDictA.pop(orange.Value(self.varA.varType, orange.ValueTypes.DK).native())
+##            if val2idxDictB.has_key(orange.Value(self.varB.varType, orange.ValueTypes.DC).native()):
+##                val2idxDictB.pop(orange.Value(self.varB.varType, orange.ValueTypes.DC).native())
+##            if val2idxDictB.has_key(orange.Value(self.varB.varType, orange.ValueTypes.DK).native()):
+##                val2idxDictB.pop(orange.Value(self.varB.varType, orange.ValueTypes.DK).native())
+            if val2idxDictA.has_key("?"):
+                val2idxDictA.pop("?")
+            if val2idxDictA.has_key("~"):
+                val2idxDictA.pop("~")
+            if val2idxDictA.has_key(""):
+                val2idxDictA.pop("")
+            if val2idxDictB.has_key("?"):
+                val2idxDictB.pop("?")
+            if val2idxDictB.has_key("~"):
+                val2idxDictB.pop("~")
+            if val2idxDictB.has_key(""):
+                val2idxDictB.pop("")
             # example table names
             nameA = self.dataA.name
             if not nameA: nameA = "Examples A"
@@ -175,21 +210,12 @@ class OWMergeData(OWWidget):
             vlBreduced.remove(self.varB)
             domBreduced = orange.Domain(vlBreduced, None)
             etBreduced = orange.ExampleTable(domBreduced)
-            if self.varA.varType == orange.VarTypes.String:
-                # odstrani, ko Janez popravi bug #60
-                for e in self.dataA:
-                    dataBidx = val2idxDictB.get(str(e[self.varA]), None)
-                    if dataBidx <> None:
-                        etBreduced.append(self.dataB[dataBidx])
-                    else:
-                        etBreduced.append(orange.Example(domBreduced, exBDK))
-            else:
-                for e in self.dataA:
-                    dataBidx = val2idxDictB.get(e[self.varA].native(), None)
-                    if dataBidx <> None:
-                        etBreduced.append(self.dataB[dataBidx])
-                    else:
-                        etBreduced.append(orange.Example(domBreduced, exBDK))
+            for e in self.dataA:
+                dataBidx = val2idxDictB.get(e[self.varA].native(), None)
+                if dataBidx <> None:
+                    etBreduced.append(self.dataB[dataBidx])
+                else:
+                    etBreduced.append(orange.Example(domBreduced, exBDK))
             etAB = orange.ExampleTable([self.dataA, etBreduced])
             etAB.name = nameA + " (merged with %s)" % nameB
             self.send("Merged Examples A+B", etAB)
@@ -204,21 +230,12 @@ class OWMergeData(OWWidget):
             vlAreduced.remove(self.varA)
             domAreduced = orange.Domain(vlAreduced, None)
             etAreduced = orange.ExampleTable(domAreduced)
-            if self.varB.varType == orange.VarTypes.String:
-                # odstrani, ko Janez popravi bug #60
-                for e in self.dataB:
-                    dataAidx = val2idxDictA.get(str(e[self.varB]), None)
-                    if dataAidx <> None:
-                        etAreduced.append(self.dataA[dataAidx])
-                    else:
-                        etAreduced.append(orange.Example(domAreduced, exADK))
-            else:
-                for e in self.dataB:
-                    dataAidx = val2idxDictA.get(e[self.varB].native(), None)
-                    if dataAidx <> None:
-                        etAreduced.append(self.dataA[dataAidx])
-                    else:
-                        etAreduced.append(orange.Example(domAreduced, exADK))
+            for e in self.dataB:
+                dataAidx = val2idxDictA.get(e[self.varB].native(), None)
+                if dataAidx <> None:
+                    etAreduced.append(self.dataA[dataAidx])
+                else:
+                    etAreduced.append(orange.Example(domAreduced, exADK))
             etBA = orange.ExampleTable([self.dataB, etAreduced])
             etBA.name = nameB + " (merged with %s)" % nameA
             self.send("Merged Examples B+A", etBA)
@@ -233,7 +250,6 @@ class OWMergeData(OWWidget):
 
     def lbAttrAChange(self):
         if self.dataA:
-##            print "self.lbAttrA.currentItem()", self.lbAttrA.currentItem()
             currItem = self.lbAttrA.currentItem()
             if currItem >= 0 and self.lbAttrA.isSelected(currItem):
                 self.varA = self.varListA[self.lbAttrA.currentItem()]
@@ -255,15 +271,6 @@ class OWMergeData(OWWidget):
             self.varB = None
         self.sendData()
 
-
-##    def onClearSelectionClick(self):
-##        self.lbAttrA.setCurrentItem(-1)
-##        self.lbAttrA.setSelected(self.lbAttrA.currentItem(), False)
-##        self.lbAttrB.setCurrentItem(-1)
-##        self.lbAttrA.clearSelection()
-##        self.lbAttrB.clearSelection()
-##        print "currentItem:", self.lbAttrA.currentItem(), "isSelected:", self.lbAttrA.isSelected(self.lbAttrA.currentItem()), "self.varA", self.varA
-##        print "currentItem:", self.lbAttrB.currentItem(), "isSelected:", self.lbAttrB.isSelected(self.lbAttrB.currentItem()), "self.varB", self.varB
 
     ############################################################################################################################################################
     ## Utility functions 
@@ -291,8 +298,11 @@ if __name__=="__main__":
     signalManager = orngSignalManager.SignalManager(0)
     #data = orange.ExampleTable('dicty_800_genes_from_table07.tab')
 ##    data = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
-    dataA = orange.ExampleTable(r'c:\Documents and Settings\peterjuv\My Documents\STEROLTALK\Sterolgene v.0 mouse\sterolgene v.0 mouse controlGeneRatios.tab')
-    dataB = orange.ExampleTable(r'c:\Documents and Settings\peterjuv\My Documents\STEROLTALK\Sterolgene v.0 mouse\sterolgene v.0 mouse controlGeneRatios 2 ecoli.tab')
+##    dataA = orange.ExampleTable(r'c:\Documents and Settings\peterjuv\My Documents\STEROLTALK\Sterolgene v.0 mouse\sterolgene v.0 mouse probeRatios.tab')
+##    dataA = orange.ExampleTable(r'c:\Documents and Settings\peterjuv\My Documents\STEROLTALK\Sterolgene v.0 mouse\Copy of sterolgene v.0 mouse probeRatios.tab')
+##    dataB = orange.ExampleTable(r'c:\Documents and Settings\peterjuv\My Documents\STEROLTALK\Sterolgene v.0 mouse\sterolgene v.0 mouse probeRatios.tab')
+    dataA = orange.ExampleTable(r'c:\Documents and Settings\peterjuv\My Documents\et1.tab')
+    dataB = orange.ExampleTable(r'c:\Documents and Settings\peterjuv\My Documents\et2.tab')
     a=QApplication(sys.argv)
     ow=OWMergeData()
     a.setMainWidget(ow)
