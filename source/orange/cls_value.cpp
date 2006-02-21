@@ -344,13 +344,7 @@ PyObject *Value_FromArguments(PyTypeObject *type, PyObject *args)
       return convertFromPython(obj1, val, var) ? Value_FromVariableValueType(type, var, val) : PYNULL;
     }
     else if (PyInt_Check(obj1) && PyInt_Check(obj2)) {
-      int vartype = int(PyInt_AsLong(obj1));
-      if (vartype > TValue::FLOATVAR) {
-        PyErr_Format(PyExc_IndexError, "invalid value type (%i)", vartype);
-        return PYNULL;
-      }
-        
-      return Value_FromValueType(type, TValue((char)vartype, (signed char)PyInt_AsLong(obj2)));
+      return Value_FromValueType(type, TValue((char)(int(PyInt_AsLong(obj1))), (signed char)PyInt_AsLong(obj2)));
     }
 
     PYERROR(PyExc_TypeError, "Value(): invalid arguments", PYNULL);
