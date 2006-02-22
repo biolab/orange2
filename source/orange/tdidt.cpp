@@ -416,7 +416,7 @@ TValue TTreeClassifier::operator()(const TExample &exam)
   }
 
   // couldn't classify, so we'll return something a priori
-  return findNodeValue(node, refexam);
+  return TValue(findNodeValue(node, refexam));
 }
 
 
