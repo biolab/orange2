@@ -165,7 +165,7 @@ public:
 class ORANGE_API TSVMClassifier : public TClassifier{
 public:
 	__REGISTER_CLASS
-
+		TSVMClassifier(){};
 	TSVMClassifier(PVariable, PExampleTable, svm_model*, svm_node*);
 	~TSVMClassifier();
 
