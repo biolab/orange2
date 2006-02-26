@@ -1,0 +1,109 @@
+<html>
+<head>
+<link rel=stylesheet href="../style.css" type="text/css" media=screen>
+</head>
+<body>
+<h1>orngSVM</h1>
+<p>orngSVM provides accsess to orange Support Vector Machine functionality</p>
+<h2>SVMLearner</h2>
+<p>SVMLearner is a function that constructs a SVMLearner class and optionaly trains it on provided examples</p>
+<p class=section >Arguments</p>
+<dl class=arguments>
+  <dt>svm_type</dt>
+  <dd>Defines the type of SVM (can be SVMLearner.C_SVC (default), SVMLearner.NU_SVC, SVMLearner.ONE_CLASS, SVMLearner.EPSILON_SVR, SVMLearner.NU_SVR)</dd>
+  <dt>kernel_type</dt>
+  <dd>Defines the type of a kernel to use for learning (can be SVMLearner.RBF (default), SVMLearner.LINEAR, SVMLearner.POLY, SVMLearner.SIGMOID, SVMLearner.CUSTOM)</dd>
+  <dt>degree</dt>
+  <dd>Kernel parameter (POLY) (default 3)</dd>
+  <dt>gamma</dt>
+  <dd>Kernel parameter (POLY/RBF/SIGMOID) (default 1/number_of_examples)</dd>
+  <dt>coef0</dt>
+  <dd>Kernel parameter (POLY/SIGMOID) (default 0)</dd>
+  <dt>kernelFunc</dt>
+  <dd>Function that will be called if <code>kernel_type</code> is SVMLearner.CUSTOM. It must accept two orange.Example arguments and return a float.</dd>
+  <dt>C</dt>
+  <dd>C parameter for C_SVC, EPSILON_SVR, NU_SVR</dd>
+  <dt>nu</dt>
+  <dd>Nu parameter for NU_SVC, NU_SVR and ONE_CLASS (default 0.5)</dd>
+  <dt>p</dt>
+  <dd>Epsilon in loss-function for EPSILON_SVR</dd>
+  <dt>cache_size</dt>
+  <dd>Cache memory size in MB (default 100)</dd>
+  <dt>eps</dt>
+  <dd>Tolerance of termination criterion (default 0.001)</dd>
+  <dt>shrinking</dt>
+  <dd>Determines whether to use shrinking heuristics (default True)</dd>
+  <dt>probability</dt>
+  <dd>Determines if a probability model should be build (default False)</dd>
+</dl>
+
+
+<h2>parameterSelection</h2>
+<p>parameterSelection tool that uses cross validation to find the optimal parameters.</p>
+<p class=section>Arguments</p>
+<dl class=arguments>
+	<dt>learner</dt>
+	<dd>Learner to use</dd>
+	<dt>data</dt>
+	<dd>Data to use for learning and testing</dd>
+	<dt>folds</dt>
+	<dd>Number of cross validation folds</dd>
+	<dt>parameters</dt>
+	<dd>Dictionary with parameters as keys and containing lists of values (eg. {"gamma":[0.5,0.6,0.7],"C":[1.0,1.1.2])</dd>
+</dl>
+
+<h2>KernelWrapper (DualKernelWrapper)</h2>
+<p>KernelWrapper (DualKernelWrapper) is an abstract wrapper class that takea one (two) kernel function (functions) as a initalization parameters
+and uses them to compute a new kernel function. The available kernel wrappers are RBFKernelWrapper, PolyKernelWrapper, AdditionKernelWrapper, MultiplicationKernelWrapper.</p>
+<p class=section>Methods</p>
+<dl class=methods>
+	<dt>__call__(example1, example2)</dt>
+	<dd>Computes the kernel function for the two examples</dd>
+</dl>
+<h2>RBFKernelWrapper</h2>
+<p>Takes one kernel function (K1) in initialization and uses it to compute a new kernel function: K(x,y)=exp(K1(x,y)^2/gamma)
+<p class=section>Attributes</p>
+<dl class=attributes>
+	<dt>gamma</dt>
+	<dd>gamma to use in the kernel function</dd>
+</dl>
+<h2>PolyKernelWrapper</h2>
+<p>Takes one kernel function (K1) in initialization and uses it to compute a new kernel function: K(x,y)=K1(x,y)^degree
+<p class=section>Attributes</p>
+<dl class=attributes>
+	<dt>degree</dt>
+	<dd>degree to use in the kernel function</dd>
+</dl>
+<h2>AdditionKernelWrapper</h2>
+<p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)+K2(x,y)
+<h2>MultiplicationKernelWrapper</h2>
+<p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)*K2(x,y)
+</p>
+<h2>Examples</h2>
+<xmp class=code>
+import orange, orngSVM
+data=orange.ExampleTable("iris.tab")
+l1=orngSVM.SVMLearner()
+l1.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data))
+l1.kernel_type=orange.SVMLearner.CUSTOM
+l1.kernelFunc.gamma=0.5
+l1.probability=True
+c1=l1(data)
+l1.name="SVM - RBF(Euclidean)"
+
+l2=orngSVM.SVMLearner()
+l2.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamiltonian(data))
+l2.kernel_type=orange.SVMLearner.CUSTOM
+l2.kernelFunc.gamma=0.5
+l2.probability=True
+c2=l2(data)
+l2.name="SVM - RBF(Hamiltonian)"
+
+import orngTest, orngStat
+tests=orngTest.crossValidation([l1, l2], data, folds=5)
+[ca1, ca2]=orngStat.CA(tests)
+print l1.name, "CA:", ca1
+print l2.name, "CA:", ca2
+</xmp>
+
+
