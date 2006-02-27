@@ -99,7 +99,7 @@ class DualKernelWrapper(KernelWrapper):
 class RBFKernelWrapper(KernelWrapper):
     gamma=0.5
     def __call__(self, example1, example2):
-        return math.exp(math.pow(self.wrapped(example1, example2),2)/self.gamma)
+        return math.exp(-math.pow(self.wrapped(example1, example2),2)/self.gamma)
 
 class PolyKernelWrapper(KernelWrapper):
     degree=3.0
