@@ -75,7 +75,7 @@ class orngScaleData:
 
     # ####################################################################
     # ####################################################################
-    # set new data and scale its values to the 0-1 interval
+    # set new data and scale its values to the 0-1 interval or normalize it by subtracting the mean and dividing by the deviation
     def setData(self, data, keepMinMaxVals = 0):
         self.attributeFlipInfo = {}
         if not keepMinMaxVals or self.globalValueScaling == 1:
@@ -134,8 +134,8 @@ class orngScaleData:
             else:
                 if self.scalingByVariance:
                     self.offsets.append(self.domainDataStat[index].avg)
-                    self.normalizers.append(5*self.domainDataStat[index].dev)
-                    arr[index] = (arr[index] - offsets[-1]) / normalizers[-1]
+                    self.normalizers.append(self.domainDataStat[index].dev)
+                    arr[index] = ((arr[index] - self.offsets[-1]) / self.normalizers[-1])
                 else:
                     if self.attrValues.has_key(attr.name):          # keep the old min, max values
                         min, max = self.attrValues[attr.name]
@@ -159,7 +159,7 @@ class orngScaleData:
                 else:
                     self.scaledData[index] = arr[index]
 
-        self.noJitteringScaledData = arr
+            self.noJitteringScaledData = arr
         
  
     # ####################################################################

@@ -28,59 +28,10 @@ LEFT = 1
 TOP = 2
 RIGHT = 3
 
-class SortAttributeValuesDlg(OWBaseWidget):
-    def __init__(self, parentWidget = None, attrList = []):
-        OWBaseWidget.__init__(self, None, None, "Sort Attribute Values", modal = TRUE)
-
-        self.space = QVBox(self)
-        self.layout = QVBoxLayout(self, 4)
-        self.layout.addWidget(self.space)
-        
-        box1 = OWGUI.widgetBox(self.space, 1, orientation = "horizontal")
-        
-        self.attributeList = QListBox(box1)
-        self.attributeList.setSelectionMode(QListBox.Extended)
-
-        vbox = OWGUI.widgetBox(box1, "", orientation = "vertical")
-        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attribute values up")
-        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attribute values down")
-        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
-        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
-        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonDOWNAttr.setMaximumWidth(20)
-        self.buttonUPAttr.setMaximumWidth(20)
-
-        box2 = OWGUI.widgetBox(self.space, 1, orientation = "horizontal")
-        self.okButton =     OWGUI.button(box2, self, "OK", callback = self.accept)
-        self.cancelButton = OWGUI.button(box2, self, "Cancel", callback = self.reject)
-
-        for attr in attrList:
-            self.attributeList.insertItem(attr)
-
-        self.resize(300, 300)
-
-    # move selected attribute values
-    def moveAttrUP(self):
-        for i in range(1, self.attributeList.count()):
-            if self.attributeList.isSelected(i):
-                self.attributeList.insertItem(self.attributeList.text(i), i-1)
-                self.attributeList.removeItem(i+1)
-                self.attributeList.setSelected(i-1, TRUE)
-
-    def moveAttrDOWN(self):
-        for i in range(self.attributeList.count()-2,-1,-1):
-            if self.attributeList.isSelected(i):
-                self.attributeList.insertItem(self.attributeList.text(i), i+2)
-                self.attributeList.removeItem(i)
-                self.attributeList.setSelected(i+1, TRUE)
-
 class OWMosaicDisplay(OWWidget):
     settingsList = ["horizontalDistribution", "showAprioriDistributionLines", "horizontalDistribution", "showAprioriDistributionBoxes", "interiorColoring", "boxSize" ]
 
     contextHandlers = {"": DomainContextHandler("", ["attributeValuesDict"], loadImperfect = 0)}
-
         
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Mosaic display", TRUE, TRUE)
@@ -99,7 +50,7 @@ class OWMosaicDisplay(OWWidget):
         self.showAprioriDistributionLines = 1
         self.showAprioriDistributionBoxes = 1
         self.horizontalDistribution = 1
-        self.showSubsetDistributions = 1
+        self.showSubsetDistributions = 0
         self.boxSize = 5
         self.attr1 = ""
         self.attr2 = ""
@@ -113,6 +64,8 @@ class OWMosaicDisplay(OWWidget):
         self.colorPalette = None
         self.permutationDict = {}
         self.attributeValuesDict = {}
+        self.conditionalDict = None
+        self.conditionalSubsetDict = None
 
         #self.blueColors = [QColor(255, 255, 255), QColor(117, 149, 255), QColor(38, 43, 232), QColor(1,5,173)]
         self.blueColors = [QColor(255, 255, 255), QColor(210, 210, 255), QColor(110, 110, 255), QColor(0,0,255)]
@@ -120,8 +73,11 @@ class OWMosaicDisplay(OWWidget):
         
         self.loadSettings()
 
-        # add a settings dialog and initialize its values
-        #self.options = OWInteractionGraphOptions()
+        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
+        self.GeneralTab = QVGroupBox(self)
+        self.SettingsTab = QVGroupBox(self)
+        self.tabs.insertTab(self.GeneralTab, "General")
+        self.tabs.insertTab(self.SettingsTab, "Settings")
 
         self.box = QVBoxLayout(self.mainArea)
         self.canvas = QCanvas(2000, 2000)
@@ -132,64 +88,50 @@ class OWMosaicDisplay(OWWidget):
         
         #GUI
         #add controls to self.controlArea widget
-        self.controlArea.setMinimumWidth(220)
-        box1 = OWGUI.widgetBox(self.controlArea, " 1st Attribute ", orientation = "horizontal")
-        box2 = OWGUI.widgetBox(self.controlArea, " 2nd Attribute ", orientation = "horizontal")
-        box3 = OWGUI.widgetBox(self.controlArea, " 3rd Attribute ", orientation = "horizontal")
-        box4 = OWGUI.widgetBox(self.controlArea, " 4th Attribute ", orientation = "horizontal")
-        self.attr1Combo = OWGUI.comboBox(box1, self, "attr1", None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
-        self.attr2Combo = OWGUI.comboBox(box2, self, "attr2", None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
-        self.attr3Combo = OWGUI.comboBox(box3, self, "attr3", None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
-        self.attr4Combo = OWGUI.comboBox(box4, self, "attr4", None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
+        self.controlArea.setMinimumWidth(235)
+        
+        texts = [" 1st Attribute ", " 2nd Attribute ", " 3rd Attribute ", " 4th Attribute "]
+        for i in range(1,5):
+            box = OWGUI.widgetBox(self.GeneralTab, texts[i-1], orientation = "horizontal")
+            box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+            combo = OWGUI.comboBox(box, self, "attr" + str(i), None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
+                        
+            butt = OWGUI.button(box, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values")
+            butt.setMaximumWidth(26); butt.setMaximumHeight(26); butt.setMinimumWidth(24); butt.setMinimumHeight(26)
+            butt.setToggleButton(1)
+            butt.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
 
-        self.sort1 = OWGUI.button(box1, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values"); self.sort1.setToggleButton(1); self.sort1.setMaximumWidth(26)
-        self.sort2 = OWGUI.button(box2, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values"); self.sort2.setToggleButton(1); self.sort2.setMaximumWidth(26)
-        self.sort3 = OWGUI.button(box3, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values"); self.sort3.setToggleButton(1); self.sort3.setMaximumWidth(26)
-        self.sort4 = OWGUI.button(box4, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values"); self.sort4.setToggleButton(1); self.sort4.setMaximumWidth(26)
-        self.sort1.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
-        self.sort2.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
-        self.sort3.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
-        self.sort4.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
-
-        box1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        box2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        box3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        box4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+            setattr(self, "sort"+str(i), butt)
+            setattr(self, "attr" + str(i)+ "Combo", combo)
 
         self.optimizationDlg = OWMosaicOptimization(self, self.signalManager)
-        optimizationButtons = OWGUI.widgetBox(self.controlArea, " Optimization Dialog ", orientation = "horizontal")
+        optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialog ", orientation = "horizontal")
         optimizationButtons.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow)
 
-        box5 = OWGUI.widgetBox(self.controlArea, " Cell Colors Represent... ")
+        box5 = OWGUI.widgetBox(self.GeneralTab, " Cell Colors Represent... ")
         OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.changedInteriorColoring)
         box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         
-        self.box6 = OWGUI.widgetBox(self.controlArea, " Class Distribution Settings ")
+        self.box6 = OWGUI.widgetBox(self.SettingsTab, " Class Distribution Settings ")
         OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateData)
         OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show Apriori Distribution with Lines', callback = self.updateData, tooltip = "Show the lines that represent the apriori class distribution")
         OWGUI.checkBox(self.box6, self, 'showAprioriDistributionBoxes', 'Show Apriori Distribution with Boxes', callback = self.updateData, tooltip = "Show the lines that represent the apriori class distribution")
         OWGUI.spin(self.box6, self, 'boxSize', 1, 15, 1, '', "       Box Size: (pixels): ", orientation = "horizontal", callback = self.updateData)
         self.box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
-        OWGUI.separator(self.controlArea, height = 10)
-        
-        self.permButton = OWGUI.button(self.controlArea, self, "Explore Attribute Permutations", callback = self.permutationListToggle)
-        self.permButton.setToggleButton(1)
-        OWGUI.separator(self.controlArea, height = 5)
+        self.box7 = OWGUI.widgetBox(self.GeneralTab, " Possible permutations ")
 
-        self.box7 = OWGUI.widgetBox(self.controlArea, " Possible permutations ")
+        self.permButton = OWGUI.button(self.box7, self, "Explore Attribute Permutations", callback = self.permutationListToggle)
+        self.permButton.setToggleButton(1)
+        
         self.permutationList = QListBox(self.box7)
         self.connect(self.permutationList, SIGNAL("selectionChanged()"), self.setSelectedPermutation)
-        self.box7.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding))
-        self.box7.hide()
-
-        box = OWGUI.widgetBox(self.controlArea, "")
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
+        self.permutationList.hide()
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
         self.icons = self.createAttributeIconDict()
-        self.resize(680, 480)
+        self.resize(750, 550)
 
         self.activateLoadedSettings()
         self.changedInteriorColoring()
@@ -200,9 +142,9 @@ class OWMosaicDisplay(OWWidget):
         
     def permutationListToggle(self):
         if self.permButton.isOn():
-            self.box7.show()
+            self.permutationList.show()
         else:
-            self.box7.hide()
+            self.permutationList.hide()
 
     def setSelectedPermutation(self):
         if self.permutationList.count() > 0:
@@ -221,7 +163,8 @@ class OWMosaicDisplay(OWWidget):
         elif self.sort2.isOn(): attr = self.attr2
         elif self.sort3.isOn(): attr = self.attr3
         elif self.sort4.isOn(): attr = self.attr4
-        if attr  != "" and attr != "(None)": 
+
+        if self.data and attr  != "" and attr != "(None)": 
             dlg = SortAttributeValuesDlg(self, self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr))
             if dlg.exec_loop() == QDialog.Accepted:
                 self.attributeValuesDict[attr] = [str(dlg.attributeList.text(i)) for i in range(dlg.attributeList.count())]
@@ -342,9 +285,8 @@ class OWMosaicDisplay(OWWidget):
         else:               self.setStatusBarText("")
 
         selectList = attrList
-        data = self.optimizationDlg.getData()   # get the selected class values
-        if data.domain.classVar: data = data.select(attrList + [data.domain.classVar.name])
-        else: data = data.select(attrList)
+        if self.data.domain.classVar: data = self.data.select(attrList + [self.data.domain.classVar.name])
+        else: data = self.data.select(attrList)
         data = orange.Preprocessor_dropMissing(data)
 
         self.aprioriDistributions = []
@@ -380,11 +322,13 @@ class OWMosaicDisplay(OWWidget):
         # compute distributions
         self.conditionalDict = self.optimizationDlg.getConditionalDistributions(data, attrList)
         self.conditionalDict[""] = len(data)
-
-        if self.showSubsetDistributions and self.subsetData:
+        self.conditionalSubsetDict = None
+        
+        if self.showSubsetDistributions and self.subsetData and len(self.subsetData) > 1:
             subData = orange.Preprocessor_dropMissing(self.subsetData)
-            self.conditionalSubsetDict = self.optimizationDlg.getConditionalDistributions(subData, attrList)
-            self.conditionalSubsetDict[""] = len(subData)
+            if subData and len(subData) > 1:
+                self.conditionalSubsetDict = self.optimizationDlg.getConditionalDistributions(subData, attrList)
+                self.conditionalSubsetDict[""] = len(subData)
 
         # draw rectangles
         self.DrawData(attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 0, "", len(attrList))
@@ -578,6 +522,7 @@ class OWMosaicDisplay(OWWidget):
                     OWCanvasRectangle(self.canvas, x0, y0+total, x1-x0, v, self.colorPalette[i], self.colorPalette[i], z = -20)
                 total += v
 
+            # show apriori boxes and lines
             if (self.showAprioriDistributionLines or self.showAprioriDistributionBoxes) and abs(x1 - x0) > 1 and abs(y1 - y0) > 1:
                 total = 0
                 for i in range(len(aprioriDist)):
@@ -594,7 +539,8 @@ class OWMosaicDisplay(OWWidget):
                         total += val
                         if i < len(aprioriDist)-1 and self.showAprioriDistributionLines: OWCanvasLine(self.canvas, x0, y0+total, x1, y0+total, z = 10)
 
-            if self.showSubsetDistributions and self.subsetData and len(self.subsetData) > 1:
+            # show subset distribution
+            if self.showSubsetDistributions and self.conditionalSubsetDict:
                 total = 0
                 for i in range(len(aprioriDist)):
                     val = self.conditionalSubsetDict[attrVals + "-" + values[i]]
@@ -613,18 +559,19 @@ class OWMosaicDisplay(OWWidget):
     # add tooltips
     def addTooltip(self, x, y, w, h, condition, apriori = None, attrVals = None, pearson = None, expected = None):
         tooltipText = "<b>Examples in this area have:</b><br>" + condition
+        
         if apriori:
             values = self.attributeValuesDict.get(self.data.domain.classVar.name, None) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
             actual = [self.conditionalDict[attrVals + "-" + values[i]] for i in range(len(apriori))]
-            if sum(actual) > 0: 
+            if sum(actual) > 0:
                 apriori = [apriori[key] for key in values]
                 aprioriText = ""; actualText = ""
                 text = ""
                 for i in range(len(values)):
-                    text += 4*"&nbsp;" + "<b>%s</b>: %d / %.1f%% (Expected %.1f / %.1f%%)<br>" % (values[i], actual[i], 100.0*actual[i]/float(sum(actual)), (apriori[i]*actual[i])/float(sum(apriori)), 100.0*apriori[i]/float(sum(apriori)))
+                    text += 4*"&nbsp;" + "<b>%s</b>: %d / %.1f%% (Expected %.1f / %.1f%%)<br>" % (values[i], actual[i], 100.0*actual[i]/float(sum(actual)), (apriori[i]*sum(actual))/float(sum(apriori)), 100.0*apriori[i]/float(sum(apriori)))
                 tooltipText += "<b>Number of examples:</b> " + str(int(sum(actual))) + "<br><b>Class distribution:</b><br>" + text[:-4]
         elif pearson and expected:
-            tooltipText += "<hr>Expected number of examples: %.1f<br>Standardized (Pearson) residual: %.1f" % (expected, pearson)
+            tooltipText += "<hr>Expected number of examples: %.1f<br>Actual number of examples: %d<br>Standardized (Pearson) residual: %.1f" % (expected, self.conditionalDict[attrVals], pearson)
         tipRect = QRect(x, y, w, h)
         QToolTip.add(self.canvasView, tipRect, tooltipText)
         self.tooltips.append(tipRect)
@@ -633,12 +580,61 @@ class OWMosaicDisplay(OWWidget):
     def saveToFileCanvas(self):
         sizeDlg = OWChooseImageSizeDlg(self.canvas)
         sizeDlg.exec_loop()
+
+class SortAttributeValuesDlg(OWBaseWidget):
+    def __init__(self, parentWidget = None, attrList = []):
+        OWBaseWidget.__init__(self, None, None, "Sort Attribute Values", modal = TRUE)
+
+        self.space = QVBox(self)
+        self.layout = QVBoxLayout(self, 4)
+        self.layout.addWidget(self.space)
+        
+        box1 = OWGUI.widgetBox(self.space, 1, orientation = "horizontal")
+        
+        self.attributeList = QListBox(box1)
+        self.attributeList.setSelectionMode(QListBox.Extended)
+
+        vbox = OWGUI.widgetBox(box1, "", orientation = "vertical")
+        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attribute values up")
+        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attribute values down")
+        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonUPAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonDOWNAttr.setMaximumWidth(20)
+        self.buttonUPAttr.setMaximumWidth(20)
+
+        box2 = OWGUI.widgetBox(self.space, 1, orientation = "horizontal")
+        self.okButton =     OWGUI.button(box2, self, "OK", callback = self.accept)
+        self.cancelButton = OWGUI.button(box2, self, "Cancel", callback = self.reject)
+
+        for attr in attrList:
+            self.attributeList.insertItem(attr)
+
+        self.resize(300, 300)
+
+    # move selected attribute values
+    def moveAttrUP(self):
+        for i in range(1, self.attributeList.count()):
+            if self.attributeList.isSelected(i):
+                self.attributeList.insertItem(self.attributeList.text(i), i-1)
+                self.attributeList.removeItem(i+1)
+                self.attributeList.setSelected(i-1, TRUE)
+
+    def moveAttrDOWN(self):
+        for i in range(self.attributeList.count()-2,-1,-1):
+            if self.attributeList.isSelected(i):
+                self.attributeList.insertItem(self.attributeList.text(i), i+2)
+                self.attributeList.removeItem(i)
+                self.attributeList.setSelected(i+1, TRUE)
+
     
 
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=SortAttributeValuesDlg()
+    ow = OWMosaicDisplay()
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()
