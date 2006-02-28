@@ -73,13 +73,15 @@ import orngScaleLinProjData
 class VizRank:
     def __init__(self, visualizationMethod, graph = None):
         if not graph:
-            if visualizationMethod == SCATTERPLOT: graph = orngScaleScatterPlotData.orngScaleScatterPlotData()
+            if visualizationMethod == SCATTERPLOT:
+                graph = orngScaleScatterPlotData.orngScaleScatterPlotData()
             elif visualizationMethod == RADVIZ:
                 graph = orngScaleLinProjData.orngScaleLinProjData()
                 graph.normalizeExamples = 1
             elif visualizationMethod == LINEAR_PROJECTION:
                 graph = orngScaleLinProjData.orngScaleLinProjData()
                 graph.normalizeExamples = 0
+                graph.scalingByVariance = 1
             else:
                 print "an invalid visualization method was specified. VizRank can not run."
                 return
@@ -416,6 +418,7 @@ class VizRank:
 
             if 1 in [example[attr].isSpecial() for attr in attrList]: index+=1; continue
             attrVals = [self.graph.scaleExampleValue(example, self.graph.attributeNameIndex[attr]) for attr in attrList]
+            #if min(attrVals) < 0.0 or max(attrVals) > 1.0: index+=1; continue     # ignore projections where we have to extrapolate to project the data example
                                     
             attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
             table = self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = generalDict)
@@ -1026,7 +1029,7 @@ class VizRankClassifier(orange.Classifier):
         if self.VizRank.__class__.__name__ == "OWVizRank":
             table = orange.ExampleTable(example.domain)
             table.append(example)
-            self.VizRank.parentWidget.subsetdata(table, 0)       # show the example is we use the widget
+            self.VizRank.parentWidget.subsetdata(table)       # show the example is we use the widget
             classVal, dist = self.VizRank.findArguments(example, 0, 0)
         else:
             classVal, dist = self.VizRank.findArguments(example)
