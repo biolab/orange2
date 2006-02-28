@@ -5,10 +5,12 @@ import OWGUI, OWVisFuncts
 from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
+mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlation With Class)", CRAMERS_PHI),("Information Gain (In Percents Of Class Entropy Removed)", INFORMATION_GAIN), ("Gain Ratio", GAIN_RATIO), ("Interaction Gain (In Percents Of Class Entropy Removed)", INTERACTION_GAIN),("Average Probability Of Correct Classification", AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION)]
+
 class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
-    settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "percentDataUsed",
+    settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells", "useOnlyRelevantInteractionsInArgumentation"
                     "evaluationTime", "argumentCount", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
@@ -28,7 +30,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.showScore = 1
         self.showConfidence = 1
         self.VizRankClassifierName = "Mosaic Learner"
-        self.resultListIndices = []
+        
         
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
@@ -81,13 +83,16 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = ["Sum of Standardized Pearson Residuals", "Gain Ratio", "Information Gain", "Interaction Gain", "Average probability of correct classification"], tooltip = "What is interesting?")
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
 
-        self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
-        self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
+        #self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
+        #self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
+
+        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, " " )
+        self.ignoreSmallCellsCombo = OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
         
-        #self.localOptimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Local Optimization Settings ")
-        self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Length of the Projection List ")
+        self.testingBox = OWGUI.widgetBox(self.SettingsTab, " Testing Method ")
+        self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times "], tooltip = "Method for evaluating the class separation in the projection.")
         
         OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = " Measure for Ranking Attributes ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
@@ -99,7 +104,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.stopArgumentationButton = OWGUI.button(self.argumentationBox, self, "Stop Searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
-        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments For Class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.updateShownArguments)
+
+        self.argumentsClassBox = OWGUI.widgetBox(self.ArgumentationTab, " Show Arguments For Class: ", orientation = "horizontal")
+        self.classValueList = OWGUI.comboBox(self.argumentsClassBox, self, "argumentationClassValue", tooltip = "Select the class value that you wish to see arguments for", callback = self.updateShownArguments)
+        self.logitLabel = OWGUI.widgetLabel(self.argumentsClassBox, " ", labelWidth = 100)
+
         self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments/Odds Ratios For The Selected Class Value ")
         self.argumentList = QListBox(self.argumentBox)
         self.argumentList.setMinimumSize(200,200)
@@ -122,21 +131,16 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Maximum time for evaluating projections (minutes):  ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
         b2 = OWGUI.widgetBox(b, orientation = "horizontal")
-        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Argument Count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of top arguments used when classifying:     ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts , sendSelectedValue = 1, valueType = int)
+        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Class Prediction Settings ")
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of arguments used when classifying:     ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts , sendSelectedValue = 1, valueType = int)
+        OWGUI.checkBox(projCountBox, self, 'useOnlyRelevantInteractionsInArgumentation', 'Use only relevant interactions in class prediction', tooltip = "Consider only interactions that are found to be relevant. \nUse Kononenko's criterion to find interacting attribute values (Igor Kononenko: Semi-naive Bayesian Classifier)")
         OWGUI.button(self.ClassificationTab, self, "Apply Changes", callback = self.resendLearner)
 
         # ##########################
         # SAVE & MANAGE TAB
-        self.classesBox = OWGUI.widgetBox(self.ManageTab, " Select Class Values You Wish to Consider ")
         self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, " Number of Concurrently Visualized Attributes ")
         #self.dialogsBox = OWGUI.widgetBox(self.ManageTab, " Dialogs ")        
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
-        
-        self.classesList = QListBox(self.classesBox)
-        self.classesList.setSelectionMode(QListBox.Multi)
-        self.classesList.setMinimumSize(60,60)
-        self.connect(self.classesList, SIGNAL("selectionChanged()"), self.classesListChanged)
         
         self.attrLenList = QListBox(self.visualizedAttributesBox)
         self.attrLenList.setSelectionMode(QListBox.Multi)
@@ -158,18 +162,25 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.resize(375,550)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
-        self.updateMestimateComboState()
 
-        
-    # ##############################################################
+        self.updateMestimateComboState()
+        self.updateGUI()
+
+    # ##############################################################    
     # EVENTS
-    # ##############################################################
     def showSelectedAttributes(self, attrs = None):
         if not self.parentWidget: return
-
-        if not attrs: (score, attrs, index) = self.getSelectedProjection()
+        projection = self.getSelectedProjection()
+        if not attrs:
+            if not projection: return
+            (score, attrs, index) = projection
         self.parentWidget.setShownAttributes(attrs)
-    
+
+    def updateGUI(self):
+        if self.qualityMeasure in [CHI_SQUARE, CRAMERS_PHI]: self.ignoreSmallCellsBox.show()
+        else:                                                self.ignoreSmallCellsBox.hide()
+        if self.qualityMeasure == AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION: self.testingBox.show()
+        else:   self.testingBox.hide()
 
     def updateMestimateComboState(self):
         self.mEditBox.setEnabled(self.probabilityEstimation == M_ESTIMATE)
@@ -189,17 +200,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             self.attrLenDict[int(str(self.attrLenList.text(i)))] = self.attrLenList.isSelected(i)
         self.updateShownProjections()
 
-    def classesListChanged(self):
-        results = self.results
-        self.clearResults()
-        
-        self.selectedClasses = self.getSelectedClassValues()
-        for result in results:
-            if self.attrLenDict[len(result[ATTR_LIST])] == 1:
-                self.insertItem(result[SCORE], result[ATTR_LIST], self.findTargetIndex(result[SCORE], max), result[TRY_INDEX])
-        self.finishedAddingResults()
-
-
     def clearResults(self):
         orngMosaic.clearResults(self)
         self.resultList.clear()
@@ -208,13 +208,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     # ##############################################################
     # ##############################################################
-
-    def getSelectedClassValues(self):
-        selectedClasses = []
-        for i in range(self.classesList.count()):
-            if self.classesList.isSelected(i): selectedClasses.append(i)
-        return selectedClasses
-
 
     def updateShownProjections(self, *args):
         self.resultList.clear()
@@ -238,10 +231,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.setStatusBarText("")
         self.classValueList.clear()
         self.argumentList.clear()
-        self.classesList.clear()
         self.selectedClasses = []
-        self.arguments = []
-        
+                
         if not data: return
         
         if hasattr(data, "name"): self.datasetName = data.name
@@ -250,18 +241,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         if not data or not (data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete): return
 
         # add class values
-        for i in range(len(data.domain.classVar.values)):
-            self.classesList.insertItem(data.domain.classVar.values[i])
-            self.classValueList.insertItem(data.domain.classVar.values[i])
-            
+        for val in getVariableValuesSorted(data, data.domain.classVar.name):
+            self.classValueList.insertItem(val)
+        self.updateShownArguments()
+        
         if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
-        self.classesList.selectAll(1)
-
-    # get only the data examples that belong to one of the selected class values
-    def getData(self):
-        if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
-            return self.data.select({self.data.domain.classVar.name: [self.data.domain.classVar.values[i] for i in self.selectedClasses]})
-        else: return self.data
 
 
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
@@ -304,8 +288,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
             return None, None
         
-        data = self.getData()   # get only the examples that have one of the class values that is selected in the class value list
-        if not data:
+        if not self.data:
             QMessageBox.critical(None,'No data','There is no data or no class value is selected in the Manage tab.',QMessageBox.Ok)
             return None, None
 
@@ -328,7 +311,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             s = '<nobr>Based on the projections, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (str(classValue), max(dist)*100. / float(sum(dist)))
             for key in values:
                 s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
-            
             QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
         
         return (classValue, dist)
@@ -360,7 +342,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         if filename == None:
             # get file name
             if self.datasetName != "":
-                filename = "%s - %s" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], self.parentName)
+                filename = "%s - %s" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], "Mosaic plots")
             else:
                 filename = "%s" % (self.parentName)
             qname = QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Interesting mosaic visualizations (*.mproj)", self, "", "Save List of Visualizations")
@@ -384,9 +366,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         file = open(name, "wt")        
         file.write("%s\n" % (str(dict)))
-        file.write("%s\n" % str(self.selectedClasses))
         for (score, attrList, tryIndex) in self.results:
-            file.write("(%.3f, %s, %d\n" % (score, attrList, tryIndex))
+            file.write("(%.4f, %s, %d)\n" % (score, attrList, tryIndex))
         file.flush()
         file.close()
         self.setStatusBarText("Saved %d visualizations" % (len(self.results)))
@@ -450,8 +431,10 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     # ######################################################
     
     def getSelectedProjection(self):
-        if self.resultList.count() == 0: return None
-        return self.results[self.resultListIndices[self.resultList.currentItem()]]      # we have to look into resultListIndices, since perhaps not all projections from the self.results are shown
+        currentItem = self.resultList.currentItem()
+        if self.resultList.count() == 0 or currentItem == -1:
+            return None
+        return self.results[self.resultListIndices[currentItem]]      # we have to look into resultListIndices, since perhaps not all projections from the self.results are shown
 
     def stopOptimizationClick(self):
         self.cancelOptimization = 1
@@ -476,16 +459,21 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def updateShownArguments(self):
         self.argumentList.clear()
         if len(self.arguments) == 0: return
-        ind = self.classValueList.currentItem()
-        for i in range(len(self.arguments[ind])):
-            (argScore, accuracy, attrList, index, error) = self.arguments[ind][i]
+        classVal = str(self.classValueList.currentText())
+        
+        self.logitLabel.setText("log odds = %.2f" % self.logits.get(classVal, -1))
+        self.logitLabel.show()
+
+        if not self.arguments.has_key(classVal): return
+        for i in range(len(self.arguments[classVal])):
+            (argScore, accuracy, attrList, index, error) = self.arguments[classVal][i]
             self.insertArgument(argScore, error, attrList, i)
             
 
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
-        classInd = self.classValueList.currentItem()
-        self.showSelectedAttributes(self.arguments[classInd][ind][2])
+        classVal = str(self.classValueList.currentText())
+        self.showSelectedAttributes(self.arguments[classVal][ind][2])
 
 
     def resendLearner(self):
