@@ -31,7 +31,7 @@ class MDS:
             #print "rec:",name            
             return self.__dict__["mds"].__dict__[name]
         else:
-            return object.__getattribute__(self, "__dict__")[name]
+            return self.__dict__[name]
 
     def __setattr__(self, name, value):
         #print "setattr"
@@ -55,9 +55,12 @@ class MDS:
     def getStress(self, stressFunc=SgnRelStress):
         self.mds.getStress(stressFunc)
 
-    def optimize(iter, stressFunc=SgnRelStress, eps=1e-3, progeressCallback=None):
+    def optimize(self, iter, stressFunc=SgnRelStress, eps=1e-3, progressCallback=None):
         self.mds.progressCallback=progressCallback
         self.mds.optimize(iter, stressFunc, eps)
+
+    def run(self, iter, stressFunc=SgnRelStress, eps=1e-3, progressCallback=None):
+        self.optimize(iter, stressFunc, eps, progressCallback)
 
     def Torgerson(self):
         # Torgerson's initial approximation
