@@ -1,9 +1,9 @@
 """
-<name>SVM</name>
+<name>Support Vector Machines</name>
 <description>Support Vector Machines learner/classifier.</description>
 <icon>icons/BasicSVM.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
-<priority>100</priority>
+<priority>110</priority>
 """
 
 import orange, orngSVM, OWGUI

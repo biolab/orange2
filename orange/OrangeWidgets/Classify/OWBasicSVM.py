@@ -7,7 +7,7 @@
 """
 
 from OWWidget import *
-from orngSVM import *
+from orngSVM_Jakulin import *
 import orngLR_Jakulin
 import OWGUI
 
