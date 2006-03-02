@@ -18,7 +18,7 @@ class SVMLearnerClass:
         self.gamma=0.2
         self.degree=3
         self.coef0=0
-        self.shriniking=1
+        self.shrinking=1
         self.probability=0
         self.cache_size=100
         self.eps=0.001
@@ -32,13 +32,20 @@ class SVMLearnerClass:
         self.__dict__[name]=value
 
     def __call__(self, examples, weight=0):
-        if not self.learner:
-            if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.varType.Discrete:
-                raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
-            if self.svm_type in [3,4] and examples.domain.classVar.varType==orange.varType.Discrete:
-                raise AttributeError, "Cannot do regression on descrete class data. Use C_SVC or NU_SVC for classification"
-            if self.kernel_type==4 and not self.kernelFunc:
-                raise AttributeError, "Custom kernel function not supplied"
+        if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.VarTypes.Discrete:
+            raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
+        if self.svm_type in [3,4] and examples.domain.classVar.varType==orange.VarTypes.Discrete:
+            raise AttributeError, "Cannot do regression on descrete class data. Use C_SVC or NU_SVC for classification"
+        if self.kernel_type==4 and not self.kernelFunc:
+            raise AttributeError, "Custom kernel function not supplied"
+        ##################################################
+        if self.kernel_type==4:     #There is a bug in svm
+            self.probability=True
+        ##################################################
+
+        for name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
+                "coef0", "shrinking", "probability", "cache_size", "eps"]:
+            self.learner.__dict__[name]=getattr(self, name)
         return self.learner(examples)
 
 BasicSVMLearner=orngSVM_Jakulin.BasicSVMLearner
