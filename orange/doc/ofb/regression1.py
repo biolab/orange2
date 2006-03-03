@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Builds a regression tree and prints it out
 # Category:    modelling
 # Uses:        housing
+# Classes:     orngTree.TreeLearner
+# Referenced:  regression.htm
 
 import orange, orngTree
 

@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: A simple implementation of wrapper feature subset selection
 # Category:    modelling
 # Uses:        imports-85
+# Classes:     Domain, orngTest.crossValidation
+# Referenced:  domain.htm
 
 import orange, orngTest, orngStat, orngTree
 

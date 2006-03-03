@@ -1,8 +1,8 @@
-# Author:      J Demsar
-# Version:     1.0
 # Description: Shows different uses of orange.Domain
 # Category:    preprocessing
 # Uses:        glass
+# Classes:     Domain
+# Referenced:  domain.htm
 
 import orange
 

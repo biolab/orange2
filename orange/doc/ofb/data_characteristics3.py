@@ -1,7 +1,8 @@
-# Author:      B Zupan
 # Description: Read data, show mean for continuous attributes and contingency matrix for nominal attributes
 # Category:    description
 # Uses:        adult_sample.tab
+# Classes:     DomainContingency
+# Referenced:  basic_exploration.htm
 
 import orange
 data = orange.ExampleTable("../datasets/adult_sample")

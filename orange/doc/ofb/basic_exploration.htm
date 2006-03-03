@@ -32,7 +32,7 @@ href="../datasets/adult.zip">adult.tab</a> and generates <a href=
 data = orange.ExampleTable("adult")
 selection = orange.MakeRandomIndices2(data, 0.03)
 sample = data.select(selection, 0)
-orange.saveTabDelimited("adult_sample.tab", sample)
+sample.save("adult_sample_sample.tab")
 </xmp>
 
 <p>Above loads the data, prepares a selection vector of length

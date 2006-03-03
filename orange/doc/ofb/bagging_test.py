@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Test for bagging as defined in bagging.py
 # Category:    modelling
 # Uses:        adult_sample.tab, bagging.py
+# Referenced:  c_bagging.htm
+# Classes:     orngTest.crossValidation
 
 import orange, orngTree, orngStat, orngTest, orngStat, bagging
 data = orange.ExampleTable("../datasets/adult_sample")

@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Read data and for each attribute report percent of instances with missing value
 # Category:    description
 # Uses:        adult_sample.tab
+# Referenced:  basic_exploration.htm
 
 import orange
 data = orange.ExampleTable("../datasets/adult_sample")

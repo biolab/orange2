@@ -1,8 +1,8 @@
-# Author:      J Demsar
-# Version:     1.0
 # Description: Manual categorization of continuous attributes.
 # Category:    preprocessing
 # Uses:        iris
+# Classes:     ClassifierFromVar, IntervalDiscretizer, getValueFrom
+# Referenced:  o_categorization.htm
 
 import orange
 

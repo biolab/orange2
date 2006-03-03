@@ -1,8 +1,8 @@
-# Author:      J Demsar
-# Version:     1.0
 # Description: Attribute-based discretization. Shows how different attributes may be discretized with different categorization methods and how the default attribute values names used by these methods may be simply replaced by the list of user-defined names.
 # Category:    preprocessing
 # Uses:        iris
+# Classes:     EquiNDiscretization, EntropyDiscretization
+# Referenced:  o_categorization.htm
 
 def printexamples(data, inxs, msg="%i examples"):
   print msg % len(inxs)

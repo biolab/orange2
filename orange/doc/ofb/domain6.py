@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Shows how to use Filter_sameValues for instance selection
 # Category:    preprocessing
 # Uses:        imports-85
+# Classes:     
+# Referenced:  domain.htm
 
 import orange
 

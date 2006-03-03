@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Creates a list of association rules, selects five rules and prints them out
 # Category:    description
 # Uses:        imports-85
+# Classes:     orngAssoc.build, Preprocessor_discretize, EquiNDiscretization
+# Referenced:  assoc.htm
 
 import orange, orngAssoc
 

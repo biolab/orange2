@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Builds regression models from data and outputs predictions for first five instances
 # Category:    modelling
 # Uses:        housing
+# Classes:     MakeRandomIndices2, MajorityLearner, orngTree.TreeLearner, orange.kNNLearner
+# Referenced:  regression.htm
 
 import orange, orngTree, orngTest, orngStat
 

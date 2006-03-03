@@ -1,9 +1,9 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Entropy based discretization compared to discretization with equal-frequency
 #              of instances in intervals
 # Category:    preprocessing
 # Uses:        wdbc.tab
+# Classes:     Preprocessor_discretize, EntropyDiscretization
+# Referenced:  o_categorization.htm
 
 import orange
 

@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Learn decision tree from data and output class probabilities for first few instances
 # Category:    modelling
 # Uses:        voting.tab
+# Classes:     orngTree.TreeLearner
+# Referenced:  c_otherclass.htm
 
 import orange, orngTree
 data = orange.ExampleTable("voting")

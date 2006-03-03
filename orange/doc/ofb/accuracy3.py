@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Category:    evaluation
 # Description: Set a number of learners, split data to train and test set, learn models from train set and estimate classification accuracy on the test set
 # Uses:        voting.tab
+# Classes:     MakeRandomIndices2
+# Referenced:  c_performance.htm
 
 import orange, orngTree
 

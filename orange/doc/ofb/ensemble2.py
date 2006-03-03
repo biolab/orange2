@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Example of how to build ensamble learners in Orange. Takes a list of learners, and for prediction uses the highest predicted class probability.
 # Category:    modelling
 # Uses:        promoters.tab
+# Classes:     orngTest.crossValidation
+# Referenced:  o_ensemble.htm
 
 import orange, orngTree
 import orngTest, orngStat

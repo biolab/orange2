@@ -1,6 +1,6 @@
-# Version:     1.0
 # Description: Class that embeds naive Bayesian classifier, but when learning discretizes the data with entropy-based discretization (which uses training data only)
 # Category:    modelling
+# Referenced:  c_nb_disc.htm
 
 import orange
 

@@ -600,13 +600,12 @@ fssed.name = 'w fss'
 learners = [base, fssed]
 data = orange.ExampleTable("voting")
 results = orngTest.crossValidation(learners, data, folds=10)
-cdt = orngStat.computeCDT(results) # req. for AUC
 
 print "Learner      CA     IS     Brier    AUC"
 for i in range(len(learners)):
   print "%-12s %5.3f  %5.3f  %5.3f  %5.3f" % (learners[i].name, \
     orngStat.CA(results)[i], orngStat.IS(results)[i],
-    orngStat.BrierScore(results)[i], orngStat.AROCFromCDT(cdt[i])[7])
+    orngStat.BrierScore(results)[i], orngStat.AUC(results)[i])
 </xmp>
 
 <p>The wrapped learner uses <code>WrapperFSS</code>, which is exactly the same function that we have developed in out previous script. The objects we have introduced in the script above mainly take care of the attributes, the code that really does something is actually in the <code>__call__</code> function of <code>WrappedFSSLearner_Class</code>. Running this script for classification tree, we get the same single-attribute set with <code>physician-fee-freeze</code> for all of the ten folds, and a minimal gain in accuracy. Something similar happens for naive Bayes, except that attributes included in the data set are <code>[physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution]</code>, and the statistics reported are quite higher than for the naive Bayes without feature subset selection:</p>

@@ -516,13 +516,9 @@ work.  Function <code>crossValidation</code> returns the object stored
 in <code>results</code>, which essentially stores the probabilities
 and class values of the instances that were used as test cases. Based
 on <code>results</code>, the classification accuracy, information
-score and Brier score for each of the learners are computed (function
-<code>CA</code> and <code>IS</code>). Notice that to compute area
-under ROC curve (AUC), a little more effort is needed: this is done by
-the function call to <code>orngStat.computeCDT</code>, which returns a
-number of concordant, discordant, and tied pairs, which are then used
-in computation of AUC (and other statistics) by
-<code>orngStat.AROCFromCDT</code>.</p>
+score, Brier score and area under ROC curve (AUC) for each of the
+learners are computed (function <code>CA</code>,
+<code>IS</code> and <code>AUC</code>).</p>
 
 <p>Apart from statistics that we have mentioned above, 
 <a href="../modules/orngStat.htm">orngStat</a> has build-in functions that can compute other performance
@@ -537,4 +533,3 @@ Up: <a href="classification.htm">Classification</a>
 
 </body>
 </html>
-

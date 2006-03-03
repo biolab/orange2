@@ -1,8 +1,8 @@
-# Author:      J Demsar
-# Version:     1.0
 # Description: Shows how to find out which are the cut-off points introduced by Orange's automatic categorization rutines.
 # Category:    preprocessing
 # Uses:        iris
+# Classes:     EquiNDiscretization, EntropyDiscretization
+# Referenced:  o_categorization.htm
 
 import orange
 iris = orange.ExampleTable("iris")

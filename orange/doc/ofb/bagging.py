@@ -1,7 +1,6 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: An implementation of bagging (only bagging class is defined here)
 # Category:    modelling
+# Referenced:  c_bagging.htm
 
 import orange, random
 

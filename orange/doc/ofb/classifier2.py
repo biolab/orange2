@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Read data, build naive Bayesian classifier, and output class probabilities for the first few instances
 # Category:    modelling
 # Uses:        voting.tab
+# Referenced:  c_basics.htm
 
 import orange
 data = orange.ExampleTable("voting")

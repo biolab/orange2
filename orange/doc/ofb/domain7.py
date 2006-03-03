@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Shows how to add class noise and missing attributes to data sets. Also shows how to test a single learner on a range of data sets.
 # Category:    preprocessing
 # Uses:        imports-85
+# Referenced:  domain.htm
 
 import orange
 

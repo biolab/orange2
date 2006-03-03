@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Script that tests bayes.py and compares it to kNN from core Orange
 # Category:    modelling
 # Uses:        voting.tab
+# Classes:     orngTest.crossValidation
+# Referenced:  c_nb.htm
 
 import orange, orngTest, orngStat, bayes
 data = orange.ExampleTable("voting")

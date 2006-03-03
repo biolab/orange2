@@ -1,8 +1,8 @@
-# Author:      J Demsar
-# Version:     1.0
 # Description: Shows how to round-off the cut-off points used for categorization.
 # Category:    preprocessing
 # Uses:        iris
+# Classes:     EquiNDiscretization, EntropyDiscretization
+# Referenced:  o_categorization.htm
 
 import orange
 iris = orange.ExampleTable("iris")

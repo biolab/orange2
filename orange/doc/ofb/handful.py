@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Read data, learn several models (bayes, kNN, decision tree) and for all models output class probabilities they return for first few instances
 # Category:    modelling
 # Uses:        voting.tab
+# Classes:     MajorityLearner, BayesLearner, orngTree.TreeLearner, kNNLearner
+# Referenced:  c_otherclass.htm
 
 import orange, orngTree
 data = orange.ExampleTable("voting")

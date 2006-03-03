@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Adds two new numerical attributes to iris data set, that are, respectively, computed from two existing attributes
 # Category:    preprocessing
 # Uses:        iris
+# Classes:     Domain, FloatVariable
+# Referenced:  domain.htm
 
 import orange
 data = orange.ExampleTable('iris')

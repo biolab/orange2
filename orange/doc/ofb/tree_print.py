@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Learn a decision tree from data and print it out
 # Category:    modelling
 # Uses:        voting.tab
+# Classes:     orngTree.TreeLearner
+# Referenced:  c_otherclass.htm
 
 import orange, orngTree
 data = orange.ExampleTable("voting")

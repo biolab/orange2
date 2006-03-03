@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Leave-one-out method for estimation of classification accuracy. Demonstration of use for different learners
 # Category:    evaluation
 # Uses:        voting.tab
+# Referenced:  c_performance.htm
 
 import orange, orngTree
 

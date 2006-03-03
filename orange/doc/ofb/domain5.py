@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Shows how to use Filter_sameValues qith options for conjunction and disjunction of conditions
 # Category:    preprocessing
 # Uses:        imports-85
+# Classes:     Preprocessor_take
+# Referenced:  domain.htm
 
 import orange
 

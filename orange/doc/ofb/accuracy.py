@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Learn a naive Bayesian classifier, and measure classification accuracy on the same data set
 # Category:    evaluation
 # Uses:        voting.tab
+# Referenced:  c_performance.htm
 
 import orange
 data = orange.ExampleTable("voting")

@@ -1,10 +1,10 @@
-# Author:     B Zupan
-# Version:    1.0
 # Description: Estimation of accuracy by random sampling.
 # User can set what proportion of data will be used in training.
 # Demonstration of use for different learners.
 # Category:   evaluation
 # Uses:        voting.tab
+# Classes:     MakeRandomIndices2
+# Referenced:  c_performance.htm
 
 import orange, orngTree
 

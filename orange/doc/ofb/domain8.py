@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Shows how to add class noise to data
 # Category:    preprocessing
 # Uses:        imports-85
+# Classes:     Preprocessor_addClassNoise, orngTest.crossValidation
+# Referenced:  domain.htm
 
 import orange, orngTest, orngStat
 

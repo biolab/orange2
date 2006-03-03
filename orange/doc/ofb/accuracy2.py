@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Set a number of learners, for each build a classifier from the data and determine classification accuracy
 # Category:    evaluation
 # Uses:        voting.tab
+# Referenced:  c_performance.htm
 
 import orange, orngTree
 

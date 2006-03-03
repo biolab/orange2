@@ -1,8 +1,9 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Implementation of AUC (area under ROC curve) statistics, test of different methods through 10-fold cross validation (warning: for educational purposes only, use orngEval for estimation of AUC and similar statistics)
 # Category:    evaluation
 # Uses:        voting.tab
+# Classes:     MakeRandomIndicesCV
+# Referenced:  c_performance.htm
+
 
 import orange, orngTree
 

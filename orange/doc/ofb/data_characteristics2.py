@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Read data, output class values and attribute names, and show class distribution (in proportion of instances belonging to a class)
 # Category:    description
 # Uses:        adult_sample.tab
+# Referenced:  basic_exploration.htm
 
 import orange
 data = orange.ExampleTable("../datasets/adult_sample")

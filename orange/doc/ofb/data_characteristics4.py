@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Show frequences for values of discrete attributes, count number of instances where attribute is not defined
 # Category:    description
 # Uses:        adult_sample.tab
+# Referenced:  basic_exploration.htm
 
 import orange
 data = orange.ExampleTable("../datasets/adult_sample")

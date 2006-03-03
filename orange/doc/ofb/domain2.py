@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Shows how to select examples based on their attribute values
 # Category:    preprocessing
 # Uses:        imports-85
+# Classes:     Domain, select
+# Referenced:  domain.htm
 
 import orange
 

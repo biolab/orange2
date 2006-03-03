@@ -1,8 +1,7 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Reads a data set, prints out attribute and class names
 # Category:    preprocessing
 # Uses:        imports-85
+# Referenced:  domain.htm
 
 import orange
 

@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Add a new attribute price to a car data set, compute it from two existing attributes (buying, maint)
 # Category:    preprocessing
 # Uses:        car
+# Classes:     Domain, Value, getValueFrom, EnumVariable
+# Referenced:  domain.htm
 
 import orange
 data = orange.ExampleTable('../datasets/car')

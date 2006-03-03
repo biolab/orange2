@@ -1,4 +1,3 @@
-# Version:     1.1
 # Description: Class that implements the naive Bayesian learner and classifier (warning: just for educational purposes, for real, use naive Bayes as implemented in core Orange)
 # Category:    modelling
 # Referenced:  c_nb.htm

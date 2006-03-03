@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Uses cross-validation to compare regression tree and k-nearest neighbors
-# Category:    modelling
+# Category:    modelling, evaluation
 # Uses:        housing
+# Classes:     orngStat.MSE, orngTest.crossValidation, MajorityLearner, orngTree.TreeLearner, orange.kNNLearner
+# Referenced:  regression.htm
 
 import orange, orngTree, orngTest, orngStat
 

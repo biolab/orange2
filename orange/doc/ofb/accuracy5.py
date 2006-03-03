@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Category:    evaluation
 # Description: Estimation of accuracy by cross validation. Demonstration of use for different learners.
 # Uses:        voting.tab
+# Classes:     MakeRandomIndicesCV
+# Referenced:  c_performance.htm
 
 import orange, orngTree
 reload(orngTree)

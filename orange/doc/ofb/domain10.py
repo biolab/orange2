@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: A simple implementation of wrapper feature subset selection
 # Category:    modelling
 # Uses:        voting
+# Classes:     Domain, orngTest.crossValidation
+# Referenced:  domain.htm
 
 import orange, orngTest, orngStat, orngTree
 
@@ -89,11 +89,9 @@ fssed.name = 'w fss'
 learners = [base, fssed]
 data = orange.ExampleTable("voting")
 results = orngTest.crossValidation(learners, data, folds=10)
-cdt = orngStat.computeCDT(results) # req. for AUC
 
 print "Learner      CA     IS     Brier    AUC"
 for i in range(len(learners)):
   print "%-12s %5.3f  %5.3f  %5.3f  %5.3f" % (learners[i].name, \
     orngStat.CA(results)[i], orngStat.IS(results)[i],
-    orngStat.BrierScore(results)[i], orngStat.AROCFromCDT(cdt[i])[7])
-
+    orngStat.BrierScore(results)[i], orngStat.AUC(results)[i])

@@ -1,8 +1,8 @@
-# Author:      J Demsar
-# Version:     1.0
 # Description: Attribute-based discretization. Shows how different attributes may be discretized with different categorization methods. Also shows how the resulting domain is put together using orange.select.
 # Category:    preprocessing
 # Uses:        iris
+# Classes:     EquiNDiscretization, EntropyDiscretization
+# Referenced:  o_categorization.htm
 
 def printexamples(data, inxs, msg="First %i examples"):
   print msg % len(inxs)

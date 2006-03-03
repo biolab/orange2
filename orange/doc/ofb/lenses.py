@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Read data, list attributes and class values, print first few data instances
 # Category:    description
 # Uses:        lenses.tab
+# Classes:     ExampleTable
+# Referenced:  load_data.htm
 
 import orange
 data = orange.ExampleTable("lenses")

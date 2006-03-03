@@ -1,8 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Bagging and boosting with k-nearest neighbors
 # Category:    modelling
 # Uses:        promoters.tab
+# Classes:     orngTest.crossValidation, orngEnsemble.BaggedLearner, orngEnsemble.BoostedLearner
+# Referenced:  o_ensemble.htm
 
 import orange, orngTest, orngStat, orngEnsemble
 data = orange.ExampleTable("promoters")
