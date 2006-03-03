@@ -393,18 +393,17 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 		case CUSTOM:
 		{
 			while(y->index!=-1)
-				y++;
+				++y;
 			while(x->index!=-1)
-				x++;
+				++x;
 			if(!param.classifier)
 				return param.learner->kernelFunc->operator()(param.learner->tempExamples->at((int)x->value),
 			param.learner->tempExamples->at((int)y->value));
-			TExample *ex;
-			memcpy((void *)&ex, (void*)&x->value, sizeof(TExample *));
+			//TExample *ex;
+			//memcpy((void *)&ex, (void*)&x->value, sizeof(TExample *));
 			return param.classifier->kernelFunc->operator()(*param.classifier->currentExample,
 				param.classifier->examples->at((int)y->value));
 		}
-			
 		default:
 			return 0;	/* Unreachable */
 	}
@@ -3121,7 +3120,7 @@ int svm_check_probability_model(const svm_model *model)
 
 svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0){
 	//if(type==0)
-		for(int i=0;i<ex.domain->attributes->size();i++){
+        for(int i=0;i<ex.domain->attributes->size();i++){
 			if(ex[i].isRegular()){
 				if(ex[i].varType==TValue::FLOATVAR)
 					node->value=float(ex[i]);
@@ -3200,7 +3199,7 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	param.weight = NULL;
 	param.learner=this;
 	param.classifier=NULL;
-	cout<<param.kernel_type<<endl;
+	//cout<<param.kernel_type<<endl;
 	
 	tempExamples=examples;
 	int exlen=examples->domain->attributes->size();
@@ -3218,6 +3217,9 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	if(param.kernel_type==CUSTOM && !kernelFunc)
 		raiseError("Custom kernel function not supplied");
 
+	if(param.kernel_type==CUSTOM) // using the custom kernel with non-probabilistic model does not work (for some unknown reason)
+		param.probability=1
+
 	prob.l=examples->numberOfExamples();
 	prob.y=Malloc(double,prob.l);
 	prob.x=Malloc(svm_node*, prob.l);
@@ -3227,8 +3229,6 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	PEITERATE(iter, examples){
 		prob.x[k]=node;
 		node=example_to_svm(*iter, node, k);//, (param.kernel_type==CUSTOM)? 1:0);
-		if(node>&x_space[2*prob.l*(exlen+1)-1])
-			raiseError("TTT");
 		switch(classVarType){
 			case TValue::FLOATVAR:{
 				prob.y[k]=(*iter).getClass().floatV;
@@ -3245,13 +3245,15 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 
 	const char* error=svm_check_parameter(&prob,&param);
 	if(error){
+		free(x_space);
+		free(prob.y);
+		free(prob.x);
 		raiseError("LibSVM parameter error: %s", error);
 	}
-	cout<<"training"<<endl;
+	//cout<<"training"<<endl;
 	model=svm_train(&prob,&param);
-	cout<<"end training"<<endl;
+	//cout<<"end training"<<endl;
 	svm_destroy_param(&param);
-	//free(x_space);
 	free(prob.y);
 	free(prob.x);
 	tempExamples=NULL;
@@ -3303,7 +3305,7 @@ PDistribution TSVMClassifier::classDistribution(const TExample & example){
 	svm_node *x=Malloc(svm_node, exlen+1);
 	svm_get_labels(model,labels);
 	prob_estimates = (double *) malloc(nr_class*sizeof(double));
-	example_to_svm(example, x, 1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
+	example_to_svm(example, x, -1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
 	svm_predict_probability(model,x,prob_estimates);
 	currentExample=NULL;
 	PDistribution dist=TDistribution::create(example.domain->classVar);
@@ -3324,7 +3326,7 @@ TValue TSVMClassifier::operator()(const TExample & example){
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
 	svm_node *x=Malloc(svm_node, exlen+1);
-	example_to_svm(example, x, 1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
+	example_to_svm(example, x, -1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
 	double v;
 	if(model->param.probability){
 		double *prob=(double *) malloc(nr_class*sizeof(double));
