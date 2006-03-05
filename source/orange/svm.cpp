@@ -3218,7 +3218,7 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 		raiseError("Custom kernel function not supplied");
 
 	if(param.kernel_type==CUSTOM) // using the custom kernel with non-probabilistic model does not work (for some unknown reason)
-		param.probability=1
+		param.probability=1;
 
 	prob.l=examples->numberOfExamples();
 	prob.y=Malloc(double,prob.l);
