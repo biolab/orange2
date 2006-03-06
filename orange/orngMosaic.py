@@ -50,12 +50,12 @@ class orngMosaic:
 
         self.testingMethod = 0
         self.evaluationTime = 2
-        self.argumentCount = 5
         self.mValue = 2.0
         self.probabilityEstimation = M_ESTIMATE
         self.learnerName = "Mosaic Classifier"
         self.resultListIndices = []
-        self.useOnlyRelevantInteractionsInArgumentation = 1
+        #self.useOnlyRelevantInteractionsInArgumentation = 0
+        self.automaticallyRemoveWeakerArguments = 1
 
         self.data = None
         self.evaluatedAttributes = None   # save last evaluated attributes
@@ -307,64 +307,95 @@ class orngMosaic:
         if not example or len(self.results) == 0: return None, None
         if not (self.data and self.data.domain.classVar and self.logits and self.classVals): return None, None
 
+##        if self.useOnlyRelevantInteractionsInArgumentation:
+##            self.classDistributionsForExample = {}
+##            for attr in self.data.domain.attributes:
+##                temp = self.data.filter({attr:example[attr]})
+##                self.classDistributionsForExample[attr.name] = orange.Distribution(self.data.domain.classVar, temp)
+
         if self.__class__.__name__ == "OWMosaicOptimization":
             from qt import qApp
 
         for index in range(len(self.results)):
             (score, attrList, tryIndex) = self.results[index]
-            args, errors = self.evaluateArgument(example, attrList, score)
+            args = self.evaluateArgument(example, attrList, score)      # call evaluation of a specific projection
             if not args: continue
             
             for val in self.classVals:
-                pos = self.getArgumentIndex(args[val], val)
-                self.arguments[val].insert(pos, (args[val], score, attrList, index, errors[val]))
+                pos = self.getArgumentIndex(args[val][0], val)
+                self.arguments[val].insert(pos, (args[val][0], score, attrList, index, args[val][1]))
                 if self.__class__.__name__ == "OWMosaicOptimization" and val == str(self.classValueList.currentText()):
-                    self.insertArgument(args[val], errors[val], attrList, pos)
+                    self.insertArgument(args[val][0], args[val][1], attrList, pos)
                     qApp.processEvents()
 
-        #predictions = [self.aprioriDistribution[i] for i in range(len(self.aprioriDistribution))]
-        #for j in range(nrOfClases):
-        #   for i in range(min(self.argumentCount, nrOfArguments))):
-        #        predictions[j] *= self.arguments[j][i][0]
+        if self.automaticallyRemoveWeakerArguments:
+            self.removeWeakerArguments()
 
-        nrOfArguments = len(self.arguments[self.classVals[0]])
-        #nrOfClases = len(self.aprioriDistribution)
-        #predictions = [0 for i in range(nrOfClases)]
+        nrOfArguments = len(self.arguments.values()[0])
         predictions = []
         
-        #for j in range(nrOfClases):
         for val in self.classVals:
-            #predictions[j] = sum([self.arguments[j][i][1] * self.arguments[j][i][0] for i in range(min(nrOfArguments, self.argumentCount))])   # projection score * argument value
-            #predictions[j] = sum([self.arguments[j][i][0] for i in range(min(nrOfArguments, self.argumentCount))])                              # argument value
-            
-            # take best self.argumentCount arguments and the worst self.argumentCount arguments. sum them together and this is it. 
-            #if nrOfArguments < self.argumentCount * 2: predictions[j] = sum([self.arguments[j][i][0] for i in range(nrOfArguments)])
-            #else: predictions[j] = sum([self.arguments[j][i][0] for i in range(self.argumentCount)] + [self.arguments[j][i][0] for i in range(nrOfArguments-self.argumentCount, nrOfArguments)])
             predictions.append(self.logits[val] + sum([v[0] for v in self.arguments[val]]))
-            """
-            predictions[j] = 1.0
-            for arg in self.arguments[j]:
-                predictions[j] *= arg[0]
-            """
             
-##        Min = min(predictions)
-##        if Min < 0:
-##            predictions = [val - Min for val in predictions]
-
         # use predictions from all arguments to classify an example
         probabilities = []
         for i, val in enumerate(predictions):
             if val < -100: p = 0
             else:         p = 1 / (1 + e**-val)
             probabilities.append(p)
-        #self.printVerbose(str(probabilities) + " " + str(sum(probabilities)))
+
         classValue = self.data.domain.classVar[probabilities.index(max(probabilities))]
         dist = orange.DiscDistribution([val/float(sum(probabilities)) for val in probabilities])
         dist.variable = self.data.domain.classVar
         return classValue, dist
 
 
+    # for a given example and a projection evaluate arguments for each class value
+    def evaluateArgument(self, example, attrList, score):
+        attrVals = [example[attr] for attr in attrList]
+        if "?" in attrVals: return None      # the testExample has a missing value at one of the visualized attributes
 
+        #subData = orange.Preprocessor_take(self.data, values = dict([(self.data.domain[attr], example[attr]) for attr in attrList]))
+        attrVals = [example[attr] for attr in attrList]
+        if "?" in attrVals: return None      # the testExample has a missing value at one of the visualized attributes
+        subData = self.getDataSubset(attrList, attrVals)
+        if not subData or len(subData) == 0: return None
+
+        lenData = len(self.data)
+        lenSubData = len(subData)
+
+##        if self.useOnlyRelevantInteractionsInArgumentation and len(attrList) > 1:
+##            P = self.getInteractionImportanceProbability(attrList, [example[attr] for attr in attrList], subData)
+##            if P > 0.5: return None
+
+        arguments = {}
+
+        aprioriProbabilities = [nrOfCases / float(lenData) for nrOfCases in self.aprioriDistribution]
+        actualProbabilities = self.estimateClassProbabilities(self.data, example, attrList, subData)    # estimate probabilities for the example and given attribute list
+                
+        for i in range(len(self.aprioriDistribution)):
+            # compute log odds of P(c|ai)/P(c)
+            val = 0
+            if (1-actualProbabilities[i]) * aprioriProbabilities[i] > 0.0:
+                val = (actualProbabilities[i] * (1-aprioriProbabilities[i])) / ((1-actualProbabilities[i]) * aprioriProbabilities[i])
+                if val > 0: val = log(val)
+                else: val = -999.99
+            else: val = 999.99
+
+            # compute confidence interval
+            approxZero = 0.0001
+            aprioriPc0 = max(approxZero, aprioriProbabilities[i]); aprioriPc1 = max(approxZero, 1-aprioriProbabilities[i])
+            actualPc0  = max(approxZero, actualProbabilities[i]);  actualPc1  = max(approxZero, 1-actualProbabilities[i])
+            part1 = 1 / (len(self.data) * aprioriPc0 * aprioriPc1)
+            part2 = 1 / max(approxZero, lenSubData  * actualPc0  * actualPc1)
+            error = sqrt(max(0, part2 - part1)) * 1.64
+
+            arguments[self.classVals[i]] = (val, error)
+
+        return arguments
+
+        
+    # probability estimation function
     def estimateClassProbabilities(self, data, example, attrList, subData = None, subDataDistribution = None, aprioriDistribution = None, probabilityEstimation = -1, mValue = -1):
         if probabilityEstimation == -1: probabilityEstimation = self.probabilityEstimation
         if aprioriDistribution == None: aprioriDistribution = self.aprioriDistribution
@@ -373,7 +404,8 @@ class orngMosaic:
         if not subData:
             attrVals = [example[attr] for attr in attrList]
             if "?" in attrVals: return None      # the testExample has a missing value at one of the visualized attributes
-            subData = orange.Preprocessor_take(data, values = dict([(data.domain[attr], example[attr]) for attr in attrList]))
+            subData = self.getDataSubset(attrList, attrVals)
+            #subData = orange.Preprocessor_take(data, values = dict([(data.domain[attr], example[attr]) for attr in attrList]))
         if not subDataDistribution:
             subDataDistribution = orange.Distribution(data.domain.classVar.name, subData)
 
@@ -400,107 +432,123 @@ class orngMosaic:
                 pa = aprioriDistribution[index]/float(sum(aprioriDistribution))
                 actualProbabilities.append((pa * mValue + n) / float(lenSubData + mValue))       # p = (pa*m+n)/(N+m)
 
+        s = sum(actualProbabilities)
+        if "%.3f" % s != "1.000":
+            print "probabilities don't sum to 1, but to", s, actualProbabilities
+
         return actualProbabilities
 
+
+    def removeWeakerArguments(self):
+        if not self.arguments or not self.arguments.values(): return
+
+        # create a dict for arguments of different lengths. each dict has arguments of this length and corresponding scores
+        argList = {1: {}, 2: {}, 3:{}, 4:{}}
+        for argsByClass in self.arguments.values():
+            for i in range(len(argsByClass)):
+                attrs = argsByClass[i][2]
+                attrs.sort()
+                existingVal, existingIndexList = argList[len(attrs)].get(tuple(attrs), (0.0, []))
+                argList[len(attrs)][tuple(attrs)] = (existingVal + abs(argsByClass[i][0]), existingIndexList + [i])
+
+        if len(argList[1]) == 0: return     # in case that we only evaluated projections with EXACTLY X attributes we cannot remove weak arguments
+
+        for count in [4,3,2]:
+            args = argList[count]
+
+            candidates = []     # candidate projections for deleting
+            for key in args.keys():
+                splits = OWVisFuncts.getPossibleSplits(list(key))
+                for split in splits:
+                    vals = [argList[len(v)].get(tuple(v), [None, None])[0] for v in split]
+                    if None in vals or sum(vals) >= args[key][0]:
+                        args.pop(key)   # remove the combination of attributes because a split exists, that produces a more important argument
+                        break
+                if args.has_key(key):
+                    candidates.append((args[key][0], key, splits))
+
+            candidates.sort()
+            candidates.reverse()
+            for val, attrs, splits in candidates:
+                vals = []
+                for split in splits:
+                    vals += [argList[len(v)].get(tuple(v)) for v in split]
+                if None in vals:
+                    args.pop(attrs)
+                    continue       # we have already used some of the attributes in split for a better projection
+
+                # obviously we have found a very good projection of attributes and we still have all the attributes needed
+                # we now have to remove other projections that use these attributes
+                for split in splits:
+                    for part in split:
+                        if argList[len(part)].has_key(tuple(part)):
+                            argList[len(part)].pop(tuple(part))
+
+        #print [len(argList[1]), len(argList[2]), len(argList[3])]
+        #assert False not in [a[a.keys()[i]] == a.values()[i] for i in range(len(a.keys()))]
+        indicesToKeep = [[] for i in range(len(self.arguments.values()))]
+        for val, indices in argList[1].values() + argList[2].values() + argList[3].values() + argList[4].values():
+            for i, v in enumerate(indices):
+                indicesToKeep[i].append(v)
+
+        # we remove all arguments that are not in indicesToKeep       
+        for i, indices in enumerate(indicesToKeep):
+            indices.sort()
+            arguments = self.arguments.values()[i]
+            for j in range(len(arguments))[::-1]:
+                if len(indices) == 0 or j != indices[-1]:
+                    arguments.pop(j)
+                else: indices.pop()
+            
     # compute probability that the combination of attribute values in attrValues is significantly different from being independent
     # see Kononenko: Semi-naive Bayes
-    def getInteractionImportanceProbability(self, data, attrList, attrValues, subData = None, contingencies = None, aprioriDistribution = None, subDataDistribution = None):
+    def getInteractionImportanceProbability(self, attrList, attrValues, subData = None, contingencies = None, aprioriDistribution = None, subDataDistribution = None):
         assert len(attrList) == len(attrValues)
 
         if not subData:
-            subData = orange.Preprocessor_take(data, values = dict([(data.domain[attrList[i]], attrValues[i]) for i in range(len(attrList))]))
+            #subData = orange.Preprocessor_take(self.data, values = dict([(self.data.domain[attrList[i]], attrValues[i]) for i in range(len(attrList))]))
+            subData = self.getDataSubset(attrList, attrValues)
         if not aprioriDistribution: aprioriDistribution = self.aprioriDistribution
         if not subDataDistribution:
-            subDataDistribution = orange.Distribution(data.domain.classVar.name, subData)
+            subDataDistribution = orange.Distribution(self.data.domain.classVar.name, subData)
+        """
         if not contingencies:
-            contingencies = [orange.ContingencyAttrClass(attr, data) for attr in attrList]
+            for i in range(len(attrList)):
+                temp = self.data.filter({attrList[i]: attrValues[i]})
+                contingencies
+            contingencies = [orange.ContingencyAttrClass(attr, self.data) for attr in attrList]
+        """
 
         lenSubData = len(subData)
-        lenData = len(data)
+        lenData = len(self.data)
         eps = 0.0
         for i in range(len(aprioriDistribution)):
             product = 1.0
-            for x in [contingencies[j][attrValues[j]] for j in range(len(attrList))]:
-                product *= (x[i] / sum(x))      # P(cj|ai)
+            for j in range(len(attrList)):
+                N_ci_aj = self.classDistributionsForExample[attrList[j]][i]
+                N_aj = sum(self.classDistributionsForExample[attrList[j]])
+                product *= N_ci_aj / N_aj       # P(ci|aj)
+            
             eps += (aprioriDistribution[i]/lenData) * abs((subDataDistribution[i]/lenSubData) - (product*lenData)/aprioriDistribution[i])
+            #eps += abs((subDataDistribution[i]/lenSubData) - (product*lenData)/aprioriDistribution[i])
 
         if eps*lenSubData == 0: return 9999999
-        return 1/(4*eps*eps*lenSubData)         
+        ret = 1/(4*eps*eps*lenSubData)
+        #if ret > 1 or ret < 0.0:
+        #    print "invalid probability", eps, ret
+        #assert ret >= 0.0
+        #assert ret <= 1.0
+        return ret
 
-
-    # for a given example and a projection evaluate arguments for each class value
-    def evaluateArgument(self, example, attrList, score):
-        attrVals = [example[attr] for attr in attrList]
-        if "?" in attrVals: return None, None      # the testExample has a missing value at one of the visualized attributes
-
-        subData = orange.Preprocessor_take(self.data, values = dict([(self.data.domain[attr], example[attr]) for attr in attrList]))
-        if not subData or len(subData) == 0: return None, None
-
-        lenData = len(self.data)
-        lenSubData = len(subData)
-
-        if self.useOnlyRelevantInteractionsInArgumentation:
-            P = self.getInteractionImportanceProbability(self.data, attrList, [example[attr] for attr in attrList], subData)
-            if P > 0.5: return None, None
-
-        arguments = {}
-        errors = {}
-
-        aprioriProbabilities = [nrOfCases / float(lenData) for nrOfCases in self.aprioriDistribution]
-        actualProbabilities = self.estimateClassProbabilities(self.data, example, attrList, subData)    # estimate probabilities for the example and given attribute list
-        #print "apriori",attrList[0],  example[attrList[0]], aprioriProbabilities
-        #print "actual", attrList[0], example[attrList[0]], actualProbabilities
-                
-        for i in range(len(self.aprioriDistribution)):
-            # compute log odds of P(c|ai)/P(c)
-            val = 0
-            #val = (actualProbabilities[i] ) / (aprioriProbabilities[i])
-            if (1-actualProbabilities[i]) * aprioriProbabilities[i] > 0.0:
-                val = (actualProbabilities[i] * (1-aprioriProbabilities[i])) / ((1-actualProbabilities[i]) * aprioriProbabilities[i])
-                if val > 0: val = log(val)
-                else: val = -999.99
-            else: val = 999.99
-
-            # compute confidence interval
-            approxZero = 0.0001
-            aprioriPc0 = max(approxZero, aprioriProbabilities[i]); aprioriPc1 = max(approxZero, 1-aprioriProbabilities[i])
-            actualPc0  = max(approxZero, actualProbabilities[i]);  actualPc1  = max(approxZero, 1-actualProbabilities[i])
-            part1 = 1 / (len(self.data) * aprioriPc0 * aprioriPc1)
-            part2 = 1 / max(approxZero, lenSubData  * actualPc0  * actualPc1)
-            error = sqrt(max(0, part2 - part1)) * 1.64
-
-            arguments[self.classVals[i]] = val
-            errors[self.classVals[i]] = error
-
-        """
-        # prepare array of arguments for each class value
-        for i in range(len(self.aprioriDistribution)):  # compute the value of the argument as peasons residual * sqrt(lenSubData)
-            #pearson = lenSubData*(actualProbabilities[i] - aprioriProbabilities[i]) / sqrt(lenSubData*aprioriProbabilities[i])
-            #arguments.append(pearson * sqrt(lenSubData) * score)
-            #arguments.append(actualProbabilities[i] / float(aprioriProbabilities[i]))
-
-            # compute log odds of P(c|ai)/P(c)
-            val = 0
-            if (1-actualProbabilities[i]) * aprioriProbabilities[i] > 0.0:
-                val = (actualProbabilities[i] * (1-aprioriProbabilities[i])) / ((1-actualProbabilities[i]) * aprioriProbabilities[i])
-                if val > 0: val = log(val)
-                else: val = -999.99
-            else: val = 999.99
-
-            # compute confidence interval
-            approxZero = 0.0001
-            aprioriPc0 = max(approxZero, aprioriProbabilities[i]); aprioriPc1 = max(approxZero, 1-aprioriProbabilities[i])
-            actualPc0  = max(approxZero, actualProbabilities[i]);  actualPc1  = max(approxZero, 1-actualProbabilities[i])
-            part1 = 1 / (len(self.data) * aprioriPc0 * aprioriPc1)
-            part2 = 1 / max(approxZero, lenSubData  * actualPc0  * actualPc1)
-            error = sqrt(max(0, part2 - part1)) * 1.64
-
-            arguments.append(val)
-            errors.append(error)
-        """
-        
-        return arguments, errors
-
+    # select only those examples that have the specified attribute values
+    # also remove examples that have missing values at those attributes
+    def getDataSubset(self, attrList, attrValues):
+        temp = self.data.selectref(dict([(attrList[i], attrValues[i]) for i in range(len(attrList))]))
+        filter = orange.Filter_isDefined(domain=self.data.domain)
+        for v in self.data.domain.variables:
+            filter.check[v] = v.name in attrList
+        return filter(temp)
+    
 
     def getArgumentIndex(self, value, classValue):
         if len(self.arguments[classValue]) == 0: return 0
@@ -556,3 +604,20 @@ class MosaicVizRankLearner(orange.Learner):
         
     def __call__(self, examples, weightID = 0):
         return MosaicVizRankClassifier(self.Mosaic, examples)
+
+
+
+#test widget appearance
+if __name__=="__main__":
+    data = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\breastcancer2004.tab")
+    example = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\breastcancer2004-1 example 2.tab")
+    data = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\zoo.tab")
+    example = data
+    mosaic = orngMosaic()
+    mosaic.attributeCount= 3
+    mosaic.setData(data)
+    mosaic.probabilityEstimation = RELATIVE
+    #mosaic.useOnlyRelevantInteractionsInArgumentation = 0
+    mosaic.automaticallyRemoveWeakerArguments = 1
+    mosaic.evaluateProjections()
+    mosaic.findArguments(example[0])

@@ -11,11 +11,10 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
     settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells", "useOnlyRelevantInteractionsInArgumentation"
-                    "evaluationTime", "argumentCount", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount"]
+                    "evaluationTime", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
-    argumentCounts = range(201)[1:]
     
     def __init__(self, parentWidget = None, signalManager = None):
         OWBaseWidget.__init__(self, None, signalManager, "Mosaic Optimization Dialog")
@@ -132,8 +131,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Maximum time for evaluating projections (minutes):  ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
         b2 = OWGUI.widgetBox(b, orientation = "horizontal")
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Class Prediction Settings ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of arguments used when classifying:     ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts , sendSelectedValue = 1, valueType = int)
-        OWGUI.checkBox(projCountBox, self, 'useOnlyRelevantInteractionsInArgumentation', 'Use only relevant interactions in class prediction', tooltip = "Consider only interactions that are found to be relevant. \nUse Kononenko's criterion to find interacting attribute values (Igor Kononenko: Semi-naive Bayesian Classifier)")
+        #OWGUI.checkBox(projCountBox, self, 'useOnlyRelevantInteractionsInArgumentation', 'Ignore arguments without relevant interactions', tooltip = "Consider only relevant interactions. Use Kononenko's criterion \nto find interacting attribute values (Igor Kononenko: Semi-naive Bayesian Classifier)")
+        OWGUI.checkBox(projCountBox, self, 'automaticallyRemoveWeakerArguments', 'Remove weaker arguments')
         OWGUI.button(self.ClassificationTab, self, "Apply Changes", callback = self.resendLearner)
 
         # ##########################
