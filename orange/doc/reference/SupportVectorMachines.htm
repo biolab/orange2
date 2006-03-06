@@ -25,7 +25,7 @@ Additionally you can use the following kernel functions:
 </ul>
 </p>
 <h2>SVMLearner</h2>
-<p>SVMLearner class constructs a SVMClassiifier </p>
+<p>SVMLearner class constructs a SVMClassifier </p>
 <p class=section >Attributes</p>
 <dl class=attributes>
   <dt>svm_type</dt>
@@ -35,11 +35,11 @@ Additionally you can use the following kernel functions:
   <dt>degree</dt>
   <dd>Kernel parameter (POLY) (default 3)</dd>
   <dt>gamma</dt>
-  <dd>Kernel parameter (POLY/RBF/SIGMOID) (default 1/number_of_examples)</dd>
+  <dd>Kernel parameter (POLY/RBF/SIGMOID) (default 1.0/number_of_examples)</dd>
   <dt>coef0</dt>
   <dd>Kernel parameter (POLY/SIGMOID) (default 0)</dd>
   <dt>kernelFunc</dt>
-  <dd>Function that will be called if <code>kernel_type</code> is SVMLearner.CUSTOM. It must accept two orange.Example argument and return a float.</dd>
+  <dd>Function that will be called if <code>kernel_type</code> is SVMLearner.CUSTOM. It must accept two orange.Example arguments and return a float.</dd>
   <dt>C</dt>
   <dd>C parameter for C_SVC, EPSILON_SVR, NU_SVR</dd>
   <dt>nu</dt>
@@ -56,12 +56,15 @@ Additionally you can use the following kernel functions:
   <dd>Determines if a probability model should be build (default False)</dd>
 </dl>
 <h2>SVMClassifier</h2>
+<p>Classifier used for classification, regression or distribution estimation (ONE_CLASS). In the later case the return value of the __call__ function can be 1.0 (positive case) or -1.0(negative case).</p>
+<p class=section>Attributes</p>
 <dl class=attributes>
   <dt>examples</dt>
   <dd>Holds the examples used for training</dd>
   <dt>supportVectors</dt>
   <dd>Holds the support vectors</dd>
 </dl>
+</p>
 <h2>Examples</h2>
 <xmp class=code>
 >>> import orange
