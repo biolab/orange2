@@ -1,8 +1,43 @@
 from copy import copy
 
-differentClassPermutationsDict = {}
-projectionListDict = {}
+_differentClassPermutationsDict = {}
+_projectionListDict = {}
 
+_possibleSplits = {}
+_possibleSplits[1] = [[[0]]]
+_possibleSplits[2] = [[[0], [1]]]
+_possibleSplits[3] = [[[0], [1,2]], [[0,1],[2]], [[0,2], [1]], [[0], [1], [2]]]
+_possibleSplits[4] = [[[0], [1,2,3]],
+    [[1], [0,2,3]],
+    [[2], [0,1,3]],
+    [[3], [0,1,2]],
+    [[0,1], [2,3]],
+    [[0,2], [1,3]],
+    [[0,3], [1,2]],
+    [[0,1,2], [3]],
+    [[0,1,3], [2]],
+    [[0,2,3], [1]],
+    [[1,2,3], [0]],
+    [[0], [1], [2,3]],
+    [[0], [2], [1,3]],
+    [[0], [3], [1,2]],
+    [[1], [2], [0,3]],
+    [[1], [3], [0,2]],
+    [[2], [3], [0,1]],
+    [[0], [1], [2], [3]]]
+
+
+def getPossibleSplits(attrs):
+    if len(attrs) > 4: return []
+    retSplit = []
+    for split in _possibleSplits[len(attrs)]:
+        parts = []
+        for arr in split:
+            a = [attrs[i] for i in arr]
+            parts.append(a)
+        retSplit.append(parts)
+    return retSplit
+    
 # take a number and return a formated string, eg: 2341232 -> "2,341,232"
 def createStringFromNumber(num):
     s = str(num)
@@ -181,7 +216,7 @@ def addProjs(projs, count, i):
 # removeFlipDuplicates tries to flip the attributes in the projection and removes it if the projection already exists
 # removeFlipDuplicates = 1 for radviz and =0 for polyviz
 def createProjections(numClasses, maxProjLen, removeFlipDuplicates = 1):
-    if projectionListDict.has_key((numClasses, maxProjLen, removeFlipDuplicates)): return projectionListDict[(numClasses, maxProjLen, removeFlipDuplicates)]
+    if _projectionListDict.has_key((numClasses, maxProjLen, removeFlipDuplicates)): return _projectionListDict[(numClasses, maxProjLen, removeFlipDuplicates)]
 
     # create array of arrays of lengths, e.g. [3,3,2] that will tell that we want 3 attrs from the 1st class, 3 from 2nd and 2 from 3rd
     if maxProjLen % numClasses != 0:
@@ -198,18 +233,18 @@ def createProjections(numClasses, maxProjLen, removeFlipDuplicates = 1):
         tempCombs = createMixCombinations(l, removeFlipDuplicates)
         combs += tempCombs
 
-    if differentClassPermutationsDict.has_key((numClasses, removeFlipDuplicates)):
-        perms = differentClassPermutationsDict[(numClasses, removeFlipDuplicates)]
+    if _differentClassPermutationsDict.has_key((numClasses, removeFlipDuplicates)):
+        perms = _differentClassPermutationsDict[(numClasses, removeFlipDuplicates)]
     else:
         perms = permutations(range(numClasses))
         perms = removeRotationDuplicates(perms, removeFlipDuplicates)
-        differentClassPermutationsDict[(numClasses, removeFlipDuplicates)] = perms
+        _differentClassPermutationsDict[(numClasses, removeFlipDuplicates)] = perms
             
     final = []
     for perm in perms:
         final += [[(perm[i], j) for (i,j) in comb] for comb in combs]
 
-    projectionListDict[(numClasses, maxProjLen, removeFlipDuplicates)] = final
+    _projectionListDict[(numClasses, maxProjLen, removeFlipDuplicates)] = final
     return final
 
 
@@ -217,4 +252,5 @@ def createProjections(numClasses, maxProjLen, removeFlipDuplicates = 1):
 if __name__== "__main__": 
     #a = []
     #a = permutations([1,2,3], [])
-    l=createProjections(2, 4)
+    #l=createProjections(2, 4)
+    print getPossibleSplits(["a","b", "c"])
