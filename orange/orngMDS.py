@@ -1,3 +1,17 @@
+#
+# A Trashy (but working) MDS Library 
+#
+# CVS Info: $Id$
+#
+# V 1.01
+#   - fixed the scaling bug in constructMatrixFromProx() (H. Harpending)
+#
+# V 1.0
+#
+# Aleks Jakulin (jakulin@acm.org) 2001-2002
+# Ales Erjavec 2006
+
+
 import orange
 import orangeom as orangemds
 from math import *
