@@ -314,15 +314,15 @@ Function .onGUIInit
 	${If} $PythonDir == ""
 		!ifdef INCLUDEPYTHON
 		  askpython:
-			MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python (ver 2.3.2-1)$\r$\nOrange installation will continue after you finish installing Python." IDOK installpython
+			MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python (ver 2.3.5)$\r$\nOrange installation will continue after you finish installing Python." IDOK installpython
 			MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython
 			Quit
 		
 		  installpython:
 			SetOutPath $DESKTOP
-			File various\Python-2.3.2-1.exe
+			File various\Python-2.3.5.exe
 			StrCpy $PythonOnDesktop 1
-			ExecWait "$DESKTOP\Python-2.3.2-1.exe"
+			ExecWait "$DESKTOP\Python-2.3.5.exe"
 
 			ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
 			${If} $PythonDir == ""

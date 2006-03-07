@@ -22,3 +22,5 @@ rem ************************************************
 REM *** build whatsup.txt list
 cdd %SCRIPTDIR
 python whatsUp.py
+
+exit

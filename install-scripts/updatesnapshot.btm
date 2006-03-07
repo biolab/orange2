@@ -57,6 +57,7 @@ del %DOWNLOADDIR\orange-win-genomics-snap-*.exe
 
 nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
 nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
+copy %DOWNLOADDIR\%WIN_SNAPSHOT %DOWNLOADDIR\orange-snapshot.exe
 rem del snapshotfiles_*.inc
 
 rem del %DOWNLOADDIR\orange-source-snap-*.zip
