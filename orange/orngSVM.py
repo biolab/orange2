@@ -111,7 +111,7 @@ class RBFKernelWrapper(KernelWrapper):
 class PolyKernelWrapper(KernelWrapper):
     degree=3.0
     def __call__(self, example1, example2):
-        return math.pow(self.wrapped(example1, example2), degree)
+        return math.pow(self.wrapped(example1, example2), self.degree)
 
 class AdditionKernelWrapper(DualKernelWrapper):
     def __call__(self, example1, example2):
