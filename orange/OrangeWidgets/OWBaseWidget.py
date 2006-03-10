@@ -554,27 +554,40 @@ class OWBaseWidget(QDialog):
     def loadSettings(self, file = None):
         file = self.getSettingsFile(file)
         if file:
-            settings = cPickle.load(file)
+            try:
+                settings = cPickle.load(file)
+            except:
+                settings = None
 
-            if hasattr(self, "settingsList"):
-                self.setSettings(settings)
-
-            contextHandlers = getattr(self, "contextHandlers", {})
-            for contextHandler in contextHandlers.values():
-                if not getattr(contextHandler, "globalContexts", False): # don't have it or empty
-                    contexts = settings.get(contextHandler.localContextName, False)
-                    if contexts:
-                        contextHandler.globalContexts = contexts
+            # can't close everything into one big try-except since this would mask all errors in the below code                
+            if settings:
+                if hasattr(self, "settingsList"):
+                    self.setSettings(settings)
+                
+                contextHandlers = getattr(self, "contextHandlers", {})
+                for contextHandler in contextHandlers.values():
+                    if not getattr(contextHandler, "globalContexts", False): # don't have it or empty
+                        contexts = settings.get(contextHandler.localContextName, False)
+                        if contexts:
+                            contextHandler.globalContexts = contexts
+            
 
         
     def loadContextSettings(self, file = None):
         if not hasattr(self.__class__, "savedContextSettings"):
             file = self.getSettingsFile(file)
             if file:
-                settings = cPickle.load(file)
-                if settings.has_key("savedContextSettings"):
-                    self.__class__.savedContextSettings = settings["savedContextSettings"]
-                    return
+                try:
+                    settings = cPickle.load(file)
+                except:
+                    settings = None
+
+                # can't close everything into one big try-except since this would mask all errors in the below code                
+                if settings:                    
+                    if settings.has_key("savedContextSettings"):
+                        self.__class__.savedContextSettings = settings["savedContextSettings"]
+                        return
+                
             self.__class__.savedContextSettings = {}
 
 
