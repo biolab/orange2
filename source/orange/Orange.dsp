@@ -44,8 +44,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fr /FD /Zm700 /c
-# SUBTRACT CPP /YX
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -111,8 +110,8 @@ PostBuild_Cmds=copy obj\Debug\orange_d.lib ..\..\lib\orange_d.lib
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
 # SUBTRACT BASE CPP /Fr
-# ADD CPP /nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
-# SUBTRACT CPP /Fr /YX
+# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
+# SUBTRACT CPP /Fr
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -279,17 +278,6 @@ SOURCE=.\distvars.cpp
 # Begin Source File
 
 SOURCE=.\domain.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -300,8 +288,6 @@ SOURCE=.\domaindepot.cpp
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi /O2 /Ob1 /FAs /Fa"obj/Release_debug/dd.asm"
 
 !ENDIF 
 
@@ -357,18 +343,6 @@ SOURCE=.\graph.cpp
 # Begin Source File
 
 SOURCE=.\gslconversions.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -417,17 +391,6 @@ SOURCE=.\learn.cpp
 # Begin Source File
 
 SOURCE=.\lib_components.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -436,17 +399,6 @@ SOURCE=.\lib_io.cpp
 # Begin Source File
 
 SOURCE=.\lib_kernel.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -455,17 +407,6 @@ SOURCE=.\lib_learner.cpp
 # Begin Source File
 
 SOURCE=.\lib_preprocess.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi /O2 /Oy /Ob1 /FAs
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -534,17 +475,6 @@ SOURCE=.\orange.cpp
 # Begin Source File
 
 SOURCE=.\orvector.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -699,17 +629,6 @@ SOURCE=.\values.cpp
 # Begin Source File
 
 SOURCE=.\vars.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi /Od
-
-!ENDIF 
-
 # End Source File
 # End Group
 # Begin Group "Header Files"

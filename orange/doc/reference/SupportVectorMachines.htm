@@ -70,7 +70,7 @@ Additionally you can use the following kernel functions:
 >>> import orange
 >>> data=orange.ExampleTable("iris.tab")
 >>> l=orange.SVMLearner()
->>> l.svm_type=SVMLearner.NU_SVC
+>>> l.svm_type=orange.SVMLearner.NU_SVC
 >>> l.nu=0.3
 >>> l.probability=True
 >>> c=l(data)
