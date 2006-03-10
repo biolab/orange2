@@ -9,14 +9,14 @@
 
 <p>This page describes how to subtype Orange's classes in Python and make the overloaded methods callable from C++ components.</p>
 
-<p style="margin-bottom: 0mm">Since Orange has only an interface to Python but is otherwise independent from it, subtyping might sometimes not function as you would expect. Thus we first describe the general problem with subtyping and our solution for it. The section is a bit difficult and you don't need to read it if</P>
-<UL style="margin-top: 0mm">
-<LI>you won't try to overload any existing methods,</LI>
-<LI>or you will overload existing methods but won't expect them to be called by C++ code (of other Orange objects),</LI>
-<LI>or you will only derive classes directly from <CODE>Filter</CODE>, <CODE>Learner</CODE>, <CODE>Classifier</CODE>, <CODE>TreeSplitConstructor</CODE>, <CODE>TreeStopCriteria</CODE>, <CODE>TreeExampleSplitter</CODE>, <CODE>TreeDescender</CODE> and <CODE>MeasureAttribute</CODE>, <CODE>TransformValue</CODE> and overload only their call operators.</li>
-</UL>
+<p style="margin-bottom: 0mm">Since Orange has only an interface to Python but is otherwise independent from it, subtyping might sometimes not function as you would expect. If you subtype an Orange class in Python and overload some methods, the C++ code (say if you use your instance as a component for some Orange object) will call the C++ method and not the one you provided in Python.</p>
 
-<p>For this, the derived classes will work just as you expect them to, so you don't need to know any details of their inner workings and can immediately proceed to the <A href="#examples">examples</A>.</p>
+<P>Exceptions to that are: <CODE>Filter</CODE>, <CODE>Learner</CODE>, <CODE>Classifier</CODE>, <CODE>TreeSplitConstructor</CODE>, <CODE>TreeStopCriteria</CODE>, <CODE>TreeExampleSplitter</CODE>, <CODE>TreeDescender</CODE> and <CODE>MeasureAttribute</CODE>, <CODE>TransformValue</CODE>, <CODE>ExamplesDistance</CODE>, <CODE>ExamplesDistance_Constructor</CODE>. If you subtype one of these classes and overload its call operator, your operator will get called from the C++ code. If you subclass any other class or overload any other method, C++ code won't know about it.</P>
+
+<P>If your subclass won't get called from C++ but only from Python code, you can subclass anything you want and it will function as it should.</P>
+
+<P>If you are satisfied with that, you can <a href="#examples">skip to the examples</a> on this page to learn how to subclass what you need. If you wonder why does it have to be like this, read on.</P>
+
 
 <hr>
 
@@ -325,6 +325,14 @@ EnumVariable 'tear_rate'
 
 <p>When trained on 'lenses' data, our learner chose the attribute 'tear_rate'. When its value is 'reduced', the predicted class is 'none' and the distribution shows that the classifier is pretty sure about it (100%). When the value is 'normal', the predicted class is 'soft' but with much less certainty (42%). When the value will be unknown or out of range (for example, is the user adds some values), the classifier will predict class 'no' with 62.5% certainty.</p>
 
+
+<H3>ExamplesDistance and ExamplesDistance_Constructor</H3>
+
+<P><code>ExamplesDistance_Constructor</code> receives four arguments: an example generator and weights meta id, domain distributions (of type <code>DomainDistributions</code> and basic attribute statistics (an instance of <code>DomainBasicAttrStat</code>). The latter two can be <code>None</code>; you should write your code so that it computes them itself from the examples if they are needed. Function should return an instance of <code>ExamplesDistance</code>.</P>
+
+<P><code>ExamplesDistance</code> gets two examples and should return a number representing the distance between them.</P>
+
+
 <H3>MeasureAttribute</H3>
 
 <p><code>MeasureAttribute</code> is slightly more complex since it can be given different sets of parameters. Both must be supported. (This is so messy and inconsistent with the C++ code that it will surely be changed in the future.)</p>
@@ -541,12 +549,12 @@ class Descender_RandomBranch(orange.TreeDescender):
 >>> orngTree.printModel(tree)
 
 tear_rate reduced: none (100.0%)
-tear_rate normal: 
-|   astigmatic no: 
+tear_rate normal:
+|   astigmatic no:
 |   |   age young: soft (100.0%)
 |   |   age pre-presbyopic: soft (100.0%)
 |   |   age presbyopic: soft (50.0%)
-|   astigmatic yes: 
+|   astigmatic yes:
 |   |   prescription myope: hard (100.0%)
 |   |   prescription hypermetrope: none (66.66%)
 </xmp>
