@@ -1089,7 +1089,6 @@ PyObject *DomainContingency_normalize(PyObject *self, PyObject *) PYARGS(0, "() 
 #include "distance.hpp"
 #include "distance_dtw.hpp"
 
-BASED_ON(ExamplesDistance, Orange)
 BASED_ON(ExamplesDistance_Normalized, ExamplesDistance)
 C_NAMED(ExamplesDistance_Hamiltonian, ExamplesDistance, "()")
 C_NAMED(ExamplesDistance_Maximal, ExamplesDistance_Normalized, "()")
@@ -1098,7 +1097,6 @@ C_NAMED(ExamplesDistance_Euclidean, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Relief, ExamplesDistance, "()")
 C_NAMED(ExamplesDistance_DTW, ExamplesDistance_Normalized, "()")
 
-BASED_ON(ExamplesDistanceConstructor, Orange)
 C_CALL(ExamplesDistanceConstructor_Hamiltonian, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Hamiltonian")
 C_CALL(ExamplesDistanceConstructor_Maximal, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Maximal")
 C_CALL(ExamplesDistanceConstructor_Manhattan, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Manhattan")
@@ -1107,9 +1105,29 @@ C_CALL(ExamplesDistanceConstructor_Relief, ExamplesDistanceConstructor, "([examp
 C_CALL(ExamplesDistanceConstructor_DTW, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_DTW")
 
 
+PyObject *ExamplesDistanceConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrExamplesDistanceConstructor_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TExamplesDistanceConstructor_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TExamplesDistanceConstructor_Python(), type);
+}
+
+
+PyObject *ExamplesDistance_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrExamplesDistance_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TExamplesDistance_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TExamplesDistance_Python(), type);
+}
+
 
 PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance")
 { PyTRY
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrExamplesDistanceConstructor_Type) {
+      PyErr_Format(PyExc_SystemError, "ExamplesDistanceConstructor.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
     NO_KEYWORDS
 
     PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
@@ -1180,6 +1198,12 @@ PyObject *ExamplesDistance_call(PyObject *self, PyObject *args, PyObject *keywor
 {
   PyTRY
     NO_KEYWORDS
+
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrExamplesDistance_Type) {
+      PyErr_Format(PyExc_SystemError, "ExamplesDistance.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
     TExample *ex1, *ex2;
     if (!PyArg_ParseTuple(args, "O&O&:ExamplesDistance_Normalized.__call__", ptr_Example, &ex1, ptr_Example, &ex2))
       PYERROR(PyExc_TypeError, "attribute error (two examples expected)", PYNULL);

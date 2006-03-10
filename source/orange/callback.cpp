@@ -688,6 +688,29 @@ float TKernelFunc_Python::operator ()(const TExample &e1, const TExample &e2){
 	return res;
 }
 
+
+PExamplesDistance TExamplesDistanceConstructor_Python::operator ()(PExampleGenerator eg, const int &wei, PDomainDistributions dd, PDomainBasicAttrStat das) const
+{
+	PyObject *args=Py_BuildValue("(NiNN)", WrapOrange(eg), wei, WrapOrange(dd), WrapOrange(das));
+	PyObject *result=callCallback((PyObject *)myWrapper, args);
+	Py_DECREF(args);
+  PExamplesDistance res = PyOrange_AsExamplesDistance(result);
+	Py_DECREF(result);
+	return res;
+}
+
+
+
+float TExamplesDistance_Python::operator()(const TExample &e1, const TExample &e2) const
+{
+	PyObject *args=Py_BuildValue("(NN)", Example_FromExampleCopyRef(e1), Example_FromExampleCopyRef(e2));
+	PyObject *result=callCallback((PyObject *)myWrapper, args);
+	Py_DECREF(args);
+	float res=PyFloat_AsDouble(result);
+	Py_DECREF(result);
+	return res;
+}
+
 /*
 PIM TConstructIM_Python::operator()(PExampleGenerator gen, const vector<bool> &bound, const TVarList &boundSet, const vector<bool> &free, const int &weightID)
 { if (!gen)

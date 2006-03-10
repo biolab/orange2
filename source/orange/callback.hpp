@@ -222,6 +222,20 @@ public:
 	virtual float operator()(const TExample &, const TExample &);
 };
 
+#include "distance.hpp"
+
+class ORANGE_API TExamplesDistanceConstructor_Python : public TExamplesDistanceConstructor {
+public:
+  __REGISTER_CLASS
+  virtual PExamplesDistance operator()(PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat()) const;
+};
+
+class ORANGE_API TExamplesDistance_Python : public TExamplesDistance {
+public:
+  __REGISTER_CLASS
+  virtual float operator()(const TExample &, const TExample &) const;
+};
+
 /*
 Not verified yet:
 
