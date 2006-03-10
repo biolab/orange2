@@ -119,7 +119,7 @@ public:
   int position; //P attribute's position in domain
   int acceptSpecial; //P tells whether a special value (DK, DC...) is accepted (1), rejected (0) or ignored (-1)
 
-  TValueFilter(const int &pos = ILLEGAL_INT, const int & = -1);
+  TValueFilter(const int &pos = ILLEGAL_INT, const int & = 0);
   virtual int operator()(const TExample &) const = 0; // Returns 1 for accept, 0 for reject, -1 for ignore
   virtual PValueFilter deepCopy() const;
 };
@@ -136,8 +136,8 @@ public:
   int oper; //P operator
 
   TValueFilter_continuous();
-  TValueFilter_continuous(const int &pos, const float &min=0.0, const float &max=0.0, const bool &outs = false, const int &accs = -1);
-  TValueFilter_continuous(const int &pos, const int &op, const float &min=0.0, const float &max=0.0, const int &accs = -1);
+  TValueFilter_continuous(const int &pos, const float &min=0.0, const float &max=0.0, const bool &outs = false, const int &accs = 0);
+  TValueFilter_continuous(const int &pos, const int &op, const float &min=0.0, const float &max=0.0, const int &accs = 0);
   virtual int operator()(const TExample &) const;
   virtual PValueFilter deepCopy() const;
 };
@@ -149,8 +149,8 @@ public:
   PValueList values; //P accepted values
   bool negate;
 
-  TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = -1, bool negate = false);
-  TValueFilter_discrete(const int &pos, PVariable, const int &accs = -1, bool negate = false);
+  TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = 0, bool negate = false);
+  TValueFilter_discrete(const int &pos, PVariable, const int &accs = 0, bool negate = false);
   virtual int operator()(const TExample &) const;
   virtual PValueFilter deepCopy() const;
 };
@@ -166,7 +166,7 @@ public:
   bool caseSensitive; //P if true (default), the operator is case sensitive
 
   TValueFilter_string();
-  TValueFilter_string(const int &pos, const int &op, const string &min, const string &max, const int &accs = -1, const bool csens = true);
+  TValueFilter_string(const int &pos, const int &op, const string &min, const string &max, const int &accs = 0, const bool csens = true);
   virtual int operator()(const TExample &) const;
 };
 
@@ -179,7 +179,7 @@ public:
   bool caseSensitive; //P if true (default), the comparison is case sensitive
 
   TValueFilter_stringList();
-  TValueFilter_stringList(const int &pos, PStringList, const int &accs = -1, const int &op = Equal, const bool csens = true);
+  TValueFilter_stringList(const int &pos, PStringList, const int &accs = 0, const int &op = Equal, const bool csens = true);
   virtual int operator()(const TExample &) const;
 };
 
