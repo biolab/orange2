@@ -15,11 +15,12 @@ data.domain.addmeta(orange.newmetaid(), newattr)
 
 data[0]["foo"] = ("a", "tuple")
 data[1]["foo"] = "a string"
-data[2]["foo"] = orange
 
 # Could, but won't do this; the script is also used
 # in regression tests and printing the pointer would
-# cause a mismatch btw Win, Linux and Mac version
+# cause a mismatch btw Win, Linux and Mac version;
+# printing the module would cause a mismatch in the path
+# data[2]["foo"] = orange
 # data[3]["foo"] = data
 
 for i in range(4):
