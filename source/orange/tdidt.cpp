@@ -386,13 +386,13 @@ PDistribution TTreeClassifier::findNodeDistribution(PTreeNode node, const TExamp
 }
 
 
-float TTreeClassifier::findNodeValue(PTreeNode node, const TExample &exam)
+TValue TTreeClassifier::findNodeValue(PTreeNode node, const TExample &exam)
 {
   PDistribution dist = findNodeDistribution(node, exam);
   if (dist)
     return dist->highestProbValue(exam);
   else
-    return 0.0;
+    return TValue(0.0);
 }
 
 
@@ -412,11 +412,11 @@ TValue TTreeClassifier::operator()(const TExample &exam)
   else {
     PDistribution decision = vote(node, refexam, branchWeights);
     if (decision)
-      decision->highestProbValue(exam);
+      return decision->highestProbValue(exam);
   }
 
   // couldn't classify, so we'll return something a priori
-  return TValue(findNodeValue(node, refexam));
+  return findNodeValue(node, refexam);
 }
 
 
