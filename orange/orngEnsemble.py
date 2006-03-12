@@ -139,10 +139,14 @@ from math import sqrt, floor
 import orngTree
 
 class SplitConstructor_AttributeSubset(orange.TreeSplitConstructor):
-    def __init__(self, scons, attributes, rand = random.Random()):
+    def __init__(self, scons, attributes, rand = None):
         self.scons = scons           # split constructor of original tree
         self.attributes = attributes # number of attributes to consider
-        self.rand = rand             # a random generator
+        if rand:
+            self.rand = rand             # a random generator
+        else:
+            self.rand = random.Random()
+            self.rand.seed(0)
 
     def __call__(self, gen, weightID, contingencies, apriori, candidates, clsfr):
         cand = [1]*self.attributes + [0]*(len(candidates) - self.attributes)
