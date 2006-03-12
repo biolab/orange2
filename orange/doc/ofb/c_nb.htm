@@ -69,49 +69,49 @@ on for classification. Here is a <code>Learner</code>: class</p>
 "bayes.py">bayes.py</a></p>
 <xmp class="code">class Learner_Class:
   def __init__(self, m=0.0, name='std naive bayes', **kwds):
-  self.__dict__ = kwds
-  self.m = m
-  self.name = name
+    self.__dict__ = kwds
+    self.m = m
+    self.name = name
 
   def __call__(self, examples, weight=None, **kwds):
-  for k in kwds.keys():
-    self.__dict__[k] = kwds[k]
-  domain = examples.domain
+    for k in kwds.keys():
+      self.__dict__[k] = kwds[k]
+    domain = examples.domain
 
-  # first, compute class probabilities
-  n_class = [0.] * len(domain.classVar.values)
-  for e in examples:
-    n_class[int(e.getclass())] += 1
+    # first, compute class probabilities
+    n_class = [0.] * len(domain.classVar.values)
+    for e in examples:
+      n_class[int(e.getclass())] += 1
 
-  p_class = [0.] * len(domain.classVar.values)
-  for i in range(len(domain.classVar.values)):
-    p_class[i] = n_class[i] / len(examples)
+    p_class = [0.] * len(domain.classVar.values)
+    for i in range(len(domain.classVar.values)):
+      p_class[i] = n_class[i] / len(examples)
 
-  # count examples with specific attribute and
-  # class value, pc[attribute][value][class]
-  
-  # initialization of pc
-  pc = []
-  for i in domain.attributes:
-    p = [[0.]*len(domain.classVar.values) for i in range(len(i.values))]
-    pc.append(p)
+    # count examples with specific attribute and
+    # class value, pc[attribute][value][class]
 
-  # count instances, store them in pc
-  for e in examples:
-    c = int(e.getclass())
+    # initialization of pc
+    pc = []
+    for i in domain.attributes:
+      p = [[0.]*len(domain.classVar.values) for i in range(len(i.values))]
+      pc.append(p)
+
+    # count instances, store them in pc
+    for e in examples:
+      c = int(e.getclass())
+      for i in range(len(domain.attributes)):
+      if not e[i].isSpecial():
+        pc[i][int(e[i])][c] += 1.0
+
+    # compute conditional probabilities
     for i in range(len(domain.attributes)):
-    if not e[i].isSpecial():
-      pc[i][int(e[i])][c] += 1.0
+      for j in range(len(domain.attributes[i].values)):
+        for k in range(len(domain.classVar.values)):
+          pc[i][j][k] = (pc[i][j][k] + self.m * p_class[k])/ \
+            (n_class[k] + self.m)
 
-  # compute conditional probabilities
-  for i in range(len(domain.attributes)):
-    for j in range(len(domain.attributes[i].values)):
-    for k in range(len(domain.classVar.values)):
-      pc[i][j][k] = (pc[i][j][k] + self.m * p_class[k])/ \
-          (n_class[k] + self.m)
-
-  return Classifier(m = self.m, domain=domain, p_class=p_class, \
-           p_cond=pc, name=self.name)  
+    return Classifier(m = self.m, domain=domain, p_class=p_class, \
+             p_cond=pc, name=self.name)
 </xmp>
 
 <p>Initialization of Learner_Class saves the two attributes, m and
@@ -152,7 +152,7 @@ variables required for classification.</p>
     if result_type == orange.GetProbabilities:
       return p
     return (v,p)
-    
+
   def show(self):
     print 'm=', self.m
     print 'class prob=', self.p_class
