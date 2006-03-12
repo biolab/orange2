@@ -326,13 +326,14 @@ PyObject *Value_FromArguments(PyTypeObject *type, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|O:Value", &obj1, &obj2))
       return PYNULL;
 
-    if (!obj2)
+    if (!obj2) {
       if (PyOrVariable_Check(obj1))
         return Value_FromVariableType(type, PyOrange_AsVariable(obj1));
       else {
         TValue val;
-        return convertFromPython(obj1, val) ? Value_FromVariableValueType(type, PyValue_AS_Variable(obj1), val) : PYNULL;
+        return convertFromPython(obj1, val) ? Value_FromValueType(type, val) : PYNULL;
       }
+    }
 
     TValue val;
     if (PyOrVariable_Check(obj1)) {
