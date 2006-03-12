@@ -71,7 +71,7 @@ class OWCN2RulesViewer(OWWidget):
         OWWidget.__init__(self, parent, signalManager,"CN2 Rules Viewer")
         
         self.inputs=[("CN2UnorderedClassifier", orngCN2.CN2UnorderedClassifier, self.data)]
-        self.outputs=[("ExampleTable", ExampleTable)]
+        self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
         self.RuleLen=1
         self.RuleQ=1
         self.Coverage=1
@@ -95,12 +95,12 @@ class OWCN2RulesViewer(OWWidget):
         layout.addWidget(self.headerView)
         layout.addWidget(self.canvasView)
         layout=QVBoxLayout(self.controlArea)
-        box=OWGUI.widgetBox(self.controlArea,"Show info on")
+        box=OWGUI.widgetBox(self.controlArea,"Show Info")
         layout.addWidget(box)
         layout.addWidget(self.controlArea)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
-        OWGUI.checkBox(box,self,"RuleLen","Rule length",callback=self.drawRules)
-        OWGUI.checkBox(box,self,"RuleQ","Rule quality",callback=self.drawRules)
+
+        OWGUI.checkBox(box,self,"RuleLen","Rule length",callback=self.drawRules)        OWGUI.checkBox(box,self,"RuleQ","Rule quality",callback=self.drawRules)
         OWGUI.checkBox(box,self,"Coverage","Coverage",callback=self.drawRules)
         OWGUI.checkBox(box,self,"Class","Predicted class", callback=self.drawRules)
         OWGUI.checkBox(box,self,"Dist","Distribution", callback=self.drawRules)
@@ -336,8 +336,11 @@ class OWCN2RulesViewer(OWWidget):
             
     def commit(self):
         if self.examples:
-            self.send("ExampleTable",orange.ExampleTable(self.examples))
+            examples = orange.ExampleTable(self.examples)
+            self.send("Classified Examples", examples)
+            self.send("ExampleTable", examples)
         else:
+            self.send("Classified Examples", None)
             self.send("ExampleTable",None)
 
     def saveRules(self):
