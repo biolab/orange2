@@ -1,3 +1,4 @@
+"""
 import orange
 import orngCN2
 
@@ -25,3 +26,4 @@ learner.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = 50)
 cl = learner(data)
 for r in cl.rules:
     print orngCN2.ruleToString(r)
+"""
