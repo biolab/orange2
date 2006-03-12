@@ -105,7 +105,7 @@ Imputed:
 ['A', 1876, 'HIGHWAY', 1200, 4, 'G', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD']
 
 ['O', 1878, 'RR', ?, 2, 'G', '?', 'STEEL', '?', '?', 'SIMPLE-T']
-['O', 1878, 'RR', 1000, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
+['O', 1878, 'RR', 804, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
 
 ['M', 1882, 'RR', ?, 2, 'G', '?', 'STEEL', '?', '?', 'SIMPLE-T']
 ['M', 1882, 'RR', 1000, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
