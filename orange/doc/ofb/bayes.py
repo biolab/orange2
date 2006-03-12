@@ -6,7 +6,6 @@ import orange
 
 class Learner(object):
     def __new__(cls, examples=None, **kwds):
-        print "NEW"
         learner = object.__new__(cls, **kwds)
         if examples:
             return learner(examples)
@@ -14,13 +13,11 @@ class Learner(object):
             return learner
 
     def __init__(self, m=0.0, name='std naive bayes', **kwds):
-        print 'INIT'
         self.__dict__ = kwds
         self.m = m
         self.name = name
 
     def __call__(self, examples, weight=None, **kwds):
-        print 'CALL'
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
         domain = examples.domain
