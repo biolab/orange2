@@ -331,7 +331,12 @@ class install_wrap(install):
                 print "success"
         else:
 	    sysBinFile = None
-            print "Libraries was not exported to the system library path (using 'non-system' installation)"
+            # link orange.so into liborange.so
+            try:
+                os.symlink(os.path.join(self.orangepath, "orange", "orange.so"), os.path.join(self.orangepath, "orange", "liborange.so"))
+            except:
+                print "problems creating link to liborange.so:", os.path.join(self.orangepath, "orange", "liborange.so")
+            print "Libraries were not exported to the system library path (using 'non-system' installation)"
             
         print "Creating path file...",
         if self.orangepath == None:
@@ -421,7 +426,7 @@ OrangeInstallDoc = os.path.join(sys.prefix, "share", "doc",
                                 "orange")
 OrangeInstallLib = os.path.join(sys.prefix, "lib")
 
-OrangeLibList = ['orange.so','liborange.so', 'orangene.so','orangeom.so','statc.so','corn.so']
+OrangeLibList = ['orange.so', 'orangene.so','orangeom.so','statc.so','corn.so']
         
 BaseDir = os.getcwd()
 OrangeDirs = ["orange", "orange.OrangeCanvas", "orange.OrangeWidgets"]
