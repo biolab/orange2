@@ -21,16 +21,16 @@ def getVariableValuesSorted(data, index):
     
     values = list(data.domain[index].values)
     intValues = []
-    i = 0
+
     # do all attribute values containt integers?
     try:
-        intValues = [int(val) for val in values]
+        intValues = [(int(val), val) for val in values]
     except:
         return values
 
     # if all values were intergers, we first sort them ascendently
     intValues.sort()
-    return [str(val) for val in intValues]
+    return [val[1] for val in intValues]
 
 # ####################################################################
 # create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
@@ -116,6 +116,7 @@ class orngScaleData:
             
             if data.domain[index].varType == orange.VarTypes.Discrete:
                 variableValueIndices = getVariableValueIndices(data, index)
+                print variableValueIndices
                 for i in range(len(data.domain[index].values)):
                     if i != variableValueIndices[data.domain[index].values[i]]:
                         line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
