@@ -414,7 +414,7 @@ class install_wrap(install):
 		print ""
 		print "Orange Canvas shortcut not created ('non-system' installation)"
 		print ""
-		print "PLEASE ADD to your environment: LD_LIBRARY_PATH="+OrangeInstallDir
+		print "PLEASE ADD to your environment: LD_LIBRARY_PATH="+OrangeInstallDir+":$LD_LIBRARY_PATH ; export LD_LIBRARY_PATH"
 		print ""
     
 # preparing data for Distutils
