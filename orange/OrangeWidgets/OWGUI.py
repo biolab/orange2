@@ -35,7 +35,7 @@ def widgetLabel(widget, label=None, labelWidth=None):
     return lbl
 
 
-def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None):
+def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, debuggingEnabled = 1):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     
@@ -45,6 +45,8 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
         QToolTip.add(wa, tooltip)
 
     connectControl(wa, master, value, callback, "valueChanged(int)", CallFront_spin(wa))
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, 1, callback )]
     return b
 
 
@@ -61,7 +63,7 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     return b
 
 
-def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = []):
+def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], debuggingEnabled = 1):
     b = widgetBox(widget, box, orientation=None)
     wa = QCheckBox(label, b)
     if labelWidth:
@@ -77,6 +79,8 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     wa.disables = disables
     wa.makeConsistent = Disabler(wa, master, value)
     master.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, value, callback)]
     return wa
 
 
@@ -95,7 +99,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     return wa
 
 
-def checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None):
+def checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None, debuggingEnabled = 1):
     hb = QHBox(widget)
     wa = checkBox(hb, master, checked, label, callback = checkCallback, labelWidth = labelWidth)
 
@@ -110,16 +114,21 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
 
     connectControl(wb, master, value, None, "valueChanged(int)", CallFront_spin(wb),
                    cfunc = spinCallback and FunctionCallback(master, spinCallback, widget=wb, getwidget=getwidget))
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, checked, checkCallback)]
+        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wb, value, spinCallback, min, max)]
     return wa, wb
 
 
-def button(widget, master, label, callback = None, disabled=0, tooltip=None):
+def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1):
     btn = QPushButton(label, widget)
     btn.setDisabled(disabled)
     if callback:
         master.connect(btn, SIGNAL("clicked()"), callback)
     if tooltip:
         QToolTip.add(btn, tooltip)
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
     return btn
 
 
@@ -155,7 +164,7 @@ def getAttributeIcons():
     return attributeIconDict
 
 
-def listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single):
+def listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single, debuggingEnabled = 1):
     bg = box and QHButtonGroup(box, widget) or widget
     lb = QListBox(bg)
     lb.setSelectionMode(selectionMode)
@@ -173,11 +182,13 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
 
     connectControl(lb, master, value, callback, "selectionChanged()", CallFront_ListBox(lb), ListBoxCallback(lb, master, value))
     master.controlledAttributes[labels] = CallFront_ListBoxLabels(lb)
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("listBox", lb, value, callback)]
     return lb
     
 
 # btnLabels is a list of either char strings or pixmaps
-def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None):
+def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1):
     if box:
         bg = QVButtonGroup(box, widget)
     else:
@@ -197,10 +208,12 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
             QToolTip.add(w, tooltips[i])
 
     connectControl(bg, master, value, callback, "clicked(int)", CallFront_radioButtons(bg))
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("radioButtonsInBox", bg, value, callback)]
     return bg
 
 
-def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None):
+def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None, debuggingEnabled = 1):
     if box:
         bg = QHButtonGroup(box, widget)
     else:
@@ -216,10 +229,12 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
         QToolTip.add(w, tooltip)
 
     connectControl(w, master, value, callback, "stateChanged(int)", CallFront_checkBox(w))
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("radioButton", w, value, callback)]
     return w
 
 
-def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0):
+def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1):
     if box:
         sliderBox = QHButtonGroup(box, widget)
     else:
@@ -242,10 +257,12 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
 
     connectControl(slider, master, value, callback, "valueChanged(int)", CallFront_hSlider(slider))
     QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("hSlider", slider, value, minValue, maxValue, step, callback)]
     return slider
 
 
-def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80):
+def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, debuggingEnabled = 1):
     init = mygetattr(master, value)
     if box:
         sliderBox = QHButtonGroup(box, widget)
@@ -295,12 +312,14 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
         cback = ValueCallback(master, value)
         master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
     connectControl(slider, master, value, callback, "valueChanged(double)", cfront, cback)
-
     slider.box = hb
+    
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("qwtHSlider", slider, value, minValue, maxValue, step, callback)]
     return slider
 
 
-def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str, control2attributeDict = {}, emptyString = None):
+def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str, control2attributeDict = {}, emptyString = None, debuggingEnabled = 1):
     hb = widgetBox(widget, box, orientation)
     widgetLabel(hb, label, labelWidth)
     if tooltip: QToolTip.add(hb, tooltip)
@@ -324,6 +343,8 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
                        ValueCallbackCombo(master, value, valueType, control2attributeDict))
     else:
         connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo, None, control2attributeDict))
+    if debuggingEnabled:
+        master._guiElements = getattr(master, "_guiElements", []) + [("comboBox", combo, value, callback)]
     return combo
 
 
@@ -721,9 +742,11 @@ class ProgressBar:
         self.widget = widget
         self.count = 0
         self.widget.progressBarInit()
+
     def advance(self):
         self.count += 1
         self.widget.progressBarSet(int(self.count*100/self.iter))
+
     def finish(self):
         self.widget.progressBarFinished()
 
