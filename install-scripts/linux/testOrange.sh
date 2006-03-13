@@ -8,6 +8,9 @@ mv regressionTests/* .
 cat xtest.py | sed s/"\.\.\/doc"/"\.\.\/doc\/orange"/ > new.py
 mv -f new.py xtest.py
 
+LD_LIBRARY_PATH=/home/orange/daily/test_install/orange:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
+
 if ! python xtest.py test; then
 	exit 1
 else

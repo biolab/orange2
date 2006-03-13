@@ -2,6 +2,7 @@ cd /home/orange/install-scripts
 cvs update
 chmod +x linux/testOrange.sh
 chmod +x linux/compileRegress.sh
+chmod +x linux/compileInteractive.sh
 
 # prepare sources
 cd /home/orange/daily
