@@ -384,7 +384,7 @@ float TRuleEvaluator_Entropy::operator()(PRule rule, PExampleTable, const int &,
 {
   const TDiscDistribution &obs_dist = dynamic_cast<const TDiscDistribution &>(rule->classDistribution.getReference());
   if (!obs_dist.cases)
-    return numeric_limits<float>::min();
+    return -numeric_limits<float>::max();
 
   if (targetClass == -1)
     return -getEntropy(dynamic_cast<TDiscDistribution &>(rule->classDistribution.getReference()));
