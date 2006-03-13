@@ -2,34 +2,12 @@ from orngScaleData import *
 from copy import copy
 from math import sqrt
 
-# build a list (in currList) of different permutations of elements in list of elements
-# elements contains a list of indices [1,2..., n]
-def buildPermutationIndexList(elements, tempPerm, currList):
-    for i in range(len(elements)):
-        el =  elements[i]
-        elements.remove(el)
-        tempPerm.append(el)
-        buildPermutationIndexList(elements, tempPerm, currList)
-
-        elements.insert(i, el)
-        tempPerm.pop()
-
-    if elements == []:
-        temp = copy(tempPerm)
-        # in tempPerm we have a permutation. Check if it already exists in the currList
-        for i in range(len(temp)):
-            el = temp.pop()
-            temp.insert(0, el)
-            if str(temp) in currList: return
-            
-        # also try the reverse permutation
-        temp.reverse()
-        for i in range(len(temp)):
-            el = temp.pop()
-            temp.insert(0, el)
-            if str(temp) in currList: return
-        currList[str(tempPerm)] = copy(tempPerm)
-
+# generate a list of permutations of the given list
+def generatePermutations(list):
+    if list==[]:
+        return [[]]
+    else:
+        return [ [list[i]] + p for i in range(len(list)) for p in generatePermutations(list[:i] + list[i+1:])]
 
 
 class orngScaleLinProjData(orngScaleData):
@@ -38,6 +16,8 @@ class orngScaleLinProjData(orngScaleData):
         self.normalizeExamples = 1
         self.anchorData =[]        # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
         self.lastAttrIndices = None
+        self.anchorDict = {}
+        
         
     def setAnchors(self, xAnchors, yAnchors, attributes):
         if attributes:
@@ -56,10 +36,14 @@ class orngScaleLinProjData(orngScaleData):
             return [(xAnchors[i], yAnchors[i]) for i in range(numOfAttr)]
         
     def createXAnchors(self, numOfAttrs):
-        return Numeric.cos(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs))
+        if not self.anchorDict.has_key(numOfAttrs):
+            self.anchorDict[numOfAttrs] = (Numeric.cos(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)), Numeric.sin(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)))
+        return self.anchorDict[numOfAttrs][0]
 
     def createYAnchors(self, numOfAttrs):
-        return Numeric.sin(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs))
+        if not self.anchorDict.has_key(numOfAttrs):
+            self.anchorDict[numOfAttrs] = (Numeric.cos(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)), Numeric.sin(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)))
+        return self.anchorDict[numOfAttrs][1]
 
 
      # save projection (xAttr, yAttr, classVal) into a filename fileName
@@ -95,16 +79,18 @@ class orngScaleLinProjData(orngScaleData):
         if normalizeExample == 1 or (normalizeExample == None and self.normalizeExamples):
             m = min(values); M = max(values)
             if m < 0.0 or M > 1.0:  # we have to do rescaling of values so that all the values will be in the 0-1 interval
-                m = min(m, 0.0); M = max(M, 1.0); diff = M-m
+                m = min(m, 0.0); M = max(M, 1.0); diff = max(M-m, 1e-10)
                 values = [(val-m) / float(diff) for val in values]
             
             s = sum(Numeric.array(values)*anchorRadius)
             if s == 0: return [0.0, 0.0]
-        else: s = 1
+            x = self.trueScaleFactor * Numeric.matrixmultiply(XAnchors*anchorRadius, values) / float(s)
+            y = self.trueScaleFactor * Numeric.matrixmultiply(YAnchors*anchorRadius, values) / float(s)
+        else:
+            x = self.trueScaleFactor * Numeric.matrixmultiply(XAnchors, values)
+            y = self.trueScaleFactor * Numeric.matrixmultiply(YAnchors, values)
 
-        x = self.trueScaleFactor * Numeric.matrixmultiply(XAnchors*anchorRadius, values) / float(s)
-        y = self.trueScaleFactor * Numeric.matrixmultiply(YAnchors*anchorRadius, values) / float(s)
-        return [x,y]
+        return [x, y]
 
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
     def createProjectionAsExampleTable(self, attrIndices, settingsDict = {}):
@@ -128,7 +114,7 @@ class orngScaleLinProjData(orngScaleData):
         removeMissingData = settingsDict.get("removeMissingData", 1)
         
         # if we want to use anchor data we can get attrIndices from the anchorData
-        if useAnchorData:
+        if useAnchorData and self.anchorData:
             attrIndices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
 
         if not validData: validData = self.getValidList(attrIndices)
@@ -144,7 +130,7 @@ class orngScaleLinProjData(orngScaleData):
             classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
             if removeMissingData: classList = Numeric.compress(validData, classList)    
 
-        if useAnchorData:
+        if useAnchorData and self.anchorData:
             XAnchors = Numeric.array([val[0] for val in self.anchorData])
             YAnchors = Numeric.array([val[1] for val in self.anchorData])
             r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle

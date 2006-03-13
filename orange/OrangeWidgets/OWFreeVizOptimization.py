@@ -2,7 +2,7 @@ from OWBaseWidget import *
 from OWWidget import OWWidget
 from OWkNNOptimization import *
 import orange, math, random, orangeom
-import OWGUI, OWVisAttrSelection, OWVisTools, DESolver, Numeric
+import OWGUI, orngVisFuncts, DESolver, Numeric
 from math import sqrt
 
 from orngScaleLinProjData import *
@@ -313,9 +313,8 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
             oldVal = self.parentWidget.optimizationDlg.qualityMeasure
             self.parentWidget.optimizationDlg.qualityMeasure = AVERAGE_CORRECT
             self.s2nSpread = 0
-            classPerms = {}
-            buildPermutationIndexList(range(len(self.rawdata.domain.classVar.values)), [], classPerms)
-            for perm in classPerms.values():
+            permutations = generatePermutations(range(len(self.rawdata.domain.classVar.values)))
+            for perm in permutations:
                 self.classPermutationList = perm
                 for val in self.attrsNum:
                     if self.attrsNum[self.attrsNum.index(val)-1] > len(self.rawdata.domain.attributes): continue    # allow the computations once
@@ -360,7 +359,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         
         # compute the quality of attributes only once
         if self.s2nMixData == None:
-            rankedAttrs, rankedAttrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.rawdata, OWVisAttrSelection.S2NMeasureMix())
+            rankedAttrs, rankedAttrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.rawdata, orngVisFuncts.S2NMeasureMix())
             self.s2nMixData = (rankedAttrs, rankedAttrsByClass)
             classCount = len(rankedAttrsByClass)
             attrs = rankedAttrs[:(self.s2nPlaceAttributes/classCount)*classCount]    # select appropriate number of attributes

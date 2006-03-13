@@ -4,7 +4,7 @@ import orange, orangeom, orngTest
 from copy import copy
 from math import sqrt
 import OWGUI, OWDlgs
-import OWVisAttrSelection, OWVisTools
+import orngVisFuncts
 import Numeric, RandomArray
 
 VALUE = 0
@@ -22,7 +22,7 @@ CAN_LIE_NEAR = 1
 BEST_GROUPS = 0
 BEST_GROUPS_IN_EACH_CLASS = 1
 
-contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant()), ("Signal to Noise Ratio", OWVisAttrSelection.S2NMeasure()), ("Signal to Noise Ratio For Each Class", OWVisAttrSelection.S2NMeasureMix())]
+contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Fisher discriminant", orngVisFuncts.MeasureFisherDiscriminant()), ("Signal to Noise Ratio", orngVisFuncts.S2NMeasure()), ("Signal to Noise Ratio For Each Class", orngVisFuncts.S2NMeasureMix())]
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
 VALUE = 0
@@ -510,7 +510,7 @@ class ClusterOptimization(OWBaseWidget):
     # given a dataset return a list of (val, attrName) where val is attribute "importance" and attrName is name of the attribute
     def getEvaluatedAttributes(self, data):
         self.setStatusBarText("Evaluating attributes...")
-        attrs = OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+        attrs = orngVisFuncts.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
         self.setStatusBarText("")
         return attrs
     

@@ -1,7 +1,7 @@
 from OWBaseWidget import *
 from OWWidget import OWWidget
 import os
-import OWGUI, OWVisFuncts
+import OWGUI, orngVisFuncts
 from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
@@ -260,7 +260,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         try:
             # evaluate attributes using the selected attribute measure
-            self.evaluatedAttributes = OWVisAttrSelection.evaluateAttributes(data, None, discMeasures[self.attrDisc][1])
+            self.evaluatedAttributes = orngVisFuncts.evaluateAttributes(data, None, discMeasures[self.attrDisc][1])
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # print the exception

@@ -1,5 +1,5 @@
 import orangeom, orange
-import math, random, Numeric
+import math, random, Numeric, LinearAlgebra
 from orngScaleLinProjData import orngScaleLinProjData
 
 #implementation
@@ -287,18 +287,12 @@ class FreeViz:
 
     def findSPCAProjection(self, attrIndices = None, setGraphAnchors = 1):
         try:
-            import LinearAlgebra
-
             ai = self.graph.attributeNameIndex
             if not attrIndices:
                 attributes = self.getShownAttributeList()
                 attrIndices = [ai[label] for label in attributes]
                 
             validData = self.graph.getValidList(attrIndices)
-##            if sum(validData) <= len(attrIndices):
-##                print "More attributes than examples. Singular matrix. Exiting..."
-##                return None
-            
             self.graph.normalizeExamples = 0
             
             selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
@@ -307,9 +301,6 @@ class FreeViz:
             
             s = Numeric.sum(selectedData)/float(len(selectedData))  
             selectedData -= s       # substract average value to get zero mean
-
-            #for i in range(len(attrIndices)):
-            #    self.graph.noJitteringScaledData[attrIndices[i]] -= s[i]
 
             # define the Laplacian matrix
             L = Numeric.zeros((len(selectedData), len(selectedData)))
@@ -321,7 +312,6 @@ class FreeViz:
             s = Numeric.sum(L)
             for i in range(len(selectedData)):
                 L[i,i] = -s[i]
-            #print L[0]
 
             if self.useGeneralizedEigenvectors:
                 covarMatrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), selectedData)
@@ -333,7 +323,16 @@ class FreeViz:
             # compute selectedDataT * L * selectedData
             matrix = Numeric.matrixmultiply(matrix, L)
             matrix = Numeric.matrixmultiply(matrix, selectedData)
+
             vals, vectors = LinearAlgebra.eigenvectors(matrix)
+            """
+            if vals.typecode() in Numeric.typecodes["Complex"]:     # the eigenvalues are complex numbers -> singluar covariance matrix
+                names = self.graph.attributeNames
+                attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
+                anchors = self.graph.createAnchors(len(attributes), attributes)
+                if setGraphAnchors: self.graph.anchorData = self.graph.createAnchors(len(attributes), attributes)
+                return [anchors[i][0] for i in range(len(attributes))], [anchors[i][1] for i in range(len(attributes))], (attributes, attrIndices)
+            """ 
             firstInd  = list(vals).index(max(vals)); vals[firstInd] = -1   # save the index of the largest eigenvector
             secondInd = list(vals).index(max(vals));                       # save the index of the second largest eigenvector
 
@@ -347,6 +346,7 @@ class FreeViz:
             names = self.graph.attributeNames
             attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
 
+            """
             temp = [(lengthArr[i], i) for i in range(len(lengthArr))]
             temp.sort()
 
@@ -362,6 +362,10 @@ class FreeViz:
             #print attrIndices, newXAnchors, newYAnchors
 
             return newXAnchors, newYAnchors, (newAttributes, newIndices)
+            """
+            if setGraphAnchors:
+                self.graph.setAnchors(xAnchors, yAnchors, attributes)
+            return xAnchors, yAnchors, (attributes, attrIndices)
         except:
             #print "unable to compute the inverse of a singular matrix."
             names = self.graph.attributeNames
@@ -369,6 +373,7 @@ class FreeViz:
             anchors = self.graph.createAnchors(len(attributes), attributes)
             if setGraphAnchors: self.graph.anchorData = self.graph.createAnchors(len(attributes), attributes)
             return [anchors[i][0] for i in range(len(attributes))], [anchors[i][1] for i in range(len(attributes))], (attributes, attrIndices)
+
 
 
 # #############################################################################
