@@ -389,7 +389,6 @@ class install_wrap(install):
             OrangeInstallDoc = os.path.join(self.orangepath, "doc", "orange")
             print "Orange installation dir: "+OrangeInstallDir
             print "Orange documentation dir: "+OrangeInstallDoc
-            print "Please add to your environment: LD_LIBRARY_PATH="+OrangeInstallDir
             print "To uninstall Orange type:"
             print ""
             print "    python "+OrangeInstallDoc+"/setup.py uninstall"
@@ -409,6 +408,9 @@ class install_wrap(install):
 	else:
 		print ""
 		print "Orange Canvas shortcut not created ('non-system' installation)"
+		print ""
+		print "PLEASE ADD to your environment: LD_LIBRARY_PATH="+OrangeInstallDir
+		print ""
     
 # preparing data for Distutils
 
