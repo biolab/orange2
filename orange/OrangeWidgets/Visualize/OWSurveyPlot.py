@@ -12,7 +12,7 @@
 
 from OWWidget import *
 from OWSurveyPlotGraph import *
-import OWVisAttrSelection
+import orngVisFuncts
 import OWGUI
            
 ###########################################################################################
@@ -257,7 +257,7 @@ class OWSurveyPlot(OWWidget):
                 if attr.name not in shownAttributes:
                     self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
         else:
-            shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+            shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
             if data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
                 self.shownAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
             for attr in shown[:10]:

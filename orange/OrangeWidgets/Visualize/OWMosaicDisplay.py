@@ -17,7 +17,7 @@ from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 from OWQCanvasFuncts import *
 from OWGraphTools import ColorPaletteHSV, ColorPaletteBrewer
 from OWDlgs import OWChooseImageSizeDlg
-from OWVisFuncts import permutations
+from orngVisFuncts import permutations
 from copy import copy
 
 PEARSON = 0

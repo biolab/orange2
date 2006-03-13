@@ -12,7 +12,7 @@
 
 from OWWidget import *
 from OWParallelGraph import *
-import OWToolbars, OWGUI, OWDlgs, OWVisAttrSelection 
+import OWToolbars, OWGUI, OWDlgs, orngVisFuncts 
 from sys import getrecursionlimit, setrecursionlimit
 
 ###########################################################################################
@@ -298,7 +298,7 @@ class OWParallelCoordinates(OWWidget):
                 if (attrs[i], attrs[i+1]) in self.correlationDict.keys():   corr = self.correlationDict[(attrs[i], attrs[i+1])]
                 elif (attrs[i+1], attrs[i]) in self.correlationDict.keys(): corr = self.correlationDict[(attrs[i+1], attrs[i])]
                 else:
-                    corr = OWVisAttrSelection.computeCorrelation(self.data, attrs[i], attrs[i+1])
+                    corr = orngVisFuncts.computeCorrelation(self.data, attrs[i], attrs[i+1])
                     self.correlationDict[(attrs[i], attrs[i+1])] = corr
                 if corr and len(self.graph.attributeFlipInfo.keys()) > 0 and (self.graph.attributeFlipInfo[attrs[i]] != self.graph.attributeFlipInfo[attrs[i+1]]): corr = -corr
                 if corr: labels.append("%2.3f" % (corr))
@@ -327,7 +327,7 @@ class OWParallelCoordinates(OWWidget):
                 if attr.name not in shownAttributes:
                     self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
         else:
-            shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+            shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
             if data.domain.classVar and data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
                 self.shownAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
             for attr in shown:
@@ -793,8 +793,8 @@ class ParallelOptimization(OWBaseWidget):
         attrInfo = []
         if self.optimizationMeasure == CORRELATION:
             attrList = [attr.name for attr in self.parallelWidget.data.domain.attributes]
-            attrInfo = OWVisAttrSelection.computeCorrelationBetweenAttributes(self.parallelWidget.data, attrList)
-            #attrInfo = OWVisAttrSelection.computeCorrelationInsideClassesBetweenAttributes(self.parallelWidget.data, attrList)
+            attrInfo = orngVisFuncts.computeCorrelationBetweenAttributes(self.parallelWidget.data, attrList)
+            #attrInfo = orngVisFuncts.computeCorrelationInsideClassesBetweenAttributes(self.parallelWidget.data, attrList)
         elif self.optimizationMeasure == VIZRANK:
             for (val, [a1, a2]) in self.projections:
                 attrInfo.append((val, a1, a2))
@@ -819,9 +819,9 @@ class ParallelOptimization(OWBaseWidget):
         qApp.processEvents()        # allow processing of other events
         
         if self.orderAllAttributes:
-            OWVisAttrSelection.optimizeAttributeOrder(attrInfo, len(self.parallelWidget.data.domain.attributes), self, qApp)
+            orngVisFuncts.optimizeAttributeOrder(attrInfo, len(self.parallelWidget.data.domain.attributes), self, qApp)
         else:
-            OWVisAttrSelection.optimizeAttributeOrder(attrInfo, self.numberOfAttributes, self, qApp)
+            orngVisFuncts.optimizeAttributeOrder(attrInfo, self.numberOfAttributes, self, qApp)
 
         self.stopOptimizationButton.hide()
         self.startOptimizationButton.show()

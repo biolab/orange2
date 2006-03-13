@@ -18,7 +18,7 @@ from OWClusterOptimization import *
 from OWFreeVizOptimization import *
 import time
 import OWToolbars, OWGUI, orngTest, orangeom
-import OWVisFuncts, OWDlgs
+import orngVisFuncts, OWDlgs
 import orngVizRank
 
 ###########################################################################################
@@ -164,7 +164,8 @@ class OWLinProj(OWWidget):
         OWGUI.comboBoxWithCaption(box2a, self, "graph.scaleFactor", 'Scale point position by: ', callback = self.updateGraph, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
 
         valueScalingList = ["attribute range", "global range", "attribute variance"]
-        if name.lower() == "radviz": valueScalingList.pop(); self.valueScalingType = min(self.valueScalingType, 1)
+        if name.lower() == "radviz":
+            valueScalingList.pop(); self.valueScalingType = min(self.valueScalingType, 1)
         OWGUI.comboBoxWithCaption(box2a, self, "valueScalingType", 'Scale values by: ', callback = self.setValueScaling, items = valueScalingList)
 
         box3 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
@@ -217,6 +218,7 @@ class OWLinProj(OWWidget):
         
         self.cbShowAllAttributes()
         self.setActiveLearner()
+        self.setValueScaling()
         
 
     # #########################
@@ -253,7 +255,7 @@ class OWLinProj(OWWidget):
             else: minLen = 3
                         
             possibilities = 0
-            for i in range(minLen, maxLen+1): possibilities += OWVisFuncts.combinationsCount(i, len(listOfAttributes))* OWVisFuncts.fact(i-1)/2
+            for i in range(minLen, maxLen+1): possibilities += orngVisFuncts.combinationsCount(i, len(listOfAttributes))* orngVisFuncts.fact(i-1)/2
                 
             self.graph.totalPossibilities = possibilities
             self.graph.triedPossibilities = 0

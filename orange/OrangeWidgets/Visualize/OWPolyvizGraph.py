@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 import time, math
 from OWkNNOptimization import *
 from orngScaleData import *
-import OWVisFuncts
+import orngVisFuncts
 #import orange
 
 # ####################################################################
@@ -700,7 +700,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                         for attrOrder in attrReverse:
                             if self.kNNOptimization.isOptimizationCanceled():
                                 secs = time.time() - startTime
-                                self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                                self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
                                 self.polyvizWidget.progressBarFinished()
                                 return
                             permutationIndex += 1
@@ -716,14 +716,14 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                                 
                             self.triedPossibilities += 1
                             self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                            self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities)))
+                            self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities)))
 
                     if self.onlyOnePerSubset:
                         (acc, other_results, lenTable, attrList, order) = self.kNNOptimization.getMaxFunct()(tempList)
                         addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": order})
 
         secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.polyvizWidget.progressBarFinished()
 
 
@@ -751,10 +751,10 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
 
         for z in range(minLength-1, len(attributes)):
             for u in range(minLength-1, maxLength):
-                projs = OWVisFuncts.createProjections(numClasses, u+1)
+                projs = orngVisFuncts.createProjections(numClasses, u+1)
                 attrListLength = u+1
                 
-                combinations = OWVisFuncts.combinations(range(z), u)
+                combinations = orngVisFuncts.combinations(range(z), u)
 
                 if attrReverseDict == None:
                     if not allAttrReverse.has_key(attrListLength):
@@ -800,7 +800,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                             for attrOrder in attrReverse:
                                 if self.kNNOptimization.isOptimizationCanceled():
                                     secs = time.time() - startTime
-                                    self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                                    self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
                                     return
                                 permutationIndex += 1
 
@@ -814,7 +814,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                                     tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
                                     
                                 self.triedPossibilities += 1
-                                self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), z))
+                                self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), z))
                         except:
                             pass
                             
@@ -823,7 +823,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                         addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": attrOrder})
                
         secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.polyvizWidget.progressBarFinished()
 
 
@@ -853,7 +853,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
             for iteration in range(2):
                 if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue    
                 if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
-                strTotalAtts = OWVisFuncts.createStringFromNumber(lenOfAttributes)
+                strTotalAtts = orngVisFuncts.createStringFromNumber(lenOfAttributes)
                 listOfCanditates = []
 
                 if attrReverseList == None:
@@ -917,7 +917,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                         listOfCanditates.append((acc, attrList, reverse))
                         if max(acc, accuracy)/min(acc, accuracy) > 1.01: significantImprovement = 1
                     else:
-                        self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
+                        self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), orngVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
                         if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
                             addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1, generalDict = {"reverse": reverse})
 

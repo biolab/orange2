@@ -6,7 +6,7 @@ import time
 from orngCI import FeatureByCartesianProduct
 import OWClusterOptimization
 import RandomArray
-import OWVisFuncts
+import orngVisFuncts
 from orngScaleScatterPlotData import *
 
 DONT_SHOW_TOOLTIPS = 0

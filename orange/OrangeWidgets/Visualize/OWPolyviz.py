@@ -16,7 +16,7 @@ from OWPolyvizGraph import *
 from OWkNNOptimization import *
 from time import time
 from math import pow
-import OWVisAttrSelection, OWToolbars, OWVisFuncts, OWDlgs
+import orngVisFuncts, OWToolbars, orngVisFuncts, OWDlgs
 
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
@@ -252,7 +252,7 @@ class OWPolyviz(OWWidget):
             # use the heuristic to test only most interesting attribute orders
             self.optimizationDlg.setStatusBarText("Evaluating attributes...")
             if self.optimizationDlg.useHeuristicToFindAttributeOrders:
-                attrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix())
+                attrs, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.data, orngVisFuncts.S2NMeasureMix())
                 self.optimizationDlg.setStatusBarText("")
 
                 self.graph.getOptimalSeparationUsingHeuristicSearch(attrs, attrsByClass, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
@@ -273,7 +273,7 @@ class OWPolyviz(OWWidget):
                 self.graph.triedPossibilities = 0
 
                 if self.graph.totalPossibilities > 200000:
-                    self.printVerbose("OWPolyviz: Warning: There are %s possible polyviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities)))
+                    self.printVerbose("OWPolyviz: Warning: There are %s possible polyviz projections with this set of attributes"% (orngVisFuncts.createStringFromNumber(self.graph.totalPossibilities)))
 
                 self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
 

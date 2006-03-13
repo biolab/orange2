@@ -485,7 +485,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             elif self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                 for (xAnchor,yAnchor,label) in shownAnchorData:
-                    if self.anchorsAsVectors:
+                    if self.anchorsAsVectors and not self.scalingByVariance:
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
                         markerX, markerY = xAnchor*attrVal, yAnchor*attrVal
                         key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, markerX], yData = [0, markerY], lineWidth=3)
@@ -608,21 +608,19 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # build list of indices for permutations of different number of attributes
         permutationIndices = {}
         for i in range(3, maxLength+1):
-            indices = {}
-            buildPermutationIndexList(range(0, i), [], indices)
-            permutationIndices[i] = indices
+            permutationIndices[i] = generatePermutations(range(i))
 
         classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
         for z in range(minLength-1, len(attributes)):
             for u in range(minLength-1, maxLength):
-                combinations = OWVisFuncts.combinations(attributes[:z], u)
+                combinations = orngVisFuncts.combinations(attributes[:z], u)
 
                 XAnchors = anchorList[u+1-minLength][0]
                 YAnchors = anchorList[u+1-minLength][1]
                 
                 for attrList in combinations:
                     attrs = attrList + [attributes[z]] # remove the value of this attribute subset
-                    permIndices = permutationIndices[len(attrs)]
+                    permutations = permutationIndices[len(attrs)]
                     
                     validData = self.getValidList(attrs)
                     classList = Numeric.compress(validData, classListFull)
@@ -632,12 +630,12 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     tempList = []
 
                     # for every permutation compute how good it separates different classes            
-                    for ind in permIndices.values():
+                    for ind in permutations:
                         permutation = [attrs[val] for val in ind]
                         permutationAttributes = [self.attributeNames[i] for i in permutation]                        
                         if self.clusterOptimization.isOptimizationCanceled():
                             secs = time.time() - startTime
-                            self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                            self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
                             self.widget.progressBarFinished()
                             return
 
@@ -663,7 +661,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                         del permutation, data, graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict, classesDict,
                         
                     self.widget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                    self.clusterOptimization.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities)))
+                    self.clusterOptimization.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities)))
 
                     if self.onlyOnePerSubset:
                         (value, valueDict, closureDict, polygonVerticesDict, attrs, enlargedClosureDict, otherDict) = max(tempList)
@@ -679,7 +677,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 del combinations
 
         secs = time.time() - startTime
-        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.widget.progressBarFinished()
 
 

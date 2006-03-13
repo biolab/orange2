@@ -9,7 +9,7 @@
 from OWWidget import *
 from random import betavariate 
 from OWSieveMultigramGraph import *
-import OWVisAttrSelection
+import orngVisFuncts
 from orngCI import FeatureByCartesianProduct
 import OWGUI
 

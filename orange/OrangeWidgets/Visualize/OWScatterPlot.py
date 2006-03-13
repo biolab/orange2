@@ -158,7 +158,7 @@ class OWScatterPlot(OWWidget):
         self.icons = self.createAttributeIconDict()
         
         self.activateLoadedSettings()
-        self.resize(900, 700)
+        self.resize(700, 550)
 
     
     def activateLoadedSettings(self):
