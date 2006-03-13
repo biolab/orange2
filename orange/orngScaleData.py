@@ -7,7 +7,7 @@ import orange
 import Numeric, RandomArray, MA
 from MA import transpose
 from OWTools import *
-import OWVisFuncts
+import orngVisFuncts
 
 
 # ####################################################################    
@@ -96,9 +96,9 @@ class orngScaleData:
         self.attributeNames = [attr.name for attr in data.domain]
         self.attributeNameIndex = dict([(data.domain[i].name, i) for i in range(len(data.domain))])
         
-        min = -1; max = -1
+        Min = -1; Max = -1
         if self.globalValueScaling == 1:
-            (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
+            (Min, Max) = self.getMinMaxValDomain(data, self.attributeNames)
 
         arr = transpose(data.toMA("ac")[0])
         averages = MA.average(arr, 1)
@@ -128,25 +128,26 @@ class orngScaleData:
                 if not self.attrValues.has_key(attr.name):  self.attrValues[attr.name] = [0, len(attr.values)]
                 count = self.attrValues[attr.name][1]
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
-                self.offsets.append(-0.5)
-                self.normalizers.append(count)
+                self.offsets.append(0.0)
+                self.normalizers.append(count-1)
                 self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
             else:
                 if self.scalingByVariance:
                     self.offsets.append(self.domainDataStat[index].avg)
-                    self.normalizers.append(self.domainDataStat[index].dev)
+                    self.normalizers.append(max(1e-5, self.domainDataStat[index].dev))
                     arr[index] = ((arr[index] - self.offsets[-1]) / self.normalizers[-1])
+                    self.attrValues[attr.name] = [MA.minimum(arr[index]), MA.maximum(arr[index])]
                 else:
                     if self.attrValues.has_key(attr.name):          # keep the old min, max values
-                        min, max = self.attrValues[attr.name]
+                        Min, Max = self.attrValues[attr.name]
                     elif self.globalValueScaling == 0:
-                        min = self.domainDataStat[index].min
-                        max = self.domainDataStat[index].max
-                    diff = float(max - min) or 1.0
-                    self.attrValues[attr.name] = [min, max]
-                    self.offsets.append(min)
+                        Min = self.domainDataStat[index].min
+                        Max = self.domainDataStat[index].max
+                    diff = float(Max - Min) or 1.0
+                    self.attrValues[attr.name] = [Min, Max]
+                    self.offsets.append(Min)
                     self.normalizers.append(diff)
-                    arr[index] = (arr[index] - float(min)) / diff
+                    arr[index] = (arr[index] - float(Min)) / diff
 
                 if self.jitterContinuous:
                     line = arr[index] + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))
@@ -242,12 +243,10 @@ class orngScaleData:
             d = getVariableValueIndices(example, index)
             return (d[example[index].value]*2 + 1) / float(2*len(d))
         else:
-            [min, max] = self.attrValues[example.domain[index].name]
-            #if example[index] < min:   return 0
-            #elif example[index] > max: return 1
-            #else: return (example[index] - min) / float(max - min)
-            # warning: returned value can be outside 0-1 interval!!!
-            return (example[index] - min) / float(max - min)
+            if len(self.offsets) <= index or len(self.normalizers) <= index :
+                print "invalid example or attribute index", index, len(self.offsets), len(self.normalizers)
+                return 0.0
+            return (example[index] - self.offsets[index]) / self.normalizers[index]
         
 
     def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):
