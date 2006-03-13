@@ -425,6 +425,8 @@ class OWBaseWidget(QDialog):
     def __init__(self, parent = None, signalManager = None, title="Qt Orange BaseWidget", modal=FALSE):
         # the "currentContexts" MUST be the first thing assigned to a widget
         self.currentContexts = {}
+        self._guiElements = []      # used for automatic widget debugging
+        
         self.title = title.replace("&","")
 
         QDialog.__init__(self, parent, self.title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize + Qt.WStyle_Maximize)
@@ -906,6 +908,54 @@ class OWBaseWidget(QDialog):
         
     def __setattr__(self, name, value):
         return unisetattr(self, name, value, QDialog)
+
+    def randomlyChangeSettings(self):
+        import random
+        index = random.randint(0, len(self._guiElements)-1)
+        type, widget = self._guiElements[index][0], self._guiElements[index][1]
+        if type == "checkBox" and widget.isEnabled():
+            type, widget, value, callback = self._guiElements[index]
+            setattr(self, value, not mygetattr(self, value))
+            if callback:
+                callback()
+        elif type == "button" and widget.isEnabled():
+            type, widget, callback = self._guiElements[index]
+            if widget.isToggleButton():
+                widget.setOn(not widget.isOn())
+            if callback:
+                callback()
+        elif type == "listBox" and widget.isEnabled():
+            type, widget, value, callback = self._guiElements[index]
+            if widget.count():
+                itemIndex = random.randint(0, widget.count()-1)
+                widget.setSelected(itemIndex, not widget.isSelected(itemIndex))
+            if callback:
+                callback()
+        elif type == "radioButtonsInBox" and widget.isEnabled():
+            type, widget, value, callback = self._guiElements[index]
+            radioIndex = random.randint(0, len(widget.buttons)-1)
+            if widget.buttons[radioIndex].isEnabled():
+                setattr(self, value, radioIndex)
+            if callback:
+                callback()
+        elif type == "radioButton" and widget.isEnabled():
+            type, widget, value, callback = self._guiElements[index]
+            setattr(self, value, not mygetattr(self, value))
+            if callback:
+                callback()
+        elif type in ["hSlider", "qwtHSlider", "spin"] and widget.isEnabled():
+            type, widget, value, min, max, step, callback = self._guiElements[index]
+            currentValue = mygetattr(self, value)
+            if currentValue == min:   setattr(self, value, currentValue+step)
+            elif currentValue == max: setattr(self, value, currentValue-step)
+            else:                     setattr(self, value, currentValue + [-step,step][random.randint(0,1)])
+            if callback:
+                callback()
+        elif type == "comboBox" and widget.isEnabled():
+            type, widget, value, callback = self._guiElements[index]
+            widget.setCurrentItem(random.randint(0, widget.count()-1))      # XXX DOES THIS WORK??? does the value change correspondingly?
+            if callback:
+                callback()  
 
 if __name__ == "__main__":  
     a=QApplication(sys.argv)
