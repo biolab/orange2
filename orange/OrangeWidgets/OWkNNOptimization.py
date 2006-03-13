@@ -1,6 +1,6 @@
 from OWBaseWidget import *
 from OWWidget import OWWidget
-import OWGUI, OWDlgs, OWVisTools
+import OWGUI, OWDlgs
 from OWGraph import *
 from orngVizRank import *
 from orngScaleData import getVariableValuesSorted
@@ -11,9 +11,9 @@ class OWVizRank(VizRank, OWBaseWidget):
                     "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances",
                     "evaluationAlgorithm", "createSnapshots", "evaluationTime", "learnerName",
                     "argumentCount", "optimizeBestProjection", "optimizeBestProjectionTime",
-                    "useHeuristicToFindAttributeOrders", "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount",
-                    "useExampleWeighting", "useSupervisedPCA", "useGammaDistribution", "optimizationType", "attributeCount",
-                    "useHeuristicToFindAttributeOrders", "saveResultsFromFolds"]
+                    "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount",
+                    "useExampleWeighting", "useSupervisedPCA", "attrSubsetSelection", "optimizationType", "attributeCount",
+                    "saveResultsFromFolds", "locOptOptimizeProjectionByPermutingAttributes"]
     resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30,35, 40, 50, 60, 70, 80, 100, 120, 150, 200]
@@ -80,7 +80,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         if visualizationMethod != SCATTERPLOT:
             self.label1 = QLabel('Projections with ', self.buttonBox)
             self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
-            self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(3, 15), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int)
+            self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(3, 100), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int)
             self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
         self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start Evaluating Projections", callback = self.evaluateProjections)
@@ -89,8 +89,6 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
         self.optimizeGivenProjectionButton = OWGUI.button(self.optimizationBox, self, "Optimize current projection", callback = self.optimizeBestProjections)
-        self.useHeuristicToFindAttributeOrderCheck = OWGUI.checkBox(self.optimizationBox, self, 'useHeuristicToFindAttributeOrders', 'Use Heuristic to Find Attribute Orders', tooltip = "Don't try all possible permutations of an attribute subset but only those,\nthat will most likely produce interesting projections.", callback = self.removeEvaluatedAttributes)
-        if visualizationMethod == SCATTERPLOT: self.useHeuristicToFindAttributeOrderCheck.hide()
 
         self.resultList = QListBox(self.resultsBox)
         #self.resultList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
@@ -104,27 +102,24 @@ class OWVizRank(VizRank, OWBaseWidget):
         # ##########################
         # SETTINGS TAB
         self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
-        self.methodTypeCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "evaluationAlgorithm", "Projection Evaluation Method", tooltip = "Which learning method to use to use to evaluate given projections.", items = ["k-Nearest Neighbor", "Fisher Discriminant Analysis", "Heuristic (very fast)"])
-        self.attrKNeighboursEdit = OWGUI.lineEdit(self.optimizationSettingsBox, self, "kValue", "Number of neighbors (k):                ", orientation = "horizontal", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", valueType = int, validator = QIntValidator(self))
-        self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
+        self.methodTypeCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "evaluationAlgorithm", "Projection Evaluation Method: ", tooltip = "Which learning method to use to use to evaluate given projections.", items = ["k-Nearest Neighbor", "Fisher Discriminant Analysis", "Heuristic (very fast)"])
+        self.attrKNeighboursEdit = OWGUI.lineEdit(self.optimizationSettingsBox, self, "kValue", "Number of neighbors (k):            ", orientation = "horizontal", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", valueType = int, validator = QIntValidator(self))
+        self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
+        self.testingCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "testingMethod", label = "Testing Method: ", orientation = "horizontal", items = ["Leave one out (slowest)", "10 fold cross validation", "Test on learning set (fastest)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")        
         OWGUI.checkBox(self.optimizationSettingsBox, self, 'useExampleWeighting', 'Use example weighting (in case of uneven class distribution)', tooltip = "Don't try all possible permutations of an attribute subset but only those,\nthat will most likely produce interesting projections.")
 
         if visualizationMethod == LINEAR_PROJECTION:
             OWGUI.checkBox(self.SettingsTab, self, 'useSupervisedPCA', 'Optimize class separation using supervised PCA', box = " Supervised PCA ")
         else: self.useSupervisedPCA = 0
-        
-        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ranking ")
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ranking of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ranking of Discrete Attributes: ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
-        OWGUI.comboBox(self.heuristicsSettingsBox, self, "useGammaDistribution", items = ["Exhaustively test possible attribute subsets", "Generate attribute subset according using gamma distribution"])
+
+        self.attributeSelectionBox = OWGUI.widgetBox(self.SettingsTab, " Attribute subset selection ")        
+        OWGUI.comboBox(self.attributeSelectionBox, self, "attrSubsetSelection", items = ["Deterministically using the selected attribute ranking measures", "Use gamma distribution and test all possible placements", "Use gamma distribution and test only one possible placement"])
+            
+        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Measures for Attribute Ranking ")
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " For Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " For Discrete Attributes:  ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
         self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score", "Area under curve (AUC)"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
-        self.testingCombo = OWGUI.comboBox(self.SettingsTab, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")        
-
-        self.localOptimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Local Optimization Settings ")
-        self.localOptimizationProjCountCombo = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptProjCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
-        self.localOptimizationAttrsCount = OWGUI.lineEdit(self.localOptimizationSettingsBox, self, "locOptAttrsToTry", "Number of best attributes to try:                       ", orientation = "horizontal", tooltip = "How many of the top ranked attributes do you want to try in the projections?", valueType = int, validator = QIntValidator(self))
-        self.localOptimizationProjMaxAttr    = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptMaxAttrsInProj", "Maximum number of attributes in a projection: ", items = range(3,50), tooltip = "What is the number of attributes when local optimization should stop optimizing projections?", sendSelectedValue = 1, valueType = int)
 
         self.saveResultsFromFoldsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank's classification accuracy ")
         hbox = OWGUI.widgetBox(self.saveResultsFromFoldsBox, orientation = "horizontal")
@@ -132,7 +127,13 @@ class OWVizRank(VizRank, OWBaseWidget):
         OWGUI.button(hbox, self, "Compute accuracy", callback = self.computeVizRanksAccuracy)
 
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Length of the Projection List ")
-        self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)        
+        self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
+
+        self.localOptimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Local Optimization Settings ")
+        OWGUI.checkBox(self.localOptimizationSettingsBox, self, 'locOptOptimizeProjectionByPermutingAttributes', 'Try improving projection by permuting attributes in projection')
+        self.localOptimizationProjCountCombo = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptProjCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
+        self.localOptimizationAttrsCount = OWGUI.lineEdit(self.localOptimizationSettingsBox, self, "locOptAttrsToTry", "Number of best attributes to try:                       ", orientation = "horizontal", tooltip = "How many of the top ranked attributes do you want to try in the projections?", valueType = int, validator = QIntValidator(self))
+        self.localOptimizationProjMaxAttr    = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptMaxAttrsInProj", "Maximum number of attributes in a projection: ", items = range(3,50), tooltip = "What is the number of attributes when local optimization should stop optimizing projections?", sendSelectedValue = 1, valueType = int)
 
         # ##########################
         # ARGUMENTATION TAB
@@ -159,9 +160,6 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.optimizeBestProjectionCombo = OWGUI.comboBox(b2, self, "optimizeBestProjectionTime", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
         self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts, sendSelectedValue = 1, valueType = int)
-        #projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
-        #self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
-        #self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsCount", items = self.moreArgumentsNums, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box", sendSelectedValue = 1, valueType = int)
 
         # ##########################
         # SAVE & MANAGE TAB
@@ -233,14 +231,6 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.evaluatedAttributes = None
         self.evaluatedAttributesByClass = None
         
-        # update heuristic check box
-        self.useHeuristicToFindAttributeOrderCheck.setEnabled(contMeasures[self.attrCont][0] == "Signal to Noise OVA")
-        
-        if not self.data: return
-        if not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete or self.attrCont != CONT_MEAS_S2NMIX:
-            self.useHeuristicToFindAttributeOrders = 0
-            self.useHeuristicToFindAttributeOrderCheck.setEnabled(0)
-        
        
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
@@ -305,12 +295,15 @@ class OWVizRank(VizRank, OWBaseWidget):
     # a function that is meaningful when visualizing using radviz or polyviz
     # it removes projections that don't have different at least two attributes in comparison with some better ranked projection
     def removeTooSimilarProjections(self):
-        i=0
+        (text, ok) = QInputDialog.getText('Qt Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
+        if not ok: return
+        percents = int(str(text)) 
         qApp.setOverrideCursor(QWidget.waitCursor)
         self.setStatusBarText("Removing similar projections")
+        i=0
         while i < self.resultList.count():
             qApp.processEvents()
-            if self.existsABetterSimilarProjection(i):
+            if self.existsABetterSimilarProjection(i, allowedPercentOfEqualAttributes = percents):
                 self.results.pop(i)
                 self.shownResults.pop(i)
                 self.resultList.removeItem(i)
@@ -373,7 +366,6 @@ class OWVizRank(VizRank, OWBaseWidget):
             self.classesList.insertItem(data.domain.classVar.values[i])
             self.classValueList.insertItem(data.domain.classVar.values[i])
         self.classesList.selectAll(1)
-        #if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
 
                 
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
@@ -406,7 +398,7 @@ class OWVizRank(VizRank, OWBaseWidget):
                     data = data1
             
             # evaluate attributes using the selected attribute measure
-            self.evaluatedAttributes = OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+            self.evaluatedAttributes = orngVisFuncts.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # print the exception
@@ -439,7 +431,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             if self.resultList.count() > self.resultListLen:
                 self.resultList.removeItem(self.resultList.count()-1)
                 self.shownResults.pop()
-            if updateStatusBar: self.setStatusBarText("Inserted %s projections" % (OWVisFuncts.createStringFromNumber(index)))
+            if updateStatusBar: self.setStatusBarText("Inserted %s projections" % (orngVisFuncts.createStringFromNumber(index)))
             qApp.processEvents()        # allow processing of other events
 
     
@@ -512,7 +504,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.disableControls()
 
         testIndex = 0
-        strTotal = OWVisFuncts.createStringFromNumber(len(results))
+        strTotal = orngVisFuncts.createStringFromNumber(len(results))
         for (acc, other, tableLen, attrList, tryIndex, generalDict) in results:
             if self.isOptimizationCanceled(): break
             testIndex += 1
@@ -524,7 +516,7 @@ class OWVizRank(VizRank, OWBaseWidget):
             if self.saveResultsFromFolds: generalDict["resultsByFolds"] = resultsByFolds
             
             self.addResult(accuracy, other_results, tableLen, attrList, tryIndex, generalDict)
-            self.setStatusBarText("Reevaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(testIndex), strTotal))
+            self.setStatusBarText("Reevaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(testIndex), strTotal))
 
         self.setStatusBarText("")
         self.parentWidget.progressBarFinished()
@@ -542,8 +534,13 @@ class OWVizRank(VizRank, OWBaseWidget):
                 QMessageBox.information( None, self.parentName, 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
             elif self.qualityMeasure == AVERAGE_CORRECT:
                 QMessageBox.information( None, self.parentName, 'Average probability of correct classification is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+            elif self.qualityMeasure == AUC:
+                QMessageBox.information( None, self.parentName, 'AUC is %.3f'%(acc), QMessageBox.Ok + QMessageBox.Default)
+            elif self.qualityMeasure == BRIER_SCORE:
+                QMessageBox.information( None, self.parentName, 'Brier score of kNN model is %.3f' % (acc), QMessageBox.Ok + QMessageBox.Default)
             else:
-                QMessageBox.information( None, self.parentName, 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
+                QMessageBox.information( None, self.parentName, 'Accuracy of the model is is %.3f' % (acc), QMessageBox.Ok + QMessageBox.Default)
+                
 
     
     # ##############################################################
@@ -572,7 +569,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         
         VizRank.save(self, name, self.shownResults, len(self.shownResults))
 
-        self.setStatusBarText("Saved %s projections" % (OWVisFuncts.createStringFromNumber(len(self.shownResults))))
+        self.setStatusBarText("Saved %s projections" % (orngVisFuncts.createStringFromNumber(len(self.shownResults))))
         butt.hide()
 
 
@@ -603,7 +600,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         del self.dontUpdate
         self.finishedAddingResults()
 
-        self.setStatusBarText("Loaded %s projections" % (OWVisFuncts.createStringFromNumber(count)))
+        self.setStatusBarText("Loaded %s projections" % (orngVisFuncts.createStringFromNumber(count)))
         butt.hide()
 
     def showKNNCorect(self):
@@ -619,7 +616,6 @@ class OWVizRank(VizRank, OWBaseWidget):
     # disable all controls while evaluating projections
     def disableControls(self):
         self.buttonBox.setEnabled(0)
-        self.useHeuristicToFindAttributeOrderCheck.setEnabled(0)
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
         self.resultsDetailsBox.setEnabled(0)
@@ -631,7 +627,6 @@ class OWVizRank(VizRank, OWBaseWidget):
         
     def enableControls(self):
         self.buttonBox.setEnabled(1)
-        self.useHeuristicToFindAttributeOrderCheck.setEnabled(1)
         self.startOptimizationButton.show()
         self.stopOptimizationButton.hide()
         self.resultsDetailsBox.setEnabled(1)
@@ -922,12 +917,12 @@ class OWInteractionAnalysis(OWWidget):
         best = self.results[0][ACCURACY]
         worst= self.results[min(len(self.results)-1, self.projectionCount)][ACCURACY]
 
-        if self.parent.useHeuristicToFindAttributeOrders: attributes, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.parent.data, OWVisAttrSelection.S2NMeasureMix())
-        else:   attributes = OWVisAttrSelection.evaluateAttributes(self.parent.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+        if self.parent.attrCont == CONT_MEAS_S2NMIX: attributes, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.parent.data, orngVisFuncts.S2NMeasureMix())
+        else:   attributes = orngVisFuncts.evaluateAttributes(self.parent.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
         attributes = attributes[:self.attributeCount]
         
-        if self.parent.useHeuristicToFindAttributeOrders: attributes, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.parent.data, OWVisAttrSelection.S2NMeasureMix())
-        else:   attributes = OWVisAttrSelection.evaluateAttributes(self.parent.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+        if self.parent.attrCont == CONT_MEAS_S2NMIX: attributes, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.parent.data, orngVisFuncts.S2NMeasureMix())
+        else:   attributes = orngVisFuncts.evaluateAttributes(self.parent.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
         attributes = attributes[:self.attributeCount]
         
         while index < len(self.results):
@@ -1084,7 +1079,7 @@ class OWGraphAttributeHistogram(OWWidget):
         attrs = attrs[:self.attributeCount]
 
         if self.colorAttributes and self.evaluatedAttributes == None:
-            evalAttrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.kNNOptimizationDlg.data, OWVisAttrSelection.S2NMeasureMix())
+            evalAttrs, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.kNNOptimizationDlg.data, orngVisFuncts.S2NMeasureMix())
 
             classVariableValues = getVariableValuesSorted(self.kNNOptimizationDlg.data, self.kNNOptimizationDlg.data.domain.classVar.name)
             classColors = ColorPaletteHSV(len(classVariableValues))
@@ -1336,7 +1331,7 @@ class OWGraphIdentifyOutliers(OWWidget):
                 Numeric.put(self.matrixOfPredictions[(existing + index)*classCount + i], validDataIndices, probabilities[i])            
 
             index += 1
-            self.statusBar.message("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(existing + index), OWVisFuncts.createStringFromNumber(projCount)))
+            self.statusBar.message("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(existing + index), orngVisFuncts.createStringFromNumber(projCount)))
             self.widget.progressBarSet(100.0*(index)/float(projCount-existing))
 
         self.widget.progressBarFinished()
