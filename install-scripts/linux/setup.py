@@ -389,6 +389,7 @@ class install_wrap(install):
             OrangeInstallDoc = os.path.join(self.orangepath, "doc", "orange")
             print "Orange installation dir: "+OrangeInstallDir
             print "Orange documentation dir: "+OrangeInstallDoc
+            print "Please add to your environment: LD_LIBRARY_PATH="+OrangeInstallDir
             print "To uninstall Orange type:"
             print ""
             print "    python "+OrangeInstallDoc+"/setup.py uninstall"
@@ -418,7 +419,7 @@ OrangeInstallDoc = os.path.join(sys.prefix, "share", "doc",
                                 "orange")
 OrangeInstallLib = os.path.join(sys.prefix, "lib")
 
-OrangeLibList = ['orange.so','orangene.so','orangeom.so','statc.so','corn.so']
+OrangeLibList = ['orange.so','liborange.so', 'orangene.so','orangeom.so','statc.so','corn.so']
         
 BaseDir = os.getcwd()
 OrangeDirs = ["orange", "orange.OrangeCanvas", "orange.OrangeWidgets"]
