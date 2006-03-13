@@ -1,5 +1,5 @@
 from orngCI import FeatureByCartesianProduct
-import orange, OWVisAttrSelection, OWVisFuncts
+import orange, orngVisFuncts
 import time
 import Numeric, orngContingency
 from math import sqrt, log, e
@@ -103,7 +103,7 @@ class orngMosaic:
         
         try:
             # evaluate attributes using the selected attribute measure
-            self.evaluatedAttributes = OWVisAttrSelection.evaluateAttributes(data, None, discMeasures[self.attrDisc][1])
+            self.evaluatedAttributes = orngVisFuncts.evaluateAttributes(data, None, discMeasures[self.attrDisc][1])
         except:
             import sys
             type, val, traceback = sys.exc_info()
@@ -154,13 +154,13 @@ class orngMosaic:
             return
 
         triedPossibilities = 0; totalPossibilities = 0
-        if self.optimizationType == 0: totalPossibilities = OWVisFuncts.combinationsCount(self.attributeCount, len(evaluatedAttrs))
+        if self.optimizationType == 0: totalPossibilities = orngVisFuncts.combinationsCount(self.attributeCount, len(evaluatedAttrs))
         else:
-            for i in range(1, self.attributeCount+1): totalPossibilities += OWVisFuncts.combinationsCount(i, len(evaluatedAttrs))
+            for i in range(1, self.attributeCount+1): totalPossibilities += orngVisFuncts.combinationsCount(i, len(evaluatedAttrs))
 
         for z in range(len(evaluatedAttrs)):
             for u in range(minLength-1, maxLength):
-                combinations = OWVisFuncts.combinations(evaluatedAttrs[:z], u)
+                combinations = orngVisFuncts.combinations(evaluatedAttrs[:z], u)
                 
                 for attrList in combinations:
                     attrs = [evaluatedAttrs[z]] + attrList
@@ -176,7 +176,7 @@ class orngMosaic:
                     
                     if self.__class__.__name__ == "OWMosaicOptimization":
                         self.parentWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
-                        self.setStatusBarText("Evaluated %s visualizations..." % (OWVisFuncts.createStringFromNumber(triedPossibilities)))
+                        self.setStatusBarText("Evaluated %s visualizations..." % (orngVisFuncts.createStringFromNumber(triedPossibilities)))
                         qApp.processEvents()        # allow processing of other events
 
         self.finishEvaluation(triedPossibilities)
@@ -185,7 +185,7 @@ class orngMosaic:
     def finishEvaluation(self, evaluatedProjections):
         if self.__class__.__name__ == "OWMosaicOptimization":
             secs = time.time() - self.startTime
-            self.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
+            self.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
             self.parentWidget.progressBarFinished()
             self.enableControls()
             self.finishedAddingResults()
@@ -442,63 +442,61 @@ class orngMosaic:
     def removeWeakerArguments(self):
         if not self.arguments or not self.arguments.values(): return
 
-        # create a dict for arguments of different lengths. each dict has arguments of this length and corresponding scores
-        argList = {1: {}, 2: {}, 3:{}, 4:{}}
-        for argsByClass in self.arguments.values():
-            for i in range(len(argsByClass)):
-                attrs = argsByClass[i][2]
+        for classValue in self.arguments.keys():
+            # create a dict for arguments of different lengths. each dict has arguments of this length and corresponding scores
+            argList = {1: {}, 2: {}, 3:{}, 4:{}}
+            arguments = self.arguments[classValue]
+            for i in range(len(arguments)):
+                attrs = arguments[i][2]
                 attrs.sort()
-                existingVal, existingIndexList = argList[len(attrs)].get(tuple(attrs), (0.0, []))
-                argList[len(attrs)][tuple(attrs)] = (existingVal + abs(argsByClass[i][0]), existingIndexList + [i])
+                argList[len(attrs)][tuple(attrs)] = (arguments[i][0], i)
 
-        if len(argList[1]) == 0: return     # in case that we only evaluated projections with EXACTLY X attributes we cannot remove weak arguments
+            if len(argList[1]) == 0: return     # in case that we only evaluated projections with EXACTLY X attributes we cannot remove weak arguments
 
-        for count in [4,3,2]:
-            args = argList[count]
+            for count in [4,3,2]:
+                args = argList[count]
 
-            candidates = []     # candidate projections for deleting
-            for key in args.keys():
-                splits = OWVisFuncts.getPossibleSplits(list(key))
-                for split in splits:
-                    vals = [argList[len(v)].get(tuple(v), [None, None])[0] for v in split]
-                    if None in vals or sum(vals) >= args[key][0]:
-                        args.pop(key)   # remove the combination of attributes because a split exists, that produces a more important argument
-                        break
-                if args.has_key(key):
-                    candidates.append((args[key][0], key, splits))
+                candidates = []     # candidate projections for deleting
+                for key in args.keys():
+                    splits = orngVisFuncts.getPossibleSplits(list(key))
+                    for split in splits:
+                        vals = [argList[len(v)].get(tuple(v), [None, None])[0] for v in split]
+                        if None in vals or abs(sum(vals)) >= abs(args[key][0]) or not sum([abs(val) == val for val in vals]) in [0, len(vals)]:   # do all values in vals have the same sign
+                            args.pop(key)   # remove the combination of attributes because a split exists, that produces a more important argument
+                            break
+                    if args.has_key(key):
+                        candidates.append((args[key][0], key, splits))
 
-            candidates.sort()
-            candidates.reverse()
-            for val, attrs, splits in candidates:
-                vals = []
-                for split in splits:
-                    vals += [argList[len(v)].get(tuple(v)) for v in split]
-                if None in vals:
-                    args.pop(attrs)
-                    continue       # we have already used some of the attributes in split for a better projection
+                candidates.sort()
+                candidates.reverse()
+                for val, attrs, splits in candidates:
+                    vals = []
+                    for split in splits:
+                        vals += [argList[len(v)].get(tuple(v)) for v in split]
+                    if None in vals:
+                        args.pop(attrs)
+                        continue       # we have already used some of the attributes in split for a better projection
 
-                # obviously we have found a very good projection of attributes and we still have all the attributes needed
-                # we now have to remove other projections that use these attributes
-                for split in splits:
-                    for part in split:
-                        if argList[len(part)].has_key(tuple(part)):
-                            argList[len(part)].pop(tuple(part))
+                    # obviously we have found a very good projection of attributes and we still have all the attributes needed
+                    # we now have to remove other projections that use these attributes
+                    for split in splits:
+                        for part in split:
+                            if argList[len(part)].has_key(tuple(part)):
+                                argList[len(part)].pop(tuple(part))
 
-        #print [len(argList[1]), len(argList[2]), len(argList[3])]
-        #assert False not in [a[a.keys()[i]] == a.values()[i] for i in range(len(a.keys()))]
-        indicesToKeep = [[] for i in range(len(self.arguments.values()))]
-        for val, indices in argList[1].values() + argList[2].values() + argList[3].values() + argList[4].values():
-            for i, v in enumerate(indices):
-                indicesToKeep[i].append(v)
+            #print [len(argList[1]), len(argList[2]), len(argList[3])]
+            #assert False not in [a[a.keys()[i]] == a.values()[i] for i in range(len(a.keys()))]
+            indicesToKeep = []
+            for val, index in argList[1].values() + argList[2].values() + argList[3].values() + argList[4].values():
+                indicesToKeep.append(index)
 
-        # we remove all arguments that are not in indicesToKeep       
-        for i, indices in enumerate(indicesToKeep):
-            indices.sort()
-            arguments = self.arguments.values()[i]
+            # we remove all arguments that are not in indicesToKeep
+            indicesToKeep.sort()
+            arguments = self.arguments[classValue]
             for j in range(len(arguments))[::-1]:
-                if len(indices) == 0 or j != indices[-1]:
+                if len(indicesToKeep) == 0 or j != indicesToKeep[-1]:
                     arguments.pop(j)
-                else: indices.pop()
+                else: indicesToKeep.pop()
             
     # compute probability that the combination of attribute values in attrValues is significantly different from being independent
     # see Kononenko: Semi-naive Bayes
