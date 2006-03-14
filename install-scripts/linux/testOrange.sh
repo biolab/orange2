@@ -19,3 +19,6 @@ else
 	exit 0
 fi
 
+# commit testresults.xml
+#cvs commit -m "" testresults.xml
+
