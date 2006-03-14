@@ -241,16 +241,13 @@ def testScripts(complete):
             os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest1.py", name, `titerations`, `runNo`, `int(isNewFile)`, outputsdir)
             report = open("xtest1_report", "rt")
             
-            result = rstrip(report.readline())
+            result = rstrip(report.readline()) or "crash"
             testNode.setAttribute("RESULT", result)
             runTestNode.setAttribute("RESULT", result)
 
-            results = ["OK", "changed", "random", "error"]
+            results = ["OK", "changed", "random", "error", "crash"]
             if result:
                 error_status = max(error_status, results.index(result))
-            else:
-                result = "crash"
-                error_status = 4
                 
             if result in ["error", "crash"]:
                 err_iter = rstrip(report.readline())
