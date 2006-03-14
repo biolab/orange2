@@ -275,6 +275,24 @@ TPreprocessor_addNoise::TPreprocessor_addNoise(PVariableFloatMap probs, const fl
 {}
 
 
+
+// props should be initialized to length of domain.attributes->size(), with defaultProportions
+void getProportions(PVariableFloatMap &proportions, const TDomain &domain, vector<float> &props)
+{
+  if (proportions) {
+    PITERATE(TVariableFloatMap, vi, proportions) {
+      const int idx = domain.getVarNum((*vi).first);
+      // class is included if this is explicitly requested
+      if (idx >= props.size())
+        props.push_back((*vi).second);
+      else
+        props[idx] = (*vi).second;
+    }
+  }
+}
+
+
+
 PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { 
   newWeight = weightID;
@@ -283,37 +301,29 @@ PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, cons
     return mlnew TExampleTable(gen);
 
   const TDomain &domain = gen->domain.getReference();
-  vector<pair<int, float> > ps;
-  vector<bool> attributeUsed(domain.attributes->size(), false);
 
   TExampleTable *table = mlnew TExampleTable(gen);
   PExampleGenerator wtable = table;
 
+  // We mustn't allow MakeRandomIndicesN to initalize a new generator each time it's called since we'd than always select the same examples
   const int n = table->size();
   PRandomGenerator rg = randomGenerator ? randomGenerator : mlnew TRandomGenerator;
   TMakeRandomIndicesN makerind;
-  // We mustn't allow MakeRandomIndicesN to initalize a new generator each time it's called since we'd than always select the same examples
   makerind.randomGenerator = rg;
 
-  if (proportions)
-    PITERATE(TVariableFloatMap, vi, proportions) {
-      TVariable &var = (*vi).first.getReference();
-      if (var.varType != TValue::INTVAR)
-        raiseError("Cannot add noise to non-discrete attribute '%s'", var.name.c_str());
-      const int idx = domain.getVarNum((*vi).first);
-      if ((*vi).second > 0.0)
-        addNoise(idx, (*vi).second, makerind, table);
-      if ((idx >= 0) && (idx < attributeUsed.size())) // not a class
-        attributeUsed[idx] = true;
+  // this will not assign the defaultProportion to the class
+  vector<float> props(domain.attributes->size(), defaultProportion > 0.0 ? defaultProportion : 0.0);
+  getProportions(proportions, domain, props);
+
+  int idx = 0;
+  vector<float>::const_iterator pi(props.begin()), pe(props.end());
+  for(; pi!=pe; pi++, idx++) {
+    if (*pi > 0.0) {
+      const PVariable &var = domain.variables->at(idx);
+      if (var->varType != TValue::INTVAR)
+        raiseError("Cannot add noise to non-discrete attribute '%s'", var->name.c_str());
+      addNoise(idx, *pi, makerind, table);
     }
-
-
-  if (defaultProportion > 0.0) {
-    int idx = 0;
-    const vector<bool>::const_iterator bb(attributeUsed.begin()), be(attributeUsed.end());
-    for(vector<bool>::const_iterator bi(bb); bi != be; bi++, idx++)
-      if (!*bi)
-        addNoise(idx, defaultProportion, makerind, table);
   }
 
   return wtable;
@@ -334,6 +344,11 @@ TPreprocessor_addGaussianNoise::TPreprocessor_addGaussianNoise(PVariableFloatMap
 {}
 
 
+int cmp1st(const pair<int, float> &o1, const pair<int, float> &o2)
+{
+  return o1.first < o2.first;
+}
+
 /* For Gaussian noise we use TGaussianNoiseGenerator; the advantage against going
    attribute by attribute (like in addNoise) is that it might require less paging
    on huge datasets. */
@@ -348,6 +363,7 @@ PExampleGenerator TPreprocessor_addGaussianNoise::operator()(PExampleGenerator g
   vector<pair<int, float> > ps;
   vector<bool> attributeUsed(domain.attributes->size(), false);
   
+
   if (deviations)
     PITERATE(TVariableFloatMap, vi, deviations) {
       PVariable var = (*vi).first;
@@ -371,6 +387,7 @@ PExampleGenerator TPreprocessor_addGaussianNoise::operator()(PExampleGenerator g
     }
   }
 
+  sort(ps.begin(), ps.end(), cmp1st);
   TGaussianNoiseGenerator gg = TGaussianNoiseGenerator(ps, gen, randomGenerator);
   return PExampleGenerator(mlnew TExampleTable(PExampleGenerator(gg)));
 }
@@ -399,52 +416,32 @@ PExampleGenerator TPreprocessor_addMissing::operator()(PExampleGenerator gen, co
     return mlnew TExampleTable(gen);
 
   const TDomain &domain = gen->domain.getReference();
-  vector<pair<int, float> > ps;
-  vector<bool> attributeUsed(domain.attributes->size(), false);
 
   TExampleTable *table = mlnew TExampleTable(gen);
   PExampleGenerator wtable = table;
 
+  // We mustn't allow MakeRandomIndices2 to initalize a new generator each time it's called since we'd than always select the same examples
   const int n = table->size();
   TMakeRandomIndices2 makerind;
-  // We mustn't allow MakeRandomIndices2 to initalize a new generator each time it's called since we'd than always select the same examples
   makerind.randomGenerator = randomGenerator ? randomGenerator : mlnew TRandomGenerator;;
 
-  if (proportions)
-    PITERATE(TVariableFloatMap, vi, proportions) {
-      const int idx = domain.getVarNum((*vi).first);
-      PLongList rind = makerind(n, 1 - (*vi).second);
-      if ((*vi).second > 0.0) {
-        const unsigned char &varType = (*vi).first->varType;
-        int eind = 0;
-        PITERATE(TLongList, ri, rind) {
-          if (*ri)
-            (*table)[eind][idx] = TValue(varType, specialType);
-          eind++;
-        }
+  // this will not assign the defaultProportion to the class
+  vector<float> props(domain.attributes->size(), defaultProportion > 0.0 ? defaultProportion : 0.0);
+  getProportions(proportions, domain, props);
+
+  int idx = 0;
+  vector<float>::const_iterator pi(props.begin()), pe(props.end());
+  for(; pi != pe; idx++, pi++)
+    if (*pi > 0.0) {
+      PLongList rind = makerind(n, 1 - *pi);
+      const unsigned char &varType = domain.variables->at(idx)->varType;
+      int eind = 0;
+      PITERATE(TLongList, ri, rind) {
+        if (*ri)
+          (*table)[eind][idx] = TValue(varType, specialType);
+        eind++;
       }
-      if ((idx >= 0) && (idx < attributeUsed.size())) // not a class
-        attributeUsed[idx] = true;
     }
-
-
-  if (defaultProportion > 0.0) {
-    TVarList::const_iterator vi(table->domain->attributes->begin());
-    int idx = 0;
-    const vector<bool>::const_iterator bb(attributeUsed.begin()), be(attributeUsed.end());
-    for(vector<bool>::const_iterator bi(bb); bi != be; bi++, vi++, idx++)
-      if (!*bi) {
-        PLongList rind = makerind(n, 1 - defaultProportion);
-        const unsigned char &varType = (*vi)->varType;
-
-        int eind = 0;
-        PITERATE(TLongList, ri, rind) {
-          if (*ri)
-            (*table)[eind][idx] = TValue(varType, specialType);
-          eind++;
-        }
-      }
-  }
 
   return wtable;
 }

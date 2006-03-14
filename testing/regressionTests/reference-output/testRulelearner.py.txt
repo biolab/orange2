@@ -1,0 +1,32 @@
+IF sex=['male'] AND status=['second'] AND age=['child'] THEN survived=yes<11.000, 0.000>
+IF sex=['female'] AND status=['second'] AND age=['child'] THEN survived=yes<13.000, 0.000>
+IF sex=['female'] AND status=['first'] AND age=['child'] THEN survived=yes<1.000, 0.000>
+IF sex=['female'] AND status=['first'] THEN survived=yes<140.000, 4.000>
+IF status=['first'] AND age=['child'] THEN survived=yes<5.000, 0.000>
+IF sex=['male'] AND status=['second'] THEN survived=no<14.000, 154.000>
+IF status=['crew'] AND sex=['female'] THEN survived=yes<20.000, 3.000>
+IF status=['second'] THEN survived=yes<80.000, 13.000>
+IF sex=['male'] AND status=['third'] AND age=['adult'] THEN survived=no<75.000, 387.000>
+IF status=['crew'] THEN survived=no<192.000, 670.000>
+IF sex=['male'] AND status=['third'] THEN survived=no<13.000, 35.000>
+IF status=['first'] THEN survived=no<57.000, 118.000>
+IF age=['child'] THEN survived=no<14.000, 17.000>
+IF TRUE THEN survived=no<76.000, 89.000>
+*****
+IF sex=['male'] AND status=['second'] AND age=['adult'] THEN survived=no<14.000, 154.000>
+IF sex=['male'] AND age=['adult'] AND status=['third'] THEN survived=no<75.000, 387.000>
+IF sex=['female'] AND status=['first'] THEN survived=yes<141.000, 4.000>
+IF sex=['male'] AND status=['crew'] THEN survived=no<192.000, 670.000>
+IF status=['second'] THEN survived=yes<104.000, 13.000>
+IF sex=['male'] AND status=['third'] THEN survived=no<13.000, 35.000>
+IF age=['adult'] AND status=['first'] THEN survived=no<57.000, 118.000>
+IF status=['crew'] THEN survived=yes<20.000, 3.000>
+IF sex=['female'] THEN survived=no<90.000, 106.000>
+IF TRUE THEN survived=yes<5.000, 0.000>
+****
+IF status=['second'] AND sex=['male'] THEN survived=no<25.000, 154.000>
+IF status=['third'] AND sex=['male'] THEN survived=no<88.000, 422.000>
+IF sex=['female'] AND status=['first'] THEN survived=yes<141.000, 4.000>
+IF status=['crew'] THEN survived=no<212.000, 673.000>
+IF status=['second'] THEN survived=yes<93.000, 13.000>
+IF TRUE THEN survived=no<152.000, 224.000>
