@@ -11,6 +11,8 @@ mv -f new.py xtest.py
 LD_LIBRARY_PATH=/home/orange/daily/test_install/orange:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
 
+# set time limit for regression tests
+ulimit -t 60000
 if ! python xtest.py test; then
 	exit 1
 else
