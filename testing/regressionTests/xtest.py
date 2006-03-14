@@ -249,13 +249,15 @@ def testScripts(complete):
             if result:
                 error_status = max(error_status, results.index(result))
             else:
-                error_status = 3
+                result = "crash"
+                error_status = 4
                 
-            if result == "error":
+            if result in ["error", "crash"]:
                 err_iter = rstrip(report.readline())
                 err_msg = reduce(add, report.readlines(), "")
                 if not err_msg:
                     err_msg = "<no message -- segmentation fault?>"
+                    print
                 for nn in [testNode, runTestNode]:
                     nn.setAttribute("ITERATION", err_iter)
                     nn.setAttribute("xml:space", "preserve")
