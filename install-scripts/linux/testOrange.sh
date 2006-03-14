@@ -12,7 +12,7 @@ LD_LIBRARY_PATH=/home/orange/daily/test_install/orange:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
 
 # set time limit for regression tests
-ulimit -t 120000
+ulimit -t 900
 if ! python xtest.py test; then
 	exit 1
 else
