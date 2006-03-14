@@ -613,7 +613,7 @@ class OWTreeViewer2D(OWWidget):
         TreeTab = QVGroupBox(self)
         OWGUI.checkWithSpin(TreeTab, self, 'Max Tree Depth:', 1, 20, 'MaxTreeDepthB', "MaxTreeDepth", tooltip='Defines the depth of the tree displayed', checkCallback=self.toggleTreeDepth, spinCallback=self.toggleTreeDepth)
         OWGUI.spin(TreeTab, self, 'LineWidth', min=1, max=10, step=1, label='Max Line Width:', tooltip='Defines max width of the edges that connect tree nodes', callback=self.toggleLineWidth)
-        OWGUI.radioButtonsInBox(TreeTab, self,  'LineWidthMethod', ['No Dependency', 'Root Node', 'Parent Node'], box='Baseline for Line Width',
+        OWGUI.radioButtonsInBox(TreeTab, self,  'LineWidthMethod', ['No Dependency', 'Root Node', 'Parent Node'], box='Reference for Line Width',
                                 tooltips=['All edges are of the same width', 'Line width is relative to number of cases in root node', 'Line width is relative to number of cases in parent node'],
                                 callback=self.toggleLineWidth)
         self.tabs.insertTab(TreeTab, "Tree")
@@ -625,9 +625,11 @@ class OWTreeViewer2D(OWWidget):
         # Node information
 
 
-        self.centerRootButton=OWGUI.button(self.controlArea, self, "Center Root", callback=lambda :self.rootNode and self.canvasView.center(self.rootNode.x(),
+        OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator)
+        findbox = QHBox(self.controlArea)
+        self.centerRootButton=OWGUI.button(findbox, self, "Find Root", callback=lambda :self.rootNode and self.canvasView.center(self.rootNode.x(),
                                                                                                                       self.rootNode.y()))
-        self.centerNodeButton=OWGUI.button(self.controlArea, self, "Center Selected Node", callback=lambda :self.canvasView.selectedNode and \
+        self.centerNodeButton=OWGUI.button(findbox, self, "Find Selected", callback=lambda :self.canvasView.selectedNode and \
                                      self.canvasView.center(self.canvasView.selectedNode.x(), self.canvasView.selectedNode.y()))
         self.tabs.insertTab(NodeTab,"Node")
         self.NodeTab=NodeTab
@@ -781,8 +783,7 @@ class OWDefTreeViewer2D(OWTreeViewer2D):
         self.navWidget.lay.addWidget(self.treeNav)
         self.canvasView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
-        OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
-        
+#        OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
 
 if __name__=="__main__":
     a = QApplication(sys.argv)
