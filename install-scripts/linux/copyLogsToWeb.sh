@@ -18,3 +18,6 @@ for f in *-output; do
 	chmod o+r /var/www/html/orange/tests/$f/*.txt
 done
 
+cp testresults.xml /var/www/html/orange/tests
+chmod o+r /var/www/html/orange/tests/testresults.xml
+
