@@ -94,30 +94,31 @@ class OWCN2RulesViewer(OWWidget):
         self.headerView.setVScrollBarMode(QScrollView.AlwaysOff)
         layout.addWidget(self.headerView)
         layout.addWidget(self.canvasView)
-        layout=QVBoxLayout(self.controlArea)
+        
         box=OWGUI.widgetBox(self.controlArea,"Show Info")
-        layout.addWidget(box)
-        layout.addWidget(self.controlArea)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
 
-        OWGUI.checkBox(box,self,"RuleLen","Rule length",callback=self.drawRules)        OWGUI.checkBox(box,self,"RuleQ","Rule quality",callback=self.drawRules)
+        OWGUI.checkBox(box,self,"RuleLen","Rule length",callback=self.drawRules)
+        OWGUI.checkBox(box,self,"RuleQ","Rule quality",callback=self.drawRules)
         OWGUI.checkBox(box,self,"Coverage","Coverage",callback=self.drawRules)
         OWGUI.checkBox(box,self,"Class","Predicted class", callback=self.drawRules)
         OWGUI.checkBox(box,self,"Dist","Distribution", callback=self.drawRules)
         OWGUI.checkBox(box,self,"DistBar","Distribution(Bar)",callback=self.drawRules)
 
+        OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Sorting")
-        layout.addWidget(box)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
         self.sortBox=OWGUI.comboBox(box, self, "Sort", 
                                     items=["Rule length", "Rule quality", "Coverage", "Predicted class",
                                            "Distribution","Rule"]
                                     ,callback=self.drawRules)
-        box=OWGUI.widgetBox(self.controlArea,1)
-        layout.addWidget(box)
+        OWGUI.separator(self.controlArea)
+        box=OWGUI.widgetBox(self.controlArea,"Output")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
         OWGUI.checkBox(box,self,"Commit", "Commit on change")
         OWGUI.button(box,self,"&Commit",callback=self.commit)
+
+        QVBox(self.controlArea)
         
         OWGUI.button(self.controlArea,self,"&Save rules to file",callback=self.saveRules)
 
