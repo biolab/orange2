@@ -24,19 +24,6 @@ def demangleExamples(x):
     else:
         return x, 0
     
-def classChecksum(dta):
-    rgen=random.Random()
-    rgen.seed(0)
-    sum=0
-    for i in dta:
-        sum+=int(i.getclass()) ^ rgen.randint(0, 255)
-    return sum
-
-
-def verbose_print(verb, s):
-    if verb:
-        print s
-
 
 class BooleanCounter:
   def __init__(self, bits):
@@ -112,7 +99,7 @@ class NondecreasingCounter:
   def next(self):
     if not self.subcounter:
       self.subcounter=BooleanCounter(self.places-1)
-    if self.subcounter():
+    if self.subcounter.next():
       self.state=[0]
       for add_one in self.subcounter.state:
         self.state.append(self.state[-1]+add_one)
@@ -150,7 +137,7 @@ class CanonicFuncCounter:
       self.state = [0]*self.places
 
     if not self.state:
-      raise IndexError, "CanonicFuncCounter: counting finished"
+      raise StopIteration, "CanonicFuncCounter: counting finished"
     
     return self.state
 
@@ -229,40 +216,30 @@ def compare2_smaller(x, y):
 
 
 def frange(*argw):
-    start, stop = 0.0, 1.0
+    start, stop, step = 0.0, 1.0, 0.1
     if len(argw)==1:
         start=step=argw[0]
     elif len(argw)==2:
         stop, step = argw
     elif len(argw)==3:
         start, stop, step = argw
-    else:
+    elif len(argw)>3:
         raise AttributeError, "1-3 arguments expected"
 
     stop+=1e-10
     i=0
     res=[]
-    print start, stop, step
     while 1:
         f=start+i*step
-        print f
         if f>stop:
             break
         res.append(f)
-        print res
         i+=1
     return res
 
-def delimitedList(aList, aDelimiter):
-    return reduce(lambda x,y, delim=aDelimiter: x+delim+y, a_list)
 
-import re
-cnre=re.compile(".*\.(?P<classname>\w*) instance at")
-def getclassname(object):
-    import exceptions
-    on=cnre.search(`object`)
-    try:
-        return on.group("classname")
-    except Exception:
-        pass
-    return None
+verbose = 0
+
+def printVerbose(text, *verb):
+    if len(verb) and verb[0] or verbose:
+        print text

@@ -1,8 +1,13 @@
 import orange
-from orngMisc import demangleExamples, getobjectname, classChecksum
+from orngMisc import demangleExamples, getobjectname
 import exceptions, whrandom, cPickle, os, os.path
 
 #### Some private stuff
+
+def verbose_print(verb, s):
+    if verb:
+        print s
+
 
 def encodePP(pps):
     pps=""
@@ -199,7 +204,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
 
     examples, weight = demangleExamples(examples)
     folds = cv(examples)
-    ccsum = classChecksum(examples)
+    ccsum = hex(examples.checksum())[2:]
     ppsp = encodePP(pps)
     nLrn = len(learners)
 
@@ -310,7 +315,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
     testResults.results = [TestedExample(indices[i], int(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                            for i in range(len(examples))]
 
-    ccsum = classChecksum(examples)
+    ccsum = hex(examples.checksum())[2:]
     ppsp = encodePP(pps)
     fnstr = "{TestWithIndices}_%s_%s%s-%s" % ("%s", indicesrandseed, ppsp, ccsum)
     if "*" in fnstr:
