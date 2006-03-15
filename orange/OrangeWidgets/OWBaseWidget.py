@@ -11,7 +11,7 @@ from string import *
 import cPickle, copy
 from OWTools import *
 from orngSignalManager import *
-import time, user, verbose
+import time, user, orngMisc
 
 ERROR = 0
 WARNING = 1
@@ -818,7 +818,7 @@ class OWBaseWidget(QDialog):
         self.statusBar.message(text)
 
     def printVerbose(self, text):
-        verbose.printVerbose(text)
+        orngMisc.printVerbose(text)
 
     # if we are in debug mode print the event into the file
     def printEvent(self, type, text):
