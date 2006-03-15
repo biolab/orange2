@@ -1,5 +1,5 @@
         Learner   CA     Brier Score
         default:  0.473  0.501
-    k-NN (k=11):  0.859  0.242
-   boosted k-NN:  0.813  0.267
-boosted classifier:  0.858  0.249
+    k-NN (k=11):  0.859  0.240
+   boosted k-NN:  0.813  0.257
+    AdaBoost.M1:  0.830  0.244
