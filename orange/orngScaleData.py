@@ -60,6 +60,7 @@ class orngScaleData:
         self.scalingByVariance = 0
         self.jitterSize = 10
         self.jitterContinuous = 0
+        self.subDataMinMaxDict = {}             # dictionary of tuples. keys are attribute names. values are (min, max) vals for examples in subsetData
         
        
     
@@ -161,7 +162,28 @@ class orngScaleData:
                     self.scaledData[index] = arr[index]
 
             self.noJitteringScaledData = arr
+
+        if self.subsetData:
+            self.setSubsetData(self.subsetData)
         
+    def setSubsetData(self, subData):
+        self.subsetData = subData
+        self.subDataMinMaxDict = {}
+        if not subData or not self.rawdata or subData.domain != self.rawdata.domain:
+            return
+        if self.scalingByVariance or self.globalValueScaling: return
+        
+        domainSubDataStat = orange.DomainBasicAttrStat(subData)
+        for index in range(len(subData.domain)):
+            attr = subData.domain[index]
+            if subData.domain[index].varType == orange.VarTypes.Continuous:
+                Min = domainSubDataStat[index].min
+                Max = domainSubDataStat[index].max
+                projMin = (Min - self.offsets[index]) / self.normalizers[index]
+                projMax = (Max - self.offsets[index]) / self.normalizers[index]
+                if projMin < 0.0 or projMax > 1.0:
+                    self.subDataMinMaxDict[attr.name] = (min(projMin, 0.0), max(1.0, projMax))
+
  
     # ####################################################################
     # compute min and max value for a list of attributes 
@@ -246,7 +268,11 @@ class orngScaleData:
             if len(self.offsets) <= index or len(self.normalizers) <= index :
                 print "invalid example or attribute index", index, len(self.offsets), len(self.normalizers)
                 return 0.0
-            return (example[index] - self.offsets[index]) / self.normalizers[index]
+            position = (example[index] - self.offsets[index]) / self.normalizers[index]
+            if self.subDataMinMaxDict.has_key(self.rawdata.domain[index].name):
+                m, M = self.subDataMinMaxDict[self.rawdata.domain[index].name]
+                position = (position - m) / float(max(M-m, 1e-10))
+            return position
         
 
     def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):

@@ -2,14 +2,6 @@ from orngScaleData import *
 from copy import copy
 from math import sqrt
 
-# generate a list of permutations of the given list
-def generatePermutations(list):
-    if list==[]:
-        return [[]]
-    else:
-        return [ [list[i]] + p for i in range(len(list)) for p in generatePermutations(list[:i] + list[i+1:])]
-
-
 class orngScaleLinProjData(orngScaleData):
     def __init__(self):
         orngScaleData.__init__(self)
@@ -17,7 +9,6 @@ class orngScaleLinProjData(orngScaleData):
         self.anchorData =[]        # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
         self.lastAttrIndices = None
         self.anchorDict = {}
-        
         
     def setAnchors(self, xAnchors, yAnchors, attributes):
         if attributes:
@@ -79,8 +70,9 @@ class orngScaleLinProjData(orngScaleData):
         if normalizeExample == 1 or (normalizeExample == None and self.normalizeExamples):
             m = min(values); M = max(values)
             if m < 0.0 or M > 1.0:  # we have to do rescaling of values so that all the values will be in the 0-1 interval
-                m = min(m, 0.0); M = max(M, 1.0); diff = max(M-m, 1e-10)
-                values = [(val-m) / float(diff) for val in values]
+                values = [max(0.0, min(val, 1.0)) for val in values]
+                #m = min(m, 0.0); M = max(M, 1.0); diff = max(M-m, 1e-10)
+                #values = [(val-m) / float(diff) for val in values]
             
             s = sum(Numeric.array(values)*anchorRadius)
             if s == 0: return [0.0, 0.0]
@@ -112,6 +104,7 @@ class orngScaleLinProjData(orngScaleData):
         jitterSize = settingsDict.get("jitterSize", 0.0)
         useAnchorData = settingsDict.get("useAnchorData", 0)
         removeMissingData = settingsDict.get("removeMissingData", 1)
+        #minmaxVals = settingsDict.get("minmaxVals", None)
         
         # if we want to use anchor data we can get attrIndices from the anchorData
         if useAnchorData and self.anchorData:
@@ -124,7 +117,22 @@ class orngScaleLinProjData(orngScaleData):
         else:                data = self.noJitteringScaledData
 
         selectedData = Numeric.take(data, attrIndices)
-        if removeMissingData: selectedData = Numeric.compress(validData, selectedData)
+        if removeMissingData:
+            selectedData = Numeric.compress(validData, selectedData)
+
+        """
+        if minmaxVals:
+            for i in range(len(minmaxVals)):
+                m, M = minmaxVals[i]
+                if m == 0.0 and M == 1.0: continue
+                selectedData[i] = (selectedData[i] - m) / float(M-m)
+        """
+        if self.subsetData:
+            for i in range(len(attrIndices)):
+                if not self.subDataMinMaxDict.has_key(self.rawdata.domain[attrIndices[i]].name):
+                    continue
+                m, M = self.subDataMinMaxDict[self.rawdata.domain[attrIndices[i]].name]
+                selectedData[i] = (selectedData[i] - m) / float(M-m)
         
         if not classList:
             classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
