@@ -81,7 +81,7 @@ def parameter_selection(learner, data, folds=4, parameters={}):
                     res=1-res
                 else:
                     [res]=orngStat.MSE(te)
-                if res<best:
+                if res<best["error"]:
                     best.update(current)
                     best["error"]=res
         else:
