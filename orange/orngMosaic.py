@@ -77,11 +77,16 @@ class orngMosaic:
 
         if not data: return
 
-        # take only discrete attributes
+        # discretize attributes
+        entroDisc = orange.EntropyDiscretization()
         discAttrs = []
         for attr in data.domain:
-            if attr.varType == orange.VarTypes.Discrete: discAttrs.append(attr.name)
-
+            if attr.varType == orange.VarTypes.Discrete:
+                discAttrs.append(attr)
+            else:
+                newAttr = entroDisc(attr, data)
+                newAttr.name = attr.name
+                discAttrs.append(newAttr)
         self.data = data.select(discAttrs)
         self.attributeNameIndex = dict([(self.data.domain[i].name, i) for i in range(len(self.data.domain))])
 
