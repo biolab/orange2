@@ -4,7 +4,7 @@ from math import sqrt
 import os, orange
 from math import sqrt
 import Numeric, time
-from copy import copy
+from copy import copy, deepcopy
 from orngLinProj import FreeViz
 
 # quality measure
@@ -175,9 +175,19 @@ class VizRank:
         return 0
 
 
-    def createkNNLearner(self):
-        kValue = self.kValue
-        if self.percentDataUsed != 100: kValue = int(kValue * self.percentDataUsed / 100.0)
+    def createkNNLearner(self, k = -1, kValueFormula = -1):
+        if k == -1:
+            if kValueFormula == -1 or not self.data or len(self.data) == 0:
+                kValue = self.kValue
+            elif kValueFormula == 0 or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete:
+                kValue = int(sqrt(len(self.data)))
+            else:
+                kValue = int(len(self.data) / len(self.data.domain.classVar.values))    # k = N / c (c = # of class values)
+            if self.percentDataUsed != 100:
+                kValue = int(kValue * self.percentDataUsed / 100.0)
+        else:
+            kValue = k
+            
         return orange.kNNLearner(k = kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
         
 
@@ -201,8 +211,14 @@ class VizRank:
                 self.kValue = int(len(data) / len(data.domain.classVar.values))    # k = N / c (c = # of class values)
 
         self.attributeNameIndex = self.graph.attributeNameIndex
+        self.correctSettingsIfNecessary()
 
-
+    # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
+    def setSubsetData(self, subData):
+        self.subsetData = subData
+        self.graph.setSubsetData(subData)
+        self.clearArguments()
+        
     def getEvaluatedAttributes(self):
         return orngVisFuncts.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
 
@@ -235,8 +251,7 @@ class VizRank:
         if index < self.maxResultListLen:
             self.results.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, generalDict))
 
-    # if we computed projections with self.saveResultsFromFolds = 1 then we can quickly compute actual accuracy that we would get
-    # if we would use VizRank as an ordinary classifier and testing it on each fold separately
+    """
     def computeVizRanksAccuracy(self, showResults = 1):
         if not self.results: return
 
@@ -270,10 +285,14 @@ class VizRank:
 
         for fold in range(nrFolds):
             learnset = self.data.selectref(indices, fold, negate=1)
+            testset  = self.data.selectref(indices, fold, negate=0)
             if not len(learnset): continue
-
+            self.graph.setSubsetData(None)
+            self.graph.setData(learnset)
+            self.graph.setSubsetData(testset)
             self.data = learnset
-            self.graph.setData(learnset, keepMinMaxVals = 1)
+
+            #self.graph.setData(learnset, keepMinMaxVals = 1)
             folds[fold].sort(); folds[fold].reverse()
             self.results = [self.results[index] for (val, index) in folds[fold][:self.argumentCount+100]]
                         
@@ -281,6 +300,7 @@ class VizRank:
                 if indices[i] != fold: continue
                 classValue, dist = VizRank.findArguments(self, data[i])
                 testResults.results[i].setResult(0, classValue, dist)
+
             self.data = fullData
             self.results = fullResults
             if hasattr(self, "setStatusBarText"): self.setStatusBarText("Evaluated %d/%d folds..." % (fold, nrFolds ))
@@ -297,6 +317,7 @@ class VizRank:
             import qt
             qt.QMessageBox.information(self, "VizRank's accuracy", s, 'OK')
         return acc
+    """
 
     # kNNEvaluate - evaluate class separation in the given projection using a heuristic or k-NN method
     def kNNComputeAccuracy(self, table):
@@ -417,6 +438,8 @@ class VizRank:
     # Argumentation functions
     def findArguments(self, example):
         self.clearArguments()
+        if not self.data or not self.data.domain or not self.data.domain.classVar: return 
+
         self.arguments = [[] for i in range(len(self.data.domain.classVar.values))]
                 
         if len(self.results) == 0:
@@ -429,26 +452,25 @@ class VizRank:
             (accuracy, other_results, lenTable, attrList, tryIndex, generalDict) = self.results[index]
 
             if 1 in [example[attr].isSpecial() for attr in attrList]: index+=1; continue
-            attrVals = [self.graph.scaleExampleValue(example, self.attributeNameIndex[attr]) for attr in attrList]
-            #if min(attrVals) < 0.0 or max(attrVals) > 1.0: index+=1; continue     # ignore projections where we have to extrapolate to project the data example
-                                    
             attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
+            attrVals = [self.graph.scaleExampleValue(example, ind) for ind in attrIndices]
             table = self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = generalDict)
             [xTest, yTest] = self.graph.getProjectedPointPosition(attrIndices, attrVals, settingsDict = generalDict)
             
-            learner = self.externalLearner or self.createkNNLearner()
+            learner = self.externalLearner or self.createkNNLearner(kValueFormula = 0)
             if self.useExampleWeighting: table, weightID = orange.Preprocessor_addClassWeight(table, equalize=1)
             else: weightID = 0
             classifier = learner(table, weightID)
             (classValue, dist) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
             classValue = int(classValue)
-            
+            #if max(dist) < 0.8: index += 1; continue        # ignore projections that don't have a reliable prediction
+                        
             for i in range(len(self.arguments)):
                 self.arguments[i].insert(self.getArgumentIndex(dist[i], i), (None, dist[i], dist, attrList, index))
                 vals[i] += dist[i]
-            
+
             index += 1; usedArguments += 1
-            
+
         suma = sum(vals)
         if suma == 0:
             dist = orange.Distribution(self.data.domain.classVar.name, self.data)
@@ -464,12 +486,19 @@ class VizRank:
         top = 0; bottom = len(self.arguments[classValue])
         while (bottom-top) > 1:
             mid  = (bottom + top)/2
-            if max(value, self.arguments[classValue][mid][1]) == value: bottom = mid
+            if max(value, self.arguments[classValue][mid][0]) == value: bottom = mid
             else: top = mid
 
         if len(self.arguments[classValue]) == 0: return 0
-        if max(value, self.arguments[classValue][top][1]) == value:  return top
+        if max(value, self.arguments[classValue][top][0]) == value:  return top
         else:                                                        return bottom
+
+    def correctSettingsIfNecessary(self):
+        if not self.data: return
+        # check if we have discrete attributes. if yes, then make sure we are not using s2nMix measure and GAMMA_SINGLE
+        if 1 in [self.data.domain[attr].varType == orange.VarTypes.Discrete for attr in self.data.domain.attributes]:
+            if self.attrCont == CONT_MEAS_S2NMIX:           self.attrCont = CONT_MEAS_S2N
+            if self.attrSubsetSelection == GAMMA_SINGLE:    self.attrSubsetSelection = GAMMA_ALL
 
     def isOptimizationCanceled(self):
         return (time.time() - self.startTime) / 60 >= self.optimizeBestProjectionTime
@@ -527,7 +556,7 @@ class VizRank:
                     if self.useSupervisedPCA:
                         permutationIndices[i] = [range(i)]
                     else:
-                        permutationIndices[i] = orngScaleLinProjData.generatePermutations(range(i))
+                        permutationIndices[i] = orngVisFuncts.generateDifferentPermutations(range(i))
                     self.totalPossibilities += orngVisFuncts.combinationsCount(i, len(attributes)) * len(permutationIndices[i])
                 self.evaluationData["permutationIndices"] = permutationIndices
             else:
@@ -557,7 +586,7 @@ class VizRank:
         maxTries = 50
         triedDict = self.evaluationData.get("triedCombinations", {})
         
-        if self.attrCont == CONT_MEAS_S2NMIX:
+        if self.attrCont == CONT_MEAS_S2NMIX or self.attrSubsetSelection == GAMMA_SINGLE:
             numClasses = len(self.data.domain.classVar.values)
             attributes, attrsByClass = self.evaluationData["attrs"]
             for i in range(maxTries):
@@ -600,9 +629,27 @@ class VizRank:
         combination = combinations[index]
         permutations = []
 
-        if self.attrCont == CONT_MEAS_S2NMIX:
+        if self.attrCont == CONT_MEAS_S2NMIX or self.attrSubsetSelection == GAMMA_SINGLE:
             # if we don't want to test all placements then we only create a permutation of groups and attributes in each group
-            if self.attrSubsetSelection == GAMMA_SINGLE:          
+            if self.attrSubsetSelection == GAMMA_SINGLE:
+                newCombinations = [combination]
+                for c in range(10):
+                    tempCombination = deepcopy(newCombinations[-1])
+                    newCombination = []
+                    for i in range(len(tempCombination)):
+                        group = tempCombination.pop(random.randint(0, len(tempCombination)-1))
+                        newGroup = []
+                        for j in range(len(group)):
+                            newGroup.append(group.pop(random.randint(0, len(group)-1)))
+                        newCombination.append(newGroup)
+                    newCombinations.append(newCombination)
+
+                for comb in newCombinations:
+                    allAttrs = []
+                    for group in comb: allAttrs += group
+                    permutations.append(allAttrs)
+
+                """
                 newCombination = []
                 for i in range(len(combination)):
                     group = combination.pop(random.randint(0, len(combination)-1))
@@ -611,9 +658,10 @@ class VizRank:
                         newGroup.append(group.pop(random.randint(0, len(group)-1)))
                     newCombination.append(newGroup)
                 combination = newCombination
+                """
                 
             # create only one permutation, because its all we need
-            if self.attrSubsetSelection == GAMMA_SINGLE or self.useSupervisedPCA:       
+            elif self.useSupervisedPCA:       
                 allAttrs = []
                 for l in combination: allAttrs += l
                 permutations.append(allAttrs)
@@ -633,6 +681,7 @@ class VizRank:
     def evaluateProjections(self):
         random.seed(0)      # always use the same seed to make results repeatable
         if not self.data: return
+        self.correctSettingsIfNecessary()
         evaluatedProjections = 0
         self.startTime = time.time()
         self.evaluationData = {}            # clear all previous data about tested permutations and stuff
@@ -768,6 +817,7 @@ class VizRank:
         random.seed(0)      # always use the same seed to make results repeatable
         count = min(len(self.results), self.locOptProjCount)
         if not count: return
+        self.correctSettingsIfNecessary()
         attrLists = [self.results[i][ATTR_LIST] for i in range(count)]                                   # create a list of attributes that are in the top projections
         attrLists = [[self.attributeNameIndex[name] for name in projection] for projection in attrLists]    # find indices from the attribute names
         accuracys = [self.getProjectionQuality(self.results[i][ATTR_LIST])[0] for i in range(count)]
@@ -1017,7 +1067,8 @@ class VizRank:
             file.write(s + "\n")
 
             if self.abortCurrentOperation: break
-            if hasattr(self, "setStatusBarText"): self.setStatusBarText("Saved %s projections" % (orngVisFuncts.createStringFromNumber(i)))
+            if hasattr(self, "setStatusBarText"):
+                self.setStatusBarText("Saved %s projections" % (orngVisFuncts.createStringFromNumber(i)))
 
         file.flush()
         file.close()
@@ -1077,7 +1128,7 @@ class VizRankClassifier(orange.Classifier):
         self.VizRank = vizrank
 
         if self.VizRank.__class__.__name__ == "OWVizRank":
-            self.VizRank.parentWidget.cdata(data, clearResults = 1)
+            self.VizRank.parentWidget.cdata(data)
             self.VizRank.useTimeLimit = 1                
         else:
             self.VizRank.setData(data)
@@ -1123,8 +1174,8 @@ class VizRankLearner(orange.Learner):
 
 #test widget
 if __name__=="__main__":
-    #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
-    data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\microarray\cancer\leukemia.tab")
+    data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
+    #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\microarray\cancer\leukemia.tab")
     """
     vizrank = VizRank(LINEAR_PROJECTION)
     vizrank.setData(data)
@@ -1133,13 +1184,20 @@ if __name__=="__main__":
     vizrank.attrCont = CONT_MEAS_S2NMIX
     vizrank.useSupervisedPCA = 0
     vizrank.useExampleWeighting = 0
-    vizrank.attrSubsetSelection == GAMMA_SINGLE
+    vizrank.attrSubsetSelection = GAMMA_SINGLE
     vizrank.evaluationTime = 1
     vizrank.evaluateProjections()
     """
     vizrank = VizRank(RADVIZ)
     vizrank.setData(data)
+    vizrank.attributeCount = 6
     vizrank.optimizationType = MAXIMUM_NUMBER_OF_ATTRS    # MAXIMUM_NUMBER_OF_ATTRS,  EXACT_NUMBER_OF_ATTRS
-    vizrank.saveResultsFromFolds = 1
-    vizrank.load(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\microarray\cancer\leukemia - Radviz - test.proj")
-    vizrank.computeVizRanksAccuracy()
+    vizrank.attrSubsetSelection = GAMMA_SINGLE
+    vizrank.attrCont = CONT_MEAS_S2N
+    #vizrank.saveResultsFromFolds = 1
+    #vizrank.load(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\microarray\cancer\leukemia - Radviz - test.proj")
+    #vizrank.computeVizRanksAccuracy()
+    vizrank.evaluationTime = 0.2
+    vizrank.evaluateProjections()
+    #vizrank.findArguments(data[0])
+    
