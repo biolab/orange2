@@ -118,9 +118,7 @@ class OWSurveyPlot(OWWidget):
         box = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
         OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
 
-
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+        OWGUI.button(self.SettingsTab, self, "Canvas Color", callback = self.setGraphCanvasColor, tooltip = "Set color for canvas background", debuggingEnabled = 0)
 
         self.icons = self.createAttributeIconDict()
 
@@ -132,7 +130,8 @@ class OWSurveyPlot(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
+        self.graph.setCanvasColor(QColor(self.graphCanvasColor))
+        #self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.cbShowAllAttributes()
 
     # ####################
@@ -333,10 +332,10 @@ class OWSurveyPlot(OWWidget):
         self.updateGraph()
 
     def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.parent.graphCanvasColor))
+        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
         if newColor.isValid():
-            self.parent.graphCanvasColor = str(newColor.name())
-            self.parent.graph.setCanvasColor(QColor(newColor))
+            self.graphCanvasColor = str(newColor.name())
+            self.graph.setCanvasColor(QColor(newColor))
 
 
 

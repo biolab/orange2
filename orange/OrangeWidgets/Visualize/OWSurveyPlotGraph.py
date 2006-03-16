@@ -46,9 +46,11 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
 
         self.setAxisScale(QwtPlot.yLeft, 0, totalValid, totalValid)
         self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)
-        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
-        self.setAxisMaxMinor(QwtPlot.xBottom, 0)
+        #self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
+        #self.setAxisMaxMinor(QwtPlot.xBottom, 0)
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
+        self.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)  # hide ticks
+        self.axisScaleDraw(QwtPlot.xBottom).setOptions(0)           # hide horizontal line representing x axis
         #self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
         
         # draw vertical lines that represent attributes

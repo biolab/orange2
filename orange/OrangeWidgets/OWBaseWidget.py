@@ -3,15 +3,11 @@
 # Orange Widget
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
-
-import sys, time
-import os, os.path
+from OWTools import *
+import sys, time, random, user, verbose, os, os.path, cPickle, copy, orngMisc
 import orange
 from string import *
-import cPickle, copy
-from OWTools import *
 from orngSignalManager import *
-import time, user, orngMisc
 
 ERROR = 0
 WARNING = 1
@@ -910,7 +906,8 @@ class OWBaseWidget(QDialog):
         return unisetattr(self, name, value, QDialog)
 
     def randomlyChangeSettings(self):
-        import random
+        if len(self._guiElements) == 0: return
+        
         index = random.randint(0, len(self._guiElements)-1)
         type, widget = self._guiElements[index][0], self._guiElements[index][1]
         if type == "checkBox" and widget.isEnabled():
@@ -929,15 +926,15 @@ class OWBaseWidget(QDialog):
             if widget.count():
                 itemIndex = random.randint(0, widget.count()-1)
                 widget.setSelected(itemIndex, not widget.isSelected(itemIndex))
-            if callback:
-                callback()
+                if callback:
+                    callback()
         elif type == "radioButtonsInBox" and widget.isEnabled():
             type, widget, value, callback = self._guiElements[index]
             radioIndex = random.randint(0, len(widget.buttons)-1)
             if widget.buttons[radioIndex].isEnabled():
                 setattr(self, value, radioIndex)
-            if callback:
-                callback()
+                if callback:
+                    callback()
         elif type == "radioButton" and widget.isEnabled():
             type, widget, value, callback = self._guiElements[index]
             setattr(self, value, not mygetattr(self, value))
@@ -953,9 +950,10 @@ class OWBaseWidget(QDialog):
                 callback()
         elif type == "comboBox" and widget.isEnabled():
             type, widget, value, callback = self._guiElements[index]
-            widget.setCurrentItem(random.randint(0, widget.count()-1))      # XXX DOES THIS WORK??? does the value change correspondingly?
-            if callback:
-                callback()  
+            if widget.count():
+                widget.setCurrentItem(random.randint(0, widget.count()-1))      # XXX DOES THIS WORK??? does the value change correspondingly?
+                if callback:
+                    callback()  
 
 if __name__ == "__main__":  
     a=QApplication(sys.argv)

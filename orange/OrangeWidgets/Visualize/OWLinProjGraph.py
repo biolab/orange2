@@ -9,6 +9,7 @@ from operator import add
 from math import *
 from OWClusterOptimization import *
 from orngScaleLinProjData import *
+import orngVisFuncts
 
 # indices in curveData
 SYMBOL = 0
@@ -608,7 +609,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # build list of indices for permutations of different number of attributes
         permutationIndices = {}
         for i in range(3, maxLength+1):
-            permutationIndices[i] = generatePermutations(range(i))
+            permutationIndices[i] = orngVisFuncts.generateDifferentPermutations(range(i))
 
         classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
         for z in range(minLength-1, len(attributes)):

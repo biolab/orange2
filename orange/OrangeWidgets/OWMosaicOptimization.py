@@ -10,7 +10,7 @@ mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlati
 class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
-    settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells", "useOnlyRelevantInteractionsInArgumentation"
+    settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
                     "evaluationTime", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
@@ -29,6 +29,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.showScore = 1
         self.showConfidence = 1
         self.VizRankClassifierName = "Mosaic Learner"
+        self.useOnlyRelevantInteractionsInArgumentation = 0 # unused variable present in old ini files
         
         
         self.lastSaveDirName = os.getcwd()

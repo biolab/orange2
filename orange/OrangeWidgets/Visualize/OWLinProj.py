@@ -120,9 +120,9 @@ class OWLinProj(OWWidget):
         self.shownAttribsLB = OWGUI.listBox(hbox, self, "selectedShown", "shownAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
         self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
 
-        self.optimizationDlgButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.")
-        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow)
-        self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved")
+        self.optimizationDlgButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
+        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
+        self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
         self.optimizationDlgButton.setMaximumWidth(63)
         self.clusterDetectionDlgButton.setMaximumWidth(63)
         self.freeVizDlgButton.setMaximumWidth(63)
@@ -181,7 +181,7 @@ class OWLinProj(OWWidget):
 
         # ####
         hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
-        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables")
+        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
         
         box2 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
         OWGUI.comboBox(box2, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
@@ -374,7 +374,7 @@ class OWLinProj(OWWidget):
     # INPUT SIGNALS
     
     # receive new data and update all fields
-    def cdata(self, data, clearResults = 1):
+    def cdata(self, data):
         if data:
             name = getattr(data, "name", "")
             data = orange.Preprocessor_dropMissingClasses(data)
@@ -388,7 +388,7 @@ class OWLinProj(OWWidget):
         self.data = data
         self.graph.setData(self.data)
         self.optimizationDlg.setData(data)  
-        self.clusterDlg.setData(data, clearResults)
+        self.clusterDlg.setData(data)
         self.freeVizDlg.setData(data)
         self.graph.clusterClosure = None
         self.graph.insideColors = None
