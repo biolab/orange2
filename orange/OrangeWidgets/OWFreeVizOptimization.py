@@ -13,8 +13,6 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
                     "s2nSpread", "s2nPlaceAttributes", "autoSetParameters",
                     "forceRelation", "mirrorSymmetry", "forceSigma", "restrain", "law", "forceRelation", "disableAttractive",
                     "disableRepulsive", "useGeneralizedEigenvectors"]
-    attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000]
-    #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
 
     forceRelValues = ["4 : 1", "3 : 1", "2 : 1", "3 : 2", "1 : 1", "2 : 3", "1 : 2", "1 : 3", "1 : 4"]
     attractRepelValues = [(4, 1), (3, 1), (2, 1), (3, 2), (1, 1), (2, 3), (1, 2), (1, 3), (1, 4)]
@@ -37,14 +35,6 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         if self.graph:
             self.graph.hideRadius = 0
             self.graph.showAnchors = 1
-
-        
-        self.stepsBeforeUpdate = 10
-        self.s2nSpread = 5
-        self.s2nPlaceAttributes = 50
-        self.s2nMixData = None
-        self.autoSetParameters = 1
-        self.classPermutationList = None
 
         # differential evolution
         self.differentialEvolutionPopSize = 100
@@ -297,100 +287,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.updateData([attr.name for attr in self.rawdata.domain.attributes], 0)
         self.graph.repaint()
 
-    # ###############################################################
-    # S2N HEURISTIC FUNCTIONS
-    # ###############################################################
     
-    # if autoSetParameters is set then try different values for parameters and see how good projection do we get
-    # if not then just use current parameters to place anchors
-    def s2nMixAnchorsAutoSet(self):
-        if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
-            return
-        
-        if self.autoSetParameters:
-            results = {}
-            oldVal = self.parentWidget.optimizationDlg.qualityMeasure
-            self.parentWidget.optimizationDlg.qualityMeasure = AVERAGE_CORRECT
-            self.s2nSpread = 0
-            permutations = generatePermutations(range(len(self.rawdata.domain.classVar.values)))
-            for perm in permutations:
-                self.classPermutationList = perm
-                for val in self.attrsNum:
-                    if self.attrsNum[self.attrsNum.index(val)-1] > len(self.rawdata.domain.attributes): continue    # allow the computations once
-                    self.s2nPlaceAttributes = val
-                    self.s2nMixAnchors(0)
-                    qApp.processEvents()
-                    acc, other, resultsByFolds = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, settingsDict = {"useAnchorData": 1}))
-                    if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
-                    else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
-                                                             
-                    results[acc] = (perm, val)
-            if results.keys() == []: return
-            self.classPermutationList, self.s2nPlaceAttributes = results[max(results.keys())]
-            qApp.processEvents()
-            self.s2nMixAnchors(0)        # update the best number of attributes
-
-            results = []
-            anchors = self.graph.anchorData
-            attributeNameIndex = self.graph.attributeNameIndex
-            attrIndices = [attributeNameIndex[val[2]] for val in anchors]
-            for val in range(10):
-                self.s2nSpread = val
-                acc, other, resultsByFolds = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"useAnchorData": 1}))
-                results.append(acc)
-                if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
-                else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
-            self.s2nSpread = results.index(max(results))
-
-            self.parentWidget.optimizationDlg.qualityMeasure = oldVal       # restore the old quality measure
-            self.setStatusBarText("Best projection value is %.2f" % (max(results)))
-
-        # always call this. if autoSetParameters then because we need to set the attribute list in radviz. otherwise because it finds the best attributes for current settings
-        self.s2nMixAnchors()
-
-
-
-    # place a subset of attributes around the circle. this subset must contain "good" attributes for each of the class values
-    def s2nMixAnchors(self, setAttributeListInRadviz = 1):
-        if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
-            return
-        
-        # compute the quality of attributes only once
-        if self.s2nMixData == None:
-            rankedAttrs, rankedAttrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.rawdata, orngVisFuncts.S2NMeasureMix())
-            self.s2nMixData = (rankedAttrs, rankedAttrsByClass)
-            classCount = len(rankedAttrsByClass)
-            attrs = rankedAttrs[:(self.s2nPlaceAttributes/classCount)*classCount]    # select appropriate number of attributes
-        else:
-            classCount = len(self.s2nMixData[1])
-            attrs = self.s2nMixData[0][:(self.s2nPlaceAttributes/classCount)*classCount]
-            
-        arr = [0]       # array that will tell where to put the next attribute
-        for i in range(1,len(attrs)/2): arr += [i,-i]
-
-        if len(attrs) == 0: return
-        phi = (2*math.pi*self.s2nSpread)/(len(attrs)*10.0)
-        anchorData = []; start = []
-        arr2 = arr[:(len(attrs)/classCount)+1]
-        for cls in range(classCount):
-            startPos = (2*math.pi*cls)/classCount
-            if self.classPermutationList: cls = self.classPermutationList[cls]
-            attrsCls = attrs[cls::classCount]
-            tempData = [(arr2[i], math.cos(startPos + arr2[i]*phi), math.sin(startPos + arr2[i]*phi), attrsCls[i]) for i in range(min(len(arr2), len(attrsCls)))]
-            start.append(len(anchorData) + len(arr2)/2) # starting indices for each class value
-            tempData.sort()
-            anchorData += [(x, y, name) for (i, x, y, name) in tempData]
-
-        anchorData = anchorData[(len(attrs)/(2*classCount)):] + anchorData[:(len(attrs)/(2*classCount))]
-        self.graph.anchorData = anchorData
-        attrNames = [anchor[2] for anchor in anchorData]
-        if setAttributeListInRadviz:
-            self.parentWidget.setShownAttributeList(self.rawdata, attrNames)
-        self.graph.updateData(attrNames)
-        self.graph.repaint()
-
 
     def findSPCAProjection(self):
         import LinearAlgebra
@@ -451,7 +348,11 @@ class S2NHeuristicClassifier(orange.Classifier):
             self.optimizationDlg.optimize(nrOfFreeVizSteps)
 
     # for a given example run argumentation and find out to which class it most often fall        
-    def __call__(self, example, returnType):        
+    def __call__(self, example, returnType):
+        table = orange.ExampleTable(example.domain)
+        table.append(example)
+        self.radvizWidget.subsetdata(table)       # show the example is we use the widget
+            
         anchorData = self.radvizWidget.graph.anchorData
         attributeNameIndex = self.radvizWidget.graph.attributeNameIndex
         scaleFunction = self.radvizWidget.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
@@ -460,9 +361,9 @@ class S2NHeuristicClassifier(orange.Classifier):
         attrVals = [scaleFunction(example, index) for index in attrListIndices]
                 
         table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, settingsDict = {"scaleFactor": self.radvizWidget.graph.trueScaleFactor, "useAnchorData": 1})
-        knn = self.radvizWidget.optimizationDlg.createkNNLearner()(table)
+        knn = self.radvizWidget.optimizationDlg.createkNNLearner(kValueFormula = 0)(table)
 
-        [xTest, yTest] = self.radvizWidget.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
+        [xTest, yTest] = self.radvizWidget.graph.getProjectedPointPosition(attrListIndices, attrVals, settingsDict = {"useAnchorData":1})
         (classVal, prob) = knn(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
 
         if returnType == orange.GetBoth: return classVal, prob

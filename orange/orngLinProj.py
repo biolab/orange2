@@ -1,6 +1,7 @@
 import orangeom, orange
 import math, random, Numeric, LinearAlgebra
 from orngScaleLinProjData import orngScaleLinProjData
+import orngVisFuncts
 
 #implementation
 FAST_IMPLEMENTATION = 0
@@ -28,7 +29,27 @@ class FreeViz:
         self.forceSigma = 1.0
         self.mirrorSymmetry = 1
         self.useGeneralizedEigenvectors = 1
+        self.rawdata = None
 
+        # s2n heuristics parameters
+        self.stepsBeforeUpdate = 10
+        self.s2nSpread = 5
+        self.s2nPlaceAttributes = 50
+        self.s2nMixData = None
+        self.autoSetParameters = 1
+        self.classPermutationList = None
+        self.attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000]
+        #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
+        
+    def setData(self, data):
+        self.rawdata = data
+        self.s2nMixData = None
+        self.classPermutationList = None
+        
+    # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
+    def setSubsetData(self, subsetdata):
+        self.subsetdata = subsetdata
+    
 
     def showAllAttributes(self):
         self.graph.anchorData = [(0,0, a.name) for a in self.graph.rawdata.domain.attributes]
@@ -374,6 +395,119 @@ class FreeViz:
             if setGraphAnchors: self.graph.anchorData = self.graph.createAnchors(len(attributes), attributes)
             return [anchors[i][0] for i in range(len(attributes))], [anchors[i][1] for i in range(len(attributes))], (attributes, attrIndices)
 
+    # ###############################################################
+    # S2N HEURISTIC FUNCTIONS
+    # ###############################################################
+    
+    # if autoSetParameters is set then try different values for parameters and see how good projection do we get
+    # if not then just use current parameters to place anchors
+    def s2nMixAnchorsAutoSet(self):
+        if self.__class__ != FreeViz:
+            import qt
+                
+        if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            if self.__class__ != FreeViz:
+                qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
+            else:
+                print "S2N heuristic works only in data sets with a discrete class value"
+            return
+
+        import orngVizRank
+        vizrank = orngVizRank.VizRank(orngVizRank.RADVIZ, graph = self.graph)
+        vizrank.qualityMeasure = orngVizRank.AVERAGE_CORRECT
+        vizrank.setData(self.rawdata)
+        
+        if self.autoSetParameters:
+            results = {}
+            self.s2nSpread = 0
+            permutations = orngVisFuncts.generateDifferentPermutations(range(len(self.rawdata.domain.classVar.values)))
+            for perm in permutations:
+                self.classPermutationList = perm
+                for val in self.attrsNum:
+                    if self.attrsNum[self.attrsNum.index(val)-1] > len(self.rawdata.domain.attributes): continue    # allow the computations once
+                    self.s2nPlaceAttributes = val
+                    self.s2nMixAnchors(0)
+                    if self.__class__ != FreeViz:
+                        qt.qApp.processEvents()
+                        
+                    acc, other, resultsByFolds = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, settingsDict = {"useAnchorData": 1}))
+                    if hasattr(self, "setStatusBarText"):
+                        if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
+                        else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
+                                                             
+                    results[acc] = (perm, val)
+            if results.keys() == []: return
+            self.classPermutationList, self.s2nPlaceAttributes = results[max(results.keys())]
+            if self.__class__ != FreeViz:
+                qt.qApp.processEvents()
+            self.s2nMixAnchors(0)        # update the best number of attributes
+
+            results = []
+            anchors = self.graph.anchorData
+            attributeNameIndex = self.graph.attributeNameIndex
+            attrIndices = [attributeNameIndex[val[2]] for val in anchors]
+            for val in range(10):
+                self.s2nSpread = val
+                self.s2nMixAnchors(0)
+                acc, other, resultsByFolds = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"useAnchorData": 1}))
+                results.append(acc)
+                if hasattr(self, "setStatusBarText"):
+                    if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
+                    else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
+            self.s2nSpread = results.index(max(results))
+
+            if hasattr(self, "setStatusBarText"):
+                self.setStatusBarText("Best projection value is %.2f" % (max(results)))
+
+        # always call this. if autoSetParameters then because we need to set the attribute list in radviz. otherwise because it finds the best attributes for current settings
+        self.s2nMixAnchors()
+
+
+    # place a subset of attributes around the circle. this subset must contain "good" attributes for each of the class values
+    def s2nMixAnchors(self, setAttributeListInRadviz = 1):
+        if self.__class__ != FreeViz:
+            import qt
+            if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+                qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
+                return
+        
+        # compute the quality of attributes only once
+        if self.s2nMixData == None:
+            rankedAttrs, rankedAttrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.rawdata, orngVisFuncts.S2NMeasureMix())
+            self.s2nMixData = (rankedAttrs, rankedAttrsByClass)
+            classCount = len(rankedAttrsByClass)
+            attrs = rankedAttrs[:(self.s2nPlaceAttributes/classCount)*classCount]    # select appropriate number of attributes
+        else:
+            classCount = len(self.s2nMixData[1])
+            attrs = self.s2nMixData[0][:(self.s2nPlaceAttributes/classCount)*classCount]
+            
+        arr = [0]       # array that will tell where to put the next attribute
+        for i in range(1,len(attrs)/2): arr += [i,-i]
+
+        if len(attrs) == 0: return
+        phi = (2*math.pi*self.s2nSpread)/(len(attrs)*10.0)
+        anchorData = []; start = []
+        arr2 = arr[:(len(attrs)/classCount)+1]
+        for cls in range(classCount):
+            startPos = (2*math.pi*cls)/classCount
+            if self.classPermutationList: cls = self.classPermutationList[cls]
+            attrsCls = attrs[cls::classCount]
+            tempData = [(arr2[i], math.cos(startPos + arr2[i]*phi), math.sin(startPos + arr2[i]*phi), attrsCls[i]) for i in range(min(len(arr2), len(attrsCls)))]
+            start.append(len(anchorData) + len(arr2)/2) # starting indices for each class value
+            tempData.sort()
+            anchorData += [(x, y, name) for (i, x, y, name) in tempData]
+
+        anchorData = anchorData[(len(attrs)/(2*classCount)):] + anchorData[:(len(attrs)/(2*classCount))]
+        self.graph.anchorData = anchorData
+        attrNames = [anchor[2] for anchor in anchorData]
+
+        if self.__class__ != FreeViz:
+            if setAttributeListInRadviz:
+                self.parentWidget.setShownAttributeList(self.rawdata, attrNames)
+            self.graph.updateData(attrNames)
+            self.graph.repaint()
+
+
 
 
 # #############################################################################
@@ -422,3 +556,59 @@ class FreeVizLearner(orange.Learner):
         
     def __call__(self, examples, weightID = 0):
         return FreeVizClassifier(examples, self.FreeViz)
+
+
+
+# #############################################################################
+# class that represents S2N Heuristic classifier
+class S2NHeuristicClassifier(orange.Classifier):
+    def __init__(self, data, freeviz):
+        self.FreeViz = freeviz
+        self.data = data
+
+        if self.FreeViz.__class__ != FreeViz:
+            self.FreeViz.parentWidget.cdata(data)
+        else:
+            self.FreeViz.setData(data)
+            self.FreeViz.graph.setData(data)
+            
+        self.FreeViz.s2nMixAnchorsAutoSet()
+
+    def __call__(self, example, returnType):
+        table = orange.ExampleTable(example.domain)
+        table.append(example)
+
+        if self.FreeViz.__class__ != FreeViz:
+            self.FreeViz.parentWidget.subsetdata(table)      # show the example is we use the widget
+        else:
+            self.FreeViz.graph.setSubsetData(table)       
+            
+        anchorData = self.FreeViz.graph.anchorData
+        attributeNameIndex = self.FreeViz.graph.attributeNameIndex
+        scaleFunction = self.FreeViz.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
+
+        attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
+        attrVals = [scaleFunction(example, index) for index in attrListIndices]
+                
+        table = self.FreeViz.graph.createProjectionAsExampleTable(attrListIndices, settingsDict = {"scaleFactor": self.FreeViz.graph.trueScaleFactor, "useAnchorData": 1})
+        kValue = int(math.sqrt(len(self.data)))
+        knn = orange.kNNLearner(k = kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
+
+        [xTest, yTest] = self.FreeViz.graph.getProjectedPointPosition(attrListIndices, attrVals, settingsDict = {"useAnchorData":1})
+        classifier = knn(table, 0)
+        (classVal, dist) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
+        
+        if returnType == orange.GetBoth: return classVal, dist
+        else:                            return classVal
+        
+
+class S2NHeuristicLearner(orange.Learner):
+    def __init__(self, freeviz = None):
+        if not freeviz:
+            freeviz = FreeViz()
+        self.FreeViz = freeviz
+        self.name = "S2N Feature Selection Learner"
+        
+    def __call__(self, examples, weightID = 0):
+        return S2NHeuristicClassifier(examples, self.FreeViz)
+
