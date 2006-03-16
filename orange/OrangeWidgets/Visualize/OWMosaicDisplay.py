@@ -96,7 +96,7 @@ class OWMosaicDisplay(OWWidget):
             box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
             combo = OWGUI.comboBox(box, self, "attr" + str(i), None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
                         
-            butt = OWGUI.button(box, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values")
+            butt = OWGUI.button(box, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values", debuggingEnabled = 0)
             butt.setMaximumWidth(26); butt.setMaximumHeight(26); butt.setMinimumWidth(24); butt.setMinimumHeight(26)
             butt.setToggleButton(1)
             butt.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_sort.png")))
@@ -107,7 +107,7 @@ class OWMosaicDisplay(OWWidget):
         self.optimizationDlg = OWMosaicOptimization(self, self.signalManager)
         optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialog ", orientation = "horizontal")
         optimizationButtons.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow)
+        OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, debuggingEnabled = 0)
 
         box5 = OWGUI.widgetBox(self.GeneralTab, " Cell Colors Represent... ")
         OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.changedInteriorColoring)
@@ -211,7 +211,7 @@ class OWMosaicDisplay(OWWidget):
 
         if data:
             #self.data = orange.Preprocessor_dropMissing(data)
-            self.data = data
+            self.data = self.optimizationDlg.data
             if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.colorPalette = ColorPaletteBrewer(len(data.domain.classVar.values))
                 #self.colorPalette = ColorPaletteHSV(len(data.domain.classVar.values))
