@@ -438,13 +438,14 @@ class VizRank:
     # Argumentation functions
     def findArguments(self, example):
         self.clearArguments()
-        if not self.data or not self.data.domain or not self.data.domain.classVar: return 
+        if not self.data or not self.data.domain or not self.data.domain.classVar:
+            return orange.MajorityLearner(self.data)(example, orange.GetBoth)
 
         self.arguments = [[] for i in range(len(self.data.domain.classVar.values))]
                 
         if len(self.results) == 0:
             print 'VizRank Argumentation: To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.'
-            return (None,None)
+            return orange.MajorityLearner(self.data)(example, orange.GetBoth)
 
         usedArguments = 0; index = 0
         vals = [0.0 for i in range(len(self.arguments))]
@@ -1039,13 +1040,15 @@ class VizRank:
 
         # open, write and save file
         file = open(name, "wt")
-        attrs = ["kValue", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "useSupervisedPCA", "saveResultsFromFolds", "attrSubsetSelection"]
+        
+        attrs = ["kValue", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "useSupervisedPCA", "saveResultsFromFolds", "attrSubsetSelection", "optimizationType", "attributeCount", "attrDisc", "attrCont", "evaluationTime"]
         dict = {}
         for attr in attrs: dict[attr] = self.__dict__[attr]
         dict["dataCheckSum"] = self.data.checksum()
         
         file.write("%s\n%s\n" % (str(dict), str(self.selectedClasses)))
 
+        i=0
         for i in range(len(results)):
             if i >= count: break
 
