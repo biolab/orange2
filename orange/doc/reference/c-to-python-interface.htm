@@ -21,15 +21,13 @@
 <P>We shall write a function that gets examples, indices/names/descriptors of two attributes and the number edge types (see documentation on <A href="graph.htm">graphs</A>). The two attributes need to be discrete; the function treats the values of these two attributes for each example as a point in a plane and computes the Delaunay triangulation, which is returned as <CODE>orange.Graph</CODE>.</P>
 
 <P>The function should be declared like this:</P>
-<XMP class="code">
-PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(examples[, attr1, attr2, nEdgeTypes]) -> Graph")
+<XMP class="code">PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(examples[, attr1, attr2, nEdgeTypes]) -> Graph")
 </XMP>
 
 <P>This all should be written in a single line. Function arguments and result are like for any Python function (as you have learned while reading Python's documentation), while the macro PYARGS marks the function for export to Python. The macro is dummy and serves only as a marker. The first argument tells Python about the types of arguments (again, you've seen the constant METH_VARARGS in Python's docs), and the second string describes the functions arguments and/or what the function does.</P>
 
 <P>We shall close the function in <CODE>PyTRY</CODE> - <CODE>PyCATCH</CODE> block. This catches any C++ exceptions that Orange might throw and turns them into Python error messages. You should do this with any your function that calls orange's functions to be sure that you catch anything that's thrown from in there.</P>
-<XMP class=code>
-{
+<XMP class=code>{
   PyTRY
   ...
   PyCATCH
@@ -37,8 +35,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
 </XMP>
 
 <P>Now for the real code. First we need to get the arguments and check their types.</P>
-<XMP class=code>
-    PExampleGenerator egen;
+<XMP class=code>    PExampleGenerator egen;
     int nEdgeTypes = 1;
     PyObject *pyvar1 = NULL, *pyvar2 = NULL;
     int attr1 = 0, attr2 = 1;
@@ -60,8 +57,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
 
 <P>For the actual triangulation we shall use Wml, which expects the arguments in a structure <CODE>Vector2&lt;float&gt;</CODE>.</P>
 
-<XMP class=code>
-    const int nofex = egen->numberOfExamples();
+<XMP class=code>    const int nofex = egen->numberOfExamples();
 
     Vector2<float> *points = new Vector2<float>[nofex];
     Vector2<float> *pi = points;
@@ -81,8 +77,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
 
 <P>We have used a macro <CODE>PEITERATE(ei, egen)</CODE> for iteration across the example table, where <CODE>egen</CODE> is an example generator and <CODE>ei</CODE> is an iterator (declared by the macro). If we wanted, we could use an equivalent <CODE>for</CODE> loop: <CODE>for(TExampleIterator ei(egen->begin()); ei; ++ei)</CODE>. Of the two results computed by <CODE>Delaunay2a&lt;float&gt;</CODE>, we immediately discard <CODE>adjacent</CODE>, while from <CODE>triangles</CODE> we shall construct the graph.</P>
 
-<XMP class=code>
-    TGraph *graph = new TGraphAsList(nofex, nEdgeTypes, 0);
+<XMP class=code>    TGraph *graph = new TGraphAsList(nofex, nEdgeTypes, 0);
     PGraph wgraph = graph;
     try {
       for(int *ti = triangles, *te = ti+nTriangles*3; ti!=te; ti+=3) {
@@ -102,8 +97,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
 <P>The <CODE>graph</CODE> is immediately wrapped into an instance of <CODE>PGraph</CODE>. If anything fails, for instance, if an exception occurs in the code that follows, <CODE>graph</CODE> will be deallocated automatically so we don't need to (and even mustn't!) care about it. However, we have to be careful about the <CODE>triangles</CODE>, we need another <CODE>try</CODE>-<CODE>catch</CODE> to deallocate it in case of errors. Then follows copying the data from <CODE>triangles</CODE> into <CODE>graph</CODE> (we won't explain it here, look at Wml's documentation if you are that curious).</P>
 
 <P><CODE>TGraph</CODE> is Orange's class and <CODE>PGraph</CODE> is a wrapper around it. Python can use neither of them, the only type of result that the function can return is a Python object, so we conclude by:</P>
-<XMP class=code>
-    PyObject *res = WrapOrange(wgraph);
+<XMP class=code>    PyObject *res = WrapOrange(wgraph);
     return res;
 </XMP>
 
@@ -115,8 +109,7 @@ PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARG
 
 <P>What remains is to export this function to Python. We need to construct a new module, it's name will be <CODE>orangeom</CODE> and it will export the function triangulate. We've already mentioned that this has something to do with <CODE>PYARGS</CODE> macro. It has two arguments, the first, <CODE>METH_VARARGS</CODE> giving the number and type of arguments, while the second is the documentation string. Assuming that <CODE>triangulate.cpp</CODE> is in directory source/orangeom, so source/orange is its sibling directory, we need to run ../pyxtract/pyxtract.py like this:</P>
 
-<XMP class=code>
-python ../pyxtract/pyxtract.py -m -n orangeom -l ../orange/px/stamp triangulate.cpp
+<XMP class=code>python ../pyxtract/pyxtract.py -m -n orangeom -l ../orange/px/stamp triangulate.cpp
 </XMP>
 
 <P>Do yourself a favour and put this line into a batch file. See the <CODE>_pyxtract.bat</CODE> files in various Orange's directories.</P>
@@ -125,8 +118,7 @@ python ../pyxtract/pyxtract.py -m -n orangeom -l ../orange/px/stamp triangulate.
 
 <P>What do we get from pyxtract? A few files we don't need and one more we don't care about. The only file of real interest for us is initialization.px. You can see the file for yourself, but omitting a few unimportant points, it looks like this.</P>
 
-<XMP class=code>
-PyMethodDef orangeomFunctions[]={
+<XMP class=code>PyMethodDef orangeomFunctions[]={
      {"triangulate", (binaryfunc)triangulate, METH_VARARGS, "(examples[, attr1, attr2, nEdgeTypes]) -> Graph"},
      {NULL, NULL}
 };
@@ -148,8 +140,7 @@ extern "C" ORANGEOM_API void initorangeom()
 <P>Functions <CODE>initorangeomExceptions</CODE>, <CODE>gcorangeomUnsafeInitialization</CODE> initialize the exceptions your module will throw to Python and initializes the stuff that cannot be initialized before the class types are ready. Both functions need to be provided by our module, but since we don't have any work for them, we'll just define them empty.</P>
 
 <P>So, we need to write a file that will include initialization.px. It should be like this.</P>
-<XMP class=code>
-#include "orange_api.hpp"
+<XMP class=code>#include "orange_api.hpp"
 
 #ifdef _MSC_VER
     #define ORANGEOM_API __declspec(dllexport)
@@ -242,8 +233,7 @@ need to debug.
 
 <P>We won't go deeper into explaining <CODE>PyTypeObject</CODE> since this is done in Python documentation. What you need to know is that for each Orange class that is accessible from Python, there is a corresponding <CODE>PyTypeObject</CODE> that defines its methods. For instance, the elements of <CODE>ExampleTable</CODE> (examples) can be accessed through indexing because we defined a C function that gets an index (and the table, of course) and returns the corresponding example, and we've put a pointer to this method into the <CODE>ExampleTable</CODE>'s <CODE>PyTypeObject</CODE> (actually, we didn't do it manually, this is what pyxtract is responsible for). This is equivalent to overloading the operator [] in C++. Here's the function (with error detection removed for the sake of clarity).
 
-<XMP class=code>
-PyObject *ExampleTable_getitem_sq(PyObject *self, int idx)
+<XMP class=code>PyObject *ExampleTable_getitem_sq(PyObject *self, int idx)
 {
   CAST_TO(TExampleTable, table);
   return Example_FromExampleRef((*table)[idx], EXAMPLE_LOCK(PyOrange_AsExampleTable(self)));
@@ -253,8 +243,7 @@ PyObject *ExampleTable_getitem_sq(PyObject *self, int idx)
 
 Also, <CODE>ExampleTable</CODE> has a method <CODE>sort([list-of-attributes])</CODE>. This is implemented through a C function that gets a list of attributes and calls the C++ class' method <CODE>TExampleTable::sort(const vector&lt;int&gt; order)</CODE>. To illustrate, this is a slightly simplified function (we've removed some flexibility regarding the parameters and the exception handling).
 
-<XMP class=code>
-PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+<XMP class=code>PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
 {
   CAST_TO(TExampleTable, table);
 
@@ -354,8 +343,7 @@ Pyxtract should also know how the class is constructed - it can have a specific 
 
 <DT><CODE>PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, descriptor)")</CODE></DT>
 <DD><CODE>ClassifierByLookupTable1_new</CODE> has a specific constructor. The general ones above couldn't be used since this constructor needs to have some arguments or for some other reason (eg. the user doesn't need to specify the arguments, but the C++ constructor for the corresponding C++ class requires them, so this interface function will provide the defaults). The constructor function needs to be defined like above (ie. &lt;classname&gt;_new), followed by a <CODE>BASED_ON</CODE> macro giving the parent class and the comment. The declaration must be written in a single line. Just for the illustration, the (simplified, no error handling) constructor looks like this
-<XMP class=code>
-PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, descriptor)")
+<XMP class=code>PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, descriptor)")
 {
   PyTRY
     PVariable vcl, vvl;
@@ -384,8 +372,7 @@ Function parses the arguments by calling <CODE>PyArg_ParseTuple</CODE>, construc
 
 <P>The <CODE>new</CODE> operator, however, sometimes also accepts keyword arguments. For instance, when constructing an <CODE>ExampleTable</CODE> by reading the data from file, you can specify a domain (using keyword argument <CODE>domain</CODE>), a list of attributes to reuse if possible (<CODE>use</CODE>), you can tell it not to reuse the stored domain or not to store the newly constructed domain (<CODE>dontCheckStored</CODE>, <CODE>dontStore</CODE>). After the <CODE>ExampleTable</CODE> is constructed, <CODE>init</CODE> is called to set the attributes. To tell it to ignore the keyword arguments that the constructor might (or had) used, we write the following.
 
-<XMP class=code>
-CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas")
+<XMP class=code>CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas")
 </XMP>
 
 <P><CODE>init</CODE> will ignore all the keywords from the list.</P>
@@ -393,8 +380,7 @@ CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStor
 <P>Talking about attributes, here's another macro. You know you can assign arbitrary attributes to Orange classes. Let <code>ba</code> be an orange object, say <code>orange.BayesLearner</code>. If you assign new attributes as usual directly, eg. <CODE>ba.myAttribute = 12</CODE>, you will get a warning (you should use the object's method <CODE>setattr(name, value)</CODE> to avoid it; you can read more about it on a page about <a href="peculiarities.htm">Orange peculiarities</a>). Some objects have some attributes that cannot be implemented in C++ code, yet they are usual and useful. For instance, <CODE>Graph</CODE> can use attributes <CODE>objects</CODE>, <CODE>forceMapping</CODE> and <CODE>returnIndices</CODE>, which can only be set from Python (if you take a look at the documentation on <CODE>Graph</CODE> you will see why these cannot be implemented in C++). Yet, since user are allowed to set these attributes and will do so often, we don't want to give warnings. We achieve this by
 </P>
 
-<XMP class=code>
-RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
+<XMP class=code>RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
 </XMP>
 
 <P>How do these things function? Well, it is not hard to imagine: pyxtract catches all such exceptions and stores the corresponding lists for each particular class. The <CODE>init</CODE> constructor then checks the list prior to setting attributes. Also the method for setting attributes that issues warnings for unknown attributes checks the list prior to complaining.</P>
@@ -562,8 +548,7 @@ RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
 </TABLE>
 
 <P>For example, here's what gets called when you want to know the length of an example table.</P>
-<XMP class=code>
-int ExampleTable_len_sq(PyObject *self)
+<XMP class=code>int ExampleTable_len_sq(PyObject *self)
 { PyTRY
     return SELF_AS(TExampleGenerator).numberOfExamples();
   PyCATCH_1
@@ -579,8 +564,7 @@ int ExampleTable_len_sq(PyObject *self)
 
 <P>An example for this is class <CODE>HierarchicalCluster</CODE>. It contains results of a general, not necessarily binary clustering, so each node in the tree has a list <CODE>branches</CODE> with all the node's children. Yet, as the usual clustering is binary, it would be nice if the node would also support attributes <CODE>left</CODE> and <CODE>right</CODE>. They are not present in C++, but we can write a function that check the number of branches; if there are none, it returns <CODE>None</CODE>, if there are more than two, it complains, while otherwise it returns the first branch.</P>
 
-<XMP class=code>
-PyObject *HierarchicalCluster_get_left(PyObject *self)
+<XMP class=code>PyObject *HierarchicalCluster_get_left(PyObject *self)
 {
   PyTRY
     CAST_TO(THierarchicalCluster, cluster);
@@ -607,8 +591,7 @@ PyObject *HierarchicalCluster_get_left(PyObject *self)
 
 <P>You've already seen an example of a member function - the <CODE>ExampleTable</CODE>'s method <CODE>sort</CODE>. The general template is <CODE>PyObject *&lt;classname&gt;_&lt;methodname&gt;(&lt;arguments&gt;) PYARGS(&lt;arguments-keyword&gt;, &lt;documentation-string&gt;)</CODE>. In the case of the <CODE>ExampleTable</CODE>'s <CODE>sort</CODE>, this looks like this.</P>
 
-<XMP class=code>
-PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+<XMP class=code>PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
 </XMP>
 
 <P>Argument type can be any of the usual Python constants stating the number and the kind of arguments, such as <CODE>METH_VARARGS</CODE> or <CODE>METH_O</CODE> - this constant gets copied to the corresponding list (browse Python documentation for <CODE>PyMethodDef</CODE>).</P>

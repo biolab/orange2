@@ -68,8 +68,7 @@
 
 <p class="header">part of <a href="knnlearner.py">knnlearner.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<xmp class="code">
->>> import orange, orngTest, orngStat
+<xmp class="code">>>> import orange, orngTest, orngStat
 >>> data = orange.ExampleTable("iris")
 >>>
 >>> rndind = orange.MakeRandomIndices2(data, p0=0.8)
@@ -92,8 +91,7 @@ Iris-setosa Iris-setosa
 
 <p>As many experiments have shown, a selection of examples distance measure does not have a greater and predictable effect on the performance of kNN classifiers. So there is not much point in changing the default. If you decide to do so, you need to set the <code>distanceConstructor</code> to an instance of one of the classes for <a href="ExamplesDistance.htm">distance measuring</a>.</p>
 
-<xmp class="code">
->>> knn = orange.kNNLearner()
+<xmp class="code">>>> knn = orange.kNNLearner()
 >>> knn.k = 10
 >>> knn.distanceConstructor = orange.ExamplesDistanceConstructor_Hamiltonian()
 >>> knn = knn(train)

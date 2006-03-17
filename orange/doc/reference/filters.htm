@@ -30,7 +30,7 @@
 <H2>Random filter</H2>
 <A name="randomfilter">
 
-<P><CODE>Filter_random</CODE> accepts an example with a given probability.</CODE> 
+<P><CODE>Filter_random</CODE> accepts an example with a given probability.</CODE>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -44,8 +44,7 @@
 <P>The inherited attribute <CODE>domain</CODE> is ignored.</P>
 
 <p class="header"><a href="filter.py">part of filter.py</a></p>
-<XMP class="code">
->>> randomfilter = orange.Filter_random(prob = 0.7, randomGenerator = 24)
+<XMP class="code">>>> randomfilter = orange.Filter_random(prob = 0.7, randomGenerator = 24)
 >>> for i in range(10):
 ...    print randomfilter(example),
 1 1 0 1 0 0 0 1 1 1
@@ -56,8 +55,7 @@
 <P>Setting the random generator ensures that the filter will always select the same examples, disregarding of how many times you run the script or what you do (in Orange) before you run it. <CODE>randomGenerator=24</CODE> is a shortcut for <CODE>randomGenerator = orange.RandomGenerator(24)</CODE> or <CODE>randomGenerator = orange.RandomGenerator(initseed=24)</CODE>.</P>
 
 <P>To select a subset of examples instead of calling the filter for each individual example, use the filter like this.</P>
-<XMP class=code>
-data70 = randomfilter(data)
+<XMP class=code>data70 = randomfilter(data)
 </XMP>
 
 
@@ -76,8 +74,7 @@ data70 = randomfilter(data)
 
 <p class="header">part of <a href="filter.py">filter.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-data = orange.ExampleTable("lenses")
+<XMP class="code">data = orange.ExampleTable("lenses")
 data2 = data[:5]
 data2[0][0] = "?"
 data2[1].setclass("?")
@@ -127,8 +124,7 @@ for ex in orange.Filter_hasClassValue(data2, negate=1):
 
 <p class="header"><a href="filter.py">part of filter.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-filteryoung = orange.Filter_sameValue()
+<XMP class="code">filteryoung = orange.Filter_sameValue()
 age = data.domain["age"]
 filteryoung.value = orange.Value(age, "young")
 filteryoung.position = data.domain.attributes.index(age)
@@ -164,8 +160,7 @@ for ex in filteryoung(data):
 
 <p class="header"><a href="filter.py">part of filter.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-fya = orange.Filter_values()
+<XMP class="code">fya = orange.Filter_values()
 fya.domain = data.domain
 age, astigm = data.domain["age"], data.domain["astigmatic"]
 fya.conditions.append(orange.ValueFilter_discrete(
@@ -190,8 +185,7 @@ for ex in fya(data):
 
 <p class="header"><a href="filter.py">part of filter.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-fya = orange.Filter_values(
+<XMP class="code">fya = orange.Filter_values(
    domain = data.domain,
    conditions = [
      orange.ValueFilter_discrete(
@@ -206,7 +200,7 @@ fya = orange.Filter_values(
        acceptSpecial = 1
      )
    ],
-   conjunction = 0 
+   conjunction = 0
 )
 </XMP>
 

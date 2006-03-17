@@ -33,8 +33,7 @@
 
 <p class="header">part of <a href="classifierFromVar.py">part of classifierFromVar.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 data = orange.ExampleTable("monk1")
 e = data.domain["e"]
 
@@ -91,8 +90,7 @@ for i in data2:
 
 <p class="header">part of <a href="classifierFromVar.py">part of classifierFromVar.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
-e1.getValueFrom = orange.ClassifierFromVarFD()
+<XMP class=code>e1.getValueFrom = orange.ClassifierFromVarFD()
 e1.getValueFrom.domain = data.domain
 e1.getValueFrom.position = data.domain.attributes.index(e)
 e1.getValueFrom.transformer = eTransformer

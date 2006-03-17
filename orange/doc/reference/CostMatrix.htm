@@ -24,8 +24,7 @@
 <DD>Constructs a matrix of the given size and initializes it with the default cost (1, if not given). All elements of the matrix are assigned the given cost, except for the diagonal that have the default cost of 0. (Diagonal elements represent correct classifications and these usually have no price; you can, however, change this.)
 
 <p class="header"><a href="CostMatrix.py">part of CostMatrix.py</a>
-<XMP class=code style="margin-top: 0mm">
-import orange
+<XMP class=code style="margin-top: 0mm">import orange
 
 cm = orange.CostMatrix(3)
 print "classVar =", cm.classVar
@@ -36,8 +35,7 @@ for pred in range(3):
 </XMP>
 
 <P>This initializes the matrix and print it out:</P>
-<XMP class=code>
-0.0 1.0 1.0
+<XMP class=code>0.0 1.0 1.0
 1.0 0.0 1.0
 1.0 1.0 0.0
 </XMP>
@@ -50,8 +48,7 @@ for pred in range(3):
 
 <p class="header"><a href="CostMatrix.py">part of CostMatrix.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class=code style="margin-top: 0mm">
-data = orange.ExampleTable("iris")
+<XMP class=code style="margin-top: 0mm">data = orange.ExampleTable("iris")
 cm = orange.CostMatrix(data.domain.classVar, 2)
 </XMP>
 
@@ -63,13 +60,11 @@ cm = orange.CostMatrix(data.domain.classVar, 2)
 
 <p class="header"><a href="CostMatrix.py">part of CostMatrix.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class=code  style="margin-top: 0mm">
-cm = orange.CostMatrix(data.domain.classVar, [(0, 2, 1), (2, 0, 1), (2, 2, 0)])
+<XMP class=code  style="margin-top: 0mm">cm = orange.CostMatrix(data.domain.classVar, [(0, 2, 1), (2, 0, 1), (2, 2, 0)])
 </XMP>
 
 <P>If you print this matrix out, will it look like this:</P>
-<XMP class=code>
-0.0 2.0 1.0
+<XMP class=code>0.0 2.0 1.0
 2.0 0.0 1.0
 2.0 2.0 0.0
 </XMP>
@@ -82,8 +77,7 @@ cm = orange.CostMatrix(data.domain.classVar, [(0, 2, 1), (2, 0, 1), (2, 2, 0)])
 
 <p class="header"><a href="CostMatrix.py">part of CostMatrix.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class=code  style="margin-top: 0mm">
-cm = orange.CostMatrix(data.domain.classVar, 2)
+<XMP class=code  style="margin-top: 0mm">cm = orange.CostMatrix(data.domain.classVar, 2)
 cm.setcost("Iris-setosa", "Iris-virginica", 1)
 cm.setcost("Iris-versicolor", "Iris-virginica", 1)
 </XMP>
@@ -100,8 +94,7 @@ cm.setcost("Iris-versicolor", "Iris-virginica", 1)
 
 <p class="header"><a href="CostMatrix.py">part of CostMatrix.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
-data = orange.ExampleTable("lenses")
+<XMP class=code>data = orange.ExampleTable("lenses")
 meas = orange.MeasureAttribute_cost()
 meas.cost = ((0, 2, 1), (2, 0, 1), (2, 2, 0))
 for attr in data.domain.attributes:
@@ -112,8 +105,7 @@ for attr in data.domain.attributes:
 
 <P>Funny as it might look, but since Orange uses constructor to perform such conversion, even the above statement is correct (although the cost matrix is rather dull, with 0s on the diagonal and 1s around):</P>
 
-<XMP class=code>
-meas.cost = data.domain.classVar
+<XMP class=code>meas.cost = data.domain.classVar
 </XMP>
 
 </BODY></HTML> 

@@ -1,4 +1,4 @@
-<html> <HEAD> 
+<html> <HEAD>
 <LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
 <LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
 </HEAD> <body>
@@ -42,8 +42,7 @@ Four-valued attribute with, say, values 'small', 'medium', 'large', 'extra large
 
 <p class="header">part of <a href="transformvalue-o2c.py">transformvalues-o2c.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
-import orange
+<xmp class="code">import orange
 
 data = orange.ExampleTable("lenses")
 
@@ -81,8 +80,7 @@ newData = orange.ExampleTable(newDomain, data)
 
 <p class="header">part of <a href="transformvalue-d2c.py">transformvalues-d2c.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<xmp class="code">
-import orange
+<xmp class="code">import orange
 
 data = orange.ExampleTable("monk1")
 
@@ -99,8 +97,7 @@ e1.getValueFrom.transformer.value = int(orange.Value(e, "1"))
 <P>To demonstrate the use of various flags, we constructed two more attributes in a similar manner. Both are based on <CODE>e</CODE>, all check whether <CODE>e</CODE>'s value is "1", except that the new attribute's <CODE>e10</CODE> tranformation will not be zero based and the <CODE>e01</CODE>'s transformation will also be inverted:
 
 <p class="header">part of <a href="transformvalue-d2c.py">transformvalues-d2c.py</a></p>
-<xmp class="code">
-(...)
+<xmp class="code">(...)
 e10.getValueFrom.transformer.zeroBased = False
 (...)
 e01.getValueFrom.transformer.zeroBased = False
@@ -110,8 +107,7 @@ e01.getValueFrom.transformer.invert = True
 <P>Finally, we shall construct a new domain that will only have the original <CODE>e</CODE> and its transformations, and the class. We shall convert the entire table to that domain and print out the first ten examples.</P>
 
 <p class="header">part of <a href="transformvalue-d2c.py">transformvalues-d2c.py</a></p>
-<xmp class="code">
-newDomain = orange.Domain([e, e1, e10, e01], data.domain.classVar)
+<xmp class="code">newDomain = orange.Domain([e, e1, e10, e01], data.domain.classVar)
 newData = orange.ExampleTable(newDomain, data)
 for ex in newData[:10]:
     print ex
@@ -119,8 +115,7 @@ for ex in newData[:10]:
 
 <P>Here's the script's output.</P>
 
-<XMP class=code>
-['1', 1.000, 1.000, -1.000, '1']
+<XMP class=code>['1', 1.000, 1.000, -1.000, '1']
 ['1', 1.000, 1.000, -1.000, '1']
 ['2', 0.000, -1.000, 1.000, '1']
 ['2', 0.000, -1.000, 1.000, '1']
@@ -138,8 +133,7 @@ for ex in newData[:10]:
 
 <p class="header">part of <a href="transformvalue-d2c.py">transformvalues-d2c.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class="code">
-attributes = [e]
+<XMP class="code">attributes = [e]
 for v in e.values:
     newattr = orange.FloatVariable("e=%s" % v)
     newattr.getValueFrom = orange.ClassifierFromVar(whichVar = e)
@@ -149,8 +143,7 @@ for v in e.values:
 </XMP>
 
 <P>The output of this script is</P>
-<XMP class="code">
-['1', 1.000, 0.000, 0.000, 0.000, '1']
+<XMP class="code">['1', 1.000, 0.000, 0.000, 0.000, '1']
 ['1', 1.000, 0.000, 0.000, 0.000, '1']
 ['2', 0.000, 1.000, 0.000, 0.000, '1']
 ['2', 0.000, 1.000, 0.000, 0.000, '1']
@@ -180,8 +173,7 @@ for v in e.values:
 
 <p class="header">part of <a href="transformvalue-nc.py">transformvalues-nc.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 
 data = orange.ExampleTable("iris")
 
@@ -216,8 +208,7 @@ newData = orange.ExampleTable(newDomain, data)
 
 <p class="header">part of <a href="transformvalue-miv.py">transformvalues-miv.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-age = data.domain["age"]
+<XMP class="code">age = data.domain["age"]
 
 age_b = orange.EnumVariable("age_c", values = ['young', 'old'])
 age_b.getValueFrom = orange.ClassifierFromVar(whichVar = age)
@@ -258,7 +249,7 @@ age_b.getValueFrom.transformer.mapping = [0, 1, 1]
       value 1, the second to 2...) will be 1.0 and the other will be 0.0. For attributes
       that have <CODE>baseValue</CODE> set, the specified value is used as base instead
       of the lowest one.</DD>
-      
+
   <DT>DomainContinuizer.FrequentIsBase</DT>
   <DD>The attribute is treated in the same fashion as above, except that not the lowest
       but the most frequent value is used as a base. If there are more attributes that
@@ -267,23 +258,23 @@ age_b.getValueFrom.transformer.mapping = [0, 1, 1]
       doesn't give information on value frequencies). Again, if attribute has
       <CODE>baseValue</CODE> set, the specified value is used instead of the most
       frequent.</DD>
-      
+
   <DT>DomainContinuizer.NValues</DT>
   <DD>The attribute is replaced by N attributes. If you plan to use the newly
       constructed domain in statistical modelling, make sure that the method is
       immune to dependent attributes. An exception to that are binary attributes
       which are still replaced by a single attribute.</DD>
-      
+
   <DT>DomainContinuizer.Ignore</DT>
   <DD>Multivalued attributes are omitted.</DD>
-  
+
   <DT>DomainContinuizer.ReportError</DT>
   <DD>If multivalued attribute is encountered, an error is raised.</DD>
-  
+
   <DT>DomainContinuizer.AsOrdinal</DT>
   <DD>Multivalued attributes are treated as ordinal, <I>ie</I> replaced by a continuous
       attribute with the values' index (see <CODE>Ordinal2Continuous</CODE>).</DD>
-      
+
   <DT>DomainContinuizer.AsNormalizedOrdinal</DT>
   <DD>As above, except that the resulting continuous value will be from range 0 to
       1.</DD>
@@ -300,7 +291,7 @@ age_b.getValueFrom.transformer.mapping = [0, 1, 1]
   <DD>Class attribute is copied as is. Note that this is different from the meaning of
       this value at <CODE>multinomialTreatment</CODE> where it denotes omitting the
       attribute.</DD>
-      
+
   <DT>DomainContinuizer.AsOrdinal, DomainContinuizer.AsNormalizedOrdinal</DT>
   <DD>If class is multinomial, it is treated as ordinal, in the same manner as
       described above. Binary classes are transformed to 0.0/1.0 attributes.</DD>
@@ -314,8 +305,7 @@ age_b.getValueFrom.transformer.mapping = [0, 1, 1]
 
 <p class="header">part of <a href="transformvalue-domain.py">transformvalues-domain.py</a>
 (uses <a href="bridges.tab">bridges.tab</a>)</p>
-<XMP class="code">
-def printExample(ex):
+<XMP class="code">def printExample(ex):
     for val in ex:
         print "%20s: %s" % (val.variable.name, val)
 
@@ -335,8 +325,7 @@ printExample(data[15])
 <P>We'll show the output in a moment. Let us now use the lowest values as the bases and continuize the attributes.</P>
 
 <p class="header">part of <a href="transformvalue-domain.py">transformvalues-domain.py</a></p>
-<XMP class="code">
-continuizer = orange.DomainContinuizer()
+<XMP class="code">continuizer = orange.DomainContinuizer()
 
 continuizer.multinomialTreatment = continuizer.LowestIsBase
 domain0 = continuizer(data)
@@ -348,8 +337,7 @@ printExample(data0[15])
 
 <TABLE>
 <TR><TD>
-<XMP CLASS=CODE>
-         RIVER=A: 0.000
+<XMP CLASS=CODE>         RIVER=A: 0.000
          RIVER=O: 0.000
          RIVER=Y: 0.000
          ERECTED: 1863
@@ -375,8 +363,7 @@ PURPOSE=AQUEDUCT: 0.000
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: M
+<XMP CLASS=CODE>   RIVER: M
  ERECTED: 1863
  PURPOSE: RR
   LENGTH: 1000
@@ -390,8 +377,7 @@ MATERIAL: IRON
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: <M, A, O, Y>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
  ERECTED: continuous
  PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
   LENGTH: continuous
@@ -413,8 +399,7 @@ MATERIAL: <WOOD, IRON, STEEL>
 
 <TABLE>
 <TR><TD>
-<XMP CLASS=CODE>
-         RIVER=M: 1.000
+<XMP CLASS=CODE>         RIVER=M: 1.000
          RIVER=O: 0.000
          RIVER=Y: 0.000
          ERECTED: 1863
@@ -440,8 +425,7 @@ PURPOSE=AQUEDUCT: 0.000
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: M
+<XMP CLASS=CODE>   RIVER: M
  ERECTED: 1863
  PURPOSE: RR
   LENGTH: 1000
@@ -455,8 +439,7 @@ MATERIAL: IRON
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: <M, A, O, Y>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
  ERECTED: continuous
  PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
   LENGTH: continuous
@@ -478,8 +461,7 @@ MATERIAL: <WOOD, IRON, STEEL>
 
 <TABLE>
 <TR><TD>
-<XMP CLASS=CODE>
-         RIVER=M: 1.000
+<XMP CLASS=CODE>         RIVER=M: 1.000
          RIVER=A: 0.000
          RIVER=O: 0.000
          RIVER=Y: 0.000
@@ -511,8 +493,7 @@ PURPOSE=AQUEDUCT: 0.000
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: M
+<XMP CLASS=CODE>   RIVER: M
  ERECTED: 1863
  PURPOSE: RR
   LENGTH: 1000
@@ -526,8 +507,7 @@ MATERIAL: IRON
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: <M, A, O, Y>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
  ERECTED: continuous
  PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
   LENGTH: continuous
@@ -547,8 +527,7 @@ MATERIAL: <WOOD, IRON, STEEL>
 
 <TABLE>
 <TR><TD>
-<XMP CLASS=CODE>
-         ERECTED: 1863
+<XMP CLASS=CODE>         ERECTED: 1863
           LENGTH: 1000
            LANES: 2
        CLEAR-G=G: 0.000
@@ -556,8 +535,7 @@ MATERIAL: <WOOD, IRON, STEEL>
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: M
+<XMP CLASS=CODE>   RIVER: M
  ERECTED: 1863
  PURPOSE: RR
   LENGTH: 1000
@@ -571,8 +549,7 @@ MATERIAL: IRON
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: <M, A, O, Y>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
  ERECTED: continuous
  PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
   LENGTH: continuous
@@ -592,8 +569,7 @@ MATERIAL: <WOOD, IRON, STEEL>
 
 <TABLE>
 <TR><TD>
-<XMP CLASS=CODE>
-   C_RIVER: 0.000
+<XMP CLASS=CODE>   C_RIVER: 0.000
    ERECTED: 1863
  C_PURPOSE: 2.000
     LENGTH: 1000
@@ -607,8 +583,7 @@ C_MATERIAL: 1.000
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: M
+<XMP CLASS=CODE>   RIVER: M
  ERECTED: 1863
  PURPOSE: RR
   LENGTH: 1000
@@ -622,8 +597,7 @@ MATERIAL: IRON
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: <M, A, O, Y>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
  ERECTED: continuous
  PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
   LENGTH: continuous
@@ -643,8 +617,7 @@ MATERIAL: <WOOD, IRON, STEEL>
 
 <TABLE>
 <TR><TD>
-<XMP CLASS=CODE>
-   C_RIVER: 0.000
+<XMP CLASS=CODE>   C_RIVER: 0.000
    ERECTED: 1863
  C_PURPOSE: 0.667
     LENGTH: 1000
@@ -658,8 +631,7 @@ C_MATERIAL: 0.500
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: M
+<XMP CLASS=CODE>   RIVER: M
  ERECTED: 1863
  PURPOSE: RR
   LENGTH: 1000
@@ -673,8 +645,7 @@ MATERIAL: IRON
 </XMP>
 </TD>
 <TD>
-<XMP CLASS=CODE>
-   RIVER: <M, A, O, Y>
+<XMP CLASS=CODE>   RIVER: <M, A, O, Y>
  ERECTED: continuous
  PURPOSE: <HIGHWAY, AQUEDUCT, RR, WALK>
   LENGTH: continuous

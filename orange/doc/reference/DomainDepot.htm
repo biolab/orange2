@@ -44,8 +44,7 @@ you can use depots whenever you want to store and reuse domain descriptors. In e
 <P>Depots are generally used for constructing domains, like this.</P>
 
 <p class="header">part of <a href="domainDepot.py">domainDepot.py</a>
-<XMP class="code">
-de = orange.DomainDepot()
+<XMP class="code">de = orange.DomainDepot()
 
 names = ['mS#SSN', 'C#gender', 'D#race', 'cC#total']
 domain, metaIDs, isNew = de.prepareDomain(names)
@@ -56,8 +55,7 @@ print "Is new: ", isNew and "yes" or "no"
 </P>
 
 <P>This will print
-<XMP class="code">
-Domain: [age, gender, race, total], {-2:name, -3:SSN}
+<XMP class="code">Domain: [age, gender, race, total], {-2:name, -3:SSN}
 IDs of meta attributes: [-2, -3]
 Is new:  yes
 </XMP>
@@ -65,8 +63,7 @@ Is new:  yes
 <P>The domain is as expected. In the list of IDs of meta attributes, each element corresponds to a meta attribute in the same order as they are given in the list of names. Here, -2 corresponds to the first ('mS#name') and -3 to the second ('mS#SSN').</P>
 
 <P>If we call the function again, but with the order of the meta attributes changed,
-<XMP class="code">
-names = ['mS#SSN', 'mS#name', 'C#age', 'D#gender', 'D#race', 'cC#total']
+<XMP class="code">names = ['mS#SSN', 'mS#name', 'C#age', 'D#gender', 'D#race', 'cC#total']
 domain, metaIDs, isNew = de.prepareDomain(names)
 </XMP>
 </P>
@@ -78,8 +75,7 @@ domain, metaIDs, isNew = de.prepareDomain(names)
 <P>With the first two optional arguments, we can request reuse of attributes even when a new domain is constructed.</P>
 
 <p class="header">part of <a href="domainDepot.py">domainDepot.py</a>
-<XMP class="code">
-names = ['mS#SSN', 'D#gender', 'C#race', 'cC#total']
+<XMP class="code">names = ['mS#SSN', 'D#gender', 'C#race', 'cC#total']
 domain2, metaIDs2, isNew2 = de.prepareDomain(names, domain.attributes, domain.getmetas())
 print "IDs of meta attributes: ", metaIDs
 print "Is new? ", bool(isNew)
@@ -94,8 +90,7 @@ print
 <P>Finally, we can disable storing the domains and/or looking up for the stored by adding the two flags. Here's a little game.</P>
 
 <p class="header">part of <a href="domainDepot.py">domainDepot.py</a>
-<XMP class="code">
-names = ['D#v%i' % i for i in range(5)]
+<XMP class="code">names = ['D#v%i' % i for i in range(5)]
 domain1, mid, isNew = de.prepareDomain(names, None, None, 1)
 domain2, mid, isNew = de.prepareDomain(names, None, None)
 print "I constructed two same domains, but without storing the first."

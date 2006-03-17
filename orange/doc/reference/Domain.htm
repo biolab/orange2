@@ -43,8 +43,7 @@
 <DT>orange.Domain(list-of-attributes)</DT>
 <DD>This is the simplest and the most useful constructor. The new domain will contain the listed attributes, given as objects derived from <CODE>orange.Variable</CODE>. The last attribute in the list will be the class attribute.
 
-<XMP class="code">
->>> d = orange.Domain([a, b, c])
+<XMP class="code">>>> d = orange.Domain([a, b, c])
 >>> print d.attributes
 <EnumVariable 'a', EnumVariable 'b'>
 >>> print d.classVar
@@ -55,8 +54,7 @@ EnumVariable 'c'
 <DT>orange.Domain(list-of-attributes, class-attribute)</DT>
 <DD>This is similar to above, except that the class attribute is given separately. <CODE>Class-attribute</CODE> must be an attribute descriptor (<CODE>orange.Variable</CODE>), not a string with an attribute name.
 
-<XMP class="code">
->>> d = orange.Domain([a, b], c)
+<XMP class="code">>>> d = orange.Domain([a, b], c)
 >>> print d.attributes
 <EnumVariable 'a', EnumVariable 'b'>
 >>> print d.classVar
@@ -67,8 +65,7 @@ EnumVariable 'c'
 <DT>orange.Domain(list-of-attributes, flag)</DT>
 <DD>Another variation of the first case. The flag is interpreted as boolean value; if true, the domain will have the class attribute (the last attribute in the list). If false, there's no class attribute. That's therefore a way for constructing a classless domain.
 
-<XMP class="code">
->>> d = orange.Domain([a, b, c], 0)
+<XMP class="code">>>> d = orange.Domain([a, b, c], 0)
 >>> print d.attributes
 <EnumVariable 'a', EnumVariable 'b', EnumVariable 'c'>
 >>> print d.classVar
@@ -81,8 +78,7 @@ If we replace 0 by 1, we get the same results as in the first two cases.</P>
 <DT>orange.Domain(list-of-attributes, source)</DT>
 <DD>In this form, list of attributes can also include attribute names, not only attribute descriptors. The second argument, <CODE>source</CODE>, can be an existing domain or a list of attribute descriptors.
 
-<XMP class="code">
->>> d1 = orange.Domain([a, b])
+<XMP class="code">>>> d1 = orange.Domain([a, b])
 >>> d2 = orange.Domain(["a", b, c], d1)
 </XMP>
 
@@ -91,8 +87,7 @@ When constructing <CODE>d2</CODE>, we want it to include <CODE>"a"</CODE>, <CODE
 <DT>orange.Domain(list-of-attributes, flag, source)</DT>
 <DD>This is similar to the case above, except that the additional flag tells whether there is a class attribute or not.
 
-<XMP class="code">
->>> d2 = orange.Domain(["a", b, c], 0, [a, b])
+<XMP class="code">>>> d2 = orange.Domain(["a", b, c], 0, [a, b])
 </XMP>
 
 <P>Here, <CODE>d2</CODE> includes all three attributes but no class attributes. Note also that we have used a list of attribute descriptor as <CODE>source</CODE> instead of an existing domain, as we did in the previous example.</P>
@@ -104,8 +99,7 @@ When constructing <CODE>d2</CODE>, we want it to include <CODE>"a"</CODE>, <CODE
 <DT>orange.Domain(domain, class-attribute)</DT>
 <DD>This one is more useful: the new domain has the same attributes as the old one, except that the class attribute is changed. The old class attribute becomes an ordinary attribute and the attribute specified by the second argument becomes a class attribute. The class attribute can be specified either by name (if so, it must be a name of one of the attributes that exist in the "original" domain) or by descriptor.
 
-<XMP class="code">
->>> d1 = orange.Domain([a, b, c])
+<XMP class="code">>>> d1 = orange.Domain([a, b, c])
 >>> d2 = orange.Domain(d1, a)
 >>> print d2.attributes
 <EnumVariable 'b', EnumVariable 'c'>
@@ -117,8 +111,7 @@ In this example, we started with a domain <CODE>d1</CODE> with attributes <CODE>
 
 This constructor can be used to add classes to classless domains.
 
-<XMP class=code>
->>> d1 = orange.Domain([a, b], 0)
+<XMP class=code>>>> d1 = orange.Domain([a, b], 0)
 >>> d2 = orange.Domain(d1, c)
 </XMP>
 
@@ -136,8 +129,7 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 
 <p class="header"><a href="domain2.py">domain2.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class="code">
->>> import orange
+<XMP class="code">>>> import orange
 >>> data = orange.ExampleTable("monk1")
 >>> d2 = orange.Domain(["a", "b", "e", "y"], data.domain)
 >>>
@@ -153,14 +145,12 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 
 <P>An equivalent way of converting examples is to construct a new example, passing the new domain to the constructor.</P>
 
-<XMP class="code">
->>> example2 = orange.Example(d2, example)
+<XMP class="code">>>> example2 = orange.Example(d2, example)
 </XMP>
 
 <P>Example tables can be converted in a similar manner.</P>
 
-<XMP class="code">
->>> data2 = orange.ExampleTable(d2, data)
+<XMP class="code">>>> data2 = orange.ExampleTable(d2, data)
 >>> print data2[55]
 ['1', '2', '4', '0']
 </XMP>
@@ -177,8 +167,7 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 
 <p class="header"><a href="domain2.py">domain2.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class="code">
->>> misses = orange.FloatVariable("misses")
+<XMP class="code">>>> misses = orange.FloatVariable("misses")
 >>> id = orange.newmetaid()
 >>> data.domain.addmeta(id, misses)
 >>> print data[55]
@@ -189,52 +178,45 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 
 <p class="header"><a href="domain2.py">domain2.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class="code">
->>> for example in data:
+<XMP class="code">>>> for example in data:
 ...    example[misses] = 0
 </XMP>
 
 <P>An alternative is referring by name.</P>
 
-<XMP class="code">
->>> for example in data:
+<XMP class="code">>>> for example in data:
 ...    example["misses"] = 0
 </XMP>
 
 <P>Both alternatives are more elegant than the one to which you would have to resort if the meta-attribute was not make known to the domain:</P>
 
-<XMP class="code">
->>> for example in data:
+<XMP class="code">>>> for example in data:
 ...   example.setmeta(id, 0)
 </XMP>
 
 <P>Registering the meta-attribute also enhances printouts. When example is printed, meta-values for registered attributes are shown as "name:value" pairs, while for unregistered you will get id's instead of names.</P>
 
 <P>As you can learn by reading documentation on <A href="ExampleTable.htm"><CODE>ExampleTable</CODE></A>, the best way to add a meta-attribute to whole example table is by calling
-<XMP class="code">
-data.addMetaAttribute("misses", 0)
+<XMP class="code">data.addMetaAttribute("misses", 0)
 </XMP>
 
 <P>This again works only if "misses" is registered in <CODE>data.domain</CODE> (which we did by calling <CODE>data.domain.addmeta(id, misses)</CODE>). If it's not, you should use an id instead of string "misses" and change 0 to 0.0 to prevent the value from being interpreted as a discrete value (if there is no descriptor, orange has not idea about what you mean by 0 - a discrete index or a continuous value):<P>
 
-<XMP class=code>
->>> data.addMetaAttribute(id, 0.0)
+<XMP class=code>>>> data.addMetaAttribute(id, 0.0)
 </XMP>
 
 <P>In a massive testing of different models, you could count the number of times that each example was missclassified by calling classifiers in the following loop.</P>
 
 <p class="header"><a href="domain2.py">domain2.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class="code">
->>> for example in data:
+<XMP class="code">>>> for example in data:
 ...   if example.getclass() != classifier(example):
 ...      example[misses] += 1
 </XMP>
 
 <P>The other effect of registering meta-attributes is that they appear in converted examples. That is, whenever an example is converted to certain domain, the example will have all the meta attributes that are declared in that domain. If the meta-attributes occur in the original domain of the example or can be computed from the attributes in the original domain, they will have appropriate values. When not, their values will be DK.</P>
 
-<XMP class="code">
-domain = data.domain
+<XMP class="code">domain = data.domain
 d2 = orange.Domain(["a", "b", "e", "y"], domain)
 for attr in ["c", "d", "f"]:
     d2.addmeta(orange.newmetaid(), domain[attr])
@@ -244,8 +226,7 @@ data2 = orange.ExampleTable(d2, data)
 
 <P>Domain <CODE>d2</CODE> is constructed to have only the attributes <CODE>a</CODE>, <CODE>b</CODE>, <CODE>e</CODE> and the class attribute, while the other three attributes are added as meta attributes, among with a mysterious additional attribute <CODE>X</CODE>.</P>
 
-<XMP class="code">
->>> print data[55]
+<XMP class="code">>>> print data[55]
 ['1', '2', '1', '1', '4', '2', '0'], {"misses":0.000000}
 >>> print data2[55]
 ['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?'}
@@ -257,8 +238,7 @@ data2 = orange.ExampleTable(d2, data)
 <DT>addmeta(id, descriptor)</B></CODE></DT>
 <DD>You have seen this function in action already. The id is a negative integer, which you get from <CODE>orange.newmetaid()</CODE>. (You can cheat by just giving any negative integer, say -42, when you would only like to quickly try something. You shouldn't do that in final code, since calling <CODE>orange.newmetaid</CODE> assures that id's are unique.) The descriptor should be an attribute descriptor derived from <CODE>orange.Variable</CODE>, such as <CODE>EnumVariable</CODE>, <CODE>FloatVariable></CODE> or <CODE>StringVariable</CODE>.
 
-<XMP class="code">
->>> d2.addmeta(-42, orange.StringVariable("name"))
+<XMP class="code">>>> d2.addmeta(-42, orange.StringVariable("name"))
 >>> data2[55]["name"] = "Joe"
 >>> print data2[55]
 ['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?', "name":'Joe'}
@@ -268,8 +248,7 @@ data2 = orange.ExampleTable(d2, data)
 <DT>metaid(name | descriptor)</B></CODE></DT>
 <DD>With this function, you can retrieve a lost id of a meta-attribute. You will use this function to get id's of meta-attributes that are loaded from tab-delimited files, where you will know their names but not the id's.
 
-<XMP class="code">
->>> d2.metaid("name")
+<XMP class="code">>>> d2.metaid("name")
 -42
 </XMP>
 
@@ -279,8 +258,7 @@ data2 = orange.ExampleTable(d2, data)
 <DT>getmeta(name | id)</B></CODE></DT>
 <DD>Given a name or an id of an attribute, this function returns its descriptor. For instance, to get the descriptor for the string variable, which we didn't store above, when constructing the meta attribute, we'd call it like this.
 
-<XMP class="code">
->>> d2.getmeta("name")
+<XMP class="code">>>> d2.getmeta("name")
 StringVariable 'name'
 </XMP>
 
@@ -290,8 +268,7 @@ StringVariable 'name'
 <DT>addmetas(dict)</B></CODE></DT>
 <DD>This method is similar to <CODE>addmeta</CODE> described above, except that it can be used to add multiple meta-attributes at once. The dictionary it accepts as an argument is in the same form as the one returned by <CODE>getmetas()</CODE>. Therefore, to add all meta attributes from <CODE>domain</CODE> to <CODE>newdomain</CODE>, use the following statement.
 
-<XMP class="code">
-newdomain.addmetas(domain.getmetas())
+<XMP class="code">newdomain.addmetas(domain.getmetas())
 </XMP>
 </P></DD>
 
@@ -303,8 +280,7 @@ newdomain.addmetas(domain.getmetas())
 
 <P>To certain extent, domains behave like lists. The length of domain is the number of its attributes, including the class attribute. Iterating through domain goes through attributes and the class attribute, but not through meta-attributes. You can get slices, but cannot set them (since domains are immutable). Domains can be indexed by integer indices, attribute names or descriptors. Domain has a method <CODE>index(var)</CODE> that returns the index of an attribute specified by a descriptor, name (or index, if you believe this makes sense).</P>
 
-<XMP class="code">
->>> print d2
+<XMP class="code">>>> print d2
 [a, b, e, y], {-4:c, -5:d, -6:f, -7:X}
 >>> d2[1]
 EnumVariable 'b'
@@ -315,8 +291,8 @@ EnumVariable 'd'
 >>> d2[-4]
 EnumVariable 'c'
 >>> for attr in d2:
-... 	print attr.name,
-... 
+...     print attr.name,
+...
 a b e y
 </XMP>
 

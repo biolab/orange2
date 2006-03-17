@@ -30,7 +30,7 @@
 <DD>Wald Z statistics for beta coefficients. Wald Z is computed as <CODE>beta</CODE>/<CODE>beta_se</CODE>.</DD>
 
 <DT>P</DT>
-<DD>List of P-values for beta coefficients, that is, the probability that beta coefficients differ from 0.0. The probability is computed from squared Wald Z statistics that is distributed with Chi-Square distribution.</DD> 
+<DD>List of P-values for beta coefficients, that is, the probability that beta coefficients differ from 0.0. The probability is computed from squared Wald Z statistics that is distributed with Chi-Square distribution.</DD>
 
 <DT>likelihood</DT>
 <DD>The probability of the sample (ie. learning examples) observed on the basis of the derived model, as a function of the regression parameters.
@@ -47,7 +47,7 @@
 <P class=section>Attributes</P>
 <DL class=attributes>
 <DT>fitter</DT>
-<DD>An object that fits beta coefficients and corresponding 
+<DD>An object that fits beta coefficients and corresponding
 standard errors from a set of data.</DD>
 </DL>
 
@@ -56,8 +56,7 @@ standard errors from a set of data.</DD>
 <DT>fitModel(examples[, weightID =])</DT>
 <DD>Fits the model by calling <CODE>fitter</CODE>. If fitting succeeds, it returns a <CODE>Classifer</CODE>; if not, it returns the offending attribute. You should therefore always check the type of result returned, as follows.
 
-<XMP class=code>
-c = fitModel(examples)
+<XMP class=code>c = fitModel(examples)
 if isinstance(c, Variable):
     < remove the attribute c and see what happens >
 else:
@@ -67,7 +66,7 @@ else:
 
 <P>As all learners, <CODE>LogRegLearner</CODE> naturally provides the usual call operator, whom you pass examples (and weights, if you have them) and which returns a classifier or throws an exception if it can't. Use <CODE>fitModel</CODE> in the code that will iteratively remove problem attributes until it gets a classifier; in fact, that's exactly what <a href="../orngLR.htm"><CODE>orngLR</CODE></A> does.</DD>
 </DL>
-      
+
 <H2><A name=fitters></A>Logistic Regression Fitters</H2>
 
 <P>Fitters are objects that LogRegLearner uses to fit the model.</P>
@@ -109,8 +108,7 @@ else:
 
 <P style="margin-top:12pt">The proper way of calling the fitter is to expect and handle all the situations described. For instance, if <CODE>fitter</CODE> is an instance of some fitter and <CODE>examples</CODE> contain a set of suitable examples, a script should look like this:</P>
 
-<XMP class=code>
-res = fitter(examples)
+<XMP class=code>res = fitter(examples)
 if res[0] in [fitter.OK, fitter.Infinity, fitter.Divergence]:
    status, beta, beta_se, likelihood = res
    < proceed by doing something with what you got >
@@ -128,13 +126,12 @@ else:
 
 <P><FONT size=5>Examples</FONT></P></H2>
 
-<p>Since basic logistic regression allows only continuous 
+<p>Since basic logistic regression allows only continuous
 attributes and a dichotome class, we show only a very basic example. More detailed use of logistic regression is shown in logistic regression module.</p>
 
 <p>Let us load the data, induce a classifier and see how it performs on the first five examples.</p>
 
-<xmp class="code">
->>> data = orange.ExampleTable("ionosphere")
+<xmp class="code">>>> data = orange.ExampleTable("ionosphere")
 >>> logistic = orange.LogRegLearner(data)
 >>>
 >>> for ex in data[:5]:

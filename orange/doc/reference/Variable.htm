@@ -222,8 +222,7 @@ the fly.</P>
 
 <p class="header">part of <a href="variable.py">variable.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 data = orange.ExampleTable("monk1")
 
 e2 = orange.EnumVariable("e2", values = ["not 1", "1"])
@@ -252,8 +251,7 @@ assigning <CODE>checkE</CODE> to <CODE>getValueFrom</CODE>.</P>
 
 <P>In most circumstances, value of <CODE>e2</CODE> can be computed on the fly - we can pretend that the attribute exists in the <CODE>data</CODE>, although it doesn't (but can be computed from it). For instance, we can observe the conditional distribution of classes with regard to <CODE>e2</CODE>.</P>
 
-<XMP class="code">
->>> dist = orange.Distribution(e2, data)
+<XMP class="code">>>> dist = orange.Distribution(e2, data)
 >>> print dist
 <324.000, 108.000>
 >>>
@@ -270,8 +268,7 @@ Class distribution when e<>1: <216.000, 108.000>
 
 <p class="header">part of <a href="variable.py">variable.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class="code">
-newDomain = orange.Domain([data.domain["a"], data.domain["b"],
+<XMP class="code">newDomain = orange.Domain([data.domain["a"], data.domain["b"],
                            e2, data.domain.classVar])
 newData = orange.ExampleTable(newDomain, data)
 </XMP>
@@ -281,8 +278,7 @@ newData = orange.ExampleTable(newDomain, data)
 
 <p class="header"><a href="variable2.py">variable2.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class="code">
-import orange, orngTree
+<XMP class="code">import orange, orngTree
 
 data = orange.ExampleTable("monk1")
 

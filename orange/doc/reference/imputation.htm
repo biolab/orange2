@@ -46,8 +46,7 @@
 <P>The following code will load the bridges data, and first impute the values in a single examples and then in the whole table.</P>
 
 <P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 data = orange.ExampleTable("bridges")
 
@@ -73,8 +72,7 @@ for i in range(20, 25):
 <P>You can also construct the <CODE>Imputer_defaults</CODE> yourself and specify your own defaults. Or leave some values unspecified, in which case the imputer won't impute them, as in the following example.</P>
 
 <P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
-<XMP class=code>
-imputer = orange.Imputer_defaults(data.domain)
+<XMP class=code>imputer = orange.Imputer_defaults(data.domain)
 imputer.defaults["LENGTH"] = 1234
 </XMP>
 
@@ -118,8 +116,7 @@ imputer.defaults["LENGTH"] = 1234
 <P>The following imputer predicts the missing attribute values using classification and regression trees with the minimum of 20 examples in a leaf.</P>
 
 <P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
-<XMP class=code>
-import orngTree
+<XMP class=code>import orngTree
 imputer = orange.ImputerConstructor_model()
 imputer.learnerContinuous = imputer.learnerDiscrete = orngTree.TreeLearner(minSubset = 20)
 imputer = imputer(data)
@@ -130,8 +127,7 @@ imputer = imputer(data)
 <P>You can of course use different learning algorithms for discrete and continuous attributes. Probably a common setup will be to use <CODE>BayesLearner</CODE> for discrete and <CODE>MajorityLearner</CODE> (which just remembers the average) for continuous attributes, as follows.</P>
 
 <P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
-<XMP class=code>
-imputer = orange.ImputerConstructor_model()
+<XMP class=code>imputer = orange.ImputerConstructor_model()
 imputer.learnerContinuous = orange.MajorityLearner()
 imputer.learnerDiscrete = orange.BayesLearner()
 imputer = imputer(data)
@@ -140,15 +136,13 @@ imputer = imputer(data)
 <P>You can also construct an <CODE>Imputer_model</CODE> yourself. You will do this if different attributes need different treatment. Brace for an example that will be a bit more complex. First we shall construct an <CODE>Imputer_model</CODE> and initialize an empty list of models.</P>
 
 <P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
-<XMP class=code>
-imputer = orange.Imputer_model()
+<XMP class=code>imputer = orange.Imputer_model()
 imputer.models = [None] * len(data.domain)
 </XMP>
 
 <P>Attributes "LANES" and "T-OR-D" will always be imputed values 2 and "THROUGH". Since "LANES" is continuous, it suffices to construct a <CODE>DefaultClassifier</CODE> with the default value 2.0 (don't forget the decimal part, or else Orange will think you talk about an index of a discrete value - how could it tell?). For the discrete attribute "T-OR-D", we could construct a <CODE>DefaultClassifier</CODE> and give the index of value "THROUGH" as an argument. But we shall do it nicer, by constructing a <CODE>Value</CODE>. Both classifiers will be stored at the appropriate places in <CODE>imputer.models</CODE>.</P>
 
-<XMP class=code>
-imputer.models[data.domain.index("LANES")] = orange.DefaultClassifier(2.0)
+<XMP class=code>imputer.models[data.domain.index("LANES")] = orange.DefaultClassifier(2.0)
 
 tord = orange.DefaultClassifier(orange.Value(data.domain["T-OR-D"], "THROUGH"))
 imputer.models[data.domain.index("T-OR-D")] = tord
@@ -156,8 +150,7 @@ imputer.models[data.domain.index("T-OR-D")] = tord
 
 <P>"LENGTH" will be computed with a regression tree induced from "MATERIAL", "SPAN" and "ERECTED" (together with "LENGTH" as the class attribute, of course). Note that we initialized the domain by simply giving a list with the names of the attributes, with the domain as an additional argument in which Orange will look for the named attributes.</P>
 
-<XMP class=code>
-import orngTree
+<XMP class=code>import orngTree
 len_domain = orange.Domain(["MATERIAL", "SPAN", "ERECTED", "LENGTH"], data.domain)
 len_data = orange.ExampleTable(len_domain, data)
 len_tree = orngTree.TreeLearner(len_data, minSubset=20)
@@ -167,8 +160,7 @@ orngTree.printTxt(len_tree)
 
 <P>We printed the tree just to see what it looks like.</P>
 
-<XMP class=code>
-SPAN SHORT: 1157.523
+<XMP class=code>SPAN SHORT: 1157.523
 SPAN MEDIUM:
 |   ERECTED <1908.500: 1324.754
 |   ERECTED >=1908.500: 1528.385
@@ -177,8 +169,7 @@ SPAN LONG: 1906.677
 
 <P>Small and nice. Now for the "SPAN". Wooden bridges and walkways are short, while the others are mostly medium. This could be done by <a href="lookup.htm"><CODE>ClassifierByLookupTable</CODE></A> - this would be faster than what we plan here. See the corresponding documentation on lookup classifier. Here we are gonna do it with a Python function.</P>
 
-<XMP class=code>
-spanVar = data.domain["SPAN"]
+<XMP class=code>spanVar = data.domain["SPAN"]
 
 def computeSpan(ex, returnWhat):
     if ex["TYPE"] == "WOOD" or ex["PURPOSE"] == "WALK":
@@ -219,8 +210,7 @@ imputer.models[data.domain.index("SPAN")] = computeSpan
 <P>Here's a script that shows what this imputer actually does to the domain.</P>
 
 <P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
-<XMP class=code>
-imputer = orange.ImputerConstructor_asValue(data)
+<XMP class=code>imputer = orange.ImputerConstructor_asValue(data)
 
 original = data[19]
 imputed = imputer(data[19])
@@ -241,9 +231,7 @@ print
 
 <P>The script's output looks like this.</P>
 
-<XMP class=code>
-
-[RIVER, ERECTED, PURPOSE, LENGTH, LANES, CLEAR-G, T-OR-D,
+<XMP class=code>[RIVER, ERECTED, PURPOSE, LENGTH, LANES, CLEAR-G, T-OR-D,
 MATERIAL, SPAN, REL-L, TYPE]
 
 [RIVER, ERECTED_def, ERECTED, PURPOSE, LENGTH_def, LENGTH,
@@ -290,8 +278,7 @@ TYPE: SIMPLE-T -> SIMPLE-T
 <P>If for any reason you want to use these algorithms to run on imputed data, you can use the wrappers provide in the module orngImpute. The module's description is a matter of a separate page, but we shall show its code here as another demonstration of how to use the imputers - logistic regression is implemented essentially the same as the below classes.</P>
 
 <P class="header">a simplified code from of module orngImpute.py</A></P>
-<XMP class=code>
-class LearnerWithImputation(orange.Learner):
+<XMP class=code>class LearnerWithImputation(orange.Learner):
     def __init__(self, **argkw):
         self.__dict__.update(argkw)
 

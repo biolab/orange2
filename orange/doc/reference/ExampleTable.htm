@@ -44,17 +44,16 @@
 For exercise, we shall construct a domain for the common version of Monk datasets; attribute names will be <CODE>a</CODE>, <CODE>b</CODE>, <CODE>c</CODE>, <CODE>d</CODE>, <CODE>e</CODE>, and <CODE>f</CODE>, and their values will be 1, 2, 3, and 4. Attribute <CODE>f</CODE> is four-valued, <CODE>a</CODE>, <CODE>b</CODE> and <CODE>d</CODE> are three-values and <CODE>c</CODE> is binary.
 
 <p class="header">part of <a href="exampletable1.py">exampletable1.py</a></p>
-<XMP class=code>
-import orange, random
+<XMP class=code>import orange, random
 
 classattr = orange.EnumVariable("y", values = ["0", "1"])
-                                
+
 card = [3, 3, 2, 3, 4, 2]
 values = ["1", "2", "3", "4"]
 attributes = [  name = orange.EnumVariable(chr(97+i),
                 values = values[:card[i]])
               for i in range(6)]
-              
+
 domain = orange.Domain(attributes + [classattr])
 
 data = orange.ExampleTable(domain)
@@ -71,12 +70,11 @@ data = orange.ExampleTable(domain)
 </DD>
 
 <DT>ExampleTable(domain, examples)</DT>
-<DD>The last constructor converts examples into the given domain and stores them into the new table. Examples can again be given in an <CODE>ExampleGenerator</CODE> or a Python list, containing examples as objects of type <CODE>Example</CODE> or Python lists.</P> 
+<DD>The last constructor converts examples into the given domain and stores them into the new table. Examples can again be given in an <CODE>ExampleGenerator</CODE> or a Python list, containing examples as objects of type <CODE>Example</CODE> or Python lists.</P>
 
 <P>If you have examples stored in a list of lists, for instance</P>
 
-<XMP class="code">
-loe = [
+<XMP class="code">loe = [
     ["3", "1", "1", "2", "1", "1",  "1"],
     ["3", "1", "1", "2", "2", "1",  "0"],
     ["3", "3", "1", "2", "2", "1",  "1"]]
@@ -84,14 +82,12 @@ loe = [
 
 <P>you can convert it into an <CODE>ExampleTable</CODE> by</P>
 
-<XMP class="code">
-data = orange.ExampleTable(domain, loe)
+<XMP class="code">data = orange.ExampleTable(domain, loe)
 </XMP>
 
 <P>Instead of strings (ie, symbolic values) you can use value indices in <CODE>loe</CODE>, when you find it more appropriate:</CODE>
 
-<XMP class="code">
-loe = [
+<XMP class="code">loe = [
     [2, 0, 0, 1, 0, 0,  1],
     [2, 0, 0, 1, 1, 0,  0],
     [2, 2, 0, 1, 1, 0,  1]]
@@ -108,8 +104,7 @@ Note that this is not the SQL's join operator as it doesn't try to match any key
 For a trivial example, we shall merge two tables stored in the following tab-delimited files.</P>
 
 <p class="header"><a href="merge1.tab">merge1.tab</a></p>
-<XMP class="code">
-a1    a2    m1    m2
+<XMP class="code">a1    a2    m1    m2
 f     f     f     f
             meta  meta
 1     2     3     4
@@ -118,8 +113,7 @@ f     f     f     f
 </XMP>
 
 <p class="header"><a href="merge2.tab">merge2.tab</a></p>
-<XMP class="code">
-a1    a3    m1     m3
+<XMP class="code">a1    a3    m1     m3
 f     f     f      f
             meta   meta
 1     2.5   3      4.5
@@ -130,8 +124,7 @@ f     f     f      f
 The two tables can be loaded, merged and printed out by the following script.
 
 <p class="header"><a href="exampletable_merge.py">exampletable_merge.py</a> (uses <a href="merge1.tab">merge1.tab</a>, <A href="merge2.tab">merge2.tab</A>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 
 data1 = orange.ExampleTable("merge1")
 data2 = orange.ExampleTable("merge2", use = data1.domain)
@@ -150,8 +143,7 @@ for i in range(len(data1)):
 <P>First, note the <CODE>use = data1.domain</CODE> which ensures that while loading the second table, the attributes from the first will be reused if they are of same name and type. Without that, the attribute <CODE>a1</CODE> from the first and the attribute <CODE>a2</CODE> from the second table would be two different attributes and the merged table would have two attributes named <CODE>a1</CODE> instead of a single one, which is what we want. The same goes for meta-attribute <CODE>m1</CODE> which will also have the same id in both table. (For this reason, it is important to pass the entire domain, <EM>ie</EM> <CODE>data1.domain</CODE>, not a list of attributes, such as <CODE>data1.domain.variables</CODE> or - obviously intentionally doing it wrong -- <CODE>data1.domain.variables + data1.domain.getmetas().values()</CODE>.)</P>
 
 <P>Merging succeeds since the values of <CODE>a1</CODE> and <CODE>m1</CODE> are the same for all matching examples from <CODE>data1</CODE> and <CODE>data2</CODE>, and the printout is as anticipated.</P>
-<XMP class=code>
-Domain 1:  [a1, a2], {-2:m1, -3:m2}
+<XMP class=code>Domain 1:  [a1, a2], {-2:m1, -3:m2}
 Domain 2:  [a1, a3], {-2:m1, -4:m3}
 Merged:    [a1, a2, a3], {-2:m1, -3:m2, -4:m3}
 
@@ -187,15 +179,13 @@ Merged:    [a1, a2, a3], {-2:m1, -3:m2, -4:m3}
 <DT>&lt;slices&gt;</DT>
 <DD>Slices function as expected: <CODE>data[:10]</CODE>, for instance, gives the first ten examples from <CODE>data</CODE>. These examples are not returned in an <CODE>ExampleTable</CODE> but in ordinary Python list, containing references to examples in the table. For instance, to do something with the first <CODE>n</CODE> examples, you can use a loop like this.
 
-<XMP class=code>
-for example in data[:n]:
+<XMP class=code>for example in data[:n]:
     do_something(example)
 </XMP>
 
 <P>As for ordinary lists, this is somewhat slower than</P>
 
-<XMP class=code>
-for i in range(n):
+<XMP class=code>for i in range(n):
     do_something(example[n])
 </XMP>
 
@@ -208,8 +198,7 @@ for i in range(n):
 <DT>&lt;logical tests&gt;</DT>
 <DD>As for ordinary lists, a table is "false", when empty. Thus, an empty table can be rejected by the following <CODE>if</CODE> statement.
 
-<XMP class=code>
-if not data:
+<XMP class=code>if not data:
     raise "I would really need some examples before I proceed, sir"
 </XMP>
 </DD>
@@ -219,8 +208,7 @@ if not data:
 <DD>Appends a single example to the table. We have already shown how to construct a domain description and an empty example table for Monk 1 dataset. Let us now add a few examples representing the Monk 1 concept (y := (a==b) or (e==1)).
 
 <p class="header">part of <a href="exampletable1.py">exampletable1.py</a></p>
-<XMP class=code>
-data = orange.ExampleTable(domain)
+<XMP class=code>data = orange.ExampleTable(domain)
 for i in range(100):
     ex = [random.randint(0, c-1) for c in card]
     ex.append(ex[0]==ex[1] or ex[4]==0)
@@ -252,8 +240,7 @@ for i in range(100):
 <P><CODE>ExampleTable</CODE> offers several methods for selection and translation of examples (some of them are actually inherited from a more general class <CODE>ExampleGenerator</CODE>). For easier illustration, we shall prepare an example table with 10 examples, described by a single numerical attribute having values from 0 to 9 (effectively enumerating the examples).</P>
 
 <p class="header">part of <a href="exampletable2.py">exampletable2.py</a></p>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 domain = orange.Domain([orange.FloatVariable()])
 data = orange.ExampleTable(domain)
@@ -268,8 +255,7 @@ for i in range(10):
 <P>The most natural use of this method is for division of examples into folds. For this, we first prepare a list of fold indices using an appropriate descendant of <CODE>MakeRandomIndices</CODE>; <CODE>MakeRandomIndicesCV</CODE>, for instance, will prepare indices for cross-validation (see documentation on <a href="randomindices.htm">random indices</a>). Then we feed the indices to <CODE>select</CODE>, as shown in example below.</P>
 
 <p class="header">part of <a href="exampletable2.py">exampletable2.py</a></p>
-<XMP class=code>
-cv_indices = orange.MakeRandomIndicesCV(data, 4)
+<XMP class=code>cv_indices = orange.MakeRandomIndicesCV(data, 4)
 print "Indices: ", cv_indices, "\n"
 
 for fold in range(4):
@@ -287,10 +273,9 @@ for fold in range(4):
 
 <P>The printout begins with.</P>
 
-<XMP class=code>
-Indices:  <1, 0, 2, 2, 0, 1, 0, 3, 1, 3> 
+<XMP class=code>Indices:  <1, 0, 2, 2, 0, 1, 0, 3, 1, 3>
 
-Fold 0: train 
+Fold 0: train
      [0.000000]
      [2.000000]
      [3.000000]
@@ -299,7 +284,7 @@ Fold 0: train
      [8.000000]
      [9.000000]
 
-      : test  
+      : test
      [1.000000]
      [4.000000]
      [6.000000]
@@ -310,8 +295,7 @@ Fold 0: train
 <P>Another form of calling function <CODE>select</CODE> is by giving a list of integers that are interpreted as boolean values.</P>
 
 <p class="header">part of <a href="exampletable2.py">exampletable2.py</a></p>
-<XMP class=code>
->>> t = data.select([1, 1, 0, 0, 0,  0, 0, 0, 0, 1])
+<XMP class=code>>>> t = data.select([1, 1, 0, 0, 0,  0, 0, 0, 0, 1])
 >>> for ex in t:
 ...     print ex
 [0.000000]
@@ -343,33 +327,28 @@ Fold 0: train
 
 <P>For instance, young patients in the lenses dataset can be selected by</P>
 
-<XMP class=code>
-young = data.filter(age="young")
+<XMP class=code>young = data.filter(age="young")
 </XMP>
 
 <P>More than one value can be allowed and more than one attribute checked. To select all patients with age "young" or "psby" who are astigmatic, use</P>
 
-<XMP class=code>
-young = data.filter(age=["young", "presbyopic"], astigm="y")
+<XMP class=code>young = data.filter(age=["young", "presbyopic"], astigm="y")
 </XMP>
 
 <P>If you need to reverse the decision, you cannot simply add <CODE>negate=1</CODE> as in <CODE>select</CODE> method, since this would be interpreted simply as another attribute (<CODE>negate</CODE>) whose value needs to be 1 (e.g. <CODE>values[1]</CODE>, see documentation on <A href="Variable.htm"><CODE>Variable</CODE></A>). For negation, you should use somewhat less readable way to pass arguments to <CODE>filter</CODE> - you should pack them to a dictionary. For instance, to select examples that are not young and astigmatic, use</P>
 
-<XMP class=code>
-young = data.filter({"age": "young", "astigmatic": "yes"}, negate=1)
+<XMP class=code>young = data.filter({"age": "young", "astigmatic": "yes"}, negate=1)
 </XMP>
 
 <P>Note that this selects patients that are young, but not astigmatic and those that are astigmatic, but not young. In essence, conjunction of conditions is computed first and the result is negated if <CODE>negate</CODE> is 1. If you need more flexible selection (e.g. disjunction instead of conjunction), see documentation on <a href="preprocessing.htm">preprocessors</a>.</P>
 
 <P>Continuous attribute values are specified by pairs of values. In dataset "bridges", bridges with lengths between 1000 and 2000 (inclusive) are selected by</P>
 
-<XMP class=code>
-mid = data.filter(LENGTH=(1000, 2000))
+<XMP class=code>mid = data.filter(LENGTH=(1000, 2000))
 </XMP>
 
 <P>Bridges that are shorter or longer than that selected by inverting the range.</P>
-<XMP class=code>
-mid = data.filter(LENGTH=(2000, 1000))
+<XMP class=code>mid = data.filter(LENGTH=(2000, 1000))
 </XMP>
 </DD>
 
@@ -389,8 +368,7 @@ mid = data.filter(LENGTH=(2000, 1000))
 <DT>randomexample()</DT>
 <DD>Returns a random example from the table.
 
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 data = orange.ExampleTable("lenses")
 
 print "Random random"
@@ -400,15 +378,13 @@ for i in range(5):
 
 <P>To select random examples, <CODE>ExampleTable</CODE> uses a random number generator stored in the field <CODE>randomGenerator</CODE>. If it has none, a new one is constructed and initialized with random seed 0. As a consequence, such a script will always select the same examples. If you don't want this, create another random generator and use a random number from Python to initialize it.
 
-<XMP class=code>
-import random
+<XMP class=code>import random
 data.randomGenerator = orange.RandomGenerator(random.randint(0, 10000))
 </XMP>
 
 <P>Since Orange calls constructors when an object of incorrect type is assigned to a built-in attribute, this can be written in a shorter form as
 
-<XMP class=code>
-import random
+<XMP class=code>import random
 data.randomGenerator = random.randint(0, 10000)
 </XMP>
 </DD>

@@ -177,15 +177,13 @@ FloatVariable 'sepal width'
 
 <p class="header"><a href="discretization.py">part of discretization.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class=code>
-idisc = orange.IntervalDiscretizer(points = [3.0, 5.0])
+<XMP class=code>idisc = orange.IntervalDiscretizer(points = [3.0, 5.0])
 sep_l = idisc.constructVariable(data.domain["sepal length"])
 data2 = data.select([data.domain["sepal length"], sep_l, data.domain.classVar])
 </XMP>
 
 <P>That's all. First five examples of <CODE>data2</CODE> are now</P>
-<XMP class=code>
-[5.100000, '>5.00', 'Iris-setosa']
+<XMP class=code>[5.100000, '>5.00', 'Iris-setosa']
 [4.900000, '(3.00, 5.00]', 'Iris-setosa']
 [4.700000, '(3.00, 5.00]', 'Iris-setosa']
 [4.600000, '(3.00, 5.00]', 'Iris-setosa']
@@ -196,8 +194,7 @@ data2 = data.select([data.domain["sepal length"], sep_l, data.domain.classVar])
 
 <p class="header"><a href="discretization.py">part of discretization.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class=code>
-idisc = orange.IntervalDiscretizer(points = [3.0, 5.0])
+<XMP class=code>idisc = orange.IntervalDiscretizer(points = [3.0, 5.0])
 newattrs = [idisc.constructVariable(attr) for attr in data.domain.attributes]
 data2 = data.select(newattrs + [data.domain.classVar])
 </XMP>
@@ -264,8 +261,7 @@ data2 = data.select(newattrs + [data.domain.classVar])
 
 <P>For an example, we shall discretize all attributes of Iris dataset into 6 intervals. We shall construct an <CODE>ExampleTable</CODE> with discretized attributes and print description of the attributes.</P>
 
-<XMP class=code>
-disc = orange.EquiDistDiscretization(numberOfIntervals = 6)
+<XMP class=code>disc = orange.EquiDistDiscretization(numberOfIntervals = 6)
 newattrs = [disc(attr, data) for attr in data.domain.attributes]
 data2 = data.select(newattrs + [data.domain.classVar])
 
@@ -274,8 +270,7 @@ for attr in newattrs:
 </XMP>
 
 <P>Script's answer is</P>
-<XMP class=code>
-D_sepal length: <<4.90, [4.90, 5.50), [5.50, 6.10), [6.10, 6.70), [6.70, 7.30), >7.30>
+<XMP class=code>D_sepal length: <<4.90, [4.90, 5.50), [5.50, 6.10), [6.10, 6.70), [6.70, 7.30), >7.30>
 D_sepal width: <<2.40, [2.40, 2.80), [2.80, 3.20), [3.20, 3.60), [3.60, 4.00), >4.00>
 D_petal length: <<1.98, [1.98, 2.96), [2.96, 3.94), [3.94, 4.92), [4.92, 5.90), >5.90>
 D_petal width: <<0.50, [0.50, 0.90), [0.90, 1.30), [1.30, 1.70), [1.70, 2.10), >2.10>
@@ -285,8 +280,7 @@ D_petal width: <<0.50, [0.50, 0.90), [0.90, 1.30), [1.30, 1.70), [1.70, 2.10), >
 parsing the symbolic values? Sure, they are hidden in the discretizer, which is, as usual, stored in <CODE>attr.getValueFrom.transformer</CODE>.</P>
 
 <P>Compare the following with the values above.</P>
-<XMP class=code>
->>> for attr in newattrs:
+<XMP class=code>>>> for attr in newattrs:
 ...    print "%s: first interval at %5.3f, step %5.3f" % \
 ...    (attr.name, attr.getValueFrom.transformer.firstCut, \
 ...    attr.getValueFrom.transformer.step)
@@ -298,8 +292,7 @@ D_petal width: first interval at 0.500, step 0.400
 
 <P>As all discretizers, <CODE>EquiDistDiscretizer</CODE> also has the method <CODE>constructVariable</CODE>. The following example discretizes all attributes into six equal intervals of width 1, the first interval
 
-<XMP class=code>
-edisc = orange.EquiDistDiscretizer(firstVal = 2.0, step = 1.0, numberOfIntervals = 5)
+<XMP class=code>edisc = orange.EquiDistDiscretizer(firstVal = 2.0, step = 1.0, numberOfIntervals = 5)
 newattrs = [edisc.constructVariable(attr) for attr in data.domain.attributes]
 data2 = data.select(newattrs + [data.domain.classVar])
 for ex in data2[:10]:
@@ -321,16 +314,14 @@ for ex in data2[:10]:
 
 <p class="header"><a href="discretization.py">part of discretization.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class="code">
-entro = orange.EntropyDiscretization()
+<XMP class="code">entro = orange.EntropyDiscretization()
 for attr in data.domain.attributes:
     disc = entro(attr, data)
     print "%s: %s" % (attr.name, disc.getValueFrom.transformer.points)
 </XMP>
 
 <P>The output shows that all attributes are discretized onto three intervals:</P>
-<XMP class=code>
-sepal length: <5.5, 6.09999990463>
+<XMP class=code>sepal length: <5.5, 6.09999990463>
 sepal width: <2.90000009537, 3.29999995232>
 petal length: <1.89999997616, 4.69999980927>
 petal width: <0.600000023842, 1.70000004768>
@@ -355,8 +346,7 @@ petal width: <0.600000023842, 1.70000004768>
 
 <P>If we merge classes setosa and virginica into one, we can observe whether the bi-modal discretization would correctly recognize the interval in which versicolors dominate.</P>
 
-<XMP class=code>
-newclass = orange.EnumVariable("is versicolor", values = ["no", "yes"])
+<XMP class=code>newclass = orange.EnumVariable("is versicolor", values = ["no", "yes"])
 newclass.getValueFrom = lambda ex, w: ex["iris"]=="Iris-versicolor"
 newdomain = orange.Domain(data.domain.attributes, newclass)
 data_v = orange.ExampleTable(newdomain, data)
@@ -364,8 +354,7 @@ data_v = orange.ExampleTable(newdomain, data)
 
 <P>In this script, we have constructed a new class attribute which tells whether an iris is versicolor or not. We have told how this attribute's value is computed from the original class value with a simple lambda function. Finally, we have constructed a new domain and converted the examples. Now for discretization.</P>
 
-<XMP class=code>
-for attr in data_v.domain.attributes:
+<XMP class=code>for attr in data_v.domain.attributes:
     disc = bimod(attr, data_v)
     print "%s: (%5.3f, %5.3f)" % (attr.name, \
           disc.getValueFrom.transformer.low, \
@@ -374,7 +363,6 @@ for attr in data_v.domain.attributes:
 
 <P>Script prints out the middle intervals:</P>
 <XMP class=code>
-
 Bi-Modal discretization
 sepal length: (5.400, 6.200]
 sepal width: (2.000, 2.900]

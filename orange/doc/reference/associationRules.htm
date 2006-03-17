@@ -49,8 +49,7 @@ NOBODY expects the Spanish Inquisition! Amongst our weaponry are such diverse el
 
 <P>The text needs to be cleaned of punctuation marks and capital letters at beginnings of the sentences, each sentence needs to be put in a new line and commas need to be inserted between the words. The first three lines thus become:
 <p class="header"><a href="inquisition.basket">part of inquisition.basket</a></p>
-<XMP class=code>
-nobody, expects, the, Spanish, Inquisition
+<XMP class=code>nobody, expects, the, Spanish, Inquisition
 our, chief, weapon, is, surprise, surprise, and, fear,fear, and, surprise
 our, two, weapons, are, fear, and, surprise, and, ruthless, efficiency
 </XMP>
@@ -59,8 +58,7 @@ our, two, weapons, are, fear, and, surprise, and, ruthless, efficiency
 
 <p class="header"><a href="assoc-agrawal.py">assoc-agrawal.py</a>
 (uses <a href="inquisition.basket">inquisition.basket</a>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 data = orange.ExampleTable("inquisition")
 
 rules = orange.AssociationRulesSparseInducer(data, support = 0.5)
@@ -72,8 +70,7 @@ for r in rules:
 
 <P>The induced rules are surprisingly fear-full.</P>
 
-<XMP class=code>
-0.500   1.000   fear -> surprise
+<XMP class=code>0.500   1.000   fear -> surprise
 0.500   1.000   surprise -> fear
 0.500   1.000   fear -> surprise our
 0.500   1.000   fear surprise -> our
@@ -112,8 +109,7 @@ for r in rules:
 
 <p class="header"><a href="assoc-agrawal.py">assoc.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 
 data = orange.ExampleTable("lenses")
 
@@ -124,8 +120,7 @@ for r in rules:
 </XMP>
 
 <P>The found rules are</P>
-<XMP class=code>
-0.333  0.533  lenses=none -> prescription=hypermetrope
+<XMP class=code>0.333  0.533  lenses=none -> prescription=hypermetrope
 0.333  0.667  prescription=hypermetrope -> lenses=none
 0.333  0.533  lenses=none -> astigmatic=yes
 0.333  0.667  astigmatic=yes -> lenses=none
@@ -137,8 +132,7 @@ for r in rules:
 
 <p class="header"><a href="assoc-agrawal.py">part of assoc.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-print "\nClassification rules"
+<XMP class="code">print "\nClassification rules"
 rules = orange.AssociationRulesInducer(data, supp = 0.3, classificationRules = 1)
 for r in rules:
     print "%5.3f  %5.3f  %s" % (r.support, r.confidence, r)
@@ -148,8 +142,7 @@ for r in rules:
 
 <p class="header"><a href="assoc-agrawal.py">part of assoc.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-0.333  0.667  prescription=hypermetrope -> lenses=none
+<XMP class="code">0.333  0.667  prescription=hypermetrope -> lenses=none
 0.333  0.667  astigmatic=yes -> lenses=none
 0.500  1.000  tear_rate=reduced -> lenses=none
 </XMP>
@@ -203,8 +196,7 @@ for r in rules:
 
 <p class="header"><a href="assoc-rule.py">assoc-rule.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 data = orange.ExampleTable("lenses")
 

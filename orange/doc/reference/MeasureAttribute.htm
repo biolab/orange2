@@ -52,7 +52,7 @@
  <DT>__call__(attribute, examples[, apriori class distribution][, weightID])<br>
  __call__(attribute, domain contingency[, apriori class distribution])<br>
  __call__(contingency, class distribution[, apriori class distribution])</DT>
- 
+
 <DD>There are three call operators just to make your life simpler and faster. When working with the data, your method might have already computed, for instance, contingency matrix. If so and if the quality measure you use is OK with that (as most measures are), you can pass the contingency matrix and the measure will compute much faster. If, on the other hand, you only have examples and haven't computed any statistics on them, you can pass examples (and, optionally, an id for meta-attribute with weights) and the measure will compute the contingency itself, if needed.</P>
 
 <P>Argument <CODE>attribute</CODE> gives the attribute whose quality is to be assessed. This can be either a descriptor, an index into domain or a name. In the first form, if the attribute is given by descriptor, it doesn't need to be in the domain. It needs to be computable from the attribute in the domain, though.</DD>
@@ -67,8 +67,7 @@
 
 <p class="header"><a href="MeasureAttribute1.py">part of measureattribute1.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
-import orange, random
+<XMP class=code>import orange, random
 data = orange.ExampleTable("lenses")
 
 meas = orange.MeasureAttribute_info()
@@ -87,8 +86,7 @@ print
 
 <P>As for many other classes in Orange, you can construct the object and use it on-the-fly. For instance, to measure the quality of attribute "tear_rate", you could write simply</P>
 
-<XMP class=code>
->>> print orange.MeasureAttribute_info("tear_rate", data)
+<XMP class=code>>>> print orange.MeasureAttribute_info("tear_rate", data)
 0.548794984818
 </XMP>
 
@@ -96,8 +94,7 @@ print
 
 <p class="header"><a href="MeasureAttribute1.py">measureattribute1a.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class=code>
-import orange, random
+<XMP class=code>import orange, random
 data = orange.ExampleTable("iris")
 
 d1 = orange.EntropyDiscretization("petal length", data)
@@ -110,8 +107,7 @@ print orange.MeasureAttribute_info(d1, data)
 
 <p class="header"><a href="MeasureAttribute1.py">part of measureattribute1.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
-mid = orange.newmetaid()
+<XMP class=code>mid = orange.newmetaid()
 data.domain.addmeta(mid, orange.EnumVariable(values = ["v0", "v1"]))
 data.addMetaAttribute(mid)
 
@@ -139,7 +135,6 @@ print "Information gain for a random meta attribute: %6.4f" % \
 </DL>
 
 <XMP class=code>
-
 </XMP>
 
 <HR>
@@ -176,8 +171,7 @@ print "Information gain for a random meta attribute: %6.4f" % \
 
 <P>If cost of predicting the first class for an example that is actually in the second is 5, and the cost of the opposite error is 1, than an appropriate measure can be constructed and used for attribute 3 as follows.</P>
 
-<XMP class=code>
->>> meas = orange.MeasureAttribute_cost()
+<XMP class=code>>>> meas = orange.MeasureAttribute_cost()
 >>> meas.cost = ((0, 5), (1, 0))
 >>> meas(3, data)
 0.083333350718021393
@@ -203,15 +197,13 @@ print "Information gain for a random meta attribute: %6.4f" % \
 
 <P>Caching will only have effect if you use the same instance for all attributes in the domain. So, don't do this:</P>
 
-<XMP class=code>
-for attr in data.domain.attributes:
+<XMP class=code>for attr in data.domain.attributes:
     print orange.MeasureAttribute_relief(attr, data)
 </XMP>
 
 <P>In this script, cached data dies together with the instance of <CODE>MeasureAttribute_relief</CODE>, which is constructed and destructed for each attribute separately. It's way faster to go like this.</P>
 
-<XMP class=code>
-meas = orange.MeasureAttribute_relief()
+<XMP class=code>meas = orange.MeasureAttribute_relief()
 for attr in data.domain.attributes:
     print meas(attr, data)
 </XMP>

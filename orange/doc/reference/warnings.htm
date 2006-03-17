@@ -18,35 +18,31 @@ The other warning <CODE>orange.KernelWarning</CODE> is issued by Orange kernel i
 
 <P>Python allows to add attributes to class instances. This is a perfectly legal Python code that adds the attribute <CODE>test</CODE> to an instance of class <CODE>A</CODE>.</P>
 
-<XMP class="code">
-class A:
+<XMP class="code">class A:
     pass
-    
+
 a = A()
 a.test = 12
 </XMP>
 
 <P>Such attributes can be quite useful, so Orange supports them as well (with exception of classes <CODE>Example</CODE> and <CODE>Value</CODE>, which are not derived from <CODE>Orange</CODE>). It is therefore OK to, for instance, store the number of misclassified examples to each leaf of decision tree to a new attribute, or add a comment to naive Bayesian learner:</P>
 
-<XMP class="code">
-bl = orange.BayesLearner()
+<XMP class="code">bl = orange.BayesLearner()
 bl.comment = "Naive Bayesian learner with default parameters"
 </XMP>
 
 <P>This is, however, somewhat dangerous. Say that you want to set the method for estimation of conditional probabilities.</P>
 
-<XMP class="code">
-bl.conditionalEstimatrConstructor = \
+<XMP class="code">bl.conditionalEstimatrConstructor = \
   orange.ConditionalProbabilityEstimatorConstructor_ByRows()
 </XMP>
 
-<P>It's a long line, so it's no wonder that we mistyped it: 
+<P>It's a long line, so it's no wonder that we mistyped it:
 <CODE>conditionalEstimatorConstructor</CODE> misses an "o". But Orange thinks you wanted to assign a new attribute <CODE>conditionalEstimatrConstructor</CODE> to <CODE>bl</CODE>. <CODE>conditionalEstimatorConstructor</CODE> does not change, although the programmer thinks it has!</P>
 
 <P>The solution is to give warnings: you are free to set new attributes, such as <CODE>comment</CODE> (or <CODE>conditionalEstimatrConstructor</CODE>), but you'll get a warning the first time that certain attribute is set at certain place. Exception to this are modules whose name begin with <CODE>orng</CODE>. You can also disable the warnings in your code, if you dare:</p>
 
-<XMP class="code">
-import warnings
+<XMP class="code">import warnings
 warnings.filterwarnings("ignore", "", orange.AttributeWarning)
 </XMP>
 

@@ -16,8 +16,7 @@
 
 <p class="header"><a href="distributions.py">part of distributions.py</a>
 (uses <a href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
-<XMP class="code">
->>> import orange
+<XMP class="code">>>> import orange
 >>> data = orange.ExampleTable("adult_sample")
 >>> disc = orange.Distribution("workclass", data)
 >>> print disc
@@ -30,8 +29,7 @@
 
 <p class="header"><a href="distributions.py">part of distributions.py</a>
 (uses <a href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
-<XMP class="code">
->>> workclass = data.domain["workclass"]
+<XMP class="code">>>> workclass = data.domain["workclass"]
 >>> for i in range(len(workclass.values)):
 ...   print "%20s: %5.3f" % (workclass.values[i], disc[i])
              Private: 685.000
@@ -91,8 +89,7 @@
 
 <P>To get the number of examples with <CODE>workclass</CODE>="private", you can use either of the three forms below:</P>
 
-<XMP class="code">
-print "Private: ", disc["Private"]
+<XMP class="code">print "Private: ", disc["Private"]
 print "Private: ", disc[0]
 print "Private: ", disc[orange.Value(workclass, "Private")]
 </XMP>
@@ -106,8 +103,7 @@ print "Private: ", disc[orange.Value(workclass, "Private")]
 <DT>keys(), values(), items()</DT>
 <DD>Return a list of values, a list of example counts and a list of (value, frequency) pairs, respectively. For instance, distribution in the last example of section "General Distributions" could be printed out by
 
-<XMP class="code">
-for val, num in disc.items():
+<XMP class="code">for val, num in disc.items():
     print "%20s: %5.3f" % (val, num)
 </xmp
 </dd>
@@ -136,7 +132,7 @@ for val, num in disc.items():
 
 </DL>
 
-<H2>Discrete distributions</H2> 
+<H2>Discrete distributions</H2>
 
 <P>Discrete distributions can be constructed directly.</P>
 
@@ -148,16 +144,14 @@ for val, num in disc.items():
 <DT>DiscDistribution(list)</DT>
 <DD>This form of constructor initializes a list, but leaves the variable at <CODE>None</CODE>. You can use such distribution for random number generation.
 
-<XMP class="code">
-disc = orange.DiscDistribution([0.5, 0.3, 0.2])
+<XMP class="code">disc = orange.DiscDistribution([0.5, 0.3, 0.2])
 for i in range(20):
     print disc.random(),
 </XMP>
 
 <P>This will print out approximately ten 0's, six 1's and four 2's. To name the values, you can assign an attribute descriptor.</P>
 
-<XMP class=code>
-v = orange.EnumVariable(values = ["red", "green", "blue"])
+<XMP class=code>v = orange.EnumVariable(values = ["red", "green", "blue"])
 disc.variable = v
 </XMP>
 </DD>
@@ -200,8 +194,7 @@ disc.variable = v
 <DT>percentile(p)</DT>
 <DD>Returns p-th percentile of distribution, ie such value x that <CODE>p</CODE> percents of attribute's values are smaller than x. <CODE>p</CODE> must be a value between 0 and 100. For instance, if <CODE>dage</CODE> is a continuous distribution, quartiles can be printed by
 
-<XMP class=code>
-print "Quartiles: %5.3f - %5.3f - %5.3f" % \
+<XMP class=code>print "Quartiles: %5.3f - %5.3f - %5.3f" % \
   (dage.percentile(25), dage.percentile(50), dage.percentile(75))
 </XMP>
 </DD>
@@ -261,8 +254,7 @@ print "Quartiles: %5.3f - %5.3f - %5.3f" % \
 
 <p class="header"><a href="distributions.py">part of distributions.py</a>
 (uses <a href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
-<XMP class="code">
-dist = orange.DomainDistributions(data)
+<XMP class="code">dist = orange.DomainDistributions(data)
 
 for d in dist:
     if d.variable.varType == orange.VarTypes.Discrete:
@@ -273,8 +265,7 @@ for d in dist:
 
 <P>To get the distribution for, say, attribute "age", you can either use its index in the domain or its name or descriptor.</P>
 
-<XMP class="code">
-dist_age = dist["age"]
+<XMP class="code">dist_age = dist["age"]
 </XMP>
 
 </BODY> 

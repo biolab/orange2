@@ -95,8 +95,7 @@ That is, by default, both will use relative frequencies. But when <CODE>estimato
 
 <p>Let us load the data, induce a classifier and see how it performs on the first five examples.</p>
 
-<xmp class="code">
->>> data = orange.ExampleTable("lenses")
+<xmp class="code">>>> data = orange.ExampleTable("lenses")
 >>> bayes = orange.BayesLearner(data)
 >>>
 >>> for ex in data[:5]:
@@ -110,8 +109,7 @@ hard hard
 
 <P>The classifier is correct in all five cases. Interested in probabilities, maybe?</P>
 
-<xmp class="code">
->>> for ex in data[:5]:
+<xmp class="code">>>> for ex in data[:5]:
 ...     print ex.getclass(), bayes(ex, orange.Classifier.GetProbabilities)
 no <0.423, 0.000, 0.577>
 no <0.000, 0.000, 1.000>
@@ -124,8 +122,7 @@ hard <0.715, 0.000, 0.285>
 
 <P>Now, let us peek into the classifier.</P>
 
-<xmp class="code">
->>> print bayes.estimator
+<xmp class="code">>>> print bayes.estimator
 None
 >>> print bayes.distribution
 <0.167, 0.208, 0.625>
@@ -141,16 +138,14 @@ None
 
 <P>Let us now use m-estimate instead of relative frequencies.</P>
 
-<xmp class="code">
->>> bayesl = orange.BayesLearner()
+<xmp class="code">>>> bayesl = orange.BayesLearner()
 >>> bayesl.estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=2.0)
 >>> bayes = bayesl(data)
 </xmp>
 
 <P>The classifier is still correct for all examples.</P>
 
-<xmp class="code">
->>> for ex in data[:5]:
+<xmp class="code">>>> for ex in data[:5]:
 ...     print ex.getclass(), bayes(ex, no &lt;0.375, 0.063, 0.562&gt;
 no <0.016, 0.003, 0.981>
 soft <0.021, 0.607, 0.372>
@@ -160,15 +155,13 @@ hard <0.632, 0.030, 0.338>
 
 <P>Observing probabilities shows a shift towards the third, more frequent class - as compared to probabilities above, where relative frequencies were used.</P>
 
-<xmp class="code">
->>> print bayes.conditionalDistributions[0]
+<xmp class="code">>>> print bayes.conditionalDistributions[0]
 <'young': <0.233, 0.242, 0.525>, 'p_psby': <0.133, 0.242, 0.625>, (...)
 </xmp>
 
 <P>Note that the change in error estimation did not have any effect on apriori probabilities:</P>
 
-<xmp class="code">
->>> print bayes.distribution
+<xmp class="code">>>> print bayes.distribution
 <0.167, 0.208, 0.625>
 </xmp>
 
@@ -176,8 +169,7 @@ hard <0.632, 0.030, 0.338>
 
 <P>Finally, let us show an example with continuous attributes. We will take iris dataset that contains four continuous and no discrete attributes.</P>
 
-<xmp class="code">
->>> data = orange.ExampleTable("iris")
+<xmp class="code">>>> data = orange.ExampleTable("iris")
 >>> bayes = orange.BayesLearner(data)
 >>> for exi in range(0, len(data), 20):
 ...     print data[exi].getclass(), bayes(data[exi], orange.Classifier.GetBoth)
@@ -185,15 +177,13 @@ hard <0.632, 0.030, 0.338>
 
 <P>The classifier works well. To see a glimpse of how it works, let us observe conditional distributions for the first attribute. It is stored in <CODE>conditionalDistributions</CODE>, as before, except that it now behaves as a dictionary, not as a list like before (see information on <A href="distributions.htm">distributions</A>.</P>
 
-<xmp class="code">
->>> print bayes.conditionalDistributions[0]
+<xmp class="code">>>> print bayes.conditionalDistributions[0]
 <4.300: <0.837, 0.137, 0.026>;, 4.333: <0.834, 0.140, 0.026>, 4.367: <0.830, (...)
 </xmp>
 
 <P>For a nicer picture, we can print out the probabilities, copy and paste it to some graph drawing program ... and get something like the figure below.</P>
 
-<xmp class="code">
->>> for x, probs in bayes.conditionalDistributions[0].items():
+<xmp class="code">>>> for x, probs in bayes.conditionalDistributions[0].items():
 ...     print "%5.3f\t%5.3f\t%5.3f\t%5.3f" % (x, probs[0], probs[1], probs[2])
 4.300   0.837   0.137   0.026
 4.333   0.834   0.140   0.026

@@ -82,8 +82,7 @@ A class for brute force search for nearest neighbours. It stores a table of exam
 
 <p class="header"><a href="examplesdistance.py">examplesdistance.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 data = orange.ExampleTable("lenses")
 
@@ -100,8 +99,7 @@ for ex in nn(data[0], 5):
 
 <P>First, we prepare a constructor <CODE>nnc</CODE>, and tell it that we want to use Euclidean distance. The we obtain a new id for meta-attribute and call the constructor. The resulting object <CODE>nn</CODE> is trained to find neighbours of examples in lenses dataset. Finally, in the for loop, we call <CODE>nn</CODE> to find the five nearest neighbours of <CODE>data[0]</CODE> and print them out.</P>
 
-<XMP class=code>
-*** Reference example:  ['young', 'myope', 'no', 'reduced', 'none']
+<XMP class=code>*** Reference example:  ['young', 'myope', 'no', 'reduced', 'none']
 ['young', 'myope', 'no', 'reduced', 'none'], {-2:0.00}
 ['young', 'myope', 'yes', 'reduced', 'none'], {-2:1.00}
 ['young', 'hypermetrope', 'no', 'reduced', 'none'], {-2:1.00}

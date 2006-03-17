@@ -16,29 +16,25 @@
 
 <p>The typical example for this are learners and classifiers. Basically, learners are objects that can be called with learning examples as an argument, and return a classifier. Classifiers, in turn, are object that can be called with an example and predict its class (or probabilities for the classes). For instance, if <code>data</code> contains learning examples, we can construct a Bayesian learner and classifier like this:<p>
 
-<xmp class="code">
-learner = orange.BayesLearner()
+<xmp class="code">learner = orange.BayesLearner()
 classifier = learner(data)
 </xmp>
 
 <p>Everything is normal here. <code>orange.BayesLearner()</code> returns an instance of <code>orange.BayesLearner</code>. Many users would, however, prefer to do to it like this:</p>
 
-<xmp class="code">
-classifier = orange.BayesLearner()(data)
+<xmp class="code">classifier = orange.BayesLearner()(data)
 </xmp>
 
 <p>The learner is constructed and immediately called. In order to avoid extra parentheses, <code>orange.BayesLearner</code>'s constructor can accept data, call learning and return a classifier:</code>
 
-<xmp class="code">
-classifier = orange.BayesLearner(data)
+<xmp class="code">classifier = orange.BayesLearner(data)
 </xmp>
 
 <p>The same can be done with most classes whose main purpose is construction of another class through the call operator (in the same way as <code>orange.BayesLearner</code>'s main function is construction of <code>orange.BayesClassifier</code>). If the constructor is passed the arguments that would be passed to the call, the constructor will execute the call itself and returned the corresponding instance.</p>
 
 <p>Is there a way to program similar constructors in Python? Yes, to some extent. The trick is to have a function instead of a class. Here's a skeleton of the Python code that would simulate the <code>BayesLearner</code>'s behaviour.</p>
 
-<xmp class="code">
-def BayesLearner(data = None, weightId = 0):
+<xmp class="code">def BayesLearner(data = None, weightId = 0):
   learner = BayesLearnerClass()
   if data:
     return learner(data, weightId)
@@ -65,8 +61,7 @@ class BayesClassifierClass:
 
 <p>Another peculiarity of constructors is that they accept values of attributes to be set. Essentially, everything that is passed as a keyword argument is copied to the instances dictionary, just as if constructors were defined like this.</p>
 
-<xmp class="code">
-class MyClass:
+<xmp class="code">class MyClass:
   def __init__(self, <positional arguments>, **args):
     self.__dict__.update(args)
     <...>
@@ -74,16 +69,14 @@ class MyClass:
 
 <p>This will significantly reduce the length of your scripts. Instead of</p>
 
-<xmp class="code">
-treelearner = orange.TreeLearner()
+<xmp class="code">treelearner = orange.TreeLearner()
 treelearner.storeExamples = 1
 tree = treelearner(data)
 </xmp>
 
 <p>you can - using this trick and the one from the previous section, simply say</p>
 
-<xmp class="code">
-tree = orange.TreeLearner(data, storeExamples = 1)
+<xmp class="code">tree = orange.TreeLearner(data, storeExamples = 1)
 </xmp>
 
 <p>The constructor will construct an <code>orange.TreeLearner</code>, set its attribute <code>storeExamples</code>, call it with the <code>data</code> and return the resulting tree classifier.</p>
@@ -103,8 +96,7 @@ Passing attribute values to constructors is not ambiguous and is very handy, so 
 
 <p>Python has no type-checking. If a Python class expects certain attribute to be of certain type, this is not checked when the attribute value is set. Potential errors are discovered only when the attribute is used. Not so in Orange. Since built-in attributes are stored as C++ structures, they need to be converted while set (or read). Passing a value of wrong type is discovered immediately. If <code>data</code> is an <code>orange.ExampleTable</code>, setting its <code>domain</code> to a wrong type will yield an error.</p>
 
-<xmp class="code">
->>> data.domain=2
+<xmp class="code">>>> data.domain=2
 Traceback (most recent call last):
   File "<interactive input>", line 1, in ?
 TypeError: invalid parameter type for 'ExampleTable.domain', (expected 'Domain', got 'int')
@@ -115,8 +107,7 @@ TypeError: invalid parameter type for 'ExampleTable.domain', (expected 'Domain',
 
 <p>Python classes do not have a fixed set of attributes. You can create new attributes by assignment.</p>
 
-<xmp class="code">
->>> class A:
+<xmp class="code">>>> class A:
 ...   pass
 ...
 >>> a = A()
@@ -129,30 +120,26 @@ TypeError: invalid parameter type for 'ExampleTable.domain', (expected 'Domain',
 
 <p>Due to many such errors and relatively little need for the user-defined attributes, Orange will trigger a warnings when such attributes are created.</p>
 
-<xmp class="code">
->>> b=orange.BayesLearner()
+<xmp class="code">>>> b=orange.BayesLearner()
 >>> b.g=12
 __main__:1: AttributeWarning: 'g' is not a builtin attribute of 'BayesLearner'
 </xmp>
 
 <p>This, on the other hand, can be annoying when setting a new attribute is not a mistake. There are two ways to avoid the unwanted warnings. One is to utilize standard Python's warning filters.</p>
 
-<xmp class="code">
-warnings.filterwarnings("ignore", "", orange.AttributeWarning)
+<xmp class="code">warnings.filterwarnings("ignore", "", orange.AttributeWarning)
 </xmp>
 
 <p>This is rather dangerous practice; it is much safer to disable warnings that occur in particular module and/or with a particular orange class or module. The following disables warnings in <CODE>orng</CODE> modules.</p>
 
-<xmp class="code">
-warnings.filterwarnings("ignore", "", orange.AttributeWarning, "orng.*")
+<xmp class="code">warnings.filterwarnings("ignore", "", orange.AttributeWarning, "orng.*")
 </xmp>
 
 <P>The complete documentation on module <code>warning</code> is included in Python's distribution.</p>
 
 <P>The best way to use new attributes but without disabling the otherwise beneficial warnings is not to set them the usual way but through a function <CODE>setattr</CODE>.</P>
 
-<XMP class="code">
->>> b.setattr("i", 15)
+<XMP class="code">>>> b.setattr("i", 15)
 </XMP>
 
 <P>This has the exact same effect as <CODE>b.i = 15</CODE>, only without warnings.</P>
@@ -161,23 +148,20 @@ warnings.filterwarnings("ignore", "", orange.AttributeWarning, "orng.*")
 
 <p>Orange has many objects that behave like lists, but aren't ordinary lists. The most widely seen objects of this kind are <code>orange.ExampleTable</code>, <code>orange.Example</code> and <code>orange.Domain</code>. There is nothing really special about them, but we have seen that many users tend to have problems with them. At certain points, they are reluctant to do typical list-like operations of them. For example, to iterate through the attributes of the <code>data.domain</code>, many write</p>
 
-<xmp class="code">
-for i in range(len(data.domain)):
+<xmp class="code">for i in range(len(data.domain)):
   attr = data.domain[i]
   ...
 </xmp>
 
 <p>while it is obviously more elegant to use <code>data.domain</code> as any other list</p>
 
-<xmp class="code">
-for attr in data.domain:
+<xmp class="code">for attr in data.domain:
   ...
 </xmp>
 
 <p>Similarly, to print out the first ten examples of an <code>orange.ExampleTable</code>, you can use slicing.</p>
 
-<xmp class="code">
-for example in data[:10]:
+<xmp class="code">for example in data[:10]:
   print example
 </xmp>
 
@@ -185,20 +169,17 @@ for example in data[:10]:
 
 <p>There are two efficient ways to convert an Orange list to an ordinary Python list. One is to instruct Python to create a list from your object:</p>
 
-<xmp class="code">
-listofexamples = list(data)
+<xmp class="code">listofexamples = list(data)
 </xmp>
 
 <p>This is equivalent to</p>
 
-<xmp class="code">
-listofexamples = [example for example in data]
+<xmp class="code">listofexamples = [example for example in data]
 </xmp>
 
 <p>or (if you are not familiar with list comprehensions)</p>
 
-<xmp class="code">
-listofexmaples = []
+<xmp class="code">listofexmaples = []
 for example in data:
   listofexamples.append(example)
 </xmp>
@@ -216,8 +197,7 @@ Orange classes cannot be pickled (yet). This also prevents deep-copying, which w
 
 <p>Orange does not support (yet) named arguments to functions. In Python, function arguments can be given by position or by keywords.</p>
 
-<xmp class="code">
->>> def f(a, b):
+<xmp class="code">>>> def f(a, b):
 ...   return a-b
 ...
 >>> f(7, 5)

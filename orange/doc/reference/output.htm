@@ -13,8 +13,7 @@
 <DL class="attributes">
 <DT>dump(format)</DT>
 <DD>Returns the string that represents the object in the given <CODE>format</CODE>. For instance, to print a <CODE>classifier</CODE> in XML format, use
-<XMP class=code>
-print classifier.dump("xml")
+<XMP class=code>print classifier.dump("xml")
 </XMP>
 </DD>
 
@@ -40,14 +39,13 @@ print classifier.dump("xml")
 <P>For example, here's a simple function for printing a contingency matrix in a tab-delimited format.</P>
 
 <p class="header">part of <A href="output.py">output.py</a></p>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 def printTabDelimContingency(c):
     if c.innerVariable.varType != orange.VarTypes.Discrete or \
        c.outerVariable.varType != orange.VarTypes.Discrete:
         raise "printTabDelimContingency can only handle discrete contingencies"
-    
+
     res = ""
     for v in c.innerVariable.values:
         res += "\t%s" % v
@@ -63,8 +61,7 @@ def printTabDelimContingency(c):
 
 <P>To register the function with format "tab", we call <CODE>setoutput</CODE>.</P>
 
-<XMP class=code>
-orange.setoutput(orange.Contingency, "tab", printTabDelimContingency)
+<XMP class=code>orange.setoutput(orange.Contingency, "tab", printTabDelimContingency)
 </XMP>
 </P>
 
@@ -72,8 +69,7 @@ orange.setoutput(orange.Contingency, "tab", printTabDelimContingency)
 
 <p class="header">part of <A href="output.py">output.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
-data = orange.ExampleTable("monk1")
+<XMP class=code>data = orange.ExampleTable("monk1")
 cont = orange.ContingencyAttrClass("e", data)
 
 print cont.dump("tab")
@@ -87,8 +83,7 @@ print cont.dump("tab")
 
 <p class="header">part of <A href="output.py">output.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
-orange.setoutput(orange.Contingency, "str", printTabDelimContingency)
+<XMP class=code>orange.setoutput(orange.Contingency, "str", printTabDelimContingency)
 
 print cont
 </XMP> 

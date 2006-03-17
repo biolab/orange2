@@ -7,7 +7,7 @@
 <BODY>
 <h1>Basic Statistics for Continuous Attributes</h1>
 
-<P>Orange contains two simple classes for computing basic statistics for continuous attributes, such as their minimal and maximal value or average: <code>BasicAttrStat</code> holds the statistics for a single attribute and <code>DomainBasicAttrStat</code> holds the statistics for all attributes in the domain. 
+<P>Orange contains two simple classes for computing basic statistics for continuous attributes, such as their minimal and maximal value or average: <code>BasicAttrStat</code> holds the statistics for a single attribute and <code>DomainBasicAttrStat</code> holds the statistics for all attributes in the domain.
 
 <hr>
 
@@ -56,8 +56,7 @@
 
 <p class=header style="margin-bottom: 12pt">part of <a href="basicattrstat.py">basicattrstat.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 data = orange.ExampleTable("iris")
 bas = orange.DomainBasicAttrStat(data)
 print "%20s  %5s  %5s  %5s" % ("attribute", "min", "max", "avg")
@@ -69,8 +68,7 @@ for a in bas:
 
 <p>This will print</p>
 
-<xmp class="code">
-           attribute    min    max    avg
+<xmp class="code">           attribute    min    max    avg
         sepal length  4.300  7.900  5.843
          sepal width  2.000  4.400  3.054
         petal length  1.000  6.900  3.759
@@ -83,8 +81,7 @@ for a in bas:
 <DT>&lt;list-like operations&gt;</DT>
 <DD><CODE>DomainBasicAttrStat</CODE> behaves like a ordinary list, except that its elements can also be indexed by attribute descriptors or attribute names.</p>
 
-<xmp class="code">
->>> print bas["sepal length"].avg        
+<xmp class="code">>>> print bas["sepal length"].avg
 5.84333467484
 </xmp>
 </DL>

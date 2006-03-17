@@ -75,8 +75,7 @@
 <P>Let us construct a simple distance matrix run clustering on it.</P>
 
 <P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 m = [[],
      [ 3],
@@ -96,8 +95,7 @@ root = orange.HierarchicalClustering(matrix, linkage=orange.HierarchicalClusteri
 <P>Root is a root of the cluster hierarchy. We can print using a simple recursive function.</P>
 
 <P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
-<XMP class=code>
-def printClustering(cluster):
+<XMP class=code>def printClustering(cluster):
     if cluster.branches:
         return "(%s%s)" % (printClustering(cluster.left), printClustering(cluster.right))
     else:
@@ -107,8 +105,7 @@ def printClustering(cluster):
 <P>The output is not exactly nice, but it will have to do. Our clustering, printed by calling <CODE>printClustering(root)</CODE> looks like this: <CODE>(((04)((57)(89)))((1(26))3))</CODE>. The elements are separated into two groups, the first containing elements 0, 4, 5, 7, 8, 9, and the second 1, 2, 6, 3. The difference between them equals <CODE>root.height</CODE>, 9.0 in our case. The first cluster is further divided onto 0 and 4 in one, and 5, 7, 8, 9 in the other subcluster...</P>
 
 <P>It is easy to print out the cluster's objects. Here's what's in the left subcluster of <CODE>root</CODE>.</P>
-<XMP class=code>
->>> for el in root.left:
+<XMP class=code>>>> for el in root.left:
 ...    print el,
 0 4 5 7 8 9
 </XMP>
@@ -117,8 +114,7 @@ def printClustering(cluster):
 <P>Everything that can be iterated over, can as well be cast into a list or tuple. Let us demonstrate this by writing a better function for printing out the clustering (which will also come handy for something else in a while). The one above supposed that each leaf contains a single object. This is not necessarily so; instead of printing out the first (and supposedly the only) element of cluster, <CODE>cluster[0]</CODE>, we shall print it out as a tuple.</P>
 
 <P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
-<XMP class=code>
-def printClustering2(cluster):
+<XMP class=code>def printClustering2(cluster):
     if cluster.branches:
         return "(%s%s)" % (printClustering2(cluster.left), printClustering2(cluster.right))
     else:
@@ -126,17 +122,14 @@ def printClustering2(cluster):
 </XMP>
 
 <P>The distance matrix could have been given a list of objects. We could, for instance, put</P>
-<XMP CLASS=CODE>
-matrix.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"]
+<XMP CLASS=CODE>matrix.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"]
 </XMP>
 <P>above calling the <CODE>HierarchicalClustering</CODE>. (This code will actually trigger a warning; to avoid it, use <CODE>matrix.setattr("objects", ["Ann", "Bob"...</CODE>. Why this is needed is explained in the page on <A href="peculiarities.htm">Orange peculiarities</A>.) If we've forgotten to store the <CODE>objects</CODE> into <CODE>matrix</CODE> prior to clustering, nothing is lost. We can add it into clustering later, by</P>
-<XMP CLASS=CODE>
-root.mapping.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"])
+<XMP CLASS=CODE>root.mapping.objects = ["Ann", "Bob", "Curt", "Danny", "Eve", "Fred", "Greg", "Hue", "Ivy", "Jon"])
 </XMP>
 
 <P>So, what do these "objects" do? Call <CODE>printClustering(root)</CODE> again and you'll see. Or, let us print out the elements of the first left cluster, as we did before.</P>
-<XMP class=code>
->>> for el in root.left:
+<XMP class=code>>>> for el in root.left:
 ...    print el,
 Ann Eve Fred Hue Ivy Jon
 </XMP>
@@ -145,8 +138,7 @@ Ann Eve Fred Hue Ivy Jon
 
 
 <P>Now for swapping and permutations.</P>
-<XMP class=code>
->>> printClustering(root)
+<XMP class=code>>>> printClustering(root)
 ((('Ann''Eve')(('Fred''Hue')('Ivy''Jon')))(('Bob'('Curt''Greg'))'Danny'))
 >>> root.left.swap()
 >>> printClustering(root)
@@ -161,8 +153,7 @@ Ann Eve Fred Hue Ivy Jon
 <P>Let us write function for cluster pruning.</P>
 
 <P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
-<XMP class=code>
-def prune(cluster, togo):
+<XMP class=code>def prune(cluster, togo):
     if cluster.branches:
         if togo<0:
             cluster.branches = None
@@ -173,8 +164,7 @@ def prune(cluster, togo):
 </XMP>
 
 <P>We shall use <CODE>printClustering2</CODE> here, since we can have multiple elements in a leaf of the clustering hierarchy.</P>
-<XMP class=code>
->>> prune(root, 9)
+<XMP class=code>>>> prune(root, 9)
 >>> print printClustering2(root)
 ((('Bob', 'Curt', 'Greg')('Danny',))(('Fred', 'Hue', 'Ivy', 'Jon')('Ann', 'Eve')))
 </XMP>
@@ -182,8 +172,7 @@ def prune(cluster, togo):
 <P>We've ended up with four clusters. Need a list of clusters? Here's the function.</P>
 
 <P class="header">part of <A href="hclust_art.py">hclust_art.py</A></P>
-<XMP class=code>
-def listOfClusters0(cluster, alist):
+<XMP class=code>def listOfClusters0(cluster, alist):
     if not cluster.branches:
         alist.append(list(cluster))
     else:
@@ -205,8 +194,7 @@ def listOfClusters(root):
 <P>The most common things to cluster are certainly examples. To show how to this is done, we shall now load the Iris data set, initialize a distance matrix with the distances measure by <A href="examplesdistance.htm"><CODE>ExamplesDistance_Euclidean</CODE></A> and cluster it with average linkage. Since we don't need the matrix, we shall let the clustering overwrite it (not that it's needed for such a small data set as Iris).</P>
 
 <P class="header">part of <A href="hclust.py">hclust.py</A> (uses <a href="iris.tab">iris.tab</a>)</P>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 data = orange.ExampleTable("iris")
 
@@ -225,8 +213,7 @@ root = clustering(matrix)
 
 <P>Note that we haven't forgotten to set the <CODE>matrix.objects</CODE>. We did it through <CODE>matrix.setattr</CODE> to avoid the warning. Let us now prune the clustering using the function we've written above, and print out the clusters.</P>
 <P class="header">part of <A href="hclust.py">hclust.py</A> (uses <a href="iris.tab">iris.tab</a>)</P>
-<XMP class=code>
-prune(root, 1.4)
+<XMP class=code>prune(root, 1.4)
 
 for n, cluster in enumerate(listOfClusters(root)):
     print "\n\n*** Cluster %i ***\n" % n
@@ -237,8 +224,7 @@ for n, cluster in enumerate(listOfClusters(root)):
 <P>Since the printout is pretty long, it might be more informative to just print out the class distributions for each cluster.</P>
 
 <P class="header">part of <A href="hclust.py">hclust.py</A> (uses <a href="iris.tab">iris.tab</a>)</P>
-<XMP class=code>
-for cluster in listOfClusters(root):
+<XMP class=code>for cluster in listOfClusters(root):
     dist = orange.getClassDistribution(cluster)
     for e, d in enumerate(dist):
         print "%s: %3.0f   " % (data.domain.classVar.values[e], d),
@@ -246,16 +232,14 @@ for cluster in listOfClusters(root):
 </XMP>
 
 <P>Here's what it shows.</P>
-<XMP class=code>
-Iris-setosa:  49    Iris-versicolor:   0    Iris-virginica:   0   
-Iris-setosa:   1    Iris-versicolor:   0    Iris-virginica:   0   
-Iris-setosa:   0    Iris-versicolor:  50    Iris-virginica:  17   
-Iris-setosa:   0    Iris-versicolor:   0    Iris-virginica:  33   
+<XMP class=code>Iris-setosa:  49    Iris-versicolor:   0    Iris-virginica:   0
+Iris-setosa:   1    Iris-versicolor:   0    Iris-virginica:   0
+Iris-setosa:   0    Iris-versicolor:  50    Iris-virginica:  17
+Iris-setosa:   0    Iris-versicolor:   0    Iris-virginica:  33
 </XMP>
 
 <P>Note something else: <CODE>listOfClusters</CODE> does not return a list of <CODE>ExampleTable</CODE>s, but a list of lists of examples. Therefore, in the above script, <CODE>cluster</CODE> is a list of examples, not an <CODE>ExampleTable</CODE>, but it gets converted to it automatically when the function is called. Most Orange functions will do this for you automatically. You can, for instance, call a learning algorithms, passing a cluster as an argument. It won't mind. If you, however, want to have a list of table, you can easily convert the list by</P>
-<XMP class=code>
-tables = [orange.ExampleTable(cluster) for cluster in listOfClusters(root)]
+<XMP class=code>tables = [orange.ExampleTable(cluster) for cluster in listOfClusters(root)]
 </XMP>
 </P>
 
@@ -266,8 +250,7 @@ tables = [orange.ExampleTable(cluster) for cluster in listOfClusters(root)]
 
 <P>To demonstrate how the data in clusters is stored, we shall continue with the clustering we got in the first example.</P>
 
-<XMP class=code>
->>> del root.mapping.objects
+<XMP class=code>>>> del root.mapping.objects
 >>> print printClustering(root)
 (((1(26))3)(((57)(89))(04)))
 >>> print root.mapping

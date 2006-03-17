@@ -13,8 +13,7 @@
 
 <p class="header"><a href="ClassifierByLookupTable.py">part of ClassifierByLookupTable.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 data = orange.ExampleTable("monk1")
 a, b, e = data.domain["a"], data.domain["b"], data.domain["e"]
@@ -32,8 +31,7 @@ data2 = data.select([a, b, ab, e, e1, data.domain.classVar])
 
 <P>We can check the correctness of the script by printing out several random examples from <CODE>data2</CODE>.</p>
 
-<XMP class=code>
->>> for i in range(5):
+<XMP class=code>>>> for i in range(5):
 ...     print data2.randomexample()
 ['1', '1', 'yes', '4', 'no', '1']
 ['3', '3', 'yes', '2', 'no', '1']
@@ -48,8 +46,7 @@ data2 = data.select([a, b, ab, e, e1, data.domain.classVar])
 
 <P>Note that you don't need <CODE>ClassifierByLookupTable</CODE> for this. The new attribute <CODE>e1</CODE> could be computed with a callback to Python, for instance:</P>
 
-<XMP class=code>
-e2.getValueFrom = lambda ex, rw: orange.Value(e2, ex["e"]=="1")
+<XMP class=code>e2.getValueFrom = lambda ex, rw: orange.Value(e2, ex["e"]=="1")
 </XMP>
 
 <P>While functionally the same, using classifiers by lookup table is faster.</P>
@@ -116,17 +113,16 @@ ClassifierByLookupTable3(classVar, variable1, variable2, variable3, [, lookupTab
 <P style="margin-top: 12pt">Let's see some indices for randomly chosen examples from the original table.</P>
 <p class="header"><a href="ClassifierByLookupTable.py">part of ClassifierByLookupTable.py (continued from above)</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
->>> for i in range(5):
+<XMP class=code>>>> for i in range(5):
 ...     ex = data.randomexample()
 ...     print "%s: ab %i, e1 %i " % (ex, \
 ...         ab.getValueFrom.getindex(ex), \
 ...         e1.getValueFrom.getindex(ex))
-['1', '1', '2', '2', '4', '1', '1']: ab 0, e1 3 
-['3', '3', '1', '2', '2', '1', '1']: ab 8, e1 1 
-['2', '1', '2', '3', '4', '2', '0']: ab 3, e1 3 
-['2', '1', '1', '2', '1', '1', '1']: ab 3, e1 0 
-['1', '1', '1', '2', '3', '1', '1']: ab 0, e1 2 
+['1', '1', '2', '2', '4', '1', '1']: ab 0, e1 3
+['3', '3', '1', '2', '2', '1', '1']: ab 8, e1 1
+['2', '1', '2', '3', '4', '2', '0']: ab 3, e1 3
+['2', '1', '1', '2', '1', '1', '1']: ab 3, e1 0
+['1', '1', '1', '2', '3', '1', '1']: ab 0, e1 2
 </XMP>
 </DD>
 </DL>
@@ -156,8 +152,7 @@ ClassifierByLookupTable3(classVar, variable1, variable2, variable3, [, lookupTab
 
 <p class="header"><a href="ClassifierByExampleTable.py">part of ClassifierByExampleTable.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 data = orange.ExampleTable("monk1")
 a, b, e = data.domain["a"], data.domain["b"], data.domain["e"]
@@ -168,8 +163,7 @@ abe = orange.LookupLearner(data_s)
 
 <P>In <CODE>data_s</CODE>, we have prepared a table in which examples are described only by <CODE>a</CODE>, <CODE>b</CODE>, <CODE>e</CODE> and the class. Learner constructs a <CODE>ClassifierByExampleTable</CODE> and stores examples from <CODE>data_s</CODE> into its <CODE>sortedExamples</CODE>. Examples are merged so that there are no duplicates.
 
-<XMP class=code>
->>> print len(data_s)
+<XMP class=code>>>> print len(data_s)
 432
 >>> print len(abe2.sortedExamples)
 36
@@ -189,8 +183,7 @@ abe = orange.LookupLearner(data_s)
 
 <P>Well, there's a bit more here than meets the eye: each example's class value also stores the distribution of classes for all examples that were merged into it. In our case, the three attribute suffice to unambiguously determine the classes and, since example covered the entire space, all distributions have 12 examples in one of the class and none in the other.</P>
 
-<XMP class=code>
->>> for i in abe2.sortedExamples[:10]:
+<XMP class=code>>>> for i in abe2.sortedExamples[:10]:
 ...     print i, i.getclass().svalue
 ['1', '1', '1', '1'] <0.000, 12.000>
 ['1', '1', '2', '1'] <0.000, 12.000>
@@ -206,23 +199,20 @@ abe = orange.LookupLearner(data_s)
 
 <P><CODE>ClassifierByExampleTable</CODE> will usually used by <CODE>getValueFrom</CODE>. So, we would probably continue this by constructing a new attribute and put the classifier into its <CODE>getValueFrom</CODE>.</P>
 
-<XMP class=code>
->>> y2 = orange.EnumVariable("y2", values = ["0", "1"])
+<XMP class=code>>>> y2 = orange.EnumVariable("y2", values = ["0", "1"])
 >>> y2.getValueFrom = abe
 </XMP>
 
 <P>There's something disturbing here. Although <CODE>abe</CODE> determines the value of <CODE>y2</CODE>, <CODE>abe.classVar</CODE> is still <CODE>y</CODE>. Orange doesn't bother (the whole example is artificial - you will seldom pack entire dataset in an <CODE>ClassifierByExampleTable</CODE>...), so shouldn't you. But still, for the sake of hygiene, you can conclude by
 
-<XMP class=code>
->>> abe.classVar = y2
+<XMP class=code>>>> abe.classVar = y2
 </XMP>
 
 <P>Whole story can be greatly simplified. <CODE>LookupLearner</CODE> can also be called differently than other learners. Besides examples, you can pass the new class attribute and the attributes that should be used for classification. This saves us from constructing <CODE>data_s</CODE> and reassigning the <CODE>classVar</CODE>. It doesn't set the <CODE>getValueFrom</CODE>, though.</P>
 
 <p class="header"><a href="ClassifierByExampleTable.py">part of ClassifierByExampleTable.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 data = orange.ExampleTable("monk1")
 a, b, e = data.domain["a"], data.domain["b"], data.domain["e"]
 
@@ -234,8 +224,7 @@ abe2 = orange.LookupLearner(y2, [a, b, e], data)
 
 <p class="header"><a href="ClassifierByExampleTable.py">part of ClassifierByExampleTable.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
-<XMP class=code>
-y2 = orange.EnumVariable("y2", values = ["0", "1"])
+<XMP class=code>y2 = orange.EnumVariable("y2", values = ["0", "1"])
 abe2 = orange.LookupLearner(y2, [a, b], data)
 for i in abe2.sortedExamples:
     print i, i.getclass().svalue
@@ -243,8 +232,7 @@ for i in abe2.sortedExamples:
 
 <P>The script's output show how the classes are distributed for different values of <CODE>a</CODE> and <CODE>b</CODE>.</P>
 
-<XMP class=code>
-['1', '1', '1'] <0.000, 48.000>
+<XMP class=code>['1', '1', '1'] <0.000, 48.000>
 ['1', '2', '0'] <36.000, 12.000>
 ['1', '3', '0'] <36.000, 12.000>
 ['2', '1', '0'] <36.000, 12.000>

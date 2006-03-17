@@ -35,8 +35,7 @@
 <P>Say we have some data loaded and would like to add an attribute with some Python values to the examples. The easiest way to do this is to attach a meta attribute, like this.</P>
 
 <P class="header">part of <A href="pythonvariable1.py">pythonvariable1.py</A></P>
-<XMP class=code>
-import orange
+<XMP class=code>import orange
 
 data = orange.ExampleTable("lenses")
 
@@ -58,8 +57,7 @@ data[3]["foo"] = data
 <P>Like any attribute, <CODE>PythonVariable</CODE> can compute its values from values of other attributes, as described in the documentation on the <CODE>Variable</CODE>'s method <a href="Variable.htm#getValueFrom"><CODE>getValueFrom</CODE></A>. Let us show how this is done on another not necessarily useful example: we shall construct a an attribute whose value will be a list of indices, representing the values of other example's attributes.</P>
 
 <P class="header">part of <A href="pythonvariable1.py">pythonvariable1.py</A></P>
-<XMP class=code>
-def extolist(ex, wh=0):
+<XMP class=code>def extolist(ex, wh=0):
     return orange.PythonValue(map(int, ex))
 
 listvar = orange.PythonVariable("a_list")
@@ -71,8 +69,7 @@ newdata = orange.ExampleTable(newdomain, data)
 
 <P>The first few examples in the <CODE>newdata</CODE> look like this.</P>
 
-<XMP CLASS="code">
-['young', 'myope', 'no', 'reduced', '[0, 0, 0, 0, 0]', 'none']
+<XMP CLASS="code">['young', 'myope', 'no', 'reduced', '[0, 0, 0, 0, 0]', 'none']
 ['young', 'myope', 'no', 'normal', '[0, 0, 0, 1, 1]', 'soft']
 ['young', 'myope', 'yes', 'reduced', '[0, 0, 1, 0, 0]', 'none']
 ['young', 'myope', 'yes', 'normal', '[0, 0, 1, 1, 2]', 'hard']
@@ -90,8 +87,7 @@ newdata = orange.ExampleTable(newdomain, data)
 
 <P>There is however a workaround. You can do this as follows.</P>
 
-<XMP class=code>
-def extolist(ex, wh=0):
+<XMP class=code>def extolist(ex, wh=0):
     return map(int, ex)
 
 listvar = orange.PythonVariable("a_list")
@@ -111,8 +107,7 @@ listvar.getValueFrom.classVar = listvar
 <P>If you want to define a special syntax for your Python-based attribute, you will need to derive a new Python class from <CODE>PythonVariable</CODE> and define the two functions.</P>
 
 <P class="header">part of <A href="pythonvariable2a.py">pythonvariable2a.py</A></P>
-<XMP class=code>
-import orange, time
+<XMP class=code>import orange, time
 
 class DateVariable(orange.PythonVariable):
     def str2val(self, str):
@@ -124,8 +119,7 @@ class DateVariable(orange.PythonVariable):
 
 <P>Here we defined an attribute to represent a date. We used Python's module <CODE>time</CODE> whose functions <CODE>strptime</CODE> and <CODE>strftime</CODE> convert a date, represented as a string in a given format to an instance of <CODE>time.struct_time</CODE>, used for representing dates, and back. The string formats for <CODE>str2val</CODE> and <CODE>val2str</CODE> do not need to match. See this.</P>
 
-<XMP class=code>
->>> birth = DateVariable("birth")
+<XMP class=code>>>> birth = DateVariable("birth")
 >>> val = birth("Aug 19 2003")
 >>> print val
 Aug 19 2003 (Tue)
@@ -138,8 +132,7 @@ Aug 19 2003 (Tue)
 <P>Let us construct an example table that will include a new attribute: we shall load the lenses data set, add the new attribute and set its value for the first example.</P>
 
 <P class="header">part of <A href="pythonvariable2a.py">pythonvariable2a.py</A> (uses <a href="lenses.tab">lenses</a>)</P>
-<XMP class=code>
-data = orange.ExampleTable("lenses")
+<XMP class=code>data = orange.ExampleTable("lenses")
 
 newdomain = orange.Domain(data.domain.attributes + [birth], data.domain.classVar)
 newdata = orange.ExampleTable(newdomain, data)
@@ -153,11 +146,10 @@ print newdata[0]
 <P>If <CODE>val2str</CODE> is not defined, Orange will "print" the value to a string. The alternative to defining the <CODE>DateVariable</CODE>'s <CODE>val2str</CODE> is defining a special Python class that will represent a date and overload its method <CODE>__str__</CODE>, like in the following example.</P>
 
 <P class="header">part of <A href="pythonvariable2b.py">pythonvariable2b.py</A></P>
-<XMP class=code>
-class DateValue(orange.SomeValue):
+<XMP class=code>class DateValue(orange.SomeValue):
     def __init__(self, date):
         self.date = date
-        
+
     def __str__(self):
         return time.strftime("%b %d %Y (%a)", self.date)
 
@@ -174,8 +166,7 @@ class DateVariable(orange.PythonVariable):
 <P>For our <CODE>DateVariable</CODE>, the two additional functions could, for instance, look as follows.</P>
 
 <P class="header">part of <A href="pythonvariable2c.py">pythonvariable2c.py</A></P>
-<XMP class=code>
-    def filestr2val(self, str, example):
+<XMP class=code>    def filestr2val(self, str, example):
         if str == "unknown":
             return orange.PythonValueSpecial(orange.ValueTypes.DK)
         return DateValue(time.strptime(str, "%m/%d/%Y"))
@@ -232,8 +223,7 @@ class DateVariable(orange.PythonVariable):
 <P>You can also redefine two <CODE>PythonValue</CODE>'s methods. Besides <CODE>__str__</CODE> which we examined above, you can also redefine <CODE>__cmp__(self, other)</CODE> which should return a negative integer is <CODE>self</CODE> is smaller than <CODE>other</CODE>, zero if they are equal and positive integer if <CODE>self</CODE> is greater. The meaning of "smaller" and "greater" depends upon the type of the attribute. If you leave the function undefined, Orange will use the Python's built-in comparison function. Which is great, since all decent Python objects support sensible comparisons. For instance, let us continue with the example in which we first defined <CODE>DateVariable</CODE> (but haven't defined <CODE>DateValue</CODE>).</P>
 
 <P class="header">part of <A href="pythonvariable2a.py">pythonvariable2a.py</A></P>
-<XMP class=code>
-newdata[0]["birth"] = "Aug 19 2003"
+<XMP class=code>newdata[0]["birth"] = "Aug 19 2003"
 newdata[1]["birth"] = "Jan 12 1998"
 newdata[2]["birth"] = "Sep 1 1995"
 newdata[3]["birth"] = "May 25 2001"
@@ -243,14 +233,13 @@ print "\nSorted data"
 for i in newdata:
     print i
 </XMP>
-    
+
 <P>This sorts the examples according to the date of birth (it might well be that people born in 2003 do not wear contact lenses at the time of writing this documentation, but we expect Orange to be around for a while :).</P>
 
 <P>This won't work with <CODE>PythonValue</CODE> as we defined it (the second example, where we showed how to redefine <CODE>__str__</CODE>). To fix it, we need to define a method <CODE>__cmp__</CODE> for <CODE>PythonValue</CODE>. The easiest way is to pass the work to Python, like this.</CODE>
 
 <P class="header">part of <A href="pythonvariable2b.py">pythonvariable2b.py</A></P>
-<XMP class=code>
-    def __cmp__(self, other):
+<XMP class=code>    def __cmp__(self, other):
         return cmp(self.date, other.date)
 </XMP>
 
@@ -269,8 +258,7 @@ for i in newdata:
 <P>The latter tricks - putting arbitrary expressions into can sometimes come handy for specifying the values as well. Here's an example of a file with Python expressions used for specifying values.</P>
 
 <P class="header"><A href="pythonvariable.tab">pythonvariable.tab</A></P>
-<XMP class=code>
-tear_rate    foo                  lenses
+<XMP class=code>tear_rate    foo                  lenses
 discrete     python               none soft hard
                                   class
 reduced      [0, 0, 0, 0, 0]      none
@@ -285,8 +273,7 @@ reduced      [0, a, 1, 0, 0]      none
 <P>Loading this file requires defining <CODE>A</CODE> (this shall be some class), import <CODE>math</CODE> so we can compute <CODE>math.sqrt</CODE>, define <CODE>a</CODE> to be some number, and <CODE>perfectSquare(n)</CODE> to be a function (which will, in our case, return a list of perfect squares for up to <CODE>n</CODE>).</P>
 
 <P class="header">part of <A href="pythonvariable2d.py">pythonvariable2d.py</A></P>
-<XMP class=code>
-import orange, math
+<XMP class=code>import orange, math
 
 def perfectSquares(x):
     return filter(lambda x:math.floor(math.sqrt(x)) == math.sqrt(x), range(x+1))
@@ -305,8 +292,7 @@ for i in data:
 </XMP>
 
 <P>And here's the output:</P>
-<XMP class=code>
-['reduced', '[0, 0, 0, 0, 0]', 'none']
+<XMP class=code>['reduced', '[0, 0, 0, 0, 0]', 'none']
 ['normal', 'value: 3.14', 'soft']
 ['reduced', '4.0', 'none']
 ['normal', '60', 'hard']

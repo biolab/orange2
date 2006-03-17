@@ -38,40 +38,35 @@
 
 <P>Loading examples is trivial. To load the data from the file <CODE>iris.tab</CODE>, you simply type</P>
 
-<XMP class="code">
->>> data = orange.ExampleTable("iris.tab")
+<XMP class="code">>>> data = orange.ExampleTable("iris.tab")
 </XMP>
 
 <P>You can, of course, also give a relative or absolute path to the file. Well, <CODE>ExampleTable</CODE> is even smarted than that. You can omit the file extension.</P>
 
-<XMP class="code">
->>> data = orange.ExampleTable("iris")
+<XMP class="code">>>> data = orange.ExampleTable("iris")
 </XMP>
 
 <P>This will do the same - Orange will look for any file with stem "iris" and a recognizable extension, such as .tab, .names, .rda... What happens when there is more than one such file? If orange discovers that you have, for instance, iris.tab <EM>and</EM> iris.names in the current directory, it will issue an error. You will have to provide the extension in this case.</P>
 
 <P>But there's more. You don't even have to provide a filename. If you call the <CODE>ExampleTable</CODE> without any arguments, like this,</P>
 
-<XMP class="code">
->>> data = orange.ExampleTable("")
+<XMP class="code">>>> data = orange.ExampleTable("")
 </XMP>
 
 <P>it will load the file with the same name as the current directory name. So, if your current directory is "c:\mydata\iris", it will look for files with stem "iris" and any known extensions. This might come handy if you perform some massive experiments and you want to run the same script for many different datasets located in separate directories.</P>
 
 <P>There's a special trick for reading Excel files. If the file has multiple worksheets, the active worksheet (the one which was visible when the file was last saved) is read. To override this, you can specify a worksheet by appending a "#" and the worksheet's name to the file name. If your iris file is in Excel's format in a worksheet named "train", you can read it by
 
-<XMP class="code">
->>> data = orange.ExampleTable("iris#train")
+<XMP class="code">>>> data = orange.ExampleTable("iris#train")
 </XMP>
 
 
 <H2>Multiple Datafiles with the Same Domain</H2>
-<A name="samedomain">
+<A name="samedomain"></a>
 
 <P>Special mechanisms are at work when you have, for instance, separate files for training and testing examples, but with the same attribute names and types in the same order.</P>
 
-<XMP class="code">
->>> train = orange.ExampleTable("iris_train")
+<XMP class="code">>>> train = orange.ExampleTable("iris_train")
 >>> test = orange.ExampleTable("iris_test")
 </XMP>
 
@@ -79,8 +74,7 @@
 
 <P>A situtation that would probably occur even more often is to have an Excel file with two spreadsheets, one containing training and the other testing examples. They can be loaded by:</P>
 
-<XMP class="code">
->>> train = orange.ExampleTable("breast.xls#train")
+<XMP class="code">>>> train = orange.ExampleTable("breast.xls#train")
 >>> test = orange.ExampleTable("breast.xls#test")
 </XMP>
 
@@ -88,8 +82,7 @@
 
 <P>You can override the default behaviour by adding a few keyword parameters. You can prohibit reusing domains by setting <code>dontCheckStored</code> to 1. Therefore, if you would, for any weird reason, want to have the above iris datasets belonging to two unrelated domains, you can load them by</p>
 
-<XMP class="code">
->>> train = orange.ExampleTable("iris.data")
+<XMP class="code">>>> train = orange.ExampleTable("iris.data")
 >>> test = orange.ExampleTable("iris.test", dontCheckStored = 1)
 </XMP>
 
@@ -97,24 +90,21 @@
 
 <p>You can give the <code>ExampleTable</code> a list of attributes that can be reused. For instance, you might have testing set that contains some attributes not present in the training set. By the usual mechanism, these datasets would have separate domain and attribute definitions - even the attributes with the same names would be actually unrelated; models induced from the training data would be completely useless on the testing data, as none of its attributes would be recognized. So, to tell Orange to reuse the attributes, you can use the <code>use</code> keyword:</p>
 
-<XMP class="code">
->>> train = orange.ExampleTable("breast.xls#train")
+<XMP class="code">>>> train = orange.ExampleTable("breast.xls#train")
 >>> test = orange.ExampleTable("breast.xls#test", \
               use = train.domain)
 </XMP>
 
 <p>By this, Orange is licensed to reuse any of attributes, either normal or meta, when constructing the domain for testing examples. Instead of giving a domain, you can also pass a list of attributes:</p>
 
-<XMP class="code">
->>> train = orange.ExampleTable("breast.xls#train")
+<XMP class="code">>>> train = orange.ExampleTable("breast.xls#train")
 >>> test = orange.ExampleTable("breast.xls#test", \
             use = train.domain.attributes + someother.domain.attributes)
 </XMP>
 
 <p>Finally, you can tell Orange to reuse a domain.</p>
 
-<XMP class="code">
->>> train = orange.ExampleTable("breast.xls#train")
+<XMP class="code">>>> train = orange.ExampleTable("breast.xls#train")
 >>> test = orange.ExampleTable("breast.xls#test", domain = some.domain)
 </XMP>
 
@@ -124,22 +114,19 @@
 
 
 <H2>Saving Examples</H2>
-<A name="saving">
+<A name="saving"></a>
 
 <P>Saving examples to files is even simpler. <CODE>ExampleTable</CODE> (actually its ancestor, <CODE>ExampleGenerator</CODE>) implements a method <CODE>save</CODE> which accepts a single argument, file name, from which it also deduces the format. For instance, if examples are stored in <CODE>ExampleTable</CODE> <CODE>data</CODE>, we can save them as tab-delimited file by
 
-<XMP class="code">
->>> data.save("mydata.tab")
+<XMP class="code">>>> data.save("mydata.tab")
 </XMP>
 
 <P>If the file format requires multiple files (such as C4.5, where the attribute definitions and the examples are separate files with different extensions), specify one of them and Orange will make the things right. For instance, to save the data in C4.5, call either
 
-<XMP class="code">
->>> data.save("mydata.names")
+<XMP class="code">>>> data.save("mydata.names")
 </XMP>
-or 
-<XMP class="code">
->>> data.save("mydata.data")
+or
+<XMP class="code">>>> data.save("mydata.data")
 </XMP>
 
 Orange will write both files, <CODE>mydata.names</CODE> and <CODE>mydata.data</CODE> in both cases.</P>

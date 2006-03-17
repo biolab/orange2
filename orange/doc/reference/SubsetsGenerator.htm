@@ -19,8 +19,7 @@
 
 <P>Let <CODE>data</CODE> be a generator that constructs pair of attributes from domain Monk 1 (the section below describes how to create such generator). You can use it in <CODE>for</CODE> clauses, either in classical for-sentence:</P>
 
-<xmp class="code">
->>> for attrs in data:
+<xmp class="code">>>> for attrs in data:
 ...     print attrs
 ...
 (EnumVariable 'a', EnumVariable 'b')
@@ -31,8 +30,7 @@
 
 <P>or in list comprehensions</P>
 
-<XMP class="code">
-subsets = [attrs for attrs in data]
+<XMP class="code">subsets = [attrs for attrs in data]
 </XMP>
 
 <P><SMALL>There is another, older way of using subset generators. You can reset generator by calling <CODE>reset</CODE>. Then, each subsequent call to <CODE>next</CODE> will give a subset of attributes. When combinations are exhausted, <CODE>next</CODE> will return <CODE>None</CODE>. This protocol is provided for compatibility with older versions of Orange, but you can still use it if it comes handy.</SMALL></P>
@@ -41,27 +39,23 @@ subsets = [attrs for attrs in data]
 
 <P>Before iterating through subsets, the generator needs to be given a set of attributes. You can specify the set at construction time, set it through <CODE>varList</CODE> attribute, or specify it at for-clause. So, to construct the above generator, one can say:</P>
 
-<XMP class="code">
-sgen = orange.SubsetsGenerator_constSize(data.domain.attributes)
+<XMP class="code">sgen = orange.SubsetsGenerator_constSize(data.domain.attributes)
 </XMP>
 
 <P>or</P>
 
-<XMP class="code">
-sgen = orange.SubsetsGenerator_constSize()
+<XMP class="code">sgen = orange.SubsetsGenerator_constSize()
 sgen.varList = data.domain.attributes
 </XMP>
 
 <P>The former can be shortened to</P>
 
-<XMP class="code">
-sgen = orange.SubsetsGenerator_constSize(varList=data.domain.attributes)
+<XMP class="code">sgen = orange.SubsetsGenerator_constSize(varList=data.domain.attributes)
 </XMP>
 
 <P>The third alternative, providing the attribute set at call time, goes like this:</P>
 
-<XMP class="code">
-sgen = orange.SubsetsGenerator_constSize()
+<XMP class="code">sgen = orange.SubsetsGenerator_constSize()
 for attrs in sgen(data.domain.attributes):
   print attrs
 </XMP>
@@ -70,7 +64,7 @@ for attrs in sgen(data.domain.attributes):
 
 <H2>SubsetsGenerator_constSize</H2>
 
-<P><CODE>SubsetsGenerator_constSize</CODE> returns subsets of predefined size.</P> 
+<P><CODE>SubsetsGenerator_constSize</CODE> returns subsets of predefined size.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -82,8 +76,7 @@ for attrs in sgen(data.domain.attributes):
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
 (uses <a href="monks-1.tab">monks-1.tab</a>)</p>
-<XMP class="code">
-gen1 = orange.SubsetsGenerator_constSize(data.domain.attributes, B=3)
+<XMP class="code">gen1 = orange.SubsetsGenerator_constSize(data.domain.attributes, B=3)
 for attrs in gen1:
   print attrs
 </XMP>
@@ -96,8 +89,7 @@ B is set for the duration of the call or permanently.</SMALL></P>
 
 <P>Output begins by:</P>
 
-<XMP class="code">
-(EnumVariable 'a', EnumVariable 'b', EnumVariable 'c')
+<XMP class="code">(EnumVariable 'a', EnumVariable 'b', EnumVariable 'c')
 (EnumVariable 'a', EnumVariable 'b', EnumVariable 'd')
 (EnumVariable 'a', EnumVariable 'b', EnumVariable 'e')
 (EnumVariable 'a', EnumVariable 'b', EnumVariable 'f')
@@ -115,8 +107,7 @@ B is set for the duration of the call or permanently.</SMALL></P>
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
 (uses <a href="monks-1.tab">monks-1.tab</a>)</p>
-<XMP class="code">
-def f(gen, data):
+<XMP class="code">def f(gen, data):
   for attrs in gen(data.domain.attributes):
     print attrs
 
@@ -137,15 +128,13 @@ f(gen, data)
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
 (uses <a href="monks-1.tab">monks-1.tab</a>)</p>
-<XMP class="code">
-gen4 = orange.SubsetsGenerator_minMaxSize(min=1, max=3)
+<XMP class="code">gen4 = orange.SubsetsGenerator_minMaxSize(min=1, max=3)
 for attrs in gen4(data.domain.attributes):
   print attrs
 </xmp>
 
 <P>The output begins by:</P>
-<XMP class=code>
-(EnumVariable 'a',)
+<XMP class=code>(EnumVariable 'a',)
 (EnumVariable 'b',)
 (EnumVariable 'c',)
 (EnumVariable 'd',)
@@ -170,8 +159,7 @@ for attrs in gen4(data.domain.attributes):
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
 (uses <a href="monks-1.tab">monks-1.tab</a>)</p>
-<xmp class="code">
-gen5 = orange.SubsetsGenerator_constant()
+<xmp class="code">gen5 = orange.SubsetsGenerator_constant()
 gen5.constant = data.domain[:3]
 for attrs in gen5(data.domain.attributes):
   print attrs

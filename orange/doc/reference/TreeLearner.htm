@@ -435,8 +435,7 @@ Uses the information in <code>node</code> (particularly the <code>branchSelector
 
 <p class="header">part of <a href="treestructure.py">treestructure.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
->>> data = orange.ExampleTable("lenses")
+<xmp class="code">>>> data = orange.ExampleTable("lenses")
 >>> treeClassifier = orange.TreeLearner(data)
 </xmp>
 
@@ -444,8 +443,7 @@ Uses the information in <code>node</code> (particularly the <code>branchSelector
 
 <p class="header">part of <a href="treestructure.py">treestructure.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
-def treeSize(node):
+<xmp class="code">def treeSize(node):
     if not node:
         return 0
 
@@ -459,8 +457,7 @@ def treeSize(node):
 
 <p>If node is <CODE>None</CODE>, we have a null-node; null nodes don't count, so we return 0. Otherwise, the size is 1 (this node) plus the sizes of all subtrees. The node is an internal node if it has a <CODE>node.branchSelector</CODE>; it there's no selector, it's a leaf. Don't attempt to skip the <CODE>if</CODE> statement: leaves don't have an empty list of branches, they don't have a list of branches at all.</p>
 
-<xmp>
->>> treeSize(treeClassifier.tree)
+<xmp>>>> treeSize(treeClassifier.tree)
 10
 </xmp>
 
@@ -470,8 +467,7 @@ def treeSize(node):
 
 <p class="header">part of <a href="treestructure.py">treestructure.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
-def printTree0(node, level):
+<xmp class="code">def printTree0(node, level):
     if not node:
         print " "*level + "<null node>"
         return
@@ -496,16 +492,14 @@ def printTree0(node, level):
 <p>Finally, if the node is a leaf, we print out the distribution of learning examples in the node and the class to which the examples in the node would be classified. We again assume that the <code>nodeClassifier</code> is the default one - a <code>DefaultClassifier</code>. A better print function should be aware of possible alternatives.</p>
 
 <p>Now, we just need to write a simple function to call our printTree0. We could write something like...</p>
-<xmp class="code">
-def printTree(x):
+<xmp class="code">def printTree(x):
     printTree0(x.tree, 0)
 </xmp>
 <p>... but we won't. Let us learn how to handle arguments of different types. Let's write a function that will accept either a <code>TreeClassifier</code> or a <code>TreeNode</code> (just like <code>TreePruners</code>, remember?)</p>
 
 <p class="header">part of <a href="treestructure.py">treestructure.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
-def printTree(x):
+<xmp class="code">def printTree(x):
     if isinstance(x, orange.TreeClassifier):
         printTree0(x.tree, 0)
     elif isinstance(x, orange.TreeNode):
@@ -518,21 +512,20 @@ def printTree(x):
 
 <p class="header">part of <a href="treestructure.py">treestructure.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
->>> printTree(treeClassifier)
+<xmp class="code">>>> printTree(treeClassifier)
 
-tear_rate (<15.000, 5.000, 4.000>) 
-: reduced --> none (<12.000, 0.000, 0.000>)  
-: normal 
-   astigmatic (<3.000, 5.000, 4.000>) 
-   : no 
-      age (<1.000, 5.000, 0.000>) 
-      : young --> soft (<0.000, 2.000, 0.000>)  
-      : pre-presbyopic --> soft (<0.000, 2.000, 0.000>)  
-      : presbyopic --> none (<1.000, 1.000, 0.000>)  
-   : yes 
-      prescription (<2.000, 0.000, 4.000>) 
-      : myope --> hard (<0.000, 0.000, 3.000>)  
+tear_rate (<15.000, 5.000, 4.000>)
+: reduced --> none (<12.000, 0.000, 0.000>)
+: normal
+   astigmatic (<3.000, 5.000, 4.000>)
+   : no
+      age (<1.000, 5.000, 0.000>)
+      : young --> soft (<0.000, 2.000, 0.000>)
+      : pre-presbyopic --> soft (<0.000, 2.000, 0.000>)
+      : presbyopic --> none (<1.000, 1.000, 0.000>)
+   : yes
+      prescription (<2.000, 0.000, 4.000>)
+      : myope --> hard (<0.000, 0.000, 3.000>)
       : hypermetrope --> none (<2.000, 0.000, 1.000>)
 </xmp>
 
@@ -540,8 +533,7 @@ tear_rate (<15.000, 5.000, 4.000>)
 
 <p class="header">part of <a href="treestructure.py">treestructure.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
-def cutTree(node, level):
+<xmp class="code">def cutTree(node, level):
     if node and node.branchSelector:
         if level:
             for branch in node.branches:
@@ -556,15 +548,14 @@ def cutTree(node, level):
 
 <p class="header">part of <a href="treestructure.py">treestructure.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
->>> cutTree(tree.tree, 2)
+<xmp class="code">>>> cutTree(tree.tree, 2)
 >>> printTree(tree)
 
-tear_rate (<15.000, 5.000, 4.000>) 
-: reduced --> none (<12.000, 0.000, 0.000>)  
-: normal 
-   astigmatic (<3.000, 5.000, 4.000>) 
-   : no --> soft (<1.000, 5.000, 0.000>)  
+tear_rate (<15.000, 5.000, 4.000>)
+: reduced --> none (<12.000, 0.000, 0.000>)
+: normal
+   astigmatic (<3.000, 5.000, 4.000>)
+   : no --> soft (<1.000, 5.000, 0.000>)
    : yes --> hard (<2.000, 0.000, 4.000>)
 </xmp>
 
@@ -579,14 +570,12 @@ tear_rate (<15.000, 5.000, 4.000>)
 
 <p class="header"><a href="treelearner.py">treelearner.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
->>> learner = orange.TreeLearner()
+<xmp class="code">>>> learner = orange.TreeLearner()
 </xmp>
 
 <p>There are three crucial components in learning: the split and stop criteria, and the <code>exampleSplitter</code> (there are some others, which become important during classification; we'll talk about them later). They are not defined; if you use the learner, the slots are filled temporarily but later cleared again.</code>
 
-<xmp class="code">
->>> print learner.split
+<xmp class="code">>>> print learner.split
 None
 >>> learner(data)
 <TreeClassifier instance at 0x01F08760>
@@ -597,16 +586,14 @@ None
 <H4>Stopping criteria</H4>
 <p>The stop is trivial. The default is set by</p>
 
-<xmp class="code">
->>> learner.stop = orange.TreeStopCriteria_common()
+<xmp class="code">>>> learner.stop = orange.TreeStopCriteria_common()
 </xmp>
 
 <p>Well, this is actually done in C++ and it uses a global component that is constructed once for all, but apart from that we did effectively the same thing.</p>
 
 <p>We can now examine the default stopping parameters.</p>
 
-<xmp class="code">
->>> print learner.stop.maxMajority, learner.stop.minExamples
+<xmp class="code">>>> print learner.stop.maxMajority, learner.stop.minExamples
 1.0 0.0
 </xmp>
 
@@ -614,34 +601,32 @@ None
 
 <p class="header">part of <a href="treelearner.py">treelearner.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
->>> learner.stop.minExamples = 5.0
+<xmp class="code">>>> learner.stop.minExamples = 5.0
 >>> tree = learner(data)
 >>> printTree(tree)
-tear_rate (<15.000, 5.000, 4.000>) 
-: reduced --> none (<12.000, 0.000, 0.000>)  
-: normal 
-   astigmatic (<3.000, 5.000, 4.000>) 
-   : no 
-      age (<1.000, 5.000, 0.000>) 
-      : young --> soft (<0.000, 2.000, 0.000>)  
-      : pre-presbyopic --> soft (<0.000, 2.000, 0.000>)  
-      : presbyopic --> soft (<1.000, 1.000, 0.000>)  
-   : yes 
-      prescription (<2.000, 0.000, 4.000>) 
-      : myope --> hard (<0.000, 0.000, 3.000>)  
-      : hypermetrope --> none (<2.000, 0.000, 1.000>)  
+tear_rate (<15.000, 5.000, 4.000>)
+: reduced --> none (<12.000, 0.000, 0.000>)
+: normal
+   astigmatic (<3.000, 5.000, 4.000>)
+   : no
+      age (<1.000, 5.000, 0.000>)
+      : young --> soft (<0.000, 2.000, 0.000>)
+      : pre-presbyopic --> soft (<0.000, 2.000, 0.000>)
+      : presbyopic --> soft (<1.000, 1.000, 0.000>)
+   : yes
+      prescription (<2.000, 0.000, 4.000>)
+      : myope --> hard (<0.000, 0.000, 3.000>)
+      : hypermetrope --> none (<2.000, 0.000, 1.000>)
 </xmp>
 
 <p>OK, that's better. If we want an even smaller tree, we can also limit the maximal proportion of majority class.</p>
 
 <p class="header">part of <a href="treelearner.py">treelearner.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
->>> learner.stop.maxMajority = 0.5
+<xmp class="code">>>> learner.stop.maxMajority = 0.5
 >>> tree = learner(tree)
 >>> printTree(tree)
---> none (<15.000, 5.000, 4.000>) 
+--> none (<15.000, 5.000, 4.000>)
 </xmp>
 
 <p>Well, this might have been an overkill...</p>
@@ -689,4 +674,4 @@ tear_rate (<15.000, 5.000, 4.000>)
 Bratko, I. (2002). <EM>Prolog Programming for Artificial Intelligence</EM>, Addison Wesley, 2002.<P>
 
 
-</BODY> 
+</BODY>

@@ -28,8 +28,7 @@
 
 <P>Let us show the use of the class on a simple dataset with three examples, given by the following tab-delimited file.</P>
 
-<XMP CLASS=CODE>
-a       b      c         d         y
+<XMP CLASS=CODE>a       b      c         d         y
 0 1     0 1 2  discrete  discrete  discrete
                                    class
 0       0      ?         0         0
@@ -41,8 +40,7 @@ a       b      c         d         y
 
 <p class="header">part of <A href="unusedValues.py">unusedValues.py</a>
 (uses <a href="unusedValues.tab">unusedValues.tab</a>)</P>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 data = orange.ExampleTable("unusedValues")
 
 newattrs = [orange.RemoveUnusedValues(attr, data) for attr in data.domain.variables]
@@ -59,8 +57,7 @@ for attr in range(len(data.domain)):
 </XMP>
 
 <P>And here's the script's output.</P>
-<XMP class="code">
-EnumVariable 'a' retained as is
+<XMP class="code">EnumVariable 'a' retained as is
 EnumVariable 'b' reduced, new values are <0, 2>
 EnumVariable 'c' removed
 EnumVariable 'd' retained as is
@@ -73,8 +70,7 @@ EnumVariable 'y' retained as is
 
 <p class="header">part of <A href="unusedValues.py">unusedValues.py</a>
 (uses <a href="unusedValues.tab">unusedValues.tab</a>)</P>
-<XMP class="code">
-filteredattrs = filter(bool, newattrs)
+<XMP class="code">filteredattrs = filter(bool, newattrs)
 newdata = orange.ExampleTable(orange.Domain(filteredattrs), data)
 
 print "\nOriginal example table"
@@ -88,8 +84,7 @@ for ex in newdata:
 
 <P>List <CODE>newattrs</CODE> includes some original attributes (<CODE>a</CODE>, <CODE>d</CODE> and <CODE>y</CODE>) a new attribute (<CODE>b</CODE>) and a <CODE>None</CODE> (for <CODE>c</CODE>). The latter is removed by <CODE>filter</CODE> called at the beginning of the script. We use <CODE>filteredattrs</CODE> to construct a new domain and then convert the original <CODE>data</CODE> to <CODE>newdata</CODE>. As the output shows, the two tables are the same except for the removed attribute <CODE>c</CODE>.</P>
 
-<XMP class="code">
-Original example table
+<XMP class="code">Original example table
 ['0', '0', '?', '0', '0']
 ['1', '2', '?', '0', '0']
 ['0', '0', '?', '0', '1']

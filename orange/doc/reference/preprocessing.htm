@@ -14,8 +14,7 @@
 
 <P>Most of code samples will work with lenses dataset. We thus suppose that Orange is imported, data is loaded and there are variables that correspond to attribute descriptors:</P>
 
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 data = orange.ExampleTable("lenses")
 age, prescr, astigm, tears = data.domain.attributes
 </XMP>
@@ -34,8 +33,7 @@ age, prescr, astigm, tears = data.domain.attributes
 
 <p class="header"><a href="pp-attributes.py">pp-attributes.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
->>> pp = orange.Preprocessor_select()
+<xmp class="code">>>> pp = orange.Preprocessor_select()
 >>> pp.attributes = [age, tears]
 >>>
 >>> data2 = pp(data)
@@ -49,8 +47,7 @@ Attributes: <EnumVariable 'age', EnumVariable 'tears'>, classVar None
 
 <p class="header"><a href="pp-attributes.py">pp-attributes.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class="code">
->>> data2 = orange.Preprocessor_ignore(data, attributes = [age, tears])
+<xmp class="code">>>> data2 = orange.Preprocessor_ignore(data, attributes = [age, tears])
 >>> print "Attributes: %s, classVar %s" % (data2.domain.attributes, data2.domain.classVar)
 Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariable 'y'
 </XMP>
@@ -77,8 +74,7 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 
 <p class="header"><a href="pp-select.py">pp-select.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
->>> pp = orange.Preprocessor_take()
+<XMP class="code">>>> pp = orange.Preprocessor_take()
 >>> pp.values[prescr] = "hyper"
 >>> pp.values[age] = ["young", "psby"]
 >>> data2 = pp(data)
@@ -103,22 +99,19 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 
 <P>As you suspected, it is also possible to filter by values of continuous attributes. So, if age was continuous, we could select teenagers by</P>
 
-<XMP class="code">
->>> pp.values[age] = (10, 19)
+<XMP class="code">>>> pp.values[age] = (10, 19)
 </XMP>
 
 <P>Both boundaries are inclusive. How to select those from outside an interval? By reversing the order:</P>
 
-<XMP class="code">
->>> pp.values[age] = (19, 10)
+<XMP class="code">>>> pp.values[age] = (19, 10)
 </XMP>
 
 <P>Again, this should be enough for most. For "hackers": the condition is stored as <CODE>ValueFilter_continuous</CODE> which has a common ancestor with <CODE>ValueFilter_discrete</CODE>, <CODE>ValueFilter</CODE>. The boundaries are in the fields <CODE>min</CODE> and <CODE>max</CODE>. Here, <CODE>min</CODE> is always smaller or equal to <CODE>max</CODE>; there is a flag <CODE>outside</CODE> which is false by default. Again, you can construct the condition manually, by <CODE>pp.values[age] = orange.ValueFilter_continuous(min=10, max=19)</CODE>.</P>
 
 <P>Finally, here's a shortcut. The preprocessor's field <CODE>values</CODE> behaves like a dictionary and can thus also be initialized as one. The shortest way to achieve the same result as above is</P>
 
-<XMP class="code">
-data2 = orange.Preprocessor_take(data, 
+<XMP class="code">data2 = orange.Preprocessor_take(data,
             values = {prescr: "hyper", age: ["young", "psby"]})
 </XMP>
 
@@ -131,8 +124,7 @@ data2 = orange.Preprocessor_take(data,
 
 <p class="header"><a href="pp-duplicates.py">pp-duplicates.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
->>> data2 = orange.Preprocessor_ignore(data, attributes = [age])
+<XMP class="code">>>> data2 = orange.Preprocessor_ignore(data, attributes = [age])
 >>> data2, weightID = orange.Preprocessor_removeDuplicates(data2)
 >>> for ex in data2:
 >>>    print ex
@@ -174,8 +166,7 @@ data2 = orange.Preprocessor_take(data,
 
 <p class="header"><a href="pp-noise.py">part of pp-noise.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
->>> data2 = orange.Preprocessor_addClassNoise(data, proportion = 0.5)
+<XMP class=code>>>> data2 = orange.Preprocessor_addClassNoise(data, proportion = 0.5)
 </XMP>
 
 <P>Note again that this doesn't mean that the class for half of examples will be changed. The preprocessor works like this. If the dataset has <CODE>N</CODE> examples, class attribute has <CODE>v</CODE> values and the noise proportion is <CODE>p</CODE>, then <CODE>N*p/v</CODE> randomly chosen examples will be assigned to class 1, other <CODE>N*p/v</CODE> randomly chosen examples will be assigned to class 2 and so forth; <CODE>N*(1-p)/v</CODE> examples will be left alone. When numbers do not divide evenly, they are not rounded to the closest integer; instead, groups that get an example more or less are chosen at random.</P>
@@ -196,8 +187,7 @@ data2 = orange.Preprocessor_take(data,
 
 <p class="header"><a href="pp-noise.py">part of pp-noise.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
->>> cdomain = orange.Domain([orange.FloatVariable()])
+<XMP class=code>>>> cdomain = orange.Domain([orange.FloatVariable()])
 >>> cdata = orange.ExampleTable(cdomain, [[100]]*20)
 >>> cdata2 = orange.Preprocessor_addGaussianClassNoise(cdata, deviation=10)
 </XMP>
@@ -251,8 +241,7 @@ data2 = pp(data)
 
 <p class="header"><a href="pp-noise.py">part of pp-noise.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
-pp = orange.Preprocessor_addGaussianNoise()
+<XMP class=code>pp = orange.Preprocessor_addGaussianNoise()
 pp.deviations[iris.domain["petal width"]] = 0.0
 pp.defaultDeviation = 1.0
 data2 = pp(iris)
@@ -284,8 +273,7 @@ data2 = pp(iris)
 
 <p class="header"><a href="pp-missing.py">part of pp-missing.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
-pp = orange.Preprocessor_addMissingClasses()
+<XMP class=code>pp = orange.Preprocessor_addMissingClasses()
 pp.proportion = 0.5
 pp.specialType = orange.ValueTypes.DK
 data2 = pp(data)
@@ -325,8 +313,7 @@ print
 
 <p class="header"><a href="pp-missing.py">part of pp-missing.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class=code>
-age, prescr, astigm, tears, y = data.domain.variables
+<XMP class=code>age, prescr, astigm, tears, y = data.domain.variables
 pp = orange.Preprocessor_addMissing()
 pp.proportions = {age: 0.2, astigm: 0.5}
 pp.specialType = orange.ValueTypes.DC
@@ -360,8 +347,7 @@ for ex in data3:
 
 <p class="header"><a href="pp-weights.py">part of pp-weights.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-pp = orange.Preprocessor_addClassWeight()
+<XMP class="code">pp = orange.Preprocessor_addClassWeight()
 pp.classWeights = [2.0, 1.0, 1.0]
 data2, weightID = pp(data)
 
@@ -370,35 +356,30 @@ print "  - weighted class distribution: ", orange.Distribution(y, data2, weightI
 </XMP>
 
 <P>Script prints</P>
-<XMP class=code>
-  - original class distribution:  <15.000, 5.000, 4.000>
+<XMP class=code>  - original class distribution:  <15.000, 5.000, 4.000>
   - weighted class distribution:  <30.000, 5.000, 4.000>
 </XMP>
 
 <P>The number of examples in the first class has seemingly doubled. Printing out the examples reveals that those belonging to the first class ("no") have a weight of 2.0 while the other weigh 1.0. Weighted examples can then be used for learning, either directly</P>
 
-<XMP class="code">
->>> ba = orange.BayesLearner(data2, weight)
+<XMP class="code">>>> ba = orange.BayesLearner(data2, weight)
 </XMP>
 
 <P>or by through some sampling procedure, such as cross-validation</P>
 
-<XMP class="code">
->>> res = orngTest.crossValidation([orange.BayesLearner()], (data2, weight))
+<XMP class="code">>>> res = orngTest.crossValidation([orange.BayesLearner()], (data2, weight))
 </XMP>
 
 <P>In a highly unbalanced dataset where the majority class prevails by large over the minority, it is often desirable to reduce the number of majority class examples. The traditional way of doing this is by randomly selecting only a certain proportion of examples belonging to majority class. The alternative to this is assigning a smaller weight to examples belonging to the majority class (this, naturally, requires a learning algorithm capable of processing weights). For this purpose, <CODE>Preprocessor_addClassWeight</CODE> can be told to equalize the class distribution prior to weighting. Let's see how this works on lenses.</P>
 
 <p class="header"><a href="pp-weights.py">part of pp-weights.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-data2, weightID = orange.Preprocessor_addClassWeight(data, equalize=1)
+<XMP class="code">data2, weightID = orange.Preprocessor_addClassWeight(data, equalize=1)
 </XMP>
 
 <P>Equalizing computes such weights that the weighted number of examples in each class is equivalent. In our case, we originally had a total of 24 examples, of which 15 belong to the first class, and 5 and 4 in the other two. The preprocessor reweighted examples so that there are 8 (one third) in each of the three classes. Examples in the first class therefore got a weight of 8/15=0.53, as can be quickly checked:</P>
 
-<XMP class="code">
->>> data2[0]
+<XMP class="code">>>> data2[0]
 ['psby', 'hyper', 'y', 'normal', 'no'], {6:0.53}
 </XMP>
 
@@ -406,8 +387,7 @@ data2, weightID = orange.Preprocessor_addClassWeight(data, equalize=1)
 
 <p class="header"><a href="pp-weights.py">part of pp-weights.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-pp = orange.Preprocessor_addClassWeight()
+<XMP class="code">pp = orange.Preprocessor_addClassWeight()
 pp.classWeights = [0.5, 0.25, 0.25]
 pp.equalize = 1
 data2, weightID = pp(data)
@@ -416,8 +396,7 @@ print "  - weighted class distribution: ", orange.Distribution(y, data2, weightI
 </XMP>
 
 <P>This script prints</P>
-<XMP class=code>
-  - original class distribution:  <15.000, 5.000, 4.000>
+<XMP class=code>  - original class distribution:  <15.000, 5.000, 4.000>
   - weighted class distribution:  <12.000, 6.000, 6.000>
 </XMP>
 
@@ -482,8 +461,7 @@ print "  - weighted class distribution: ", orange.Distribution(y, data2, weightI
 
 <p class="header"><a href="pp-weights.py">part of pp-weights.py</a>
 (uses <a href="wpbc.csv">lenses.csv</a>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 data = orange.ExampleTable("wpbc")
 
 time = data.domain["time"]
@@ -502,8 +480,7 @@ print
 
 <P>The script prints</P>
 
-<XMP class=code>
-class	time	weight
+<XMP class=code>class   time    weight
 N    10.00 0.927
 N    5.00  0.875
 N    5.00  0.875
@@ -546,8 +523,7 @@ N    6.00  0.880
 <P>This is the simplest way to discretize the iris dataset:</P>
 <p class="header"><a href="pp-discretization.py">part of pp-discretization.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 iris = orange.ExampleTable("iris")
 
 pp = orange.Preprocessor_discretize()
@@ -556,8 +532,7 @@ data2 = pp(iris)
 </XMP>
 
 <P>To discretize only "petal length" and "sepal length", set the <CODE>attributes</CODE>:</P>
-<XMP class=code>
-pp.attributes = [iris.domain["petal length"], iris.domain["sepal length"]]
+<XMP class=code>pp.attributes = [iris.domain["petal length"], iris.domain["sepal length"]]
 </XMP>
 
 <H2>Applying filters</H2>
@@ -572,8 +547,7 @@ pp.attributes = [iris.domain["petal length"], iris.domain["sepal length"]]
 
 <P>For instance, to exclude the examples with defined class values, you can call</P>
 
-<XMP class=code>
-data2 = orange.Preprocessor_filter(data, filter = orange.Filter_hasClassValue())
+<XMP class=code>data2 = orange.Preprocessor_filter(data, filter = orange.Filter_hasClassValue())
 </XMP>
 
 <P>Note that you can employ preprocessors for most tasks that you could use the filters for, and that filters can also be applied by <a href="ExampleTable.htm#filter"><CODE>ExampleTable</CODE>'s method <CODE>filter</CODE></A>. The preferred way is the way which you prefer.</P>

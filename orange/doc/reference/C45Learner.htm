@@ -134,8 +134,7 @@ script constructs the same learner as you would get by calling the usual C4.5.</
 
 <p class="header">part of <a href="c45.py">c45.py</a> (uses <a
 href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 
 data = orange.ExampleTable("lenses")
 tree = orange.C45Learner(data)
@@ -148,16 +147,14 @@ for i in data[:5]:
 same, except that one uses command-line symbols and the other internal
 variable names)</P>
 
-<XMP class="code">
-tree = orange.C45Learner(data, m=100)
+<XMP class="code">tree = orange.C45Learner(data, m=100)
 tree = orange.C45Learner(data, minObjs=100)
 </XMP>
 
 <P>The way that could be prefered by veteran C4.5 user might be through
 method <CODE>commandline</CODE>.</P>
 
-<XMP class="code">
-lrn = orange.C45Learner()
+<XMP class="code">lrn = orange.C45Learner()
 lrn.commandline("-m 1 -s")
 tree = lrn(data)
 </XMP>

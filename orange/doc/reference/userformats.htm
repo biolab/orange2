@@ -24,16 +24,14 @@
 
 <P>Finally, if you want the <CODE>ExampleTable</CODE>'s constructor and its <CODE>save</CODE> method to recognize the format, you need to register your functions like this</p>
 
-<XMP class=code>
-orange.registerFileType("Weka", loadARFF, toARFF, ".arff")
+<XMP class=code>orange.registerFileType("Weka", loadARFF, toARFF, ".arff")
 </XMP>
 
 <P>The first argument tells the format's name; the second and third give the functions for loading and saving the data and the last one specifies the extension. If multiple extensions are possible, give a list of strings instead of a single string.</P>
 
 <P>If you don't support certain operation, pass <CODE>None</CODE> for a function. The following call registers a C5.0 file type that can save the data but doesn't load it.</P>
 
-<XMP class=code>
-orange.registerFileType("C50", None, toC50, [".names", ".data", ".test"])
+<XMP class=code>orange.registerFileType("C50", None, toC50, [".names", ".data", ".test"])
 </XMP>
 
 <P>User defined types have a precedence over the built-ins if the extension is given: if you load a file as <CODE>ExampleTable("mydata.names")</CODE> the above functions are used (are rather would be - loading function is not defined above). If there is no extension, built-ins are tried first. This is rather confusing, so it is advisable not to override the existing extensions when not absolutely needed. (Note: these rules might change - in the future user-defined formats will probably have a precedence over built-ins regardless of whether the extension is given or not.)</P>

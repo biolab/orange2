@@ -27,8 +27,7 @@
 
 <p class="header">part of <a href="example.py">example.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
->>> import orange
+<XMP class="code">>>> import orange
 >>> data = orange.ExampleTable("lenses")
 >>> domain = data.domain
 >>> for attr in domain:
@@ -48,8 +47,7 @@ lenses <none, soft, hard>
 <DT>orange.Example(domain, list-of-values)</DT>
 <DD>This construct an initialized example. The list can contain anything that can be converted to a value (see documentation on <A href="Value.htm"><CODE>orange.Value</CODE></A>) and must be of appropriate length, one value for each corresponding attribute.
 
-<XMP class="code">
->>> ex = orange.Example(domain, ["young", "myope", "yes", "reduced", "soft"])
+<XMP class="code">>>> ex = orange.Example(domain, ["young", "myope", "yes", "reduced", "soft"])
 >>> print ex
 ['young', 'myope', 'yes', 'reduced', 'soft']
 >>> ex = orange.Example(domain, ["young", 0, 1, orange.Value(domain[3],\
@@ -67,8 +65,7 @@ lenses <none, soft, hard>
 <DT>orange.Example(domain, example)</DT>
 <DD>This form of constructor can be used for converting examples from other domains.
 
-<XMP class="code">
->>> reduced_dom = orange.Domain(["age", "lenses"], domain)
+<XMP class="code">>>> reduced_dom = orange.Domain(["age", "lenses"], domain)
 >>> reduced_ex = orange.Example(reduced_dom, ex)
 >>> print reduced_ex
 ['young', 'soft']
@@ -83,8 +80,7 @@ lenses <none, soft, hard>
 <P>We shall demonstrate the function on the datasets <a href="merge1.tab">merge1.tab</a> and <A href="merge2.tab">merge2.tab</A>; the first has attributes <CODE>a1</CODE> and <CODE>a2</CODE>, and meta-attributes <CODE>m1</CODE> and <CODE>m2</CODE>, while the second has attributes <CODE>a1</CODE> and <CODE>a3</CODE> and meta-attributes <CODE>m1</CODE> and <CODE>m3</CODE>.
 
 <p class="header"><a href="example_merge.py">example_merge.py</a>  (uses <a href="merge1.tab">merge1.tab</a>, <A href="merge2.tab">merge2.tab</A>)</p>
-<XMP class="code">
-import orange
+<XMP class="code">import orange
 
 data1 = orange.ExampleTable("merge1")
 data2 = orange.ExampleTable("merge2", use = data1.domain)
@@ -114,8 +110,7 @@ print "Merge: ", merge
 
 <P>In addition, <CODE>newdomain</CODE> has two new attributes, <CODE>n1</CODE> and <CODE>n2</CODE>, the first as ordinary and the second as meta-attribute.</P>
 
-<XMP class=code>
-First example:  [1, 2], {"m1":3, "m2":4}
+<XMP class=code>First example:  [1, 2], {"m1":3, "m2":4}
 Second example:  [1, 2.5], {"m1":3, "m3":4.5}
 Merge:  [1, 2.5, 3, ?], {"a2":2, "m2":4, -5:4.50, "n2":?}
 </XMP>
@@ -130,8 +125,7 @@ Merge:  [1, 2.5, 3, ?], {"a2":2, "m2":4, -5:4.50, "n2":?}
 
 <P>Examples can be indexed by integer indices, attribute descriptors or attribute names. Since "age" is the the first attribute in dataset lenses, the below statements are equivalent.</P>
 
-<XMP class="code">
->>> age = data.domain["age"]
+<XMP class="code">>>> age = data.domain["age"]
 >>> example = data[0]
 >>> print example[0]
 young
@@ -143,8 +137,7 @@ young
 
 <P>Example's values can be modified. We shall increase the age (and if it becomes larger than 2, reset it to 0).</P>
 
-<XMP class="code">
->>> example = data[0]
+<XMP class="code">>>> example = data[0]
 >>> print data[0]
 ['young', 'myope', 'no', 'reduced', 'nono']
 >>> example[age] = (int(example[age])+1) % 3
@@ -195,8 +188,7 @@ young
 
 <p class="header"><a href="example2.py">example2.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
->>> import orange, random
+<XMP class="code">>>> import orange, random
 >>> random.seed(0)
 >>> data = orange.ExampleTable("lenses")
 >>> id = orange.newmetaid()
@@ -210,14 +202,12 @@ young
 
 <P>To make learner aware of weights, one only needs to pass the id as an additional argument. Therefore, to train a Bayesian classifier on our randomly weighted examples, you would call it by.</P>
 
-<XMP class="code">
->>> bayes = orange.BayesLearner(data, id)
+<XMP class="code">>>> bayes = orange.BayesLearner(data, id)
 </XMP>
 
 <P>Many other functions accept weights in similar fashion.</P>
 
-<XMP class="code">
->>> print orange.getClassDistribution(data)
+<XMP class="code">>>> print orange.getClassDistribution(data)
 <15.000, 5.000, 4.000>
 >>> print orange.getClassDistribution(data, id)
 <9.691, 3.232, 1.969>
@@ -227,15 +217,13 @@ young
 
 <P>As mentioned in documentation on <A href="Domain.htm"><CODE>orange.Domain</CODE></A>, you can enhance the output by registering an attribute descriptor for meta-attribute with id -2 in the example's domain.</P>
 
-<XMP class="code">
->>> w = orange.FloatVariable("w")
+<XMP class="code">>>> w = orange.FloatVariable("w")
 >>> data.domain.addmeta(id, w)
 </XMP>
 
 <P>Meta-attribute can now be indexed just as any other attribute:</P>
 
-<XMP class="code">
->>> print data[0][id]
+<XMP class="code">>>> print data[0][id]
 0.844422
 >>> print data[0][w]
 0.844422
@@ -249,8 +237,7 @@ young
 
 <p class="header">part of <a href="example3.py">example3.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<XMP class="code">
->>> ok = orange.EnumVariable("ok?", values=["no", "yes"])
+<XMP class="code">>>> ok = orange.EnumVariable("ok?", values=["no", "yes"])
 >>> ok_id = orange.newmetaid()
 >>> data[0].setmeta(ok_id, "yes")
 Traceback (most recent call last):
@@ -263,29 +250,25 @@ TypeError: cannot convert 'yes' to a value of an unknown attribute
 
 <P>This can't work since we haven't told Orange that <CODE>ok_id</CODE> corresponds to attribute <CODE>ok</CODE> and thus it cannot convert string "yes" to a <CODE>orange.Value</CODE>. You should perform the conversion manually.</P>
 
-<XMP class="code">
->>> data[0][ok_id] = orange.Value(ok, "yes"))
+<XMP class="code">>>> data[0][ok_id] = orange.Value(ok, "yes"))
 </XMP>
 
 <P>However, if you register the meta-attribute with the <A href="Domain.htm">domain descriptor</A>, Orange can find a descriptor and perform the conversion itself.</P>
 
-<XMP class="code">
->>> data.domain.addmeta(ok_id, ok)
+<XMP class="code">>>> data.domain.addmeta(ok_id, ok)
 >>> data[0][ok_id] = "yes"
 </XMP>
 
 <P>As before, you can use either id <CODE>ok_id</CODE>, attribute descriptor <CODE>ok</CODE> or attribute's name <CODE>"ok?"</CODE> to index the example.</P>
 
-<XMP class="code">
->>> data[0][ok_id] = "yes"
+<XMP class="code">>>> data[0][ok_id] = "yes"
 >>> data[0][ok] = "yes"
 >>> data[0]["ok?"] = "yes"
 </XMP>
 
 <P>It is even possible to use the meta-attribute with the <CODE>setvalue</CODE> function.</P>
 
-<XMP class="code">
->>> no_yes = [orange.Value(ok, "no"), orange.Value(ok, "yes")]
+<XMP class="code">>>> no_yes = [orange.Value(ok, "no"), orange.Value(ok, "yes")]
 >>> for example in data:
 ...     example.setvalue(no_yes[whrandom.randint(0, 1)])
 </XMP>
@@ -306,8 +289,7 @@ TypeError: cannot convert 'yes' to a value of an unknown attribute
 <DD>Returns a value of specified meta-attribute. Value must be continuous; an exception is raised otherwise. If the argument is zero or <CODE>None</CODE>, function returns 1.0 (since weight id of 0 normally means that examples are not weighted).</P>
 
 <P>If you are writing your own learner, you should always use this function to retrieve example's weight. It is practical: most functions in Orange that can optionally accept weights, understand a weight id of 0 as "no weights"; this function takes care of that. In particular, never attempt to do this:
-<XMP class=code>
->>> weight = example[id]
+<XMP class=code>>>> weight = example[id]
 </XMP>
 <P>If examples are not weighted, <CODE>id</CODE> will be zero and you'll get the value of the first attribute...</P>
 </DD>
