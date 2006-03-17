@@ -42,14 +42,14 @@
 <p>parameterSelection tool that uses cross validation to find the optimal parameters.</p>
 <p class=section>Arguments</p>
 <dl class=arguments>
-	<dt>learner</dt>
-	<dd>Learner to use</dd>
-	<dt>data</dt>
-	<dd>Data to use for learning and testing</dd>
-	<dt>folds</dt>
-	<dd>Number of cross validation folds</dd>
-	<dt>parameters</dt>
-	<dd>Dictionary with parameters as keys and containing lists of values (eg. {"gamma":[0.5,0.6,0.7],"C":[1.0,1.1.2])</dd>
+    <dt>learner</dt>
+    <dd>Learner to use</dd>
+    <dt>data</dt>
+    <dd>Data to use for learning and testing</dd>
+    <dt>folds</dt>
+    <dd>Number of cross validation folds</dd>
+    <dt>parameters</dt>
+    <dd>Dictionary with parameters as keys and containing lists of values (eg. {"gamma":[0.5,0.6,0.7],"C":[1.0,1.1.2])</dd>
 </dl>
 
 <h2>KernelWrapper (DualKernelWrapper)</h2>
@@ -57,22 +57,22 @@
 and uses them to compute a new kernel function. The available kernel wrappers are RBFKernelWrapper, PolyKernelWrapper, AdditionKernelWrapper, MultiplicationKernelWrapper.</p>
 <p class=section>Methods</p>
 <dl class=methods>
-	<dt>__call__(example1, example2)</dt>
-	<dd>Computes the kernel function for the two examples</dd>
+    <dt>__call__(example1, example2)</dt>
+    <dd>Computes the kernel function for the two examples</dd>
 </dl>
 <h2>RBFKernelWrapper</h2>
 <p>Takes one kernel function (K1) in initialization and uses it to compute a new kernel function: K(x,y)=exp(K1(x,y)^2/gamma)
 <p class=section>Attributes</p>
 <dl class=attributes>
-	<dt>gamma</dt>
-	<dd>gamma to use in the kernel function</dd>
+    <dt>gamma</dt>
+    <dd>gamma to use in the kernel function</dd>
 </dl>
 <h2>PolyKernelWrapper</h2>
 <p>Takes one kernel function (K1) in initialization and uses it to compute a new kernel function: K(x,y)=K1(x,y)^degree
 <p class=section>Attributes</p>
 <dl class=attributes>
-	<dt>degree</dt>
-	<dd>degree to use in the kernel function</dd>
+    <dt>degree</dt>
+    <dd>degree to use in the kernel function</dd>
 </dl>
 <h2>AdditionKernelWrapper</h2>
 <p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)+K2(x,y)
@@ -80,8 +80,7 @@ and uses them to compute a new kernel function. The available kernel wrappers ar
 <p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)*K2(x,y)
 </p>
 <h2>Examples</h2>
-<xmp class=code>
-import orange, orngSVM
+<xmp class=code>import orange, orngSVM
 data=orange.ExampleTable("iris.tab")
 l1=orngSVM.SVMLearner()
 l1.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data))

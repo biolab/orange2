@@ -9,57 +9,55 @@
 <p>SOMLearner is a function that constructs a SOMLearner instance and optionally trains it on provided examples</p>
 <p class=section>Arguments</p>
 <dl class=arguments>
-	<dt>examples</dt>
-	<dd>Examples to be used for training (default None)</dd>
-	<dt>wightID</dt>
-	<dd>Index of the meta attribute that contains weight values (default 0)</dd>
-	<DT>xDim</DT>
-	<DD>X dimension of the map (default 10)</DD>
-	<DT>yDim</DT>
-	<DD>Y dimension of the map (default 10)</DD>
-	<DT>topology</DT>
-	<DD>Topology of the map. Can be a SOMLearner.RetangularTopology for rectangular or SOMLearner.HexagonalTopology (default) for hexagonal topology</DD>
-	<DT>neighborhood<DT>
-	<DD>Neighborhood function type. Can be SOMLearner.BubbleNeighborhood (default) or SOMLearner.GaussianNeighborhood</DD>
-	<DT>alphaType</DT>
-	<DD>A alpha function type. Can be a SOMLearner.LinearFunction (default) or SOMLearner.InverseFunction</DD>
-	<DT>parameters</DT>
-	<DD>Specifies the radius, alpha and num. of iterations for each phase of training in a form of a list of dictionaries (e.g. parameters=[{"iterations":1000, "radius":5.0, "alpha":0.05}, {"iterations":10000, "radius":3.0, "alpha":0.02}] (note that not all (or even any) items in a dictionary are mandatory {"iterations:1000} is a valid item in the <code>parameters</code> list, the rest will be assigned the default or the last given value)</DD>
+    <dt>examples</dt>
+    <dd>Examples to be used for training (default None)</dd>
+    <dt>wightID</dt>
+    <dd>Index of the meta attribute that contains weight values (default 0)</dd>
+    <DT>xDim</DT>
+    <DD>X dimension of the map (default 10)</DD>
+    <DT>yDim</DT>
+    <DD>Y dimension of the map (default 10)</DD>
+    <DT>topology</DT>
+    <DD>Topology of the map. Can be a SOMLearner.RetangularTopology for rectangular or SOMLearner.HexagonalTopology (default) for hexagonal topology</DD>
+    <DT>neighborhood<DT>
+    <DD>Neighborhood function type. Can be SOMLearner.BubbleNeighborhood (default) or SOMLearner.GaussianNeighborhood</DD>
+    <DT>alphaType</DT>
+    <DD>A alpha function type. Can be a SOMLearner.LinearFunction (default) or SOMLearner.InverseFunction</DD>
+    <DT>parameters</DT>
+    <DD>Specifies the radius, alpha and num. of iterations for each phase of training in a form of a list of dictionaries (e.g. parameters=[{"iterations":1000, "radius":5.0, "alpha":0.05}, {"iterations":10000, "radius":3.0, "alpha":0.02}] (note that not all (or even any) items in a dictionary are mandatory {"iterations:1000} is a valid item in the <code>parameters</code> list, the rest will be assigned the default or the last given value)</DD>
 </dl>
 
 <h2>getUMatrix</h2>
 <p><code>getUMatrix</code> is a function that constructs a u-matrix (uniform distance matrix) of the provided SOM (the way it is constructed depends on the topology of the SOM)</p>
 <p class=section>Arguments</p>
 <dl class=arguments>
-	<dt>somMap</dt>
-	<dd>SOM for witch the u-matrix is to be constructed</dd>
+    <dt>somMap</dt>
+    <dd>SOM for witch the u-matrix is to be constructed</dd>
 </dl>
 <h2>Examples</h2>
 As an example we are going to train the SOM on the iris dataset and then print the nodes and the examples associated with that node
 <p class="header"><a href="som1.py">som1.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<xmp class=code>
-l=orngSOM.SOMLearner(xDim=5, yDim=10, parameters=[{"iterations":1000, "radius":5, "alpha":0.05},{"iterations":10000, "alpha":0.02}])
+<xmp class=code>l=orngSOM.SOMLearner(xDim=5, yDim=10, parameters=[{"iterations":1000, "radius":5, "alpha":0.05},{"iterations":10000, "alpha":0.02}])
 c=l(orange.ExampleTable("iris.tab"))
 for n in c.nodes:
     print "node:", n.x,n.y
     for e in n.examples:
-	print "\t",e
+    print "\t",e
 </xmp>
 With the result
-<xmp class=code>
-node: 0 0
-	[7.2, 3.6, 6.1, 2.5, 'Iris-virginica']
-	[7.7, 3.8, 6.7, 2.2, 'Iris-virginica']
-	[7.9, 3.8, 6.4, 2.0, 'Iris-virginica']
+<xmp class=code>node: 0 0
+    [7.2, 3.6, 6.1, 2.5, 'Iris-virginica']
+    [7.7, 3.8, 6.7, 2.2, 'Iris-virginica']
+    [7.9, 3.8, 6.4, 2.0, 'Iris-virginica']
 node: 1 0
-	[7.2, 3.2, 6.0, 1.8, 'Iris-virginica']
-	[7.7, 3.0, 6.1, 2.3, 'Iris-virginica']
+    [7.2, 3.2, 6.0, 1.8, 'Iris-virginica']
+    [7.7, 3.0, 6.1, 2.3, 'Iris-virginica']
 node: 2 0
-	[7.1, 3.0, 5.9, 2.1, 'Iris-virginica']
-	[7.6, 3.0, 6.6, 2.1, 'Iris-virginica']
-	[7.3, 2.9, 6.3, 1.8, 'Iris-virginica']
-	[7.7, 2.6, 6.9, 2.3, 'Iris-virginica']
-	[7.7, 2.8, 6.7, 2.0, 'Iris-virginica']
+    [7.1, 3.0, 5.9, 2.1, 'Iris-virginica']
+    [7.6, 3.0, 6.6, 2.1, 'Iris-virginica']
+    [7.3, 2.9, 6.3, 1.8, 'Iris-virginica']
+    [7.7, 2.6, 6.9, 2.3, 'Iris-virginica']
+    [7.7, 2.8, 6.7, 2.0, 'Iris-virginica']
 ...
 </xmp>

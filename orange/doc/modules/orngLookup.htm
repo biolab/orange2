@@ -17,8 +17,7 @@
 
 <P>If, for instance, <CODE>data</CODE> contains a dataset Monk 1 and you would like to construct a new feature from attributes <CODE>a</CODE> and <CODE>b</CODE>, you can call this function as follows.
 
-<XMP class="code">
->>> newvar = orange.EnumVariable()
+<XMP class="code">>>> newvar = orange.EnumVariable()
 >>> bound = [data.domain[name] for name in ["a", "b"]
 >>> lookup = orngLookup.lookupFromBound(newvar, bound)
 >>> print lookup.lookupTable
@@ -38,8 +37,7 @@ neither <CODE>newVar</CODE> nor the lookup table...</P>
 
 <P>For exercise, let us construct a new attribute called <CODE>a=b</CODE> whose value will be "yes" when <CODE>a</CODE> and <CODE>b</CODE> or equal and "no" when they are not. We will then add the attribute to the dataset.</P>
 
-<XMP class="code">
->>> bound = [data.domain[name] for name in ["a", "b"]]
+<XMP class="code">>>> bound = [data.domain[name] for name in ["a", "b"]]
 >>> newVar = orange.EnumVariable("a=b", values = ["no", "yes"])
 >>> lookup = orngLookup.lookupFromFunction(newVar, bound, lambda x: x[0]==x[1])
 >>> newVar.getValueFrom = lookup
@@ -68,8 +66,7 @@ By setting <CODE>newVar.getValueFrom</CODE> to <CODE>lookup</CODE> we state that
 
 <P>This function takes a set of examples (<CODE>ExampleTable</CODE>, for instance) and turns it into a classifier. If there are one, two or three attributes and no ambiguous examples (examples are ambiguous if they have same values of attributes but with different class values), it will construct an appropriate <CODE>ClassifierByLookupTable</CODE>. Otherwise, it will return an <CODE>ClassifierByExampleTable</CODE>.</P>
 
-<XMP class="code">
->>> lookup = orngLookup.lookupFromExamples(data)
+<XMP class="code">>>> lookup = orngLookup.lookupFromExamples(data)
 >>> testExample = orange.Example(data.domain, ['3', '2', '2', '3', '4', '1', '?'])
 >>> lookup(testExample)
 <orange.Value 'y'='0'>
@@ -84,8 +81,7 @@ By setting <CODE>newVar.getValueFrom</CODE> to <CODE>lookup</CODE> we state that
 
 <P>For instance, if <CODE>lookup</CODE> is such as constructed in example for <CODE>lookupFromFunction</CODE>, you can print it out by</CODE></P>
 
-<XMP class="code">
->>> print lookup.dump("tab")
+<XMP class="code">>>> print lookup.dump("tab")
 a      b      a=b
 ------ ------ ------
 1      1      yes
@@ -100,13 +96,11 @@ a      b      a=b
 </XMP>
 
 <P>Function <CODE>write</CODE> writes it to file, either a new one</P>
-<XMP class="code">
->>> lookup.write("tab", "d:\\t.txt")
+<XMP class="code">>>> lookup.write("tab", "d:\\t.txt")
 </XMP>
 
 <P>or to an already open file (this way you can write more things to one file)</P>
-<XMP class="code">
->>> lookup.write("tab", f)
+<XMP class="code">>>> lookup.write("tab", f)
 </XMP>
 
 </body> </html>

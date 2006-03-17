@@ -53,8 +53,7 @@
 <p>First we load the data and compute the distance matrix</p>
 <p class="header"><a href="mds1.py">mds1.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<XMP class= code>
-import orange
+<XMP class= code>import orange
 import orngMDS
 import math
 data=orange.ExampleTable("../datasets/iris.tab")
@@ -65,16 +64,14 @@ for i in range(len(data)):
        matrix[i, j] = dist(data[i], data[j])
 </XMP>
 <p>Then we construct the MDS instance and perform the initial torgerson approximation, after which we update the stress matrix using the orngMDS.KruskalStress function</p>
-<XMP class= code>
-mds=orngMDS.MDS(matrix)
+<XMP class= code>mds=orngMDS.MDS(matrix)
 mds.Torgerson()
 mds.getStress(orngMDS.KruskalStress)
 </XMP>
 <p>And finally the main optimization loop, after which we print the projected points  along with the data</p>
-<XMP class= code>
-i=0
+<XMP class= code>i=0
 while 100>i:
-	i+=1
+    i+=1
     oldStress=mds.avgStress
     for j in range(10): mds.SMACOFstep()
     mds.getStress(orngMDS.KruskalStress)

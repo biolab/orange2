@@ -28,8 +28,7 @@
 <dt><b>EntropyDiscretization</b>([<em>data</em>])</dt>
 <dd class="ddfun">This is simply a wrapper class around the function <code>entropyDiscretization</code>. Once invoked it would either create an object that can be passed a data set for discretization, or if invoked with the data set, would return a discretized data set:
 
-<xmp>
-discretizer = orngDisc.EntropyDiscretization()
+<xmp class="code">discretizer = orngDisc.EntropyDiscretization()
 disc_data = discretizer(data)
 another_disc_data = orngDisc.EntropyDiscretization(data)
 </xmp>
@@ -38,8 +37,7 @@ another_disc_data = orngDisc.EntropyDiscretization(data)
 <dt><b>DiscretizedLearner</b>([<em>basedLearner</em>[<em>, examples</em>[<em>, discretizer</em>[<em>, name</em>]]]])</dt>
 <dd>This class allows to set an learner object, such that before learning a data passed to a learner is discretized. In this way we can prepare an object that lears without giving it the data, and, for instance, use it in some standard testing procedure that repeats learning/testing on several data samples. Default procedure for discretization (<em>discretizer</em>) is <code>orngDisc.EntropyDiscretization</code>.
 An example on how such learner is set and used in ten-fold cross validation is given below:</p>
-<xmp>
-bayes = orange.BayesLearner()
+<xmp class="code">bayes = orange.BayesLearner()
 dBayes = orngDisc.DiscretizedLearner(bayes, name='disc bayes')
 results = orngEval.CrossValidation([dBayes], data)
 

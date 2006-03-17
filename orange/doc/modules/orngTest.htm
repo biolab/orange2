@@ -41,8 +41,7 @@ a list of learning algorithms is prepared.</P>
 
 <p class=header><a href="test.py">part of test.py</a>
 (uses <a href="voting.tab">voting.tab</a>)</p>
-<XMP class=code>
-import orange, orngTest, orngStat
+<XMP class=code>import orange, orngTest, orngStat
 
 data = orange.ExampleTable("voting")
 
@@ -58,8 +57,7 @@ names = [x.name for x in learners]
 and printed by the following function (function uses list
 <CODE>names</CODE> constructed above).</P>
 
-<XMP class=code>
-def printResults(res):
+<XMP class=code>def printResults(res):
     CAs = orngStat.CA(res, reportSE=1)
     for i in range(len(names)):
         print "%s: %5.3f+-%4.3f" % (names[i], CAs[i][0], 1.96*CAs[i][1]),
@@ -112,16 +110,14 @@ upon Orange's global random generator that is reset (with random seed
 0) when Orange is imported. Script's output will therefore depend upon
 what you did after Orange was first imported in the current Python
 session.
-<XMP class=code>
-res = orngTest.proportionTest(learners, data, 0.7, randomGenerator = orange.globalRandom)
+<XMP class=code>res = orngTest.proportionTest(learners, data, 0.7, randomGenerator = orange.globalRandom)
 </XMP></LI>
 
 <LI>Construct a new <CODE>orange.RandomGenerator</CODE> and use in
 various places and times. The code below, for instance, will produce
 different results in each iteration, but overall the same results each
 time it's run.
-<XMP class=code>
-for i in range(3):
+<XMP class=code>for i in range(3):
     res = orngTest.proportionTest(learners, data, 0.7, randomGenerator = myRandom)
     printResults(res)
 </XMP>
@@ -131,8 +127,7 @@ number provided by Python. Python has a global random generator that
 is reset when Python is loaded, using current system time for a
 seed. With this, results will be (in general) different each time the
 script is run.
-<XMP class=code>
-import random
+<XMP class=code>import random
 for i in range(3):
     res = orngTest.proportionTest(learners, data, 0.7, randomGenerator = random.randint(0, 100))
     printResults(res)
@@ -158,8 +153,7 @@ and returns a preprocessed table and weight.</P>
 
 <P>This example will demonstrate the devastating effect of 100% class
 noise on learning.</P>
-<XMP class>
-classnoise = orange.Preprocessor_addClassNoise(proportion=1.0)
+<XMP class="code">classnoise = orange.Preprocessor_addClassNoise(proportion=1.0)
 res = orngTest.proportionTest(learners, data, 0.7, 100, pps = [("L", classnoise)])
 </XMP>
 </DD>
@@ -172,8 +166,7 @@ res = orngTest.proportionTest(learners, data, 0.7, 100, pps = [("L", classnoise)
 
 <P>The script below makes 100 repetitions of 70:30 test and store the classifiers it induces.</P>
 
-<XMP class=code>
-res = orngTest.proportionTest(learners, data, 0.7, 100, storeClassifier = 1)
+<XMP class=code>res = orngTest.proportionTest(learners, data, 0.7, 100, storeClassifier = 1)
 </XMP>
 
 <P>After this, <CODE>res.classifiers</CODE> is a list of 100 items and each item will be a list with three classifiers.</P>
@@ -192,12 +185,11 @@ strat = ..., pps = [])</DT>
 <DD>Splits the data with <CODE>learnProp</CODE> of examples in the learning and the rest in the testing set. The test is repeated for a given number of <CODE>times</CODE> (default 10). Division is stratified by default. Function also accepts keyword arguments for randomization and storing classifiers.</P>
 
 <P>100 repetitions of the so-called 70:30 test in which 70% of examples are used for training and 30% for testing is done by
-<XMP class=code>
-res = orngTest.proportionTest(learners, data, 0.7, 100)
+<XMP class=code>res = orngTest.proportionTest(learners, data, 0.7, 100)
 </XMP>
 <P>Note that Python allows naming the arguments; instead of "<CODE>100</CODE>" you can use "<CODE>times = 100</CODE>" to increase the clarity (not so with keyword arguments, such as <CODE>storeClassifiers</CODE>, <CODE>randseed</CODE> or <CODE>verbose</CODE> that must always be given with a name, as shown in examples above).</DD>
 
-<DT>leaveOneOut(learners, examples, pps = [])</DT> 
+<DT>leaveOneOut(learners, examples, pps = [])</DT>
 <DD>Performs a leave-one-out experiment with the given list of
 learners and examples. This is equivalent to performing
 len(examples)-fold cross validation. Function accepts additional
@@ -230,8 +222,7 @@ cross-validation or not.  This function does not return a single
 <CODE>ExperimentResults</CODE> but a list of them, one for each
 proportion.</P>
 
-<XMP class=code>
-prop = [0.2, 0.4, 0.6, 0.8, 1.0]
+<XMP class=code>prop = [0.2, 0.4, 0.6, 0.8, 1.0]
 res = orngTest.learningCurveN(learners, data, folds = 5, proportions = prop)
 for i, p in enumerate(prop):
     print "%5.3f:" % p,
@@ -278,8 +269,7 @@ number of <CODE>times</CODE> for each proportion. The result is a list
 of <CODE>ExperimentResults</CODE>, one for each proportion.</P>
 
 <P>In the following scripts, examples are pre-divided onto training and testing set. Learning curves are computed in which 20, 40, 60, 80 and 100 percents of the examples in the former set are used for learning and the latter set is used for testing. Random selection of the given proportion of learning set is repeated for five times.
-<XMP class=code>
-indices = orange.MakeRandomIndices2(data, p0 = 0.7)
+<XMP class=code>indices = orange.MakeRandomIndices2(data, p0 = 0.7)
 train = data.select(indices, 0)
 test = data.select(indices, 1)
 
@@ -430,4 +420,4 @@ using the same testing technique (same number of iterations). </DD>
 and a recommended approach. <EM>Data Mining and Knowledge Discovery
 1</EM>, pages 317-328.</P>
 
-</BODY> 
+</BODY>
