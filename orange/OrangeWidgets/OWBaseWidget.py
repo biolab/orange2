@@ -4,7 +4,7 @@
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
 from OWTools import *
-import sys, time, random, user, verbose, os, os.path, cPickle, copy, orngMisc
+import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
 import orange
 from string import *
 from orngSignalManager import *

@@ -5,7 +5,7 @@
 from qt import *
 import sys, os, cPickle
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
-import orange, user, verbose
+import orange, user, orngMisc
 
 TRUE  = 1
 FALSE = 0
@@ -688,7 +688,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
             self.settings["lineColor"]           = (dlg.lineIcon.color.red(), dlg.lineIcon.color.green(), dlg.lineIcon.color.blue())
 
-            verbose.verbose = int(self.settings["verbose"])
+            orngMisc.verbose = int(self.settings["verbose"])
 
             self.dontAskBeforeClose = self.settings["dontAskBeforeClose"]
             self.saveSettingsBeforeClose = self.settings["saveSettingsBeforeClose"]
@@ -773,7 +773,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("canvasWidth", 700)
         self.settings.setdefault("canvasHeight", 600)
         
-        verbose.verbose = self.settings["verbose"]
+        orngMisc.verbose = self.settings["verbose"]
                 
 
     # Saves settings to this widget's .ini file
