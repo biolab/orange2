@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>Save</title>
+<link rel=stylesheet href="../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Save</h1>
+
+<img src="icons/Save.png">
+<p>Saves data to a file.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Examples (ExampleTable)</DT>
+<DD>Attribute-valued data set.</DD>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>(None)</DT>
+</dl>
+
+<h2>Description</h2>
+
+<p>Takes a data set provided at the input channel and saves it to a
+data file. The widget remembers a list of file names most recently
+used. It supports manual mode (one needs to press <b>Save</b> button
+to write the file) or automatic mode where any data that comes to
+widget's is immediately written to the selected file. Since the latest
+overrider the previous file withouth warning, manual mode is a default
+one.</p>
+
+<h2>Examples</h2>
+
+<p>We used two <a href="File.htm">File</a> widgets, read the iris and
+glass data set (provided in Orange distribution), and send them to the
+Data Table widget.</p>
+
+<img src="DataTable-Example1.png">
+
+<p>A snapshot of the widget under these settings is shown below.</p>
+
+<img src="DataTable-Example2.png">
+
+</body>
+</html>
