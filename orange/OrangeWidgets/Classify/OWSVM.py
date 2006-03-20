@@ -1,16 +1,16 @@
 """
-<name>Support Vector Machines</name>
+<name>SVM</name>
 <description>Support Vector Machines learner/classifier.</description>
 <icon>icons/BasicSVM.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
-<priority>110</priority>
+<priority>100</priority>
 """
 
 import orange, orngSVM, OWGUI
 from OWWidget import *
 
 class OWSVM(OWWidget):
-    settingsList=["C","nu","p","probability","shrinking","gamma","degree", "coef0", "kernel_type", "name", "useNu"]
+    settingsList=["C","nu","p","probability","shrinking","gamma","degree", "coef0", "kernel_type", "name", "useNu", "nomogram"]
     def __init__(self, parent=None, signalManager=None, name="SVM"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.inputs=[("Example Table", ExampleTable, self.cdata)]
@@ -27,6 +27,7 @@ class OWSVM(OWWidget):
         self.shrinking = 1
         self.probability=0
         self.useNu=0
+        self.nomogram=0
         self.data = None
         self.name="SVM Learner/Classifier"
         
@@ -39,7 +40,7 @@ class OWSVM(OWWidget):
         self.leg = OWGUI.doubleSpin(self.gcd, self, "gamma",0.0,10.0,0.25, label="g: ", orientation="horizontal", callback=self.changeKernel)
         self.led = OWGUI.doubleSpin(self.gcd, self, "coef0", 0.0,10.0,0.5, label="  c: ", orientation="horizontal", callback=self.changeKernel)
         self.lec = OWGUI.doubleSpin(self.gcd, self, "degree", 0.0,10.0,0.5, label="  d: ", orientation="horizontal", callback=self.changeKernel)
-        b=OWGUI.widgetBox(self.controlArea, self, "Options")
+        b=OWGUI.widgetBox(self.controlArea,"Options")
         OWGUI.doubleSpin(b,self, "C", 0.0, 100.0, 0.5, label="Model complexity (C)", orientation="horizontal")
         OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", orientation="horizontal")
         OWGUI.doubleSpin(b,self, "eps", 0.0, 0.5, 0.001, label="Numeric precision (eps)", orientation="horizontal")
@@ -47,8 +48,8 @@ class OWSVM(OWWidget):
         OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
         OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors", callback=lambda:self.nuBox.setDisabled(not self.useNu))
         self.nuBox=OWGUI.doubleSpin(b,self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", orientation="horizontal")
-
-        OWGUI.button(b,self,"&Apply settings", callback=self.applySettings)
+        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible")
+        OWGUI.button(self.controlArea, self,"&Apply settings", callback=self.applySettings)
         self.nuBox.setDisabled(not self.useNu)
         self.resize(100,100)        
         self.loadSettings()
@@ -91,7 +92,22 @@ class OWSVM(OWWidget):
 
         self.classifier=None
         self.supportVectors=None
-        if self.data:
+        if self.nomogram and self.data and self.data.domain.classVar.varType==orange.VarTypes.Discrete and \
+                len(self.data.domain.classVar.values)==2 and self.kernel_type==0:
+            import orngLR_Jakulin
+            self.learner=orngSVM.BasicSVMLearner()
+            for attr in ("name", "shrinking"):
+                setattr(self.learner, attr, getattr(self, attr))
+            for attr in ("gamma", "coef0", "C", "p", "eps", "nu"):
+                setattr(self.learner, attr, float(getattr(self, attr)))
+            self.learner.kernel=self.kernel_type
+            self.learner.for_nomogram=1
+            self.classifier=orngLR_Jakulin.MarginMetaLearner(self.learner, folds=1)(self.data)
+            self.classifier.name=self.name
+            self.classifier.domain=self.data.domain
+            self.classifier.data=self.data
+            self.supportVectors=self.data.getitemsref(self.classifier.classifier.model["SVi"])
+        elif self.data:
             if self.data.domain.classVar.varType==orange.VarTypes.Continuous:
                 self.learner.svm_type+=3
             self.classifier=self.learner(self.data)
@@ -107,7 +123,7 @@ if __name__=="__main__":
     w=OWSVM()
     app.setMainWidget(w)
     w.show()
-    d=orange.ExampleTable("../../doc/datasets/housing.tab")
+    d=orange.ExampleTable("../../doc/datasets/tic_tac_toe.tab")
     w.cdata(d)
     app.exec_loop()
     w.saveSettings()
