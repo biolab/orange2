@@ -20,5 +20,5 @@ else
 fi
 
 # commit testresults.xml
-#cvs commit -m "" testresults.xml
+cvs commit -m "" testresults.xml
 
