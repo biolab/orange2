@@ -203,7 +203,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
 
     allResults=[]
     for p in proportions:
-        printVerbose("Proportion: %5.3f" % p, verb)
+        orngMisc.printVerbose("Proportion: %5.3f" % p, verb)
 
         if (cv.randseed<0) or (pick.randseed<0):
             cache = 0
@@ -217,10 +217,10 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
                                for i in range(len(examples))]
 
         if cache and testResults.loadFromFiles(learners, fnstr):
-            printVerbose("  loaded from cache", verb)
+            orngMisc.printVerbose("  loaded from cache", verb)
         else:
             for fold in range(cv.folds):
-                printVerbose("  fold %d" % fold, verb)
+                orngMisc.printVerbose("  fold %d" % fold, verb)
                 
                 # learning
                 learnset = examples.selectref(folds, fold, negate=1)
@@ -265,12 +265,12 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
     pick = orange.MakeRandomIndices2(stratified = strat, randomGenerator = randomGenerator)
     allResults=[]
     for p in proportions:
-        printVerbose("Proportion: %5.3f" % p, verb)
+        orngMisc.printVerbose("Proportion: %5.3f" % p, verb)
         testResults = ExperimentResults(times, [l.name for l in learners], testset.domain.classVar.values.native(), testweight!=0, testset.domain.classVar.baseValue)
         testResults.results = []
         
         for t in range(times):
-            printVerbose("  repetition %d" % t, verb)
+            orngMisc.printVerbose("  repetition %d" % t, verb)
             learnAndTestOnTestData(learners, (learnset.selectref(pick(learnset, p), 0), learnweight), testset, testResults, t)
 
         allResults.append(testResults)
@@ -315,7 +315,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
         cache = 0
 
     if cache and testResults.loadFromFiles(learners, fnstr):
-        printVerbose("  loaded from cache", verb)
+        orngMisc.printVerbose("  loaded from cache", verb)
     else:
         for fold in range(nIterations):
             # learning
