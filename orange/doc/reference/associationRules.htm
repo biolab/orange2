@@ -8,9 +8,22 @@
 
 <H1>Association Rules</H1>
 
-<P>Orange provides two algorithms for induction of association rules. One is the basic Agrawal's algorithm with dynamic induction of supported itemsets and rules that is designed specifically for datasets with a large number of different items. This is, however, not really suitable for attribute-based machine learning problems, which are at the primary focus of Orange. We have thus adapted the original algorithm to be more efficient for the latter type of data, and to induce the rules in which, for contrast to Agrawal's rules, both sides don't only contain attributes (like "bread, butter -> jam") but also their values ("bread = wheat, butter = yes -> jam = plum"). As a further variation, the algorithm can be limited to search only for classification rules in which the sole attribute to appear on the right side of the rule is the class attribute.</P>
+<P>Orange provides two algorithms for induction of association
+rules. One is the basic Agrawal's algorithm with dynamic induction of
+supported itemsets and rules that is designed specifically for
+datasets with a large number of different items. This is, however, not
+really suitable for attribute-based machine learning problems, which
+are at the primary focus of Orange. We have thus adapted the original
+algorithm to be more efficient for the latter type of data, and to
+induce the rules in which, for contrast to Agrawal's rules, both sides
+don't only contain attributes (like "bread, butter -> jam") but also
+their values ("bread = wheat, butter = yes -> jam = plum"). As a
+further variation, the algorithm can be limited to search only for
+classification rules in which the sole attribute to appear on the
+right side of the rule is the class attribute.</P>
 
-<P>Besides association rule inducer, Orange also provides a rather simplified method for classification by association rules.</P>
+<P>Besides association rule inducer, Orange also provides a rather
+simplified method for classification by association rules.</P>
 
 <HR>
 
@@ -88,7 +101,14 @@ for r in rules:
 
 <H2>Association Rules for Non-sparse Examples</H2>
 
-<P>The other algorithm for association rules provided by Orange, <CODE>AssociationRulesInducer</CODE> is optimized for non-sparse examples in the usual Orange form. Each example is described by values of a fixed set of attributes. Unknown values are ignored, while values of attributes are not (as opposite to the above-described algorithm for sparse rules). In addition, the algorithm can be directed to search only for classification rules, in which the only attribute on the right-hand side is the class attribute.</P>
+<P>The other algorithm for association rules provided by Orange,
+<CODE>AssociationRulesInducer</CODE> is optimized for non-sparse
+examples in the usual Orange form. Each example is described by values
+of a fixed set of attributes. Unknown values are ignored, while values
+of attributes are not (as opposite to the above-described algorithm
+for sparse rules). In addition, the algorithm can be directed to
+search only for classification rules, in which the only attribute on
+the right-hand side is the class attribute.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -105,7 +125,10 @@ for r in rules:
 <DD>The maximal number of itemsets.</DD>
 </DL>
 
-<P>Meaning of all attributes (except the new one, <CODE>classificationRules</CODE>) is the same as for <CODE>AssociationRulesSparseInducer</CODE>. See the description of <CODE>maxItemSet</CODE> there.</P>
+<P>Meaning of all attributes (except the new one,
+<CODE>classificationRules</CODE>) is the same as for
+<CODE>AssociationRulesSparseInducer</CODE>. See the description of
+<CODE>maxItemSet</CODE> there.</P>
 
 <p class="header"><a href="assoc-agrawal.py">assoc.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
@@ -114,7 +137,7 @@ for r in rules:
 data = orange.ExampleTable("lenses")
 
 print "\nAssociation rules"
-rules = orange.AssociationRulesInducer(data, supp = 0.3)
+rules = orange.AssociationRulesInducer(data, supp = 0.5)
 for r in rules:
     print "%5.3f  %5.3f  %s" % (r.support, r.confidence, r)
 </XMP>
