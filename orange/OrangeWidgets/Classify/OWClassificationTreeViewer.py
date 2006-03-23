@@ -7,7 +7,7 @@
 """
 
 from OWWidget import *
-from orngTreeLearner import TreeLearner
+from orngTree import TreeLearner
 from OWGUI import *
 
 import orngTree
