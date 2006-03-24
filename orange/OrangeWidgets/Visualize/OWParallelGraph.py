@@ -77,14 +77,16 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
         classNameIndex = -1
+        continuousClass = 0
         if self.rawdata.domain.classVar:
             classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
+            continuousClass = self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous
         
         length = len(attributes)
         indices = [self.attributeNameIndex[label] for label in attributes]
         xs = range(length)
         dataSize = len(self.scaledData[0])
-        continuousClass = (self.rawdata.domain.classVar != None and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous)
+        
         
         if not continuousClass and self.rawdata.domain.classVar:
             colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
@@ -142,7 +144,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         # draw the data
         # ############################################
         
-        validData = self.getValidList(indices + [self.attributeNameIndex[self.rawdata.domain.classVar.name]])
+        validData = self.getValidList(indices)
         for i in range(dataSize):
             if not validData[i]:
                 self.curvePoints.append([]) # add an empty list
@@ -480,19 +482,17 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
             if self.lineTracking and self.rawdata and self.rawdata.domain.classVar:
                 if (dist >= 0.1 or key != self.lastSelectedKey) and self.lastSelectedKey in self.dataKeys:
-                    ind = self.dataKeys.index(self.lastSelectedKey)
-                    colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values), 150)
-                    classValueSorted  = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-                    
-                    self.setCurvePen(self.lastSelectedKey, QPen(colorPalette[classValueSorted.index(self.rawdata[ind].getclass().value)], 1))
+                    existingPen = self.curvePen(self.lastSelectedKey)
+                    existingPen.setWidth(1)
+                    self.setCurvePen(self.lastSelectedKey, existingPen)
                     self.lastSelectedKey = 0
 
                 if dist < 0.1 and key != self.lastSelectedKey and key in self.dataKeys:
-                    ind = self.dataKeys.index(key)
-                    colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
-                    classValueSorted  = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-                    self.setCurvePen(key, QPen(colorPalette[classValueSorted.index(self.rawdata[ind].getclass().value)], 3))
                     self.lastSelectedKey = key
+                    existingPen = self.curvePen(self.lastSelectedKey)
+                    existingPen.setWidth(3)
+                    self.setCurvePen(self.lastSelectedKey, existingPen)
+                    
             else:
                 OWGraph.onMouseMoved(self, e)
                 return
@@ -502,7 +502,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
     def getSelectionsAsExampleTables(self, targetValue = None):
         if not self.rawdata:
-            print "no data"
             return (None, None)
         
         selIndices = []

@@ -579,10 +579,9 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList], "validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, attributeReverse, validData)
                  
-        selected = self.rawdata.getitemsref(selIndices)
-        unselected = self.rawdata.getitemsref(unselIndices)
-
         if addProjectedPositions:
+            selected = orange.ExampleTable(domain, self.rawdata.getitemsref(selIndices))
+            unselected = orange.ExampleTable(domain, self.rawdata.getitemsref(unselIndices))
             for i in range(len(selIndices)):
                 selected[i][xAttr] = array[selIndices[i]][0]
                 selected[i][yAttr] = array[selIndices[i]][1]
@@ -590,6 +589,9 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
             for i in range(len(unselIndices)):
                 unselected[i][xAttr] = array[unselIndices[i]][0]
                 unselected[i][yAttr] = array[unselIndices[i]][1]
+        else:
+            selected = self.rawdata.getitemsref(selIndices)
+            unselected = self.rawdata.getitemsref(unselIndices)
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None

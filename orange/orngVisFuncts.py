@@ -655,7 +655,11 @@ def computeCorrelation(data, attr1, attr2):
     a1 = [table[k][attr1].value for k in range(len(table))]
     a2 = [table[k][attr2].value for k in range(len(table))]
     
-    val, prob = statc.pearsonr(a1, a2)
+    try:
+        val, prob = statc.pearsonr(a1, a2)
+    except:
+        val = 0.0    # possibly invalid a1 or a2
+        
     return val
 
 # ##########################################################################################
