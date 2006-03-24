@@ -83,7 +83,7 @@ class orngMosaic:
         for attr in data.domain:
             if attr.varType == orange.VarTypes.Discrete:
                 discAttrs.append(attr)
-            else:
+            elif data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
                 newAttr = entroDisc(attr, data)
                 newAttr.name = attr.name
                 discAttrs.append(newAttr)

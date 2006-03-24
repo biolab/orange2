@@ -260,7 +260,7 @@ class orngScaleData:
     def scaleExampleValue(self, example, index):
         if example[index].isSpecial():
             print "Warning: scaling example with missing value"
-            return 1e20
+            return 0.5     #1e20     
         if example.domain[index].varType == orange.VarTypes.Discrete:
             d = getVariableValueIndices(example, index)
             return (d[example[index].value]*2 + 1) / float(2*len(d))

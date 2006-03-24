@@ -444,7 +444,7 @@ class VizRank:
         self.arguments = [[] for i in range(len(self.data.domain.classVar.values))]
                 
         if len(self.results) == 0:
-            print 'VizRank Argumentation: To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.'
+            print 'To classify an example using VizRank you first have to evaluate some projections.'
             return orange.MajorityLearner(self.data)(example, orange.GetBoth)
 
         usedArguments = 0; index = 0
@@ -597,7 +597,7 @@ class VizRank:
                     ind = tried%numClasses
                     found = 0
                     while not found:
-                        attr = attrsByClass[ind][int(random.gammavariate(1,10 + len(attrsByClass[ind])/1000))%len(attrsByClass[ind])]
+                        attr = attrsByClass[ind][int(random.gammavariate(1,10 + len(attrsByClass[ind])/2000))%len(attrsByClass[ind])]
                         if attr not in attrList[ind]:
                             attrList[ind].append(attr); placed += 1; attrs.append(attr); found = 1
                     tried += 1
