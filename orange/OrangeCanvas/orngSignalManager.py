@@ -90,7 +90,8 @@ class SignalManager:
             self.debugFile.write(strValue)
             if object:
                 if type(object) == orange.ExampleTable:
-                    self.debugFile.write("\n\ttoken type = ExampleTable. len = " + str(len(object)) + "\n\tdomain = " + str(object.domain))
+                    name = " " + getattr(object, "name", "")
+                    self.debugFile.write("\n\ttoken type = ExampleTable" + name + ". len = " + str(len(object)))
             self.debugFile.write("\n")
 
     def exceptionHandler(self, type, value, tracebackInfo):
