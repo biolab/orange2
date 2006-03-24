@@ -949,9 +949,13 @@ class OWBaseWidget(QDialog):
             if callback:
                 callback()
         elif type == "comboBox" and widget.isEnabled():
-            type, widget, value, callback = self._guiElements[index]
+            type, widget, value, sendSelectedValue, valueType, callback = self._guiElements[index]
             if widget.count():
-                widget.setCurrentItem(random.randint(0, widget.count()-1))      # XXX DOES THIS WORK??? does the value change correspondingly?
+                pos = random.randint(0, widget.count()-1)
+                if sendSelectedValue:
+                    setattr(self, value, valueType(str(widget.text(pos))))
+                else:
+                    setattr(self, value, pos)
                 if callback:
                     callback()  
 

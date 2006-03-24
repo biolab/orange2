@@ -344,7 +344,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     else:
         connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo, None, control2attributeDict))
     if debuggingEnabled:
-        master._guiElements = getattr(master, "_guiElements", []) + [("comboBox", combo, value, callback)]
+        master._guiElements = getattr(master, "_guiElements", []) + [("comboBox", combo, value, sendSelectedValue, valueType, callback)]
     return combo
 
 
