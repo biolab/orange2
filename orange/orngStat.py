@@ -1010,7 +1010,7 @@ def AUC_iterations(AUCcomputer, iterations, computerArgs):
 
 # AUC for binary classification problems
 def AUC_binary(res, useWeights = True):
-    if numberOfIterations > 1:
+    if res.numberOfIterations > 1:
         return AUC_iterations(AUC_i, splitByIterations(res), (-1, useWeights, res, res.numberOfIterations))
     else:
         return AUC_i([res], -1, useWeights)
