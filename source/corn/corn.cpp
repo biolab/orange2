@@ -188,12 +188,12 @@ public:
 
 class ExperimentResults {
 public:
-  int numberOfIterations, numberOfLearners;
+  int numberOfIterations, numberOfLearners, numberOfClasses;
   vector<TestedExample> results;
   bool weights;
   int baseClass;
 
-  ExperimentResults(const int &ni, const int &nl, const bool &);
+  ExperimentResults(const int &ni, const int &nl, const int &nc, const bool &);
   ExperimentResults(PyObject *);
 };
 
@@ -259,9 +259,10 @@ TestedExample::TestedExample(PyObject *obj)
         
       
 
-ExperimentResults::ExperimentResults(const int &ni, const int &nl, const bool &w)
+ExperimentResults::ExperimentResults(const int &ni, const int &nl, const int &nc, const bool &w)
 : numberOfIterations(ni),
   numberOfLearners(nl),
+  numberOfClasses(nc),
   weights(w)
 {}
 
@@ -275,8 +276,16 @@ ExperimentResults::ExperimentResults(PyObject *obj)
   Py_DECREF(temp);
 
   temp = PyObject_GetAttrString(obj, "baseClass");
-  baseClass = PyInt_AsLong(temp);
+  baseClass = temp ? PyInt_AsLong(temp) : -1;
   Py_DECREF(temp);
+
+  temp = PyObject_GetAttrString(obj, "classValues");
+  if (!temp)
+    throw CornException("no 'classValues' attribute");
+  numberOfClasses = PySequence_Size(temp);
+  Py_DECREF(temp);
+  if (numberOfClasses == -1)
+    throw CornException("'classValues' should contain a list of class names");
 
   PyObject *pyresults = PyObject_GetAttrString(obj, "results");
   if (!pyresults)
@@ -341,6 +350,8 @@ void C_computeROCCumulative(const ExperimentResults &results, int classIndex, pp
     classIndex = results.baseClass;
   if (classIndex<0)
     classIndex = 1;
+  if (classIndex >= results.numberOfClasses)
+    throw CornException("classIndex out of range");
 
   totals = pp();
   cummlists = vector<TCummulativeROC>(results.numberOfLearners);
@@ -353,6 +364,32 @@ void C_computeROCCumulative(const ExperimentResults &results, int classIndex, pp
     vector<TCummulativeROC>::iterator ci(cummlists.begin());
     const_ITERATE(vector<vector<float> >, pi, (*i).probabilities) {
       const float &tp = (*pi)[classIndex];
+      (*ci)[tp];
+      (*ci)[tp].add(ind, weight);
+      ci++;
+    }
+  }
+}
+
+
+void C_computeROCCumulativePair(const ExperimentResults &results, int classIndex1, int classIndex2, pp &totals, vector<TCummulativeROC> &cummlists, bool useWeights)
+{
+  if ((classIndex1 >= results.numberOfClasses) || (classIndex2 >= results.numberOfClasses))
+    throw CornException("classIndex out of range");
+
+  totals = pp();
+  cummlists = vector<TCummulativeROC>(results.numberOfLearners);
+
+  const_ITERATE(vector<TestedExample>, i, results.results) {
+    bool ind = (*i).actualClass==classIndex1;
+    float weight = useWeights ? (*i).weight : 1.0;
+    totals.add(ind, weight);
+
+    vector<TCummulativeROC>::iterator ci(cummlists.begin());
+    const_ITERATE(vector<vector<float> >, pi, (*i).probabilities) {
+      const float &c1 = (*pi)[classIndex1];
+      const float c_sum = c1 + (*pi)[classIndex2];
+      const float tp = (c_sum > 1e-10) ? c1 / c_sum : 0.5;
       (*ci)[tp];
       (*ci)[tp].add(ind, weight);
       ci++;
@@ -389,6 +426,22 @@ void C_computeCDT(const vector<TCummulativeROC> &cummlists, vector<TCDT> &cdts)
 }
 
 
+PyObject *py_ROCCumulativeList(vector<TCummulativeROC> &cummlists, pp &totals)
+{
+  PyObject *pyresults = PyList_New(cummlists.size());
+  int lrn = 0;
+  ITERATE(vector<TCummulativeROC>, ci, cummlists) {
+    PyObject *pclist = PyList_New((*ci).size());
+    int prb = 0;
+    ITERATE(TCummulativeROC, si, *ci)
+      PyList_SetItem(pclist, prb++, Py_BuildValue("f(ff)", (*si).first, (*si).second.normal, (*si).second.abnormal));
+    PyList_SetItem(pyresults, lrn++, pclist);
+  }
+
+  return Py_BuildValue("N(ff)", pyresults, totals.normal, totals.abnormal);
+}
+
+
 PyObject *py_computeROCCumulative(PyObject *, PyObject *arg)
 { 
   PyTRY
@@ -408,41 +461,40 @@ PyObject *py_computeROCCumulative(PyObject *, PyObject *arg)
     pp totals;
     vector<TCummulativeROC> cummlists;
     C_computeROCCumulative(results, classIndex, totals, cummlists, useweights);
-
-    pyresults = PyList_New(results.numberOfLearners);
-    int lrn = 0;
-    ITERATE(vector<TCummulativeROC>, ci, cummlists) {
-      PyObject *pclist = PyList_New((*ci).size());
-      int prb = 0;
-      ITERATE(TCummulativeROC, si, *ci)
-        PyList_SetItem(pclist, prb++, Py_BuildValue("f(ff)", (*si).first, (*si).second.normal, (*si).second.abnormal));
-      PyList_SetItem(pyresults, lrn++, pclist);
-    }
-
-    return Py_BuildValue("N(ff)", pyresults, totals.normal, totals.abnormal);
+    return py_ROCCumulativeList(cummlists, totals);
   PyCATCH
 }
 
 
-PyObject *py_computeCDT(PyObject *, PyObject *arg)
-{
+PyObject *py_computeROCCumulativePair(PyObject *, PyObject *arg)
+{ 
   PyTRY
     PyObject *pyresults;
-    int classIndex = -1;
-    PyObject *pyuseweights;
-    if (!PyArg_ParseTuple(arg, "OiO", &pyresults, &classIndex, &pyuseweights))
-      PYERROR(PyExc_TypeError, "computeROCCummulative: results and optionally the classIndex expected", PYNULL);
+    int classIndex1, classIndex2;
+    PyObject *pyuseweights = NULL;
+    if (!PyArg_ParseTuple(arg, "Oii|O", &pyresults, &classIndex1, &classIndex2, &pyuseweights))
+      PYERROR(PyExc_TypeError, "computeROCCummulative: results and classIndices, and optional 'useWeights' flag expected", PYNULL);
 
-    bool useweights = PyObject_IsTrue(pyuseweights)!=0;
+    bool useweights = pyuseweights && PyObject_IsTrue(pyuseweights)!=0;
 
     ExperimentResults results(pyresults);
-//    if (results.numberOfIterations>1)
-//      PYERROR(PyExc_SystemError, "computeCDT: cannot compute CDT for experiments with multiple iterations", PYNULL);
+    if (results.numberOfIterations>1)
+      PYERROR(PyExc_SystemError, "computeCDT: cannot compute CDT for experiments with multiple iterations", PYNULL);
+
 
     pp totals;
     vector<TCummulativeROC> cummlists;
-    C_computeROCCumulative(results, classIndex, totals, cummlists, useweights);
+    C_computeROCCumulativePair(results, classIndex1, classIndex2, totals, cummlists, useweights);
+    return py_ROCCumulativeList(cummlists, totals);
+  PyCATCH
+}
 
+
+PyObject *computeCDTList(vector<TCummulativeROC> &cummlists)
+{
+  PyObject *res = NULL, *orngStatModule = NULL;
+
+  try {
     vector<TCDT> cdts;
     C_computeCDT(cummlists, cdts);
 
@@ -453,6 +505,7 @@ PyObject *py_computeCDT(PyObject *, PyObject *arg)
     // PyModule_GetDict and PyDict_GetItemString return borrowed references
     PyObject *orngStatModuleDict = PyModule_GetDict(orngStatModule);
     Py_DECREF(orngStatModule);
+    orngStatModule = NULL;
 
     PyObject *CDTType = PyDict_GetItemString(orngStatModuleDict, "CDT");
 
@@ -476,6 +529,55 @@ PyObject *py_computeCDT(PyObject *, PyObject *arg)
     }
 
     return res;
+  }
+  catch (...) {
+    Py_XDECREF(res);
+    Py_XDECREF(orngStatModule);
+    throw;
+  }
+}
+
+
+PyObject *py_computeCDT(PyObject *, PyObject *arg)
+{
+  PyTRY
+    PyObject *pyresults;
+    int classIndex = -1;
+    PyObject *pyuseweights = PYNULL;
+    if (!PyArg_ParseTuple(arg, "O|iO", &pyresults, &classIndex, &pyuseweights))
+      PYERROR(PyExc_TypeError, "computeROCCummulative: results and optionally the classIndex expected", PYNULL);
+
+    bool useweights = pyuseweights && PyObject_IsTrue(pyuseweights)!=0;
+
+    ExperimentResults results(pyresults);
+
+    pp totals;
+    vector<TCummulativeROC> cummlists;
+    C_computeROCCumulative(results, classIndex, totals, cummlists, useweights);
+
+    return computeCDTList(cummlists);
+  PyCATCH
+}
+
+
+PyObject *py_computeCDTPair(PyObject *, PyObject *arg)
+{
+  PyTRY
+    PyObject *pyresults;
+    int classIndex1, classIndex2;
+    PyObject *pyuseweights = PYNULL;
+    if (!PyArg_ParseTuple(arg, "Oii|O", &pyresults, &classIndex1, &classIndex2, &pyuseweights))
+      PYERROR(PyExc_TypeError, "computeROCCummulative: results, two class indices and optional flag for using weights", PYNULL);
+
+    bool useweights = pyuseweights && PyObject_IsTrue(pyuseweights)!=0;
+
+    ExperimentResults results(pyresults);
+
+    pp totals;
+    vector<TCummulativeROC> cummlists;
+    C_computeROCCumulativePair(results, classIndex1, classIndex2, totals, cummlists, useweights);
+
+    return computeCDTList(cummlists);
   PyCATCH
 }
 
@@ -678,36 +780,6 @@ public:
     }
 };
 
-/*
-PyObject *py_sort_random(PyObject *, PyObject *arg)
-{ PyTRY
-    PyObject *pylist, *compfunc;
-    if (   !PyArg_ParseTuple(arg, "OO", &pylist, &compfunc)
-        || !PyCallable_Check(compfunc)
-        || !PyList_Check(pylist))
-      PYERROR(PyExc_TypeError, "sort_random: list and compare function expected", PYNULL);
-
-    vector<PyObject *> toSort;
-    int i, e;
-    for(i = 0, e = PyList_Size(pylist); i<e; i++) {
-      PyObject *item = PyList_GetItem(pylist, i);
-      Py_XINCREF(item);
-      toSort.push_back(item);
-    }
-
-    random_sort(toSort.begin(), toSort.end(), CompCallbackLess(compfunc), CompCallbackEqual(compfunc));
-
-    for(i = 0, e = PyList_Size(pylist); i<e; i++)
-      PyList_SetItem(pylist, i, toSort[i]);
-
-    RETURN_NONE;
-  PyCATCH
-}
-
-
-PyObject *py_ref(PyObject *, PyObject *arg)
-{ return PyInt_FromLong((long)arg); }
-*/
     
 
 /* *********** EXPORT DECLARATIONS ************/
@@ -718,11 +790,11 @@ PyObject *py_ref(PyObject *, PyObject *arg)
 PyMethodDef corn_functions[] = {
      DECLARE(compare2ROCs)
      DECLARE(computeROCCumulative)
-//     DECLARE(sort_random)
+     DECLARE(computeROCCumulativePair)
      DECLARE(computeCDT)
+     DECLARE(computeCDTPair)
      DECLARE(mAUC)
 
-//     {"ref", py_ref, METH_O},
 
      {NULL, NULL}
 };

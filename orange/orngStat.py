@@ -1,4 +1,5 @@
 import statc, operator, math
+from operator import add
 import orngMisc, orngTest
 
 
@@ -30,12 +31,22 @@ def sqr(x):
 #### Utility
 
 def splitByIterations(res):
+    if res.numberOfIterations < 2:
+        return [res]
+        
     ress = [orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
             for i in range(res.numberOfIterations)]
     for te in res.results:
         ress[te.iterationNumber].results.append(te)
     return ress    
 
+
+def classProbabilitiesFromRes(res):
+    probs = [0.] * len(res.classValues)
+    for te in res.results:
+        probs[int(te.actualClass)] += 1
+    ss = sum(probs)
+    return [x/ss for x in probs]
     
 #### Statistics
 
@@ -381,7 +392,7 @@ def Friedman(res, statistics, **argkw):
             k = len(sums)
     N = res.numberOfIterations
     k = len(sums)
-    T = reduce(operator.add, [x*x for x in sums])
+    T = sum([x*x for x in sums])
     F = 12.0 / (N*k*(k+1)) * T  - 3 * N * (k+1)
     return F, statc.chisqprob(F, k-1)
     
@@ -884,16 +895,21 @@ class CDT:
   def __init__(self, C=0.0, D=0.0, T=0.0):
     self.C, self.D, self.T = C, D, T
    
+def isCDTEmpty(cdt):
+    return cdt.C + cdt.D + cdt.T == 0
+
 
 def computeCDT(res, classIndex=-1, **argkw):
+    """Obsolete, don't use"""
+    import corn
     if classIndex<0:
         if res.baseClass>=0:
             classIndex = res.baseClass
         else:
             classIndex = 1
             
-    import corn
     useweights = res.weights and not argkw.get("unweighted", 0)
+    weightByClasses = argkw.get("weightByClasses", True)
 
     if (res.numberOfIterations>1):
         CDTs = [CDT() for i in range(res.numberOfLearners)]
@@ -905,14 +921,17 @@ def computeCDT(res, classIndex=-1, **argkw):
                 CDTs[i].D += expCDTs[i].D
                 CDTs[i].T += expCDTs[i].T
         for i in range(res.numberOfLearners):
-            if (CDTs[i].C + CDTs[i].D + CDTs[i].T) == 0:
+            if isCDTEmpty(CDT[0]):
                 return corn.computeCDT(res, classIndex, useweights)
         
         return CDTs
     else:
         return corn.computeCDT(res, classIndex, useweights)
-    
+
+## THIS FUNCTION IS OBSOLETE AND ITS AVERAGING OVER FOLDS IS QUESTIONABLE
+## DON'T USE IT
 def ROCsFromCDT(cdt, **argkw):
+    """Obsolete, don't use"""
     if type(cdt) == list:
         return [ROCsFromCDT(c) for c in cdt]
 
@@ -941,18 +960,148 @@ def ROCsFromCDT(cdt, **argkw):
 
 AROCFromCDT = ROCsFromCDT  # for backward compatibility, AROCFromCDT is obsolote
 
-def AUCFromCDT(cdt, **argkw):
-    aucs = apply(ROCsFromCDT, (cdt,), argkw)
-    if type(cdt) == list:
-        return [x[-1] for x in aucs]
+
+
+# computes AUC using a specified 'cdtComputer' function
+# It tries to compute AUCs from 'ite' (examples from a single iteration) and,
+# if C+D+T=0, from 'all_ite' (entire test set). In the former case, the AUCs
+# are divided by 'divideByIfIte'. Additional flag is returned which is True in
+# the former case, or False in the latter.
+def AUC_x(cdtComputer, ite, all_ite, divideByIfIte, computerArgs):
+    cdt = cdtComputer(*(ite, ) + computerArgs)
+    if not isCDTEmpty(cdt[0]):
+        return [x[-1]/divideByIfIte for x in ROCsFromCDT(cdt)], True
+        
+    if all_ite:
+         cdt = cdtComputer(*(all_ite, ) + computerArgs)
+         if not isCDTEmpty(cdt[0]):
+             return [x[-1] for x in ROCsFromCDT(cdt)], False
+
+    return False, False
+
+    
+# computes AUC between classes i and j as if there we no other classes
+def AUC_ij(ite, classIndex1, classIndex2, useWeights = True, all_ite = None, divideByIfIte = 1.0):
+    import corn
+    return AUC_x(corn.computeCDTPair, ite, all_ite, divideByIfIte, (classIndex1, classIndex2, useWeights))
+
+
+# computes AUC between class i and the other classes (treating them as the same class)
+def AUC_i(ite, classIndex, useWeights = True, all_ite = None, divideByIfIte = 1.0):
+    import corn
+    return AUC_x(corn.computeCDT, ite, all_ite, divideByIfIte, (classIndex, useWeights))
+   
+
+# computes the average AUC over folds using a "AUCcomputer" (AUC_i or AUC_ij)
+# it returns the sum of what is returned by the computer, unless at a certain
+# fold the computer has to resort to computing over all folds or even this failed;
+# in these cases the result is returned immediately
+def AUC_iterations(AUCcomputer, iterations, computerArgs):
+    subsum_aucs = [0.] * iterations[0].numberOfLearners
+    for ite in iterations:
+        aucs, foldsUsed = AUCcomputer(*(ite, ) + computerArgs)
+        if not aucs:
+            return None
+        if not foldsUsed:
+            return aucs
+        subsum_aucs = map(add, subsum_aucs, aucs)
+    return subsum_aucs
+
+
+# AUC for binary classification problems
+def AUC_binary(res, useWeights = True):
+    if numberOfIterations > 1:
+        return AUC_iterations(AUC_i, splitByIterations(res), (-1, useWeights, res, res.numberOfIterations))
     else:
-        return aucs[-1]
+        return AUC_i([res], -1, useWeights)
 
-def AUC(res, classIndex=-1, **argkw):
-    cdt = apply(computeCDT, (res,), argkw)
-    aucs = apply(ROCsFromCDT, (cdt,), argkw)
-    return [x[-1] for x in aucs]
+# AUC for multiclass problems
+def AUC_multi(res, useWeights = True, method = 0):
+    numberOfClasses = len(res.classValues)
+    
+    if res.numberOfIterations > 1:
+        iterations = splitByIterations(res)
+        all_ite = res
+    else:
+        iterations = [res]
+        all_ite = None
+    
+    # by pairs
+    sum_aucs = [0.] * res.numberOfLearners
+    usefulClassPairs = 0.
 
+    if method in [0, 2]:
+        prob = classProbabilitiesFromRes(res)
+        
+    if method <= 1:
+        for classIndex1 in range(numberOfClasses):
+            for classIndex2 in range(classIndex1):
+                subsum_aucs = AUC_iterations(AUC_ij, iterations, (classIndex1, classIndex2, useWeights, all_ite, res.numberOfIterations))
+                if subsum_aucs:
+                    if method == 0:
+                        p_ij = prob[classIndex1] * prob[classIndex2]
+                        subsum_aucs = [x * p_ij  for x in subsum_aucs]
+                        usefulClassPairs += p_ij
+                    else:
+                        usefulClassPairs += 1
+                    sum_aucs = map(add, sum_aucs, subsum_aucs)
+    else:
+        for classIndex in range(numberOfClasses):
+            subsum_aucs = AUC_iterations(AUC_i, iterations, (classIndex, useWeights, all_ite, res.numberOfIterations))
+            if subsum_aucs:
+                if method == 0:
+                    p_i = prob[classIndex]
+                    subsum_aucs = [x * p_i  for x in subsum_aucs]
+                    usefulClassPairs += p_i
+                else:
+                    usefulClassPairs += 1
+                sum_aucs = map(add, sum_aucs, subsum_aucs)
+                    
+    if usefulClassPairs > 0:
+        sum_aucs = [x/usefulClassPairs for x in sum_aucs]
+
+    return sum_aucs
+
+
+# Computes AUC, possibly for multiple classes (the averaging method can be specified)
+# Results over folds are averages; if some folds examples from one class only, the folds are merged
+def AUC(res, method = 0, useWeights = True):
+    if len(res.classValues) < 2:
+        raise "Cannot compute AUC on a single-class problem"
+    elif len(res.classValues) == 2:
+        return AUC_binary(res, useWeights)
+    else:
+        return AUC_multi(res, useWeights, method)
+
+AUC.ByWeightedPairs = 0
+AUC.ByPairs = 1
+AUC.WeightedOnAgainstAll = 2
+AUC.OneAgainstAll = 3
+
+
+# Computes AUC; in multivalued class problem, AUC is computed as one against all
+# Results over folds are averages; if some folds examples from one class only, the folds are merged
+def AUC_single(res, classIndex = -1, useWeights = True):
+    if classIndex<0:
+        if res.baseClass>=0:
+            classIndex = res.baseClass
+        else:
+            classIndex = 1
+
+    if res.numberOfIterations > 1:
+        return AUC_iterations(AUC_i, splitByIterations(res), (classIndex, useWeights, res, res.numberOfIterations))
+    else:
+        return AUC_i([res], classIndex, useWeights)
+
+
+# Computes AUC for a pair of classes (as if there were no other classes)
+# Results over folds are averages; if some folds have examples from one class only, the folds are merged
+def AUC_pair(res, classIndex1, classIndex2, useWeights = True):
+    if res.numberOfIterations > 1:
+        return AUC_iterations(AUC_ij, splitByIterations(res), (classIndex1, classIndex2, useWeights, res, res.numberOfIterations))
+    else:
+        return AUC_ij(res, classIndex1, classIndex2, useWeights)
+  
 
 def McNemar(res, **argkw):
     nLearners = res.numberOfLearners
@@ -1039,7 +1188,7 @@ def Friedman(res, stat=CA):
             ranks = [k+1-x for x in ranks]
         sums = [ranks[i]+sums[i] for i in range(k)]
 
-    T = reduce(operator.add, [x*x for x in sums])
+    T = sum([x*x for x in sums])
     sums = [x/N for x in sums]
 
     F = 12.0 / (N*k*(k+1)) * T  - 3 * N * (k+1)
