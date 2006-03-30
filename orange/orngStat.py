@@ -10,7 +10,7 @@ def log2(x):
 
 def checkNonZero(x):
     if x==0.0:
-        raise SystemError, "Cannot compute the score: no examples or sum of weight is 0.0."
+        raise SystemError, "Cannot compute the score: no examples or sum of weights is 0.0."
 
 def gettotweight(res):
     totweight = reduce(lambda x, y: x+y.weight, res.results, 0)
@@ -24,11 +24,6 @@ def gettotsize(res):
     else:
         raise SystemError, "Cannot compute the score: no examples."
 
-def sqr(x):
-    return x*x
-
-
-#### Utility
 
 def splitByIterations(res):
     if res.numberOfIterations < 2:
@@ -41,12 +36,41 @@ def splitByIterations(res):
     return ress    
 
 
-def classProbabilitiesFromRes(res):
-    probs = [0.] * len(res.classValues)
-    for te in res.results:
-        probs[int(te.actualClass)] += 1
-    ss = sum(probs)
-    return [x/ss for x in probs]
+def classProbabilitiesFromRes(res, **argkw):
+    probs = [0.0] * len(res.classValues)
+    if argkw.get("unweighted", 0) or not res.weights:
+        for tex in res.results:
+            probs[int(tex.actualClass)] += 1.0
+        totweight = gettotsize(res)
+    else:
+        totweight = 0.0
+        for tex in res.results:
+            probs[tex.actualClass] += tex.weight
+            totweight += tex.weight
+        checkNonZero(totweight)
+    return [prob/totweight for prob in probs]
+
+
+def statisticsByFolds(stats, foldN, reportSE, iterationIsOuter):
+    # remove empty folds, turn the matrix so that learner is outer
+    if iterationIsOuter:
+        if not stats:
+            raise SystemError, "Cannot compute the score: no examples or sum of weights is 0.0."
+        numberOfLearners = len(stats[0])
+        stats = filter(lambda (x, fN): fN>0.0, zip(stats,foldN))
+        stats = [ [x[lrn]/fN for x, fN in stats] for lrn in range(numberOfLearners)]
+    else:
+        stats = [ [x/Fn for x, Fn in filter(lambda (x, Fn): Fn > 0.0, zip(lrnD, foldN))] for lrnD in stats]
+
+    if not stats:
+        raise SystemError, "Cannot compute the score: no classifiers"
+    if not stats[0]:
+        raise SystemError, "Cannot compute the score: no examples or sum of weights is 0.0."
+    
+    if reportSE:
+        return [(statc.mean(x), statc.sterr(x)) for x in stats]
+    else:
+        return [statc.mean(x) for x in stats]
     
 #### Statistics
 
@@ -77,7 +101,7 @@ def MSE(res, **argkw):
                 ac = float(tex.actualClass)
                 nIter[tex.iterationNumber] += 1
                 for i, cls in enumerate(tex.classes):
-                    MSEs[i][tex.iterationNumber] += sqr(float(cls) - ac)
+                    MSEs[i][tex.iterationNumber] += (float(cls) - ac)**2
         else:
             raise SystemError, "weighted RMSE with SE not implemented yet"
         MSEs = [[x/ni for x, ni in zip(y, nIter)] for y in MSEs]
@@ -90,12 +114,12 @@ def MSE(res, **argkw):
         if argkw.get("unweighted", 0) or not res.weights:
             for tex in res.results:
                 MSEs = map(lambda res, cls, ac = float(tex.actualClass):
-                           res + sqr(float(cls) - ac), MSEs, tex.classes)
+                           res + (float(cls) - ac)**2, MSEs, tex.classes)
             totweight = gettotsize(res)
         else:
             for tex in res.results:
                 MSEs = map(lambda res, cls, ac = float(tex.actualClass), tw = tex.weight:
-                           res + tw*sqr(float(cls) - ac), MSEs, tex.classes)
+                           res + tw * (float(cls) - ac)**2, MSEs, tex.classes)
             totweight = gettotweight(res)
 
         if argkw.get("sqrt", 0):
@@ -106,7 +130,8 @@ def RMSE(res, **argkw):
     argkw.setdefault("sqrt", 1)
     return MSE(res, **argkw)
 
-def CA(res, reportSE=0, **argkw):
+
+def CA(res, reportSE = False, **argkw):
     if res.numberOfIterations==1:
         if type(res)==ConfusionMatrix:
             div = nm.TP+nm.FN+nm.FP+nm.TN
@@ -119,15 +144,18 @@ def CA(res, reportSE=0, **argkw):
                 for tex in res.results:
                     CAs = map(lambda res, cls: res+(cls==tex.actualClass), CAs, tex.classes)
             else:
-                totweight = gettotweight(res)
+                totweight = 0.
                 for tex in res.results:
                     CAs = map(lambda res, cls: res+(cls==tex.actualClass and tex.weight), CAs, tex.classes)
+                    totweight += tex.weight
+            checkNonZero(totweight)
             ca = [x/totweight for x in CAs]
             
         if reportSE:
             return [(x, x*(1-x)/math.sqrt(totweight)) for x in ca]
         else:
-            return [x for x in ca]            
+            return ca
+        
     else:
         CAsByFold = [[0.0]*res.numberOfIterations for i in range(res.numberOfLearners)]
         foldN = [0.0]*res.numberOfIterations
@@ -143,62 +171,74 @@ def CA(res, reportSE=0, **argkw):
                     CAsByFold[lrn][tex.iterationNumber] += (tex.classes[lrn]==tex.actualClass) and tex.weight
                 foldN[tex.iterationNumber] += tex.weight
 
-        newFolds = []
-        for lrn in range(res.numberOfLearners):
-            newF = []
-            for fold in range(res.numberOfIterations):
-                if foldN[fold]>0.0:
-                        newF.append(CAsByFold[lrn][fold]/foldN[fold])
-            newFolds.append(newF)
+        return statisticsByFolds(CAsByFold, foldN, reportSE, False)
 
-        checkNonZero(len(newFolds))
-        if reportSE:
-            return [(statc.mean(cas), statc.sterr(cas)) for cas in newFolds]
-        else:
-            return [statc.mean(cas) for cas in newFolds]
 
+# Obsolete, but kept for compatibility
 def CA_se(res, **argkw):
-    return apply(CA, (res, 1), argkw)
+    return CA(res, True, **argkw)
 
-def AP(res, **argkw):
-    APs=[0.0]*res.numberOfLearners
+
+def AP(res, reportSE = False, **argkw):
+    if res.numberOfIterations == 1:
+        APs=[0.0]*res.numberOfLearners
+        if argkw.get("unweighted", 0) or not res.weights:
+            for tex in res.results:
+                APs = map(lambda res, probs: res + probs[tex.actualClass], APs, tex.probabilities)
+            totweight = gettotsize(res)
+        else:
+            totweight = 0.
+            for tex in res.results:
+                APs = map(lambda res, probs: res + probs[tex.actualClass]*tex.weight, APs, tex.probabilities)
+                totweight += tex.weight
+        checkNonZero(totweight)
+        return [AP/totweight for AP in APs]
+
+    APsByFold = [[0.0]*res.numberOfLearners for i in range(res.numberOfIterations)]
+    foldN = [0.0] * res.numberOfIterations
     if argkw.get("unweighted", 0) or not res.weights:
         for tex in res.results:
-            APs = map(lambda res, probs: res + probs[tex.actualClass], APs, tex.probabilities)
-        totweight = gettotsize(res)
+            APsByFold[tex.iterationNumber] = map(lambda res, probs: res + probs[tex.actualClass], APsByFold[tex.iterationNumber], tex.probabilities)
+            foldN[tex.iterationNumber] += 1
     else:
         for tex in res.results:
-            APs = map(lambda res, probs: res + probs[tex.actualClass]*tex.weight, APs, tex.probabilities)
-        totweight = gettotweight(res)
-    return [AP/totweight for AP in APs]
+            APsByFold[tex.iterationNumber] = map(lambda res, probs: res + probs[tex.actualClass] * tex.weight, APsByFold[tex.iterationNumber], tex.probabilities)
+            foldN[tex.iterationNumber] += tex.weight
+
+    return statisticsByFolds(APsByFold, foldN, reportSE, True)    
+        
+        
 
 
-def BrierScore(res, reportSE=0, **argkw):
+def BrierScore(res, reportSE = False, **argkw):
     # Computes an average (over examples) of sum_x(t(x) - p(x))^2, where
     #    x is class,
     #    t(x) is 0 for 'wrong' and 1 for 'correct' class
     #    p(x) is predicted probabilty.
     # There's a trick: since t(x) is zero for all classes but the
     # correct one (c), we compute the sum as sum_x(p(x)^2) - 2*p(c) + 1
-    # Since +1 is there for each example, it add 1 to the average
+    # Since +1 is there for each example, it adds 1 to the average
     # We skip the +1 inside the sum and add it just at the end of the function
+    # We take max(result, 0) to avoid -0.0000x due to rounding errors
 
     if res.numberOfIterations == 1:
         MSEs=[0.0]*res.numberOfLearners
         if argkw.get("unweighted", 0) or not res.weights:
+            totweight = 0.0
             for tex in res.results:
                 MSEs = map(lambda res, probs:
-                           res + reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
-            totweight = gettotsize(res)
+                           res + reduce(lambda s, pi: s+pi**2, probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
+                totweight += tex.weight
         else:
             for tex in res.results:
                 MSEs = map(lambda res, probs:
-                           res + tex.weight*reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
+                           res + tex.weight*reduce(lambda s, pi: s+pi**2, probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
             totweight = gettotweight(res)
+        checkNonZero(totweight)
         if reportSE:
-            return [(x/totweight+1.0, 0) for x in MSEs]  ## change this, not zero!!!
+            return [(max(x/totweight+1.0, 0), 0) for x in MSEs]  ## change this, not zero!!!
         else:
-            return [x/totweight+1.0 for x in MSEs]
+            return [max(x/totweight+1.0, 0) for x in MSEs]
 
     BSs = [[0.0]*res.numberOfLearners for i in range(res.numberOfIterations)]
     foldN = [0.] * res.numberOfIterations
@@ -206,27 +246,21 @@ def BrierScore(res, reportSE=0, **argkw):
     if argkw.get("unweighted", 0) or not res.weights:
         for tex in res.results:
             BSs[tex.iterationNumber] = map(lambda rr, probs:
-                       rr + reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], BSs[tex.iterationNumber], tex.probabilities)
+                       rr + reduce(lambda s, pi: s+pi**2, probs, 0) - 2*probs[tex.actualClass], BSs[tex.iterationNumber], tex.probabilities)
             foldN[tex.iterationNumber] += 1
     else:
         for tex in res.results:
             BSs[tex.iterationNumber] = map(lambda res, probs:
-                       res + tex.weight*reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], BSs[tex.iterationNumber], tex.probabilities)
+                       res + tex.weight*reduce(lambda s, pi: s+pi**2, probs, 0) - 2*probs[tex.actualClass], BSs[tex.iterationNumber], tex.probabilities)
             foldN[tex.iterationNumber] += tex.weight
 
-    # divide BSs by number of cases per fold
-    nBSs = []
-    for lrn in range(res.numberOfLearners):
-        nBS = []
-        for fold in range(res.numberOfIterations):
-            if foldN[fold]>0.:
-                nBS.append(BSs[fold][lrn] / foldN[fold] + 1.0)
-        nBSs.append(nBS)
-
+    stats = statisticsByFolds(BSs, foldN, reportSE, True)
     if reportSE:
-        return [(statc.mean(x), statc.sterr(x)) for x in nBSs]
+        return [(x+1.0, y) for x, y in stats]
     else:
-        return [statc.mean(x) for x in nBSs]
+        return [x+1.0 for x in stats]
+    
+
 
 def BSS(res, **argkw):
     return [1-x/2 for x in apply(BrierScore, (res, ), argkw)]
@@ -294,40 +328,10 @@ def IS_ex(Pc, P):
         return -(-log2(1-P)+log2(1-Pc))
     
 
-def aprioriDistributions(res, **argkw):
-    probs = [0.0]*(max([x.actualClass for x in res.results])+1)
-    if argkw.get("unweighted", 0) or not res.weights:
-        for tex in res.results:
-            probs[tex.actualClass] += 1.0
-        totweight = gettotsize(res)
-    else:
-        for tex in res.results:
-            probs[tex.actualClass] += tex.weight
-        totweight = gettotweight(res)
-    return [prob/totweight for prob in probs]
 
-    
-def xxIS(res, apriori=None, **argkw):
+def IS(res, apriori=None, reportSE = False, **argkw):
     if not apriori:
-        apriori = aprioriDistributions(res)
-    ISs = [0.0]*res.numberOfLearners
-    if argkw.get("unweighted", 0) or not res.weights:
-        for tex in res.results:
-          for i in range(len(tex.probabilities)):
-                cls = tex.actualClass
-                ISs[i] += IS_ex(tex.probabilities[i][cls], apriori[cls])
-        totweight = gettotsize(res)
-    else:
-        for tex in res.results:
-          for i in range(len(tex.probabilities)):
-                cls = tex.actualClass
-                ISs[i] += IS_ex(tex.probabilities[i][cls], apriori[cls]) * tex.weight
-        totweight = gettotweight(res)
-    return [IS/totweight for IS in ISs]
-
-def IS(res, apriori=None, reportSE=0, **argkw):
-    if not apriori:
-        apriori = aprioriDistributions(res)
+        apriori = classProbabilitiesFromRes(res)
 
     if res.numberOfIterations==1:
         ISs = [0.0]*res.numberOfLearners
@@ -366,20 +370,8 @@ def IS(res, apriori=None, reportSE=0, **argkw):
                 ISs[i][tex.iterationNumber] += IS_ex(tex.probabilities[i][cls], apriori[cls]) * tex.weight
             foldN[tex.iterationNumber] += tex.weight
 
-    # divide ISs by number of cases per fold
-    nISs = []
-    for lrn in range(res.numberOfLearners):
-        nIS = []
-        for fold in range(res.numberOfIterations):
-            if foldN[fold]>0.:
-                nIS.append(ISs[lrn][fold] / foldN[fold])
-        nISs.append(nIS)
+    return statisticsByFolds(ISs, foldN, reportSE, False)
 
-    checkNonZero(len(nISs))
-    if reportSE:
-        return [(statc.mean(x), statc.sterr(x)) for x in nISs]
-    else:
-        return [statc.mean(x) for x in nISs]
 
 def Friedman(res, statistics, **argkw):
     sums = None
@@ -435,11 +427,30 @@ class ConfusionMatrix:
                 self.TN += weight
 
 
-def computeConfusionMatrices(res, classIndex=-1, **argkw):
+def confusionMatrices(res, classIndex=-1, **argkw):
     tfpns = [ConfusionMatrix() for i in range(res.numberOfLearners)]
-
+    
     if classIndex<0:
-        if res.baseClass>=0:
+        numberOfClasses = len(res.classValues)
+        if classIndex < -1 or numberOfClasses > 2:
+            cm = [[[0.0] * numberOfClasses for i in range(numberOfClasses)] for l in range(res.numberOfLearners)]
+            if argkw.get("unweighted", 0) or not res.weights:
+                for tex in res.results:
+                    trueClass = int(tex.actualClass)
+                    for li, pred in enumerate(tex.classes):
+                        predClass = int(pred)
+                        if predClass < numberOfClasses:
+                            cm[li][trueClass][predClass] += 1
+            else:
+                for tex in enumerate(res.results):
+                    trueClass = int(tex.actualClass)
+                    for li, pred in tex.classes:
+                        predClass = int(pred)
+                        if predClass < numberOfClasses:
+                            cm[li][trueClass][predClass] += tex.weight
+            return cm
+            
+        elif res.baseClass>=0:
             classIndex = res.baseClass
         else:
             classIndex = 1
@@ -469,6 +480,9 @@ def computeConfusionMatrices(res, classIndex=-1, **argkw):
                     tfpns[i].addTFPosNeg(lr.classes[i]==classIndex, isPositive, lr.weight)
     return tfpns
 
+
+# obsolete (renamed)
+computeConfusionMatrices = confusionMatrices
 
 def sens(confm):
     if type(confm) == list:
@@ -534,16 +548,16 @@ def AUCWilcoxon(res, classIndex=-1, **argkw):
             thisPos, thisNeg = prob[1][1], prob[1][0]
             highPos -= thisPos
             W += thisNeg * (highPos + thisPos/2.)
-            Q2 += thisPos * (sqr(lowNeg)  + lowNeg*thisNeg  + sqr(thisNeg)/3.)
-            Q1 += thisNeg * (sqr(highPos) + highPos*thisPos + sqr(thisPos)/3.)
+            Q2 += thisPos * (lowNeg**2  + lowNeg*thisNeg  + thisNeg**2 /3.)
+            Q1 += thisNeg * (highPos**2 + highPos*thisPos + thisPos**2 /3.)
 
             lowNeg += thisNeg
 
         W  /= (totPos*totNeg)
-        Q1 /= (totNeg*sqr(totPos))
-        Q2 /= (totPos*sqr(totNeg))
+        Q1 /= (totNeg*totPos**2)
+        Q2 /= (totPos*totNeg**2)
 
-        SE = math.sqrt( (W*(1-W) + (totPos-1)*(Q1-sqr(W)) + (totNeg-1)*(Q2-sqr(W))) / (totPos*totNeg) )
+        SE = math.sqrt( (W*(1-W) + (totPos-1)*(Q1-W**2) + (totNeg-1)*(Q2-W**2)) / (totPos*totNeg) )
         results.append((W, SE))
     return results
 
@@ -1013,7 +1027,7 @@ def AUC_binary(res, useWeights = True):
     if res.numberOfIterations > 1:
         return AUC_iterations(AUC_i, splitByIterations(res), (-1, useWeights, res, res.numberOfIterations))
     else:
-        return AUC_i([res], -1, useWeights)
+        return AUC_i(res, -1, useWeights)
 
 # AUC for multiclass problems
 def AUC_multi(res, useWeights = True, method = 0):
@@ -1075,7 +1089,7 @@ def AUC(res, method = 0, useWeights = True):
 
 AUC.ByWeightedPairs = 0
 AUC.ByPairs = 1
-AUC.WeightedOnAgainstAll = 2
+AUC.WeightedOneAgainstAll = 2
 AUC.OneAgainstAll = 3
 
 
@@ -1102,6 +1116,31 @@ def AUC_pair(res, classIndex1, classIndex2, useWeights = True):
     else:
         return AUC_ij(res, classIndex1, classIndex2, useWeights)
   
+
+# AUC for multiclass problems
+def AUC_matrix(res, useWeights = True):
+    numberOfClasses = len(res.classValues)
+    numberOfLearners = res.numberOfLearners
+    
+    if res.numberOfIterations > 1:
+        iterations, all_ite = splitByIterations(res), res
+    else:
+        iterations, all_ite = [res], None
+    
+    aucs = [[[] for i in range(numberOfClasses)] for i in range(numberOfLearners)]
+    prob = classProbabilitiesFromRes(res)
+        
+    for classIndex1 in range(numberOfClasses):
+        for classIndex2 in range(classIndex1):
+            pair_aucs = AUC_iterations(AUC_ij, iterations, (classIndex1, classIndex2, useWeights, all_ite, res.numberOfIterations))
+            if pair_aucs:
+                for lrn in range(numberOfLearners):
+                    aucs[lrn][classIndex1].append(pair_aucs[lrn])
+            else:
+                for lrn in range(numberOfLearners):
+                    aucs[lrn][classIndex1].append(-1)
+    return aucs
+                
 
 def McNemar(res, **argkw):
     nLearners = res.numberOfLearners
@@ -1136,7 +1175,7 @@ def McNemar(res, **argkw):
         for l2 in range(l1, nLearners):
             su=mcm[l1][l2] + mcm[l2][l1]
             if su:
-                mcm[l2][l1] = sqr(abs(mcm[l1][l2]-mcm[l2][l1])-1) / su
+                mcm[l2][l1] = (abs(mcm[l1][l2]-mcm[l2][l1])-1)**2 / su
             else:
                 mcm[l2][l1] = 0
 
@@ -1167,7 +1206,7 @@ def McNemarOfTwo(res, lrn1, lrn2):
 
     su = tf + ft
     if su:
-        return sqr(abs(tf-ft)-1) / su
+        return (abs(tf-ft)-1)**2 / su
     else:
         return 0
 
