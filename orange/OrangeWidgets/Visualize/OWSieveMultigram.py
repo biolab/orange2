@@ -7,7 +7,6 @@
 """
 
 from OWWidget import *
-from random import betavariate 
 from OWSieveMultigramGraph import *
 import orngVisFuncts
 from orngCI import FeatureByCartesianProduct

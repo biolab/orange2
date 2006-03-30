@@ -310,8 +310,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if self.enabledLegend == 1 and self.rawdata.domain.classVar:
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                self.graph.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", colorPalette[0], colorPalette[0], 0, symbol = QwtSymbol.None, enableLegend = 1)
                 for ind in range(len(varValues)):
-                    self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], colorPalette[ind], colorPalette[ind], self.pointWidth, enableLegend = 1)
+                    self.addCurve(varValues[ind], colorPalette[ind], colorPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
             else:
                 l = len(attributes)-1
                 xs = [l*1.15, l*1.20, l*1.20, l*1.15]

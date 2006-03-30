@@ -11,10 +11,8 @@
 # 
 
 from OWWidget import *
-from random import betavariate 
 from OWPolyvizGraph import *
 from OWkNNOptimization import *
-from time import time
 from math import pow
 import orngVisFuncts, OWToolbars, orngVisFuncts, OWDlgs
 
@@ -163,14 +161,21 @@ class OWPolyviz(OWWidget):
        
         # ####################################
         #K-NN OPTIMIZATION functionality
+        """
+        self.optimizationDlg.disconnect(self.optimizationDlg.startOptimizationButton, SIGNAL("clicked()"), self.optimizationDlg.evaluateProjections)
+        self.optimizationDlg.disconnect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizationDlg.optimizeBestProjections)
+        
+        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
+        
         self.optimizationDlg.disconnect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.optimizationDlg.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         #self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
+        """
+        
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.reverseSelectedAttribute)
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
@@ -249,7 +254,8 @@ class OWPolyviz(OWWidget):
             # ################################################################################################
             # use the heuristic to test only most interesting attribute orders
             self.optimizationDlg.setStatusBarText("Evaluating attributes...")
-            if self.optimizationDlg.useHeuristicToFindAttributeOrders:
+            
+            if self.optimizationDlg.attrCont == CONT_MEAS_S2NMIX:
                 attrs, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.data, orngVisFuncts.S2NMeasureMix())
                 self.optimizationDlg.setStatusBarText("")
 

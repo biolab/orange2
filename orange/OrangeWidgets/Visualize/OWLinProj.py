@@ -11,13 +11,11 @@
 # 
 
 from OWWidget import *
-from random import betavariate 
 from OWLinProjGraph import *
 from OWkNNOptimization import OWVizRank
 from OWClusterOptimization import *
 from OWFreeVizOptimization import *
-import time
-import OWToolbars, OWGUI, orngTest, orangeom
+import OWToolbars, OWGUI, orngTest
 import orngVisFuncts, OWDlgs
 import orngVizRank
 

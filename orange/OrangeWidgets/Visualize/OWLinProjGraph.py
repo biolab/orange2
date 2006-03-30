@@ -72,9 +72,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
-    def setData(self, data, keepMinMaxVals = 0):
+    def setData(self, data):
         OWGraph.setData(self, data)
-        orngScaleLinProjData.setData(self, data, keepMinMaxVals)
+        orngScaleLinProjData.setData(self, data)
 
     
     # ####################################################################
@@ -777,6 +777,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         file.close()
 
     def computePotentials(self):
+        import orangeom
         rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
         ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
         if not getattr(self, "potentialsBmp", None) \

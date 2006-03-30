@@ -2,7 +2,7 @@ from OWGraph import *
 from copy import copy, deepcopy
 import time, math
 from OWkNNOptimization import *
-from orngScaleData import *
+from orngScalePolyvizData import *
 import orngVisFuncts
 #import orange
 
@@ -64,12 +64,12 @@ TOOLTIPS_SHOW_SPRINGS = 1
 ###########################################################################################
 ##### CLASS : OWPolyvizGRAPH
 ###########################################################################################
-class OWPolyvizGraph(OWGraph, orngScaleData):
+class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
     def __init__(self, polyvizWidget, parent = None, name = None):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
-        orngScaleData.__init__(self)
-        self.attrLocalValues = {}
+        orngScalePolyvizData.__init__(self)
+        
         self.lineLength = 2*0.05
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
         self.triedPossibilities = 0 # how many possibilities did we already try
@@ -85,7 +85,6 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
-        self.validData = []
         self.showLegend = 1
         self.onlyOnePerSubset = 1
 
@@ -101,29 +100,9 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
             anchors[1].append(float(strY))
         return anchors
 
-    def createXAnchors(self, numOfAttrs):
-        return Numeric.cos(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs))
-
-    def createYAnchors(self, numOfAttrs):
-        return Numeric.sin(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs))
-
-    #
-    # if we use globalScaling we must also create a copy of localy scaled data
-    #
     def setData(self, data):
-        # first call the original function to scale data
         OWGraph.setData(self, data)
-        orngScaleData.setData(self, data)
-        
-        if data == None: return
-
-        for index in range(len(data.domain)):
-            if data.domain[index].varType == orange.VarTypes.Discrete:
-                values = [0, len(data.domain[index].values)-1]
-            else:
-                values = [self.domainDataStat[index].min, self.domainDataStat[index].max]
-            self.attrLocalValues[data.domain[index].name] = values
-
+        orngScalePolyvizData.setData(self, data)
 
     #
     # update shown data. Set labels, coloring by className ....
@@ -207,8 +186,10 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
 
             else:
                 # min and max value
-                names = ["%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
-                #names = ["%.1f" % (0.0), "%.1f" % (1.0)]
+                if self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
+                    names = ["%.1f" % (0.0), "%.1f" % (1.0)]
+                elif self.tooltipValue == TOOLTIPS_SHOW_DATA:
+                    names = ["%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
                 if attributeReverse[labels[i]] == 1: names.reverse()
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
@@ -469,12 +450,6 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
         self.update()
         
 
-    # #######################################
-    # try to find the optimal attribute order by trying all diferent circular permutations
-    # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getProjectionQuality(self, attrList, attributeReverse):
-        return self.kNNOptimization.kNNComputeAccuracy(self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList]}))
-
     def generateAttrReverseLists(self, attrList, fullAttribList, tempList):
         if attrList == []: return tempList
         tempList2 = deepcopy(tempList)
@@ -487,72 +462,6 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
     def saveProjectionAsTabData(self, fileName, attrList, attributeReverse):
         orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList]}))
 
-    # attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0
-    def createProjectionAsExampleTable(self, attrList, settingsDict = {}):
-        domain = settingsDict.get("domain")
-        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrList, settingsDict)
-        return orange.ExampleTable(domain, data)
-
-    #def createProjectionAsNumericArray(self, attrIndices, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, removeMissingData = 1):
-    def createProjectionAsNumericArray(self, attrIndices, settingsDict = {}):
-
-        # load the elements from the settings dict
-        attributeReverse = settingsDict.get("reverse", [0]*len(attrIndices))
-        validData = settingsDict.get("validData")
-        classList = settingsDict.get("classList")
-        sum_i     = settingsDict.get("sum_i")
-        XAnchors = settingsDict.get("XAnchors")
-        YAnchors = settingsDict.get("YAnchors")
-        scaleFactor = settingsDict.get("scaleFactor", 1.0)
-        jitterSize = settingsDict.get("jitterSize", 0.0)
-        removeMissingData = settingsDict.get("removeMissingData", 1)
-        
-        if not validData: validData = self.getValidList(attrIndices)
-
-        if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
-        else:                 selectedData = Numeric.take(self.noJitteringScaledData, attrIndices)
-        
-        if not classList:
-            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-            classList = Numeric.compress(validData, classList)
-            
-        if not sum_i: sum_i = self._getSum_i(selectedData)
-        if not (XAnchors and YAnchors):
-            XAnchors = self.createXAnchors(len(attrIndices))
-            YAnchors = self.createYAnchors(len(attrIndices))
-
-        xanchors = Numeric.zeros(Numeric.shape(selectedData), Numeric.Float)
-        yanchors = Numeric.zeros(Numeric.shape(selectedData), Numeric.Float)
-        length = len(attrIndices)
-
-        for i in range(length):
-            if attributeReverse[i]:
-                xanchors[i] = selectedData[i] * XAnchors[i] + (1-selectedData[i]) * XAnchors[(i+1)%length]
-                yanchors[i] = selectedData[i] * YAnchors[i] + (1-selectedData[i]) * YAnchors[(i+1)%length]
-            else:
-                xanchors[i] = (1-selectedData[i]) * XAnchors[i] + selectedData[i] * XAnchors[(i+1)%length]
-                yanchors[i] = (1-selectedData[i]) * YAnchors[i] + selectedData[i] * YAnchors[(i+1)%length]
-
-        x_positions = Numeric.sum(Numeric.multiply(xanchors, selectedData)) / sum_i
-        y_positions = Numeric.sum(Numeric.multiply(yanchors, selectedData)) / sum_i
-
-        if scaleFactor != 1.0:
-            x_positions = x_positions * scaleFactor
-            y_positions = y_positions * scaleFactor
-        if jitterSize > 0.0:
-            x_positions += (RandomArray.random(len(x_positions))-0.5)*jitterSize
-            y_positions += (RandomArray.random(len(y_positions))-0.5)*jitterSize
-        
-        return Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
-
-    # ##############################################################
-    # function to compute the sum of all values for each element in the data. used to normalize.
-    def _getSum_i(self, data):
-        sum_i = Numeric.add.reduce(data)
-        if len(Numeric.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
-            sum_i += Numeric.where(sum_i == 0, 1.0, 0.0)
-        return sum_i 
 
     # ####################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
@@ -820,7 +729,7 @@ class OWPolyvizGraph(OWGraph, orngScaleData):
                         except:
                             pass
                             
-                    if self.onlyOnePerSubset:
+                    if self.onlyOnePerSubset and tempList:
                         (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
                         addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": attrOrder})
                

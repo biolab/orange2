@@ -100,9 +100,9 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
 
         if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+            self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
             for ind in range(len(classValues)):
-                self.addCurve(self.rawdata.domain.classVar.name + "=" + classValues[ind], colors[ind], colors[ind], self.pointWidth, enableLegend = 1)
-
+                self.addCurve(classValues[ind], colors[ind], colors[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
            
 
     # show rectangle with example shown under mouse cursor
