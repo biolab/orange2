@@ -382,6 +382,9 @@ void C_computeROCCumulativePair(const ExperimentResults &results, int classIndex
 
   const_ITERATE(vector<TestedExample>, i, results.results) {
     bool ind = (*i).actualClass==classIndex1;
+    if (!ind && ((*i).actualClass!=classIndex2))
+      continue;
+
     float weight = useWeights ? (*i).weight : 1.0;
     totals.add(ind, weight);
 
