@@ -368,23 +368,6 @@ class OWGraph(QwtPlot):
 
         return text[:-4]        # remove the last <br>
 
-    def changeClassAttr(self, selected, unselected):
-        classVar = orange.EnumVariable("Selection", values = ["Selected data", "Unselected data"])
-        classVar.getValueFrom = lambda ex,what: 0  # orange.Value(classVar, 0)
-        if selected:
-            domain = orange.Domain(selected.domain.variables + [classVar])
-            table = orange.ExampleTable(domain, selected)
-            if unselected:
-                classVar.getValueFrom = lambda ex,what: 1
-                table.extend(unselected)
-        elif unselected:
-            domain = orange.Domain(unselected.domain.variables + [classVar])
-            classVar.getValueFrom = lambda ex,what: 1
-            table = orange.ExampleTable(domain, unselected)
-        else: table = None
-        return table
-
-
     def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None, lineWidth = 1, pen = None):
         newCurveKey = self.insertCurve(name)
         if showFilledSymbols or (showFilledSymbols == None and self.showFilledSymbols):

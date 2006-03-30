@@ -77,10 +77,9 @@ class orngScaleData:
     # ####################################################################
     # ####################################################################
     # set new data and scale its values to the 0-1 interval or normalize it by subtracting the mean and dividing by the deviation
-    def setData(self, data, keepMinMaxVals = 0):
+    def setData(self, data):
         self.attributeFlipInfo = {}
-        if not keepMinMaxVals or self.globalValueScaling == 1:
-            self.attrValues = {}
+        self.attrValues = {}
 
         self.rawdata = data
         RandomArray.seed(1,1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
@@ -139,9 +138,7 @@ class orngScaleData:
                     arr[index] = ((arr[index] - self.offsets[-1]) / self.normalizers[-1])
                     self.attrValues[attr.name] = [MA.minimum(arr[index]), MA.maximum(arr[index])]
                 else:
-                    if self.attrValues.has_key(attr.name):          # keep the old min, max values
-                        Min, Max = self.attrValues[attr.name]
-                    elif self.globalValueScaling == 0:
+                    if not self.globalValueScaling:
                         Min = self.domainDataStat[index].min
                         Max = self.domainDataStat[index].max
                     diff = float(Max - Min) or 1.0

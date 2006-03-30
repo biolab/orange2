@@ -1,6 +1,6 @@
 from OWBaseWidget import *
 import os
-import orange, orangeom, orngTest
+import orange, orngTest
 from copy import copy
 from math import sqrt
 import OWGUI, OWDlgs
@@ -220,9 +220,9 @@ class ClusterOptimization(OWBaseWidget):
         OWGUI.button(self.buttonBox6, self, "Load", self.load)
         OWGUI.button(self.buttonBox6, self, "Save", self.save)
 
-        self.buttonBox7 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
-        OWGUI.button(self.buttonBox7, self, "Graph projections", self.graphProjectionQuality)
-        OWGUI.button(self.buttonBox7, self, "Interaction Analysis", self.interactionAnalysis)
+        #self.buttonBox7 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
+        #OWGUI.button(self.buttonBox7, self, "Graph projections", self.graphProjectionQuality)
+        #OWGUI.button(self.buttonBox7, self, "Interaction Analysis", self.interactionAnalysis)
         
         self.buttonBox3 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
         self.clusterStabilityButton = OWGUI.button(self.buttonBox3, self, 'Show cluster stability', self.evaluatePointsInClusters)
@@ -304,6 +304,7 @@ class ClusterOptimization(OWBaseWidget):
     # ##############################################################
     # ##############################################################
     def evaluateClusters(self, data):
+        import orangeom
         graph = orangeom.triangulate(data,0,1,3)
         graph.returnIndices = 1
         computeDistances(graph)
@@ -715,20 +716,19 @@ class ClusterOptimization(OWBaseWidget):
             self.sizeDlg.saveToFileDirect(name, ext, size)
         QDialog.accept(self.sizeDlg)
 
-
+    """
     def interactionAnalysis(self):
         from OWkNNOptimization import OWInteractionAnalysis, CLUSTER
         dialog = OWInteractionAnalysis(self, signalManager = self.signalManager)
         dialog.setResults(self.shownResults, CLUSTER)
         dialog.show()
 
-
     def graphProjectionQuality(self):
         from OWkNNOptimization import OWGraphProjectionQuality, CLUSTER
         dialog = OWGraphProjectionQuality(self, signalManager = self.signalManager)
         dialog.setResults(self.allResults, CLUSTER)
         dialog.show()
-
+    """
 
     
 

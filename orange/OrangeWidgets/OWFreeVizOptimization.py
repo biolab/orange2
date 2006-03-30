@@ -1,7 +1,7 @@
 from OWBaseWidget import *
 from OWWidget import OWWidget
 from OWkNNOptimization import *
-import orange, math, random, orangeom
+import orange, math, random
 import OWGUI, orngVisFuncts, DESolver, Numeric
 from math import sqrt
 
@@ -325,6 +325,7 @@ class RadvizSolver(DESolver.DESolver):
         self.data = Numeric.transpose(self.radviz.graph.scaledData).tolist()
 
     def EnergyFunction(self, trial, bAtSolution):
+        import orangeom
         anchorData = [(trial[2*i], trial[2*i+1], self.radviz.data.domain.attributes[i].name) for i in self.attrIndices]
         for (x,y,a) in anchorData:
             if x**2 + y**2 > 1: return 999999999999, 0
