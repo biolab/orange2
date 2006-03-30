@@ -68,27 +68,33 @@ testingMethods = [orngTest.leaveOneOut, orngTest.crossValidation, orngTest.learn
 SCATTERPLOT = 1
 RADVIZ = 2
 LINEAR_PROJECTION = 3
+POLYVIZ = 4
 
 # optimization type
 EXACT_NUMBER_OF_ATTRS = 0
 MAXIMUM_NUMBER_OF_ATTRS = 1
 
-import orngScaleScatterPlotData
-import orngScaleLinProjData
-
 class VizRank:
     def __init__(self, visualizationMethod, graph = None):
         if not graph:
             if visualizationMethod == SCATTERPLOT:
+                import orngScaleScatterPlotData
                 graph = orngScaleScatterPlotData.orngScaleScatterPlotData()
             elif visualizationMethod == RADVIZ:
+                import orngScaleLinProjData
                 graph = orngScaleLinProjData.orngScaleLinProjData()
                 graph.normalizeExamples = 1
                 graph.scalingByVariance = 0
             elif visualizationMethod == LINEAR_PROJECTION:
+                import orngScaleLinProjData
                 graph = orngScaleLinProjData.orngScaleLinProjData()
                 graph.normalizeExamples = 0
                 graph.scalingByVariance = 1
+            elif visualizationMethod == POLYVIZ:
+                import orngScalePolyvizData
+                graph = orngScalePolyvizData.orngScalePolyvizData()
+                graph.normalizeExamples = 1
+                graph.scalingByVariance = 0
             else:
                 print "an invalid visualization method was specified. VizRank can not run."
                 return
@@ -99,6 +105,8 @@ class VizRank:
         self.visualizationMethod = visualizationMethod
 
         self.data = None
+        self.subsetdata = None
+        
         self.results = []
         self.arguments = []                                 # a list of arguments
                 
@@ -115,28 +123,37 @@ class VizRank:
         self.useSupervisedPCA = 0                           # use the supervisedPCA
         self.useExampleWeighting = 0                        # weight examples, so that the class that has a low number of examples will have higher weights
         
-        self.evaluationTime = 2                             # how many minutes do we want to try to find top projections
-        self.optimizeBestProjection = 0                     # do we want to try to locally improve the best projections
-        self.optimizeBestProjectionTime = 2                 # how many minutes do we want to try to locally optimize the best projections
         self.externalLearner = None                         # do we use knn or some external learner
         self.selectedClasses = []                           # which classes are we trying to separate
         self.learnerName = "VizRank Learner"
         #self.onlyOnePerSubset = 1                           # save only the best placement of attributes in radviz
         self.maxResultListLen = 100000                      # number of projections to store in a list
-        self.saveResultsFromFolds = 0                       # do we want to save information for each fold when evaluating projection - used to compute VizRank's accuracy
+        self.storeEachPermutation = 0                       # do we want to save information for each fold when evaluating projection - used to compute VizRank's accuracy
         self.abortCurrentOperation = 0
+
+        # when to stop evaluation. when first criterion holds, evaluation stops
+        self.timeLimit = 0              # if greater than 0 then this is the number of minutes that VizRank will use to evaluate projections
+        self.projectionLimit = 0        # if greater than 0 then this is the number of projections that will be evaluated with VizRank
+        self.evaluatedProjectionsCount = 0
+
+        # when to stop local optimization?
+        self.optimizeTimeLimit = 0
+        self.optimizeProjectionLimit = 0
+        self.optimizedProjectionsCount = 0
         
         if visualizationMethod == SCATTERPLOT: self.parentName = "Scatterplot"
         elif visualizationMethod == RADVIZ:    self.parentName = "Radviz"
-        elif visualizationMethod == LINEAR_PROJECTION: self.parentName = "Linear Projection"
-
+        elif visualizationMethod == LINEAR_PROJECTION:  self.parentName = "Linear Projection"
+        elif visualizationMethod == POLYVIZ:            self.parentName = "Polyviz"
+        
         self.argumentCount = 1              # number of arguments used when classifying 
         #self.argumentValueFormula = 1       # how to compute argument value
 
         self.locOptOptimizeProjectionByPermutingAttributes = 1      # try to improve projection by switching pairs of attributes in a projection
-        self.locOptMaxAttrsInProj = 20                              # maximum number of attributes in projection
+        self.locOptAllowAddingAttributes = 0                        # do we allow increasing the number of visualized attributes
+        self.locOptMaxAttrsInProj = 20                              # if self.locOptAllowAddingAttributes == 1 then what is the maximum number of attributes in a projection
         self.locOptAttrsToTry = 100                                 # number of best ranked attributes to try 
-        self.locOptProjCount = 20                                   # consider this number of best ranked projections
+        self.locOptProjCount = 20                                   # try to locally optimize this number of best ranked projections
         self.attributeNameIndex = {}                                # dict with indices to attributes
                 
         self.datasetName = ""
@@ -156,7 +173,7 @@ class VizRank:
     def removeTooSimilarProjections(self, allowedPercentOfEqualAttributes = 70):
         i=0
         while i < len(self.results):
-            if self.existsABetterSimilarProjection(i, allowedPercentOfEqualAttributes):
+            if self.results[i][TRY_INDEX] != -1 and self.existsABetterSimilarProjection(i, allowedPercentOfEqualAttributes):
                 self.results.pop(i)
             else:
                 i += 1
@@ -391,13 +408,11 @@ class VizRank:
 
     def computeAccuracyFromResults(self, table, results):
         prediction = [0.0 for i in range(len(table.domain.classVar.values))]
-        resultsByFolds = [0.0 for i in range(results.numberOfIterations)]
         countsByFold =  [0 for i in range(results.numberOfIterations)]
 
         if self.qualityMeasure == AVERAGE_CORRECT:
             for res in results.results:
                 prediction[res.actualClass] += res.probabilities[0][res.actualClass]
-                resultsByFolds[res.iterationNumber] += res.probabilities[0][res.actualClass]
                 countsByFold[res.iterationNumber] += 1
             prediction = [val*100.0 for val in prediction]
 
@@ -408,14 +423,12 @@ class VizRank:
                 for prob in res.probabilities[0]: val += prob*prob
                 val = val - 2*res.probabilities[0][res.actualClass] + 1
                 prediction[res.actualClass] += val
-                resultsByFolds[res.iterationNumber] += val
                 countsByFold[res.iterationNumber] += 1
             
         elif self.qualityMeasure == CLASS_ACCURACY:
             #return 100*orngStat.CA(results)[0], results
             for res in results.results:
                 prediction[res.actualClass] += res.classes[0]==res.actualClass
-                resultsByFolds[res.iterationNumber] += res.classes[0]==res.actualClass
                 countsByFold[res.iterationNumber] += 1
             prediction = [val*100.0 for val in prediction]
         elif self.qualityMeasure == AUC:
@@ -429,10 +442,8 @@ class VizRank:
         s = sum([currentClassDistribution[index] for index in self.selectedClasses])
 
         prediction = [prediction[i] / float(max(1, currentClassDistribution[i])) for i in range(len(prediction))] # turn to probabilities
-        resultsByFolds = [resultsByFolds[i] / float(max(countsByFold[i],1)) for i in range(results.numberOfIterations)]
 
-        return val/float(s), (acc, prediction, list(currentClassDistribution)), resultsByFolds
-        #return 100.0*statc.mean(resultsByFolds), (acc, prediction, list(currentClassDistribution)), resultsByFolds
+        return val/float(s), (acc, prediction, list(currentClassDistribution))
         
 
     # Argumentation functions
@@ -501,11 +512,17 @@ class VizRank:
             if self.attrCont == CONT_MEAS_S2NMIX:           self.attrCont = CONT_MEAS_S2N
             if self.attrSubsetSelection == GAMMA_SINGLE:    self.attrSubsetSelection = GAMMA_ALL
 
-    def isOptimizationCanceled(self):
-        return (time.time() - self.startTime) / 60 >= self.optimizeBestProjectionTime
-
     def isEvaluationCanceled(self):
-        return (time.time() - self.startTime) / 60 >= self.evaluationTime
+        stop = 0
+        if self.timeLimit > 0: stop = (time.time() - self.startTime) / 60 >= self.timeLimit
+        if self.optimizeProjectionLimit > 0: stop = stop or self.evaluatedProjectionsCount >= self.projectionLimit
+        return stop
+
+    def isOptimizationCanceled(self):
+        stop = 0
+        if self.optimizeTimeLimit > 0: stop = (time.time() - self.startTime) / 60 >= self.optimizeTimeLimit
+        if self.projectionLimit > 0: stop = stop or self.optimizedProjectionsCount >= self.optimizeProjectionLimit
+        return stop
 
 
     # get a new subset of attributes. if attributes are not evaluated yet then evaluate them and save info to evaluationData dict.
@@ -590,6 +607,7 @@ class VizRank:
         if self.attrCont == CONT_MEAS_S2NMIX or self.attrSubsetSelection == GAMMA_SINGLE:
             numClasses = len(self.data.domain.classVar.values)
             attributes, attrsByClass = self.evaluationData["attrs"]
+            gammaWidth = len(attributes)/(1000*numClasses)
             for i in range(maxTries):
                 attrList = [[] for c in range(numClasses)]; attrs = []
                 placed = 0; tried = 0
@@ -597,7 +615,7 @@ class VizRank:
                     ind = tried%numClasses
                     found = 0
                     while not found:
-                        attr = attrsByClass[ind][int(random.gammavariate(1,10 + len(attrsByClass[ind])/2000))%len(attrsByClass[ind])]
+                        attr = attrsByClass[ind][int(random.gammavariate(1,10 + gammaWidth))%len(attrsByClass[ind])]
                         if attr not in attrList[ind]:
                             attrList[ind].append(attr); placed += 1; attrs.append(attr); found = 1
                     tried += 1
@@ -683,7 +701,11 @@ class VizRank:
         random.seed(0)      # always use the same seed to make results repeatable
         if not self.data: return
         self.correctSettingsIfNecessary()
-        evaluatedProjections = 0
+        if self.timeLimit == self.projectionLimit == 0:
+            print "Evaluation of projections was started without any time or projection restrictions. To prevent an indefinite projection evaluation a time limit of 2 hours was set."
+            self.timeLimit = 2 * 60
+            
+        self.evaluatedProjectionsCount = 0
         self.startTime = time.time()
         self.evaluationData = {}            # clear all previous data about tested permutations and stuff
 
@@ -709,21 +731,21 @@ class VizRank:
             for i in range(len(evaluatedAttributes)):
                 for j in range(i):
                     attr1 = self.attributeNameIndex[evaluatedAttributes[j]]; attr2 = self.attributeNameIndex[evaluatedAttributes[i]]
-                    evaluatedProjections += 1
+                    self.evaluatedProjectionsCount += 1
                     if self.isEvaluationCanceled():
-                        self.finishEvaluation(evaluatedProjections)
+                        self.finishEvaluation(self.evaluatedProjectionsCount)
                         return
                     
                     table = self.graph.createProjectionAsExampleTable([attr1, attr2])
-                    accuracy, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
-                    self.addResult(accuracy, other_results, len(table), [self.data.domain[attr1].name, self.data.domain[attr2].name], evaluatedProjections, (resultsByFolds and {"resultsByFolds" : resultsByFolds}) or {})
+                    accuracy, other_results = self.kNNComputeAccuracy(table)
+                    self.addResult(accuracy, other_results, len(table), [self.data.domain[attr1].name, self.data.domain[attr2].name], self.evaluatedProjectionsCount, {})
                     
                     if self.__class__.__name__ == "OWVizRank":
-                        self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(evaluatedProjections), strCount))
-                        self.parentWidget.progressBarSet(100.0*evaluatedProjections/float(count))
+                        self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount), strCount))
+                        self.parentWidget.progressBarSet(100.0*self.evaluatedProjectionsCount/float(count))
 
         # #################### RADVIZ, LINEAR_PROJECTION  ################################
-        elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION):
+        elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION, POLYVIZ):
             if self.useSupervisedPCA:
                 self.freeviz.useGeneralizedEigenvectors = 1
                 self.graph.normalizeExamples = 0
@@ -753,11 +775,11 @@ class VizRank:
                     if self.useSupervisedPCA:
                         xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
                         table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
-                        evaluatedProjections += 1
-                        accuracy, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
-                        self.addResult(accuracy, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})  # here we don't save resultsByFolds since this would be cheating - models would be different for each fold.
-                        if self.isEvaluationCanceled(): self.finishEvaluation(evaluatedProjections); return
-                        if self.__class__.__name__ == "OWVizRank": self.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(evaluatedProjections)))
+                        self.evaluatedProjectionsCount += 1
+                        accuracy, other_results = self.kNNComputeAccuracy(table)
+                        self.addResult(accuracy, other_results, len(table), attrNames, self.evaluatedProjectionsCount, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
+                        if self.isEvaluationCanceled(): self.finishEvaluation(self.evaluatedProjectionsCount); return
+                        if self.__class__.__name__ == "OWVizRank": self.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount)))
                     else:
                         XAnchors = self.graph.createXAnchors(len(attrIndices))
                         YAnchors = self.graph.createYAnchors(len(attrIndices))
@@ -770,31 +792,33 @@ class VizRank:
 
                         # for every permutation compute how good it separates different classes
                         for permutation in permutations:
-                            if self.isEvaluationCanceled():
-                                self.finishEvaluation(evaluatedProjections)
+                            if self.evaluatedProjectionsCount % 10 == 0 and self.isEvaluationCanceled():
+                                self.finishEvaluation(self.evaluatedProjectionsCount)
                                 return
                             
                             table = self.graph.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                            accuracy, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
+                            accuracy, other_results = self.kNNComputeAccuracy(table)
                             
                             # save the permutation
-                            if self.saveResultsFromFolds:
-                                self.addResult(accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation], evaluatedProjections, (resultsByFolds and {"resultsByFolds" : resultsByFolds}) or {})
+                            if self.storeEachPermutation:
+                                self.addResult(accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation], self.evaluatedProjectionsCount, {})
                             else:
                                 tempList.append((accuracy, other_results, len(table), [self.graph.attributeNames[i] for i in permutation]))
 
-                            evaluatedProjections += 1
+                            self.evaluatedProjectionsCount += 1
                             if self.__class__.__name__ == "OWVizRank":
-                                self.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(evaluatedProjections)))
+                                self.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount)))
                                 qApp.processEvents()        # allow processing of other events
 
-                        if not self.saveResultsFromFolds and len(tempList) > 0:   # return only the best attribute placements
+                        if not self.storeEachPermutation and len(tempList) > 0:   # return only the best attribute placements
                             (acc, other_results, lenTable, attrList) = maxFunct(tempList)
-                            self.addResult(acc, other_results, lenTable, attrList, evaluatedProjections)
+                            self.addResult(acc, other_results, lenTable, attrList, self.evaluatedProjectionsCount)
 
                     permutations = self.getNextPermutations()  
+        else:
+            print "unknown visualization method"
 
-        self.finishEvaluation(evaluatedProjections)
+        self.finishEvaluation(self.evaluatedProjectionsCount)
     
 
     def finishEvaluation(self, evaluatedProjections):
@@ -814,91 +838,92 @@ class VizRank:
         return self.kNNComputeAccuracy(table)
 
 
+    def insertTempProjection(self, projections, acc, attrList):
+        if len(projections) == 0: return [(acc, attrList)]
+        
+        top = 0; bottom = len(projections)
+        while (bottom-top) > 1:
+            mid  = (bottom + top)/2
+            if max(acc, projections[mid][0]) == acc: bottom = mid
+            else: top = mid
+
+        if max(acc, projections[top][0]) == acc: projections.insert(top, (acc, attrList))
+        else:                                    projections.insert(bottom, (acc, attrList))
+
     def optimizeBestProjections(self, restartWhenImproved = 1):
         random.seed(0)      # always use the same seed to make results repeatable
         count = min(len(self.results), self.locOptProjCount)
         if not count: return
         self.correctSettingsIfNecessary()
-        attrLists = [self.results[i][ATTR_LIST] for i in range(count)]                                   # create a list of attributes that are in the top projections
-        attrLists = [[self.attributeNameIndex[name] for name in projection] for projection in attrLists]    # find indices from the attribute names
-        accuracys = [self.getProjectionQuality(self.results[i][ATTR_LIST])[0] for i in range(count)]
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
-        attributes = [self.attributeNameIndex[name] for name in orngVisFuncts.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])[:self.locOptAttrsToTry]]
-        self.startTime = time.time()
-        evaluatedProjections = 0
-        lenOfAttributes = len(attributes)
-        maxFunct = self.getMaxFunct()
+        self.optimizedProjectionsCount = 0
+        """
+        if self.optimizeTimeLimit == self.optimizeProjectionLimit == 0:
+            print "Optimization of projections was started without any time or projection restrictions. To prevent an indefinite projection optimization a time limit of 2 hours was set."
+            self.optimizeProjectionLimit = 2 * 60
+        """
+        
 
         if self.__class__.__name__ == "OWVizRank": 
             self.disableControls()
             from qt import qApp
         
+        attrs = [self.results[i][ATTR_LIST] for i in range(count)]                                   # create a list of attributes that are in the top projections
+        attrs = [[self.attributeNameIndex[name] for name in projection] for projection in attrs]    # find indices from the attribute names
+        accuracys = [self.getProjectionQuality(self.results[i][ATTR_LIST])[0] for i in range(count)]
+        projections = [(accuracys[i], attrs[i]) for i in range(len(accuracys))]
+
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
+        attributes = [self.attributeNameIndex[name] for name in orngVisFuncts.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])[:self.locOptAttrsToTry]]
+        self.startTime = time.time()
+        lenOfAttributes = len(attributes)
+        maxFunct = self.getMaxFunct()
+
         if self.visualizationMethod == SCATTERPLOT:
             classIndex = self.attributeNameIndex[self.data.domain.classVar.name]
             classListFull = Numeric.transpose(self.data.toNumeric("c")[0])[0]
 
-            for i in range(len(attrLists)):
-                projection = attrLists[i]
-                accuracy = accuracys[i]
-                optimizedProjection = 1
-                
-                while optimizedProjection:
-                    significantImprovement = 0
-                    
-                    strTotalAtts = orngVisFuncts.createStringFromNumber(lenOfAttributes)
-                    listOfCandidates = []
-                    for (attrIndex, attr) in enumerate(attributes):
-                        if attr in projection: continue
-                        if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
+            tempDict = {}
+            while len(projections) > 0:
+                (accuracy, projection) = projections.pop(0)
 
-                        projections = [[projection[0], attr], [attr, projection[1]]]
-                        
-                        tempList = []
-                        for testProj in projections:
-                            table = self.graph.createProjectionAsExampleTable(testProj, settingsDict = {"domain": domain})
-                            acc, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
-                            
-                            tempList.append((acc, other_results, len(table), testProj))  # save the permutation
-                            if self.saveResultsFromFolds:
-                                self.addResult(acc, other_results, len(table), testProj, 0, (resultsByFolds and {"resultsByFolds" : resultsByFolds}) or {})
-
-                            evaluatedProjections += 1
-                            if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
-                            if self.isOptimizationCanceled():
-                                self.finishEvaluation(evaluatedProjections)
-                                return
-
-                        # return only the best attribute placements
-                        (acc, other_results, lenTable, attrList) = maxFunct(tempList)
-                        if not self.saveResultsFromFolds and min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
-                            self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], 1)
-                        
-                        if maxFunct(acc, accuracy) == acc:
-                            listOfCandidates.append((acc, attrList))
-                            if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                            if max(acc, accuracy)/min(acc, accuracy) > 1.0001: optimizedProjection = 1
+                significantImprovement = 0
+                strTotalAtts = orngVisFuncts.createStringFromNumber(lenOfAttributes)
+                for (attrIndex, attr) in enumerate(attributes):
+                    if attr in projection: continue
+                    testProjections = []
+                    if not tempDict.has_key((projection[0], attr)) and not tempDict.has_key((attr, projection[0])): testProjections.append([projection[0], attr])
+                    if not tempDict.has_key((projection[1], attr)) and not tempDict.has_key((attr, projection[1])): testProjections.append([attr, projection[1]])
+                                        
+                    for testProj in testProjections:
+                        table = self.graph.createProjectionAsExampleTable(testProj, settingsDict = {"domain": domain})
+                        acc, other_results = self.kNNComputeAccuracy(table)
+                        if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0:
+                            self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.optimizedProjectionsCount), acc))
+                        if acc > accuracy:
+                            self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in testProj], -1)
+                            self.insertTempProjection(projections, acc, proj)
+                            tempDict[tuple(proj)] = 1
                             if max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
-                        elif hasattr(self, "setStatusBarText"): self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), orngVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
-                            
-
-                    # select the best new projection and say this is now our new projection to optimize    
-                    if len(listOfCandidates) > 0:
-                        (accuracy, projection) = maxFunct(listOfCandidates)
-                        if hasattr(self, "setStatusBarText"):  self.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
+                        
+                        self.optimizedProjectionsCount += 1
+                        if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
+                        if self.optimizedProjectionsCount % 10 == 0 and self.isOptimizationCanceled():
+                            self.finishEvaluation(self.optimizedProjectionsCount)
+                            return
+                    if significantImprovement: break
 
         # #################### RADVIZ, LINEAR_PROJECTION  ################################
-        elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION):
+        elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION, POLYVIZ):
             numClasses = len(self.data.domain.classVar.values)
 
             classListFull = Numeric.transpose(self.data.toNumeric("c")[0])[0]
             newProjDict = {}
 
-            for i in range(len(attrLists)):
-                projection = attrLists[i]
-                accuracy = accuracys[i]
-                optimizedProjection = 1
+            while len(projections) > 0:
+                (accuracy, projection) = projections.pop(0)
 
-                if self.locOptOptimizeProjectionByPermutingAttributes == 1 and not self.useSupervisedPCA:
+                # first try to use the attributes in the projection and evaluate only different permutations of these attributes
+                if self.locOptOptimizeProjectionByPermutingAttributes == 1 and self.useSupervisedPCA == 1:
                     bestProjection = projection; tempProjection = projection
                     bestAccuracy = accuracy; tempAccuracy = accuracy
                     triedPermutationsDict = {}
@@ -917,112 +942,102 @@ class VizRank:
                             triedPermutationsDict[str(newProj)] = 1
                             
                             table = self.graph.createProjectionAsExampleTable(newProj, settingsDict = {"validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                            acc, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
-                            evaluatedProjections += 1
+                            acc, other_results = self.kNNComputeAccuracy(table)
+                            self.optimizedProjectionsCount += 1
                             if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
-                            if self.isOptimizationCanceled(): self.finishEvaluation(evaluatedProjections); return
-                            self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in newProj], 0, {})
-                            self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), acc))
+                            if self.isOptimizationCanceled(): self.finishEvaluation(self.optimizedProjectionsCount); return
+                            if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0:
+                                self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.optimizedProjectionsCount), acc))
                             if acc > bestAccuracy:
                                 bestAccuracy = acc
                                 bestProjection = newProj
+                                self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in newProj], -1, {})
                             if acc > tempAccuracy or acc / tempAccuracy > 0.99:
                                 tempProjection = newProj
                                 tempAccuracy = acc
                     projection = bestProjection
                     accuracy = bestAccuracy
-                
-                while optimizedProjection:
-                    optimizedProjection = 0
-                    significantImprovement = 0
-                    
-                    # in the first step try to find a better projection by substituting an existent attribute with a new one
-                    # in the second step try to find a better projection by adding a new attribute to the circle
-                    for iteration in range(2):
-                        if (len(projection) + iteration > self.locOptMaxAttrsInProj): continue    
-                        if iteration == 1 and optimizedProjection: continue             # if we already found a better projection with replacing an attribute then don't try to add a new atribute
-                        strTotalAtts = orngVisFuncts.createStringFromNumber(lenOfAttributes)
-                        listOfCandidates = []
-                        for (attrIndex, attr) in enumerate(attributes):
-                            if attr in projection: continue
-                            if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
-                            tempList = []
 
-                            # supervised PCA
-                            if self.useSupervisedPCA:
-                                if iteration == 0:  # replace one attribute in each projection with attribute attr
-                                    #projections = [copy(projection) for i in range(max(1, len(projection)/3))]
-                                    projections = [copy(projection) for i in range(len(projection))]
-                                    for i in range(len(projections)): projections[i][len(projection)-1-i] = attr
-                                elif iteration == 1: projections = [projection + [attr]]
+                # take best projection and try to replace one of the attributes with a new attribute
+                # when you can't further improve projections this way try adding a new attribute to the projection
+                # in the first step try to find a better projection by substituting an existent attribute with a new one
+                # in the second step try to find a better projection by adding a new attribute to the circle
+                significantImprovement = 0
+                for iteration in range(2):
+                    if iteration == 1 and not self.locOptAllowAddingAttributes: continue    # if we are not allowed to increase the number of visualized attributes
+                    if (len(projection) + iteration > self.locOptMaxAttrsInProj): continue    
+                    strTotalAtts = orngVisFuncts.createStringFromNumber(lenOfAttributes)
+                    for (attrIndex, attr) in enumerate(attributes):
+                        if attr in projection: continue
+                        if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
+                        tempList = []
 
-                                for proj in projections:
-                                    if newProjDict.has_key(str(proj)): continue
-                                    newProjDict[str(proj)] = 1
-                                    xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(proj, setGraphAnchors = 0)
-                                    table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
-                                    evaluatedProjections += 1
-                                    acc, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
-                                    
-                                    tempList.append((acc, other_results, len(table), newIndices, {"XAnchors": xanchors, "YAnchors": yanchors}))
-                                    if self.saveResultsFromFolds:
-                                        self.addResult(acc, other_results, len(table), attrNames, 0, {"XAnchors": xanchors, "YAnchors": yanchors, "resultsByFolds" : resultsByFolds})
-    
-                                    #self.addResult(acc, other_results, len(table), attrNames, evaluatedProjections, generalDict = {"XAnchors": xanchors, "YAnchors": yanchors})
-                                    if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
-                                    if self.isOptimizationCanceled(): self.finishEvaluation(evaluatedProjections); return
+                        # supervised PCA
+                        if self.useSupervisedPCA:
+                            if iteration == 0:  # replace one attribute in each projection with attribute attr
+                                testProjections = [copy(projection) for i in range(len(projection))]
+                                for i in range(len(testProjections)): testProjections[i][len(projection)-1-i] = attr
+                            elif iteration == 1: testProjections = [projection + [attr]]
 
-                            # ordinary radviz projections
-                            else:
-                                projections = [copy(projection) for i in range(len(projection))]
-                                if iteration == 0:  # replace one attribute in each projection with attribute attr
-                                    count = len(projection)
-                                    for i in range(count): projections[i][i] = attr
-                                elif iteration == 1:
-                                    count = len(projection) + 1
-                                    for i in range(count-1): projections[i].insert(i, attr)
-
-                                XAnchors = self.graph.createXAnchors(count)
-                                YAnchors = self.graph.createYAnchors(count)
-                                validData = self.graph.getValidList(projections[0])
-                                classList = Numeric.compress(validData, classListFull)
+                            for proj in testProjections:
+                                proj.sort()
+                                if newProjDict.has_key(str(proj)): continue
+                                newProjDict[str(proj)] = 1
+                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(proj, setGraphAnchors = 0)
+                                table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
+                                self.optimizedProjectionsCount += 1
+                                acc, other_results = self.kNNComputeAccuracy(table)
                                 
-                                for testProj in projections:
-                                    if newProjDict.has_key(str(testProj)): continue
-                                    newProjDict[str(testProj)] = 1
-                                    
-                                    table = self.graph.createProjectionAsExampleTable(testProj, settingsDict = {"validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                                    acc, other_results, resultsByFolds = self.kNNComputeAccuracy(table)
-                                    tempList.append((acc, other_results, len(table), testProj, {}))
-                                    if self.saveResultsFromFolds:
-                                        self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in testProj], 0, (resultsByFolds and {"resultsByFolds" : resultsByFolds}) or {})
+                                tempList.append((acc, other_results, len(table), newIndices, {"XAnchors": xanchors, "YAnchors": yanchors}))
+                                if self.storeEachPermutation:
+                                    self.addResult(acc, other_results, len(table), attrNames, -1, {"XAnchors": xanchors, "YAnchors": yanchors})
 
-                                    evaluatedProjections += 1
-                                    if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
-                                    if self.isOptimizationCanceled(): self.finishEvaluation(evaluatedProjections); return
+                                if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
+                                if self.isOptimizationCanceled(): self.finishEvaluation(self.optimizedProjectionsCount); return
 
-                            # return only the best attribute placements
-                            if len(tempList) == 0: continue     # can happen if the newProjDict already had all the projections that we tried
-                            (acc, other_results, lenTable, attrList, generalDict) = maxFunct(tempList)
+                        # ordinary radviz projections
+                        else:
+                            testProjections = [copy(projection) for i in range(len(projection))]
+                            if iteration == 0:  # replace one attribute in each projection with attribute attr
+                                count = len(projection)
+                                for i in range(count): testProjections[i][i] = attr
+                            elif iteration == 1:
+                                count = len(projection) + 1
+                                for i in range(count-1): testProjections[i].insert(i, attr)
 
-                            if not self.saveResultsFromFolds and min(acc, accuracy)/max(acc, accuracy) > 0.99:   # if the found projection is at least 99% as good as the one optimized, add it to the list of projections anyway
-                                self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], 0, generalDict = generalDict)
+                            XAnchors = self.graph.createXAnchors(count)
+                            YAnchors = self.graph.createYAnchors(count)
+                            validData = self.graph.getValidList(testProjections[0])
+                            classList = Numeric.compress(validData, classListFull)
                             
-                            if maxFunct(acc, accuracy) == acc:
-                                listOfCandidates.append((acc, attrList))
-                                if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                                if max(acc, accuracy)/min(acc, accuracy) > 1.001:  optimizedProjection = 1
-                                if max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
-                            elif hasattr(self, "setStatusBarText"): self.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), orngVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
+                            for testProj in testProjections:
+                                if newProjDict.has_key(str(testProj)): continue
+                                newProjDict[str(testProj)] = 1
                                 
-                                
+                                table = self.graph.createProjectionAsExampleTable(testProj, settingsDict = {"validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+                                acc, other_results = self.kNNComputeAccuracy(table)
+                                if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0: self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.optimizedProjectionsCount), acc))
+                                if acc > accuracy:
+                                    tempList.append((acc, other_results, len(table), testProj, {}))
+                                if self.storeEachPermutation:
+                                    self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in testProj], -1, {})
 
-                        # select the best new projection and say this is now our new projection to optimize    
-                        if len(listOfCandidates) > 0:
-                            (accuracy, projection) = maxFunct(listOfCandidates)
-                            if hasattr(self, "setStatusBarText"): self.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
+                                self.optimizedProjectionsCount += 1
+                                if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
+                                if self.isOptimizationCanceled(): self.finishEvaluation(self.optimizedProjectionsCount); return
 
-        self.finishEvaluation(evaluatedProjections)
+                        # return only the best attribute placements
+                        if len(tempList) == 0: continue     # can happen if the newProjDict already had all the projections that we tried
+                        (acc, other_results, lenTable, attrList, generalDict) = maxFunct(tempList)
+                        self.insertTempProjection(projections, acc, attrList)
+                        self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], -1, {})
+                        if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
+                        if acc/accuracy > 1.005:  significantImprovement = 1
+
+        else:
+            print "unknown visualization method"
+
+        self.finishEvaluation(self.optimizedProjectionsCount)
 
     # ##############################################################
     # Loading and saving projection files
@@ -1034,6 +1049,7 @@ class VizRank:
         if os.path.splitext(name)[1] != ".proj": name = name + ".proj"
 
         if not results: results = self.results
+        self.abortCurrentOperation = 0
 
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
@@ -1041,9 +1057,9 @@ class VizRank:
         # open, write and save file
         file = open(name, "wt")
         
-        attrs = ["kValue", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "useSupervisedPCA", "saveResultsFromFolds", "attrSubsetSelection", "optimizationType", "attributeCount", "attrDisc", "attrCont", "evaluationTime"]
+        attrs = ["kValue", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "useSupervisedPCA", "attrSubsetSelection", "optimizationType", "attributeCount", "attrDisc", "attrCont", "timeLimit", "projectionLimit"]
         dict = {}
-        for attr in attrs: dict[attr] = self.__dict__[attr]
+        for attr in attrs: dict[attr] = self.__dict__.get(attr)
         dict["dataCheckSum"] = self.data.checksum()
         
         file.write("%s\n%s\n" % (str(dict), str(self.selectedClasses)))
@@ -1075,12 +1091,14 @@ class VizRank:
 
         file.flush()
         file.close()
+        self.abortCurrentOperation = 0
         return i
 
     # load projections from a file
     def load(self, name, ignoreCheckSum = 1):
         self.clearResults()
         self.clearArguments()
+        self.abortCurrentOperation = 0
 
         if self.__class__.__name__ == "OWVizRank":
             import qt
@@ -1117,6 +1135,7 @@ class VizRank:
                 qt.qApp.processEvents()        # allow processing of other events
         file.close()
 
+        self.abortCurrentOperation = 0
         # update loaded results
         return selectedClasses, count
 
@@ -1132,18 +1151,23 @@ class VizRankClassifier(orange.Classifier):
 
         if self.VizRank.__class__.__name__ == "OWVizRank":
             self.VizRank.parentWidget.cdata(data)
-            self.VizRank.useTimeLimit = 1                
+            #self.VizRank.useTimeLimit = 1
+            self.VizRank.timeLimit = self.VizRank.evaluationTime
+            if self.VizRank.optimizeBestProjection:
+                self.VizRank.optimizeTimeLimit = self.VizRank.optimizeBestProjectionTime
+            else:
+                self.VizRank.optimizeTimeLimit = 0
         else:
             self.VizRank.setData(data)
 
         self.VizRank.evaluateProjections()
         
         # do we want to optimize current projection. if yes then spend the same amount of time to optimize it            
-        if self.VizRank.optimizeBestProjection:
+        if self.VizRank.optimizeTimeLimit > 0 or self.VizRank.optimizeProjectionLimit:
             self.VizRank.optimizeBestProjections()
             self.VizRank.removeTooSimilarProjections()
 
-        if self.VizRank.__class__.__name__ == "OWVizRank": del self.VizRank.useTimeLimit
+        #if self.VizRank.__class__.__name__ == "OWVizRank": del self.VizRank.useTimeLimit
 
 
     # for a given example run argumentation and find out to which class it most often fall        
@@ -1188,7 +1212,7 @@ if __name__=="__main__":
     vizrank.useSupervisedPCA = 0
     vizrank.useExampleWeighting = 0
     vizrank.attrSubsetSelection = GAMMA_SINGLE
-    vizrank.evaluationTime = 1
+    vizrank.timeLimit = 1
     vizrank.evaluateProjections()
     """
     vizrank = VizRank(RADVIZ)
@@ -1197,10 +1221,10 @@ if __name__=="__main__":
     vizrank.optimizationType = MAXIMUM_NUMBER_OF_ATTRS    # MAXIMUM_NUMBER_OF_ATTRS,  EXACT_NUMBER_OF_ATTRS
     vizrank.attrSubsetSelection = GAMMA_SINGLE
     vizrank.attrCont = CONT_MEAS_S2N
-    #vizrank.saveResultsFromFolds = 1
+    #vizrank.storeEachPermutation = 1
     #vizrank.load(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\microarray\cancer\leukemia - Radviz - test.proj")
     #vizrank.computeVizRanksAccuracy()
-    vizrank.evaluationTime = 0.2
+    vizrank.timeLimit = 0.2
     vizrank.evaluateProjections()
     #vizrank.findArguments(data[0])
     
