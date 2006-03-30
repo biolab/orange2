@@ -603,11 +603,13 @@ class VizRank:
     def getAttributeSubsetUsingGammaDistribution(self, attrCount):
         maxTries = 50
         triedDict = self.evaluationData.get("triedCombinations", {})
+        projCountWidth = len(triedDict.keys()) / 1000
         
         if self.attrCont == CONT_MEAS_S2NMIX or self.attrSubsetSelection == GAMMA_SINGLE:
             numClasses = len(self.data.domain.classVar.values)
             attributes, attrsByClass = self.evaluationData["attrs"]
-            gammaWidth = len(attributes)/(1000*numClasses)
+            attrWidth = len(attributes)/(1000*numClasses)
+            
             for i in range(maxTries):
                 attrList = [[] for c in range(numClasses)]; attrs = []
                 placed = 0; tried = 0
@@ -615,14 +617,13 @@ class VizRank:
                     ind = tried%numClasses
                     found = 0
                     while not found:
-                        attr = attrsByClass[ind][int(random.gammavariate(1,10 + gammaWidth))%len(attrsByClass[ind])]
+                        attr = attrsByClass[ind][int(random.gammavariate(1, 5 + attrWidth + projCountWidth))%len(attrsByClass[ind])]
                         if attr not in attrList[ind]:
                             attrList[ind].append(attr); placed += 1; attrs.append(attr); found = 1
                     tried += 1
                 attrs.sort()
                 if not triedDict.has_key(tuple(attrs)) and len(attrs) == attrCount:
                     triedDict[tuple(attrs)] = 1
-                    self.evaluationData["triedCombinations"] = triedDict
                     return [attrList]
         else:
             attributes = self.evaluationData["attrs"]
@@ -630,13 +631,12 @@ class VizRank:
                 attrList = []
                 placed = 0; 
                 while placed < attrCount:
-                    attr = attributes[int(random.gammavariate(1,10 + len(attributes)/1000))%len(attributes)]
+                    attr = attributes[int(random.gammavariate(1,5 + (len(attributes)/1000) + projCountWidth))%len(attributes)]
                     if attr not in attrList:
                         attrList.append(attr); placed += 1
                 attrList.sort()
                 if not triedDict.has_key(tuple(attrList)):
                     triedDict[tuple(attrList)] = 1
-                    self.evaluationData["triedCombinations"] = triedDict
                     return [attrList]
         return None
 
