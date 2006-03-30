@@ -1,5 +1,5 @@
 compactness	circularity	distance circularity	radius ratio	pr.axis aspect ratio	max.length aspect ratio	scatter ratio	elongatedness	pr.axis rectangularity	max.length rectangularity	scaled variance along major axis	scaled variance along minor axis	scaled radius of gyration	skewness about major axis	skewness about minor axis	kurtosis about minor axis	kurtosis about major axis	hollows ratio	vehicle
-c	c	c	c	c	c	c	c	c	c	c	c	c	c	c	c	c	c	d
+c	c	c	c	c	c	c	c	c	c	c	c	c	c	c	c	c	c	bus van saab opel
 																		class
 95	48	83	178	72	10	162	42	20	159	176	379	184	70	6	16	187	197	van
 91	41	84	141	57	9	149	45	19	143	170	330	158	72	9	14	189	199	van
