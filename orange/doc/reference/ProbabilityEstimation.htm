@@ -114,7 +114,7 @@
 
 <P>This conditional probability estimator has different estimators for different values of conditional attribute. For instance, when used for computing p(c|A) in naive Bayesian classifier, it would have an estimator for each possible value of attribute A. This does not mean that the estimators were constructed by different constructors, i.e. using different probability estimation methods. This class is normally used when we only have a probability estimator constructor for unconditional probabilities but need to construct a conditional probability estimator; the constructor is used to construct estimators for subsets of original example set and the resulting estimators are stored in <CODE>ConditionalProbabilityEstimator_ByRows</CODE>.</P>
 
-<A name="ConditionalProbabilityEstimatorConstructor_ByRows">
+<A name="ConditionalProbabilityEstimatorConstructor_ByRows"></A>
 <H3>ConditionalProbabilityEstimatorConstructor_ByRows</H3>
 
 <P class=section>Attributes</P>
@@ -147,7 +147,8 @@ p(c) = (Nc+1) / (N+n)
 
 <P>The resulting estimator is again of type <CODE>ProbabilityEstimator_FromDistribution</CODE>.</P>
 
-<H3>ProbabilityEstimatorConstructor_Laplace</H3>
+<a name="mestimate"></a>
+<H3>ProbabilityEstimatorConstructor_m</H3>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
