@@ -1,12 +1,14 @@
-import orange, re, time
+import orange, time
 
-def BayesLearner(examples = None, weightID = 0, **argkw):
-    tl = apply(BayesLearnerClass, (), argkw)
-    if examples:
-        tl = tl(examples, weightID)
-    return tl
-
-class BayesLearnerClass:
+class BayesLearner(orange.Learner):
+    def __new__(cls, examples = None, weightID = 0, **argkw):
+        self = orange.Learner.__new__(cls, **argkw)
+        if examples:
+            self.__init__(**argkw)
+            return self.__call__(examples, weightID)
+        else:
+            return self
+        
     def __init__(self, **argkw):
         self.learner = None
         self.__dict__.update(argkw)
@@ -50,45 +52,30 @@ def printModel(bayesclassifier):
     frmtStr=' %10.3f'*nValues
     classes=" "*20+ ((' %10s'*nValues) % tuple([i[:10] for i in bayesclassifier.classVar.values]))
     print classes
-    print "class probabilities "+(frmtStr % tuple(bayesclassifier.probabilities.classes))
+    print "class probabilities "+(frmtStr % tuple(bayesclassifier.distribution))
     print
 
-    for i in bayesclassifier.probabilities:
+    for i in bayesclassifier.conditionalDistributions:
         print "Attribute", i.variable.name
         print classes
         for v in range(len(i.variable.values)):
-            print ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v].distribution))
+            print ("%20s" % i.variable.values[v][:20]) + (frmtStr % tuple(i[v]))
         print
 
     
-def toXMLCharset(s):
-    import re
-    p = re.compile('(<)')
-    s = p.sub('&lt;', s)
-
-    p = re.compile('(>)')
-    s = p.sub('&gt;', s)
-    return s
-
-# previously toXMLCharset. Filters out special chars and replaces them with
-# corresponding XML items
 
 def XC(s):
-    p = re.compile('(<)')
-    s = p.sub('&lt;', s)
-
-    p = re.compile('(>)')
-    s = p.sub('&gt;', s)
-    return s
+    return s.replace("<", "&lt;").replace(">", "&gt;")
 
 # this filters the ID string, it should not contain any special symbols,
 # only letters and numbers and _. We are using IDs in expressions!
 
 def XID(s):
+    import re
     p = re.compile('[^a-zA-Z0-9_]')
     return p.sub('', s)
 
-def saveXML(file, model, includeClasses=0):
+def saveXML(file, model):
     import types
     fopened=0
     if (type(file)==types.StringType):
@@ -123,7 +110,7 @@ def saveXML(file, model, includeClasses=0):
                 f.write('      <inputtype>%s</inputtype>\n' % getattr(a, 'xInputType', 'pulldown'))
         else:
             f.write('      <name>%s</name>\n' % getattr(a, 'xName', a.name))
-            f.write('      <description>%s</description>\n' % getattr(a, 'xDescription', 'lala'))
+            f.write('      <description>%s</description>\n' % getattr(a, 'xDescription', ''))
             f.write('      <type>categorical</type>\n')
             f.write('      <values>%s</values>\n' % reduce(lambda x,y: x+';'+y, [i for i in a.values]))
 #        if getattr(a, 'xDescription', None): f.write('     <description>%s</description>\n' % i.xDescription)
@@ -172,70 +159,3 @@ def saveXML(file, model, includeClasses=0):
 
     if fopened:
         f.close()
-
-
-##def saveXML(file, bayesclassifier, includeClasses=0):
-##    import types
-##    fopened=0
-##    if (type(file)==types.StringType):
-##        f=open(file, "wt")
-##        fopened=1
-##
-##    f.write('<?xml version="1.0" ?>\n')
-##    f.write('<model name="Confined">\n')
-##    f.write('<description>Based on preoperative predictors computes the probability that prostate cancer is organ-confined.</description>\n')
-##    f.write('<author>TBA</author>\n')
-##    f.write('<date>1999-03-20</date>\n')
-##    f.write('<outcome>Organ-Confined Prostate Cancer</outcome>\n')
-##
-##    if includeClasses or (len(bayesclassifier.classVar.values)>2):
-##        f.write('<classes>'+reduce(lambda x,y: x+"; "+y, [i for i in bayesclassifier.classVar.values])+'</classes>')
-##        
-##    f.write('<variables>\n')
-##    for i in bayesclassifier.domain.attributes:
-##        f.write('  <var>\n')
-##        s = '    <name>%s</name>' % i.name
-##        f.write(s)
-##        f.write('    <type>categorical</type>\n')
-##        f.write('    <input>pulldown</input>\n')
-##        f.write('    <values>')
-##        n = 0
-##        for j in i.values:
-##          if n: f.write(';'),
-##          n=1
-##          s = '%s' % j;
-##          f.write(toXMLCharset(s))
-##        f.write('</values>\n')
-##        f.write('    <default>NA</default>\n')
-##        f.write('    <page>1</page>\n')
-##        f.write('  </var>\n')
-##    f.write('</variables>\n')
-##
-##    f.write('<pages>\n')
-##    f.write('  <page id="1">Patient Data</page>\n')
-##    f.write('</pages>\n')
-##    
-##    f.write('<modeldefinition type="naivebayes">\n')
-##    # prob yes, no (should be reversed)
-##    frmtStr=('%5.3f; '*len(bayesclassifier.classVar.values))[:-2]
-##    s = ('  <classprobabilities>'+frmtStr+'</classprobabilities>') % tuple(bayesclassifier.distribution)
-##    f.write(s)
-##    f.write('  <contingencymatrix>\n')
-##    for i in bayesclassifier.conditionalDistributions:
-##        # prob no, yes (reversed as above)
-##        s = '    <conditionalprobability attribute="%s">' % i.variable.name
-##        f.write(s)
-##        n = 0
-##        for j in i:
-##            if n: f.write(' ; '),
-##            n=1
-####            s = '%5.3f,%5.3f' % (j[0], j[1])
-##            f.write(frmtStr % tuple(j))
-##        f.write('</conditionalprobability>\n')
-##    f.write('  </contingencymatrix>\n')
-##    f.write('</modeldefinition>\n')
-##
-##    f.write('</model>\n')
-##
-##    if fopened:    
-##        f.close()
