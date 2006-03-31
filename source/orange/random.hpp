@@ -124,13 +124,13 @@ extern PRandomGenerator globalRandom;
 
 class ORANGE_API TSimpleRandomGenerator {
 public:
-  int seed;
+  unsigned int seed;
   
   TSimpleRandomGenerator(int aseed = 0)
   : seed(aseed)
   {}
 
-  int rand ()
+  unsigned int rand ()
   { return(((seed = seed * 214013L + 2531011L) >> 16) & 0x7fff); }
 
   int operator()(const int &y)
