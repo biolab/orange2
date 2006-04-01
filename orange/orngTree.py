@@ -48,7 +48,8 @@ class TreeLearnerClass:
   def instance(self):
     learner = orange.TreeLearner()
 
-    if hasattr(self, "split"):
+    hasSplit = hasattr(self, "split")
+    if hasSplit:
       learner.split = self.split
     else:
       learner.split = orange.TreeSplitConstructor_Combined()
@@ -68,6 +69,8 @@ class TreeLearnerClass:
       measure = getattr(self, "measure", None)
       if type(measure) == str:
         measure = measures[measure]()
+      if not hasSplit and not measure:
+        measure = orange.MeasureAttribute_gainRatio()
 
       learner.split.continuousSplitConstructor.measure = measure
       learner.split.discreteSplitConstructor.measure = measure
