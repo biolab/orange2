@@ -146,12 +146,13 @@ class CanonicFuncCounter:
 import random
 
 class BestOnTheFly:
-    def __init__(self, compare=cmp, seed = 0):
+    def __init__(self, compare=cmp, seed = 0, callCompareOn1st = False):
         self.randomGenerator = random.Random(seed)
         self.compare=compare
         self.wins=0
         self.bestIndex, self.index = -1, -1
         self.best = None
+        self.callCompareOn1st = callCompareOn1st
 
     def candidate(self, x):
         self.index += 1
@@ -161,7 +162,10 @@ class BestOnTheFly:
             self.bestIndex=self.index
             return 1
         else:
-            cmpr=self.compare(x, self.best)
+            if self.callCompareOn1st:
+                cmpr=self.compare(x[0], self.best[0])
+            else:
+                cmpr=self.compare(x, self.best)
             if cmpr>0:
                 self.best=x
                 self.wins=1
@@ -184,14 +188,14 @@ class BestOnTheFly:
         else:
             return None
 
-def selectBest(x, compare=cmp, seed = 0):
-    bs=BestOnTheFly(compare, seed)
+def selectBest(x, compare=cmp, seed = 0, callCompareOn1st = False):
+    bs=BestOnTheFly(compare, seed, callCompareOn1st)
     for i in x:
         bs.candidate(i)
     return bs.winner()
 
-def selectBestIndex(x, compare=cmp, seed = 0):
-    bs=BestOnTheFly(compare, seed)
+def selectBestIndex(x, compare=cmp, seed = 0, callCompareOn1st = False):
+    bs=BestOnTheFly(compare, seed, callCompareOn1st)
     for i in x:
         bs.candidate(i)
     return bs.winnerIndex()
