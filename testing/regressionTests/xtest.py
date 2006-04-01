@@ -26,7 +26,7 @@ def findFileNode(name, dir):
         node = None
         
     newnode = dom1.createElement("FILE")
-    newnode.setAttribute("name", dir+"/"+name)
+    newnode.setAttribute("name", name)
     return newnode, True
 
     
