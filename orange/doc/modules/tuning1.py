@@ -27,4 +27,4 @@ tuner = orngWrap.Tune1Parameter(object=learner,
                                 evaluate = orngStat.AUC, verbose=2)
 classifier = tuner(data)
 
-print "Optimal setting: ", learner.minSubset
+print "Optimal setting: ", learner.split.continuousSplitConstructor.minSubset
