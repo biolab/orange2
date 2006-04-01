@@ -30,12 +30,12 @@ C4.5 with -m 1 and -s
 
 petal width <= 0.6: Iris-setosa (50.0) 
 petal width > 0.6: 
-|    petal width <= 1.7: 
-|    |    petal length <= 4.9: Iris-versicolor (48.0) 
-|    |    petal length > 4.9: 
-|    |    |    petal width <= 1.5: Iris-virginica (3.0) 
-|    |    |    petal width > 1.5: Iris-versicolor (3.0) 
-|    petal width > 1.7: Iris-virginica (46.0)
+|   petal width > 1.7: Iris-virginica (46.0) 
+|   petal width <= 1.7: 
+|   |   petal length <= 4.9: Iris-versicolor (48.0) 
+|   |   petal length > 4.9: 
+|   |   |   petal width <= 1.5: Iris-virginica (3.0) 
+|   |   |   petal width > 1.5: Iris-versicolor (3.0)
 
 Classification accuracy: 0.933 (converted to tree: 0.933)
 Brier score: 0.128 (converted to tree: 0.128)
