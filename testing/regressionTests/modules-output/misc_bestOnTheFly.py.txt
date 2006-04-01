@@ -1,2 +1,3 @@
-(EnumVariable 'lym_dimin', 0.56470930576324463)
+(0.56470930576324463, EnumVariable 'lym_dimin')
+(0.56470930576324463, EnumVariable 'lym_dimin')
 EnumVariable 'lym_dimin' ,  0.564709305763
