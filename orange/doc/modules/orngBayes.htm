@@ -4,7 +4,7 @@
 <body>
 <h1>orngBayes: A Helper Module for Naive Bayesian Classifier</h1>
 
-<p>Module orngBayes contains a Bayesian learner which uses the one from Orange, with the only difference that using the m-estimate is much simpler than with the learner built in Orange. Besides, the module has functions for printing out the classifier in a textual form or as a (proprietary) XML.</p>
+<p>Module orngBayes contains a Bayesian learner which uses the one from Orange, with the only difference that using the m-estimate is much simpler than with the learner built in Orange. Besides, the module has a function for printing out the classifier in a textual form.</p>
 
 <h2>Bayes Learner</h2>
 
@@ -86,9 +86,5 @@ Attribute water-project-cost-sharing
 ... and so on through all the attributes.</P>
 
 <P>This function is unable to print out the model if it contains continuous attributes or advanced probability estimators which wouldn't store the pre-computed probabilities (we have none like this at the moment).</P>
-
-<h2>Saving to XML</h2>
-
-<P>It is possible to save the bayesian model in form a of proprietary XML (DSScheme). The function is named <code>saveXML(file, model)</code>, where <code>file</code> can be an opened file or a file name.</P>
 
 </body> </html>

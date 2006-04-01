@@ -126,8 +126,8 @@
 
 <p class=section>Methods</P>
 <DL class=attributes>
-<dt>__init__(compare = cmp, seed = 0)</dt>
-<dd>Constructor can be given a compare function and a random seed; both arguments are optional. The default function for comparison supposes that the objects can be compared by the usual comparison operators. If the seed is not given, a seed of 0 is used to ensure that the same experiment always gives the same results, despite pseudo-randomness.</dd>
+<dt>__init__(compare = cmp, seed = 0, callCompareOn1st = False)</dt>
+<dd>Constructor can be given a compare function and a random seed; both arguments are optional. The default function for comparison supposes that the objects can be compared by the usual comparison operators. If the seed is not given, a seed of 0 is used to ensure that the same experiment always gives the same results, despite pseudo-randomness. If <code>callCompareOn1st</code> is set, <code>BestOnTheFly</code> will suppose that the candidates are lists are tuples, and it will call <code>compare</code> with the first element of the tuple.</dd>
 
 <dt>candidate(x)</dt>
 <dd>Candidates are fed to a function <code>candidate</code>, which accepts a single argument (the candidate).</dd>
@@ -139,20 +139,20 @@
 <dd>Returns the index of the optimal object within the sequence of the candidates.</dd>
 </DL>
 
-<h3>selectBest(l, compare=cmp, seed=0)</h3>
+<h3>selectBest(l, compare = cmp, seed = 0, callCompareOn1st = False)</h3>
 
 <P>Function <code>selectBest</code> (it is a separate function, not a method of <code>BestOnTheFly</code>) returns the optimal object from list <code>l</code>. The function can be used if the candidates are already in the list, so using the more complicated <code>BestOnTheFly</code> directly is not needed.</P>
 
 <P>To demonstrate the use of <code>BestOnTheFly</code> and present <code>selectBest</code>: here's how <code>selectBest</code> is implemented.</P>
 
-<xmp class="code">def selectBest(x, compare=cmp, seed = 0):
-    bs=BestOnTheFly(compare, seed)
+<xmp class="code">def selectBest(x, compare=cmp, seed = 0, callCompareOn1st = False):
+    bs=BestOnTheFly(compare, seed, callCompareOn1st)
     for i in x:
         bs.candidate(i)
     return bs.winner()
 </xmp>
 
-<h3>selectBestIndex(l, compare=cmp, seed=0)</h3>
+<h3>selectBestIndex(l, compare=cmp, seed=0, callCompareOn1st = False)</h3>
 
 <P>Similar to <code>selectBest</code> except that it doesn't return the best object but its index in the list <code>l</code>.</P>
 
@@ -173,15 +173,16 @@
 
 data = orange.ExampleTable("lymphography")
 
-findBest = orngMisc.BestOnTheFly(orngMisc.compare2_lastBigger)
+findBest = orngMisc.BestOnTheFly(callCompareOn1st = True)
 
 for attr in data.domain.attributes:
-    findBest.candidate((attr, orange.MeasureAttribute_gainRatio(attr, data)))
+    findBest.candidate((orange.MeasureAttribute_gainRatio(attr, data), attr))
 
 print findBest.winner()
 </xmp>
 
-<P>Our candidates are tuples consisting of attributes and their gain ratios. The compare function is <code>orngMisc.compare2_lastBigger</code> which compares the last element of the tuple, the gain ratio.</P>
+<P>Our candidates are tuples gain ratios and attributes, so we set <code>callCompareOn1st</code> to make the compare function compare the first element (gain ratios). We could achieve the same by initializing the object like this:</P>
+<xmp class="code">findBest = orngMisc.BestOnTheFly(orngMisc.compare2_firstBigger)</xmp>
 
 <P>The other way to do it is through indices.</P>
 
