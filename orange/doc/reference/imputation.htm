@@ -92,7 +92,7 @@ imputer.defaults["LENGTH"] = 1234
 <DT>deterministic</DT>
 <DD>If true (default is false), random generator is initialized for each example using the example's hash value as a seed. This results in same examples being always imputed the same values.</DD>
 
-<A name="model">
+<A name="model"></A>
 <H2>Model-based imputation</H2>
 
 <P>Model-based imputers learn to predict the attribute's value from values of other attributes. <CODE>ImputerConstructor_model</CODE> are given a learning algorithm (two, actually - one for discrete and one for continuous attributes) and they construct a classifier for each attribute. The constructed imputer <CODE>Imputer_model</CODE> stores a list of classifiers which are used when needed.</P>
@@ -260,7 +260,7 @@ TYPE: SIMPLE-T -> SIMPLE-T
 
 <P>The first continuous attribute, "ERECTED" is defined. Its value remains 1874 and the additional attribute "ERECTED_def" has value "def". Not so for "LENGTH". Its undefined value is replaced by the average (1567) and the new attribute has value "undef". The undefined discrete attribute "CLEAR-G" (and all other undefined discrete attributes) is assigned the value "NA".</P>
 
-<A name="use">
+<A name="use"></A>
 <H2>Using imputers</H2>
 
 <P>To properly use the imputation classes in learning process, they must be trained on training examples only. Imputing the missing values and subsequently using the data set in cross-validation will give overly optimistic results.</P>
