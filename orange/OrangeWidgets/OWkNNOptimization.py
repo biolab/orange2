@@ -879,28 +879,31 @@ class OWInteractionAnalysis(OWWidget):
         white = QColor(255,255,255)
         self.graph.clear()
         self.graph.removeMarkers()
-        if self.results == None or self.dialogType not in [VIZRANK, CLUSTER]: return
+        if not self.results or self.dialogType not in [VIZRANK, CLUSTER]: return
 
         self.projectionCount = int(self.projectionCount)
         self.attributeCount = int(self.attributeCount)
 
         attributes = []
         attrDict = {}
-
+        
         best = self.results[0][ACCURACY]
         worst= self.results[min(len(self.results)-1, self.projectionCount)][ACCURACY]
 
         if self.sortAttributesByQuality:
             attributes = self.attributes[:self.attributeCount]
+        else:
+            attrCountDict = {}
+            for index in range(min(self.projectionCount, len(self.results))):
+                for attr in self.results[index][3]:
+                    attrCountDict[attr] = attrCountDict.get(attr, 0) + 1
+            attrCounts = [(attrCountDict[attr], attr) for attr in attrCountDict.keys()]
+            attrCounts.sort()
+            attrCounts.reverse()
+            attributes = [attr[1] for attr in attrCounts[:self.attributeCount]]
         
         for index in range(min(len(self.results), self.projectionCount)):
             attrs = self.results[index][ATTR_LIST]
-
-            if not self.sortAttributesByQuality:
-                if len(attributes) < self.attributeCount:
-                    for attr in attrs:
-                        if attr not in attributes and len(attributes) < self.attributeCount:
-                            attributes.append(attr)
 
             for i in range(len(attrs)):
                 for j in range(i+1, len(attrs)):
