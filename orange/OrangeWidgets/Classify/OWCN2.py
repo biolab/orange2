@@ -23,8 +23,8 @@ class CN2ProgressBar(orange.ProgressCallback):
         self.widget.progressBarSet(100*(self.start+(self.end-self.start)*value))
 
 class OWCN2(OWWidget):
-    settingsList=["QualityButton","CoveringButton","m", "MaxRuleLength", "MinCoverage",
-         "BeamWidth", "Alpha", "Weight", "stepAlpha"]
+    settingsList=["QualityButton","CoveringButton","m", "MaxRuleLength", "useMaxRuleLength",
+                  "MinCoverage", "BeamWidth", "Alpha", "Weight", "stepAlpha"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"CN2")
@@ -38,6 +38,7 @@ class OWCN2(OWWidget):
         self.BeamWidth=5
         self.MinCoverage=0
         self.MaxRuleLength=0
+        self.useMaxRuleLength=False
         self.Weight=0.9
         self.m=2
         self.LearnerName=""
@@ -77,18 +78,17 @@ class OWCN2(OWWidget):
         QRadioButton("WRACC",self.ruleQualityBG)
         self.connect(self.ruleQualityBG,SIGNAL("released(int)"),self.qualityButtonPressed)
         
-        OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha",
+        OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha (vs. default rule)",
                 orientation="horizontal", labelWidth=labelWidth,
-                tooltip="Significance of a complete rule compared to original data.")
-        OWGUI.doubleSpin(self.ruleValidationGroup, self, "stepAlpha", 0, 1,0.001, label="Alpha (Stepwise)",
+                tooltip="Significance of rules compared to original data.")
+        OWGUI.doubleSpin(self.ruleValidationGroup, self, "stepAlpha", 0, 1,0.001, label="Stopping Alpha (vs. parent rule)",
                 orientation="horizontal", labelWidth=labelWidth,
-                tooltip="Requested significance of each specialization of a rule.")
+                tooltip="Significance of each specialization of a rule.")
         OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum Coverage",
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
                 "Minimum number of examples a rule must\ncover (use 0 for dont care)")
-        OWGUI.spin(self.ruleValidationGroup, self, "MaxRuleLength", 0, 100,label="Max. Rule Length",
-                orientation="horizontal", labelWidth=labelWidth, tooltip=
-                "Maximum number of conditions in the left\npart of the rule (use 0 for dont care)")
+        OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Limit Max. Rule Length:", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
+                            tooltip="Maximum number of conditions in the left\npart of the rule (use 0 for dont care)")        
         
         """
         self.coveringAlgBG=OWGUI.radioButtonsInBox(self.coveringAlgGroup, self, "CoveringButton",
@@ -147,10 +147,14 @@ class OWCN2(OWWidget):
         elif self.QualityButton==2:
             ruleFinder.evaluator=orngCN2.WRACCEvaluator()
 
+        if self.useMaxRuleLength:
+            maxRuleLength = self.MaxRuleLength
+        else:
+            maxRuleLength = 0
         ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS(alpha=self.stepAlpha,
-                    min_coverage=self.MinCoverage, max_rule_complexity=self.MaxRuleLength)
+                    min_coverage=self.MinCoverage, max_rule_complexity=maxRuleLength)
         ruleFinder.validator=orange.RuleValidator_LRS(alpha=self.Alpha,
-                    min_coverage=self.MinCoverage, max_rule_complexity=self.MaxRuleLength)
+                    min_coverage=self.MinCoverage, max_rule_complexity=maxRuleLength)
         ruleFinder.ruleFilter=orange.RuleBeamFilter_Width(width=self.BeamWidth)
         self.learner.ruleFinder=ruleFinder
 
