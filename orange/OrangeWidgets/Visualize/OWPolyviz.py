@@ -70,6 +70,8 @@ class OWPolyviz(OWWidget):
         self.graph.useDifferentColors = 1
         self.graph.tooltipKind = 0
         self.graph.tooltipValue = 0
+
+        self.graph.showAxisScale = 0
                 
         self.data = None
         self.attributeSelectionList = None

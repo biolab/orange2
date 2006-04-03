@@ -81,6 +81,8 @@ class OWLinProj(OWWidget):
         self.graph.tooltipValue = 0
         self.graph.scaleFactor = 1.0
 
+        self.graph.showAxisScale = 0
+
         # cluster dialog
         self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, name)
         self.graph.clusterOptimization = self.clusterDlg
