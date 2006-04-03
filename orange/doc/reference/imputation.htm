@@ -273,7 +273,7 @@ TYPE: SIMPLE-T -> SIMPLE-T
 
 <H3>Module orngImpute</H3>
 
-<P>Most of Orange's learning algorithms do not use imputers, because they can appropriately handle the missing values. Bayesian classifier, for instance, simply skips the corresponding attributes in the formula, while classification/regression trees have components for handling the missing values in various ways.</P>
+<P>Most of Orange's learning algorithms do not use imputers because they can appropriately handle the missing values. Bayesian classifier, for instance, simply skips the corresponding attributes in the formula, while classification/regression trees have components for handling the missing values in various ways.</P>
 
 <P>If for any reason you want to use these algorithms to run on imputed data, you can use the wrappers provide in the module orngImpute. The module's description is a matter of a separate page, but we shall show its code here as another demonstration of how to use the imputers - logistic regression is implemented essentially the same as the below classes.</P>
 
@@ -302,7 +302,7 @@ class ClassifierWithImputation(orange.Classifier):
 <P>Note that this code is slightly simplified, although the omitted details handle non-essential technical issues that are unrelated to imputation.</P>
 
 
-<A name="callback">
+<A name="callback"></A>
 <H2>Writing Your Own Imputer Constructor</H2>
 
 <P>Imputation classes provide the Python-callback functionality (not all Orange classes do so, refer to the documentation on <A href="callbacks.htm">subtyping the Orange classes in Python</A> for a list). If you want to write your own imputation constructor or an imputer, you need to simply program a Python function that will behave like the built-in Orange classes (and even less, for imputer, you only need to write a function that gets an example as argument, imputation for example tables will then use that function).</P>
