@@ -9,11 +9,11 @@
 algorithms. It includes functions for data sampling and splitting, and
 for testing learners. It implements cross-validation, leave-one out,
 random sampling, learning curves. All functions return result in the
-same for - an instance of <CODE>ExperimentResults</CODE> or, in case
+same for - an instance of <CODE>ExperimentResults</CODE>, described at the end of the page, or, in case
 of learning curves, a list of <CODE>ExperimentResults</CODE>. This
 object(s) can be passed to statistical function for model evaluation
 (classification accuracy, Brier score, ROC analysis...) available in
-module <CODE>orngStat</CODE>.</p>
+module <a href="orngStat.htm"><CODE>orngStat</CODE></a>.</p>
 
 <P>Your scripts will thus basically conduct experiments using
 functions in <CODE>orngTest</CODE>, covered on this page and then
@@ -23,10 +23,6 @@ writing their own statistical measures of the quality of models,
 description of <CODE>TestedExample</CODE> and
 <CODE>ExperimentResults</CODE> are available at the end of this
 page.</P>
-
-<hr>
-
-<H2>Functions</H2>
 
 <P><B>An important change over previous versions of Orange:</B> Orange
 has been "de-randomized". Running the same script twice will generally
@@ -65,11 +61,9 @@ and printed by the following function (function uses list
 </XMP>
 
 
-<h3>Common Arguments</H3>
+<h2>Common Arguments</H2>
 
-<P>Besides the specialized arguments for particular sampling
-procedures, many function in this module accept a set of common
-arguments.</P>
+<P>Many function in this module use a set of common arguments, which we define here.</P>
 
 <DL class=attributes>
 <DT>learners</DT>
@@ -177,9 +171,10 @@ res = orngTest.proportionTest(learners, data, 0.7, 100, pps = [("L", classnoise)
 </DL>
 
 
-<H3>Functions</H3>
+<H2>Sampling and Testing Functions</H2>
 
-<DL class=functions>
+
+<DL class=attributes>
 <DT>proportionTest(learners, data, learnProp, times = 10,
 strat = ..., pps = [])</DT>
 <DD>Splits the data with <CODE>learnProp</CODE> of examples in the learning and the rest in the testing set. The test is repeated for a given number of <CODE>times</CODE> (default 10). Division is stratified by default. Function also accepts keyword arguments for randomization and storing classifiers.</P>
@@ -301,7 +296,6 @@ for i, p in enumerate(prop):
 
 </DL>
 
-<hr>
 
 <H2>Classes</H2>
 
