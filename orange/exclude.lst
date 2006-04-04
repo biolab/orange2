@@ -15,3 +15,4 @@ orange/c45.dll
 orange/orangeWidgets/Genomics/OWRules.py
 orange/orangeWidgets/Genomics/OWDisplayMotifs.py
 orange/orangeWidgets/Genomics/OWApproxProfiles.py
+orange/doc/style.css
