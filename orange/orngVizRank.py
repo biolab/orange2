@@ -152,7 +152,7 @@ class VizRank:
         self.locOptOptimizeProjectionByPermutingAttributes = 1      # try to improve projection by switching pairs of attributes in a projection
         self.locOptAllowAddingAttributes = 0                        # do we allow increasing the number of visualized attributes
         self.locOptMaxAttrsInProj = 20                              # if self.locOptAllowAddingAttributes == 1 then what is the maximum number of attributes in a projection
-        self.locOptAttrsToTry = 100                                 # number of best ranked attributes to try 
+        self.locOptAttrsToTry = 50                                 # number of best ranked attributes to try 
         self.locOptProjCount = 20                                   # try to locally optimize this number of best ranked projections
         self.attributeNameIndex = {}                                # dict with indices to attributes
                 
@@ -923,18 +923,20 @@ class VizRank:
                 (accuracy, projection) = projections.pop(0)
 
                 # first try to use the attributes in the projection and evaluate only different permutations of these attributes
-                if self.locOptOptimizeProjectionByPermutingAttributes == 1 and self.useSupervisedPCA == 1:
+                if self.locOptOptimizeProjectionByPermutingAttributes == 1 and self.useSupervisedPCA == 0:
                     bestProjection = projection; tempProjection = projection
                     bestAccuracy = accuracy; tempAccuracy = accuracy
                     triedPermutationsDict = {}
                     failedConsecutiveTries = 0
+                    tries = 0
                     XAnchors = self.graph.createXAnchors(len(projection))
                     YAnchors = self.graph.createYAnchors(len(projection))
                     validData = self.graph.getValidList(projection)
                     classList = Numeric.compress(validData, classListFull)
-                    while failedConsecutiveTries < 30:
+                    while failedConsecutiveTries < 5 and tries < 50:
                         #newProj = orngVisFuncts.switchTwoElements(tempProjection, nrOfTimes = 3)
                         newProj = orngVisFuncts.switchTwoElementsInGroups(tempProjection, numClasses, 3)
+                        tries += 1
                         if triedPermutationsDict.has_key(str(newProj)):
                             failedConsecutiveTries += 1
                         else:
@@ -951,7 +953,7 @@ class VizRank:
                             if acc > bestAccuracy:
                                 bestAccuracy = acc
                                 bestProjection = newProj
-                                self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in newProj], -1, {})
+                                #self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in newProj], -1, {})
                             if acc > tempAccuracy or acc / tempAccuracy > 0.99:
                                 tempProjection = newProj
                                 tempAccuracy = acc
@@ -1029,10 +1031,11 @@ class VizRank:
                         # return only the best attribute placements
                         if len(tempList) == 0: continue     # can happen if the newProjDict already had all the projections that we tried
                         (acc, other_results, lenTable, attrList, generalDict) = maxFunct(tempList)
-                        self.insertTempProjection(projections, acc, attrList)
-                        self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], -1, {})
-                        if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                        if acc/accuracy > 1.005:  significantImprovement = 1
+                        if acc/accuracy > 1.005:
+                            self.insertTempProjection(projections, acc, attrList)
+                            self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], -1, {})
+                            if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
+                        if acc/accuracy > 1.01:  significantImprovement = 1
 
         else:
             print "unknown visualization method"
