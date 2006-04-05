@@ -935,7 +935,7 @@ def computeCDT(res, classIndex=-1, **argkw):
                 CDTs[i].D += expCDTs[i].D
                 CDTs[i].T += expCDTs[i].T
         for i in range(res.numberOfLearners):
-            if isCDTEmpty(CDT[0]):
+            if isCDTEmpty(CDTs[0]):
                 return corn.computeCDT(res, classIndex, useweights)
         
         return CDTs
@@ -955,6 +955,9 @@ def ROCsFromCDT(cdt, **argkw):
         import warnings
         warnings.warn("Can't compute AUC: one or both classes have no instances")
         return (-1,)*8
+    if N < 2:
+        import warnings
+        warnings.warn("Can't compute AUC: one or both classes have too few examples")
 
     som = (C-D)/N
     c = 0.5*(1+som)
@@ -982,14 +985,14 @@ AROCFromCDT = ROCsFromCDT  # for backward compatibility, AROCFromCDT is obsolote
 # are divided by 'divideByIfIte'. Additional flag is returned which is True in
 # the former case, or False in the latter.
 def AUC_x(cdtComputer, ite, all_ite, divideByIfIte, computerArgs):
-    cdt = cdtComputer(*(ite, ) + computerArgs)
-    if not isCDTEmpty(cdt[0]):
-        return [x[-1]/divideByIfIte for x in ROCsFromCDT(cdt)], True
+    cdts = cdtComputer(*(ite, ) + computerArgs)
+    if not isCDTEmpty(cdts[0]):
+        return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T)/divideByIfIte for cdt in cdts], True
         
     if all_ite:
          cdt = cdtComputer(*(all_ite, ) + computerArgs)
          if not isCDTEmpty(cdt[0]):
-             return [x[-1] for x in ROCsFromCDT(cdt)], False
+             return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T) for cdt in cdts], False
 
     return False, False
 
@@ -1027,7 +1030,7 @@ def AUC_binary(res, useWeights = True):
     if res.numberOfIterations > 1:
         return AUC_iterations(AUC_i, splitByIterations(res), (-1, useWeights, res, res.numberOfIterations))
     else:
-        return AUC_i(res, -1, useWeights)
+        return AUC_i(res, -1, useWeights)[0]
 
 # AUC for multiclass problems
 def AUC_multi(res, useWeights = True, method = 0):
