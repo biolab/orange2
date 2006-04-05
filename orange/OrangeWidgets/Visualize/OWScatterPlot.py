@@ -28,7 +28,6 @@ class OWScatterPlot(OWWidget):
                     "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
                     "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
                     "clusterClassifierName", "learnerIndex", "colorSettings", "VizRankLearnerName"]
-    jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
     contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY", (["attrLabel", "attrShape", "attrSize"], DomainContextHandler.Optional)])}

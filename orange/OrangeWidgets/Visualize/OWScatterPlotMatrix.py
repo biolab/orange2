@@ -15,7 +15,7 @@ from OWScatterPlotGraph import OWScatterPlotGraph
 #import qt
 import orngInteract
 import statc
-import OWDlgs
+import OWDlgs, OWGUI
 from math import sqrt
 
 class QMyLabel(QLabel):
@@ -33,10 +33,7 @@ class QMyLabel(QLabel):
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWScatterPlotMatrix(OWWidget):
-    settingsList = ["pointWidth", "jitteringType", "showXAxisTitle", "showYAxisTitle", "showTitle", "showAttributeValues",
-                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols"]
-    spreadType=["none","uniform","triangle","beta"]
-    jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
+    settingsList = ["pointWidth", "showAxisScale", "showXaxisTitle", "showYLaxisTitle",  "showLegend", "jitterSize", "jitterContinuous", "showFilledSymbols", "colorSettings"]
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
     
     def __init__(self,parent=None, signalManager = None):
@@ -45,24 +42,21 @@ class OWScatterPlotMatrix(OWWidget):
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
         self.outputs = [("Attribute selection", list)] 
 
-
         #set default settings
         self.data = None
+        
         self.pointWidth = 5
-        self.showTitle = 0
-        self.showAttributeValues = 0
-        self.showXAxisTitle = 0
-        self.showYAxisTitle = 0
-        self.showVerticalGridlines = 0
-        self.showHorizontalGridlines = 0
+        self.showAxisScale = 1
+        self.showXaxisTitle = 0
+        self.showYLaxisTitle = 0
         self.showLegend = 0
         self.jitterContinuous = 0
         self.jitterSize = 2
         self.showFilledSymbols = 1
         self.shownAttrCount = 0
-        self.graphGridColor = str(Qt.black.name())
         self.graphCanvasColor = str(Qt.white.name())
         self.attributeSelection = None
+        self.colorSettings = None
 
         #load settings
         self.loadSettings()
@@ -70,39 +64,62 @@ class OWScatterPlotMatrix(OWWidget):
         #GUI
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = OWScatterPlotMatrixOptions(self, "Settings")
+        self.SettingsTab = QVGroupBox(self, "Settings")
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
         
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
-        self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.shownAttribsGroup.setTitle("Shown attributes")
-        self.hiddenAttribsGroup.setTitle("Hidden attributes")
+        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Shown Attributes " )
+        self.shownAttribsGroup.setMinimumWidth(200)
+        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
+        self.addRemoveGroup = OWGUI.widgetBox(self.GeneralTab, 1, orientation = "horizontal" )
+        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Hidden Attributes ")
 
-        self.shownAttribsLB = QListBox(self.shownAttribsGroup)
+        self.shownAttribsLB = QListBox(hbox)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
 
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
+
+        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
+        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
+        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
+        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonUPAttr.setMaximumWidth(20)
+        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        self.buttonDOWNAttr.setMaximumWidth(20)
+        self.buttonUPAttr.setMaximumWidth(20)
+
+        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
+        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
+        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+
+        self.createMatrixButton = OWGUI.button(self.GeneralTab, self, "Create matrix", callback = self.createGraphs, tooltip="Create scatterplot matrix using shown attributes")
+
+        # ####################################
+        # settings tab
+        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.setPointWidth)
+
+        box2 = OWGUI.widgetBox(self.SettingsTab, " Jittering Options ")
+        box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
+        self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
+        self.jitterSizeCombo = OWGUI.comboBox(box3, self, "jitterSize", callback = self.updateJitteringSettings, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.checkBox(box2, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.updateJitteringSettings, tooltip = "Does jittering apply also on continuous attributes?")
+
+        box4 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
+        OWGUI.checkBox(box4, self, 'showAxisScale', 'Show axis scale', callback = self.updateSettings)
+        OWGUI.checkBox(box4, self, 'showXaxisTitle', 'X axis title', callback = self.updateSettings)
+        OWGUI.checkBox(box4, self, 'showYLaxisTitle', 'Y axis title', callback = self.updateSettings)
+        OWGUI.checkBox(box4, self, 'showLegend', 'Show legend', callback = self.updateSettings)
+        OWGUI.checkBox(box4, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateSettings)
         
-        self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
-        self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
+        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
-        self.createMatrixButton = QPushButton("Create matrix", self.GeneralTab)
-
-        #connect controls to appropriate functions
-        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
-        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
-        self.connect(self.createMatrixButton, SIGNAL("clicked()"), self.createGraphs)
-        self.connect(self.SettingsTab.apply, SIGNAL("clicked()"), self.updateSettings)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
-
-        self.connect(self.SettingsTab.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
-        self.connect(self.SettingsTab.jitterContinuous, SIGNAL("clicked()"), self.setJitterContinuous)
-        self.connect(self.SettingsTab.gShowDistributions, SIGNAL("clicked()"), self.updateSettings)
-
 
         self.grid = QGridLayout(self.mainArea)
         self.graphs = []
@@ -119,55 +136,62 @@ class OWScatterPlotMatrix(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.SettingsTab.gShowTitle.setChecked(self.showTitle)
-        self.SettingsTab.gShowAttributeValues.setChecked(self.showAttributeValues)
-        self.SettingsTab.gSetXaxisCB.setChecked(self.showXAxisTitle)
-        self.SettingsTab.gSetYaxisCB.setChecked(self.showYAxisTitle)
-        self.SettingsTab.gShowFilledSymbolsCB.setChecked(self.showFilledSymbols)
+        dlg = self.createColorDialog()
+        self.graphCanvasColor = dlg.getColor("Canvas")
+        self.colorPalette = dlg.getColorPalette("colorPalette")
+        
+    def createColorDialog(self):
+        c = OWDlgs.ColorPalette(self, "Color Palette")
+        c.createColorPalette("colorPalette", "Continuous variable palette")
+        box = c.createBox("otherColors", "Other Colors")
+        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        box.addSpace(5)
+        box.adjustSize()
+        if self.colorSettings:
+            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
+            c.setCurrentState(self.colorSettings[2])
+        else:
+            c.setColorSchemas()
+        return c
 
-        self.SettingsTab.jitterContinuous.setChecked(self.jitterContinuous)
-        for i in range(len(self.jitterSizeList)):
-            self.SettingsTab.jitterSize.insertItem(self.jitterSizeList[i])
-        self.SettingsTab.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
-
-        self.SettingsTab.widthSlider.setValue(self.pointWidth)
-        self.SettingsTab.widthLCD.display(self.pointWidth)
-
+    def getColorPalette(self):
+        return self.colorPalette
+        
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_loop():
+            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
+            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.graphCanvasColor = dlg.getColor("Canvas")
+            self.updateSettings()
+            
     def setGraphOptions(self, graph, title):
-        graph.updateSettings(showDistributions = self.SettingsTab.gShowDistributions.isChecked(), showAttributeValues = self.showAttributeValues)
-        graph.setShowXaxisTitle(self.showXAxisTitle)
-        graph.setShowYLaxisTitle(self.showYAxisTitle)
-        graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
-        graph.setShowMainTitle(self.showTitle)
-        graph.setMainTitle(title)
-        graph.pointWidth = self.pointWidth
-        graph.setCanvasBackground(QColor(self.graphCanvasColor))
-        graph.setGridPen(QPen(QColor(self.graphGridColor)))
+        graph.showAxisScale = self.showAxisScale
+        graph.showXaxisTitle = self.showXaxisTitle
+        graph.showYLaxisTitle = self.showYLaxisTitle
+        graph.showLegend = self.showLegend
+        graph.showFilledSymbols = self.showFilledSymbols
+        graph.setCanvasBackground(self.graphCanvasColor)
 
-    def setPointWidth(self, n):
-        self.pointWidth = n
+
+    def setPointWidth(self):
         for graph in self.graphs:
             graph.pointWidth = n
         self.updateGraph()
         
-    def setJitterContinuous(self):
-        self.jitterContinuous = self.SettingsTab.jitterContinuous.isChecked()
-        self.updateJitteringSettings()
-
-    # jittering options
-    def setJitteringSize(self, n):
-        self.jitterSize = self.jitterSizeNums[n]
-        self.setJitterContinuous()
+    def updateShowLegend(self):
+        for graph in self.graphs:
+            graph.showLegend = self.showLegend
 
     def updateJitteringSettings(self):
         if self.graphs == []: return
-        self.graphs[0].setJitteringOption(self.jitteringType)
-        self.graphs[0].setJitterContinuous(self.jitterContinuous)
         self.graphs[0].jitterSize = self.jitterSize
+        self.graphs[0].jitterContinuous = self.jitterContinuous
+        self.graphs[0].setData(self.data)
+        
         for graph in self.graphs[1:]:
             graph.jitterSize = self.jitterSize
-            graph.setJitterContinuous(self.jitterContinuous)
-            graph.setJitteringOption(self.jitteringType)
+            graph.jitterContinuous = self.jitterContinuous
             graph.scaledData = self.graphs[0].scaledData
             graph.validDataArray = self.graphs[0].validDataArray
             graph.attributeNameIndex = self.graphs[0].attributeNameIndex
@@ -175,42 +199,25 @@ class OWScatterPlotMatrix(OWWidget):
             graph.attributeNames = self.graphs[0].attributeNames
         self.updateGraph()
     
-    def setCanvasColor(self, c):
-        self.graphCanvasColor = c
-        for graph in self.graphs:
-            graph.setCanvasColor(c)
-
-    def setGridColor(self, c):
-        self.graphGridColor = c
-        for graph in self.graphs:
-            graph.setGridColor(c)
-
     # #########################
     # GRAPH MANIPULATION
     # #########################
     def updateSettings(self):
-        self.showTitle = self.SettingsTab.gShowTitle.isChecked()
-        self.showAttributeValues = self.SettingsTab.gShowAttributeValues.isChecked()
-        self.showXAxisTitle = self.SettingsTab.gSetXaxisCB.isChecked()
-        self.showYAxisTitle = self.SettingsTab.gSetYaxisCB.isChecked()
-        self.showFilledSymbols = self.SettingsTab.gShowFilledSymbolsCB.isChecked()
-        
-        self.pointWidth = self.SettingsTab.widthSlider.value()
-
         for i in range(len(self.graphs)):
             (attr1, attr2, className, title) = self.graphParameters[i]
             self.setGraphOptions(self.graphs[i], title)
-            
         self.updateGraph()
     
     def updateGraph(self):
         for i in range(len(self.graphs)):
             (attr1, attr2, className, title) = self.graphParameters[i]
             self.graphs[i].updateData(attr1, attr2, className)
+            self.graphs[i].repaint()
             
     def removeAllGraphs(self):
         for graph in self.graphs:
             graph.hide()
+            graph.destroy()
         self.graphs = []
         self.graphParameters = []
 
@@ -232,6 +239,9 @@ class OWScatterPlotMatrix(OWWidget):
             for j in range(i):
                 graph = OWScatterPlotGraph(self, self.mainArea)
                 graph.setMinimumSize(QSize(10,10))
+                graph.jitterSize = self.jitterSize
+                graph.jitterContinuous = self.jitterContinuous
+                
                 if self.graphs == []:
                     graph.setData(self.data)
                 else:
@@ -415,6 +425,21 @@ class OWScatterPlotMatrix(OWWidget):
             if self.shownAttribsLB.isSelected(i):
                 self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
                 self.shownAttribsLB.removeItem(i)
+
+    def moveAttrUP(self):
+        for i in range(1, self.shownAttribsLB.count()):
+            if self.shownAttribsLB.isSelected(i):
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
+                self.shownAttribsLB.removeItem(i+1)
+                self.shownAttribsLB.setSelected(i-1, TRUE)
+
+    def moveAttrDOWN(self):
+        count = self.shownAttribsLB.count()
+        for i in range(count-2,-1,-1):
+            if self.shownAttribsLB.isSelected(i):
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
+                self.shownAttribsLB.removeItem(i)
+                self.shownAttribsLB.setSelected(i+1, TRUE)
                 
     def resizeEvent(self, e):
         w = self.mainArea.width()
@@ -422,57 +447,6 @@ class OWScatterPlotMatrix(OWWidget):
         size = QSize(w/(len(self.labels)+1), h/(len(self.labels)+1))
         for label in self.labels:
             label.setSize(size)
-
-class OWScatterPlotMatrixOptions(QVGroupBox):
-    def __init__(self,parent=None,name=None):
-        QVGroupBox.__init__(self, parent, name)
-        self.parent = parent
-
-        # point width
-        widthBox = QHGroupBox("Point Width", self)
-        QToolTip.add(widthBox, "The width of points")
-        self.widthSlider = QSlider(2, 20, 1, 3, QSlider.Horizontal, widthBox)
-        self.widthSlider.setTickmarks(QSlider.Below)
-        self.widthLCD = QLCDNumber(2, widthBox)
-
-        ######
-        # jittering options
-        self.jitteringOptionsBG = QVButtonGroup("Jittering options", self)
-        QToolTip.add(self.jitteringOptionsBG, "Percents of a discrete value to be jittered")
-        self.hbox = QHBox(self.jitteringOptionsBG, "jittering size")
-        self.jitterLabel = QLabel('Jittering size (% of size)', self.hbox)
-        self.jitterSize = QComboBox(self.hbox)
-
-        self.jitterContinuous = QCheckBox('jitter continuous attributes', self.jitteringOptionsBG)        
-
-        #####
-        self.graphSettings = QVButtonGroup("General graph settings", self)
-        QToolTip.add(self.graphSettings, "Enable/disable main title, axis title and grid")
-        self.gShowTitle = QCheckBox('Show title', self.graphSettings)
-        self.gShowAttributeValues = QCheckBox('Show attribute values', self.graphSettings)
-        self.gSetXaxisCB = QCheckBox('X axis title ', self.graphSettings)
-        self.gSetYaxisCB = QCheckBox('Y axis title ', self.graphSettings)
-        self.gShowFilledSymbolsCB = QCheckBox('show filled symbols', self.graphSettings)
-        self.gShowDistributions = QCheckBox('Show distributions', self.graphSettings)
-
-        self.apply = QPushButton("Apply changes", self)
-        self.gSetGridColorB = QPushButton("Grid Color", self)
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self)
-        self.connect(self.widthSlider, SIGNAL("valueChanged(int)"), self.widthLCD, SLOT("display(int)"))
-        self.connect(self.gSetGridColorB, SIGNAL("clicked()"), self.setGraphGridColor)
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
-
-    def setGraphGridColor(self):
-        newColor = QColorDialog.getColor(QColor(self.parent.graphGridColor))
-        if newColor.isValid():
-            self.parent.graphGridColor = str(newColor.name())
-            self.parent.setGridColor(newColor)
-
-    def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.parent.graphCanvasColor))
-        if newColor.isValid():
-            self.parent.graphCanvasColor = str(newColor.name())
-            self.parent.setCanvasColor(QColor(newColor))
 
 
 

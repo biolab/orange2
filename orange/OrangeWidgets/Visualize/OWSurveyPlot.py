@@ -21,7 +21,8 @@ import OWGUI
 class OWSurveyPlot(OWWidget):
     settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend", "graph.tooltipKind", "showAllAttributes"]
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
-    attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
+    #attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
+    attributeDiscOrder = ["None","ReliefF","GainRatio"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)

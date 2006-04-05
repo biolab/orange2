@@ -25,9 +25,7 @@ class OWPolyviz(OWWidget):
                     "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankLearnerName",
                     "colorSettings", "addProjectedPositions", "showAllAttributes"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
-    jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
-    scaleFactorList = [str(x) for x in scaleFactorNums]
         
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Polyviz", TRUE)
@@ -552,6 +550,11 @@ class OWPolyviz(OWWidget):
 
     def getColorPalette(self):
         return self.colorPalette
+
+    def destroy(self, dw = 1, dsw = 1):
+        self.optimizationDlg.hide()
+        OWWidget.destroy(self, dw, dsw)
+
 
 
 #test widget appearance

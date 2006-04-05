@@ -150,7 +150,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         # #######################################################
         # show clusters
-        if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+        if self.showClusters and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             data = self.createProjectionAsExampleTable([xAttrIndex, yAttrIndex], settingsDict = {"validData": validData, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation})
             graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             
@@ -220,7 +220,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         # ##############################################################
         # show normal scatterplot with dots
         else:
-            if self.insideColors != None:
+            if self.insideColors and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 # variables and domain for the table
                 classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 

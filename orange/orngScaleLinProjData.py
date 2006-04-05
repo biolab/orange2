@@ -110,7 +110,11 @@ class orngScaleLinProjData(orngScaleData):
         if useAnchorData and self.anchorData:
             attrIndices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
 
-        if not validData: validData = self.getValidList(attrIndices)
+        if not validData:
+            validData = self.getValidList(attrIndices)
+
+        if not classList:
+            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
 
         # if jitterSize is set below zero we use scaledData that has already jittered data
         if jitterSize < 0.0: data = self.scaledData
@@ -119,6 +123,7 @@ class orngScaleLinProjData(orngScaleData):
         selectedData = Numeric.take(data, attrIndices)
         if removeMissingData:
             selectedData = Numeric.compress(validData, selectedData)
+            classList = Numeric.compress(validData, classList)    
 
         """
         if minmaxVals:
@@ -133,10 +138,6 @@ class orngScaleLinProjData(orngScaleData):
                     continue
                 m, M = self.subDataMinMaxDict[self.rawdata.domain[attrIndices[i]].name]
                 selectedData[i] = (selectedData[i] - m) / float(M-m)
-        
-        if not classList:
-            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-            if removeMissingData: classList = Numeric.compress(validData, classList)    
 
         if useAnchorData and self.anchorData:
             XAnchors = Numeric.array([val[0] for val in self.anchorData])
