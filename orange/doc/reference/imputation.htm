@@ -277,18 +277,25 @@ TYPE: SIMPLE-T -> SIMPLE-T
 
 <P>If for any reason you want to use these algorithms to run on imputed data, you can use the wrappers provide in the module orngImpute. The module's description is a matter of a separate page, but we shall show its code here as another demonstration of how to use the imputers - logistic regression is implemented essentially the same as the below classes.</P>
 
-<P class="header">a simplified code from of module orngImpute.py</A></P>
-<XMP class=code>class LearnerWithImputation(orange.Learner):
-    def __init__(self, **argkw):
-        self.__dict__.update(argkw)
+<P class="header">The complete code of module orngImpute.py</A></P>
+<XMP class=code>import orange
 
-    def __call__(self, data, w=0):
-        trained_imputer = self.imputer(data, w)
-        imputed_data = trained_imputer(data, w)
-        baseClassifier = self.baseLearner(imputed_data, w)
-        return ClassifierWithImputation(baseClassifier, trained_imputer)
+class ImputeLearner(orange.Learner):
+    def __new__(cls, examples = None, weightID = 0, **keyw):
+        self = orange.Learner.__new__(cls, **keyw)
+        self.__dict__.update(keyw)
+        if examples:
+            return self.__call__(examples, weightID)
+        else:
+            return self
 
-class ClassifierWithImputation(orange.Classifier):
+    def __call__(self, data, weight=0):
+        trained_imputer = self.imputerConstructor(data, weight)
+        imputed_data = trained_imputer(data, weight)
+        baseClassifier = self.baseLearner(imputed_data, weight)
+        return ImputeClassifier(baseClassifier, trained_imputer)
+
+class ImputeClassifier(orange.Classifier):
     def __init__(self, baseClassifier, imputer):
         self.baseClassifier = baseClassifier
         self.imputer = imputer
@@ -297,7 +304,7 @@ class ClassifierWithImputation(orange.Classifier):
         return self.baseClassifier(self.imputer(ex), what)
 </XMP>
 
-<P><CODE>LearnerWithImputation</CODE> puts the passed keyword arguments to the instance's  dictionary. You are expected to call it like <CODE>LearnerWithImputation(baseLearner=&lt;someLearner&gt;, imputer=&lt;someImputerConstructor&gt;)</CODE>. When the learner is called with examples, it trains the imputer, imputes the data, induces a <CODE>baseClassifier</CODE> by the <CODE>baseLearner</CODE> and constructs <CODE>ClassifierWithImputation</CODE> that stores the <CODE>baseClassifier</CODE> and the <CODE>imputer</CODE>. For classification, the missing values are imputed and the classifier's prediction is returned.</P>
+<P><CODE>LearnerWithImputation</CODE> puts the keyword arguments into the instance's  dictionary. You are expected to call it like <CODE>LearnerWithImputation(baseLearner=&lt;someLearner&gt;, imputer=&lt;someImputerConstructor&gt;)</CODE>. When the learner is called with examples, it trains the imputer, imputes the data, induces a <CODE>baseClassifier</CODE> by the <CODE>baseLearner</CODE> and constructs <CODE>ClassifierWithImputation</CODE> that stores the <CODE>baseClassifier</CODE> and the <CODE>imputer</CODE>. For classification, the missing values are imputed and the classifier's prediction is returned.</P>
 
 <P>Note that this code is slightly simplified, although the omitted details handle non-essential technical issues that are unrelated to imputation.</P>
 
