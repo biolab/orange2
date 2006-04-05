@@ -92,11 +92,12 @@ class OWAttributeStatistics(OWWidget):
             self.canvasview.hide()
         else:
             self.canvasview.show()
-            # we do a trick here, and make a new domain that includes the class var, if one exists
-            # this for a reason to change any of the code, plus to be able to use such functions
+
             # as DomainDistributions
-            newdomain = orange.Domain(data.domain.attributes+[data.domain.classVar],0)
-            self.dataset = orange.ExampleTable(newdomain, data)
+
+#            newdomain = orange.Domain(data.domain.attributes+[data.domain.classVar],0)
+#            self.dataset = orange.ExampleTable(newdomain, data)
+            self.dataset = data
             self.dist = orange.DomainDistributions(self.dataset)
 
             for a in self.dataset.domain.attributes:
@@ -526,6 +527,7 @@ if __name__=="__main__":
 	ow=OWAttributeStatistics()
 	a.setMainWidget(ow)
 	data = orange.ExampleTable('adult_sample')
+	data = orange.ExampleTable('adult_sample_noclass')
 	ow.data(data)
 	ow.show()
 	a.exec_loop()
