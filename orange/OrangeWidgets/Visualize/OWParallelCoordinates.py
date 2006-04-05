@@ -26,7 +26,7 @@ class OWParallelCoordinates(OWWidget):
     attributeContOrder = ["None", "ReliefF", "Fisher discriminant", "Signal to Noise", "Signal to Noise For Each Class"]
     attributeDiscOrder = ["None", "ReliefF", "GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
-    linesDistanceNums = [0, 10, 20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
+    linesDistanceNums = [10, 20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Parallel Coordinates", TRUE)

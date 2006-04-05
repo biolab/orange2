@@ -48,13 +48,14 @@ class orngScalePolyvizData(orngScaleLinProjData):
         
         if not validData: validData = self.getValidList(attrIndices)
 
-        if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
+        if not classList:
+            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]    
+
+        if removeMissingData:
+            selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
+            classList = Numeric.compress(validData, classList)
         else:                 selectedData = Numeric.take(self.noJitteringScaledData, attrIndices)
         
-        if not classList:
-            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-            classList = Numeric.compress(validData, classList)
-            
         if not sum_i: sum_i = self._getSum_i(selectedData)
         if not (XAnchors and YAnchors):
             XAnchors = self.createXAnchors(len(attrIndices))
@@ -81,7 +82,7 @@ class orngScalePolyvizData(orngScaleLinProjData):
         if jitterSize > 0.0:
             x_positions += (RandomArray.random(len(x_positions))-0.5)*jitterSize
             y_positions += (RandomArray.random(len(y_positions))-0.5)*jitterSize
-        
+
         return Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
 
 

@@ -20,7 +20,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.parallelDlg = parallelDlg
         self.showDistributions = 0
         self.hidePureExamples = 1
-        self.metaid = -1
         self.toolInfo = []
         self.toolRects = []
         self.useSplines = 0
@@ -34,7 +33,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
     def setData(self, data):
         OWGraph.setData(self, data)
         orngScaleData.setData(self, data)
-        self.metaid = -1
         
 
     # update shown data. Set attributes, coloring by className ....
@@ -105,10 +103,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
         
         if self.hidePureExamples == 1 and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             # add a meta attribute if it doesn't exist yet
-            if self.metaid == -1:
-                self.metaid = orange.newmetaid()
-                self.rawdata.domain.addmeta(self.metaid, orange.IntVariable("ItemIndex"))
-                for i in range(dataSize): self.rawdata[i].setmeta(self.metaid, i)
+            metaid = orange.newmetaid()
+            self.rawdata.domain.addmeta(metaid, orange.IntVariable("ItemIndex"))
+            for i in range(dataSize): self.rawdata[i].setmeta(metaid, i)
 
             for i in range(length):
                 if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Discrete or attributes[i] == self.rawdata.domain.classVar.name: continue
@@ -119,23 +116,24 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
                     ind = 0
                     while ind < len(tempData):
-                        if dataStop[int(tempData[ind].getmeta(self.metaid))] == lastIndex:
+                        if dataStop[int(tempData[ind].getmeta(metaid))] == lastIndex:
                             val = tempData[ind][classNameIndex]
                             break
                         ind += 1
                         
                     # do all instances belong to the same class?
                     while ind < len(tempData):
-                        if dataStop[int(tempData[ind].getmeta(self.metaid))] != lastIndex: ind += 1; continue
+                        if dataStop[int(tempData[ind].getmeta(metaid))] != lastIndex: ind += 1; continue
                         if val != tempData[ind][classNameIndex]: break
                         ind += 1
 
                     # if all examples belong to one class we repair the meta variable values
                     if ind >= len(tempData):
                         for item in tempData:
-                            index = int(item.getmeta(self.metaid))
+                            index = int(item.getmeta(metaid))
                             if dataStop[index] == lastIndex:
                                 dataStop[index] = indices[i]
+            self.rawdata.domain.removemeta(metaid)
 
         # first create all curves
         if targetValue != None: curves = [[],[]]
@@ -310,7 +308,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if self.enabledLegend == 1 and self.rawdata.domain.classVar:
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-                self.graph.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", colorPalette[0], colorPalette[0], 0, symbol = QwtSymbol.None, enableLegend = 1)
+                self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", colorPalette[0], colorPalette[0], 0, symbol = QwtSymbol.None, enableLegend = 1)
                 for ind in range(len(varValues)):
                     self.addCurve(varValues[ind], colorPalette[ind], colorPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
             else:
