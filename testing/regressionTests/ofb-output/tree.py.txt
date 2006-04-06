@@ -6,23 +6,24 @@ Probabilities for democrats:
 4: 0.985 (originally democrat)
 5: 0.985 (originally democrat)
 
-physician-fee-freeze y: 
-|   synfuels-corporation-cutback n: republican (97.25%)
-|   synfuels-corporation-cutback y: 
-|   |   mx-missile n: 
-|   |   |   el-salvador-aid y: 
-|   |   |   |   adoption-of-the-budget-resolution n: republican (85.33%)
-|   |   |   |   adoption-of-the-budget-resolution y: 
-|   |   |   |   |   anti-satellite-test-ban n: democrat (99.54%)
-|   |   |   |   |   anti-satellite-test-ban y: republican (100.0%)
-|   |   |   el-salvador-aid n: 
-|   |   |   |   handicapped-infants n: republican (100.0%)
-|   |   |   |   handicapped-infants y: democrat (99.77%)
-|   |   mx-missile y: 
-|   |   |   religious-groups-in-schools y: democrat (99.54%)
-|   |   |   religious-groups-in-schools n: 
-|   |   |   |   immigration y: republican (98.63%)
-|   |   |   |   immigration n: 
-|   |   |   |   |   handicapped-infants n: republican (98.63%)
-|   |   |   |   |   handicapped-infants y: democrat (99.77%)
-physician-fee-freeze n: democrat (98.52%)
+physician-fee-freeze=n: democrat (98.52%)
+physician-fee-freeze=y
+|    synfuels-corporation-cutback=n: republican (97.25%)
+|    synfuels-corporation-cutback=y
+|    |    mx-missile=n
+|    |    |    el-salvador-aid=y
+|    |    |    |    adoption-of-the-budget-resolution=n: republican (85.33%)
+|    |    |    |    adoption-of-the-budget-resolution=y
+|    |    |    |    |    anti-satellite-test-ban=n: democrat (99.54%)
+|    |    |    |    |    anti-satellite-test-ban=y: republican (100.00%)
+|    |    |    el-salvador-aid=n
+|    |    |    |    handicapped-infants=n: republican (100.00%)
+|    |    |    |    handicapped-infants=y: democrat (99.77%)
+|    |    mx-missile=y
+|    |    |    religious-groups-in-schools=y: democrat (99.54%)
+|    |    |    religious-groups-in-schools=n
+|    |    |    |    immigration=y: republican (98.63%)
+|    |    |    |    immigration=n
+|    |    |    |    |    handicapped-infants=n: republican (98.63%)
+|    |    |    |    |    handicapped-infants=y: democrat (99.77%)
+

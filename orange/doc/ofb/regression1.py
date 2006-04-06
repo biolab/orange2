@@ -5,7 +5,8 @@
 # Referenced:  regression.htm
 
 import orange, orngTree
+reload(orngTree)
 
 data = orange.ExampleTable("../datasets/housing.tab")
 rt = orngTree.TreeLearner(data, measure="retis", mForPruning=2, minExamples=20)
-orngTree.printTxt(rt, leafFields=["average","confidenceInterval"], decimalPlaces=1, confidenceLevel=0.85)
+orngTree.printTxt(rt, leafStr="%V %I")

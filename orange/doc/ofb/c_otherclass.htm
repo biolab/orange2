@@ -56,11 +56,11 @@ that we have imported another module (<code>orngTree</code>) and used learner
 default parameters for tree learner assume that a single example is
 enough to have a leaf for it, gain ratio is used for measuring
 the quality of attributes that are considered for internal nodes of
-the tree, and after the tree is constructed the subtrees no pruning takes 
-place (see <a href="../modules/orngTree.htm">orngTree documentation</a> for details). 
+the tree, and after the tree is constructed the subtrees no pruning takes
+place (see <a href="../modules/orngTree.htm">orngTree documentation</a> for details).
 The resulting tree with default parameters would be rather big, so we have additionally
 requested that leaves that share common predecessor (node) are pruned if they classify to the same
-class, and requested that tree is post-pruned using m-error estimate pruning method with 
+class, and requested that tree is post-pruned using m-error estimate pruning method with
 parameter m set to 2.0.</p>
 
 <p>The output of the script that uses classification tree learner
@@ -75,33 +75,33 @@ Probabilities for democrats:
 5: 0.985 (originally democrat)
 </xmp>
 
-<p>Notice that on these five instances, for a rather fine margin, the 
+<p>Notice that on these five instances, for a rather fine margin, the
 constructed classification tree misclassifies only the first instance.
 To see why, it is important to print out the tree, which is done
 by the last line in our script. The constructed tress is:</p>
 
 <p class="header">output of running the <a href=
 "tree_print.py">classifier4.py</a> script</p>
-<xmp class="code">physician-fee-freeze y: 
-|   synfuels-corporation-cutback n: republican (97.25%)
-|   synfuels-corporation-cutback y: 
-|   |   mx-missile n: 
-|   |   |   el-salvador-aid y: 
-|   |   |   |   adoption-of-the-budget-resolution n: republican (85.33%)
-|   |   |   |   adoption-of-the-budget-resolution y: 
-|   |   |   |   |   anti-satellite-test-ban n: democrat (99.54%)
-|   |   |   |   |   anti-satellite-test-ban y: republican (100.0%)
-|   |   |   el-salvador-aid n: 
-|   |   |   |   handicapped-infants n: republican (100.0%)
-|   |   |   |   handicapped-infants y: democrat (99.77%)
-|   |   mx-missile y: 
-|   |   |   religious-groups-in-schools y: democrat (99.54%)
-|   |   |   religious-groups-in-schools n: 
-|   |   |   |   immigration y: republican (98.63%)
-|   |   |   |   immigration n: 
-|   |   |   |   |   handicapped-infants n: republican (98.63%)
-|   |   |   |   |   handicapped-infants y: democrat (99.77%)
-physician-fee-freeze n: democrat (98.52%)
+<xmp class="code">physician-fee-freeze=n: democrat (98.52%)
+physician-fee-freeze=y
+|    synfuels-corporation-cutback=n: republican (97.25%)
+|    synfuels-corporation-cutback=y
+|    |    mx-missile=n
+|    |    |    el-salvador-aid=y
+|    |    |    |    adoption-of-the-budget-resolution=n: republican (85.33%)
+|    |    |    |    adoption-of-the-budget-resolution=y
+|    |    |    |    |    anti-satellite-test-ban=n: democrat (99.54%)
+|    |    |    |    |    anti-satellite-test-ban=y: republican (100.00%)
+|    |    |    el-salvador-aid=n
+|    |    |    |    handicapped-infants=n: republican (100.00%)
+|    |    |    |    handicapped-infants=y: democrat (99.77%)
+|    |    mx-missile=y
+|    |    |    religious-groups-in-schools=y: democrat (99.54%)
+|    |    |    religious-groups-in-schools=n
+|    |    |    |    immigration=y: republican (98.63%)
+|    |    |    |    immigration=n
+|    |    |    |    |    handicapped-infants=n: republican (98.63%)
+|    |    |    |    |    handicapped-infants=y: democrat (99.77%)
 </xmp>
 
 <p>Notice that the printout states the decision at internal nodes and, for leaves, the class label to which a tree would make a classification. These later are associated probability, which is estimated from the learning set of examples.</p>
