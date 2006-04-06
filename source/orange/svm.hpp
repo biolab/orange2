@@ -205,9 +205,14 @@ public:
 	TValue operator()(const TExample&);
 	PDistribution classDistribution(const TExample &);
 
-	PExampleTable supportVectors; //P support vectors
+	PFloatList getDecisionValues(const TExample &);
+
+	PFloatList rho;	//PR rho
+	PFloatListList coef; //PR coef
+	PExampleTable supportVectors; //PR support vectors
 	PExampleTable examples;	//P examples used to train the classifier
-	PKernelFunc kernelFunc;	//P custom kernel function
+	PKernelFunc kernelFunc;	//PR custom kernel function
+
 	const TExample *currentExample;
 
 private:

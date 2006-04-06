@@ -3284,7 +3284,24 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 		raiseError("LibSVM parameter error: %s", error);
 	}
 	//cout<<"training"<<endl;
+
+#ifdef _MSC_VER
+	FILE* tmpstream=freopen("NUL","w", stdout);
+#else
+	int tmpstream=dup(stdout);
+	freopen("/dev/null", "w", stdout);
+#endif
+
 	model=svm_train(&prob,&param);
+
+#ifdef _MSC_VER
+	freopen("CON", "w", stdout);
+#else
+	close(stdout);
+	dup(tmpstream);
+	close(tmpstream);
+#endif
+
 	//cout<<"end training"<<endl;
 	svm_destroy_param(&param);
 	free(prob.y);
@@ -3305,14 +3322,25 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 		model->param.svm_type!=NU_SVR &&  (model->param.probability != 0);
 	if(!classVar && model->param.svm_type==ONE_CLASS)
 		classVar=mlnew TFloatVariable();
+	int nr_class=svm_get_nr_class(model);
+	int i=0;
 	supportVectors=mlnew TExampleTable(examples->domain);
-	for(int i=0;i<model->l;i++){
+	for(i=0;i<model->l;i++){
 		svm_node *node=model->SV[i];
 		while(node->index!=-1)
 			node++;
 		supportVectors->addExample(mlnew TExample(examples->at(int(node->value))));
 	}
-
+	/*rho=mlnew TFloatList(nr_class);
+	for(i=0;i<nr_class;i++)
+		rho->at(i)=model->rho[i];
+	coef=mlnew TFloatListList();
+	for(i=0;i<nr_class;i++){
+		TFloatList *l=mlnew TFloatList(model->l);
+		for(int j=0;j<model->l;j++)
+			l->at(j)=model->sv_coef[i][j];
+		coef->push_back(l);
+	}*/
 }
 
 TSVMClassifier::~TSVMClassifier(){
@@ -3374,5 +3402,24 @@ TValue TSVMClassifier::operator()(const TExample & example){
 		return TValue(v);
 	else
 		return TValue(int(v));
+}
+
+PFloatList TSVMClassifier::getDecisionValues(const TExample &example){
+	if(!model)
+		raiseError("No Model");
+	currentExample=&example;
+	int exlen=example.domain->attributes->size();
+	int svm_type=svm_get_svm_type(model);
+	int nr_class=svm_get_nr_class(model);
+	svm_node *x=Malloc(svm_node, exlen+1);
+	example_to_svm(example, x, -1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
+	double *dec= (double*) malloc(sizeof(double)*nr_class*(nr_class-1)/2);
+	svm_predict_values(model, x, dec);
+	PFloatList res=mlnew TFloatList(nr_class*(nr_class-1)/2);
+	for(int i=0;i<nr_class*(nr_class-1)/2;i++)
+		res->at(i)=dec[i];
+	free(x);
+	free(dec);
+	return res;
 }
 
