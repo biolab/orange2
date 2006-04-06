@@ -1,13 +1,13 @@
+tear_rate=reduced: none (100.00%)
+tear_rate=normal
+|    astigmatic=no
+|    |    age=young: soft (100.00%)
+|    |    age=pre-presbyopic: soft (100.00%)
+|    |    age=presbyopic: none (50.00%)
+|    astigmatic=yes
+|    |    prescription=myope: hard (100.00%)
+|    |    prescription=hypermetrope: none (66.67%)
 
-tear_rate reduced: none (100.0%)
-tear_rate normal: 
-|   astigmatic no: 
-|   |   age young: soft (100.0%)
-|   |   age pre-presbyopic: soft (100.0%)
-|   |   age presbyopic: none (50.0%)
-|   astigmatic yes: 
-|   |   prescription myope: hard (100.0%)
-|   |   prescription hypermetrope: none (66.66%)
 ['young', 'myope', 'yes', '?', 'hard']
 
 
