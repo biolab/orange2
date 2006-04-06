@@ -515,17 +515,16 @@ treeLearner.stop = StoppingCriterion_random()
 <p>In this section, we will suppose that the tree has already been induced (using, say, default settings for <code>TreeLearner</code>) and stored in a <code>TreeClassifier</code> <code>tree</code>.</p>
 
 <xmp class="code">>>> tree = orange.TreeLearner(data)
->>> orngTree.printModel(tree)
-
-tear_rate reduced: none (100.0%)
-tear_rate normal:
-|   astigmatic no:
-|   |   age young: soft (100.0%)
-|   |   age pre-presbyopic: soft (100.0%)
-|   |   age presbyopic: soft (50.0%)
-|   astigmatic yes:
-|   |   prescription myope: hard (100.0%)
-|   |   prescription hypermetrope: none (66.66%)
+>>> orngTree.printTxt(tree)
+tear_rate=reduced: none (100.00%)
+tear_rate=normal
+|    astigmatic=no
+|    |    age=young: soft (100.00%)
+|    |    age=pre-presbyopic: soft (100.00%)
+|    |    age=presbyopic: none (50.00%)
+|    astigmatic=yes
+|    |    prescription=myope: hard (100.00%)
+|    |    prescription=hypermetrope: none (66.67%)
 </xmp>
 
 
