@@ -5,9 +5,6 @@
 from qt import *
 from qtcanvas import *
 import orngCanvasItems
-TRUE  = 1
-FALSE = 0
-
 
 # ########################################
 # ######## SCHEMA VIEW class
@@ -16,10 +13,10 @@ class SchemaView(QCanvasView):
     def __init__(self, doc, *args):
         apply(QCanvasView.__init__,(self,) + args)
         self.doc = doc
-        self.bMouseDown = FALSE
-        self.bWidgetDragging = FALSE
-        self.bLineDragging = FALSE
-        self.bMultipleSelection = FALSE
+        self.bMouseDown = False
+        self.bWidgetDragging = False
+        self.bLineDragging = False
+        self.bMultipleSelection = False
         self.movingWidget = None
         self.mouseDownPosition = QPoint(0,0)
         self.lastMousePosition = QPoint(0,0)
@@ -78,7 +75,7 @@ class SchemaView(QCanvasView):
             if len(newName) < 3 or newName[:2].lower() != "qt":
                 newName = "Qt " + newName
             self.tempWidget.instance.setCaption(newName)
-            self.doc.enableSave(TRUE)
+            self.doc.enableSave(True)
 
     # popMenuAction - user selected to delete active widget
     def removeActiveWidget(self):
@@ -108,7 +105,7 @@ class SchemaView(QCanvasView):
             self.selectedLine.repaintLine(self)
             self.selectedLine.inWidget.updateTooltip()
             self.selectedLine.outWidget.updateTooltip()
-        self.doc.enableSave(TRUE)
+        self.doc.enableSave(True)
 
     # popMenuAction - delete selected link
     def deleteSelectedLine(self):
@@ -194,7 +191,7 @@ class SchemaView(QCanvasView):
         if activeItems == []:
             self.tempWidget = None
             self.tempRect = None
-            self.bMultipleSelection = TRUE
+            self.bMultipleSelection = True
             self.unselecteAllWidgets()
             
         # we clicked on a widget or on a line            
@@ -209,7 +206,7 @@ class SchemaView(QCanvasView):
                 # did we click inside the boxes to draw connections
                 if ev.button() == QMouseEvent.LeftButton and (widget.mouseInsideLeftChannel(rect) or widget.mouseInsideRightChannel(rect)):
                     if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
-                        self.bLineDragging = TRUE
+                        self.bLineDragging = True
                         pos = widget.getEdgePoint(rect)
                         self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.doc.canvas)
                         self.tempLine.setPoints(pos.x(), pos.y(), pos.x(), pos.y())
@@ -219,12 +216,12 @@ class SchemaView(QCanvasView):
                     
                 # we clicked inside the widget and we start dragging it
                 elif ev.button() == QMouseEvent.LeftButton:
-                    self.bWidgetDragging = TRUE
+                    self.bWidgetDragging = True
 
                     if widget not in self.selWidgets and self.doc.canvasDlg.ctrlPressed == 0:
                         self.unselecteAllWidgets()
                         self.selWidgets = [widget]
-                        self.bMultipleSelection = FALSE
+                        self.bMultipleSelection = False
                     elif self.doc.canvasDlg.ctrlPressed == 1:
                         if widget not in self.selWidgets:
                             self.selWidgets.append(widget)
@@ -237,7 +234,7 @@ class SchemaView(QCanvasView):
                         w.setCoords(w.x(), w.y())
                         w.savePosition()
                         w.removeTooltip()
-                        w.setAllLinesFinished(FALSE)
+                        w.setAllLinesFinished(False)
                         w.repaintAllLines()
                     
                 # is we clicked the right mouse button we show the popup menu for widgets
@@ -248,7 +245,7 @@ class SchemaView(QCanvasView):
 
             # if we right clicked on a line we show a popup menu
             elif line != None and ev.button() == QMouseEvent.RightButton:
-                self.bMultipleSelection = FALSE
+                self.bMultipleSelection = False
                 self.unselecteAllWidgets()
                 self.selectedLine = line
                 self.linePopup.setItemChecked(self.menupopupLinkEnabledID, self.selectedLine.getEnabled()) 
@@ -258,7 +255,7 @@ class SchemaView(QCanvasView):
                 self.unselecteAllWidgets()
 
         self.doc.canvas.update()
-        self.bMouseDown = TRUE
+        self.bMouseDown = True
         self.lastMousePosition = QPoint(ev.pos().x(), ev.pos().y())
 
 
@@ -284,8 +281,8 @@ class SchemaView(QCanvasView):
 
                 items = self.canvas().collisions(item.rect())
                 count = self.findItemTypeCount(items, orngCanvasItems.CanvasWidget)
-                if count > 1: item.invalidPosition = TRUE
-                else:         item.invalidPosition = FALSE
+                if count > 1: item.invalidPosition = True
+                else:         item.invalidPosition = False
                 item.updateLineCoords()
             
         elif self.bLineDragging:
@@ -321,25 +318,25 @@ class SchemaView(QCanvasView):
         
         # if we are moving a widget
         if self.bWidgetDragging:
-            validPos = TRUE
+            validPos = True
             for item in self.selWidgets:
                 items = self.canvas().collisions(item.rect())
                 count = self.findItemTypeCount(items, orngCanvasItems.CanvasWidget)
                 if count > 1:
-                    validPos = FALSE
+                    validPos = False
 
             for item in self.selWidgets:
-                item.invalidPosition = FALSE
+                item.invalidPosition = False
                 if not validPos:
                     #item.setCoordsBy(self.mouseDownPosition.x() - ev.pos().x(), self.mouseDownPosition.y() - ev.pos().y())
                     item.restorePosition()
                 item.updateTooltip()
                 item.updateLineCoords()
-                item.setAllLinesFinished(TRUE)
+                item.setAllLinesFinished(True)
                 item.repaintWidget()
                 item.repaintAllLines()
                 
-            self.doc.enableSave(TRUE)
+            self.doc.enableSave(True)
 
         # if we are drawing line
         elif self.bLineDragging:
@@ -373,9 +370,9 @@ class SchemaView(QCanvasView):
                 self.tempLine = None
                 
         self.canvas().update()
-        self.bMouseDown = FALSE
-        self.bWidgetDragging = FALSE
-        self.bLineDragging = FALSE
+        self.bMouseDown = False
+        self.bWidgetDragging = False
+        self.bLineDragging = False
 
     def contentsMouseDoubleClickEvent(self, ev):
         rect = QRect(ev.pos().x()-3, ev.pos().y()-3,6,6)        

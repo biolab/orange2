@@ -12,9 +12,6 @@ from qttable import *
 #from orngSignalManager import ExampleTable, ExampleTableWithClass
 #from orngSignalManager import *
 
-TRUE  = 1
-FALSE = 0
-
 class QCanvasIcon(QCanvasRectangle):
     def __init__(self, canvas, fileName):
         QCanvasRectangle.__init__(self,canvas)
@@ -34,8 +31,8 @@ class SignalCanvasView(QCanvasView):
     def __init__(self, dlg, *args):
         apply(QCanvasView.__init__,(self,) + args)
         self.dlg = dlg
-        self.bMouseDown = FALSE
-        self.bLineDragging = FALSE
+        self.bMouseDown = False
+        self.bLineDragging = False
         self.tempLine = None
         self.inWidget = None
         self.outWidget = None
@@ -553,7 +550,7 @@ class CanvasOptionsDlg(QDialog):
                 text = self.tabOrderList.text(i)
                 self.tabOrderList.removeItem(i)
                 self.tabOrderList.insertItem(text, i-1)
-                self.tabOrderList.setSelected(i-1, TRUE)
+                self.tabOrderList.setSelected(i-1, True)
 
     # move selected widget category down
     def moveDown(self):
@@ -562,7 +559,7 @@ class CanvasOptionsDlg(QDialog):
                 text = self.tabOrderList.text(i)
                 self.tabOrderList.removeItem(i)
                 self.tabOrderList.insertItem(text, i+1)
-                self.tabOrderList.setSelected(i+1, TRUE)
+                self.tabOrderList.setSelected(i+1, True)
 
 
 
@@ -673,7 +670,7 @@ class WidgetRegistryDlg(QDialog):
         
         self.okButton = QPushButton("OK", hbox)
         self.okButton.setFixedWidth(110)
-        self.okButton.setDefault(TRUE)
+        self.okButton.setDefault(True)
         self.cancelButton = QPushButton("Cancel", hbox)
         self.cancelButton.setFixedWidth(110)
 
@@ -707,8 +704,8 @@ class PreferencesDlg(QDialog):
         cap2 = QLabel("Priority:", groupBox)
         cap3 = QLabel("Color:", groupBox)
         self.editFullName = QLineEdit(groupBox)
-        self.editPriority = QComboBox( FALSE, groupBox, "priority" ) 
-        self.editColor    = QComboBox( FALSE, groupBox, "color" )
+        self.editPriority = QComboBox( False, groupBox, "priority" ) 
+        self.editColor    = QComboBox( False, groupBox, "color" )
         #self.connect( self.editPriority, SIGNAL("activated(int)"), self.comboValueChanged )
         #self.connect( self.editColor, SIGNAL("activated(int)"), self.comboValueChanged ) 
 

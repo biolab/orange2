@@ -9,10 +9,6 @@ import orngDoc, orngOutput, orngResources
 from orngSignalManager import InputSignal, OutputSignal
 from xml.dom.minidom import Document, parse
 
-TRUE  = 1
-FALSE = 0 
-
-
 class DirectionButton(QToolButton):
     def __init__(self, parent, leftDirection = 1, useLargeIcons = 0):
         apply(QToolButton.__init__,(self, parent))
@@ -26,7 +22,7 @@ class DirectionButton(QToolButton):
         else:                    self.setIconSet(QIconSet(QPixmap(orngResources.move_right)))
         
         if useLargeIcons == 1:
-            self.setUsesBigPixmap(TRUE)
+            self.setUsesBigPixmap(True)
             self.setMaximumSize(40, 80)
             self.setMinimumSize(40, 80)
         else:
@@ -75,13 +71,13 @@ class WidgetButton(QToolButton):
         QToolTip.add( self, tooltipText)
 
         self.canvasDlg = canvasDlg
-        self.setTextLabel(name, FALSE)
+        self.setTextLabel(name, False)
         
         self.setIconSet(QIconSet(QPixmap(self.getFullIconName())))
         
         if useLargeIcons == 1:
-            self.setUsesTextLabel (TRUE)
-            self.setUsesBigPixmap(TRUE)
+            self.setUsesTextLabel (True)
+            self.setUsesBigPixmap(True)
             self.setMaximumSize(80, 80)
             self.setMinimumSize(80, 80)
         else:
@@ -179,11 +175,11 @@ class WidgetButton(QToolButton):
             items = win.canvasView.canvas().collisions(widget.rect())
             count = win.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget)
             if count > 1:
-                    widget.invalidPosition = TRUE
-                    widget.selected = TRUE
+                    widget.invalidPosition = True
+                    widget.selected = True
             else:
-                    widget.invalidPosition = FALSE
-                    widget.selected = FALSE
+                    widget.invalidPosition = False
+                    widget.selected = False
             widget.updateLineCoords()
             win.canvasView.canvas().update()
         delattr(self, "busy")
@@ -278,7 +274,7 @@ class WidgetTabs(QTabWidget):
         self.tabs = []
         self.canvasDlg = None
         self.allWidgets = []
-        self.useLargeIcons = FALSE
+        self.useLargeIcons = False
         self.tabDict = {}
         self.setMinimumWidth(10)    # this way the < and > button will show if tab dialog is too small
         self.widgetInfo = widgetInfo

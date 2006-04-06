@@ -14,10 +14,6 @@ from orngDlgs import *
 from orngSignalManager import SignalManager
 import cPickle
 
-TRUE  = 1
-FALSE = 0
-
-
 class SchemaDoc(QMainWindow):
     def __init__(self, canvasDlg, *args):
         apply(QMainWindow.__init__,(self,) + args)
@@ -28,7 +24,7 @@ class SchemaDoc(QMainWindow):
         self.setCaption("Schema " + str(orngResources.iDocIndex))
         orngResources.iDocIndex = orngResources.iDocIndex + 1
         
-        self.enableSave(FALSE)
+        self.enableSave(False)
         self.setIcon(QPixmap(orngResources.file_new))
         self.lines = []                         # list of orngCanvasItems.CanvasLine items
         self.widgets = []                       # list of orngCanvasItems.CanvasWidget items
@@ -38,7 +34,7 @@ class SchemaDoc(QMainWindow):
         self.documentname = str(self.caption())
         self.applicationpath = canvasDlg.settings["saveApplicationDir"]
         self.applicationname = str(self.caption())
-        self.documentnameValid = FALSE
+        self.documentnameValid = False
         self.loadedSettingsDict = {}
         self.canvas = QCanvas(2000,2000)
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
@@ -90,7 +86,7 @@ class SchemaDoc(QMainWindow):
 
     # add line connecting widgets outWidget and inWidget
     # if necessary ask which signals to connect
-    def addLine(self, outWidget, inWidget, enabled = TRUE):
+    def addLine(self, outWidget, inWidget, enabled = True):
         # check if line already exists
         line = self.getLine(outWidget, inWidget)
         if line:
@@ -101,7 +97,7 @@ class SchemaDoc(QMainWindow):
             QMessageBox.critical( None, "Orange Canvas", "Cyclic connections are not allowed in Orange Canvas.", QMessageBox.Ok + QMessageBox.Default )
             return
 
-        dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
+        dialog = SignalDialog(self.canvasDlg, None, "", True)
         dialog.setOutInWidgets(outWidget, inWidget)
         connectStatus = dialog.addDefaultLinks()
         if connectStatus == -1:
@@ -137,7 +133,7 @@ class SchemaDoc(QMainWindow):
             outWidget.updateTooltip()
             inWidget.updateTooltip()
 
-        self.enableSave(TRUE)
+        self.enableSave(True)
         return line
 
     # ####################################
@@ -150,7 +146,7 @@ class SchemaDoc(QMainWindow):
                 signals = line.getSignals()
             
         if newSignals == None:
-            dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
+            dialog = SignalDialog(self.canvasDlg, None, "", True)
             dialog.setOutInWidgets(outWidget, inWidget)
             for (outName, inName) in signals:
                 #print "<extra>orngDoc.py - SignalDialog.addLink() - adding signal to dialog: ", outName, inName
@@ -176,7 +172,7 @@ class SchemaDoc(QMainWindow):
         outWidget.updateTooltip()
         inWidget.updateTooltip()
 
-        self.enableSave(TRUE)
+        self.enableSave(True)
         
 
     # #####################################
@@ -222,7 +218,7 @@ class SchemaDoc(QMainWindow):
         if not otherSignals:
             self.removeLine(outWidget, inWidget)
 
-        self.enableSave(TRUE)
+        self.enableSave(True)
 
     # ####################################
     # remove line line
@@ -237,7 +233,7 @@ class SchemaDoc(QMainWindow):
         line.outWidget.updateTooltip()
         line.hide()
         line.remove()
-        self.enableSave(TRUE)        
+        self.enableSave(True)        
 
     # ####################################
     # remove line, connecting two widgets
@@ -295,7 +291,7 @@ class SchemaDoc(QMainWindow):
         qApp.restoreOverrideCursor()
         
         self.widgets.append(newwidget)
-        self.enableSave(TRUE)
+        self.enableSave(True)
         self.canvas.update()    
         return newwidget
 
@@ -310,7 +306,7 @@ class SchemaDoc(QMainWindow):
         self.signalManager.removeWidget(widget.instance)
         self.widgets.remove(widget)
         widget.remove()
-        self.enableSave(TRUE)
+        self.enableSave(True)
 
     def clear(self):
         for widget in self.widgets[::-1]:   self.removeWidget(widget)   # remove widgets from last to first
@@ -322,7 +318,7 @@ class SchemaDoc(QMainWindow):
             line.setEnabled(1)
             #line.repaintLine(self.canvasView)
         self.canvas.update()
-        self.enableSave(TRUE)
+        self.enableSave(True)
 
     def disableAllLines(self):
         for line in self.lines:
@@ -330,7 +326,7 @@ class SchemaDoc(QMainWindow):
             line.setEnabled(0)
             #line.repaintLine(self.canvasView)
         self.canvas.update()
-        self.enableSave(TRUE)
+        self.enableSave(True)
 
     # return a new widget instance of a widget with filename "widgetName"
     def addWidgetByFileName(self, widgetName, x, y, caption, activateSettings = 1):
@@ -387,13 +383,13 @@ class SchemaDoc(QMainWindow):
         self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
         self.applicationname = os.path.splitext(os.path.split(name)[1])[0] + ".py"
         self.setCaption(self.documentname)
-        self.documentnameValid = TRUE
+        self.documentnameValid = True
         self.save()        
 
     # ####################################
     # save the file            
     def save(self):
-        self.enableSave(FALSE)
+        self.enableSave(False)
 
         # create xml document
         doc = Document()
@@ -509,10 +505,10 @@ class SchemaDoc(QMainWindow):
 
             for widget in self.widgets: widget.updateTooltip()
             self.canvas.update()
-            self.enableSave(FALSE)
+            self.enableSave(False)
             
             self.setCaption(self.documentname)
-            self.documentnameValid = TRUE
+            self.documentnameValid = True
             self.signalManager.processNewSignals(self.widgets[0].instance)
 
         finally:
@@ -530,7 +526,7 @@ class SchemaDoc(QMainWindow):
         qname = QFileDialog.getSaveFileName( os.path.join(self.applicationpath, appName) , "Orange Scripts (*%s)" % extension, self, "", "Save File as Application")
         if qname.isEmpty(): return
 
-        saveDlg = saveApplicationDlg(None, "", TRUE)
+        saveDlg = saveApplicationDlg(None, "", True)
 
         # add widget captions
         for instance in self.signalManager.widgets:
@@ -551,6 +547,7 @@ class SchemaDoc(QMainWindow):
 
         #format string with file content
         t = "    "  # instead of tab
+        n = "\n"
         imports = "import sys, os, cPickle, orange\nimport orngSignalManager\n\n#set value in next line to 1 if want to output debugging info to file 'signalManagerOutput.txt'\nDEBUG_MODE = 0\n"
         imports += """
 widgetDir = os.path.join(os.path.split(orange.__file__)[0], "OrangeWidgets")
@@ -563,7 +560,7 @@ if os.path.exists(widgetDir):
         instancesT = "# create widget instances\n" +t+t
         instancesB = "# create widget instances\n" +t+t
         tabs = "# add tabs\n"+t+t
-        links = "#load settings before we connect widgets\n" +t+t+ "self.loadSettings()\n\n" +t+t + "# add widget signals\n"+t+t + "signalManager.setFreeze(1)\n" +t+t
+        links = "#load settings before we connect widgets\n" +t+t+ "self.loadSettings()\n\n" +t+t + "# add widget signals\n"+t+t + "self.signalManager.setFreeze(1)\n" +t+t
         buttons = "# create widget buttons\n"+t+t
         buttonsConnect = "#connect GUI buttons to show widgets\n"+t+t
         icons = "# set icons\n"+t+t
@@ -572,6 +569,7 @@ if os.path.exists(widgetDir):
         saveSett = ""
         signals = "#set event and progress handler\n"+t+t
         synchronizeContexts = ""
+        widgetInstanceList = "#list of widget instances\n" +t+t + "self.widgets = ["
 
         sepCount = 1
         # gui for shown widgets
@@ -586,12 +584,12 @@ if os.path.exists(widgetDir):
                 name = name.replace("(", "")
                 name = name.replace(")", "")
                 imports += "from %s import *\n" % (widget.widget.getFileName())
-                instancesT += "self.ow%s = %s (self.tabs, signalManager = signalManager)\n" % (name, widget.widget.getFileName())+t+t
-                instancesB += "self.ow%s = %s(signalManager = signalManager)\n" %(name, widget.widget.getFileName()) +t+t
+                instancesT += "self.ow%s = %s (self.tabs, signalManager = self.signalManager)\n" % (name, widget.widget.getFileName())+t+t
+                instancesB += "self.ow%s = %s(signalManager = self.signalManager)\n" %(name, widget.widget.getFileName()) +t+t
                 signals += "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
                 icons += "self.ow%s.setWidgetIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
                 captions  += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
-                manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
+                manager += "self.signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 tabs += "self.ow%s.captionTitle = '%s'\n" % (name, widget.caption)+t+t
                 tabs += "self.ow%s.setCaption(self.ow%s.captionTitle)\n" % (name, name) +t+t
@@ -601,12 +599,13 @@ if os.path.exists(widgetDir):
                 loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
                 saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
                 synchronizeContexts = "self.ow%s.synchronizeContexts()\n" % (name) +t+t + synchronizeContexts
+                widgetInstanceList += "self.ow%s, " % (name)
             else:
                 buttons += "frameSpace%s = QFrame(self);  frameSpace%s.setMinimumHeight(10); frameSpace%s.setMaximumHeight(10)\n" % (str(sepCount), str(sepCount), str(sepCount)) +t+t
                 sepCount += 1
-
-        instancesT += "\n" +t+t + "# create instances of hidden widgets\n\n" +t+t
-        instancesB += "\n" +t+t + "# create instances of hidden widgets\n\n" +t+t
+                
+        instancesT += n+t+t + "# create instances of hidden widgets\n\n" +t+t
+        instancesB += n+t+t + "# create instances of hidden widgets\n\n" +t+t
         
         # gui for hidden widgets
         for widgetName in hiddenWidgetList:
@@ -619,14 +618,15 @@ if os.path.exists(widgetDir):
             name = name.replace("(", "")
             name = name.replace(")", "")
             imports += "from %s import *\n" % (widget.widget.getFileName())
-            instancesT += "self.ow%s = %s (self.tabs, signalManager = signalManager)\n" % (name, widget.widget.getFileName())+t+t
-            instancesB += "self.ow%s = %s(signalManager = signalManager)\n" %(name, widget.widget.getFileName()) +t+t
-            signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t + "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
-            manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
+            instancesT += "self.ow%s = %s (self.tabs, signalManager = self.signalManager)\n" % (name, widget.widget.getFileName())+t+t
+            instancesB += "self.ow%s = %s(signalManager = self.signalManager)\n" %(name, widget.widget.getFileName()) +t+t
+            signals += "self.ow%s.signalManager = self.signalManager\n" % (name) +t+t + "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
+            manager += "self.signalManager.addWidget(self.ow%s)\n" %(name) +t+t
             tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
             loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
             loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
             saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
+            widgetInstanceList += "self.ow%s, " % (name)
         
         for line in self.lines:
             if not line.getEnabled(): continue
@@ -641,20 +641,18 @@ if os.path.exists(widgetDir):
             inWidgetName = inWidgetName.replace(")", "")
     
             for (outName, inName) in line.getSignals():            
-                links += "signalManager.addLink( self.ow" + outWidgetName + ", self.ow" + inWidgetName + ", '" + outName + "', '" + inName + "', 1)\n" +t+t
-    
-        links += "signalManager.setFreeze(0)\n" +t+t
+                links += "self.signalManager.addLink( self.ow" + outWidgetName + ", self.ow" + inWidgetName + ", '" + outName + "', '" + inName + "', 1)\n" +t+t
+
+        widgetInstanceList += "]"    
+        links += "self.signalManager.setFreeze(0)\n" +t+t
         buttons += "frameSpace = QFrame(self);  frameSpace.setMinimumHeight(20); frameSpace.setMaximumHeight(20)\n"+t+t
         buttons += "exitButton = QPushButton(\"E&xit\",self)\n"+t+t + "self.connect(exitButton,SIGNAL(\"clicked()\"), application, SLOT(\"quit()\"))\n"+t+t
 
-        classname = os.path.splitext(os.path.basename(appName))[0]
-        classname = classname.replace(" ", "_")
-
         classinit = """
-    def __init__(self,parent=None):
+    def __init__(self,parent=None, debugMode = DEBUG_MODE, debugFileName = "signalManagerOutput.txt", verbosity = 1):
         QVBox.__init__(self,parent)
         self.setCaption("Qt %s")
-        signalManager = orngSignalManager.SignalManager(DEBUG_MODE)""" % (fileName)
+        self.signalManager = orngSignalManager.SignalManager(debugMode, debugFileName, verbosity)""" % (fileName)
 
         if asTabs == 1:
             classinit += """
@@ -704,32 +702,34 @@ if os.path.exists(widgetDir):
         saveSettings = """
         
     def saveSettings(self):
+        if DEBUG_MODE: return
         %s
         strSettings = {}
-        """ % (synchronizeContexts) + saveSett + "\n" + t+t + """file = open("%s", "w")
+        """ % (synchronizeContexts) + saveSett + n+t+t + """file = open("%s", "w")
         cPickle.dump(strSettings, file)
         file.close()
         """ % (fileName + ".sav")
         
                 
         finish = """
-application = QApplication(sys.argv)
-ow = """ + classname + """()
-application.setMainWidget(ow)
-ow.show()
+if __name__ == "__main__": 
+    application = QApplication(sys.argv)
+    ow = GUIApplication()
+    application.setMainWidget(ow)
+    ow.show()
 
-# comment the next line if in debugging mode and are interested only in output text in 'signalManagerOutput.txt' file
-application.exec_loop()
-ow.saveSettings()
+    # comment the next line if in debugging mode and are interested only in output text in 'signalManagerOutput.txt' file
+    application.exec_loop()
+    ow.saveSettings()
 """
 
         #if save != "":
         #    save = t+"def exit(self):\n" +t+t+ save
 
         if asTabs:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + signals + "\n" +t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
+            whole = imports + "\n\n" + "class GUIApplication(QVBox):" + classinit + n+n+t+t+ instancesT + signals + n+t+t + widgetInstanceList+n+t+t + progress + n+t+t + manager + n+t+t + tabs + n+ t+t + links + n+ handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         else:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + signals + "\n\n"+t+t+ captions + "\n"+t+t+ icons + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
+            whole = imports + "\n\n" + "class GUIApplication(QVBox):" + classinit + "\n\n"+t+t+ instancesB + signals + n+n+t+t+ widgetInstanceList +n+t+t + captions + n+t+t+ icons + n+t+t + manager + n+t+t + buttons + n + progress + n +t+t+  buttonsConnect + n +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         
         #save app
         fileApp = open(os.path.join(self.applicationpath, self.applicationname), "wt")

@@ -3,7 +3,7 @@
 #    manager, that handles correct processing of widget signals
 #
 
-import sys
+import sys, time
 import orange
 
 Single = 2
@@ -71,11 +71,21 @@ class SignalManager:
     freezing = 0            # do we want to process new signal immediately
     signalProcessingInProgress = 0 # this is set to 1 when manager is propagating new signal values
 
-    def __init__(self, debugMode = 0, debugFileName = "signalManagerOutput.txt"):
+    def __init__(self, debugMode = 0, debugFileName = "signalManagerOutput.txt", verbosity = 1):
         self.debugFile = None
+        self.verbosity = verbosity
         if debugMode:
             self.debugFile = open(debugFileName, "wt")
             sys.excepthook = self.exceptionHandler
+
+    def setDebugMode(self, debugMode = 0, debugFileName = "signalManagerOutput.txt", verbosity = 1):
+        self.verbosity = verbosity
+        if self.debugFile:
+            self.debugFile.close()
+        if debugMode:
+            self.debugFile = open(debugFileName, "wt", 0)
+            sys.excepthook = self.exceptionHandler
+
 
     # ----------------------------------------------------------
     # ----------------------------------------------------------
@@ -88,33 +98,34 @@ class SignalManager:
     def addEvent(self, strValue, object = None):
         if self.debugFile:
             self.debugFile.write(strValue)
-            if object:
-                if type(object) == orange.ExampleTable:
-                    name = " " + getattr(object, "name", "")
-                    self.debugFile.write("\n\ttoken type = ExampleTable" + name + ". len = " + str(len(object)))
+            if type(object) == orange.ExampleTable:
+                name = " " + getattr(object, "name", "")
+                self.debugFile.write(". Token type = ExampleTable" + name + ". len = " + str(len(object)))
+            elif type(object) == list:
+                self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object[:10])))
+            elif object != None:
+                self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object)[:100]))
             self.debugFile.write("\n")
+            self.debugFile.flush()
 
     def exceptionHandler(self, type, value, tracebackInfo):
-        self.debugFile.write("Unhandled exception of type %s\n" % ( str(type)))
-        self.debugFile.write("Traceback:\n")
-
         import traceback, os
         list = traceback.extract_tb(tracebackInfo, 10)
         space = "\t"
         totalSpace = space
-        for i in range(len(list)):
-            (file, line, funct, code) = list[i]
-            if code == None: continue
-            (dir, filename) = os.path.split(file)
-            self.debugFile.write(totalSpace + "File: " + filename + " in line %4d\n" %(line))
+        self.debugFile.write("Unhandled exception of type %s\n" % ( str(type)))
+        self.debugFile.write("Traceback:\n")
+
+        for i, (file, line, funct, code) in enumerate(list):
+            if not code: continue
+            self.debugFile.write(totalSpace + "File: " + os.path.split(file)[1] + " in line %4d\n" %(line))
             self.debugFile.write(totalSpace + "Function name: %s\n" % (funct))
-            if i == len(list)-1: self.debugFile.write(totalSpace + "Code: " + code + "\n")
-            else:
-                self.debugFile.write(totalSpace + "Code: " + code + "\n")
-                totalSpace += space
-            
-        self.debugFile.write(totalSpace + "Exception type: " + str(type) + "\n")
-        self.debugFile.write(totalSpace + "Exception value: " + str(value)+ "\n")
+            self.debugFile.write(totalSpace + "Code: " + code + "\n")
+            totalSpace += space
+
+        self.debugFile.write(totalSpace[:-1] + "Exception type: " + str(type) + "\n")
+        self.debugFile.write(totalSpace[:-1] + "Exception value: " + str(value)+ "\n")
+        self.debugFile.flush()
         
     # ----------------------------------------------------------
     # ----------------------------------------------------------
@@ -268,7 +279,8 @@ class SignalManager:
     def send(self, widgetFrom, signalNameFrom, value, id):
         # add all target widgets new value and mark them as dirty
         # if not freezed -> process dirty widgets
-        self.addEvent("send data from " + widgetFrom.title + ". Signal = " + signalNameFrom, value)
+        if self.verbosity >= 1:
+            self.addEvent("send data from " + widgetFrom.title + ". Signal = " + signalNameFrom, value)
 
         if not self.links.has_key(widgetFrom): return
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
@@ -292,7 +304,7 @@ class SignalManager:
         if len(self.widgets) == 0: return
         if self.signalProcessingInProgress: return
         
-        self.addEvent("process new signals from " + firstWidget.title)
+        #self.addEvent("process new signals from " + firstWidget.title)
         
         if firstWidget not in self.widgets:
             firstWidget = self.widgets[0]   # if some window that is not a widget started some processing we have to process new signals from the first widget

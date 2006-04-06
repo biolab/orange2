@@ -10,9 +10,6 @@ import traceback
 import os.path, os
 import orngResources
 
-TRUE  = 1
-FALSE = 0 
-
 class OutputWindow(QMainWindow):
     def __init__(self, canvasDlg, *args):
         apply(QMainWindow.__init__,(self,) + args)

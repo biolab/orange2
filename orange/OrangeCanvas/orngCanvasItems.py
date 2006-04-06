@@ -5,9 +5,6 @@
 from qt import *
 from qtcanvas import *
 import os, sys
-TRUE  = 1
-FALSE = 0
-
 ERROR = 0
 WARNING = 1
 
@@ -322,8 +319,8 @@ class CanvasWidget(QCanvasRectangle):
             self.imageEdge = QPixmap(os.path.join(canvasDlg.picsDir,"WidgetEdge.png"))
             
         self.setSize(68, 68)
-        self.selected = FALSE
-        self.invalidPosition = FALSE    # is the widget positioned over other widgets
+        self.selected = False
+        self.invalidPosition = False    # is the widget positioned over other widgets
         self.inLines = []               # list of connected lines on input
         self.outLines = []              # list of connected lines on output
         self.caption = widget.name
@@ -488,21 +485,21 @@ class CanvasWidget(QCanvasRectangle):
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):
-        if self.widget.getInputs() == []: return FALSE
+        if self.widget.getInputs() == []: return False
 
         LBox = QRect(self.x(), self.y()+18,8,16)
-        if isinstance(pos, QPoint) and LBox.contains(pos): return TRUE
-        elif isinstance(pos, QRect) and LBox.intersects(pos): return TRUE
-        else: return FALSE
+        if isinstance(pos, QPoint) and LBox.contains(pos): return True
+        elif isinstance(pos, QRect) and LBox.intersects(pos): return True
+        else: return False
         
     # is mouse position inside the right signal channel
     def mouseInsideRightChannel(self, pos):
-        if self.widget.getOutputs() == []: return FALSE
+        if self.widget.getOutputs() == []: return False
 
         RBox = QRect(self.x() + 60, self.y()+18,8,16)
-        if isinstance(pos, QPoint) and RBox.contains(pos): return TRUE
-        elif isinstance(pos, QRect) and RBox.intersects(pos): return TRUE
-        else: return FALSE
+        if isinstance(pos, QPoint) and RBox.contains(pos): return True
+        elif isinstance(pos, QRect) and RBox.intersects(pos): return True
+        else: return False
             
 
     # we know that the mouse was pressed inside a channel box. We only need to find
