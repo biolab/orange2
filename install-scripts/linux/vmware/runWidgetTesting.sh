@@ -1,8 +1,8 @@
 DISPLAY=george:1
 export DISPLAY
 cd /home/vmware
-#rm -Rf testWidgetImage
-#cp -R /vmware/VMWAREimages/winXP.widgetTesting testWidgetImage
+rm -Rf testWidgetImage
+cp -R /vmware/VMWAREimages/winXP.widgetTesting testWidgetImage
 echo "\"testWidgetImage/Windows\ XP\ Professional.vmx\"" > runThis.lst
 
 # kill after 30min
