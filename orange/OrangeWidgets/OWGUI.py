@@ -116,7 +116,7 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
                    cfunc = spinCallback and FunctionCallback(master, spinCallback, widget=wb, getwidget=getwidget))
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, checked, checkCallback)]
-        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wb, value, spinCallback, min, max)]
+        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wb, value, spinCallback, min, max, spinCallback)]
     return wa, wb
 
 
