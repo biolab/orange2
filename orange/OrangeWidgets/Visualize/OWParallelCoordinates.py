@@ -24,7 +24,7 @@ class OWParallelCoordinates(OWWidget):
                     "graph.useSplines", "graph.lineTracking", "graph.enabledLegend", "autoSendSelection",
                     "toolbarSelection", "graph.showStatistics", "colorSettings", "showAllAttributes"]
     attributeContOrder = ["None", "ReliefF", "Fisher discriminant", "Signal to Noise", "Signal to Noise For Each Class"]
-    attributeDiscOrder = ["None", "ReliefF", "GainRatio", "Oblivious decision graphs"]
+    attributeDiscOrder = ["None", "ReliefF", "GainRatio"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
     linesDistanceNums = [10, 20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
