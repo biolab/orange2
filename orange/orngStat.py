@@ -910,7 +910,7 @@ class CDT:
     self.C, self.D, self.T = C, D, T
    
 def isCDTEmpty(cdt):
-    return cdt.C + cdt.D + cdt.T == 0
+    return cdt.C + cdt.D + cdt.T < 1e-20
 
 
 def computeCDT(res, classIndex=-1, **argkw):
@@ -990,8 +990,8 @@ def AUC_x(cdtComputer, ite, all_ite, divideByIfIte, computerArgs):
         return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T)/divideByIfIte for cdt in cdts], True
         
     if all_ite:
-         cdt = cdtComputer(*(all_ite, ) + computerArgs)
-         if not isCDTEmpty(cdt[0]):
+         cdts = cdtComputer(*(all_ite, ) + computerArgs)
+         if not isCDTEmpty(cdts[0]):
              return [(cdt.C+cdt.T/2)/(cdt.C+cdt.D+cdt.T) for cdt in cdts], False
 
     return False, False
