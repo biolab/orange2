@@ -480,7 +480,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             intX = self.transform(QwtPlot.xBottom, x_i)
             intY = self.transform(QwtPlot.yLeft, y_i)
             if len(self.anchorData) > 50:
-                text = "Too many attributes.<hr>Example index = %d" % (index+1)
+                text = "Too many attributes.<hr>Example index = %d" % (index)
                 self.showTip(intX, intY, text)
 
             elif self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
@@ -521,7 +521,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     labels = []
 
                 text = self.getExampleTooltipText(self.rawdata, self.rawdata[index], labels)
-                text += "<br><hr>Example index = %d" % (index+1)
+                text += "<br><hr>Example index = %d" % (index)
                 if extraString:
                     text += "<hr>" + extraString
 
