@@ -24,7 +24,7 @@ data = orange.ExampleTable("iris.tab")
 print len(data)
 
 tree = orngTree.TreeLearner(data, storeExamples=1, storeContingencies=1)
-print 'CLASSIFICATION TREE:',
+print 'CLASSIFICATION TREE:'
 orngTree.printTxt(tree)
 
 print '\nEXAMPLES IN NODES:'

@@ -8,10 +8,10 @@
 import orange, orngTree
 data = orange.ExampleTable("iris.tab")
 
-print "BIG TREE:",
+print "BIG TREE:"
 tree1 = orngTree.TreeLearner(data)
-orngTree.printTxt(tree1, leafFields=['major', 'contingency'])
+orngTree.printTree(tree1, leafStr="%m", nodeStr=".")
 
-print "\nPRE-PRUNED TREE:",
+print "\nPRE-PRUNED TREE:"
 tree2 = orngTree.TreeLearner(data, maxMajority=0.7)
-orngTree.printTxt(tree2, leafFields=['major', 'contingency'])
+orngTree.printTree(tree2, leafStr="%m", nodeStr=".")

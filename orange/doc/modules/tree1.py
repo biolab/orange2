@@ -9,5 +9,5 @@
 import orange, orngTree
 data = orange.ExampleTable("iris.tab")
 tree = orange.TreeLearner(data)
-orngTree.printTxt(tree)
+orngTree.printTree(tree)
 orngTree.printDot(tree, fileName="tree1.dot")
