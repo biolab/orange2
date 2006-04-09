@@ -11,9 +11,9 @@
 
 from OWWidget import *
 import OWGUI, string, os.path
-import OWVisAttrSelection
+import orngVisFuncts
 
-contMeasures = [("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Signal to Noise Ratio", OWVisAttrSelection.S2NMeasure())]
+contMeasures = [("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Signal to Noise Ratio", orngVisFuncts.S2NMeasure())]
 discMeasures = [("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini()), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50))]
 
 
