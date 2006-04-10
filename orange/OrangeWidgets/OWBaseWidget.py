@@ -910,37 +910,38 @@ class OWBaseWidget(QDialog):
         
         index = random.randint(0, len(self._guiElements)-1)
         type, widget = self._guiElements[index][0], self._guiElements[index][1]
-        if type == "checkBox" and widget.isEnabled():
+        if not widget.isEnabled(): return
+        if type == "checkBox":
             type, widget, value, callback = self._guiElements[index]
             setattr(self, value, not mygetattr(self, value))
             if callback:
                 callback()
-        elif type == "button" and widget.isEnabled():
+        elif type == "button":
             type, widget, callback = self._guiElements[index]
             if widget.isToggleButton():
                 widget.setOn(not widget.isOn())
             if callback:
                 callback()
-        elif type == "listBox" and widget.isEnabled():
+        elif type == "listBox":
             type, widget, value, callback = self._guiElements[index]
             if widget.count():
                 itemIndex = random.randint(0, widget.count()-1)
                 widget.setSelected(itemIndex, not widget.isSelected(itemIndex))
                 if callback:
                     callback()
-        elif type == "radioButtonsInBox" and widget.isEnabled():
+        elif type == "radioButtonsInBox":
             type, widget, value, callback = self._guiElements[index]
             radioIndex = random.randint(0, len(widget.buttons)-1)
             if widget.buttons[radioIndex].isEnabled():
                 setattr(self, value, radioIndex)
                 if callback:
                     callback()
-        elif type == "radioButton" and widget.isEnabled():
+        elif type == "radioButton":
             type, widget, value, callback = self._guiElements[index]
             setattr(self, value, not mygetattr(self, value))
             if callback:
                 callback()
-        elif type in ["hSlider", "qwtHSlider", "spin"] and widget.isEnabled():
+        elif type in ["hSlider", "qwtHSlider", "spin"]:
             type, widget, value, min, max, step, callback = self._guiElements[index]
             currentValue = mygetattr(self, value)
             if currentValue == min:   setattr(self, value, currentValue+step)
@@ -948,7 +949,7 @@ class OWBaseWidget(QDialog):
             else:                     setattr(self, value, currentValue + [-step,step][random.randint(0,1)])
             if callback:
                 callback()
-        elif type == "comboBox" and widget.isEnabled():
+        elif type == "comboBox":
             type, widget, value, sendSelectedValue, valueType, callback = self._guiElements[index]
             if widget.count():
                 pos = random.randint(0, widget.count()-1)
