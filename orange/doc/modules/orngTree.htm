@@ -12,7 +12,7 @@ trees. <code>orngTree.TreeLearner</code> is essentially a wrapper around <a href
 
 <P>The module also contains functions for counting the number of nodes and leaves in the tree.</P>
 
-<P>The most striking functionality of the module is the function for printing out the tree which is extremely versatile and can print out practically anything you'd like to know, from the number of examples, proportion of majority class and similar, to more complex statistics like the proportion a particular class divided by the proportion this class in a parent node.</P>
+<P>The most striking functionality of the module is the function for printing out the tree which is extremely versatile and can print out practically anything you'd like to know, from the number of examples, proportion of majority class and similar, to more complex statistics like the proportion a particular class divided by the proportion of this class in a parent node. And even more, you can define your own callback functions to be used for printing.</P>
 
 
 <h2>TreeLearner</h2>
@@ -72,7 +72,7 @@ of <code>TreeClassifier</code> object is returned instead.</p>
   <dd>Induction stops when the proportion of majority class in the
   node exceeds the value set by this parameter(default: 1.0). E.g. to stop the induction as soon as the majority class reaches 70%, you should say
   <xmp class="code">tree2 = orngTree.TreeLearner(data, maxMajority=0.7)</xmp>
-  
+
   <P>This is an example of the tree on iris data set, built with the above arguments - the numbers show the majority class proportion at each node. You can find more details in the script <a href="tree2.py">tree2.py</a>, which induces and prints this tree.</P>
   <xmp class="printout">root: 0.333
 |    petal width<0.800: 1.000
@@ -184,6 +184,9 @@ big.</p>
 
   <dt>simpleFirst</dt>
   <dd>If <code>True</code> (default), the branches with a single node are printed before the branches with larger subtrees. If you set it to <code>False</code> (which I don't know why you would), the branches are printed in order of appearance.</dd>
+  
+  <dt>userFormats</dt>
+  <dd>A list of regular expressions and callback function through which the user can print out other specific information in the nodes.
 </dl>
 
 <P>The magic is in the format string. It is a string which is printed out at every leaf or internal node with the certain format specifiers replaced by data from the tree node. Specifiers are generally of form
@@ -233,6 +236,9 @@ For regression trees, you can use operators =, !=, &lt;, &lt;=, &gt;, and &gt;=,
 <dt>d</dt>
 <dd>Same as above, except that it shows proportions of examples. This again doesn't work with regression trees.</dd>
 </dl>
+
+<dt>&lt;user defined formats&gt;</dt>
+<dd>You can add more, if you will. Instructions and examples are given at the end of this section.</dd>
 </P>
 
 <P>Now for some examples. We shall build a small tree from the iris data set - we shall limit the depth to three levels.</P>
@@ -419,7 +425,7 @@ RM>=6.941
 |    |    |    TAX>=534.500: 1.000 (30.000)</xmp>
 
 <P>The last line, for instance, says the the number of examples with the class below 22 is among those with tax above 534 is 30 times higher than the number of such examples in its parent node.</P>
- 
+
 <P>For another exercise, let's count the same for all examples <em>outside</em> interval [20, 22] (given like this, the interval includes the bounds). And let us print out the proportions as percents.</P>
 
 <xmp class="code">orngTree.printTree(tree, leafStr="%C![20,22] (%^cbP![20,22]%)", nodeStr=".")</xmp>
@@ -441,6 +447,93 @@ RM>=6.941
 |    |    RM>=7.437: 29.000 (98%)
 |    |    |    TAX<534.500: 29.000 (103%)
 |    |    |    TAX>=534.500: 0.000 (0%)
+</xmp>
+
+
+<h3>Defining Your Own Printout functions</h3>
+
+<P><code>dumpTree</code>'s argument <code>userFormats</code> can be used to print out some other information in the leaves or nodes. If provided, <code>userFormat</code> should contain a list of tuples with a regular expression and a callback function to be called when that expression is found in the format string. Expressions from <code>userFormats</code> are checked before the built-in expressions discussed above, so you can override the built-ins if you want to.</P>
+
+<P>The regular expression should describe a string like those we used above, for instance the string <code>%.2DbP</code>. When a leaf or internal node is printed out, the format string (<code>leafStr</code> or <code>nodeStr</code>) is checked for these regular expressions and when the match is found, the corresponding callback function is called.</P>
+
+<P>The callback function will get five arguments: the format string (<code>leafStr</code> or <code>nodeStr</code>), the match object, the node which is being printed, its parent (can be <code>None</code>) and the tree classifier. The function should return the format string in which the part described by the match object (that is, the part that is matched by the regular expression) is replaced by whatever information your callback function is supposed to give.</P>
+
+<P>The function can use several utility function provided in the module.</P>
+<dl class="attributes">
+<dt>insertStr(s, mo, sub)</dt>
+<dd>Replaces the part of <code>s</code> which is covered by <code>mo</code> by the string <code>sub</code>.</dd>
+
+<dt>insertDot(s, mo)</dt>
+<dd>Calls <code>insertStr(s, mo, "."). You should use this when the function cannot compute the desired quantity; it is called, for instance, when it needs to divide by something in the parent, but the parent doesn't exist.</dd>
+
+<dt>insertNum(s, mo, n)</dt>
+<dd>Replaces the part of <code>s</code> matched by <code>mo</code> by the number <code>n</code>, formatted as specified by the user, that is, it multiplies it by 100, if needed, and prints with the right number of places and decimals. It does so by checking the <code>mo</code> for a group named <code>m100</code> (representing the <code>^</code> in the format string) and a group named <code>fs</code> represented the part giving the number of decimals (e.g. <code>5.3</code>).</dd>
+
+<dt>byWhom(by, parent, tree)</dt>
+<dd>If <code>by</code> equals <code>bp</code>, it returns <code>parent</code>, else it returns <code>tree.tree</code>. This is used to find what to divide the quantity with, when division is required.</dd>
+</dl>
+
+<P>There are also a few pieces of regular expression that you may want to reuse. The two you are likely to use are</P>
+<dl class="attributes-sm">
+<dt>fs</dt>
+<dd>Defines the multiplier by 100 (<code>^</code>) and the format for the number of decimals (e.g. <code>5.3</code>). The corresponding groups are named <code>m100</code> and <code>fs</code>.</dd>
+
+<dt>by</dt>
+<dd>Defines <code>bP</code> or <code>bA</code> or nothing; the result is in groups <code>by</code>.</dd>
+</dl>
+
+<P>For a trivial example, "%V" is implemented like this. There is the following tuple in the list of built-in formats: <code>(re.compile("%V"), replaceV)</code>. <code>replaceV</code> is a function defined by:</P>
+<xmp class="code">def replaceV(strg, mo, node, parent, tree):
+    return insertStr(strg, mo, str(node.nodeClassifier.defaultValue))</xmp>
+<P>It therefore takes the value predicted at the node (<code>node.nodeClassifier.defaultValue</code>), converts it to a string and passes it to <code>insertStr</code> to do the replacement.</P>
+
+<P>A more complex regular expression is the one for the proportion of majority class, defined as <code>"%"+fs+"M"+by</code>. It uses the two partial expressions defined above.</P>
+
+<P>Let's say with like to print the classification margin for each node, that is, the difference between the proportion of the largest and the second largest class in the node.</P>
+
+<p class="header">part of <a href="orngTree2.py">orngTree2.py</a></p>
+<xmp class="code">def getMargin(dist):
+    if dist.abs < 1e-30:
+        return 0
+    l = list(dist)
+    l.sort()
+    return (l[-1] - l[-2]) / dist.abs
+
+def replaceB(strg, mo, node, parent, tree):
+    margin = getMargin(node.distribution)
+
+    by = mo.group("by")
+    if margin and by:
+        whom = orngTree.byWhom(by, parent, tree)
+        if whom and whom.distribution:
+            divMargin = getMargin(whom.distribution)
+            if divMargin > 1e-30:
+                margin /= divMargin
+            else:
+                orngTree.insertDot(strg, mo)
+        else:
+            return orngTree.insertDot(strg, mo)
+    return orngTree.insertNum(strg, mo, margin)
+
+
+myFormat = [(re.compile("%"+orngTree.fs+"B"+orngTree.by), replaceB)]</xmp>
+
+<P>We first defined <code>getMargin</code> which gets the distribution and computes the margin. The callback replaces, <code>replaceB</code>, computes the margin for the node. If we need to divided the quantity by something (that is, if the <code>by</code> group is present), we call <code>orngTree.byWhom</code> to get the node with whose margin this node's margin is to be divided. If this node (usually the parent) does not exist of if its margin is zero, we call <code>insertDot</code> to insert a dot, otherwise we call <code>insertNum</code> which will insert the number, obeying the format specified by the user.</P>
+
+<P><code>myFormat</code> is a list containing the regular expression and the callback function.</P>
+
+<P>We can now print out the iris tree, for instance using the following call.</P>
+<xmp class="code">orngTree.printTree(tree, leafStr="%V %^B% (%^3.2BbP%)", userFormats = myFormat)</xmp>
+
+<P>And this is what we get.</P>
+<xmp class="printout">petal width<0.800: Iris-setosa 100% (100.00%)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: Iris-versicolor 88% (108.57%)
+|    |    petal length>=5.350: Iris-virginica 100% (122.73%)
+|    petal width>=1.750
+|    |    petal length<4.850: Iris-virginica 33% (34.85%)
+|    |    petal length>=4.850: Iris-virginica 100% (104.55%)
 </xmp>
 
 
