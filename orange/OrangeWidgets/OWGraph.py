@@ -593,10 +593,10 @@ class OWGraph(QwtPlot):
         x1 = self.axisScale(QwtPlot.xBottom).lBound(); x2 = self.axisScale(QwtPlot.xBottom).hBound()
         y1 = self.axisScale(QwtPlot.yLeft).lBound();   y2 = self.axisScale(QwtPlot.yLeft).hBound()
 
-        if not (self.axisScaleDraw(QwtPlot.xBottom).options() and self.axisScaleDraw(QwtPlot.yLeft).options()): edgeOffset = 0.01
+        if self.showAxisScale == 0: edgeOffset = 0.01
         else: edgeOffset = 0.08
 
-        f.write("from pylab import *\n\n#constants\nx1 = %f; x2 = %f\ny1 = %f; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = %f\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\nhold(True)\n" % (x1,x2,y1,y2,size.width(), size.height(), edgeOffset))
+        f.write("from pylab import *\n\n#possible changes in how the plot looks\n#rcParams['xtick.major.size'] = 0\n#rcParams['ytick.major.size'] = 0\n\n#constants\nx1 = %f; x2 = %f\ny1 = %f; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = %f\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\nhold(True)\n" % (x1,x2,y1,y2,size.width(), size.height(), edgeOffset))
 
         # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
         linestyles = ["o", "-", "-.", "--", ":", "-", "-"]
@@ -617,9 +617,14 @@ class OWGraph(QwtPlot):
             markeredgecolor = self._getColorFromObject(c.symbol().pen()) 
             markerfacecolor = self._getColorFromObject(c.symbol().brush())
             color = self._getColorFromObject(c.pen())
+            colorB = self._getColorFromObject(c.brush())
             linewidth = c.pen().width()
-            #markeredgewidth
-            f.write("plot(%s, %s, marker = '%s', linestyle = '%s', markersize = %d, markeredgecolor = %s, markerfacecolor = %s, color = %s, linewidth = %d)\n" % (xData, yData, marker, linestyle, markersize, markeredgecolor, markerfacecolor, color, linewidth))
+            if c.__class__ == PolygonCurve and len(xData) == 4:
+                x0 = min(xData); x1 = max(xData); diffX = x1-x0
+                y0 = min(yData); y1 = max(yData); diffY = y1-y0
+                f.write("gca().add_patch(Rectangle((%f, %f), %f, %f, edgecolor=%s, facecolor = %s, linewidth = %d, fill = 1))\n" % (x0,y0,diffX, diffY, color, colorB, linewidth))
+            else:
+                f.write("plot(%s, %s, marker = '%s', linestyle = '%s', markersize = %d, markeredgecolor = %s, markerfacecolor = %s, color = %s, linewidth = %d)\n" % (xData, yData, marker, linestyle, markersize, markeredgecolor, markerfacecolor, color, linewidth))
             
         f.write("\n# add markers\n")
         for key in self.markerKeys():
@@ -643,18 +648,20 @@ class OWGraph(QwtPlot):
         f.write("# enable grid\ngrid(%s)\n\n" % (self.grid().xEnabled() and self.grid().yEnabled() and "True" or "False"))
 
         # axis
-        if not (self.axisScaleDraw(QwtPlot.xBottom).options() and self.axisScaleDraw(QwtPlot.yLeft).options()):
+        if self.showAxisScale == 0:
             f.write("#hide axis\naxis('off')\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n")
         else:
             if self.axisScaleDraw(QwtPlot.yLeft).__class__ == DiscreteAxisScaleDraw:
                 labels = self.axisScaleDraw(QwtPlot.yLeft).labels
-                f.write("pos, labels = yticks(%s, %s)\nfor l in labels: l.set_rotation('vertical')\n" % (range(len(labels)), labels))
+                f.write("yticks(%s, %s)\nlabels = gca().get_yticklabels()\nsetp(labels, rotation=-%.3f) #, weight = 'bold', fontsize=10)\n\n" % (range(len(labels)), labels, self.axisScaleDraw(QwtPlot.yLeft).labelRotation()))
             if self.axisScaleDraw(QwtPlot.xBottom).__class__ == DiscreteAxisScaleDraw:
                 labels = self.axisScaleDraw(QwtPlot.xBottom).labels
-                f.write("xticks(%s, %s)\n" % (range(len(labels)), labels))
+                f.write("xticks(%s, %s)\nlabels = gca().get_xticklabels()\nsetp(labels, rotation=-%.3f) #, weight = 'bold', fontsize=10)\n\n" % (range(len(labels)), labels, self.axisScaleDraw(QwtPlot.xBottom).labelRotation()))
 
             f.write("#set axis labels\nxlabel('%s', weight = 'bold')\nylabel('%s', weight = 'bold')\n\n" % (str(self.axisTitle(QwtPlot.xBottom)), str(self.axisTitle(QwtPlot.yLeft))))
-            f.write("\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n")
+            f.write("\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n#subplots_adjust(left = 0.08, bottom = 0.11, right = 0.98, top = 0.98)\n")
+
+        f.write("\n# possible settings to change\n#axes().set_frame_on(0) #hide the frame\n#axis('off') #hide the axes and labels on them\n\n")
         
         f.write("show()")
         f.close()
