@@ -16,7 +16,7 @@ class OWRadviz(OWLinProj):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "clusterClassifierName",
-                    "showOptimizationSteps", "valueScalingType", "graph.showProbabilities", "showAllAttributes",
+                    "valueScalingType", "graph.showProbabilities", "showAllAttributes",
                     "learnerIndex", "colorSettings", "addProjectedPositions", "VizRankLearnerName"]
             
     def __init__(self, parent=None, signalManager = None):

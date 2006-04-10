@@ -182,6 +182,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     color = classValueIndices[graph.objects[i].getclass().value]
                     self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
 
+            """
             self.removeMarkers()
             for i in range(graph.nVertices):
                 if not validData[i]: continue
@@ -189,6 +190,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 self.marker(mkey).setXValue(float(data[i][0]))
                 self.marker(mkey).setYValue(float(data[i][1]))
                 self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+            """
 
         elif self.clusterClosure: self.showClusterLines(indices, validData)        
 

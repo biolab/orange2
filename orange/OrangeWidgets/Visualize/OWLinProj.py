@@ -10,7 +10,7 @@
 # Show a linear projection of the data
 # 
 
-from OWWidget import *
+from OWVisWidget import *
 from OWLinProjGraph import *
 from OWkNNOptimization import OWVizRank
 from OWClusterOptimization import *
@@ -22,11 +22,11 @@ import orngVizRank
 ###########################################################################################
 ##### WIDGET : Linear Projection
 ###########################################################################################
-class OWLinProj(OWWidget):
+class OWLinProj(OWVisWidget):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "clusterClassifierName",
-                    "showOptimizationSteps", "valueScalingType", "graph.showProbabilities", "showAllAttributes",
+                    "valueScalingType", "graph.showProbabilities", "showAllAttributes",
                     "learnerIndex", "colorSettings", "addProjectedPositions", "VizRankLearnerName"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
@@ -34,7 +34,7 @@ class OWLinProj(OWWidget):
 
     contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
         
-    def __init__(self,parent=None, signalManager = None, name = "Linear Projection"):
+    def __init__(self,parent=None, signalManager = None, name = "Linear Projection", graphClass = None):
         OWWidget.__init__(self, parent, signalManager, name, TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdata), ("Attribute Selection List", AttributeList, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
@@ -43,7 +43,6 @@ class OWLinProj(OWWidget):
         # local variables
         self.learnersArray = [None, None, None, None]   # VizRank, Cluster, FreeViz, S2N Heuristic Learner
         self.showAllAttributes = 0
-        self.showOptimizationSteps = 0
         self.valueScalingType = 0
         self.autoSendSelection = 1
         self.data = None
@@ -57,14 +56,12 @@ class OWLinProj(OWWidget):
         self.colorSettings = None
         self.addProjectedPositions = 0
         
-        self.shownAttributes = []
-        self.selectedShown = []
-        self.hiddenAttributes = []
-        self.selectedHidden = []
-
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
-        self.graph = OWLinProjGraph(self, self.mainArea, name)
+        if graphClass:
+            self.graph = graphClass(self, self.mainArea, name)
+        else:
+            self.graph = OWLinProjGraph(self, self.mainArea, name)
         self.box.addWidget(self.graph)
 
         # graph variables
@@ -91,10 +88,16 @@ class OWLinProj(OWWidget):
         self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)    
         
         # optimization dialog
-        if name.lower() == "radviz": self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
-        else:                        self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION, name)
+        if name.lower() == "radviz":
+            self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
+            self.learnersArray[0] = VizRankLearner(RADVIZ, self.optimizationDlg, self.graph)
+        elif name.lower() == "polyviz":
+            self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.POLYVIZ, name)
+            self.learnersArray[0] = VizRankLearner(POLYVIZ, self.optimizationDlg, self.graph)
+        else:
+            self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION, name)
+            self.learnersArray[0] = VizRankLearner(LINEAR_PROJECTION, self.optimizationDlg, self.graph)
 
-        self.learnersArray[0] = VizRankLearner(RADVIZ, self.optimizationDlg, self.graph)
         self.learnersArray[2] = FreeVizLearner(self.freeVizDlg)
 
         #load settings
@@ -111,15 +114,9 @@ class OWLinProj(OWWidget):
         self.tabs.insertTab(self.SettingsTab, "Settings")
  
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Shown Attributes " )
-        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
-        self.addRemoveGroup = OWGUI.widgetBox(self.GeneralTab, 1, orientation = "horizontal" )
-        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Hidden Attributes ")
-        self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialogs ", orientation = "horizontal")
-        
-        self.shownAttribsLB = OWGUI.listBox(hbox, self, "selectedShown", "shownAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
-        self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
+        self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraphAndAnchors)
 
+        self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialogs ", orientation = "horizontal")
         self.optimizationDlgButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
         self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
@@ -134,26 +131,11 @@ class OWLinProj(OWWidget):
         self.graph.autoSendSelectionCallback = self.selectionChanged
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
                                
-        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
-        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
-        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
-        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
-        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonDOWNAttr.setMaximumWidth(20)
-        self.buttonUPAttr.setMaximumWidth(20)
-
-        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
-        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
-        self.showAllCB = OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
-
         # ####################################
         # SETTINGS TAB
         # #####
+        self.extraTopBox = OWGUI.widgetBox(self.SettingsTab, orientation = "vertical")
+        self.extraTopBox.hide()
         OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=15, step=1, callback = self.updateGraph)
 
         box = OWGUI.widgetBox(self.SettingsTab, " Jittering Options ")
@@ -164,7 +146,7 @@ class OWLinProj(OWWidget):
         OWGUI.comboBoxWithCaption(box2a, self, "graph.scaleFactor", 'Scale point position by: ', callback = self.updateGraph, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
 
         valueScalingList = ["attribute range", "global range", "attribute variance"]
-        if name.lower() == "radviz":
+        if name.lower() in ["radviz", "polyviz"]:
             valueScalingList.pop(); self.valueScalingType = min(self.valueScalingType, 1)
         OWGUI.comboBoxWithCaption(box2a, self, "valueScalingType", 'Scale values by: ', callback = self.setValueScaling, items = valueScalingList)
 
@@ -203,6 +185,8 @@ class OWLinProj(OWWidget):
         self.activateLoadedSettings()
         self.setValueScaling() # XXX is there any better way to do this?!
         self.resize(900, 700)
+        self.grid.activate()
+        self.SettingsTab.updateGeometry()
 
     def saveToFile(self):
         self.graph.saveToFile([("Save PixTex", self.graph.savePicTeX)])
@@ -211,7 +195,6 @@ class OWLinProj(OWWidget):
         dlg = self.createColorDialog()
         self.colorPalette = dlg.getColorPalette("colorPalette")
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-                
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.clusterDlg.changeLearnerName(self.clusterClassifierName)
@@ -313,13 +296,6 @@ class OWLinProj(OWWidget):
         self.updateGraph(attrList, 1, insideColors, clusterClosure = (closure, enlargedClosure, classValue))
         self.graph.removeAllSelections()
 
-
-    def getShownAttributeList(self):
-        return [a[0] for a in self.shownAttributes]
-        #if self.shownAttributes != [] and type(self.shownAttributes[0]) == tuple:
-        #    return [a[0] for a in self.shownAttributes]
-        #else: return self.shownAttributes
-
     def setShownAttributeList(self, data, shownAttributes = None):
         shown = []
         hidden = []
@@ -348,6 +324,9 @@ class OWLinProj(OWWidget):
         self.resetAttrManipulation()
 
         self.sendShownAttributes()
+
+    def updateGraphAndAnchors(self):
+        self.updateGraph(setAnchors = 1)
     
     def updateGraph(self, attrList = None, setAnchors = 0, insideColors = None, clusterClosure = None, **args):
         if not attrList:
@@ -441,99 +420,12 @@ class OWLinProj(OWWidget):
 
     # ###############################################################################################################
     # EVENTS
-
-    def resetAttrManipulation(self):
-        if self.selectedShown:
-            mini, maxi = min(self.selectedShown), max(self.selectedShown)
-            tightSelection = maxi - mini == len(self.selectedShown) - 1
-        self.buttonUPAttr.setEnabled(self.selectedShown != [] and tightSelection and mini)
-        self.buttonDOWNAttr.setEnabled(self.selectedShown != [] and tightSelection and maxi < len(self.shownAttributes)-1)
-        self.attrAddButton.setDisabled(not self.selectedHidden or self.showAllAttributes)
-        self.attrRemoveButton.setDisabled(not self.selectedShown or self.showAllAttributes)
-        if self.hiddenAttributes and self.hiddenAttributes[0][0]!=self.data.domain.classVar.name:
-            self.showAllCB.setChecked(0)
-        
-
-    def moveAttrSelection(self, labels, selection, dir):
-        self.graph.insideColors = None
-        self.graph.clusterClosure = None
-        
-        labs = getattr(self, labels)
-        sel = getattr(self, selection)
-        mini, maxi = min(sel), max(sel)+1
-        if dir == -1:
-            setattr(self, labels, labs[:mini-1] + labs[mini:maxi] + [labs[mini-1]] + labs[maxi:])
-        else:
-            setattr(self, labels, labs[:mini] + [labs[maxi]] + labs[mini:maxi] + labs[maxi+1:])
-        setattr(self, selection, map(lambda x:x+dir, sel))
-
-        self.sendShownAttributes()
-        self.graph.potentialsBmp = None
-        self.updateGraph(setAnchors = 1)
-        self.graph.removeAllSelections()
-
-    # move selected attribute in "Attribute Order" list one place up
-    def moveAttrUP(self):
-        self.moveAttrSelection("shownAttributes", "selectedShown", -1)
-
-    # move selected attribute in "Attribute Order" list one place down  
-    def moveAttrDOWN(self):
-        self.moveAttrSelection("shownAttributes", "selectedShown", 1)
-
-
-    def cbShowAllAttributes(self):
-        if self.showAllAttributes:
-            self.addAttribute(True)
-        self.resetAttrManipulation()
-
-    def addAttribute(self, addAll = False):
-        self.graph.insideColors = None
-        self.graph.clusterClosure = None
-
-        if addAll:
-            if self.data:
-                self.setShownAttributeList(self.data, [attr.name for attr in self.data.domain.attributes])
-        else:
-            self.setShownAttributeList(self.data, self.shownAttributes + [self.hiddenAttributes[i] for i in self.selectedHidden])
-        self.selectedHidden = []
-        self.selectedShown = []
-        self.resetAttrManipulation()
-                
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-
-        self.sendShownAttributes()
-        self.updateGraph(setAnchors = 1)
-        self.graph.replot()
-        self.graph.removeAllSelections()
-
-    def removeAttribute(self):
-        self.graph.insideColors = None
-        self.graph.clusterClosure = None
-
-        newShown = self.shownAttributes[:]
-        self.selectedShown.sort(lambda x,y:-cmp(x, y))
-        for i in self.selectedShown:
-            del newShown[i]
-        self.setShownAttributeList(self.data, newShown)
-                
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-        self.sendShownAttributes()
-        self.updateGraph(setAnchors = 1)
-        self.graph.replot()
-        self.graph.removeAllSelections()
-
-
     def resetBmpUpdateValues(self):
         self.graph.potentialsBmp = None
         self.updateGraph()
 
     def setActiveLearner(self):
         self.send("Learner", self.learnersArray[self.learnerIndex])
-        
-    def setManualPosition(self):
-        self.graph.manualPositioning = self.manualPositioningButton.isOn()
         
     def resetGraphData(self):
         self.graph.setData(self.data)
@@ -582,28 +474,6 @@ class OWLinProj(OWWidget):
 
     def getColorPalette(self):
         return self.colorPalette
-
-    # ###############################################################################################################
-    # functions used by OWClusterOptimization class
-    def setMinimalGraphProperties(self):
-        attrs = ["graph.pointWidth", "graph.showLegend", "graph.showClusters", "autoSendSelection"]
-        self.oldSettings = dict([(attr, mygetattr(self, attr)) for attr in attrs])
-        self.graph.pointWidth = 3
-        self.graph.showLegend = 0
-        self.graph.showClusters = 0
-        self.autoSendSelection = 0
-        self.graph.showAttributeNames = 0
-        self.graph.setAxisScale(QwtPlot.xBottom, -1.05, 1.05, 1)
-        self.graph.setAxisScale(QwtPlot.yLeft, -1.05, 1.05, 1)
-
-
-    def restoreGraphProperties(self):
-        if hasattr(self, "oldSettings"):
-            for key in self.oldSettings:
-                self.__setattr__(key, self.oldSettings[key])
-        self.graph.showAttributeNames = 1
-        self.graph.setAxisScale(QwtPlot.xBottom, -1.22, 1.22, 1)
-        self.graph.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
     def destroy(self, dw = 1, dsw = 1):
         self.clusterDlg.hide()

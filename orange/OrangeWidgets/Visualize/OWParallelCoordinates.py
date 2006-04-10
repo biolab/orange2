@@ -10,7 +10,7 @@
 # Show data using parallel coordinates visualization method
 # 
 
-from OWWidget import *
+from OWVisWidget import *
 from OWParallelGraph import *
 import OWToolbars, OWGUI, OWDlgs, orngVisFuncts 
 from sys import getrecursionlimit, setrecursionlimit
@@ -18,7 +18,7 @@ from sys import getrecursionlimit, setrecursionlimit
 ###########################################################################################
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
-class OWParallelCoordinates(OWWidget):
+class OWParallelCoordinates(OWVisWidget):
     settingsList = ["attrContOrder", "attrDiscOrder", "graph.jitterSize", "graph.showDistributions",
                     "graph.showAttrValues", "graph.hidePureExamples", "graph.globalValueScaling", "linesDistance",
                     "graph.useSplines", "graph.lineTracking", "graph.enabledLegend", "autoSendSelection",
@@ -45,7 +45,7 @@ class OWParallelCoordinates(OWWidget):
         self.box.addWidget(self.graph)
         self.box.addWidget(self.slider)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Selection List", ExampleList, self.exampleSelection), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
     
         #set default settings
@@ -57,7 +57,6 @@ class OWParallelCoordinates(OWWidget):
         self.projections = None
         self.correlationDict = {}
         self.middleLabels = "Correlations"
-        self.exampleSelectionList = None
         self.attributeSelectionList = None  
         self.toolbarSelection = 0
         self.colorSettings = None
@@ -84,42 +83,11 @@ class OWParallelCoordinates(OWWidget):
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #add controls to self.controlArea widget
-        self.targetGroup = QVGroupBox(self.GeneralTab)
-        self.targetGroup.setTitle(" Target class value: ")
-        self.targetValueCombo = QComboBox(self.targetGroup)
-        self.connect(self.targetValueCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
-        
-        self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
-        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
-        self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
-        self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.shownAttribsGroup.setTitle("Shown attributes")
-        self.hiddenAttribsGroup.setTitle("Hidden attributes")
+        self.targetValueCombo = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box = " Target Class Value ", sendSelectedValue = 1, valueType = str, callback = self.updateGraph)
 
-        self.shownAttribsLB = QListBox(hbox)
-        self.shownAttribsLB.setSelectionMode(QListBox.Extended)
+        self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraph)
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.flipAttribute)
 
-        self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
-        self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
-        
-        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
-        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
-        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
-        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
-        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonDOWNAttr.setMaximumWidth(20)
-        self.buttonUPAttr.setMaximumWidth(20)
-        
-        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
-        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
-        OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
-        
         self.optimizationDlg = ParallelOptimization(self, signalManager = self.signalManager)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
         self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "Optimization dialog", callback = self.optimizationDlg.reshow, debuggingEnabled = 0)
@@ -181,74 +149,12 @@ class OWParallelCoordinates(OWWidget):
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
         self.cbShowAllAttributes()
 
-    def targetValueChanged(self):
-        self.updateGraph()
-        if self.exampleSelectionList: self.sendSelections()
-
-    # ####################
-    # LIST BOX FUNCTIONS
-    # ####################
-
-    # move selected attribute in "Attribute Order" list one place up
-    def moveAttrUP(self):
-        for i in range(1, self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
-                self.shownAttribsLB.removeItem(i+1)
-                self.shownAttribsLB.setSelected(i-1, TRUE)
-        self.updateGraph()
-
-    # move selected attribute in "Attribute Order" list one place down  
-    def moveAttrDOWN(self):
-        count = self.shownAttribsLB.count()
-        for i in range(count-2,-1,-1):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.setSelected(i+1, TRUE)
-        self.updateGraph()
-
-    def cbShowAllAttributes(self):
-        if self.showAllAttributes:
-            self.addAttribute(True)
-        self.attrRemoveButton.setDisabled(self.showAllAttributes)
-        self.attrAddButton.setDisabled(self.showAllAttributes)
-
-    def addAttribute(self, addAll = False):
-        count = self.hiddenAttribsLB.count()
-        pos   = self.shownAttribsLB.count()
-        for i in range(count-1, -1, -1):
-            if addAll or self.hiddenAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
-                self.hiddenAttribsLB.removeItem(i)
-
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-        self.sendShownAttributes()
-        self.updateGraph()
-        self.graph.removeAllSelections()
-
-    def removeAttribute(self):
-        count = self.shownAttribsLB.count()
-        pos   = self.hiddenAttribsLB.count()
-        for i in range(count-1, -1, -1):
-            if self.shownAttribsLB.isSelected(i):
-                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
-                self.shownAttribsLB.removeItem(i)
-                
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-        self.updateGraph()
-
     def flipAttribute(self, item):
         if self.graph.flipAttribute(str(item.text())):
             self.updateGraph()
         else:
             self.information("Didn't flip the attribute. To flip a continuous attribute uncheck 'Global value scaling' checkbox.")
         
-
-    # #####################
-
     def updateGraph(self, *args):
         attrs = self.getShownAttributeList()
         maxAttrs = self.mainArea.width() / self.linesDistance
@@ -314,35 +220,39 @@ class OWParallelCoordinates(OWWidget):
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
     def setShownAttributeList(self, data, shownAttributes = None):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
+        shown = []
+        hidden = []
 
-        if data == None: return
+        if data:
+            if shownAttributes:
+                if type(shownAttributes[0]) == tuple:
+                    shown = shownAttributes
+                else:
+                    domain = self.data.domain
+                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
+                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
+            else:
+                shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+                shown = [(attr, data.domain[attr].varType) for attr in shown]
+                hidden = [(attr, data.domain[attr].varType) for attr in hidden]
+                if self.showAllAttributes:
+                    shown += hidden
+                    hidden = []
+                else:
+                    hidden = shown[10:] + hidden
+                    shown = shown[:10]
+                    
+            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown + hidden:
+                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
 
-        if shownAttributes:
-            for attr in shownAttributes:
-                self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
-                
-            for attr in data.domain:
-                if attr.name not in shownAttributes:
-                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-        else:
-            shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
-            if data.domain.classVar and data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
-                self.shownAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
-            for attr in shown:
-                self.shownAttribsLB.insertItem(self.icons[data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
-            for attr in hidden:
-                self.hiddenAttribsLB.insertItem(self.icons[data.domain[self.graph.attributeNameIndex[attr]].varType], attr)    
+        self.shownAttributes = shown
+        self.hiddenAttributes = hidden
+        self.selectedHidden = []
+        self.selectedShown = []
+        self.resetAttrManipulation()
         self.sendShownAttributes()
-                
-        
-    def getShownAttributeList(self):
-        list = []
-        for i in range(self.shownAttribsLB.count()):
-            list.append(str(self.shownAttribsLB.text(i)))
-        return list
-
+                       
+       
     def sendShownAttributes(self):
         self.send("Attribute Selection List", self.getShownAttributeList())
 
@@ -393,14 +303,7 @@ class OWParallelCoordinates(OWWidget):
         exData = self.data
         self.data = data
         
-        if self.exampleSelectionList and data and len(data) == len(self.exampleSelectionList):
-            self.graph.setData(data.select(self.exampleSelectionList))
-            self.warning()
-        else:
-            if self.exampleSelectionList and data: self.warning("Table with selected indices is not of the same size as the data set. Full data set is shown.")
-            else:                                  self.warning()
-            self.graph.setData(self.data)
-            
+        self.graph.setData(self.data)
         self.optimizationDlg.setData(data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
@@ -420,17 +323,11 @@ class OWParallelCoordinates(OWWidget):
             if not attrs and data and data.domain.attributes: attrs = [attr.name for attr in data.domain.attributes[:10]]
             self.setShownAttributeList(self.data, attrs)
 
+        self.resetAttrManipulation()
         self.updateGraph()
         self.sendSelections()
     # ################################################
-
     
-    # ###### SELECTION ################################
-    # receive a list of attributes we wish to show
-    def exampleSelection(self, exampleSelectionList):
-        self.exampleSelectionList = exampleSelectionList
-        self.cdata(self.data)
-
     def attributeSelection(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
         if self.data and self.attributeSelectionList:
@@ -479,8 +376,7 @@ class OWParallelCoordinates(OWWidget):
 
     def setGlobalValueScaling(self):
         self.isResizing = 0
-        if not self.exampleSelectionList: self.graph.setData(self.data)
-        else: self.graph.setData(self.data.select(self.exampleSelectionList))
+        self.graph.setData(self.data)
         if self.graph.globalValueScaling:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())        # we need to call this so that attributes are really rescaled in respect to the CURRENTLY SHOWN ATTRIBUTES
         self.updateGraph()

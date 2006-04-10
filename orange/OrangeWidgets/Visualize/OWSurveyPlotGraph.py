@@ -19,9 +19,9 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         self.yDataIndices = []  # array of indices that show the index in self.rawdata - if there are no missing values then array[i] = i
         self.attrLabels = []
 
-    def setData(self, data):
+    def setData(self, data, **args):
         OWGraph.setData(self, data)
-        orngScaleData.setData(self, data)
+        orngScaleData.setData(self, data, **args)
         
     #
     # update shown data. Set labels, coloring by className ....

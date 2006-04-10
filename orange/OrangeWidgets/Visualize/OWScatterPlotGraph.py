@@ -300,7 +300,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                             if self.rawdata.domain.classVar and labelAttr==self.rawdata.domain.classVar.name:
                                 lbl = str(self.rawdata.domain.classVar.values[int(self.rawdata[i][labelAttr])])
                             else:
-                                if self.rawdata[i][labelAttr].varType==orange.VarTypes.Continuous:
+                                if self.rawdata[i][labelAttr].varType==orange.VarTypes.Continuous and not self.rawdata[i][labelAttr].isSpecial():
                                     lbl = "%4.1f" % orange.Value(self.rawdata[i][labelAttr])
                                 else:
                                     lbl = str(orange.Value(self.rawdata[i][labelAttr]))

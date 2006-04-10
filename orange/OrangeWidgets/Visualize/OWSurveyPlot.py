@@ -10,7 +10,7 @@
 # Show data using survey plot visualization method
 # 
 
-from OWWidget import *
+from OWVisWidget import *
 from OWSurveyPlotGraph import *
 import orngVisFuncts
 import OWGUI
@@ -18,10 +18,9 @@ import OWGUI
 ###########################################################################################
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
-class OWSurveyPlot(OWWidget):
+class OWSurveyPlot(OWVisWidget):
     settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend", "graph.tooltipKind", "showAllAttributes"]
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
-    #attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
     attributeDiscOrder = ["None","ReliefF","GainRatio"]
 
     def __init__(self,parent=None, signalManager = None):
@@ -48,6 +47,8 @@ class OWSurveyPlot(OWWidget):
         self.attrContOrder = "None"
         self.attributeSelectionList = None
         self.graphCanvasColor = str(Qt.white.name())
+        self.primaryAttribute = "(None)"
+        self.secondaryAttribute = "(None)"
 
         #load settings
         self.loadSettings()
@@ -60,64 +61,24 @@ class OWSurveyPlot(OWWidget):
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #add controls to self.controlArea widget
-        self.sortingAttrGB = QVGroupBox(self.GeneralTab)
-        self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
-        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
-        self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
-        self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.sortingAttrGB.setTitle("Sorting")
-        self.shownAttribsGroup.setTitle("Shown attributes")
-        self.hiddenAttribsGroup.setTitle("Hidden attributes")
+        self.sortingAttrGB = OWGUI.widgetBox(self.GeneralTab, "Sorting")
+        self.primaryAttrCombo = OWGUI.comboBoxWithCaption(self.sortingAttrGB, self, "primaryAttribute", label = '1st:', items = ["(None)"], sendSelectedValue = 1, valueType = str, callback = self.sortingClick, labelWidth = 25)
+        self.secondaryAttrCombo = OWGUI.comboBoxWithCaption(self.sortingAttrGB, self, "secondaryAttribute", label = '2nd:', items = ["(None)"], sendSelectedValue = 1, valueType = str, callback = self.sortingClick, labelWidth = 25)
 
-        self.primarySortCB = QCheckBox('Enable primary sorting by:', self.sortingAttrGB)
-        self.primaryAttr = QComboBox(self.sortingAttrGB)
-        self.connect(self.primarySortCB, SIGNAL("clicked()"), self.sortingClick)
-        self.connect(self.primaryAttr, SIGNAL('activated ( const QString & )'), self.sortingClick)
-
-        self.secondarySortCB = QCheckBox('Enable secondary sorting by:', self.sortingAttrGB)
-        self.secondaryAttr = QComboBox(self.sortingAttrGB)
-        self.connect(self.secondarySortCB, SIGNAL("clicked()"), self.sortingClick)
-        self.connect(self.secondaryAttr, SIGNAL('activated ( const QString & )'), self.sortingClick)
-
-        self.primarySortCB.setChecked(0)
-        self.secondarySortCB.setChecked(0)
-
-        self.shownAttribsLB = QListBox(hbox)
-        self.shownAttribsLB.setSelectionMode(QListBox.Extended)
-
-        self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
-        self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
-        
-        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
-        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
-        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
-        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
-        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonDOWNAttr.setMaximumWidth(20)
-        self.buttonUPAttr.setMaximumWidth(20)
-
-        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
-        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
-        OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
+        self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraph)
 
         # ##################################
         # survey plot settings
-        # ####
         box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
         OWGUI.checkBox(box, self, "graph.globalValueScaling", "Global Value Scaling", callback = self.setGlobalValueScaling)
-        OWGUI.checkBox(box, self, "graph.exampleTracking", "Enable example tracking", callback = self.updateValues)
-        OWGUI.checkBox(box, self, "graph.enabledLegend", "Show legend", callback = self.updateValues)
+        OWGUI.checkBox(box, self, "graph.exampleTracking", "Enable example tracking", callback = self.updateGraph)
+        OWGUI.checkBox(box, self, "graph.enabledLegend", "Show legend", callback = self.updateGraph)
 
         OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
         OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = " Discrete attribute ordering ", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
 
         box = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
-        OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
+        OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
 
         OWGUI.button(self.SettingsTab, self, "Canvas Color", callback = self.setGraphCanvasColor, tooltip = "Set color for canvas background", debuggingEnabled = 0)
 
@@ -135,152 +96,79 @@ class OWSurveyPlot(OWWidget):
         #self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.cbShowAllAttributes()
 
-    # ####################
-    # LIST BOX FUNCTIONS
-    # ####################
-
-    # move selected attribute in "Attribute Order" list one place up
-    def moveAttrUP(self):
-        for i in range(1, self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
-                self.shownAttribsLB.removeItem(i+1)
-                self.shownAttribsLB.setSelected(i-1, TRUE)
-        self.updateGraph()
-
-    # move selected attribute in "Attribute Order" list one place down  
-    def moveAttrDOWN(self):
-        count = self.shownAttribsLB.count()
-        for i in range(count-2,-1,-1):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.setSelected(i+1, TRUE)
-        self.updateGraph()
-
-    def cbShowAllAttributes(self):
-        if self.showAllAttributes:
-            self.addAttribute(True)
-        self.attrRemoveButton.setDisabled(self.showAllAttributes)
-        self.attrAddButton.setDisabled(self.showAllAttributes)
-
-    def addAttribute(self, addAll = False):
-        count = self.hiddenAttribsLB.count()
-        pos   = self.shownAttribsLB.count()
-        for i in range(count-1, -1, -1):
-            if addAll or self.hiddenAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
-                self.hiddenAttribsLB.removeItem(i)
-                
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-
-        self.sendShownAttributes()
-        self.updateGraph()
-        self.graph.removeAllSelections()
-        #self.graph.replot()
-
-    def removeAttribute(self):
-        count = self.shownAttribsLB.count()
-        pos   = self.hiddenAttribsLB.count()
-        for i in range(count-1, -1, -1):
-            if self.shownAttribsLB.isSelected(i):
-                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
-                self.shownAttribsLB.removeItem(i)
-                
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-        self.updateGraph()
-        self.sendShownAttributes()
-        #self.graph.replot()
-
     # #####################
     def setSortCombo(self):
-        self.primaryAttr.clear()
-        self.secondaryAttr.clear()
+        self.primaryAttrCombo.clear()
+        self.secondaryAttrCombo.clear()
+        self.primaryAttrCombo.insertItem("(None)")
+        self.secondaryAttrCombo.insertItem("(None)")
         if not self.data: return
         for attr in self.data.domain:
-            self.primaryAttr.insertItem(self.icons[attr.varType], attr.name)
-            self.secondaryAttr.insertItem(self.icons[attr.varType], attr.name)
-        self.primaryAttr.setCurrentItem(0)
-        self.secondaryAttr.setCurrentItem(len(self.data.domain)>1)
+            self.primaryAttrCombo.insertItem(self.icons[attr.varType], attr.name)
+            self.secondaryAttrCombo.insertItem(self.icons[attr.varType], attr.name)
+        #self.primaryAttrCombo.setCurrentItem(0)
+        #self.secondaryAttrCombo.setCurrentItem(0)
+        self.primaryAttribute = "(None)"
+        self.secondaryAttribute = "(None)"
     
-
-    def sortData2(self, primaryAttr, secondaryAttr, data):
-        if not data: return None
-        data.sort([primaryAttr, secondaryAttr])
-        return data
-
-    def sortData1(self, primaryAttr, data):
-        if not data: return None
-        data.sort(primaryAttr)
-        return data
-        
     def updateGraph(self, *args):
         self.graph.updateData(self.getShownAttributeList())
         self.graph.update()
         self.repaint()
 
     # set combo box values with attributes that can be used for coloring the data
-    def sortingClick(self, *args):
-        primaryOn = self.primarySortCB.isOn()
-        secondaryOn = self.secondarySortCB.isOn()
+    def sortingClick(self):
+        attrs = [self.primaryAttribute, self.secondaryAttribute]
+        while "(None)" in attrs: attrs.remove("(None)")
+        if attrs and self.data:
+            self.data.sort(attrs)
 
-        primaryAttr = str(self.primaryAttr.currentText())
-        secondaryAttr = str(self.secondaryAttr.currentText())
-
-        if secondaryOn == 1 and secondaryAttr != "":
-            primaryOn = 1
-            self.primarySortCB.setChecked(1)
-            
-        if primaryOn == 1 and secondaryOn == 1 and primaryAttr != "" and secondaryAttr != "":
-            self.data = self.sortData2(primaryAttr, secondaryAttr, self.data)
-        elif primaryOn == 1 and primaryAttr != "":
-            self.data = self.sortData1(primaryAttr, self.data)
-
-        self.graph.setData(self.data)
+        self.graph.setData(self.data, sortValuesForDiscreteAttrs = 0)
         self.updateGraph()        
         
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
     def setShownAttributeList(self, data, shownAttributes = None):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
+        shown = []
+        hidden = []
 
-        if data == None: return
+        if data:
+            if shownAttributes:
+                if type(shownAttributes[0]) == tuple:
+                    shown = shownAttributes
+                else:
+                    domain = self.data.domain
+                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
+                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
+            else:
+                shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+                shown = [(attr, data.domain[attr].varType) for attr in shown]
+                hidden = [(attr, data.domain[attr].varType) for attr in hidden]
+                if self.showAllAttributes:
+                    shown += hidden
+                    hidden = []
+                else:
+                    hidden = shown[10:] + hidden
+                    shown = shown[:10]
+                    
+            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown + hidden:
+                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
 
-        if shownAttributes:
-            for attr in shownAttributes:
-                self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
-                
-            for attr in data.domain:
-                if attr.name not in shownAttributes:
-                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-        else:
-            shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
-            if data.domain.classVar and data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
-                self.shownAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
-            for attr in shown[:10]:
-                self.shownAttribsLB.insertItem(self.icons[data.domain[attr].varType], attr)
-            for attr in shown[10:] + hidden:
-                self.hiddenAttribsLB.insertItem(self.icons[data.domain[attr].varType], attr)    
+        self.shownAttributes = shown
+        self.hiddenAttributes = hidden
+        self.selectedHidden = []
+        self.selectedShown = []
+        self.resetAttrManipulation()
         self.sendShownAttributes()
         
-    def getShownAttributeList (self):
-        return [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())]
-
     def sendShownAttributes(self):
         self.send("Attribute Selection List", self.getShownAttributeList())
-    
-    ##############################################
-    
     
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
         if data:
-            name = ""
-            if hasattr(data, "name"): name = data.name
+            name = getattr(data, "name", "")
             data = orange.Preprocessor_dropMissingClasses(data)
             data.name = name
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
@@ -290,13 +178,11 @@ class OWSurveyPlot(OWWidget):
         if self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes): # preserve attribute choice if the domain is the same
             self.sortingClick()
             return  
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
 
+        self.resetAttrManipulation()
         self.setSortCombo()
         self.setShownAttributeList(self.data)
         self.sortingClick()
-    #################################################
 
     ####### SELECTION signal ################################
     # receive info about which attributes to show
@@ -307,10 +193,6 @@ class OWSurveyPlot(OWWidget):
                 if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
                     return
             self.setShownAttributeList(self.data, self.attributeSelectionList)
-        self.updateGraph()
-    #################################################
-
-    def updateValues(self):
         self.updateGraph()
 
     # update attribute ordering

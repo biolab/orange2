@@ -70,7 +70,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         OWGraph.__init__(self, parent, name)
         orngScalePolyvizData.__init__(self)
         
-        self.lineLength = 2*0.05
+        self.lineLength = 2
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
         self.triedPossibilities = 0 # how many possibilities did we already try
         self.startTime = time.time()
@@ -88,9 +88,6 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.showLegend = 1
         self.onlyOnePerSubset = 1
 
-    def setLineLength(self, len):
-        self.lineLength = len*0.05
-
     def createAnchors(self, anchorNum):
         anchors = [[],[]]
         for i in range(anchorNum):
@@ -107,7 +104,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, labels, attributeReverse, **args):
+    def updateData(self, labels, foo, **args):
         #self.removeCurves()
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
@@ -179,18 +176,13 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 k = 1.08
                 for j in range(count):
                     pos = (1.0 + 2.0*float(j)) / float(2*count)
-                    if attributeReverse[labels[i]] == 0:
-                        self.addMarker(values[j], k*(1-pos)*self.XAnchor[i]+k*pos*self.XAnchor[(i+1)%length], k*(1-pos)*self.YAnchor[i]+k*pos*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
-                    else:
-                        self.addMarker(values[j], k*pos*self.XAnchor[i]+k*(1-pos)*self.XAnchor[(i+1)%length], k*pos*self.YAnchor[i]+k*(1-pos)*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
-
+                    self.addMarker(values[j], k*(1-pos)*self.XAnchor[i]+k*pos*self.XAnchor[(i+1)%length], k*(1-pos)*self.YAnchor[i]+k*pos*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
             else:
                 # min and max value
                 if self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                     names = ["%.1f" % (0.0), "%.1f" % (1.0)]
                 elif self.tooltipValue == TOOLTIPS_SHOW_DATA:
                     names = ["%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
-                if attributeReverse[labels[i]] == 1: names.reverse()
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
 
@@ -200,12 +192,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         YAnchor = self.createYAnchors(length)
 
         for i in range(length):
-            if attributeReverse[labels[i]]:
-                Xdata = XAnchor[i] * self.noJitteringScaledData[indices[i]] + XAnchor[(i+1)%length] * (1-self.noJitteringScaledData[indices[i]])
-                Ydata = YAnchor[i] * self.noJitteringScaledData[indices[i]] + YAnchor[(i+1)%length] * (1-self.noJitteringScaledData[indices[i]])
-            else:
-                Xdata = XAnchor[i] * (1-self.noJitteringScaledData[indices[i]]) + XAnchor[(i+1)%length] * self.noJitteringScaledData[indices[i]]
-                Ydata = YAnchor[i] * (1-self.noJitteringScaledData[indices[i]]) + YAnchor[(i+1)%length] * self.noJitteringScaledData[indices[i]]
+            Xdata = XAnchor[i] * (1-self.noJitteringScaledData[indices[i]]) + XAnchor[(i+1)%length] * self.noJitteringScaledData[indices[i]]
+            Ydata = YAnchor[i] * (1-self.noJitteringScaledData[indices[i]]) + YAnchor[(i+1)%length] * self.noJitteringScaledData[indices[i]]
             XAnchorPositions[i] = Xdata
             YAnchorPositions[i] = Ydata
 
@@ -369,7 +357,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         for j in range(count):
             dist = EuclDist([x, y], [xAnchors[j] , yAnchors[j]])
             if dist == 0: continue
-            kvoc = float(self.lineLength) / dist
+            kvoc = float(self.lineLength * 0.05) / dist
             lineX1 = x; lineY1 = y
 
             # we don't make extrapolation
@@ -459,13 +447,13 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
    
     # save projection (xAttr, yAttr, classVal) into a filename fileName
-    def saveProjectionAsTabData(self, fileName, attrList, attributeReverse):
-        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList]}))
+    def saveProjectionAsTabData(self, fileName, attrList):
+        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], settingsDict = {}))
 
 
     # ####################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
-    def getSelectionsAsExampleTables(self, attrList, attributeReverse, addProjectedPositions = 0):
+    def getSelectionsAsExampleTables(self, attrList, addProjectedPositions = 0):
         if not self.rawdata: return (None, None)
         if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawdata)       # if no selections exist
 
@@ -485,8 +473,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList], "validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
-        selIndices, unselIndices = self.getSelectionsAsIndices(attrList, attributeReverse, validData)
+        array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
+        selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
                  
         if addProjectedPositions:
             selected = orange.ExampleTable(domain, self.rawdata.getitemsref(selIndices))
@@ -507,13 +495,13 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         return (selected, unselected)
     
 
-    def getSelectionsAsIndices(self, attrList, attributeReverse, validData = None):
+    def getSelectionsAsIndices(self, attrList, validData = None):
         if not self.rawdata: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         if not validData: validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"reverse": [attributeReverse[attr] for attr in attrList], "validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
+        array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
         selIndices = []; unselIndices = []
                  
         for i in range(len(validData)):

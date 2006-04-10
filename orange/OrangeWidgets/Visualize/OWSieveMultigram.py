@@ -6,7 +6,7 @@
 <priority>4300</priority>
 """
 
-from OWWidget import *
+from OWVisWidget import *
 from OWSieveMultigramGraph import *
 import orngVisFuncts
 from orngCI import FeatureByCartesianProduct
@@ -15,7 +15,7 @@ import OWGUI
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
-class OWSieveMultigram(OWWidget):
+class OWSieveMultigram(OWVisWidget):
     settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes", "showAllAttributes"]
             
     def __init__(self,parent=None, signalManager = None):
@@ -53,36 +53,8 @@ class OWSieveMultigram(OWWidget):
         self.statusBar.message("")
                 
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
-        hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
-        self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
-        self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.shownAttribsGroup.setTitle("Shown attributes")
-        self.hiddenAttribsGroup.setTitle("Hidden attributes")
-
-        self.shownAttribsLB = QListBox(hbox)
-        self.shownAttribsLB.setSelectionMode(QListBox.Extended)
-
-        self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
-        self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
+        self.createShowHiddenLists(self, self.GeneralTab)
         
-        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
-        self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
-        self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
-        self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
-        self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
-        self.buttonDOWNAttr.setMaximumWidth(20)
-        self.buttonUPAttr.setMaximumWidth(20)
-
-        self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
-        self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
-        OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
-
         self.interestingButton =QPushButton("Find interesting attr.", self.GeneralTab)
         self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection) 
 
@@ -112,54 +84,6 @@ class OWSieveMultigram(OWWidget):
     # LIST BOX FUNCTIONS
     # ####################
 
-    # move selected attribute in "Attribute Order" list one place up
-    def moveAttrUP(self):
-        for i in range(self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i) and i != 0:
-                text = self.shownAttribsLB.text(i)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, i-1)
-                self.shownAttribsLB.setSelected(i-1, TRUE)
-        self.updateGraph()
-
-    # move selected attribute in "Attribute Order" list one place down  
-    def moveAttrDOWN(self):
-        count = self.shownAttribsLB.count()
-        for i in range(count-2,-1,-1):
-            if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, i+1)
-                self.shownAttribsLB.setSelected(i+1, TRUE)
-        self.updateGraph()
-
-    def cbShowAllAttributes(self):
-        if self.showAllAttributes:
-            self.addAttribute(True)
-        self.attrRemoveButton.setDisabled(self.showAllAttributes)
-        self.attrAddButton.setDisabled(self.showAllAttributes)
-
-    def addAttribute(self, addAll = False):
-        count = self.hiddenAttribsLB.count()
-        pos   = self.shownAttribsLB.count()
-        for i in range(count-1, -1, -1):
-            if addAll or self.hiddenAttribsLB.isSelected(i):
-                text = self.hiddenAttribsLB.text(i)
-                self.hiddenAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, pos)
-        self.updateGraph()
-
-    def removeAttribute(self):
-        count = self.shownAttribsLB.count()
-        pos   = self.hiddenAttribsLB.count()
-        for i in range(count-1, -1, -1):
-            if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
-                self.shownAttribsLB.removeItem(i)
-                self.hiddenAttribsLB.insertItem(text, pos)
-        self.updateGraph()
-        #self.graph.replot()
-
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
     def setShownAttributeList(self, data, exData):
@@ -173,14 +97,6 @@ class OWSieveMultigram(OWWidget):
             if attr.varType == orange.VarTypes.Discrete:
                 self.shownAttribsLB.insertItem(attr.name)
         
-    def getShownAttributeList (self):
-        list = []
-        for i in range(self.shownAttribsLB.count()):
-            list.append(str(self.shownAttribsLB.text(i)))
-        return list
-    ##############################################
-    
-    
     ####### DATA ################################
     # receive new data and update all fields
     def data(self, data):

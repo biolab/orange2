@@ -451,25 +451,6 @@ class OWScatterPlot(OWWidget):
     def getColorPalette(self):
         return self.colorPalette
 
-    def setMinimalGraphProperties(self):
-        attrs = ["graph.pointWidth", "graph.showLegend", "graph.showClusters", "showXAxisTitle", "showYAxisTitle", "showGridlines", "graph.showAxisScale", "autoSendSelection"]
-        self.oldSettings = dict([(attr, mygetattr(self, attr)) for attr in attrs])
-
-        self.graph.pointWidth = 4
-        self.graph.showLegend = 0
-        self.graph.showClusters = 0
-        self.graph.showXaxisTitle = 0
-        self.graph.showYLaxisTitle = 0
-        self.graph.showAxisScale = 0
-        self.showGridlines = 0
-        self.autoSendSelection = 0
-        #self.updateValues()
-
-    def restoreGraphProperties(self):
-        if hasattr(self, "oldSettings"):
-            for key in self.oldSettings:
-                self.__setattr__(key, self.oldSettings[key])
-        
     def destroy(self, dw = 1, dsw = 1):
         self.clusterDlg.hide()
         self.optimizationDlg.hide()
