@@ -86,7 +86,8 @@ class orngMosaic:
             elif data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
                 newAttr = entroDisc(attr, data)
                 newAttr.name = attr.name
-                discAttrs.append(newAttr)
+                if len(newAttr.values) > 1:
+                    discAttrs.append(newAttr)
         self.data = data.select(discAttrs)
         self.attributeNameIndex = dict([(self.data.domain[i].name, i) for i in range(len(self.data.domain))])
 

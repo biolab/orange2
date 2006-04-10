@@ -35,12 +35,15 @@ def getVariableValuesSorted(data, index):
 # ####################################################################
 # create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
 # in case all values are integers, we also sort them
-def getVariableValueIndices(data, index):
+def getVariableValueIndices(data, index, sortValuesForDiscreteAttrs = 1):
     if data.domain[index].varType == orange.VarTypes.Continuous:
         print "Invalid index for getVariableValueIndices"
         return {}
 
-    values = getVariableValuesSorted(data, index)
+    if sortValuesForDiscreteAttrs:
+        values = getVariableValuesSorted(data, index)
+    else:
+        values = list(data.domain[index].values)
     return dict([(values[i], i) for i in range(len(values))])
 
 
@@ -77,9 +80,10 @@ class orngScaleData:
     # ####################################################################
     # ####################################################################
     # set new data and scale its values to the 0-1 interval or normalize it by subtracting the mean and dividing by the deviation
-    def setData(self, data):
+    def setData(self, data, **args):
         self.attributeFlipInfo = {}
         self.attrValues = {}
+        sortValuesForDiscreteAttrs = args.get("sortValuesForDiscreteAttrs", 1)
 
         self.rawdata = data
         RandomArray.seed(1,1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
@@ -115,7 +119,7 @@ class orngScaleData:
             attr = data.domain[index]
             
             if data.domain[index].varType == orange.VarTypes.Discrete:
-                variableValueIndices = getVariableValueIndices(data, index)
+                variableValueIndices = getVariableValueIndices(data, index, sortValuesForDiscreteAttrs)
                 for i in range(len(data.domain[index].values)):
                     if i != variableValueIndices[data.domain[index].values[i]]:
                         line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work

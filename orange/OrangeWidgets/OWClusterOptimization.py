@@ -42,7 +42,7 @@ class ClusterOptimization(OWBaseWidget):
     MAXIMUM_NUMBER_OF_ATTRS = 1
 
     settingsList = ["resultListLen", "minExamples", "lastSaveDirName", "attrCont", "attrDisc", "showRank",
-                    "showValue", "jitterDataBeforeTriangulation", "createSnapshots", "useProjectionValue",
+                    "showValue", "jitterDataBeforeTriangulation", "useProjectionValue",
                     "evaluationTime", "distributionScale", "removeDistantPoints", "useAlphaShapes", "alphaShapesValue",
                     "argumentCountIndex", "evaluationTimeIndex", "conditionForArgument", "moreArgumentsIndex", "canUseMoreArguments",
                     "parentWidget.clusterClassifierName"]
@@ -96,7 +96,6 @@ class ClusterOptimization(OWBaseWidget):
         self.argumentationType = BEST_GROUPS
         
         self.argumentationClassValue = 0
-        self.createSnapshots = 1
         self.distributionScale = 1
         self.considerDistance = 1
         self.useProjectionValue = 0
@@ -185,7 +184,6 @@ class ClusterOptimization(OWBaseWidget):
         self.stopArgumentationButton = OWGUI.button(self.argumentationStartBox, self, "Stop searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
-        self.createSnapshotCheck = OWGUI.checkBox(self.argumentationStartBox, self, 'createSnapshots', 'Create snapshots of projections (a bit slower)', tooltip = "Show each argument with a projections screenshot.\nTakes a bit more time, since the projection has to be created.")
         self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
         self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for the selected class value ")
         self.argumentList = QListBox(self.argumentBox)
@@ -775,13 +773,12 @@ class ClusterOptimization(OWBaseWidget):
     # ######################################################
 
     # use evaluated projections to find arguments for classifying the first example in the self.subsetdata to possible classes.
-    # add found arguments into the list with possible figure snapshots
+    # add found arguments into the list
     # find only the number of argument that is specified in Arugment count combo in Classification tab
     def findArguments(self, selectBest = 1, showClassification = 1):
         self.cancelArgumentation = 0
         self.clearArguments()
         self.arguments = [[] for i in range(self.classValueList.count())]
-        snapshots = self.createSnapshots
         
         if self.subsetdata == None:
             QMessageBox.information( None, "Cluster Dialog Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
@@ -795,7 +792,6 @@ class ClusterOptimization(OWBaseWidget):
 
         self.findArgumentsButton.hide()
         self.stopArgumentationButton.show()
-        if snapshots: self.parentWidget.setMinimalGraphProperties()
 
         foundArguments = 0
         argumentCount = self.argumentCounts[self.argumentCountIndex]
@@ -822,21 +818,10 @@ class ClusterOptimization(OWBaseWidget):
                         inside = self.isExampleInsideCluster(attrList, testExample, closure, vertices, other[OTHER_AVERAGE_DIST])
                         if inside == 0 or (inside == 1 and self.conditionForArgument == MUST_BE_INSIDE): continue
                         vals[classValue] += 1
-                        pic = None
-                        if snapshots:
-                            # if the point lies inside a cluster -> save this figure into a pixmap
-                            self.parentWidget.updateGraph(attrList, clusterClosure = closure)
-                            pic = QPixmap(QSize(120,120))
-                            painter = QPainter(); painter.begin(pic);
-                            painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
-                            self.graph.printPlot(painter, pic.rect())
-                            painter.flush();  painter.end()
-
-                        self.arguments[classValue].append((pic, value, attrList, startingIndex+index))
+                        
+                        self.arguments[classValue].append((None, value, attrList, startingIndex+index))
                         if classValue == self.classValueList.currentItem():
-                            if snapshots: self.argumentList.insertItem(pic, "%.2f - %s" %(value, attrList))
-                            else:         self.argumentList.insertItem("%.2f - %s" %(value, attrList))
-                        break
+                            self.argumentList.insertItem("%.2f - %s" %(value, attrList))
                     if classIndices[cls] == startingIndex: classIndices[cls] = len(self.allResults)+1
                     
                 foundArguments += 1
@@ -864,27 +849,15 @@ class ClusterOptimization(OWBaseWidget):
                 
                 foundArguments += 1  # increase argument count
                 
-                pic = None
-                if snapshots:
-                    # if the point lies inside a cluster -> save this figure into a pixmap
-                    self.parentWidget.updateGraph(attrList, clusterClosure = closure)
-                    pic = QPixmap(QSize(120,120))
-                    painter = QPainter(); painter.begin(pic)
-                    painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
-                    self.graph.printPlot(painter, pic.rect())
-                    painter.flush();  painter.end()
-
                 if self.useProjectionValue: vals[classValue] += value
                 else: vals[classValue] += 1
 
-                self.arguments[classValue].append((pic, value, attrList, index))
+                self.arguments[classValue].append((None, value, attrList, index))
                 if classValue == self.classValueList.currentItem():
-                    if snapshots: self.argumentList.insertItem(pic, "%.2f - %s" %(value, attrList))
-                    else:         self.argumentList.insertItem("%.2f - %s" %(value, attrList))
+                    self.argumentList.insertItem("%.2f - %s" %(value, attrList))
 
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
-        self.parentWidget.restoreGraphProperties()
         if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
         if foundArguments == 0: return (None, None)
 

@@ -345,13 +345,13 @@ class VizRank:
         else:
             testTable = table
 
-        if len(testTable) == 0: return 0,0
+        if len(testTable) == 0: return 0, 0
 
         if self.evaluationAlgorithm == ALGORITHM_KNN or self.externalLearner:
             if self.externalLearner: learner = self.externalLearner
             else:                    learner = self.createkNNLearner(); weight = 0
 
-            if self.useExampleWeighting:
+            if self.useExampleWeighting and testTable.domain.classVar and testTable.domain.classVar.varType == orange.VarTypes.Discrete:
                 testTable, weightID = orange.Preprocessor_addClassWeight(testTable, equalize=1)
                 results = apply(testingMethods[self.testingMethod], [[learner], (testTable, weightID)])
             else:
@@ -367,7 +367,7 @@ class VizRank:
                 if not results.results or not results.results[0].probabilities[0]: return 0,0
                 for res in results.results:  val += res.probabilities[0].density(res.actualClass)
                 val/= float(len(results.results))
-                return 100.0*val, (100.0*val), None
+                return 100.0*val, (100.0*val)
 
         # ###############################
         # do we want to use very fast heuristic
@@ -432,7 +432,7 @@ class VizRank:
                 countsByFold[res.iterationNumber] += 1
             prediction = [val*100.0 for val in prediction]
         elif self.qualityMeasure == AUC:
-            return orngStat.AROCFromCDT(orngStat.computeCDT(results)[0])[7], None, None
+            return orngStat.AUC(results)[0], None
             
         # compute accuracy only for classes that are selected as interesting. other class values do not participate in projection evaluation
         acc = sum(prediction) / float(len(results.results))                 # accuracy over all class values
@@ -701,7 +701,7 @@ class VizRank:
         random.seed(0)      # always use the same seed to make results repeatable
         if not self.data: return
         self.correctSettingsIfNecessary()
-        if self.timeLimit == self.projectionLimit == 0:
+        if self.timeLimit == self.projectionLimit == 0 and self.__class__.__name__ == "VizRank":
             print "Evaluation of projections was started without any time or projection restrictions. To prevent an indefinite projection evaluation a time limit of 2 hours was set."
             self.timeLimit = 2 * 60
             
@@ -714,7 +714,7 @@ class VizRank:
         self.clearArguments()
         if self.__class__.__name__ == "OWVizRank":
             from qt import qApp, QMessageBox
-            if self.attributeCount >= 10 and not (self.useSupervisedPCA) and self.attrSubsetSelection != GAMMA_SINGLE and QMessageBox.critical(self, 'VizRank', 'You chose to evaluate projections with a high number of attributes. Since VizRank has to evaluate different placements\nof these attributes there will be a high number of projections to evaluate. Do you still want to proceed?','Continue','Cancel', '', 0,1):
+            if self.attributeCount >= 10 and not (self.useSupervisedPCA) and self.visualizationMethod != SCATTERPLOT and self.attrSubsetSelection != GAMMA_SINGLE and QMessageBox.critical(self, 'VizRank', 'You chose to evaluate projections with a high number of attributes. Since VizRank has to evaluate different placements\nof these attributes there will be a high number of projections to evaluate. Do you still want to proceed?','Continue','Cancel', '', 0,1):
                 return
             self.disableControls()
             self.parentWidget.progressBarInit()

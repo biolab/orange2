@@ -53,8 +53,10 @@ class orngScalePolyvizData(orngScaleLinProjData):
 
         if removeMissingData:
             selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
-            classList = Numeric.compress(validData, classList)
-        else:                 selectedData = Numeric.take(self.noJitteringScaledData, attrIndices)
+            if len(classList) != Numeric.shape(selectedData)[1]:
+                classList = Numeric.compress(validData, classList)
+        else:
+            selectedData = Numeric.take(self.noJitteringScaledData, attrIndices)
         
         if not sum_i: sum_i = self._getSum_i(selectedData)
         if not (XAnchors and YAnchors):

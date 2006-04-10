@@ -123,7 +123,8 @@ class orngScaleLinProjData(orngScaleData):
         selectedData = Numeric.take(data, attrIndices)
         if removeMissingData:
             selectedData = Numeric.compress(validData, selectedData)
-            classList = Numeric.compress(validData, classList)    
+            if len(classList) != Numeric.shape(selectedData)[1]:
+                classList = Numeric.compress(validData, classList)    
 
         """
         if minmaxVals:
