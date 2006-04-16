@@ -51,8 +51,8 @@ class OWDataSampler(OWWidget):
 
         # Options Box
         box2 = QVGroupBox('Options', self.controlArea)
-        OWGUI.checkBox(box2, self, 'Stratified', 'Stratified if possible')
-        OWGUI.checkWithSpin(box2, self, 'Use a specific random seed:', 0, 32767, 'UseSpecificSeed', 'RandomSeed')
+        OWGUI.checkBox(box2, self, 'Stratified', 'Stratified (if possible)')
+        OWGUI.checkWithSpin(box2, self, 'Set random seed:', 0, 32767, 'UseSpecificSeed', 'RandomSeed')
         OWGUI.separator(self.controlArea)
 
         # Sampling Type Box
@@ -60,15 +60,15 @@ class OWDataSampler(OWWidget):
         self.sBox = QVButtonGroup("Sampling Type", self.controlArea)        
 
         # Random Sampling
-        self.s[0] = QRadioButton('Random Sampling', self.sBox)
+        self.s[0] = QRadioButton('Random sampling', self.sBox)
         # repeat checkbox
         self.h1Box = QHBox(self.sBox)
         QWidget(self.h1Box).setFixedSize(19, 8)
-        OWGUI.checkBox(self.h1Box, self, 'Repeat', 'Elements in sample can repeat')
+        OWGUI.checkBox(self.h1Box, self, 'Repeat', 'Repeated sampling')
         # specified number of elements checkbox
         self.h2Box = QHBox(self.sBox)
         QWidget(self.h2Box).setFixedSize(19, 8)
-        OWGUI.checkWithSpin(self.h2Box, self, 'Select a specified number of elements:', 1, 1000000000, 'useCases', 'nCases', checkCallback=self.uCases)
+        OWGUI.checkWithSpin(self.h2Box, self, 'Sample size (instances):', 1, 1000000000, 'useCases', 'nCases', checkCallback=self.uCases)
         # percentage slider
         self.h3Box = QHBox(self.sBox)
         QWidget(self.h3Box).setFixedSize(19, 8)
@@ -78,29 +78,24 @@ class OWDataSampler(OWWidget):
         OWGUI.hSlider(self.slidebox, self, 'selPercentage', minValue=1, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")        
         
         # Cross Validation
-        self.s[1] = QRadioButton('Cross Validation', self.sBox)
+        self.s[1] = QRadioButton('Cross validation', self.sBox)
         box = QHBox(self.sBox)
         QWidget(box).setFixedSize(19, 8)
         OWGUI.spin(box, self, 'CVFolds', 2, 100, step=1, label='Number of folds:  ', callback=self.changeCombo)
 
         # Leave-One-Out
-        self.s[2] = QRadioButton('Leave-One-Out', self.sBox)
+        self.s[2] = QRadioButton('Leave-one-out', self.sBox)
 
         # Multiple Groups
-        self.s[3] = QRadioButton('Multiple Groups', self.sBox)        
+        self.s[3] = QRadioButton('Multiple subsets', self.sBox)        
         gbox = QHBox(self.sBox)
         QWidget(gbox).setFixedSize(19, 8)
-        OWGUI.lineEdit(gbox, self, 'GroupText', label='Sizes of groups:', callback=self.changeCombo)
-
-        # Select Data Button
-        QWidget(self.sBox).setFixedSize(0, 8)
-        OWGUI.button(self.sBox, self, 'Select &Data', callback = self.process)
-        self.s[self.SelectType].setChecked(True)    # set initial radio button on (default sample type)
+        OWGUI.lineEdit(gbox, self, 'GroupText', label='Subset sizes (e.g. "0.1, 0.2, 0.5"):', callback=self.changeCombo)
 
         # Output Group Box
         OWGUI.separator(self.controlArea)
-        self.foldBox = QHGroupBox('Fold / Group', self.controlArea)
-        QLabel('Select fold / group to output:', self.foldBox)
+        self.foldBox = QHGroupBox('Ouput Data for Fold / Group', self.controlArea)
+        QLabel('Fold / group:', self.foldBox)
         self.foldcombo = QComboBox(self.foldBox)
         # fill the combo box (later make it sensitive to number of folds)
         self.foldcombo.clear()
@@ -108,6 +103,11 @@ class OWDataSampler(OWWidget):
             self.foldcombo.insertItem(str(x+1))
         self.foldBox.setEnabled(False)
         
+        # Select Data Button
+        OWGUI.separator(self.controlArea)
+        OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process)
+        self.s[self.SelectType].setChecked(True)    # set initial radio button on (default sample type)
+
         # CONNECTIONS        
         # set connections for RadioButton (SelectType)
         self.dummy1 = [None]*len(self.s)
@@ -180,20 +180,20 @@ class OWDataSampler(OWWidget):
                 for x in range(self.nCases):
                     sample.append(self.data[random.randint(0,len(self.data)-1)])
                 remainder = None
-                self.infob.setText('Method: Random Sampling with Repetitions, using exactly %d instances.' % self.nCases)
+                self.infob.setText('Random sampling with repetitions, %d instances.' % self.nCases)
             else:                
                 sample = self.data.select(self.ind, 0)
                 remainder = self.data.select(self.ind, 1)
-            self.infoc.setText('Outputing %d instances.' % len(sample))
+            self.infoc.setText('Output: %d instances.' % len(sample))
         elif self.SelectType == 3:
             self.ind = self.indices(self.data, p0 = self.pGroups[self.outFold-1])
             sample = self.data.select(self.ind, 0)
             remainder = self.data.select(self.ind, 1)
-            self.infoc.setText('Outputing group %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
+            self.infoc.setText('Output: subset %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
         else:
             sample = self.data.select(self.ind, self.outFold-1)
             remainder = self.data.select(self.ind, self.outFold-1, negate=1)
-            self.infoc.setText('Outputing fold %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
+            self.infoc.setText('Output: fold %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
         # set name (by PJ)
         if sample:
             sample.name = self.data.name
@@ -230,11 +230,11 @@ class OWDataSampler(OWWidget):
                     self.error("Sample size (w/o repetitions) larger than dataset.")
                     return                    
                 self.indices = orange.MakeRandomIndices2(p0=int(self.nCases))
-                self.infob.setText('Method: Random Sampling, using exactly %d instances.' % self.nCases)
+                self.infob.setText('Random sampling, using exactly %d instances.' % self.nCases)
             else:
                 #print float(self.selPercentage/100.0)
                 self.indices = orange.MakeRandomIndices2(p0=float(self.selPercentage/100.0))
-                self.infob.setText('Method: Random Sampling, using %d percent of instances.' % self.selPercentage)
+                self.infob.setText('Random sampling, %d%% of input instances.' % self.selPercentage)
             if self.Stratified == 1: self.indices.stratified = self.indices.StratifiedIfPossible
             else:                    self.indices.stratified = self.indices.NotStratified
             if self.UseSpecificSeed == 1: self.indices.randseed = self.RandomSeed
@@ -248,10 +248,10 @@ class OWDataSampler(OWWidget):
             # apply selected options
             if self.SelectType == 2:
                 self.CVFoldsInternal = len(self.data)
-                self.infob.setText('Method: Leave-One-Out.')
+                self.infob.setText('Leave-one-out.')
             else:
                 self.CVFoldsInternal = self.CVFolds
-                self.infob.setText('Method: %d-fold Cross Validation.' % self.CVFolds)
+                self.infob.setText('%d-fold cross validation.' % self.CVFolds)
             self.indices = orange.MakeRandomIndicesCV(folds = self.CVFoldsInternal)
             if self.Stratified == 1:
                 self.indices.stratified = self.indices.StratifiedIfPossible
@@ -269,7 +269,7 @@ class OWDataSampler(OWWidget):
 
         # MultiGroup
         elif self.SelectType == 3:
-            self.infob.setText('Method: Multiple Groups.')
+            self.infob.setText('Multiple subsets.')
             #parse group specification string
             try:
                 self.pGroups = []
@@ -277,7 +277,7 @@ class OWDataSampler(OWWidget):
                     self.pGroups.append(float(x))
                 self.nGroups = len(self.pGroups)
             except:
-                self.error("Invalid group specification string entered.")
+                self.error("Invalid specification for sizes of subsets.")
                 return
 
             #prepare indices generator
@@ -302,9 +302,11 @@ class OWDataSampler(OWWidget):
 
 if __name__=="__main__":
     appl = QApplication(sys.argv)
-    ow = OWDataSamplerA()
+    ow = OWDataSampler()
     appl.setMainWidget(ow)
+
+    data = orange.ExampleTable('iris.tab')
+    ow.cdata(data)
     ow.show()
-    dataset = orange.ExampleTable('iris.tab')
-    ow.data(dataset)
     appl.exec_loop()
+    ow.saveSettings()
