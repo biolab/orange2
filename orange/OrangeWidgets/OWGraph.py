@@ -96,6 +96,8 @@ class OWGraph(QwtPlot):
 
         # uncomment this if you want to use printer friendly symbols
         #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
+        self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
+        self.discPalette = ColorPaletteGenerator()
 
 
     def __setattr__(self, name, value):

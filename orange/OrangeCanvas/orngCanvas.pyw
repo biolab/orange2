@@ -765,7 +765,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("focusOnCatchOutput" , 0)
         self.settings.setdefault("printOutputInStatusBar", 1)
         self.settings.setdefault("printExceptionInStatusBar", 1)
-        self.settings.setdefault("showSignalNames", 0)
+        self.settings.setdefault("showSignalNames", 1)
         self.settings.setdefault("saveSchemaDir", self.outputDir)
         self.settings.setdefault("saveApplicationDir", self.outputDir)
         self.settings.setdefault("verbose", 0)

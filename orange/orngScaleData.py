@@ -118,14 +118,14 @@ class orngScaleData:
         for index in range(len(data.domain)):
             attr = data.domain[index]
             
-            if data.domain[index].varType == orange.VarTypes.Discrete:
+            if attr.varType == orange.VarTypes.Discrete:
                 variableValueIndices = getVariableValueIndices(data, index, sortValuesForDiscreteAttrs)
-                for i in range(len(data.domain[index].values)):
-                    if i != variableValueIndices[data.domain[index].values[i]]:
+                for i in range(len(attr.values)):
+                    if i != variableValueIndices[attr.values[i]]:
                         line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
-                        indices = [Numeric.where(line == val, 1, 0) for val in range(len(data.domain[index].values))]
-                        for i in range(len(data.domain[index].values)):
-                            Numeric.putmask(line, indices[i], variableValueIndices[data.domain[index].values[i]])
+                        indices = [Numeric.where(line == val, 1, 0) for val in range(len(attr.values))]
+                        for i in range(len(attr.values)):
+                            Numeric.putmask(line, indices[i], variableValueIndices[attr.values[i]])
                         arr[index] = line   # save the changed array
                         break
 
