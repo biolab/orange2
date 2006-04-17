@@ -154,23 +154,15 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             data = self.createProjectionAsExampleTable([xAttrIndex, yAttrIndex], settingsDict = {"validData": validData, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation})
             graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             
-            classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])
             indices = Numeric.compress(validData, Numeric.array(range(len(self.rawdata))))
             
             for key in valueDict.keys():
                 if not polygonVerticesDict.has_key(key): continue
                 for (i,j) in closureDict[key]:
-                    color = classIndices[graph.objects[i].getclass().value]
-                    self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [float(self.rawdata[indices[i]][xAttr]), float(self.rawdata[indices[j]][xAttr])], yData = [float(self.rawdata[indices[i]][yAttr]), float(self.rawdata[indices[j]][yAttr])], lineWidth = 1)
+                    color = self.discPalette[classIndices[graph.objects[i].getclass().value]]
+                    self.addCurve("", color, color, 1, QwtCurve.Lines, QwtSymbol.None, xData = [float(self.rawdata[indices[i]][xAttr]), float(self.rawdata[indices[j]][xAttr])], yData = [float(self.rawdata[indices[i]][yAttr]), float(self.rawdata[indices[j]][yAttr])], lineWidth = 1)
 
-                """
-                for arr in enlargedClosureDict[key]:
-                    #print arr
-                    color = classIndices[otherDict[key][0]]
-                    for i in range(len(arr)):
-                        self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + xVar * arr[i][0], xVarMin + xVar * arr[(i+1)%len(arr)][0]], yData = [yVarMin + (yVarMax - yVarMin) * arr[i][1], yVarMin + (yVarMax - yVarMin) * arr[(i+1)%len(arr)][1]], lineWidth = 2)
-                """
             self.removeMarkers()
             for i in range(graph.nVertices):
                 if not validData[i]: continue
@@ -223,10 +215,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             if self.insideColors and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 # variables and domain for the table
                 classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
-
-                if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
-                else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
-
                 (insideData, stringData) = self.insideColors
                 j = 0
                 equalSize = len(self.rawdata) == len(insideData)
@@ -235,24 +223,15 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                         j += equalSize
                         continue
                     
-                    fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j])
-                    edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
+                    fillColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j]]
+                    edgeColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
 
                     x = xData[i]
                     y = yData[i]
-##                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-##                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
-##                    else:                           x = self.rawdata[i][xAttrIndex].value
-##
-##                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-##                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
-##                    else:                           y = self.rawdata[i][yAttrIndex].value
-
                     key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
 
                     # we add a tooltip for this point
                     self.addTip(x, y, text = self.getExampleTooltipText(self.rawdata, self.rawdata[j], attrIndices))
-                    #self.addTip(x, y, text = self.getExampleTooltipText(self.rawdata, self.rawdata[j], attrIndices) + stringData %(100*insideData[j]))
                     j+=1
                     
             # ##############################################################
@@ -261,7 +240,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not haveSubsetData:
                 if colorIndex != -1:
                     classCount = len(colorIndices)
-                    classColors = ColorPaletteHSV(classCount)
                 else: classCount = 1
 
                 pos = [[ [] , [], [] ] for i in range(classCount)]
@@ -270,19 +248,11 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 validData = self.getValidList(indices)
                 for i in range(len(self.rawdata)):
                     if not validData[i]: continue
-
-##                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-##                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
-##                    else:                           x = self.rawdata[i][xAttrIndex].value
-##
-##                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
-##                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
-##                    else:                           y = self.rawdata[i][yAttrIndex].value
                     x = xData[i]
                     y = yData[i]
 
                     if colorIndex != -1: index = colorIndices[self.rawdata[i][colorIndex].value]
-                    else: index = 0
+                    else:                index = 0
                     pos[index][0].append(x)
                     pos[index][1].append(y)
                     pos[index][2].append(i)
@@ -311,8 +281,8 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                      
 
                 for i in range(classCount):
-                    newColor = QColor(0,0,0)
-                    if colorIndex != -1: newColor = classColors.getColor(i)
+                    if colorIndex != -1: newColor = self.discPalette[i]
+                    else:                newColor = QColor(0,0,0)
                     key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = self.curveSymbols[0], xData = pos[i][0], yData = pos[i][1])
                 
 
@@ -320,9 +290,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             # slow, unoptimized drawing because we use different symbols and/or different sizes of symbols
             # ##############################################################
             else:
-                if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:  classColors = self.scatterWidget.getColorPalette()
-                elif colorIndex != -1:                                                                          classColors = ColorPaletteHSV(len(self.rawdata.domain[colorIndex].values))
-
                 shownSubsetCount = 0
                 attrs = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
                 while -1 in attrs: attrs.remove(-1)
@@ -338,9 +305,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     
                     if colorIndex != -1:
                         if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
-                            newColor = QColor();
-                            newColor.setRgb(classColors[int(self.noJitteringScaledData[colorIndex][i] * (len(classColors)-1))])
-                        else: newColor = classColors[colorIndices[self.rawdata[i][colorIndex].value]]
+                            newColor = self.contPalette[self.noJitteringScaledData[colorIndex][i]]
+                        else:
+                            newColor = self.discPalette[colorIndices[self.rawdata[i][colorIndex].value]]
                     else: newColor = QColor(0,0,0)
                             
                     Symbol = self.curveSymbols[0]
@@ -377,8 +344,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
                         if colorIndex != -1 and not self.subsetData[i][colorIndex].isSpecial():
                             val = min(1.0, max(0.0, self.scaleExampleValue(self.subsetData[i], colorIndex)))    # scale to 0-1 interval
-                            if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor.setHsv(val, 255, 255)
-                            else: newColor = classColors[colorIndices[self.subsetData[i][colorIndex].value]]
+                            if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
+                                newColor = self.contPalette[val]
+                            else:
+                                newColor = self.discPalette[colorIndices[self.subsetData[i][colorIndex].value]]
                         else: newColor = QColor(0,0,0)
                                 
                         Symbol = self.curveSymbols[0]
@@ -397,10 +366,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 num = len(self.rawdata.domain[colorIndex].values)
                 val = [[], [], [self.pointWidth]*num, [QwtSymbol.Ellipse]*num]
                 varValues = getVariableValuesSorted(self.rawdata, colorIndex)
-                colors = ColorPaletteHSV(num)
                 for ind in range(num):
                     val[0].append(self.rawdata.domain[colorIndex].name + "=" + varValues[ind])
-                    val[1].append(colors.getColor(ind))
+                    val[1].append(self.discPalette[ind])
                 legendKeys[colorIndex] = val
 
             if shapeIndex != -1 and self.rawdata.domain[shapeIndex].varType == orange.VarTypes.Discrete:
@@ -434,13 +402,13 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         # draw color scale for continuous coloring attribute
         if colorIndex != -1 and showColorLegend and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
             x0 = xmax + xVar*1.0/100.0;  x1 = x0 + xVar*2.5/100.0
-            palette = self.scatterWidget.getColorPalette()
-            height = yVar / float(len(palette))
+            count = 200
+            height = yVar / float(count)
             xs = [x0, x1, x1, x0]
 
-            for i in range(len(palette)):
-                y = yVarMin + i*yVar/float(len(palette))
-                col = QColor(); col.setRgb(palette[i])
+            for i in range(count):
+                y = yVarMin + i*yVar/float(count)
+                col = self.contPalette[i/float(count)]
                 curve = PolygonCurve(self, QPen(col), QBrush(col))
                 newCurveKey = self.insertCurve(curve)
                 self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
@@ -455,7 +423,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
     # ######  SHOW CLUSTER LINES  ##################################
     # ##############################################################
     def showClusterLines(self, xAttr, yAttr, width = 1):
-        classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
         classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])
 
         shortData = self.rawdata.select([self.rawdata.domain[xAttr], self.rawdata.domain[yAttr], self.rawdata.domain.classVar])
@@ -471,24 +438,13 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         if type(closure) == dict:
             for key in closure.keys():
                 clusterLines = closure[key]
-                colorIndex = classIndices[self.rawdata.domain.classVar[classValue[key]].value]
+                color = self.discPalette[classIndices[self.rawdata.domain.classVar[classValue[key]].value]]
                 for (p1, p2) in clusterLines:
-                    self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
-
-                """
-                arr = enlargedClosure[key]
-                for i in range(len(arr)):
-                    self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + (xVarMax - xVarMin) * arr[i][0], xVarMin + (xVarMax - xVarMin) * arr[(i+1)%len(arr)][0]], yData = [yVarMin + (yVarMax - yVarMin) * arr[i][1], yVarMin + (yVarMax - yVarMin) * arr[(i+1)%len(arr)][1]], lineWidth = 2)
-                """ 
+                    self.addCurve("", color, color, 1, QwtCurve.Lines, QwtSymbol.None, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
         else:
-            colorIndex = classIndices[self.rawdata.domain.classVar[classValue].value]
+            colorIndex = self.discPalette[classIndices[self.rawdata.domain.classVar[classValue].value]]
             for (p1, p2) in closure:
-                self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
-
-            """
-            for i in range(len(enlargedClosure)):
-                self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + (xVarMax - xVarMin) * enlargedClosure[i][0], xVarMin + (xVarMax - xVarMin) * enlargedClosure[(i+1)%len(enlargedClosure)][0]], yData = [yVarMin + (yVarMax - yVarMin) * enlargedClosure[i][1], yVarMin + (yVarMax - yVarMin) * enlargedClosure[(i+1)%len(enlargedClosure)][1]], lineWidth = 2)
-            """
+                self.addCurve("", color, color, 1, QwtCurve.Lines, QwtSymbol.None, xData = [float(shortData[p1][0]), float(shortData[p2][0])], yData = [float(shortData[p1][1]), float(shortData[p2][1])], lineWidth = width)
         
     def addTip(self, x, y, attrIndices = None, dataindex = None, text = None):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return
@@ -566,19 +522,20 @@ class QwtPlotCurvePieChart(QwtPlotCurve):
         QwtPlotCurve.__init__(self, parent, text)
         self.color = Qt.black
         self.penColor = Qt.black
+        self.parent = parent
 
     def draw(self, p, xMap, yMap, f, t):
         # save ex settings
         back = p.backgroundMode()
         pen = p.pen()
         brush = p.brush()
-        colors = ColorPaletteHSV(self.dataSize())
+        colors = self.parent.discPalette
 
         p.setBackgroundMode(Qt.OpaqueMode)
         #p.setBackgroundColor(self.color)
         for i in range(self.dataSize()-1):
-            p.setBrush(QBrush(colors.getColor(i)))
-            p.setPen(QPen(colors.getColor(i)))
+            p.setBrush(QBrush(colors[i]))
+            p.setPen(QPen(colors[i]))
 
             factor = self.percentOfTotalData * self.percentOfTotalData
             px1 = xMap.transform(self.x(0)-0.1 - 0.5*factor)

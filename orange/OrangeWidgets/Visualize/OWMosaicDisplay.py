@@ -15,7 +15,7 @@ from OWMosaicOptimization import *
 from math import sqrt, floor, ceil, pow
 from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 from OWQCanvasFuncts import *
-from OWGraphTools import ColorPaletteHSV, ColorPaletteBrewer
+from OWGraphTools import *
 from OWDlgs import OWChooseImageSizeDlg
 from orngVisFuncts import permutations
 from copy import copy
@@ -213,7 +213,7 @@ class OWMosaicDisplay(OWWidget):
             #self.data = orange.Preprocessor_dropMissing(data)
             self.data = self.optimizationDlg.data
             if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
-                self.colorPalette = ColorPaletteBrewer(len(data.domain.classVar.values))
+                self.colorPalette = ColorPaletteGenerator(rgbColors = ColorBrewerRGBValues)
                 #self.colorPalette = ColorPaletteHSV(len(data.domain.classVar.values))
             else: self.interiorColoring = PEARSON
             

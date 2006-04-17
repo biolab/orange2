@@ -137,31 +137,27 @@ class OWScatterPlotMatrix(OWWidget):
     # #########################
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
+        self.contPalette = dlg.getContinuousPalette("contPalette")
+        self.discPalette = dlg.getDiscretePalette()
         self.graphCanvasColor = dlg.getColor("Canvas")
-        self.colorPalette = dlg.getColorPalette("colorPalette")
         
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createColorPalette("colorPalette", "Continuous variable palette")
-        box = c.createBox("otherColors", "Other Colors")
+        c.createDiscretePalette(" Discrete Palette ")
+        c.createContinuousPalette("contPalette", " Continuous palette ")
+        box = c.createBox("otherColors", " Other Colors ")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         box.adjustSize()
-        if self.colorSettings:
-            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
-            c.setCurrentState(self.colorSettings[2])
-        else:
-            c.setColorSchemas()
+        c.setColorSchemas(self.colorSettings)
         return c
 
-    def getColorPalette(self):
-        return self.colorPalette
-        
     def setColors(self):
         dlg = self.createColorDialog()
         if dlg.exec_loop():
-            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
-            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.colorSettings = dlg.getColorSchemas()
+            self.contPalette = dlg.getContinuousPalette("contPalette")
+            self.discPalette = dlg.getDiscretePalette()
             self.graphCanvasColor = dlg.getColor("Canvas")
             self.updateSettings()
             
@@ -172,6 +168,8 @@ class OWScatterPlotMatrix(OWWidget):
         graph.showLegend = self.showLegend
         graph.showFilledSymbols = self.showFilledSymbols
         graph.setCanvasBackground(self.graphCanvasColor)
+        graph.contPalette = self.contPalette
+        graph.discPalette = self.discPalette
 
 
     def setPointWidth(self):
@@ -368,7 +366,11 @@ class OWScatterPlotMatrix(OWWidget):
             self.removeAllGraphs()
             return
         
-        self.data = orange.Preprocessor_dropMissingClasses(data)
+        if data and data.domain.classVar:
+            name = getattr(data, "name", "")
+            data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
+            data.name = name
+        self.data = data
 
         if self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes): # preserve attribute choice if the domain is the same
             if self.graphs != []: self.createGraphs()   # if we had already created graphs, redraw them with new data

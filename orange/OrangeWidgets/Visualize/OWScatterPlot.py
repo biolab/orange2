@@ -162,8 +162,8 @@ class OWScatterPlot(OWWidget):
     
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
-        self.colorPalette = dlg.getColorPalette("colorPalette")
-
+        self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+        self.graph.discPalette = dlg.getDiscretePalette()
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         self.graph.setGridPen(QPen(dlg.getColor("Grid")))
                 
@@ -197,22 +197,21 @@ class OWScatterPlot(OWWidget):
     # ##############################################################################################################################################################
 
     def resetGraphData(self):
-        self.graph.setData(self.data)
+        orngScaleScatterPlotData.setData(self.graph, self.data)
+        #self.graph.setData(self.data)
         self.majorUpdateGraph()
 
     # receive new data and update all fields
     def cdata(self, data, clearResults = 1):
         self.closeContext()
 
-        if data:
-            name = ""
-            if hasattr(data, "name"): name = data.name
-            data = orange.Preprocessor_dropMissingClasses(data)
+        if data and data.domain.classVar:
+            name = getattr(data, "name", "")
+            data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
             data.name = name
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         exData = self.data
         self.data = data
-        self.graph.setData(data)
         self.graph.insideColors = None
         self.graph.clusterClosure = None
         
@@ -426,30 +425,25 @@ class OWScatterPlot(OWWidget):
     def setColors(self):
         dlg = self.createColorDialog()
         if dlg.exec_loop():
-            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
-            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.colorSettings = dlg.getColorSchemas()
+            self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+            self.graph.discPalette = dlg.getDiscretePalette()
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
             self.graph.setGridPen(QPen(dlg.getColor("Grid")))
             self.updateGraph()
 
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createColorPalette("colorPalette", "Continuous variable palette")
-        box = c.createBox("otherColors", "Other Colors")
+        c.createDiscretePalette(" Discrete Palette ")
+        c.createContinuousPalette("contPalette", " Continuous palette ")
+        box = c.createBox("otherColors", " Other Colors ")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         c.createColorButton(box, "Grid", "Grid color", Qt.black)
         box.addSpace(5)
         box.adjustSize()
-        if self.colorSettings:
-            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
-            c.setCurrentState(self.colorSettings[2])
-        else:
-            c.setColorSchemas()
+        c.setColorSchemas(self.colorSettings)
         return c
-
-    def getColorPalette(self):
-        return self.colorPalette
 
     def destroy(self, dw = 1, dsw = 1):
         self.clusterDlg.hide()

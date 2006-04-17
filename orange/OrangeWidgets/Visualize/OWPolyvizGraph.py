@@ -239,8 +239,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
             # fill and edge color palettes 
             bwColors = ColorPaletteBW(-1, 55, 255)
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
-            else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = self.contPalette
+            else:                                                                   classColors = self.discPalette
             
             if table.domain.classVar.varType == orange.VarTypes.Continuous: preText = 'Mean square error : '
             else:
@@ -256,12 +256,10 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         # CONTINUOUS class 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
-            palette = self.polyvizWidget.getColorPalette()
             for i in range(dataSize):
                 if not validData[i]: continue
-                newColor = QColor(0,0,0)
-                if self.useDifferentColors:
-                    newColor.setRgb(palette[int(self.noJitteringScaledData[classNameIndex][i] * (len(palette)-1))])
+                if self.useDifferentColors:  newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
+                else:                        newColor = QColor(0,0,0)
                 curveData[i][PENCOLOR] = newColor
                 curveData[i][BRUSHCOLOR] = newColor
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
@@ -271,7 +269,6 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         # DISCRETE class + optimize drawing
         elif self.optimizedDrawing:
             pos = [[ [] , [], [],  [], [] ] for i in range(valLen)]
-            colors = ColorPaletteHSV(valLen)
             
             for i in range(dataSize):
                 if not validData[i]: continue
@@ -280,12 +277,12 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 pos[classValueIndices[self.rawdata[i].getclass().value]][2].append(i)
                 pos[classValueIndices[self.rawdata[i].getclass().value]][3].append(curveData[i][XANCHORS])
                 pos[classValueIndices[self.rawdata[i].getclass().value]][4].append(curveData[i][YANCHORS])
-                if self.useDifferentColors: self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], colors.getColor(classValueIndices[self.rawdata[i].getclass().value]), i, length)
-                else: self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], QColor(0,0,0), i, length)
+                if self.useDifferentColors: self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], self.discPalette[classValueIndices[self.rawdata[i].getclass().value]], i, length)
+                else:                       self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], QColor(0,0,0), i, length)
 
             for i in range(valLen):
-                newColor = colors[i]
-                if not self.useDifferentColors: newColor = QColor(0,0,0)
+                if self.useDifferentColors: newColor = self.discPalette[i]
+                else:                       newColor = QColor(0,0,0)
                 
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[i]
                 else: curveSymbol = self.curveSymbols[0]
@@ -295,13 +292,12 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     self.addTooltipKey(pos[i][0][k], pos[i][1][k], pos[i][3][k], pos[i][4][k], newColor, pos[i][2][k])
 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            colors = ColorPaletteHSV(valLen)
             for i in range(dataSize):
                 if not validData[i]: continue
-                newColor = colors[classValueIndices[self.rawdata[i].getclass().value]]
-                if not self.useDifferentColors: newColor = QColor(0,0,0)
+                if self.useDifferentColors: newColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
+                else:                       newColor = QColor(0,0,0)
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
-                else: curveSymbol = self.curveSymbols[0]
+                else:                        curveSymbol = self.curveSymbols[0]
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
                 self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
@@ -323,10 +319,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
                     
                 classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-                classColors = ColorPaletteHSV(len(classVariableValues))
                 for index in range(len(classVariableValues)):
-                    color = classColors.getColor(index)
-                    if not self.useDifferentColors: color = QColor(0,0,0)
+                    if not self.useDifferentColors: color = self.discPalette[index]
+                    else:                           color = QColor(0,0,0)
                     y = 1.0 - index * 0.05
 
                     if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
@@ -337,12 +332,11 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             # show legend for continuous class
             else:
                 xs = [1.15, 1.20, 1.20, 1.15]
-                palette = self.polyvizWidget.getColorPalette()
-                height = 2 / float(len(palette))
-                lenPalette = len(palette)
-                for i in range(len(palette)):
-                    y = -1.0 + i*2.0/float(lenPalette)
-                    col = QColor(); col.setRgb(palette[i])
+                count = 200
+                height = 2 / float(count)
+                for i in range(count):
+                    y = -1.0 + i*2.0/float(count)
+                    col = self.contPalette[i/float(count)]
                     curve = PolygonCurve(self, QPen(col), QBrush(col))
                     newCurveKey = self.insertCurve(curve)
                     self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])

@@ -91,12 +91,15 @@ class OWLinProj(OWVisWidget):
         if name.lower() == "radviz":
             self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
             self.learnersArray[0] = VizRankLearner(RADVIZ, self.optimizationDlg, self.graph)
+            self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
         elif name.lower() == "polyviz":
             self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.POLYVIZ, name)
             self.learnersArray[0] = VizRankLearner(POLYVIZ, self.optimizationDlg, self.graph)
+            self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         else:
             self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION, name)
             self.learnersArray[0] = VizRankLearner(LINEAR_PROJECTION, self.optimizationDlg, self.graph)
+            self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
 
         self.learnersArray[2] = FreeVizLearner(self.freeVizDlg)
 
@@ -176,9 +179,6 @@ class OWLinProj(OWVisWidget):
 
         self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = " Set Active Learner ", items = ["VizRank Learner", "Cluster Learner", "FreeViz Learner", "S2N Feature Selection Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.", callback = self.setActiveLearner)
 
-        # ####################################
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
-
         self.icons = self.createAttributeIconDict()
 
         # add a settings dialog and initialize its values
@@ -193,8 +193,10 @@ class OWLinProj(OWVisWidget):
 
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
-        self.colorPalette = dlg.getColorPalette("colorPalette")
+        self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+        self.graph.discPalette = dlg.getDiscretePalette()
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+        
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.clusterDlg.changeLearnerName(self.clusterClassifierName)
@@ -354,9 +356,9 @@ class OWLinProj(OWVisWidget):
     
     # receive new data and update all fields
     def cdata(self, data):
-        if data:
+        if data and data.domain.classVar:
             name = getattr(data, "name", "")
-            data = orange.Preprocessor_dropMissingClasses(data)
+            data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
             data.name = name
             
         if self.data and data and self.data.checksum() == data.checksum():
@@ -365,7 +367,6 @@ class OWLinProj(OWVisWidget):
         self.closeContext()        
         exData = self.data
         self.data = data
-        self.graph.setData(self.data)
         self.optimizationDlg.setData(data)  
         self.clusterDlg.setData(data)
         self.freeVizDlg.setData(data)
@@ -428,7 +429,8 @@ class OWLinProj(OWVisWidget):
         self.send("Learner", self.learnersArray[self.learnerIndex])
         
     def resetGraphData(self):
-        self.graph.setData(self.data)
+        orngScaleLinProjData.setData(self.graph, self.data)
+        #self.graph.setData(self.data)
         self.updateGraph()
         
     def setValueScaling(self):
@@ -441,7 +443,8 @@ class OWLinProj(OWVisWidget):
         else:
             self.graph.globalValueScaling = 0
             self.graph.scalingByVariance = 1
-        self.graph.setData(self.data)
+        #self.graph.setData(self.data)
+        orngScaleLinProjData.setData(self.graph, self.data)
         self.graph.potentialsBmp = None
         self.updateGraph()
         
@@ -453,27 +456,22 @@ class OWLinProj(OWVisWidget):
     def setColors(self):
         dlg = self.createColorDialog()
         if dlg.exec_loop():
-            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
-            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.colorSettings = dlg.getColorSchemas()
+            self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+            self.graph.discPalette = dlg.getDiscretePalette()
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
             self.updateGraph()
 
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createColorPalette("colorPalette", "Continuous variable palette")
-        box = c.createBox("otherColors", "Other Colors")
+        c.createDiscretePalette(" Discrete Palette ")
+        c.createContinuousPalette("contPalette", " Continuous palette ")
+        box = c.createBox("otherColors", " Other Colors ")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         box.adjustSize()
-        if self.colorSettings:
-            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
-            c.setCurrentState(self.colorSettings[2])
-        else:
-            c.setColorSchemas()
+        c.setColorSchemas(self.colorSettings)
         return c
-
-    def getColorPalette(self):
-        return self.colorPalette
 
     def destroy(self, dw = 1, dsw = 1):
         self.clusterDlg.hide()

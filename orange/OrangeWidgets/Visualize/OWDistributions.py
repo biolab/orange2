@@ -187,17 +187,14 @@ class OWDistributionGraph(OWGraph):
         self.removeCurves()
 
         currentBarsHeight = [0] * len(keys)
-        colors = ColorPaletteHSV(len(self.visibleOutcomes))
         for oi in range(len(self.visibleOutcomes)):
             if self.visibleOutcomes[oi] == 1:
                 #for all bars insert curve and
                 cn = 0
                 for key in keys:
                     subBarHeight = self.hdata[key][oi]
-                    curve = subBarQwtPlotCurve(self)
-                    curve.color = colors.getColor(oi)
+                    curve = RectanglePlotCurve(self, pen = QPen(Qt.black), brush = QBrush(self.discPalette[oi]))
                     ckey = self.insertCurve(curve)
-                    self.setCurveStyle(ckey, QwtCurve.UserCurve)
                     if self.variableContinuous:
                         self.setCurveData(ckey, [key, key + self.subIntervalStep], [currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight])
                     else:
@@ -527,9 +524,9 @@ class OWDistributions(OWWidget):
     def setOutcomeNames(self, list):
         "Sets the outcome target names."
         self.outcomesQLB.clear()
-        colors = ColorPaletteHSV(len(list))
+        colors = ColorPaletteGenerator()
         for i in range(len(list)):
-            self.outcomesQLB.insertItem(ColorPixmap(colors.getColor(i)), list[i])
+            self.outcomesQLB.insertItem(ColorPixmap(colors[i]), list[i])
         self.outcomesQLB.selectAll(TRUE)
 
     def outcomeSelectionChange(self):

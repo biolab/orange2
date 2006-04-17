@@ -25,7 +25,6 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         
     #
     # update shown data. Set labels, coloring by className ....
-    #
     def updateData(self, labels):
         self.removeCurves()
         self.tips.removeAll()
@@ -66,24 +65,17 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
             classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 classValDict = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar)
-                colors = ColorPaletteBrewer(len(classValDict))
-            else:
-                colors = ColorPaletteHSV()
         
         y = 0
         self.yDataIndices = []
         
         for i in range(len(self.rawdata)):
             if validData[i] == 0: continue
-            
-            curve = subBarQwtPlotCurve(self)
-            
             if classNameIndex == -1: newColor = QColor(0,0,0)
-            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: newColor = colors[classValDict[self.rawdata[i].getclass().value]]
-            else: newColor = colors[self.noJitteringScaledData[classNameIndex][i]]
-                
-            curve.color = newColor
-            curve.penColor = newColor
+            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: newColor = self.discPalette[classValDict[self.rawdata[i].getclass().value]]
+            else: newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
+
+            curve = RectanglePlotCurve(self, pen = QPen(newColor), brush = QBrush(newColor))
             xData = []; yData = []
             for j in range(self.length):
                 width = self.noJitteringScaledData[indices[j]][i] * 0.45
@@ -95,14 +87,13 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
             self.yDataIndices.append(y)
 
             ckey = self.insertCurve(curve)
-            self.setCurveStyle(ckey, QwtCurve.UserCurve)
             self.setCurveData(ckey, xData, yData)
 
         if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
             self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
             for ind in range(len(classValues)):
-                self.addCurve(classValues[ind], colors[ind], colors[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
+                self.addCurve(classValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
            
 
     # show rectangle with example shown under mouse cursor

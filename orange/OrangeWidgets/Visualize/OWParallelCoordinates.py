@@ -45,7 +45,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.box.addWidget(self.graph)
         self.box.addWidget(self.slider)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
     
         #set default settings
@@ -144,7 +144,8 @@ class OWParallelCoordinates(OWVisWidget):
     # #########################
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
-        self.colorPalette = dlg.getColorPalette("colorPalette")
+        self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+        self.graph.discPalette = dlg.getDiscretePalette()
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
         self.cbShowAllAttributes()
@@ -285,14 +286,20 @@ class OWParallelCoordinates(OWVisWidget):
     def show(self):
         OWWidget.show(self)
         self.updateGraph()
+
+    def subsetdata(self, data, update = 1):
+        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+        self.graph.setSubsetData(data)
+        qApp.processEvents()
+        if update: self.updateGraph()
+        qApp.processEvents()
     
     # ###### DATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        if data:
-            name = ""
-            if hasattr(data, "name"): name = data.name
-            data = orange.Preprocessor_dropMissingClasses(data)
+        if data and data.domain.classVar:
+            name = getattr(data, "name", "")
+            data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
             data.name = name
             
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
@@ -304,7 +311,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.data = data
         
         self.graph.setData(self.data)
-        self.optimizationDlg.setData(data)
+        self.optimizationDlg.setData(self.data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
             self.shownAttribsLB.clear()
@@ -398,27 +405,23 @@ class OWParallelCoordinates(OWVisWidget):
     def setColors(self):
         dlg = self.createColorDialog()
         if dlg.exec_loop():
-            self.colorSettings = (dlg.getColorSchemas(), dlg.getCurrentSchemeIndex(), dlg.getCurrentState())
-            self.colorPalette = dlg.getColorPalette("colorPalette")
+            self.colorSettings = dlg.getColorSchemas()
+            self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+            self.graph.discPalette = dlg.getDiscretePalette()
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
             self.updateGraph()
 
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createColorPalette("colorPalette", "Continuous variable palette")
-        box = c.createBox("otherColors", "Other Colors")
+        c.createDiscretePalette(" Discrete Palette ")
+        c.createContinuousPalette("contPalette", " Continuous palette ")
+        box = c.createBox("otherColors", " Other Colors ")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         box.adjustSize()
-        if self.colorSettings:
-            c.setColorSchemas(self.colorSettings[0], self.colorSettings[1])
-            c.setCurrentState(self.colorSettings[2])
-        else:
-            c.setColorSchemas()
+        c.setColorSchemas(self.colorSettings)
         return c
 
-    def getColorPalette(self):
-        return self.colorPalette
 
 CORRELATION = 0
 VIZRANK = 1
