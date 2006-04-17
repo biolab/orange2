@@ -1018,19 +1018,20 @@ class OWGraphAttributeHistogram(OWWidget):
         b1 = OWGUI.widgetBox(self.controlArea, box = 1)
         b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Attributes')
         b3 = OWGUI.widgetBox(self.controlArea, 'Number Of Projections')
-        b4 = OWGUI.widgetBox(self.controlArea, box = 1)
+        #b4 = OWGUI.widgetBox(self.controlArea, box = 1)
         box = OWGUI.widgetBox(self.controlArea)
 
         OWGUI.checkBox(b1, self, 'colorAttributes', label = "Color attributes according to class vote", callback = self.updateGraph)
-        OWGUI.checkBox(b1, self, 'progressLines', label = "Show progress lines", callback = self.updateGraph)
+        OWGUI.checkBox(b1, self, 'progressLines', label = "Show intermediate lines", callback = self.updateGraph)
+        OWGUI.checkBox(b1, self, 'rotateXAttributes', label = "Show attribute names vertically", callback = self.updateGraph)
         OWGUI.qwtHSlider(b2, self, 'attributeCount', minValue=0, maxValue = 100, step = 1, callback = self.updateGraph, precision = 0, maxWidth = 170)
         OWGUI.qwtHSlider(b3, self, 'projectionCount', minValue = 0, maxValue = 10000, step=50, callback = self.updateGraph, precision = 0, maxWidth = 170)
-        OWGUI.checkBox(b4, self, 'rotateXAttributes', label = "Show Labels Vertically", callback = self.updateGraph)
+        
 
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        #b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
 
         self.kNNOptimizationDlg = parent
@@ -1131,6 +1132,9 @@ class OWGraphAttributeHistogram(OWWidget):
         if self.rotateXAttributes:
             self.graph.axisScaleDraw(QwtPlot.xBottom).setLabelRotation(-90)
             self.graph.axisScaleDraw(QwtPlot.xBottom).setLabelAlignment(Qt.AlignLeft)
+        else:
+            self.graph.axisScaleDraw(QwtPlot.xBottom).setLabelRotation(0)
+            self.graph.axisScaleDraw(QwtPlot.xBottom).setLabelAlignment(Qt.AlignHCenter)
         
         self.graph.setYLaxisTitle("Number of appearances in top projections")
         
@@ -1258,17 +1262,20 @@ class OWGraphProjectionQuality(OWWidget):
 # #############################################################################
 # draw a graph for all the evaluated projections that shows how is the classification accuracy falling when we are moving from the best to the worst evaluated projections
 class OWGraphIdentifyOutliers(OWWidget):
-    settingsList = ["projectionCountList", "showLegend", "showAllClasses", "sortProjections"]
+    settingsList = ["projectionCountList", "showLegend", "showAllClasses", "sortProjections", "showClickedProjection"]
     def __init__(self,parent=None, signalManager = None, widget = None, graph = None):
         OWWidget.__init__(self, parent, signalManager, "Outlier Identification", wantGraph = 1, wantStatusBar = 1)
 
-        self.projectionCountList = ["5", "10", "50", "100", "200", "500", "1000", "2000", "5000", "10000", "Other..."]
-        self.projectionCount = "100"
+        self.projectionCountList = ["5", "10", "20", "50", "100", "200", "500", "1000", "2000", "5000", "10000", "Other..."]
+        self.projectionCount = "20"
         self.selectedExampleIndex = 0
         self.showPredictionsInProjection = 0
         self.showLegend = 1
         self.showAllClasses = 0
         self.sortProjections = 1
+        self.showClickedProjection = 1
+
+        self.projectionIndices = []
         self.matrixOfPredictions = None
         self.projectionGraph = graph
         self.VizRankDialog = parent
@@ -1282,26 +1289,24 @@ class OWGraphIdentifyOutliers(OWWidget):
         self.loadSettings()
         
         b1 = OWGUI.widgetBox(self.controlArea, ' Projection Count ')
-        self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCount", "Number of best projections to consider: ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
+        self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCount", "Best projections to consider:   ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
 
-        self.showGraphCheck = OWGUI.checkBox(self.controlArea, self, 'showPredictionsInProjection', 'Color the points using class predictions', box = "Show predictions in the projection", tooltip = "For all examples show the probabilities of correct class using color intensity of points in the projection", callback = self.toggleShowPredictions)
-        
         b3 = OWGUI.widgetBox(self.controlArea, ' Show Predictions for Selected Example ')
         OWGUI.checkBox(b3, self, 'showAllClasses', 'Show predictions for all classes', tooltip = "Show predicted probabilities for each class value", callback = self.updateGraph)
         OWGUI.checkBox(b3, self, 'sortProjections', 'Sort projection by decreasing probability', tooltip = "Don't show projections as they are ranked. Instead sort them by decreasing probability of correct classification", callback = self.updateGraph)
         OWGUI.checkBox(b3, self, 'showLegend', 'Show class legend', callback = self.updateGraph)
-        self.selectedExampleCombo = OWGUI.comboBoxWithCaption(b3, self, "selectedExampleIndex", "Index of selected example:   ", tooltip = "Select the index of the example whose predictions you wish to analyse in the graph?", callback = self.selectedExampleChanged, sendSelectedValue = 1, valueType = int)
-        OWGUI.button(b3, self, "Update index from the graph", self.updateIndexFromGraph)
+        OWGUI.checkBox(b3, self, 'showClickedProjection', 'Show selected projection', tooltip = "Do you want to show the projection by clicking its horizontal bar with class predictions?", callback = self.updateGraph)
+        hb1 = OWGUI.widgetBox(b3, orientation="horizontal")
+        self.selectedExampleCombo = OWGUI.comboBoxWithCaption(hb1, self, "selectedExampleIndex", "Example Index: ", tooltip = "Select the index of the example whose predictions you wish to analyse in the graph?", callback = self.selectedExampleChanged, sendSelectedValue = 1, valueType = int)
+        butt = OWGUI.button(hb1, self, "From proj.", self.updateIndexFromGraph, tooltip = "Update example index based on the selection in the projection")
+        butt.setMaximumWidth(60)
 
-        b2 = OWGUI.widgetBox(self.controlArea, 1)
-        #OWGUI.button(b2, self, "Update", self.updateProjectionCount)
-        self.showPredictionsButton = OWGUI.button(b2, self, "Show Graph Of Predictions", self.showGraphUpdate)
-        self.showPredictionsButton.setToggleButton(1)
 
         #b4 = OWGUI.widgetBox(self.controlArea, ' Graph Settings')
         #OWGUI.comboBoxWithCaption(b4, self, "lineWidth", 'Line width: ', items = range(1,5), callback = self.updateGraph, sendSelectedValue = 1, valueType = int)
 
         b5 = OWGUI.widgetBox(self.controlArea, ' Examples by Their Uncertain Predictions ')
+        self.showGraphCheck = OWGUI.checkBox(b5, self, 'showPredictionsInProjection', 'Show predicted probabilities in the projection', tooltip = "Color the points in the projection according to the probability of correct classification averaged over the selected projection count", callback = self.toggleShowPredictions)
         OWGUI.button(b5, self, "Evaluate predictions for all examples", self.evaluateAllExamples)
         self.exampleList = QListBox(b5)
         self.connect(self.exampleList, SIGNAL("selectionChanged()"),self.exampleListSelectionChanged) 
@@ -1313,13 +1318,19 @@ class OWGraphIdentifyOutliers(OWWidget):
         self.graph.showYLaxisTitle = 1
         self.graph.setXaxisTitle("Predicted class probabilities")
         self.graph.setYLaxisTitle("Projections")
+        self.graph.show()
         
         self.box.addWidget(self.graph)
         self.box.activate()
 
+        self.graph.disconnect(self.graph, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.graph.onMousePressed)
+        self.graph.disconnect(self.graph, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.graph.onMouseReleased)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-        
-        self.showGraphUpdate()
+        self.connect(self.graph, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.graphOnMouseMoved)
+        self.connect(self.graph, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.graphOnMousePressed)
+                
+        self.resize(600, 400)
+        self.show()
 
     # on escape
     def hideEvent (self, e):
@@ -1340,7 +1351,8 @@ class OWGraphIdentifyOutliers(OWWidget):
             for i in range(len(self.data)):
                 self.selectedExampleCombo.insertItem(str(i))
 
-        self.updateGraph()
+        self.evaluateProjections()
+        self.selectedExampleChanged()
 
     def projectionCountChanged(self):
         self.exampleList.clear()
@@ -1357,13 +1369,14 @@ class OWGraphIdentifyOutliers(OWWidget):
                     self.projectionCountEdit.insertItem(text, i)
                 self.projectionCount = text
             else:
-                self.projectionCount = "100"
+                self.projectionCount = "20"
         self.evaluateProjections()
-        self.toggleShowPredictions()    # update changes
+        self.selectedExampleChanged()
         
-
-
+        
     def evaluateProjections(self):
+        if not self.results or not self.data: return
+        
         # compute predictions
         self.widget.progressBarInit()
 
@@ -1430,23 +1443,14 @@ class OWGraphIdentifyOutliers(OWWidget):
         self.widget.showSelectedAttributes()
 
 
-    def showGraphUpdate(self):
-        if self.showPredictionsButton.isOn():
-            self.graph.show()
-            self.evaluateProjections()
-            self.resize(self.controlArea.size().width() + 400, self.size().height())
-            self.selectedExampleChanged()
-        else:
-            self.graph.hide()
-            self.resize(self.controlArea.size().width(), self.size().height())
-        
-
     def selectedExampleChanged(self):
-        if self.showPredictionsButton.isOn() and self.results:
-            projCount = min(int(self.projectionCount), len(self.results))
-            classCount = len(self.data.domain.classVar.values)
-            self.graphMatrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, self.selectedExampleIndex], (projCount, classCount)))
-            self.updateGraph()
+        if not self.results or not self.data: return
+
+        projCount = min(int(self.projectionCount), len(self.results))
+        classCount = len(self.data.domain.classVar.values)
+        self.graphMatrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, self.selectedExampleIndex], (projCount, classCount)))
+        self.updateGraph()
+        
         valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in self.widget.getShownAttributeList()])
         insideColors = Numeric.zeros(len(self.data))
         insideColors[self.selectedExampleIndex] = 1
@@ -1532,6 +1536,8 @@ class OWGraphIdentifyOutliers(OWWidget):
         else:
             indices = [(i,i) for i in range(len(self.graphMatrix[0]))]
             classes = range(nrOfClasses)
+
+        self.projectionIndices = [val[1] for val in indices]
     
         for i in range(len(self.graphMatrix[0])):
             x = 0
@@ -1539,13 +1545,10 @@ class OWGraphIdentifyOutliers(OWWidget):
                 if not self.showAllClasses and int(self.data[self.selectedExampleIndex].getclass()) != j: continue
                 (prob, index) = indices[i]
                 xDiff = self.graphMatrix[j][index]
-
-                curve = OWGraphTools.subBarQwtPlotCurve(self.graph)
-                curve.color = classColors.getColor(j)
-                curve.penColor = classColors.getColor(j)
+                curve = OWGraphTools.RectanglePlotCurve(self.graph, QPen(classColors.getColor(j)), QBrush(classColors.getColor(j)))
                 ckey = self.graph.insertCurve(curve)
                 self.graph.setCurveStyle(ckey, QwtCurve.UserCurve)
-                self.graph.setCurveData(ckey, [x, x+xDiff], [i+1, i])
+                self.graph.setCurveData(ckey, [x, x+xDiff], [i, i+1])
                 x += xDiff
         
         if self.showLegend:
@@ -1554,12 +1557,39 @@ class OWGraphIdentifyOutliers(OWWidget):
             self.graph.addCurve("<b>" + self.VizRankDialog.data.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
             for i,val in enumerate(classVariableValues):
                 self.graph.addCurve(val, classColors[i], classColors[i], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
-        
+        else:
+            self.graph.enableLegend(0)
         
         self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
-   
 
+    def graphOnMouseMoved(self, e):
+        import math
+        if getattr(self, "selectedRectangle", -1) != -1:
+            self.graph.removeCurve(self.selectedRectangle)
+            self.selectedRectangle = -1
+            
+        y = int(math.floor(self.graph.invTransform(QwtPlot.yLeft, e.y())))
+        if self.showClickedProjection and y >= 0 and y < len(self.projectionIndices):
+            diff  = 0.01
+            curve = OWGraphTools.RectanglePlotCurve(self.graph)
+            self.selectedRectangle = self.graph.insertCurve(curve)
+            self.graph.setCurveData(self.selectedRectangle, [0-diff, 1+diff], [y-diff, y+1+diff])
+            self.graph.replot()
+            
+
+    def graphOnMousePressed(self, e):
+        if self.showClickedProjection:
+            import math
+            y = int(math.floor(self.graph.invTransform(QwtPlot.yLeft, e.y())))
+            if y >= len(self.projectionIndices): return
+            projIndex = self.projectionIndices[y]
+            self.VizRankDialog.resultList.setSelected(projIndex, 1)
+            attrs = self.VizRankDialog.shownResults[projIndex][ATTR_LIST]
+            valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in attrs])
+            insideColors = Numeric.zeros(len(self.data))
+            insideColors[self.selectedExampleIndex] = 1
+            self.widget.updateGraph(attrs, setAnchors = 1, insideColors = (Numeric.compress(valid, insideColors), "Focused example: %d"))
 
 #test widget appearance
 if __name__=="__main__":

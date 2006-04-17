@@ -18,9 +18,10 @@ def getHtmlCompatibleString(strVal):
 
 #A 10X10 single color pixmap
 class ColorPixmap (QPixmap):
-    def __init__(self,color=Qt.white):
+    def __init__(self,color=Qt.white, size = 10):
         "Creates a single-color pixmap"
-        QPixmap.__init__(self,10,10)
+        QPixmap.__init__(self,size,size)
+        self.color = color
         self.fill(color)
 
   
