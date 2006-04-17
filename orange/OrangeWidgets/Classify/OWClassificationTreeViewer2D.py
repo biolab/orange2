@@ -199,12 +199,12 @@ class OWClassificationTreeViewer2D(OWTreeViewer2D):
         self.navWidget.lay.addWidget(self.treeNav)
         self.canvasView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
-        self.navWidget.setCaption("Qt Navigator")
-        OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
+        self.navWidget.setCaption("Navigator")
+        # OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
         self.setMouseTracking(True)
 
-        nodeInfoBox = QVButtonGroup("Show Info On", self.NodeTab)
-        nodeInfoButtons = ['Majority Class', 'Majority Class Probability', 'Target Class Probability', 'Number of Instances']
+        nodeInfoBox = QVButtonGroup("Show Info", self.NodeTab)
+        nodeInfoButtons = ['Majority class', 'Majority class probability', 'Target class probability', 'Number of instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'inst']
         self.NodeInfoW = []; self.dummy = 0
         for i in range(len(nodeInfoButtons)):
@@ -213,11 +213,11 @@ class OWClassificationTreeViewer2D(OWTreeViewer2D):
                                nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
 
-        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in Node', 'Majority Class Probability', 'Target Class Probability', 'Target Class Distribution'], box='Node Color',                            
+        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Majority class probability', 'Target class probability', 'Target class distribution'], box='Node Color',                            
                                 callback=self.toggleNodeColor)
 
-        OWGUI.checkBox(self.NodeTab, self, 'ShowPies', 'Show Pies', box='Pies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
-        self.targetCombo=OWGUI.comboBox(self.NodeTab,self, "TargetClassIndex",items=[],box="TargetClass",callback=self.toggleTargetClass)
+        OWGUI.checkBox(self.NodeTab, self, 'ShowPies', 'Show pies', box='Pies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
+        self.targetCombo=OWGUI.comboBox(self.NodeTab,self, "TargetClassIndex",items=[],box="Target Class",callback=self.toggleTargetClass)
         OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
