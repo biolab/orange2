@@ -6,7 +6,7 @@ baspath = Server.MapPath("/orange/doc/widgets/catalog")
 def insertFile(cat, name):
     import os
     namep = name.replace(" ", "")
-    s = cat + "/" + name
+    s = cat + "/" + namep
     if os.path.exists(baspath+"\\"+s+".htm"):
         Response.Write('<tr><td><a href="%s.htm"><img src="icons/%s.png"></a></td>\n' % (s, namep) + \
                        '<td><a href="%s.htm">%s</a></td></tr>\n\n' % (s, name))
@@ -15,7 +15,7 @@ def insertFile(cat, name):
                        '<td><FONT COLOR="#bbbbbb">%s</FONT></a></td></tr>\n\n' % name)
 
 def category(cat, names):
-    Response.Write('<H2>Data</H2>\n<table>\n\n')
+    Response.Write('<H2>%s</H2>\n<table>\n\n' % cat)
     for name in names:
         insertFile(cat, name)
     Response.Write('</table>')
