@@ -2,10 +2,10 @@
 <name>SOMVisualizer</name>
 <description>SOM visualizer</description>
 <icon>SOMVisualizer.png</icon>
-<contact>Ales Erjavec (ales.erjevec(@at@)fri.uni-lj.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
 <priority>5020</priority>
 """
-import orngSOM, orange, orangeom
+import orange, orngSOM, orangeom
 import math, Numeric
 import OWGUI, OWGraphTools
 from OWWidget import *
@@ -14,6 +14,8 @@ from qtcanvas import *
 from OWTreeViewer2D import CanvasBubbleInfo
 from OWDlgs import OWChooseImageSizeDlg
 
+DefColor=QColor(200, 200, 0)
+BaseColor=QColor(0, 0, 200)
 class CanvasSOMItem(QCanvasPolygon):
     startAngle=0
     segment=6
@@ -25,17 +27,16 @@ class CanvasSOMItem(QCanvasPolygon):
         self.labelText=""
         self.textColor=Qt.black
         self.outlinePoints=None
-        self.innerPoints=None
+        self.histObj=[]
         self.setSize(10)
 
     def boundingRect(self):
         return self.outlinePoints.boundingRect()
 
     def move(self, x, y):
-        ox, oy=self.x(), self.y()
-        dx, dy=ox-x, oy-y
-        self.outlinePoints.translate(-dx,-dy)
         QCanvasPolygon.move(self, x, y)
+        for e in self.histObj:
+            e.move(x, y)
 
     def areaPoints(self):
         return self.outlinePoints
@@ -46,19 +47,40 @@ class CanvasSOMItem(QCanvasPolygon):
             x=int(math.cos(2*math.pi/self.segments*i+self.startAngle)*size)
             y=int(math.sin(2*math.pi/self.segments*i+self.startAngle)*size)
             self.outlinePoints.setPoint(i,x,y)
-        if not self.innerPoints:
-            self.setInnerSize(size)
-            
-    def setInnerSize(self, size):
-        self.innerPoints=QPointArray(self.segments)
-        for i in range(self.segments):
-            x=int(math.cos(2*math.pi/self.segments*i+self.startAngle)*size)
-            y=int(math.sin(2*math.pi/self.segments*i+self.startAngle)*size)
-            self.innerPoints.setPoint(i,x,y)
-        self.setPoints(self.innerPoints)
-        if not self.outlinePoints:
-            self.setSize(size)
-        
+        self.setPoints(self.outlinePoints)
+
+    def setPie(self, attrIndex, size):
+        for e in self.histObj:
+            e.setCanvas(None)
+        self.histObj=[]
+        if len(self.node.examples)<0:
+            return
+        dist=orange.Distribution(attrIndex, self.node.examples)
+        colors=OWGraphTools.ColorPaletteHSV(len(dist))
+        distSum=max(sum(dist),1)
+        startAngle=0
+        for i in range(len(dist)):
+            angle=360/distSum*dist[i]*16
+            c=QCanvasEllipse(size, size, startAngle, angle, self.canvas())
+            c.setBrush(QBrush(colors[i]))
+            c.setZ(10)
+            c.move(self.x(), self.y())
+            c.show()
+            startAngle+=angle
+            self.histObj.append(c)
+
+    def setHist(self, size):
+        for e in self.histObj:
+            e.setCanvas(None)
+        self.histObj=[]
+        c=QCanvasEllipse(size, size, self.canvas())
+        c.setZ(10)
+        c.move(self.x(), self.y())
+        c.setBrush(QBrush(DefColor))
+        c.setPen(QPen(Qt.white))
+        c.show()
+        self.histObj.append(c)
+
     def setLabel(self, label):
         self.labelText=label
 
@@ -83,19 +105,19 @@ class CanvasSOMItem(QCanvasPolygon):
 
     def setChanged(self):
         self.canvas().setChanged(self.boundingRect())
-        
+       
     def drawShape(self, painter):
         QCanvasPolygon.drawShape(self, painter)
-        if self.canvas().showGrid:
-            color=self.isSelected and Qt.red or Qt.black
+        if self.canvas().showGrid or self.isSelected:
+            color=self.isSelected and Qt.blue or Qt.black
             p=QPen(color)
             if self.isSelected:
-                p.setWidth(2)
+                p.setWidth(3)
             painter.setPen(p)
             painter.drawPolyline(self.outlinePoints)
             painter.drawLine(self.outlinePoints.point(0)[0],self.outlinePoints.point(0)[1],
                              self.outlinePoints.point(self.segments-1)[0],self.outlinePoints.point(self.segments-1)[1])
-        if self.node:
+        """if self.node:
             painter.setPen(QPen(self.isSelected and Qt.red or self.textColor))
             if self.labelText:
                 painter.drawText(self.boundingRect(), Qt.AlignVCenter | Qt.AlignLeft, " "+self.labelText)
@@ -103,7 +125,12 @@ class CanvasSOMItem(QCanvasPolygon):
                 #return 
                 painter.setBrush(QBrush(self.isSelected and Qt.red or self.textColor))
                 painter.drawPie(self.x()-2,self.y()-2,4,4,0,5760)
-        #self.setChanged()
+        #self.setChanged()"""
+
+    def setCanvas(self, canvas):
+        QCanvasPolygon.setCanvas(self, canvas)
+        for e in self.histObj:
+            e.setCanvas(canvas)
         
 class CanvasHexagon(CanvasSOMItem):
     startAngle=0
@@ -164,6 +191,7 @@ class SOMCanvasView(QCanvasView):
         b.fitSquare()
         b.show()
         return b
+    
     def fitBubble(self):
         bRect=self.bubble.boundingRect()
         #cRect=self.canvas().rect()
@@ -260,6 +288,69 @@ class SOMCanvas(QCanvas):
         self.objSize=25
         self.canvasObj=[]
         self.somMap=None
+
+    def drawHistogram(self):
+        if self.parent().inputSet:
+            maxVal=max([len(n.mappedExamples) for n in self.somMap.nodes]+[1])
+        else:
+            maxVal=max([len(n.examples) for n in self.somMap.nodes]+[1])
+        if self.drawMode==1:
+            maxSize=int(self.objSize*0.8)*2
+        else:
+            maxSize=int(self.objSize*0.8)*4
+        for n in self.canvasObj:
+            if n.hasNode:
+                if self.parent().inputSet:
+                    size=float(len(n.node.mappedExamples))/maxVal*maxSize
+                else:
+                    size=float(len(n.node.examples))/maxVal*maxSize
+                if self.parent().drawPies():
+                    n.setPie(self.parent().attribute, size)
+                else:
+                    n.setHist(size)
+                    
+        self.updateHistogramColors()            
+
+    def updateHistogramColors(self):
+        if self.parent().drawPies():
+            return
+        attr=self.somMap.examples.domain.variables[self.parent().attribute]
+        for n in self.canvasObj:
+            if n.hasNode:
+                if attr.varType==orange.VarTypes.Discrete:
+                    if self.parent().inputSet:
+                        dist=orange.Distribution(attr, n.node.mappedExamples)
+                    else:
+                        dist=orange.Distribution(attr, n.node.examples)
+                    colors=OWGraphTools.ColorPaletteHSV(len(dist))
+                    maxProb=max(dist)
+                    majValInd=filter(lambda i:dist[i]==maxProb, range(len(dist)))[0]
+                    if self.parent().discHistMode==1:
+                        n.histObj[0].setBrush(QBrush(colors[majValInd]))
+                    elif self.parent().discHistMode==2:
+                        light=180-80*float(dist[majValInd])/max(sum(dist),1)
+                        n.histObj[0].setBrush(QBrush(colors[majValInd].light(light)))
+                else:
+                    if self.parent().inputSet:
+                        dist=orange.Distribution(attr, n.node.mappedExamples)
+                        fullDist=orange.Distribution(attr, self.parent().examples)
+                    else:
+                        dist=orange.Distribution(attr, n.node.examples)
+                        fullDist=orange.Distribution(attr, self.somMap.examples)
+                    if len(dist)==0:
+                        continue
+                    
+                    if self.parent().contHistMode==0:
+                        n.histObj[0].setBrush(QBrush(DefColor))
+                    if self.parent().contHistMode==1:
+                        std=(dist.average()-fullDist.average())/fullDist.var()
+                        std=min(max(std,-1),1)
+                        n.histObj[0].setBrush(QBrush(QColor(0,0, 75*(std+1)+50)))                           
+                    if self.parent().contHistMode==2:
+                        light = 300-200*dist.var()/fullDist.var()
+                        n.histObj[0].setBrush(QBrush(QColor(0,0,20).light(light)))                   
+                    
+                    
         
     def setSom(self, somMap=None):
         self.oldSom=self.somMap
@@ -271,28 +362,26 @@ class SOMCanvas(QCanvas):
         self.somNodeMap={}
         for n in somMap.nodes:
             self.somNodeMap[(n.x,n.y)]=n
-            
-        if self.drawMode==0:
+
+        if self.drawMode==1:
             self.uMat=orngSOM.getUMat(somMap)
             if somMap.topology==orangeom.SOMLearner.HexagonalTopology:
                 self.drawUMatHex()
             else:
                 self.drawUMatRect()
-        elif self.drawMode==1:
-            if somMap.topology==orangeom.SOMLearner.HexagonalTopology:
-                self.drawHistogramHex()
-            else:
-                self.drawHistogramRect()
         else:
             if somMap.topology==orangeom.SOMLearner.HexagonalTopology:
                 self.drawHex()
             else:
                 self.drawRect()
-            minVal=min([n.vector[self.component] for n in self.somMap.nodes])
-            maxVal=max([n.vector[self.component] for n in self.somMap.nodes])
-            for o in self.canvasObj:
-                val=255-max(min(255*(o.node.vector[self.component]-minVal)/(maxVal-minVal),245),10)
-                o.setColor(QColor(val,val,val))
+            if self.drawMode!=0:
+                minVal=min([n.vector[self.component] for n in self.somMap.nodes])
+                maxVal=max([n.vector[self.component] for n in self.somMap.nodes])
+                for o in self.canvasObj:
+                    val=255-max(min(255*(o.node.vector[self.component]-minVal)/(maxVal-minVal),245),10)
+                    o.setColor(QColor(val,val,val))
+        if (self.parent().inputSet==0 or self.parent().examples) and self.parent().histogram:
+            self.drawHistogram()
         self.updateLabels()
         
     def redrawSom(self):    #for redrawing without clearing the selection 
@@ -308,7 +397,7 @@ class SOMCanvas(QCanvas):
                 newSelection.append(o)
         self.parent().canvasView.selectionList=newSelection
         self.update()
-                
+    
     def drawHex(self):
         size=self.objSize*2-1
         x,y=size*2, size*2
@@ -316,7 +405,6 @@ class SOMCanvas(QCanvas):
             offset=1-abs(n.x%2-2)
             h=CanvasHexagon(self)
             h.setSize(size)
-            h.setInnerSize(size)
             h.setNode(n)
             (xa,ya)=h.advancement()
             h.move(x+n.x*xa, y+n.y*ya+offset*ya/2)
@@ -332,7 +420,6 @@ class SOMCanvas(QCanvas):
         for n in self.somMap.nodes:
             r=CanvasRectangle(self)
             r.setSize(size)
-            r.setInnerSize(size)
             r.setNode(n)
             (xa,ya)=r.advancement()
             r.move(x+n.x*xa, y+n.y*ya)
@@ -341,47 +428,8 @@ class SOMCanvas(QCanvas):
         self.resize(x+self.somMap.xDim*xa, y+self.somMap.yDim*ya)
         self.update()
     
-    def drawHistogramHex(self):
-        size=self.objSize*2-1
-        x,y=size*2, size*2
-        maxVal=max([len(n.examples) for n in self.somMap.nodes])
-        colors=OWGraphTools.ColorPaletteHSV(len(n.examples.domain.classVar.values))
-        self.resize(1,1)    # crashes at update without this line !!!
-        for n in self.somMap.nodes:
-            offset=offset=1-abs(n.x%2-2)
-            h=CanvasHexagon(self)
-            h.setNode(n)
-            h.setSize(size)
-            h.setInnerSize(size*float(len(n.examples))/maxVal)
-            (xa,ya)=h.advancement()
-            h.move(x+n.x*xa, y+n.y*ya+offset*ya/2)
-            h.show()
-            h.setColor(Qt.lightGray) #colors[int(n.classifier.defaultVal)])
-            self.canvasObj.append(h)
-        self.resize(x+self.somMap.xDim*xa, y+self.somMap.yDim*ya)
-        self.update()
-    
-    def drawHistogramRect(self):
-        size=self.objSize*2-1
-        x,y=size*2, size*2
-        maxVal=max([len(n.examples) for n in self.somMap.nodes]+[1])
-        colors=OWGraphTools.ColorPaletteHSV(len(n.examples.domain.classVar.values))
-        for n in self.somMap.nodes:
-            r=CanvasRectangle(self)
-            r.setSize(size)
-            r.setInnerSize(size*len(n.examples)/maxVal)
-            r.setNode(n)
-            (xa, ya)=r.advancement()
-            r.move(y+n.x*xa, y+n.y*ya)
-            r.show()
-            r.setColor(colors[int(n.classifier.defaultVal)])
-            self.canvasObj.append(r)
-        self.resize(x+self.somMap.xDim*xa, y+self.somMap.yDim*ya)
-        self.update()
-        
-    
     def drawUMatHex(self):
-        size=self.objSize*2-1
+        size=2*(self.objSize/2)-1
         x,y=size*2, size*2
         maxDist=max(reduce(Numeric.maximum, [a for a in self.uMat]))
         minDist=max(reduce(Numeric.minimum, [a for a in self.uMat]))
@@ -390,7 +438,6 @@ class SOMCanvas(QCanvas):
             for j in range(len(self.uMat[i])):
                 h=CanvasHexagon(self)
                 h.setSize(size)
-                h.setInnerSize(size)
                 (xa,ya)=h.advancement()
                 h.move(x+i*xa, y+j*ya+offset*ya/2)
                 if i%2==0 and j%2==0:
@@ -403,7 +450,7 @@ class SOMCanvas(QCanvas):
         self.update()
         
     def drawUMatRect(self):
-        size=self.objSize*2-1
+        size=self.objSize-1
         x,y=size*2, size*2
         
         maxDist=max(reduce(Numeric.maximum, [a for a in self.uMat]))
@@ -412,7 +459,6 @@ class SOMCanvas(QCanvas):
             for j in range(len(self.uMat[i])):
                 r=CanvasRectangle(self)
                 r.setSize(size)
-                r.setInnerSize(size)
                 if i%2==0 and j%2==0:
                     r.setNode(self.somNodeMap[(i/2,j/2)])
                 (xa,ya)=r.advancement()
@@ -443,12 +489,10 @@ class SOMCanvas(QCanvas):
         for o in self.canvasObj:
             o.setCanvas(None)
         self.canvasObj=[]
-                  
-                
-        
-        
+
+
 class OWSOMVisualizer(OWWidget):
-    settingsList=["canvas.drawMode","canvas.objSize","commitOnChange"]
+    settingsList=["canvas.drawMode","canvas.objSize","commitOnChange", "backgroundMode", "backgroundCheck"]
     def __init__(self, parent=None, signalManager=None, name="SOMVisualizer"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.inputs=[("SOMMap", orangeom.SOMMap, self.setSomMap), ("SOMClassifier", orangeom.SOMClassifier, self.setSomClassifier), ("Examples", ExampleTable, self.data)]
@@ -456,6 +500,14 @@ class OWSOMVisualizer(OWWidget):
         
         self.labelNodes=0
         self.commitOnChange=0
+        self.backgroundCheck=1
+        self.backgroundMode=0
+        self.histogram=1
+        self.attribute=0
+        self.discHistMode=0
+        self.targetValue=0
+        self.contHistMode=0
+        self.inputSet=0
         
         
         layout=QVBoxLayout(self.mainArea,QVBoxLayout.TopToBottom,0)
@@ -466,25 +518,59 @@ class OWSOMVisualizer(OWWidget):
         
         self.loadSettings()
         call=lambda:self.canvas.redrawSom()
-        box=QVBox(self.controlArea)
-        b=OWGUI.radioButtonsInBox(box, self, "canvas.drawMode", ["U-Matrix", "Histogram", "Component Planes"], box="Visualization Method", callback=self.setMode)
+        tabW=QTabWidget(self.controlArea)
+        mainTab=OWGUI.widgetBox(self.controlArea)
+        histTab=OWGUI.widgetBox(self.controlArea)
+        mainTab.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        histTab.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        self.mainTab=mainTab
+        self.histTab=histTab
+        tabW.addTab(mainTab, "Options")
+        tabW.addTab(histTab, "Histogram Coloring")
+        self.backgroundBox=QVButtonGroup("Background", mainTab)
+        #OWGUI.checkBox(self.backgroundBox, self, "backgroundCheck","Show background", callback=self.setBackground)
+        b=OWGUI.radioButtonsInBox(self.backgroundBox, self, "canvas.drawMode", ["None", "U-Matrix", "Component Planes"], callback=self.setBackground)
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        self.componentCombo=OWGUI.comboBox(b,self,"canvas.component", callback=call)
+        self.componentCombo=OWGUI.comboBox(b,self,"canvas.component", callback=self.setBackground)
         self.componentCombo.setEnabled(self.canvas.drawMode==2)
-        QRadioButton
-        b1=QVBox(box)
-        b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        b=OWGUI.hSlider(b1, self, "canvas.objSize","Size", 10,20,step=2,ticks=10, callback=call)
+        #b=OWGUI.widgetBox(mainTab, "Histogram")
+        b=QVButtonGroup("Histogram", mainTab)
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        OWGUI.checkBox(box, self, "labelNodes", "Node Labeling", callback=self.canvas.updateLabels)
-        OWGUI.checkBox(box, self, "canvas.showGrid", "Show Grid", callback=self.canvas.updateAll)
-        b1=OWGUI.widgetBox(box, "Bubble Info")
+        OWGUI.checkBox(b, self, "histogram", "Show histogram", callback=self.setHistogram)
+        OWGUI.radioButtonsInBox(b, self, "inputSet", ["Use training set", "Use input subset"], callback=self.setHistogram)
+        
+        b1=QVBox(mainTab)
+        b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        b=OWGUI.hSlider(b1, self, "canvas.objSize","Plot size", 10,20,step=2,ticks=10, callback=call)
+        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        #OWGUI.checkBox(b1, self, "labelNodes", "Node Labeling", callback=self.canvas.updateLabels)
+        b1=OWGUI.widgetBox(b1, "Bubble Info")
         OWGUI.checkBox(b1, self, "canvasView.showBubbleInfo","Show")
         OWGUI.checkBox(b1, self, "canvasView.includeCodebook", "Include codebook vector")
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        OWGUI.checkBox(box, self, "commitOnChange", "Commit on change")
-        OWGUI.button(box, self, "&Invert selection", callback=self.canvasView.invertSelection)
-        OWGUI.button(box, self, "&Commit", callback=self.commit)
+        OWGUI.checkBox(mainTab, self, "canvas.showGrid", "Show Grid", callback=self.canvas.updateAll)
+        OWGUI.checkBox(mainTab, self, "commitOnChange", "Commit on change")
+        QVBox(mainTab)
+        self.histogramBox=OWGUI.widgetBox(histTab, "Coloring")
+        self.attributeCombo=OWGUI.comboBox(self.histogramBox, self, "attribute", "Attribute", callback=self.setHistogram)
+        self.tabWidget=QTabWidget(self.histogramBox)
+        self.discTab=discTab=OWGUI.widgetBox(self.histogramBox)
+        self.contTab=contTab=OWGUI.widgetBox(self.histogramBox)
+        self.tabWidget.addTab(discTab, "Discrete")
+        self.tabWidget.addTab(contTab, "Continous")
+        b=QVButtonGroup(discTab)
+        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        OWGUI.radioButtonsInBox(b, self, "discHistMode", ["Pie chart", "Majority value", "Majority value prob."], callback=self.setHistogram)
+        #self.targetValueCombo=OWGUI.comboBox(b, self, "targetValue", callback=self.setHistogram)
+        QVBox(discTab)
+        b=QVButtonGroup(contTab)
+        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        OWGUI.radioButtonsInBox(b, self, "contHistMode", ["Default", "Avg. value" ,"Variance"],callback=self.setHistogram)
+        QVBox(contTab)
+ 
+        QVBox(self.controlArea)
+        OWGUI.button(self.controlArea, self, "&Invert selection", callback=self.canvasView.invertSelection)
+        OWGUI.button(self.controlArea, self, "&Commit", callback=self.commit)
         OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph)
         
         self.selectionList=[]
@@ -495,6 +581,23 @@ class OWSOMVisualizer(OWWidget):
     def setMode(self):
         self.componentCombo.setEnabled(self.canvas.drawMode==2)
         self.canvas.redrawSom()
+
+    def setBackground(self):
+        self.setMode()
+
+    def setHistogram(self):
+        if self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete:
+            self.tabWidget.setTabEnabled(self.discTab,True)
+            self.tabWidget.setTabEnabled(self.contTab,False)
+            self.tabWidget.showPage(self.discTab)
+        else:
+            self.tabWidget.setTabEnabled(self.discTab,False)
+            self.tabWidget.setTabEnabled(self.contTab,True)
+            self.tabWidget.showPage(self.contTab)
+        self.canvas.redrawSom()
+
+    def drawPies(self):
+        return self.discHistMode==0 and self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete
         
     def setSomMap(self, somMap=None):
         self.somType="Map"
@@ -510,13 +613,40 @@ class OWSOMVisualizer(OWWidget):
             self.clear()
             return
         self.componentCombo.clear()
+        self.attributeCombo.clear()
+        #self.targetValueCombo.clear()
+        self.targetValue=0
         self.canvas.component=0
+        self.attribute=0
         for v in somMap.examples.domain.attributes:
             self.componentCombo.insertItem(v.name)
+        for v in somMap.examples.domain.variables:
+            self.attributeCombo.insertItem(v.name)
+        #for v in somMap.examples.domain.attributes[self.attribute].values:
+        #    self.targetValueCombo.insertItem(str(v))
+
+        if self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete:
+            self.tabWidget.setTabEnabled(self.discTab,True)
+            self.tabWidget.setTabEnabled(self.contTab,False)
+            self.tabWidget.showPage(self.discTab)
+        else:
+            self.tabWidget.setTabEnabled(self.discTab,False)
+            self.tabWidget.setTabEnabled(self.contTab,True)
+            self.tabWidget.showPage(self.contTab)        
+            
         self.canvas.setSom(somMap)
        
     def data(self, data=None):
         self.examples=data
+        if data and self.somMap:
+            for n in self.somMap.nodes:
+                setattr(n,"mappedExamples", orange.ExampleTable(data.domain))
+            for e in data:
+                bmu=self.somMap.getWinner(e)
+                bmu.mappedExamples.append(e)
+            if self.inputSet==1:
+                self.setHistogram()
+                
 
     def clear(self):
         self.componentCombo.clear()
@@ -543,19 +673,6 @@ class OWSOMVisualizer(OWWidget):
         sizeDlg = OWChooseImageSizeDlg(self.canvas)
         sizeDlg.exec_loop()
         return
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        ext = ext.upper()
-        dSize=self.canvas.size()
-        buffer = QPixmap(dSize.width(),dSize.height()) # any size can do, now using the window size
-        painter=QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
-        self.canvasView.drawContents(painter,0,0,dSize.width(), dSize.height())
-        painter.end()
-        buffer.save(fileName, ext)
         
     def keyPressEvent(self, event):
         if event.key()==Qt.Key_Control:
@@ -573,10 +690,12 @@ class OWSOMVisualizer(OWWidget):
 if __name__=="__main__":
     ap=QApplication(sys.argv)
     data=orange.ExampleTable("../../doc/datasets/iris.tab")
-    l=orngSOM.SOMLearner(data)#, topology=orangeom.SOMLearner.RectangularTopology)
+    l=orngSOM.SOMLearner()# topology=orangeom.SOMLearner.RectangularTopology)
+    l=l(data)
     l.data=data
     w=OWSOMVisualizer()
     ap.setMainWidget(w)
     w.setSomClassifier(l)
+    w.data(orange.ExampleTable(data[:50]))
     w.show()
     ap.exec_loop()
