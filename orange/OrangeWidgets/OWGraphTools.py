@@ -4,161 +4,75 @@ from qwt import *
 #from OWGraphTools import *
 from math import sqrt
 
-colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
+##colorHSVValues = [(240, 255, 255), (0, 255, 255), (120, 255, 255), (30, 255, 255), (60, 255, 255),
+##                  (300, 255, 255), (180, 255, 255), (270, 255, 255), (210, 255, 255), (45, 127, 255),
+##                  (45, 127, 127), (30, 255, 92), (120, 255, 84), (60, 255, 192), (180, 255, 127),
+##                  (0, 255, 128), (300, 255, 127)]
 
-colorHSVValues = [(240, 255, 255), (0, 255, 255), (120, 255, 255), (30, 255, 255), (60, 255, 255),
-                  (300, 255, 255), (180, 255, 255), (270, 255, 255), (210, 255, 255), (45, 127, 255),
-                  (45, 127, 127), (30, 255, 92), (120, 255, 84), (60, 255, 192), (180, 255, 127),
-                  (0, 255, 128), (300, 255, 127)]
+defaultRGBColors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (128, 0, 255), (0, 128, 255), (255, 223, 128), (127, 111, 64), (92, 46, 0), (0, 84, 0), (192, 192, 0), (0, 127, 127), (128, 0, 0), (127, 0, 127)]
+
+#colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
 
 #ColorBrewer color set - bad when there are small points
-colorRGBValues = [(0, 140, 255), (228, 26, 28), (77, 175, 74), (255, 127, 0), (255, 255, 51), (152, 78, 163), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
+ColorBrewerRGBValues = [(0, 140, 255), (228, 26, 28), (77, 175, 74), (255, 127, 0), (255, 255, 51), (152, 78, 163), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
 
-class ColorPaletteHSV:
+class ColorPaletteGenerator:
     maxHueVal = 260
     
-    def __init__(self, numberOfColors = -1, brightness = 255):
-        self.brightness = brightness
+    def __init__(self, numberOfColors = 0, rgbColors = defaultRGBColors):
+        self.rgbColors = rgbColors
         self.numberOfColors = numberOfColors
-        
-        self.rebuildColors()
-
-    def rebuildColors(self):
-        self.colors = []
-        self.hueValues = []
-        if self.numberOfColors == -1: return  # used for coloring continuous variables
-        #elif self.numberOfColors <= len(colorRGBValues): 
-        elif self.numberOfColors <= len(colorHSVValues):
-            self.hueValues = colorHSVValues[:self.numberOfColors]
-            for i in self.hueValues:
-                c = QColor()
-                c.setHsv(*i)
-                self.colors.append(c)
-        else:   
-            self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
-            for hue in self.hueValues:
-                col = QColor()
-                col.setHsv(hue, self.brightness, 255)
-                self.colors.append(col)
-        
 
     def __getitem__(self, index, brightness = None):
-        # is this color for continuous attribute?
-        if self.numberOfColors == -1:                
+        if self.numberOfColors == -1:     # is this color for continuous attribute?
             col = QColor()
-            col.setHsv(index*self.maxHueVal, self.brightness, 255)     # index must be between 0 and 1
+            col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
             return col
-        # if we want a standard color, just with a specific brightness value
-        elif brightness != None:    
-            col = QColor()
-            col.setHsv(colorHueValues[index], brightness, 255)
-            return col
-        # return a color from the built table
-        else:                                   # get color for discrete attribute
-            return self.colors[index]           # index must be between 0 and self.numberofColors
-
-    # get only hue value for given index
-    def getHue(self, index):
-        if self.numberOfColors == -1:
-            return index * self.maxHueVal
         else:
-            return self.hueValues[index]
-
-    def getBrightness(self):
-        return self.brightness
-
-    def setBrightness(self, brightness):
-        self.brightness = brightness
-        self.rebuildColors()
+            if index < len(self.rgbColors):
+                color = QColor(*self.rgbColors[index])
+                if not brightness: return color
+                h,s,v = color.getHsv()
+                color.setHsv(h, brightness, v)
+                return color
+            else:
+                col = QColor()
+                col.setHsv(index*self.maxHueVal, brightness or 255, 255)
+                return col
+       
 
     # get QColor instance for given index
     def getColor(self, index, brightness = None):
         return self.__getitem__(index, brightness)
 
+# only for backward compatibility
+class ColorPaletteHSV(ColorPaletteGenerator):
+    pass
 
-class ColorPaletteBrewer:
-    maxHueVal = 260
-    
-    def __init__(self, numberOfColors = -1, brightness = 255):
-        self.brightness = brightness
-        self.numberOfColors = numberOfColors
-        
-        self.rebuildColors()
-
-    def rebuildColors(self):
-        self.colors = []
-        self.hueValues = []
-        if self.numberOfColors == -1: return  # used for coloring continuous variables
-        elif self.numberOfColors <= len(colorRGBValues): 
-            for i in range(self.numberOfColors):
-                self.colors.append(QColor(colorRGBValues[i][0], colorRGBValues[i][1], colorRGBValues[i][2]))
-            self.hueValues = [c.hsv()[0] for c in self.colors]
-        else:   
-            self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
-            for hue in self.hueValues:
-                col = QColor()
-                col.setHsv(hue, self.brightness, 255)
-                self.colors.append(col)
-        
-
-    def __getitem__(self, index, brightness = None):
-        # is this color for continuous attribute?
-        if self.numberOfColors == -1:                
-            col = QColor()
-            col.setHsv(index*self.maxHueVal, self.brightness, 255)     # index must be between 0 and 1
-            return col
-        # if we want a standard color, just with a specific brightness value
-        elif brightness != None:    
-            col = QColor()
-            col.setHsv(colorHueValues[index], brightness, 255)
-            return col
-        # return a color from the built table
-        else:                                   # get color for discrete attribute
-            return self.colors[index]           # index must be between 0 and self.numberofColors
-
-    # get only hue value for given index
-    def getHue(self, index):
-        if self.numberOfColors == -1:
-            return index * self.maxHueVal
-        else:
-            return self.hueValues[index]
-
-    def getBrightness(self):
-        return self.brightness
-
-    def setBrightness(self, brightness):
-        self.brightness = brightness
-        self.rebuildColors()
-
-    # get QColor instance for given index
-    def getColor(self, index, brightness = None):
-        return self.__getitem__(index, brightness)
-            
 
 # black and white color palette
 class ColorPaletteBW:
     def __init__(self, numberOfColors = -1, brightest = 50, darkest = 255):
-        self.colors = []
         self.numberOfColors = numberOfColors
         self.brightest = brightest
         self.darkest = darkest
+        self.hueValues = []
         
         if numberOfColors == -1: return  # used for coloring continuous variables
-        else:   
-            for val in [int(brightest + (darkest-brightest)*x/float(numberOfColors-1)) for x in range(numberOfColors)]:
-                self.colors.append(QColor(val, val, val))
+        else:
+            self.values = [int(brightest + (darkest-brightest)*x/float(numberOfColors-1)) for x in range(numberOfColors)]
 
     def __getitem__(self, index):
         if self.numberOfColors == -1:                # is this color for continuous attribute?
             val = int(self.brightest + (self.darkest-self.brightest)*index)
             return QColor(val, val, val)
-        else:                                   # get color for discrete attribute
-            return self.colors[index]           # index must be between 0 and self.numberofColors
+        else:                                                                           # get color for discrete attribute
+            return QColor(self.values[index], self.values[index], self.values[index])   # index must be between 0 and self.numberofColors
                 
     # get QColor instance for given index
     def getColor(self, index):
         return self.__getitem__(index)
-
+    
         
 
 # ####################################################################
@@ -295,11 +209,12 @@ class SelectionCurve(QwtPlotCurve):
 
 # ####################################################################
 # draw a rectangle
-class subBarQwtPlotCurve(QwtPlotCurve):
-    def __init__(self, parent = None, text = None):
+class RectanglePlotCurve(QwtPlotCurve):
+    def __init__(self, parent = None, pen = QPen(Qt.black), brush = QBrush(), text = None):
         QwtPlotCurve.__init__(self, parent, text)
-        self.color = Qt.black
-        self.penColor = Qt.black
+        self.setPen(pen)
+        self.setBrush(brush)
+        self.setStyle(QwtCurve.UserCurve)
 
     def draw(self, p, xMap, yMap, f, t):
         # save ex settings
@@ -307,10 +222,8 @@ class subBarQwtPlotCurve(QwtPlotCurve):
         pen = p.pen()
         brush = p.brush()
         
-        p.setBackgroundMode(Qt.OpaqueMode)
-        p.setBackgroundColor(self.color)
-        p.setBrush(self.color)
-        p.setPen(self.penColor)
+        p.setPen(self.pen())
+        p.setBrush(self.brush())
         
         if t < 0: t = self.dataSize() - 1
         if divmod(f, 2)[1] != 0: f -= 1

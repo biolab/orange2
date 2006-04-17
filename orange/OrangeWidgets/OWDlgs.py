@@ -2,9 +2,8 @@ import os
 from qwt import QwtPlot
 from qtcanvas import QCanvas
 from OWBaseWidget import *
-import OWGUI
+import OWGUI, OWGraphTools, OWTools
 from ColorPalette import *
-
         
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName", "penWidthFactor"]
@@ -243,105 +242,261 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         col = tuple([v/float(255) for v in col])
         return col
 
-class ColorPaletteWidget(QVBox):
-    def __init__(self, parent, master, label = "Colors", callback = None):
-        QVBox.__init__(self, parent)
-        self.setSpacing(4)
-        
-        self.master = master
+      
+
+class ColorPalette(OWBaseWidget):
+    def __init__(self,parent, caption = "Color Palette", callback = None, modal  = TRUE):
+        OWBaseWidget.__init__(self, None, None, caption, modal = modal)
+        self.layout = QVBoxLayout(self, 4)
+
         self.callback = callback
         self.counter = 1
         self.paletteNames = []
         self.colorButtonNames = []
+        self.colorSchemas = []
+        self.discreteColors = []
+        self.selectedSchemaIndex = 0
 
-        self.colorSchemas = {}
-        self.master.selectedSchemaIndex = 0
-        self.schemaCombo = OWGUI.comboBox(self, self.master, "selectedSchemaIndex", box = "Saved Profiles", callback = self.paletteSelected)
+        self.mainArea = OWGUI.widgetBox(self, box = None)
+        self.layout.addWidget(self.mainArea)
+        self.mainArea.setSpacing(4)
+        self.schemaCombo = OWGUI.comboBox(self.mainArea, self, "selectedSchemaIndex", box = "Saved Profiles", callback = self.paletteSelected)
+            
+        self.hbox = OWGUI.widgetBox(self, orientation = "horizontal")
+        self.layout.addWidget(self.hbox)
         
+        self.okButton = OWGUI.button(self.hbox, self, "OK", self.acceptChanges)
+        self.cancelButton = OWGUI.button(self.hbox, self, "Cancel", self.reject)
+        self.setMinimumWidth(230)
+        self.resize(240, 400)
+
+    def acceptChanges(self):
+        state = self.getCurrentState()
+        oldState = self.colorSchemas[self.selectedSchemaIndex][1]
+        if state == oldState:
+            QDialog.accept(self)
+        else:
+            # if we changed the deafult schema, we must save it under a new name
+            if self.colorSchemas[self.selectedSchemaIndex][0] == "Default":
+                if QMessageBox.information(self, 'Question', 'The color schema has changed. Do you want to save changes?','Yes','No', '', 0,1):
+                    QDialog.reject(self)
+                else:
+                    self.selectedSchemaIndex = self.schemaCombo.count()-1
+                    self.paletteSelected()
+                    QDialog.accept(self)
+            # simply save the new users schema
+            else:
+                self.colorSchemas[self.selectedSchemaIndex] = [self.colorSchemas[self.selectedSchemaIndex][0], state]
+                QDialog.accept(self)
+    
+    def createBox(self, boxName, boxCaption = None):
+        box = OWGUI.widgetBox(self.mainArea, boxCaption)
+        box.setAlignment(Qt.AlignLeft)
+        return box
+
+    def createColorButton(self, box, buttonName, buttonCaption, initialColor = Qt.black):
+        newbox = QHBox(box)
+        self.__dict__["buttonBox"+str(self.counter)] = newbox
+        newbox.setSpacing(5)
+        self.__dict__[buttonName] = ColorButton(self, newbox)
+        self.__dict__["buttonLabel"+str(self.counter)] = OWGUI.widgetLabel(newbox, buttonCaption)
+        self.__dict__[buttonName].setColor(initialColor)
+        self.colorButtonNames.append(buttonName)
+        self.__dict__["buttonBoxSpacing"+str(self.counter)] = QHBox(newbox)
+
+        self.__dict__[buttonName].setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed ))
+        self.__dict__["buttonLabel"+str(self.counter)].setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed ))
+        
+        self.counter += 1
+        
+
+    def createContinuousPalette(self, paletteName, boxCaption, passThroughBlack = 0, initialColor1 = Qt.white, initialColor2 = Qt.black):
+        self.__dict__["buttonBox"+str(self.counter)] = OWGUI.widgetBox(self.mainArea, boxCaption)
+
+        self.__dict__["paletteBox"+str(self.counter)] = OWGUI.widgetBox(self.__dict__["buttonBox"+str(self.counter)], orientation = "horizontal")
+        self.__dict__[paletteName+"Left"]  = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)])
+        self.__dict__[paletteName+"Left"].master = self
+        self.__dict__[paletteName+ "View"] = InterpolationView(self.__dict__["paletteBox"+str(self.counter)])
+        self.__dict__[paletteName+"Right"] = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)])
+        self.__dict__[paletteName+"Right"].master = self
+
+        self.__dict__[paletteName+"Left"].setColor(initialColor1)
+        self.__dict__[paletteName+"Right"].setColor(initialColor2)
+        self.__dict__["buttonBox"+str(self.counter)].addSpace(6)
+        
+        self.__dict__[paletteName+"passThroughBlack"] = passThroughBlack
+        self.__dict__[paletteName+"passThroughBlackCheckbox"] = OWGUI.checkBox(self.__dict__["buttonBox"+str(self.counter)], self, paletteName+"passThroughBlack", "Pass through black", callback = self.colorSchemaChange)
+        self.paletteNames.append(paletteName)
+        self.counter += 1
+
+    # #####################################################
+    # DISCRETE COLOR PALETTE
+    # #####################################################
+    def createDiscretePalette(self, boxCaption):
+        box = OWGUI.widgetBox(self.mainArea, boxCaption)
+        hbox = OWGUI.widgetBox(box, orientation = 'horizontal')
+        
+        self.discListbox = QListBox(hbox)
+
+        vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
+        self.buttLoad       = OWGUI.button(vbox, self, "D", callback = self.showPopup, tooltip="Load a predefined set of colors")
+        self.buttLoad.setMaximumWidth(20)
+        self.buttLoad.setMaximumHeight(20)
+        buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
+        buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
+        buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        buttonUPAttr.setMaximumWidth(20)
+        buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
+        buttonDOWNAttr.setMaximumWidth(20)
+        buttonUPAttr.setMaximumWidth(20)
+        self.connect(self.discListbox, SIGNAL("doubleClicked ( QListBoxItem * )"), self.changeDiscreteColor)
+
+        self.popupMenu = QPopupMenu(self)
+        self.popupMenu.insertItem("Load default RGB palette", self.loadRGBPalette)
+        self.popupMenu.insertItem("Load Color Brewer palette", self.loadCBPalette)
+
+        self.discreteColors = [QColor(r,g,b) for (r,g,b) in OWGraphTools.defaultRGBColors]
+        for ind in range(len(self.discreteColors)):
+            self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
+        
+    def changeDiscreteColor(self, item):
+        ind = self.discListbox.index(item)
+        color = QColorDialog.getColor(self.discreteColors[ind], self)
+        if color.isValid():
+            self.discListbox.changeItem(OWTools.ColorPixmap(color, 15), "Color %d" % (ind), ind)
+            self.discreteColors[ind] = color
+
+    def loadRGBPalette(self):
+        self.discListbox.clear()
+        self.discreteColors = [QColor(r,g,b) for (r,g,b) in OWGraphTools.defaultRGBColors]
+        for ind in range(len(self.discreteColors)):
+            self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
+            
+    def loadCBPalette(self):
+        self.discListbox.clear()
+        self.discreteColors = [QColor(r,g,b) for (r,g,b) in OWGraphTools.ColorBrewerRGBValues]
+        for ind in range(len(self.discreteColors)):
+            self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
+            
+    def showPopup(self):
+        point = self.buttLoad.mapToGlobal(QPoint(0, self.buttLoad.height()))
+        self.popupMenu.popup(point, 0)
+
+    # move selected attribute in "Attribute Order" list one place up
+    def moveAttrUP(self):
+        for i in range(1, self.discListbox.count()):
+            if self.discListbox.isSelected(i):
+                self.discListbox.insertItem(self.discListbox.pixmap(i), self.discListbox.text(i-1), i-1)
+                self.discListbox.removeItem(i+1)
+                self.discListbox.setSelected(i-1, TRUE)
+                self.discreteColors.insert(i-1, self.discreteColors.pop(i))
+        
+
+    # move selected attribute in "Attribute Order" list one place down  
+    def moveAttrDOWN(self):
+        count = self.discListbox.count()
+        for i in range(count-2,-1,-1):
+            if self.discListbox.isSelected(i):
+                self.discListbox.insertItem(self.discListbox.pixmap(i), self.discListbox.text(i+2), i+2)
+                self.discListbox.removeItem(i)
+                self.discListbox.setSelected(i+1, TRUE)
+                self.discreteColors.insert(i+1, self.discreteColors.pop(i))
+
+    # #####################################################
+        
+    def getCurrentSchemeIndex(self):
+        return self.selectedSchemaIndex
+
+    def getColor(self, buttonName):
+        return self.__dict__[buttonName].getColor()
+
+    def getContinuousPalette(self, paletteName):
+        c1 = self.__dict__[paletteName+"Left"].getColor()
+        c2 = self.__dict__[paletteName+"Right"].getColor()
+        b = self.__dict__[paletteName+"passThroughBlack"]
+        return ContinuousPaletteGenerator(c1, c2, b)
+
+    def getDiscretePalette(self):
+        return OWGraphTools.ColorPaletteGenerator([(c.red(), c.green(), c.blue()) for c in self.discreteColors])
+
     def getColorSchemas(self):
         return self.colorSchemas
+
+    def getCurrentState(self):
+        l1 = [(name, self.qRgbFromQColor(self.__dict__[name].getColor())) for name in self.colorButtonNames]
+        l2 = [(name, (self.qRgbFromQColor(self.__dict__[name+"Left"].getColor()), self.qRgbFromQColor(self.__dict__[name+"Right"].getColor()), self.__dict__[name+"passThroughBlack"])) for name in self.paletteNames]
+        l3 = [self.qRgbFromQColor(col) for col in self.discreteColors]
+        return [l1, l2, l3]
+
     
     def setColorSchemas(self, schemas = None, selectedSchemaIndex = 0):
         self.schemaCombo.clear()
 
-        if not schemas or len(schemas.keys()) == 0:
-            schemas = {}
-            schemas["Default"] = tuple([self.__dict__[name].getColor().rgb() for name in self.colorButtonNames] + [(self.__dict__[name+"Left"].getColor().rgb(), self.__dict__[name+"Right"].getColor().rgb(), self.master.__dict__[name+"passThroughBlack"]) for name in self.paletteNames])
+        if not schemas or type(schemas) != list:
+            schemas = [("Default", self.getCurrentState()) ]
 
         self.colorSchemas = schemas
-        for key in schemas.keys():
-            self.schemaCombo.insertItem(key)
+        for (name, sch) in schemas:
+            self.schemaCombo.insertItem(name)
 
         self.schemaCombo.insertItem("Save current palette as...")
         self.selectedSchemaIndex = selectedSchemaIndex
         self.paletteSelected()
-
-    def getCurrentState(self):
-        l1 = [self.qRgbFromQColor(self.__dict__[name].getColor()) for name in self.colorButtonNames]
-        l2 = [(self.qRgbFromQColor(self.__dict__[name+"Left"].getColor()), self.qRgbFromQColor(self.__dict__[name+"Right"].getColor()), self.master.__dict__[name+"passThroughBlack"]) for name in self.paletteNames]
-        return tuple(l1+l2)
-
+        
     def setCurrentState(self, state):
-        for i in range(len(self.colorButtonNames)):
-            self.__dict__[self.colorButtonNames[i]].setColor(self.rgbToQColor(state[i]))
-        for i in range(len(self.colorButtonNames),len(state)):
-            (l, r, chk) = state[i]
-            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"Left"].setColor(self.rgbToQColor(l))
-            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"Right"].setColor(self.rgbToQColor(r))
-            self.master.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"passThroughBlack"] = chk
-            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"passThroughBlackCheckbox"].setChecked(chk)
+        [buttons, contPalettes, discPalette] = state
+        for (name, but) in buttons:
+            self.__dict__[name].setColor(self.rgbToQColor(but))
+        for (name, (l,r,chk)) in contPalettes:
+            self.__dict__[name+"Left"].setColor(self.rgbToQColor(l))
+            self.__dict__[name+"Right"].setColor(self.rgbToQColor(r))
+            self.__dict__[name+"passThroughBlack"] = chk
+            self.__dict__[name+"passThroughBlackCheckbox"].setChecked(chk)
             pallete = self.createPalette(self.rgbToQColor(l), self.rgbToQColor(r), chk) + 5*[Qt.white.rgb()]
-            self.__dict__[self.paletteNames[i-len(self.colorButtonNames)]+"View"].setPalette1(pallete)
-        self.master.currentState = state
+            self.__dict__[name+"View"].setPalette1(pallete)
 
+        self.discreteColors = [self.rgbToQColor(col) for col in discPalette]
+        if self.discreteColors:
+            self.discListbox.clear()
+            for ind in range(len(self.discreteColors)):
+                self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
+        
     def paletteSelected(self):
         if not self.schemaCombo.count(): return 
-        if self.master.selectedSchemaIndex == self.schemaCombo.count()-1:    # if we selected "Save current palette as..." option then add another option to the list
-            message = "Please enter new color schema name"
+
+        # if we selected "Save current palette as..." option then add another option to the list
+        if self.selectedSchemaIndex == self.schemaCombo.count()-1:    
+            message = "Please enter a new name for the current color schema:"
             ok = FALSE
             while (not ok):
-                s = QInputDialog.getText("New Schema", message, QLineEdit.Normal)
+                s = QInputDialog.getText("New Schema Name", message, QLineEdit.Normal)
                 ok = TRUE
                 if (s[1]==TRUE):
-                    for i in range(self.schemaCombo.count()):
-                        if s[0].lower().compare(self.schemaCombo.text(i).lower())==0:
-                            ok = FALSE
-                            message = "Color schema with that name already exists, please enter another name"
+                    newName = str(s[0])
+                    oldNames = [str(self.schemaCombo.text(i)).lower() for i in range(self.schemaCombo.count()-1)]
+                    if newName.lower() == "default":
+                        ok = FALSE
+                        message = "Can not change the 'Default' schema. Please enter a different name:"
+                    elif newName.lower() in oldNames:
+                        index = oldNames.index(newName.lower())
+                        self.colorSchemas.pop(index)
+                        
                     if (ok):
-                        self.colorSchemas[str(s[0])] = self.getCurrentState()
-                        self.schemaCombo.insertItem(s[0], 0)
-                        self.schemaCombo.setCurrentItem(0)
-                        self.master.currentState = self.colorSchemas[str(s[0])]
+                        self.colorSchemas.insert(0, (newName, self.getCurrentState()))
+                        self.schemaCombo.insertItem(newName, 0)
+                        #self.schemaCombo.setCurrentItem(0)
+                        self.selectedSchemaIndex = 0
                 else:
-                    state = self.getCurrentState()          # if we pressed cancel we have to select a different item than the "Save current palette as..."
-                    self.master.selectedSchemaIndex = 0    # this will change the color buttons, so we have to restore the colors
+                    state = self.getCurrentState()  # if we pressed cancel we have to select a different item than the "Save current palette as..."
+                    self.selectedSchemaIndex = 0    # this will change the color buttons, so we have to restore the colors
                     self.setCurrentState(state)             
         else:
-            schema = self.getCurrentColorSchema()
+            schema = self.colorSchemas[self.selectedSchemaIndex][1]
             self.setCurrentState(schema)
             if self.callback: self.callback()
-
-
-    # this function is called if one of the color buttons was pressed or there was any other change of the color palette
-    def colorSchemaChange(self):
-        state = self.getCurrentState()
-        self.setCurrentState(state)
-        if self.callback: self.callback()
-
-    def getCurrentColorSchema(self):
-        return self.colorSchemas[str(self.schemaCombo.currentText())]
-
-    def setCurrentColorSchema(self, schema):
-        self.colorSchemas[str(self.schemaCombo.currentText())] = schema
-
-    def createPalette(self, color1, color2, passThroughBlack, colorNumber = paletteInterpolationColors):
-        if passThroughBlack:
-            palette = [qRgb(color1.red() - color1.red()*i*2./colorNumber, color1.green() - color1.green()*i*2./colorNumber, color1.blue() - color1.blue()*i*2./colorNumber) for i in range(colorNumber/2)]
-            palette += [qRgb(color2.red()*i*2./colorNumber, color2.green()*i*2./colorNumber, color2.blue()*i*2./colorNumber) for i in range(colorNumber - (colorNumber/2))]
-        else:
-            palette = [qRgb(color1.red() + (color2.red()-color1.red())*i/colorNumber, color1.green() + (color2.green()-color1.green())*i/colorNumber, color1.blue() + (color2.blue()-color1.blue())*i/colorNumber) for i in range(colorNumber)]
-
-        return palette
+            
 
     def rgbToQColor(self, rgb):
         return QColor(qRed(rgb), qGreen(rgb), qBlue(rgb))
@@ -349,98 +504,43 @@ class ColorPaletteWidget(QVBox):
     def qRgbFromQColor(self, qcolor):
         return qRgb(qcolor.red(), qcolor.green(), qcolor.blue())
 
-    def createBox(self, boxName, boxCaption = None):
-        box = OWGUI.widgetBox(self, boxCaption)
-        box.setAlignment(Qt.AlignLeft)
-        return box
+    def createPalette(self, color1, color2, passThroughBlack, colorNumber = paletteInterpolationColors):
+        if passThroughBlack:
+            palette = [qRgb(color1.red() - color1.red()*i*2./colorNumber, color1.green() - color1.green()*i*2./colorNumber, color1.blue() - color1.blue()*i*2./colorNumber) for i in range(colorNumber/2)]
+            palette += [qRgb(color2.red()*i*2./colorNumber, color2.green()*i*2./colorNumber, color2.blue()*i*2./colorNumber) for i in range(colorNumber - (colorNumber/2))]
+        else:
+            palette = [qRgb(color1.red() + (color2.red()-color1.red())*i/colorNumber, color1.green() + (color2.green()-color1.green())*i/colorNumber, color1.blue() + (color2.blue()-color1.blue())*i/colorNumber) for i in range(colorNumber)]
+        return palette
 
-    def createColorButton(self, box, buttonName, buttonCaption, initialColor = Qt.black):
-        self.__dict__["buttonBox"+str(self.counter)] = QHBox(box)
-        self.__dict__["buttonBox"+str(self.counter)].setSpacing(5)
-        self.__dict__[buttonName] = ColorButton(self, self.__dict__["buttonBox"+str(self.counter)])
-        self.__dict__["buttonLabel"+str(self.counter)] = OWGUI.widgetLabel(self.__dict__["buttonBox"+str(self.counter)], buttonCaption)
-        self.__dict__[buttonName].setColor(initialColor)
-        self.colorButtonNames.append(buttonName)
-        self.__dict__["buttonBoxSpacing"+str(self.counter)] = QHBox(self.__dict__["buttonBox"+str(self.counter)])
+    # this function is called if one of the color buttons was pressed or there was any other change of the color palette
+    def colorSchemaChange(self):
+        self.setCurrentState(self.getCurrentState())
+        if self.callback: self.callback()
 
-        self.__dict__[buttonName].setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed ))
-        self.__dict__["buttonLabel"+str(self.counter)].setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed ))
+
+class ContinuousPaletteGenerator:
+    def __init__(self, color1, color2, passThroughBlack):
+        self.color1 = color1
+        self.color2 = color2
+        self.passThroughBlack = passThroughBlack
+
+    # val must be between 0 and 1
+    def __getitem__(self, val):
+        if self.passThroughBlack:
+            if val < 0.5:
+                return QColor(self.color1.red() - self.color1.red()*val*2, self.color1.green() - self.color1.green()*val*2, self.color1.blue() - self.color1.blue()*val*2)
+            else:
+                return QColor(self.color2.red()*(val-0.5)*2., self.color2.green()*(val-0.5)*2., self.color2.blue()*(val-0.5)*2.)
+        else:
+            return QColor(self.color1.red() + (self.color2.red()-self.color1.red())*val, self.color1.green() + (self.color2.green()-self.color1.green())*val, self.color1.blue() + (self.color2.blue()-self.color1.blue())*val)
         
-        #self.__dict__["buttonBoxSpacing"+str(self.counter)].setSizePolicy(QSizePolicy(QSizePolicy.Expanding , QSizePolicy.Fixed ))
-        self.counter += 1
-
-    def createColorPalette(self, paletteName, boxCaption, passThroughBlack = 0, initialColor1 = Qt.white, initialColor2 = Qt.black):
-        self.__dict__["buttonBox"+str(self.counter)] = OWGUI.widgetBox(self, boxCaption)
-
-        self.__dict__["paletteBox"+str(self.counter)] = OWGUI.widgetBox(self.__dict__["buttonBox"+str(self.counter)], orientation = "horizontal")
-        self.__dict__[paletteName+"Left"]  = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)])
-        self.__dict__[paletteName+ "View"] = InterpolationView(self.__dict__["paletteBox"+str(self.counter)])
-        self.__dict__[paletteName+"Right"] = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)])
-
-        self.__dict__[paletteName+"Left"].setColor(initialColor1)
-        self.__dict__[paletteName+"Right"].setColor(initialColor2)
-        self.__dict__["buttonBox"+str(self.counter)].addSpace(6)
-        
-        self.master.__dict__[paletteName+"passThroughBlack"] = passThroughBlack
-        self.__dict__[paletteName+"passThroughBlackCheckbox"] = OWGUI.checkBox(self.__dict__["buttonBox"+str(self.counter)], self.master, paletteName+"passThroughBlack", "Pass through black", callback = self.colorSchemaChange)
-        self.paletteNames.append(paletteName)
-        self.counter += 1
-
-
-class ColorPalette(OWBaseWidget):
-    def __init__(self,parent, caption = "Color Palette", callback = None, modal  = TRUE):
-        OWBaseWidget.__init__(self, None, None, caption, modal = modal)
-        self.layout = QVBoxLayout(self, 4)
-        
-        self.mainArea = ColorPaletteWidget(self, self, "Colors", callback)
-        self.layout.addWidget(self.mainArea)
-            
-        self.hbox = OWGUI.widgetBox(self, orientation = "horizontal")
-        self.layout.addWidget(self.hbox)
-        
-        self.okButton = OWGUI.button(self.hbox, self, "OK", self.accept)
-        self.cancelButton = OWGUI.button(self.hbox, self, "Cancel", self.reject)
-        self.setMinimumWidth(230)
-
-    def getCurrentSchemeIndex(self):
-        return self.selectedSchemaIndex
-
-    def getCurrentState(self):
-        return self.mainArea.getCurrentState()
-
-    def setCurrentState(self, state):
-        self.mainArea.setCurrentState(state)
-
-    def getColorSchemas(self):
-        return self.mainArea.colorSchemas
-    
-    def setColorSchemas(self, schemas = None, selectedSchemaIndex = 0):
-        self.mainArea.setColorSchemas(schemas, selectedSchemaIndex)
-
-    def getColor(self, buttonName):
-        return self.mainArea.__dict__[buttonName].getColor()
-
-    def getColorPalette(self, paletteName):
-        c1 = self.mainArea.__dict__[paletteName+"Left"].getColor()
-        c2 = self.mainArea.__dict__[paletteName+"Right"].getColor()
-        b = self.mainArea.master.__dict__[paletteName+"passThroughBlack"]
-        return self.mainArea.createPalette(c1, c2, b)
-
-    def createBox(self, boxName, boxCaption = None):
-        return self.mainArea.createBox(boxName, boxCaption)
-
-    def createColorButton(self, box, buttonName, buttonCaption, initialColor = Qt.black):
-        self.mainArea.createColorButton(box, buttonName, buttonCaption, initialColor)
-
-    def createColorPalette(self, paletteName, boxCaption, passThroughBlack = 0, initialColor1 = Qt.white, initialColor2 = Qt.black):
-        self.mainArea.createColorPalette(paletteName, boxCaption, passThroughBlack, initialColor1, initialColor2)
-    
 
 if __name__== "__main__":
     a = QApplication(sys.argv)
-    """
+    
     c = ColorPalette(None, modal = FALSE)
-    c.createColorPalette("colorPalette", "Palette")
+    c.createContinuousPalette("continuousPalette", "Continuous Palette")
+    c.createDiscretePalette("Discrete Palette")
     box = c.createBox("otherColors", "Colors")
     c.createColorButton(box, "Canvas", "Canvas")
     box.addSpace(5)
@@ -457,3 +557,4 @@ if __name__== "__main__":
     c = OWChooseImageSizeDlg(None)
     c.show()
     a.exec_loop()
+    """
