@@ -9,10 +9,10 @@ def insertFile(cat, name):
     s = cat + "/" + namep
     if os.path.exists(baspath+"\\"+s+".htm"):
         Response.Write('<td><a href="%s.htm"><img src="icons/%s.png"></a></td>\n' % (s, namep) + \
-                       '<td><a href="%s.htm">%s</a></td>\n\n' % (s, name))
+                       '<td style="padding-right: 15"><a href="%s.htm">%s</a></td>\n\n' % (s, name))
     else:
         Response.Write('<td><img style="padding: 2;" src="icons/%s.png"></td>\n' % namep + \
-                       '<td><FONT COLOR="#bbbbbb">%s</FONT></a></td>\n\n' % name)
+                       '<td style="padding-right: 15"><FONT COLOR="#bbbbbb">%s</FONT></a></td>\n\n' % name)
 
 def category(cat, names):
     Response.Write('<tr><td COLSPAN="6"><H2>%s</H2></td></tr>\n\n\n' % cat)
@@ -51,7 +51,7 @@ toolbar.</p>
 version you use might miss some stuff which is already described
 here. Download the new snapshot if you need it.</P>
 
-<table  cellpadding=5>
+<table>
 <%
 category("Data", ["File", "Save", "Data Table", "Select Attributes", "Data Sampler", "Select Data", "Discretize", "Continuize", "Rank"])
 
