@@ -1,0 +1,12 @@
+* compileRegress.sh:
+	Used on george. It checks-out orange, sources, docs and widgets. It then compiles orange, installs it localy (user-level install), and runs the regression tests. Email is sent in case of failure. Called daily at 7am.
+
+* copyLogsToWeb.sh:
+	Called after compileRegress.sh to publish all logs on web, http://george.fri.uni-lj.si/orange.
+	
+* createSnapshot.sh:
+	Called daily (from estelle) to create Linux snapshots, binary, source-only, bcm, genomics versions.
+
+* compileInteractive.sh:
+	Call this script to check-out all source (into /home/orange/interactive/orange) and run "python setup.py compile".
+	
