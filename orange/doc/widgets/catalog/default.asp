@@ -8,17 +8,20 @@ def insertFile(cat, name):
     namep = name.replace(" ", "")
     s = cat + "/" + namep
     if os.path.exists(baspath+"\\"+s+".htm"):
-        Response.Write('<tr><td><a href="%s.htm"><img src="icons/%s.png"></a></td>\n' % (s, namep) + \
-                       '<td><a href="%s.htm">%s</a></td></tr>\n\n' % (s, name))
+        Response.Write('<td><a href="%s.htm"><img src="icons/%s.png"></a></td>\n' % (s, namep) + \
+                       '<td><a href="%s.htm">%s</a></td>\n\n' % (s, name))
     else:
-        Response.Write('<tr><td><img style="padding: 2;" src="icons/%s.png"></td>\n' % namep + \
-                       '<td><FONT COLOR="#bbbbbb">%s</FONT></a></td></tr>\n\n' % name)
+        Response.Write('<td><img style="padding: 2;" src="icons/%s.png"></td>\n' % namep + \
+                       '<td><FONT COLOR="#bbbbbb">%s</FONT></a></td>\n\n' % name)
 
 def category(cat, names):
-    Response.Write('<H2>%s</H2>\n<table>\n\n' % cat)
-    for name in names:
+    Response.Write('<tr><td COLSPAN="6"><H2>%s</H2></td></tr>\n\n\n' % cat)
+    Response.Write('<tr>\n')
+    for i, name in enumerate(names):
+        if i and not i % 3:
+            Response.Write('</tr><tr>')
         insertFile(cat, name)
-    Response.Write('</table>')
+    Response.Write('</tr>')
     
 def emptyColumn():
     Response.Write('</td><td>&nbsp;&nbsp;&nbsp;</td><td valign="top">')
@@ -48,44 +51,23 @@ toolbar.</p>
 version you use might miss some stuff which is already described
 here. Download the new snapshot if you need it.</P>
 
-<table>
-<tr><td valign="top">
-
+<table  cellpadding=5>
 <%
 category("Data", ["File", "Save", "Data Table", "Select Attributes", "Data Sampler", "Select Data", "Discretize", "Continuize", "Rank"])
-
-emptyColumn()
 
 category("Visualize", ["Attribute Statistics", "Distributions", "Scatterplot", "Scatterplot Matrix",
             "Radviz", "Polyviz", "Parallel Coordinates", "Survey Plot",
             "Sieve Diagram", "Mosaic Display", "Sieve Multigram"])
 
-emptyColumn()
-
 category("Associate", ["Association Rules", "Association Rules Filter", "Association Rules Viewer", "Association Rules Print",
           "Example Distance", "Attribute Distance", "Distance Map", "K-means Clustering",
           "Interaction Graph", "MDS", "Hierarchical Clustering"])
-%>
 
-</tr>
-</table>
-
-<br><br>
-
-<table>
-<tr><td valign="top">
-
-<%
 category("Classify", ["Naive Bayes", "Logistic Regression", "Majority", "k-Nearest Neighbours", "Classification Tree",
                          "C4.5", "Interactive Tree Builder", "SVM", "CN2", "Classification Tree Viewer",
                          "Classification Tree Graph", "CN2 Rules Viewer", "Nomogram"])
 
-emptyColumn()
-
 category("Evaluate", ["Test Learners", "Classifications", "ROC Analysis", "Lift Curve", "Calibration Plot"])
 %>
-
-</tr>
 </table>
-
 </body></html>
