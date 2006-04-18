@@ -295,9 +295,9 @@ class SOMCanvas(QCanvas):
         else:
             maxVal=max([len(n.examples) for n in self.somMap.nodes]+[1])
         if self.drawMode==1:
-            maxSize=int(self.objSize*0.8)*2
+            maxSize=int(self.objSize*0.7)*2
         else:
-            maxSize=int(self.objSize*0.8)*4
+            maxSize=int(self.objSize*0.7)*4
         for n in self.canvasObj:
             if n.hasNode:
                 if self.parent().inputSet:
@@ -343,9 +343,10 @@ class SOMCanvas(QCanvas):
                     if self.parent().contHistMode==0:
                         n.histObj[0].setBrush(QBrush(DefColor))
                     if self.parent().contHistMode==1:
-                        std=(dist.average()-fullDist.average())/fullDist.var()
+                        std=(dist.average()-fullDist.average())/max(fullDist.dev(),1)
                         std=min(max(std,-1),1)
-                        n.histObj[0].setBrush(QBrush(QColor(0,0, 75*(std+1)+50)))                           
+                        #print std
+                        n.histObj[0].setBrush(QBrush(QColor(70*(std+1)+50, 70*(std+1)+50, 0)))                           
                     if self.parent().contHistMode==2:
                         light = 300-200*dist.var()/fullDist.var()
                         n.histObj[0].setBrush(QBrush(QColor(0,0,20).light(light)))                   
@@ -508,6 +509,9 @@ class OWSOMVisualizer(OWWidget):
         self.targetValue=0
         self.contHistMode=0
         self.inputSet=0
+
+        self.somMap=None
+        self.examples=None
         
         
         layout=QVBoxLayout(self.mainArea,QVBoxLayout.TopToBottom,0)
@@ -533,6 +537,7 @@ class OWSOMVisualizer(OWWidget):
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         self.componentCombo=OWGUI.comboBox(b,self,"canvas.component", callback=self.setBackground)
         self.componentCombo.setEnabled(self.canvas.drawMode==2)
+        OWGUI.checkBox(self.backgroundBox, self, "canvas.showGrid", "Show Grid", callback=self.canvas.updateAll)
         #b=OWGUI.widgetBox(mainTab, "Histogram")
         b=QVButtonGroup("Histogram", mainTab)
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
@@ -548,7 +553,7 @@ class OWSOMVisualizer(OWWidget):
         OWGUI.checkBox(b1, self, "canvasView.showBubbleInfo","Show")
         OWGUI.checkBox(b1, self, "canvasView.includeCodebook", "Include codebook vector")
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        OWGUI.checkBox(mainTab, self, "canvas.showGrid", "Show Grid", callback=self.canvas.updateAll)
+        
         OWGUI.checkBox(mainTab, self, "commitOnChange", "Commit on change")
         QVBox(mainTab)
         self.histogramBox=OWGUI.widgetBox(histTab, "Coloring")
@@ -565,12 +570,13 @@ class OWSOMVisualizer(OWWidget):
         QVBox(discTab)
         b=QVButtonGroup(contTab)
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        OWGUI.radioButtonsInBox(b, self, "contHistMode", ["Default", "Avg. value" ,"Variance"],callback=self.setHistogram)
+        OWGUI.radioButtonsInBox(b, self, "contHistMode", ["Default", "Avg. value"],callback=self.setHistogram)
         QVBox(contTab)
  
-        QVBox(self.controlArea)
-        OWGUI.button(self.controlArea, self, "&Invert selection", callback=self.canvasView.invertSelection)
-        OWGUI.button(self.controlArea, self, "&Commit", callback=self.commit)
+        b=OWGUI.widgetBox(self.controlArea, "Selection")
+        OWGUI.button(b, self, "&Invert selection", callback=self.canvasView.invertSelection)
+        OWGUI.button(b, self, "&Commit", callback=self.commit)
+        OWGUI.checkBox(b, self, "commitOnChange", "Commit on change")
         OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph)
         
         self.selectionList=[]
@@ -662,8 +668,10 @@ class OWSOMVisualizer(OWWidget):
     def commit(self):
         ex=orange.ExampleTable(self.somMap.examples.domain)
         for n in self.selectionList:
-            if n.examples:
+            if self.inputSet==0 and n.examples:
                 ex.extend(n.examples)
+            elif self.inputSet==1 and n.mappedExamples:
+                ex.extend(n.mappedExamples)
         if len(ex):
             self.send("Examples",ex)
         else:
