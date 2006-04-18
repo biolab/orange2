@@ -52,7 +52,7 @@ here. Download the new snapshot if you need it.</P>
 <tr><td valign="top">
 
 <%
-category("Data", ["File", "Save", "Data Table", "Select Attributes", "Data Sampler", "Select Data", "Discretize", "Rank"])
+category("Data", ["File", "Save", "Data Table", "Select Attributes", "Data Sampler", "Select Data", "Discretize", "Continuize", "Rank"])
 
 emptyColumn()
 
