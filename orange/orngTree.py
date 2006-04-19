@@ -152,13 +152,13 @@ def insertDot(s, mo):
 def insertStr(s, mo, sub):
     return s[:mo.start()] + sub + s[mo.end():]
 
-def insertNum(s, mo, N):
+def insertNum(s, mo, n):
     grps = mo.groupdict()
     m100 = grps.get("m100", None)
     if m100:
-        N *= 100
+        n *= 100
     fs = grps.get("fs") or (m100 and ".0" or "5.3")
-    return s[:mo.start()] + ("%%%sf" % fs % N) + s[mo.end():]
+    return s[:mo.start()] + ("%%%sf" % fs % n) + s[mo.end():]
 
 def byWhom(by, parent, tree):
         if by=="bP":
@@ -434,119 +434,149 @@ def replaceI(strg, mo, node, parent, tree):
     return insertStr(strg, mo, "[%%%sf-%%%sf]" % (fs, fs) % ((av-il)*mul, (av+il)*mul))
 
 
-def formatString(strg, node, parent, tree):
-    if not node:
-        return "<null node>"
-    for rgx, replacer in [(re_V, replaceV), (re_N, replaceN), (re_M, replaceM), (re_m, replacem),
-                          (re_Cdisc, replaceCdisc), (re_cdisc, replacecdisc),
-                          (re_Ccont, replaceCcont), (re_ccont, replaceccont),
-                          (re_Cconti, replaceCconti), (re_cconti, replacecconti),
-                          (re_D, replaceD), (re_d, replaced),
-                          (re_AE, replaceAE), (re_I, replaceI)
-                         ]:
-        if not node.distribution:
-            strg = rgx.sub(".", strg)
+# This class is more a collection of function, merged into a class so that they don't
+# need to transfer too many arguments. It will be constructed, used and discarded,
+# it is not meant to store any information.
+class __TreeDumper:
+    defaultStringFormats = [(re_V, replaceV), (re_N, replaceN), (re_M, replaceM), (re_m, replacem),
+                              (re_Cdisc, replaceCdisc), (re_cdisc, replacecdisc),
+                              (re_Ccont, replaceCcont), (re_ccont, replaceccont),
+                              (re_Cconti, replaceCconti), (re_cconti, replacecconti),
+                              (re_D, replaceD), (re_d, replaced),
+                              (re_AE, replaceAE), (re_I, replaceI)
+                             ]
+
+    def __init__(self, leafStr, nodeStr, stringFormats, minExamples, maxDepth, simpleFirst, tree, **kw):
+        self.stringFormats = stringFormats
+        self.minExamples = minExamples
+        self.maxDepth = maxDepth
+        self.simpleFirst = simpleFirst
+        self.tree = tree
+        self.__dict__.update(kw)
+
+        if leafStr:
+            self.leafStr = leafStr
         else:
-            strt = 0
-            while True:
-                mo = rgx.search(strg, strt)
-                if not mo:
-                    break
-                strg = replacer(strg, mo, node, parent, tree)
-                strt = mo.start()+1
-                    
-    return strg
+            if tree.classVar.varType == orange.VarTypes.Discrete:
+                self.leafStr = "%V (%^.2m%)"
+            else:
+                self.leafStr = "%V"
+
+        if nodeStr == ".":
+            self.nodeStr = self.leafStr
+        else:
+            self.nodeStr = nodeStr
         
 
-def showBranch(node, parent, root, lev, i, nodeStr = ""):
-    bdes = node.branchDescriptions[i]
-    bdes = node.branchSelector.classVar.name + (bdes[0] not in "<=>" and "=" or "") + bdes
-    if node.branches[i]:
-        nodedes = nodeStr and ": "+formatString(nodeStr, node.branches[i], node, root) or ""
-    else:
-        nodedes = "<null node>"
-    return "|    "*lev + bdes + nodedes
+    def formatString(self, strg, node, parent):
+        if not node:
+            return "<null node>"
+        
+        for rgx, replacer in self.stringFormats:
+            if not node.distribution:
+                strg = rgx.sub(".", strg)
+            else:
+                strt = 0
+                while True:
+                    mo = rgx.search(strg, strt)
+                    if not mo:
+                        break
+                    strg = replacer(strg, mo, node, parent, self.tree)
+                    strt = mo.start()+1
+                        
+        return strg
+        
+
+    def showBranch(self, node, parent, lev, i):
+        bdes = node.branchDescriptions[i]
+        bdes = node.branchSelector.classVar.name + (bdes[0] not in "<=>" and "=" or "") + bdes
+        if node.branches[i]:
+            nodedes = self.nodeStr and ": "+self.formatString(self.nodeStr, node.branches[i], node) or ""
+        else:
+            nodedes = "<null node>"
+        return "|    "*lev + bdes + nodedes
         
         
-def dumpTree0(node, parent, tree, lev, leafStr, nodeStr, minExamples, maxDepth, simpleFirst):
-    if node.branches:
-        if node.distribution.abs < minExamples or lev > maxDepth:
-            return "|    "*lev + ". . .\n"
-        
-        res = ""
-        if simpleFirst:
+    def dumpTree0(self, node, parent, lev):
+        if node.branches:
+            if node.distribution.abs < self.minExamples or lev > self.maxDepth:
+                return "|    "*lev + ". . .\n"
+            
+            res = ""
+            if self.simpleFirst:
+                for i, branch in enumerate(node.branches):
+                    if not branch or not branch.branches:
+                        res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
+                                             self.formatString(self.leafStr, branch, node))
             for i, branch in enumerate(node.branches):
-                if not branch or not branch.branches:
-                    res += "%s: %s\n" % (showBranch(node, parent, tree, lev, i),
-                                         formatString(leafStr, branch, node, tree))
-        for i, branch in enumerate(node.branches):
-            if branch and branch.branches:
-                res += "%s\n%s" % (showBranch(node, parent, tree, lev, i, nodeStr),
-                                   dumpTree0(branch, node, tree, lev+1, leafStr, nodeStr, minExamples, maxDepth, simpleFirst))
-            elif not simpleFirst:
-                res += "%s: %s\n" % (showBranch(node, parent, tree, lev, i),
-                                     formatString(leafStr, branch, node, tree))
-        return res
-    else:
-        return formatString(leafStr, node, parent, tree)
+                if branch and branch.branches:
+                    res += "%s\n%s" % (self.showBranch(node, parent, lev, i),
+                                       self.dumpTree0(branch, node, lev+1))
+                elif not self.simpleFirst:
+                    res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
+                                         self.formatString(self.leafStr, branch, node))
+            return res
+        else:
+            return self.formatString(self.leafStr, node, parent)
 
-def defaultLeafStr(varType):
-    if varType == orange.VarTypes.Discrete:
-        return "%V (%^.2m%)"
-##    elif varType == orange.VarTypes.Continuous:
-##        return "%V %.1I(95)"
-    else:
-        return "%V"
+
+    def dumpTree(self):
+        if self.nodeStr:
+            lev, res = 1, "root: %s\n" % self.formatString(self.nodeStr, self.tree.tree, None)
+            self.maxDepth += 1
+        else:
+            lev, res = 0, ""
+        return res + self.dumpTree0(self.tree.tree, None, lev)
+        
+
+    def dotTree0(self, node, parent, internalName):
+        if node.branches:
+            if node.distribution.abs < self.minExamples or len(internalName)-1 > self.maxDepth:
+                self.fle.write('%s [ shape="plaintext" label="..." ]\n' % internalName)
+                return
+                
+            label = node.branchSelector.classVar.name
+            if self.nodeStr:
+                label += "\\n" + self.formatString(self.nodeStr, node, parent)
+            self.fle.write('%s [ shape=%s label="%s"]\n' % (internalName, self.nodeShape, label))
+            
+            for i, branch in enumerate(node.branches):
+                if branch:
+                    internalBranchName = internalName+chr(i+65)
+                    self.fle.write('%s -> %s [ label="%s" ]\n' % (internalName, internalBranchName, node.branchDescriptions[i]))
+                    self.dotTree0(self.fle, branch, node, internalBranchName)
+                    
+        else:
+            self.fle.write('%s [ shape=%s label="%s"]\n' % (internalName, self.leafShape, self.formatString(self.leafStr, node, parent)))
+
+
+    def dotTree(self, internalName="n"):
+        fle.write("digraph G {\n")
+        dotTree0(fle, tree.tree, None, tree, internalName)
+        fle.write("}\n")
+
 
 def dumpTree(tree, leafStr = "", nodeStr = "", **argkw):
-    leafStr = leafStr or defaultLeafStr(tree.classVar.varType)
-    if nodeStr == ".":
-        nodeStr = leafStr
-    minExamples = argkw.get("minExamples", 0)
-    maxDepth = argkw.get("maxDepth", 1e10)
-    simpleFirst = argkw.get("simpleFirst", True)
-    if nodeStr:
-        lev, res = 1, "root: %s\n" % formatString(nodeStr, tree.tree, None, tree)
-        maxDepth += 1
-    else:
-        lev, res = 0, ""
-    return res + dumpTree0(tree.tree, None, tree, lev, leafStr, nodeStr, minExamples, maxDepth, simpleFirst)
+    return __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + __TreeDumper.defaultStringFormats,
+                        argkw.get("minExamples", 0), argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
+                        tree).dumpTree()
+
 
 def printTree(*a, **aa):
     print dumpTree(*a, **aa)
 
 printTxt = printTree
 
-def dotTree0(fle, node, parent, tree, internalName, leafStr, nodeStr, minExamples, maxDepth, leafShape, nodeShape):
-    if node.branches:
-        if node.distribution.abs < minExamples or len(internalName)-1 > maxDepth:
-            fle.write('%s [ shape="plaintext" label="..." ]\n' % internalName)
-            return
-            
-        label = node.branchSelector.classVar.name
-        if nodeStr:
-            label += "\\n" + formatString(nodeStr, node, parent, tree)
-        fle.write('%s [ shape=%s label="%s"]\n' % (internalName, nodeShape, label))
-        
-        for i, branch in enumerate(node.branches):
-            if branch:
-                internalBranchName = internalName+chr(i+65)
-                fle.write('%s -> %s [ label="%s" ]\n' % (internalName, internalBranchName, node.branchDescriptions[i]))
-                dotTree0(fle, branch, node, tree, internalBranchName, leafStr, nodeStr, minExamples, maxDepth, leafShape, nodeShape)
-                
-    else:
-        fle.write('%s [ shape=%s label="%s"]\n' % (internalName, leafShape, formatString(leafStr, node, parent, tree)))
 
 def dotTree(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
-    leafStr = leafStr or defaultLeafStr(tree.classVar.varType)
-    if nodeStr == ".":
-        nodeStr = leafStr
-    minExamples = argkw.get("minExamples", 0)
-    maxDepth = argkw.get("maxDepth", 1e10)
-
     fle = type(fileName) == str and file(fileName, "wt") or fileName
     fle.write("digraph G {\n")
-    dotTree0(fle, tree.tree, None, tree, "n", leafStr, nodeStr, minExamples, maxDepth, leafShape, nodeShape)
+
+    __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + __TreeDumper.defaultStringFormats,
+                 argkw.get("minExamples", 0), argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
+                 tree,
+                 leafShape = leafShape, nodeShape = nodeShape, fle = fle).dotTree()
+                        
     fle.write("}\n")
 
 printDot = dotTree
