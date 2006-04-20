@@ -6,7 +6,7 @@
 <priority>5020</priority>
 """
 import orange, orngSOM, orangeom
-import math, Numeric
+import math, Numeric, sets
 import OWGUI, OWGraphTools
 from OWWidget import *
 from qt import *
@@ -29,6 +29,7 @@ class CanvasSOMItem(QCanvasPolygon):
         self.outlinePoints=None
         self.histObj=[]
         self.setSize(10)
+        self.setZ(0)
 
     def boundingRect(self):
         return self.outlinePoints.boundingRect()
@@ -161,6 +162,7 @@ class SOMCanvasView(QCanvasView):
         self.bubbleNode=None
         self.showBubbleInfo=True
         self.includeCodebook=True
+        self.selectionRect=None
         self.viewport().setMouseTracking(True)
         
     def buildBubble(self, node):
@@ -205,6 +207,10 @@ class SOMCanvasView(QCanvasView):
         
     def contentsMouseMoveEvent(self, event):
         pos=event.pos()
+        if self.selectionRect:
+            rect=self.selectionRect.rect()
+            self.selectionRect.setSize(pos.x()-rect.x(),pos.y()-rect.y())
+            #self.updateSelection()
         obj=self.canvas().collisions(pos)
         if obj and (obj[-1].__class__==CanvasHexagon or obj[-1].__class__==CanvasRectangle) and obj[-1].hasNode:
             if not self.showBubbleInfo:
@@ -233,6 +239,14 @@ class SOMCanvasView(QCanvasView):
         self.canvas().update()
         
     def contentsMousePressEvent(self, event):
+        pos=event.pos()
+        self.selectionRect=r=QCanvasRectangle(pos.x(), pos.y(), 1, 1, self.canvas())
+        r.show()
+        r.setZ(19)
+        self.oldSelection=self.selectionList
+        if not self.master.ctrlPressed:
+            self.clearSelection()            
+        """
         obj=self.canvas().collisions(event.pos())
         if obj and obj[-1].hasNode:
             if obj[-1] in self.selectionList:
@@ -252,7 +266,35 @@ class SOMCanvasView(QCanvasView):
             self.clearSelection()
         self.master.updateSelection([a.node for a in self.selectionList])
         self.canvas().update()
+        """
+
+    def contentsMouseReleaseEvent(self, event):
+        #obj=self.canvas().collisions(event.pos())
+        #if obj and obj[-1]
+        self.updateSelection()
+        self.selectionRect.setCanvas(None)
+        self.selectionRect=None
+        self.master.updateSelection([a.node for a in self.selectionList])
+        self.canvas().update()
+        pass
     
+    def updateSelection(self):
+        obj=self.canvas().collisions(self.selectionRect.rect())
+        obj=filter(lambda a:isinstance(a, CanvasSOMItem) and a.hasNode, obj)
+        if self.master.ctrlPressed:
+            set1=sets.Set(obj)
+            set2=sets.Set(self.oldSelection)
+            intersection=set1.intersection(set2)
+            union=set1.union(set2)
+            for e in list(intersection):
+                self.removeSelection(e)
+            for e in list(set1.difference(set2)):
+                self.addSelection(e)
+        else:
+            self.clearSelection()
+            for e in obj:
+                self.addSelection(e)          
+
     def addSelection(self, obj):
         obj.setSelected(True)
         self.selectionList.append(obj)
@@ -275,10 +317,9 @@ class SOMCanvasView(QCanvasView):
                     self.removeSelection(n)
         self.master.updateSelection([a.node for a in self.selectionList])
         self.canvas().update()
-                    
 
 baseColor=QColor(20,20,20)  
-    
+
 class SOMCanvas(QCanvas):
     def __init__(self, *args):
         apply(QCanvas.__init__, (self,)+args)
@@ -295,9 +336,9 @@ class SOMCanvas(QCanvas):
         else:
             maxVal=max([len(n.examples) for n in self.somMap.nodes]+[1])
         if self.drawMode==1:
-            maxSize=int(self.objSize*0.7)*2
+            maxSize=4*int(self.somMap.xDim*self.objSize/(2*self.somMap.xDim-1)*0.7)
         else:
-            maxSize=int(self.objSize*0.7)*4
+            maxSize=4*int(self.objSize*0.7)
         for n in self.canvasObj:
             if n.hasNode:
                 if self.parent().inputSet:
@@ -350,9 +391,7 @@ class SOMCanvas(QCanvas):
                     if self.parent().contHistMode==2:
                         light = 300-200*dist.var()/fullDist.var()
                         n.histObj[0].setBrush(QBrush(QColor(0,0,20).light(light)))                   
-                    
-                    
-        
+    
     def setSom(self, somMap=None):
         self.oldSom=self.somMap
         self.somMap=somMap
@@ -400,8 +439,10 @@ class SOMCanvas(QCanvas):
         self.update()
     
     def drawHex(self):
-        size=self.objSize*2-1
-        x,y=size*2, size*2
+        #size=self.objSize*2-1
+        #size=int((self.objSize-9)/10.0*20)*2-1
+        size=2*self.objSize-1
+        x,y=size, size*2
         for n in self.somMap.nodes:
             offset=1-abs(n.x%2-2)
             h=CanvasHexagon(self)
@@ -416,7 +457,7 @@ class SOMCanvas(QCanvas):
     
     def drawRect(self):
         size=self.objSize*2-1
-        x,y=size*2, size*2
+        x,y=size, size
         self.resize(1,1)    # crashes at update without this line !!!
         for n in self.somMap.nodes:
             r=CanvasRectangle(self)
@@ -430,8 +471,9 @@ class SOMCanvas(QCanvas):
         self.update()
     
     def drawUMatHex(self):
-        size=2*(self.objSize/2)-1
-        x,y=size*2, size*2
+        #size=2*(int(self.objSize*1.15)/2)-1
+        size=2*int(self.somMap.xDim*self.objSize/(2*self.somMap.xDim-1))-1
+        x,y=size, size
         maxDist=max(reduce(Numeric.maximum, [a for a in self.uMat]))
         minDist=max(reduce(Numeric.minimum, [a for a in self.uMat]))
         for i in range(len(self.uMat)):
@@ -451,8 +493,9 @@ class SOMCanvas(QCanvas):
         self.update()
         
     def drawUMatRect(self):
-        size=self.objSize-1
-        x,y=size*2, size*2
+        #size=self.objSize-1
+        size=2*int(self.somMap.xDim*self.objSize/(2*self.somMap.xDim-1))-1
+        x,y=size, size
         
         maxDist=max(reduce(Numeric.maximum, [a for a in self.uMat]))
         minDist=max(reduce(Numeric.minimum, [a for a in self.uMat]))
@@ -546,7 +589,7 @@ class OWSOMVisualizer(OWWidget):
         
         b1=QVBox(mainTab)
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        b=OWGUI.hSlider(b1, self, "canvas.objSize","Plot size", 10,20,step=2,ticks=10, callback=call)
+        b=OWGUI.hSlider(b1, self, "canvas.objSize","Plot size", 10,100,step=10,ticks=10, callback=call)
         b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         #OWGUI.checkBox(b1, self, "labelNodes", "Node Labeling", callback=self.canvas.updateLabels)
         b1=OWGUI.widgetBox(b1, "Bubble Info")
@@ -554,7 +597,7 @@ class OWSOMVisualizer(OWWidget):
         OWGUI.checkBox(b1, self, "canvasView.includeCodebook", "Include codebook vector")
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         
-        OWGUI.checkBox(mainTab, self, "commitOnChange", "Commit on change")
+        #OWGUI.checkBox(mainTab, self, "commitOnChange", "Commit on change")
         QVBox(mainTab)
         self.histogramBox=OWGUI.widgetBox(histTab, "Coloring")
         self.attributeCombo=OWGUI.comboBox(self.histogramBox, self, "attribute", "Attribute", callback=self.setHistogram)
@@ -698,7 +741,7 @@ class OWSOMVisualizer(OWWidget):
 if __name__=="__main__":
     ap=QApplication(sys.argv)
     data=orange.ExampleTable("../../doc/datasets/iris.tab")
-    l=orngSOM.SOMLearner()# topology=orangeom.SOMLearner.RectangularTopology)
+    l=orngSOM.SOMLearner( topology=orangeom.SOMLearner.RectangularTopology)
     l=l(data)
     l.data=data
     w=OWSOMVisualizer()
