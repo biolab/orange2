@@ -553,9 +553,10 @@ class Dendogram(QCanvas):
         self.selectionList.append(new)
         c=float(self.parent.Brightness)/10;
         colorPalette=OWGraphTools.ColorPaletteHSV(len(self.selectionList))
-        color=[(a.red()+(255-a.red())*c, a.green()+(255-a.green())*c,
-                         a.blue()+(255-a.blue())*c) for a in colorPalette]
-        colorPalette=[QColor(a[0],a[1],a[2]) for a in color]
+        #color=[(a.red()+(255-a.red())*c, a.green()+(255-a.green())*c,
+        #                 a.blue()+(255-a.blue())*c) for a in colorPalette]
+        #colorPalette=[QColor(a[0],a[1],a[2]) for a in color]
+        colorPalette=[colorPalette.getColor(i, 150) for i in range(len(self.selectionList))]
         for el, col in zip(self.selectionList, colorPalette):
             brush=QBrush(col,Qt.SolidPattern)
             el.setBrush(brush)
