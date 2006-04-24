@@ -8,7 +8,7 @@ for i in range(len(data)):
    for j in range(i+1):
        matrix[i, j] = dist(data[i], data[j])
 mds=orngMDS.MDS(matrix)
-mds.Torgerson()
+#mds.Torgerson()
 mds.getStress(orngMDS.KruskalStress)
 i=0
 while 100>i:
