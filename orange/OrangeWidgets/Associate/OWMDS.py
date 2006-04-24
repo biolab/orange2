@@ -179,14 +179,14 @@ class OWMDS(OWWidget):
                 discI+=1
             elif attr.varType==orange.VarTypes.Continuous:
                 c=OWGraphTools.ColorPaletteHSV(-1)
-                val=[e[j] for e in data]
+                val=[e[j] for e in data if not e[j].isSpecial()]
                 minVal=min(val)
                 maxVal=max(val)
                 for i in range(len(data)):
-                    self.colors[i][attrI]=c.getColor((data[i][attr]-minVal)/abs(maxVal-minVal))
+                    self.colors[i][attrI]=data[i][attr].isSpecial() and Qt.black or c.getColor((data[i][attr]-minVal)/abs(maxVal-minVal))
                     #self.shapes[i][discI]=self.graph.shapeList[0]
                     self.names[i][attrI]=" "+str(data[i][attr])
-                    self.sizes[i][contI]=int(self.data[i][attr]/maxVal*9)+1
+                    self.sizes[i][contI]=data[i][attr].isSpecial() and 5 or int(self.data[i][attr]/maxVal*9)+1
                 contI+=1
                 attrI+=1
             else:
