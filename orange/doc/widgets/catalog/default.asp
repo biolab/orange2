@@ -65,7 +65,7 @@ category("Associate", ["Association Rules", "Association Rules Filter", "Associa
 
 category("Classify", ["Naive Bayes", "Logistic Regression", "Majority", "k-Nearest Neighbours", "Classification Tree",
                          "C4.5", "Interactive Tree Builder", "SVM", "CN2", "Classification Tree Viewer",
-                         "Classification Tree Graph", "CN2 Rules Viewer", "Nomogram"])
+                         "Classification Tree Graph", "Rules Viewer", "Nomogram"])
 
 category("Evaluate", ["Test Learners", "Classifications", "ROC Analysis", "Lift Curve", "Calibration Plot"])
 %>
