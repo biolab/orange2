@@ -32,6 +32,11 @@ except:
 class OWMDS(OWWidget):
     settingsList=["graph.ColorAttr", "graph.SizeAttr", "graph.ShapeAttr", "graph.NameAttr", "graph.ShowStress", "graph.NumStressLines", "graph.ShowName",
                   "StressFunc", "toolbarSelection", "autoSendSelection", "selectionOptions", "computeStress"]
+    contextHandlers={"":DomainContextHandler("", [ContextField("graph.ColorAttr", DomainContextHandler.Optional),
+                                                  ContextField("graph.SizeAttr", DomainContextHandler.Optional),
+                                                  ContextField("graph.ShapeAttr", DomainContextHandler.Optional),
+                                                  ContextField("graph.NameAttr", DomainContextHandler.Optional),
+                                                  ContextField("graph.ShowName", DomainContextHandler.Optional)])}
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None, name="Multi Dimensional Scaling"):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -117,6 +122,7 @@ class OWMDS(OWWidget):
         self.done=True
 
     def cmatrix(self, matrix=None):
+        self.closeContext()
         self.origMatrix=matrix
         self.data=data=None
         if matrix:
@@ -136,6 +142,7 @@ class OWMDS(OWWidget):
             self.mds.points=RandomArray.random([self.mds.n, self.mds.dim])
             self.mds.getStress()
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
+            self.openContext("",self.data)
             self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names)
         else:
             self.graph.clear()
@@ -454,7 +461,7 @@ class MDSGraph(OWGraph):
 
     def setPoints(self):
         import sets
-        if self.ShapeAttr==0 and self.SizeAttr==0:
+        if self.ShapeAttr==0 and self.SizeAttr==0 and self.NameAttr==0:
             colors=[c[self.ColorAttr] for c in self.colors]
             
             set=[]
