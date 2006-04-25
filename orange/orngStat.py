@@ -664,6 +664,32 @@ def TCcomputeROC(res, classIndex=-1, keepConcavities=1):
 
     return results
 
+## returns a list of points at the intersection of the tangential iso-performance line and the given ROC curve
+## for given values of FPcost, FNcost and pval
+def TCbestThresholdsOnROCcurve(FPcost, FNcost, pval, curve):
+    m = (FPcost*(1.0 - pval)) / (FNcost*pval)
+
+    ## put the iso-performance line in point (0.0, 1.0)
+    x0, y0 = (0.0, 1.0)
+    x1, y1 = (1.0, 1.0 + m)
+    d01 = math.sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0))
+
+    ## calculate and find the closest point to the line
+    firstp = 1
+    mind = 0.0
+    a = (x0*y1 - x1*y0)
+    closestPoints = []
+    for (x, y, fscore) in curve:
+        d = ((y0 - y1)*x + (x1 - x0)*y + a) / d01
+        d = abs(d)
+        if firstp or d < mind:
+            mind, firstp = d, 0
+            closestPoints = [(x, y, fscore)]
+        else:
+            if abs(d - mind) <= 0.0001: ## close enough
+                closestPoints.append( (x, y, fscore) )
+    return closestPoints          
+
 def frange(start, end=None, inc=None):
     "A range function, that does accept float increments..."
 
