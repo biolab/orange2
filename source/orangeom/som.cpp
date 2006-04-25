@@ -207,7 +207,7 @@ float TSOMClassifier::getError(PExampleGenerator examples){
 }
     
 PSOMNode TSOMClassifier::getWinner(const TExample &example){
-    PSOMNode node;
+    PSOMNode node=nodes->at(0);
     float min=numeric_limits<float>::max();
     PITERATE(TSOMNodeList, iter, nodes){
         float dist=(*iter)->getDistance(example);
