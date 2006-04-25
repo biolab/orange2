@@ -12,7 +12,7 @@ from OWGraph import *
 
 import OWGUI
 
-import orngEval, orngTest
+import orngStat, orngTest
 import statc, math
 
 def TCconvexHull(curves):
@@ -37,11 +37,11 @@ def TCconvexHull(curves):
             elif py == maxY:
                 prevPfscore.append(fscore)
         elif (px > prevX):
-            hull = orngEval.ROCaddPoint((prevX, maxY, prevPfscore), hull, keepConcavities=0)
+            hull = orngStat.ROCaddPoint((prevX, maxY, prevPfscore), hull, keepConcavities=0)
             prevX = px
             maxY = py
             prevPfscore = [fscore]
-    hull = orngEval.ROCaddPoint((prevX, maxY, prevPfscore), hull, keepConcavities=0)
+    hull = orngStat.ROCaddPoint((prevX, maxY, prevPfscore), hull, keepConcavities=0)
 
     return hull
 
@@ -78,7 +78,7 @@ class singleClassROCgraph(OWGraph):
         self.removeCurves()
 
     def computeCurve(self, res, classIndex=-1, keepConcavities=1):
-        return orngEval.TCcomputeROC(res, classIndex, keepConcavities)
+        return orngStat.TCcomputeROC(res, classIndex, keepConcavities)
 
     def setNumberOfClassifiersIterationsAndClassifierColors(self, classifierNames, iterationsNum, classifierColor):
         classifiersNum = len(classifierNames)
@@ -305,7 +305,7 @@ class singleClassROCgraph(OWGraph):
     def calcAverageCurves(self):
         ##
         ## self.averagingMethod == 'merge':
-        mergedIterations = orngEval.ExperimentResults(1, self.splitByIterations[0].classifierNames, self.splitByIterations[0].classValues, self.splitByIterations[0].weights, classifiers=self.splitByIterations[0].classifiers, loaded=self.splitByIterations[0].loaded)
+        mergedIterations = orngTest.ExperimentResults(1, self.splitByIterations[0].classifierNames, self.splitByIterations[0].classValues, self.splitByIterations[0].weights, classifiers=self.splitByIterations[0].classifiers, loaded=self.splitByIterations[0].loaded)
         i = 0
         for isplit in self.splitByIterations:
             if self.showIterations[i]:
@@ -363,7 +363,7 @@ class singleClassROCgraph(OWGraph):
         ##
         ## self.averagingMethod == 'vertical':
         ## calculated from the self.classifierIterationROCdata data
-        (averageCurves, verticalErrorBarValues) = orngEval.TCverticalAverageROC(ROCS, self.VTAsamples)
+        (averageCurves, verticalErrorBarValues) = orngStat.TCverticalAverageROC(ROCS, self.VTAsamples)
         classifier = 0
         for c in averageCurves:
             self.verticalConvexHullData.append(c)
@@ -388,7 +388,7 @@ class singleClassROCgraph(OWGraph):
         ##
         ## self.averagingMethod == 'threshold':
         ## calculated from the self.classifierIterationROCdata data
-        (averageCurves, verticalErrorBarValues, horizontalErrorBarValues) = orngEval.TCthresholdlAverageROC(ROCS, self.VTAsamples)
+        (averageCurves, verticalErrorBarValues, horizontalErrorBarValues) = orngStat.TCthresholdlAverageROC(ROCS, self.VTAsamples)
         classifier = 0
         for c in averageCurves:
             self.thresholdConvexHullData.append(c)
@@ -468,27 +468,8 @@ class singleClassROCgraph(OWGraph):
 
     ## performance line
     def calcUpdatePerformanceLine(self):
-        m = (self.FPcost*(1.0 - self.pvalue)) / (self.FNcost*self.pvalue)
-
-        ## put the iso-performance line in point (0.0, 1.0)
-        x0, y0 = (0.0, 1.0)
-        x1, y1 = (1.0, 1.0 + m)
-        d01 = math.sqrt((x1 - x0)*(x1 - x0) + (y1 - y0)*(y1 - y0))
-
-        ## calculate and find the closest point to the line
-        firstp = 1
-        mind = 0.0
-        a = (x0*y1 - x1*y0)
-        closestpoints = []
-        for (x, y, fscorelist) in self.hullCurveDataForPerfLine:
-            d = ((y0 - y1)*x + (x1 - x0)*y + a) / d01
-            d = abs(d)
-            if firstp or d < mind:
-                mind, firstp = d, 0
-                closestpoints = [(x, y, fscorelist)]
-            else:
-                if abs(d - mind) <= 0.0001: ## close enough
-                    closestpoints.append( (x, y, fscorelist) )
+    	closestpoints = orngStat.TCbestThresholdsOnROCcurve(self.FPcost, self.FNcost, self.pvalue, self.hullCurveDataForPerfLine)
+    	m = (self.FPcost*(1.0 - self.pvalue)) / (self.FNcost*self.pvalue)
 
         ## now draw the closest line to the curve
         b = (self.averagingMethod == 'merge') and self.showPerformanceLine
@@ -933,7 +914,7 @@ class OWROC(OWWidget):
                 self.classifierColor.append( newColor )
 
             ## testSetsQLB
-            self.dresSplitByIterations = orngEval.splitByIterations(self.dres)
+            self.dresSplitByIterations = orngStat.splitByIterations(self.dres)
             self.numberOfIterations = len(self.dresSplitByIterations)
 
             self.calcAllClassGraphs()
@@ -950,7 +931,7 @@ class OWROC(OWWidget):
 
             ## calculate default pvalues
             reminder = self.maxp
-            for f in orngEval.aprioriDistributions(self.dres):
+            for f in orngStat.classProbabilitiesFromRes(self.dres):
                 v = int(round(f * self.maxp))
                 reminder -= v
                 if reminder < 0:
