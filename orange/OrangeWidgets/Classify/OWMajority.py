@@ -40,10 +40,12 @@ class OWMajority(OWWidget):
     def cdata(self,data):
         self.data = data
         if data:
-            print "learning"
             self.classifier = self.learner(data)
             self.classifier.name = self.name
-            self.send("Classifier", self.classifier)
+        else:
+            self.classifier = None
+        self.send("Classifier", self.classifier)
+            
  
 ##############################################################################
 # Test the widget, run from DOS prompt
