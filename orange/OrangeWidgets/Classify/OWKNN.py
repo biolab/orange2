@@ -18,13 +18,14 @@ class OWKNN(OWWidget):
         self.callbackDeposit = []
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
-        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("KNN Classifier", orange.kNNClassifier)]
+        self.outputs = [("Learner", orange.Learner),("KNN Classifier", orange.kNNClassifier)]
 
         self.metricsList = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
                        ("Hamiltonian", orange.ExamplesDistanceConstructor_Hamiltonian),
                        ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
                        ("Maximal", orange.ExamplesDistanceConstructor_Maximal),
-                       ("Dynamic time warp", orange.ExamplesDistanceConstructor_DTW)]
+#                       ("Dynamic time warp", orange.ExamplesDistanceConstructor_DTW)
+                            ]
         
         # Settings
         self.name = 'kNN'
@@ -43,19 +44,19 @@ class OWKNN(OWWidget):
         OWGUI.separator(self.controlArea)
 
         wbN = OWGUI.widgetBox(self.controlArea, "Neighbours")
-        OWGUI.spin(wbN, self, "k", 1, 100, 1, None, "Number of neighbours ", orientation="horizontal")
+        OWGUI.spin(wbN, self, "k", 1, 100, 1, None, "Number of neighbours   ", orientation="horizontal")
         OWGUI.checkBox(wbN, self, "ranks", "Weighting by ranks, not distances")
 
         OWGUI.separator(self.controlArea)
 
         wbM = OWGUI.widgetBox(self.controlArea, "Metrics")
         OWGUI.comboBox(wbM, self, "metrics", items = [x[0] for x in self.metricsList], valueType = int)
-        OWGUI.checkBox(wbM, self, "normalize", "normalize continuous attributes")
-        OWGUI.checkBox(wbM, self, "ignoreUnknowns", "ignore unknown values")
+        OWGUI.checkBox(wbM, self, "normalize", "Normalize continuous attributes")
+        OWGUI.checkBox(wbM, self, "ignoreUnknowns", "Ignore unknown values")
 
         OWGUI.separator(self.controlArea)
 
-        OWGUI.button(self.controlArea, self, "&Apply Setting", callback = self.setLearner, disabled=0)
+        OWGUI.button(self.controlArea, self, "&Apply Settings", callback = self.setLearner, disabled=0)
 
         self.resize(100,250)
 
@@ -80,7 +81,6 @@ class OWKNN(OWWidget):
         if self.data and self.learner:
             self.classifier = self.learner(self.data)
             self.classifier.name = self.name
-            self.send("Classifier", self.classifier)
             self.send("KNN Classificatier", self.classifier)
 
 ##############################################################################
