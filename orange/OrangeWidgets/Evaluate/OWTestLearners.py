@@ -265,7 +265,8 @@ class OWTestLearners(OWWidget):
         if self.sampleMethod <> id:
             self.sampleMethod = id
             self.results = None
-            self.test()
+            if self.data:
+                self.test()
 
     # reporting on evaluation results
     def setStatTable(self):
