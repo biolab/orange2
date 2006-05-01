@@ -218,7 +218,7 @@ class OWClassificationTreeViewer2D(OWTreeViewer2D):
 
         OWGUI.checkBox(self.NodeTab, self, 'ShowPies', 'Show pies', box='Pies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
         self.targetCombo=OWGUI.comboBox(self.NodeTab,self, "TargetClassIndex",items=[],box="Target Class",callback=self.toggleTargetClass)
-        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
+        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
         
