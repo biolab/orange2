@@ -29,7 +29,7 @@ class OWClassificationTree(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset)]
-        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier)]
+        self.outputs = [("Learner", orange.Learner),("Classification Tree", orange.TreeClassifier)]
 
         # Settings
         self.name = 'Classification Tree'
@@ -54,7 +54,7 @@ class OWClassificationTree(OWWidget):
         
         # attribute quality estimation
         qBox = QVGroupBox(self.controlArea)
-        qBox.setTitle('Attribute Quality Estimation')
+        qBox.setTitle('Attribute selection criterion')
 
         self.qMea = QComboBox(qBox)
         for m in self.measures:
@@ -90,7 +90,7 @@ class OWClassificationTree(OWWidget):
         self.mBox.setTitle('Post-Pruning')
         OWGUI.checkBox(self.mBox, self, 'postMaj', 'Recursively merge leaves with same majority class')
         self.postMPruningBox, self.postMPruningPBox = \
-          OWGUI.checkWithSpin(self.mBox, self, "m for m-error pruning ", 0, 1000, 'postMPruning', 'postM')
+          OWGUI.checkWithSpin(self.mBox, self, "Pruning with m-estimate, m=", 0, 1000, 'postMPruning', 'postM')
 
         # apply button
         OWGUI.separator(self.controlArea)
@@ -118,7 +118,6 @@ class OWClassificationTree(OWWidget):
         if self.data <> None:
             self.classifier = self.learner(self.data)
             self.classifier.name = self.name
-            self.send("Classifier", self.classifier)
             self.send("Classification Tree", self.classifier)
 
     def measureChanged(self, idx):
@@ -140,7 +139,6 @@ class OWClassificationTree(OWWidget):
         if self.data:
             self.setLearner()
         else:
-            self.send("Classifier", None)
             self.send("Classification Tree", None)
 
 ##############################################################################
