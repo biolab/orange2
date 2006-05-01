@@ -1,0 +1,70 @@
+<html>
+<head>
+<title>C4.5</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Naive Bayesian Learner</h1>
+
+<img class="screenshot" src="../icons/NaiveBayes.png">
+<p>Naive Bayesian Learner</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Classified Examples (ExampleTableWithClass)</DT>
+<DD>A table with training examples</DD>
+</dl>
+
+<h3>Outputs</h3>
+<DL class=attributes>
+<DT>Learner</DT>
+<DD>The naive Bayesian learning algorithm with settings as specified in the dialog.</DD>
+
+<DT>Naive Bayesian Classifier</DT>
+<DD>Trained classifier (a subtype of Classifier)</DD>
+</dl>
+
+<P>Signal <code>Naive Bayesian Classifier</code> sends data only if the learning data (signal <code>Classified Examples</code> is present.</P>
+
+<h2>Description</h2>
+
+<p>This widget provides a graphical interface to the Naive Bayesian classifier.</p>
+
+<p>As all widgets for classification, this widget provides a learner and classifier on the output. Learner is a learning algorithm with settings as specified by the user. It can be fed into widgets for testing learners, for instance <code>Test Learners</code>. Classifier is a Naive Bayesian Classifier (a subtype of a general classifier), built from the training examples on the input. If examples are not given, the widget outputs no classifier.</p>
+
+<table>
+<tr><td valign="top"><img class="screenshot" src="NaiveBayes.png" alt="NaiveBayes Widget" border=0></td>
+
+<td valign="top">
+<P>Learner can be given a name under which it will appear in, say, <code>Test Learners</code>. The default name is "Naive Bayes".</P>
+
+<P>Next come the probability estimators. <b>Unconditional</b> sets the method used for estimating prior class probabilities from the data. You can use either relative frequencies, Laplace estimate or m-estimate. <b>Conditional (discrete)</b> sets the method for estimating conditional probabilities. You can use any of the three options above or set the method to be the same as for ``unconditional''. Finally, <b>Conditional (continuous)</b> specifies the method used for estimatin conditional probability for continuous attributes. We suggest LOESS; other settings are untested and may not work.</P>
+
+<P>When using m-estimate, the value of <em>m</em> parameter is set in <b>Parameter for m-estimate</b>. Similarly, when using LOESS, you can set the <b>Size of LOESS window</b>.</P>
+
+<P>If the class is binary, the classification accuracy may be increased considerably by letting the learner find the optimal classification threshold (option <b>Adjust threshold</b>). The threshold is computed from the training data. If left unchecked, the usual threshold of 0.5 is used.</P>
+
+<P>When you change one or more settings, you need to push <b>Apply</b>; this will put the new learner on the output and, if the training examples are given, construct a new classifier and output it as well.</P>
+</td>
+</tr></table>
+
+
+<h2>Examples</h2>
+
+<P>There are two typical uses of this widget. First, you may want to induce the model and check what it looks like in a <a href="Nomogram.htm">Nomogram</a>.</P>
+
+<img class="screenshot" src="NaiveBayes-SchemaClassifier.png" alt="Naive Bayesian Classifier - Schema with a Classifier" border=0>
+
+<P>The second schema compares the results of Naive Bayesian learner with another learner, a C4.5 tree.</P>
+
+<img class="screenshot"
+src="C4.5-SchemaLearner.png" alt="Naive Bayesian Classifier - Schema with a Learner" border=0>
+
+</body>
+</html>
