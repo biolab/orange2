@@ -25,7 +25,7 @@ class OWNaiveBayes(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
-        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Naive Bayesian Classifier", orange.BayesClassifier)]
+        self.outputs = [("Learner", orange.Learner),("Naive Bayesian Classifier", orange.BayesClassifier)]
                 
         # Settings
         self.m = 2.0                        # m for probability estimation
@@ -152,7 +152,6 @@ class OWNaiveBayes(OWWidget):
 #                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
                 return            
             self.classifier.name = self.name
-            self.send("Classifier", self.classifier)
             self.send("Naive Bayesian Classifier", self.classifier)
         self.error()
 
@@ -164,7 +163,6 @@ class OWNaiveBayes(OWWidget):
         else:
             self.learner = None
             self.classifier = None
-            self.send("Classifier", self.classifier)
             self.send("Naive Bayesian Classifier", self.classifier)
 
     # signal processing
