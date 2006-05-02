@@ -8,26 +8,20 @@
 """
 
 from OWWidget import *
-#from orngAssoc import *        # to ne dela, ce si v napacnem direktoriju
-
-import orngAssoc
-import string 
-
-import sys
 from qt import *
 from OWTools import *
-
+import OWGUI, sys, string
 
 class OWAssociationRulesPrint(OWWidget):
+    settingsList = ["chbSupportValue","chbConfidenceValue","chbLiftValue","chbLeverageValue","chbStrengthValue","chbCoverageValue"]
+    settingsNames = ["Support", "Confidence", "Lift", "Leverage", "Strength", "Coverage"]
+    
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Association rules viewer")
+        OWWidget.__init__(self, parent, signalManager, "Association Rules Viewer")
         
         self.inputs = [("AssociationRules", orange.AssociationRules, self.arules)]
         self.outputs = []
-        
-        self.rules=[]          # na zacetku nima vhodnih podatkov -v mainu jih dobi
-
-        # Settings
+        self.rules=[]
 
         self.chbSupportValue=1
         self.chbConfidenceValue=1
@@ -36,131 +30,49 @@ class OWAssociationRulesPrint(OWWidget):
         self.chbStrengthValue=0 
         self.chbCoverageValue=0
         
-        self.settingsList = ["chbSupportValue","chbConfidenceValue","chbLiftValue","chbLeverageValue","chbStrengthValue","chbCoverageValue"]  # list of settings
-        self.loadSettings()         # function call
+        self.loadSettings()
 
-        # GUI: CONTROL AREA
-        #QWidget(self.controlArea).setFixedSize(16, 16)
+        gbox= OWGUI.widgetBox(self.controlArea, "Measures")
+        for sn, ln in zip(self.settingsList, self.settingsNames):
+            OWGUI.checkBox(gbox, self, sn, ln, callback = self.displayRules)
 
+        sep = OWGUI.separator(self.controlArea)
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
-                # the measures - a part of settings
-        self.gbox= QVGroupBox ( "Measures", self.controlArea, "gbox" )
-        
-        self.chbSupport = QCheckBox( "Support", self.gbox, "chbSupport" ) # the checkboxes - which attribs to display
-        self.chbSupport.setChecked(self.chbSupportValue)
-        self.connect(self.chbSupport, SIGNAL("clicked()"), self.setChbSupport)
-        self.connect(self.chbSupport, SIGNAL("clicked()"), self.displayRules)
-        
-        self.chbConfidence= QCheckBox( "Confidence", self.gbox, "chbConfidence" )
-        self.chbConfidence.setChecked(self.chbConfidenceValue)
-        self.connect(self.chbConfidence, SIGNAL("clicked()"), self.setChbConfidence)
-        self.connect(self.chbConfidence, SIGNAL("clicked()"), self.displayRules)
-        
-        self.chbLift= QCheckBox( "Lift", self.gbox, "chbLift" )
-        self.chbLift.setChecked(self.chbLiftValue)
-        self.connect(self.chbLift, SIGNAL("clicked()"), self.setChbLift)
-        self.connect(self.chbLift, SIGNAL("clicked()"), self.displayRules)
-        
-        self.chbLeverage= QCheckBox( "Leverage", self.gbox, "chbLeverage" )
-        self.chbLeverage.setChecked(self.chbLeverageValue)
-        self.connect(self.chbLeverage, SIGNAL("clicked()"), self.setChbLeverage)
-        self.connect(self.chbLeverage, SIGNAL("clicked()"), self.displayRules)
-        
-        self.chbStrength= QCheckBox( "Strength", self.gbox, "chbStrength" )
-        self.chbStrength.setChecked(self.chbStrengthValue)
-        self.connect(self.chbStrength, SIGNAL("clicked()"), self.setChbStrength)
-        self.connect(self.chbStrength, SIGNAL("clicked()"), self.displayRules)
-        
-        self.chbCoverage= QCheckBox( "Coverage", self.gbox, "chbCoverage" )
-        self.chbCoverage.setChecked(self.chbCoverageValue)
-        self.connect(self.chbCoverage, SIGNAL("clicked()"), self.setChbCoverage)
-        self.connect(self.chbCoverage, SIGNAL("clicked()"), self.displayRules)
-        
-            #Save rules to file button
-        self.btnSaveToFile = QPushButton("&Save rules to file...", self.controlArea)
-        self.connect(self.btnSaveToFile,SIGNAL("clicked()"), self.saveRulesToFile)       
+        self.btnSaveToFile = OWGUI.button(self.controlArea, self, "&Save Rules to File...", self.saveRules)
 
-
-        
-####### GUI : vizualization area 
         self.layout=QVBoxLayout(self.mainArea)
-        self.edtRules = QMultiLineEdit(self.mainArea)                # we print the rules in this multi line edit
+        self.edtRules = QMultiLineEdit(self.mainArea)
         self.edtRules.setReadOnly(TRUE)
         self.layout.addWidget(self.edtRules)
-        
 
-    def setChbSupport(self):
-        self.chbSupportValue=self.chbSupport.isChecked()
+        self.resize(500, 500)        
 
-    def setChbConfidence(self):
-        self.chbConfidenceValue=self.chbConfidence.isChecked()
-
-    def setChbLift(self):
-        self.chbLiftValue=self.chbLift.isChecked()
-
-    def setChbLeverage(self):
-        self.chbLeverageValue=self.chbLeverage.isChecked()
-        
-    def setChbStrength(self):
-        self.chbStrengthValue=self.chbStrength.isChecked()
-
-    def setChbCoverage(self):
-        self.chbCoverageValue=self.chbCoverage.isChecked()
-
-    def arules(self,arules):                # nekaj dela s podatki - ta je edini channel (baje)
+    def arules(self,arules):
         self.rules=arules
         self.displayRules()
-
         
-    def saveRulesToFile(self):
+    def saveRules(self):
         dlg = QFileDialog()
         fileName = dlg.getSaveFileName( "myRules.txt", "Textfiles (*.txt)", self );
         if not fileName.isNull() :
-            f=open(str(fileName), 'w')
-            if self.rules!=0:        #this function can be called also when just the tabs are changed before the rules are built
-                ms=[]                                    # measures to be displayed (based on chkboxes)
-                if self.chbSupportValue: ms.append("support")        
-                if self.chbConfidenceValue: ms.append("confidence")  #have to do this for other measures too
-                if self.chbLiftValue: ms.append("lift")
-                if self.chbLeverageValue: ms.append("leverage")
-                if self.chbStrengthValue: ms.append("strength")
-                if self.chbCoverageValue: ms.append("coverage")
-                if ms!=[]:
-                    f.write(str( string.lstrip(reduce(lambda a,b: a+"\t"+b, ['%s' % (m[0:4]) for m in ms]))+"\trule")+'\n') # prints the first line
+            f = open(str(fileName), 'w')
+            if self.rules:
+                toWrite = [ln for sn, ln in zip(self.settingsList, self.settingsNames) if getattr(self, sn)]
+                f.write("\t".join(toWrite) + "\tRule\n")
+                toWrite = map(string.lower, toWrite)
                 for rule in self.rules:
-                    s=(orngAssoc.printRule(rule))
-                    L=string.lstrip(reduce(lambda a,b: a+"\t"+b, ['%.3f' % getattr(rule,m) for m in ms],""))    # for each rule gets the measures
-                    if L!="":
-                        f.write( L+'\t'+s+'\n')             # prints the measures and the rule        
-                    else:
-                        f.write(s+'\n')
+                    f.write("\t".join(["%.3f" % getattr(rule, m) for m in toWrite]) + "\t" + `rule` + "\n")
             f.close()
 
     def displayRules(self):
-        """ Checkes which measures are checked and displays the measures and the rules in their "normal" form."""
-        if self.rules!=0:        #this function can be called also when just the tabs are changed before the rules are built
-            ms=[]                                    # measures to be displayed (based on chkboxes)
-            if self.chbSupportValue: ms.append("support")        
-            if self.chbConfidenceValue: ms.append("confidence")  #have to do this for other measures too
-            if self.chbLiftValue: ms.append("lift")
-            if self.chbLeverageValue: ms.append("leverage")
-            if self.chbStrengthValue: ms.append("strength")
-            if self.chbCoverageValue: ms.append("coverage")
-            
-            self.edtRules.clear()
-            if ms!=[]:
-                self.edtRules.append(str( string.lstrip(reduce(lambda a,b: a+"\t"+b, ['%s' % (m[0:4]) for m in ms]))+"\trule")) # prints the first line
+        self.edtRules.clear()
+        if self.rules:
+            toWrite = [ln for sn, ln in zip(self.settingsList, self.settingsNames) if getattr(self, sn)]
+            self.edtRules.append("\t".join([x[:4] for x in toWrite]) + "\tRule\n")
+            toWrite = map(string.lower, toWrite)
             for rule in self.rules:
-                s= `rule`
-                s=s.replace(", ",",")                           # the result of categorize might have the sequence ", " that is removed
-                s=s.replace(" ","  ")                           # extend the spaces to achieve greater legibility
-                L=string.lstrip(reduce(lambda a,b: a+"\t"+b, ['%.3f' % getattr(rule,m) for m in ms],""))    # for each rule gets the measures
-                if L!="":
-                    self.edtRules.append( L+'\t'+s)             # prints the measures and the rule        
-                else:
-                    self.edtRules.append(s)
-
-
+                self.edtRules.append("\t".join(["%.3f" % getattr(rule, m) for m in toWrite]) + "\t" + `rule`.replace(" ", "  "))
 
 
 if __name__=="__main__":
@@ -169,7 +81,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
 
-    dataset = orange.ExampleTable('car.tab')
+    dataset = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
     rules=orange.AssociationRulesInducer(dataset, minSupport = 0.3, maxItemSets=15000)
     ow.arules(rules)
         

@@ -6,485 +6,319 @@
 <priority>200</priority>
 """
 
-import orange
-import orngAssoc
-from OWWidget import *
-
-import sys
-import string
-
+import orange, sys
 from qt import *
 from qtcanvas import *
+from OWWidget import *
+import OWGUI
 
 class AssociationRulesFilterCanvas(QCanvas):
-    def __init__(self, rules, numcols, numrows, support_min, support_max, confidence_min, confidence_max, cell_width, cell_height, statusBar, *args):
-        apply(QCanvas.__init__, (self, ) + args)
-        self.rules = rules
-        self.statusBar = statusBar
-        self.draw(numcols, numrows, support_min, support_max, confidence_min, confidence_max, cell_width, cell_height)
+    def __init__(self, master, widget):
+        QCanvas.__init__(self, widget)
+        self.master = master
+        self.rect = None
+        self.unselect()
+        self.draw()
+
+    def unselect(self):
+        if self.rect:
+            self.rect.hide()
+            self.rect = None
         
-    def draw(self, numcols, numrows, support_min, support_max, confidence_min, confidence_max, cell_width, cell_height):
-        # hide all cells and delete them
+        
+    def draw(self):
+        master = self.master
+        nc, nr, cw, ch, ig = master.numcols, master.numrows, master.cellwidth, master.cellheight, master.ingrid
+        scmin, scmax, srmin, srmax = master.sel_colmin, master.sel_colmax, master.sel_rowmin, master.sel_rowmax
+
+        self.resize(nc * cw +1, nr * ch +1)
+
         for a in self.allItems():
             a.hide()
-        self.cells = []        
-        
-        # nastavi se na ustrezno velikost
-        self.resize(numcols * cell_width +1, numrows * cell_height +1)
-        
-        # count rules in cells
-        rules_count = 0
-        cell_rule_counts = []
-        for x in range(numcols):
-            for y in range(numrows):
-                cell_rule_counts.append(0)
+                
+        maxcount = max([max([len(cell) for cell in row]) for row in master.ingrid])
+        maxcount = float(max(10, maxcount))
 
-        for rule in self.rules:
-            # is the rule within the cell?
-            if rule.support > support_min and rule.support <= support_max and rule.confidence > confidence_min and rule.confidence <= confidence_max:
-                rules_count += 1
-
-                x = int((rule.support - support_min) * numcols / (support_max - support_min))
-
-                # upostevaj tudi moznost, da je rezultat na robu
-                if x == (rule.support - support_min) * numcols / (support_max - support_min):
-                    x -= 1
-                y = numrows - 1 - int((rule.confidence - confidence_min) * numrows / (confidence_max - confidence_min))
-
-                # upostevaj tudi moznost, da je rezultat na robu
-                if y == numrows - 1 - ((rule.confidence - confidence_min) * numrows / (confidence_max - confidence_min)):
-                    y += 1
-
-                cell_rule_counts[x * numrows + y] += 1
-            
-
-        # poisi maksimalno stevilo pravil v celici                            
-        max_cell_rule_count = 1
-        for x in cell_rule_counts:
-            if x > max_cell_rule_count:
-                max_cell_rule_count = x
-
-        # crna naj pomeni vsaj 10 pravil
-        if max_cell_rule_count < 10:
-            max_cell_rule_count = 10
-            
-        # narisi mrezo
-        for x in range(numcols):
-            for y in range(numrows):
-                # stevilo pravil v trenutni celici
-                cell_rule_count = cell_rule_counts[x*numrows + y]
-                # nastavi velikost in polozaj posamezne celice
-                cell = QCanvasRectangle(x * cell_width, y * cell_height, cell_width+1, cell_height+1, self)
-                # nastavi barvo celice
-                if cell_rule_count == 0:
-                    cell.setBrush(QBrush(QColor(255, 255, 255)))
+        pens = [QPen(QColor(200,200,200), 1), QPen(QColor(200,200,255), 1)]
+        brushes = [QBrush(QColor(255, 255, 255)), QBrush(QColor(250, 250, 255))]
+        self.cells = []
+        for x in range(nc):
+            selx = x >= scmin and x <= scmax
+            for y in range(nr):
+                sel = selx and y >= srmin and y <= srmax
+                cell = QCanvasRectangle(x*cw, y*ch, cw+1, ch+1, self)
+                cell.setPen(pens[sel])
+                if not ig[y][x]:
+                    cell.setBrush(brushes[sel])
                 else:
-                    color = 255 - (cell_rule_count * 235 / max_cell_rule_count)
-                    cell.setBrush(QBrush(QColor(color-20, color-20, color)))
-                # nastavi barvo in tip roba celice
-                cell.setPen(QPen(QColor(200,200,200), 1));
-                # pokazi celico
+                    if sel:
+                        color = 220 - 220 * len(ig[y][x]) / maxcount
+                        cell.setBrush(QBrush(QColor(color, color, 255)))
+                    else:
+                        color = 255 - 235 * len(ig[y][x]) / maxcount
+                        cell.setBrush(QBrush(QColor(color-20, color-20, color)))
                 cell.show()
-                # shrani celico, da je garbage collector ne izbrise
-                self.cells.append(cell)
-        
-        self.update()
-        self.statusBar.message('Support('+ str(support_min) +':'+ str(support_max) +')     Confidence('+ str(confidence_min) +':'+ str(confidence_max) +')     Rules('+ str(rules_count) + ')')
 
-                
-class AssociationRulesFilterBrowser(QCanvasView):
-    def __init__(self, *args):
-        apply(QCanvasView.__init__,(self, ) + args)
-        self.rectangleDrawn = False
-        # nastavljen na fiksno velikost
+        if self.rect:
+            self.rect.hide()
+        if scmin > -1:
+            self.rect = QCanvasRectangle(scmin*cw, srmin*ch, (scmax-scmin+1)*cw, (srmax-srmin+1)*ch, self)
+            self.rect.setPen(QPen(QColor(128, 128, 255), 2))
+            self.rect.show()
+        else:
+            self.rect = None
+
+        self.update()
+        self.master.zoomBar.setText('Support (H):  %3i%% - %3i%%,   Confidence (V): %3i%% - %3i%%' % (int(master.supp_min*100), int(master.supp_max*100), int(master.conf_min*100), int(master.conf_max*100)))
+
+
+class AssociationRulesFilterView(QCanvasView):
+    def __init__(self, master, canvas, widget):
+        QCanvasView.__init__(self, canvas, widget)
+        self.master = master
+        self.canvas = canvas
         self.setFixedSize(365, 365)
+        self.selecting = False
         self.update()
 
-    # miskin klik, zapomni si koordinato    
     def contentsMousePressEvent(self, ev):
-        self.startX = ev.pos().x()
-        self.startY = ev.pos().y()
-        self.endX = self.startX+1
-        self.endY = self.startY+1
-        if (self.rectangleDrawn):
-            self.rectangle.hide()
-        else:
-            self.rectangleDrawn = True
-        self.rectangle = QCanvasRectangle(self.startX, self.startY, 1, 1, self.canvas())
-        # risi cez podlago
-        self.rectangle.setZ(1)
-        self.rectangle.setPen(QPen(QColor(Qt.gray), 2, Qt.DashLine))
-        self.rectangle.show()
-        self.canvas().update()
+        self.sel_startX = ev.pos().x()
+        self.sel_startY = ev.pos().y()
+        master = self.master
+        self.master.sel_colmin = self.master.sel_colmax = self.sel_startX / self.master.cellwidth
+        self.master.sel_rowmin = self.master.sel_rowmax = self.sel_startY / self.master.cellheight
+        self.canvas.draw()
+        self.master.updateRuleList()
 
-    # miska premaknjena, tipka se ne spuscena (javljaj dogodek za izris legende)                                                  
     def contentsMouseMoveEvent(self, ev):
-        self.endX = ev.pos().x()
-        self.endY = ev.pos().y()
-        self.emit(PYSIGNAL("sigNewAreaSelecting"), (self.startX, self.startY, self.endX, self.endY, ))
-        self.rectangle.setSize(self.endX - self.startX, self.endY - self.startY)
-        self.canvas().update()
+        self.sel_endX = ev.pos().x()
+        self.sel_endY = ev.pos().y()
+        t = self.sel_startX /self.master.cellwidth, self.sel_endX /self.master.cellwidth
+        self.master.sel_colmin, self.master.sel_colmax = min(t), max(t)
+        t = self.sel_startY /self.master.cellheight, self.sel_endY /self.master.cellheight
+        self.master.sel_rowmin, self.master.sel_rowmax = min(t), max(t)
 
-    # tipka na miski spuscena, poglej za katero tipko je slo in sprozi ustrezni dogodek            
+        self.master.sel_colmin = max(self.master.sel_colmin, 0)
+        self.master.sel_rowmin = max(self.master.sel_rowmin, 0)
+        self.master.sel_colmax = min(self.master.sel_colmax, self.master.numcols-1)
+        self.master.sel_rowmax = min(self.master.sel_rowmax, self.master.numrows-1)
+
+        self.canvas.draw()
+        self.master.updateRuleList()
+
     def contentsMouseReleaseEvent(self, ev):
-        if (self.startX > self.endX):
-            t = self.startX
-            self.startX = self.endX
-            self.endX = t
-        if (self.startY > self.endY):
-            t = self.startY
-            self.startY = self.endY
-            self.endY = t
-            
-        # popravi selekcijo na mrezo
-        #if (ev.button() & QMouseEvent.LeftButton):
-        if True:
-            if (self.startX < 0):
-                self.startX = 0
-            if (self.startY < 0):
-                self.startY = 0
-            #TODO: ne pride do collision
-            if (self.endX > self.width()):
-                self.endX = self.width()-10
-            if (self.endY > self.height()):
-                self.endY = self.height()-10
-                            
-            try:
-                items = self.canvas().collisions(QPoint(self.startX, self.startY))
-                self.startX = int(items[len(items)-1].x())
-                self.startY = int(items[len(items)-1].y())
-            except:
-                pass
-            
-            try:    
-                items = self.canvas().collisions(QPoint(self.endX, self.endY))
-                self.endX = int(items[len(items)-1].x() + items[len(items)-1].width())
-                self.endY = int(items[len(items)-1].y() + items[len(items)-1].height()) 
-            except:
-                pass
-                
-            self.rectangle.hide()
-            self.rectangle = QCanvasRectangle(self.startX +1,
-                                              self.startY +1,
-                                              self.endX - self.startX -1,
-                                              self.endY - self.startY -1,
-                                              self.canvas())
-            self.rectangle.setZ(1)
-            self.rectangle.setPen(QPen(QColor(Qt.gray), 2, Qt.DashLine))
-            self.rectangle.show()
+        self.master.sendIfAuto()
 
-        # narisi spremembe
-        self.canvas().update()
-        
-        # ali je bil pritisnjen levi ali desni miskin gumb        
-        if (ev.button() & QMouseEvent.LeftButton):    
-            self.emit(PYSIGNAL("sigNewRulesAreaSelected"),(self.startX, self.startY, self.endX, self.endY, ))
-        else:
-            self.emit(PYSIGNAL("sigNewGridAreaSelected"),(self.startX, self.startY, self.endX, self.endY, ))                                                                                                                                              
-        
+
 class OWAssociationRulesFilter(OWWidget):
+    settingsList = ["autoSend"]
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AssociationRulesFilter")
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
 
-        # zapomni si glavne karakteristike
-        self.support_max = 1.0
-        self.support_min = 0.0
-        self.confidence_max = 1.0
-        self.confidence_min = 0.0
-        self.numcols = 18
-        self.numrows = 18
-        self.cellwidth = 20
-        self.cellheight = 20
-
-        # ne rabi settings list ker nastavitve prilagaja podatkom.
-        #self.settingsList = []   
-        #self.loadSettings()                            
-
-        # attributi za gradnjo asoc. pravil
-        self.rules = []
-        self.allrules = []
-        self.dataset = []
+        self.supp_min, self.supp_max = self.conf_min, self.conf_max = 0., 1.
+        self.numcols = self.numrows = 20
+        self.cellwidth = self.cellheight = 18
+        self.autoSend = False
         
-        # poskrbi za avtomatski layout
-        self.hbox = QHBoxLayout(self.mainArea)
-        self.vbox = QVBoxLayout(self.hbox)
-        self.hbox1 = QHBoxLayout(self.vbox)
-        self.vbox1 = QVBoxLayout(self.hbox1)
-        self.vbox2 = QVBoxLayout(self.hbox1)
-        self.hbox3 = QHBoxLayout(self.vbox2)
+        self.loadSettings()
+
+        self.rules = None
+        self.selectedRules = []
+        self.noZoomButton()
+
+
+        self.mainLayout = QHBoxLayout(self.mainArea)
+        self.mainLayout.setAutoAdd(True)
+        mainLeft = OWGUI.widgetBox(self.mainArea, "Filter")
+        sep = OWGUI.separator(self.mainArea, 16, 0)
+        mainRight = OWGUI.widgetBox(self.mainArea, "Rules")
         
-        # ustvari elemente
-        self.statusBar = QStatusBar(self.mainArea)
-        self.gridGB = QGroupBox(1, QGroupBox.Vertical , 'Support Horizontal('+ str(self.support_min) +':'+ str(self.support_max) +')     Confidence Vertical('+ str(self.confidence_min) +':'+ str(self.confidence_max) +')', self.mainArea)
-        self.AssociationRulesFilterCanvas = AssociationRulesFilterCanvas(self.allrules, self.numrows, self.numcols, self.support_min, self.support_max, self.confidence_min, self.confidence_max, self.cellwidth, self.cellheight, self.statusBar, self.mainArea)
-        self.AssociationRulesFilterBrowser = AssociationRulesFilterBrowser(self.AssociationRulesFilterCanvas, self.gridGB)
-        self.edtRulesGB = QGroupBox(2, QGroupBox.Vertical , 'Rules View', self.mainArea)
-        self.edtRules = QMultiLineEdit(self.edtRulesGB)
+        self.zoomBar = OWGUI.widgetLabel(mainLeft, " ")
+        OWGUI.separator(mainLeft, 0, 4)
+        self.ruleCanvas = AssociationRulesFilterCanvas(self, mainLeft)
+        self.canvasView = AssociationRulesFilterView(self, self.ruleCanvas, mainLeft)
+
+        
+        self.suppLabel = OWGUI.widgetLabel(mainRight, "Support: ")
+        self.confLabel = OWGUI.widgetLabel(mainRight, "Confidence:")
+        OWGUI.separator(mainRight, 0, 4)
+        self.rulesLabel = OWGUI.widgetLabel(mainRight, "#rules: ")
+        OWGUI.separator(mainRight)
+        
+        self.edtRules = QMultiLineEdit(mainRight)
         self.edtRules.setReadOnly(True)
-                
-        self.support = QGroupBox(2, QGroupBox.Vertical , 'Support View', self.controlArea)
-        self.supportMinValueLabel = QLabel('MinValue:', self.support)
-        self.supportMaxValueLabel = QLabel('MaxValue:', self.support)
-        self.supportMinValueSpinBox = QSpinBox(self.support)
-        self.supportMinValueSpinBox.setRange(0, 99)
-        self.supportMinValueSpinBox.setSuffix(' %')
-        self.supportMaxValueSpinBox = QSpinBox(self.support)
-        self.supportMaxValueSpinBox.setRange(1,100)
-        self.supportMaxValueSpinBox.setSuffix(' %')
-        
-        self.confidence = QGroupBox(2, QGroupBox.Vertical , 'Confidence View', self.controlArea)
-        self.confidenceMinValueLabel = QLabel('MinValue:', self.confidence)
-        self.confidenceMaxValueLabel = QLabel('MaxValue:', self.confidence)
-        self.confidenceMinValueSpinBox = QSpinBox(self.confidence)
-        self.confidenceMinValueSpinBox.setRange(0, 99)
-        self.confidenceMinValueSpinBox.setSuffix(' %')
-        self.confidenceMaxValueSpinBox = QSpinBox(self.confidence)
-        self.confidenceMaxValueSpinBox.setRange(1,100)
-        self.confidenceMaxValueSpinBox.setSuffix(' %')
-                
-        self.buttonApply = QPushButton('Zoom In', self.controlArea)
-        self.buttonReset = QPushButton('Default Zoom', self.controlArea)
-        self.buttonShowEntire = QPushButton('No Zoom', self.controlArea)
-        
-        self.writeValuesToUser(self.support_min, self.support_max, self.confidence_min, self.confidence_max)
-        
-        # dodaj elemente na layout
-        self.vbox1.addWidget(self.gridGB)
-        self.vbox.addWidget(self.statusBar)
-        self.hbox3.addWidget(self.edtRulesGB)        
+        self.edtRules.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
-        # poberi odvecen prostor pod mrezo
-        self.vbox1spacer = QSpacerItem(0, 0, QSizePolicy.Fixed , QSizePolicy.Expanding)
-        self.vbox1.addItem(self.vbox1spacer)
+        cbox = OWGUI.widgetBox(mainRight, box=None, orientation="horizontal")
+        self.commitButton = OWGUI.button(cbox, self, "Send Rules", callback = self.sendRules)
+        OWGUI.separator(cbox, 24, 0)
+        self.autoCommit = OWGUI.checkBox(cbox, self, "autoSend", "Send rules automatically", disables=[self.commitButton])
 
-        # naj se razteguje prostor za pravila
-        self.vboxspacer = QSpacerItem(0, 0, QSizePolicy.Fixed , QSizePolicy.Fixed)
-        self.vbox.addItem(self.vboxspacer)        
-        
-        self.connect(self.buttonApply,SIGNAL("clicked()"),self.applyButtonClicked)
-        self.connect(self.buttonReset,SIGNAL("clicked()"),self.resetButtonClicked)
-        self.connect(self.buttonShowEntire,SIGNAL("clicked()"),self.showEntireButtonClicked)
-        self.connect(self.AssociationRulesFilterBrowser, PYSIGNAL("sigNewAreaSelecting"), self.slotNewAreaSelecting)
-        self.connect(self.AssociationRulesFilterBrowser, PYSIGNAL("sigNewGridAreaSelected"), self.slotNewGridAreaSelected)
-        self.connect(self.AssociationRulesFilterBrowser, PYSIGNAL("sigNewRulesAreaSelected"), self.slotNewGridAreaSelected)
-        self.connect(self,PYSIGNAL("rulesChanged"),self.displayRules)
+        boxb = OWGUI.widgetBox(mainLeft, box=None, orientation="horizontal")
+        OWGUI.button(boxb, self, 'Zoom', callback = self.zoomButton)
+        OWGUI.button(boxb, self, 'Show All', callback = self.showAllButton)
+        OWGUI.button(boxb, self, 'No Zoom', callback = self.noZoomButton)
+        OWGUI.separator(boxb, 16, 8)
+        OWGUI.button(boxb, self, 'Unselect', callback = self.unselect)
+
+        self.controlArea.setFixedSize(0, 0)
+        self.resize(800, 380)
+
     
-    # draw grid for the stored data
-    def redrawGrid(self):
-        if self.support_min == self.support_max:
-            self.support_max = self.support_max + 0.01
-        if self.confidence_max == self.confidence_min:
-            self.confidence_max = self.confidence_max + 0.01
+    def checkScale(self):
+        if self.supp_min == self.supp_max:
+            self.supp_max += 0.01
+        if self.conf_max == self.conf_min:
+            self.conf_max += 0.01
+        self.suppInCell = (self.supp_max - self.supp_min) / self.numcols
+        self.confInCell = (self.conf_max - self.conf_min) / self.numrows
 
-        self.gridGB.setTitle('Support Horizontal('+ str(self.support_min) +':'+ str(self.support_max) +')     Confidence Vertical('+ str(self.confidence_min) +':'+ str(self.confidence_max) +')')        
-        self.AssociationRulesFilterCanvas.draw(self.numcols, self.numrows, self.support_min, self.support_max, self.confidence_min, self.confidence_max, self.cellwidth, self.cellheight)
-        
-    # update the info windows
-    def writeValuesToUser(self, support_min, support_max, confidence_min, confidence_max):
-        self.supportMinValueSpinBox.setValue(support_min * 100)
 
-        # upostevaj tudi tisocice pri support in confidence max
-        if int(support_max * 100) < 100 * support_max:
-            self.supportMaxValueSpinBox.setValue(support_max * 100 + 1)
+    def unselect(self):
+        self.sel_colmin = self.sel_colmax = self.sel_rowmin = self.sel_rowmax = -1
+
+        if hasattr(self, "edtRules"):
+            edtRules = self.edtRules
+            edtRules.clear()
+            self.selectedRules = []
+            for row in self.ingrid:
+                for cell in row:
+                    for rule in cell:
+                        edtRules.append(`rule`)
+                        self.selectedRules.append(rule)
+
+            if hasattr(self, "confLabel"):
+                self.updateConfSupp()            
+
+        if hasattr(self, "ruleCanvas"):
+            self.ruleCanvas.unselect()
+            self.ruleCanvas.draw()
+
+        self.sendIfAuto()            
+
+
+    def updateConfSupp(self):
+        if self.sel_colmin >= 0:
+            smin, cmin = self.coordToSuppConf(self.sel_colmin, self.sel_rowmin)
+            smax, cmax = self.coordToSuppConf(self.sel_colmax+1, self.sel_rowmax+1)
         else:
-            self.supportMaxValueSpinBox.setValue(support_max * 100)
+            smin, cmin = self.supp_min, self.conf_min
+            smax, cmax = self.supp_max, self.conf_max
+            
+        self.confLabel.setText("Confidence: %3i%% - %3i%%" % (round(100*cmin), round(100*cmax)))
+        self.suppLabel.setText("Support: %3i%% - %3i%%" % (round(100*smin), round(100*smax)))
+        numlines = self.edtRules.numLines()
+        if numlines == 1 and not str(self.edtRules.textLine(0)).strip():
+            numlines = 0
+        self.rulesLabel.setText("Number of rules: %i" % numlines)
+
+    # This function doesn't send anything to output! (Shouldn't because it's called by the mouse move event)            
+    def updateRuleList(self):
+        edtRules = self.edtRules
+        edtRules.clear()
+        self.selectedRules = []
+        for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]:
+            for cell in row[self.sel_colmin : self.sel_colmax+1]:
+                for rule in cell:
+                    edtRules.append(`rule`)
+                    self.selectedRules.append(rule)
+                    
+        self.updateConfSupp()
+
+
+    def setIngrid(self):
+        smin, sic, cmin, cic = self.supp_min, self.suppInCell, self.conf_min, self.confInCell
+        self.ingrid = [[[] for x in range(self.numcols)] for y in range(self.numrows)]
+        if self.rules:
+            for r in self.rules:
+                self.ingrid[min(self.numrows-1, int((r.confidence - cmin) / cic))][min(self.numcols-1, int((r.support - smin) / sic))].append(r)
+
+
+    def coordToSuppConf(self, col, row):
+        return self.supp_min + col * self.suppInCell, self.conf_min + row * self.confInCell
+    
+    def zoomButton(self):
+        if self.sel_rowmin >= 0:
+            print "ZB", self.sel_colmin, self.sel_colmax, self.sel_rowmin, self.sel_rowmax
+            # have to compute both at ones!
+            self.supp_min, self.conf_min, self.supp_max, self.conf_max = self.coordToSuppConf(self.sel_colmin, self.sel_rowmin) + self.coordToSuppConf(self.sel_colmax+1, self.sel_rowmax+1)
+            print "ZB", self.supp_min, self.supp_max, self.conf_min, self.conf_max
+            self.checkScale()
+
+            smin, sic, cmin, cic = self.supp_min, self.suppInCell, self.conf_min, self.confInCell
+            newingrid = [[[] for x in range(self.numcols)] for y in range(self.numrows)]
+            for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]:
+                for cell in row[self.sel_colmin : self.sel_colmax+1]:
+                    for rule in cell:
+                        inrow = (rule.confidence - cmin) / cic
+                        if inrow >= 0 and inrow < self.numrows + 1e-3:
+                            incol = (rule.support - smin) / sic
+                            if incol >= 0 and incol < self.numcols + 1e-3:
+                                newingrid[min(int(inrow), self.numrows-1)][min(int(incol), self.numcols-1)].append(rule)
+            self.ingrid = newingrid
+
+            self.unselect()
+            self.ruleCanvas.draw()
+            self.sendIfAuto()
+
+
+    def rezoom(self, smi, sma, cmi, cma):
+        self.supp_min, self.supp_max, self.conf_min, self.conf_max = smi, sma, cmi, cma
+        self.checkScale() # to set the inCell
+        self.setIngrid()
+        self.unselect()
+        if hasattr(self, "ruleCanvas"):
+            self.ruleCanvas.draw()
+        self.sendIfAuto()
         
-        self.confidenceMinValueSpinBox.setValue(confidence_min * 100)
-        if int(confidence_max * 100) < 100 * confidence_max:
-            self.confidenceMaxValueSpinBox.setValue(confidence_max * 100 + 1)
+    def showAllButton(self):
+        self.rezoom(self.supp_allmin, self.supp_allmax, self.conf_allmin, self.conf_allmax)
+
+    def noZoomButton(self):
+        self.rezoom(0., 1., 0., 1.)
+        
+    def setSelectionBar(self):
+        if getattr(self, "sel_supp_min", -1) >= 0:
+            self.selectionBar.setText('Selection:   Support: %3i%% - %3i%%,  Confidence: %3i%% - %3i%%' % (int(100*self.sel_supp_min), int(100*self.sel_supp_max), int(100*self.sel_conf_min), int(100*self.sel_conf_max)))
         else:
-            self.confidenceMaxValueSpinBox.setValue(confidence_max * 100)
+            self.selectionBar.clear()
+
+    def sendIfAuto(self):
+        if self.autoSend:
+            self.sendRules()
         
-        #self.gridsettingsCellWidthSpinBox.setValue(self.cellwidth)
-        #self.gridsettingsCellHeightSpinBox.setValue(self.cellheight)
-        #self.gridsettingsCellColNumSpinBox.setValue(self.numcols)
-        #self.gridsettingsCellRowNumSpinBox.setValue(self.numrows)
+    def sendRules(self):
+        self.send("Association Rules", orange.AssociationRules(self.selectedRules))
     
-    # podatke iz okenc preberi v podatke, ki jih hranis
-    def readValuesFromUser(self):
-        #self.numcols = self.gridsettingsCellColNumSpinBox.value()
-        #self.numrows = self.gridsettingsCellRowNumSpinBox.value()
-        #self.cellwidth = self.gridsettingsCellWidthSpinBox.value()
-        #self.cellheight = self.gridsettingsCellHeightSpinBox.value()
-        
-        self.confidence_min = float(self.confidenceMinValueSpinBox.value()) / 100
-        self.confidence_max = float(self.confidenceMaxValueSpinBox.value()) / 100
-        
-        self.support_min = float(self.supportMinValueSpinBox.value()) / 100
-        self.support_max = float(self.supportMaxValueSpinBox.value()) / 100
-        
-    def applyButtonClicked(self):
-        self.statusBar.clear()
-        self.readValuesFromUser()
-        self.redrawGrid()
-
-    def resetButtonClicked(self):
-        self.statusBar.clear()
-        del(self.rules[:])
-        self.rules.extend(self.allrules)
-
-        # nastavi priporoceno obmocje
-        if len(self.allrules) > 0:
-            rule = self.allrules[0]
-            self.support_max = rule.support
-            self.support_min = rule.support
-            self.confidence_max = rule.confidence
-            self.confidence_min = rule.confidence
-            for rule in self.allrules:
-                if rule.confidence > self.confidence_max:
-                    self.confidence_max = rule.confidence
-                if rule.confidence < self.confidence_min:
-                    self.confidence_min = rule.confidence
-                if rule.support > self.support_max:
-                    self.support_max = rule.support
-                if rule.support < self.support_min:
-                    self.support_min = rule.support
-
-            # zaradi kasnejsih preverjanj pogojev rule.support < support_min in rule.confidence < confidence_min
-            if self.support_min == round(self.support_min, 2):
-                self.support_min -= 0.01
-            if self.confidence_min == round(self.confidence_min, 2):
-                self.confidence_min -= 0.01
+    def arules(self,rules):
+        self.rules = rules
+        if self.rules:
+            self.supp_min = self.conf_min = 1
+            self.supp_max = self.conf_max = 0
+            for rule in self.rules:
+                self.conf_min = min(self.conf_min, rule.confidence)
+                self.conf_max = max(self.conf_max, rule.confidence)
+                self.supp_min = min(self.supp_min, rule.support)
+                self.supp_max = max(self.supp_max, rule.support)
+            self.checkScale()
         else:
-            self.support_max = 1.0
-            self.support_min = 0.0
-            self.confidence_max = 1.0
-            self.confidence_min = 0.0
-            
-        self.writeValuesToUser(self.support_min, self.support_max, self.confidence_min, self.confidence_max)
-        self.readValuesFromUser()
-        self.redrawGrid()
-        self.emit(PYSIGNAL("rulesChanged"), (self.rules,))  #send a signal that new rules are to be vizualized                                    
-        
+            self.supp_min, self.supp_max = self.conf_min, self.conf_max = 0., 1.
 
-    def showEntireButtonClicked(self):
-        self.statusBar.clear()
-        self.support_max = 1.0
-        self.support_min = 0.0
-        self.confidence_max = 1.0
-        self.confidence_min = 0.0
-        del(self.rules[:])
-        self.rules.extend(self.allrules)
-        self.writeValuesToUser(self.support_min, self.support_max, self.confidence_min, self.confidence_max)
-        self.redrawGrid()
-        self.emit(PYSIGNAL("rulesChanged"), (self.rules,))  #send a signal that new rules are to be vizualized                                    
-        
-    
-    def slotNewAreaSelecting(self, x1, y1, x2, y2):
-        if x1 > x2:
-            t = x2
-            x2 = x1
-            x1 = t
-        if y1 > y2:
-            t = y2
-            y2 = y1
-            y1 = t
-        
-        if x2 - x1 > 10:
-            if y2 - y1 > 10:
-                support_min = self.support_min
-                support_max = self.support_max
-                confidence_min = self.confidence_min
-                confidence_max = self.confidence_max 
+        self.supp_allmin, self.supp_allmax, self.conf_allmin, self.conf_allmax = self.supp_min, self.supp_max, self.conf_min, self.conf_max
+        self.rezoom(self.supp_allmin, self.supp_allmax, self.conf_allmin, self.conf_allmax)
 
-                support_min += x1 * (self.support_max - self.support_min) / self.AssociationRulesFilterCanvas.width()
-                support_max -= (self.AssociationRulesFilterCanvas.width() - x2) * (self.support_max - self.support_min) / self.AssociationRulesFilterCanvas.width()
-                confidence_min += (self.AssociationRulesFilterCanvas.height() - y2) * (self.confidence_max - self.confidence_min) / self.AssociationRulesFilterCanvas.height()
-                confidence_max -= y1 * (self.confidence_max - self.confidence_min) / self.AssociationRulesFilterCanvas.height()
-                                                
-                if not support_min > 0:
-                    support_min = 0
-                
-                if not support_max < 1:
-                    support_max = 1
-                
-                if not confidence_min > 0:
-                    confidence_min = 0
-                
-                if not confidence_max < 1:
-                    confidence_max = 1
 
-                # normaliziraj na normalno stevilo digitalk
-                confidence_max = round(confidence_max, 3)
-                confidence_min = round(confidence_min, 3)
-                support_min = round(support_min, 3)
-                support_max = round(support_max, 3)
-                
-                self.statusBar.message('Support('+ str(support_min) +':'+ str(support_max) +')     Confidence('+ str(confidence_min) +':'+ str(confidence_max) +')', 30000)
-                     
-    def slotNewGridAreaSelected(self, x1, y1, x2, y2):
-        if x1 > x2:
-            t = x2
-            x2 = x1
-            x1 = t
-        if y1 > y2:
-            t = y2
-            y2 = y1
-            y1 = t
-            
-        if x2 - x1 > 10:
-            if y2 - y1 > 10:
-                support_min = self.support_min
-                support_max = self.support_max
-                confidence_min = self.confidence_min
-                confidence_max = self.confidence_max 
-
-                x11 = (x1+1) * self.numcols / self.AssociationRulesFilterCanvas.width() 
-                x12 = (x2) * self.numcols / self.AssociationRulesFilterCanvas.width()
-                y11 = (y2) * self.numrows / self.AssociationRulesFilterCanvas.height() 
-                y12 = (y1+1) * self.numrows / self.AssociationRulesFilterCanvas.height()
-
-                support_min = (self.support_max - self.support_min) / (self.numcols) * x11 + self.support_min
-                support_max = (self.support_max - self.support_min) / (self.numcols) * x12 + self.support_min
-                confidence_min = ((self.numrows) - y11) * (self.confidence_max - self.confidence_min) / (self.numrows) + self.confidence_min
-                confidence_max = ((self.numrows) - y12) * (self.confidence_max - self.confidence_min) / (self.numrows) + self.confidence_min
-
-                support_min = round(max(support_min, 0.0), 3)
-                support_max = round(min(support_max, 1.0), 3)
-                confidence_min = round(max(confidence_min, 0.0), 3)
-                confidence_max = round(min(confidence_max, 1.0), 3)
-
-                rules_count = 0
-                del (self.rules[:])
-                for rule in self.allrules:
-                    if round(rule.support, 3) >= support_min:
-                        if round(rule.support, 3) <= support_max:
-                            if round(rule.confidence, 3) >= confidence_min:
-                                if round(rule.confidence, 3) <= confidence_max:
-                                    rules_count = rules_count + 1
-                                    self.rules.append(rule)
-            
-                self.writeValuesToUser( support_min, support_max, confidence_min, confidence_max )
-                self.statusBar.message('Support('+ str(support_min) +':'+ str(support_max) +')     Confidence('+ str(confidence_min) +':'+ str(confidence_max) +')     Rules('+ str(rules_count) + ')')
-
-                self.emit(PYSIGNAL("rulesChanged"), (self.rules,))  #send a signal that new rules are to be vizualized                                    
-            
-                #self.redrawGrid()
-                
-    
-    def displayRules(self, x):
-        self.edtRules.clear()
-        for rule in self.rules:
-            self.edtRules.append(`rule`)
-        self.send("Association Rules", self.rules)
-
-    def arules(self,rules):                # channel po katerem dobi podatke
-        del(self.allrules[:])
-        self.allrules.extend(rules)
-        
-        self.resetButtonClicked()
-        
+       
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWAssociationRulesFilter()
     a.setMainWidget(ow)
-    ow.resize(750, 380)
 
 
-    dataset = orange.ExampleTable('car.tab')
+    dataset = orange.ExampleTable('../../doc/datasets/car.tab')
     rules=orange.AssociationRulesInducer(dataset, minSupport = 0.3, maxItemSets=15000)
     ow.arules(rules)
 

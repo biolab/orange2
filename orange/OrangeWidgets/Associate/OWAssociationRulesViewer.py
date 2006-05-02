@@ -30,7 +30,9 @@ class OWAssociationRulesViewer(OWWidget):
  
         self.settingsList = ["treeDepth", "showWholeRules"]
 
-        OWGUI.hSlider(self.space, self, "treeDepth", "Tree depth", minValue = 0, maxValue = 10, step = 1, callback = self.displayRules)
+        
+        OWGUI.widgetLabel("Tree depth")
+        OWGUI.hSlider(self.controlArea, self, "treeDepth", minValue = 0, maxValue = 10, step = 1, callback = self.displayRules)
 
         self.layout=QVBoxLayout(self.mainArea)
         self.treeRules = QListView(self.mainArea,'ListView')       #the rules and their properties are printed into this QListView
@@ -45,7 +47,7 @@ class OWAssociationRulesViewer(OWWidget):
 ##            OWGUI.checkBox(self.gbox, self, "show" + attr, attr, callback = self.displayRules)
             self.treeRules.addColumn(self.tr(attr), 60)
         
-        OWGUI.checkBox(self.space, self, "showWholeRules", "Display whole rules", callback = self.setWholeRules)
+        OWGUI.checkBox(self.controlArea, self, "showWholeRules", "Display whole rules", callback = self.setWholeRules)
         self.showSupport = self.showConfidence = 1
         self.loadSettings()
 
@@ -156,7 +158,7 @@ if __name__=="__main__":
     ow=OWAssociationRulesViewer()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('car.tab')
+    dataset = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
     rules=orange.AssociationRulesInducer(dataset, minSupport = 0.3, maxItemSets=15000)
     ow.arules(rules)
     
