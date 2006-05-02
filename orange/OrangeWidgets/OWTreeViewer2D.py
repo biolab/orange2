@@ -625,7 +625,7 @@ class OWTreeViewer2D(OWWidget):
         # Node information
 
 
-        OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator)
+        OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator, debuggingEnabled = 0)
         findbox = QHBox(self.controlArea)
         self.centerRootButton=OWGUI.button(findbox, self, "Find Root", callback=lambda :self.rootNode and self.canvasView.center(self.rootNode.x(),
                                                                                                                       self.rootNode.y()))
