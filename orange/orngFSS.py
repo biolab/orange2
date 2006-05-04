@@ -1,8 +1,3 @@
-### Janez 03-02-14: The two classes for removal of redundant values
-###                 were merged and moved to orngCI
-### Inform Blaz and remove this comment
-
-
 import orange
 
 ##############################################################################
@@ -12,8 +7,8 @@ def attMeasure(data, measure = orange.MeasureAttribute_relief(k=20, m=50)):
   """
   Assesses the quality of attributes using the given measure, outputs the results and
   returns a sorted list of tuples (attribute name, measure)
-  Arguments: data           example table
-             measure        an attribute measure (derived from orange.MeasureAttribute)
+  Arguments: data       example table
+             measure    an attribute scoring function (derived from orange.MeasureAttribute)
   Result:    a sorted list of tuples (attribute name, measure)
   """
   measl=[]
@@ -25,59 +20,59 @@ def attMeasure(data, measure = orange.MeasureAttribute_relief(k=20, m=50)):
 #    print "%25s, %6.3f" % (i[0], i[1])
   return measl
 
-def bestNAtts(relevancies, N):
+def bestNAtts(scores, N):
   """
   Returns the first N attributes from the list returned by function attMeasure.
-  Arguments: relevancies   a list such as one returned by "attMeasure"
+  Arguments: scores   a list such as one returned by "attMeasure"
              N             the number of attributes
   Result: the first N attributes (without measures)
   """
-  return map(lambda x:x[0], relevancies[:N])
+  return map(lambda x:x[0], scores[:N])
 
-def attsAbovethreshold(relevancies, threshold=0.0):
+def attsAbovethreshold(scores, threshold=0.0):
   """
   Returns attributes from the list returned by function attMeasure that
-  have the relevancy above or equal to a specified threshold
-  Arguments: relevancies   a list such as one returned by "attMeasure"
+  have the score above or equal to a specified threshold
+  Arguments: scores   a list such as one returned by "attMeasure"
              threshold      threshold, default is 0.0
   Result: the first N attributes (without measures)
   """
-  pairs = filter(lambda x, t=threshold: x[1] > t, relevancies)
+  pairs = filter(lambda x, t=threshold: x[1] > t, scores)
   return map(lambda x:x[0], pairs)
 
-def selectBestNAtts(data, relevancies, N):
+def selectBestNAtts(data, scores, N):
   """
   Constructs and returns a new set of examples that includes a
-  class and only N best attributes from a list relevancies
+  class and only N best attributes from a list scores
   Arguments: data          an example table
-             relevancies   a list such as one returned by "attMeasure"
+             scores   a list such as one returned by "attMeasure"
              N             the number of attributes
   Result: data with the first N attributes (without measures)
   """
-  return data.select(bestNAtts(relevancies, N)+[data.domain.classVar.name])
+  return data.select(bestNAtts(scores, N)+[data.domain.classVar.name])
 
 
-def selectAttsAboveThresh(data, relevancies, threshold=0.0):
+def selectAttsAboveThresh(data, scores, threshold=0.0):
   """
   Constructs and returns a new set of examples that includes a
   class and attributes from the list returned by function attMeasure that
-  have the relevancy above or equal to a specified threshold
+  have the score above or equal to a specified threshold
   Arguments: data          an example table
-             relevancies      a list such as one returned by "attMeasure"
+             scores      a list such as one returned by "attMeasure"
              threshold      threshold, default is 0.0
   Result: the first N attributes (without measures)
   """
-  return data.select(attsAbovethreshold(relevancies, threshold)+[data.domain.classVar.name])
+  return data.select(attsAbovethreshold(scores, threshold)+[data.domain.classVar.name])
 
 
 def filterRelieff(data, measure = orange.MeasureAttribute_relief(k=20, m=50), margin=0):
   """
   Takes the data set and an attribute measure (Relief by default). Estimates
-  attibute relevancy by the measure, removes worst attribute if its measure
-  is below the margin. Repeats, until no attribute has negative or zero relevancy.
+  attibute score by the measure, removes worst attribute if its measure
+  is below the margin. Repeats, until no attribute has negative or zero score.
   Arguments: data          an example table
              measure       an attribute measure (derived from mlpy.MeasureAttribute)
-             margin        if relevance is higher than margin, attribute is not removed
+             margin        if score is higher than margin, attribute is not removed
   """
   measl = attMeasure(data, measure)
   
@@ -158,8 +153,7 @@ class FilteredClassifier:
   def __call__(self, example, resultType = orange.GetValue):
     return self.classifier(example, resultType)
   def atts(self):
-    return self.domain.attributes
-  
+    return self.domain.attributes  
 
 class StepwiseLearner_Class:
   def __init__(self, **kwds):
