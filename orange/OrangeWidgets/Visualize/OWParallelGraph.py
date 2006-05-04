@@ -142,7 +142,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if not haveSubsetData: subsetReferencesToDraw = []
         else:                  subsetReferencesToDraw = [example.reference() for example in self.subsetData]
         validData = self.getValidList(indices)
-        shownSubsetCount = 0
         for i in range(dataSize):
             if not validData[i]:
                 self.curvePoints.append([]) # add an empty list
@@ -168,6 +167,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     curves[0].append(curve)
                 else:
                     curves[1].append(curve)
+                    if subsetReferencesToDraw:
+                        subsetReferencesToDraw.remove(self.rawdata[i].reference())
                     
             curve.setPen(QPen(newColor, 1))
             if not dataStop:
@@ -183,7 +184,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 curve.setStyle(QwtCurve.Spline)
 
         # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-        if haveSubsetData and shownSubsetCount < len(self.subsetData):
+        
+        if subsetReferencesToDraw != []:
             for i in range(len(self.subsetData)):
                 if not self.subsetData[i].reference() in subsetReferencesToDraw: continue
                 subsetReferencesToDraw.remove(self.subsetData[i].reference())
@@ -311,10 +313,10 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     if data[i][c] == (): continue
                     x = i - 0.03*(len(data[i])-1)/2.0 + c*0.03
                     col = self.discPalette[c]
-                    self.addCurve("", col, col, 3, QwtCurve.Lines, QwtSymbol.Diamond, xData = [x,x,x], yData = [data[i][c][0], data[i][c][1], data[i][c][2]], lineWidth = 4)
-                    self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][0], data[i][c][0]], lineWidth = 4)
-                    self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][1], data[i][c][1]], lineWidth = 4)
-                    self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][2], data[i][c][2]], lineWidth = 4)
+                    self.nonDataKeys.append(self.addCurve("", col, col, 3, QwtCurve.Lines, QwtSymbol.Diamond, xData = [x,x,x], yData = [data[i][c][0], data[i][c][1], data[i][c][2]], lineWidth = 4))
+                    self.nonDataKeys.append(self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][0], data[i][c][0]], lineWidth = 4))
+                    self.nonDataKeys.append(self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][1], data[i][c][1]], lineWidth = 4))
+                    self.nonDataKeys.append(self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][2], data[i][c][2]], lineWidth = 4))
 
             # draw lines with mean/median values
             classCount = 1
@@ -327,9 +329,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 for i in range(len(data)):
                     if data[i] != [()]: ys.append(data[i][c][1]); xs.append(i+diff)
                     else:
-                        if len(xs) > 1: self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4)
+                        if len(xs) > 1: self.nonDataKeys.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4))
                         xs = []; ys = []
-                self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4)
+                self.nonDataKeys.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4))
 
         
         # ##################################################

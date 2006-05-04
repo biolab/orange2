@@ -89,7 +89,6 @@ class OWParallelCoordinates(OWVisWidget):
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.flipAttribute)
 
         self.optimizationDlg = ParallelOptimization(self, signalManager = self.signalManager)
-        self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
         self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "Optimization dialog", callback = self.optimizationDlg.reshow, debuggingEnabled = 0)
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
@@ -223,28 +222,28 @@ class OWParallelCoordinates(OWVisWidget):
     def setShownAttributeList(self, data, shownAttributes = None):
         shown = []
         hidden = []
+        if not data: return
 
-        if data:
-            if shownAttributes:
-                if type(shownAttributes[0]) == tuple:
-                    shown = shownAttributes
-                else:
-                    domain = self.data.domain
-                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
-                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
+        if shownAttributes:
+            if type(shownAttributes[0]) == tuple:
+                shown = shownAttributes
             else:
-                shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
-                shown = [(attr, data.domain[attr].varType) for attr in shown]
-                hidden = [(attr, data.domain[attr].varType) for attr in hidden]
-                if self.showAllAttributes:
-                    shown += hidden
-                    hidden = []
-                else:
-                    hidden = shown[10:] + hidden
-                    shown = shown[:10]
-                    
-            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown + hidden:
-                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
+                domain = data.domain
+                shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
+            hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
+        else:
+            shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+            shown = [(attr, data.domain[attr].varType) for attr in shown]
+            hidden = [(attr, data.domain[attr].varType) for attr in hidden]
+            if self.showAllAttributes:
+                shown += hidden
+                hidden = []
+            else:
+                hidden = shown[10:] + hidden
+                shown = shown[:10]
+                
+        if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown + hidden:
+            hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
 
         self.shownAttributes = shown
         self.hiddenAttributes = hidden
@@ -257,29 +256,6 @@ class OWParallelCoordinates(OWVisWidget):
     def sendShownAttributes(self):
         self.send("Attribute Selection List", self.getShownAttributeList())
 
-    # #############################
-    # if user clicks new attribute list in optimization dialog, we update shown attributes
-    def showSelectedAttributes(self):
-        attrList = self.optimizationDlg.getSelectedAttributes()
-        if not attrList: return
-
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-        self.graph.removeAllSelections()
-
-        for attr in attrList:
-            self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
-        for attr in self.data.domain.attributes:
-            if attr.name not in attrList:
-                self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-
-        if self.optimizationDlg.optimizationMeasure == VIZRANK:
-            self.middleLabels = "VizRank"
-        else:
-            self.middleLabels = "Correlations"
-        self.updateGraph()
-        self.sendShownAttributes()
-    
     # #############################################
 
     # had to override standart show to call updateGraph. otherwise self.mainArea.width() gives incorrect value    
@@ -422,6 +398,10 @@ class OWParallelCoordinates(OWVisWidget):
         c.setColorSchemas(self.colorSettings)
         return c
 
+    def destroy(self, dw = 1, dsw = 1):
+        self.optimizationDlg.hide()
+        OWWidget.destroy(self, dw, dsw)
+
 
 CORRELATION = 0
 VIZRANK = 1
@@ -480,6 +460,8 @@ class ParallelOptimization(OWBaseWidget):
 
         self.resultList = QListBox(self.resultsBox)
         self.resultList.setMinimumSize(200,200)
+        self.connect(self.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
+        
               
         # remove non-existing files
         names = []
@@ -488,14 +470,14 @@ class ParallelOptimization(OWBaseWidget):
             if not os.path.exists(longName):
                 self.fileBuffer.remove((short, longName))
             else: names.append(short)
-        if len(self.fileBuffer) > 0: self.fileName = self.fileBuffer[0][0]
+        names.append("(None)")
+        self.fileName = "(None)"
                 
         self.hbox1 = OWGUI.widgetBox(self.vizrankSettingsBox, " VizRank projections file ", orientation = "horizontal")
         self.vizrankFileCombo = OWGUI.comboBox(self.hbox1, self, "fileName", items = names, tooltip = "File that contains information about interestingness of scatterplots \ngenerated by VizRank method in scatterplot widget", callback = self.changeProjectionFile, sendSelectedValue = 1, valueType = str)
         self.browseButton = OWGUI.button(self.hbox1, self, "...", callback = self.loadProjections)
         self.browseButton.setMaximumWidth(20)
-        
-        
+
         self.resultsInfoBox = OWGUI.widgetBox(self.vizrankSettingsBox, " VizRank parameters ")
         self.kNeighborsLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Number of neighbors (k):")
         self.percentDataUsedLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Percent of data used:")
@@ -522,8 +504,8 @@ class ParallelOptimization(OWBaseWidget):
 
         
         self.clearButton = OWGUI.button(self.manageBox, self, "Clear results", self.clearResults)
-        self.loadButton = OWGUI.button(self.manageBox, self, "Load", self.loadResults)
-        self.saveButton = OWGUI.button(self.manageBox, self, "Save", self.saveResults)
+        self.loadButton  = OWGUI.button(self.manageBox, self, "Load", self.loadResults)
+        self.saveButton  = OWGUI.button(self.manageBox, self, "Save", self.saveResults)
         self.closeButton = OWGUI.button(self.manageBox, self, "Close dialog", self.hide)
 
         self.changeProjectionFile()
@@ -539,6 +521,17 @@ class ParallelOptimization(OWBaseWidget):
 
     def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()
+
+    # if user clicks new attribute list in optimization dialog, we update shown attributes
+    def showSelectedAttributes(self):
+        attrList = self.getSelectedAttributes()
+        if not attrList: return
+
+        self.parallelWidget.setShownAttributeList(self.parallelWidget.data, attrList)
+        self.parallelWidget.graph.removeAllSelections()
+
+        self.parallelWidget.middleLabels = (self.optimizationMeasure == VIZRANK and "VizRank") or "Correlations"
+        self.parallelWidget.updateGraph()
 
     def setAllAttributeRadio(self):
         self.orderAllAttributes = 1
@@ -606,7 +599,7 @@ class ParallelOptimization(OWBaseWidget):
 
         file = open(name, "rt")
         settings = eval(file.readline()[:-1])
-        if settings.has_key("parentName") and settings["parentName"] != "ScatterPlot":
+        if settings.has_key("parentName") and settings["parentName"].lower() != "scatterplot":
             QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. Only projection file generated by scatterplot is compatible. \nThis file was created using %s method'%(settings["parentName"]), QMessageBox.Ok)
             file.close()
             return
@@ -702,10 +695,10 @@ class ParallelOptimization(OWBaseWidget):
             attrs = [attr.name for attr in self.parallelWidget.data.domain.attributes]
             for (v, a1, a2) in attrInfo:
                 if a1 not in attrs:
-                    print "attribute ", a1, " was not found in the data set. Probably wrong VizRank projections file is loaded."
+                    print "attribute " + a1 + " was not found in the data set. You probably loaded wrong file with VizRank projections."
                     return
                 if a2 not in attrs:
-                    print "attribute ", a2, " was not found in the data set. Probably wrong VizRank projections file is loaded."
+                    print "attribute " + a2 + " was not found in the data set. You probably loaded wrong file with VizRank projections."
                     return
 
         if len(attrInfo) == 0:
