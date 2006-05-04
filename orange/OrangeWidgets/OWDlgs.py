@@ -1,8 +1,8 @@
 import os
-from qwt import QwtPlot
-from qtcanvas import QCanvas
 from OWBaseWidget import *
 import OWGUI, OWGraphTools, OWTools
+from qwt import QwtPlot
+from qtcanvas import QCanvas
 from ColorPalette import *
         
 class OWChooseImageSizeDlg(OWBaseWidget):
@@ -388,7 +388,11 @@ class ColorPalette(OWBaseWidget):
     def moveAttrUP(self):
         for i in range(1, self.discListbox.count()):
             if self.discListbox.isSelected(i):
-                self.discListbox.insertItem(self.discListbox.pixmap(i), self.discListbox.text(i-1), i-1)
+                pixI, textI = self.discListbox.pixmap(i-1), self.discListbox.text(i)
+                pixII, textII = self.discListbox.pixmap(i), self.discListbox.text(i-1)
+                self.discListbox.insertItem(pixI, textI, i-1)
+                self.discListbox.insertItem(pixII, textII, i-1)
+                self.discListbox.removeItem(i+1)
                 self.discListbox.removeItem(i+1)
                 self.discListbox.setSelected(i-1, TRUE)
                 self.discreteColors.insert(i-1, self.discreteColors.pop(i))
@@ -399,10 +403,15 @@ class ColorPalette(OWBaseWidget):
         count = self.discListbox.count()
         for i in range(count-2,-1,-1):
             if self.discListbox.isSelected(i):
-                self.discListbox.insertItem(self.discListbox.pixmap(i), self.discListbox.text(i+2), i+2)
-                self.discListbox.removeItem(i)
+                pixI, textI = self.discListbox.pixmap(i+1), self.discListbox.text(i)
+                pixII, textII = self.discListbox.pixmap(i), self.discListbox.text(i+1)
+                self.discListbox.insertItem(pixI, textI, i)
+                self.discListbox.insertItem(pixII, textII, i+1)
+                self.discListbox.removeItem(i+2)
+                self.discListbox.removeItem(i+2)
                 self.discListbox.setSelected(i+1, TRUE)
                 self.discreteColors.insert(i+1, self.discreteColors.pop(i))
+                
 
     # #####################################################
         
@@ -419,7 +428,7 @@ class ColorPalette(OWBaseWidget):
         return ContinuousPaletteGenerator(c1, c2, b)
 
     def getDiscretePalette(self):
-        return OWGraphTools.ColorPaletteGenerator([(c.red(), c.green(), c.blue()) for c in self.discreteColors])
+        return OWGraphTools.ColorPaletteGenerator(rgbColors = [(c.red(), c.green(), c.blue()) for c in self.discreteColors])
 
     def getColorSchemas(self):
         return self.colorSchemas
