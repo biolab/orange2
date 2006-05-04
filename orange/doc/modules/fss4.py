@@ -1,5 +1,3 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Demonstrates the use of orngFSS.FilteredLearner to compare
 #              naive Bayesian learner when all or just the most important attribute
 #              is used. Shows how to find out which (in ten-fold cross validation)
@@ -7,6 +5,7 @@
 # Category:    preprocessing
 # Uses:        voting.tab
 # Referenced:  orngFSS.htm
+# Classes:     orngFSS.FilteredLearner
 
 import orange, orngFSS, orngTest, orngStat
 data = orange.ExampleTable("voting")
@@ -31,5 +30,3 @@ for i in range(10):
     else: attsUsed[a.name] = 1
 for k in attsUsed.keys():
   print "%2d x %s" % (attsUsed[k], k)
-
-

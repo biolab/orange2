@@ -1,43 +1,39 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Compares naive Bayes with and withouth feature subset selection
 # Category:    preprocessing
 # Uses:        voting.tab
 # Referenced:  orngFSS.htm
+# Classes:     orngFSS.attMeasure, orngFSS.selectBestNAtts
 
 import orange, orngFSS
-data = orange.ExampleTable("voting")
 
-# first, define a new classifier which will use FSS
-
-def BayesFSS(examples=None, **kwds):
-  learner = apply(BayesFSS_Class, (), kwds)
-  if examples: return learner(examples)
-  else: return learner
-
-class BayesFSS_Class:
+class BayesFSS(object):
+  def __new__(cls, examples=None, **kwds):
+    learner = object.__new__(cls, **kwds)
+    if examples:
+      return learner(examples)
+    else:
+      return learner
+    
   def __init__(self, name='Naive Bayes with FSS', N=5):
     self.name = name
-    self.N = N
-
+    self.N = 5
+      
   def __call__(self, data, weight=None):
     ma = orngFSS.attMeasure(data)
-    # filtered = orngFSS.selectAttsAboveTresh(data, ma)
     filtered = orngFSS.selectBestNAtts(data, ma, self.N)
     model = orange.BayesLearner(filtered)
-    return BayesFSS_Classifier(classifier = model, nAtts = len(filtered.domain.attributes))
+    return BayesFSS_Classifier(classifier=model, N=self.N, name=self.name)
 
 class BayesFSS_Classifier:
   def __init__(self, **kwds):
     self.__dict__ = kwds
-
+    
   def __call__(self, example, resultType = orange.GetValue):
     return self.classifier(example, resultType)
 
-# test above code on an example
-# do 10-fold cross-validation
-
+# test above wraper on a data set
 import orngStat, orngTest
+data = orange.ExampleTable("voting")
 learners = (orange.BayesLearner(name='Naive Bayes'), BayesFSS(name="with FSS"))
 results = orngTest.crossValidation(learners, data)
 

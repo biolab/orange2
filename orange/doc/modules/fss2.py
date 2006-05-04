@@ -1,9 +1,8 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Ranking of attributes with two different measures (Relief and gain ratio)
 # Category:    preprocessing
 # Uses:        voting.tab
 # Referenced:  orngFSS.htm
+# Classes:     orngFSS.attMeasure, MeasureAttribute_gainRatio
 
 import orange, orngFSS
 data = orange.ExampleTable("voting")
