@@ -12,7 +12,7 @@ from OWGraph import *
 from OWGUI import *
 from OWROC import *
 
-import orngEval
+import orngStat, orngEval
 import statc, math
 
 class singleClassLiftCurveGraph(singleClassROCgraph):
@@ -32,7 +32,7 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
         self.averagingMethod = 'merge'
 
     def computeCurve(self, res, classIndex=-1, keepConcavities=1):
-        return orngEval.computeLiftCurve(res, classIndex)
+        return orngStat.computeLiftCurve(res, classIndex)
 
     def setNumberOfClassifiersIterationsAndClassifierColors(self, classifierNames, iterationsNum, classifierColor):
         singleClassROCgraph.setNumberOfClassifiersIterationsAndClassifierColors(self, classifierNames, iterationsNum, classifierColor)
@@ -332,7 +332,7 @@ class OWLiftCurve(OWROC):
                 self.classifierColor.append( newColor )
 
             ## testSetsQLB
-            self.dresSplitByIterations = orngEval.splitByIterations(self.dres)
+            self.dresSplitByIterations = orngStat.splitByIterations(self.dres)
             self.numberOfIterations = len(self.dresSplitByIterations)
 
             self.calcAllClassGraphs()
@@ -349,7 +349,7 @@ class OWLiftCurve(OWROC):
 
             ## calculate default pvalues
             reminder = self.maxp
-            for f in orngEval.aprioriDistributions(self.dres):
+            for f in orngStat.classProbabilitiesFromRes(self.dres):
                 v = int(round(f * self.maxp))
                 reminder -= v
                 if reminder < 0:
