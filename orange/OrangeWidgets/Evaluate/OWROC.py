@@ -73,7 +73,11 @@ class singleClassROCgraph(OWGraph):
         self.pvalue = 400.0 ##0.400
 
         self.performanceLineSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(Qt.color0), QPen(self.black), QSize(7,7))
+        self.defaultLineSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(Qt.black), QPen(self.black), QSize(8,8))
         self.convexHullPen = QPen(Qt.yellow, 3)
+
+        self.removeMarkers()
+        self.performanceMarkerKeys = []
 
         self.removeCurves()
 
@@ -106,6 +110,12 @@ class singleClassROCgraph(OWGraph):
             ckey = self.insertCurve('')
             self.setCurvePen(ckey, QPen(self.classifierColor[cNum], 2))
             self.mergedCKeys.append(ckey)
+
+            ckey = self.insertCurve('')
+            self.setCurveSymbol(ckey, self.defaultLineSymbol)
+            self.setCurvePen(ckey, QPen(Qt.black, 5))
+            self.mergedCThresholdKeys.append(ckey)
+            self.mergedCThresholdMarkers.append([])
 
             ckey = self.insertCurve('')
             self.setCurvePen(ckey, QPen(self.classifierColor[cNum], 1))
@@ -141,10 +151,13 @@ class singleClassROCgraph(OWGraph):
         self.showConvexCurves = 0
         self.showConvexHull = 0
         self.showPerformanceLine = 0
+        self.showDefaultThresholdPoint = 0
         self.showDiagonal = 0
 
         ## 'merge' average curve keys
         self.mergedCKeys = []
+        self.mergedCThresholdKeys = []
+        self.mergedCThresholdMarkers = []
         self.mergedConvexCKeys = []
         ## 'vertical' average curve keys
         self.verticalCKeys = []
@@ -226,9 +239,17 @@ class singleClassROCgraph(OWGraph):
             curve =  self.curve(self.mergedCKeys[cNum])
             if curve <> None: curve.setEnabled(b)
 
+            b2 = b and self.showDefaultThresholdPoint
+            curve =  self.curve(self.mergedCThresholdKeys[cNum])
+            if curve <> None: curve.setEnabled(b2)
+            for mkey in self.mergedCThresholdMarkers[cNum]:
+            	marker = self.marker(mkey)
+            	if marker <> None: marker.setEnabled(b2)
+
             b = b and self.showConvexCurves
             curve =  self.curve(self.mergedConvexCKeys[cNum])
             if curve <> None: curve.setEnabled(b)
+
 
             ## 'vertical' averaging
             b = (self.averagingMethod == 'vertical') and showCNum
@@ -268,7 +289,7 @@ class singleClassROCgraph(OWGraph):
 
         ## performance line
         b = (self.averagingMethod == 'merge') and self.showPerformanceLine
-        for mkey in self.markerKeys():
+        for mkey in self.performanceMarkerKeys:
             self.marker(mkey).setEnabled(b)
         curve = self.curve(self.performanceLineCKey)
         if curve <> None: curve.setEnabled(b)
@@ -287,6 +308,10 @@ class singleClassROCgraph(OWGraph):
     def setShowPerformanceLine(self, b):
         self.showPerformanceLine = b
         self.updateCurveDisplay()
+        
+    def setShowDefaultThresholdPoint(self, b):
+    	self.showDefaultThresholdPoint = b
+    	self.updateCurveDisplay()
 
     def setShowClassifiers(self, list):
         self.showClassifiers = list
@@ -322,6 +347,31 @@ class singleClassROCgraph(OWGraph):
                 y = [py for (px, py, pf) in c]
                 ckey = self.mergedCKeys[classifier]
                 self.setCurveData(ckey, x, y)
+
+		# points of defualt threshold classifiers
+                defPoint = [(abs(pf-0.5), pf, px, py) for (px, py, pf) in c]
+                defPoints = []
+                if len(defPoint) > 0:
+                	defPoint.sort()
+                	defPoints = [(px, py, pf) for (d, pf, px, py) in defPoint if d == defPoint[0][0]]
+                else:
+                	defPoints = []
+                defX = [px for (px, py, pf) in defPoints]
+                defY = [py for (px, py, pf) in defPoints]
+                ckey = self.mergedCThresholdKeys[classifier]
+                self.setCurveData(ckey, defX, defY)
+                
+                for mkey in self.mergedCThresholdMarkers[classifier]:
+                	self.removeMarker(mkey)
+                self.mergedCThresholdMarkers[classifier] = []
+                for (dx, dy, pf) in defPoints:
+                	mkey = self.insertMarker('%3.2g' % (pf))
+                	dx = max(min(0.95, dx + 0.01), 0.01)
+                	dy = min(max(0.01, dy - 0.02), 0.95)
+                	self.marker(mkey).setXValue(dx)
+                	self.marker(mkey).setYValue(dy)
+                	self.marker(mkey).setLabelAlignment(Qt.AlignRight)
+                	self.mergedCThresholdMarkers[classifier].append(mkey)
                 classifier += 1
             classifier = 0
             for c in convexCurves:
@@ -334,6 +384,10 @@ class singleClassROCgraph(OWGraph):
         else:
             for c in range(len(self.mergedCKeys)):
                 self.setCurveData(self.mergedCKeys[c], [], [])
+                self.setCurveData(self.mergedCThresholdKeys[c], [], [])
+                for mkey in self.mergedCThresholdMarkers[c]:
+                	self.removeMarker(mkey)
+                self.mergedCThresholdMarkers[c] = []
                 self.setCurveData(self.mergedConvexCKeys[c], [], [])
 
         ## prepare a common input structure for vertical and threshold averaging
@@ -473,10 +527,13 @@ class singleClassROCgraph(OWGraph):
 
         ## now draw the closest line to the curve
         b = (self.averagingMethod == 'merge') and self.showPerformanceLine
-        self.removeMarkers()
         lpx = []
         lpy = []
         first = 1
+        ## remove old markers
+        for mkey in self.performanceMarkerKeys:
+        	self.removeMarker(mkey)
+       	self.performanceMarkerKeys = []
         for (x, y, fscorelist) in closestpoints:
             if first:
                 first = 0
@@ -488,20 +545,14 @@ class singleClassROCgraph(OWGraph):
             py = y
             for (cNum, threshold) in fscorelist:
                 s = "%1.3f %s" % (threshold, self.classifierNames[cNum])
-                py = py - 0.05
-                if py < 0.05:
-                    py = 0.05
-                if py > 1.0:
-                    py = 1.0
-                if px < 0.0:
-                    px = 0.0
-                if px > 0.8:
-                    px = 0.8
+               	px = max(min(0.95, px + 0.01), 0.01)
+                py = min(max(0.01, py - 0.02), 0.95)
                 mkey = self.insertMarker(s)
                 self.marker(mkey).setXValue(px)
                 self.marker(mkey).setYValue(py)
                 self.marker(mkey).setLabelAlignment(Qt.AlignRight)
                 self.marker(mkey).setEnabled(b)
+                self.performanceMarkerKeys.append(mkey)
         if len(closestpoints) > 0:
             lpx.append(x + 2.0)
             lpy.append(y + 2.0*m)
@@ -566,7 +617,7 @@ class singleClassROCgraph(OWGraph):
 class OWROC(OWWidget):
     settingsList = ["PointWidth", "CurveWidth", "ConvexCurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor", "AveragingMethodIndex",
-                    "ShowConvexHull", "ShowConvexCurves", "EnablePerformance"]
+                    "ShowConvexHull", "ShowConvexCurves", "EnablePerformance", "DefaultThresholdPoint"]
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ROC Analysis", 1)
 
@@ -584,6 +635,7 @@ class OWROC(OWWidget):
         self.ShowConvexHull = TRUE
         self.ShowConvexCurves = FALSE
         self.EnablePerformance = TRUE
+        self.DefaultThresholdPoint = TRUE
 
         #load settings
         self.loadSettings()
@@ -636,7 +688,7 @@ class OWROC(OWWidget):
         self.connect(self.unselectAllClassifiersQLB, SIGNAL("clicked()"), self.SUAclassifiersQLB)
 
         # show convex ROC curves and show ROC convex hull
-        self.convexCurvesQCB = OWGUI.checkBox(self.generalTab, self, 'ShowConvexCurves', 'Show Convex ROC Rurves', tooltip='', callback=self.setShowConvexCurves)
+        self.convexCurvesQCB = OWGUI.checkBox(self.generalTab, self, 'ShowConvexCurves', 'Show Convex ROC Curves', tooltip='', callback=self.setShowConvexCurves)
         OWGUI.checkBox(self.generalTab, self, 'ShowConvexHull', 'Show ROC Convex Hull', tooltip='', callback=self.setShowConvexHull)
         self.tabs.insertTab(self.generalTab, "General")
         
@@ -645,6 +697,7 @@ class OWROC(OWWidget):
         self.performanceTab = QVGroupBox(self)
         self.performanceTabCosts = QVGroupBox(self.performanceTab)
         OWGUI.checkBox(self.performanceTabCosts, self, 'EnablePerformance', 'Show Performance Line', tooltip='', callback=self.setShowPerformanceAnalysis)
+        OWGUI.checkBox(self.performanceTabCosts, self, 'DefaultThresholdPoint', 'Default Threshold (0.5) Point', tooltip='', callback=self.setShowDefaultThresholdPoint)
 
         ## FP and FN cost ranges
         mincost = 1; maxcost = 1000; stepcost = 5;
@@ -783,6 +836,10 @@ class OWROC(OWWidget):
         for g in self.graphs:
             g.setShowPerformanceLine(self.EnablePerformance)
 
+    def setShowDefaultThresholdPoint(self):
+        for g in self.graphs:
+            g.setShowDefaultThresholdPoint(self.DefaultThresholdPoint)
+
     ## test set selection (testSetsQLB)
     def testSetsSelectionChange(self):
         list = []
@@ -803,6 +860,7 @@ class OWROC(OWWidget):
             g.setShowConvexHull(self.ShowConvexHull)
             g.setAveragingMethod(self.AveragingMethod)
             g.setShowPerformanceLine(self.EnablePerformance)
+            g.setShowDefaultThresholdPoint(self.DefaultThresholdPoint)
 
             ## user settings
             g.setPointWidth(self.PointWidth)
