@@ -50,7 +50,6 @@ class OWMosaicDisplay(OWWidget):
         self.showAprioriDistributionLines = 1
         self.showAprioriDistributionBoxes = 1
         self.horizontalDistribution = 1
-        self.showSubsetDistributions = 0
         self.boxSize = 5
         self.attr1 = ""
         self.attr2 = ""
@@ -66,6 +65,7 @@ class OWMosaicDisplay(OWWidget):
         self.attributeValuesDict = {}
         self.conditionalDict = None
         self.conditionalSubsetDict = None
+        self.originalSubsetData = None
 
         #self.blueColors = [QColor(255, 255, 255), QColor(117, 149, 255), QColor(38, 43, 232), QColor(1,5,173)]
         self.blueColors = [QColor(255, 255, 255), QColor(210, 210, 255), QColor(110, 110, 255), QColor(0,0,255)]
@@ -210,7 +210,6 @@ class OWMosaicDisplay(OWWidget):
         self.optimizationDlg.setData(data)
 
         if data:
-            #self.data = orange.Preprocessor_dropMissing(data)
             self.data = self.optimizationDlg.data
             if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.colorPalette = ColorPaletteGenerator(rgbColors = ColorBrewerRGBValues)
@@ -220,14 +219,20 @@ class OWMosaicDisplay(OWWidget):
         self.initCombos(self.data)
         self.openContext("", data)
 
+        #self.subsetdataHander(self.originalSubsetData)
         self.updateDataAndPermList()
 
     def subsetdataHander(self, data):
-        self.subsetData = data
-                
-        if data and len(data) > 1: self.setStatusBarText("The data set received on the 'Example subset' input contains more than one example. Only the first example will be considered.")
-        else:                      self.setStatusBarText("")
+        #if data: self.originalSubsetData = orange.ExampleTable(data)
+        #else:    self.originalSubsetData = None
 
+        try:
+            self.subsetData = data.select(self.data.domain)
+        except:
+            self.subsetData = None
+                
+        #if data and len(data) > 1: self.setStatusBarText("The data set received on the 'Example subset' input contains more than one example. Only the first example will be considered.")
+        #else:                      self.setStatusBarText("")
         self.updateDataAndPermList()
         
 
@@ -323,8 +328,8 @@ class OWMosaicDisplay(OWWidget):
         self.conditionalDict = self.optimizationDlg.getConditionalDistributions(data, attrList)
         self.conditionalDict[""] = len(data)
         self.conditionalSubsetDict = None
-        
-        if self.showSubsetDistributions and self.subsetData and len(self.subsetData) > 1:
+
+        if self.subsetData and len(self.subsetData) > 1 and self.data.domain == self.subsetData.domain:
             subData = orange.Preprocessor_dropMissing(self.subsetData)
             if subData and len(subData) > 1:
                 self.conditionalSubsetDict = self.optimizationDlg.getConditionalDistributions(subData, attrList)
@@ -471,17 +476,15 @@ class OWMosaicDisplay(OWWidget):
         rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 30)   
 
         # show a rectangle that will represent the example in the subset
-        if self.subsetData and self.subsetData.domain == self.data.domain and self.conditionalDict[attrVals] > 0:
+        if self.subsetData and self.subsetData.domain.attributes == self.data.domain.attributes and self.conditionalDict[attrVals] > 0 and len(self.subsetData) == 1:
             correctBox = 1
             for i in range(len(usedAttrs)/2):
                 if self.subsetData[0][usedAttrs[2*i]] != usedAttrs[2*i+1]:
                     correctBox = 0
                     break
             if correctBox:
-                if len(self.subsetData) > 1 or self.subsetData[0].getclass().isSpecial(): color = QColor(0,0,0)
-                else:
-                    values = self.attributeValuesDict.get(self.data.domain.classVar.name, None) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
-                    color = self.colorPalette[values.index(self.subsetData[0].getclass().value)]
+                values = self.attributeValuesDict.get(self.data.domain.classVar.name, None) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+                color = self.colorPalette[values.index(self.subsetData[0].getclass().value)]
                 rect = OWCanvasRectangle(self.canvas, x0-3, y0-3, x1-x0+7, y1-y0+7, color, Qt.white, penWidth = 3, z=-50, penStyle = Qt.DashLine)
         
 
@@ -515,10 +518,12 @@ class OWMosaicDisplay(OWWidget):
             for i in range(len(aprioriDist)):
                 val = self.conditionalDict[attrVals + "-" + values[i]]
                 if self.horizontalDistribution:
-                    v = ((x1-x0)* val)/self.conditionalDict[attrVals]
+                    if i == len(aprioriDist)-1: v = x1-x0 - total
+                    else:                       v = int(((x1-x0)* val)/self.conditionalDict[attrVals])
                     OWCanvasRectangle(self.canvas, x0+total, y0, v, y1-y0, self.colorPalette[i], self.colorPalette[i], z = -20)
                 else:
-                    v = ((y1-y0)* val)/self.conditionalDict[attrVals]
+                    if i == len(aprioriDist)-1: v = y1-y0 - total
+                    else:                       v = int(((y1-y0)* val)/self.conditionalDict[attrVals])
                     OWCanvasRectangle(self.canvas, x0, y0+total, x1-x0, v, self.colorPalette[i], self.colorPalette[i], z = -20)
                 total += v
 
@@ -527,30 +532,33 @@ class OWMosaicDisplay(OWWidget):
                 total = 0
                 for i in range(len(aprioriDist)):
                     if self.horizontalDistribution:
-                        val = ((x1-x0)* aprioriDist[values[i]])/len(self.data)
+                        if i == len(aprioriDist)-1: v = x1-x0 - total
+                        else:                       v = int(((x1-x0)* aprioriDist[values[i]])/float(len(self.data)))
                         if self.showAprioriDistributionBoxes:
-                            OWCanvasRectangle(self.canvas, x0+total, y0, val+1, self.boxSize, brushColor = self.colorPalette[i], z = 0)
-                        total += val
-                        if i < len(aprioriDist)-1 and self.showAprioriDistributionLines: OWCanvasLine(self.canvas, x0+total, y0, x0+total, y1, z = 10)
+                            OWCanvasRectangle(self.canvas, x0+total, y0, v, self.boxSize, brushColor = self.colorPalette[i], z = 0)
+                        if i < len(aprioriDist)-1 and self.showAprioriDistributionLines: OWCanvasLine(self.canvas, x0+total+v, y0, x0+total+v, y1, z = 10)
                     else:
-                        val = ((y1-y0)* aprioriDist[values[i]])/len(self.data)
+                        if i== len(aprioriDist)-1: v = y1-y0 - total
+                        else:                      v = int(((y1-y0)* aprioriDist[values[i]])/float(len(self.data)))
                         if self.showAprioriDistributionBoxes:
-                            OWCanvasRectangle(self.canvas, x0, y0+total, self.boxSize, val+1, brushColor = self.colorPalette[i], z = 0)
-                        total += val
-                        if i < len(aprioriDist)-1 and self.showAprioriDistributionLines: OWCanvasLine(self.canvas, x0, y0+total, x1, y0+total, z = 10)
+                            OWCanvasRectangle(self.canvas, x0, y0+total, self.boxSize, v, brushColor = self.colorPalette[i], z = 0)
+                        if i < len(aprioriDist)-1 and self.showAprioriDistributionLines: OWCanvasLine(self.canvas, x0, y0+total+v, x1, y0+total+v, z = 10)
+                    total += v
 
             # show subset distribution
-            if self.showSubsetDistributions and self.conditionalSubsetDict:
+            if self.conditionalSubsetDict:
                 total = 0
                 for i in range(len(aprioriDist)):
                     val = self.conditionalSubsetDict[attrVals + "-" + values[i]]
-                    if not self.conditionalSubsetDict[attrVals]: continue
+                    if not self.conditionalSubsetDict[attrVals] or val == 0: continue
                     if self.horizontalDistribution:
-                        v = ((x1-x0)* val)/self.conditionalSubsetDict[attrVals]
-                        OWCanvasRectangle(self.canvas, x0+total, y1-self.boxSize, v+(x0+total+v<x1), self.boxSize, brushColor = self.colorPalette[i], z = 15)
+                        if i == len(aprioriDist)-1: v = x1-x0 - total
+                        else:                       v = int(((x1-x0)* val)/float(self.conditionalSubsetDict[attrVals]))
+                        OWCanvasRectangle(self.canvas, x0+total, y1-self.boxSize, v, self.boxSize, brushColor = self.colorPalette[i], z = 15)
                     else:
-                        v = ((y1-y0)* val)/self.conditionalSubsetDict[attrVals]
-                        OWCanvasRectangle(self.canvas, x1-self.boxSize, y0+total, self.boxSize, v+(y0+total+v<y1), brushColor = self.colorPalette[i], z = 15)
+                        if i == len(aprioriDist)-1: v = y1-y0 - total
+                        else:                       v = int(((y1-y0)* val)/float(self.conditionalSubsetDict[attrVals]))
+                        OWCanvasRectangle(self.canvas, x1-self.boxSize, y0+total, self.boxSize, v, brushColor = self.colorPalette[i], z = 15)
                     total += v
 
         self.addTooltip(x0, y0, x1-x0, y1-y0, condition, aprioriDist, attrVals, pearson, expected)
