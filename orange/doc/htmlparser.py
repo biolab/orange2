@@ -51,7 +51,25 @@ def newID(s):
     global IDCounter
     IDs[s] = "JH%i" % IDCounter
     IDCounter += 1
-    
+
+class IndexStore:
+    def __init__(self, aname, entries = None):
+        self.name = aname
+        if entries:
+            self.entries = entries[:]
+        else:
+            self.entries = []
+        self.subentries = {}
+
+def addIndex(indexStoreList, name, title=None, filename=None, counter = None):
+    if title:
+        cateS = IndexStore(name, [(title, filename, counter)])
+        newID("%s#HH%i" % (filename, counter))
+    else:
+        cateS = IndexStore(name)
+    indexStoreList.setdefault(name.lower(), cateS)
+    return cateS
+
 def findIndices(page, filename, title):
     lowpage = page.lower()
     outp = []
@@ -107,9 +125,17 @@ def findIndices(page, filename, title):
             else:
                 lastout = lidx = idxm.end()
 
-            index.setdefault(name.lower(), (name, []))
-            index[name.lower()][1].append((title, filename, counter))
-            newID("%s#HH%i" % (filename, counter))
+            if "+" in name:
+                cate, name = name.split("+")
+                cateS = addIndex(index, cate)
+                addIndex(index, name, title, filename, counter)
+                addIndex(cateS.subentries, name, title, filename, counter)
+            elif "/" in name:
+                cate, name = name.split("/")
+                cateS = addIndex(index, cate)
+                addIndex(cateS.subentries, name, title, filename, counter)
+            else:
+                addIndex(index, name, title, filename, counter)
             counter += 1
 
         else:
@@ -157,15 +183,27 @@ def findIndices(page, filename, title):
 
 
 
+def writeIndexHH_store(hhk, indexStoreList):
+    hhk.write("\n<UL>")
+    for indexStore in indexStoreList.values():
+        if indexStore.entries or indexStore.subentries:
+            hhk.write(hhkentry % indexStore.name)
+            if indexStore.entries:
+                for entry in indexStore.entries:
+                    hhk.write(hhksubentry % entry)
+            else:
+                for substore in indexStore.subentries:
+                    for subentry in substore.entries:
+                        hhk.write(hhksubentry % subentry)
+            hhk.write(hhkendentry)
+            if indexStore.subentries:
+                writeIndexHH_store(hhk, indexStore.subentries)
+    hhk.write("\n</UL>")
+    
 def writeIndexHH():
     hhk = file("processed/orange.hhk", "w")
     hhk.write(hhkhead)
-    for name, entries in index.values():
-        hhk.write(hhkentry % name)
-        for entry in entries:
-            hhk.write(hhksubentry % entry)
-        hhk.write(hhkendentry)
-    hhk.write("</UL>")
+    writeIndexHH_store(hhk, index)
     hhk.close()
 
 def writeTocHHRec(hhc, node, l=0):
@@ -182,7 +220,6 @@ def writeTocHH():
     hhc.write(hhchead)
     for s in TOCRoot.subentries:
         writeTocHHRec(hhc, s, 0)
-    hhc.write("</UL>\n\n")
     hhc.close()
     
 def writeHHP():
@@ -290,9 +327,9 @@ def main():
     writeTocHH()
     writeHHP()
 
-    writeIndexJH()
-    writeTocJH()
-    writeMapJH()
+##    writeIndexJH()
+##    writeTocJH()
+##    writeMapJH()
 
 
 hhphead = """
@@ -336,19 +373,17 @@ hhkhead = """
 <meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
 <!-- Sitemap 1.0 -->
 </HEAD><BODY>
-<UL>
 """
 
 hhkentry = """<LI><OBJECT type="text/sitemap">
-    <param name="Name" value="%s">
-"""
+    <param name="Name" value="%s">"""
 
 hhksubentry = """
     <param name="Name" value="%s">
     <param name="Local" value="%s#HH%i">
 """
 
-hhkendentry = "</OBJECT>\n\n"
+hhkendentry = "\n</OBJECT>\n"
 
 
 jh_idx = """
