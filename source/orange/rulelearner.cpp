@@ -28,6 +28,7 @@
 #include "classfromvar.hpp"
 #include "progress.hpp"
 
+
 #include "rulelearner.ppp"
 
 
@@ -433,6 +434,24 @@ bool worstRule(const PRule &r1, const PRule &r2)
                    && ((int(r1.getUnwrappedPtr()) ^ int(r2.getUnwrappedPtr())) & 16) != 0
                ); }  */
 
+bool inRules(PRuleList rules, PRule rule) 
+{
+  TRuleList::const_iterator ri(rules->begin()), re(rules->end());
+  PExampleGenerator rulegen = rule->examples;
+  for (; ri!=re; ri++) {
+    PExampleGenerator rigen = (*ri)->examples;
+    if (rigen->numberOfExamples() == rulegen->numberOfExamples()) {
+      TExampleIterator rei(rulegen->begin()), ree(rulegen->end());
+      TExampleIterator riei(rigen->begin()), riee(rigen->end());
+      for (; rei != ree && !(*rei).compare(*riei); ++rei, ++riei) {
+      }
+        if (rei == ree)
+          return true;
+    }
+  }
+  return false;
+}
+
 TRuleBeamFilter_Width::TRuleBeamFilter_Width(const int &w)
 : width(w)
 {}
@@ -442,9 +461,21 @@ void TRuleBeamFilter_Width::operator()(PRuleList &rules, PExampleTable, const in
 {
   if (rules->size() > width) {
     // Janez poglej
-    TRuleList::const_iterator ri(rules->begin()), re(rules->end());
     sort(rules->begin(), rules->end(), worstRule);
-    rules->erase(rules->begin()+width, rules->end());
+  
+    TRuleList *filteredRules = mlnew TRuleList;
+    PRuleList wFilteredRules = filteredRules;
+
+    int nRules = 0;
+    TRuleList::const_iterator ri(rules->begin()), re(rules->end());
+    while (nRules < width && ri != re) {
+      if (!inRules(wFilteredRules,*ri)) {
+        wFilteredRules->push_back(*ri);
+        nRules++;
+      }
+      ri++;
+    }
+    rules =  wFilteredRules;  
   }
 }
 
