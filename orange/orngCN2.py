@@ -114,13 +114,12 @@ def CN2Learner(examples = None, weightID=0, **kwds):
         return cn2
 
 class CN2LearnerClass(orange.RuleLearner):
-    def __init__(self, evaluator = orange.RuleEvaluator_Entropy(), beamWidth = 5, alpha = 0.05, **kwds):
+    def __init__(self, evaluator = orange.RuleEvaluator_Entropy(), beamWidth = 5, alpha = 1.0, **kwds):
         self.__dict__ = kwds
         self.ruleFinder = orange.RuleBeamFinder()
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
         self.ruleFinder.evaluator = evaluator
         self.ruleFinder.validator = orange.RuleValidator_LRS(alpha = alpha)
-        self.ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha = alpha)
         
     def __call__(self, examples, weight=0):
         if examples.domain.classVar.varType == orange.VarTypes.Continuous:
@@ -171,7 +170,7 @@ def CN2UnorderedLearner(examples = None, weightID=0, **kwds):
 
 # Kako nastavim v c++, da mi ni potrebno dodati imena
 class CN2UnorderedLearnerClass(orange.RuleLearner):
-    def __init__(self, evaluator = LaplaceEvaluator(), beamWidth = 5, alpha = 0.05, **kwds):
+    def __init__(self, evaluator = LaplaceEvaluator(), beamWidth = 5, alpha = 1.0, **kwds):
         self.__dict__ = kwds
         self.ruleFinder = orange.RuleBeamFinder()
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
