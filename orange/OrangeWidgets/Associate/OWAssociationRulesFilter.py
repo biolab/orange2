@@ -121,7 +121,7 @@ class OWAssociationRulesFilter(OWWidget):
         self.supp_min, self.supp_max = self.conf_min, self.conf_max = 0., 1.
         self.numcols = self.numrows = 20
         self.cellwidth = self.cellheight = 18
-        self.autoSend = False
+        self.autoSend = True
         
         self.loadSettings()
 
