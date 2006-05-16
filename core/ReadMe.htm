@@ -1,0 +1,226 @@
+<html>
+
+<head>
+<title>Classification version of CORE</title>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<STYLE> st1\:*{behavior:url(#ieooui) }
+</STYLE>
+<style> <!-- p.MsoNormal, li.MsoNormal {mso-style-parent:""; margin-bottom:.0001pt; font-size:12.0pt; font-family:"Times New Roman"; margin-left:0cm; margin-right:0cm; margin-top:0cm}
+	h1 {margin-right:0cm; margin-left:0cm; font-size:24.0pt; font-family:"Times New Roman"}
+	h2 {margin-right:0cm; margin-left:0cm; font-size:18.0pt; font-family:"Times New Roman"}
+	h3 {margin-right:0cm; margin-left:0cm; font-size:13.5pt; font-family:"Times New Roman"}
+	h5 {margin-right:0cm; margin-left:0cm; font-size:10.0pt; font-family:"Times New Roman"}
+	a:link {color:blue; text-decoration:underline; }
+	a:visited {color:purple; text-decoration:underline; }
+	p.3dmsoplaintext {margin-right:0cm; margin-left:0cm; font-size:12.0pt; font-family:"Times New Roman"; }
+	ul {margin-bottom:0cm;}
+	--> 
+</style>
+</head>
+
+<body lang=EN-US link=blue vlink=purple>
+
+<h1 class=Section1>Classification version of CORE</h1>
+
+<h3 class=Section1>Version 0.9.15&nbsp;&nbsp;&nbsp;</h3>
+
+<h5 class=Section1>Last updated in Ljubljana,
+ Slovenia on
+September, <span class=SpellE>23th</span>, 2005</h5>
+
+<p class=3dmsoplaintext>&nbsp;</O:P>CORE is an experimental learning
+system, which learns decision trees, random forests or evaluates the
+attributes. Some of its abilities are described in the papers at <a
+href="http://lkm.fri.uni-lj.si/rmarko/papers/">http://lkm.fri.uni-lj.si/rmarko/papers/</a> </p>
+<P class=3dmsoplaintext>&nbsp;</P>
+<H2 class=3dmsoplaintext>Decision trees</H2>
+
+<p class=3dmsoplaintext>While building a decision tree the system, in each
+node, evaluates the attributes (with <span class=SpellE>ReliefF</span>, GainRatio, MDL, or any other built in heuristics). It builds decision trees in<span
+class=GramE>&nbsp; the</span> top-down manner and post prunes them (using
+m-estimate or&nbsp; MDL pruning). </p>
+<P class=3dmsoplaintext>&nbsp;</P>
+<H2 class=3dmsoplaintext>Random forests</H2>
+
+<p class=3dmsoplaintext>The basic algorithm of Leo <span class=SpellE>Breiman</span>
+is implemented&nbsp;plus some improvements:</p>
+<DIV class=Section1>
+<UL type=disc>
+ <li class=MsoNormal>it <span class=SpellE>alows</span>
+     selection of different attribute <span class=SpellE>evaluati</span> on
+     heuristics, even several of them in one forest
+ <li class=MsoNormal>probability estimation as
+     averages of tree <span class=SpellE>probab</span> <span class=SpellE>lities</span>
+ <li class=MsoNormal>weighted voting where
+     weights are average margin of trees in local subspaces
+ <li class=MsoNormal>regularization</li></UL></DIV>
+<P class=MsoNormal>&nbsp;</P>
+
+<h2><O:P></O:P>Attribute evaluation</h2>
+
+<p class=3dmsoplaintext>The most interesting evaluation heuristics is the
+algorithm <span class=SpellE>ReliefF</span>, which is capable of detecting
+conditional dependencies between the attributes. For each attribute it
+evaluates the probability that it separates different from similar near
+instances. Together with its adaptation for regression problems called <span
+class=SpellE>RReliefF</span> it provides <span class=GramE>an</span> unified view
+to attribute estimation. See the paper Theoretical and Empirical Analyses of <span
+class=SpellE>ReliefF</span> and <span class=SpellE>RReliefF</span> (MLJ, 2003)
+and other papers at <a href="http://lkm.fri.uni-lj.si/rmarko/papers/">http://lkm.fri.uni-lj.si/rmarko/papers/</a></p>
+<P class=3dmsoplaintext>&nbsp;</P>
+
+<h2><O:P></O:P>Data format</h2>
+
+<p class=3dmsoplaintext>The system uses its own input format as well as the
+format of C4.5, C5, See5 and Cubist. Native data format is described in <span
+style="FONT-FAMILY:'Courier New'">DataFormat.htm</span> file.</p>
+<P class=3dmsoplaintext>&nbsp;</P>
+
+<h2><O:P></O:P>Source code</h2>
+
+<p class=3dmsoplaintext>The system is written in C++ and should compile without
+problems as console application with Microsoft, Borland or GNU C++ compiler.
+The top level definitions should be set in <span class=SpellE>general.h</span>
+file. The executable for 32bit Windows-Intel platform is included. </p>
+
+<h3>Linux </h3>
+
+<p class=3dmsoplaintext>Uncomment <span style="FONT-FAMILY:'Courier New'">#define
+UNIX</span> in <span class=SpellE><span style="FONT-FAMILY:'Courier New'">general.h</span></span>
+file and compile the sources with:<br>
+<span style="FONT-FAMILY:'Courier New'">&gt;g++ *.<span class=SpellE>cpp</span>
+-O2 -o dire</span> </p>
+
+<h2>&nbsp;</h2>
+
+<h2>Execution </h2>
+
+<p class=3dmsoplaintext>Start the system by: </p>
+
+<ul type=disc>
+ <li class=MsoNormal><span style="FONT-FAMILY:
+     'Courier New'">dire&nbsp;</span>&nbsp;&nbsp; # starts in user interface
+     mode
+ <li class=MsoNormal><span style="FONT-FAMILY:
+     'Courier New'">dire o=<span class=SpellE>parameter_file</span> </span>&nbsp;
+     # starts in user interface mode with parameters from file
+ <li class=MsoNormal><span style="FONT-FAMILY:
+     'Courier New'">dire o=<span class=SpellE>parameter_file</span> a=action</span>&nbsp;
+     # executes specified action with parameters from file
+ <li class=MsoNormal><O:P><span style="FONT-FAMILY:
+     'Courier New'">dire o=<span class=SpellE>parameter_file</span> a=action&nbsp;keyword=value
+     ...</span>&nbsp;# executes specified action with parameters from file,
+     where specified parameters override the ones in the file</li>
+</ul>
+
+<p class=3dmsoplaintext>&nbsp;The <span style="FONT-FAMILY:'Courier New'">action
+</span>can be any 
+of the following:</O:P></p>
+
+<ul type=disc>
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">treeOnce</span></span>&nbsp;- builds
+     decision tree&nbsp;on one specified data split
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">treeAll</span></span>&nbsp;-&nbsp;builds
+     decision tree models&nbsp;on all data splits
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">rfOnce</span></span> &nbsp;-
+     &nbsp;builds random forest&nbsp;on one data split
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">rfAll</span></span> - builds random
+     forest&nbsp;on all data splits
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">estOnce</span></span><span
+     style="FONT-FAMILY:'Courier New'"> </span>-&nbsp;evaluates&nbsp;attributes
+     with estimators from parameter file on one selected data split
+ <li class=MsoNormal><span class=SpellE><span
+     class=GramE><span style="FONT-FAMILY:'Courier New'">estAll</span></span></span><span
+     class=GramE> <span style="FONT-FAMILY:'Courier New'">&nbsp;</span>-</span>
+     evaluates attributes with estimators from parameter file on all data
+     splits.
+ <li class=MsoNormal><span style="FONT-FAMILY:
+     'Courier New'">data</span> &nbsp;- outputs characteristics of
+     the&nbsp;data set</li>
+</ul>
+
+<p class=3dmsoplaintext> Keywords are the same as the ones in the
+parameter file.</p>
+<P class=3dmsoplaintext>An example of how to prepare the data is included. 
+It&nbsp;is an Australian credit data set from UCI repository, and contains the 
+following files:</P>
+
+<ul type=disc>
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">credita.par</span></span> -&nbsp;the
+     file with parameters,
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">credita.dat</span></span> - file with
+     the data,
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">credita.dsc</span></span> - description
+     of the attributes,
+ <li class=MsoNormal><span ?>&nbsp;</span><span
+     style="FONT-FAMILY:'Courier New'">credita.01s</span>,... <span
+     style="FONT-FAMILY:'Courier New'">credita.09s</span> - definition of
+     splits to training and testing data prepared&nbsp;for 10-fold
+     cross-validation,
+ <li class=MsoNormal><span class=SpellE><span
+     style="FONT-FAMILY:'Courier New'">credita.cm</span></span> - cost matrix</li>
+</ul>
+
+<p class=3dmsoplaintext><O:P>For example to&nbsp;test random forests with
+parameters from <span class=SpellE>credita.par</span>, except for attribute
+estimator:</p>
+
+<p class=3dmsoplaintext>&gt; <span class=GramE><span style="FONT-FAMILY:'Courier New'">dire</span></span><span
+style="FONT-FAMILY:'Courier New'"> o=<span class=SpellE>credita.par</span> a=<span
+class=SpellE>rfAll</span> <span class=SpellE>selectionEstimator</span>=7</span></p>
+<P class=3dmsoplaintext>&nbsp;</P>
+
+<h2><span class=SpellE></span></O:P><span class=SpellE>Licence</span></h2>
+
+<p class=3dmsoplaintext>Classification and regression version of CORE are
+freely available under the GNU public <span class=SpellE>licence</span> from <a
+href="http://lkm.fri.uni-lj.si/rmarko/software/">http://lkm.fri.uni-lj.si/rmarko/software/</a>
+or upon e-mail request to the author.&nbsp;The software is "as is"
+and there is no warranty for it. The comments and bug reports are welcome.
+However,<span class=GramE>&nbsp; I</span> cannot guarantee that I will have
+time to resolve&nbsp;them (but the same is true for commercial software as
+well).</p>
+
+<p class=3dmsoplaintext>&nbsp;</p>
+
+<h3>Acknowledgments</h3>
+
+<p class=3dmsoplaintext>The software was developed during my graduate studies,
+post-doc project and regular research work on the University of Ljubljana,
+Faculty of Computer and Information Science. The work was supported also by the
+Slovene Ministry of<span class=GramE>&nbsp; Science</span> through various
+research grants and projects.</p>
+
+<p class=3dmsoplaintext>&nbsp;Thanks to <span class=SpellE>Petr</span> <span
+class=SpellE>Savicky</span> who pointed to and resolved&nbsp;some bugs in
+random forests code and kindly proposed some improvements in the user
+interface.</p>
+
+<p class=3dmsoplaintext><O:P>&nbsp;</O:P>Enjoy. Love and light...</p>
+
+<p class=3dmsoplaintext>_________________________________________</p>
+<P class=3dmsoplaintext><O:P></O:P><O:P></O:P>Marko <span class=SpellE>Robnik-Sikonja</span>,
+Ph.D., Assistant Professor<br>
+University of Ljubljana,<br>
+Faculty of Computer and Information Science,<br>
+Laboratory for Cognitive Modeling,<br>
+<span class=SpellE>Trzaska</span> 25, 1001 Ljubljana, Slovenia<br>
+e-mail: <a href="mailto:Marko.Robnik@fri.uni-lj.si">Marko.Robnik@fri.uni-lj.si</a><br>
+WWW: <A 
+href="http://lkm.fri.uni-lj.si/rmarko/">http://lkm.fri.uni-lj.si/rmarko/</A></P>
+<P class=3dmsoplaintext>
+ &nbsp;</P>
+
+<p class=MsoNormal>&nbsp;</p>
+
+</body>
+
+</html>
