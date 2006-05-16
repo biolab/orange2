@@ -151,7 +151,7 @@ void Options::processOptions(void)
    else 
       strcpy(CommandStr, defaultEditor) ;
    
-#if defined(MICROSOFT) 
+#if defined(MICROSOFT2) 
    intptr_t childUID = _spawnlp(_P_WAIT, CommandStr, CommandStr, FileName, NULL) ;
   if (childUID==-1)  {
      // error

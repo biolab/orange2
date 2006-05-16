@@ -494,6 +494,8 @@ void dectree::readData(TExampleTable &egen)
       throw "missing class value";
     DiscData.Set(i, 0, (*ei).getClass().intV);
   }
+
+  state = data;
 }
 
 // ************************************************************

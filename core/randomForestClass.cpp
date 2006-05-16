@@ -35,7 +35,6 @@ PClassifier TRandomForestLearner::operator()(PExampleGenerator egen, const int &
 	TExampleTable &table = dynamic_cast<TExampleTable &>(toExampleTable(egen).getReference());
 	gFT->readDescription(table);
 	gFT->readData(table);
-	gFT->state = empty ;
 	gFT->learnRF = TRUE ;
 	gFT->buildForest();
     //
