@@ -8,9 +8,6 @@ extern IMPORT_DLL TOrangeType PyOrLearner_Type;
 /* -------------- RandomForest --------------*/
 
 
-PyObject *RandomForest_abstract_constructor(PyTypeObject *type, PyObject *args, PyObject *kwds)
-{ return PyOrType_GenericAbstract((PyTypeObject *)&PyOrRandomForest_Type, type, args, kwds); }
-
 
 PyTypeObject PyOrRandomForest_Type_inh = {
   PyObject_HEAD_INIT((_typeobject *)&PyType_Type)
@@ -19,7 +16,7 @@ PyTypeObject PyOrRandomForest_Type_inh = {
   sizeof(TPyOrange), 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_RICHCOMPARE, /* tp_flags */
-  "<abstract>",                                      /* tp_doc */
+  "(classVar | examples, [randomGenerator | int])",  /* tp_doc */
   0, 0, 0, 0, 0, 0, 0, 0, 0,
   (_typeobject *)&PyOrClassifier_Type,               /* tp_base */
   0, 0, 0, 0, 0,

@@ -723,10 +723,6 @@ extern IMPORT_DLL TOrangeType PyOrIntervalDiscretizer_Type;
 #define PyOrIntervalDiscretizer_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrIntervalDiscretizer_Type)
 #define PyOrange_AsIntervalDiscretizer(op) (*(GCPtr< TIntervalDiscretizer > *)(void *)(&PyOrange_AS_Orange(op)))
 
-extern IMPORT_DLL TOrangeType PyOrKernelFunc_Type;
-#define PyOrKernelFunc_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrKernelFunc_Type)
-#define PyOrange_AsKernelFunc(op) (*(GCPtr< TKernelFunc > *)(void *)(&PyOrange_AS_Orange(op)))
-
 extern IMPORT_DLL TOrangeType PyOrLWRClassifier_Type;
 #define PyOrLWRClassifier_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrLWRClassifier_Type)
 #define PyOrange_AsLWRClassifier(op) (*(GCPtr< TLWRClassifier > *)(void *)(&PyOrange_AS_Orange(op)))
@@ -1964,9 +1960,6 @@ extern IMPORT_DLL TOrangeType PyOrkNNLearner_Type;
 
   #define cc_IntervalDiscretizer PyOrIntervalDiscretizer_Type.ot_converter
   #define ccn_IntervalDiscretizer PyOrIntervalDiscretizer_Type.ot_nconverter
-
-  #define cc_KernelFunc PyOrKernelFunc_Type.ot_converter
-  #define ccn_KernelFunc PyOrKernelFunc_Type.ot_nconverter
 
   #define cc_LWRClassifier PyOrLWRClassifier_Type.ot_converter
   #define ccn_LWRClassifier PyOrLWRClassifier_Type.ot_nconverter

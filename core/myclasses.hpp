@@ -6,6 +6,17 @@
 #include "random.hpp"
 #include "filter.hpp"
 
+#include "ftree.h"
+//#include "estimator.h"
+//#include "utils.h"
+#include "rndforest.h"
+//#include "rfUtil.h"
+#include "options.h"
+#include <stdio.h>
+#include "frontend.h"
+extern Options *opt ;
+extern featureTree *gFT ;
+
 // Class definitions as usual, except for the MYMODULE_API, __REGISTER_CLASS and //P
 
 class CORE_API TRandomForestLearner : public TLearner {
@@ -13,6 +24,15 @@ public:
     __REGISTER_CLASS
 
     int randomSeed;  //P seed for the random generator
+	featureTree *Forest;  //P
+	Options *options; //P
+
+	// atributi RF
+	int rfNoTrees; //P
+	bool rfPredictClass;//P
+	double rfSampleProp;//P
+	int rfNoSelAttr;//P
+	int rfkNearestEqual;//P
 
     TRandomForestLearner(const int &seed = 0);
     PClassifier operator()(PExampleGenerator, const int &weightID);
@@ -22,9 +42,44 @@ public:
 class CORE_API TRandomForest : public TClassifier {
 public:
     __REGISTER_CLASS
+	
+	featureTree *Forest;  //P
+    Options *options;  //P
 
     PRandomGenerator randomGenerator; //PR random generator
 
     TRandomForest(PVariable classVar, PRandomGenerator rgen);
     virtual TValue operator()(const TExample &ex);
 };
+////////////////////////////7
+
+/*class RandomForestClassifier{
+public:
+	featureTree *Forest;  //*gFT
+    Options *options;
+	RandomForestClassifier(featureTree * inputForest);
+
+	TClass Classify(TExample examp);
+	TDistr Distribution(TExample examp);
+
+};*/
+/*
+class RandomForestLearner{
+public:
+	int state;  // ?????????????
+	featureTree *Forest;  //*gFT
+	Options *options;
+
+	// atributi RF
+	int rfNoTrees;
+	bool rfPredictClass;
+	double rfSampleProp;
+	int rfNoSelAttr;
+	int rfkNearestEqual;
+
+	RandomForestLearner();
+	RandomForestLearner(int rfNoTrees);
+
+	RandomForestClassifier* GetClassifier();
+};
+*/

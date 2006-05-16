@@ -64,9 +64,9 @@ char VersionString[]="CORE, classification version 0.9.15, built on " __DATE__ "
 
 int main(int argc, char *argv[]) {
     outVersion(stdout) ;
-	RandomForestLearner* ucenec = new RandomForestLearner();
-	RandomForestClassifier* klasifikator = ucenec->GetClassifier();
-	printf("\nSt Attr: %d",klasifikator->Forest->NoAttr);
+	//RandomForestLearner* ucenec = new RandomForestLearner();
+	//RandomForestClassifier* klasifikator = ucenec->GetClassifier();
+	//printf("\nSt Attr: %d",klasifikator->Forest->NoAttr);
 	printf("\nKonec");
 //    gFT = new featureTree ;
 //    opt = new Options() ;
