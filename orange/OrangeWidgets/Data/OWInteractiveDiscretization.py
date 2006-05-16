@@ -122,6 +122,8 @@ class DiscGraph(OWGraph):
         var=self.vars[self.master.attribute]
         targetClass=self.data.domain.classVar.values[self.master.targetClass]
         for e, key in zip(self.data, self.rugKeys):
+            if e[var].isSpecial():
+                continue
             self.setCurveYAxis(key, QwtPlot.yRight)
             curve=self.curve(key)
             curve.setData([float(e[var]), float(e[var])], e[-1]==targetClass and [1.0, 0.98] or [0.02, 0.0])
