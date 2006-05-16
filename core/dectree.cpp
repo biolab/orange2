@@ -409,6 +409,92 @@ void dectree::clearDescription(void)
    NoAttr = NoOriginalAttr = NoDiscrete = NoContinuous = 0 ;
 }
 
+
+void dectree::readDescription(PExampleGenerator egen)
+{
+  const nattrs = egen->domain->variables->size();
+  NoContinuous = 0 ;
+  NoDiscrete = 1 ;
+  ContIdx.create(nattrs, -1) ;
+  DiscIdx.create(nattrs, -1) ;
+  AttrDesc.create(nattrs);
+
+  int i = 1;
+  TVarList::const_iterator vi(egen->domain->attributes->begin()), ve(egen->domain->attributes->end());
+  for(; vi != ve; vi++, i++) {
+    AttrDesc[i].AttributeName = strcpy(new char[(*vi)->name.length()+1], (*vi)->name.c_str());
+    if ((*vi)->varType == TValue::FLOATVAR) {
+      NoContinuous++;
+      AttrDesc[i].continuous = TRUE;
+      AttrDesc[i].NoValues = 0;
+      AttrDesc[i].tablePlace = NoContinuous ;
+      AttrDesc[i].userDefinedDistance = FALSE ;
+      AttrDesc[i].EqualDistance = AttrDesc[i].DifferentDistance = -1.0 ;
+              
+      ContIdx[NoContinuous] = i ;
+    }
+    else if ((*vi)->varType == TValue::INTVAR) {
+      NoDiscrete++;
+      AttrDesc[i].continuous = FALSE ;
+      DiscIdx[NoDiscrete] = i ;
+      AttrDesc[i].tablePlace = NoDiscrete ;
+
+      const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>((*vi).getReference());
+      AttrDesc[i].NoValues = evar.noOfValues();
+
+      AttrDesc[i].ValueName.create(AttrDesc[i].NoValues) ;
+      AttrDesc[i].valueProbability.create(AttrDesc[i].NoValues+1) ;
+      
+      int j = 0;
+      const_PITERATE(TStringList, ai, evar.values)
+        AttrDesc[i].ValueName[j++] = strcpy(new char[(*ai).length()+1], (*ai).c_str()) ;
+    }
+  }
+
+  if (egen->domain->classVar->varType != TValue::INTVAR)
+    throw "discrete class expected";
+
+  AttrDesc[0].continuous = FALSE ;
+  DiscIdx[0] = i ;
+  AttrDesc[0].tablePlace = NoDiscrete ;
+
+  const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(egen->domain->classVar.getReference());
+  AttrDesc[0].NoValues = evar.noOfValues();
+
+  AttrDesc[0].ValueName.create(AttrDesc[0].NoValues) ;
+  AttrDesc[0].valueProbability.create(AttrDesc[0].NoValues+1) ;
+  
+  int j = 0;
+  const_PITERATE(TStringList, ai, evar.values)
+    AttrDesc[0].ValueName[j++] = strcpy(new char[(*ai).length()+1], (*ai).c_str()) ;
+
+  NoClasses = AttrDesc[0].NoValues;
+}
+
+
+void dectree::readData(TExampleTable &egen)
+{
+  clearData();
+
+  if (NoDiscrete)
+    DiscData.create(egen.numberOfExamples(), NoDiscrete) ;
+  if (NoContinuous)
+    ContData.create(egen.numberOfExamples(), NoContinuous) ;
+
+  int i = 0;
+  for(TExampleIterator ei(egen.begin()); ei; ++ei, i++) {
+    int contJ = 0, discJ = 1;
+    for(TExample::const_iterator eei((*ei).begin()), eee((*ei).end()-1); eei != eee; eei++)
+      if ((*eei).varType == TValue::FLOATVAR)
+        ContData.Set(i, contJ, (*eei).isSpecial() ? NAcont : (*eei).floatV);
+      else
+        DiscData.Set(i, discJ, (*eei).isSpecial() ? NAdisc : (*eei).intV);
+    if ((*ei).getClass().isSpecial())
+      throw "missing class value";
+    DiscData.Set(i, 0, (*ei).getClass().intV);
+  }
+}
+
 // ************************************************************
 //
 //                           readData

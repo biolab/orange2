@@ -9,6 +9,8 @@
 #include "contain.h"
 #include "bintree.h"
 
+#include "table.hpp"
+
 const char NAdisc = '\x00' ;
 #define NAcont -1e30
 //const double NAcont = -1e30 ;
@@ -114,8 +116,10 @@ public:
    ~dectree();
    int readProblem(void) ;  //--//
    int readDescription(void);
+   void readDescription(PExampleGenerator egen);
    int readCosts(void);
    int readData(void);
+   void readData(TExampleTable &);
    int prepareDataSplits(void);
    int setDataSplit(int splitIdx);
    void clearData(void);
