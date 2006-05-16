@@ -7,9 +7,6 @@ import sys, os, cPickle
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
 import orange, user, orngMisc
 
-TRUE  = 1
-FALSE = 0
-
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self,*args):
         apply(QMainWindow.__init__,(self,) + args)
@@ -79,17 +76,13 @@ class OrangeCanvasDlg(QMainWindow):
         self.widgetInfo = {} # this is a dictionary with items: category-widget_name : {info about widget (inList, outList, description...}
         
         self.rebuildSignals()    # coloring of signals - unused!
-        self.useLargeIcons = FALSE
-        self.snapToGrid = TRUE
-        self.dontAskBeforeClose = FALSE
-        self.saveSettingsBeforeClose = TRUE
+        self.useLargeIcons = False
+        self.snapToGrid = True
 
         self.loadSettings()
         
         self.useLargeIcons = self.settings["useLargeIcons"]
         self.snapToGrid = self.settings["snapToGrid"]
-        self.dontAskBeforeClose = self.settings["dontAskBeforeClose"]
-        self.saveSettingsBeforeClose = self.settings["saveSettingsBeforeClose"]
         
         self.widgetSelectedColor = QColor(self.settings["widgetSelectedColor"][0], self.settings["widgetSelectedColor"][1], self.settings["widgetSelectedColor"][2])
         self.widgetActiveColor   = QColor(self.settings["widgetActiveColor"][0], self.settings["widgetActiveColor"][1], self.settings["widgetActiveColor"][2])
@@ -101,19 +94,19 @@ class OrangeCanvasDlg(QMainWindow):
         self.initMenu()
         
         self.toolNew  = QToolButton(QIconSet(QPixmap(orngResources.file_new)), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema')
-        #self.toolNew.setUsesTextLabel (TRUE)
+        #self.toolNew.setUsesTextLabel (True)
         self.toolOpen = QToolButton(QIconSet(QPixmap(orngResources.file_open)), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema') 
         self.toolSave = QToolButton(QIconSet(QPixmap(orngResources.file_save)), "Save schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
         self.toolbar.addSeparator()
         toolPrint = QToolButton(QIconSet(QPixmap(orngResources.file_print)), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
         
         # qt version compatibility
-        if hasattr(self, "addDockWindow"): self.addDockWindow(self.toolbar, "Toolbar", Qt.DockTop, TRUE)
-        else:                  self.addToolBar(self.toolbar, "Toolbar", QMainWindow.Top, TRUE)
+        if hasattr(self, "addDockWindow"): self.addDockWindow(self.toolbar, "Toolbar", Qt.DockTop, True)
+        else:                  self.addToolBar(self.toolbar, "Toolbar", QMainWindow.Top, True)
         
         # read widgets    
-        if hasattr(self.widgetsToolBar, "setHorizontalStretchable"): self.widgetsToolBar.setHorizontalStretchable(TRUE)        
-        else: self.widgetsToolBar.setHorizontallyStretchable(TRUE)
+        if hasattr(self.widgetsToolBar, "setHorizontalStretchable"): self.widgetsToolBar.setHorizontalStretchable(True)        
+        else: self.widgetsToolBar.setHorizontallyStretchable(True)
         self.createWidgetsToolbar(not os.path.exists(self.registryFileName))
 
         self.readShortcuts()
@@ -158,8 +151,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.widgetsToolBar.clear()
         self.tabs = orngTabs.WidgetTabs(self.widgetInfo, self.widgetsToolBar, 'tabs')
         
-        if hasattr(self, "addDockWindow") : self.addDockWindow(self.widgetsToolBar, "Widgets", Qt.DockTop, TRUE)
-        else:                               self.addToolBar(self.widgetsToolBar, "Widgets", QMainWindow.Top, TRUE)
+        if hasattr(self, "addDockWindow") : self.addDockWindow(self.widgetsToolBar, "Widgets", Qt.DockTop, True)
+        else:                               self.addToolBar(self.widgetsToolBar, "Widgets", QMainWindow.Top, True)
         
         self.tabs.setCanvasDlg(self)
         
@@ -213,12 +206,14 @@ class OrangeCanvasDlg(QMainWindow):
         #self.menuFile.insertItem( "New from template",  self.menuItemNewFromTemplate)
         #self.menuFile.insertItem( "New from wizard",  self.menuItemNewWizard)
         self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_open)), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
+        if os.path.exists(os.path.join(self.canvasDir, "_lastSchema.ows")):
+            self.menuFile.insertItem("Open Last Schema", self.menuItemOpenLastSchema)
         self.menuFile.insertItem( "&Close", self.menuItemClose )
         self.menuFile.insertSeparator()
         self.menuSaveID = self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
         self.menuSaveAsID = self.menuFile.insertItem( "Save &As...", self.menuItemSaveAs)
-        self.menuFile.insertItem( "&Save As Application (Tabs)...", self.menuItemSaveAsAppTabs)
-        self.menuFile.insertItem( "&Save As Application (Buttons)...", self.menuItemSaveAsAppButtons)
+        self.menuFile.insertItem( "&Save as Application (Tabs)...", self.menuItemSaveAsAppTabs)
+        self.menuFile.insertItem( "&Save as Application (Buttons)...", self.menuItemSaveAsAppButtons)
         self.menuFile.insertSeparator()
         self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_print)), "&Print Schema / Save image", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
         self.menuFile.insertSeparator()
@@ -263,13 +258,13 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.menupopupShowToolbarID = self.menuWindow.insertItem( "Toolbar",  self.menuItemShowToolbar )
         if self.settings.has_key("showToolbar"): self.showToolbar = self.settings["showToolbar"]
-        else:                                    self.showToolbar = TRUE
+        else:                                    self.showToolbar = True
         if not self.showToolbar: self.toolbar.hide()
         self.menuWindow.setItemChecked(self.menupopupShowToolbarID, self.showToolbar)
 
         self.menupopupShowWidgetToolbarID = self.menuWindow.insertItem( "Widget Toolbar",  self.menuItemShowWidgetToolbar)
         if self.settings.has_key("showWidgetToolbar"): self.showWidgetToolbar = self.settings["showWidgetToolbar"]
-        else:                                    self.showWidgetToolbar = TRUE
+        else:                                    self.showWidgetToolbar = True
         if not self.showWidgetToolbar: self.widgetsToolBar.hide()
         self.menuWindow.setItemChecked(self.menupopupShowWidgetToolbarID, self.showWidgetToolbar)
         
@@ -349,6 +344,11 @@ class OrangeCanvasDlg(QMainWindow):
         win = self.menuItemNewSchema(0)
         win.loadDocument(str(name))
         self.addToRecentMenu(str(name))
+
+    def menuItemOpenLastSchema(self):
+        if os.path.exists(os.path.join(self.canvasDir, "_lastSchema.ows")):
+            win = self.menuItemNewSchema(0)
+            win.loadDocument(os.path.join(self.canvasDir, "_lastSchema.ows"), str(win.caption()))
 
     def menuItemClose(self):
         win = self.workspace.activeWindow()
@@ -475,7 +475,7 @@ class OrangeCanvasDlg(QMainWindow):
         return
         
     def updateSnapToGrid(self):
-        if self.snapToGrid == TRUE:
+        if self.snapToGrid == True:
             for win in self.workspace.windowList():
                 if not isinstance(win, orngDoc.SchemaDoc): continue
                 for widget in win.widgets:
@@ -544,17 +544,17 @@ class OrangeCanvasDlg(QMainWindow):
 
     """
     def menuItemPreferences(self):
-        dlg = orngDlgs.PreferencesDlg(self, None, "", TRUE)
+        dlg = orngDlgs.PreferencesDlg(self, None, "", True)
         dlg.exec_loop()
         if dlg.result() == QDialog.Accepted:
             self.rebuildSignals()
     """
 
     def menuItemRebuildWidgetRegistry(self):
-        self.createWidgetsToolbar(TRUE)
+        self.createWidgetsToolbar(True)
         
     def menuItemEditWidgetShortcuts(self):
-        dlg = orngDlgs.WidgetRegistryDlg(self, None, "", TRUE)
+        dlg = orngDlgs.WidgetRegistryDlg(self, None, "", True)
         dlg.exec_loop()
         if dlg.result() == QDialog.Accepted:
 
@@ -625,7 +625,7 @@ class OrangeCanvasDlg(QMainWindow):
         if w: w.setFocus()
 
     def menuItemCanvasOptions(self):
-        dlg = orngDlgs.CanvasOptionsDlg(self, None, "", TRUE)
+        dlg = orngDlgs.CanvasOptionsDlg(self, None, "", True)
 
         # set general options settings
         dlg.snapToGridCB.setChecked(self.snapToGrid)
@@ -633,7 +633,7 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
         dlg.verboseCB.setChecked(self.settings["verbose"])
         dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
-        dlg.saveSettingsBeforeCloseCB.setChecked(self.settings["saveSettingsBeforeClose"])
+        dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
 
         # set current exception settings
         #dlg.catchExceptionCB.setChecked(self.settings["catchException"])
@@ -682,16 +682,13 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
             self.settings["verbose"] = dlg.verboseCB.isChecked()
             self.settings["dontAskBeforeClose"] = dlg.dontAskBeforeCloseCB.isChecked()
-            self.settings["saveSettingsBeforeClose"] = dlg.saveSettingsBeforeCloseCB.isChecked()
-
+            self.settings["autoSaveSchemasOnClose"] = dlg.autoSaveSchemasOnCloseCB.isChecked()
+            
             self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
             self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
             self.settings["lineColor"]           = (dlg.lineIcon.color.red(), dlg.lineIcon.color.green(), dlg.lineIcon.color.blue())
 
             orngMisc.verbose = int(self.settings["verbose"])
-
-            self.dontAskBeforeClose = self.settings["dontAskBeforeClose"]
-            self.saveSettingsBeforeClose = self.settings["saveSettingsBeforeClose"]
 
             self.widgetSelectedColor = dlg.selectedWidgetIcon.color
             self.widgetActiveColor   = dlg.activeWidgetIcon.color
@@ -753,7 +750,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("snapToGrid", 1)
         self.settings.setdefault("writeLogFile", 1)
         self.settings.setdefault("dontAskBeforeClose", 0)
-        self.settings.setdefault("saveSettingsBeforeClose", 1)
+        self.settings.setdefault("autoSaveSchemasOnClose", 0)
         
         self.settings.setdefault("widgetSelectedColor", (0, 255, 0))
         self.settings.setdefault("widgetActiveColor", (0,0,255))

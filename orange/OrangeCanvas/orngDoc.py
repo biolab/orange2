@@ -48,19 +48,21 @@ class SchemaDoc(QMainWindow):
         newSettings = self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
         self.canSave = self.canSave or newSettings
 
-        if not self.canSave or self.canvasDlg.dontAskBeforeClose:
+        self.synchronizeContexts()
+        if self.canvasDlg.settings["autoSaveSchemasOnClose"]:
+            self.save(os.path.join(self.canvasDlg.canvasDir, "_lastSchema.ows"))
+
+        if not self.canSave or self.canvasDlg.settings["dontAskBeforeClose"]:
             if newSettings:
-                self.synchronizeContexts()
                 self.saveDocument()
             self.clear()
             ce.accept()
             QMainWindow.closeEvent(self, ce)
             return
-
+        
         #QMainWindow.closeEvent(self, ce)
         res = QMessageBox.information(self,'Orange Canvas','Do you want to save changes made to schema?','&Yes','&No','&Cancel',0)
         if res == 0:
-            self.synchronizeContexts()
             self.saveDocument()
             ce.accept()
             self.clear()
@@ -388,7 +390,7 @@ class SchemaDoc(QMainWindow):
 
     # ####################################
     # save the file            
-    def save(self):
+    def save(self, filename = None):
         self.enableSave(False)
 
         # create xml document
@@ -425,14 +427,20 @@ class SchemaDoc(QMainWindow):
         settings.setAttribute("settingsDictionary", str(settingsDict))
 
         xmlText = doc.toprettyxml()
-        file = open(os.path.join(self.documentpath, self.documentname), "wt")
+
+        if filename != None:
+            file = open(filename, "wt")
+        else:
+            file = open(os.path.join(self.documentpath, self.documentname), "wt")
+        
         file.write(xmlText)
         file.flush()
         file.close()
         doc.unlink()
 
         #self.saveWidgetSettings(os.path.join(self.documentpath, os.path.splitext(self.documentname)[0]) + ".sav")
-        self.canvasDlg.addToRecentMenu(os.path.join(self.documentpath, self.documentname))        
+        if not filename:
+            self.canvasDlg.addToRecentMenu(os.path.join(self.documentpath, self.documentname))        
 
     def saveWidgetSettings(self, filename):
         list = {}
@@ -446,7 +454,7 @@ class SchemaDoc(QMainWindow):
 
     # ####################################                    
     # load a scheme with name "filename"
-    def loadDocument(self, filename):
+    def loadDocument(self, filename, caption = None):
         if not os.path.exists(filename):
             self.close()
             QMessageBox.critical(self,'Orange Canvas','Unable to find file "'+ filename,  QMessageBox.Ok + QMessageBox.Default)
@@ -506,8 +514,9 @@ class SchemaDoc(QMainWindow):
             for widget in self.widgets: widget.updateTooltip()
             self.canvas.update()
             self.enableSave(False)
-            
-            self.setCaption(self.documentname)
+
+            if caption != None: self.setCaption(caption)
+            else:               self.setCaption(self.documentname)
             self.documentnameValid = True
             self.signalManager.processNewSignals(self.widgets[0].instance)
 
