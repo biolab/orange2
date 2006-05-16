@@ -1,28 +1,26 @@
-#ifndef __MYMODULE_GLOBALS
-#define __MYMODULE_GLOBALS
+#ifndef __COREMODULE_GLOBALS
+#define __COREMODULE_GLOBALS
 
-// The usual export-import mechanism; MYMODULE_EXPORTS is defined by default
-//  (VC takes care of this)
 #ifdef _MSC_VER
-    #ifdef MYMODULE_EXPORTS
-        #define MYMODULE_API __declspec(dllexport)
+    #ifdef CORE_EXPORTS
+        #define CORE_API __declspec(dllexport)
     #else
-        #define MYMODULE_API __declspec(dllimport)
+        #define CORE_API __declspec(dllimport)
     
         #ifdef _DEBUG
-            #pragma comment(lib, "mymodule_d.lib")
+            #pragma comment(lib, "core_d.lib")
         #else
-            #pragma comment(lib, "mymodule.lib")
+            #pragma comment(lib, "core.lib")
         #endif
     #endif
 #else
-    #define MYMODULE_API
+    #define CORE_API
 #endif
 
 // garbage collection stuff
 #include "garbage.hpp"
-#define MMWRAPPER(x) BASIC_WRAPPER(x, MYMODULE_API)
-#define MMVWRAPPER(x) BASIC_VWRAPPER(x, MYMODULE_API)
+#define COREWRAPPER(x) BASIC_WRAPPER(x, CORE_API)
+#define COREVWRAPPER(x) BASIC_VWRAPPER(x, CORE_API)
 
 
 // wrapper macro for orange classes is defined here (besides other things)

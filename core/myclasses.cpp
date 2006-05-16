@@ -1,10 +1,8 @@
-// all other files should include myclasses.hpp (if they need these definitions),
-// myclasses.cpp should be the only one who includes myclasses.ppp
-#include "myclasses.ppp"
+#include "coreclasses.ppp"
 
 #include "errors.hpp" // for raiseError
 
-TMyLearner::TMyLearner(const int &seed)
+TCoreLearner::TMyLearner(const int &seed)
 : randomSeed(seed)
 {}
 
