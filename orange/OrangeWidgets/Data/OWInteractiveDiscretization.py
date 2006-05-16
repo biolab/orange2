@@ -44,18 +44,21 @@ class DiscGraph(OWGraph):
         self.curAttribute=0
         self.curCandidate=0
         self.data=None
-    """
+    
     def snap(self, point):
+        if not self.master.snap:
+            return point
         varInd=self.master.attribute
         minVal=self.minVal[varInd]
         maxVal=self.maxVal[varInd]
-        if maxVal-minVal<self.resolution
-        rr=["%f.2" % a for a in frange(minVal, maxVal, self.resolution)]
-        rr=[int(float(s)*100)/100.0  for s in rr]
-        i=0, max=abs(rr[0]-point)
-        for r in rr[1:]:
-            if i<
-    """
+        order=math.ceil(math.log(maxVal-minVal, 10))
+        f=point*math.pow(10, -(order-1))
+        s="%.1f" % f
+        f=float(s)/math.pow(10, -(order-1))
+        #print f
+        return f
+        #return point
+    
     def computeBaseScore(self):
         varInd=self.master.attribute
         minVal=self.minVal[varInd]
@@ -186,6 +189,7 @@ class DiscGraph(OWGraph):
     def onMousePressed(self, e):
         self.mouseCurrentlyPressed=1
         cut=self.invTransform(QwtPlot.xBottom, e.x())
+        cut=self.snap(cut)
         curve=self.getCutCurve(cut)
         if curve:
             if e.button()==Qt.RightButton:
@@ -205,13 +209,16 @@ class DiscGraph(OWGraph):
         if self.mouseCurrentlyPressed:
             if self.selectedCutPoint:
                 pos=self.invTransform(QwtPlot.xBottom, e.x())
+                pos=self.snap(pos)
+                if self.curCutPoints[self.selectedCutPoint.curveInd]==pos:
+                    return
                 self.curCutPoints[self.selectedCutPoint.curveInd]=pos
                 self.selectedCutPoint.setData([pos, pos], [1.0, 0.0])
                 self.computeLookaheadScore(pos)
                 self.plotLookaheadCurve()
                 self.curve(self.lookaheadCurveKey).setEnabled(1)
                 self.update()
-        elif self.getCutCurve(self.invTransform(QwtPlot.xBottom, e.x())):
+        elif self.getCutCurve(self.snap(self.invTransform(QwtPlot.xBottom, e.x()))):
             self.canvas().setCursor(Qt.sizeHorCursor)
         else:
             self.canvas().setCursor(Qt.arrowCursor)
@@ -308,7 +315,7 @@ class OWInteractiveDiscretization(OWWidget):
         OWGUI.checkBox(box, self, "showLookaheadLine", "Show lookahead line", callback=self.graph.replotAll)
         OWGUI.checkBox(box, self, "showTargetClassProb", "Show target class prob", callback=self.graph.replotAll)
         OWGUI.checkBox(box, self, "showRug", "Show rug", callback=self.graph.replotAll)
-        #OWGUI.checkBox(box, self, "snap", "Snap to grid")
+        OWGUI.checkBox(box, self, "snap", "Snap to grid")
         QVBox(self.controlArea)
         OWGUI.button(self.controlArea, self,"&Commit", callback=self.commit)
 
