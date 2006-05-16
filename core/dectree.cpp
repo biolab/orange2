@@ -409,10 +409,11 @@ void dectree::clearDescription(void)
    NoAttr = NoOriginalAttr = NoDiscrete = NoContinuous = 0 ;
 }
 
+#include "table.hpp"
 
-void dectree::readDescription(PExampleGenerator egen)
+void dectree::readDescription(TExampleTable &egen)
 {
-  const nattrs = egen->domain->variables->size();
+  const nattrs = egen.domain->variables->size();
   NoContinuous = 0 ;
   NoDiscrete = 1 ;
   ContIdx.create(nattrs, -1) ;
@@ -420,7 +421,7 @@ void dectree::readDescription(PExampleGenerator egen)
   AttrDesc.create(nattrs);
 
   int i = 1;
-  TVarList::const_iterator vi(egen->domain->attributes->begin()), ve(egen->domain->attributes->end());
+  TVarList::const_iterator vi(egen.domain->attributes->begin()), ve(egen.domain->attributes->end());
   for(; vi != ve; vi++, i++) {
     AttrDesc[i].AttributeName = strcpy(new char[(*vi)->name.length()+1], (*vi)->name.c_str());
     if ((*vi)->varType == TValue::FLOATVAR) {
@@ -451,14 +452,14 @@ void dectree::readDescription(PExampleGenerator egen)
     }
   }
 
-  if (egen->domain->classVar->varType != TValue::INTVAR)
+  if (egen.domain->classVar->varType != TValue::INTVAR)
     throw "discrete class expected";
 
   AttrDesc[0].continuous = FALSE ;
   DiscIdx[0] = i ;
   AttrDesc[0].tablePlace = NoDiscrete ;
 
-  const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(egen->domain->classVar.getReference());
+  const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(egen.domain->classVar.getReference());
   AttrDesc[0].NoValues = evar.noOfValues();
 
   AttrDesc[0].ValueName.create(AttrDesc[0].NoValues) ;

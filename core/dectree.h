@@ -9,7 +9,6 @@
 #include "contain.h"
 #include "bintree.h"
 
-#include "table.hpp"
 
 const char NAdisc = '\x00' ;
 #define NAcont -1e30
@@ -78,6 +77,8 @@ enum datastate {empty, description, data, tree, random_forest} ;
 
 class featureTree; // forward
 
+class TExampleTable; 
+
 //  basic class for decision trees, provides data input and output
 class dectree :  public bintree
 {
@@ -116,7 +117,7 @@ public:
    ~dectree();
    int readProblem(void) ;  //--//
    int readDescription(void);
-   void readDescription(PExampleGenerator egen);
+   void readDescription(TExampleTable &egen);
    int readCosts(void);
    int readData(void);
    void readData(TExampleTable &);
