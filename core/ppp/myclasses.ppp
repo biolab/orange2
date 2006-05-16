@@ -4,44 +4,30 @@
 
 
 
-/****** TMyLearner *****/
+/****** TRandomForestLearner *****/
 
-TPropertyDescription TMyLearner_properties[] = {
-  {"randomSeed", "seed for the random generator", &typeid(int), NULL, offsetof(TMyLearner, randomSeed), false, false},
-  {"needs", "the kind of data that learner needs", &typeid(int), NULL, offsetof(TMyLearner, needs), true, false},
+TPropertyDescription TRandomForestLearner_properties[] = {
+  {"randomSeed", "seed for the random generator", &typeid(int), NULL, offsetof(TRandomForestLearner, randomSeed), false, false},
+  {"needs", "the kind of data that learner needs", &typeid(int), NULL, offsetof(TRandomForestLearner, needs), true, false},
   {NULL}
 };
 
-size_t const TMyLearner_components[] = { 0};
-TClassDescription TMyLearner::st_classDescription = { "TMyLearner", &typeid(TMyLearner), &TLearner::st_classDescription, TMyLearner_properties, TMyLearner_components };
-TClassDescription const *TMyLearner::classDescription() const { return &TMyLearner::st_classDescription; }
-TOrange *TMyLearner::clone() const { return mlnew TMyLearner(*this); }
+size_t const TRandomForestLearner_components[] = { 0};
+TClassDescription TRandomForestLearner::st_classDescription = { "TRandomForestLearner", &typeid(TRandomForestLearner), &TLearner::st_classDescription, TRandomForestLearner_properties, TRandomForestLearner_components };
+TClassDescription const *TRandomForestLearner::classDescription() const { return &TRandomForestLearner::st_classDescription; }
+TOrange *TRandomForestLearner::clone() const { return mlnew TRandomForestLearner(*this); }
 
 
-/****** TMyClassifier *****/
+/****** TRandomForest *****/
 
-TPropertyDescription TMyClassifier_properties[] = {
-  {"randomGenerator", "random generator", &typeid(POrange), &TRandomGenerator::st_classDescription, offsetof(TMyClassifier, randomGenerator), true, false},
-  {"classVar", "class variable", &typeid(POrange), &TVariable::st_classDescription, offsetof(TMyClassifier, classVar), false, false},
-  {"computesProbabilities", "set if classifier computes class probabilities (if not, it assigns 1.0 to the predicted)", &typeid(bool), NULL, offsetof(TMyClassifier, computesProbabilities), false, false},
+TPropertyDescription TRandomForest_properties[] = {
+  {"randomGenerator", "random generator", &typeid(POrange), &TRandomGenerator::st_classDescription, offsetof(TRandomForest, randomGenerator), true, false},
+  {"classVar", "class variable", &typeid(POrange), &TVariable::st_classDescription, offsetof(TRandomForest, classVar), false, false},
+  {"computesProbabilities", "set if classifier computes class probabilities (if not, it assigns 1.0 to the predicted)", &typeid(bool), NULL, offsetof(TRandomForest, computesProbabilities), false, false},
   {NULL}
 };
 
-size_t const TMyClassifier_components[] = { offsetof(TMyClassifier, randomGenerator), offsetof(TMyClassifier, classVar), 0};
-TClassDescription TMyClassifier::st_classDescription = { "TMyClassifier", &typeid(TMyClassifier), &TClassifier::st_classDescription, TMyClassifier_properties, TMyClassifier_components };
-TClassDescription const *TMyClassifier::classDescription() const { return &TMyClassifier::st_classDescription; }
-TOrange *TMyClassifier::clone() const { return mlnew TMyClassifier(*this); }
-
-
-/****** TMyFilter *****/
-
-TPropertyDescription TMyFilter_properties[] = {
-  {"negate", "if true, filter output should be negated.", &typeid(bool), NULL, offsetof(TMyFilter, negate), false, false},
-  {"domain", "domain to which the examples are converted (if needed)", &typeid(POrange), &TDomain::st_classDescription, offsetof(TMyFilter, domain), false, false},
-  {NULL}
-};
-
-size_t const TMyFilter_components[] = { offsetof(TMyFilter, domain), 0};
-TClassDescription TMyFilter::st_classDescription = { "TMyFilter", &typeid(TMyFilter), &TFilter::st_classDescription, TMyFilter_properties, TMyFilter_components };
-TClassDescription const *TMyFilter::classDescription() const { return &TMyFilter::st_classDescription; }
-TOrange *TMyFilter::clone() const { return mlnew TMyFilter(*this); }
+size_t const TRandomForest_components[] = { offsetof(TRandomForest, randomGenerator), offsetof(TRandomForest, classVar), 0};
+TClassDescription TRandomForest::st_classDescription = { "TRandomForest", &typeid(TRandomForest), &TClassifier::st_classDescription, TRandomForest_properties, TRandomForest_components };
+TClassDescription const *TRandomForest::classDescription() const { return &TRandomForest::st_classDescription; }
+TOrange *TRandomForest::clone() const { return mlnew TRandomForest(*this); }

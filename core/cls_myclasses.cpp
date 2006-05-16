@@ -1,10 +1,8 @@
-#include "coreclasses.hpp"
+#include "myclasses.hpp"
 
 
 C_CALL(RandomForestLearner, Learner, "() -/-> RandomForest")
 
-BASED_ON(RandomForest, ClassifierFD)
-/*
 PyObject *RandomForest_new(PyTypeObject *type, PyObject *args, PyObject *keyws) BASED_ON(Classifier, "(classVar | examples, [randomGenerator | int])")
 {
   PyTRY {
@@ -22,12 +20,11 @@ PyObject *RandomForest_new(PyTypeObject *type, PyObject *args, PyObject *keyws) 
         PYERROR(PyExc_AttributeError, "RandomClassifier.__new__ expects a class variable and, optionally, a random generator or a seed", NULL);
     }
 
-    TClassifier *rclass = new TMyClassifier(classVar, rg);
+    TClassifier *rclass = new TRandomForest(classVar, rg);
     return WrapNewOrange(rclass, type);
   }
   PyCATCH;
 }
-*/
 
 
-#include "px/cls_coreclasses.px"
+#include "px/cls_myclasses.px"

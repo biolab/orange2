@@ -5,20 +5,20 @@
 
 
 
-PyMethodDef mymoduleFunctions[]={
+PyMethodDef coreFunctions[]={
      {NULL, NULL}
 };
 
-int noOfmymoduleClasses=2;
+int noOfcoreClasses=2;
 
-TOrangeType *mymoduleClasses[]={
+TOrangeType *coreClasses[]={
     &PyOrRandomForest_Type,
     &PyOrRandomForestLearner_Type,
     NULL};
 
 
 
-void addmymoduleConstants(PyObject *mod) {
+void addcoreConstants(PyObject *mod) {
      PyModule_AddObject(mod, "RandomForest", (PyObject *)&PyOrRandomForest_Type);
      PyModule_AddObject(mod, "RandomForestLearner", (PyObject *)&PyOrRandomForestLearner_Type);
 }
@@ -30,25 +30,25 @@ void addmymoduleConstants(PyObject *mod) {
   BOOL APIENTRY DllMain( HANDLE, DWORD  ul_reason_for_call, LPVOID)  { return TRUE; }
 #endif
 
-PyObject *mymoduleModule;
+PyObject *coreModule;
 
 ORANGE_API void addClassList(TOrangeType **);
 
 #ifdef DARWIN
-  extern "C" MYMODULE_API void initmymoduleLow()
+  extern "C" CORE_API void initcoreLow()
 #else
-  extern "C" MYMODULE_API void initmymodule()
+  extern "C" CORE_API void initcore()
 #endif
 { 
-  if (!initmymoduleExceptions())
+  if (!initcoreExceptions())
     return;
 
-  for(TOrangeType **type=mymoduleClasses; *type; type++)
+  for(TOrangeType **type=coreClasses; *type; type++)
     if (PyType_Ready((PyTypeObject *)*type)<0)
       return;
-  addClassList(mymoduleClasses);
+  addClassList(coreClasses);
 
-  gcmymoduleUnsafeStaticInitialization();
-  mymoduleModule = Py_InitModule("mymodule", mymoduleFunctions);  
-  addmymoduleConstants(mymoduleModule);
+  gccoreUnsafeStaticInitialization();
+  coreModule = Py_InitModule("core", coreFunctions);  
+  addcoreConstants(coreModule);
 }

@@ -69,7 +69,7 @@ protected:
    int rfTreeCheck(binnode *branch, int caseIdx, marray<double> &probDist) ;
    void rfSplit(marray<int> &DTrain, int TrainSize, binnode* Node, marray<int> &LeftTrain, int &LeftSize, marray<int> &RightTrain, int &RightSize) ;
    void rfNearCheck(int caseIdx, marray<double> &probDist) ;
-   void rfFindNearInTree(binnode *branch, int caseIdx, marray<IntSortRec> &near) ;
+   void rfFindNearInTree(binnode *branch, int caseIdx, marray<IntSortRec> &) ;
    binnode* rfBuildLimitedTree(int noTerminal, int TrainSize, marray<int> &DTrain, marray<double> &attrProb) ;
    void rfRevertToLeaf(binnode *Node) ;
    binnode* rfPrepareLeaf(int TrainSize, marray<int> &DTrain) ;

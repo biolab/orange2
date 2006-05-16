@@ -7,10 +7,10 @@
 
 #include "mymodule_globals.hpp"
 
-bool initmymoduleExceptions()
+bool initcoreExceptions()
 { return true; }
 
-void gcmymoduleUnsafeStaticInitialization()
+void gccoreUnsafeStaticInitialization()
 {}
 
 #include "px/initialization.px"

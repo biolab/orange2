@@ -723,6 +723,10 @@ extern IMPORT_DLL TOrangeType PyOrIntervalDiscretizer_Type;
 #define PyOrIntervalDiscretizer_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrIntervalDiscretizer_Type)
 #define PyOrange_AsIntervalDiscretizer(op) (*(GCPtr< TIntervalDiscretizer > *)(void *)(&PyOrange_AS_Orange(op)))
 
+extern IMPORT_DLL TOrangeType PyOrKernelFunc_Type;
+#define PyOrKernelFunc_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrKernelFunc_Type)
+#define PyOrange_AsKernelFunc(op) (*(GCPtr< TKernelFunc > *)(void *)(&PyOrange_AS_Orange(op)))
+
 extern IMPORT_DLL TOrangeType PyOrLWRClassifier_Type;
 #define PyOrLWRClassifier_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrLWRClassifier_Type)
 #define PyOrange_AsLWRClassifier(op) (*(GCPtr< TLWRClassifier > *)(void *)(&PyOrange_AS_Orange(op)))
@@ -995,11 +999,11 @@ extern IMPORT_DLL TOrangeType PyOrRandomClassifier_Type;
 #define PyOrRandomClassifier_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrRandomClassifier_Type)
 #define PyOrange_AsRandomClassifier(op) (*(GCPtr< TRandomClassifier > *)(void *)(&PyOrange_AS_Orange(op)))
 
-extern MYMODULE_API TOrangeType PyOrRandomForest_Type;
+extern CORE_API TOrangeType PyOrRandomForest_Type;
 #define PyOrRandomForest_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrRandomForest_Type)
 #define PyOrange_AsRandomForest(op) (*(GCPtr< TRandomForest > *)(void *)(&PyOrange_AS_Orange(op)))
 
-extern MYMODULE_API TOrangeType PyOrRandomForestLearner_Type;
+extern CORE_API TOrangeType PyOrRandomForestLearner_Type;
 #define PyOrRandomForestLearner_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrRandomForestLearner_Type)
 #define PyOrange_AsRandomForestLearner(op) (*(GCPtr< TRandomForestLearner > *)(void *)(&PyOrange_AS_Orange(op)))
 
@@ -1425,7 +1429,7 @@ extern IMPORT_DLL TOrangeType PyOrkNNLearner_Type;
 #define PyOrkNNLearner_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrkNNLearner_Type)
 #define PyOrange_AskNNLearner(op) (*(GCPtr< TkNNLearner > *)(void *)(&PyOrange_AS_Orange(op)))
 
-#if defined(MYMODULE_EXPORTS) || !defined(_MSC_VER)
+#if defined(CORE_EXPORTS) || !defined(_MSC_VER)
 
   #define cc_AlignmentList PyOrAlignmentList_Type.ot_converter
   #define ccn_AlignmentList PyOrAlignmentList_Type.ot_nconverter
@@ -1960,6 +1964,9 @@ extern IMPORT_DLL TOrangeType PyOrkNNLearner_Type;
 
   #define cc_IntervalDiscretizer PyOrIntervalDiscretizer_Type.ot_converter
   #define ccn_IntervalDiscretizer PyOrIntervalDiscretizer_Type.ot_nconverter
+
+  #define cc_KernelFunc PyOrKernelFunc_Type.ot_converter
+  #define ccn_KernelFunc PyOrKernelFunc_Type.ot_nconverter
 
   #define cc_LWRClassifier PyOrLWRClassifier_Type.ot_converter
   #define ccn_LWRClassifier PyOrLWRClassifier_Type.ot_nconverter

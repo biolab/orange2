@@ -936,19 +936,19 @@ int featureTree::rfTreeCheck(binnode *branch, int caseIdx, marray<double> &probD
 //
 //************************************************************
 void featureTree::rfNearCheck(int caseIdx, marray<double> &probDist) {
-    marray<IntSortRec> near(NoCases) ;
+    marray<IntSortRec> nearr(NoCases) ;
     int i, j, max, iT ;
 	for (i=0 ; i < NoCases ; i++) {
-		near[i].key = 0 ;
-		near[i].value = i ;
+		nearr[i].key = 0 ;
+		nearr[i].value = i ;
 	}
 	marray<double> distr(NoClasses+1) ;
 	for (iT=0 ; iT < opt->rfNoTrees ; iT++) 
-		rfFindNearInTree(forest[iT].t.root, caseIdx, near) ;
-	near.setFilled(NoCases) ;
-	near[caseIdx].key = 0 ;
+		rfFindNearInTree(forest[iT].t.root, caseIdx, nearr) ;
+	nearr.setFilled(NoCases) ;
+	nearr[caseIdx].key = 0 ;
 	int k = Mmin(opt->rfkNearestEqual, NoTeachCases-1) ;
-	near.sortKdsc(k) ;
+	nearr.sortKdsc(k) ;
     
 	marray<sortRec> treeMg(opt->rfNoTrees) ;
 	for (iT=0 ; iT < opt->rfNoTrees ; iT++) {
@@ -959,17 +959,17 @@ void featureTree::rfNearCheck(int caseIdx, marray<double> &probDist) {
 	double sumTreeMg = 0.0 ;
 	for (iT=0 ; iT < opt->rfNoTrees ; iT++)  {
 		treeCount = 0 ;
-	   for (i=near.filled()-1 ; i > near.filled()-1-k ; i--) 
-  		  if (! forest[iT].ib.member(near[i].value)) {
+	   for (i=nearr.filled()-1 ; i > nearr.filled()-1-k ; i--) 
+  		  if (! forest[iT].ib.member(nearr[i].value)) {
              treeCount++ ; 
-			 max = rfTreeCheck(forest[iT].t.root, near[i].value, distr) ;
-			 if (DiscData(near[i].value,0)==1)
+			 max = rfTreeCheck(forest[iT].t.root, nearr[i].value, distr) ;
+			 if (DiscData(nearr[i].value,0)==1)
 			  	maxOther = 2 ;
 			 else maxOther = 1 ;
 			 for (j=maxOther+1 ; j <= NoClasses; j++)
-				if (j != DiscData(near[i].value,0) && distr[j] > distr[maxOther])
+				if (j != DiscData(nearr[i].value,0) && distr[j] > distr[maxOther])
 					maxOther = j ;
-			 treeMg[iT].key += distr[DiscData(near[i].value,0)] - distr[maxOther] ; 
+			 treeMg[iT].key += distr[DiscData(nearr[i].value,0)] - distr[maxOther] ; 
 		  }
        treeMg[iT].key /= double(treeCount) ;
        if (treeMg[iT].key > 0)
@@ -1008,13 +1008,13 @@ void featureTree::rfNearCheck(int caseIdx, marray<double> &probDist) {
 //        taking locality into account 
 //
 //************************************************************
-void featureTree::rfFindNearInTree(binnode *branch, int caseIdx, marray<IntSortRec> &near)
+void featureTree::rfFindNearInTree(binnode *branch, int caseIdx, marray<IntSortRec> &nearr)
 {
    switch (branch->Identification)  {   
         case leaf:
 			{
 				for (int i=0 ; i < branch->DTrain.len() ; i++) 
-					near[branch->DTrain[i]].key++ ;
+					nearr[branch->DTrain[i]].key++ ;
 			   return ;
 			}
         case continuousAttribute:
@@ -1023,9 +1023,9 @@ void featureTree::rfFindNearInTree(binnode *branch, int caseIdx, marray<IntSortR
                 if (contValue == NAcont)
 					contValue = branch->NAcontValue[branch->Construct.root->attrIdx] ;
                 if (contValue <= branch->Construct.splitValue)
-                    rfFindNearInTree(branch->left, caseIdx, near) ;
+                    rfFindNearInTree(branch->left, caseIdx, nearr) ;
                 else 
-                   rfFindNearInTree(branch->right, caseIdx,near) ;
+                   rfFindNearInTree(branch->right, caseIdx,nearr) ;
 			  }
 			  return ;
 		case discreteAttribute: 
@@ -1034,9 +1034,9 @@ void featureTree::rfFindNearInTree(binnode *branch, int caseIdx, marray<IntSortR
                 if (discValue == NAdisc)
 					discValue = branch->NAdiscValue[branch->Construct.root->attrIdx] ;
                 if (branch->Construct.leftValues[discValue])
-                    rfFindNearInTree(branch->left, caseIdx, near) ;
+                    rfFindNearInTree(branch->left, caseIdx, nearr) ;
                 else 
-                   rfFindNearInTree(branch->right, caseIdx, near) ;
+                   rfFindNearInTree(branch->right, caseIdx, nearr) ;
 			   }
 			   return ;
         default:

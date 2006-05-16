@@ -1,8 +1,9 @@
-#include "coreclasses.ppp"
+#include "myclasses.ppp"
 
 #include "errors.hpp" // for raiseError
 
-TCoreLearner::TMyLearner(const int &seed)
+/*
+TRandomForestLearner::TRandomForestLearner(const int &seed)
 : randomSeed(seed)
 {}
 
@@ -29,11 +30,4 @@ TValue TMyClassifier::operator()(const TExample &)
   return TValue(randomGenerator->randint(classVar->noOfValues()));
 }
 
-
-/* The only fancy thing in this file: sumValues is actually CRC32,
-   so the result of this function is semi-random, but always the
-   same for the same example */
-bool TMyFilter::operator()(const TExample &ex)
-{
-  return ex.sumValues() & 1;
-}
+*/

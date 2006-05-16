@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MYMODULE_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "../orange" /I "px" /I "ppp" /I "$(PYTHON)/include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MYMODULE_EXPORTS" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "../orange" /I "px" /I "ppp" /I "$(PYTHON)/include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "CORE_EXPORTS" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -72,8 +72,8 @@ PostBuild_Cmds=copy Release\mymodule.lib ..\..\lib\mymodule.lib
 # PROP Intermediate_Dir "Debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MYMODULE_EXPORTS" /YX /FD /GZ  /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../include" /I "../orange" /I "px" /I "ppp" /I "$(PYTHON)/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MYMODULE_EXPORTS" /YX /FD /GZ  /c
+# ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MYMODULE_EXPORTS" /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../include" /I "../orange" /I "px" /I "ppp" /I "$(PYTHON)/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "CORE_EXPORTS" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -100,7 +100,147 @@ PostBuild_Cmds=copy Debug\mymodule_d.lib ..\..\lib\mymodule_d.lib
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=.\binarize.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\binnode.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\binnode.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\binpart.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\binpart.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\bintree.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\bintree.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\bool.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\C5convert.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\C5defns.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\C5hooks.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\C5hooks.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\cls_myclasses.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\constrct.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\constrct.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\contain.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\cost.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\dectree.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\dectree.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\error.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\error.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\estimator.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\estimator.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\estOrdAttr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\expr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\expr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\frontend.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\frontend.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ftree.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ftree.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\general.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\mathutil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\mathutil.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\menu.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\menu.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\model.cpp
 # End Source File
 # Begin Source File
 
@@ -109,6 +249,78 @@ SOURCE=.\myclasses.cpp
 # Begin Source File
 
 SOURCE=.\mymodule.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\new_new.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\new_new.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\nrutil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\nrutil.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\options.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\options.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\prune.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\randomForestClass.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\relieff.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\rfRegularize.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\rfUtil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\rfUtil.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\rndforest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\rndforest.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\treenode.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\trutil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\utils.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\utils.h
 # End Source File
 # End Group
 # Begin Group "Header Files"

@@ -1,5 +1,4 @@
 
 /* from myclasses.hpp */
-class EXPORT_DLL TMyLearner;
-class EXPORT_DLL TMyClassifier;
-class EXPORT_DLL TMyFilter;
+class EXPORT_DLL TRandomForestLearner;
+class EXPORT_DLL TRandomForest;
