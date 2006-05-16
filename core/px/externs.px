@@ -843,18 +843,6 @@ extern IMPORT_DLL TOrangeType PyOrMeasureAttribute_relief_Type;
 #define PyOrMeasureAttribute_relief_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrMeasureAttribute_relief_Type)
 #define PyOrange_AsMeasureAttribute_relief(op) (*(GCPtr< TMeasureAttribute_relief > *)(void *)(&PyOrange_AS_Orange(op)))
 
-extern MYMODULE_API TOrangeType PyOrMyClassifier_Type;
-#define PyOrMyClassifier_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrMyClassifier_Type)
-#define PyOrange_AsMyClassifier(op) (*(GCPtr< TMyClassifier > *)(void *)(&PyOrange_AS_Orange(op)))
-
-extern MYMODULE_API TOrangeType PyOrMyFilter_Type;
-#define PyOrMyFilter_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrMyFilter_Type)
-#define PyOrange_AsMyFilter(op) (*(GCPtr< TMyFilter > *)(void *)(&PyOrange_AS_Orange(op)))
-
-extern MYMODULE_API TOrangeType PyOrMyLearner_Type;
-#define PyOrMyLearner_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrMyLearner_Type)
-#define PyOrange_AsMyLearner(op) (*(GCPtr< TMyLearner > *)(void *)(&PyOrange_AS_Orange(op)))
-
 extern IMPORT_DLL TOrangeType PyOrNormalizeContinuous_Type;
 #define PyOrNormalizeContinuous_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrNormalizeContinuous_Type)
 #define PyOrange_AsNormalizeContinuous(op) (*(GCPtr< TNormalizeContinuous > *)(void *)(&PyOrange_AS_Orange(op)))
@@ -1006,6 +994,14 @@ extern IMPORT_DLL TOrangeType PyOrPythonVariable_Type;
 extern IMPORT_DLL TOrangeType PyOrRandomClassifier_Type;
 #define PyOrRandomClassifier_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrRandomClassifier_Type)
 #define PyOrange_AsRandomClassifier(op) (*(GCPtr< TRandomClassifier > *)(void *)(&PyOrange_AS_Orange(op)))
+
+extern MYMODULE_API TOrangeType PyOrRandomForest_Type;
+#define PyOrRandomForest_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrRandomForest_Type)
+#define PyOrange_AsRandomForest(op) (*(GCPtr< TRandomForest > *)(void *)(&PyOrange_AS_Orange(op)))
+
+extern MYMODULE_API TOrangeType PyOrRandomForestLearner_Type;
+#define PyOrRandomForestLearner_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrRandomForestLearner_Type)
+#define PyOrange_AsRandomForestLearner(op) (*(GCPtr< TRandomForestLearner > *)(void *)(&PyOrange_AS_Orange(op)))
 
 extern IMPORT_DLL TOrangeType PyOrRandomGenerator_Type;
 #define PyOrRandomGenerator_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOrRandomGenerator_Type)
@@ -2055,21 +2051,6 @@ extern IMPORT_DLL TOrangeType PyOrkNNLearner_Type;
   #define cc_MeasureAttribute_relief PyOrMeasureAttribute_relief_Type.ot_converter
   #define ccn_MeasureAttribute_relief PyOrMeasureAttribute_relief_Type.ot_nconverter
 
-  int cc_func_MyClassifier(PyObject *, void *);
-  int ccn_func_MyClassifier(PyObject *, void *);
-  #define cc_MyClassifier cc_func_MyClassifier
-  #define ccn_MyClassifier ccn_func_MyClassifier
-
-  int cc_func_MyFilter(PyObject *, void *);
-  int ccn_func_MyFilter(PyObject *, void *);
-  #define cc_MyFilter cc_func_MyFilter
-  #define ccn_MyFilter ccn_func_MyFilter
-
-  int cc_func_MyLearner(PyObject *, void *);
-  int ccn_func_MyLearner(PyObject *, void *);
-  #define cc_MyLearner cc_func_MyLearner
-  #define ccn_MyLearner ccn_func_MyLearner
-
   #define cc_NormalizeContinuous PyOrNormalizeContinuous_Type.ot_converter
   #define ccn_NormalizeContinuous PyOrNormalizeContinuous_Type.ot_nconverter
 
@@ -2183,6 +2164,16 @@ extern IMPORT_DLL TOrangeType PyOrkNNLearner_Type;
 
   #define cc_RandomClassifier PyOrRandomClassifier_Type.ot_converter
   #define ccn_RandomClassifier PyOrRandomClassifier_Type.ot_nconverter
+
+  int cc_func_RandomForest(PyObject *, void *);
+  int ccn_func_RandomForest(PyObject *, void *);
+  #define cc_RandomForest cc_func_RandomForest
+  #define ccn_RandomForest ccn_func_RandomForest
+
+  int cc_func_RandomForestLearner(PyObject *, void *);
+  int ccn_func_RandomForestLearner(PyObject *, void *);
+  #define cc_RandomForestLearner cc_func_RandomForestLearner
+  #define ccn_RandomForestLearner ccn_func_RandomForestLearner
 
   #define cc_RandomGenerator PyOrRandomGenerator_Type.ot_converter
   #define ccn_RandomGenerator PyOrRandomGenerator_Type.ot_nconverter
@@ -2501,14 +2492,11 @@ extern IMPORT_DLL TOrangeType PyOrkNNLearner_Type;
 
 #else
 
-  #define cc_MyClassifier PyOrMyClassifier_Type.ot_converter
-  #define ccn_MyClassifier PyOrMyClassifier_Type.ot_nconverter
+  #define cc_RandomForest PyOrRandomForest_Type.ot_converter
+  #define ccn_RandomForest PyOrRandomForest_Type.ot_nconverter
 
-  #define cc_MyFilter PyOrMyFilter_Type.ot_converter
-  #define ccn_MyFilter PyOrMyFilter_Type.ot_nconverter
-
-  #define cc_MyLearner PyOrMyLearner_Type.ot_converter
-  #define ccn_MyLearner PyOrMyLearner_Type.ot_nconverter
+  #define cc_RandomForestLearner PyOrRandomForestLearner_Type.ot_converter
+  #define ccn_RandomForestLearner PyOrRandomForestLearner_Type.ot_nconverter
 
 #endif
 

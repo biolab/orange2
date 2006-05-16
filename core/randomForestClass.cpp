@@ -25,7 +25,7 @@ RandomForestClassifier* RandomForestLearner::GetClassifier(void) {
 	opt = options;
 	opt->readConfig("credita.par") ;
 	gFT->state = empty ;
-	Tree->learnRF = TRUE ;
+	gFT->learnRF = TRUE ;
 	gFT->buildForest();
     //
 	// nekaj delat

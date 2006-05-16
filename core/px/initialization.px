@@ -9,20 +9,18 @@ PyMethodDef mymoduleFunctions[]={
      {NULL, NULL}
 };
 
-int noOfmymoduleClasses=3;
+int noOfmymoduleClasses=2;
 
 TOrangeType *mymoduleClasses[]={
-    &PyOrMyClassifier_Type,
-    &PyOrMyFilter_Type,
-    &PyOrMyLearner_Type,
+    &PyOrRandomForest_Type,
+    &PyOrRandomForestLearner_Type,
     NULL};
 
 
 
 void addmymoduleConstants(PyObject *mod) {
-     PyModule_AddObject(mod, "MyClassifier", (PyObject *)&PyOrMyClassifier_Type);
-     PyModule_AddObject(mod, "MyFilter", (PyObject *)&PyOrMyFilter_Type);
-     PyModule_AddObject(mod, "MyLearner", (PyObject *)&PyOrMyLearner_Type);
+     PyModule_AddObject(mod, "RandomForest", (PyObject *)&PyOrRandomForest_Type);
+     PyModule_AddObject(mod, "RandomForestLearner", (PyObject *)&PyOrRandomForestLearner_Type);
 }
 
 

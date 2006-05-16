@@ -2,18 +2,17 @@
    Do not edit.*/
 
 extern IMPORT_DLL TOrangeType PyOrClassifier_Type;
-extern IMPORT_DLL TOrangeType PyOrFilter_Type;
 extern IMPORT_DLL TOrangeType PyOrLearner_Type;
 
 
-/* -------------- MyClassifier --------------*/
+/* -------------- RandomForest --------------*/
 
 
 
-PyTypeObject PyOrMyClassifier_Type_inh = {
+PyTypeObject PyOrRandomForest_Type_inh = {
   PyObject_HEAD_INIT((_typeobject *)&PyType_Type)
   0,
-  "MyClassifier",
+  "RandomForest",
   sizeof(TPyOrange), 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_RICHCOMPARE, /* tp_flags */
@@ -22,66 +21,34 @@ PyTypeObject PyOrMyClassifier_Type_inh = {
   (_typeobject *)&PyOrClassifier_Type,               /* tp_base */
   0, 0, 0, 0, 0,
   PyType_GenericAlloc,                               /* tp_alloc */
-  (newfunc)MyClassifier_new,                         /* tp_new */
+  (newfunc)RandomForest_new,                         /* tp_new */
   _PyObject_GC_Del,                                  /* tp_free */
   0, 0, 0, 0, 0, 0,
 };
 
-int cc_func_MyClassifier(PyObject *obj, void *ptr) { if (!PyOrMyClassifier_Check(obj)) return 0;      *(GCPtr<TMyClassifier> *)(ptr) = PyOrange_AsMyClassifier(obj); return 1; }
-int ccn_func_MyClassifier(PyObject *obj, void *ptr) { if (obj == Py_None) { *(GCPtr<TMyClassifier> *)(ptr) = GCPtr<TMyClassifier>(); return 1; }      if (!PyOrMyClassifier_Check(obj)) return 0;      *(GCPtr<TMyClassifier> *)(ptr) = PyOrange_AsMyClassifier(obj); return 1; }
+int cc_func_RandomForest(PyObject *obj, void *ptr) { if (!PyOrRandomForest_Check(obj)) return 0;      *(GCPtr<TRandomForest> *)(ptr) = PyOrange_AsRandomForest(obj); return 1; }
+int ccn_func_RandomForest(PyObject *obj, void *ptr) { if (obj == Py_None) { *(GCPtr<TRandomForest> *)(ptr) = GCPtr<TRandomForest>(); return 1; }      if (!PyOrRandomForest_Check(obj)) return 0;      *(GCPtr<TRandomForest> *)(ptr) = PyOrange_AsRandomForest(obj); return 1; }
 
 
-MYMODULE_API TOrangeType PyOrMyClassifier_Type (PyOrMyClassifier_Type_inh, typeid(TMyClassifier), 0, cc_MyClassifier, ccn_MyClassifier, NULL, NULL, NULL);
+MYMODULE_API TOrangeType PyOrRandomForest_Type (PyOrRandomForest_Type_inh, typeid(TRandomForest), 0, cc_RandomForest, ccn_RandomForest, NULL, NULL, NULL);
 
 
 
-/* -------------- MyFilter --------------*/
+/* -------------- RandomForestLearner --------------*/
 
 
-POrange MyFilter_default_constructor(PyTypeObject *type)
-{ return POrange(mlnew TMyFilter(), type); }
+POrange RandomForestLearner_default_constructor(PyTypeObject *type)
+{ return POrange(mlnew TRandomForestLearner(), type); }
 
 
-PyTypeObject PyOrMyFilter_Type_inh = {
+PyTypeObject PyOrRandomForestLearner_Type_inh = {
   PyObject_HEAD_INIT((_typeobject *)&PyType_Type)
   0,
-  "MyFilter",
+  "RandomForestLearner",
   sizeof(TPyOrange), 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_RICHCOMPARE, /* tp_flags */
-  "([randomGenerator=]) -> MyFilter",                /* tp_doc */
-  0, 0, 0, 0, 0, 0, 0, 0, 0,
-  (_typeobject *)&PyOrFilter_Type,                   /* tp_base */
-  0, 0, 0, 0, 0,
-  PyType_GenericAlloc,                               /* tp_alloc */
-  (newfunc)PyOrType_GenericNamedNew,                 /* tp_new */
-  _PyObject_GC_Del,                                  /* tp_free */
-  0, 0, 0, 0, 0, 0,
-};
-
-int cc_func_MyFilter(PyObject *obj, void *ptr) { if (!PyOrMyFilter_Check(obj)) return 0;      *(GCPtr<TMyFilter> *)(ptr) = PyOrange_AsMyFilter(obj); return 1; }
-int ccn_func_MyFilter(PyObject *obj, void *ptr) { if (obj == Py_None) { *(GCPtr<TMyFilter> *)(ptr) = GCPtr<TMyFilter>(); return 1; }      if (!PyOrMyFilter_Check(obj)) return 0;      *(GCPtr<TMyFilter> *)(ptr) = PyOrange_AsMyFilter(obj); return 1; }
-
-
-MYMODULE_API TOrangeType PyOrMyFilter_Type (PyOrMyFilter_Type_inh, typeid(TMyFilter), MyFilter_default_constructor, cc_MyFilter, ccn_MyFilter, NULL, NULL, NULL);
-
-
-
-/* -------------- MyLearner --------------*/
-
-
-POrange MyLearner_default_constructor(PyTypeObject *type)
-{ return POrange(mlnew TMyLearner(), type); }
-
-
-PyTypeObject PyOrMyLearner_Type_inh = {
-  PyObject_HEAD_INIT((_typeobject *)&PyType_Type)
-  0,
-  "MyLearner",
-  sizeof(TPyOrange), 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_RICHCOMPARE, /* tp_flags */
-  "([randomSeed=]) -/-> MyClassifier",               /* tp_doc */
+  "() -/-> RandomForest",                            /* tp_doc */
   0, 0, 0, 0, 0, 0, 0, 0, 0,
   (_typeobject *)&PyOrLearner_Type,                  /* tp_base */
   0, 0, 0, 0, 0,
@@ -91,11 +58,11 @@ PyTypeObject PyOrMyLearner_Type_inh = {
   0, 0, 0, 0, 0, 0,
 };
 
-int cc_func_MyLearner(PyObject *obj, void *ptr) { if (!PyOrMyLearner_Check(obj)) return 0;      *(GCPtr<TMyLearner> *)(ptr) = PyOrange_AsMyLearner(obj); return 1; }
-int ccn_func_MyLearner(PyObject *obj, void *ptr) { if (obj == Py_None) { *(GCPtr<TMyLearner> *)(ptr) = GCPtr<TMyLearner>(); return 1; }      if (!PyOrMyLearner_Check(obj)) return 0;      *(GCPtr<TMyLearner> *)(ptr) = PyOrange_AsMyLearner(obj); return 1; }
+int cc_func_RandomForestLearner(PyObject *obj, void *ptr) { if (!PyOrRandomForestLearner_Check(obj)) return 0;      *(GCPtr<TRandomForestLearner> *)(ptr) = PyOrange_AsRandomForestLearner(obj); return 1; }
+int ccn_func_RandomForestLearner(PyObject *obj, void *ptr) { if (obj == Py_None) { *(GCPtr<TRandomForestLearner> *)(ptr) = GCPtr<TRandomForestLearner>(); return 1; }      if (!PyOrRandomForestLearner_Check(obj)) return 0;      *(GCPtr<TRandomForestLearner> *)(ptr) = PyOrange_AsRandomForestLearner(obj); return 1; }
 
 
-MYMODULE_API TOrangeType PyOrMyLearner_Type (PyOrMyLearner_Type_inh, typeid(TMyLearner), MyLearner_default_constructor, cc_MyLearner, ccn_MyLearner, NULL, NULL, NULL);
+MYMODULE_API TOrangeType PyOrRandomForestLearner_Type (PyOrRandomForestLearner_Type_inh, typeid(TRandomForestLearner), RandomForestLearner_default_constructor, cc_RandomForestLearner, ccn_RandomForestLearner, NULL, NULL, NULL);
 
 
 
