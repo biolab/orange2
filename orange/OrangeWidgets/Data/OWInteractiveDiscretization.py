@@ -42,9 +42,20 @@ class DiscGraph(OWGraph):
         self.setCursor(Qt.arrowCursor)
         self.canvas().setCursor(Qt.arrowCursor)
         self.curAttribute=0
+        self.curCandidate=0
         self.data=None
-
-    #def computeScore(self, cuts, res=30):
+    """
+    def snap(self, point):
+        varInd=self.master.attribute
+        minVal=self.minVal[varInd]
+        maxVal=self.maxVal[varInd]
+        if maxVal-minVal<self.resolution
+        rr=["%f.2" % a for a in frange(minVal, maxVal, self.resolution)]
+        rr=[int(float(s)*100)/100.0  for s in rr]
+        i=0, max=abs(rr[0]-point)
+        for r in rr[1:]:
+            if i<
+    """
     def computeBaseScore(self):
         varInd=self.master.attribute
         minVal=self.minVal[varInd]
@@ -182,7 +193,10 @@ class DiscGraph(OWGraph):
                 self.computeBaseScore()
                 self.replotAll()
             else:
-                self.selectedCutPoint=curve
+                cut=self.curCutPoints.pop(curve.curveInd)
+                self.computeBaseScore()
+                self.replotAll()
+                self.selectedCutPoint=self.addCutPoint(cut)
         else:
             self.selectedCutPoint=self.addCutPoint(cut)
             self.update()
@@ -226,9 +240,10 @@ class DiscGraph(OWGraph):
         self.baseCurveKey=self.insertCurve("")
         self.lookaheadCurveKey=self.insertCurve("")
         
-        self.cutPoints[self.curAttribute][0]=self.curCutPoints
-        self.curCutPoints=self.cutPoints[self.master.attribute][0]
+        self.cutPoints[self.curAttribute][self.curCandidate]=self.curCutPoints
+        self.curCutPoints=self.cutPoints[self.master.attribute][self.master.candidate]
         self.curAttribute=self.master.attribute
+        self.curCandidate=self.master.candidate
 
         self.computeBaseScore()
         #self.computeLookaheadScore()
@@ -258,10 +273,12 @@ class OWInteractiveDiscretization(OWWidget):
         self.targetClass=0
         self.discretization=0
         self.intervals=3
+        self.candidate=0
         self.loadSettings()
         self.inputs=[("Examples", ExampleTableWithClass, self.cdata)]
         self.outputs=[("Examples", ExampleTableWithClass)]
-        self.measures=[("Gain ratio", orange.MeasureAttribute_gainRatio),
+        self.measures=[("Information gain", orange.MeasureAttribute_info),
+                       #("Gain ratio", orange.MeasureAttribute_gainRatio),
                        ("Gini", orange.MeasureAttribute_gini),
                        ("Relevance", orange.MeasureAttribute_relevance)]
                        #("chi-square",)]
@@ -283,6 +300,7 @@ class OWInteractiveDiscretization(OWWidget):
         self.intervalSlider=OWGUI.hSlider(box, self, "intervals", "Intervals", 2, 10)
         OWGUI.button(box, self, "&Apply", callback=self.discretize)
         self.setDiscMethod()
+        OWGUI.radioButtonsInBox(self.controlArea, self, "candidate", ["1","2","3"], "Candidate Split", callback=self.graph.replotAll)
         
         box=OWGUI.widgetBox(self.controlArea, "Options")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
@@ -346,8 +364,8 @@ class OWInteractiveDiscretization(OWWidget):
         i=0
         for attr in self.data.domain.attributes:
             if attr.varType==orange.VarTypes.Continuous:
-                if self.graph.cutPoints[i][0]:
-                    idisc=orange.IntervalDiscretizer(points=self.graph.cutPoints[i][0])
+                if self.graph.cutPoints[i][self.candidate]:
+                    idisc=orange.IntervalDiscretizer(points=self.graph.cutPoints[i][self.candidate])
                     newattrs.append(idisc.constructVariable(attr))
                     i+=1
                 else:
