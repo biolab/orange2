@@ -26,5 +26,4 @@ PyObject *RandomForest_new(PyTypeObject *type, PyObject *args, PyObject *keyws) 
   PyCATCH;
 }
 
-
 #include "px/cls_myclasses.px"

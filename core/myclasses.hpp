@@ -28,11 +28,11 @@ public:
 	Options *options; 
 
 	// atributi RF
-	int rfNoTrees; //P
-	bool rfPredictClass;//P
-	float rfSampleProp;//P
-	int rfNoSelAttr;//P
-	int rfkNearestEqual;//P
+	int noTrees; //P
+	bool predictClass;//P
+	float sampleProp;//P
+	int noSelAttr;//P
+	int kNearestEqual;//P
 
     TRandomForestLearner(const int &seed = 0);
     PClassifier operator()(PExampleGenerator, const int &weightID);

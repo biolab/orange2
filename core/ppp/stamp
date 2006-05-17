@@ -3446,7 +3446,7 @@ I01
 tp1116
 a(S'int'
 p1117
-S'rfNoTrees'
+S'noTrees'
 p1118
 g1118
 S''
@@ -3457,7 +3457,7 @@ I01
 tp1120
 a(S'bool'
 p1121
-S'rfPredictClass'
+S'predictClass'
 p1122
 g1122
 g1119
@@ -3467,7 +3467,7 @@ I01
 tp1123
 a(S'float'
 p1124
-S'rfSampleProp'
+S'sampleProp'
 p1125
 g1125
 g1119
@@ -3477,7 +3477,7 @@ I01
 tp1126
 a(S'int'
 p1127
-S'rfNoSelAttr'
+S'noSelAttr'
 p1128
 g1128
 g1119
@@ -3487,7 +3487,7 @@ I01
 tp1129
 a(S'int'
 p1130
-S'rfkNearestEqual'
+S'kNearestEqual'
 p1131
 g1131
 g1119

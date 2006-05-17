@@ -8,11 +8,11 @@
 
 TPropertyDescription TRandomForestLearner_properties[] = {
   {"randomSeed", "seed for the random generator", &typeid(int), NULL, offsetof(TRandomForestLearner, randomSeed), false, false},
-  {"rfNoTrees", "", &typeid(int), NULL, offsetof(TRandomForestLearner, rfNoTrees), false, false},
-  {"rfPredictClass", "", &typeid(bool), NULL, offsetof(TRandomForestLearner, rfPredictClass), false, false},
-  {"rfSampleProp", "", &typeid(float), NULL, offsetof(TRandomForestLearner, rfSampleProp), false, false},
-  {"rfNoSelAttr", "", &typeid(int), NULL, offsetof(TRandomForestLearner, rfNoSelAttr), false, false},
-  {"rfkNearestEqual", "", &typeid(int), NULL, offsetof(TRandomForestLearner, rfkNearestEqual), false, false},
+  {"noTrees", "", &typeid(int), NULL, offsetof(TRandomForestLearner, noTrees), false, false},
+  {"predictClass", "", &typeid(bool), NULL, offsetof(TRandomForestLearner, predictClass), false, false},
+  {"sampleProp", "", &typeid(float), NULL, offsetof(TRandomForestLearner, sampleProp), false, false},
+  {"noSelAttr", "", &typeid(int), NULL, offsetof(TRandomForestLearner, noSelAttr), false, false},
+  {"kNearestEqual", "", &typeid(int), NULL, offsetof(TRandomForestLearner, kNearestEqual), false, false},
   {"needs", "the kind of data that learner needs", &typeid(int), NULL, offsetof(TRandomForestLearner, needs), true, false},
   {NULL}
 };

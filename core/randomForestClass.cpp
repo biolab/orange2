@@ -15,7 +15,12 @@ extern Options *opt ;
 extern featureTree *gFT ;
 
 TRandomForestLearner::TRandomForestLearner(const int &seed)
-: randomSeed(seed)
+: randomSeed(seed),
+  noTrees(100),
+  predictClass(FALSE),
+  sampleProp(0.0),
+  noSelAttr(0),
+  kNearestEqual(30)
 {}
 
 /*RandomForestLearner::RandomForestLearner(int rfNoTrees){
@@ -30,7 +35,13 @@ PClassifier TRandomForestLearner::operator()(PExampleGenerator egen, const int &
 	Forest = new featureTree();
 	options = new Options();
 	gFT = Forest;
-	// dodamo
+	// set attributes into opt
+	opt->rfNoTrees = noTrees;
+	opt->rfPredictClass = predictClass ? TRUE : FALSE ;
+	opt->rfSampleProp = sampleProp;
+	opt->rfNoSelAttr = noSelAttr;
+	opt->rfkNearestEqual = kNearestEqual;
+
 	opt = options;
 	//opt->readConfig("credita.par") ;
 	TExampleTable &table = dynamic_cast<TExampleTable &>(toExampleTable(egen).getReference());
@@ -38,9 +49,7 @@ PClassifier TRandomForestLearner::operator()(PExampleGenerator egen, const int &
 	gFT->readData(table);
 	gFT->learnRF = TRUE ;
 	gFT->buildForest();
-    //
-	// nekaj delat
-	//
+    
 	TRandomForest* ranForest = new TRandomForest(egen->domain->classVar, randGen);
 	ranForest->options = opt;
 	ranForest->Forest = gFT;
@@ -68,10 +77,6 @@ TValue TRandomForest::operator()(const TExample &)
 
 PDistribution TRandomForest::classDistribution(const TExample &origexam)
 { 
-    float distr[4];
-	TDiscDistribution *distribucija= new TDiscDistribution(distr,4);
-	
-	
 	gFT=Forest;
 	opt = options;
 	//gFT->clearData();
@@ -104,7 +109,14 @@ PDistribution TRandomForest::classDistribution(const TExample &origexam)
 	int arrSize;
 	double *probDistArr = probDist.unWrap(arrSize);
 	//probDist.unWrap(arrSize);
-	return NULL;
+	//float distr[arrSize];
+	float *distr=(float*)malloc(arrSize);
+	for (i=0;i<arrSize;i++){
+		distr[i]=(float)probDistArr[i];
+	}
+	TDiscDistribution *distribucija= new TDiscDistribution(distr,arrSize);
+
+	return distribucija;
 }
 
 
