@@ -24,13 +24,13 @@ public:
     __REGISTER_CLASS
 
     int randomSeed;  //P seed for the random generator
-	featureTree *Forest;  //P
-	Options *options; //P
+	featureTree *Forest;  
+	Options *options; 
 
 	// atributi RF
 	int rfNoTrees; //P
 	bool rfPredictClass;//P
-	double rfSampleProp;//P
+	float rfSampleProp;//P
 	int rfNoSelAttr;//P
 	int rfkNearestEqual;//P
 
@@ -50,6 +50,7 @@ public:
 
     TRandomForest(PVariable classVar, PRandomGenerator rgen);
     virtual TValue operator()(const TExample &ex);
+	virtual PDistribution classDistribution(const TExample &);
 };
 ////////////////////////////7
 
