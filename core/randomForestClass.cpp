@@ -70,12 +70,14 @@ PDistribution TRandomForest::classDistribution(const TExample &origexam)
 { 
     float distr[4];
 	TDiscDistribution *distribucija= new TDiscDistribution(distr,4);
-	/*
-	int contJ = 0, discJ = 1;
-	int i = 1;
+	
+	
 	gFT=Forest;
 	opt = options;
-	gFT->clearData();
+	//gFT->clearData();
+
+	int contJ = 0, discJ = 1;
+	int i = gFT->DTeach.len();
 
     for(TExample::const_iterator eei(origexam.begin()), eee(origexam.end()-1); eei != eee; eei++)
       if ((*eei).varType == TValue::FLOATVAR)
@@ -87,16 +89,21 @@ PDistribution TRandomForest::classDistribution(const TExample &origexam)
     gFT->DiscData.Set(i, 0, origexam.getClass().intV);
 	//TExample exam = TExample(domain, origexam);
 	//gFT->t
-	marray<double> probDist(NoClasses+1) ;
+	/*
+	marray<double> probDist(gFT->NoClasses + 1) ;
 	probDist.init(0.0) ;
-	gFT->DTest[1]
+	//gFT->DTest[1]
 	if (opt->rfkNearestEqual>0)
-	  rfNearCheck(gFT->DTest[1], probDist) ;       
-	else if (NoClasses==2 && opt->rfRegType==1)
-	  rfCheckReg(gFT->DTest[1], probDist) ;
+	  gFT->rfNearCheck(gFT->DTest[0], probDist) ;       
+	else if (gFT->NoClasses==2 && opt->rfRegType==1)
+	  gFT->rfCheckReg(gFT->DTest[0], probDist) ;
 	else 
-	  rfCheck(gFT->DTest[1], probDist) ;
-*/
+	  gFT->rfCheck(gFT->DTest[0], probDist) ;
+	*/
+	marray<double> probDist = gFT->getDistribution(gFT->DTest);
+	int arrSize;
+	double *probDistArr = probDist.unWrap(arrSize);
+	//probDist.unWrap(arrSize);
 	return NULL;
 }
 

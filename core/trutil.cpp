@@ -279,7 +279,26 @@ void featureTree::outDomainSummary(FILE *to) const
     fprintf(to,"\n-----------------------------------------------------------\n") ;
 }
 
-
+//************************************************************
+//
+//                      getDistribution
+//                      ---------------
+//
+//        gets distribution matrix
+//
+//************************************************************
+marray<double> featureTree::getDistribution(marray<int> &DSet)
+{	
+	marray<double> probDist(NoClasses + 1) ;
+	probDist.init(0.0) ;
+	if (opt->rfkNearestEqual>0)
+	  rfNearCheck(DSet[0], probDist) ;       
+	else if (NoClasses==2 && opt->rfRegType==1)
+	  rfCheckReg(DSet[0], probDist) ;
+	else 
+	  rfCheck(DSet[0], probDist) ;
+	return probDist;
+}
 
 //************************************************************
 //

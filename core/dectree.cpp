@@ -409,6 +409,14 @@ void dectree::clearDescription(void)
    NoAttr = NoOriginalAttr = NoDiscrete = NoContinuous = 0 ;
 }
 
+//************************************************************
+//
+//                    readDescription (egen)
+//                    ---------------
+//
+//          read description of attributes from file
+//
+//************************************************************
 #include "table.hpp"
 
 void dectree::readDescription(TExampleTable &egen)
@@ -471,16 +479,23 @@ void dectree::readDescription(TExampleTable &egen)
 
   NoClasses = AttrDesc[0].NoValues;
 }
-
+// ************************************************************
+//
+//                           readData (egen)
+//                           --------
+//
+//                     read the data from file
+//
+// ************************************************************
 
 void dectree::readData(TExampleTable &egen)
 {
   clearData();
 
   if (NoDiscrete)
-    DiscData.create(egen.numberOfExamples(), NoDiscrete) ;
+    DiscData.create(egen.numberOfExamples()+1, NoDiscrete) ;
   if (NoContinuous)
-    ContData.create(egen.numberOfExamples(), NoContinuous) ;
+    ContData.create(egen.numberOfExamples()+1, NoContinuous) ;
 
   int i = 0;
   for(TExampleIterator ei(egen.begin()); ei; ++ei, i++) {
@@ -494,8 +509,16 @@ void dectree::readData(TExampleTable &egen)
       throw "missing class value";
     DiscData.Set(i, 0, (*ei).getClass().intV);
   }
-
   state = data;
+  // set data split  -> vsi exampli v Teach, en prazen prostor za Test
+  int noOfExamp = egen.numberOfExamples();
+  DTeach.create(noOfExamp);
+  DTest.create(1);
+  for (i=0;i<noOfExamp;i++){
+	  DTeach[i]=i;
+  }
+  DTest[0]=noOfExamp;
+  
 }
 
 // ************************************************************

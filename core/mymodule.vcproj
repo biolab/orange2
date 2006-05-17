@@ -39,13 +39,13 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="../../mymodule_d.pyd"
+				OutputFile="../../core_d.pyd"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="../../lib,$(PYTHON)/libs"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile=".\Debug/mymodule_d.pdb"
-				ImportLibrary=".\Debug/mymodule_d.lib"
+				ProgramDatabaseFile=".\Debug/core_d.pdb"
+				ImportLibrary=".\Debug/core_d.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -111,8 +111,8 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="../../lib,$(PYTHON)/libs"
-				ProgramDatabaseFile=".\Release/mymodule.pdb"
-				ImportLibrary=".\Release/mymodule.lib"
+				ProgramDatabaseFile=".\Release/core.pdb"
+				ImportLibrary=".\Release/core.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -585,7 +585,8 @@
 			<File
 				RelativePath="myclasses.cpp">
 				<FileConfiguration
-					Name="Debug|Win32">
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"

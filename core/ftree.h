@@ -102,6 +102,7 @@ public:
    featureTree();
    ~featureTree();
    int constructTree(); //--//
+   marray<double> getDistribution(marray<int> &DSet);
    void test(marray<int> &DSet, int SetSize, double &Accuracy, double &avgCost, double &Inf, 
              double &Auc, mmatrix<int> &PredictionMatrix, double &sensitivity, double &specificity, FILE *probabilityFile) ;
    void outDomainSummary(FILE *to) const ;
