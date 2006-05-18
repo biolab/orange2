@@ -5,7 +5,6 @@
 # Referenced:  regression.htm
 
 import orange, orngTree
-reload(orngTree)
 
 data = orange.ExampleTable("../datasets/housing.tab")
 rt = orngTree.TreeLearner(data, measure="retis", mForPruning=2, minExamples=20)
