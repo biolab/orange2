@@ -49,7 +49,6 @@ public:
     PRandomGenerator randomGenerator; //PR random generator
 
     TRandomForest(PVariable classVar, PRandomGenerator rgen);
-    virtual TValue operator()(const TExample &ex);
 	virtual PDistribution classDistribution(const TExample &);
 };
 ////////////////////////////7

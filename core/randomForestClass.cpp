@@ -36,11 +36,11 @@ PClassifier TRandomForestLearner::operator()(PExampleGenerator egen, const int &
 	options = new Options();
 	gFT = Forest;
 	// set attributes into opt
-	opt->rfNoTrees = noTrees;
-	opt->rfPredictClass = predictClass ? TRUE : FALSE ;
-	opt->rfSampleProp = sampleProp;
-	opt->rfNoSelAttr = noSelAttr;
-	opt->rfkNearestEqual = kNearestEqual;
+	options->rfNoTrees = noTrees;
+	options->rfPredictClass = predictClass ? TRUE : FALSE ;
+	options->rfSampleProp = sampleProp;
+	options->rfNoSelAttr = noSelAttr;
+	options->rfkNearestEqual = kNearestEqual;
 
 	opt = options;
 	//opt->readConfig("credita.par") ;
@@ -67,13 +67,10 @@ TRandomForest::TRandomForest(PVariable classVar, PRandomGenerator rgen)
 {
 	if (classVar->varType != TValue::INTVAR)
     raiseError("MyClassifier cannot work with a non-discrete attribute '%s'", classVar->name.c_str());
+  computesProbabilities = true;
 }
 
 
-TValue TRandomForest::operator()(const TExample &)
-{
-  return TValue(randomGenerator->randint(classVar->noOfValues()));
-}
 
 PDistribution TRandomForest::classDistribution(const TExample &origexam)
 { 
@@ -89,9 +86,6 @@ PDistribution TRandomForest::classDistribution(const TExample &origexam)
 		  gFT->ContData.Set(i, contJ, (*eei).isSpecial() ? NAcont : (*eei).floatV);
       else
         gFT->DiscData.Set(i, discJ, (*eei).isSpecial() ? NAdisc : (*eei).intV);
-    if (origexam.getClass().isSpecial())
-      throw "missing class value";
-    gFT->DiscData.Set(i, 0, origexam.getClass().intV);
 	//TExample exam = TExample(domain, origexam);
 	//gFT->t
 	/*
