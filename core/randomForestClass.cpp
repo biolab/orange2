@@ -106,10 +106,11 @@ PDistribution TRandomForest::classDistribution(const TExample &origexam)
 	  gFT->rfCheck(gFT->DTest[0], probDist) ;
 	*/
 	marray<double> probDist = gFT->getDistribution(gFT->DTest);
-	int arrSize;
-	double *probDistArr = probDist.unWrap(arrSize);
+	int arrSize=probDist.len();
+	double *probDistArr = probDist.toArray();
 	//probDist.unWrap(arrSize);
 	//float distr[arrSize];
+
 	float *distr=(float*)malloc(arrSize);
 	for (i=0;i<arrSize;i++){
 		distr[i]=(float)probDistArr[i];

@@ -518,7 +518,10 @@ void dectree::readData(TExampleTable &egen)
 	  DTeach[i]=i;
   }
   DTest[0]=noOfExamp;
-  
+  NoTeachCases=noOfExamp;
+  NoTestCases=1;
+  SetValueProbabilities();
+  SetDistances();
 }
 
 // ************************************************************
