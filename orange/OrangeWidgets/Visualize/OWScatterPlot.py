@@ -452,12 +452,16 @@ class OWScatterPlot(OWWidget):
 
 #test widget appearance
 if __name__=="__main__":
-    a=QApplication(sys.argv)
+#    a=QApplication(sys.argv)
+    a=QApplication([])
     ow=OWScatterPlot()
     a.setMainWidget(ow)
 
+    d = orange.ExampleTable("c:/d/ai/orange/doc/datasets/iris")
+    ow.cdata(d)
     ow.show()
-    a.exec_loop()
+    
+#    a.exec_loop()
 
     #save settings 
     ow.saveSettings()
