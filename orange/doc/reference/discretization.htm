@@ -63,7 +63,7 @@ or <CODE>BiModalDiscretizer</CODE></TD>
 
 <DL>
 <DT><B>Equi-distant discretization (<CODE>EquiDistDiscretization</CODE>,
-<CODE>EquiDiscDiscretizer</CODE>)</B></DT>
+<CODE>EquiDistDiscretizer</CODE>)</B></DT>
 <DD>The range of attribute's values is split into prescribed number equal-sized intervals.<P></DD>
 
 <DT><B>Quartile discretization (<CODE>EquiNDiscretization</CODE>,
@@ -216,6 +216,8 @@ data2 = data.select(newattrs + [data.domain.classVar])
 <DD>Width of intervals.</DD>
 <DT>numberOfIntervals</DT>
 <DD>Number of intervals.</DD>
+<dt>points (read-only)</dt>
+<dt>The cut-off points; this is not a real attribute although it behaves as one. Reading it constructs a list of cut-off points and returns it, but changing the list doesn't affect the discretizer - it's a separate list. This attribute is here only for to give the <code>EquiDistDiscretizer</code> the same interface as that of <code>IntervalDiscretizer</code>.</dt> 
 </DL>
 
 <P>All values below <CODE>firstCut</CODE> belong to the first interval (including possible values smaller than <CODE>firstVal</CODE>. Otherwise, value <CODE>val</CODE>'s interval is <CODE>floor((val-firstVal)/step)</CODE>. If this is turns out to be greater or equal to <CODE>numberOfIntervals</CODE>, it is decreased to <CODE>numberOfIntervals-1</CODE>.</P>
@@ -298,6 +300,21 @@ data2 = data.select(newattrs + [data.domain.classVar])
 for ex in data2[:10]:
     print ex
 </XMP>
+
+
+
+
+<H3>Discretization with Intervals Containing (Approximately) Equal Number of Examples</H3>
+
+<P><CODE>EquiNDiscretization</CODE> discretizes the attribute by cutting it into the prescribed number of intervals so that each of them contains equal number of examples. The examples are obviously needed for this discretization, too.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>numberOfIntervals</DT>
+<DD>Number of intervals into which the attribute is to be discretized. Default value is 4.</DD>
+</DL>
+
+<P>The use of this discretization is equivalent to the above one, except that we use <code>EquiNDiscretization</code> instead of <code>EquiDistDiscretization</code>. The resulting discretizer is <code>IntervalDiscretizer</code>, hence it has <code>points</code> instead of <code>firstCut</code>/<code>step</code>/<code>numberOfIntervals</code>.</P>
 
 
 <H3>Entropy-based Discretization</H3>
