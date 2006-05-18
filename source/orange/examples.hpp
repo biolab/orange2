@@ -117,8 +117,8 @@ public:
 
   bool operator < (const TExample &) const;
   bool operator == (const TExample &) const;
-  int  compare(const TExample &other) const;
-  bool compatible(const TExample &other) const;
+  int  compare(const TExample &other, const bool ignoreClass = false) const;
+  bool compatible(const TExample &other, const bool ignoreClass = false) const;
 
   void addToCRC(unsigned long &crc) const;
   int sumValues() const;

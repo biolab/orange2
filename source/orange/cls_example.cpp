@@ -531,12 +531,14 @@ PyObject *Example_setclass(TPyExample *pex, PyObject *val) PYARGS(METH_O, "(valu
 }
 
 
-PyObject *Example_compatible(TPyExample *pex, PyObject *obj) PYARGS(METH_O, "(example); Returns true if examples are compatible")
+PyObject *Example_compatible(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "(example[, ignoreClass]); Returns true if examples are compatible")
 { PyTRY
-    if (!PyOrExample_Check(obj))
-      PYERROR(PyExc_TypeError, "example expected", PYNULL)
+    PExample example;
+    int ic = 0;
+    if (!PyArg_ParseTuple(args, "O&|i", cc_Example, &example, &ic))
+      PYERROR(PyExc_TypeError, "example and, optionally, a flag for ignoring the class expected", PYNULL)
 
-    return PyInt_FromLong(PyExample_AS_Example(pex)->compatible(PyExample_AS_ExampleReference(obj)) ? 1 : 0);
+    return PyInt_FromLong(PyExample_AS_Example(pex)->compatible(example.getReference(), ic != 0) ? 1 : 0);
   PyCATCH
 }
 

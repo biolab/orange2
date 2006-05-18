@@ -105,6 +105,18 @@ PyObject *Discretizer_constructVariable(PyObject *self, PyObject *var) PYARGS(ME
 }
 
 
+PyObject *EquiDistDiscretizer_get_points(PyObject *self)
+{ PyTRY
+   CAST_TO(TEquiDistDiscretizer, edd);
+    int nint = edd->numberOfIntervals - 1;
+    PyObject *res = PyList_New(nint);
+    for(int i = 0; i < nint; i++)
+      PyList_SetItem(res, i, PyFloat_FromDouble(edd->firstCut + i*edd->step));
+    return res;
+  PyCATCH
+}
+
+
 /* ************ FILTERS FOR REGRESSION ************** */
 
 #include "transval.hpp"

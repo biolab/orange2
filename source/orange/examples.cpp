@@ -292,12 +292,12 @@ bool TExample::operator == (const TExample &other) const
 }
 
 
-int TExample::compare(const TExample &other) const
+int TExample::compare(const TExample &other, const bool ignoreClass) const
 { if (domain != other.domain)
     raiseError("examples are from different domains");
 
   const_iterator i1(begin()), i2(other.begin());
-  int Na = domain->variables->size();
+  int Na = domain->variables->size() - (ignoreClass && domain->classVar ? 1 : 0);
   if (!Na)
     return true;
 
@@ -307,11 +307,11 @@ int TExample::compare(const TExample &other) const
 }
 
 
-bool TExample::compatible(const TExample &other) const
+bool TExample::compatible(const TExample &other, const bool ignoreClass) const
 { if (domain != other.domain)
     raiseError("examples are from different domains");
   
-  int Na = domain->variables->size();
+  int Na = domain->variables->size() - (ignoreClass && domain->classVar ? 1 : 0);
   if (!Na)
     return true;
   for (const_iterator i1(begin()), i2(other.begin()); (*i1).compatible(*i2) && --Na; i1++, i2++);
