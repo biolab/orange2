@@ -46,8 +46,25 @@ for attr in newattrs:
 print
 
 for attr in newattrs:
-    print "%s: first interval at %5.3f, step %5.3f" % (attr.name, attr.getValueFrom.transformer.firstCut, attr.getValueFrom.transformer.step)
+    print "%15s: first interval at %5.3f, step %5.3f" % (attr.name, attr.getValueFrom.transformer.firstCut, attr.getValueFrom.transformer.step)
+    print " "*17 + "cutoffs at " + ", ".join(["%5.3f" % x for x in attr.getValueFrom.transformer.points])
 print
+
+
+
+print "\n\nQuartile discretization"
+disc = orange.EquiNDiscretization(numberOfIntervals = 6)
+newattrs = [disc(attr, data) for attr in data.domain.attributes]
+data2 = data.select(newattrs + [data.domain.classVar])
+
+for attr in newattrs:
+    print "%s: %s" % (attr.name, attr.values)
+print
+
+for attr in newattrs:
+    print " "*17 + "cutoffs at " + ", ".join(["%5.3f" % x for x in attr.getValueFrom.transformer.points])
+print
+
 
 
 print "\nManual construction of EquiDistDiscretizer - all attributes"
