@@ -166,8 +166,8 @@ young
 <DT>native([nativity])</DT>
 <DD>Converts the example into an ordinary Python list. If the optional argument is 1 (default), the list will contain objects of type <CODE>Value</CODE>; if it is 0, the list will contain native Python objects - string for discrete and numbers for continuous attribute values).</DD>
 
-<DT>compatible(other_example)</DT>
-<DD>Return true if the two examples are compatible, that is, if they are the same in all attributes which are known for both examples.</DD>
+<DT>compatible(other_example, ignoreClass = 0)</DT>
+<DD>Return true if the two examples are compatible, that is, if they are the same in all attributes which are known for both examples. If the optional second argument is true, class values are ignored, so two examples are compatible even though they differ in their class values.</DD>
 </DL>
 
 <H2>Hashing</H2>

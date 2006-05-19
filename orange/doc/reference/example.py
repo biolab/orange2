@@ -41,3 +41,11 @@ if d == data[0][0]:
 print example.native()
 print example.native(0)
 print example.native(1)
+
+e1 = orange.Example(data[0])
+e2 = orange.Example(data[0])
+print e1.compatible(e2)
+e2.setclass((e1.getclass() + 1) % 3)
+print e1.compatible(e2)
+print e1.compatible(e2, False)
+print e1.compatible(e2, True)
