@@ -378,7 +378,7 @@ int dectree::readDescription(void)
          error("dectree::readDescription","This program assumes classification problem.") ;
 	     return 0 ;
 	  }
-	  NoClasses = AttrDesc[0].NoValues ;
+	    NoClasses = AttrDesc[0].NoValues ;
       state=description;
       fclose(from) ;
       return 1;
@@ -422,6 +422,7 @@ void dectree::clearDescription(void)
 void dectree::readDescription(TExampleTable &egen)
 {
   const nattrs = egen.domain->variables->size();
+  NoOriginalAttr = NoAttr = nattrs -1 ;
   NoContinuous = 0 ;
   NoDiscrete = 1 ;
   ContIdx.create(nattrs, -1) ;
@@ -433,19 +434,18 @@ void dectree::readDescription(TExampleTable &egen)
   for(; vi != ve; vi++, i++) {
     AttrDesc[i].AttributeName = strcpy(new char[(*vi)->name.length()+1], (*vi)->name.c_str());
     if ((*vi)->varType == TValue::FLOATVAR) {
-      NoContinuous++;
       AttrDesc[i].continuous = TRUE;
       AttrDesc[i].NoValues = 0;
       AttrDesc[i].tablePlace = NoContinuous ;
       AttrDesc[i].userDefinedDistance = FALSE ;
       AttrDesc[i].EqualDistance = AttrDesc[i].DifferentDistance = -1.0 ;
               
-      ContIdx[NoContinuous] = i ;
+      ContIdx[NoContinuous] = i-1 ;
+      NoContinuous++;
     }
     else if ((*vi)->varType == TValue::INTVAR) {
-      NoDiscrete++;
       AttrDesc[i].continuous = FALSE ;
-      DiscIdx[NoDiscrete] = i ;
+      DiscIdx[NoDiscrete] = i-1 ;
       AttrDesc[i].tablePlace = NoDiscrete ;
 
       const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>((*vi).getReference());
@@ -457,6 +457,8 @@ void dectree::readDescription(TExampleTable &egen)
       int j = 0;
       const_PITERATE(TStringList, ai, evar.values)
         AttrDesc[i].ValueName[j++] = strcpy(new char[(*ai).length()+1], (*ai).c_str()) ;
+
+      NoDiscrete++;
     }
   }
 
@@ -464,7 +466,7 @@ void dectree::readDescription(TExampleTable &egen)
     throw "discrete class expected";
 
   AttrDesc[0].continuous = FALSE ;
-  DiscIdx[0] = i ;
+  DiscIdx[0] = i-1 ;
   AttrDesc[0].tablePlace = NoDiscrete ;
 
   const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(egen.domain->classVar.getReference());
@@ -492,6 +494,8 @@ void dectree::readData(TExampleTable &egen)
 {
   clearData();
 
+  NoCases = egen.numberOfExamples();
+
   if (NoDiscrete)
     DiscData.create(egen.numberOfExamples()+1, NoDiscrete) ;
   if (NoContinuous)
@@ -502,12 +506,12 @@ void dectree::readData(TExampleTable &egen)
     int contJ = 0, discJ = 1;
     for(TExample::const_iterator eei((*ei).begin()), eee((*ei).end()-1); eei != eee; eei++)
       if ((*eei).varType == TValue::FLOATVAR)
-        ContData.Set(i, contJ, (*eei).isSpecial() ? NAcont : (*eei).floatV);
+        ContData.Set(i, contJ++, (*eei).isSpecial() ? NAcont : (*eei).floatV);
       else
-        DiscData.Set(i, discJ, (*eei).isSpecial() ? NAdisc : (*eei).intV);
+        DiscData.Set(i, discJ++, (*eei).isSpecial() ? NAdisc : (*eei).intV+1);
     if ((*ei).getClass().isSpecial())
       throw "missing class value";
-    DiscData.Set(i, 0, (*ei).getClass().intV);
+    DiscData.Set(i, 0, (*ei).getClass().intV+1);
   }
   state = data;
   // set data split  -> vsi exampli v Teach, en prazen prostor za Test
