@@ -15,3 +15,7 @@ young
 [<orange.Value 'age'='pre-presbyopic'>, <orange.Value 'prescription'='myope'>, <orange.Value 'astigmatic'='no'>, <orange.Value 'tear_rate'='reduced'>, <orange.Value 'lenses'='none'>]
 ['pre-presbyopic', 'myope', 'no', 'reduced', 'none']
 [<orange.Value 'age'='pre-presbyopic'>, <orange.Value 'prescription'='myope'>, <orange.Value 'astigmatic'='no'>, <orange.Value 'tear_rate'='reduced'>, <orange.Value 'lenses'='none'>]
+1
+0
+0
+1
