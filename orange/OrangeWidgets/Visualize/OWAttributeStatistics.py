@@ -100,7 +100,7 @@ class OWAttributeStatistics(OWWidget):
             self.dataset = data
             self.dist = orange.DomainDistributions(self.dataset)
 
-            for a in self.dataset.domain.attributes:
+            for a in self.dataset.domain:
                 self.attributes.insertItem(self.icons[a.varType], a.name)
                 
         self.HighlightedAttribute = 0
@@ -125,7 +125,7 @@ class DisplayStatistics (QCanvas):
 		self.vbias, self.hbias = 60, 200
 
 	def displayStat(self, data, ind, dist):
-		attr = data.domain.attributes[ind]
+		attr = data.domain[ind]
 		attr_name = QCanvasText (attr.name, self)
 		attr_name.move(10, 10)
 		attr_name.show()
