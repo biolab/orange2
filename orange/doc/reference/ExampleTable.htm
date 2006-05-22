@@ -70,7 +70,7 @@ data = orange.ExampleTable(domain)
 </DD>
 
 <DT>ExampleTable(domain, examples)</DT>
-<DD>The last constructor converts examples into the given domain and stores them into the new table. Examples can again be given in an <CODE>ExampleGenerator</CODE> or a Python list, containing examples as objects of type <CODE>Example</CODE> or Python lists.</P>
+<DD>This constructor converts examples into the given domain and stores them into the new table. Examples can again be given in an <CODE>ExampleGenerator</CODE>, a Python list containing examples as objects of type <CODE>Example</CODE> or Python lists, or Numeric array, if your Orange build supports it.</P>
 
 <P>If you have examples stored in a list of lists, for instance</P>
 
@@ -94,6 +94,18 @@ data = orange.ExampleTable(domain)
 </XMP>
 
 <P>The other way of putting such examples into an <CODE>ExampleTable</CODE> is by method <A href="#extend"><CODE>extend</CODE></A>.</P>
+
+<P>Finally, here's an example that puts a content of Numeric array into an <code>ExampleTable</code>.</P>
+
+<xmp class="code">
+import Numeric
+d = orange.Domain([orange.FloatVariable('a%i'%x) for x in range(5)])
+a = Numeric.array([[1, 2, 3, 4, 5], [5, 4, 3, 2, 1]])
+t = orange.ExampleTable(a)
+</xmp>
+
+<P>For this example, we first constructed a domain with attributes <Code>a1</code>, <Code>a2</code>, <Code>a3</code>, <Code>a4</code> and <Code>a5</code>. We then put together a simple Numeric <code>array</code> with five columns and put it into a table.</P>
+
 </DD>
 
 <DT>ExampleTable(list-of-tables)</DT>
