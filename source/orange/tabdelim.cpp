@@ -489,7 +489,8 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
     
       for(list<TSearchWarranty>::iterator wi(searchWarranties.begin()), we(searchWarranties.end()); wi!=we; wi++) {
         if ((*wi).posInFile >= atoms.size())
-          raiseError("line %i too short", fei.line);
+          continue;
+//          raiseError("line %i too short", fei.line);
 
         const string &atom = atoms[(*wi).posInFile];
 
@@ -741,6 +742,20 @@ bool atomsEmpty(const vector<string> &atoms)
 }
 
 
+int trimAtomsList(vector<string> &atoms)
+{
+  if (!atoms.size())
+    return 0;
+
+  vector<string>::iterator ei(atoms.end()-1), bi(atoms.begin());
+  for(; !(*ei).length() && ei!=bi; ei--);
+  if (!(*ei).length())
+    atoms.clear();
+  else
+    atoms.erase(++ei, atoms.end());
+  return atoms.size();
+}
+
 /*  Reads a list of atoms from a line of tab or comma delimited file. Atom consists of any characters
     except \n, \r and \t (and ',' if csv=true). Multiple spaces are replaced by a single space. Atoms
     are separated by \t or ',' if csv=true. Lines end with \n or \r. Lines which begin with | are ignored.
@@ -784,7 +799,7 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
           if (c != '\n')
             fseek(fei.file, SEEK_CUR, -1);
         }
-        return atoms.size();
+        return trimAtomsList(atoms);
 
       case '\t':
         atoms.push_back(trim(atom));
@@ -823,7 +838,7 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
   if (atom.length() || atoms.size())
     atoms.push_back(csv ? trim(atom) : atom);
 
-  return atoms.size();
+  return trimAtomsList(atoms);
 }
 
 
