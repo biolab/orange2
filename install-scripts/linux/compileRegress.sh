@@ -56,7 +56,8 @@ cat install.log >> ../output.log
 echo `date` > regress.log
 if ! /home/orange/install-scripts/linux/testOrange.sh >> regress.log 2>&1 ; then
   cd /home/orange/daily/orange
-  grep -v "(last outcome: OK): 1 2 3 OK" regress.log >> ../output.log
+  #grep -v "(last outcome: OK): 1 2 3 OK" regress.log >> ../output.log
+  grep -v "1 2 3 OK" regress.log >> ../output.log  # changed by JD
   echo -e "\n\nOnly FAILED tests are reported here." >> ../output.log
   mail -s "Linux: ERROR regression tests (compile and install OK) Orange" janez.demsar@fri.uni-lj.si < ../output.log
   mail -s "Linux: ERROR regression tests (compile and install OK) Orange" tomaz.curk@fri.uni-lj.si < ../output.log
