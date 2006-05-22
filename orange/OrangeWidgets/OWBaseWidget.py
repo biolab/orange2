@@ -789,6 +789,7 @@ class OWBaseWidget(QDialog):
         else:
             self.setCaption(self.captionTitle + " (0% complete)" )
         if self.progressBarHandler: self.progressBarHandler(self, value)
+        qApp.processEvents()
 
     def progressBarAdvance(self, value):
         self.progressBarSet(self.progressBarValue+value)
@@ -812,6 +813,7 @@ class OWBaseWidget(QDialog):
 
     def setStatusBarText(self, text):
         self.statusBar.message(text)
+        qApp.processEvents()
 
     def printVerbose(self, text):
         orngMisc.printVerbose(text)
@@ -858,6 +860,7 @@ class OWBaseWidget(QDialog):
 
         if self.widgetStateHandler:
             self.widgetStateHandler()
+        qApp.processEvents()
 
     def synchronizeContexts(self):
         if hasattr(self, "contextHandlers"):
