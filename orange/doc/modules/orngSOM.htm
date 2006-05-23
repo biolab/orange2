@@ -4,38 +4,44 @@
 </head>
 <body>
 <h1>orngSOM</h1>
-<p>orngSOM provides orange with SOM functionality </p>
+<p>Interface to Self Organizing Maps algorithm. For implementation of SOM, Orange integrates a <a href="http://www.cis.hut.fi/research/som-research/nnrc-programs.shtml">SOM_PAK package</a> from the inventors of the method. </p>
 <h2>SOMLearner</h2>
-<p>SOMLearner is a function that constructs a SOMLearner instance and optionally trains it on provided examples</p>
+<p>SOMLearner is a function that constructs an instance of SOMLearner instance. If an optional data set is provided, a corresponding Self Organizing Map will be constructed (training).</p>
 <p class=section>Arguments</p>
 <dl class=arguments>
     <dt>examples</dt>
-    <dd>Examples to be used for training (default None)</dd>
+    <dd>Data instances to be used for training (default None).</dd>
     <dt>wightID</dt>
-    <dd>Index of the meta attribute that contains weight values (default 0)</dd>
+    <dd>Index of the meta attribute that contains weight values (default 0, no weights).</dd>
     <DT>xDim</DT>
-    <DD>X dimension of the map (default 10)</DD>
+    <DD>X dimension of the map (default 10).</DD>
     <DT>yDim</DT>
-    <DD>Y dimension of the map (default 10)</DD>
+    <DD>Y dimension of the map (default 10).</DD>
     <DT>topology</DT>
-    <DD>Topology of the map. Can be a SOMLearner.RetangularTopology for rectangular or SOMLearner.HexagonalTopology (default) for hexagonal topology</DD>
+    <DD>Topology of the map. Can be a SOMLearner.RetangularTopology for rectangular or SOMLearner.HexagonalTopology (default) for hexagonal topology.</DD>
     <DT>neighborhood<DT>
-    <DD>Neighborhood function type. Can be SOMLearner.BubbleNeighborhood (default) or SOMLearner.GaussianNeighborhood</DD>
+    <DD>Neighborhood function type. Can be SOMLearner.BubbleNeighborhood (default) or SOMLearner.GaussianNeighborhood.</DD>
     <DT>alphaType</DT>
-    <DD>A alpha function type. Can be a SOMLearner.LinearFunction (default) or SOMLearner.InverseFunction</DD>
+    <DD>An alpha function type. Can be a SOMLearner.LinearFunction (default) or SOMLearner.InverseFunction.</DD>
     <DT>parameters</DT>
-    <DD>Specifies the radius, alpha and num. of iterations for each phase of training in a form of a list of dictionaries (e.g. parameters=[{"iterations":1000, "radius":5.0, "alpha":0.05}, {"iterations":10000, "radius":3.0, "alpha":0.02}] (note that not all (or even any) items in a dictionary are mandatory {"iterations:1000} is a valid item in the <code>parameters</code> list, the rest will be assigned the default or the last given value)</DD>
-</dl>
+    
+    <DD>Specifies the radius, alpha and number of iterations for each
+phase of training. The parameters are passed as a list of dictionaries
+(e.g. parameters=[{"iterations":1000, "radius":5.0, "alpha":0.05},
+{"iterations":10000, "radius":3.0, "alpha":0.02}]. Notice that not all
+(or even any) items in a dictionary are mandatory. For instance, {"iterations:1000}
+is a valid item in the <code>parameters</code> list, in which case the last given value (or the default in the case of none) will be used for other parameters.</DD>
+  </dl>
 
 <h2>getUMatrix</h2>
-<p><code>getUMatrix</code> is a function that constructs a u-matrix (uniform distance matrix) of the provided SOM (the way it is constructed depends on the topology of the SOM)</p>
+<p>A function that constructs a u-matrix (uniform distance matrix) for the Self-Organizing learner <code>somMap</code> which is passed as an argument. The construction of the matrix depends on the topology of the SOM.</p>
 <p class=section>Arguments</p>
 <dl class=arguments>
     <dt>somMap</dt>
-    <dd>SOM for witch the u-matrix is to be constructed</dd>
+    <dd>SOM for which the u-matrix is to be constructed</dd>
 </dl>
 <h2>Examples</h2>
-As an example we are going to train the SOM on the iris dataset and then print the nodes and the examples associated with that node
+As an example we are going to train the SOM on the iris dataset and then print the nodes and the examples associated with that node. Notice that clas-values are not used when constructing SOM.
 <p class="header"><a href="som1.py">som1.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
 <xmp class=code>l=orngSOM.SOMLearner(xDim=5, yDim=10, parameters=[{"iterations":1000, "radius":5, "alpha":0.05},{"iterations":10000, "alpha":0.02}])
