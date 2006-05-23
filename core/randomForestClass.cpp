@@ -86,6 +86,7 @@ PDistribution TRandomForest::classDistribution(const TExample &origexam)
 		  gFT->ContData.Set(i, contJ++, (*eei).isSpecial() ? NAcont : (*eei).floatV);
       else
         gFT->DiscData.Set(i, discJ++, (*eei).isSpecial() ? NAdisc : (*eei).intV+1);
+	gFT->NoCases++;
 	//TExample exam = TExample(domain, origexam);
 	//gFT->t
 	/*
@@ -110,7 +111,7 @@ PDistribution TRandomForest::classDistribution(const TExample &origexam)
 		distr[i]=(float)probDistArr[i+1];
 	}
 	TDiscDistribution *distribucija= new TDiscDistribution(distr,arrSize);
-
+	gFT->NoCases--;
 	return distribucija;
 }
 

@@ -468,7 +468,8 @@ void dectree::readDescription(TExampleTable &egen)
   //AttrDesc[0].AttributeName = strcpy(new char[6], "peter");
   AttrDesc[0].AttributeName = strcpy(new char[classVar->name.length()+1], classVar->name.c_str());
   AttrDesc[0].continuous = FALSE ;
-  DiscIdx[0] = egen.domain->variables->size()-1;
+  //DiscIdx[0] = egen.domain->variables->size()-1;
+  DiscIdx[0] = 0 ;
   AttrDesc[0].tablePlace = 0 ;
 
   const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(classVar.getReference());
@@ -500,9 +501,9 @@ void dectree::readData(TExampleTable &egen)
   NoCases = egen.numberOfExamples();
 
   if (NoDiscrete)
-    DiscData.create(egen.numberOfExamples()+1, NoDiscrete) ;
+    DiscData.create(NoCases+1, NoDiscrete) ;
   if (NoContinuous)
-    ContData.create(egen.numberOfExamples()+1, NoContinuous) ;
+    ContData.create(NoCases+1, NoContinuous) ;
 
   int i = 0;
   for(TExampleIterator ei(egen.begin()); ei; ++ei, i++) {
@@ -518,14 +519,14 @@ void dectree::readData(TExampleTable &egen)
   }
   state = data;
   // set data split  -> vsi exampli v Teach, en prazen prostor za Test
-  int noOfExamp = egen.numberOfExamples();
-  DTeach.create(noOfExamp);
+  //int noOfExamp = egen.numberOfExamples();
+  DTeach.create(NoCases);
   DTest.create(1);
-  for (i=0;i<noOfExamp;i++){
+  for (i=0;i<NoCases;i++){
 	  DTeach[i]=i;
   }
-  DTest[0]=noOfExamp;
-  NoTeachCases=noOfExamp;
+  DTest[0]=NoCases;
+  NoTeachCases=NoCases;
   NoTestCases=1;
   SetValueProbabilities();
   SetDistances();

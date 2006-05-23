@@ -58,7 +58,7 @@
 				HeaderFileName=""/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy Debug\mymodule_d.lib ..\..\lib\mymodule_d.lib"/>
+				CommandLine="copy ..\..\core_d.pyd &quot;C:\Program Files\Python23\Lib\site-packages\orange\core_d.pyd&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -109,7 +109,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="../../core.pyd"
+				OutputFile="C:\Program Files\Python23\Lib\site-packages\orange\core.pyd"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="../../lib,$(PYTHON)/libs"
@@ -128,7 +128,6 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				CommandLine="copy Release\mymodule.lib ..\..\lib\mymodule.lib
-copy ..\..\core.pyd &quot;c:\Program Files\Python23\lib\site-packages\orange\core.pyd&quot;
 "/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
