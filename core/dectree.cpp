@@ -468,10 +468,10 @@ void dectree::readDescription(TExampleTable &egen)
   //AttrDesc[0].AttributeName = strcpy(new char[6], "peter");
   AttrDesc[0].AttributeName = strcpy(new char[classVar->name.length()+1], classVar->name.c_str());
   AttrDesc[0].continuous = FALSE ;
-  DiscIdx[0] = ege.domain->variables->size()-1;
+  DiscIdx[0] = egen.domain->variables->size()-1;
   AttrDesc[0].tablePlace = 0 ;
 
-  const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(classVar);
+  const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(classVar.getReference());
   AttrDesc[0].NoValues = evar.noOfValues();
 
   AttrDesc[0].ValueName.create(AttrDesc[0].NoValues) ;
