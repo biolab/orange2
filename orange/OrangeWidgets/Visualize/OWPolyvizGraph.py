@@ -320,8 +320,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     
                 classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 for index in range(len(classVariableValues)):
-                    if not self.useDifferentColors: color = self.discPalette[index]
-                    else:                           color = QColor(0,0,0)
+                    if self.useDifferentColors: color = self.discPalette[index]
+                    else:                       color = QColor(0,0,0)
                     y = 1.0 - index * 0.05
 
                     if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
