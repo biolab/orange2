@@ -29,7 +29,7 @@ class DiscGraph(OWGraph):
         self.baseCurveKey=self.insertCurve("")
         self.lookaheadCurveKey=self.insertCurve("")
 
-        self.setAxisScale(QwtPlot.yRight, -0.0, 1.0, 0.0)
+        self.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.0)
         self.setYLaxisTitle("Attribute score")
         self.setXaxisTitle("Attribute value")
         self.setYRaxisTitle("Target class probability")
@@ -55,10 +55,8 @@ class DiscGraph(OWGraph):
         f=point*math.pow(10, -(order-1))
         s="%.1f" % f
         f=float(s)/math.pow(10, -(order-1))
-        #print f
         return f
-        #return point
-    
+
     def computeBaseScore(self):
         varInd=self.master.attribute
         minVal=self.minVal[varInd]
@@ -117,7 +115,7 @@ class DiscGraph(OWGraph):
             return
         if not self.rugKeys:
             self.rugKeys=[self.insertCurve("") for e in self.data]
-        color=self.classColors[self.master.targetClass]
+        color=Qt.blue #self.classColors[self.master.targetClass]
         pen=QPen(color)
         var=self.vars[self.master.attribute]
         targetClass=self.data.domain.classVar.values[self.master.targetClass]
@@ -126,10 +124,9 @@ class DiscGraph(OWGraph):
                 continue
             self.setCurveYAxis(key, QwtPlot.yRight)
             curve=self.curve(key)
-            curve.setData([float(e[var]), float(e[var])], e[-1]==targetClass and [1.0, 0.98] or [0.02, 0.0])
+            curve.setData([float(e[var]), float(e[var])], e[-1]==targetClass and [1.0, 0.98] or [0.04, 0.025])
             curve.setPen(pen)
-        
-        
+
     def plotBaseCurve(self):
         if not self.master.showBaseLine:
             return
@@ -143,7 +140,7 @@ class DiscGraph(OWGraph):
         curve=self.curve(self.lookaheadCurveKey)
         curve.setData(self.lookaheadCurveX, self.lookaheadCurveY)
         #curve.setPen(QPen(Qt.black, 2))
-    
+
     def plotProbCurve(self):
         if not self.master.showTargetClassProb:
             return
@@ -155,17 +152,28 @@ class DiscGraph(OWGraph):
         self.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
         curve=self.curve(self.probCurveKey)
         curve.setData(X,Y)
-        curve.setPen(QPen(self.classColors[self.master.targetClass]))
-    
+        curve.setPen(QPen(Qt.blue))#self.classColors[self.master.targetClass]))
+
     def plotCutLines(self):
         self.cutLineKeys=[self.insertCurve("") for c in self.curCutPoints]
         for i, key in enumerate(self.cutLineKeys):
             self.setCurveYAxis(key, QwtPlot.yRight)
             cut=self.curCutPoints[i]
             curve=self.curve(key)
-            curve.setData([cut, cut], [1.0, 0.0])
+            curve.setData([cut, cut], [1.0, 0.015])
             curve.curveInd=i
-    
+        if not self.master.showAllSets:
+            return
+        colors=[Qt.red, Qt.green, Qt.blue]
+        for i in range(3):
+            symbol=QwtSymbol(QwtSymbol.Triangle, QBrush(colors[i]), QPen(colors[i]), QSize(6,6))
+            for cut in self.cutPoints[self.master.attribute][i]:
+                key=self.insertCurve("")
+                self.setCurveYAxis(key, QwtPlot.yRight)
+                curve=self.curve(key)
+                curve.setData([cut], [0.021-i*0.013])
+                curve.setSymbol(symbol)
+            #self.curve(self.insertCurve("")).setData([self.minVal...
 
     def getCutCurve(self, cut):
         found=False
@@ -183,7 +191,7 @@ class DiscGraph(OWGraph):
         curveKey=self.insertCurve("")
         self.setCurveYAxis(curveKey, QwtPlot.yRight)
         curve=self.curve(curveKey)
-        curve.setData([cut, cut], [1.0, 0.0])
+        curve.setData([cut, cut], [1.0, 0.015])
         self.cutLineKeys.append(curveKey)
         curve.curveInd=len(self.cutLineKeys)-1
         return curve
@@ -205,6 +213,7 @@ class DiscGraph(OWGraph):
                 self.selectedCutPoint=self.addCutPoint(cut)
         else:
             self.selectedCutPoint=self.addCutPoint(cut)
+            #self.replotAll()
             self.update()
 
     def onMouseMoved(self, e):
@@ -215,7 +224,7 @@ class DiscGraph(OWGraph):
                 if self.curCutPoints[self.selectedCutPoint.curveInd]==pos:
                     return
                 self.curCutPoints[self.selectedCutPoint.curveInd]=pos
-                self.selectedCutPoint.setData([pos, pos], [1.0, 0.0])
+                self.selectedCutPoint.setData([pos, pos], [1.0, 0.015])
                 self.computeLookaheadScore(pos)
                 self.plotLookaheadCurve()
                 self.curve(self.lookaheadCurveKey).setEnabled(1)
@@ -229,7 +238,7 @@ class DiscGraph(OWGraph):
         self.mouseCurrentlyPressed=0
         self.selectedCutPoint=None
         self.computeBaseScore()
-        self.plotBaseCurve()
+        self.replotAll()
         self.curve(self.lookaheadCurveKey).setEnabled(0)
         self.update()
 
@@ -250,24 +259,36 @@ class DiscGraph(OWGraph):
         self.lookaheadCurveKey=self.insertCurve("")
         
         self.cutPoints[self.curAttribute][self.curCandidate]=self.curCutPoints
-        self.curCutPoints=self.cutPoints[self.master.attribute][self.master.candidate]
+        self.curCutPoints=self.cutPoints[self.master.attribute][self.master.candidate[0]]
         self.curAttribute=self.master.attribute
-        self.curCandidate=self.master.candidate
+        self.curCandidate=self.master.candidate[0]
 
         self.computeBaseScore()
-        #self.computeLookaheadScore()
         self.plotRug()
         self.plotBaseCurve()
-        #self.plotLookaheadCurve()
         self.plotProbCurve()
         self.plotCutLines()
         self.updateLayout()
         self.update()        
         
+def pixmap(color):
+    pixmap = QPixmap()
+    pixmap.resize(13,13)
+    painter = QPainter()
+    painter.begin(pixmap)
+    painter.setPen( color )
+    painter.setBrush( color )
+    points=QPointArray(3)
+    points.setPoint(0,13,13)
+    points.setPoint(1,0,13)
+    points.setPoint(2,7,0)
+    painter.drawPolygon(points)
+    painter.end()
+    return pixmap
 
 class OWInteractiveDiscretization(OWWidget):
     settingsList=["attribute", "targetClass", "showBaseLine", "showLookaheadLine", "measure", "targetClass", "showTargetClassProb",
-                  "showRug", "snap", "discretization", "intervals"]
+                  "showRug", "snap", "showAllSets", "discretization", "intervals"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None, name="Interactive Discretization"):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -278,11 +299,13 @@ class OWInteractiveDiscretization(OWWidget):
         self.showTargetClassProb=1
         self.showRug=1
         self.snap=1
+        self.showAllSets=1
         self.measure=0
         self.targetClass=0
         self.discretization=0
         self.intervals=3
-        self.candidate=0
+        self.candidate=[0]
+        self.sets=[]
         self.loadSettings()
         self.inputs=[("Examples", ExampleTableWithClass, self.cdata)]
         self.outputs=[("Examples", ExampleTableWithClass)]
@@ -292,10 +315,11 @@ class OWInteractiveDiscretization(OWWidget):
                        ("Relevance", orange.MeasureAttribute_relevance)]
                        #("chi-square",)]
         self.discretizationMethods=[("Entropy discretization", orange.EntropyDiscretization),
-                                    ("Equi-distance discretization", orange.EquiDistDiscretization)]
+                                    ("Equal-Frequancy discretizaion", orange.EquiNDiscretization), 
+                                    ("Equal-distance discretization", orange.EquiDistDiscretization)]
         self.layout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
         self.graph=DiscGraph(self, self.mainArea)
-        #self.canvasView=DiscCanvasView(self.canvas, self.mainArea )
+
         self.layout.addWidget(self.graph)
         box=QVBox(self.controlArea)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
@@ -309,17 +333,24 @@ class OWInteractiveDiscretization(OWWidget):
         self.intervalSlider=OWGUI.hSlider(box, self, "intervals", "Intervals", 2, 10)
         OWGUI.button(box, self, "&Apply", callback=self.discretize)
         self.setDiscMethod()
-        OWGUI.radioButtonsInBox(self.controlArea, self, "candidate", ["1","2","3"], "Candidate Split", callback=self.graph.replotAll)
+        box=OWGUI.listBox(self.controlArea, self, "candidate", "sets" , "Discretization Sets", callback=self.graph.replotAll)
         
         box=OWGUI.widgetBox(self.controlArea, "Options")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        OWGUI.checkBox(box, self, "showBaseLine", "Show base line", callback=self.graph.replotAll)
-        OWGUI.checkBox(box, self, "showLookaheadLine", "Show lookahead line", callback=self.graph.replotAll)
+        OWGUI.checkBox(box, self, "showBaseLine", "Show discretization gain", callback=self.graph.replotAll)
+        OWGUI.checkBox(box, self, "showLookaheadLine", "Show lookahead gain", callback=self.graph.replotAll)
         OWGUI.checkBox(box, self, "showTargetClassProb", "Show target class prob", callback=self.graph.replotAll)
         OWGUI.checkBox(box, self, "showRug", "Show rug", callback=self.graph.replotAll)
+        OWGUI.checkBox(box, self, "showAllSets", "Show all sets", callback=self.graph.replotAll)
         OWGUI.checkBox(box, self, "snap", "Snap to grid")
+        
         QVBox(self.controlArea)
         OWGUI.button(self.controlArea, self,"&Commit", callback=self.commit)
+        cc=OWGUI.attributeIconDict
+        OWGUI.attributeIconDict={1:pixmap(Qt.red), 2:pixmap(Qt.green), 3:pixmap(Qt.blue), -1:pixmap(Qt.blue)}
+        self.sets=[("First set",1), ("Second set", 2), ("Third set", 3)]
+        OWGUI.attributeIconDict=cc
+        self.candidate=[0]
 
     def cdata(self, data=None):
         if data:
@@ -362,12 +393,17 @@ class OWInteractiveDiscretization(OWWidget):
             disc=entro(self.vars[self.attribute], self.data)
             self.graph.curCutPoints=list(disc.getValueFrom.transformer.points)
         elif self.discretization==1:
+            inter=orange.EquiNDiscretization(numberOfIntervals = self.intervals)
+            disc=inter(self.vars[self.attribute], self.data)
+            trans=disc.getValueFrom.transformer
+            self.graph.curCutPoints=list(trans.points)
+        elif self.discretization==2:
             inter=orange.EquiDistDiscretization(numberOfIntervals = self.intervals)
             disc=inter(self.vars[self.attribute], self.data)
             trans=disc.getValueFrom.transformer
             self.graph.curCutPoints=[trans.firstCut+i*trans.step for i in range(self.intervals-1)]
         self.graph.replotAll()
-        
+
     def commit(self):
         newattrs=[]
         i=0
