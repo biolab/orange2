@@ -950,7 +950,7 @@ void featureTree::rfNearCheck(int caseIdx, marray<double> &probDist) {
 	int k = Mmin(opt->rfkNearestEqual, NoTeachCases-1) ;
 	nearr.sortKdsc(k) ;
     
-	marray<sortRec> treeMg(opt->rfNoTrees+1000) ;
+	marray<sortRec> treeMg(opt->rfNoTrees) ;
 	for (iT=0 ; iT < opt->rfNoTrees ; iT++) {
 		treeMg[iT].key = 0 ;
 		treeMg[iT].value = iT ; 

@@ -461,15 +461,17 @@ void dectree::readDescription(TExampleTable &egen)
       NoDiscrete++;
     }
   }
-
-  if (egen.domain->classVar->varType != TValue::INTVAR)
+  
+  PVariable classVar = egen.domain->classVar;
+  if (classVar->varType != TValue::INTVAR)
     throw "discrete class expected";
-
+  //AttrDesc[0].AttributeName = strcpy(new char[6], "peter");
+  AttrDesc[0].AttributeName = strcpy(new char[classVar->name.length()+1], classVar->name.c_str());
   AttrDesc[0].continuous = FALSE ;
-  DiscIdx[0] = i-1 ;
-  AttrDesc[0].tablePlace = NoDiscrete ;
+  DiscIdx[0] = ege.domain->variables->size()-1;
+  AttrDesc[0].tablePlace = 0 ;
 
-  const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(egen.domain->classVar.getReference());
+  const TEnumVariable &evar = dynamic_cast<const TEnumVariable &>(classVar);
   AttrDesc[0].NoValues = evar.noOfValues();
 
   AttrDesc[0].ValueName.create(AttrDesc[0].NoValues) ;
@@ -480,6 +482,7 @@ void dectree::readDescription(TExampleTable &egen)
     AttrDesc[0].ValueName[j++] = strcpy(new char[(*ai).length()+1], (*ai).c_str()) ;
 
   NoClasses = AttrDesc[0].NoValues;
+
 }
 // ************************************************************
 //
