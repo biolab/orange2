@@ -136,6 +136,10 @@ class uninstall(Command):
         self.systemUninstall = False
         
     def finalize_options(self):
+        if self.orangepath == None and 'root' in self.__dict__.keys() and self.root <> None:
+            self.orangepath = self.root
+            self.root = None
+
         if self.orangepath is None:
             try:
                 fo = file(sys.argv[0].replace("/setup.py", "/user_install"), "r")
@@ -248,7 +252,7 @@ class install_data_wrap(install_data):
 
     def finalize_options(self):
         install_data.finalize_options(self)
-        if self.install_dir != sys.prefix:
+        if self.install_dir != os.path.join(self.root, sys.prefix):
             OrangeInstallDir = os.path.join(self.install_dir, "orange")
             OrangeInstallDoc = os.path.join(self.install_dir, "doc", "orange")
 #            OrangeInstallLib = os.path.join(self.install_dir, "lib")
@@ -290,6 +294,10 @@ class install_wrap(install):
         self.orangepath = None;
 
     def finalize_options(self):
+        if self.orangepath == None and self.root <> None:
+            self.orangepath = self.root
+            self.root = None
+
         if self.orangepath == None:
             print "Using default system initialization, checking for privileges..."
             if os.geteuid() != 0:
