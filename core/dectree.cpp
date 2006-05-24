@@ -497,7 +497,6 @@ void dectree::readDescription(TExampleTable &egen)
 void dectree::readData(TExampleTable &egen)
 {
   clearData();
-
   NoCases = egen.numberOfExamples();
 
   if (NoDiscrete)
@@ -528,6 +527,19 @@ void dectree::readData(TExampleTable &egen)
   DTest[0]=NoCases;
   NoTeachCases=NoCases;
   NoTestCases=1;
+  NoCases++;
+  // Napolnimo še testni primer z zadnjim examplom
+  TExample *ei = egen.examples[0];
+  int contJ = 0, discJ = 1;
+    for(TExample::const_iterator eei((*ei).begin()), eee((*ei).end()-1); eei != eee; eei++)
+      if ((*eei).varType == TValue::FLOATVAR)
+        ContData.Set(i, contJ++, (*eei).isSpecial() ? NAcont : (*eei).floatV);
+      else
+        DiscData.Set(i, discJ++, (*eei).isSpecial() ? NAdisc : (*eei).intV+1);
+    if ((*ei).getClass().isSpecial())
+      throw "missing class value";
+    DiscData.Set(i, 0, (*ei).getClass().intV+1);
+
   SetValueProbabilities();
   SetDistances();
 }
