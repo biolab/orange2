@@ -94,13 +94,13 @@ class DiscGraph(OWGraph):
     
     def setData(self, data=None):
         self.clear()
+        self.data=data
         if not data:
             self.vars=[]
             self.cutLineKeys=[]
             self.rugKeys=[]
             self.curAttribute=0            
             return
-        self.data=data
         self.vars=self.master.vars
         self.condProb=[orange.ConditionalProbabilityEstimatorConstructor_loess(orange.ContingencyAttrClass(var, self.data)) for var in self.vars]
         self.cutPoints=[[[],[],[]] for i in range(len(self.vars))]
@@ -219,9 +219,15 @@ class DiscGraph(OWGraph):
     def onMouseMoved(self, e):
         if self.mouseCurrentlyPressed:
             if self.selectedCutPoint:
-                pos=self.invTransform(QwtPlot.xBottom, e.x())
-                pos=self.snap(pos)
+                pos1=self.invTransform(QwtPlot.xBottom, e.x())
+                pos=self.snap(pos1)
                 if self.curCutPoints[self.selectedCutPoint.curveInd]==pos:
+                    return
+                if pos1>self.maxVal[self.master.attribute] or pos1<self.minVal[self.master.attribute]:
+                    self.curCutPoints.pop(self.selectedCutPoint.curveInd)
+                    self.computeBaseScore()
+                    self.replotAll()
+                    self.mouseCurrentlyPressed=0
                     return
                 self.curCutPoints[self.selectedCutPoint.curveInd]=pos
                 self.selectedCutPoint.setData([pos, pos], [1.0, 0.015])
@@ -252,6 +258,8 @@ class DiscGraph(OWGraph):
 
     def replotAll(self):
         self.clear()
+        if not self.data:
+            return 
         self.rugKeys=[]
         self.cutLineKeys=[]
         self.probCurveKey=self.insertCurve("")
@@ -276,10 +284,13 @@ def pixmap(color):
     pixmap.resize(13,13)
     painter = QPainter()
     painter.begin(pixmap)
+    painter.setBrush(Qt.white)
+    painter.setPen(Qt.white)
+    painter.drawRect(0,0,13,13)
     painter.setPen( color )
     painter.setBrush( color )
     points=QPointArray(3)
-    points.setPoint(0,13,13)
+    points.setPoint(0,12,12)
     points.setPoint(1,0,13)
     points.setPoint(2,7,0)
     painter.drawPolygon(points)
@@ -381,6 +392,8 @@ class OWInteractiveDiscretization(OWWidget):
                 return
             self.graph.setData(self.data)
         else:
+            self.attributeCombo.clear()
+            self.targetCombo.clear()
             self.graph.setData(None)
             self.send("Examples", None)
 
@@ -405,21 +418,22 @@ class OWInteractiveDiscretization(OWWidget):
         self.graph.replotAll()
 
     def commit(self):
-        newattrs=[]
-        i=0
-        for attr in self.data.domain.attributes:
-            if attr.varType==orange.VarTypes.Continuous:
-                if self.graph.cutPoints[i][self.candidate]:
-                    idisc=orange.IntervalDiscretizer(points=self.graph.cutPoints[i][self.candidate])
-                    newattrs.append(idisc.constructVariable(attr))
-                    i+=1
+        if self.data:
+            newattrs=[]
+            i=0
+            for attr in self.data.domain.attributes:
+                if attr.varType==orange.VarTypes.Continuous:
+                    if self.graph.cutPoints[i][self.candidate[0]]:
+                        idisc=orange.IntervalDiscretizer(points=self.graph.cutPoints[i][self.candidate[0]])
+                        newattrs.append(idisc.constructVariable(attr))
+                        i+=1
+                    else:
+                        newattrs.append(attr)
+                        i+=1
                 else:
                     newattrs.append(attr)
-                    i+=1
-            else:
-                newattrs.append(attr)
-        newdata=self.data.select(newattrs+[self.data.domain.classVar])
-        self.send("Examples", newdata)
+            newdata=self.data.select(newattrs+[self.data.domain.classVar])
+            self.send("Examples", newdata)
 
 import sys
 if __name__=="__main__":
