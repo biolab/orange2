@@ -421,6 +421,7 @@ void dectree::clearDescription(void)
 
 void dectree::readDescription(TExampleTable &egen)
 {
+  clearDescription() ;
   const nattrs = egen.domain->variables->size();
   NoOriginalAttr = NoAttr = nattrs -1 ;
   NoContinuous = 0 ;
@@ -528,7 +529,7 @@ void dectree::readData(TExampleTable &egen)
   NoTeachCases=NoCases;
   NoTestCases=1;
   NoCases++;
-  // Napolnimo še testni primer z zadnjim examplom
+  // Napolnimo še testni primer z prvim examplom
   TExample *ei = egen.examples[0];
   int contJ = 0, discJ = 1;
     for(TExample::const_iterator eei((*ei).begin()), eee((*ei).end()-1); eei != eee; eei++)
@@ -539,6 +540,9 @@ void dectree::readData(TExampleTable &egen)
     if ((*ei).getClass().isSpecial())
       throw "missing class value";
     DiscData.Set(i, 0, (*ei).getClass().intV+1);
+  
+  DTeach.setFilled(NoTeachCases) ;
+  DTest.setFilled(NoTestCases) ;
 
   SetValueProbabilities();
   SetDistances();

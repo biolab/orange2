@@ -41,6 +41,10 @@ PClassifier TRandomForestLearner::operator()(PExampleGenerator egen, const int &
 	options->rfSampleProp = sampleProp;
 	options->rfNoSelAttr = noSelAttr;
 	options->rfkNearestEqual = kNearestEqual;
+	//  nastavljeni na roko
+	options->splitSelection = (splitSelectionType)3;
+	options->selectionEstimator = 7; // 7~Mdl
+	//options->assignOption("estReliefFexpRank=Y");
 
 	opt = options;
 	//opt->readConfig("credita.par") ;
@@ -56,7 +60,7 @@ PClassifier TRandomForestLearner::operator()(PExampleGenerator egen, const int &
 
 	gFT=NULL;
 	opt=NULL;
-  
+  //printf("\nnaucen");
   return ranForest;
 }
 
@@ -112,6 +116,7 @@ PDistribution TRandomForest::classDistribution(const TExample &origexam)
 	}
 	TDiscDistribution *distribucija= new TDiscDistribution(distr,arrSize);
 	//gFT->NoCases--;
+	//printf("\nklasificiran");
 	return distribucija;
 }
 
