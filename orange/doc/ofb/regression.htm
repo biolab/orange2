@@ -18,9 +18,10 @@ this lesson, we will see that using regression is just like using
 classifiers, and evaluation techniques are not much different
 either.</p>
 
-<p>Let us start with regression trees. Below is an example script that
-builds the tree from <a href="housing.tab">housing</a> data set and
-prints out the tree in textual form.</p>
+<p>Let us start with <index name="regression+regression tree"></index>regression
+trees. Below is an example script that builds the tree from <a
+href="housing.tab">housing</a> data set and prints out the tree in
+textual form.</p>
 
 <p class="header"><a href="regression1.py">regression1.py</a> (uses <a href=
 "housing.tab">housing.tab</a>)</p>
@@ -94,7 +95,9 @@ for i in range(10):
       20.2        50.0        21.7        23.1
 </xmp>
 
-<p>For our third and last example for regression, let us see how we can use cross-validation testing and for a score function use mean squared error.</p>
+<p>For our third and last example for regression, let us see how we
+can use cross-validation testing and for a score function use <index>mean
+squared error</index>.</p>
 
 <p class="header"><a href="regression3.py">regression3.py</a> (uses <a href=
 "housing.tab">housing.tab</a>)</p>
@@ -120,7 +123,10 @@ for i in range(len(learners)):
   print "%-15s %5.3f" % (learners[i].name, mse[i])
 </xmp>
 
-<p>Again, compared to classification tasks, this is nothing new. The only news in the above script is a mean squared error evaluation function (<code>orngStat.MSE</code>). The scripts prints out the following report:</p>
+<p>Again, compared to classification tasks, this is nothing new. The
+only news in the above script is a mean squared error evaluation
+function (<code>orngStat.MSE</code>). The scripts prints out the
+following report:</p>
 
 <xmp class="code">Learner        MSE
 default         862.838
@@ -128,7 +134,12 @@ regression tree 53.378
 k-NN (k=5)      23.285
 </xmp>
 
-<p>Currently, mean squared error is the only evaluation function we provide for regression. If you need to implement something more advanced or meaningful for your data, you should check how <code>MSE</code> is implemented in <code>orngStat</code>: it really takes only about a single line of code to compute this statistics, so you should have no problems implementing your scoring functions.</p>
+<p>Currently, mean squared error is the only evaluation function we
+provide for regression. If you need to implement something more
+advanced or meaningful for your data, you should check how
+<code>MSE</code> is implemented in <code>orngStat</code>: it really
+takes only about a single line of code to compute this statistics, so
+you should have no problems implementing your scoring functions.</p>
 
 <hr><br><p class="Path">
 Prev: <a href="c_bagging.htm">Bagging</a>,
