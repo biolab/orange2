@@ -23,12 +23,13 @@ here is definition of a Learner class:</p>
 <p class="header">function <code>Learner</code> from <a href=
 "nbdisc.py">nbdisc.py</a></p>
 <xmp class="code">class Learner(object):
-    def __new__(cls, examples=None, **kwds):
+    def __new__(cls, examples=None, name='discretized bayes', **kwds):
         learner = object.__new__(cls, **kwds)
         if examples:
+            learner.__init__(name) # force init
             return learner(examples)
         else:
-            return learner
+            return learner  # invokes the __init__
 
     def __init__(self, name='discretized bayes'):
         self.name = name
@@ -40,14 +41,14 @@ here is definition of a Learner class:</p>
         return Classifier(classifier = model)
 </xmp>
 
-<p>Learner_Class has three methods. Method <code>__init__</code>
-creates the object and, with respect if examples where passed to the
-call or not, returns a classifier (by, in essence calling the learner
-with examples, e.g., invoking <code>__call__</code> method) or
-learner, respectively. Method <code>__init__</code> is invoked every
-time the class is called for the first time. Notice that all it does
-is remembers the only argument that this class can be called with,
-i.e. the argument <code>name</code> which defaults to
+<p>Learner_Class has three methods. Method <code>__new__</code>
+creates the object and returns a learner or classifier, depending if
+examples where passed to the call. If the examples were passed as an
+argument than the method called the learner (invoking
+<code>__call__</code> method). Method <code>__init__</code> is invoked
+every time the class is called for the first time. Notice that all it
+does is remembers the only argument that this class can be called
+with, i.e. the argument <code>name</code> which defaults to
 &lsquo;discretized bayes&rsquo;. If you would expect any other
 arguments for your learners, you should handle them here (store them
 as class&rsquo; attributes using the keyword <code>self</code>).</p>

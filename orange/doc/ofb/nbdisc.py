@@ -5,12 +5,13 @@
 import orange
 
 class Learner(object):
-    def __new__(cls, examples=None, **kwds):
+    def __new__(cls, examples=None, name='discretized bayes', **kwds):
         learner = object.__new__(cls, **kwds)
         if examples:
+            learner.__init__(name) # force init
             return learner(examples)
         else:
-            return learner
+            return learner  # invokes the __init__
 
     def __init__(self, name='discretized bayes'):
         self.name = name
