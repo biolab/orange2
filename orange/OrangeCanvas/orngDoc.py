@@ -518,7 +518,8 @@ class SchemaDoc(QMainWindow):
             if caption != None: self.setCaption(caption)
             else:               self.setCaption(self.documentname)
             self.documentnameValid = True
-            self.signalManager.processNewSignals(self.widgets[0].instance)
+            if self.widgets:
+                self.signalManager.processNewSignals(self.widgets[0].instance)
 
         finally:
             # set cursor
