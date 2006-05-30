@@ -16,5 +16,5 @@ for i in range(5):
 
 print
 orngTree.printTxt(tree)
-#orngTree.printDot(tree, fileName='tree.dot', internalNodeShape="ellipse", leafShape="box")
+orngTree.printDot(tree, fileName='tree.dot', internalNodeShape="ellipse", leafShape="box")
 

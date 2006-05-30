@@ -544,16 +544,16 @@ class __TreeDumper:
                 if branch:
                     internalBranchName = internalName+chr(i+65)
                     self.fle.write('%s -> %s [ label="%s" ]\n' % (internalName, internalBranchName, node.branchDescriptions[i]))
-                    self.dotTree0(self.fle, branch, node, internalBranchName)
+                    self.dotTree0(branch, node, internalBranchName)
                     
         else:
             self.fle.write('%s [ shape=%s label="%s"]\n' % (internalName, self.leafShape, self.formatString(self.leafStr, node, parent)))
 
 
     def dotTree(self, internalName="n"):
-        fle.write("digraph G {\n")
-        dotTree0(fle, tree.tree, None, tree, internalName)
-        fle.write("}\n")
+        self.fle.write("digraph G {\n")
+        self.dotTree0(self.tree.tree, None, internalName)
+        self.fle.write("}\n")
 
 
 def dumpTree(tree, leafStr = "", nodeStr = "", **argkw):
@@ -570,15 +570,12 @@ printTxt = printTree
 
 def dotTree(tree, fileName, leafStr = "", nodeStr = "", leafShape="plaintext", nodeShape="plaintext", **argkw):
     fle = type(fileName) == str and file(fileName, "wt") or fileName
-    fle.write("digraph G {\n")
 
     __TreeDumper(leafStr, nodeStr, argkw.get("userFormats", []) + __TreeDumper.defaultStringFormats,
                  argkw.get("minExamples", 0), argkw.get("maxDepth", 1e10), argkw.get("simpleFirst", True),
                  tree,
                  leafShape = leafShape, nodeShape = nodeShape, fle = fle).dotTree()
                         
-    fle.write("}\n")
-
 printDot = dotTree
         
 ##import orange, orngTree, os
