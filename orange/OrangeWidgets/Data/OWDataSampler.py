@@ -165,10 +165,10 @@ class OWDataSampler(OWWidget):
             self.infoa.setText('No data on input.')
             self.infob.setText('')
             self.infoc.setText('')
-            self.send("Sampled Data", None)
-            self.send("Remaining Data", None)
-            self.send("Classified Sampled Data", None)
-            self.send("Classified Remaining Data", None)
+            self.send("Examples", None)
+            self.send("Remaining Examples", None)
+            self.send("Classified Examples", None)
+            self.send("Remaining Classified Examples", None)
             self.data = None
 
     # feeds the output stream
@@ -200,12 +200,12 @@ class OWDataSampler(OWWidget):
         if remainder:
             remainder.name = self.data.name
         # send data
-        self.send("Sampled Data", sample)
-        self.send("Remaining Data", remainder)
+        self.send("Examples", sample)
+        self.send("Remaining Examples", remainder)
         # send classified data (if class exists)
         if self.data.domain.classVar:
-            self.send("Classified Sampled Data", sample)
-            self.send("Classified Remaining Data", remainder)
+            self.send("Classified Examples", sample)
+            self.send("Remaining Classified Examples", remainder)
 
     # MAIN SWITCH
     # processes data after the user requests it
