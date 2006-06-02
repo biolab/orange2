@@ -116,6 +116,7 @@ def findIndices(page, filename, title):
                     continue
                 name = addNewlines(page[idxm.end():eidx])
 
+            name = name.replace("\n", " ")
             outp.append(page[lastout:idx])
             outp.append('<a name="HH%i">' % counter)
 
@@ -192,7 +193,7 @@ def writeIndexHH_store(hhk, indexStoreList):
                 for entry in indexStore.entries:
                     hhk.write(hhksubentry % entry)
             else:
-                for substore in indexStore.subentries:
+                for substore in indexStore.subentries.values():
                     for subentry in substore.entries:
                         hhk.write(hhksubentry % subentry)
             hhk.write(hhkendentry)
