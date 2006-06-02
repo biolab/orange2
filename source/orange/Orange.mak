@@ -1314,7 +1314,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\Orange.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(GNUWIN32)\lib" /libpath:"$(PYTHON24)\libs" /WARN:0 
+LINK32_FLAGS=oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(PYTHON24)\libs" /WARN:0 
 LINK32_OBJS= \
 	"$(INTDIR)\assistant.obj" \
 	"$(INTDIR)\assoc.obj" \

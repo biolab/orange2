@@ -342,7 +342,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\orangene.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /pdb:"$(OUTDIR)\orangene.pdb" /machine:I386 /out:"$(OUTDIR)\orangene.pyd" /implib:"$(OUTDIR)\orangene.lib" /libpath:"../../lib" /libpath:"$(PYTHON24)\libs" 
+LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /pdb:"$(OUTDIR)\orangene.pdb" /machine:I386 /out:"$(OUTDIR)\orangene.pyd" /implib:"$(OUTDIR)\orangene.lib" /libpath:"../../24/lib" /libpath:"$(PYTHON24)\libs" 
 LINK32_OBJS= \
 	"$(INTDIR)\heatmap.obj" \
 	"$(INTDIR)\orangene.obj"
