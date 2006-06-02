@@ -1,6 +1,6 @@
 import orange
 from orngMisc import demangleExamples, getobjectname, printVerbose
-import exceptions, whrandom, cPickle, os, os.path
+import exceptions, cPickle, os, os.path
 
 #### Some private stuff
 

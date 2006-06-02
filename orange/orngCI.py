@@ -1,4 +1,4 @@
-import whrandom
+import random
 import orange, orngMisc, orngLookup
 
 
@@ -238,9 +238,9 @@ class FeatureByRandomClass:
       raise AttributeError, "no bound attributes"
 
     newattr.getValueFrom = orngLookup.lookupFromBound(newattr, [table.domain[x] for x in bound])
-    lookupTable = newattr.getValueFrom.lookupTable = [whrandom.randint(0, self.n-1) for i in newattr.getValueFrom.lookupTable]
+    lookupTable = newattr.getValueFrom.lookupTable = [random.randint(0, self.n-1) for i in newattr.getValueFrom.lookupTable]
 
-    return newattr, whrandom.randint(0, 100)
+    return newattr, random.randint(0, 100)
 
 
 ######################################################
