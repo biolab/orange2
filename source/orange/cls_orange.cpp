@@ -195,7 +195,10 @@ PyObject *PyOrType_GenericCallableNew(PyTypeObject *type, PyObject *args, PyObje
 
       if (self2) {
         if (type!=self1->ob_type) {
-          PyObject *ccReturn = PyObject_GetAttrString((PyObject *)type, "_AssociationRulesInducer__call_construction_type");
+          char *oname = new char[30 + strlen(type->tp_name)];
+          sprintf(oname, "_%s__call_construction_type", type->tp_name);
+          PyObject *ccReturn = PyObject_GetAttrString((PyObject *)type, oname);
+          delete oname;
 
           if (!ccReturn) {
             PyErr_Format(PyExc_SystemError, "no return type specified for call-construction of '%s'", type->tp_name);
