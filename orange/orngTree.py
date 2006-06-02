@@ -503,18 +503,28 @@ class __TreeDumper:
                 return "|    "*lev + ". . .\n"
             
             res = ""
+            if self.leafStr and self.nodeStr and self.leafStr != self.nodeStr:
+                leafsep = "\n"+("|    "*lev)+"    "
+            else:
+                leafsep = ""
             if self.simpleFirst:
                 for i, branch in enumerate(node.branches):
                     if not branch or not branch.branches:
-                        res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
-                                             self.formatString(self.leafStr, branch, node))
+                        if self.leafStr == self.nodeStr:
+                            res += "%s\n" % self.showBranch(node, parent, lev, i)
+                        else:
+                            res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
+                                                 leafsep + self.formatString(self.leafStr, branch, node))
             for i, branch in enumerate(node.branches):
                 if branch and branch.branches:
                     res += "%s\n%s" % (self.showBranch(node, parent, lev, i),
                                        self.dumpTree0(branch, node, lev+1))
                 elif not self.simpleFirst:
-                    res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
-                                         self.formatString(self.leafStr, branch, node))
+                    if self.leafStr == self.nodeStr:
+                        res += "%s\n" % self.showBranch(node, parent, lev, i)
+                    else:
+                        res += "%s: %s\n" % (self.showBranch(node, parent, lev, i),
+                                             leafsep+self.formatString(self.leafStr, branch, node))
             return res
         else:
             return self.formatString(self.leafStr, node, parent)

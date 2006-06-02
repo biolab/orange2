@@ -184,7 +184,7 @@ big.</p>
 
   <dt>simpleFirst</dt>
   <dd>If <code>True</code> (default), the branches with a single node are printed before the branches with larger subtrees. If you set it to <code>False</code> (which I don't know why you would), the branches are printed in order of appearance.</dd>
-  
+
   <dt>userFormats</dt>
   <dd>A list of regular expressions and callback function through which the user can print out other specific information in the nodes.
 </dl>
@@ -352,18 +352,24 @@ petal width>=0.800
 </xmp>
 <P>See what's in the parentheses in the root node? If <code>printTree</code> cannot compute something (in this case it's because the root has no parent), it prints out a dot. You can also replace <code>=</code> by <code>!=</code> and it will count all classes <em>except</em> virginica.</P>
 
-<P>For one final example with classification trees, we shall print the distributions in that nodes, the distribution compared to the parent and the proportions compared to the parent (the latter things are not the same - think why). In leaves we shall also add the predicted class. So now we'll have to call the function like this.</P>
+<P>For one final example with classification trees, we shall print the distributions in that nodes, the distribution compared to the parent and the proportions compared to the parent (the latter things are not the same - think why). In the leaves we shall also add the predicted class. So now we'll have to call the function like this.</P>
 <xmp class="code>"orngTree.printTree(tree, leafStr='"%V   %D %.2DbP %.2dbP"', nodeStr='"%D %.2DbP %.2dbP"')</xmp>
 <p>Here's the result:</p>
 <xmp class="printout">root: [50.000, 50.000, 50.000] . .
-|    petal width<0.800: Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
+|    petal width<0.800: [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]:
+|        Iris-setosa   [50.000, 0.000, 0.000] [1.00, 0.00, 0.00] [3.00, 0.00, 0.00]
 |    petal width>=0.800: [0.000, 50.000, 50.000] [0.00, 1.00, 1.00] [0.00, 1.50, 1.50]
 |    |    petal width<1.750: [0.000, 49.000, 5.000] [0.00, 0.98, 0.10] [0.00, 1.81, 0.19]
-|    |    |    petal length<5.350: Iris-versicolor   [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]
-|    |    |    petal length>=5.350: Iris-virginica   [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]
+|    |    |    petal length<5.350: [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]:
+|    |    |        Iris-versicolor   [0.000, 49.000, 3.000] [0.00, 1.00, 0.60] [0.00, 1.04, 0.62]
+|    |    |    petal length>=5.350: [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]:
+|    |    |        Iris-virginica   [0.000, 0.000, 2.000] [0.00, 0.00, 0.40] [0.00, 0.00, 10.80]
 |    |    petal width>=1.750: [0.000, 1.000, 45.000] [0.00, 0.02, 0.90] [0.00, 0.04, 1.96]
-|    |    |    petal length<4.850: Iris-virginica   [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]
-|    |    |    petal length>=4.850: Iris-virginica   [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]</xmp>
+|    |    |    petal length<4.850: [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]:
+|    |    |        Iris-virginica   [0.000, 1.000, 2.000] [0.00, 1.00, 0.04] [0.00, 15.33, 0.68]
+|    |    |    petal length>=4.850: [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]:
+|    |    |        Iris-virginica   [0.000, 0.000, 43.000] [0.00, 0.00, 0.96] [0.00, 0.00, 1.02]
+</xmp>
 
 <P>To explore the possibilities when printing regression trees, we are gonna induce a tree from the housing data set. Called with the tree as the only argument, <code>printTree</code> prints the tree like this:
 
@@ -389,18 +395,26 @@ RM>=6.941
 <xmp class="printout">root: [SE: 0.409]
 |    RM<6.941: [SE: 0.306]
 |    |    LSTAT<14.400: [SE: 0.320]
-|    |    |    DIS<1.385: [SE: 4.420]    45.6 [38.331-52.829]
-|    |    |    DIS>=1.385: [SE: 0.244]   22.9 [22.504-23.306]
+|    |    |    DIS<1.385: [SE: 4.420]:
+|    |    |        [SE: 4.420]   45.6 [38.331-52.829]
+|    |    |    DIS>=1.385: [SE: 0.244]:
+|    |    |        [SE: 0.244]   22.9 [22.504-23.306]
 |    |    LSTAT>=14.400: [SE: 0.333]
-|    |    |    CRIM<6.992: [SE: 0.338]   17.1 [16.584-17.691]
-|    |    |    CRIM>=6.992: [SE: 0.448]  12.0 [11.243-12.714]
+|    |    |    CRIM<6.992: [SE: 0.338]:
+|    |    |        [SE: 0.338]   17.1 [16.584-17.691]
+|    |    |    CRIM>=6.992: [SE: 0.448]:
+|    |    |        [SE: 0.448]   12.0 [11.243-12.714]
 |    RM>=6.941: [SE: 1.031]
 |    |    RM<7.437: [SE: 0.958]
-|    |    |    CRIM<7.393: [SE: 0.692]   33.3 [32.214-34.484]
-|    |    |    CRIM>=7.393: [SE: 2.157]  14.4 [10.862-17.938]
+|    |    |    CRIM<7.393: [SE: 0.692]:
+|    |    |        [SE: 0.692]   33.3 [32.214-34.484]
+|    |    |    CRIM>=7.393: [SE: 2.157]:
+|    |    |        [SE: 2.157]   14.4 [10.862-17.938]
 |    |    RM>=7.437: [SE: 1.124]
-|    |    |    TAX<534.500: [SE: 0.817]  45.9 [44.556-47.237]
-|    |    |    TAX>=534.500: [SE: 0.000]     21.9 [21.900-21.900]
+|    |    |    TAX<534.500: [SE: 0.817]:
+|    |    |        [SE: 0.817]   45.9 [44.556-47.237]
+|    |    |    TAX>=534.500: [SE: 0.000]:
+|    |    |        [SE: 0.000]   21.9 [21.900-21.900]
 </xmp>
 
 <P>What's the difference between <code>%V</code>, the predicted value and <code>%A</code> the average? Doesn't a regression tree always predict the leaf average anyway? Not necessarily, the tree predict whatever the <code>nodeClassifier</code> in a leaf returns. But you're mostly right. The difference is in the number of decimals: <code>%V</code> uses the <code>FloatVariable</code>'s function for printing out the value, which results the printed number to have the same number of decimals as in the original file from which the data was read.</P>

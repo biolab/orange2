@@ -79,7 +79,7 @@ def testScripts(complete):
 
     skip = ["buildC45.py"]
     for dir in os.listdir("."):
-        if not os.path.isdir(dir) or dir in ["cvs", "datasets", "widgets"] or (directories and not dir in directories):
+        if not os.path.isdir(dir) or dir in ["cvs", "datasets", "widgets", "processed"] or (directories and not dir in directories):
             continue
         
         print "\nDirectory '%s'\n" % dir
@@ -89,11 +89,19 @@ def testScripts(complete):
         if not os.path.exists(outputsdir):
             os.mkdir(outputsdir)
 
+        if os.path.exists("exclude-from-regression.txt"):
+            dont_test = [x.strip() for x in file("exclude-from-regression.txt").readlines()]
+        else:
+            dont_test = []
+        test_set = []
+
         names = os.listdir(".")
         names = filter(lambda name: (testFiles and name in testFiles)  or  (not testFiles and (name[-3:]==".py") and (not name in skip)), names)
         names.sort()
-        test_set, dont_test = [], []
         for name in names:
+            if name in dont_test:
+                continue
+            
             node, isNewFile = findFileNode(name, dir)
             if isNewFile:
                 lastResult = "new"
@@ -105,6 +113,7 @@ def testScripts(complete):
                 test_set.append((name, node, isNewFile, lastResult))
             else:
                 dont_test.append(name)
+                
         if dont_test:
             print "Skipped: %s\n" % reduce(lambda x,y: "%s, %s" % (x,y), dont_test)
 
