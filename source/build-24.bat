@@ -1,4 +1,5 @@
 call nmakeall.bat
+cd ..
 
 copy orange.pyd* 23
 copy 24\orange.pyd .
