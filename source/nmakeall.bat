@@ -1,4 +1,4 @@
-"C:\Program Files\Microsoft Visual Studio\VC98\Bin\vcvars32.bat" 
+call "C:\Program Files\Microsoft Visual Studio\VC98\Bin\vcvars32.bat" 
 set PYTHON24=c:\python24
 
 cd Orange
