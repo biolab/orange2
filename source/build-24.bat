@@ -14,4 +14,6 @@ copy orangeom.pyd* 23
 copy 24\orangeom.pyd .
 
 copy statc.pyd* 23
-copy 24\statc.py .
+copy 24\statc.pyd .
+
+cd source
