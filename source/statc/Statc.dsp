@@ -19,6 +19,7 @@ CFG=Statc - Win32 Debug
 !MESSAGE 
 !MESSAGE "Statc - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "Statc - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "Statc - Win32 Python 24" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -89,12 +90,48 @@ LINK32=link.exe
 # ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /out:"../../statc_d.pyd" /pdbtype:sept /libpath:"$(PYTHON)/libs"
 # SUBTRACT LINK32 /nodefaultlib
 
+!ELSEIF  "$(CFG)" == "Statc - Win32 Python 24"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "Statc___Win32_Python_24"
+# PROP BASE Intermediate_Dir "Statc___Win32_Python_24"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "obj/Release24"
+# PROP Intermediate_Dir "obj/Release24"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "STATC_EXPORTS" /YX /FD /c
+# SUBTRACT BASE CPP /Fr
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "STATC_EXPORTS" /YX /FD /c
+# SUBTRACT CPP /Fr
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"obj/Release/statc.pyd" /libpath:"../../lib" /libpath:"$(PYTHON)\libs"
+# SUBTRACT BASE LINK32 /nodefaultlib
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"obj/Release24/statc.pyd" /libpath:"../../24/lib" /libpath:"$(PYTHON24)\libs"
+# SUBTRACT LINK32 /nodefaultlib
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Cmds=del "..\..\24\statc.pyd*"	"c:\program files\upx" "obj\release24\statc.pyd" -o "..\..\24\statc.pyd"	copy obj\Release24\statc.lib ..\..\24\lib\statc.lib
+# End Special Build Tool
+
 !ENDIF 
 
 # Begin Target
 
 # Name "Statc - Win32 Release"
 # Name "Statc - Win32 Debug"
+# Name "Statc - Win32 Python 24"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"

@@ -20,6 +20,7 @@ CFG=Orange - Win32 Debug
 !MESSAGE "Orange - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "Orange - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "Orange - Win32 Release_Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "Orange - Win32 Python 24" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -54,7 +55,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+# ADD LINK32 oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(GNUWIN32)\lib" /libpath:"$(PYTHON)\libs" /WARN:0
 # SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
@@ -124,6 +125,40 @@ LINK32=link.exe
 # SUBTRACT BASE LINK32 /debug
 # ADD LINK32 oleaut32.lib ole32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"..\..\orange.pyd" /libpath:"$(PYTHON)\libs" /WARN:0
 
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "Orange___Win32_Python_24"
+# PROP BASE Intermediate_Dir "Orange___Win32_Python_24"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "obj/Release24"
+# PROP Intermediate_Dir "obj/Release24"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /Zm700 /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /Zm700 /c
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+# SUBTRACT BASE LINK32 /debug
+# ADD LINK32 oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/Release24/orange.pyd" /libpath:"$(PYTHON24)\libs" /WARN:0
+# SUBTRACT LINK32 /debug
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Desc=UPXing Orange
+PostBuild_Cmds=del "..\..\24\orange.pyd*"	"c:\program files\upx" "obj\Release24\orange.pyd" -o "..\..\24\orange.pyd"	copy obj\Release24\orange.lib ..\..\24\lib\orange.lib	rem copy "obj\Release24\orange.pyd" "..\..\24\orange.pyd"
+# End Special Build Tool
+
 !ENDIF 
 
 # Begin Target
@@ -131,6 +166,7 @@ LINK32=link.exe
 # Name "Orange - Win32 Release"
 # Name "Orange - Win32 Debug"
 # Name "Orange - Win32 Release_Debug"
+# Name "Orange - Win32 Python 24"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -268,6 +304,13 @@ SOURCE=.\distancemap.cpp
 # ADD CPP /O2
 # SUBTRACT CPP /Z<none>
 
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+# ADD BASE CPP /O2
+# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
 !ENDIF 
 
 # End Source File
@@ -352,6 +395,11 @@ SOURCE=.\im_col_assess.cpp
 # PROP Exclude_From_Build 1
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# PROP BASE Exclude_From_Build 1
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 # PROP BASE Exclude_From_Build 1
 # PROP Exclude_From_Build 1
@@ -517,6 +565,13 @@ SOURCE=.\redundancy.cpp
 # ADD CPP /O2
 # SUBTRACT CPP /Z<none>
 
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+# ADD BASE CPP /O2
+# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
 !ENDIF 
 
 # End Source File
@@ -572,6 +627,13 @@ SOURCE=.\tabdelim.cpp
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD BASE CPP /O2
+# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 # ADD BASE CPP /O2
 # SUBTRACT BASE CPP /Z<none>
