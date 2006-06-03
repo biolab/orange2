@@ -385,6 +385,7 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
 }
 
 
+template<>
 int TMM_VariableFilterMap::_setitemlow(TVariableFilterMap *aMap, PyObject *pykey, PyObject *pyvalue)
 { PyTRY
     PVariable var;
@@ -393,6 +394,7 @@ int TMM_VariableFilterMap::_setitemlow(TVariableFilterMap *aMap, PyObject *pykey
 }
 
 
+template<>
 PyObject *TMM_VariableFilterMap::_setdefault(TPyOrange *self, PyObject *args)
 { PyObject *pykey;
   PyObject *deflt = Py_None;

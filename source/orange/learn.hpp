@@ -48,9 +48,9 @@ public:
   virtual PClassifier operator()(PExampleGenerator, const int &weight = 0);
 
   virtual PClassifier smartLearn(PExampleGenerator, const int &weight,
-	                               PDomainContingency & = PDomainContingency(),
-                                 PDomainDistributions & = PDomainDistributions(),
-                                 PDistribution & = PDistribution());
+	                               PDomainContingency = PDomainContingency(),
+                                 PDomainDistributions = PDomainDistributions(),
+                                 PDistribution = PDistribution());
 };
 
 

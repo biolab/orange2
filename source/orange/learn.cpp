@@ -113,9 +113,9 @@ PClassifier TLearner::operator()(PExampleGenerator gen, const int &weight)
 
 
 PClassifier TLearner::smartLearn(PExampleGenerator gen, const int &weight,
-                                 PDomainContingency &dcont,
-                                 PDomainDistributions &ddist,
-                                 PDistribution &dist)
+                                 PDomainContingency dcont,
+                                 PDomainDistributions ddist,
+                                 PDistribution dist)
 { 
   switch (needs) {
 

@@ -1100,12 +1100,16 @@ float TContDistribution::highestProbFloatIndex() const
   TSimpleRandomGenerator rg(sum);
 
   int wins=0;
-  const_iterator best=0;
+  const_iterator best;
   const_this_ITERATE(i)
     if (   (wins==0) && ((wins=1)==1)
         || ((*i).second >  (*best).second) && ((wins=1)==1)
         || ((*i).second == (*best).second) && rg.randbool(++wins))
       best = i;
+
+  if (!wins)
+    raiseError("cannot compute the modus of an empty distribution");
+
   return (*best).first;
 }
 
@@ -1120,7 +1124,7 @@ float TContDistribution::highestProb() const
   TSimpleRandomGenerator rg(sum);
 
   int wins=0;
-  const_iterator best=0;
+  const_iterator best;
   const_this_ITERATE(i)
     if (   (wins==0) && ((wins=1)==1)
         || ((*i).second >  (*best).second) && ((wins=1)==1)
