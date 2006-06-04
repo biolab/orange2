@@ -23,7 +23,7 @@ class colorItem(QTableItem):
 
 ##############################################################################
 
-class OWPrediction(OWWidget):
+class OWPredictions(OWWidget):
     settingsList = ["ShowProb", "ShowClass", "ShowTrueClass", "ShowAttributeMethod", "sendDataType", "commitOnChange"]
 
     def __init__(self, parent=None, signalManager = None):
@@ -302,7 +302,7 @@ class OWPrediction(OWWidget):
 
 if __name__=="__main__":
     a = QApplication(sys.argv)
-    ow = OWPrediction()
+    ow = OWPredictions()
     a.setMainWidget(ow)
     ow.show()
 
@@ -312,20 +312,28 @@ if __name__=="__main__":
     elif 0: 
         data = orange.ExampleTable('outcome')
         test = orange.ExampleTable('cheat', uses=data.domain)
+        data = orange.ExampleTable('iris')
+
         bayes = orange.BayesLearner(data, name="NBC")
+
         import orngTree
         tree = orngTree.TreeLearner(data, name="Tree")
         ow.classifier(bayes, 1)
         ow.classifier(tree, 2)
         ow.dataset(test)
-    elif 0: # two classifiers
+    elif 1: # two classifiers
         data = orange.ExampleTable('sailing.txt')
         bayes = orange.BayesLearner(data)
         bayes.name = "NBC"
         ow.classifier(bayes, 1)
         maj = orange.MajorityLearner(data)
         maj.name = "Majority"
+        import orngTree
+        tree = orngTree.TreeLearner(data, name="Tree")
+        knn = orange.kNNLearner(data, k = 10)
+        knn.name = "knn"
         ow.classifier(maj, 2)
+        ow.classifier(knn, 3)
         ow.dataset(data)
     else: # regression
         data = orange.ExampleTable('auto-mpg')
