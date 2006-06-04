@@ -81,7 +81,7 @@ class OWKNN(OWWidget):
         if self.data and self.learner:
             self.classifier = self.learner(self.data)
             self.classifier.name = self.name
-            self.send("KNN Classificatier", self.classifier)
+            self.send("KNN Classifier", self.classifier)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
