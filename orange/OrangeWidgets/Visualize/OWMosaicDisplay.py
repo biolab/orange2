@@ -3,7 +3,7 @@
 <description>Shows a mosaic display.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/MosaicDisplay.png</icon>
-<priority>4200</priority>
+<priority>4100</priority>
 """
 # OWMosaicDisplay.py
 #
@@ -16,7 +16,7 @@ from math import sqrt, floor, ceil, pow
 from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 from OWQCanvasFuncts import *
 from OWGraphTools import *
-from OWDlgs import OWChooseImageSizeDlg
+import OWDlgs
 from orngVisFuncts import permutations
 from copy import copy
 
@@ -29,9 +29,10 @@ TOP = 2
 RIGHT = 3
 
 class OWMosaicDisplay(OWWidget):
-    settingsList = ["horizontalDistribution", "showAprioriDistributionLines", "horizontalDistribution", "showAprioriDistributionBoxes", "interiorColoring", "boxSize" ]
+    settingsList = ["horizontalDistribution", "showAprioriDistributionLines", "horizontalDistribution",
+                    "showAprioriDistributionBoxes", "interiorColoring", "boxSize", "colorSettings", "cellspace"]
 
-    contextHandlers = {"": DomainContextHandler("", ["attributeValuesDict"], loadImperfect = 0)}
+    contextHandlers = {"": DomainContextHandler("", ["manualAttributeValuesDict"], loadImperfect = 0)}
         
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Mosaic display", TRUE, TRUE)
@@ -46,6 +47,7 @@ class OWMosaicDisplay(OWWidget):
         self.outputs = [("Learner", orange.Learner)]
     
         #load settings
+        self.colorSettings = None
         self.interiorColoring = 0
         self.showAprioriDistributionLines = 1
         self.showAprioriDistributionBoxes = 1
@@ -55,17 +57,16 @@ class OWMosaicDisplay(OWWidget):
         self.attr2 = ""
         self.attr3 = ""
         self.attr4 = ""
-        self.cellspace = 6
+        self.cellspace = 4
         self.attributeNameOffset = 30
         self.attributeValueOffset = 15
         self.residuals = [] # residual values if the residuals are visualized
         self.aprioriDistributions = []
         self.colorPalette = None
         self.permutationDict = {}
-        self.attributeValuesDict = {}
+        self.manualAttributeValuesDict = {}
         self.conditionalDict = None
         self.conditionalSubsetDict = None
-        self.originalSubsetData = None
 
         #self.blueColors = [QColor(255, 255, 255), QColor(117, 149, 255), QColor(38, 43, 232), QColor(1,5,173)]
         self.blueColors = [QColor(255, 255, 255), QColor(210, 210, 255), QColor(110, 110, 255), QColor(0,0,255)]
@@ -94,7 +95,7 @@ class OWMosaicDisplay(OWWidget):
         for i in range(1,5):
             box = OWGUI.widgetBox(self.GeneralTab, texts[i-1], orientation = "horizontal")
             box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-            combo = OWGUI.comboBox(box, self, "attr" + str(i), None, callback = self.updateDataAndPermList, sendSelectedValue = 1, valueType = str)
+            combo = OWGUI.comboBox(box, self, "attr" + str(i), None, callback = self.updateGraphAndPermList, sendSelectedValue = 1, valueType = str)
                         
             butt = OWGUI.button(box, self, "", callback = self.orderAttributeValues, tooltip = "Change the order of attribute values", debuggingEnabled = 0)
             butt.setMaximumWidth(26); butt.setMaximumHeight(26); butt.setMinimumWidth(24); butt.setMinimumHeight(26)
@@ -109,15 +110,23 @@ class OWMosaicDisplay(OWWidget):
         optimizationButtons.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, debuggingEnabled = 0)
 
-        box5 = OWGUI.widgetBox(self.GeneralTab, " Cell Colors Represent... ")
+        box5 = OWGUI.widgetBox(self.GeneralTab, " Colors in Cells Represent... ")
         OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.changedInteriorColoring)
         box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "cellspace", "Minimum cell distance: ", box = " Cell Distance ", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
+                
         self.box6 = OWGUI.widgetBox(self.SettingsTab, " Class Distribution Settings ")
-        OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateData)
-        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show Apriori Distribution with Lines', callback = self.updateData, tooltip = "Show the lines that represent the apriori class distribution")
-        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionBoxes', 'Show Apriori Distribution with Boxes', callback = self.updateData, tooltip = "Show the lines that represent the apriori class distribution")
-        OWGUI.spin(self.box6, self, 'boxSize', 1, 15, 1, '', "       Box Size: (pixels): ", orientation = "horizontal", callback = self.updateData)
+        OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateGraph)
+        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show Apriori Distribution with Lines', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
+        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionBoxes', 'Show Apriori Distribution with Boxes', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
+        OWGUI.spin(self.box6, self, 'boxSize', 1, 15, 1, '', "       Box Size: (pixels): ", orientation = "horizontal", callback = self.updateGraph)
+
+        # ####
+        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring different class values", debuggingEnabled = 0)
+        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        
         self.box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
         self.box7 = OWGUI.widgetBox(self.GeneralTab, " Possible permutations ")
@@ -134,6 +143,9 @@ class OWMosaicDisplay(OWWidget):
         self.resize(750, 550)
 
         self.activateLoadedSettings()
+        dlg = self.createColorDialog()
+        self.colorPalette = dlg.getDiscretePalette()
+        
         self.changedInteriorColoring()
         self.permutationListToggle()
 
@@ -143,19 +155,19 @@ class OWMosaicDisplay(OWWidget):
     def permutationListToggle(self):
         if self.permButton.isOn():
             self.permutationList.show()
+            self.updateGraphAndPermList()
         else:
             self.permutationList.hide()
 
     def setSelectedPermutation(self):
-        if self.permutationList.count() > 0:
+        if self.permutationList.count() > 0 and self.bestPlacements and self.permutationList.currentItem() < len(self.bestPlacements):
             index = self.permutationList.currentItem()
-            attrList = self.permutationDict.get(str(self.permutationList.text(index)), None)
-            if attrList:
-                if len(attrList) > 0: self.attr1 = attrList[0]
-                if len(attrList) > 1: self.attr2 = attrList[1]
-                if len(attrList) > 2: self.attr3 = attrList[2]
-                if len(attrList) > 3: self.attr4 = attrList[3]
-            self.updateData()
+            val, attrList, valueOrder = self.bestPlacements[index]
+            if len(attrList) > 0: self.attr1 = attrList[0]
+            if len(attrList) > 1: self.attr2 = attrList[1]
+            if len(attrList) > 2: self.attr3 = attrList[2]
+            if len(attrList) > 3: self.attr4 = attrList[3]
+            self.updateGraph(customValueOrderDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))]))
 
     def orderAttributeValues(self):
         attr = None
@@ -165,13 +177,13 @@ class OWMosaicDisplay(OWWidget):
         elif self.sort4.isOn(): attr = self.attr4
 
         if self.data and attr  != "" and attr != "(None)": 
-            dlg = SortAttributeValuesDlg(self, self.attributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr))
+            dlg = SortAttributeValuesDlg(self, self.manualAttributeValuesDict.get(attr, None) or getVariableValuesSorted(self.data, attr))
             if dlg.exec_loop() == QDialog.Accepted:
-                self.attributeValuesDict[attr] = [str(dlg.attributeList.text(i)) for i in range(dlg.attributeList.count())]
+                self.manualAttributeValuesDict[attr] = [str(dlg.attributeList.text(i)) for i in range(dlg.attributeList.count())]
 
         for control in [self.sort1, self.sort2, self.sort3, self.sort4]:
             control.setOn(0)
-        self.updateData()
+        self.updateGraph()
         
     # initialize combo boxes with discrete attributes
     def initCombos(self, data):
@@ -185,11 +197,9 @@ class OWMosaicDisplay(OWWidget):
 
         for attr in data.domain:
             if attr.varType == orange.VarTypes.Discrete:
-                self.attr1Combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
-                self.attr2Combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
-                self.attr3Combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
-                self.attr4Combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
-
+                for combo in [self.attr1Combo, self.attr2Combo, self.attr3Combo, self.attr4Combo]:
+                    combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
+                
         if self.attr1Combo.count() > 0:
             self.attr1 = str(self.attr1Combo.text(0))
             self.attr2 = str(self.attr2Combo.text(0 + 2*(self.attr2Combo.count() > 2)))
@@ -200,43 +210,35 @@ class OWMosaicDisplay(OWWidget):
     def resizeEvent(self, e):
         OWWidget.resizeEvent(self,e)
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
-        self.updateData()
+        self.updateGraph()
 
     # # DATA signal - receive new data and update all fields
     def cdata(self, data):
         self.closeContext()
         self.data = None
-        self.attributeValuesDict = {}
+        self.manualAttributeValuesDict = {}
         self.optimizationDlg.setData(data)
 
         if data:
             self.data = self.optimizationDlg.data
-            if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
-                self.colorPalette = ColorPaletteGenerator(rgbColors = ColorBrewerRGBValues)
-                #self.colorPalette = ColorPaletteHSV(len(data.domain.classVar.values))
-            else: self.interiorColoring = PEARSON
+            if not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous:
+                self.interiorColoring = PEARSON
             
         self.initCombos(self.data)
         self.openContext("", data)
 
-        #self.subsetdataHander(self.originalSubsetData)
-        self.updateDataAndPermList()
+        self.updateGraphAndPermList()
 
     def subsetdataHander(self, data):
-        #if data: self.originalSubsetData = orange.ExampleTable(data)
-        #else:    self.originalSubsetData = None
-
         try:
             self.subsetData = data.select(self.data.domain)
         except:
             self.subsetData = None
                 
-        #if data and len(data) > 1: self.setStatusBarText("The data set received on the 'Example subset' input contains more than one example. Only the first example will be considered.")
-        #else:                      self.setStatusBarText("")
-        self.updateDataAndPermList()
+        self.updateGraphAndPermList()
         
 
-    def setShownAttributes(self, attrList):
+    def setShownAttributes(self, attrList, **args):
         if not attrList: return
         self.attr1 = attrList[0]
         
@@ -249,31 +251,36 @@ class OWMosaicDisplay(OWWidget):
         if len(attrList) > 3: self.attr4 = attrList[3]
         else: self.attr4 = "(None)"
 
-        self.updateDataAndPermList()
+        self.updateGraphAndPermList(**args)
         
-
-    def changedInteriorColoring(self):
-        self.box6.setEnabled(self.interiorColoring)
-        self.updateData()
-
-
-    def updateDataAndPermList(self, *args):
-        self.permutationList.clear()
-
+    def getShownAttributes(self):
         attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
         while "(None)" in attrList: attrList.remove("(None)")
         while "" in attrList:       attrList.remove("")
+        return attrList
 
-        items = copy(attrList)
-        items.sort()
-        perms = permutations(items)
-        self.permutationDict = dict([(str(item), item) for item in perms])
-        for item in perms: self.permutationList.insertItem(str(item))
+    def changedInteriorColoring(self):
+        self.box6.setEnabled(self.interiorColoring)
+        self.updateGraph()
 
-        self.updateData()
 
-    # UPDATEDATA - gets called every time the graph has to be updated
-    def updateData(self, *args):
+    def updateGraphAndPermList(self, **args):
+        self.permutationList.clear()
+
+        if self.permButton.isOn():
+            attrList = self.getShownAttributes()
+            attrList.sort()
+            if getattr(self, "bestPlacements", None) == None or len(self.bestPlacements) == 0 or attrList not in [val[1] for val in self.bestPlacements]:
+                self.bestPlacements = self.optimizationDlg.findOptimalAttributeOrder(attrList, self.optimizationDlg.optimizeAttributeValueOrder)
+
+            if not self.bestPlacements or len(self.bestPlacements) == 0: return
+            for (val, attrs, order) in self.bestPlacements:
+                self.permutationList.insertItem("%.2f - %s" % (val, attrs))
+        
+        self.updateGraph(**args)
+
+    # updateGraph - gets called every time the graph has to be updated
+    def updateGraph(self, **args):
         # hide all rectangles
         self.warning()
         for item in self.canvas.allItems(): item.setCanvas(None)    # remove all canvas items
@@ -323,6 +330,11 @@ class OWMosaicDisplay(OWWidget):
 
         self.drawnSides = dict([(0,0),(1,0),(2,0),(3,0)])
         self.drawPositions = {}
+
+        if args.get("customValueOrder", None):
+            self.attributeValuesDict = args["customValueOrderDict"]
+        else:
+            self.attributeValuesDict = self.manualAttributeValuesDict
 
         # compute distributions
         self.conditionalDict = self.optimizationDlg.getConditionalDistributions(data, attrList)
@@ -528,7 +540,7 @@ class OWMosaicDisplay(OWWidget):
                 total += v
 
             # show apriori boxes and lines
-            if (self.showAprioriDistributionLines or self.showAprioriDistributionBoxes) and abs(x1 - x0) > 1 and abs(y1 - y0) > 1:
+            if (self.showAprioriDistributionLines or self.showAprioriDistributionBoxes) and abs(x1 - x0) > self.boxSize and abs(y1 - y0) > self.boxSize:
                 total = 0
                 for i in range(len(aprioriDist)):
                     if self.horizontalDistribution:
@@ -583,11 +595,24 @@ class OWMosaicDisplay(OWWidget):
         tipRect = QRect(x, y, w, h)
         QToolTip.add(self.canvasView, tipRect, tooltipText)
         self.tooltips.append(tipRect)
-
    
     def saveToFileCanvas(self):
-        sizeDlg = OWChooseImageSizeDlg(self.canvas)
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvas)
         sizeDlg.exec_loop()
+
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_loop():
+            self.colorSettings = dlg.getColorSchemas()
+            self.colorPalette = dlg.getDiscretePalette()
+            self.updateGraph()
+
+    def createColorDialog(self):
+        c = OWDlgs.ColorPalette(self, "Color Palette")
+        c.createDiscretePalette(" Discrete Palette ")
+        c.setColorSchemas(self.colorSettings)
+        return c
+
 
 class SortAttributeValuesDlg(OWBaseWidget):
     def __init__(self, parentWidget = None, attrList = []):
