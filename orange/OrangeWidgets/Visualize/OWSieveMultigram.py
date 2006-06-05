@@ -17,6 +17,8 @@ import OWGUI
 ###########################################################################################
 class OWSieveMultigram(OWVisWidget):
     settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes", "showAllAttributes"]
+    contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
+    
             
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", TRUE)
@@ -53,9 +55,9 @@ class OWSieveMultigram(OWVisWidget):
         self.statusBar.message("")
                 
         #add controls to self.controlArea widget
-        self.createShowHiddenLists(self, self.GeneralTab)
+        self.createShowHiddenLists(self.GeneralTab, callback = self.interestingSubsetSelection)
         
-        self.interestingButton =QPushButton("Find interesting attr.", self.GeneralTab)
+        self.interestingButton = QPushButton("Find interesting attr.", self.GeneralTab)
         self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection) 
 
         #connect controls to appropriate functions
@@ -86,29 +88,50 @@ class OWSieveMultigram(OWVisWidget):
 
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
-    def setShownAttributeList(self, data, exData):
-        if self.data and exData and str(exData.domain) == str(self.data.domain): return  # preserve attribute choice if the domain is the same
+    def setShownAttributeList(self, data, shownAttributes = None):
+        shown = []
+        hidden = []
 
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-        if data == None: return
+        if data:
+            if shownAttributes:
+                if type(shownAttributes[0]) == tuple:
+                    shown = shownAttributes
+                else:
+                    domain = self.data.domain
+                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
+                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
+            else:
+                shown = [(a.name, a.varType) for a in data.domain.attributes]
+                if not self.showAllAttributes:
+                    hidden = shown[10:]
+                    shown = shown[:10]
 
-        for attr in data.domain:
-            if attr.varType == orange.VarTypes.Discrete:
-                self.shownAttribsLB.insertItem(attr.name)
+            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown:
+                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
+
+        self.shownAttributes = shown
+        self.hiddenAttributes = hidden
+        self.selectedHidden = []
+        self.selectedShown = []
+        self.resetAttrManipulation()
         
     ####### DATA ################################
     # receive new data and update all fields
     def data(self, data):
-        exData = self.data
+        self.closeContext()
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissing(data)
         self.computeProbabilities()        
 
-        self.setShownAttributeList(self.data, exData)
+        self.setShownAttributeList(self.data)
+        self.openContext("", self.data)
+        self.resetAttrManipulation()
         self.updateGraph()
         
     #################################################
+
+    def sendShownAttributes(self):
+        pass
 
     def updateGraph(self, *args):
         self.maxLineWidth = int(str(self.SettingsTab.lineCombo.currentText()))

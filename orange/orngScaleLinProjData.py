@@ -58,7 +58,7 @@ class orngScaleLinProjData(orngScaleData):
             XAnchors = Numeric.array(XAnchors)
             YAnchors = Numeric.array(YAnchors)
             if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
-        elif useAnchorData:
+        elif useAnchorData and self.anchorData:
             XAnchors = Numeric.array([val[0] for val in self.anchorData])
             YAnchors = Numeric.array([val[1] for val in self.anchorData])
             if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)

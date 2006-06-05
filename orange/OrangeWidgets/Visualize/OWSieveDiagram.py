@@ -3,7 +3,7 @@
 <description>Sieve diagram.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
 <icon>icons/SieveDiagram.png</icon>
-<priority>4100</priority>
+<priority>4200</priority>
 """
 # OWSieveDiagram.py
 #

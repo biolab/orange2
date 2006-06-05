@@ -370,8 +370,8 @@ class OWLinProj(OWVisWidget):
         self.optimizationDlg.setData(data)  
         self.clusterDlg.setData(data)
         self.freeVizDlg.setData(data)
-        self.graph.clusterClosure = None
-        self.graph.insideColors = None
+        self.classificationResults = None
+        self.outlierValues = None
         
         reset = not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)) # preserve attribute choice if the domain is the same
         if reset:

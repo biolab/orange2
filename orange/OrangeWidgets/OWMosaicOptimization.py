@@ -10,8 +10,9 @@ mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlati
 class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
-    settingsList = ["attrDisc", "showScore", "showRank", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
-                    "evaluationTime", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount"]
+    settingsList = ["attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
+                    "evaluationTime", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount",
+                    "optimizeAttributeOrder", "optimizeAttributeValueOrder"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
@@ -25,9 +26,9 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         # loaded variables
         self.parentWidget = parentWidget
-        self.showRank = 0
-        self.showScore = 1
         self.showConfidence = 1
+        self.optimizeAttributeOrder = 0
+        self.optimizeAttributeValueOrder = 0
         self.VizRankClassifierName = "Mosaic Learner"
         self.useOnlyRelevantInteractionsInArgumentation = 0 # unused variable present in old ini files
         
@@ -60,7 +61,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         # MAIN TAB
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, " Evaluate ")
         self.resultsBox = OWGUI.widgetBox(self.MainTab, " Projection List, Most Interesting Projections First ")
-        self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, " Shown Details in Projections List " , orientation = "horizontal")
+        self.optimizeOrderBox = OWGUI.widgetBox(self.MainTab, " Attribute and Value Order ")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
 
         self.label1 = QLabel('Projections with ', self.buttonBox)
@@ -78,8 +79,9 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.resultList.setMinimumSize(200,200)
         self.connect(self.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes) 
 
-        self.showRankCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showRank', 'Rank', callback = self.updateShownProjections, tooltip = "Show projection ranks")
-        self.showScoreCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showScore', 'Score', callback = self.updateShownProjections, tooltip = "Show projection score")
+        OWGUI.checkBox(self.optimizeOrderBox, self, "optimizeAttributeOrder", "Optimize order of attributes", callback = self.optimizeCurrentAttributeOrder, tooltip = "Order the visualized attributes so that it will enhance class separation")
+        OWGUI.checkBox(self.optimizeOrderBox, self, "optimizeAttributeValueOrder", "Optimize order of attribute values", callback = self.optimizeCurrentAttributeOrder, tooltip = "Order also the values of visualized attributes so that it will enhance class separation.\nWARNING: This can take a lot of time when visualizing attributes with many values.")
+        self.optimizeOrderButton = OWGUI.button(self.optimizeOrderBox, self, "Optimize Current Order", callback = self.optimizeCurrentAttributeOrder, tooltip = "Optimize the order of currently visualized attributes")
 
         # ##########################
         # SETTINGS TAB
@@ -170,11 +172,38 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     # EVENTS
     def showSelectedAttributes(self, attrs = None):
         if not self.parentWidget: return
-        projection = self.getSelectedProjection()
         if not attrs:
+            projection = self.getSelectedProjection()
             if not projection: return
             (score, attrs, index) = projection
-        self.parentWidget.setShownAttributes(attrs)
+        valueOrder = None
+        if self.optimizeAttributeOrder:
+            self.resultList.setEnabled(0)
+            self.optimizeCurrentAttributeOrder(attrs)
+            self.resultList.setEnabled(1)
+        else:
+            self.parentWidget.setShownAttributes(attrs)
+        self.resultList.setFocus()
+            
+
+    def optimizeCurrentAttributeOrder(self, attrs = None):
+        if str(self.optimizeOrderButton.text()) == "Optimize Current Order":
+            self.stopOptimization = 0
+            self.optimizeOrderButton.setText("Stop optimization")
+
+            if not attrs:
+                attrs = self.parentWidget.getShownAttributes()
+                
+            bestPlacements = self.findOptimalAttributeOrder(attrs, self.optimizeAttributeValueOrder)
+            self.parentWidget.bestPlacements = bestPlacements
+            if bestPlacements:
+                attrList, valueOrder = bestPlacements[0][1], bestPlacements[0][2]
+                self.parentWidget.setShownAttributes(attrs, customValueOrderDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))]) )
+
+            self.optimizeOrderButton.setText("Optimize Current Order")
+        else:
+            self.stopOptimization = 1
+        
 
     def updateGUI(self):
         if self.qualityMeasure in [CHI_SQUARE, CRAMERS_PHI]: self.ignoreSmallCellsBox.show()
@@ -215,11 +244,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         for i in range(len(self.results)):
             if self.attrLenDict.has_key(len(self.results[i][ATTR_LIST])) and self.attrLenDict[len(self.results[i][ATTR_LIST])] == 1:
-                string = ""
-                if self.showRank: string += str(i+1) + ". "
-                if self.showScore: string += "%.2f : " % (self.results[i][SCORE])
-                string += self.buildAttrString(self.results[i][ATTR_LIST])
-                self.resultList.insertItem(string)
+                self.resultList.insertItem("%.2f : %s" % (self.results[i][SCORE], self.buildAttrString(self.results[i][ATTR_LIST])))
                 self.resultListIndices.append(i)
         qApp.processEvents()
         
@@ -415,14 +440,12 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def disableControls(self):
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
-        self.resultsDetailsBox.setEnabled(0)
         self.SettingsTab.setEnabled(0)
         self.ManageTab.setEnabled(0)
         
     def enableControls(self):
         self.startOptimizationButton.show()
         self.stopOptimizationButton.hide()
-        self.resultsDetailsBox.setEnabled(1)
         self.SettingsTab.setEnabled(1)
         self.ManageTab.setEnabled(1)
 
@@ -485,8 +508,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 #test widget appearance
 if __name__=="__main__":
     import sys
-    a=QApplication(sys.argv)
-    ow=MosaicOptimization()
+    a = QApplication(sys.argv)
+    ow = OWMosaicOptimization()
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()

@@ -214,6 +214,8 @@ class OWScatterPlot(OWWidget):
         self.data = data
         self.graph.insideColors = None
         self.graph.clusterClosure = None
+        self.classificationResults = None
+        self.outlierValues = None
         
         self.optimizationDlg.setData(data)
         self.clusterDlg.setData(data, clearResults)
