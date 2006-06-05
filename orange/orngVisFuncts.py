@@ -107,6 +107,7 @@ def combinations(items, count):
 
 # randomly switch two elements in a list. repeat nrOfTimes.
 def switchTwoElements(list, nrOfTimes = 1):
+    if len(list) < 2: return list
     for i in range(nrOfTimes):
         index1 = random.randint(0, len(list)-1)
         index2 = random.randint(0, len(list)-1)
@@ -748,17 +749,29 @@ def removeRotationDuplicates(arr, removeFlipDuplicates = 1):
         if type(a[0]) == int:
             key = tuple([a[i]-a[i+1] for i in range(-1, len(a)-1)])
             rkey = tuple([a[i+1]-a[i] for i in range(-1, len(a)-1)])
+            o = min(a)      # offset. needed in cases when we get in arr: [0,1,2] and [1,2,3]. otherwise it would remove the second element because it would look the same as the first
         else:
             key = tuple([(a[i][0]-a[i+1][0], a[i][1]-a[i+1][1]) for i in range(-1, len(a)-1)])
             rkey = tuple([(a[i+1][0]-a[i][0], a[i+1][1]-a[i][1]) for i in range(-1, len(a)-1)])
+            o = 0
 
-        if projDict.has_key(key) or projDict.has_key(rkey): continue
-        
+        rotations = [key[i:] + key[:i] for i in range(len(key))]
+        if 1 in [projDict.has_key((o,key)) for key in rotations]:
+            continue
+
+        rotations = [rkey[i:] + rkey[:i] for i in range(len(rkey))]
+        if removeFlipDuplicates and 1 in [projDict.has_key((o,key)) for key in rotations]:
+            continue
+
+        projDict[(o,key)] = a    
+
+        """
         found = 0
         kkey = copy.copy(key)
+        
         for i in range(len(kkey)):
             kkey = tuple(list(kkey[1:]) + [kkey[0]])
-            if projDict.has_key(kkey):
+            if projDict.has_key((o,kkey)):
                 found = 1
                 break
 
@@ -766,10 +779,11 @@ def removeRotationDuplicates(arr, removeFlipDuplicates = 1):
         if not found and removeFlipDuplicates:
             for i in range(len(rkey)):
                 rkey = tuple(list(rkey[1:]) + [rkey[0]])
-                if projDict.has_key(rkey):
+                if projDict.has_key((o,rkey)):
                     found = 1
                     break
-        if not found: projDict[key] = a
+        if not found: projDict[(o,key)] = a
+        """
     return projDict.values()
         
 # create possible combinations with the given set of numbers in arr
@@ -809,16 +823,21 @@ def createProjections(numClasses, maxProjLen, removeFlipDuplicates = 1):
         lens = [[int(maxProjLen / numClasses) for i in range(numClasses)]]
         
     combs = []
+    seen = []
     for l in lens:
-        tempCombs = createMixCombinations(l, removeFlipDuplicates)
-        combs += tempCombs
+        withoutZeros = filter(None, l)          # if numClasses > maxProjLen then some values in l are 0. we have to remove this zeros and check if we have already added such combinations.
+        if withoutZeros not in seen:
+            tempCombs = createMixCombinations(withoutZeros, removeFlipDuplicates)
+            combs += tempCombs
+            seen.append(withoutZeros)
 
-    if _differentClassPermutationsDict.has_key((numClasses, removeFlipDuplicates)):
-        perms = _differentClassPermutationsDict[(numClasses, removeFlipDuplicates)]
+    if _differentClassPermutationsDict.has_key((numClasses, maxProjLen, removeFlipDuplicates)):
+        perms = _differentClassPermutationsDict[(numClasses, maxProjLen, removeFlipDuplicates)]
     else:
-        perms = permutations(range(numClasses))
+        if numClasses <= maxProjLen: perms = permutations(range(numClasses))
+        else:                        perms = combinations(range(numClasses), maxProjLen)
         perms = removeRotationDuplicates(perms, removeFlipDuplicates)
-        _differentClassPermutationsDict[(numClasses, removeFlipDuplicates)] = perms
+        _differentClassPermutationsDict[(numClasses, maxProjLen, removeFlipDuplicates)] = perms
             
     final = []
     for perm in perms:
@@ -829,6 +848,7 @@ def createProjections(numClasses, maxProjLen, removeFlipDuplicates = 1):
 
 
 if __name__=="__main__":
+    """
     print "possible splits of ['a','b','c'] are ", getPossibleSplits(["a","b","c"])
     print "possible combinations of 2 elements of the array [1,2,3,4] are ", combinations([1,2,3,4],2)
     print "permutations of [1,2,3] are ", [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
@@ -838,3 +858,6 @@ if __name__=="__main__":
     a = data.toNumeric("ac")[0]
     c = S2NMeasure()
     c(data.domain.attributes[0].name, data)
+    """
+    final = createProjections(8,4)
+    print final
