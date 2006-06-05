@@ -1,9 +1,10 @@
 from orngCI import FeatureByCartesianProduct
 import orange, orngVisFuncts
-import time
+import time, operator
 import Numeric, orngContingency
 from math import sqrt, log, e
-import orngTest
+import orngTest, orngStat
+from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 
 # quality measures
 CHI_SQUARE = 0
@@ -59,6 +60,7 @@ class orngMosaic:
 
         self.data = None
         self.evaluatedAttributes = None   # save last evaluated attributes
+        self.stopOptimization = 0           # used to stop attribute and value order
 
         self.results = []
 
@@ -96,9 +98,12 @@ class orngMosaic:
             self.aprioriDistribution = orange.Distribution(self.data.domain.classVar.name, self.data)
             s = sum(self.aprioriDistribution)
             for i in range(len(self.aprioriDistribution)):
-                if 1-(self.aprioriDistribution[i]/s):
+                if (self.aprioriDistribution[i]/s) > 0 and (self.aprioriDistribution[i]/s) < 1:
                     p = (self.aprioriDistribution[i]/s) / (1-(self.aprioriDistribution[i]/s))
-                else: p = 99999.99
+                elif (self.aprioriDistribution[i]/s) == 0:
+                    p = 0.0001
+                elif (self.aprioriDistribution[i]/s) == 1:
+                    p = 99999.99
                 self.logits[self.classVals[i]] = log(p)
 
     
@@ -288,11 +293,8 @@ class orngMosaic:
         self.results.insert(index, (score, attrList, tryIndex))
         
         if self.__class__.__name__ == "OWMosaicOptimization":
-            string = ""
-            if self.showRank: string += str(index+1) + ". "
-            if self.showScore: string += "%.2f : " % (score)
-            string += self.buildAttrString(attrList)
-            self.resultList.insertItem(string, index)
+            
+            self.resultList.insertItem("%.2f : %s" % (score, self.buildAttrString(attrList)), index)
             self.resultListIndices.insert(index, index)
 
     # from a list of attributes build a nice string with attribute names
@@ -565,6 +567,115 @@ class orngMosaic:
 
         if max(value, self.arguments[classValue][top][0]) == value:  return top
         else:                                                        return bottom
+
+
+    #######
+    # code for evaluating different placements of a set of attributes by the separation of different classes in the graph
+    #######
+    def evaluateAttributeOrder(self, attrs, valueOrder, conditions, revert, domain = None):
+        if not domain:
+            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
+            self.weightID = orange.newmetaid()
+            domain.addmeta(self.weightID, orange.FloatVariable("ExampleWeight"))
+        projData = orange.ExampleTable(domain)
+
+        triedIndices = [0]*(len(attrs))
+        maxVals = [len(val) for val in valueOrder]
+        xpos = 0; ypos = 0
+        while triedIndices[0] < maxVals[0]:
+            vals = [valueOrder[i][triedIndices[i]] for i in range(len(attrs))]
+            combVal = reduce(operator.concat, map(operator.concat, [vals[i] for i in revert], ["-"]*len(vals)))[:-1]
+            if conditions[combVal][0] > 0:
+                #projData.append([xpos, ypos, self.data.domain.classVar.values[quotients.index(max(quotients))]])
+                projData.append([xpos, ypos, conditions[combVal][1]])
+                projData[-1].setmeta("ExampleWeight", conditions[combVal][0]/max(1,len(self.data))) # set weight of the rectangle
+
+            triedIndices[-1] += 1
+            for i in range(1, len(attrs))[::-1]:
+                if triedIndices[i] >= maxVals[i]:
+                    triedIndices[i-1] += 1
+                    triedIndices[i] = 0
+
+            xpos = triedIndices[-1]
+            ypos = len(attrs) > 1 and 2 * triedIndices[-2]
+            if len(attrs) > 2: xpos += (len(attrs) + maxVals[-1]) * triedIndices[-3] # len(attrs) will add the factor 3 or 4
+            if len(attrs) > 3: ypos += (4 + maxVals[-2]) * triedIndices[-4]
+            
+        learner = orange.kNNLearner(rankWeight = 0, k = len(projData)/2)
+        results = orngTest.learnAndTestOnLearnData([learner], (projData, self.weightID))
+        return orngStat.AP(results)[0]
+
+    # for a given subset of attributes (max 4) find which permutation is most visual friendly. optimizeValueOrder
+    def findOptimalAttributeOrder(self, attrs, optimizeValueOrder = 0):
+        apriori = [max(1, self.aprioriDistribution[val]) for val in self.data.domain.classVar.values]
+        conditions = {}
+        newFeature, quality = FeatureByCartesianProduct(self.data, attrs)
+        dist = orange.Distribution(newFeature, self.data)
+        cont = orange.ContingencyAttrClass(newFeature, self.data)
+        for key in cont.keys():
+            if dist[key] == 0: conditions[key] = (0, 0)
+            else:
+                quotients = map(operator.div, cont[key], apriori)
+                conditions[key] = (dist[key], self.data.domain.classVar.values[quotients.index(max(quotients))])
+        
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
+        self.weightID = orange.newmetaid()
+        domain.addmeta(self.weightID, orange.FloatVariable("ExampleWeight"))
+        
+        # create permutations of attributes and attribute values
+        attrPerms = orngVisFuncts.permutations(range(len(attrs)))
+        valuePerms = {}
+        for attr in attrs:
+            if optimizeValueOrder:  valuePerms[attr] = orngVisFuncts.permutations(getVariableValuesSorted(self.data, attr))
+            else:                   valuePerms[attr] = [getVariableValuesSorted(self.data, attr)]
+
+        if self.__class__.__name__ == "OWMosaicOptimization":
+            self.setStatusBarText("Generating possible attribute orders...")
+            self.parentWidget.progressBarInit()
+
+        possibleOrders = []
+        triedIndices = [0]*(len(attrs))
+        maxVals = [len(valuePerms[attr]) for attr in attrs]
+        while triedIndices[-1] < maxVals[-1]:    # we have no more possible placements if we have an overflow
+            valueOrder = [valuePerms[attrs[i]][triedIndices[i]] for i in range(len(attrs))]
+            possibleOrders.append(valueOrder)
+            triedIndices[0] += 1
+            if self.stopOptimization: break
+            for i in range(len(attrs)-1):
+                if triedIndices[i] >= maxVals[i]:
+                    triedIndices[i+1] += 1
+                    triedIndices[i] = 0
+
+        bestPlacements = []
+        current = 0
+        total = len(attrPerms) * len(possibleOrders)
+        strCount = orngVisFuncts.createStringFromNumber(total)
+        for attrPerm in attrPerms:
+            currAttrs = [attrs[i] for i in attrPerm]
+            if self.stopOptimization: break
+            tempPerms = []
+            for order in possibleOrders:
+                currValueOrder = [order[i] for i in attrPerm]
+                val = self.evaluateAttributeOrder(currAttrs, currValueOrder, conditions, map(attrPerm.index, range(len(attrPerm))), domain)
+                tempPerms.append((val, currAttrs, currValueOrder))
+                current += 1
+                if current % 10 == 0 and self.__class__.__name__ == "OWMosaicOptimization":
+                    self.setStatusBarText("Evaluated %s/%s attribute orders..." % (orngVisFuncts.createStringFromNumber(current), strCount))
+                    self.parentWidget.progressBarSet(100*current/float(total))
+                    if self.stopOptimization: break
+            bestPlacements.append(max(tempPerms))
+
+        if self.__class__.__name__ == "OWMosaicOptimization":
+            self.setStatusBarText("")
+            self.parentWidget.progressBarFinished()
+            
+        if len(bestPlacements) == 0:
+            return None, None, None
+
+        bestPlacements.sort()
+        bestPlacements.reverse()
+        return bestPlacements
+        
         
 
 # #############################################################################
@@ -613,6 +724,7 @@ class MosaicVizRankLearner(orange.Learner):
 
 #test widget appearance
 if __name__=="__main__":
+    """
     data = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\breastcancer2004.tab")
     example = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\breastcancer2004-1 example 2.tab")
     data = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\zoo.tab")
@@ -625,3 +737,9 @@ if __name__=="__main__":
     mosaic.automaticallyRemoveWeakerArguments = 1
     mosaic.evaluateProjections()
     mosaic.findArguments(example[0])
+    """
+    data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
+    mosaic = orngMosaic()
+    mosaic.setData(data)
+    ret = mosaic.findOptimalAttributeOrder(["A11", "A13", "A7"], 1) #optimizeValueOrder = 1
+    print ret
