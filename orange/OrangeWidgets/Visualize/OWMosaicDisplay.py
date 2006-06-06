@@ -216,6 +216,7 @@ class OWMosaicDisplay(OWWidget):
     def cdata(self, data):
         self.closeContext()
         self.data = None
+        self.bestPlacements = None
         self.manualAttributeValuesDict = {}
         self.optimizationDlg.setData(data)
 
@@ -251,7 +252,8 @@ class OWMosaicDisplay(OWWidget):
         if len(attrList) > 3: self.attr4 = attrList[3]
         else: self.attr4 = "(None)"
 
-        self.updateGraphAndPermList(**args)
+        self.attributeValuesDict = args.get("customValueOrderDict", None)
+        self.updateGraphAndPermList()
         
     def getShownAttributes(self):
         attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
@@ -269,14 +271,17 @@ class OWMosaicDisplay(OWWidget):
 
         if self.permButton.isOn():
             attrList = self.getShownAttributes()
-            attrList.sort()
-            if getattr(self, "bestPlacements", None) == None or len(self.bestPlacements) == 0 or attrList not in [val[1] for val in self.bestPlacements]:
-                self.bestPlacements = self.optimizationDlg.findOptimalAttributeOrder(attrList, self.optimizationDlg.optimizeAttributeValueOrder)
-
-            if not self.bestPlacements or len(self.bestPlacements) == 0: return
-            for (val, attrs, order) in self.bestPlacements:
-                self.permutationList.insertItem("%.2f - %s" % (val, attrs))
-        
+            if not getattr(self, "bestPlacements", []) or 0 in [attr in self.bestPlacements[0][1] for attr in attrList]:        # we might have bestPlacements for a different set of attributes
+                self.setStatusBarText("Evaluating different attribute permutations. You can stop evaluation by opening VizRank dialog and pressing 'Stop optimization' button.")
+                self.bestPlacements = self.optimizationDlg.optimizeCurrentAttributeOrder(attrList, updateGraph = 0)
+                self.setStatusBarText("")
+                
+            if self.bestPlacements: 
+                for (val, attrs, order) in self.bestPlacements:
+                    self.permutationList.insertItem("%.2f - %s" % (val, attrs))
+                attrList, valueOrder = self.bestPlacements[0][1], self.bestPlacements[0][2]
+                self.attributeValuesDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))])
+            
         self.updateGraph(**args)
 
     # updateGraph - gets called every time the graph has to be updated
@@ -292,9 +297,6 @@ class OWMosaicDisplay(OWWidget):
         attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
         while "(None)" in attrList: attrList.remove("(None)")
         while "" in attrList:       attrList.remove("")
-
-        if attrList == []:  self.setStatusBarText("The data contains no discrete attribute to show."); return
-        else:               self.setStatusBarText("")
 
         selectList = attrList
         if self.data.domain.classVar: data = self.data.select(attrList + [self.data.domain.classVar.name])
@@ -331,11 +333,9 @@ class OWMosaicDisplay(OWWidget):
         self.drawnSides = dict([(0,0),(1,0),(2,0),(3,0)])
         self.drawPositions = {}
 
-        if args.get("customValueOrder", None):
-            self.attributeValuesDict = args["customValueOrderDict"]
-        else:
+        if not getattr(self, "attributeValuesDict", None):
             self.attributeValuesDict = self.manualAttributeValuesDict
-
+        
         # compute distributions
         self.conditionalDict = self.optimizationDlg.getConditionalDistributions(data, attrList)
         self.conditionalDict[""] = len(data)

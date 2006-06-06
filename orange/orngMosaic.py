@@ -602,11 +602,13 @@ class orngMosaic:
             if len(attrs) > 3: ypos += (4 + maxVals[-2]) * triedIndices[-4]
             
         learner = orange.kNNLearner(rankWeight = 0, k = len(projData)/2)
-        results = orngTest.learnAndTestOnLearnData([learner], (projData, self.weightID))
+        #results = orngTest.learnAndTestOnLearnData([learner], (projData, self.weightID))
+        results = orngTest.leaveOneOut([learner], (projData, self.weightID))
         return orngStat.AP(results)[0]
 
     # for a given subset of attributes (max 4) find which permutation is most visual friendly. optimizeValueOrder
     def findOptimalAttributeOrder(self, attrs, optimizeValueOrder = 0):
+        if not self.data or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete: return None
         apriori = [max(1, self.aprioriDistribution[val]) for val in self.data.domain.classVar.values]
         conditions = {}
         newFeature, quality = FeatureByCartesianProduct(self.data, attrs)
@@ -624,7 +626,7 @@ class orngMosaic:
         
         # create permutations of attributes and attribute values
         attrPerms = orngVisFuncts.permutations(range(len(attrs)))
-        valuePerms = {}
+        valuePerms = {}     # for each attribute we generate permutations of its values (if optimizeValueOrder = 1)
         for attr in attrs:
             if optimizeValueOrder:  valuePerms[attr] = orngVisFuncts.permutations(getVariableValuesSorted(self.data, attr))
             else:                   valuePerms[attr] = [getVariableValuesSorted(self.data, attr)]
@@ -634,11 +636,11 @@ class orngMosaic:
             self.parentWidget.progressBarInit()
 
         possibleOrders = []
-        triedIndices = [0]*(len(attrs))
+        triedIndices = [0]*(len(attrs))                 # list of indices that point to the next permutation of values that will be tried
         maxVals = [len(valuePerms[attr]) for attr in attrs]
-        while triedIndices[-1] < maxVals[-1]:    # we have no more possible placements if we have an overflow
+        while triedIndices[-1] < maxVals[-1]:           # we have no more possible placements if we have an overflow
             valueOrder = [valuePerms[attrs[i]][triedIndices[i]] for i in range(len(attrs))]
-            possibleOrders.append(valueOrder)
+            possibleOrders.append(valueOrder)           # list of orders that we will evaluate
             triedIndices[0] += 1
             if self.stopOptimization: break
             for i in range(len(attrs)-1):
@@ -650,11 +652,11 @@ class orngMosaic:
         current = 0
         total = len(attrPerms) * len(possibleOrders)
         strCount = orngVisFuncts.createStringFromNumber(total)
-        for attrPerm in attrPerms:
+        for attrPerm in attrPerms:                      # for all attribute permutations
             currAttrs = [attrs[i] for i in attrPerm]
             if self.stopOptimization: break
             tempPerms = []
-            for order in possibleOrders:
+            for order in possibleOrders:                # for all permutations of attribute values
                 currValueOrder = [order[i] for i in attrPerm]
                 val = self.evaluateAttributeOrder(currAttrs, currValueOrder, conditions, map(attrPerm.index, range(len(attrPerm))), domain)
                 tempPerms.append((val, currAttrs, currValueOrder))
@@ -669,9 +671,6 @@ class orngMosaic:
             self.setStatusBarText("")
             self.parentWidget.progressBarFinished()
             
-        if len(bestPlacements) == 0:
-            return None, None, None
-
         bestPlacements.sort()
         bestPlacements.reverse()
         return bestPlacements
@@ -738,8 +737,9 @@ if __name__=="__main__":
     mosaic.evaluateProjections()
     mosaic.findArguments(example[0])
     """
-    data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
+    #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
+    data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\datasets\microarray\brown\brown-imputed.tab")
     mosaic = orngMosaic()
     mosaic.setData(data)
-    ret = mosaic.findOptimalAttributeOrder(["A11", "A13", "A7"], 1) #optimizeValueOrder = 1
+    ret = mosaic.findOptimalAttributeOrder(["spo- early", "heat 20"], 1) #optimizeValueOrder = 1
     print ret

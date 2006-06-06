@@ -186,7 +186,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.resultList.setFocus()
             
 
-    def optimizeCurrentAttributeOrder(self, attrs = None):
+    def optimizeCurrentAttributeOrder(self, attrs = None, updateGraph = 1):
         if str(self.optimizeOrderButton.text()) == "Optimize Current Order":
             self.stopOptimization = 0
             self.optimizeOrderButton.setText("Stop optimization")
@@ -195,14 +195,17 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                 attrs = self.parentWidget.getShownAttributes()
                 
             bestPlacements = self.findOptimalAttributeOrder(attrs, self.optimizeAttributeValueOrder)
-            self.parentWidget.bestPlacements = bestPlacements
-            if bestPlacements:
-                attrList, valueOrder = bestPlacements[0][1], bestPlacements[0][2]
-                self.parentWidget.setShownAttributes(attrs, customValueOrderDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))]) )
-
+            if updateGraph:
+                self.parentWidget.bestPlacements = bestPlacements
+                if bestPlacements:
+                    attrList, valueOrder = bestPlacements[0][1], bestPlacements[0][2]
+                    self.parentWidget.setShownAttributes(attrList, customValueOrderDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))]) )
+            
             self.optimizeOrderButton.setText("Optimize Current Order")
+            return bestPlacements
         else:
             self.stopOptimization = 1
+            return []
         
 
     def updateGUI(self):
