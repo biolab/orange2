@@ -433,7 +433,8 @@ class MDSGraph(OWGraph):
                                 QwtSymbol.XCross ]
 
     def setData(self, mds, colors, sizes, shapes, names):
-        if mds:
+        if 1:
+#        if mds:
             self.mds=mds
             #self.data=data
             self.colors=colors
@@ -444,7 +445,8 @@ class MDSGraph(OWGraph):
             self.updateData()
                 
     def updateData(self):
-        if self.mds:
+#        if self.mds:
+        if 1:
             self.clear()
             self.setPoints()
             if self.ShowStress:

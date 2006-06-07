@@ -160,9 +160,11 @@ class OWHierarchicalClustering(OWWidget):
         self.matrixSource="Unknown"
         items=getattr(self.matrix, "items")
         if type(items)==orange.ExampleTable: #Example Table from Example Distance
+
             self.labels=["None","Default"]+ \
-                    [a.name for a in items.domain.attributes]+\
-                    [items.domain.classVar.name]
+                         [a.name for a in items.domain.attributes]
+            if items.domain.classVar:
+                self.labels.append(items.domain.classVar.name)
                     
             self.labelInd=range(len(self.labels)-2)
             self.labels.extend([m.name for m in items.domain.getmetas().values()])
@@ -282,10 +284,11 @@ class OWHierarchicalClustering(OWWidget):
                 classVar=orange.EnumVariable(self.ClassifyName ,
                             values=[str(i) for i in range(len(maps))])
                 domain=orange.Domain(self.matrix.items.domain.attributes,classVar)
-                domain.addmetas(self.matrix.items.domain.getmetas())
-                id=orange.newmetaid()
-                domain.addmeta(id,self.matrix.items.domain.classVar)
-                table1=orange.ExampleTable(domain)#orange.Domain(self.matrix.items.domain, classVar))
+                if self.matrix.items.domain.classVar:
+                    domain.addmetas(self.matrix.items.domain.getmetas())
+                    id=orange.newmetaid()
+                    domain.addmeta(id, self.matrix.items.domain.classVar)
+                table1=orange.ExampleTable(domain) #orange.Domain(self.matrix.items.domain, classVar))
                 table1.extend(orange.ExampleTable(self.selection))
                 c=[i for i in range(len(maps)) for j in maps[i]]
                 for i in range(len(self.selection)):
