@@ -631,12 +631,14 @@ class VizRank:
             
             for i in range(maxTries):
                 attrList = [[] for c in range(numClasses)]; attrs = []
+                tried = 0
                 while len(attrs) < min(attrCount, len(self.data.domain.attributes)):
                     ind = tried%numClasses
                     #ind = random.randint(0, numClasses-1)       # warning: this can generate uneven groups for each class value!!!
                     attr = attrsByClass[ind][int(random.gammavariate(1, 5 + attrWidth + projCountWidth))%len(attrsByClass[ind])]
                     if attr not in attrList[ind]:
                         attrList[ind].append(attr); attrs.append(attr)
+                    tried += 1
                 attrs.sort()
                 if not triedDict.has_key(tuple(attrs)) and len(attrs) == attrCount:
                     triedDict[tuple(attrs)] = 1
