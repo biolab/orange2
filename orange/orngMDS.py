@@ -40,7 +40,6 @@ class MDS:
         self.originalDistances=orange.SymMatrix([m for m in self.distances])
 
     def __getattr__(self, name):
-        #print "getattr",name
         if name in ["points", "projectedDistances", "distances" ,"stress", "progressCallback", "n", "dim", "avgStress"]:
             #print "rec:",name            
             return self.__dict__["mds"].__dict__[name]
