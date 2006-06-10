@@ -55,7 +55,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(GNUWIN32)\lib" /libpath:"$(PYTHON)\libs" /WARN:0
+# ADD LINK32 oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(PYTHON)\libs" /WARN:0
 # SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"

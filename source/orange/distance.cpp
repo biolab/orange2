@@ -541,28 +541,38 @@ float TExamplesDistance_Relief::operator()(const TExample &e1, const TExample &e
   checkProperty(averages);
   checkProperty(normalizations);
   checkProperty(bothSpecial);
-  checkProperty(distributions);
+
+  const bool hasDistributions = bool(distributions);
 
   TExample::const_iterator e1i(e1.begin()), e1e(e1.end());
   TExample::const_iterator e2i(e2.begin());
   TFloatList::const_iterator avgi(averages->begin()),
                              nori(normalizations->begin()),
                              btsi(bothSpecial->begin());
-  TDomainDistributions::const_iterator di(distributions->begin());
+
+  TDomainDistributions::const_iterator di;
+  if (hasDistributions)
+    di = distributions->begin();
 
   float dist = 0.0;
-  for(; e1i!=e1e; e1i++, e2i++, avgi++, nori++, btsi++, di++) {
+  for(; e1i!=e1e; e1i++, e2i++, avgi++, nori++, btsi++) {
     float dd = 0.0;
     const TValue &v1 = *e1i, &v2 = *e2i;
     if (v1.varType==TValue::INTVAR) {             // discrete
       if (v1.isSpecial())
         if (v2.isSpecial()) 
           dd = *btsi;                               // both special
-        else 
+        else {
+          if (!hasDistributions)
+            raiseError("'distributions' not set; cannot deal with unknown values");
           dd = 1-(*di)->atint(v2.intV);        // v1 special
+        }
       else
-        if (v2.isSpecial())  
+        if (v2.isSpecial()) {
+          if (!hasDistributions)
+            raiseError("'distributions' not set; cannot deal with unknown values");
           dd = 1-(*di)->atint(v1.intV);        // v2 special
+        }
         else
           if (v1.intV != v2.intV)
             dd = 1.0;                               // both known, different
@@ -581,6 +591,9 @@ float TExamplesDistance_Relief::operator()(const TExample &e1, const TExample &e
     }
 
     dist += dd>1.0 ? 1.0 : dd;
+
+    if (hasDistributions)
+      di++;
   }
 
   return dist;
