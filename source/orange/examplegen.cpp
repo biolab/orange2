@@ -164,23 +164,36 @@ int TExampleIterator::dropReferences()
 
 
 TExampleIterator::~TExampleIterator()    
-{ generator->deleteIterator(*this); 
-  generator->myIterators.remove(this);
+{ 
+  if (generator) {
+    generator->deleteIterator(*this); 
+    generator->myIterators.remove(this);
+  }
 }
 
 
 TExampleIterator &TExampleIterator::operator =(const TExampleIterator &other)
-{ generator->deleteIterator(*this);
+{ 
   if (other.example==&other.privateExample) {
-    privateExample=other.privateExample;
-    example=&privateExample;
+    privateExample = other.privateExample;
+    example = &privateExample;
   }
   else {
-    privateExample=TExample();
-    example=other.example;
+    privateExample = TExample();
+    example = other.example;
   }
 
-  (generator=other.generator)->copyIterator(other, *this);
+  if (generator != other.generator) {
+    if (generator) {
+      generator->deleteIterator(*this);
+      generator->myIterators.remove(this);
+    }
+    
+    generator = other.generator;
+    generator->copyIterator(other, *this);
+    generator->myIterators.push_back(this);
+  }
+
   return *this;
 }
 
