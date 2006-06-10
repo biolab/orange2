@@ -29,6 +29,34 @@ WRAPPER(ExamplesDistance_Relief);
 WRAPPER(Domain);
 
 
+class TNeighbourExample {
+public:
+  int index;
+  float weight;
+  float weightEE;
+
+  TNeighbourExample(const int &i, const float &w)
+  : index(i), weight(w)
+  {}
+
+  TNeighbourExample(const int &i, const float &w, const float &wEE)
+  : index(i), weight(w), weightEE(wEE)
+  {}
+};
+
+class TReferenceExample {
+public:
+  int index;
+  vector<TNeighbourExample> neighbours;
+  float nNeighbours;
+
+  TReferenceExample(const int &i = -1)
+  : index(i),
+    nNeighbours(0.0)
+  {}
+};
+
+
 class ORANGE_API TMeasureAttribute_relief : public TMeasureAttribute {
 public:
     __REGISTER_CLASS
@@ -37,15 +65,33 @@ public:
     float m; //P number of reference examples
 
     TMeasureAttribute_relief(int ak=5, int am=100);
-    virtual float operator()(int attrNo, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID=0);
+    virtual float operator()(PVariable var, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID=0);
+
+    // If attrVals is non-NULL and the values are indeed computed by the thresholdFunction, the caller is 
+    // responsible for deallocating the table!
+    void thresholdFunction(PVariable var, PExampleGenerator, map<float, float> &res, int weightID = 0, float **attrVals = NULL);
+
+    void thresholdFunction(TFloatFloatList &res, PVariable, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID = 0);
+    float bestThreshold(PDistribution &, float &score, PVariable, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID = 0, const float &minSubset = -1);
+
+    PSymMatrix gainMatrix(PVariable var, PExampleGenerator gen, PDistribution, int weightID, int **attrVals, float **attrDistr);
+    PIntList bestBinarization(PDistribution &subsets, float &score, PVariable var, PExampleGenerator gen, PDistribution apriorClass = PDistribution(), int weightID = 0, const float &minSubset = -1);
 
     void reset();
 
     vector<float> measures;
-    PExampleGenerator prevGenerator; //C
-    PDomain prevDomain; //C
-    long prevDomainVersion;
     int prevExamples, prevWeight;
+
+    // the first int the index of the reference example
+    // the inner int-float pairs are indices of neighbours and the corresponding weights
+    //   (all indices refer to storedExamples)
+    vector<TReferenceExample> neighbourhood;
+    PExampleGenerator storedExamples;
+    PExamplesDistance distance;
+    float ndC, m_ndC;
+
+    void prepareNeighbours(PExampleGenerator, const int &weightID);
+    void checkNeighbourhood(PExampleGenerator gen, const int &weightID);
 };
     
 #endif

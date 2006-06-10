@@ -37,6 +37,7 @@ using namespace std;
 
 WRAPPER(Contingency);
 WRAPPER(DiscDistribution);
+WRAPPER(SymMatrix);
 
 float getEntropy(PContingency, int unknownsTreatment);
 float getEntropy(const vector<float> &);
@@ -74,17 +75,29 @@ public:
   int needs; //P describes what kind of data is needed for computation
   bool handlesDiscrete; //PR tells whether the measure can handle discrete attributes
   bool handlesContinuous; //PR tells whether the measure can handle continuous attributes
+  bool computesThresholds; //PR tells whether the measure can compute threshold functions/maxima for continuous attributes
 
-  TMeasureAttribute(const int &aneeds, const bool &handlesDiscrete, const bool &handlesContinuous = false);
+  TMeasureAttribute(const int aneeds, const bool handlesDiscrete, const bool handlesContinuous = false, const bool computesThresholds = false);
 
   virtual float operator()(PContingency,  PDistribution classDistribution, PDistribution apriorClass=PDistribution());
   virtual float operator()(int attrNo,    PDomainContingency,              PDistribution apriorClass=PDistribution());
+
+  // if the method implements one of these two but not both, it should implement the second
   virtual float operator()(int attrNo,    PExampleGenerator,               PDistribution apriorClass=PDistribution(), int weightID=0);
   virtual float operator()(PVariable var, PExampleGenerator,               PDistribution apriorClass=PDistribution(), int weightID=0);
 
   virtual float operator()(PDistribution) const;
   virtual float operator()(const TDiscDistribution &) const;
   virtual float operator()(const TContDistribution &) const;
+
+  virtual void thresholdFunction(TFloatFloatList &res, PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
+  virtual void thresholdFunction(TFloatFloatList &res, PVariable, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID = 0);
+
+  virtual float bestThreshold(PDistribution &, float &score, PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution(), const float &minSubset = -1);
+  virtual float bestThreshold(PDistribution &, float &score, PVariable, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID = 0, const float &minSubset = -1);
+
+  virtual PIntList bestBinarization(PDistribution &, float &score, PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution(), const float &minSubset = -1);
+  virtual PIntList bestBinarization(PDistribution &, float &score, PVariable, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID = 0, const float &minSubset = -1);
 
   virtual bool checkClassType(const int &varType);
   virtual void checkClassTypeExc(const int &varType);
@@ -100,7 +113,7 @@ public:
 
   int unknownsTreatment; //P treatment of unknown values
 
-  TMeasureAttributeFromProbabilities(const bool &handlesDiscrete, const bool &handlesContinuous = false, const int &unkTreat = ReduceByUnknowns);
+  TMeasureAttributeFromProbabilities(const bool handlesDiscrete, const bool handlesContinuous = false, const int unkTreat = ReduceByUnknowns);
 
   virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
   virtual float operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)=0; 
@@ -187,5 +200,10 @@ public:
     virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
 };
 
+
+PContingency prepareBinaryCheat(PDistribution classDistribution, PContingency origContingency,
+                                PVariable &bvar,
+                                TDiscDistribution *&dis0, TDiscDistribution *&dis1,
+                                TContDistribution *&con0, TContDistribution *&con1);
 
 #endif

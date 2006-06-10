@@ -35,6 +35,7 @@
 #include "distance.hpp"
 #include "contingency.hpp"
 #include "classify.hpp"
+#include "symmatrix.hpp"
 
 #include "cost.hpp"
 #include <vector>
@@ -77,10 +78,55 @@ void checkDiscreteContinuous(const PContingency &cont, char *measure)
 }
 
 
-TMeasureAttribute::TMeasureAttribute(const int &aneeds, const bool &hd, const bool &hc)
+/* Prepares the common stuff for binarization through attribute quality assessment:
+   - a binary attribute 
+   - a contingency matrix for this attribute
+   - a DomainContingency that contains this matrix at position newpos (the last)
+   - dis0 and dis1 (or con0 and con1, if the class is continuous) that point to distributions
+     for the left and the right branch
+*/
+PContingency prepareBinaryCheat(PDistribution classDistribution, PContingency origContingency,
+                                PVariable &bvar, 
+                                TDiscDistribution *&dis0, TDiscDistribution *&dis1,
+                                TContDistribution *&con0, TContDistribution *&con1)
+{
+  TEnumVariable *ebvar = mlnew TEnumVariable("");
+  bvar = ebvar;
+  ebvar->addValue("0");
+  ebvar->addValue("1");
+
+  /* An ugly cheat that is prone to cause problems when Contingency class is changed.
+     It is fast, though :) */
+  TContingencyClass *cont = mlnew TContingencyAttrClass(bvar, classDistribution->variable);
+  cont->innerDistribution = classDistribution;
+  cont->operator[](1);
+
+  TDiscDistribution *outerDistribution = cont->outerDistribution.AS(TDiscDistribution);
+  outerDistribution->cases = origContingency->outerDistribution->cases;
+  outerDistribution->abs = origContingency->outerDistribution->abs;
+  outerDistribution->normalized = origContingency->outerDistribution->normalized;
+
+  if (classDistribution->variable->varType == TValue::INTVAR) {
+    dis0 = cont->discrete->front().AS(TDiscDistribution);
+    dis1 = cont->discrete->back().AS(TDiscDistribution);
+    con0 = con1 = NULL;
+  }
+  else {
+    con0 = cont->discrete->front().AS(TContDistribution);
+    con1 = cont->discrete->back().AS(TContDistribution);
+    dis0 = dis1 = NULL;
+  }
+
+  return cont;
+}
+
+
+
+TMeasureAttribute::TMeasureAttribute(const int aneeds, const bool hd, const bool hc, const bool ts)
 : needs(aneeds),
   handlesDiscrete(hd),
-  handlesContinuous(hc)
+  handlesContinuous(hc),
+  computesThresholds(ts)
 {}
 
 
@@ -101,6 +147,9 @@ float TMeasureAttribute::operator()(int attrNo, PDomainContingency domainConting
 
 float TMeasureAttribute::operator()(int attrNo, PExampleGenerator gen, PDistribution apriorClass, int weightID)
 { 
+  if (needs>DomainContingency)
+    return operator()(gen->domain->attributes->at(attrNo), gen, apriorClass, weightID);
+
   _ASSERT(gen && gen->domain);
   if (!gen->domain->classVar)
     raiseError("can't evaluate attributes on class-less domains");
@@ -116,9 +165,6 @@ float TMeasureAttribute::operator()(int attrNo, PExampleGenerator gen, PDistribu
     return operator()(PContingency(contingency), classDistribution, apriorClass ? apriorClass : classDistribution);
   }
    
- if (needs>DomainContingency)
-   raiseError("invalid 'needs'");
-
  TDomainContingency domcont(gen, weightID);
  return operator()(attrNo, PDomainContingency(domcont), apriorClass ? apriorClass : domcont.classes);
 }
@@ -128,6 +174,9 @@ float TMeasureAttribute::operator ()(PVariable var, PExampleGenerator gen, PDist
 { if (!gen->domain->classVar)
     raiseError("can't evaluate attributes on class-less domains");
   
+  if (needs>DomainContingency)
+   raiseError("invalid 'needs'");
+
   int attrNo=gen->domain->getVarNum(var, false);
   if (attrNo != ILLEGAL_INT)
     return operator()(attrNo, gen, apriorClass, weightID);
@@ -168,6 +217,222 @@ float TMeasureAttribute::operator ()(const TContDistribution &) const
 }
 
 
+void TMeasureAttribute::thresholdFunction(TFloatFloatList &res, PVariable var, PExampleGenerator gen, PDistribution apriorClass, int weightID)
+{ 
+  if (!computesThresholds || (needs > Contingency_Class))
+    raiseError("cannot compute thresholds");
+  if (!gen->domain->classVar)
+    raiseError("can't evaluate attributes on class-less domains");
+
+  TContingencyAttrClass contingency(gen, var, weightID);
+
+  PDistribution classDistribution = CLONE(TDistribution, contingency.innerDistribution);
+  classDistribution->operator+= (contingency.innerDistributionUnknown);
+
+  thresholdFunction(res, PContingency(contingency), classDistribution, apriorClass ? apriorClass : classDistribution);
+}
+
+
+float TMeasureAttribute::bestThreshold(PDistribution &left_right, float &score, PVariable var, PExampleGenerator gen, PDistribution apriorClass, int weightID, const float &minSubset)
+{ 
+  if (needs > Contingency_Class)
+    raiseError("cannot compute thresholds");
+  if (!gen->domain->classVar)
+    raiseError("can't evaluate attributes on class-less domains");
+
+  TContingencyAttrClass contingency(gen, var, weightID);
+
+  PDistribution classDistribution = CLONE(TDistribution, contingency.innerDistribution);
+  classDistribution->operator+= (contingency.innerDistributionUnknown);
+
+  return bestThreshold(left_right, score, PContingency(contingency), classDistribution, apriorClass ? apriorClass : classDistribution, minSubset);
+}
+
+
+template<class TRecorder>
+bool traverseThresholds(TMeasureAttribute *measure, TRecorder &recorder, PVariable &bvar, PContingency origContingency, PDistribution classDistribution, PDistribution apriorClass)
+{
+  if (measure->needs > measure->Contingency_Class)
+    raiseError("cannot compute thresholds from contingencies");
+
+  PVariable var = origContingency->outerVariable;
+  if (var->varType != TValue::FLOATVAR)
+    raiseError("cannot search for thresholds of a non-continuous variable");
+
+  if (origContingency->continuous->size() < 2)
+    return false;
+
+  TDiscDistribution *dis0, *dis1;
+  TContDistribution *con0, *con1;
+  PContingency cont = prepareBinaryCheat(classDistribution, origContingency, bvar, dis0, dis1, con0, con1);
+  TDiscDistribution *outerDistribution = cont->outerDistribution.AS(TDiscDistribution);
+  
+  const TDistributionMap &distr = *(origContingency->continuous);
+
+  TMeasureAttributeFromProbabilities *mp = dynamic_cast<TMeasureAttributeFromProbabilities *>(measure);
+  if (mp && (mp->unknownsTreatment == mp->IgnoreUnknowns))
+    classDistribution = cont->innerDistribution;
+
+  if (dis0) { // class is discrete
+    *dis0 = TDiscDistribution();
+    *dis1 = CAST_TO_DISCDISTRIBUTION(origContingency->innerDistribution);
+    const float &left = dis0->abs, &right = dis1->abs;
+  
+    const_ITERATE(TDistributionMap, threshi, distr) {
+      *dis0 += threshi->second;
+      *dis1 -= threshi->second;
+
+      if (!recorder.acceptable(threshi->first, left, right))
+        continue;
+
+      outerDistribution->distribution[0] = left;
+      outerDistribution->distribution[1] = right;
+
+      recorder.record(threshi->first, measure->call(cont, classDistribution, apriorClass), left, right);
+    }
+  }
+
+  else { // class is continuous
+    *con0 = TContDistribution();
+    *con1 = CAST_TO_CONTDISTRIBUTION(origContingency->innerDistribution);
+    const float &left = con0->abs, &right = con1->abs;
+
+    const_ITERATE(TDistributionMap, threshi, distr) {
+      *con0 += threshi->second;
+      *con1 -= threshi->second;
+
+      if (!recorder.acceptable(threshi->first, left, right))
+        continue;
+
+      cont->outerDistribution->setint(0, left);
+      cont->outerDistribution->setint(1, right);
+        
+      recorder.record(threshi->first, measure->call(cont, classDistribution, apriorClass), left, right);
+    }
+  }
+
+  return true;
+}
+
+
+class TRecordThresholds {
+public:
+  TFloatFloatList &res;
+
+  TRecordThresholds(TFloatFloatList &ares)
+  : res(ares)
+  {}
+
+  inline bool acceptable(const float &, const float &, const float &)
+  { return true; }
+
+  inline void record(const float &threshold, const float &score, const float &left, const float &right)
+  { res.push_back(make_pair(threshold, score)); }
+};
+
+
+void TMeasureAttribute::thresholdFunction(TFloatFloatList &res, PContingency origContingency, PDistribution classDistribution, PDistribution apriorClass)
+{
+  PVariable bvar;
+  if (!traverseThresholds(this, TRecordThresholds(res), bvar, origContingency, classDistribution, apriorClass))
+    res.clear();
+}
+
+
+class TRecordMaximalThreshold {
+public:
+  float minSubset;
+
+  int wins;
+  float bestThreshold, bestScore, bestLeft, bestRight;
+  //float lastThreshold;
+  bool fixLast;
+  TRandomGenerator &rgen;
+
+  TRecordMaximalThreshold(TRandomGenerator &rg, const float &minSub = -1)
+  : minSubset(minSub),
+    wins(0),
+    //lastThreshold(ILLEGAL_FLOAT),
+    rgen(rg)
+  {}
+
+  inline bool acceptable(const float &threshold, const float &left, const float &right)
+  { 
+    if (fixLast) {
+      bestThreshold = (bestThreshold + threshold) / 2.0;
+      fixLast = false;
+    }
+    return (left >= minSubset) && (right >= minSubset);
+  }
+
+  void record(const float &threshold, const float &score, const float &left, const float &right)
+  {
+    if (   (!wins || (score > bestScore)) && ((wins=1)==1)
+        || (score == bestScore) && rgen.randbool(++wins)) {
+      //if (lastThreshold == ILLEGAL_FLOAT) {
+        bestThreshold = threshold;
+        fixLast = true;
+//      }
+//      else
+//        bestThreshold = (threshold+lastThreshold) / 2.0;
+      bestScore = score;
+      bestLeft = left;
+      bestRight = right;
+    }
+//    lastThreshold = threshold;
+  }
+};
+
+
+float TMeasureAttribute::bestThreshold(PDistribution &subsetSizes, float &score, PContingency origContingency, PDistribution classDistribution, PDistribution apriorClass, const float &minSubset)
+{
+  PVariable bvar;
+  TRecordMaximalThreshold recorder(TRandomGenerator(classDistribution->abs), minSubset);
+  if (   !traverseThresholds(this, recorder, bvar, origContingency, classDistribution, apriorClass)
+      || !recorder.wins)
+    return ILLEGAL_FLOAT;
+
+  subsetSizes = mlnew TDiscDistribution(bvar);
+  subsetSizes->addint(0, recorder.bestLeft);
+  subsetSizes->addint(1, recorder.bestRight);
+
+  score = recorder.bestScore;
+  return recorder.bestThreshold;
+}
+
+
+PIntList TMeasureAttribute::bestBinarization(PDistribution &, float &score, PContingency origContingency, PDistribution classDistribution, PDistribution apriorClass, const float &minSubset)
+{
+  if (needs > Contingency_Class)
+    raiseError("cannot compute thresholds from contingencies");
+
+  PVariable var = origContingency->outerVariable;
+  if (var->varType != TValue::INTVAR)
+    raiseError("cannot search for thresholds of a non-continuous variable");
+
+  if (origContingency->continuous->size() < 2)
+    return NULL;
+
+  raiseError("this has not been implemented yet");
+  return NULL;
+}
+
+
+PIntList TMeasureAttribute::bestBinarization(PDistribution &subsets, float &score, PVariable var, PExampleGenerator gen, PDistribution apriorClass, int weightID, const float &minSubset)
+{ 
+  if (!computesThresholds || (needs > Contingency_Class))
+    raiseError("cannot compute binarization");
+  if (!gen->domain->classVar)
+    raiseError("can't evaluate attributes on class-less domains");
+
+  TContingencyAttrClass contingency(gen, var, weightID);
+
+  PDistribution classDistribution = CLONE(TDistribution, contingency.innerDistribution);
+  classDistribution->operator+= (contingency.innerDistributionUnknown);
+
+  return bestBinarization(subsets, score, PContingency(contingency), classDistribution, apriorClass ? apriorClass : classDistribution, minSubset);
+}
+
 
 bool TMeasureAttribute::checkClassType(const int &varType)
 {
@@ -189,8 +454,8 @@ void TMeasureAttribute::checkClassTypeExc(const int &varType)
 }
 
 
-TMeasureAttributeFromProbabilities::TMeasureAttributeFromProbabilities(const bool &hd, const bool &hc, const int &unkTreat)
-: TMeasureAttribute(Contingency_Class, hd, hc),
+TMeasureAttributeFromProbabilities::TMeasureAttributeFromProbabilities(const bool hd, const bool hc, const int unkTreat)
+: TMeasureAttribute(Contingency_Class, hd, hc, hd), // we can compute thresholds, if we handle discrete attributes...
   unknownsTreatment(unkTreat)
 {}
 
@@ -674,218 +939,896 @@ float TMeasureAttribute_MSE::operator()(PContingency cont, PDistribution classDi
 TMeasureAttribute_relief::TMeasureAttribute_relief(int ak, int am)
 : TMeasureAttribute(Generator, true, false), 
   k(ak),
-  m(am)
+  m(am),
+  prevExamples(-1),
+  prevWeight(0)
 {}
 
 
-class TDistRec {
-public:
-  float dist;
-  long randoff;
-  TExample *example;
-
-  TDistRec(TExample *anex, const int &roff, float adist)
-    : dist(adist),
-      randoff(roff),
-      example(anex)
-    {};
-
-  bool operator <(const TDistRec &other) const
-    { return (dist==other.dist) ? (randoff<other.randoff) : (dist<other.dist); }
-  bool operator !=(const TDistRec &other) const
-    { return    (dist!=other.dist) || (randoff!=other.randoff); }
-};
 
 
+inline bool compare2nd(const pair<int, float> &o1, const pair<int, float> &o2)
+{ return o1.second < o2.second; }
 
-float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PDistribution aprior, int weightID)
+
+void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const int &weightID)
 {
+  neighbourhood.clear();
+
   if (!gen->domain->classVar)
-    raiseError("class-less domain");
+    raiseError("classless domain");
 
-/* If the generator's address, domain, number of examples and weight are same as before,
-   it concludes that the data is the same... (this is a bit dangerous, though) */
-  if (   (gen!=prevGenerator)
-      || (gen->domain!=prevDomain)
-      || (gen->domain->version!=prevDomainVersion)
-      || (weightID!=prevWeight)
-      || (gen->numberOfExamples()!=prevGenerator->numberOfExamples())) {
+  const bool regression = gen->domain->classVar->varType == TValue::FLOATVAR;
 
-    vector<TExampleTable *> tables;
-    TExampleTable *examples = NULL;
-
-    TRandomGenerator rgen(gen->numberOfExamples());
-
-    try {
-      PExamplesDistance wdistance = TExamplesDistanceConstructor_Relief()(gen);
-      const TExamplesDistance_Relief &distance = dynamic_cast<const TExamplesDistance_Relief &>(wdistance.getReference());
+  if (!regression && (gen->domain->classVar->varType != TValue::INTVAR))
+    raiseError("cannot compute ReliefF of a class that is neither discrete nor continuous");
   
-      if (gen->domain->classVar->varType==TValue::INTVAR) {
-        // prepares tables of examples of different classes
-        for (int i = gen->domain->classVar->noOfValues(); i--; )
-          // if gen is ExampleTable, our tables won't own examples (ie don't need to copy them)
-          tables.push_back(mlnew TExampleTable(gen->domain, !gen.is_derived_from(TExampleTable)));
+  storedExamples = mlnew TExampleTable(gen->domain, !gen.is_derived_from(TExampleTable));
+  TExampleTable &table = dynamic_cast<TExampleTable &>(storedExamples.getReference());
+  PEITERATE(ei, gen)
+    if (!(*ei).getClass().isSpecial())
+      table.addExample(*ei);
 
-        PEITERATE(ei, gen)
-          if (!(*ei).getClass().isSpecial())
-            (tables.at(int((*ei).getClass())))->addExample(*ei);
+  const int N = table.numberOfExamples();
+  if (!N)
+    raiseError("no examples with known class");
 
-        // the total number of examples and number of examples of each class
-        long N=0;
-        vector<long> gN;
-        { ITERATE(vector<TExampleTable *>, gi, tables) {
-            gN.push_back((*gi)->numberOfExamples());
-            N+=gN.back();
-          }
-        }
+  const int classIdx = table.domain->attributes->size();
 
-        if (!N)
-          raiseError("no examples with known class");
+  vector<vector<int> > examplesByClasses(regression ? 1 : table.domain->classVar->noOfValues());
+  vector<vector<int > >::iterator ebcb, ebci, ebce;
 
-        measures = vector<float>(gen->domain->attributes->size(), 0);
-        // This is what the measures must be divided by - the sum of products of weights of compared examples
-        // Should be m*k but can be less if some class doesn't have enough examples or
-        // a bit more if referenceExamples exceeds m.
-        float actualN=0;
+  float minCl, maxCl;
 
-        for(float referenceExamples=0, refWeight; referenceExamples<m; referenceExamples+=refWeight) {
-          // choose a random example
-          long eNum = rgen.randlong(N);
-          int eClass=0;
-          for(; eNum>=gN[eClass]; eNum-=gN[eClass++]);
-          TExample &example = *tables[eClass]->examples[eNum];
-          refWeight=WEIGHT(example);
+  if (table.domain->classVar->varType==TValue::INTVAR) {
+    int index;
+    TExampleIterator ei;
 
-          // for each class
-          int tsize = tables.size();
-          for(int oClass=0; oClass<tsize; oClass++) 
-            if (tables[oClass]->numberOfExamples()>0) {
-              // sort the examples by the distance
-              set<TDistRec> neighset;
-              EITERATE(ei, *tables[oClass])
-                neighset.insert(TDistRec(&*ei, rgen.randlong(), distance(example, *ei)));
+    for(ei = table.begin(), index = 0; ei; ++ei, index++)
+      examplesByClasses.at(int((*ei).getClass())).push_back(index);
 
-              float classWeight= (oClass==eClass) ? -1.0 : float(gN[oClass]) / float(N-gN[eClass]);
-
-              set<TDistRec>::iterator ni(neighset.begin()), ne(neighset.end());
-              while(((*ni).dist<=0) && (ni!=ne))
-                ni++;
-
-              for(float needwei=k, compWeight; (needwei>0) && (ni!=ne); needwei-=compWeight, ni++) {
-                // determine the weight of the current example; weights are negative for same classes
-                compWeight=WEIGHT(*(*ni).example);
-                if (compWeight>needwei) compWeight=needwei;
-                float koe=refWeight*compWeight*classWeight;
-                actualN+=fabs(koe);
-
-                // add the (weighted) distance
-                int attrNo=0;
-                TExample::iterator e1i(example.begin()), e2i((*ni).example->begin());
-                for(vector<float>::iterator mi(measures.begin()), me(measures.end());
-                    mi!=me; 
-                    *(mi++) += koe * distance(attrNo++, *(e1i++), *(e2i++)));
-              }
-            }
-        }
-
-        ITERATE(vector<TExampleTable *>, gi, tables) {
-          mldelete *gi;
-          *gi = NULL;
-        }
-        tables.clear();
-
-        ITERATE(vector<float>, mi, measures)
-          *mi/=actualN;
-      }
-
+    for(ebcb = examplesByClasses.begin(), ebci = ebcb, ebce = examplesByClasses.end(); ebci != ebce; ) {
+      const int sze = (*ebci).size();
+      if (sze)
+        ebci++;
       else {
+        examplesByClasses.erase(ebci);
+        ebce = examplesByClasses.end();
+      }
+    }
+  }
+  else {
+    ebcb = examplesByClasses.begin(), ebce = examplesByClasses.end();
+    ebcb->resize(N);
+    int i = 0;
+    for(vector<int>::iterator c0i(ebcb->begin()), c0e(ebcb->end()); c0i != c0e; *c0i++ = i++);
 
-        TExampleIterator test1(gen->begin());
-        if (!test1)
-          measures = vector<float>(gen->domain->attributes->size(), 0);
- 
-        else {
-          measures.clear();
-          examples = mlnew TExampleTable(gen, !gen.is_derived_from(TExampleTable)); // This will automatically store examples into ExampleTable if necessary
+    TExampleIterator ei(table.begin());
+    minCl = maxCl = (*ei).getClass().floatV;
+    while(++ei) {
+      const float tex = (*ei).getClass().floatV;
+	    if (tex > maxCl)
+        maxCl = tex;
+		  else if (tex < minCl)
+        minCl = tex;
+		}
+  }
 
-          float minCl, maxCl;
-          { TExampleIterator emi(examples->begin());
-            minCl=maxCl=(*emi).getClass().floatV;
-            while(++emi) {
-              float tex=(*emi).getClass().floatV;
-	            if (tex>maxCl) maxCl=tex;
-		          else if (tex<minCl) minCl=tex;
-		        }
+
+  distance = TExamplesDistanceConstructor_Relief()(gen);
+  const TExamplesDistance_Relief &rdistance = dynamic_cast<const TExamplesDistance_Relief &>(distance.getReference());
+
+  TRandomGenerator rgen(N);
+  int referenceIndex = 0;
+
+  for(float referenceExamples = 0, referenceWeight; m == -1 ? (referenceIndex < N) : (referenceExamples < m); referenceExamples += referenceWeight, referenceIndex++) {
+    if (m != -1)
+      referenceIndex = rgen.randlong(N);
+    TExample &referenceExample = table[referenceIndex];
+    referenceWeight = WEIGHT(referenceExample);
+
+    const TValue &referenceValue = referenceExample.getClass();
+    const int referenceClass= regression ? 0 : referenceExample.getClass().intV;
+
+    neighbourhood.push_back(referenceIndex);
+    vector<TNeighbourExample> &refNeighbours = neighbourhood.back().neighbours;
+
+    ndC = 0.0;
+
+    ITERATE(vector<vector<int> >, cli, examplesByClasses) {
+      const float inCliClass = (*cli).size();
+      const float classReferenceWeight =
+         regression ? referenceWeight 
+                    : referenceWeight * (referenceExample.getClass().intV == table[cli->front()].getClass().intV ? -1.0 : float(inCliClass) / float(N-inCliClass));
+
+      vector<pair<int, float> > distances(inCliClass);
+      vector<pair<int, float> >::iterator disti = distances.begin(), diste;
+      ITERATE(vector<int> , clii, *cli)
+        *disti++ = make_pair(*clii, rdistance(referenceExample, table[*clii]));
+
+      diste = distances.end();
+      disti = distances.begin();
+      sort(disti, diste, compare2nd);
+
+      while(disti != diste && (disti->second <= 0))
+        disti++;
+
+      float inWeight;
+      for(float needwei = k; (disti != diste) && (needwei > 1e-6); ) {
+        const float thisDist = disti->second;
+        inWeight = 0.0;
+        const int inAdded = refNeighbours.size();
+        do {
+          TExample &neighbourExample = table[disti->first];
+
+          const float neighbourWeight = WEIGHT(neighbourExample);
+          const float weightEE = neighbourWeight * referenceWeight;
+          inWeight += neighbourWeight;
+
+          if (regression) {
+            const float classDist = rdistance(classIdx, neighbourExample.getClass(), referenceValue);
+            refNeighbours.push_back(TNeighbourExample(disti->first,
+                                                      weightEE * classDist,
+                                                      weightEE));
+            ndC += weightEE * classDist;
           }
+          else
+            refNeighbours.push_back(TNeighbourExample(disti->first, weightEE * (neighbourExample.getClass().intV == referenceClass ? -1 : 1)));
+        } while ((++disti != diste) && (disti->second == thisDist));
 
-          float NdC=0;
-          float actualN=0;
-          vector<float> NdA(gen->domain->attributes->size(), 0);
-          vector<float> NdCdA(gen->domain->attributes->size(), 0);
-
-          for(float referenceExamples=0, refWeight; referenceExamples<m; referenceExamples+=refWeight) {
-            // choose a random example
-            long eNum = rgen.randlong(examples->numberOfExamples());
-            TExample &refExample = *examples->examples[eNum];
-            refWeight=WEIGHT(refExample);
-            float refClass=refExample.getClass().floatV;
-
-            // for each class
-            // sort the examples by the distance
-            set<TDistRec> neighset;
-            EITERATE(ei, *examples)
-              neighset.insert(TDistRec(&*ei, rgen.randlong(), distance(refExample, *ei)));
-
-            set<TDistRec>::iterator ni(neighset.begin()), ne(neighset.end());
-            while(((*ni).dist<=0) && (ni!=ne)) ni++;
-            for(float needwei=k, compWeight; (needwei>0) && (ni!=ne); needwei-=compWeight, ni++) {
-              TExample &compExample=*(*ni).example;
-              compWeight=WEIGHT(compExample);
-              if (compWeight>needwei) compWeight=needwei;
-              float koe=refWeight*compWeight;
-              float classDiff=fabs(compExample.getClass().floatV-refClass);
-              actualN+=koe;
-
-              NdC+=koe*classDiff;
-              // add the (weighted) distance
-              int attrNo=0;
-              TExample::iterator e1i(refExample.begin()), e2i(compExample.begin());
-              for(vector<float>::iterator dAi(NdA.begin()), dCdAi(NdCdA.begin()), dAe(NdA.end());
-                  dAi!=dAe;
-			           ) {
-                float diff=koe * distance(attrNo++, *(e1i++), *(e2i++));
-                *(dAi++)+=diff;
-                *(dCdAi++)+=classDiff*diff*koe;
-              }
-		        }
-          }
-
-          NdC=(NdC-actualN*minCl)/(maxCl-minCl);
-          for(vector<float>::iterator dAi(NdA.begin()), dCdAi(NdCdA.begin()), dAe(NdA.end()); dAi!=dAe; dAi++, dCdAi++)
-	        measures.push_back(*dCdAi / NdC - (*dAi - *dCdAi)/(actualN-NdC));
-          ITERATE(vector<float>, mi, measures)
-            *mi/=actualN;
-
-          mldelete examples;
-        }
+        needwei -= inWeight;
       }
 
-      prevDomain=gen->domain;
-      prevDomainVersion=prevDomain->version;
-      prevGenerator=gen;
-      prevExamples=gen->numberOfExamples();
-      prevWeight=weightID;
-    }
-    catch (exception err) {
-      ITERATE(vector<TExampleTable *>, gi, tables)
-        delete *gi;
-      if (examples)
-        delete examples;
-      throw;
+      neighbourhood.back().nNeighbours = k - needwei; // this can exceed k
     }
   }
 
 
-  float me=measures[attrNo];
-  return me;
+  ITERATE(vector<TReferenceExample>, rei, neighbourhood)
+    if (regression) {
+      const float adj = 1.0 / rei->nNeighbours;
+      ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+        nei->weight *= adj;
+        nei->weightEE *= adj;
+      }
+
+      m_ndC = referenceExamples - ndC;
+    }
+    else {
+      const float adj = 1.0 / (rei->nNeighbours * referenceExamples);
+      ITERATE(vector<TNeighbourExample>, nei, rei->neighbours)
+        nei->weight *= adj;
+    }
+}
+
+
+void TMeasureAttribute_relief::checkNeighbourhood(PExampleGenerator gen, const int &weightID)
+{
+  if (!gen->domain->classVar)
+    raiseError("class-less domain");
+
+  if ((prevExamples != gen->version) || (weightID != prevWeight))  {
+    measures.clear();
+    prepareNeighbours(gen, weightID);
+    prevExamples = gen->version;
+    prevWeight = weightID;
+  }
+}
+
+
+float *tabulateContinuousValues(PExampleGenerator gen, const int &weightID, TVariable &variable,
+                                float &min, float &max, float &avg, float &N)
+{
+  float *pc, *precals;
+  precals = pc = new float[gen->numberOfExamples()];
+  avg = N = 0.0;
+
+  PEITERATE(ei, gen) {
+    const TValue &val = variable.computeValue(*ei);
+    if (val.isSpecial())
+      *pc++ = ILLEGAL_FLOAT;
+    else {
+      *pc++ = val.floatV;
+      if (N == 0.0)
+        max = min = val.floatV;
+      else if (val.floatV > max)
+        max = val.floatV;
+      else if (val.floatV < min)
+        min = val.floatV;
+
+      const float w = WEIGHT(*ei);
+      avg += w * val.floatV;
+      N += w;
+    }
+  }
+
+  if (N > 1e-6)
+    avg /= N;
+
+  return precals;
+}
+
+
+int *tabulateDiscreteValues(PExampleGenerator gen, const int &weightID, TVariable &variable,
+                            float *&unk, float &bothUnk)
+{
+  const int noVal = dynamic_cast<TEnumVariable &>(variable).noOfValues();
+
+  int *pc, *precals = pc = new int[gen->numberOfExamples()];
+  unk = new float[noVal];
+
+  try {
+    float *ui, *ue = unk + noVal;
+    for(ui = unk; ui != ue; *ui++ = 0.0);
+       
+    int *pc = precals;
+    PEITERATE(ei, gen) {
+      const TValue &val = variable.computeValue(*ei);
+      if (val.isSpecial() || (val.intV >= noVal) || (val.intV < 0))
+        *pc++ = ILLEGAL_INT;
+      else {
+        *pc++ = val.intV;
+        ui[val.intV] += WEIGHT(*ei);
+      }
+    }
+
+    bothUnk = 1.0;
+    for(ui = unk; ui != ue; ui++) {
+      bothUnk -= *ui * *ui;
+      *ui = 1 - *ui;
+    }
+  }
+  catch (...) {
+    delete unk;
+    unk = NULL;
+    delete precals;
+    precals = NULL;
+    throw;
+  }
+
+  return precals;
+}
+
+
+float TMeasureAttribute_relief::operator()(PVariable var, PExampleGenerator gen, PDistribution aprior, int weightID)
+{
+  checkNeighbourhood(gen, weightID);
+
+  // the attribute is in the domain
+  const int attrIdx = gen->domain->getVarNum(var, false);
+  if (attrIdx != ILLEGAL_INT) {
+    if (measures.empty()) {
+      const TExamplesDistance_Relief &rdistance = dynamic_cast<const TExamplesDistance_Relief &>(distance.getReference());
+
+      const TExampleTable &table = dynamic_cast<const TExampleTable &>(gen.getReference());
+      const int nAttrs = gen->domain->attributes->size();
+      measures = vector<float>(nAttrs, 0.0);
+      vector<float>::iterator mb(measures.begin()), mi;
+      const vector<float>::const_iterator me(measures.end());
+      TExample::const_iterator e1i, e1b, e2i;
+      int attrNo;
+
+      if (gen->domain->classVar->varType == TValue::FLOATVAR) {
+        vector<float> ndA(nAttrs, 0.0);
+        vector<float> ndCdA(nAttrs, 0.0);
+        vector<float>::iterator ndAb(ndA.begin()), ndAi;
+        const vector<float>::const_iterator ndAe(ndA.end());
+        vector<float>::iterator ndCdAb(ndCdA.begin()), ndCdAi;
+
+        ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+          const TExample &referenceExample = table[rei->index];
+          e1b = referenceExample.begin();
+          ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+            const float &weight = nei->weight;
+            const float &weightEE = nei->weightEE;
+            for(attrNo = 0, e1i = e1b, e2i = table[nei->index].begin(), ndAi = ndAb, ndCdAi = ndCdAb; ndAi != ndAe; ndAi++, ndCdAi++, e1i++, e2i++, attrNo++) {
+              const float attrDist = rdistance(attrNo, *e1i, *e2i);
+              *ndAi += weightEE * attrDist;
+              *ndCdAi += weight * attrDist;
+            }
+          }
+        }
+        for(ndAi = ndAb, ndCdAi = ndCdAb, mi = mb; mi != me; mi++, ndAi++, ndCdAi++)
+          *mi = *ndCdAi / ndC - (*ndAi - *ndCdAi) / m_ndC;
+      }
+      else {
+        ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+          const TExample &referenceExample = table[rei->index];
+          e1b = referenceExample.begin();
+          ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+            const float &weight = nei->weight;
+            for(attrNo = 0, e1i = e1b, e2i = table[nei->index].begin(), mi = mb; mi != me; e1i++, e2i++, mi++, attrNo++)
+              *mi += weight * rdistance(attrNo, *e1i, *e2i);
+          }
+        }
+      }
+    }
+
+    return measures[attrIdx];
+  }
+
+
+  // the attribute is not in the domain
+  else {
+    if (!var->getValueFrom)
+      raiseError("attribute is not among the domain attributes and cannot be computed from them");
+  
+    const TExampleTable &table = dynamic_cast<const TExampleTable &>(gen.getReference());
+    TVariable &variable = var.getReference();
+    const int nExamples = gen->numberOfExamples();
+
+    PExamplesDistance distance;
+
+
+    // continuous attribute
+    if (variable.varType == TValue::FLOATVAR) {
+      float avg, min, max, N;
+      float *precals = tabulateContinuousValues(gen, weightID, variable, min, max, avg, N);
+
+      try {
+        if ((min == max) || (N < 1e-6)) {
+          delete precals;
+          return 0.0;
+        }
+
+        const float nor = 1.0 / (min-max);
+
+        // continuous attribute, continuous class
+        if (gen->domain->classVar->varType == TValue::FLOATVAR) {
+          float ndA = 0.0, ndCdA = 0.0;
+          ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+            const float refVal = precals[rei->index];
+            if (refVal == ILLEGAL_FLOAT)
+              ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+                const float neiVal = precals[nei->index];
+                const float attrDist = (neiVal == ILLEGAL_FLOAT) ? 0.5 : fabs(avg - neiVal) * nor;
+                ndA += nei->weightEE * attrDist;
+                ndCdA += nei->weight * attrDist;
+              }
+            else {
+              ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+                const float neiVal = precals[nei->index];
+                const float attrDist = fabs(refVal - (neiVal == ILLEGAL_FLOAT ? avg : neiVal)) * nor;
+                ndA += nei->weightEE * attrDist;
+                ndCdA += nei->weight * attrDist;
+              }
+            }
+          }
+
+          delete precals;
+          return ndCdA / ndC - (ndA - ndCdA) / m_ndC;
+        }
+
+        // continuous attribute, discrete class
+        else {
+          float relf = 0.0;
+
+          ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+            const float refVal = precals[rei->index];
+            if (refVal == ILLEGAL_FLOAT)
+              ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+                const float neiVal = precals[nei->index];
+                const float attrDist = (neiVal == ILLEGAL_FLOAT) ? 0.5 : fabs(avg - neiVal) * nor;
+                relf += nei->weight * attrDist;
+              }
+            else {
+              ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+                const float neiVal = precals[nei->index];
+                const float attrDist = fabs(refVal - (neiVal == ILLEGAL_FLOAT ? avg : neiVal)) * nor;
+                relf += nei->weight * attrDist;
+              }
+            }
+          }
+
+          delete precals;
+          return relf;
+        }
+
+      }
+      catch (...) {
+        delete precals;
+        throw;
+      }
+    }
+
+
+    // discrete attribute
+    else {
+      float *unk, bothUnk;
+      int *precals = tabulateDiscreteValues(gen, weightID, var.getReference(), unk, bothUnk);
+
+      try {
+        // discrete attribute, continuous class
+        if (gen->domain->classVar->varType == TValue::FLOATVAR) {
+          float ndA = 0.0, ndCdA = 0.0;
+          ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+            const int refVal = precals[rei->index];
+            if (refVal == ILLEGAL_INT)
+              ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+                const int neiVal = precals[nei->index];
+                const float attrDist = (neiVal == ILLEGAL_INT) ? bothUnk : unk[neiVal];
+                ndA += nei->weightEE * attrDist;
+                ndCdA += nei->weight * attrDist;
+              }
+            else {
+              ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+                const int neiVal = precals[nei->index];
+                const float attrDist = (neiVal == ILLEGAL_INT) ? unk[refVal] : (refVal != neiVal ? 1.0 : 0.0);
+                ndA += nei->weightEE * attrDist;
+                ndCdA += nei->weight * attrDist;
+              }
+            }
+          }
+
+          delete unk;
+          delete precals;
+          return ndCdA / ndC - (ndA - ndCdA) / m_ndC;
+        }
+
+        // discrete attribute, discrete class
+        else {
+          float relf = 0.0;
+
+          ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+            const int refVal = precals[rei->index];
+            if (refVal == ILLEGAL_FLOAT)
+              ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+                const int neiVal = precals[nei->index];
+                relf += nei->weight * ((neiVal == ILLEGAL_INT) ? bothUnk : unk[neiVal]);
+              }
+            else {
+              ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+                const int neiVal = precals[nei->index];
+                relf += nei->weight * ((neiVal == ILLEGAL_INT) ? unk[refVal] : (refVal != neiVal ? 1.0 : 0.0));
+              }
+            }
+          }
+
+          delete unk;
+          delete precals;
+          return relf;
+        }
+      }
+      catch (...) {
+        delete unk;
+        delete precals;
+        throw;
+      }
+    }
+  }
+}
+
+
+
+inline void addGain(map<float, float> &res, const float &threshold, const float &gain)
+{
+  map<float, float>::iterator lowerBound = res.lower_bound(threshold);
+  if (lowerBound != res.end() && (lowerBound->first == threshold))
+    lowerBound->second += gain;
+  else
+    res.insert(lowerBound, make_pair(threshold, gain));
+}
+
+
+// If attrVals is non-NULL and the values are indeed computed by the thresholdFunction, the caller is 
+// responsible for deallocating the table!
+void TMeasureAttribute_relief::thresholdFunction(PVariable var, PExampleGenerator gen, map<float, float> &res, int weightID, float **attrVals)
+{
+  if (var->varType != TValue::FLOATVAR)
+    raiseError("thresholdFunction can only be computed for continuous attributes");
+
+  checkNeighbourhood(gen, weightID);
+
+  const int attrIdx = gen->domain->getVarNum(var, false);
+
+  const bool regression = gen->domain->classVar->varType == TValue::FLOATVAR;
+
+  if (attrIdx != ILLEGAL_INT) {
+    if (attrVals)
+      *attrVals = NULL;
+
+    const TExamplesDistance_Relief &rdistance = dynamic_cast<const TExamplesDistance_Relief &>(distance.getReference());
+    const TExampleTable &table = dynamic_cast<const TExampleTable &>(gen.getReference());
+
+    res = map<float, float>();
+    ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+      const TValue &refVal = table[rei->index][attrIdx];
+      if (refVal.isSpecial())
+        continue;
+      const float &refValF = refVal.floatV;
+
+      ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+        const TValue &neiVal = table[nei->index][attrIdx];
+        if (neiVal.isSpecial())
+          continue;
+
+        float gain;
+        const float attrDist = rdistance(attrIdx, refVal, neiVal);
+        if (regression) {
+          const float dCdA = nei->weight * attrDist;
+          const float dA = nei->weightEE * attrDist;
+          gain = dCdA / ndC - (dA - dCdA) / m_ndC;
+        }
+        else
+          gain = nei->weight * attrDist;
+        if (neiVal.floatV > refValF)
+          gain = -gain;
+
+        addGain(res, neiVal.floatV, gain);
+        addGain(res, refValF, -gain);
+      }
+    }
+  }
+
+  else {
+    if (!var->getValueFrom)
+      raiseError("attribute is not among the domain attributes and cannot be computed from them");
+
+    float avg, min, max, N;
+    float *precals = tabulateContinuousValues(gen, weightID, var.getReference(), min, max, avg, N);
+    if (attrVals)
+      *attrVals = precals;
+
+    if ((min != max) && (N > 1e-6)) {
+      try {
+        const float nor = 1.0 / (min-max);
+
+        res = map<float, float>();
+
+        ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+          const float &refValF = precals[rei->index];
+          if (refValF == ILLEGAL_FLOAT)
+            continue;
+
+          ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+            const float &neiValF = precals[nei->index];
+            if (neiValF == ILLEGAL_FLOAT)
+              continue;
+
+            float gain;
+            const float attrDist = fabs(refValF - neiValF) * nor;
+            if (regression) {
+              const float dCdA = nei->weight * attrDist;
+              const float dC = nei->weightEE * attrDist;
+              gain = dCdA / ndC - (dC - dCdA) / m_ndC;
+            }
+            else
+              gain = nei->weight * attrDist;
+            if (neiValF > refValF)
+              gain = -gain;
+
+            addGain(res, neiValF, gain);
+            addGain(res, refValF, -gain);
+          }
+        }
+      }
+      catch (...) {
+        if (!attrVals)
+          delete precals;
+        throw;
+      }
+    }
+
+    if (!attrVals)
+      delete precals;
+  }
+}
+
+
+void TMeasureAttribute_relief::thresholdFunction(TFloatFloatList &res, PVariable var, PExampleGenerator gen, PDistribution, int weightID)
+{
+  map<float, float> divs;
+  thresholdFunction(var, gen, divs, weightID);
+
+  res.clear();
+  float score = 0;
+  for(map<float, float>::const_iterator di(divs.begin()), de(divs.end()); di != de; di++)
+    res.push_back(make_pair(di->first, score += di->second));
+}
+
+
+float TMeasureAttribute_relief::bestThreshold(PDistribution &subsetSizes, float &bestScore, PVariable var, PExampleGenerator gen, PDistribution, int weightID, const float &minSubset)
+{
+  map<float, float> divs;
+  int wins = 0;
+  float score = 0.0, bestThreshold;
+  TRandomGenerator rgen(gen->numberOfExamples());
+
+  if (minSubset > 0) {
+    float *attrVals;
+    thresholdFunction(var, gen, divs, weightID, &attrVals);
+
+    TContDistribution *valueDistribution;
+    PDistribution wvd;
+
+    if (attrVals) {
+      try {
+        float *vali = attrVals, *vale;
+        wvd = valueDistribution = new TContDistribution(var);
+        if (weightID)
+          for(TExampleIterator ei(gen->begin()); ei; ++ei, vali++)
+            if (*vali != ILLEGAL_FLOAT)
+              valueDistribution->addfloat(*vali, WEIGHT(*ei));
+        else
+           for(vali = attrVals, vale = attrVals + gen->numberOfExamples(); vali != vale; vali++)
+             if (*vali != ILLEGAL_FLOAT)
+               valueDistribution->addfloat(*vali);
+      }
+      catch (...) {
+        delete attrVals;
+        throw;
+      }
+
+      delete attrVals;
+      attrVals = NULL;
+    }
+    else {
+      wvd = new TContDistribution(gen, var, weightID);
+      valueDistribution = wvd.AS(TContDistribution);
+    }
+
+    float left = 0.0, right = valueDistribution->abs;
+    float bestLeft, bestRight;
+
+    map<float, float>::iterator distb(valueDistribution->begin()), diste(valueDistribution->end()), disti = distb, disti2;
+    for(map<float, float>::const_iterator di(divs.begin()), de(divs.end()); di != de; di++) {
+      score += di->second;
+      if (!wins || (score > bestScore) || (score == bestScore) && rgen.randbool(++wins)) {
+        for(; (disti != diste) && (disti->first <= di->first); disti++) {
+          left += disti->second;
+          right -= disti->second;
+        }
+        if ((left < minSubset))
+          continue;
+        if ((right < minSubset) || (disti == diste))
+          break;
+  
+        if (!wins || (score > bestScore))
+          wins = 1;
+  
+        bestScore = score;
+        bestLeft = left;
+        bestRight = right;
+
+        // disti cannot be distb (contemplate the above for)
+        disti2 = disti;
+        bestThreshold = (disti->first + (--disti2)->first) / 2.0;
+      }
+    }
+
+    if (!wins) {
+      subsetSizes = NULL;
+      return ILLEGAL_FLOAT;
+    }
+
+    subsetSizes = new TDiscDistribution(2);
+    subsetSizes->addint(0, bestLeft);
+    subsetSizes->addint(1, bestRight);
+    return bestThreshold;
+  }
+
+  else {
+    thresholdFunction(var, gen, divs, weightID);
+
+    for(map<float, float>::const_iterator db(divs.begin()), de(divs.end()), di = db, di2; di != de; di++) {
+      score += di->second;
+      if (   (!wins || (score > bestScore)) && ((wins=1) == 1)
+          || (score == bestScore) && rgen.randbool(++wins)) {
+        di2 = di;
+        bestThreshold = (++di2 == de) && (--di2 == db) ? di->first : (di->first + di2->first) / 2.0;
+        bestScore = score;
+      }
+    }
+
+    subsetSizes = NULL;
+    return wins ? bestThreshold : ILLEGAL_FLOAT;
+  }
+}
+
+
+PSymMatrix TMeasureAttribute_relief::gainMatrix(PVariable var, PExampleGenerator gen, PDistribution, int weightID, int **attrVals, float **attrDistr)
+{
+  TEnumVariable *evar = var.AS(TEnumVariable);
+  if (!evar)
+    raiseError("thresholdFunction can only be computed for continuous attributes");
+
+  checkNeighbourhood(gen, weightID);
+
+  TSymMatrix *gains = new TSymMatrix(evar->noOfValues());
+  PSymMatrix wgains = gains;
+
+  const int attrIdx = gen->domain->getVarNum(var, false);
+  const bool regression = gen->domain->classVar->varType == TValue::FLOATVAR;
+
+  if (attrIdx != ILLEGAL_INT) {
+    if (attrVals)
+      *attrVals = NULL;
+    if (attrDistr)
+      *attrDistr = NULL;
+
+    const TExamplesDistance_Relief &rdistance = dynamic_cast<const TExamplesDistance_Relief &>(distance.getReference());
+    const TExampleTable &table = dynamic_cast<const TExampleTable &>(gen.getReference());
+
+    ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+      const TValue &refVal = table[rei->index][attrIdx];
+      if (refVal.isSpecial())
+        continue;
+      const int &refValI = refVal.intV;
+
+      ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+        const TValue &neiVal = table[nei->index][attrIdx];
+        if (neiVal.isSpecial())
+          continue;
+
+        const float attrDist = rdistance(attrIdx, refVal, neiVal);
+        if (regression) {
+          const float dCdA = nei->weight * attrDist;
+          const float dA = nei->weightEE * attrDist;
+          gains->getref(refValI, neiVal.intV) += dCdA / ndC - (dA - dCdA) / m_ndC;
+        }
+        else
+          gains->getref(refValI, neiVal.intV) += nei->weight * attrDist;
+      }
+    }
+  }
+
+  else {
+    if (!var->getValueFrom)
+      raiseError("attribute is not among the domain attributes and cannot be computed from them");
+
+    float *unk, bothUnk;
+    int *precals = tabulateDiscreteValues(gen, weightID, var.getReference(), unk, bothUnk);
+    if (attrVals)
+      *attrVals = precals;
+    if (attrDistr) {
+      const int noVal = evar->noOfValues();
+      *attrDistr = new float[noVal];
+      for(float *ai = *attrDistr, *ui = unk, *ue = unk + noVal; ui != ue; *ai++ = 1 - *ui++);
+    }
+
+    try {
+      ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+        const int refValI = precals[rei->index];
+        ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
+          const int neiVal = precals[nei->index];
+          const int attrDist = (refValI == ILLEGAL_INT) ? ((neiVal == ILLEGAL_INT) ? bothUnk : unk[neiVal])
+                                                        : ((neiVal == ILLEGAL_INT) ? unk[refValI] : (refValI != neiVal ? 1.0 : 0.0));
+          if (attrDist == 0.0)
+            continue;
+          if (regression) {
+            const float dCdA = nei->weight * attrDist;
+            const float dA = nei->weightEE * attrDist;
+            gains->getref(refValI, neiVal) += dCdA / ndC - (dA - dCdA) / m_ndC;
+          }
+          else
+            gains->getref(refValI, neiVal) += nei->weight * attrDist;
+        }
+      }
+
+      delete unk;
+      if (!attrVals)
+        delete precals;
+    }
+    catch (...) {
+      if (unk)
+        delete unk;
+      if (precals)
+        delete precals;
+      throw;
+    }
+  }
+
+  return wgains;
+}
+
+
+PIntList TMeasureAttribute_relief::bestBinarization(PDistribution &subsetSizes, float &bestScore, PVariable var, PExampleGenerator gen, PDistribution apriorClass, int weightID, const float &minSubset)
+{
+  TEnumVariable *evar = var.AS(TEnumVariable);
+  if (!evar)
+    raiseError("cannot discretly binarize a continuous attribute");
+
+  const int noVal = evar->noOfValues();
+  if (noVal > 16)
+    raiseError("cannot binarize an attribute with more than 16 values (it would take too long)");
+
+  float *attrDistr = NULL;
+  PSymMatrix wgain = gainMatrix(var, gen, apriorClass, weightID, NULL, &attrDistr);
+  TSymMatrix &gain = wgain.getReference();
+
+  float *gains = new float[noVal * noVal], *gi = gains, *ge;
+
+  int wins = 0, bestSubset;
+  float bestLeft, bestRight;
+
+  try {
+    float thisScore = 0.0;
+    int i, j;
+    for(i = 0; i < noVal; i++)
+      for(j = 0; j < noVal; j++)
+        *gi++ = gain.getitem(i, j);
+
+    float thisLeft = 0.0, thisRight = 0.0;
+    float *ai, *ae;
+    if (!attrDistr) {
+      TDiscDistribution dd(gen, var, weightID);
+      attrDistr = new float[noVal];
+      ai = attrDistr;
+      ae = attrDistr + noVal;
+      for(vector<float>::const_iterator di(dd.distribution.begin()); ai != ae; thisLeft += (*ai++ = *di++));
+    }
+    else
+      for(ai = attrDistr, ae = attrDistr + noVal; ai != ae; thisLeft += *ai++);
+
+    if (thisLeft < minSubset)
+      return NULL;
+
+    bestSubset = 0;
+    wins = 0;
+    bestLeft = thisLeft;
+    bestRight = 0.0;
+    bestScore = 0;
+
+    TRandomGenerator rgen(gen->numberOfExamples());
+
+    // if a bit in gray is 0, the corresponding value is on the left
+    for(int cnt = (1 << (noVal-1)) - 1, gray = 0; cnt; cnt--) {
+      int prevgray = gray;
+      gray = cnt ^ (cnt >> 1);
+      int graydiff = gray ^ prevgray;
+      int diffed;
+      for(diffed = 0; !(graydiff & 1); graydiff >>= 1, diffed++);
+
+      if (gray > prevgray) { // something went to the right; subtract all the gains for being different from values on the right
+        /* prevgray = gray; */   //  unneeded: they only differ in the bit representing this group
+        for(gi = gains + diffed*noVal, ge = gi + noVal; gi != ge; thisScore += prevgray & 1 ? -*gi++ : *gi++, prevgray >>= 1);
+        thisLeft -= attrDistr[diffed];
+        thisRight += attrDistr[diffed];
+      }
+      else {
+        /* prevgray = gray; */   //  unneeded: they only differ in the bit representing this group
+        for(gi = gains + diffed*noVal, ge = gi + noVal; gi != ge; thisScore += prevgray & 1 ? *gi++ : +*gi++, prevgray >>= 1);
+        thisLeft += attrDistr[diffed];
+        thisRight -= attrDistr[diffed];
+      }
+
+      if (   (thisLeft >= minSubset) && (thisRight >= minSubset)
+          && (   (!wins || (thisScore > bestScore)) && ((wins=1) == 1)
+              || (thisScore == bestScore) && rgen.randbool(++wins))) {
+        bestScore = thisScore;
+        bestSubset = gray;
+        bestLeft = thisLeft;
+        bestRight = thisRight;
+      }
+    }
+
+    delete gains;
+    gains = NULL;
+
+    if (!wins || !bestSubset) {
+      delete attrDistr;
+      return false;
+    }
+    
+    ai = attrDistr;
+    TIntList *rightSide = new TIntList();
+    for(i = noVal; i--; bestSubset = bestSubset >> 1, ai++)
+      rightSide->push_back(*ai > 0 ? bestSubset & 1 : -1);
+
+    delete attrDistr;
+    attrDistr = NULL;
+
+    subsetSizes = new TDiscDistribution(2);
+    subsetSizes->addint(0, bestLeft);
+    subsetSizes->addint(1, bestRight);
+
+    return rightSide;
+  }
+  catch (...) {
+    if (gains)
+      delete gains;
+    if (attrDistr)
+      delete attrDistr;
+    throw;
+  }
 }
