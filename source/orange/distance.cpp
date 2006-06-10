@@ -478,11 +478,22 @@ TExamplesDistanceConstructor_Relief::TExamplesDistanceConstructor_Relief()
 
 PExamplesDistance TExamplesDistanceConstructor_Relief::operator()(PExampleGenerator gen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
 { 
-  if (!ddist)
+  const TDomain &domain = gen->domain.getReference();
+
+  PVariable otherAttribute = domain.hasOtherAttributes();
+  if (otherAttribute)
+    raiseError("domain has attributes whose type is not supported by ReliefF (e.g. '%s')", otherAttribute->name.c_str());
+
+  // for continuous attributes BasicAttrStat suffices; for discrete it does not
+  const bool hasDiscrete = domain.hasDiscreteAttributes() || domain.classVar && (domain.classVar->varType == TValue::INTVAR);
+  if (!bstat || (hasDiscrete && !ddist))
     if (!gen)
       raiseError("examples or domain distributions expected");
     else
-      ddist = mlnew TDomainDistributions(gen, weightID);
+      if (hasDiscrete)
+        ddist = mlnew TDomainDistributions(gen, weightID);
+      else
+        bstat = mlnew TDomainBasicAttrStat(gen, weightID);
 
   TExamplesDistance_Relief *edr = mlnew TExamplesDistance_Relief();
   PExamplesDistance res = edr;
@@ -494,30 +505,31 @@ PExamplesDistance TExamplesDistanceConstructor_Relief::operator()(PExampleGenera
   edr->normalizations = mlnew TAttributedFloatList(gen->domain->attributes);
   edr->bothSpecial    = mlnew TAttributedFloatList(gen->domain->attributes);
 
-  edr->distributions = ddist;
-  edr->distributions->normalize();
+  edr->distributions = CLONE(TDomainDistributions, ddist);
+  if (ddist)
+    edr->distributions->normalize();
   
-  const_PITERATE(TDomainDistributions, bi, ddist) {
-    const TContDistribution *contd = (*bi).AS(TContDistribution);
-    if (contd) {
-      edr->averages->push_back(contd->average());
-      edr->normalizations->push_back((*contd->distribution.rbegin()).first - (*contd->distribution.begin()).first);
+  for(int attrIndex = 0, nAttrs = gen->domain->variables->size(); attrIndex != nAttrs; attrIndex++)
+    if (domain.variables->at(attrIndex)->varType == TValue::FLOATVAR) {
+      if (bstat) {
+        const TBasicAttrStat &bas = bstat->at(attrIndex).getReference();
+        edr->averages->push_back(bas.avg);
+        edr->normalizations->push_back(bas.max - bas.min);
+      }
+      else {
+        const TContDistribution *contd = ddist->at(attrIndex).AS(TContDistribution);
+        edr->averages->push_back(contd->average());
+        edr->normalizations->push_back((*contd->distribution.rbegin()).first - (*contd->distribution.begin()).first);
+      }
       edr->bothSpecial->push_back(0.5);
-      continue;
     }
-
-    const TDiscDistribution *discd = (*bi).AS(TDiscDistribution);
-    if (discd) {
-      edr->averages->push_back(0.0);
-      edr->normalizations->push_back(0.0);
-      float dist = 1.0;
-      const_PITERATE(TDiscDistribution, di, discd)
-        dist -= *di * *di;
-      edr->bothSpecial->push_back(dist);
-      continue;
-    }
-
-    raiseError("unknown distribution type");
+  else {
+    edr->averages->push_back(0.0);
+    edr->normalizations->push_back(0.0);
+    float dist = 1.0;
+    const_PITERATE(TDiscDistribution, di, ddist->at(attrIndex).AS(TDiscDistribution))
+      dist -= *di * *di;
+    edr->bothSpecial->push_back(dist);
   }
 
   return res;
