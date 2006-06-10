@@ -58,6 +58,13 @@ const type_info &TOrange::propertyType(const char *name) const
 { return *propertyDescription(name)->type; }
 
 
+bool TOrange::hasProperty(const char *name) const
+{ for (const TPropertyDescription *pd = classDescription()->properties; pd->name; pd++)
+    if (!strcmp(pd->name, name))
+      return true;
+  return false;
+}
+
 const TPropertyDescription *TOrange::propertyDescription(const char *name, bool noException) const
 { for (const TPropertyDescription *pd = classDescription()->properties; pd->name; pd++)
     if (!strcmp(pd->name, name))

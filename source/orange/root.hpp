@@ -127,6 +127,7 @@ public:
   
   const TPropertyDescription *propertyDescription(const char *name, bool noException = false) const;
   const type_info &propertyType(const char *name) const;
+  bool hasProperty(const char *name) const;
 
   virtual int traverse(visitproc visit, void *arg) const;
   virtual int dropReferences();

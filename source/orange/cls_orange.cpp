@@ -297,53 +297,55 @@ PyObject *Orange_getattr1(TPyOrange *self, const char *name)
       PYERROR(PyExc_SystemError, "NULL Orange object", PYNULL);
 
     TOrange *me = (TOrange *)self->ptr;
-    try {
-      const type_info &propertyType = me->propertyType(name);
+    if (me->hasProperty(name)) {
+      try {
+        const type_info &propertyType = me->propertyType(name);
 
-      if (propertyType==typeid(bool)) {
-        bool value;
-        me->getProperty(name, value);
-        return Py_BuildValue("i", value ? 1 : 0);
-      }
+        if (propertyType==typeid(bool)) {
+          bool value;
+          me->getProperty(name, value);
+          return Py_BuildValue("i", value ? 1 : 0);
+        }
 
-      if (propertyType==typeid(int)) {
-        int value;
-        me->getProperty(name, value);
-        return Py_BuildValue("i", value);
-      }
+        if (propertyType==typeid(int)) {
+          int value;
+          me->getProperty(name, value);
+          return Py_BuildValue("i", value);
+        }
 
-      if (propertyType==typeid(float)) {
-        float value;
-        me->getProperty(name, value);
-        return Py_BuildValue("f", value);
-      }
+        if (propertyType==typeid(float)) {
+          float value;
+          me->getProperty(name, value);
+          return Py_BuildValue("f", value);
+        }
 
-      if (propertyType==typeid(string)) {
-        string value;
-        me->getProperty(name, value);
-        return Py_BuildValue("s", value.c_str());
-      }
+        if (propertyType==typeid(string)) {
+          string value;
+          me->getProperty(name, value);
+          return Py_BuildValue("s", value.c_str());
+        }
 
-      if (propertyType==typeid(TValue)) {
-        TValue value;
-        me->getProperty(name, value);
-        return Value_FromValue(value);
-      }
+        if (propertyType==typeid(TValue)) {
+          TValue value;
+          me->getProperty(name, value);
+          return Value_FromValue(value);
+        }
 
-      if (propertyType==typeid(TExample)) {
+        if (propertyType==typeid(TExample)) {
+          POrange mlobj;
+          me->wr_getProperty(name, mlobj);
+          if (mlobj)
+            return Example_FromWrappedExample(PExample(mlobj));
+          else
+            RETURN_NONE;
+        }
+      
         POrange mlobj;
         me->wr_getProperty(name, mlobj);
-        if (mlobj)
-          return Example_FromWrappedExample(PExample(mlobj));
-        else
-          RETURN_NONE;
-      }
-      
-      POrange mlobj;
-      me->wr_getProperty(name, mlobj);
-      return (PyObject *)WrapOrange(mlobj);
-    } catch (exception err)
-    {};
+        return (PyObject *)WrapOrange(mlobj);
+      } catch (exception err)
+      {}
+    }
  
     if (!strcmp(name, "name") || !strcmp(name, "shortDescription") || !strcmp(name, "description"))
       return PyString_FromString("");
