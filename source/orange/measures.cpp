@@ -334,7 +334,8 @@ public:
 void TMeasureAttribute::thresholdFunction(TFloatFloatList &res, PContingency origContingency, PDistribution classDistribution, PDistribution apriorClass)
 {
   PVariable bvar;
-  if (!traverseThresholds(this, TRecordThresholds(res), bvar, origContingency, classDistribution, apriorClass))
+  TRecordThresholds recorder(res);
+  if (!traverseThresholds(this, recorder, bvar, origContingency, classDistribution, apriorClass))
     res.clear();
 }
 
@@ -387,7 +388,8 @@ public:
 float TMeasureAttribute::bestThreshold(PDistribution &subsetSizes, float &score, PContingency origContingency, PDistribution classDistribution, PDistribution apriorClass, const float &minSubset)
 {
   PVariable bvar;
-  TRecordMaximalThreshold recorder(TRandomGenerator(classDistribution->abs), minSubset);
+  TRandomGenerator rgen(classDistribution->abs);
+  TRecordMaximalThreshold recorder(rgen, minSubset);
   if (   !traverseThresholds(this, recorder, bvar, origContingency, classDistribution, apriorClass)
       || !recorder.wins)
     return ILLEGAL_FLOAT;
