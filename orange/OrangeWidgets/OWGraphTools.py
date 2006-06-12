@@ -34,9 +34,9 @@ class ColorPaletteGenerator:
         else:
             if index < len(self.rgbColors):
                 color = QColor(*self.rgbColors[index])
-                if not brightness: return color
+                if brightness == None: return color
                 h,s,v = color.getHsv()
-                color.setHsv(h, brightness, v)
+                color.setHsv(h, int(brightness), v)
                 return color
             else:
                 col = QColor()
