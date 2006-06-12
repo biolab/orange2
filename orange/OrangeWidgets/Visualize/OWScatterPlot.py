@@ -198,17 +198,17 @@ class OWScatterPlot(OWWidget):
 
     def resetGraphData(self):
         orngScaleScatterPlotData.setData(self.graph, self.data)
-        #self.graph.setData(self.data)
         self.majorUpdateGraph()
 
     # receive new data and update all fields
     def cdata(self, data, clearResults = 1):
         self.closeContext()
 
-        if data and data.domain.classVar:
+        if self.hasDiscreteClass(data):
             name = getattr(data, "name", "")
             data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
             data.name = name
+
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         exData = self.data
         self.data = data
@@ -262,11 +262,9 @@ class OWScatterPlot(OWWidget):
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
-        #(selected, unselected, merged) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
         (selected, unselected) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
         self.send("Selected Examples",selected)
         self.send("Unselected Examples",unselected)
-        #self.send("Example Distribution", merged)
 
 
     # ##############################################################################################################################################################
@@ -452,18 +450,18 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.hide()
         OWWidget.destroy(self, dw, dsw)
 
+    def hasDiscreteClass(self, data = -1):
+        if data == -1: data = self.data
+        return data and data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete
+
+
 #test widget appearance
 if __name__=="__main__":
 #    a=QApplication(sys.argv)
     a=QApplication([])
     ow=OWScatterPlot()
     a.setMainWidget(ow)
-
-    d = orange.ExampleTable("c:/d/ai/orange/doc/datasets/iris")
-    ow.cdata(d)
     ow.show()
-    
-#    a.exec_loop()
 
     #save settings 
     ow.saveSettings()

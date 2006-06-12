@@ -222,7 +222,7 @@ class OWLinProj(OWVisWidget):
     # find projections that have tight clusters of points that belong to the same class value
     def optimizeClusters(self):
         if self.data == None: return
-        if not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+        if not self.hasDiscreteClass(self.data):
             QMessageBox.critical( None, "Cluster Detection Dialog", 'Clusters can be detected only in data sets with a discrete class value', QMessageBox.Ok)
             return
 
@@ -336,7 +336,7 @@ class OWLinProj(OWVisWidget):
         else:
             self.setShownAttributeList(self.data, attrList)
         
-        if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
+        if (self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn()) and self.hasDiscreteClass(self.data):
             shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList], settingsDict = {"useAnchorData": 1})
             kNNExampleAccuracy, probabilities = self.optimizationDlg.kNNClassifyData(shortData)
             if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")

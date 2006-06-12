@@ -2,6 +2,9 @@ import OWGUI
 from OWWidget import *
 
 class OWVisWidget(OWWidget):
+    def hasDiscreteClass(self, data = -1):
+        if data == -1: data = self.data
+        return data and data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete
 
     def createShowHiddenLists(self, placementTab, callback = None):
         self.updateCallbackFunction = callback
