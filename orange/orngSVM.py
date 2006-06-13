@@ -27,7 +27,7 @@ class SVMLearnerClass:
         self.degree=3
         self.coef0=0
         self.shrinking=1
-        self.probability=0
+        self.probability=1
         self.cache_size=100
         self.eps=0.001
         self.__dict__.update(kwds)
