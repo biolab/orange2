@@ -1,4 +1,5 @@
 import orange
+from warnings import warn
 
 class TreeLearner(orange.Learner):
     def __new__(cls, examples = None, weightID = 0, **argkw):
@@ -15,7 +16,7 @@ class TreeLearner(orange.Learner):
       
     def __setattr__(self, name, value):
         if name in ["split", "binarization", "measure", "worstAcceptable", "minSubset",
-              "stop", "maxMajority", "minExamples", "nodeLearner", "maxDepth"]:
+              "stop", "maxMajority", "minExamples", "nodeLearner", "maxDepth", "reliefM", "reliefK"]:
             self.learner = None
         self.__dict__[name] = value
 
@@ -63,6 +64,21 @@ class TreeLearner(orange.Learner):
                 measure = measures[measure]()
             if not hasSplit and not measure:
                 measure = orange.MeasureAttribute_gainRatio()
+
+            measureIsRelief = type(measure) == orange.MeasureAttribute_relief
+            relM = getattr(self, "reliefM", None)
+            if relM:
+                if not measureIsRelief:
+                    warn("reliefM is set, but the measure is not reliefF; ignoring")
+                else:
+                    measure.m = relM
+            
+            relK = getattr(self, "reliefK", None)
+            if relK:
+                if not measureIsRelief:
+                    warn("reliefK is set, but the measure is not reliefF; ignoring")
+                else:
+                    measure.k = relK
 
             learner.split.continuousSplitConstructor.measure = measure
             learner.split.discreteSplitConstructor.measure = measure
