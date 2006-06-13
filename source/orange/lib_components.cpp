@@ -2412,24 +2412,24 @@ PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywor
 }
 
 
-PyObject *MeasureAttribute_relief_thresholdFunction(PyObject *self, PyObject *args, PyObject *kwds) PYARGS(METH_VARARGS, "(attr, examples) -> list")
+PyObject *MeasureAttribute_thresholdFunction(PyObject *self, PyObject *args, PyObject *kwds) PYARGS(METH_VARARGS, "(attr, examples) -> list")
 {
   PyObject *pyvar;
   PExampleGenerator gen;
   int weightID = 0;
-  if (!PyArg_ParseTuple(args, "OO&|i:MeasureAttribute_relief_thresholdFunction", &pyvar, pt_ExampleGenerator, &gen, &weightID))
+  if (!PyArg_ParseTuple(args, "OO&|i:MeasureAttribute_thresholdFunction", &pyvar, pt_ExampleGenerator, &gen, &weightID))
     return NULL;
     
   PVariable var = varFromArg_byDomain(pyvar, gen->domain);
   if (!var)
     return NULL;
 
-  map<float, float> thresholds;
-  SELF_AS(TMeasureAttribute_relief).thresholdFunction(var, gen, thresholds, weightID);
+  TFloatFloatList thresholds;
+  SELF_AS(TMeasureAttribute).thresholdFunction(thresholds, var, gen, PDistribution(), weightID);
 
   PyObject *res = PyList_New(thresholds.size());
   int li = 0;
-  for(map<float, float>::const_iterator ti(thresholds.begin()), te(thresholds.end()); ti != te; ti++)
+  for(TFloatFloatList::const_iterator ti(thresholds.begin()), te(thresholds.end()); ti != te; ti++)
     PyList_SetItem(res, li++, Py_BuildValue("ff", ti->first, ti->second));
   return res;
 }
