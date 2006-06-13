@@ -1022,9 +1022,10 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
 
   TRandomGenerator rgen(N);
   int referenceIndex = 0;
+  const bool useAll = (m==-1) || (!weightID && (m>N));
 
-  for(float referenceExamples = 0, referenceWeight; m == -1 ? (referenceIndex < N) : (referenceExamples < m); referenceExamples += referenceWeight, referenceIndex++) {
-    if (m != -1)
+  for(float referenceExamples = 0, referenceWeight; useAll ? (referenceIndex < N) : (referenceExamples < m); referenceExamples += referenceWeight, referenceIndex++) {
+    if (!useAll)
       referenceIndex = rgen.randlong(N);
     TExample &referenceExample = table[referenceIndex];
     referenceWeight = WEIGHT(referenceExample);
@@ -1051,6 +1052,8 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
       diste = distances.end();
       disti = distances.begin();
       sort(disti, diste, compare2nd);
+
+      int startNew = refNeighbours.size();
 
       while(disti != diste && (disti->second <= 0))
         disti++;
@@ -1081,23 +1084,26 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
         needwei -= inWeight;
       }
 
-      neighbourhood.back().nNeighbours = k - needwei; // this can exceed k
+      if (k-needwei > 1) {
+        const float adj = 1.0 / (k - needwei);
+        if (regression)
+          for(vector<TNeighbourExample>::iterator ai(refNeighbours.begin() + startNew), ae(refNeighbours.end()); ai != ae; ai++) {
+            ai->weight *= adj;
+            ai->weightEE *= adj;
+          }
+        else
+          for(vector<TNeighbourExample>::iterator ai(refNeighbours.begin() + startNew), ae(refNeighbours.end()); ai != ae; ai++)
+            ai->weight *= adj;
+      }
     }
   }
 
 
-  ITERATE(vector<TReferenceExample>, rei, neighbourhood)
-    if (regression) {
-      const float adj = 1.0 / rei->nNeighbours;
-      ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
-        nei->weight *= adj;
-        nei->weightEE *= adj;
-      }
-
-      m_ndC = referenceExamples - ndC;
-    }
-    else {
-      const float adj = 1.0 / (rei->nNeighbours * referenceExamples);
+  if (regression)
+    m_ndC = referenceExamples - ndC;
+  else
+    ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
+      const float adj = 1.0 / referenceExamples;
       ITERATE(vector<TNeighbourExample>, nei, rei->neighbours)
         nei->weight *= adj;
     }
