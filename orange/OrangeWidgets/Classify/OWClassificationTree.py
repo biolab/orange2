@@ -7,23 +7,17 @@
 """
 
 from OWWidget import *
-import orngTree
-import OWGUI
+import orngTree, OWGUI
 
 class OWClassificationTree(OWWidget):
     settingsList = ["name",
-                    "estim", "relK", "relM",
+                    "estim", "relK", "relM", "relAll",
                     "bin", "subset",
                     "preLeafInst", "preNodeInst", "preNodeMaj",
                     "preLeafInstP", "preNodeInstP", "preNodeMajP",
                     "postMaj", "postMPruning", "postM"]
 
-    # If you change this, you need to change measureChanged as well,
-    # because it enables/disables two widgets when ReliefF is chosen
-    measures = (("Information Gain", "infoGain"),
-                ("Gain Ratio", "gainRatio"),
-                ("Gini Index", "gini"),
-                ("ReliefF", "relief"))
+    measures = (("Information Gain", "infoGain"), ("Gain Ratio", "gainRatio"), ("Gini Index", "gini"), ("ReliefF", "relief"))
     
     def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -31,9 +25,8 @@ class OWClassificationTree(OWWidget):
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset)]
         self.outputs = [("Learner", orange.Learner),("Classification Tree", orange.TreeClassifier)]
 
-        # Settings
         self.name = 'Classification Tree'
-        self.estim = 0; self.relK = 5; self.relM = 100
+        self.estim = 0; self.relK = 5; self.relM = 100; self.limitRef = True
         self.bin = 0; self.subset = 0
         self.preLeafInstP = 2; self.preNodeInstP = 5; self.preNodeMajP = 95
         self.preLeafInst = 1; self.preNodeInst = 0; self.preNodeMaj = 0
@@ -41,70 +34,55 @@ class OWClassificationTree(OWWidget):
         
         self.loadSettings()
         
-        self.data = None                    # input data set
-        self.preprocessor = None            # no preprocessing as default
-        self.setLearner()                   # this just sets the learner, no data
-                                            # has come to the input yet
+        self.data = None
+        self.preprocessor = None
+        self.setLearner()
         
-        # GUI
-        # name
-        OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
-                 tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
         
-        # attribute quality estimation
         qBox = QVGroupBox(self.controlArea)
         qBox.setTitle('Attribute selection criterion')
 
-        self.qMea = QComboBox(qBox)
-        for m in self.measures:
-            self.qMea.insertItem(m[0])
-        self.qMea.setCurrentItem(self.estim)
-        self.connect(self.qMea, SIGNAL("activated(int)"), self.measureChanged)
+        self.qMea = OWGUI.comboBox(qBox, self, "estim", items = [m[0] for m in self.measures], callback = self.measureChanged)
         
-        self.hbxRel1 = OWGUI.spin(qBox, self, "relM", 1, 1000, 10, label="Relief's reference examples: ")
-        self.hbxRel2 = OWGUI.spin(qBox, self, "relK", 1, 50, label="Relief's neighbours")
+        b1 = QHBox(qBox)
+        OWGUI.separator(b1, 16, 0)
+        b2 = QVBox(b1)
+        self.cbLimitRef, self.hbxRel1 = OWGUI.checkWithSpin(b2, self, "Limit the number of reference examples to ", 1, 1000, "limitRef", "relM")
+        OWGUI.separator(b2)
+        self.hbxRel2 = OWGUI.spin(b2, self, "relK", 1, 50, orientation="horizontal", label="Number of neighbours in ReliefF  ")
         OWGUI.separator(self.controlArea)
         
-        # structure of the tree
-        self.cbBin = OWGUI.checkBox(self.controlArea, self, 'bin', 'Binarization', box='Tree Structure')
+        OWGUI.checkBox(self.controlArea, self, 'bin', 'Binarization', box='Tree Structure')
         OWGUI.separator(self.controlArea)
 
-        self.measureChanged(self.estim)
+        self.measureChanged()
 
-        # prepruning
         self.pBox = QVGroupBox(self.controlArea)
         self.pBox.setTitle('Pre-Pruning')
 
-        self.preLeafInstBox, self.preLeafInstPBox = \
-          OWGUI.checkWithSpin(self.pBox, self, "Min. instances in leaves: ", 1, 1000, "preLeafInst", "preLeafInstP")
-        self.preNodeInstBox, self.preNodeInstPBox = \
-          OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 1000, "preNodeInst", "preNodeInstP", " or fewer instances")
-        self.preNodeMajBox, self.preNodeMajPBox = \
-          OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 100, "preNodeMaj", "preNodeMajP", "% of majority class")
+        self.preLeafInstBox, self.preLeafInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Min. instances in leaves: ", 1, 1000, "preLeafInst", "preLeafInstP")
+        self.preNodeInstBox, self.preNodeInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 1000, "preNodeInst", "preNodeInstP", " or fewer instances")
+        self.preNodeMajBox, self.preNodeMajPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 100, "preNodeMaj", "preNodeMajP", "% of majority class")
         
         OWGUI.separator(self.controlArea)
         self.mBox = QVGroupBox(self.controlArea)
 
-        # post-pruning
         self.mBox.setTitle('Post-Pruning')
         OWGUI.checkBox(self.mBox, self, 'postMaj', 'Recursively merge leaves with same majority class')
-        self.postMPruningBox, self.postMPruningPBox = \
-          OWGUI.checkWithSpin(self.mBox, self, "Pruning with m-estimate, m=", 0, 1000, 'postMPruning', 'postM')
+        self.postMPruningBox, self.postMPruningPBox = OWGUI.checkWithSpin(self.mBox, self, "Pruning with m-estimate, m=", 0, 1000, 'postMPruning', 'postM')
 
-        # apply button
         OWGUI.separator(self.controlArea)
         self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.setLearner, disabled=0)
 
         self.resize(100,400)
 
-    # main part:         
-
     def setLearner(self):
         if hasattr(self, "btnApply"):
             self.btnApply.setFocus()
         self.learner = orngTree.TreeLearner(measure = self.measures[self.estim][1],
-            reliefK = self.relK, reliefM = self.relM,
+            reliefK = self.relK, reliefM = self.limitRef and self.relM or -1,
             binarization = self.bin,
             minExamples = self.preNodeInst and self.preNodeInstP,
             minSubset = self.preLeafInst and self.preLeafInstP,
@@ -120,20 +98,12 @@ class OWClassificationTree(OWWidget):
             self.classifier.name = self.name
             self.send("Classification Tree", self.classifier)
 
-    def measureChanged(self, idx):
-        self.estim = idx
-        self.hbxRel1.setEnabled(idx == 3)
-        self.hbxRel2.setEnabled(idx == 3)
-        self.cbBin.setEnabled(idx != 3)
-        if idx==3:
-            self.prevBinState = self.bin
-            self.bin = 0
-        else:
-            if hasattr(self, "prevBinState"):
-                self.bin = self.prevBinState
+    def measureChanged(self):
+        relief = self.estim == 3
+        self.hbxRel1.setEnabled(relief and self.limitRef)
+        self.hbxRel2.setEnabled(relief)
+        self.cbLimitRef.setEnabled(relief)
         
-    # handle input signals        
-
     def dataset(self,data):
         self.data = data
         if self.data:
