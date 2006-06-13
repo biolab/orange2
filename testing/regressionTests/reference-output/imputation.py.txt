@@ -105,7 +105,7 @@ Imputed:
 ['A', 1876, 'HIGHWAY', 1200, 4, 'G', 'THROUGH', 'WOOD', 'SHORT', 'S', 'WOOD']
 
 ['O', 1878, 'RR', ?, 2, 'G', '?', 'STEEL', '?', '?', 'SIMPLE-T']
-['O', 1878, 'RR', 804, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
+['O', 1878, 'RR', 804, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'S', 'SIMPLE-T']
 
 ['M', 1882, 'RR', ?, 2, 'G', '?', 'STEEL', '?', '?', 'SIMPLE-T']
 ['M', 1882, 'RR', 1000, 2, 'G', 'THROUGH', 'STEEL', 'MEDIUM', 'F', 'SIMPLE-T']
@@ -142,8 +142,8 @@ Imputed:
 SPAN=SHORT: 1158
 SPAN=LONG: 1907
 SPAN=MEDIUM
-|    ERECTED<1908.500: 1325
-|    ERECTED>=1908.500: 1528
+|    ERECTED<1911.500: 1325
+|    ERECTED>=1911.500: 1528
 
 ['M', 1876, 'HIGHWAY', 1245, ?, '?', 'THROUGH', 'STEEL', 'LONG', 'F', 'SUSPEN']
 ['M', 1876, 'HIGHWAY', 1245, 3, 'G', 'THROUGH', 'STEEL', 'LONG', 'F', 'SUSPEN']

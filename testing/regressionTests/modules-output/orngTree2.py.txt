@@ -1,0 +1,9 @@
+petal width<0.800: Iris-setosa 100% (100.00%)
+petal width>=0.800
+|    petal width<1.750
+|    |    petal length<5.350: Iris-versicolor 88% (108.57%)
+|    |    petal length>=5.350: Iris-virginica 100% (122.73%)
+|    petal width>=1.750
+|    |    petal length<4.850: Iris-virginica 33% (34.85%)
+|    |    petal length>=4.850: Iris-virginica 100% (104.55%)
+

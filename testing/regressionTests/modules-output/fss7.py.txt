@@ -1,10 +1,11 @@
 
 Learner         Accuracy  #Atts
 disc bayes      0.858     14.50
-bayes & fss     0.846      2.60
+bayes & fss     0.855      3.80
 
 Attribute usage (in how many folds attribute was used?):
 10 x A9
+ 1 x A12
  8 x A10
- 3 x A7
- 5 x A6
+10 x A7
+ 9 x A6

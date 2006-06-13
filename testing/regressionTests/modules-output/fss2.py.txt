@@ -1,6 +1,6 @@
 Relief GainRt Attribute
-0.385  0.752  physician-fee-freeze
-0.166  0.444  synfuels-corporation-cutback
-0.157  0.414  el-salvador-aid
-0.156  0.382  adoption-of-the-budget-resolution
-0.152  0.345  crime
+0.728  0.752  physician-fee-freeze
+0.329  0.444  adoption-of-the-budget-resolution
+0.321  0.414  synfuels-corporation-cutback
+0.244  0.382  crime
+0.241  0.345  education-spending
