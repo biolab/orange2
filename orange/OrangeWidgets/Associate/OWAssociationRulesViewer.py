@@ -9,10 +9,7 @@
 from OWWidget import *
 import OWGUI
 
-import orngAssoc
-import re  
-
-import sys
+import sys, re
 from qt import *
 from OWTools import *
 

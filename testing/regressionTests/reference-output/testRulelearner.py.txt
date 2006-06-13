@@ -19,7 +19,7 @@ IF sex=['female'] AND status=['first'] THEN survived=yes<141.000, 4.000>
 IF sex=['male'] AND status=['crew'] THEN survived=no<192.000, 670.000>
 IF status=['second'] THEN survived=yes<104.000, 13.000>
 IF sex=['male'] AND status=['third'] THEN survived=no<13.000, 35.000>
-IF age=['adult'] AND status=['first'] THEN survived=no<57.000, 118.000>
+IF age=['adult'] AND sex=['male'] THEN survived=no<57.000, 118.000>
 IF status=['crew'] THEN survived=yes<20.000, 3.000>
 IF sex=['female'] THEN survived=no<90.000, 106.000>
 IF TRUE THEN survived=yes<5.000, 0.000>

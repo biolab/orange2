@@ -8,7 +8,7 @@
 
 import orange
 from OWWidget import *
-import orngAssoc, OWGUI
+import OWGUI
 
 class OWAssociationRules(OWWidget):
     def __init__(self,parent=None, signalManager = None):
