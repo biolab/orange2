@@ -144,7 +144,7 @@ for t in meas.thresholdFunction("petal length", data):
 
 <P>If we didn't construct the attribute in advance, we could write <code>orange.MeasureAttribute_relief().thresholdFunction("petal length", data)</code>. This is not recommendable for ReliefF, since it may be a lot slower.</P>
 
-<P>The script below finds and prints out the best threshold for binarization of an attribute.</P>
+<P>The script below finds and prints out the best threshold for binarization of an attribute, that is, the threshold with which the resulting binary attribute will have the optimal ReliefF (or any other measure).</P>
 <xmp class="code">thresh, score, distr = meas.bestThreshold("petal length", data)
 print "\nBest threshold: %5.3f (score %5.3f)" % (thresh, score)</xmp>
 
