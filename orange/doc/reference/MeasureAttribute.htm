@@ -26,6 +26,9 @@
 <DT>handlesContinuous</DT>
 <DD>Tells whether the measure can handle continuous attributes.</DD>
 
+<dt>computesThresholds</dt>
+<dd>Tells whether the measure implements the <code>thresholdFunction</code>.</dd>
+
 <DT>needs</DT>
 <DD>Tells what kind of data the measure needs. This can be either <CODE>MeasureAttribute.NeedsGenerator</CODE>, <CODE>MeasureAttribute.NeedsDomainContingency</CODE> or <CODE>MeasureAttribute.NeedsContingency_Class</CODE>. The first need an example generator (Relief is an example of such measure), the second can compute the quality from <a href="contingency.htm"><CODE>DomainContingency</CODE></A> and the latter only needs the contingency (<CODE>ContingencyAttrClass</CODE>) the attribute distribution and the apriori class distribution. Most of the measure are content by the latter.</DD>
 </DL>
@@ -61,6 +64,9 @@
 
 <P>The optional argument with <CODE>apriori class distribution</CODE> is most often ignored. It comes handy if the measure makes any probability estimates based on apriori class probabilities (such as m-estimate).</P>
 </DD>
+
+<dt>thresholdFunction(attribute, examples[, weightID])</dt>
+<dd>This function computes the qualities for different binarizations of the continuous attribute <code>attribute</code>. The attribute should of course be continuous. The result of a function is a list of tuples, where the first element represents a threshold (all splits in the middle between two existing attribute values), the second is the measured quality for a corresponding binary attribute and the last one is the distribution which gives the number of examples below and above the threshold. The last element, though, may be missing; generally, if the particular measure can get the distribution without any computational burden, it will do so and the caller can use it. If not, the caller needs to compute it itself.</dd>
 </DL>
 
 <P>The script below shows different ways to assess the quality of astigmatic, tear rate and the first attribute (whichever it is) in the dataset lenses.</P>
@@ -89,6 +95,8 @@ print
 <XMP class=code>>>> print orange.MeasureAttribute_info("tear_rate", data)
 0.548794984818
 </XMP>
+
+<P>You shouldn't use this shortcut with ReliefF, though; see the explanation in the section on ReliefF.</P>
 
 <P>It is also possible to assess the quality of attributes that do not exist in the dataset. For instance, you can assess the quality of discretized attributes without constructing a new domain and dataset that would include them.</P>
 
@@ -121,6 +129,25 @@ print "Information gain for a random meta attribute: %6.4f" % \
 </XMP>
 
 
+<P>To show the computation of thresholds, we shall use the Iris data set.</P>
+
+<p class="header"><a href="MeasureAttribute1a.py">measureattribute1a.py</a>
+(uses <a href="iris.tab">iris.tab</a>)</p>
+<xmp class="code">
+import orange
+data = orange.ExampleTable("iris")
+
+meas = orange.MeasureAttribute_relief()
+for t in meas.thresholdFunction("petal length", data):
+    print "%5.3f: %5.3f" % t
+</xmp>
+
+<P>If we didn't construct the attribute in advance, we could write <code>orange.MeasureAttribute_relief().thresholdFunction("petal length", data)</code>. This is not recommendable for ReliefF, since it may be a lot slower.</P>
+
+<P>The script below finds and prints out the best threshold for binarization of an attribute.</P>
+<xmp class="code">thresh, score, distr = meas.bestThreshold("petal length", data)
+print "\nBest threshold: %5.3f (score %5.3f)" % (thresh, score)</xmp>
+
 <H3>MeasureAttributeFromProbabilities</H3>
 
 <P><CODE>MeasureAttributeFromProbabilities</CODE> is the abstract base class for attribute quality measures that can be computed from contingency matrices only. It relieves the derived classes from having to compute the contingency matrix by defining the first two forms of call operator. (Well, that's not something you need to know if you only work in Python.) Additional feature of this class is that you can set probability estimators. If none are given, probabilities and conditional probabilities of classes are estimated by relative frequencies.</P>
@@ -134,8 +161,6 @@ print "Information gain for a random meta attribute: %6.4f" % \
 <DD>The classes that are used to estimate unconditional and conditional probabilities of classes, respectively. You can set this to, for instance, <CODE>ProbabilityEstimatorConstructor_m</CODE> and <CODE>ConditionalProbabilityEstimatorConstructor_ByRows</CODE> (with estimator constructor again set to <CODE>ProbabilityEstimatorConstructor_m</CODE>), respectively.</DD>
 </DL>
 
-<XMP class=code>
-</XMP>
 
 <HR>
 
@@ -190,12 +215,12 @@ print "Information gain for a random meta attribute: %6.4f" % \
 <DD>Number of neighbours for each example. Default is 5.</DD>
 
 <DT>m</DT>
-<DD>Number of reference examples. Default is 100.</DD>
+<DD>Number of reference examples. Default is 100. Set to -1 to take all the examples.</DD>
 </DL>
 
-<P>Computation of ReliefF is rather slow since it needs to find <CODE>k</CODE> nearest neighbours for each of <CODE>m</CODE> reference examples. Since we normally compute ReliefF for all attributes in the dataset, <CODE>MeasureAttribute_relief</CODE> caches the results. When it is called to compute a quality of certain attribute, it computes qualities for all attributes in the dataset. When called again, it uses the stored results if the domain is still the same and the example table has not changed (this is done by checking the example tables <CODE>version</CODE> and is not foolproof; it won't detect if you change values of existing examples, but will notice adding and removing examples; see information on <A href="ExampleTable.htm"><CODE>ExampleTable</CODE></A> for details).</P>
+<P>Computation of ReliefF is rather slow since it needs to find <CODE>k</CODE> nearest neighbours for each of <CODE>m</CODE> reference examples (or all examples, if <code>m</code> is set to -1). Since we normally compute ReliefF for all attributes in the dataset, <CODE>MeasureAttribute_relief</CODE> caches the results. When it is called to compute a quality of certain attribute, it computes qualities for all attributes in the dataset. When called again, it uses the stored results if the domain is still the same and the example table has not changed (this is done by checking the example tables <CODE>version</CODE> and is not foolproof; it won't detect if you change values of existing examples, but will notice adding and removing examples; see the page on <A href="ExampleTable.htm"><CODE>ExampleTable</CODE></A> for details).</P>
 
-<P>Caching will only have effect if you use the same instance for all attributes in the domain. So, don't do this:</P>
+<P>Caching will only have an effect if you use the same instance for all attributes in the domain. So, don't do this:</P>
 
 <XMP class=code>for attr in data.domain.attributes:
     print orange.MeasureAttribute_relief(attr, data)
@@ -211,6 +236,8 @@ for attr in data.domain.attributes:
 <P>When called for the first time, <CODE>meas</CODE> will compute ReliefF for all attributes and the subsequent calls simply return the stored data.</P>
 
 <P>Class <CODE>MeasureAttribute_relief</CODE> works on discrete and continuous classes and thus implements functionality of algorithms ReliefF and RReliefF.</P>
+
+<P>Note that ReliefF can also compute the threshold function, that is, the attribute quality at different thresholds for binarization.</P>
 
 
 <H2>Measure for Attributes for Regression Problems</H2>
