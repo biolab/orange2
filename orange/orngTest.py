@@ -437,16 +437,17 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argk
 
     if not testResults:
         classVar = testset.domain.classVar
-        if classVar.varType == orange.VarTypes.Discrete:
+        if testset.domain.classVar.varType == orange.VarTypes.Discrete:
             values = classVar.values.native()
             baseValue = classVar.baseValue
         else:
             values = None
             baseValue = -1
         testResults=ExperimentResults(1, [l.name for l in classifiers], values, testweight!=0, baseValue)
-    
+
+    conv = testset.domain.classVar.varType == orange.VarTypes.Discrete and int or float
     for ex in testset:
-        te = TestedExample(iterationNumber, int(ex.getclass()), 0, ex.getweight(testweight))
+        te = TestedExample(iterationNumber, conv(ex.getclass()), 0, ex.getweight(testweight))
         
         for classifier in classifiers:
             # This is to prevent cheating:
