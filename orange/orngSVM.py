@@ -27,7 +27,7 @@ class SVMLearnerClass:
         self.degree=3
         self.coef0=0
         self.shrinking=1
-        self.probability=1
+        self.probability=0
         self.cache_size=100
         self.eps=0.001
         self.__dict__.update(kwds)
@@ -59,18 +59,25 @@ class SVMLearnerClass:
 BasicSVMLearner=orngSVM_Jakulin.BasicSVMLearner
 BasicSVMClassifier=orngSVM_Jakulin.BasicSVMClassifier
 
-def parameter_selection(learner, data, folds=4, parameters={}):
+def parameter_selection(learner, data, folds=4, parameters={}, best={}, callback=None):
     """parameter selection tool: uses cross validation to find the optimal parameters.
     parameters argument is a dictionary containing ranges for parameters
     return value is a dictionary with optimal parameters and error
+    the callback function takes two arguments, a 0.0-1.0 float(progress), and the current best parameters
     >>>params=parameter_selection(learner, data, 10, {"C":range(1,10,2), "gama":range(0.5,2.0,0.25)})"""
+    global steps, curStep
+    steps=1
+    for c in parameters.values():
+        steps*=len(c)
+    curStep=1
     def mysetattr(obj, name, value):
         names=name.split(".")
         for name in names[:-1]:
             obj=getattr(obj, name)
         setattr(obj, name, value)
         
-    def search(learner, data, folds, keys, ranges, current, best):
+    def search(learner, data, folds, keys, ranges, current, best={}, callback=None):
+        global steps, curStep
         if len(keys)==1:
             for p in ranges[0]:
                 mysetattr(learner, keys[0], p)
@@ -84,19 +91,23 @@ def parameter_selection(learner, data, folds=4, parameters={}):
                 if res<best["error"]:
                     best.update(current)
                     best["error"]=res
+                curStep+=1
+                if callback:
+                    callback(curStep/float(steps), best)
         else:
             for p in ranges[0]:
                 mysetattr(learner, keys[0], p)
                 current[keys[0]]=p
-                search(learner, data, folds, keys[1:], ranges[1:], current, best)
+                search(learner, data, folds, keys[1:], ranges[1:], current, best, callback)
                 
     keys=parameters.keys()
     ranges=[parameters[key] for key in keys]
-    best={"error":sys.maxint}
-    for key in keys:
-        best[key]=None
+    best["error"]=sys.maxint
     current={}
-    search(learner, data, folds, keys, ranges, current, best)
+    for key in keys:
+        best[key]=parameters[key][0]
+        current[key]=parameters[key][0]
+    search(learner, data, folds, keys, ranges, current, best, callback)
     return best
 
 import math
