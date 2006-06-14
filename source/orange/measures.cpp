@@ -327,7 +327,10 @@ public:
   { return true; }
 
   inline void record(const float &threshold, const float &score, const float &left, const float &right)
-  { res.push_back(make_pair(threshold, score)); }
+  { if (res.size())
+      res.back().first = (res.back().first + threshold) / 2.0;
+    res.push_back(make_pair(threshold, score)); 
+  }
 };
 
 
@@ -337,6 +340,7 @@ void TMeasureAttribute::thresholdFunction(TFloatFloatList &res, PContingency ori
   TRecordThresholds recorder(res);
   if (!traverseThresholds(this, recorder, bvar, origContingency, classDistribution, apriorClass))
     res.clear();
+  res.erase(res.end()-1);
 }
 
 
@@ -353,7 +357,6 @@ public:
   TRecordMaximalThreshold(TRandomGenerator &rg, const float &minSub = -1)
   : minSubset(minSub),
     wins(0),
-    //lastThreshold(ILLEGAL_FLOAT),
     rgen(rg)
   {}
 
@@ -370,17 +373,12 @@ public:
   {
     if (   (!wins || (score > bestScore)) && ((wins=1)==1)
         || (score == bestScore) && rgen.randbool(++wins)) {
-      //if (lastThreshold == ILLEGAL_FLOAT) {
         bestThreshold = threshold;
         fixLast = true;
-//      }
-//      else
-//        bestThreshold = (threshold+lastThreshold) / 2.0;
       bestScore = score;
       bestLeft = left;
       bestRight = right;
     }
-//    lastThreshold = threshold;
   }
 };
 
@@ -1176,7 +1174,7 @@ int *tabulateDiscreteValues(PExampleGenerator gen, const int &weightID, TVariabl
         *pc++ = ILLEGAL_INT;
       else {
         *pc++ = val.intV;
-        ui[val.intV] += WEIGHT(*ei);
+        unk[val.intV] += WEIGHT(*ei);
       }
     }
 

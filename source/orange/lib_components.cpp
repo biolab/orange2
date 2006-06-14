@@ -2434,6 +2434,31 @@ PyObject *MeasureAttribute_thresholdFunction(PyObject *self, PyObject *args, PyO
   return res;
 }
 
+
+
+PyObject *MeasureAttribute_bestThreshold(PyObject *self, PyObject *args, PyObject *kwds) PYARGS(METH_VARARGS, "(attr, examples) -> list")
+{
+  PyObject *pyvar;
+  PExampleGenerator gen;
+  int weightID = 0;
+  float minSubset = 0.0;
+  if (!PyArg_ParseTuple(args, "OO&|if:MeasureAttribute_thresholdFunction", &pyvar, pt_ExampleGenerator, &gen, &weightID, &minSubset))
+    return NULL;
+    
+  PVariable var = varFromArg_byDomain(pyvar, gen->domain);
+  if (!var)
+    return NULL;
+
+  float threshold, score;
+  PDistribution distribution;
+  threshold = SELF_AS(TMeasureAttribute).bestThreshold(distribution, score, var, gen, PDistribution(), weightID);
+
+  if (threshold == ILLEGAL_FLOAT)
+    PYERROR(PyExc_SystemError, "cannot compute the threshold; check the number of instances etc.", PYNULL);
+
+  return Py_BuildValue("ffO", threshold, score, WrapOrange(distribution));
+}
+
 /* ************ EXAMPLE CLUSTERING ************ */
 
 #include "exampleclustering.hpp"
