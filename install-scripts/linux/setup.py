@@ -12,7 +12,6 @@ gotPython = '';
 gotQt = '';
 gotPyQt = '';
 gotNumeric = '';
-gotGsl = '';
 gotGcc = '';
 gotQwt = '';
 
@@ -42,11 +41,13 @@ try:
 except:
     print "NOTE: Python Qt not installed, OrangeCanvas and OrangeWidgets will not work."
     print "You can get it at: http://www.riverbankcomputing.co.uk/pyqt/index.php"
+    # we are using Qt 2.3 - Qt 3.3
 
 try:
     gotPyQt = pyqtconfig.Configuration().pyqt_version_str;
 except:
     gotPyQt = ''
+    # any PyQt that supports Qt 2.3-3.8
 
 try:
     import sipconfig
@@ -55,6 +56,7 @@ try:
 except:
     print "Sipconfig not found, Qt version could not be found!"
     gotPy = ''
+    # depends on version of PyQt
 
 try:
     import Numeric
@@ -62,6 +64,7 @@ except:
     print "Numeric Python should be installed!"
     print "You can get it at: http://numeric.scipy.org/"
     sys.exit(1)
+    # use latest, from 23.0 on
 
 try:
     import numeric_version
@@ -70,26 +73,13 @@ except:
     print "Can not determine Numeric version!"
     gotNumeric = "n/a"
 
-if os.system("gsl-config --prefix > /dev/null 2>&1") != 0:
-    print "GSL should be installed!"
-    print "You can get it at: http://www.gnu.org/software/gsl/"
-    sys.exit(1)
-
 try:
     import qwt
     gotQwt = "n/a"
 except:
     print "PyQwt not installed!"
     print "You can get it at: http://pyqwt.sourceforge.net/"
-    
-# catching version of GSL
-try:
-    import popen2
-    (stdout_err, stdin) = popen2.popen4("gsl-config --version");
-    gotGsl = stdout_err.readlines()[0]
-except:
-    print "Can not determine GSL version!"
-    gotGsl = "n/a"
+    # depends on PyQt
     
 if os.system("gcc --version > /dev/null 2>&1") != 0:
     print "GCC should be installed!"
@@ -103,6 +93,7 @@ try:
 except:
     print "Can not determine GCC version!"
     gotGcc = "n/a"
+    # version 3.3 on
 
 if OrangeVer is "ADDVERSION":
     print "Version should be added manually (edit setup.py and replace ADDVERSION)"
@@ -390,7 +381,6 @@ class install_wrap(install):
         print "Numeric version: "+gotNumeric
         print "Qwt version: "+gotQwt
         print "GCC version: "+gotGcc
-        print "Gsl version: "+gotGsl
 
         if self.orangepath != None:
             # we save orangepath for uninstallation to the file user_install
