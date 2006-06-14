@@ -6,8 +6,10 @@
 <priority>100</priority>
 """
 
-import orange, orngSVM, OWGUI
+import orange, orngSVM, OWGUI, thread
 from OWWidget import *
+from threading import Thread
+from exceptions import SystemExit
 
 class OWSVM(OWWidget):
     settingsList=["C","nu","p","probability","shrinking","gamma","degree", "coef0", "kernel_type", "name", "useNu", "nomogram"]
@@ -25,14 +27,15 @@ class OWSVM(OWWidget):
         self.eps = 1e-3
         self.nu = 0.5
         self.shrinking = 1
-        self.probability=0
+        self.probability=1
         self.useNu=0
         self.nomogram=0
         self.data = None
+        self.selFlag=False
         self.name="SVM Learner/Classifier"
         
         OWGUI.lineEdit(self.controlArea, self, "name")
-        b=QVButtonGroup("Kernel", self.controlArea)
+        self.kernelBox=b=QVButtonGroup("Kernel", self.controlArea)
         self.kernelradio = OWGUI.radioButtonsInBox(b, self, "kernel_type", btnLabels=["Linear,   x.y", "Polynomial,   (g*x.y+c)^d",
                     "RBF,   exp(-g*(x-y).(x-y))", "Sigmoid,   tanh(g*x.y+c)"], callback=self.changeKernel)
 
@@ -40,21 +43,26 @@ class OWSVM(OWWidget):
         self.leg = OWGUI.doubleSpin(self.gcd, self, "gamma",0.0,10.0,0.25, label="g: ", orientation="horizontal", callback=self.changeKernel)
         self.led = OWGUI.doubleSpin(self.gcd, self, "coef0", 0.0,10.0,0.5, label="  c: ", orientation="horizontal", callback=self.changeKernel)
         self.lec = OWGUI.doubleSpin(self.gcd, self, "degree", 0.0,10.0,0.5, label="  d: ", orientation="horizontal", callback=self.changeKernel)
-        b=OWGUI.widgetBox(self.controlArea,"Options")
+        self.optionsBox=b=OWGUI.widgetBox(self.controlArea,"Options")
         OWGUI.doubleSpin(b,self, "C", 0.0, 100.0, 0.5, label="Model complexity (C)", orientation="horizontal")
         OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", orientation="horizontal")
         OWGUI.doubleSpin(b,self, "eps", 0.0, 0.5, 0.001, label="Numeric precision (eps)", orientation="horizontal")
 
+        OWGUI.checkBox(b,self, "probability", label="Support probabilities")        
         OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
         OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors", callback=lambda:self.nuBox.setDisabled(not self.useNu))
-        self.nuBox=OWGUI.doubleSpin(b,self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", orientation="horizontal")
-        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible")
+        self.nuBox=OWGUI.doubleSpin(b,self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
+        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram")
+        self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
+                                      tooltip="Automaticaly searches for parameters that optimize classifier acuracy") 
         OWGUI.button(self.controlArea, self,"&Apply settings", callback=self.applySettings)
         self.nuBox.setDisabled(not self.useNu)
         self.resize(100,100)        
         self.loadSettings()
         self.changeKernel()
-
+        self.thread=MyThread(self)
+        self.lock=thread.allocate_lock()
+        self.terminateThread=False
         
     def changeKernel(self):
         if self.kernel_type==0:
@@ -79,7 +87,7 @@ class OWSVM(OWWidget):
 
     def applySettings(self):
         self.learner=orngSVM.SVMLearner()
-        for attr in ("name", "kernel_type", "degree", "shrinking"):
+        for attr in ("name", "kernel_type", "degree", "shrinking", "probability"):
             setattr(self.learner, attr, getattr(self, attr))
 
         for attr in ("gamma", "coef0", "C", "p", "eps", "nu"):
@@ -117,6 +125,65 @@ class OWSVM(OWWidget):
         self.send("Classifier", self.classifier)
         self.send("Support Vectors", self.supportVectors)
 
+    def parameterSearch(self):
+        if self.thread.isAlive():
+            self.lock.acquire()
+            self.terminateThread=True
+            self.lock.release()
+            #self.thread.join()
+            self.kernelBox.setDisabled(0)
+            self.optionsBox.setDisabled(0)
+            self.paramButton.setText("Automatic parameter search")
+        else:
+            self.kernelBox.setDisabled(1)
+            self.optionsBox.setDisabled(1)
+            self.progressBarInit()
+            self.thread=MyThread(self)
+            self.thread.start()
+            self.paramButton.setText("Stop")
+            
+    def progres(self, f, best):
+        self.best=best
+        self.progressBarSet(int(f*100))
+        if self.terminateThread:
+            self.lock.acquire()
+            self.terminateThread=False
+            self.lock.release()
+            import sys
+            sys.exit()
+            raise "thread exit"
+            
+    def finishSearch(self):
+        del self.best["error"]
+        for key in self.best.keys():
+            self.__setattr__(key, self.best[key])
+        self.progressBarFinished()
+        self.kernelBox.setDisabled(0)
+        self.optionsBox.setDisabled(0)
+        self.paramButton.setText("Automatic parameter search")
+        
+        
+class MyThread(Thread):
+    def __init__(self, widget):
+        apply(Thread.__init__,(self,))
+        self.widget=widget
+
+    def run(self):
+        params={}
+        if self.widget.useNu:
+            params["nu"]=[0.25, 0.5, 0.75]
+        else:
+            params["C"]=[1.0, 2.0, 3.0]
+        if self.widget.kernel_type in [1,2]:
+            params["gamma"]=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+        if self.widget.kernel_type==1:
+            params["degree"]=[1,2,3]
+        best={}
+        try:
+            best=orngSVM.parameter_selection(orngSVM.SVMLearner(),self.widget.data, 4, params, best, callback=self.widget.progres)
+        except SystemExit:
+            pass
+        self.widget.finishSearch()
 import sys
 if __name__=="__main__":
     app=QApplication(sys.argv)
