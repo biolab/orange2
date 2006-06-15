@@ -46,7 +46,7 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
 
     connectControl(wa, master, value, callback, "valueChanged(int)", CallFront_spin(wa))
     if debuggingEnabled:
-        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, 1, callback )]
+        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, step, callback )]
     return b
 
 
@@ -116,7 +116,7 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
                    cfunc = spinCallback and FunctionCallback(master, spinCallback, widget=wb, getwidget=getwidget))
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, checked, checkCallback)]
-        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wb, value, spinCallback, min, max, spinCallback)]
+        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wb, value, min, max, step, spinCallback )]
     return wa, wb
 
 
@@ -301,7 +301,6 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     width2 = lbl.sizeHint().width()
     lbl.setFixedSize(max(width1, width2), lbl.sizeHint().height())
     lbl.setText(format % init)
-
     
     if logarithmic:
         cfront = CallFront_logSlider(slider)
@@ -348,10 +347,10 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     return combo
 
 
-def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tooltip=None, callback = None, sendSelectedValue=0, valueType = int, labelWidth = None):
+def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tooltip=None, callback = None, sendSelectedValue=0, valueType = int, labelWidth = None, debuggingEnabled = 1):
     hbox = widgetBox(widget, box = box, orientation="horizontal")
     lab = widgetLabel(hbox, label, labelWidth)
-    combo = comboBox(hbox, master, value, items = items, tooltip = tooltip, callback = callback, sendSelectedValue = sendSelectedValue, valueType = valueType)
+    combo = comboBox(hbox, master, value, items = items, tooltip = tooltip, callback = callback, sendSelectedValue = sendSelectedValue, valueType = valueType, debuggingEnabled = debuggingEnabled)
     return combo
 
 ##############################################################################
