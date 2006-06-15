@@ -355,7 +355,7 @@ class VizRank:
                 results = apply(testingMethods[self.testingMethod], [[learner], (testTable, weightID)])
             else:
                 results = apply(testingMethods[self.testingMethod], [[learner], testTable])
-            
+
             # compute classification success using selected measure
             if testTable.domain.classVar.varType == orange.VarTypes.Discrete:
                 return self.computeAccuracyFromResults(testTable, results)
@@ -440,7 +440,7 @@ class VizRank:
 
         prediction = [prediction[i] / float(max(1, currentClassDistribution[i])) for i in range(len(prediction))] # turn to probabilities
 
-        return val/float(s), (acc, prediction, list(currentClassDistribution))
+        return val/max(1, float(s)), (acc, prediction, list(currentClassDistribution))
         
 
     # Argumentation functions
@@ -642,7 +642,8 @@ class VizRank:
                 attrs.sort()
                 if not triedDict.has_key(tuple(attrs)) and len(attrs) == attrCount:
                     triedDict[tuple(attrs)] = 1
-                    return [filter(None, attrList)]
+                    #return [filter(None, attrList)]        # problem: using filter removes value 0 from the array, which means that the attribute ranked as best wont be in the projections
+                    return [attrList]
         else:
             attributes = self.evaluationData["attrs"]
             for i in range(maxTries):
@@ -654,7 +655,8 @@ class VizRank:
                 attrList.sort()
                 if not triedDict.has_key(tuple(attrList)):
                     triedDict[tuple(attrList)] = 1
-                    return [filter(None, attrList)]
+                    #return [filter(None, attrList)]        # problem: using filter removes value 0 from the array, which means that the attribute ranked as best wont be in the projections
+                    return [attrList]
         return None
 
     # generate possible permutations of the current attribute subset. use evaluationData dict to find which attribute subset to use. 
@@ -869,7 +871,6 @@ class VizRank:
             self.optimizeProjectionLimit = 2 * 60
         """
         
-
         if self.__class__.__name__ == "OWVizRank": 
             self.disableControls()
             from qt import qApp
