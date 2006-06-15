@@ -85,12 +85,12 @@ class OWVizRank(VizRank, OWBaseWidget):
         if visualizationMethod != SCATTERPLOT:
             self.label1 = QLabel('Projections with ', self.buttonBox)
             self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
-            self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(3, 100), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int)
+            self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(3, 20), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
             self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
         self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "      Start Evaluating Projections      ", callback = self.evaluateProjections)
         f = self.startOptimizationButton.font(); f.setBold(1);   self.startOptimizationButton.setFont(f)
-        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopEvaluationClick)
+        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopEvaluationClick, debuggingEnabled = 0 )
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
         self.optimizeGivenProjectionButton = OWGUI.button(self.optimizationBox, self, "Locally Optimize Best Projections", callback = self.optimizeBestProjections)
@@ -98,7 +98,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.resultList = QListBox(self.resultsBox)
         #self.resultList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
         self.resultList.setMinimumSize(200,200)
-        if self.parentWidget: self.connect(self.resultList, SIGNAL("selectionChanged()"), self.parentWidget.showSelectedAttributes)
+        if self.parentWidget:
+            self.connect(self.resultList, SIGNAL("selectionChanged()"), self.parentWidget.showSelectedAttributes)
+            self._guiElements = getattr(self, "_guiElements", []) + [("listBox", self.resultList, None, self.parentWidget.showSelectedAttributes)]      # we want to debug this control
 
         self.showRankCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showRank', 'Rank', callback = self.updateShownProjections, tooltip = "Show projection ranks")
         self.showAccuracyCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showAccuracy', 'Score', callback = self.updateShownProjections, tooltip = "Show prediction accuracy of a k-NN classifier on the projection")
@@ -129,8 +131,8 @@ class OWVizRank(VizRank, OWBaseWidget):
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " For discrete attributes:  ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
         self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, " When to Stop Evaluation? ")
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)")
-        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)")
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
 
         self.localOptimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Local Optimization Settings ")
         OWGUI.checkBox(self.localOptimizationSettingsBox, self, 'locOptOptimizeProjectionByPermutingAttributes', 'Try improving projection by permuting attributes in projection')
@@ -146,9 +148,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         # ##########################
         # ARGUMENTATION TAB
         self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
-        self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments)
+        self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments, debuggingEnabled = 0)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
-        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for Class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
+        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for Class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged, debuggingEnabled = 0)
         self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for the Selected Class Value ")
         self.argumentList = QListBox(self.argumentBox)
         self.argumentList.setMinimumSize(200,200)
@@ -162,12 +164,12 @@ class OWVizRank(VizRank, OWBaseWidget):
         #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
 
         b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
-        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Time for evaluating projections (minutes):                ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
+        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Time for evaluating projections (minutes):                ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float, debuggingEnabled = 0)
         b2 = OWGUI.widgetBox(b, orientation = "horizontal")
-        self.optimizeBestProjectionCheck = OWGUI.checkBox(b2, self, "optimizeBestProjection", "Afterwards use local optimization for (minutes): ", tooltip = "Do you want to try to locally optimize the best projection when the time for evaluating projections runs out?")
-        self.optimizeBestProjectionCombo = OWGUI.comboBox(b2, self, "optimizeBestProjectionTime", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
+        self.optimizeBestProjectionCheck = OWGUI.checkBox(b2, self, "optimizeBestProjection", "Afterwards use local optimization for (minutes): ", tooltip = "Do you want to try to locally optimize the best projection when the time for evaluating projections runs out?", debuggingEnabled = 0)
+        self.optimizeBestProjectionCombo = OWGUI.comboBox(b2, self, "optimizeBestProjectionTime", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float, debuggingEnabled = 0)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts, sendSelectedValue = 1, valueType = int)
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts, sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
 
         # ##########################
         # SAVE & MANAGE TAB
@@ -180,34 +182,36 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.classesList.setSelectionMode(QListBox.Multi)
         self.classesList.setMinimumSize(60,60)
         self.connect(self.classesList, SIGNAL("selectionChanged()"), self.classesListChanged)
+        self._guiElements = getattr(self, "_guiElements", []) + [("listBox", self.classesList, None, self.classesListChanged)]      # we want to debug this control
         
         self.attrLenList = QListBox(self.visualizedAttributesBox)
         self.attrLenList.setSelectionMode(QListBox.Multi)
         self.attrLenList.setMinimumSize(60,60)
         self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
+        self._guiElements = getattr(self, "_guiElements", []) + [("listBox", self.attrLenList, None, self.attrLenListChanged)]      # we want to debug this control
         
         #self.removeSelectedButton = OWGUI.button(self.buttonBox5, self, "Remove selection", self.removeSelected)
         #self.filterButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
 
         self.buttonBox7 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
-        OWGUI.button(self.buttonBox7, self, "Attribute Ranking", self.attributeAnalysis)
-        OWGUI.button(self.buttonBox7, self, "Attribute Interactions", self.interactionAnalysis)
+        OWGUI.button(self.buttonBox7, self, "Attribute Ranking", self.attributeAnalysis, debuggingEnabled = 0)
+        OWGUI.button(self.buttonBox7, self, "Attribute Interactions", self.interactionAnalysis, debuggingEnabled = 0)
 
         self.buttonBox8 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")    
-        OWGUI.button(self.buttonBox8, self, "Graph Projection Scores", self.graphProjectionQuality)
-        OWGUI.button(self.buttonBox8, self, "Outlier Identification", self.identifyOutliers)
+        OWGUI.button(self.buttonBox8, self, "Graph Projection Scores", self.graphProjectionQuality, debuggingEnabled = 0)
+        OWGUI.button(self.buttonBox8, self, "Outlier Identification", self.identifyOutliers, debuggingEnabled = 0)
 
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.loadProjections)
-        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.saveProjections)
+        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.loadProjections, debuggingEnabled = 0)
+        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.saveProjections, debuggingEnabled = 0)
 
         self.buttonBox9 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.saveBestButton = OWGUI.button(self.buttonBox9, self, "Save Best Graphs", self.exportMultipleGraphs)
-        OWGUI.button(self.buttonBox9, self, "Remove Similar Projections", callback = self.removeTooSimilarProjections)
+        self.saveBestButton = OWGUI.button(self.buttonBox9, self, "Save Best Graphs", self.exportMultipleGraphs, debuggingEnabled = 0)
+        OWGUI.button(self.buttonBox9, self, "Remove Similar Projections", callback = self.removeTooSimilarProjections, debuggingEnabled = 0)
 
         self.buttonBox3 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         if self.parentWidget:
-            self.evaluateProjectionButton = OWGUI.button(self.buttonBox3, self, 'Evaluate Projection', callback = self.evaluateCurrentProjection)
+            self.evaluateProjectionButton = OWGUI.button(self.buttonBox3, self, 'Evaluate Projection', callback = self.evaluateCurrentProjection, debuggingEnabled = 0)
         self.reevaluateResults = OWGUI.button(self.buttonBox3, self, "Reevaluate Projections", callback = self.reevaluateAllProjections)
 
         self.buttonBox4 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
@@ -302,16 +306,18 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     # a function that is meaningful when visualizing using radviz or polyviz
     # it removes projections that don't have different at least two attributes in comparison with some better ranked projection
-    def removeTooSimilarProjections(self):
-        (text, ok) = QInputDialog.getText('Qt Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
-        if not ok: return
-        percents = int(str(text)) 
+    def removeTooSimilarProjections(self, allowedPercentOfEqualAttributes = -1):
+        if allowedPercentOfEqualAttributes == -1:
+            (text, ok) = QInputDialog.getText('Qt Allowed Similarity', 'How many attributes can be present in some better projection for a projection to be still considered as different (in pecents. Default = 70)?')
+            if not ok: return
+            allowedPercentOfEqualAttributes = int(str(text))
+            
         qApp.setOverrideCursor(QWidget.waitCursor)
         self.setStatusBarText("Removing similar projections")
         i=0
         while i < self.resultList.count():
             qApp.processEvents()
-            if self.existsABetterSimilarProjection(i, allowedPercentOfEqualAttributes = percents):
+            if self.existsABetterSimilarProjection(i, allowedPercentOfEqualAttributes = allowedPercentOfEqualAttributes):
                 self.results.pop(i)
                 self.shownResults.pop(i)
                 self.resultList.removeItem(i)
