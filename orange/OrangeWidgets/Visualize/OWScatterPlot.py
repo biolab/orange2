@@ -51,8 +51,9 @@ class OWScatterPlot(OWWidget):
         self.colorSettings = None
 
         self.graph = OWScatterPlotGraph(self, self.mainArea, "ScatterPlot")
-        self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
+        self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
         self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
+        self.optimizationDlg = self.vizrank
        
         self.data = None
 
@@ -106,7 +107,7 @@ class OWScatterPlot(OWWidget):
         self.graph.clusterOptimization = self.clusterDlg
         
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialogs ", orientation = "horizontal")
-        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
+        OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
         self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
         self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
@@ -156,6 +157,7 @@ class OWScatterPlot(OWWidget):
         self.SettingsTab.setMinimumWidth(max(self.GeneralTab.sizeHint().width(), self.SettingsTab.sizeHint().width())+20)
         self.icons = self.createAttributeIconDict()
         
+        self.debugSettings = ["attrX", "attrY", "attrColor", "attrLabel", "attrShape", "attrSize"]
         self.activateLoadedSettings()
         self.resize(700, 550)
 
@@ -173,7 +175,7 @@ class OWScatterPlot(OWWidget):
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.clusterDlg.changeLearnerName(self.clusterClassifierName)
-        self.learnersArray[1] = VizRankLearner(SCATTERPLOT, self.optimizationDlg, self.graph)
+        self.learnersArray[1] = VizRankLearner(SCATTERPLOT, self.vizrank, self.graph)
         self.setActiveLearner(self.learnerIndex)
 
     def settingsFromWidgetCallback(self, handler, context):
@@ -217,7 +219,7 @@ class OWScatterPlot(OWWidget):
         self.classificationResults = None
         self.outlierValues = None
         
-        self.optimizationDlg.setData(data)
+        self.vizrank.setData(data)
         self.clusterDlg.setData(data, clearResults)
         
         if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
@@ -234,7 +236,7 @@ class OWScatterPlot(OWWidget):
         self.graph.subsetData = data
         qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawdata - as in cluster argumentation
         if update: self.updateGraph()
-        self.optimizationDlg.setSubsetData(data)
+        self.vizrank.setSubsetData(data)
         self.clusterDlg.setSubsetData(data)
        
 
@@ -258,7 +260,7 @@ class OWScatterPlot(OWWidget):
 
     # set the learning method to be used in VizRank
     def vizRankLearner(self, learner):
-        self.optimizationDlg.externalLearner = learner
+        self.vizrank.externalLearner = learner
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
@@ -297,7 +299,7 @@ class OWScatterPlot(OWWidget):
 
 
     def showSelectedAttributes(self):
-        val = self.optimizationDlg.getSelectedProjection()
+        val = self.vizrank.getSelectedProjection()
         if not val: return
         (accuracy, other_results, tableLen, attrs, tryIndex, generalDict) = val
 
@@ -381,9 +383,9 @@ class OWScatterPlot(OWWidget):
             self.attrX = attrList[0]
             self.attrY = attrList[1]
 
-        if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
-            kNNExampleAccuracy, probabilities = self.optimizationDlg.kNNClassifyData(self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[self.attrX], self.graph.attributeNameIndex[self.attrY]]))
-            if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
+        if self.vizrank.showKNNCorrectButton.isOn() or self.vizrank.showKNNWrongButton.isOn():
+            kNNExampleAccuracy, probabilities = self.vizrank.kNNClassifyData(self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[self.attrX], self.graph.attributeNameIndex[self.attrY]]))
+            if self.vizrank.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
             else: kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")
         else:
             kNNExampleAccuracy = None
@@ -447,7 +449,7 @@ class OWScatterPlot(OWWidget):
 
     def destroy(self, dw = 1, dsw = 1):
         self.clusterDlg.hide()
-        self.optimizationDlg.hide()
+        self.vizrank.hide()
         OWWidget.destroy(self, dw, dsw)
 
     def hasDiscreteClass(self, data = -1):

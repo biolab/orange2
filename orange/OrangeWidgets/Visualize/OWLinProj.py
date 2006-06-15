@@ -89,17 +89,19 @@ class OWLinProj(OWVisWidget):
         
         # optimization dialog
         if name.lower() == "radviz":
-            self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
-            self.learnersArray[0] = VizRankLearner(RADVIZ, self.optimizationDlg, self.graph)
+            self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
+            self.learnersArray[0] = VizRankLearner(RADVIZ, self.vizrank, self.graph)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
         elif name.lower() == "polyviz":
-            self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.POLYVIZ, name)
-            self.learnersArray[0] = VizRankLearner(POLYVIZ, self.optimizationDlg, self.graph)
+            self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.POLYVIZ, name)
+            self.learnersArray[0] = VizRankLearner(POLYVIZ, self.vizrank, self.graph)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         else:
-            self.optimizationDlg = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION, name)
-            self.learnersArray[0] = VizRankLearner(LINEAR_PROJECTION, self.optimizationDlg, self.graph)
+            self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.LINEAR_PROJECTION, name)
+            self.learnersArray[0] = VizRankLearner(LINEAR_PROJECTION, self.vizrank, self.graph)
             self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
+
+        self.optimizationDlg = self.vizrank  # for backward compatibility
 
         self.learnersArray[2] = FreeVizLearner(self.freeVizDlg)
 
@@ -120,10 +122,10 @@ class OWLinProj(OWVisWidget):
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraphAndAnchors)
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialogs ", orientation = "horizontal")
-        self.optimizationDlgButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
+        self.vizrankButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
         self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
-        self.optimizationDlgButton.setMaximumWidth(63)
+        self.vizrankButton.setMaximumWidth(63)
         self.clusterDetectionDlgButton.setMaximumWidth(63)
         self.freeVizDlgButton.setMaximumWidth(63)
         
@@ -180,6 +182,7 @@ class OWLinProj(OWVisWidget):
         self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = " Set Active Learner ", items = ["VizRank Learner", "Cluster Learner", "FreeViz Learner", "S2N Feature Selection Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.", callback = self.setActiveLearner)
 
         self.icons = self.createAttributeIconDict()
+        self.debugSettings = ["hiddenAttributes", "shownAttributes"]
 
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
@@ -231,8 +234,8 @@ class OWLinProj(OWVisWidget):
         self.clusterDlg.pointStability = None
 
         try:
-            listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-            text = str(self.optimizationDlg.attributeCountCombo.currentText())
+            listOfAttributes = self.vizrank.getEvaluatedAttributes(self.data)
+            text = str(self.vizrank.attributeCountCombo.currentText())
             if text == "ALL": maxLen = len(listOfAttributes)
             else:             maxLen = int(text)
             
@@ -278,7 +281,7 @@ class OWLinProj(OWVisWidget):
 
     # show selected interesting projection
     def showSelectedAttributes(self):
-        val = self.optimizationDlg.getSelectedProjection()
+        val = self.vizrank.getSelectedProjection()
         if val:
             (accuracy, other_results, tableLen, attrList, tryIndex, generalDict) = val
             self.updateGraph(attrList, setAnchors= 1, XAnchors = generalDict.get("XAnchors"), YAnchors = generalDict.get("YAnchors"))
@@ -336,10 +339,10 @@ class OWLinProj(OWVisWidget):
         else:
             self.setShownAttributeList(self.data, attrList)
         
-        if (self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn()) and self.hasDiscreteClass(self.data):
+        if (self.vizrank.showKNNCorrectButton.isOn() or self.vizrank.showKNNWrongButton.isOn()) and self.hasDiscreteClass(self.data):
             shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList], settingsDict = {"useAnchorData": 1})
-            kNNExampleAccuracy, probabilities = self.optimizationDlg.kNNClassifyData(shortData)
-            if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
+            kNNExampleAccuracy, probabilities = self.vizrank.kNNClassifyData(shortData)
+            if self.vizrank.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
             else:   kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")
         else:
             kNNExampleAccuracy = None
@@ -367,7 +370,7 @@ class OWLinProj(OWVisWidget):
         self.closeContext()        
         exData = self.data
         self.data = data
-        self.optimizationDlg.setData(data)  
+        self.vizrank.setData(data)  
         self.clusterDlg.setData(data)
         self.freeVizDlg.setData(data)
         self.classificationResults = None
@@ -386,7 +389,7 @@ class OWLinProj(OWVisWidget):
         if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.graph.subsetData = data
         if update: self.updateGraph()
-        self.optimizationDlg.setSubsetData(data)
+        self.vizrank.setSubsetData(data)
         self.clusterDlg.setSubsetData(data)
         qApp.processEvents()
        
@@ -416,7 +419,7 @@ class OWLinProj(OWVisWidget):
     
     # set the learning method to be used in VizRank
     def vizRankLearner(self, learner):
-        self.optimizationDlg.externalLearner = learner        
+        self.vizrank.externalLearner = learner        
         
 
     # ###############################################################################################################
@@ -475,7 +478,7 @@ class OWLinProj(OWVisWidget):
 
     def destroy(self, dw = 1, dsw = 1):
         self.clusterDlg.hide()
-        self.optimizationDlg.hide()
+        self.vizrank.hide()
         self.freeVizDlg.hide()
         OWWidget.destroy(self, dw, dsw)
 

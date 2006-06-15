@@ -911,60 +911,79 @@ class OWBaseWidget(QDialog):
     def __setattr__(self, name, value):
         return unisetattr(self, name, value, QDialog)
 
-    def randomlyChangeSettings(self):
+    def randomlyChangeSettings(self, extraOutput = 0):
         if len(self._guiElements) == 0: return
         
         index = random.randint(0, len(self._guiElements)-1)
         type, widget = self._guiElements[index][0], self._guiElements[index][1]
         if not widget.isEnabled(): return
-        if type == "checkBox":
-            type, widget, value, callback = self._guiElements[index]
-            setattr(self, value, not mygetattr(self, value))
-            if callback:
-                callback()
-        elif type == "button":
-            type, widget, callback = self._guiElements[index]
-            if widget.isToggleButton():
-                widget.setOn(not widget.isOn())
-            if callback:
-                callback()
-        elif type == "listBox":
-            type, widget, value, callback = self._guiElements[index]
-            if widget.count():
-                itemIndex = random.randint(0, widget.count()-1)
-                widget.setSelected(itemIndex, not widget.isSelected(itemIndex))
+
+        if extraOutput:
+            self.signalManager.addEvent("Changing widget %s: %s" % (str(self), str(self._guiElements[index])))
+        
+        try:
+            if type == "checkBox":
+                type, widget, value, callback = self._guiElements[index]
+                setattr(self, value, not mygetattr(self, value))
                 if callback:
                     callback()
-        elif type == "radioButtonsInBox":
-            type, widget, value, callback = self._guiElements[index]
-            radioIndex = random.randint(0, len(widget.buttons)-1)
-            if widget.buttons[radioIndex].isEnabled():
-                setattr(self, value, radioIndex)
+            elif type == "button":
+                type, widget, callback = self._guiElements[index]
+                if widget.isToggleButton():
+                    widget.setOn(not widget.isOn())
                 if callback:
                     callback()
-        elif type == "radioButton":
-            type, widget, value, callback = self._guiElements[index]
-            setattr(self, value, not mygetattr(self, value))
-            if callback:
-                callback()
-        elif type in ["hSlider", "qwtHSlider", "spin"]:
-            type, widget, value, min, max, step, callback = self._guiElements[index]
-            currentValue = mygetattr(self, value)
-            if currentValue == min:   setattr(self, value, currentValue+step)
-            elif currentValue == max: setattr(self, value, currentValue-step)
-            else:                     setattr(self, value, currentValue + [-step,step][random.randint(0,1)])
-            if callback:
-                callback()
-        elif type == "comboBox":
-            type, widget, value, sendSelectedValue, valueType, callback = self._guiElements[index]
-            if widget.count():
-                pos = random.randint(0, widget.count()-1)
-                if sendSelectedValue:
-                    setattr(self, value, valueType(str(widget.text(pos))))
-                else:
-                    setattr(self, value, pos)
+            elif type == "listBox":
+                type, widget, value, callback = self._guiElements[index]
+                if widget.count():
+                    itemIndex = random.randint(0, widget.count()-1)
+                    widget.setSelected(itemIndex, not widget.isSelected(itemIndex))
+                    if callback:
+                        callback()
+            elif type == "radioButtonsInBox":
+                type, widget, value, callback = self._guiElements[index]
+                radioIndex = random.randint(0, len(widget.buttons)-1)
+                if widget.buttons[radioIndex].isEnabled():
+                    setattr(self, value, radioIndex)
+                    if callback:
+                        callback()
+            elif type == "radioButton":
+                type, widget, value, callback = self._guiElements[index]
+                setattr(self, value, not mygetattr(self, value))
                 if callback:
-                    callback()  
+                    callback()
+            elif type in ["hSlider", "qwtHSlider", "spin"]:
+                type, widget, value, min, max, step, callback = self._guiElements[index]
+                currentValue = mygetattr(self, value)
+                if currentValue == min:   setattr(self, value, currentValue+step)
+                elif currentValue == max: setattr(self, value, currentValue-step)
+                else:                     setattr(self, value, currentValue + [-step,step][random.randint(0,1)])
+                if callback:
+                    callback()
+            elif type == "comboBox":
+                type, widget, value, sendSelectedValue, valueType, callback = self._guiElements[index]
+                if widget.count():
+                    pos = random.randint(0, widget.count()-1)
+                    if sendSelectedValue:
+                        setattr(self, value, valueType(str(widget.text(pos))))
+                    else:
+                        setattr(self, value, pos)
+                    if callback:
+                        callback()
+        except:
+            self.signalManager.addEvent("-----------------------------------")
+            self.signalManager.addEvent("Widget: %s (%s), component: %s, type: %s" % (str(self), self.__class__.__name__, str(widget), type))
+            self.signalManager.addEvent("Parameters: %s " % (str(self._guiElements[index][2:])))
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)
+            d = self.getSettings()
+            debugSettings = getattr(self, "debugSettings", {})
+            d.update(debugSettings)
+            keys = d.keys()
+            keys.sort()
+            for key in keys:
+                self.signalManager.addEvent("%s: %s" % (key, str(d[key])))
+            self.signalManager.addEvent("-----------------------------------")
 
 if __name__ == "__main__":  
     a=QApplication(sys.argv)

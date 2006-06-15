@@ -24,8 +24,8 @@ class OWPolyviz(OWLinProj):
     def __init__(self,parent=None, signalManager = None):
         OWLinProj.__init__(self, parent, signalManager, "Polyviz", graphClass = OWPolyvizGraph)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Attribute Selection List", AttributeList, self.attributeSelection), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdata), ("Attribute Selection List", AttributeList, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("Learner", orange.Learner)]
 
         # SETTINGS TAB
         self.extraTopBox.show()
