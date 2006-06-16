@@ -212,8 +212,9 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
             if "*" in fnstr:
                 cache = 0
 
+        conv = examples.domain.classVar.varType == orange.VarTypes.Discrete and int or float
         testResults = ExperimentResults(cv.folds, [l.name for l in learners], examples.domain.classVar.values.native(), weight!=0, examples.domain.classVar.baseValue)
-        testResults.results = [TestedExample(folds[i], int(examples[i].getclass()), nLrn, examples[i].getweight(weight))
+        testResults.results = [TestedExample(folds[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                                for i in range(len(examples))]
 
         if cache and testResults.loadFromFiles(learners, fnstr):
@@ -303,9 +304,10 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
         basevalue = examples.domain.classVar.baseValue
     else:
         basevalue = values = None
-        
+
+    conv = examples.domain.classVar.varType == orange.VarTypes.Discrete and int or float        
     testResults = ExperimentResults(nIterations, [getobjectname(l) for l in learners], values, weight!=0, basevalue)
-    testResults.results = [TestedExample(indices[i], int(examples[i].getclass()), nLrn, examples[i].getweight(weight))
+    testResults.results = [TestedExample(indices[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                            for i in range(len(examples))]
 
     ccsum = hex(examples.checksum())[2:]
