@@ -186,7 +186,8 @@ PyObject *PyOrType_GenericCallableNew(PyTypeObject *type, PyObject *args, PyObje
 
       /* We should manually call init - Python will call init on self2, and it won't do anything.
          It's important to call it prior to setting call_constructed (below) */
-      Orange_init(self1, args, kwds);
+      if (Orange_init(self1, args, kwds) < 0)
+        goto err;
 
       /* this is to tell tp_call(self1) not to complain about keyword arguments;
          self1 is disposed later in this function, so this should cause no problems */
