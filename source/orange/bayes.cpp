@@ -156,6 +156,17 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
   PDiscDistribution wresult = result;
   result->normalize();
 
+  /* Ensure there is no division by zero: if a certain class probability is zero,
+     we can divide it by anything.
+     This is needed because if some value for some attribute is missing,
+     the conditional class distribution will be 1/#classes for each class,
+     so P(C|A)/P(C) would be (1/#classes) / 0... Now, it's (1/#classes) / 1. */
+  TDiscDistribution *classDistDiv = CLONE(TDiscDistribution, distribution);
+  PITERATE(TDiscDistribution, ci, classDistDiv)
+    if (*ci < 1e-20)
+      *ci = 1.0;
+
+
   TDomainContingency::iterator dci, dce;
   bool dciOK = conditionalDistributions;
   if (dciOK) {
@@ -178,7 +189,6 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
       // If we have a contingency, that's great
       if (dciOK && *dci) {
         *result *= (*dci)->p(*ei);
-        *result /= distribution;
       }
 
       else if (ceiOK && *cei) {
@@ -188,7 +198,6 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
         // If the estimator can return distributions, that's OK
         if (dist) {
           *result *= dist;
-          *result /= distribution;
         }
 
         // If not, we'll have to go class value by class value
@@ -201,10 +210,10 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
             while (classVar->nextValue(classVal));
 
           *result *= nd;
-          *result /= distribution;
         }
       }
 
+      *result /= *classDistDiv;
       result->normalize();
     }
     if (dciOK)
