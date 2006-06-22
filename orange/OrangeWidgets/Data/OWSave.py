@@ -14,6 +14,7 @@
 
 from OWWidget import *
 import OWGUI
+import re, os.path
 
 class OWSave(OWWidget):
     settingsList=["recentFiles","selectedFileName"]
@@ -33,6 +34,7 @@ class OWSave(OWWidget):
         
         rfbox = OWGUI.widgetBox(vb, "Filename", orientation="horizontal")
         self.filecombo = QComboBox(rfbox)
+        self.filecombo.setFixedWidth(140)
         browse = QPushButton("&Browse...", rfbox)
 
         fbox = OWGUI.widgetBox(vb, "Filename")
@@ -47,27 +49,40 @@ class OWSave(OWWidget):
         self.connect(browse, SIGNAL('clicked()'),self.browseFile)        
         self.connect(self.save, SIGNAL('clicked()'),self.saveFile)
 
-    def dataset(self, data):
-        self.data = data
-        self.save.setDisabled(data == None)
-        
-    def browseFile(self):
-        if self.recentFiles:
-            startfile = self.recentFiles[0]
-        else:
-            startfile = "."
-        filename = QFileDialog.getSaveFileName(startfile,
-        'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
-        None,'Orange Data File')
-
-        self.addFileToList(str(filename))
-        self.saveFile()
-
     savers = {".txt": orange.saveTxt, ".tab": orange.saveTabDelimited,
               ".names": orange.saveC45, ".test": orange.saveC45, ".data": orange.saveC45,
               ".rda": orange.saveRetis, ".rdo": orange.saveRetis,
               ".csv": orange.saveCsv}
     
+    re_filterExtension = re.compile(r"\(\*(?P<ext>\.[^ )]+)")
+
+    def dataset(self, data):
+        self.data = data
+        self.save.setDisabled(data == None)
+
+    def browseFile(self):
+        if self.recentFiles:
+            startfile = self.recentFiles[0]
+        else:
+            startfile = "."
+
+        dlg = QFileDialog(startfile,
+                          'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
+                          None, "Orange Data File", True)
+        dlg.exec_loop()
+
+        filename = str(dlg.selectedFile())
+        ext = lower(os.path.splitext(filename)[1])
+        if not self.savers.has_key(ext):
+            filt_ext = self.re_filterExtension.search(str(dlg.selectedFilter())).group("ext")
+            if filt_ext == ".*":
+                filt_ext = ".tab"
+            filename += filt_ext
+            
+
+        self.addFileToList(str(filename))
+        self.saveFile()
+
     def saveFile(self):
         if self.data:
             filename = self.recentFiles[self.filecombo.currentItem()]
