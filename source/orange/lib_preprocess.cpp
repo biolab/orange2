@@ -337,7 +337,10 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
           return -1;
         }
         Py_DECREF(item);
-        valueList.push_back(value);
+        if (value.isSpecial())
+          vfilter->acceptSpecial = 1;
+        else
+          valueList.push_back(value);
       }
       Py_DECREF(iterator);
     }
@@ -345,7 +348,10 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
       TValue value;
       if (!convertFromPython(pyvalue, value, var))
         return -1;
-      valueList.push_back(value);
+      if (value.isSpecial())
+        vfilter->acceptSpecial = 1;
+      else
+        valueList.push_back(value);
     }
 
     aMap->__ormap[var] = wvfilter;
