@@ -72,6 +72,9 @@ class OWSave(OWWidget):
         dlg.exec_loop()
 
         filename = str(dlg.selectedFile())
+        if not filename:
+            return
+        
         ext = lower(os.path.splitext(filename)[1])
         if not self.savers.has_key(ext):
             filt_ext = self.re_filterExtension.search(str(dlg.selectedFilter())).group("ext")
