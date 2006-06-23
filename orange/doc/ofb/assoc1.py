@@ -11,14 +11,15 @@ data = orange.Preprocessor_discretize(data, \
   method=orange.EquiNDiscretization(numberOfIntervals=3))
 data = data.select(range(10))
 
-minSupport = 0.4
-rules = orngAssoc.build(data, minSupport)
+rules = orange.AssociationRulesInducer(data, support=0.4)
 
 print "%i rules with support higher than or equal to %5.3f found.\n" % (len(rules), minSupport)
 
-subset = rules[0:5]
-subset.printMeasures(['support','confidence'])
+orngAssoc.sort(rules, ["support", "confidence"])
 
+orngAssoc.printRules(rules[:5], ["support", "confidence"])
 print
-del subset[0:2]
-subset.printMeasures(['support','confidence'])
+
+del rules[:3]
+orngAssoc.printRules(rules[:5], ["support", "confidence"])
+print

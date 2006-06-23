@@ -51,34 +51,37 @@ printout. The script that does this is:</p>
 
 <p class="header">part of <a href="assoc1.py">assoc1.py</a>  (uses <a href=
 "imports-85.tab">imports-85.tab</a>) </p>
-<xmp class=code>minSupport = 0.4
-rules = orngAssoc.build(data, minSupport)
+<xmp class=code>rules = orange.AssociationRulesInducer(data, support=0.4)
 
 print "%i rules with support higher than or equal to %5.3f found." % (len(rules), minSupport)
 
-subset = rules[0:5]
-subset.printMeasures(['support','confidence'])
+orngAssoc.sort(rules, ["support", "confidence"])
 
+orngAssoc.printRules(rules[:5], ["support", "confidence"])
 print
-del subset[0:2]
-subset.printMeasures(['support','confidence'])
+
+del rules[:3]
+orngAssoc.printRules(rules[:5], ["support", "confidence"])
+print
 </xmp>
 
 The output of this script is:
 
 <xmp class="code">87 rules with support higher than or equal to 0.400 found.
 
-supp	conf 	rule
-0.888	0.984 	engine-location=front -> fuel-type=gas
-0.888	0.901 	fuel-type=gas -> engine-location=front
-0.805	0.982 	engine-location=front -> aspiration=std
-0.805	0.817 	aspiration=std -> engine-location=front
-0.785	0.958 	fuel-type=gas -> aspiration=std
+supp    conf    rule
+0.888   0.984   engine-location=front -> fuel-type=gas
+0.888   0.901   fuel-type=gas -> engine-location=front
+0.805   0.982   engine-location=front -> aspiration=std
+0.805   0.817   aspiration=std -> engine-location=front
+0.785   0.958   fuel-type=gas -> aspiration=std
 
-supp	conf 	rule
-0.805	0.982 	engine-location=front -> aspiration=std
-0.805	0.817 	aspiration=std -> engine-location=front
-0.785	0.958 	fuel-type=gas -> aspiration=std
+supp    conf    rule
+0.805   0.982   engine-location=front -> aspiration=std
+0.805   0.817   aspiration=std -> engine-location=front
+0.785   0.958   fuel-type=gas -> aspiration=std
+0.771   0.981   fuel-type=gas aspiration=std -> engine-location=front
+0.771   0.958   aspiration=std engine-location=front -> fuel-type=gas
 </xmp>
 
 <p>Notice that the when printing out the rules, user can specify which
@@ -99,37 +102,37 @@ arguments]. Here goes the code:</p>
 
 <p class="header">part of <a href="assoc2.py">assoc2.py</a>  (uses <a href=
 "imports-85.tab">imports-85.tab</a>) </p>
-<xmp class=code>minSupport = 0.4
-rules = orngAssoc.build(data, minSupport)
+<xmp class=code>
+rules = orange.AssociationRulesInducer(data, support = 0.4)
 
 n = 5
 print "%i most confident rules:" % (n)
-rules.sortByConfidence()
-rules[0:n].printMeasures(['confidence','support','lift'])
+orngAssoc.sort(rules, ["confidence"])
+orngAssoc.printRules(rules[0:n], ['confidence','support','lift'])
 
-supp = 0.8; lift = 1.1
-print "\nRules with support>%5.3f and lift>%5.3f" % (supp, lift)
-rulesC=rules.filter(lambda x,supp=supp,lift=lift: x.support>supp and x.lift>lift)
-rulesC.sortByFields(['confidence'])
-rulesC.printMeasures(['confidence','support','lift'])
+conf = 0.8; lift = 1.1
+print "\nRules with support>%5.3f and lift>%5.3f" % (conf, lift)
+rulesC=rules.filter(lambda x: x.confidence>conf and x.lift>lift)
+orngAssoc.sort(rulesC, ['confidence'])
+orngAssoc.printRules(rulesC, ['confidence','support','lift'])
 </xmp>
 
-<p>Just two rules with requested support and lift are found in our rule set:</p>
+<p>Just one rule with requested support and lift is found in our rule set:</p>
 
 <xmp class="code">5 most confident rules:
-conf	supp	lift 	rule
-1.000	0.556	1.015 	engine-location=front -> num-of-doors=four
-1.000	0.585	1.015 	engine-location=front -> drive-wheels=fwd
-0.984	0.888	1.015 	engine-location=front -> fuel-type=gas
-0.982	0.805	1.015 	engine-location=front -> aspiration=std
-0.958	0.785	1.108 	fuel-type=gas -> aspiration=std
+conf    supp    lift    rule
+1.000   0.478   1.015   fuel-type=gas aspiration=std drive-wheels=fwd -> engine-location=front
+1.000   0.429   1.015   fuel-type=gas aspiration=std num-of-doors=four -> engine-location=front
+1.000   0.507   1.015   aspiration=std drive-wheels=fwd -> engine-location=front
+1.000   0.449   1.015   aspiration=std num-of-doors=four -> engine-location=front
+1.000   0.541   1.015   fuel-type=gas drive-wheels=fwd -> engine-location=front
 
-Rules with support>0.800 and lift>1.100
-conf	supp	lift 	rule
-0.901	0.888	1.108 	fuel-type=gas -> engine-location=front
-0.817	0.805	1.220 	aspiration=std -> engine-location=front
+Rules with confidence>0.800 and lift>1.100
+conf    supp    lift    rule
+0.898   0.429   1.116   fuel-type=gas num-of-doors=four -> aspiration=std engine-location=front
 </xmp>
 
+<!--
 <p>Finally, for our third example, we introduce cloning. Cloning helps if you require to work with different rule subsets that stem from common rule set created from some data (actually, cloning is quite useless in our example, but may be very useful otherwise). So, we use cloning to make a copy of the set of rules, then sort by first support and then confidence, and then print out few best rules. We have also lower required minimal support, just to see how many rules we obtain in this way.</p>
 
 <p class="header">part of <a href="assoc3.py">assoc3.py</a>  (uses <a href=
@@ -152,17 +155,17 @@ subset.printMeasures(['support','confidence'])
 <xmp class="code">828 rules with support higher than or equal to 0.200 found.
 
 Best 5 rules:
-supp	conf 	rule
-0.888	0.984 	engine-location=front -> fuel-type=gas
-0.888	0.901 	fuel-type=gas -> engine-location=front
-0.805	0.982 	engine-location=front -> aspiration=std
-0.805	0.817 	aspiration=std -> engine-location=front
-0.785	0.958 	fuel-type=gas -> aspiration=std
+supp    conf    rule
+0.888   0.984   engine-location=front -> fuel-type=gas
+0.888   0.901   fuel-type=gas -> engine-location=front
+0.805   0.982   engine-location=front -> aspiration=std
+0.805   0.817   aspiration=std -> engine-location=front
+0.785   0.958   fuel-type=gas -> aspiration=std
 </xmp>
-
+-->
 <hr><br><p class="Path">
-Prev: <a href="regression.htm">Regression</a>, 
-Next: <a href="other.htm">Other Techniques for Orange Scripting</a>, 
+Prev: <a href="regression.htm">Regression</a>,
+Next: <a href="other.htm">Other Techniques for Orange Scripting</a>,
 Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a></p>
 
 </body></html>
