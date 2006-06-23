@@ -620,7 +620,7 @@ class OWSOMVisualizer(OWWidget):
         OWGUI.button(b, self, "&Invert selection", callback=self.canvasView.invertSelection)
         OWGUI.button(b, self, "&Commit", callback=self.commit)
         OWGUI.checkBox(b, self, "commitOnChange", "Commit on change")
-        OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph)
+        OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph, debuggingEnabled = 0)
         
         self.selectionList=[]
         self.ctrlPressed=False
