@@ -220,7 +220,7 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
             return disc
 
         # create empty distribution
-        retDist = orange.DiscDistribution(example.domain.classVar)
+        retDist = orange.DiscDistribution(self.examples.domain.classVar)
         covRules = orange.RuleList()
         # iterate through examples - add distributions
         for r in self.rules:
