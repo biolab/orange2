@@ -95,7 +95,7 @@ class OWCN2RulesViewer(OWWidget):
         layout.addWidget(self.headerView)
         layout.addWidget(self.canvasView)
         
-        box=OWGUI.widgetBox(self.controlArea,"Show Info")
+        box=OWGUI.widgetBox(self.controlArea,"Show info")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
 
         OWGUI.checkBox(box,self,"RuleLen","Rule length",callback=self.drawRules)
@@ -109,7 +109,7 @@ class OWCN2RulesViewer(OWWidget):
         box=OWGUI.widgetBox(self.controlArea,"Sorting")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
         self.sortBox=OWGUI.comboBox(box, self, "Sort", 
-                                    items=["Rule length", "Rule quality", "Coverage", "Predicted class",
+                                    items=["No sorting", "Rule length", "Rule quality", "Coverage", "Predicted class",
                                            "Distribution","Rule"]
                                     ,callback=self.drawRules)
         OWGUI.separator(self.controlArea)
@@ -144,7 +144,7 @@ class OWCN2RulesViewer(OWWidget):
         text=[]
         items=[]
         for i, r in enumerate(self.rules):
-            l=[str(int(float(r.complexity))), "%.3f" % r.quality, str(len(self.classifier.examples.filterref(r.filter))),
+            l=[i,str(int(float(r.complexity))), "%.3f" % r.quality, "%.1f"%r.classDistribution.abs, #str(len(self.classifier.examples.filterref(r.filter))),
                 str(r.classifier.defaultValue), self.distText(r), self.ruleText(r),r]
             text.append(l)
             self.distText(r)
@@ -179,30 +179,30 @@ class OWCN2RulesViewer(OWWidget):
             l=[]
             if self.RuleLen:
                 t=QCanvasText(self.canvas)
-                t.setText(text[0])
+                t.setText(text[1])
                 l.append(t)
             if self.RuleQ:
                 t=QCanvasText(self.canvas)
-                t.setText(text[1])
+                t.setText(text[2])
                 l.append(t)
             if self.Coverage:
                 t=QCanvasText(self.canvas)
-                t.setText(text[2])
+                t.setText(text[3])
                 l.append(t)
             if self.Class:
                 t=QCanvasText(self.canvas)
-                t.setText(text[3])
+                t.setText(text[4])
                 l.append(t)
             if self.Dist and not self.DistBar:
                 t=QCanvasText(self.canvas)
-                t.setText(text[4])
+                t.setText(text[5])
                 l.append(t)
             if self.DistBar:
-                t=DistBar(text[4],self.Dist,self.canvas)
+                t=DistBar(text[5],self.Dist,self.canvas)
                 l.append(t)                    
             if self.Rule:
                 t=QCanvasText(self.canvas)
-                t.setText(text[5])#self.ruleText(text[-1]))
+                t.setText(text[6])#self.ruleText(text[-1]))
                 l.append(t)
             l.append(QCanvasText(self.canvas))
             self.obj.extend(l)
@@ -268,8 +268,8 @@ class OWCN2RulesViewer(OWWidget):
         return str
 
     def distText(self,r):
-        e=self.classifier.examples.filterref(r.filter)
-        d=orange.Distribution(r.classifier.classVar,self.classifier.examples.filterref(r.filter))
+        #e=self.classifier.examples.filterref(r.filter)
+        d=r.classDistribution#orange.Distribution(r.classifier.classVar,self.classifier.examples.filterref(r.filter))
         s=str(d).strip("<>")
         return "<"+",".join(["%.1f" % float(f) for f in s.split(",")])+">"
 
@@ -310,29 +310,31 @@ class OWCN2RulesViewer(OWWidget):
         else:
             return -1    
     def compareDist(self,a,b):
-        if max(a[-1].classDistribution)/sum(a[-1].classDistribution) \
-                < max(b[-1].classDistribution)/sum(b[-1].classDistribution):
-            return -1
-        elif max(a[-1].classDistribution)/sum(a[-1].classDistribution) \
-                > max(b[-1].classDistribution)/sum(b[-1].classDistribution):
+##        if max(a[-1].classDistribution)/a[-1].classDistribution.abs \
+##                < max(b[-1].classDistribution)/b[-1].classDistribution.abs:
+##            return -1
+        if max(a[-1].classDistribution)/a[-1].classDistribution.abs \
+               > max(b[-1].classDistribution)/b[-1].classDistribution.abs:
             return 1
         else:
             return -1
         
     def sort(self):
         text=[]
-        if self.Sort==4:
+        if self.Sort==5:
             self.text.sort(self.compareDist)
-        elif self.Sort==2 or self.Sort==0:
-            self.text.sort(lambda a,b:int(a[self.Sort])-int(b[self.Sort]))
+        elif self.Sort==3 or self.Sort==1:
+            self.text.sort(lambda a,b:-cmp(float(a[self.Sort]),float(b[self.Sort])))
+        elif self.Sort==0:
+            self.text.sort(lambda a,b:cmp(a[0],b[0]))
         else:
-            if self.Sort>5:
+            if self.Sort>6:
                 self.sortBy=self.Sort+1
             else:
                 self.sortBy=self.Sort
             self.text.sort(self.compare)
         #print self.text
-        if self.Sort>=1 and self.Sort!=3 and self.Sort !=5:
+        if self.Sort>=2 and self.Sort!=4 and self.Sort !=6:
             self.text.reverse()     
             
     def commit(self):
