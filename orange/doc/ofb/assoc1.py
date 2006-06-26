@@ -13,7 +13,7 @@ data = data.select(range(10))
 
 rules = orange.AssociationRulesInducer(data, support=0.4)
 
-print "%i rules with support higher than or equal to %5.3f found.\n" % (len(rules), minSupport)
+print "%i rules with support higher than or equal to %5.3f found.\n" % (len(rules), 0.4)
 
 orngAssoc.sort(rules, ["support", "confidence"])
 
