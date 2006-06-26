@@ -102,6 +102,9 @@ contextHandlers = {"": DomainContextHandler("", [
 
 <dt>syncWithGlobal</dt>
 <dd>tells whether instances of this widget should have a shared list of contexts (default). The alternative is that each keeps its own list; each individual list is merged with the global when the widget is deleted from the canvas (or when the canvas is closed). This setting only applies to canvas, while in saved applications widgets always have separate settings lists.</dd>
+
+<dt>maxAttributesToPickle</dt>
+<dd>To keep the size of the context file small, settings for domains exceeding a certain number of attributes are not pickled. Default is 100, but you can increase (or decrease this) if you need to.
 </dl>
 
 <P>The truly interesting argument is <code>fields</code>. It roughly corresponds to the <code>settingsList</code> in that each element specifies one widget attribute to be saved. The elements of <code>fields</code> can be strings, tuples and/or instances of <code>ContextField</code> (whatever you give, it gets automatically converted to the latter). When given as tuples, they should consist of two elements, the field name (just like in <code>settingsList</code>) and a flag. Here are the possible flags:
