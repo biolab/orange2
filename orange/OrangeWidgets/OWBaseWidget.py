@@ -208,9 +208,9 @@ class DomainContextHandler(ContextHandler):
     SelectedRequiredList = SelectedRequired + List
     
     def __init__(self, contextName, fields = [],
-                 cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, **args):
+                 cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, maxAttributesToPickle = 100, **args):
         ContextHandler.__init__(self, contextName, cloneIfImperfect, loadImperfect, findImperfect, syncWithGlobal, **args)
-        self.maxAttributesToPickle = 100
+        self.maxAttributesToPickle = maxAttributesToPickle
         self.fields = []
         for field in fields:
             if isinstance(field, ContextField):
