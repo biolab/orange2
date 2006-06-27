@@ -650,6 +650,19 @@ SOURCE=.\table.cpp
 # Begin Source File
 
 SOURCE=.\tdidt.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+# SUBTRACT CPP /FA<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
