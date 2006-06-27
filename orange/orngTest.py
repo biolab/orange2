@@ -428,7 +428,7 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
         testset = learnset    
 
     classifiers = [learner(learnset, learnweight) for learner in learners]
-    for i in range(len(learners)): classifiers[i].name = learners[i].name
+    for i in range(len(learners)): classifiers[i].name = getattr(learners[i], "name", "noname")
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
     return testOnData(classifiers, (testset, learnweight), testResults, iterationNumber)
