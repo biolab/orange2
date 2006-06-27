@@ -759,10 +759,13 @@ PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weight
       dummyVar->values = mlnew TStringList(noval, "");
       TStringList::const_iterator tvi(tested.AS(TEnumVariable)->values->begin());
       PITERATE(TIntList, ni, mapping) {
-        string &val = dummyVar->values->at(*ni);
-        if (val.length())
-          val += ", ";
-        val += *tvi++;
+        if (*ni >= 0) {
+          string &val = dummyVar->values->at(*ni);
+          if (val.length())
+            val += ", ";
+          val += *tvi;
+        }
+        tvi++;
       }
       PITERATE(TStringList, vi, dummyVar->values)
         if ((*vi).find(",") != string::npos)
