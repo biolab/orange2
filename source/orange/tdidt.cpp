@@ -746,7 +746,7 @@ float TTreePruner_m::estimateError(const PTreeNode &node, const vector<float> &m
   if (!dist)
     raiseError("invalid class distribution (DiscDistribution expected)");
 
-  if ((dist->abs==0.0) || (dist->abs+m==0.0))
+  if ((dist->abs < 1e-10) || (dist->abs+m < 1e-10))
     return 0.0;
 
   float maxe = 0.0;
@@ -778,6 +778,9 @@ float TTreePruner_m::estimateError(const PTreeNode &node, const float &m_by_se) 
   return (dist->abs*dist->error() + m_by_se) / (dist->abs+m);
 }
 
+#ifdef _MSC_VER
+#pragma optimize("p", off)
+#endif
 
 template<class T>
 float TTreePruner_m::operator()(PTreeNode node, const T &m_by_p, PTreeNode &newNode) const
@@ -797,8 +800,8 @@ float TTreePruner_m::operator()(PTreeNode node, const T &m_by_p, PTreeNode &newN
         sumweights += *bwi;
       }
 
-    float backupError = sumerr/sumweights;
-    float staticError = estimateError(node, m_by_p);
+    const float staticError = estimateError(node, m_by_p);
+    const float backupError = sumerr/sumweights;
 
     if (staticError<backupError) {
       newNode->branches = PTreeNodeList();
@@ -814,3 +817,7 @@ float TTreePruner_m::operator()(PTreeNode node, const T &m_by_p, PTreeNode &newN
   else
     return estimateError(node, m_by_p);
 }
+
+#ifdef _MSC_VER
+#pragma optimize("p", on)
+#endif
