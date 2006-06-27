@@ -234,70 +234,128 @@ TValue TEnumVariable::randomValue(const int &rand)
 
 void TEnumVariable::addValue(const string &val)
 { 
-  if (!exists(values->begin(), values->end(), val))
-    values->push_back(val);
+  if (values->size() > 50) {
+    if (valuesTree.empty())
+      createValuesTree();
 
-  if ((values->size() == 5) && ((values->front() == "f") || (values->front() == "float"))) {
-    TStringList::const_iterator vi(values->begin()), ve(values->end());
-    char *eptr;
-    char numtest[32];
-    while(++vi != ve) { // skip the first (f/float)
-      if ((*vi).length() > 31)
-        break;
-
-      strcpy(numtest, (*vi).c_str());
-      for(eptr = numtest; *eptr; eptr++)
-        if (*eptr == ',')
-          *eptr = '.';
-
-      strtod(numtest, &eptr);
-      while (*eptr==32)
-        eptr++;
-
-      if (*eptr)
-        break;
+    map<string, int>::iterator lb = valuesTree.lower_bound(val);
+    if (lb->first != val) {
+      // watch the order!
+      valuesTree.insert(lb, make_pair(val, values->size()));
+      values->push_back(val);
     }
+  }
 
-    if (vi==ve)
-      raiseWarning("is '%s' a continuous attribute unintentionally defined by '%s'?", name.c_str(), values->front().c_str());
+  else {
+    if (!exists(values->begin(), values->end(), val))
+      values->push_back(val);
+
+    if ((values->size() == 5) && ((values->front() == "f") || (values->front() == "float"))) {
+      TStringList::const_iterator vi(values->begin()), ve(values->end());
+      char *eptr;
+      char numtest[32];
+      while(++vi != ve) { // skip the first (f/float)
+        if ((*vi).length() > 31)
+          break;
+
+        strcpy(numtest, (*vi).c_str());
+        for(eptr = numtest; *eptr; eptr++)
+          if (*eptr == ',')
+            *eptr = '.';
+
+        strtod(numtest, &eptr);
+        while (*eptr==32)
+          eptr++;
+
+        if (*eptr)
+          break;
+      }
+
+      if (vi==ve)
+        raiseWarning("is '%s' a continuous attribute unintentionally defined by '%s'?", name.c_str(), values->front().c_str());
+    }
   }
 }
-
 
 
 /*  Converts a value from string representation to TValue by searching for it in value list.
     If value is not found, it is added to the list if 'autoValues'==true, else exception is raised. */
 void TEnumVariable::str2val_add(const string &valname, TValue &valu)
 {
-  TStringList::iterator vi = find(values->begin(), values->end(), valname);
-  if (vi!=values->end())
-    valu = TValue(int(vi - values->begin())); 
-  else if (!str2special(valname, valu)) {
-    addValue(valname);
-    valu = TValue(int(values->size()-1));
+  const int noValues = values->size();
+
+  if (noValues > 50) {
+    if (valuesTree.empty())
+      createValuesTree();
+
+    map<string, int>::iterator lb = valuesTree.lower_bound(valname);
+    if (lb->first == valname)
+      valu = TValue(lb->second);
+    else if (!str2special(valname, valu)) {
+      valuesTree.insert(lb, make_pair(valname, noValues));
+      values->push_back(valname);
+      valu = TValue(noValues);
+    }
+  }
+
+  else {
+    TStringList::iterator vi = find(values->begin(), values->end(), valname);
+    if (vi!=values->end())
+      valu = TValue(int(vi - values->begin())); 
+    else if (!str2special(valname, valu)) {
+      addValue(valname);
+      valu = TValue(noValues);
+    }
   }
 }
 
 
 void TEnumVariable::str2val(const string &valname, TValue &valu)
 {
-  TStringList::const_iterator vi = find(values->begin(), values->end(), valname);
-  if (vi!=values->end())
-    valu = TValue(int(vi - values->begin())); 
-  else if (!str2special(valname, valu))
-    raiseError("attribute '%s' does not have value '%s'", name.c_str(), valname.c_str());
+  if (values->size() > 50) {
+    if (valuesTree.empty())
+      createValuesTree();
+
+    map<string, int>::const_iterator vi = valuesTree.find(valname);
+    if (vi != valuesTree.end())
+      valu = TValue(vi->second);
+    else if (!str2special(valname, valu))
+      raiseError("attribute '%s' does not have value '%s'", name.c_str(), valname.c_str());
+  }
+
+  else {
+    TStringList::const_iterator vi = find(values->begin(), values->end(), valname);
+    if (vi!=values->end())
+      valu = TValue(int(vi - values->begin())); 
+    else if (!str2special(valname, valu))
+      raiseError("attribute '%s' does not have value '%s'", name.c_str(), valname.c_str());
+  }
 }
 
 
 
 bool TEnumVariable::str2val_try(const string &valname, TValue &valu)
 {
-  TStringList::const_iterator vi = find(values->begin(), values->end(), valname);
-  if (vi!=values->end()) {
-    valu = TValue(int(vi - values->begin())); 
-    return true;
+  if (values->size() > 50) {
+    if (valuesTree.empty())
+      createValuesTree();
+
+    map<string, int>::const_iterator vi = valuesTree.find(valname);
+    if (vi != valuesTree.end()) {
+      valu = TValue(vi->second);
+      return true;
+    }
+    return str2special(valname, valu);
   }
-  return str2special(valname, valu);
+    
+  else {
+    TStringList::const_iterator vi = find(values->begin(), values->end(), valname);
+    if (vi!=values->end()) {
+      valu = TValue(int(vi - values->begin())); 
+      return true;
+    }
+    return str2special(valname, valu);
+  }
 }
 
 
@@ -329,6 +387,12 @@ void TEnumVariable::val2str(const TValue &val, string &str) const
 }
 
 
+void TEnumVariable::createValuesTree()
+{
+  int i = 0;
+  const_PITERATE(TStringList, vi, values)
+    valuesTree[*vi] = i++;
+}
 
 
 

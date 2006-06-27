@@ -44,7 +44,7 @@ WRAPPER(RandomGenerator)
 #include "stladdon.hpp"
 
 #ifdef _MSC_VER
- #pragma warning (disable : 4786 4114 4018 4267)
+ #pragma warning (disable : 4786 4114 4018 4267 4251)
 #endif
 
 WRAPPER(Variable);
@@ -126,6 +126,10 @@ public:
   virtual void str2val(const string &valname, TValue &valu);
   virtual bool str2val_try(const string &valname, TValue &valu);
   virtual void str2val_add(const string &valname, TValue &valu);
+
+private:
+  map<string, int> valuesTree;
+  void createValuesTree();
 };
 
 
