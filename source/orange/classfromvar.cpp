@@ -113,6 +113,8 @@ TValue TClassifierFromVar::operator ()(const TExample &example)
     varType = distributionForUnknown->variable->varType;
   else if (classVar)
     varType = classVar->varType;
+  else if (!transformer)
+    varType = whichVar->varType;
   else if (distributionForUnknown->supportsDiscrete)
     varType = TValue::INTVAR;
   else if (distributionForUnknown->supportsContinuous)
@@ -121,6 +123,47 @@ TValue TClassifierFromVar::operator ()(const TExample &example)
     varType = TValue::NONE;
     
   return TValue(CLONE(TDistribution, distributionForUnknown), varType, valueDK);
+}
+
+
+
+PDistribution TClassifierFromVar::classDistribution(const TExample &exam)
+{ 
+  if (computesProbabilities) 
+    raiseError("invalid setting of 'computesProbabilities'");
+
+  PDistribution dist;
+  if (classVar)
+    dist = TDistribution::create(classVar);
+  else if (whichVar && !transformer)
+    dist = TDistribution::create(whichVar);
+  else
+    checkProperty(classVar); // prints out the usual error  
+
+  dist->add(operator()(exam));
+  return dist;
+}
+
+
+void TClassifierFromVar::predictionAndDistribution(const TExample &ex, TValue &val, PDistribution &classDist)
+{
+  PVariable cvar;
+  if (classVar)
+    cvar = classVar;
+  else if (whichVar && !transformer)
+    cvar = whichVar;
+  else
+    checkProperty(classVar); // prints out the usual error  
+
+  if (computesProbabilities) {
+    classDist = classDistribution(ex);
+    val = cvar->varType==TValue::FLOATVAR ? TValue(classDist->average()) : classDist->highestProbValue(ex);
+  }
+  else {
+    val = operator()(ex);
+    classDist = TDistribution::create(cvar);
+    classDist->add(val);
+  }
 }
 
 
@@ -145,15 +188,59 @@ TClassifierFromVarFD::TClassifierFromVarFD(const TClassifierFromVarFD &old)
 
 TValue TClassifierFromVarFD::operator ()(const TExample &example)
 { 
-  if (position==ILLEGAL_INT)
+  if (position == ILLEGAL_INT)
     raiseError("'position' not set");
-  if (position>=example.domain->variables->size())
-    raiseError("'position' out of range");
   
-  if (example.domain==domain)
+  if (!domain || (example.domain==domain)) {
+    if (position >= example.domain->variables->size())
+      raiseError("'position' out of range");
     return processValue(transformer, example[position], distributionForUnknown, transformUnknowns);
+  }
   else {
+    if (position >= domain->variables->size())
+      raiseError("'position' out of range");
     PVariable var = domain->getVar(position);
     return processValue(transformer, example.getValue(var), distributionForUnknown, transformUnknowns);
+  }
+}
+
+
+PDistribution TClassifierFromVarFD::classDistribution(const TExample &exam)
+{ 
+  if (computesProbabilities) 
+    raiseError("invalid setting of 'computesProbabilities'");
+
+  TValue val = operator()(exam); // call this first to check the 'position'
+
+  PDistribution dist;
+  if (classVar)
+    dist = TDistribution::create(classVar);
+  else if (!transformer) {
+    if (!domain || (exam.domain == domain))
+      dist = TDistribution::create(exam.domain->getVar(position));
+    else
+      dist = TDistribution::create(domain->getVar(position));
+  }
+  else
+    checkProperty(classVar); // prints out the usual error  
+
+  dist->add(val);
+  return dist;
+}
+
+
+void TClassifierFromVarFD::predictionAndDistribution(const TExample &ex, TValue &val, PDistribution &classDist)
+{
+  if (computesProbabilities) {
+    classDist = classDistribution(ex);
+    val = classDist->supportsContinuous ? TValue(classDist->average()) : classDist->highestProbValue(ex);
+  }
+  else {
+    val = operator()(ex);
+    if (!domain || (ex.domain == domain))
+      classDist = TDistribution::create(classVar ? classVar : ex.domain->getVar(position));
+    else
+      classDist = TDistribution::create(classVar ? classVar : domain->getVar(position));
+    classDist->add(val);
   }
 }

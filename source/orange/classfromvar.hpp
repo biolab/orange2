@@ -43,6 +43,8 @@ public:
   TClassifierFromVar(const TClassifierFromVar &);
 
   virtual TValue operator ()(const TExample &);
+  virtual PDistribution classDistribution(const TExample &exam);
+  virtual void predictionAndDistribution(const TExample &ex, TValue &val, PDistribution &classDist);
 
 protected:
   int lastDomainVersion;
@@ -64,6 +66,8 @@ public:
   TClassifierFromVarFD(const TClassifierFromVarFD &);
 
   virtual TValue operator ()(const TExample &);
+  virtual PDistribution classDistribution(const TExample &exam);
+  virtual void predictionAndDistribution(const TExample &ex, TValue &val, PDistribution &classDist);
 };
 
 #endif
