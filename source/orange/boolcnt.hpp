@@ -28,6 +28,10 @@
 
 using namespace std;
 
+#ifdef _MSC_VER
+ #pragma warning (disable : 4275 4251)
+#endif
+
 /* Given number of digits and their limit, this counter starts with 01234...d and then increases
    digits, with rightmost the least important. Digit values are ordered in increasing sequence,
    that is 012469 is valid, while 014269 isn't. If a digit reaches limit, its left neighbour is
