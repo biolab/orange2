@@ -98,6 +98,7 @@ public:
    int topology;//P topology
    int neighborhood; //P neighborhood
    int alphaType;	//P alphaType
+   int randomSeed;	//P random seed for codebook initialization
 
    PIntList iterations; //P list of iterations for each step
    PIntList radius; //P neighbourghood radius list

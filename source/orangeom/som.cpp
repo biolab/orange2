@@ -71,6 +71,7 @@ TSOMLearner::TSOMLearner(){
     domainContinuizer->classTreatment=3;
     domainContinuizer->multinomialTreatment=6;
     domainContinuizer->continuousTreatment=2;
+	randomSeed=1;
 }
 
 PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
@@ -91,6 +92,7 @@ PClassifier TSOMLearner::operator() (PExampleGenerator examples, const int &a){
     type=get_type_by_id(alpha_list, ALPHA_LINEAR);
     params.alpha_type=type->id;
     params.alpha_func=(ALPHA_FUNC*)type->data;
+	init_random(randomSeed);
     codes=randinit_codes(data, topology, neighborhood, xDim, yDim);
 	codes->fi=NULL;
     set_teach_params(&params, codes, NULL, 0);
