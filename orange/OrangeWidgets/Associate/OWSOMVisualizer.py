@@ -536,7 +536,15 @@ class SOMCanvas(QCanvas):
 
 
 class OWSOMVisualizer(OWWidget):
-    settingsList=["canvas.drawMode","canvas.objSize","commitOnChange", "backgroundMode", "backgroundCheck"]
+    settingsList=["canvas.drawMode","canvas.objSize","commitOnChange", "backgroundMode", "backgroundCheck", "canvasView.includeCodebook", "canvasView.showBubbleInfo"]
+    contextHandlers={"":DomainContextHandler("", [ContextField("attribute", DomainContextHandler.Optional),
+                                                  ContextField("discHistMode", DomainContextHandler.Optional),
+                                                  ContextField("contHistMode", DomainContextHandler.Optional),
+                                                  ContextField("targetValue", DomainContextHandler.Optional),
+                                                  ContextField("histogram", DomainContextHandler.Optional),
+                                                  ContextField("inputSet", DomainContextHandler.Optional),
+                                                  ContextField("canvas.component", DomainContextHandler.Optional),
+                                                  ContextField("canvasView.includeCodebook", DomainContextHandler.Optional)])}
     def __init__(self, parent=None, signalManager=None, name="SOMVisualizer"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.inputs=[("SOMMap", orangeom.SOMMap, self.setSomMap), ("SOMClassifier", orangeom.SOMClassifier, self.setSomClassifier), ("Examples", ExampleTable, self.data)]
@@ -657,6 +665,7 @@ class OWSOMVisualizer(OWWidget):
         self.setSom(somMap)
         
     def setSom(self, somMap=None):
+        self.closeContext()
         self.somMap=somMap
         if not somMap:
             self.clear()
@@ -682,7 +691,7 @@ class OWSOMVisualizer(OWWidget):
             self.tabWidget.setTabEnabled(self.discTab,False)
             self.tabWidget.setTabEnabled(self.contTab,True)
             self.tabWidget.showPage(self.contTab)        
-            
+        self.openContext("", somMap.examples)
         self.canvas.setSom(somMap)
        
     def data(self, data=None):
