@@ -102,7 +102,7 @@ void TTreeNode::removeStoredInfo()
 TTreeLearner::TTreeLearner()
 : storeExamples(false),
   storeDistributions(true),
-  storeContingencies(true),
+  storeContingencies(false),
   storeNodeClassifier(true),
   maxDepth(100)
 {}
@@ -703,7 +703,7 @@ PTreeNode TTreePruner_m::operator()(PTreeNode root)
   PDistribution dist;
   if (root->distribution)
     dist = root->distribution;
-  else if (root->contingency->classes)
+  else if (root->contingency && root->contingency->classes)
     dist = root->contingency->classes;
   else
     raiseError("the node does not store class distribution (check your flags for TreeLearner)");
