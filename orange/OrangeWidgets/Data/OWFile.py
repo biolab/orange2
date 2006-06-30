@@ -124,7 +124,11 @@ class OWSubFile(OWWidget):
                 self.infob.setText('Classless domain')
 
             # make new data and send it
-            data.name = string.split(os.path.split(fn)[1], '.')[0]
+            fName = os.path.split(fn)[1]
+            if "." in fName:
+                data.name = string.join(string.split(fName, '.')[:-1], '.')
+            else:
+                data.name = fName
             self.send("Examples", data)
             if data.domain.classVar:
                 self.send("Classified Examples", data)
