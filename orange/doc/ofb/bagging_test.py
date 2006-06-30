@@ -15,4 +15,4 @@ learners = [tree, baggedTree]
 
 results = orngTest.crossValidation(learners, data, folds=5)
 for i in range(len(learners)):
-    print learners[i].name, orngStat.CA(results)[i]
+    print "%s: %5.3f" % (learners[i].name, orngStat.CA(results)[i])
