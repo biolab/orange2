@@ -1464,10 +1464,101 @@ PyObject *getRegisteredFileTypes(PyObject *, PyObject *, PyObject *) PYARGS(METH
 }
 
 #include "examplegen.hpp"
-BASED_ON(ExampleGenerator, Orange)
-
 #include "table.hpp"
 #include "filter.hpp"
+
+
+PyObject *loadDataByPython(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool exhaustiveFilesearch, bool &fileFound)
+{
+  vector<TFiletypeDefinition>::iterator fi = findFiletypeByExtension(filename, true, false, exhaustiveFilesearch);
+  fileFound = fi!=filetypeDefinitions.end();
+
+  if (fileFound) {
+    PyObject *res = PyObject_Call((*fi).loader, argstuple, keywords);
+    if (!res)
+      throw pyexception();
+    if (res == Py_None)
+      return res;
+
+    if (PyOrExampleTable_Check(res))
+      return res;
+
+    PExampleGenerator gen;
+    if (!exampleGenFromParsedArgs(res, gen))
+      return PYNULL;
+
+    TExampleTable *table = gen.AS(TExampleTable);
+    if (!table)
+      return PYNULL;
+
+    return WrapNewOrange(table, type);
+  }
+
+  return PYNULL;
+}
+
+bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC);
+
+
+bool readBoolFlag(PyObject *keywords, char *flag)
+{
+  PyObject *pyflag = keywords ? PyDict_GetItemString(keywords, flag) : PYNULL;
+  return pyflag && PyObject_IsTrue(pyflag);
+}
+
+bool hasFlag(PyObject *keywords, char *flag)
+{
+  return keywords && (PyDict_GetItemString(keywords, flag) != PYNULL);
+}
+
+
+TExampleTable         *readTable(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false);
+TExampleGenerator *readGenerator(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false);
+
+PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool generatorOnly = false)
+{
+  PyObject *res;
+  
+  bool pythonFileFound;
+  res = loadDataByPython(type, filename, argstuple, keywords, false, pythonFileFound);
+  if (res)
+    if (res != Py_None)
+      return res;
+    else
+      Py_DECREF(Py_None);
+
+  PyErr_Clear();
+
+  bool dontCheckStored = hasFlag(keywords, "dontCheckStored") ? readBoolFlag(keywords, "dontCheckStored") : hasFlag(keywords, "use");
+  char *DK = NULL, *DC = NULL;
+  if (!readUndefinedSpecs(keywords, DK, DC))
+    return PYNULL;
+
+  char *errs = NULL;
+  try {
+    TExampleGenerator *generator = 
+      generatorOnly ? readGenerator(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, false, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"))
+                    : readTable(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, false, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"));
+    if (generator)
+      return WrapNewOrange(generator, type);
+  }
+  catch (mlexception err) { 
+    errs = strdup(err.what());
+  }
+
+  res = loadDataByPython(type, filename, argstuple, keywords, true, pythonFileFound);
+  if (res)
+    return res;
+
+  if (pythonFileFound) {
+    PYERROR(PyExc_SystemError, "cannot load the file", PYNULL);
+  }
+  else {
+    PyErr_SetString(PyExc_SystemError, errs);
+    free(errs);
+    return PYNULL;
+  }
+}
 
 
 int pt_ExampleGenerator(PyObject *args, void *egen)
@@ -1518,6 +1609,20 @@ converter ptd_ExampleGenerator(PDomain domain)
 { 
   ptd_domain = domain;
   return ptdf_ExampleGenerator;
+}
+
+
+CONSTRUCTOR_KEYWORDS(ExampleGenerator, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA noClass noCodedDiscrete")
+
+PyObject *ExampleGenerator_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(Orange, "(filename)")
+{  
+  PyTRY
+    char *filename = NULL;
+    if (PyArg_ParseTuple(argstuple, "s", &filename))
+      return loadDataFromFile(type, filename, argstuple, keywords, true);
+    else
+      return PYNULL;
+  PyCATCH;
 }
 
 
@@ -2043,8 +2148,6 @@ PyObject *ExampleGeneratorList_sort(TPyOrange *self, PyObject *args) PYARGS(METH
 #include "numeric_interface.hpp"
 #endif
 
-TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noCodedDiscrete, bool noClass);
-
 
 TExampleTable *readListOfExamples(PyObject *args)
 { 
@@ -2240,101 +2343,16 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
   PYERROR(PyExc_TypeError, "invalid arguments", NULL);
 }
 
-bool readBoolFlag(PyObject *keywords, char *flag)
-{
-  PyObject *pyflag = keywords ? PyDict_GetItemString(keywords, flag) : PYNULL;
-  return pyflag && PyObject_IsTrue(pyflag);
-}
-
-bool hasFlag(PyObject *keywords, char *flag)
-{
-  return keywords && (PyDict_GetItemString(keywords, flag) != PYNULL);
-}
-
 
 CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA noClass noCodedDiscrete")
-
-
-
-PyObject *loadDataByPython(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool exhaustiveFilesearch, bool &fileFound)
-{
-  vector<TFiletypeDefinition>::iterator fi = findFiletypeByExtension(filename, true, false, exhaustiveFilesearch);
-  fileFound = fi!=filetypeDefinitions.end();
-
-  if (fileFound) {
-    PyObject *res = PyObject_Call((*fi).loader, argstuple, keywords);
-    if (!res)
-      throw pyexception();
-    if (res == Py_None)
-      return res;
-
-    if (PyOrExampleTable_Check(res))
-      return res;
-
-    PExampleGenerator gen;
-    if (!exampleGenFromParsedArgs(res, gen))
-      return PYNULL;
-
-    TExampleTable *table = gen.AS(TExampleTable);
-    if (!table)
-      return PYNULL;
-
-    return WrapNewOrange(table, type);
-  }
-
-  return PYNULL;
-}
-
-bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC);
-
-TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false);
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
 {  
   PyTRY
 
     char *filename = NULL;
-    if (PyArg_ParseTuple(argstuple, "s", &filename)) {
-      PyObject *res;
-      
-      bool pythonFileFound;
-      res = loadDataByPython(type, filename, argstuple, keywords, false, pythonFileFound);
-      if (res)
-        if (res != Py_None)
-          return res;
-        else
-          Py_DECREF(Py_None);
-
-      PyErr_Clear();
-
-      bool dontCheckStored = hasFlag(keywords, "dontCheckStored") ? readBoolFlag(keywords, "dontCheckStored") : hasFlag(keywords, "use");
-      char *DK = NULL, *DC = NULL;
-      if (!readUndefinedSpecs(keywords, DK, DC))
-        return PYNULL;
-
-      char *errs = NULL;
-      try {
-        TExampleTable *table = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, false, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"));
-        if (table)
-          return WrapNewOrange(table, type);
-      }
-      catch (mlexception err) { 
-        errs = strdup(err.what());
-      }
-
-      res = loadDataByPython(type, filename, argstuple, keywords, true, pythonFileFound);
-      if (res)
-        return res;
-
-      if (pythonFileFound) {
-        PYERROR(PyExc_SystemError, "cannot load the file", PYNULL);
-      }
-      else {
-        PyErr_SetString(PyExc_SystemError, errs);
-        free(errs);
-        return PYNULL;
-      }
-    }
+    if (PyArg_ParseTuple(argstuple, "s", &filename))
+      return loadDataFromFile(type, filename, argstuple, keywords);
 
     PyErr_Clear();
 

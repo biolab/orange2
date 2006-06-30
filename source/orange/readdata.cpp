@@ -65,9 +65,7 @@ char *fileTypes[][2] = {{"Tab-delimited", "*.tab"}, {"Tab-delimited (simplified)
                        {"C45", "*.names"}, {"Retis", "*.rda"}, {"Assistant", "*.dat"}, {"Basket", "*.basket"},
                        {NULL, NULL}};
                        
-WRAPPER(ExampleTable);
-
-TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false)
+TExampleGenerator *readGenerator(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false)
 { char *ext, *hash;
   if (filename) {
     for(ext = hash = filename + strlen(filename); ext!=filename; ext--) {
@@ -88,39 +86,27 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
 
   // If the extension is given, we simply determine the format and load the files
   if (ext) {
-    if (!strcmp(ext, ".txt")) {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, true, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noCodedDiscrete, noClass);
-      return mlnew TExampleTable(gen);
-    }
+    if (!strcmp(ext, ".txt"))
+      return mlnew TTabDelimExampleGenerator(filename, true, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noCodedDiscrete, noClass);
 
-    if (!strcmp(ext, ".csv")) {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, true, true, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noCodedDiscrete, noClass);
-      return mlnew TExampleTable(gen);
-    }
+    if (!strcmp(ext, ".csv"))
+      return mlnew TTabDelimExampleGenerator(filename, true, true, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noCodedDiscrete, noClass);
 
-    if (!strcmp(ext, ".tab") || !strcmp(ext, ".tsv")) {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC);
-      return mlnew TExampleTable(gen);
-    }
+    if (!strcmp(ext, ".tab") || !strcmp(ext, ".tsv"))
+      return mlnew TTabDelimExampleGenerator(filename, false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC);
 
-    if (!strcmp(ext, ".basket")) {
-      PExampleGenerator gen = mlnew TBasketExampleGenerator(filename, knownDomain, dontCheckStored, dontStore);
-      return mlnew TExampleTable(gen);
-    }
+    if (!strcmp(ext, ".basket"))
+      return mlnew TBasketExampleGenerator(filename, knownDomain, dontCheckStored, dontStore);
 
-    if (!strcmp(ext, ".data") || !strcmp(ext, ".names") || !strcmp(ext, ".test")) {
-      PExampleGenerator gen = mlnew TC45ExampleGenerator(strcmp(ext, ".names") ? filename : string(filename, ext) + ".data",
+    if (!strcmp(ext, ".data") || !strcmp(ext, ".names") || !strcmp(ext, ".test"))
+      return mlnew TC45ExampleGenerator(strcmp(ext, ".names") ? filename : string(filename, ext) + ".data",
                                                          string(filename, ext) + ".names",
                                                          knownVars, knownDomain, dontCheckStored, dontStore);
-      return mlnew TExampleTable(gen);
-    }
 
-    if (!strcmp(ext, ".rda") || !strcmp(ext, ".rdo")) {
-      PExampleGenerator gen = mlnew TRetisExampleGenerator(string(filename, ext) + ".rda",
+    if (!strcmp(ext, ".rda") || !strcmp(ext, ".rdo"))
+      return mlnew TRetisExampleGenerator(string(filename, ext) + ".rda",
                                                            string(filename, ext) + ".rdo",
                                                            knownVars, knownDomain, dontCheckStored, dontStore);
-      return mlnew TExampleTable(gen);
-    }
 
     if (!strcmp(ext, ".dat")) {
       char *stem;
@@ -131,10 +117,9 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
         raiseError("invalid assistant filename (it should start with 'asdo' or 'asda')");
 
       stem += 3;
-      PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "a" + string(stem+1, ext), 
+      return mlnew TAssistantExampleGenerator(string(filename, stem) + "a" + string(stem+1, ext), 
                                                                string(filename, stem) + "o" + string(stem+1, ext),
                                                                knownVars, knownDomain, dontCheckStored, dontStore);
-      return mlnew TExampleTable(gen);
     }
 
     #ifdef _MSC_VER
@@ -227,46 +212,31 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
   string sfilename(filename);
 
   switch (fileFormat) {
-    case TXT: {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".txt", true, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noCodedDiscrete, noClass);
-      return mlnew TExampleTable(gen);
-    }
+    case TXT: 
+      return mlnew TTabDelimExampleGenerator(sfilename+".txt", true, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noCodedDiscrete, noClass);
 
-    case CSV: {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".csv", true, true, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noCodedDiscrete, noClass);
-      return mlnew TExampleTable(gen);
-    }
+    case CSV:
+      return mlnew TTabDelimExampleGenerator(sfilename+".csv", true, true, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noCodedDiscrete, noClass);
 
-    case TAB: {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".tab", false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC);
-      return mlnew TExampleTable(gen);
-    }
+    case TAB:
+      return mlnew TTabDelimExampleGenerator(sfilename+".tab", false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC);
 
-    case TSV: {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".tsv", false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC);
-      return mlnew TExampleTable(gen);
-    }
+    case TSV:
+      return mlnew TTabDelimExampleGenerator(sfilename+".tsv", false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC);
 
-    case BASKET: {
-      PExampleGenerator gen = mlnew TBasketExampleGenerator(sfilename+".basket", knownDomain, dontCheckStored, dontStore);
-      return mlnew TExampleTable(gen);
-    }
+    case BASKET:
+      return mlnew TBasketExampleGenerator(sfilename+".basket", knownDomain, dontCheckStored, dontStore);
 
-    case C45: {
-      PExampleGenerator gen = mlnew TC45ExampleGenerator(sfilename + ".data", sfilename + ".names", knownVars, knownDomain, dontCheckStored, dontStore);
-      return mlnew TExampleTable(gen);
-    }
+    case C45:
+      return mlnew TC45ExampleGenerator(sfilename + ".data", sfilename + ".names", knownVars, knownDomain, dontCheckStored, dontStore);
 
-    case RETIS: {
-      PExampleGenerator gen = mlnew TRetisExampleGenerator(sfilename + ".rda", sfilename + ".rdo", knownVars, knownDomain, dontCheckStored, dontStore);
-      return mlnew TExampleTable(gen);
-    }
+    case RETIS:
+      return mlnew TRetisExampleGenerator(sfilename + ".rda", sfilename + ".rdo", knownVars, knownDomain, dontCheckStored, dontStore);
 
     case ASSISTANT: {
-      PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "asda" + string(stem)+".dat",
+      return mlnew TAssistantExampleGenerator(string(filename, stem) + "asda" + string(stem)+".dat",
                                                                string(filename, stem) + "asdo" + string(stem)+".dat",
                                                                knownVars, knownDomain, dontCheckStored, dontStore);
-      return mlnew TExampleTable(gen);
     }
 
     #ifdef _MSC_VER
@@ -282,4 +252,15 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
   }
   return NULL;
 }
+
+
+TExampleTable *readTable(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false)
+{
+  TExampleGenerator *gen = readGenerator(filename, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore, DK, DC, noExcOnUnknown, noCodedDiscrete, noClass);
+  if (!gen)
+    return NULL;
+  TExampleTable *table = dynamic_cast<TExampleTable *>(gen);
+  return table ? table : new TExampleTable(gen);
+}
+
 
