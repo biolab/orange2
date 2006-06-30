@@ -1,0 +1,4 @@
+Classification Accuracy:
+           tree: 0.769
+   boosted tree: 0.817
+    bagged tree: 0.783
