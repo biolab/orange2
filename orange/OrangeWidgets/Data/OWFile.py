@@ -17,9 +17,14 @@ import OWGUI, string, os.path
 
 class OWSubFile(OWWidget):
     settingsList=["recentFiles"]
+    allFileWidgets = []
 
     def __init__(self, parent=None, signalManager = None, name = "File"):
         OWWidget.__init__(self, parent, signalManager, name)
+        OWSubFile.allFileWidgets.append(self)
+
+    def destroy(self):
+        OWSubFile.allFileWidgets.remove(self)
                  
     def activateLoadedSettings(self):
         # remove missing data set names
@@ -85,26 +90,50 @@ class OWSubFile(OWWidget):
         for (i, s) in enumerate(info):
             self.info[i].setText(s)            
 
+    # checks whether any file widget knows of any variable from the current domain
+    def attributesOverlap(self, domain):
+        for fw in OWSubFile.allFileWidgets:
+            if fw != self and getattr(fw, "dataDomain", None):
+                for var in domain:
+                    if var in fw.dataDomain:
+                        return True
+        return False
+
     # Open a file, create data from it and send it over the data channel
     def openFileBase(self,fn, throughReload = 0, DK=None, DC=None):
         dontCheckStored = throughReload and self.resetDomain
         self.resetDomain = self.domain != None
+        oldDomain = getattr(self, "dataDomain", None)
         if fn != "(none)":
             fileExt=lower(os.path.splitext(fn)[1])
+            argdict = {"dontCheckStored": dontCheckStored, "use": self.domain}
             if fileExt in (".txt",".tab",".xls"):
-                if DK and DC:
-                    data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain, DK=DK, DC=DC)
-                elif DK and not DC:
-                    data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain, DK=DK)
-                elif not DK and DC:
-                    data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain, DC=DC)
-                else:
-                    data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain)
+                preloader, loader = orange.ExampleGenerator, orange.ExampleTable
+                if DK:
+                    argdict["DK"] = DK
+                if DC:
+                    argdict["DC"] = DC
             elif fileExt in (".c45",):
-                data = orange.C45ExampleGenerator(fn, dontCheckStored = dontCheckStored, use = self.domain)
+                preloader = loader = orange.C45ExampleGenerator
             else:
                 return
-                
+
+            if dontCheckStored:
+                data = loader(fn **argdict)
+            else:
+                # Load; if the domain is the same and there is no other file widget which
+                # uses any of the same attributes like this one, reload
+                # If the loader for a particular format cannot load the examle generator
+                # (i.e. if it always returns an example table), the data is loaded twice.
+                data = preloader(fn, **argdict)
+                if oldDomain == data.domain and not self.attributesOverlap(data.domain):
+                    argdict["dontCheckStored"] = 1
+                    data = loader(fn, **argdict)
+                elif not type(data) >= orange.ExampleTable:
+                    data = loader(fn, **argdict)
+
+            self.dataDomain = data.domain
+            
             # update data info
             def sp(l):
                 n = len(l)
