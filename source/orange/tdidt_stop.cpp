@@ -53,9 +53,11 @@ bool TTreeStopCriteria::operator()(PExampleGenerator gen, const int &, PDomainCo
     if (!ei)
       return true;
 
+    const int fvi = fv.intV;
+
     while(++ei) {
       TValue &cval = (*ei).getClass();
-      if (!cval.isSpecial() && ((*ei).getClass()!=fv))
+      if (!cval.isSpecial() && (cval.intV != fvi))
         return false; // yes, may continue
     }
   }
