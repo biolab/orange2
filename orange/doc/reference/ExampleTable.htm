@@ -233,7 +233,7 @@ for i in range(100):
 </DD>
 
 
-<A name="extend">
+<A name="extend"></a>
 <DT>extend(examples)</DT>
 <DD>Appends a list of examples (given as a generator or a Python list) to the table. This function has the same effect as calling <CODE>append</CODE> for each example in the list.</P>
 
@@ -246,7 +246,7 @@ for i in range(100):
 </DD>
 </DL>
 
-<A name="select">
+<A name="select"></a>
 <H2>Selection, Filtering, Translation</H2>
 
 <P><CODE>ExampleTable</CODE> offers several methods for selection and translation of examples (some of them are actually inherited from a more general class <CODE>ExampleGenerator</CODE>). For easier illustration, we shall prepare an example table with 10 examples, described by a single numerical attribute having values from 0 to 9 (effectively enumerating the examples).</P>
@@ -263,6 +263,8 @@ for i in range(10):
 <DL class=attributes>
 <DT>select(list[, int][, negate=0]) <span class=normalfont>(inherited from <CODE>ExampleGenerator</CODE>)</SPAN></DT>
 <DD>Method <CODE>select</CODE> returns a subset of examples. The argument is a list of integers of the same length as the examples table. <CODE>select</CODE> picks the examples for which the corresponding list's element is equal to the second (optional) argument. If the latter is omitted, example for which the corresponding element is non-zero are selected. An additional keyword argument <CODE>negate=1</CODE> reverses the selection.</P>
+
+<P>Note: <code>select</code> used to have many other functions, which are now deprecated and only kept for compatibility. We shall not document them, except for one that may cause unexpected behaviour. Say we have a data set which does not contain three examples (can have more of less). Calling <code>select([0, 1, 5])</code> will return a table containing only the first, second and sixth attribute. In other words, if you use <code>select</code> like described above (and below), but give it a list of a wrong size, the call will be interpreted as if you want to change the domain. Don't purposely call <code>select</code> to change the domain.</P>
 
 <P>The most natural use of this method is for division of examples into folds. For this, we first prepare a list of fold indices using an appropriate descendant of <CODE>MakeRandomIndices</CODE>; <CODE>MakeRandomIndicesCV</CODE>, for instance, will prepare indices for cross-validation (see documentation on <a href="randomindices.htm">random indices</a>). Then we feed the indices to <CODE>select</CODE>, as shown in example below.</P>
 
@@ -364,7 +366,7 @@ Fold 0: train
 </XMP>
 </DD>
 
-<A name="filter">
+<A name="filter"></a>
 <DT>filter(filt)</DT>
 <DD>Filters examples through a given filter <CODE>filt</CODE> of type <CODE>orange.Filter</CODE>.</P></DD>
 
@@ -415,7 +417,7 @@ data.randomGenerator = random.randint(0, 10000)
 </DL>
 
 
-<A name="meta">
+<A name="meta"></a>
 <H2>Meta-values</H2>
 
 <P>Adding a meta-value to all examples in a table is a very common operation, deserving specialized functions. There are two, one for adding and the other for removing a meta-value.</P>

@@ -25,7 +25,7 @@
 <DD>Stores a distribution for learning examples belonging to the node. Storing distributions can be disabled by setting the <code>TreeLearners</code>'s <code>storeDistributions</code> flag to <CODE>false</CODE>.</DD>
 
 <DT>contingency</DT>
-<DD>Stores complete contingency matrices for the learning examples belonging to the node. Storing contingencies can be disabled by setting <code>TreeLearner</code>'s <code>storeContingencies</code> flag to <CODE>false</CODE>. Note that even when the flag is not set, the contingencies get computed and stored to <code>TreeNode</code>, but are removed shortly afterwards. The details are given in the description of the <code>TreeLearner</code> object.</DD>
+<DD>Stores complete contingency matrices for the learning examples belonging to the node. Storing contingencies can be enabled by setting <code>TreeLearner</code>'s <code>storeContingencies</code> flag to <CODE>true</CODE>. Note that even when the flag is not set, the contingencies get computed and stored to <code>TreeNode</code>, but are removed shortly afterwards. The details are given in the description of the <code>TreeLearner</code> object.</DD>
 
 <DT>examples, weightID</DT>
 <DD>Store a set of learning examples for the node and the corresponding ID of weight meta attribute. The root of the tree stores a "master table" of examples, while other nodes' <CODE>ExampleTable</CODE>s contain reference to examples in the root's <CODE>ExampleTable</CODE>. Examples are only stored if a corresponding flag (<code>storeExamples</code>) has been set while building the tree; to conserve the space, storing is disabled by default.</DD>
@@ -157,7 +157,7 @@
 <DD>Gives maximal tree depth; 0 means that only root is generated. The default is 100 to prevent any infinite tree induction due to missettings in stop criteria. If you are sure you need larger trees, increase it. If you, on the other hand, want to lower this hard limit, you can do so as well.</DD>
 
 <DT>storeDistributions, storeContingencies, storeExamples, storeNodeClassifier</DT>
-<DD>Decides whether to store class distributions, contingencies and examples in <code>TreeNodes</code>, and whether the <code>nodeClassifier</code> should be build for internal nodes. By default everything except <code>storeExamples</code> is enabled. You won't save any memory by not storing distributions but storing contingencies, since distributions actually points to the same distribution that is stored in <code>contingency.classes</code>.</DD>
+<DD>Decides whether to store class distributions, contingencies and examples in <code>TreeNodes</code>, and whether the <code>nodeClassifier</code> should be build for internal nodes. By default, distributions and node classifiers are stored, while contingencies and examples are not. You won't save any memory by not storing distributions but storing contingencies, since distributions actually points to the same distribution that is stored in <code>contingency.classes</code>.</DD>
 </DL>
 
 <p>The <code>TreeLearner</code> first sets the defaults for missing components. Although stored in the actual <code>TreeLearner</code>'s fields, they are removed when the induction is finished.</p>
