@@ -991,6 +991,21 @@ int pt_DomainContingency(PyObject *args, void *egen)
 }
 
 
+int ptn_DomainContingency(PyObject *args, void *egen)
+{ 
+  if (args == Py_None) {
+    *(PDomainContingency *)(egen) = PDomainContingency();
+    return 1;
+  }
+  else if (PyOrDomainContingency_Check(args)) {
+    *(PDomainContingency *)(egen) = PyOrange_AsDomainContingency(args);
+    return 1;
+  }
+  else {
+    egen = NULL;
+    PYERROR(PyExc_TypeError, "invalid domain contingency", 0);
+  }
+}
 
 
 
