@@ -45,7 +45,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /Zm700 /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /Op- /Oy /Ob1 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /Zm700 /Gs /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -650,19 +650,6 @@ SOURCE=.\table.cpp
 # Begin Source File
 
 SOURCE=.\tdidt.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-# SUBTRACT CPP /FA<none>
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 

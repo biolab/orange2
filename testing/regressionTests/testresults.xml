@@ -39,4 +39,4 @@ ImportError: No module named MySQLdb
   File &quot;c:\d\ai\orange\orngMySQL.py&quot;, line 10, in ?
     import MySQLdb
 ImportError: No module named MySQLdb
-</FILE></PLATFORM></STATUS><RUN DATE="2006-06-30" PLATFORM="win32" TYPE="update"><FILE DATE="2006-06-30" STATUS="OK" name="modules/misc_bestOnTheFly.py"/><FILE DATE="2006-06-30" STATUS="OK" name="modules/som1.py" xml:space="preserve"/><FILE DATE="2006-06-30" STATUS="OK" name="ofb/bagging_test.py"/></RUN></XML>
+</FILE></PLATFORM></STATUS><RUN DATE="2006-06-30" PLATFORM="win32" TYPE="update"><FILE DATE="2006-06-30" STATUS="OK" name="modules/ensemble2.py" xml:space="preserve"/><FILE DATE="2006-06-30" STATUS="OK" name="modules/ensemble3.py" xml:space="preserve"/></RUN></XML>
