@@ -257,7 +257,7 @@ public:
       if (v.isSpecial())
         return true;
 
-    CASES((intV==v.intV), (floatV==v.floatV), (svalV->operator == (v.svalV.getReference())))
+    CASES((intV!=v.intV), (floatV!=v.floatV), (svalV->operator != (v.svalV.getReference())))
   }
 };
 
