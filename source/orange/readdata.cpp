@@ -262,5 +262,3 @@ TExampleTable *readTable(char *filename, PVarList knownVars, TMetaVector *knownM
   TExampleTable *table = dynamic_cast<TExampleTable *>(gen);
   return table ? table : new TExampleTable(gen);
 }
-
-

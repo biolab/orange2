@@ -112,5 +112,3 @@ public:
   virtual bool reset(const TVarList &);
   virtual bool nextSubset(TVarList &);
 };
-
-

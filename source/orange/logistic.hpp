@@ -103,12 +103,3 @@ public:
 //	// error
 //	int error; //P Error code thrown by the selected fitter. 0(zero) means that no errors occured while fitting.
 //	PVariable error_att; //P Attribute that causes singularity if it occurs. 
-
-
-
-
-
-
-
-
-

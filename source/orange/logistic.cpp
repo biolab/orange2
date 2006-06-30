@@ -215,5 +215,3 @@ PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
   dist->addint(1, prob1);
   return res;
 }
-
-

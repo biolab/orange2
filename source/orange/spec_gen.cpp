@@ -330,5 +330,3 @@ TExampleIterator TGaussianNoiseGenerator::changeExample(const TExampleIterator &
 }
 
 #undef AD_cast
-
-

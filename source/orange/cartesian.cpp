@@ -81,8 +81,3 @@ void TCartesianClassifier::domainHasChanged()
     classV->addValue(val);
   } while (counter.next());
 }
-
-
-    
-
-

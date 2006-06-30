@@ -115,6 +115,3 @@ void dynloadC45(char [])
 { raiseErrorWho("C45Loader", "c45 is not supported on this platform"); }
 
 #endif
-
-
-

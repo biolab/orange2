@@ -67,5 +67,3 @@ int _RoundUpSize(const int &n)
 	} while (n2);
 	return ((n >> nbits) + 1) << nbits;
 }
-
-
