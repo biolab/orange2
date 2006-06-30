@@ -381,7 +381,7 @@ PyObject *TreeStopCriteria_lowcall(PyObject *self, PyObject *args, PyObject *key
     PExampleGenerator egen;
     PDomainContingency dcont;
     int weight = 0;
-    if (!PyArg_ParseTuple(args, "O&|O&O&:TreeStopCriteria.__call__", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weight, pt_DomainContingency, &dcont))
+    if (!PyArg_ParseTuple(args, "O&|O&O&:TreeStopCriteria.__call__", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weight, ptn_DomainContingency, &dcont))
       return PYNULL;
 
     bool res;
