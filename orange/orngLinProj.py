@@ -430,7 +430,7 @@ class FreeViz:
                     if self.__class__ != FreeViz:
                         qt.qApp.processEvents()
                         
-                    acc, other, resultsByFolds = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, settingsDict = {"useAnchorData": 1}))
+                    acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, settingsDict = {"useAnchorData": 1}))
                     if hasattr(self, "setStatusBarText"):
                         if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
                         else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
@@ -449,7 +449,7 @@ class FreeViz:
             for val in range(10):
                 self.s2nSpread = val
                 self.s2nMixAnchors(0)
-                acc, other, resultsByFolds = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"useAnchorData": 1}))
+                acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"useAnchorData": 1}))
                 results.append(acc)
                 if hasattr(self, "setStatusBarText"):
                     if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))

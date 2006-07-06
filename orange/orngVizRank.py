@@ -155,7 +155,7 @@ class VizRank:
         self.locOptProjCount = 20                                   # try to locally optimize this number of best ranked projections
         self.attributeNameIndex = {}                                # dict with indices to attributes
 
-        self.findArgumentsForEachClass = 0  # how do you want to compute arguments. if 0 then we go through the top ranked projection and classify. If 1 we rerank projections to find top projections for each class value and then classify.
+        self.rankArgumentsByStrength = 0  # how do you want to compute arguments. if 0 then we go through the top ranked projection and classify. If 1 we rerank projections to projections with strong class prediction and use them for classification
         self.storeEachPermutation = 0       # do we want to save information for each fold when evaluating projection - used to compute VizRank's accuracy
                 
         self.datasetName = ""
@@ -190,15 +190,22 @@ class VizRank:
                 return 1
         return 0
 
+    def getkValue(self, kValueFormula = -1):
+        if kValueFormula == -1:
+            kValueFormula = self.kValueFormula
+        if kValueFormula == 0 or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete:
+            kValue = int(sqrt(len(self.data)))
+        else:
+            kValue = int(len(self.data) / len(self.data.domain.classVar.values))    # k = N / c (c = # of class values)
+        return kValue
 
     def createkNNLearner(self, k = -1, kValueFormula = -1):
         if k == -1:
             if kValueFormula == -1 or not self.data or len(self.data) == 0:
                 kValue = self.kValue
-            elif kValueFormula == 0 or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete:
-                kValue = int(sqrt(len(self.data)))
             else:
-                kValue = int(len(self.data) / len(self.data.domain.classVar.values))    # k = N / c (c = # of class values)
+                kValue = self.getkValue(kValueFormula)
+            
             if self.percentDataUsed != 100:
                 kValue = int(kValue * self.percentDataUsed / 100.0)
         else:
@@ -452,29 +459,25 @@ class VizRank:
 
         self.arguments = [[] for i in range(len(self.data.domain.classVar.values))]
         vals = [0.0 for i in range(len(self.arguments))]
-        if self.findArgumentsForEachClass == 1:
-            if self.storeEachPermutation == 0 and not getattr(self, "warnedAboutArgumentParams", None):
-                print "Warning: findArgumentsForEachClass = 1 should be used with storeEachPermutation = 1"
-                self.warnedAboutArgumentParams = 1
-            
-            for clsVal in range(len(self.data.domain.classVar.values)):
-                # for each class we find projections where this class is best separated from other classes. we ignore other classes, they may be overlapping in these projections
-                candidates = [(self.results[index][OTHER_RESULTS][OTHER_PREDICTIONS][clsVal], index) for index in range(len(self.results[clsVal]))]
-                
-                usedArguments = 0
-                while usedArguments < self.argumentCount and candidates != []:
-                    projectionIndex = candidates.pop(candidates.index(max(candidates)))[1]
-                    classValue, dist = self.computeClassificationForExample(projectionIndex, example)
-                    
-                    if classValue and dist:
-                        self.arguments[clsVal].insert(self.getArgumentIndex(dist[clsVal], clsVal), (dist[clsVal], dist, self.results[projectionIndex][ATTR_LIST], projectionIndex))
-                        vals[clsVal] += dist[clsVal]
-                        usedArguments += 1
-                vals[clsVal] /= max(1, usedArguments)
+
+        if self.rankArgumentsByStrength == 1:
+            for index in range(min(len(self.results), self.argumentCount + 50)):
+                classValue, dist = self.computeClassificationForExample(index, example, kValue = len(self.data))
+                if classValue and dist:
+                    for i in range(len(self.arguments)):
+                        self.arguments[i].insert(self.getArgumentIndex(dist[i], i), (dist[i], dist, self.results[index][ATTR_LIST], index))
+
+            for i in range(len(self.arguments)):
+                arr = self.arguments[i]
+                arr.sort()
+                arr.reverse()
+                arr = arr[:self.argumentCount]
+                self.arguments[i] = arr
+                vals[i] = sum([arg[0] for arg in arr])
         else:
             usedArguments = 0; index = 0
             while usedArguments < self.argumentCount and index < len(self.results):
-                classValue, dist = self.computeClassificationForExample(index, example)
+                classValue, dist = self.computeClassificationForExample(index, example, kValue = self.getkValue(kValueFormula = 0))
                 if classValue and dist:
                     for i in range(len(self.arguments)):
                         self.arguments[i].insert(self.getArgumentIndex(dist[i], i), (dist[i], dist, self.results[index][ATTR_LIST], index))
@@ -493,7 +496,7 @@ class VizRank:
         return classValue, dist
 
 
-    def computeClassificationForExample(self, projectionIndex, example):
+    def computeClassificationForExample(self, projectionIndex, example, kValue = -1):
         (accuracy, other_results, lenTable, attrList, tryIndex, generalDict) = self.results[projectionIndex]
 
         if 1 in [example[attr].isSpecial() for attr in attrList]: return None, None
@@ -504,7 +507,7 @@ class VizRank:
         table = self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = generalDict)
         [xTest, yTest] = self.graph.getProjectedPointPosition(attrIndices, attrVals, settingsDict = generalDict)
         
-        learner = self.externalLearner or self.createkNNLearner(kValueFormula = 0)
+        learner = self.externalLearner or self.createkNNLearner(k = kValue)
         if self.useExampleWeighting: table, weightID = orange.Preprocessor_addClassWeight(table, equalize=1)
         else: weightID = 0
         
@@ -627,7 +630,6 @@ class VizRank:
         if self.attrCont == CONT_MEAS_S2NMIX or self.attrSubsetSelection == GAMMA_SINGLE:
             numClasses = len(self.data.domain.classVar.values)
             attributes, attrsByClass = self.evaluationData["attrs"]
-            attrWidth = len(attributes)/(1000*numClasses)
             
             for i in range(maxTries):
                 attrList = [[] for c in range(numClasses)]; attrs = []
@@ -635,7 +637,7 @@ class VizRank:
                 while len(attrs) < min(attrCount, len(self.data.domain.attributes)):
                     ind = tried%numClasses
                     #ind = random.randint(0, numClasses-1)       # warning: this can generate uneven groups for each class value!!!
-                    attr = attrsByClass[ind][int(random.gammavariate(1, 5 + attrWidth + projCountWidth))%len(attrsByClass[ind])]
+                    attr = attrsByClass[ind][int(random.gammavariate(1, 5 + projCountWidth))%len(attrsByClass[ind])]
                     if attr not in attrList[ind]:
                         attrList[ind].append(attr); attrs.append(attr)
                     tried += 1
