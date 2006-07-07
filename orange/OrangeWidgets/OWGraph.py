@@ -270,7 +270,7 @@ class OWGraph(QwtPlot):
         if (self.showYLaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
         else:
-            self.setAxisTitle(QwtPlot.yLeft, None)
+            self.setAxisTitle(QwtPlot.yLeft, "")
         self.updateLayout()
         self.repaint()
 
@@ -279,7 +279,7 @@ class OWGraph(QwtPlot):
         if (self.showYLaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
         else:
-            self.setAxisTitle(QwtPlot.yLeft, None)
+            self.setAxisTitle(QwtPlot.yLeft, "")
         self.updateLayout()
         self.repaint()
 
@@ -288,7 +288,7 @@ class OWGraph(QwtPlot):
         if (self.showYRaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
         else:
-            self.setAxisTitle(QwtPlot.yRight, None)
+            self.setAxisTitle(QwtPlot.yRight, "")
         self.updateLayout()
         self.repaint()
 
@@ -297,7 +297,7 @@ class OWGraph(QwtPlot):
         if (self.showYRaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
         else:
-            self.setAxisTitle(QwtPlot.yRight, None)
+            self.setAxisTitle(QwtPlot.yRight, "")
         self.updateLayout()
         self.repaint()
 
