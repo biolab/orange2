@@ -20,7 +20,7 @@ class OWCorrAnalysis(OWWidget):
                     "graph.showLegend", 'autoSendSelection', "graph.showFilledSymbols", 'toolbarSelection',
                     "colorSettings", "percRadius"]
                     
-    contextHandlers = {"": DomainContextHandler("", ["attrCol","attrRow","attrX", "attrY"])}
+    contextHandlers = {"": DomainContextHandler("", ["attrCol","attrRow"])}
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'CorrAnalysis')
@@ -83,25 +83,25 @@ class OWCorrAnalysis(OWWidget):
         self.DataTab = QTable(None)
         self.DataTab.setSelectionMode(QTable.NoSelection)          
         self.tabsMain.insertTab(self.DataTab, "Data Table")       
-        self.DataTab.show()
+        self.tabsMain.showPage(self.DataTab) 
         
         # Correspondence Table
         self.CorrTab = QTable(None)
         self.CorrTab.setSelectionMode(QTable.NoSelection)
         self.tabsMain.insertTab(self.CorrTab, "Correspondence Table")       
-        self.CorrTab.show()
+        self.tabsMain.showPage(self.CorrTab)  
   
         # Row profiles 
         self.RowProfilesTab = QTable(None)
         self.RowProfilesTab.setSelectionMode(QTable.NoSelection)          
         self.tabsMain.insertTab(self.RowProfilesTab, "Row profiles")       
-        self.RowProfilesTab.show()
+        self.tabsMain.showPage(self.RowProfilesTab)        
         
         # Column profiles 
         self.ColProfilesTab = QTable(None)
         self.ColProfilesTab.setSelectionMode(QTable.NoSelection)          
         self.tabsMain.insertTab(self.ColProfilesTab, "Column profiles")       
-        self.ColProfilesTab.show() 
+        self.tabsMain.showPage(self.ColProfilesTab)
         
         # ####################################
         # SETTINGS TAB
@@ -177,7 +177,7 @@ class OWCorrAnalysis(OWWidget):
     
     def fill_dataTable(self, ca, c):
         dim = c.dataMatrix.shape
-        #data tab
+        #data tabs
         self.fill_headers(ca, self.DataTab, dim[0] + 1, dim[1] + 1)
         self.DataTab.horizontalHeader().setLabel(dim[1], "Sum")
         self.DataTab.verticalHeader().setLabel(dim[0], "Sum")            
@@ -246,6 +246,7 @@ class OWCorrAnalysis(OWWidget):
         self.fill_colProfiles(self.CA)
         
         self.initAxesValues()
+        self.tabsMain.showPage(self.graph)         
         
         
     def initAxesValues(self):
