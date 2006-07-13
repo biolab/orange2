@@ -28,6 +28,56 @@ LEFT = 1
 TOP = 2
 RIGHT = 3
 
+class SelectionRectangle(QCanvasRectangle):
+    def rtti(self):
+        return 123
+
+class MosaicCanvasView(QCanvasView):
+    def __init__(self, widget, *args):
+        apply(QCanvasView.__init__,(self,) + args)
+        self.widget = widget
+        self.bMouseDown = False
+        self.mouseDownPosition = QPoint(0,0)
+        self.tempRect = None
+
+    # mouse button was pressed
+    def contentsMousePressEvent(self, ev):
+        self.mouseDownPosition = QPoint(ev.pos().x(), ev.pos().y())
+        self.bMouseDown = True
+        self.contentsMouseMoveEvent(ev)
+        
+    # mouse button was pressed and mouse is moving ######################
+    def contentsMouseMoveEvent(self, ev):
+        if ev.button() == Qt.RightButton:
+            return
+        
+        if self.tempRect:
+            self.tempRect.setCanvas(None)
+            self.tempRect = None
+
+        if self.bMouseDown:
+            rect = QRect(min(self.mouseDownPosition.x(), ev.pos().x()), min (self.mouseDownPosition.y(), ev.pos().y()), abs(self.mouseDownPosition.x() - ev.pos().x()), abs(self.mouseDownPosition.y() - ev.pos().y()))
+            self.tempRect = SelectionRectangle(rect, self.canvas())
+            self.tempRect.show()
+            self.canvas().update()
+
+        
+    # mouse button was released #########################################
+    def contentsMouseReleaseEvent(self, ev):
+        self.bMouseDown = False
+
+        if ev.button() == Qt.RightButton:
+            self.widget.removeLastSelection()
+            return
+        
+        if self.tempRect:
+            self.widget.addSelection(self.tempRect.rect())
+            self.tempRect.hide()
+            self.tempRect.setCanvas(None)
+            self.tempRect = None
+            self.canvas().update()
+            
+
 class OWMosaicDisplay(OWWidget):
     settingsList = ["horizontalDistribution", "showAprioriDistributionLines", "horizontalDistribution",
                     "showAprioriDistributionBoxes", "interiorColoring", "boxSize", "colorSettings", "cellspace"]
@@ -44,7 +94,7 @@ class OWMosaicDisplay(OWWidget):
         self.names = []     # class values
         
         self.inputs = [("Examples", ExampleTable, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdataHander)]
-        self.outputs = [("Learner", orange.Learner)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Learner", orange.Learner)]
     
         #load settings
         self.colorSettings = None
@@ -67,6 +117,12 @@ class OWMosaicDisplay(OWWidget):
         self.manualAttributeValuesDict = {}
         self.conditionalDict = None
         self.conditionalSubsetDict = None
+        self.updateSelectedData = 0     # do we need to update selected data?
+
+        self.selectionRectangle = None
+        self.selectionConditionsArray = []
+        self.selectionConditionsDict = {}
+        self.selectedData = None
 
         #self.blueColors = [QColor(255, 255, 255), QColor(117, 149, 255), QColor(38, 43, 232), QColor(1,5,173)]
         self.blueColors = [QColor(255, 255, 255), QColor(210, 210, 255), QColor(110, 110, 255), QColor(0,0,255)]
@@ -82,7 +138,7 @@ class OWMosaicDisplay(OWWidget):
 
         self.box = QVBoxLayout(self.mainArea)
         self.canvas = QCanvas(2000, 2000)
-        self.canvasView = QCanvasView(self.canvas, self.mainArea)
+        self.canvasView = MosaicCanvasView(self, self.canvas, self.mainArea)
         self.box.addWidget(self.canvasView)
         self.canvasView.show()
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
@@ -113,21 +169,6 @@ class OWMosaicDisplay(OWWidget):
         box5 = OWGUI.widgetBox(self.GeneralTab, " Colors in Cells Represent... ")
         OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.changedInteriorColoring)
         box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "cellspace", "Minimum cell distance: ", box = " Cell Distance ", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
-                
-        self.box6 = OWGUI.widgetBox(self.SettingsTab, " Class Distribution Settings ")
-        OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateGraph)
-        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show Apriori Distribution with Lines', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
-        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionBoxes', 'Show Apriori Distribution with Boxes', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
-        OWGUI.spin(self.box6, self, 'boxSize', 1, 15, 1, '', "       Box Size: (pixels): ", orientation = "horizontal", callback = self.updateGraph)
-
-        # ####
-        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
-        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring different class values", debuggingEnabled = 0)
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        
-        self.box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
         self.box7 = OWGUI.widgetBox(self.GeneralTab, " Possible permutations ")
 
@@ -137,6 +178,23 @@ class OWMosaicDisplay(OWWidget):
         self.permutationList = QListBox(self.box7)
         self.connect(self.permutationList, SIGNAL("selectionChanged()"), self.setSelectedPermutation)
         self.permutationList.hide()
+
+        # ######################
+        # SETTINGS TAB
+        # ######################        
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "cellspace", "Minimum cell distance: ", box = " Cell Distance ", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
+                
+        self.box6 = OWGUI.widgetBox(self.SettingsTab, " Class Distribution Settings ")
+        OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateGraph)
+        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show Apriori Distribution with Lines', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
+        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionBoxes', 'Show Apriori Distribution with Boxes', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
+        OWGUI.spin(self.box6, self, 'boxSize', 1, 15, 1, '', "       Box Size: (pixels): ", orientation = "horizontal", callback = self.updateGraph)
+       
+        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring different class values", debuggingEnabled = 0)
+        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+
+        self.box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
         self.icons = self.createAttributeIconDict()
@@ -160,6 +218,7 @@ class OWMosaicDisplay(OWWidget):
             self.permutationList.hide()
 
     def setSelectedPermutation(self):
+        self.removeAllSelections()
         if self.permutationList.count() > 0 and self.bestPlacements and self.permutationList.currentItem() < len(self.bestPlacements):
             index = self.permutationList.currentItem()
             val, attrList, valueOrder = self.bestPlacements[index]
@@ -267,6 +326,7 @@ class OWMosaicDisplay(OWWidget):
 
 
     def updateGraphAndPermList(self, **args):
+        self.removeAllSelections()
         self.permutationList.clear()
 
         if self.permButton.isOn():
@@ -284,11 +344,14 @@ class OWMosaicDisplay(OWWidget):
             
         self.updateGraph(**args)
 
+    # ############################################################################
+    # ############################################################################
     # updateGraph - gets called every time the graph has to be updated
     def updateGraph(self, **args):
         # hide all rectangles
         self.warning()
-        for item in self.canvas.allItems(): item.setCanvas(None)    # remove all canvas items
+        for item in self.canvas.allItems():
+            if item.rtti() != 123: item.setCanvas(None)    # remove all canvas items, except SelectionCurves
         for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
         self.names = []; self.tooltips = []
         
@@ -349,14 +412,14 @@ class OWMosaicDisplay(OWWidget):
 
         # draw rectangles
         self.DrawData(attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 0, "", len(attrList))
-
-        # draw class legend
-        self.DrawLegend(data, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
+        
+        self.DrawLegend(data, (xOff, xOff+squareSize), (yOff, yOff+squareSize)) # draw class legend
 
         self.canvas.update()
 
-
-    ######################################################################
+    # ############################################################################
+    # ############################################################################
+    
     ##  DRAW DATA - draw rectangles for attributes in attrList inside rect (x0,x1), (y0,y1)
     def DrawData(self, attrList, (x0, x1), (y0, y1), side, condition, totalAttrs, lastValueForFirstAttribute = 0, usedAttrs = [], attrVals = ""):
         if self.conditionalDict[attrVals] == 0:
@@ -485,8 +548,26 @@ class OWMosaicDisplay(OWWidget):
 
         if x1-x0 + y1-y0 == 2: y1+=1        # if we want to show a rectangle of width and height 1 it doesn't show anything. in such cases we therefore have to increase size of one edge
 
-        rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 30)   
+        # show rectangle selected or not
+        rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 30)
 
+        # we have to remember which conditions were new in this update so that when we right click we can only remove the last added selections
+        if self.selectionRectangle != None and rect in self.canvas.collisions(self.selectionRectangle) and not self.selectionConditionsDict.has_key(tuple(usedAttrs)):
+            self.recentlyAdded = getattr(self, "recentlyAdded", []) + [usedAttrs]
+            self.selectionConditionsDict[tuple(usedAttrs)] = 1
+
+        if self.selectionConditionsDict.has_key(tuple(usedAttrs)):
+            rect.setPen(QPen(Qt.black, 3, Qt.DotLine))
+
+            if self.updateSelectedData: 
+                pp = orange.Preprocessor_take()
+                for i in range(len(usedAttrs)/2):
+                    pp.values[self.data.domain[usedAttrs[2*i]]] = usedAttrs[2*i+1]
+                tempData = pp(self.data)
+                
+                if not self.selectedData: self.selectedData = tempData
+                else:                     self.selectedData.extend(tempData)
+               
         # show a rectangle that will represent the example in the subset
         if self.subsetData and self.subsetData.domain.attributes == self.data.domain.attributes and self.conditionalDict[attrVals] > 0 and len(self.subsetData) == 1:
             correctBox = 1
@@ -613,6 +694,44 @@ class OWMosaicDisplay(OWWidget):
         c.setColorSchemas(self.colorSettings)
         return c
 
+    def sendSelectedData(self):
+        # send the selected examples
+        self.send("Selected Examples", self.selectedData)
+
+    # add a new rectangle. update the graph and see which mosaics does it intersect. add this mosaics to the recentlyAdded list
+    def addSelection(self, rect):
+        self.selectionRectangle = rect
+        self.selectedData = None        # clear previous data so that we will generate a new dataset in the updateGraph()
+        self.updateSelectedData = 1 
+        self.updateGraph()
+        self.updateSelectedData = 0
+        self.sendSelectedData()
+        
+        if getattr(self, "recentlyAdded", []):
+            self.selectionConditionsArray.append(self.recentlyAdded)
+            self.recentlyAdded = []
+            
+        self.selectionRectangle = None
+
+    # remove the mosaics that were added with the last selection rectangle
+    def removeLastSelection(self):
+        if  self.selectionConditionsArray:
+            vals = self.selectionConditionsArray.pop()
+            for val in vals:
+                if self.selectionConditionsDict.has_key(tuple(val)):
+                    self.selectionConditionsDict.pop(tuple(val))
+
+        self.updateSelectedData = 1
+        self.selectedData = None        # clear previous data so that we will generate a new dataset in the updateGraph()
+        self.updateGraph()
+        self.updateSelectedData = 0
+        self.sendSelectedData()
+
+    def removeAllSelections(self):
+        self.selectionConditionsDict = {}
+        self.selectionConditionsArray = []
+        self.selectedData = None
+        self.sendSelectedData()
 
 class SortAttributeValuesDlg(OWBaseWidget):
     def __init__(self, parentWidget = None, attrList = []):
@@ -662,7 +781,6 @@ class SortAttributeValuesDlg(OWBaseWidget):
                 self.attributeList.removeItem(i)
                 self.attributeList.setSelected(i+1, TRUE)
 
-    
 
 #test widget appearance
 if __name__=="__main__":
