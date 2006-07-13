@@ -205,6 +205,7 @@ class OWScatterPlot(OWWidget):
     # receive new data and update all fields
     def cdata(self, data, clearResults = 1):
         self.closeContext()
+        self.graph.clear()
 
         if self.hasDiscreteClass(data):
             name = getattr(data, "name", "")

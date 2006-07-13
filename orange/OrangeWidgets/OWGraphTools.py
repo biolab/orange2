@@ -210,8 +210,43 @@ class SelectionCurve(QwtPlotCurve):
         else:
             return (0, xi, yi)
 
+
+# ###########################################################
+# a class that is able to draw arbitrary polygon curves.
+# data points are specified by a standard call to graph.setCurveData(key, xArray, yArray)
+# brush and pen can also be set by calls to setPen and setBrush functions
+class PolygonCurve(QwtPlotCurve):
+    def __init__(self, parent, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
+        QwtPlotCurve.__init__(self, parent)
+        self.setPen(pen)
+        self.setBrush(brush)
+        self.Pen = pen
+        self.Brush = brush
+        self.setStyle(QwtCurve.UserCurve)
+
+        if xData != None and yData != None:
+            self.setData(xData, yData)
+
+    # Draws rectangles with the corners taken from the x- and y-arrays.        
+    def draw(self, painter, xMap, yMap, start, stop):
+        #painter.setPen(self.Pen)
+        #painter.setBrush(self.Brush)
+        painter.setPen(self.pen())
+        painter.setBrush(self.brush())
+        if stop == -1: stop = self.dataSize()
+        start = max(start, 0)
+        stop = max(stop, 0)
+        array = QPointArray(stop-start)
+        for i in range(start, stop):
+            array.setPoint(i-start, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
+
+        if stop-start > 2:
+            painter.drawPolygon(array)
+            
+
 # ####################################################################
 # draw a rectangle
+# this class of curves is not yet drawn if you export picture to matplotlib
 class RectanglePlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, pen = QPen(Qt.black), brush = QBrush(), text = None):
         QwtPlotCurve.__init__(self, parent, text)

@@ -37,6 +37,9 @@ TRY_INDEX = 2
 CROSSVALIDATION = 0
 PROPORTION_TEST = 1
 
+AO_CROSSVALIDATION = 0
+AO_TESTONTRAIN = 1
+
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
 class orngMosaic:
@@ -50,6 +53,7 @@ class orngMosaic:
         self.ignoreTooSmallCells = 1    # when computing chi-square and kramer's phi, ignore cells with less than 5 elements
 
         self.testingMethod = 0
+        self.attributeOrderTestingMethod = 1
         self.evaluationTime = 2
         self.mValue = 2.0
         self.probabilityEstimation = M_ESTIMATE
@@ -146,6 +150,10 @@ class orngMosaic:
     def evaluateProjections(self):
         if not self.data or not self.classVals: return
 
+        fullData = self.data
+        if self.percentDataUsed != 100:
+            self.data = fullData.select(orange.MakeRandomIndices2(fullData, 1.0-float(self.percentDataUsed)/100.0))
+
         self.clearResults()
         self.resultListIndices = []
         
@@ -161,6 +169,7 @@ class orngMosaic:
 
         evaluatedAttrs = self.getEvaluatedAttributes(self.data)
         if evaluatedAttrs == []:
+            self.data = fullData
             self.finishEvaluation(0)
             return
 
@@ -179,6 +188,7 @@ class orngMosaic:
                     val = self._Evaluate(attrs)
 
                     if self.isOptimizationCanceled():
+                        self.data = fullData
                         self.finishEvaluation(triedPossibilities)
                         return
 
@@ -190,6 +200,7 @@ class orngMosaic:
                         self.setStatusBarText("Evaluated %s visualizations..." % (orngVisFuncts.createStringFromNumber(triedPossibilities)))
                         qApp.processEvents()        # allow processing of other events
 
+        self.data = fullData
         self.finishEvaluation(triedPossibilities)
 
 
@@ -242,7 +253,7 @@ class orngMosaic:
                 pick = orange.MakeRandomIndices2(stratified = orange.MakeRandomIndices.StratifiedIfPossible, p0 = 0.7, randomGenerator = 0)
                 indices = [pick(d) for i in range(10)]
             elif self.testingMethod == CROSSVALIDATION:
-                ind = orange.MakeRandomIndicesCV(d, 10, randseed="*", stratified = orange.MakeRandomIndices.StratifiedIfPossible)
+                ind = orange.MakeRandomIndicesCV(d, 10, randomGenerator = 0, stratified = orange.MakeRandomIndices.StratifiedIfPossible)
                 indices = [[val == i for val in ind] for i in range(10)]
             
             acc = 0.0; count = 0
@@ -602,8 +613,10 @@ class orngMosaic:
             if len(attrs) > 3: ypos += (4 + maxVals[-2]) * triedIndices[-4]
             
         learner = orange.kNNLearner(rankWeight = 0, k = len(projData)/2)
-        #results = orngTest.learnAndTestOnLearnData([learner], (projData, self.weightID))
-        results = orngTest.leaveOneOut([learner], (projData, self.weightID))
+        if self.attributeOrderTestingMethod == AO_CROSSVALIDATION:
+            results = orngTest.leaveOneOut([learner], (projData, self.weightID))
+        else:
+            results = orngTest.learnAndTestOnLearnData([learner], (projData, self.weightID))
         return orngStat.AP(results)[0]
 
     # for a given subset of attributes (max 4) find which permutation is most visual friendly. optimizeValueOrder

@@ -12,7 +12,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenList = [str(x) for x in resultsListLenNums]
     settingsList = ["attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
                     "evaluationTime", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount",
-                    "optimizeAttributeOrder", "optimizeAttributeValueOrder"]
+                    "optimizeAttributeOrder", "optimizeAttributeValueOrder", "attributeOrderTestingMethod"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
@@ -87,16 +87,16 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         # SETTINGS TAB
         self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
 
-        #self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
-        #self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
-
         self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, " " )
         self.ignoreSmallCellsCombo = OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
         
         self.testingBox = OWGUI.widgetBox(self.SettingsTab, " Testing Method ")
         self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times "], tooltip = "Method for evaluating the class separation in the projection.")
+        self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.testingBox, self, "percentDataUsed", "Percent of data used: ", items = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
         
         OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = " Measure for Ranking Attributes ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
+
+        self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing Method Used for Optimizing Attribute Orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
 
         # ##########################
         # ARGUMENTATION TAB

@@ -277,7 +277,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     def clearResults(self):
         VizRank.clearResults(self)
-        del self.shownResults; self.shownResults = []
+        self.shownResults = []
         self.resultList.clear()
         self.attrLenDict = {}
         self.attrLenList.clear()
@@ -483,7 +483,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         if table.domain.classVar.varType == orange.VarTypes.Discrete:
             probabilities = Numeric.zeros((len(table), len(table.domain.classVar.values)), Numeric.Float)
             lenClassValues = len(list(table.domain.classVar.values))
-            if self.qualityMeasure == AVERAGE_CORRECT:
+            if self.qualityMeasure in [AVERAGE_CORRECT, AUC]:       # for AUC we have no way of computing the prediction accuracy for each example
                 for i in range(len(results.results)):
                     res = results.results[i]
                     returnTable.append(res.probabilities[0][res.actualClass])
@@ -499,6 +499,8 @@ class OWVizRank(VizRank, OWBaseWidget):
                     res = results.results[i]
                     returnTable.append(res.probabilities[0][res.actualClass] == max(res.probabilities[0]))
                     probabilities[i] = res.probabilities[0]
+            else:
+                print "unknown quality measure for kNNClassifyData"
         else:
             probabilities = None
             # for continuous class we can't compute brier score and classification accuracy
@@ -506,7 +508,6 @@ class OWVizRank(VizRank, OWBaseWidget):
                 if not res.probabilities[0]: returnTable.append(0)
                 else:                        returnTable.append(res.probabilities[0].density(res.actualClass))
 
-        del results
         return returnTable, probabilities
 
 
@@ -739,19 +740,15 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.cancelOptimization = 1
     
     def isEvaluationCanceled(self):
-        #if hasattr(self, "useTimeLimit"): return VizRank.isEvaluationCanceled(self)
-        #else:                             return self.cancelOptimization
         stop = self.cancelEvaluation
         if self.useTimeLimit:       stop = stop or (time.time() - self.startTime) / 60 >= self.timeLimit
         if self.useProjectionLimit: stop = stop or self.evaluatedProjectionsCount >= self.projectionLimit
         return stop
         
     def isOptimizationCanceled(self):
-        #if hasattr(self, "useTimeLimit"):   return VizRank.isOptimizationCanceled(self)
-        #else:                               return self.cancelOptimization
         stop = self.cancelOptimization
         if self.useTimeLimit:       stop = stop or (time.time() - self.startTime) / 60 >= self.timeLimit
-        if self.useProjectionLimit: stop = stop or self.optimizedProjectionsCount >= self.optimizeProjectionLimit
+        if self.useProjectionLimit: stop = stop or self.optimizedProjectionsCount >= self.projectionLimit
         return stop
         
     def destroy(self, dw = 1, dsw = 1):
@@ -1545,10 +1542,7 @@ class OWGraphIdentifyOutliers(OWWidget):
                 if not self.showAllClasses and int(self.data[self.selectedExampleIndex].getclass()) != j: continue
                 (prob, index) = indices[i]
                 xDiff = self.graphMatrix[j][index]
-                curve = OWGraphTools.RectanglePlotCurve(self.graph, QPen(classColors.getColor(j)), QBrush(classColors.getColor(j)))
-                ckey = self.graph.insertCurve(curve)
-                self.graph.setCurveStyle(ckey, QwtCurve.UserCurve)
-                self.graph.setCurveData(ckey, [x, x+xDiff], [i, i+1])
+                self.graph.insertCurve(OWGraphTools.PolygonCurve(self.graph, QPen(classColors.getColor(j)), QBrush(classColors.getColor(j)), [x, x+xDiff, x+xDiff, x], [i, i, i+1, i+1]))
                 x += xDiff
         
         if self.showLegend:
@@ -1572,9 +1566,7 @@ class OWGraphIdentifyOutliers(OWWidget):
         y = int(math.floor(self.graph.invTransform(QwtPlot.yLeft, e.y())))
         if self.showClickedProjection and y >= 0 and y < len(self.projectionIndices):
             diff  = 0.01
-            curve = OWGraphTools.RectanglePlotCurve(self.graph)
-            self.selectedRectangle = self.graph.insertCurve(curve)
-            self.graph.setCurveData(self.selectedRectangle, [0-diff, 1+diff], [y-diff, y+1+diff])
+            self.selectedRectangle = self.graph.insertCurve(OWGraphTools.PolygonCurve(self.graph, brush = QBrush(Qt.NoBrush), xData = [0-diff, 1+diff, 1+diff, 0-diff], yData = [y-diff, y-diff, y+1+diff, y+1+diff]))
             self.graph.replot()
             
 

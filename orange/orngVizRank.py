@@ -911,7 +911,7 @@ class VizRank:
                         if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0:
                             self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.optimizedProjectionsCount), acc))
                         if acc > accuracy:
-                            self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in testProj], -1)
+                            self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in testProj], -1)
                             self.insertTempProjection(projections, acc, proj)
                             tempDict[tuple(proj)] = 1
                             if max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
