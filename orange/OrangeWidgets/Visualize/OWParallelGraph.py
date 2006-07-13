@@ -227,10 +227,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if self.showDistributions and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             self.showDistributionValues(targetValue, validData, indices, dataStop)
             
-        #curve = RectanglePlotCurve(self, pen = QPen(QColor(0, 0, 0)), brush = QBrush(QBrush.NoBrush))
-        #ckey = self.insertCurve(curve)
-        #self.setCurveData(ckey, [1,1], [2,2])
-
         # ############################################
         # draw vertical lines that represent attributes
         for i in range(len(attributes)):
@@ -439,9 +435,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     else: newColor = self.colorNonTargetValue
                 else:
                     newColor = self.discPalette[i]
-                curve = RectanglePlotCurve(self, pen = QPen(newColor), brush = QBrush(newColor))
-                
-                xData = []; yData = []
+
                 for j in range(attrLen):
                     width = float(values[i][j]*0.5) / float(maximum)
                     interval = 1.0/float(2*attrLen)
@@ -449,14 +443,9 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     height = 0.7/float(count*attrLen)
 
                     yLowBott = yOff - float(count*height)/2.0 + i*height
-                    xData.append(graphAttrIndex)
-                    xData.append(graphAttrIndex + width)
-                    yData.append(yLowBott)
-                    yData.append(yLowBott + height)
+                    ckey = self.insertCurve(PolygonCurve(self, pen = QPen(newColor), brush = QBrush(newColor), xData = [graphAttrIndex, graphAttrIndex + width, graphAttrIndex + width, graphAttrIndex], yData = [yLowBott, yLowBott, yLowBott + height, yLowBott + height]))
+                    self.nonDataKeys.append(ckey)
 
-                ckey = self.insertCurve(curve)
-                self.nonDataKeys.append(ckey)
-                self.setCurveData(ckey, xData, yData)
         self.addTooltips()
         
     def addTooltips(self):

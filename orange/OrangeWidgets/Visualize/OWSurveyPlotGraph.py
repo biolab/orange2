@@ -16,7 +16,6 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         self.length = 0 # number of shown attributes - we need it also in mouse movement
         self.enabledLegend = 0
         self.tooltipKind = 1
-        self.yDataIndices = []  # array of indices that show the index in self.rawdata - if there are no missing values then array[i] = i
         self.attrLabels = []
 
     def setData(self, data, **args):
@@ -67,27 +66,19 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
                 classValDict = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar)
         
         y = 0
-        self.yDataIndices = []
-        
         for i in range(len(self.rawdata)):
             if validData[i] == 0: continue
             if classNameIndex == -1: newColor = QColor(0,0,0)
             elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: newColor = self.discPalette[classValDict[self.rawdata[i].getclass().value]]
             else: newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
 
-            curve = RectanglePlotCurve(self, pen = QPen(newColor), brush = QBrush(newColor))
-            xData = []; yData = []
             for j in range(self.length):
                 width = self.noJitteringScaledData[indices[j]][i] * 0.45
-                xData += [j-width, j+width]
-                yData += [y, y+1]
+                ckey = self.insertCurve(PolygonCurve(self, pen = QPen(newColor), brush = QBrush(newColor)))
+                self.setCurveData(ckey, [j-width, j+width, j+width, j-width], [y, y, y+1, y+1])
 
             ##########
             y += 1
-            self.yDataIndices.append(y)
-
-            ckey = self.insertCurve(curve)
-            self.setCurveData(ckey, xData, yData)
 
         if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)

@@ -193,14 +193,14 @@ class OWDistributionGraph(OWGraph):
                 cn = 0
                 for key in keys:
                     subBarHeight = self.hdata[key][oi]
-                    curve = RectanglePlotCurve(self, pen = QPen(Qt.black), brush = QBrush(self.discPalette[oi]))
+                    curve = PolygonCurve(self, pen = QPen(Qt.black), brush = QBrush(self.discPalette[oi]))
                     ckey = self.insertCurve(curve)
                     if self.variableContinuous:
-                        self.setCurveData(ckey, [key, key + self.subIntervalStep], [currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight])
+                        self.setCurveData(ckey, [key, key + self.subIntervalStep, key + self.subIntervalStep, key], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
                     else:
                         tmpx = cn - (self.barSize/2.0)/100.0
                         tmpx2 = cn + (self.barSize/2.0)/100.0
-                        self.setCurveData(ckey, [tmpx, tmpx2], [currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight])
+                        self.setCurveData(ckey, [tmpx, tmpx2, tmpx2, tmpx], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
                     currentBarsHeight[cn] += subBarHeight
                     cn += 1
 
