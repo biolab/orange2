@@ -598,23 +598,18 @@ class OWGraph(QwtPlot):
         if self.showAxisScale == 0: edgeOffset = 0.01
         else: edgeOffset = 0.08
 
-        f.write("from pylab import *\n\n#possible changes in how the plot looks\n#rcParams['xtick.major.size'] = 0\n#rcParams['ytick.major.size'] = 0\n\n#constants\nx1 = %f; x2 = %f\ny1 = %f; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = %f\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\nhold(True)\n" % (x1,x2,y1,y2,size.width(), size.height(), edgeOffset))
+        f.write("from pylab import *\nfrom matplotlib import font_manager\n\n#possible changes in how the plot looks\n#rcParams['xtick.major.size'] = 0\n#rcParams['ytick.major.size'] = 0\n\n#constants\nx1 = %f; x2 = %f\ny1 = %f; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = %f\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\nhold(True)\n" % (x1,x2,y1,y2,size.width(), size.height(), edgeOffset))
 
-        # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
-        linestyles = ["o", "-", "-.", "--", ":", "-", "-"]
-
-        # curveSymbols = [None, Ellipse, Rect, Triangle, Diamond, DTriangle, UTriangle, LTriangle, RTriangle, XCross, Cross]
-        markers = ["None", "o", "s", "^", "d", "v", "^", "<", ">", "x", "+"]
+        linestyles = ["o", "-", "-.", "--", ":", "-", "-"]      # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
+        markers = ["None", "o", "s", "^", "d", "v", "^", "<", ">", "x", "+"]    # curveSymbols = [None, Ellipse, Rect, Triangle, Diamond, DTriangle, UTriangle, LTriangle, RTriangle, XCross, Cross]
     
         f.write("#add curves\n")
         for key in self.curveKeys():
             c = self.curve(key)
-            if c.style() >= len(linestyles): continue   # a user curve case
-            
             xData = [c.x(i) for i in range(c.dataSize())]
             yData = [c.y(i) for i in range(c.dataSize())]
             marker = markers[c.symbol().style()]
-            linestyle = linestyles[c.style()]
+            
             markersize = c.symbol().size().width()
             markeredgecolor = self._getColorFromObject(c.symbol().pen()) 
             markerfacecolor = self._getColorFromObject(c.symbol().brush())
@@ -625,7 +620,8 @@ class OWGraph(QwtPlot):
                 x0 = min(xData); x1 = max(xData); diffX = x1-x0
                 y0 = min(yData); y1 = max(yData); diffY = y1-y0
                 f.write("gca().add_patch(Rectangle((%f, %f), %f, %f, edgecolor=%s, facecolor = %s, linewidth = %d, fill = 1))\n" % (x0,y0,diffX, diffY, color, colorB, linewidth))
-            else:
+            elif c.style() < len(linestyles): 
+                linestyle = linestyles[c.style()]
                 f.write("plot(%s, %s, marker = '%s', linestyle = '%s', markersize = %d, markeredgecolor = %s, markerfacecolor = %s, color = %s, linewidth = %d)\n" % (xData, yData, marker, linestyle, markersize, markeredgecolor, markerfacecolor, color, linewidth))
             
         f.write("\n# add markers\n")
@@ -665,8 +661,41 @@ class OWGraph(QwtPlot):
 
         f.write("\n# possible settings to change\n#axes().set_frame_on(0) #hide the frame\n#axis('off') #hide the axes and labels on them\n\n")
         
-        f.write("show()")
-        f.close()
+        
+        if self.legend().itemCount() > 0:
+            legendItems = []
+            for item in self.legend().contentsWidget().children():
+                if type(item) != QwtLegendButton: continue
+                text = str(item.title()).replace("<b>", "").replace("</b>", "")
+                if not item.symbol():
+                    legendItems.append((text, None, None, None))
+                else:
+                    legendItems.append((text, markers[item.symbol().style()], self._getColorFromObject(item.symbol().pen()) , self._getColorFromObject(item.symbol().brush())))
+            f.write(""" 
+#functions to show legend below the figure
+def drawSomeLegendItems(x, items, itemsPerAxis = 1, yDiff = 0.0):
+    axes([x-0.1, .018*itemsPerAxis - yDiff, .2, .018], frameon = 0); axis('off')
+    lines = [plot([],[], label = text, marker = marker, markeredgecolor = edgeC, markerfacecolor = faceC) for (text, marker, edgeC, faceC) in items]
+    legend(lines, [item[0] for item in items], 'upper center', handlelen = 0.1, numpoints = 1, prop = font_manager.FontProperties(size=11))
+    gca().get_legend().draw_frame(False)
+        
+def drawLegend(items):
+    if not items: return
+    maxAttrInLine = 5
+    xs = [i/float(min(maxAttrInLine+1, len(items)+1)) for i in range(1, min(maxAttrInLine+1, len(items)+1))]
+    if items[0][1] == None: extraLabelForClass = [xs.pop(0), [items.pop(0)]]
+    itemsPerAxis = len(items) / len(xs) + (len(items) %% len(xs) != 0)
+    if "extraLabelForClass" in dir(): drawSomeLegendItems(extraLabelForClass[0], extraLabelForClass[1], itemsPerAxis, yDiff = 0.004)
+        
+    for i, x in enumerate(xs):
+        drawSomeLegendItems(x, items[i*itemsPerAxis: min(len(items), (i+1)*itemsPerAxis)], itemsPerAxis)
+
+items = %s
+drawLegend(items)\n""" % (str(legendItems)))
+
+        f.write("\nshow()")
+
+
 
     def _getColorFromObject(self, obj):
         if obj.__class__ == QBrush and obj.style() == Qt.NoBrush: return "'none'"
@@ -689,40 +718,6 @@ class MyQToolTip(QToolTip):
         if self.rect and self.text:
             if self.rect.contains(p):
                 self.tip(self.rect, self.text)
-        
-# ###########################################################
-# a class that is able to draw arbitrary polygon curves.
-# data points are specified by a standard call to graph.setCurveData(key, xArray, yArray)
-# brush and pen can also be set by calls to setPen and setBrush functions
-class PolygonCurve(QwtPlotCurve):
-    def __init__(self, parent, pen = QPen(Qt.black), brush = QBrush(Qt.white)):
-        QwtPlotCurve.__init__(self, parent)
-        self.setPen(pen)
-        self.setBrush(brush)
-        self.Pen = pen
-        self.Brush = brush
-    """
-    def setPen(self, pen):
-        self.Pen = pen
-
-    def setBrush(self, brush):
-        self.Brush = brush
-    """
-    # Draws rectangles with the corners taken from the x- and y-arrays.        
-    def draw(self, painter, xMap, yMap, start, stop):
-        #painter.setPen(self.Pen)
-        #painter.setBrush(self.Brush)
-        painter.setPen(self.pen())
-        painter.setBrush(self.brush())
-        if stop == -1: stop = self.dataSize()
-        start = max(start, 0)
-        stop = max(stop, 0)
-        array = QPointArray(stop-start)
-        for i in range(start, stop):
-            array.setPoint(i-start, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
-
-        if stop-start > 2:
-            painter.drawPolygon(array)
 
 
 class RotatedMarker(QwtPlotMarker):
