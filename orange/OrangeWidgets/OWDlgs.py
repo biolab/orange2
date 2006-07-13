@@ -187,7 +187,13 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                         #painter.drawText(int(scale*item.x()), int(scale*item.y()), str(item.text()))
                     else:
                         painter.scale(scale, scale)
+                        p = item.pen()
+                        oldSize = p.width()
+                        p.setWidth(int(oldSize*scale))
+                        item.setPen(p)
                         item.draw(painter)
+                        p.setWidth(oldSize)
+                        item.setPen(p)
                         painter.scale(1.0/scale, 1.0/scale)
                     item.moveBy(minx, miny)
 
