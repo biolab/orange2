@@ -62,14 +62,54 @@ class IndexStore:
         self.subentries = {}
 
 def addIndex(indexStoreList, name, title=None, filename=None, counter = None):
-    if title:
-        cateS = IndexStore(name, [(title, filename, counter)])
-        newID("%s#HH%i" % (filename, counter))
-    else:
+    cateS = indexStoreList.get(name.lower(), None)
+    if not cateS:
         cateS = IndexStore(name)
-    indexStoreList.setdefault(name.lower(), cateS)
+        indexStoreList[name.lower()] = cateS
+    
+    if title:
+        cateS.entries.append((title, filename, counter))
+        newID("%s#HH%i" % (filename, counter))
+
     return cateS
 
+htags = [tg % i for tg in ["<h%i>", "<h%i "] for i in range(5)]
+
+def findLastTag(outp, tag, start = None):
+    ri = -1
+    if tag == "h":
+        tags = htags
+    else:
+        tags = "<%s>" % tag, "<%s " % tag
+        
+    for l in range(start or len(outp)-1, -1, -1):
+        ri = max([outp[l].lower().rfind(tg) for tg in tags])
+        if ri > -1:
+            return l, ri
+
+    return -1, -1        
+        
+    
+def addAName(outp, aname, lasttag=None):
+    if not lasttag or lasttag == "here":
+        ri = -1
+    elif lasttag == "head":
+        l, ri = findLastTag(outp, "h")
+    elif lasttag == "phead":
+        l, ri = findLastTag(outp, "p")
+        lh, rih = findLastTag(outp, "h")
+        if rih > -1:
+            lp2, rip2 = findLastTag(outp, "p", l-1)
+            if ri == -1 or lp2 < lh:
+                l, ri = lh, rih
+    else:
+        l, ri = findLastTag(outp, lasttag)
+
+    if ri > -1:
+        outp[l] = outp[l][:ri] + aname + outp[l][ri:]
+    else:
+        outp.append(aname)
+        
 def findIndices(page, filename, title):
     lowpage = page.lower()
     outp = []
@@ -77,9 +117,14 @@ def findIndices(page, filename, title):
     counter = 0
     lidx = 0
     H2Entry = None
-    re_idx = re.compile(r'<index(\s+name\s*=\s*(?P<name>("[^"]*"|0)))?>')
+#    re_idx = re.compile(r'<index(\s+name\s*=\s*(?P<name>("[^"]*"|0)))?>')
+    re_idx = re.compile(r'<index(?P<options>\s+[^>]+)?>')
     re_h2 = re.compile(r'<h2(\s+toc\s*=\s*(?P<toc>("[^"]*"|0)))?>')
     re_h3 = re.compile(r'<h3(\s+toc\s*=\s*(?P<toc>("[^"]*"|0)))?>')
+
+    re_opt_name = re.compile(r'\s*name\s*=\s*(?P<name>("[^"]*"|0))\s*')
+    re_opt_pos = re.compile(r'\s*pos\s*=\s*(?P<pos>("[^"]*"))\s*')
+    
     while 1:
         idxm = re_idx.search(lowpage, lidx)
         indx = idxm and idxm.start() or -1
@@ -96,16 +141,29 @@ def findIndices(page, filename, title):
         
         idx = min(indices)
         if idx == indx:
-            nameg = idxm.group("name")
+            optionsg = idxm.group("options")
+            posg = "phead"
+            name = ""
+            if optionsg:
+                mg = re_opt_name.match(optionsg)
+                if mg:
+                    nameg = mg.group("name")
+                    begopt = idxm.span("options")[0]
+                    b, e = mg.span("name")
+                    name = addNewlines(page[begopt+b+1:begopt+e-1])
+                
+                mg = re_opt_pos.match(optionsg)
+                if mg:
+                    posg = mg.group("posg")
+                    if posg == "here":
+                        posg = None
+                    
             eidx = lowpage.find("</index>", idx)
             
             nextidxm = re_idx.search(lowpage, indx+5)
             missingendtag = nextidxm and nextidxm.start() < eidx
 
-            if nameg:
-                b, e = idxm.span("name")
-                name = addNewlines(page[b+1:e-1])
-            else:
+            if not name:
                 if missingendtag or eidx == -1:
                     print "Warning: missing end of index in '%s'" % filename
                     lidx = idxm.end()
@@ -118,7 +176,7 @@ def findIndices(page, filename, title):
 
             name = name.replace("\n", " ")
             outp.append(page[lastout:idx])
-            outp.append('<a name="HH%i">' % counter)
+            addAName(outp, '<a name="HH%i">' % counter, posg)
 
             if eidx > -1 and (not nextidxm or eidx < nextidxm.start()):
                 outp.append(page[idxm.end():eidx])
@@ -127,10 +185,14 @@ def findIndices(page, filename, title):
                 lastout = lidx = idxm.end()
 
             if "+" in name:
-                cate, name = name.split("+")
-                cateS = addIndex(index, cate)
-                addIndex(index, name, title, filename, counter)
-                addIndex(cateS.subentries, name, title, filename, counter)
+                catename = name.split("+")
+                if len(catename) == 2:
+                    cate, name = catename
+                    cateS = addIndex(index, cate)
+                    addIndex(index, name, title, filename, counter)
+                    addIndex(cateS.subentries, name, title, filename, counter)
+                else:
+                    addIndex(index, name, title, filename, counter)
             elif "/" in name:
                 cate, name = name.split("/")
                 cateS = addIndex(index, cate)
