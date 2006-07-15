@@ -7,6 +7,7 @@
 <BODY>
 
 <H1>Relevance of Attributes</H1>
+<index name="attribute quality">
 
 <P>There's a number of different measures for assessing the relevance of attributes. Orange implements some of them in the classes stemming from <CODE>MeasureAttribute</CODE>. The most of common ones compute certain statistics on conditional distributions of class values given the attribute values; in Orange, these are derived from <CODE>MeasureAttributeFromProbabilities</CODE>.</P>
 
@@ -16,7 +17,7 @@
 
 <H3>MeasureAttribute</H3>
 
-<P><CODE>MeasureAttribute</CODE> is the base class for a wide range of classes that measure quality of attributes. The class itself is, naturally, abstract. Its fields merely describe what kinds of attributes it can handle and what kind of data it requires.</P>
+<P><CODE><INDEX name="classes/MeasureAttribute">MeasureAttribute</CODE> is the base class for a wide range of classes that measure quality of attributes. The class itself is, naturally, abstract. Its fields merely describe what kinds of attributes it can handle and what kind of data it requires.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -150,7 +151,7 @@ print "\nBest threshold: %5.3f (score %5.3f)" % (thresh, score)</xmp>
 
 <H3>MeasureAttributeFromProbabilities</H3>
 
-<P><CODE>MeasureAttributeFromProbabilities</CODE> is the abstract base class for attribute quality measures that can be computed from contingency matrices only. It relieves the derived classes from having to compute the contingency matrix by defining the first two forms of call operator. (Well, that's not something you need to know if you only work in Python.) Additional feature of this class is that you can set probability estimators. If none are given, probabilities and conditional probabilities of classes are estimated by relative frequencies.</P>
+<P><CODE><INDEX name="classes/MeasureAttributeFromProbabilities">MeasureAttributeFromProbabilities</CODE> is the abstract base class for attribute quality measures that can be computed from contingency matrices only. It relieves the derived classes from having to compute the contingency matrix by defining the first two forms of call operator. (Well, that's not something you need to know if you only work in Python.) Additional feature of this class is that you can set probability estimators. If none are given, probabilities and conditional probabilities of classes are estimated by relative frequencies.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -169,24 +170,28 @@ print "\nBest threshold: %5.3f (score %5.3f)" % (thresh, score)</xmp>
 <P>The following section describes the attribute quality measures suitable for discrete attributes and outcomes. See <A href="MeasureAttribute1.py">MeasureAttribute1.py</A>, <A href="MeasureAttribute1a.py">MeasureAttribute1a.py</A>, <A href="MeasureAttribute1b.py">MeasureAttribute1b.py</A>, <A href="MeasureAttribute2.py">MeasureAttribute2.py</A> and <A href="MeasureAttribute3.py">MeasureAttribute3.py</A> for more examples on their use.</P>
 
 <H3>Information Gain</H3>
+<index name="attribute quality+information gain">
 
-<P>The most popular measure, information gain (<CODE>MeasureAttribute_info</CODE>), measures the expected decrease of the entropy.</P>
+<P>The most popular measure, information gain (<CODE><INDEX name="classes/MeasureAttribute_info">MeasureAttribute_info</CODE>), measures the expected decrease of the entropy.</P>
 
 <H3>Gain Ratio</H3>
+<index name="attribute quality+gain ratio">
 
-<P>Gain ratio (<CODE>MeasureAttribute_gainRatio </CODE>) was introduced by Quinlan in order to avoid overestimation of multi-valued attributes. It is computed as information gain divided by the entropy of the attribute's value. (It has been shown, however, that such measure still overstimates the attributes with multiple values.)
+<P>Gain ratio (<CODE><INDEX name="classes/MeasureAttribute_gainRatio">MeasureAttribute_gainRatio</CODE>) was introduced by Quinlan in order to avoid overestimation of multi-valued attributes. It is computed as information gain divided by the entropy of the attribute's value. (It has been shown, however, that such measure still overstimates the attributes with multiple values.)
 
 <H3>Gini index</H3>
+<index name="attribute quality+gini index">
 
 <P>Gini index (<CODE>MeasureAttribute_gini</CODE>) was first introduced by Breiman and can be interpreted as the probability that two randomly chosen examples will have different classes.</P>
 
 <H3>Relevance</H3>
+<index name="attribute quality+relevance">
 
-<P>Relevance of attributes (<CODE>MeasureAttribute_relevance</CODE>) is a measure that discriminate between attributes on the basis of their potential value in the formation of decision rules.</P>
+<P>Relevance of attributes (<CODE><INDEX name="classes/MeasureAttribute_relevance">MeasureAttribute_relevance</CODE>) is a measure that discriminate between attributes on the basis of their potential value in the formation of decision rules.</P>
 
 <H3>Costs</H3>
 
-<P><CODE>MeasureAttribute_cost</CODE> evaluates attributes based on the "saving" achieved by knowing the value of attribute, according to the specified cost matrix.</P>
+<P><CODE><INDEX name="classes/MeasureAttribute_cost">MeasureAttribute_cost</CODE> evaluates attributes based on the "saving" achieved by knowing the value of attribute, according to the specified cost matrix.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -206,8 +211,9 @@ print "\nBest threshold: %5.3f (score %5.3f)" % (thresh, score)</xmp>
 
 
 <H3>ReliefF</H3>
+<index name="attribute quality+ReliefF">
 
-<P>ReliefF (<CODE>MeasureAttribute_relief</CODE>) was first developed by Kira and Rendell and then substantially generalized and improved by Kononenko. It measures the usefulness of attributes based on their ability to distinguish between very similar examples belonging to different classes.</P>
+<P>ReliefF (<CODE><INDEX name="classes/MeasureAttribute_relief">MeasureAttribute_relief</CODE>) was first developed by Kira and Rendell and then substantially generalized and improved by Kononenko. It measures the usefulness of attributes based on their ability to distinguish between very similar examples belonging to different classes.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -245,8 +251,10 @@ for attr in data.domain.attributes:
 <P>Except for ReliefF, the only attribute quality measure available for regression problems is based on a mean square error.</P>
 
 <H3>Mean Square Error</H3>
+<index name="attribute quality/mean square error">
+<index name="MSE of an attribute">
 
-<P>The mean square error measure is implemented in class <CODE>MeasureAttribute_MSE</CODE>.</P>
+<P>The mean square error measure is implemented in class <CODE><INDEX name="classes/MeasureAttribute_MSE">MeasureAttribute_MSE</CODE>.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>

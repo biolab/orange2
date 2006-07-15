@@ -6,6 +6,7 @@
 
 <BODY>
 
+<index name="preprocessing+discretization">
 <H1>Discretization</H1>
 
 <HR>
@@ -87,7 +88,7 @@ or <CODE>BiModalDiscretizer</CODE></TD>
 
 <H2>General Schema</H2>
 
-<P>Instances of classes derived from <CODE>orange.Discretization</CODE> define a single method: the call operator. The object can also be called through constructor.</P>
+<P>Instances of classes derived from <CODE>orange.<INDEX name="classes/Discretization">Discretization</INDEX></CODE> define a single method: the call operator. The object can also be called through constructor.</P>
 
 <DL class=attributes>
 <DT>__call__(attribute, examples[, weightID])</DT>
@@ -164,6 +165,7 @@ FloatVariable 'sepal width'
 
 
 <H3>IntervalDiscretizer</H3>
+<index name="classes/IntervalDiscretizer">
 
 <P><CODE>IntervalDiscretizer</CODE> is the most common discretizer. It made its first appearance in the example about general discretization schema and you will see more of it later. It has a single interesting attribute.</p>
 
@@ -203,8 +205,8 @@ data2 = data.select(newattrs + [data.domain.classVar])
 
 <P><B>Do not change the length of <CODE>points</CODE> if the discretizer is used by any attribute.</B> The length of <CODE>points</CODE> should always match the number of values of the attribute, which is determined by the length of the attribute's field <CODE>values</CODE>. Therefore, if <CODE>attr</CODE> is a discretized attribute, than <CODE>len(attr.values)</CODE> must equal <CODE>len(attr.getValueFrom.transformer.points)+1</CODE>. It always does, unless you deliberately change it. If the sizes don't match, Orange will probably crash, and it will be entirely your fault.</P>f
 
-
 <H3>EquiDistDiscretizer</H3>
+<index name="classes/EquiDistDiscretizer">
 
 <P><CODE>EquiDistDiscretizer</CODE> is a bit faster but more rigid than <CODE>IntervalDiscretizer</CODE>: it uses intervals of fixed width.</CODE>
 
@@ -217,7 +219,7 @@ data2 = data.select(newattrs + [data.domain.classVar])
 <DT>numberOfIntervals</DT>
 <DD>Number of intervals.</DD>
 <dt>points (read-only)</dt>
-<dt>The cut-off points; this is not a real attribute although it behaves as one. Reading it constructs a list of cut-off points and returns it, but changing the list doesn't affect the discretizer - it's a separate list. This attribute is here only for to give the <code>EquiDistDiscretizer</code> the same interface as that of <code>IntervalDiscretizer</code>.</dt> 
+<dt>The cut-off points; this is not a real attribute although it behaves as one. Reading it constructs a list of cut-off points and returns it, but changing the list doesn't affect the discretizer - it's a separate list. This attribute is here only for to give the <code>EquiDistDiscretizer</code> the same interface as that of <code>IntervalDiscretizer</code>.</dt>
 </DL>
 
 <P>All values below <CODE>firstCut</CODE> belong to the first interval (including possible values smaller than <CODE>firstVal</CODE>. Otherwise, value <CODE>val</CODE>'s interval is <CODE>floor((val-firstVal)/step)</CODE>. If this is turns out to be greater or equal to <CODE>numberOfIntervals</CODE>, it is decreased to <CODE>numberOfIntervals-1</CODE>.</P>
@@ -226,6 +228,7 @@ data2 = data.select(newattrs + [data.domain.classVar])
 
 
 <H3>ThresholdDiscretizer</H3>
+<index name="classes/ThresholdDiscretizer">
 
 <P>Threshold discretizer converts continuous values into binary by comparing them with a threshold. This discretizer is actually not used by any discretization method, but you can use it for manual discretization. Orange needs this discretizer for binarization of continuous attributes in decision trees.</P>
 
@@ -237,6 +240,7 @@ data2 = data.select(newattrs + [data.domain.classVar])
 
 
 <H3>BiModalDiscretizer</H3>
+<index name="classes/BiModalDiscretizer">
 
 <P>This discretizer is the first discretizer that couldn't be replaced by <CODE>IntervalDiscretizer</CODE>. It has two cut off points and values are discretized according to whether they belong to the middle region (which includes the lower but not the upper boundary) or not. The discretizer is returned by <CODE>ByModalDiscretization</CODE> if its field <CODE>splitInTwo</CODE> is <CODE>true</CODE> (which by default is); see an example there.</P>
 
@@ -252,6 +256,8 @@ data2 = data.select(newattrs + [data.domain.classVar])
 <H2>Discretization Algorithms</H2>
 
 <H3>Discretization with Intervals of Equal Size</H3>
+<index name="discretization/intervals with same width">
+<index name="classes/EquiDistDiscretization">
 
 <P><CODE>EquiDistDiscretization</CODE> discretizes the attribute by cutting it into the prescribed number of intervals of equal width. The examples are needed to determine the span of attribute values. The interval between the smallest and the largest is then cut into equal parts.</P>
 
@@ -302,9 +308,9 @@ for ex in data2[:10]:
 </XMP>
 
 
-
-
 <H3>Discretization with Intervals Containing (Approximately) Equal Number of Examples</H3>
+<index name="discretization/to quartiles">
+<index name="classes/EquiNDiscretization">
 
 <P><CODE>EquiNDiscretization</CODE> discretizes the attribute by cutting it into the prescribed number of intervals so that each of them contains equal number of examples. The examples are obviously needed for this discretization, too.</P>
 
@@ -316,8 +322,10 @@ for ex in data2[:10]:
 
 <P>The use of this discretization is equivalent to the above one, except that we use <code>EquiNDiscretization</code> instead of <code>EquiDistDiscretization</code>. The resulting discretizer is <code>IntervalDiscretizer</code>, hence it has <code>points</code> instead of <code>firstCut</code>/<code>step</code>/<code>numberOfIntervals</code>.</P>
 
-
 <H3>Entropy-based Discretization</H3>
+<index name="discretization/entropy-based (Fayyad-Irani)">
+<index name="Fayyad-Irani discretization">
+<index name="classes/EntropyDiscretization">
 
 <P>Fayyad-Irani's discretization method works without a predefined number of intervals. Instead, it recursively splits intervals at the cut-off point that minimizes the entropy, until the entropy decrease is smaller than the increase of MDL induced by the new point.</P>
 
@@ -346,6 +354,8 @@ petal width: <0.600000023842, 1.70000004768>
 
 
 <H3>Bi-Modal Discretization</H3>
+<index name="discretization/bi-modal">
+<index name="classes/BiModalDiscretization">
 
 <P><CODE>BiModalDiscretization</CODE> sets two cut-off points so that the class distribution of examples in between is as different from the overall distribution as possible. The difference is measure by chi-square statistics. All possible cut-off points are tried, thus the discretization runs in O(n<SUP>2</SUP>).</P>
 

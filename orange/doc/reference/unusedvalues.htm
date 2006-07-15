@@ -6,8 +6,9 @@
 
 <BODY>
 <h1>Removal of Unused Attribute Values</h1>
+<index name="preprocessing+removal of unused values">
 
-<P>It can often happen that the definition of a discrete attribute (<CODE>EnumVariable</CODE>) declares values that do not actually appear in the data, either originally or as a consequence of some preprocessing. Such anomalies are taken care of by class <CODE>RemoveUnusedValues</CODE> that, given an attribute and the data, determines whether there are any unused values and reduces the attribute if needed. There are four possible cases.
+<P>It can often happen that the definition of a discrete attribute (<CODE>EnumVariable</CODE>) declares values that do not actually appear in the data, either originally or as a consequence of some preprocessing. Such anomalies are taken care of by class <CODE><INDEX name="classes/RemoveUnusedValues">RemoveUnusedValues</CODE> that, given an attribute and the data, determines whether there are any unused values and reduces the attribute if needed. There are four possible cases.
 
 <UL>
 <LI>The attribute does not have any used values in the data - value of this attribute is undefined for all examples. The attribute is thus useless and the class returns <CODE>None</CODE>.</LI>

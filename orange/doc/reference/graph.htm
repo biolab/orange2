@@ -3,6 +3,7 @@
 <LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
 </HEAD> <body>
 
+<index name="graphs">
 <h1>Graphs</h1>
 
 <P>Orange offers a data structure for representing directed and undirected graphs with various types of weighted connections.</P>
@@ -40,15 +41,15 @@
 
 <P>When constructing a graph, you will need to decide about the data structure for representation of edges, and call the corresponding constructor. All constructors take the same arguments: the number of vertices (needs to be given in advance, you cannot add additional vertices later), a flag telling whether the graph is directed or not, and the number of edge types. The default number of edge types is 1 (a normal graph), while the other two arguments are mandatory.</P>
 
-<P>You can choose between three constructors, all derived from a single ancestor <CODE>Graph</CODE>:
+<P>You can choose between three constructors, all derived from a single ancestor <CODE><INDEX name="classes/Graph">Graph</CODE>:
 <DL class=attributes>
-<DT><CODE>GraphAsMatrix(nVertices, directed[, nEdgeTypes])</CODE></DT>
+<DT><CODE><INDEX name="classes/GraphAsMatrix">GraphAsMatrix(nVertices, directed[, nEdgeTypes])</CODE></DT>
 <DD>Edges are stored in a matrix with either <EM>n</EM><SUP>2</SUP> or <EM>n</EM>(<EM>n</EM>+1)/2 elements, depending upon whether the graph is directed or not. (In C++, it is stored as <CODE>float *</CODE> pointing to an array of length <CODE>n*n*nEdgeTypes</CODE> or <CODE>(n*(n+1))/2*nEdgeTypes</CODE> elements, where <CODE>nEdgeTypes</CODE> is the number of edge types.) This representation is suitable for smaller graphs and for dense large graphs. For graph with only one edge type, this representation is more economical than representation with lists or trees when the number of edges is larger than <EM>n</EM><SUP>2</SUP>/4.</P>
 
 <P>Inserting, deleting and checking the edges is fast; listing the neighbours of a certain node is fast unless the graph is sparse, in which case a graph represented with a list or a tree would be faster.</P>
 </DD>
 
-<DT><CODE>GraphAsList(nVertices, directed[, nEdgeTypes])</CODE></DT>
+<DT><CODE><INDEX name="classes/GraphAsList">GraphAsList(nVertices, directed[, nEdgeTypes])</CODE></DT>
 <DD>Edges are stored in an ordered lists of neighbours, one list for each node. In C++, for each neighbour, the connection is stored in a structure with the vertex number (<CODE>int</CODE>), a pointer to the next structure, and an array of floats, one for each integer. With 16-byte alignment, this would take 16 bytes for graphs with one or two edge types on the usual 32-bit platforms.</P>
 
 <P>For undirected graphs, each edge is stored only once, in the list of the edge with the smaller index. This makes the structure smaller and insertion and lookup faster; it slows down finding the neighbours of a given node.</P>
@@ -57,7 +58,7 @@
 </DD>
 
 
-<DT><CODE>GraphAsTree(nVertices, directed[, nEdgeTypes])</CODE></DT>
+<DT><CODE><INDEX name="classes/GraphAsTree">GraphAsTree(nVertices, directed[, nEdgeTypes])</CODE></DT>
 <DD>This structure is similar to <CODE>GraphAsTree</CODE> except that the edges are stored in trees instead of lists. This should be a structure of choice for all graph between really sparse and those having one quarter of possible edges. As expected, queries are fast, while insertion and removal of edges is somewhat slower (though still faster than for <CODE>GraphAsList</CODE> unless the number of edges is really small).</P>
 
 <P>Internally, nodes of the tree contain the vertex number, two pointers and a list of floats. With one edge type, this should be 16 bytes on 32-bit platforms.</P>

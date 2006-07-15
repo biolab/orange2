@@ -7,11 +7,12 @@
 <BODY>
 <h1>Basic Statistics for Continuous Attributes</h1>
 
-<P>Orange contains two simple classes for computing basic statistics for continuous attributes, such as their minimal and maximal value or average: <code>BasicAttrStat</code> holds the statistics for a single attribute and <code>DomainBasicAttrStat</code> holds the statistics for all attributes in the domain.
+<P>Orange contains two simple classes for computing <INDEX>basic statistics</INDEX> for continuous attributes, such as their minimal and maximal value or average: <code>BasicAttrStat</code> holds the statistics for a single attribute and <code>DomainBasicAttrStat</code> holds the statistics for all attributes in the domain.
 
 <hr>
 
 <h2>BasicAttrStat</h2>
+<index name="classes/BasicAttrStat">
 
 <p class=section>Attributes</p>
 
@@ -46,6 +47,7 @@
 <p>You can see that the statistics does not include the median or, more generally, any quantiles. That's because it only collects statistics that can be computed on the fly, without remembering the data. If you need quartiles, you will need to construct a <a href="distributions.htm"><code>ContDistribution</code></A>.</p>
 
 <h2>DomainBasicAttrStat</h2>
+<index name="classes/DomainBasicAttrStat">
 
 <p><code>DomainBasicAttrStat</code> behaves as a list of <code>BasicAttrStat</code> except for a few details.</p>
 

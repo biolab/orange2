@@ -6,6 +6,8 @@
 
 <BODY>
 <h1>Classification and Regression Trees</h1>
+<index name="classifiers+classification trees">
+<index name="classifiers+regression trees">
 
 <p>This page describes the Orange trees. It first describes <A href="#procedures">the basic components and procedures</A>: it starts with <A href="#structure">the structure</A> that represents the tree, then it defines <A href="#classification">how the tree is used for classification</A>, then <A href="#learning">how it is built</A> and <a href="#pruning">pruned</A>. The order might seem strange, but the things are rather complex and this order is perhaps a bit easier to follow. After you have some idea about what the principal components do, we described the <a href="#classes">concrete classes</A> that you can use as components for a tree learner. The last part of the page contains <A href="#examples">examples</A>.</p>
 
@@ -17,7 +19,7 @@
 <A name="structure"></A>
 <H3>Tree Data Structure</H3>
 
-<p>Classification trees are represented as a tree-like hierarchy of <CODE>TreeNode</CODE> classes. <CODE>TreeNode</CODE> stores information about the learning examples belonging to the node, a branch selector, a list of branches (if the node is not a leaf) with their descriptions and strengths, and a classifier.</p>
+<p>Classification trees are represented as a tree-like hierarchy of <CODE><INDEX name="classes/TreeNode">TreeNode</CODE> classes. <CODE>TreeNode</CODE> stores information about the learning examples belonging to the node, a branch selector, a list of branches (if the node is not a leaf) with their descriptions and strengths, and a classifier.</p>
 
 <P class=section>
 <DL class=attributes>
@@ -57,11 +59,11 @@
 <A name="classification"></A>
 <H3>Classification</H3>
 
-<p>A <code>TreeClassifier</code> is an object that classifies examples according to a tree stored in a field <code>tree</code>.</p>
+<p>A <code><INDEX name="classes/TreeClassifier">TreeClassifier</code> is an object that classifies examples according to a tree stored in a field <code>tree</code>.</p>
 
 <p>Classification would be straightforward if there were no unknown values or, in general, examples that cannot be placed into a single branch. The response in such cases is determined by a component <code>descender</code>.</p>
 
-<p><code>TreeDescender</code> is an abstract object which is given an example and whose basic job is to descend as far down the tree as possible, according to the values of example's attributes. The <code>TreeDescender</code> calls the node's <code>branchSelector</code> to get the branch index. If it's a simple index, the corresponding branch is followed. If not, it's up to descender to decide what to do, and that's where descenders differ. A <code>descender</code> can choose a single branch (for instance, the one that is the most recommended by the <code>branchSelector</code>) or it can let the branches vote.</p>
+<p><code><INDEX name="classes/TreeDescender">TreeDescender</code> is an abstract object which is given an example and whose basic job is to descend as far down the tree as possible, according to the values of example's attributes. The <code>TreeDescender</code> calls the node's <code>branchSelector</code> to get the branch index. If it's a simple index, the corresponding branch is followed. If not, it's up to descender to decide what to do, and that's where descenders differ. A <code>descender</code> can choose a single branch (for instance, the one that is the most recommended by the <code>branchSelector</code>) or it can let the branches vote.</p>
 
 <p>In general there are three possible outcomes of a descent.</p>
 <UL>
@@ -91,13 +93,13 @@
 <A name="learning"></A>
 <H3>Learning</H3>
 
-<p>The main learning object is <CODE>TreeLearner</CODE>. It is basically a skeleton into which the user must plug the components for particular functions. For easier use, defaults are provided.</p>
+<p>The main learning object is <CODE><INDEX name="classes/TreeLearner">TreeLearner</CODE>. It is basically a skeleton into which the user must plug the components for particular functions. For easier use, defaults are provided.</p>
 
 <p>Components that govern the structure of the tree are <code>split</code> (of type <code>TreeSplitConstructor</code>), <code>stop</code> (of type <code>TreeStopCriteria</code>) and <code>exampleSplitter</code> (of type <code>TreeExampleSplitter</code>).</p>
 
 <H4>TreeSplitConstructor</H4>
 
-<p>The job of <code>TreeSplitConstructor</code> is to find a suitable criteria for dividing the learning (and later testing) examples coming to the node. The data it gets is a set of examples (and, optionally, an ID of weight meta-attribute), a domain contingency computed from examples, apriori class probabilities, a list of candidate attributes it should consider and a node classifier (if it was constructed, that is, if <CODE>storeNodeClassifier</CODE> is left <CODE>true</CODE>).</p>
+<p>The job of <code><INDEX name="classes/TreeSplitConstructor">TreeSplitConstructor</code> is to find a suitable criteria for dividing the learning (and later testing) examples coming to the node. The data it gets is a set of examples (and, optionally, an ID of weight meta-attribute), a domain contingency computed from examples, apriori class probabilities, a list of candidate attributes it should consider and a node classifier (if it was constructed, that is, if <CODE>storeNodeClassifier</CODE> is left <CODE>true</CODE>).</p>
 
 <p>The <code>TreeSplitConstructor</code> should use the domain contingency when possible. The reasons are two-fold; one is that it's faster and the other is that the contingency matrices are not necessarily constructed by simply counting the examples. Why and how is explained later. There are, however, cases, when domain contingency does not suffice, for examples, when ReliefF is used as a measure of quality of attributes. In this case, there's no other way but to use the examples and ignore the precomputed contingencies.</p>
 
@@ -114,12 +116,12 @@
 
 <H4>TreeStopCriteria</H4>
 
-<p><code>TreeStopCriteria</code> is a much simpler component that, given a set of examples, weight ID and contingency matrices, decides whether to continue the induction or not. The basic criterion checks whether there are any examples and whether they belong to at least two different classes (if the class is discrete). Derived components check things like the number of examples and the proportion of majority classes.</p>
+<p><code><INDEX name="classes/TreeStopCriteria">TreeStopCriteria</code> is a much simpler component that, given a set of examples, weight ID and contingency matrices, decides whether to continue the induction or not. The basic criterion checks whether there are any examples and whether they belong to at least two different classes (if the class is discrete). Derived components check things like the number of examples and the proportion of majority classes.</p>
 
 
 <H4>TreeExampleSplitter</H4>
 
-<p><code>TreeExampleSplitter</code> is analogous to the <code>TreeDescender</code> described about a while ago. Just like the <code>TreeDescender</code> decides the branch for an example during classification, the <code>TreeExampleSplitter</code> sorts the learning examples into branches.</p>
+<p><code><INDEX name="classes/TreeExampleSplitter">TreeExampleSplitter</code> is analogous to the <code>TreeDescender</code> described about a while ago. Just like the <code>TreeDescender</code> decides the branch for an example during classification, the <code>TreeExampleSplitter</code> sorts the learning examples into branches.</p>
 
 <p><code>TreeExampleSplitter</code> is given a <code>TreeNode</code> (from which it can use different stuff, but most of splitters only use the <code>branchSelector</code>), a set of examples to be divided, and the weight ID. The result is a list of subsets of examples and, optionally, a list of new weight ID's.</p>
 
@@ -187,7 +189,7 @@
 <A name="pruning"></A>
 <H3>Pruning</H3>
 
-<p>Tree pruners derived from <code>TreePrune</code> can be given either a <code>TreeNode</code> (presumably, but not necessarily a root) or a <code>TreeClassifier</code>. The result is a new, pruned <code>TreeNode</code> or a new <code>TreeClassifier</code> with a pruned tree. The original tree remains intact.</p>
+<p>Tree pruners derived from <code><INDEX name="classes/TreePrune">TreePrune</code> can be given either a <code>TreeNode</code> (presumably, but not necessarily a root) or a <code>TreeClassifier</code>. The result is a new, pruned <code>TreeNode</code> or a new <code>TreeClassifier</code> with a pruned tree. The original tree remains intact.</p>
 
 <p>Note however that pruners construct only a shallow copy of a tree. The pruned tree's <code>TreeNode</code>s contain references to the same contingency matrices, node classifiers, branch selectors, ... as the original tree. Thus, you may modify a pruned tree structure (manually cut it, add new nodes, replace components) but modifying, for instance, some node's <code>nodeClassifier</code> (a <code>nodeClassifier</code> itself, not a reference to it!) would modify the node's <code>nodeClassifier</code> in the corresponding node of the original tree.</p>
 
@@ -230,6 +232,7 @@ The function returns a tuple (<code>branchSelector</code>, <code>branchDescripti
 
 
 <H4>TreeSplitConstructor_Measure</H4>
+<index name="classes/TreeSplitConstructor_Measure">
 
 <p>An abstract base class for split constructors that employ a <code>MeasureAttribute</code> to assess a quality of a split. At present, all split constructors except for <code>TreeSplitConstructor_Combined</code> are derived from this class.</p>
 
@@ -243,18 +246,22 @@ The function returns a tuple (<code>branchSelector</code>, <code>branchDescripti
 </DL>
 
 <H4>TreeSplitConstructor_Attribute</H4>
+<index name="classes/TreeSplitConstructor_Attribute">
 
 <p><code>TreeSplitConstructor_Attribute</code> attempts to use a discrete attribute as a split; each value of the attribute corresponds to a branch in the tree. Attributes are evaluated with the <code>measure</code> and the one with the highest score is used for a split. If there is more than one attribute with the highest score, one of them is selected by random.</P>
 
 <p>The constructed <code>branchSelector</code> is an instance of <code>ClassifierFromVarFD</code> that returns a value of the selected attribute. If the attribute is <code>EnumVariable</code>, <code>branchDescription</code>'s are the attribute's values. The attribute is marked as spent, so that it cannot reappear in the node's subtrees.</p>
 
 <H4>TreeSplitConstructor_ExhaustiveBinary</H4>
+<index name="classes/TreeSplitConstructor_ExhaustiveBinary">
+<index name="binarization (in trees)"
 
 <p><code>TreeSplitConstructor_ExhaustiveBinary</code> works on discrete attributes. For each attribute, it determines which binarization of the attribute gives the split with the highest score. If more than one split has the highest score, one of them is selected by random. After trying all the attributes, it returns one of those with the highest score.</p>
 
 <p>The constructed <CODE>branchSelector</CODE> is again an instance <code>ClassifierFromVarFD</code> that returns a value of the selected attribute. This time, however, its <code>transformer</code> contains an instance of <code>MapIntValue</code> that maps the values of the attribute into a binary attribute. Branch descriptions are of form "[&lt;val1&gt;, &lt;val2&gt;, ...&lt;valn&gt;]" for branches corresponding to more than one value of the attribute. Branches that correspond to a single value of the attribute are described with this value. If the attribute was originally binary, it is spent and cannot be used in the node's subtrees. Otherwise, it can reappear in the subtrees.</p>
 
 <H4>TreeSplitConstructor_Threshold</H4>
+<index name="classes/TreeSplitConstructor_Threshold">
 
 <p>This is currently the only constructor for splits with continuous attributes. It divides the range of attributes values with a threshold that maximizes the split's quality. As always, if there is more than one split with the highest score, a random threshold is selected. The attribute that yields the highest binary split is returned.</p>
 
@@ -262,6 +269,7 @@ The function returns a tuple (<code>branchSelector</code>, <code>branchDescripti
 
 
 <H4>TreeSplitConstructor_Combined</H4>
+<index name="classes/TreeSplitConstructor_Combined">
 
 <p>This constructor delegates the task of finding the optimal split to separate split constructors for discrete and for continuous attributes. Each split constructor is called, given only attributes of appropriate types as candidates. Both construct a candidate for a split; the better of them is selected.</p>
 
@@ -296,6 +304,7 @@ Decides whether to stop (<CODE>true</CODE>) or continue (<CODE>false</CODE>) the
 </DL>
 
 <H4>TreeStopCriteria_common</H4>
+<index name="classes/TreeSplitConstructor_common">
 
 <p><code>TreeStopCriteria_common</code> contains additional criteria for pre-pruning: it checks the proportion of majority class and the number of weighted examples.</p>
 
@@ -326,25 +335,25 @@ Uses the information in <code>node</code> (particularly the <code>branchSelector
 
 <p class=section>Derived classes</p>
 <DL class=attributes>
-<DT>TreeExampleSplitter_IgnoreUnknowns</DT>
+<DT><INDEX name="classes/TreeExampleSplitter_IgnoreUnknowns">TreeExampleSplitter_IgnoreUnknowns</DT>
 <DD>Simply ignores the examples for which no single branch can be determined.</DD>
 
-<DT>TreeExampleSplitter_UnknownsToCommon</DT>
+<DT><INDEX name="classes/TreeExampleSplitter_UnknownsToCommon">TreeExampleSplitter_UnknownsToCommon</DT>
 <DD>Places all such examples to a branch with the highest number of examples. If there is more than one such branch, one is selected at random and then used for all examples.</DD>
 
-<DT>TreeExampleSplitter_UnknownsToAll</DT>
+<DT><INDEX name="classes/TreeExampleSplitter_UnknownsToAll">TreeExampleSplitter_UnknownsToAll</DT>
 <DD>Places examples with unknown value of the attribute into all branches.</DD>
 
-<DT>TreeExampleSplitter_UnknownsToRandom</DT>
+<DT><INDEX name="classes/TreeExampleSplitter_UnknownsToRandom">TreeExampleSplitter_UnknownsToRandom</DT>
 <DD>Selects a random branch for such examples.</DD>
 
-<DT>TreeExampleSplitter_UnknownsToBranch</DT>
+<DT><INDEX name="classes/TreeExampleSplitter_UnknownsToBranch">TreeExampleSplitter_UnknownsToBranch</DT>
 <DD>Constructs an additional branch to contain all such examples. The branch's description is "unknown".</DD>
 
-<DT>TreeExampleSplitter_UnknownsAsBranchSizes</DT>
+<DT><INDEX name="classes/TreeExampleSplitter_UnknownsAsBranchSizes">TreeExampleSplitter_UnknownsAsBranchSizes</DT>
 <DD>Splits examples with unknown value of the attribute according to proportions of examples in each branch.</DD>
 
-<DT>TreeExampleSplitter_UnknownsAsSelector</DT>
+<DT><INDEX name="classes/TreeExampleSplitter_UnknownsAsSelector">TreeExampleSplitter_UnknownsAsSelector</DT>
 <DD>Splits examples with unknown value of the attribute according to distribution proposed by selector (which is in most cases the same as proportions of examples in branches).</DD>
 </DL>
 
@@ -368,28 +377,29 @@ Uses the information in <code>node</code> (particularly the <code>branchSelector
 
 <p class=section>Derived classes</p>
 <DL class=attributes>
-<DT>TreeDescender_UnknownsToNode</DT>
+<DT><INDEX name="classes/TreeDescender_UnknownsToNode">TreeDescender_UnknownsToNode</DT>
 <DD>When example cannot be classified into a single branch, the current node is returned. Thus, the node's <CODE>nodeClassifier</CODE> will be used to make a decision. It is your responsibility to see that even the internal nodes have their <CODE>nodeClassifiers</CODE> (i.e., don't disable creating node classifier or manually remove them after the induction, that's all)</DD>
 
-<DT>TreeDescender_UnknownsToCommon</DT>
+<DT><INDEX name="classes/TreeDescender_UnknownsToCommon">TreeDescender_UnknownsToCommon</DT>
 <DD>Classifies examples with unknown value to a special branch. This makes sense only if the tree itself was constructed with <CODE>TreeExampleSplitter_UnknownsToBranch</CODE>.</DD>
 
-<DT>TreeDescender_UnknownsToCommonBranch</DT>
+<DT><INDEX name="classes/TreeDescender_UnknownsToCommonBranch">TreeDescender_UnknownsToCommonBranch</DT>
 <DD>Classifies examples with unknown values to the branch with the highest number of examples. If there is more than one such branch, random branch is chosen for each example that is to be classified.</DD>
 
-<DT>TreeDescender_UnknownsToCommonSelector</DT>
+<DT><INDEX name="classes/TreeDescender_UnknownsToCommonSelector">TreeDescender_UnknownsToCommonSelector</DT>
 <DD>Classifies examples with unknown values to the branch which received the highest recommendation by the selector.</DD>
 
 
-<DT>TreeDescender_MergeAsBranchSizes</DT>
+<DT><INDEX name="classes/TreeDescender_MergeAsBranchSizes">TreeDescender_MergeAsBranchSizes</DT>
 <DD>Makes the subtrees vote for the example's class; the vote is weighted according to the sizes of the branches.</DD>
 
-<DT>TreeDescender_MergeAsSelector</DT>
+<DT><INDEX name="classes/TreeDescender_MergeAsSelector">TreeDescender_MergeAsSelector</DT>
 <DD>Makes the subtrees vote for the example's class; the vote is weighted according to the selectors proposal.</DD>
 </DL>
 
 
 <H3>TreePruner and derived classes</H3>
+<index name="tree pruning">
 
 <p>Classes derived from TreePruner prune the trees as described in the section <A href="#pruning">pruning</A> - make sure you read it to understand what the pruners will do to your trees.</p>
 
@@ -405,6 +415,7 @@ Uses the information in <code>node</code> (particularly the <code>branchSelector
 
 
 <H4>TreePruner_SameMajority</H4>
+<index name="classes/TreePruner_SameMajority">
 
 <p>In Orange, a tree can have a non-trivial subtrees (i.e. subtrees with more than one leaf) in which all the leaves have the same majority class. (The reason why this is allowed is that those leaves can still have different distributions of classes and thus predict different probabilities.) However, this can be undesired when we're only interested in the class prediction or a simple tree interpretation. The <code>TreePruner_SameMajority</code> prunes the tree so that there is no subtree in which all the nodes would have the same majority class.</p>
 
@@ -413,6 +424,7 @@ Uses the information in <code>node</code> (particularly the <code>branchSelector
 <p>Note that the leaves with more than one majority class require some special handling. The pruning goes backwards, from leaves to the root. When siblings are compared, the algorithm checks whether they have (at least one) common majority class. If so, they can be pruned.</p>
 
 <H4>TreePruner_m</H4>
+<index name="classes/TreePruner_m">
 
 <p>Prunes a tree by comparing m-estimates of static and dynamic error as defined in (Bratko, 2002).</p>
 

@@ -5,7 +5,9 @@
 </HEAD>
 
 <BODY>
+<index name="example tables">
 <h1>ExampleTable</h1>
+<index name="classes/ExampleTable">
 
 <P>Examples are usually stored in a table called <CODE>orange.ExampleTable</CODE>. In Python you will perceive it a as list and this is what it basically is: an ordered sequence of examples, supporting the usual Python procedures for lists, including the more advanced operations such as slicing and sorting.</P>
 
@@ -248,6 +250,8 @@ for i in range(100):
 
 <A name="select"></a>
 <H2>Selection, Filtering, Translation</H2>
+<index name="filtering examples">
+<index name="selecting examples">
 
 <P><CODE>ExampleTable</CODE> offers several methods for selection and translation of examples (some of them are actually inherited from a more general class <CODE>ExampleGenerator</CODE>). For easier illustration, we shall prepare an example table with 10 examples, described by a single numerical attribute having values from 0 to 9 (effectively enumerating the examples).</P>
 
@@ -419,6 +423,7 @@ data.randomGenerator = random.randint(0, 10000)
 
 <A name="meta"></a>
 <H2>Meta-values</H2>
+<index name="meta attributes">
 
 <P>Adding a meta-value to all examples in a table is a very common operation, deserving specialized functions. There are two, one for adding and the other for removing a meta-value.</P>
 

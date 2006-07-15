@@ -6,8 +6,9 @@
 
 <BODY>
 <h1>Lookup Classifiers</h1>
+<index name="classifiers+lookup classification">
 
-<P>Lookup classifiers predict classes by looking into stored lists of cases. There are two kinds of such classifiers in Orange. The simpler and faster <CODE>ClassifierByLookupTable</CODE> use up to three discrete attributes and have a stored mapping from values of those attributes to class value. The more complex classifiers stores an <CODE>ExampleTable</CODE> and predicts the class by matching the example to examples in the table.</P>
+<P>Lookup classifiers predict classes by looking into stored lists of cases. There are two kinds of such classifiers in Orange. The simpler and fastest <CODE><INDEX name="classes/ClassifierByLookupTable">ClassifierByLookupTable</CODE> use up to three discrete attributes and have a stored mapping from values of those attributes to class value. The more complex classifiers stores an <CODE>ExampleTable</CODE> and predicts the class by matching the example to examples in the table.</P>
 
 <P>The natural habitat of these classifiers is feature construction: they usually reside in <CODE>getValueFrom</CODE> fields of constructed attributes to facilitate their automatic computation. For instance, the following script shows how to translate the Monk 1 dataset features into a more useful subset that will only include the attributes <CODE>a</CODE>, <CODE>b</CODE>, <CODE>e</CODE>, and attributes that will tell whether <CODE>a</CODE> and <CODE>b</CODE> are equal and whether <CODE>e</CODE> is 1 (don't bother the details, they follow later).</P>
 
@@ -55,7 +56,7 @@ data2 = data.select([a, b, ab, e, e1, data.domain.classVar])
 
 <H2>Classifiers by Lookup Table</H2>
 
-<P>Although the above example used <CODE>ClassifierByLookupTable</CODE> as if it was a concrete class, <CODE>ClassifierByLookupTable</CODE> is actually abstract. Calling its constructor is a typical Orange trick: what you get, is never <CODE>ClassifierByLookupTable</CODE>, but either <CODE>ClassifierByLookupTable1</CODE>, <CODE>ClassifierByLookupTable2</CODE> and <CODE>ClassifierByLookupTable3</CODE>. As their names tell, the first classifies using a single attribute (so that's what we had for <CODE>e1</CODE>), the second uses a pair of attributes (and has been constructed for <CODE>ab</CODE> above), and the third uses three attributes. Class predictions for each combination of attribute values are stored in a (one dimensional) table.
+<P>Although the above example used <CODE>ClassifierByLookupTable</CODE> as if it was a concrete class, <CODE>ClassifierByLookupTable</CODE> is actually abstract. Calling its constructor is a typical Orange trick: what you get, is never <CODE>ClassifierByLookupTable</CODE>, but either <CODE><INDEX name="classes/ClassifierByLookupTable1">ClassifierByLookupTable1</CODE>, <CODE><INDEX name="classes/ClassifierByLookupTable2">ClassifierByLookupTable2</CODE> and <CODE><INDEX name="classes/ClassifierByLookupTable3">ClassifierByLookupTable3</CODE>. As their names tell, the first classifies using a single attribute (so that's what we had for <CODE>e1</CODE>), the second uses a pair of attributes (and has been constructed for <CODE>ab</CODE> above), and the third uses three attributes. Class predictions for each combination of attribute values are stored in a (one dimensional) table.
 To classify an example, the classifier computes an index of the element of the table that corresponds to the combination of attribute values.</P>
 
 <P>These classifiers are built to be fast, not safe. If you, for instance, change the number of values for one of the attributes, the Orange will most probably crash. To protect you somewhat, many of these classes' attributes are read-only and can only be set when the object is constructed.</P>
@@ -130,7 +131,7 @@ ClassifierByLookupTable3(classVar, variable1, variable2, variable3, [, lookupTab
 
 <H2>Classifier by ExampleTable</H2>
 
-<P><CODE>ClassifierByExampleTable</CODE> is the alternative to <CODE>ClassifierByLookupTable</CODE>. It is to be used when the classification is based on more than three attributes. Instead of having a lookup table, it stores an <CODE>ExampleTable</CODE>, which is optimized for a faster access.</P>
+<P><CODE><INDEX name="classes/ClassifierByExampleTable">ClassifierByExampleTable</CODE> is the alternative to <CODE>ClassifierByLookupTable</CODE>. It is to be used when the classification is based on more than three attributes. Instead of having a lookup table, it stores an <CODE>ExampleTable</CODE>, which is optimized for a faster access.</P>
 
 <P>This class is used in similar contexts as <CODE>ClassifierByLookupTable</CODE>. If you write, for instance, a constructive induction algorithm, it is recommendable that the values of the new attribute are computed either by one of classifiers by lookup table or by <CODE>ClassifierByExampleTable</CODE>, depending on the number of bound attributes.</P>
 

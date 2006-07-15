@@ -4,6 +4,7 @@
 <LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
 </HEAD>
 <body>
+<index name="classifiers+logistic regression>"
 <h1>Logistic&nbsp;Regression&nbsp;Classifier and Learner</h1>
 <P align=left>Logistic regression is a popular classification method that comes from statistics. The model is described by a linear combination of coefficients,
 <P align=center>F = beta_0 + beta_1*X_1 + beta_2*X_2 + ... + beta_k*X_k<BR></P>
@@ -15,6 +16,7 @@
 <hr>
 
 <H2>LogRegClassifier</H2>
+<index name="classes/LogRegClassifier">
 
 <P><CODE>LogRegClassifier</CODE> stores estimated values of regression coefficients and their significances, and uses them to predict classes and class probabilities using the equations described above.</P>
 
@@ -41,6 +43,7 @@
 </DL>
 
 <H2>LogRegLearner</H2>
+<index name="classes/LogRegLearner">
 
 <P>Logistic learner fits the beta coefficients and computes the related statistics by calling the specified <CODE>fitter</CODE>.</P>
 
@@ -72,6 +75,7 @@ else:
 <P>Fitters are objects that LogRegLearner uses to fit the model.</P>
 
 <H3>LogRegFitter</H3>
+<index name="classes/LogRegFitter">
 
 <P><CODE>LogRegFitter</CODE> is the abstract base class for logistic fitters. It defines the form of call operator and the constants denoting its (un)success:</P>
 
@@ -119,6 +123,7 @@ else:
 </DL>
 
 <H3>LogRegFitter_Cholesky</H3>
+<index name="classes/LogRegFitter_Cholesky">
 
 <P><CODE>LogRegFitter_Cholesky</CODE> is the sole fitter available at the moment. It is a C++ translation of <A href="http://users.bigpond.net.au/amiller/">Alan Miller's logistic regression code</A>. It uses Newton-Raphson algorithm to iteratively minimize least squares error computed from learning examples.</P>
 

@@ -3,9 +3,10 @@
 <LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
 </HEAD> <body>
 
+<index name="imputation">
 <h1>Imputation</h1>
 
-<P>Imputation is a procedure of replacing the missing attribute values with some appropriate values. Imputation is needed because of the methods (learning algoritms and others) that are not capable of handling unknown values, for instance logistic regression.</P>
+<P>Imputation is a procedure of replacing the missing attribute values with some appropriate values. Imputation is needed because of the methods (learning algorithms and others) that are not capable of handling unknown values, for instance logistic regression.</P>
 
 <P>Missing values sometimes have a special meaning, so they need to be replaced by a designated value. Sometimes we know what to replace the missing value with; for instance, in a medical problem, some laboratory tests might not be done when it is known what their results would be. In that case, we impute certain fixed value instead of the missing. In the most complex case, we assign values that are computed based on some model; we can, for instance, impute the average or majority value or even a value which is computed from values of other, known attribute, using a classifier.</P>
 
@@ -20,7 +21,7 @@
 
 <H2>Abstract imputers</H2>
 
-<P>As common in Orange, imputation is done by pairs of two classes: one that does the work and another that constructs it. <CODE>ImputerConstructor</CODE> is an abstract root of the hierarchy of classes that get the training data (with an optional id for weight) and constructs an instance of a class, derived from <CODE>Imputer</CODE>. <CODE>Imputer</CODE> can be called either with an <CODE>Example</CODE>; it will return a new example with the missing values imputed (it will leave the original example intact!). If imputer is called with an <CODE>ExampleTable</CODE>, it will return a new example table with imputed examples.</P>
+<P>As common in Orange, imputation is done by pairs of two classes: one that does the work and another that constructs it. <CODE><INDEX name="classes/ImputerConstructor">ImputerConstructor</CODE> is an abstract root of the hierarchy of classes that get the training data (with an optional id for weight) and constructs an instance of a class, derived from <CODE>Imputer</CODE>. <CODE>Imputer</CODE> can be called either with an <CODE>Example</CODE>; it will return a new example with the missing values imputed (it will leave the original example intact!). If imputer is called with an <CODE>ExampleTable</CODE>, it will return a new example table with imputed examples.</P>
 
 <P class=section>Attributes of <CODE>ImputerConstructor</CODE></P>
 <DL class=attributes>
@@ -32,7 +33,7 @@
 
 <H2>Simple imputation</H2>
 
-<P>The simplest imputers always impute the same value for a particular attribute, disregarding the values of other attributes. They all use the same imputer class, <CODE>Imputer_defaults</CODE>.</P>
+<P>The simplest imputers always impute the same value for a particular attribute, disregarding the values of other attributes. They all use the same imputer class, <CODE><INDEX name="classes/Imputer_defaults">Imputer_defaults</INDEX></CODE>.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -41,7 +42,7 @@
 </DT>
 </DL>
 
-<P><CODE>Imputer_defaults</CODE> is constructed by <CODE>ImputerConstructor_minimal</CODE>, <CODE>ImputerConstructor_maximal</CODE> and <CODE>ImputerConstructor_average</CODE>. For continuous attributes, they will impute the smallest, largest or the average values encountered in the training examples. For discrete, they will impute the lowest (the one with index 0, <I>eg</I> <CODE>attr.values[0]</CODE>), the highest (<CODE>attr.values[-1]</CODE>), and the most common value encountered in the data. The first two imputers will mostly be used when the discrete values are ordered according to their impact on the class (for instance, possible values for symptoms of some disease can be ordered according to their seriousness). The minimal and maximal imputers will then represent optimistic and pessimistic imputations.</P>
+<P><CODE>Imputer_defaults</CODE> is constructed by <CODE><index  name="classes/ImputerConstructor_minimal">ImputerConstructor_minimal</CODE>, <CODE><index name="classes/ImputerConstructor_maximal">ImputerConstructor_maximal</CODE> and <CODE><index name="classes/ImputerConstructor_minimal">ImputerConstructor_average</CODE>. For continuous attributes, they will impute the smallest, largest or the average values encountered in the training examples. For discrete, they will impute the lowest (the one with index 0, <I>eg</I> <CODE>attr.values[0]</CODE>), the highest (<CODE>attr.values[-1]</CODE>), and the most common value encountered in the data. The first two imputers will mostly be used when the discrete values are ordered according to their impact on the class (for instance, possible values for symptoms of some disease can be ordered according to their seriousness). The minimal and maximal imputers will then represent optimistic and pessimistic imputations.</P>
 
 <P>The following code will load the bridges data, and first impute the values in a single examples and then in the whole table.</P>
 
@@ -83,7 +84,7 @@ imputer.defaults["LENGTH"] = 1234
 
 <H2>Random imputation</H2>
 
-<P><CODE>Imputer_Random</CODE> imputes random values. The corresponding constructor is <CODE>ImputerConstructor_Random</CODE>.</p>
+<P><CODE><INDEX name="classes/Imputer_Random">Imputer_Random</INDEX></CODE> imputes random values. The corresponding constructor is <CODEname="classes/ImputerConstructor_Random">ImputerConstructor_Random</CODE>.</p>
 
 <DL class=attributes>
 <DT>imputeClass</DT>
@@ -95,7 +96,7 @@ imputer.defaults["LENGTH"] = 1234
 <A name="model"></A>
 <H2>Model-based imputation</H2>
 
-<P>Model-based imputers learn to predict the attribute's value from values of other attributes. <CODE>ImputerConstructor_model</CODE> are given a learning algorithm (two, actually - one for discrete and one for continuous attributes) and they construct a classifier for each attribute. The constructed imputer <CODE>Imputer_model</CODE> stores a list of classifiers which are used when needed.</P>
+<P>Model-based imputers learn to predict the attribute's value from values of other attributes. <CODE><INDEX name="classes/ImputerConstructor_model">ImputerConstructor_model</CODE> are given a learning algorithm (two, actually - one for discrete and one for continuous attributes) and they construct a classifier for each attribute. The constructed imputer <CODE>Imputer_model</CODE> stores a list of classifiers which are used when needed.</P>
 
 <P class=section>Attributes of <CODE>ImputerConstructor_model</CODE></P>
 <DL class=attributes>
@@ -190,11 +191,11 @@ imputer.models[data.domain.index("SPAN")] = computeSpan
 
 <P>Missing values sometimes have a special meaning. The fact that something was not measured can sometimes tell a lot. Be, however, cautious when using such values in decision models; it the decision not to measure something (for instance performing a laboratory test on a patient) is based on the expert's knowledge of the class value, such unknown values clearly should not be used in models.</P>
 
-<P><CODE>ImputerConstructor_asValue</CODE> constructs a new domain in which each discrete attribute is replaced with a new attribute that has one value more: "NA". The new attribute will compute its values on the fly from the old one, copying the normal values and replacing the unknowns with "NA".</P>
+<P><CODE><INDEX name="classes/ImputerConstructor_asValue">ImputerConstructor_asValue</INDEX></CODE> constructs a new domain in which each discrete attribute is replaced with a new attribute that has one value more: "NA". The new attribute will compute its values on the fly from the old one, copying the normal values and replacing the unknowns with "NA".</P>
 
 <P>For continuous attributes, <CODE>ImputerConstructor_asValue</CODE> will construct a two-valued discrete attribute with values "def" and "undef", telling whether the continuous attribute was defined or not. The attribute's name will equal the original's with "_def" appended. The original continuous attribute will remain in the domain and its unknowns will be replaced by averages.</P>
 
-<P><CODE>ImputerConstructor_asValue</CODE> has no special attributes.</P>
+<P><CODE>ImputerConstructor_asValue</CODE> has no specific attributes.</P>
 
 <P>The constructed imputer is named <CODE>Imputer_asValue</CODE> (I bet you wouldn't guess). It converts the example into the new domain, which imputes the values for discrete attributes. If continuous attributes are present, it will also replace their values by the averages.</P>
 

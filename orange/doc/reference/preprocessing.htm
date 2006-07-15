@@ -7,6 +7,7 @@
 <BODY>
 
 <H1>Preprocessing</H1>
+<index name="preprocessing data sets">
 
 <P>Preprocessors are classes that take examples, usually stored as <CODE>ExampleTable</CODE> and return a new <CODE>ExampleTable</CODE> with the examples somehow preprocessed - filtered, weighted etc. All preprocessors can therefore be called and given an example generator and, optionally, an id of a meta-attribute with weights. They return either an <CODE>ExampleTable</code> or a tuple with <CODE>ExampleTable</code> and meta-attribute id; tuple is returned if id was passed to a preprocessor or if the preprocessor itself added a weight. All other parameters (such as, for example, level of noise or attributes that are to be removed) are properties and not (direct) arguments to the call.</P>
 
@@ -20,8 +21,9 @@ age, prescr, astigm, tears = data.domain.attributes
 </XMP>
 
 <H2>Selection of attributes</H2>
+<index name="preprocessing+attribute selection (manual)">
 
-<P>Selection/removal of attributes is taken care by preprocessors <CODE>Preprocessor_select</CODE> and <CODE>Preprocessor_ignore</CODE>.
+<P>Selection/removal of attributes is taken care by preprocessors <CODE><INDEX name="classes/Preprocessor_select">Preprocessor_select</CODE> and <CODE><INDEX name="classes/Preprocessor_ignore">Preprocessor_ignore</CODE>.
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -57,12 +59,14 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 
 
 <H2>Selection of examples</H2>
+<index name="preprocessing+selecting examples">
+<index name="preprocessing+filtering examples">
 
 <P>This section covers preprocessors for selection of examples. Selection can be random, based on criteria matching or on checking for the presence of (un)defined values.<P>
 
 <H3>Selection by values</H3>
 
-<P>As for selecting the attribute subset, there are again two preprocessors - <CODE>Preprocessor_take</CODE> takes examples that match the given criteria and <CODE>Preprocesor_drop</CODE> removes them.</P>
+<P>As for selecting the attribute subset, there are again two preprocessors - <CODE><INDEX name="classes/Preprocessor_take">Preprocessor_take</CODE> takes examples that match the given criteria and <CODE><INDEX name="classes/Preprocesor_drop">Preprocesor_drop</CODE> removes them.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -117,8 +121,9 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 
 
 <H3>Removal of duplicates</H3>
+<index name="preprocessing+duplicated examples removal">
 
-<P><CODE>Preprocessor_remove_duplicates</CODE> merges multiple occurrences of the same example into a single example whose weight is the sum of all merged examples. If examples were originally non-weighted, a new weight meta-attribute is prepared. This preprocessor always returns a tuple with examples and weight id.</P>
+<P><CODE><INDEX name="classes/Preprocessor_remove_duplicates">Preprocessor_remove_duplicates</CODE> merges multiple occurrences of the same example into a single example whose weight is the sum of all merged examples. If examples were originally non-weighted, a new weight meta-attribute is prepared. This preprocessor always returns a tuple with examples and weight id.</P>
 
 <P>To show how to use it, we shall first remove the attribute <CODE>age</CODE>, to introduce duplicated examples.</P>
 
@@ -144,17 +149,20 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 
 
 <H3>Selection by missing values</H3>
+<index name="preprocessing+missing values removal">
 
-<P>There are four preprocessors that select or remove examples with missing values. <CODE>Preprocessor_dropMissing</CODE> removes examples with any missing values and <CODE>Preprocessor_dropMissingClasses</CODE> removes examples with missing the class value. The other pair is <CODE>Preprocessor_takeMissing</CODE> and <CODE>Preprocessor_takeMissingClasses</CODE> that select only examples with at least one missing value or without class value, respectively. See examples in the section about <a href="#adding_missing_values">adding missing values</A>.</P>
+<P>There are four preprocessors that select or remove examples with missing values. <CODE><INDEX name="classes/Preprocessor_dropMissing">Preprocessor_dropMissing</CODE> removes examples with any missing values and <CODE><INDEX name="classes/Preprocessor_dropMissingClasses">Preprocessor_dropMissingClasses</CODE> removes examples with missing the class value. The other pair is <CODE><INDEX name="classes/Preprocessor_takeMissing">Preprocessor_takeMissing</CODE> and <CODE><INDEX name="classes/Preprocessor_takeMissingClasses">Preprocessor_takeMissingClasses</CODE> that select only examples with at least one missing value or without class value, respectively. See examples in the section about <a href="#adding_missing_values">adding missing values</A>.</P>
 
 
 <H2>Adding noise</H2>
+<index name="preprocessing+adding noise">
+<index name="noise">
 
 <P>Orange has separate preprocessors for discrete and continuous noise. When discrete noise is applied, a proportion of noisy values needs to be provided. If it is, for instance, 0.25, then every fourth value will be changed to a random. Note that this does not mean that a quarter of values will be changed since the random value can be equal to the original. For continuous noise, the value is modified by a random value from Gaussian distribution; the user provides the deviation.</P>
 
 <H3>Class noise</H3>
 
-<P>Preprocessor <CODE>Preprocessor_addClassNoise</CODE> sets the example's class to a random value with a given probability.</P>
+<P>Preprocessor <CODE><INDEX name="classes/Preprocessor_addClassNoise">Preprocessor_addClassNoise</CODE> sets the example's class to a random value with a given probability.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -173,7 +181,7 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 
 <P>For instance, dataset lenses has 24 examples and class attribute has three distinct values. Four randomly chose examples are assigned to each of the three classes, while the remaining 12 examples are left as they are.</P>
 
-<P>Preprocessor <CODE>Preprocessor_addGaussianClassNoise</CODE> adds Gaussian noise with given deviation.</P>
+<P>Preprocessor <CODE><INDEX name="classes/Preprocessor_addGaussianClassNoise">Preprocessor_addGaussianClassNoise</CODE> adds Gaussian noise with given deviation.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -194,7 +202,7 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 
 <H3>Attribute noise</H3>
 
-<P>This preprocessor sets attributes to random values; probability can be prescribed for each attribute individually and for all attributes in general.</P>
+<P>Preprocessor <code><INDEX name="classes/Preprocessor_addNoise">Preprocessor_addNoise</code> sets attributes to random values; probability can be prescribed for each attribute individually and for all attributes in general.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -249,13 +257,14 @@ data2 = pp(iris)
 
 
 <H2>Adding missing values</H2>
+<index name="preprocessing+adding missing values">
 <A name="adding_missing_values">
 
 <P>Preprocessors for adding missing values (that is, replacing known values with don't-knows or don't-cares) are similar to those for introducing noise. There are two preprocessors, one for all attributes and another that only manipulates the class attribute values.</P>
 
 <H3>Removing class values</H3>
 
-<P>Removing class values is taken care by <CODE>Preprocessor_addMissingClasses</CODE>.</P>
+<P>Removing class values is taken care by <CODE><INDEX name="classes/Preprocessor_addMissingClasses">Preprocessor_addMissingClasses</CODE>.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -293,7 +302,7 @@ print
 
 <H3>Removing attribute values</H3>
 
-<P><CODE>Preprocessor_addMissing</CODE> replaces known values of attributes with unknowns of prescribed type.</P>
+<P><CODE><INDEX name="classes/Preprocessor_addMissing">Preprocessor_addMissing</CODE> replaces known values of attributes with unknowns of prescribed type.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -327,12 +336,13 @@ for ex in data3:
 
 
 <H2>Assigning weights</H2>
+<index name="preprocessing/weighting">
 
 <P>Orange stores weights of examples as meta-attributes. Weights can be stored and read from file (as any other meta-attribute) if they are given in advance or computed outside Orange. Orange itself has two preprocessors for weighting examples.</P>
 
 <H3>Weighting by classes</H3>
 
-<P>Weighting by classes assigns weights according to classes of examples.</P>
+<P>Weighting by classes (<code><INDEX name="classes/Preprocessor_addClassWeight">Preprocessor_addClassWeight</code>) assigns weights according to classes of examples.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -504,9 +514,9 @@ N    6.00  0.880
 
 
 <H2>Discretization</H3>
+<index name="preprocessing+discretization">
 
-
-<P>The discretization preprocessor <CODE>Preprocessor_discretize</CODE> is a substitute for the discretizers in module <CODE>orngDisc</CODE>. It has three attributes.</P>
+<P>The discretization preprocessor <CODE><INDEX name="classes/Preprocessor_discretize">Preprocessor_discretize</CODE> is a substitute for the discretizers in module <CODE>orngDisc</CODE>. It has three attributes.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -536,8 +546,9 @@ data2 = pp(iris)
 </XMP>
 
 <H2>Applying filters</H2>
+<index name="preprocessing/filters">
 
-<P>The last preprocessor offers a way of applying example <A href="filters.htm">filters</A>.</P>
+<P>The last preprocessor, <code><INDEX name="classes/Preprocessor_filter">Preprocessor_filter</code> offers a way of applying example <A href="filters.htm">filters</A>.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>

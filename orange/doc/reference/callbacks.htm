@@ -5,6 +5,8 @@
 </HEAD>
 
 <BODY>
+<index name="callbacks to Python">
+<index name="subtyping Orange's classes in Python">
 <h1>Subtyping Orange classes in Python</h1>
 
 <p>This page describes how to subtype Orange's classes in Python and make the overloaded methods callable from C++ components.</p>
@@ -156,6 +158,7 @@ treeLearner.nodeLearner = orange.Learner(lambda gen, weightID: orange.MajorityLe
 <p>Examples are somewhat simplified. For instance, many classes below will silently assume that the attribute they deal with is discrete. This is to make the code clearer.</p>
 
 <H3>Filter</H3>
+<index name="classes/Filter">
 
 <p>We've already show how to derive filters. Filter is a simple object that decides whether a given example is "acceptable" or not. The below class accepts example for which the value of "age" is "young".</p>
 
@@ -201,6 +204,7 @@ treeLearner.nodeLearner = orange.Learner(lambda gen, weightID: orange.MajorityLe
 
 
 <H3>Classifier</H3>
+<index name="classes/Classifier">
 
 <p>A "classifier" in Orange has a rather non-standard meaning. A classifier is an object with a call operator that gets an example and returns a value, a distribution of values or both - the return type is regulated by an optional second argument. Beside the standard use of classifiers - "class predictors" - this also covers predictors in regression, objects used in constructive induction (which use some of example's attributes to compute a value of a new attribute), and others.</p>
 
@@ -250,6 +254,7 @@ treeLearner.nodeLearner = orange.Learner(lambda gen, weightID: orange.MajorityLe
 
 
 <H3>Learner</H3>
+<index name="classes/Learner">
 
 <p><code>ClassifierByLookupTable</code> is a classifier whose predictions are based on the value of a single attribute. It contains a simple table named <code>lookupTable</code> for conversion from attribute value to class prediction. The last element of the table is the value that is returned when the attribute value is unknown or out of range. Similarly, <code>distributions</code> is a list of distributions, used when <code>ClassifierByLookupTable</code> is used to predict a distribution.</p>
 
@@ -313,6 +318,7 @@ EnumVariable 'tear_rate'
 
 
 <H3>MeasureAttribute</H3>
+<index name="classes/MeasureAttribute">
 
 <p><code>MeasureAttribute</code> is slightly more complex since it can be given different sets of parameters. Both must be supported. (This is so messy and inconsistent with the C++ code that it will surely be changed in the future.)</p>
 
@@ -385,10 +391,12 @@ treeLearner.split.measure = measure_cardinality)
 
 
 <H3>TransformValue</H3>
+<index name="classes/TransformValue">
 
 <P><A href="TransformValue.htm"><CODE>TransformValue</CODE></a> is a simple class whose call operator gets a <CODE>Value</CODE> and returns another (or the same) <CODE>Value</CODE>. An example of its use is given in the page about <a href="classifierFromVar.htm">classifiers from attribute</a>.</P>
 
 <H3>TreeSplitConstructor</H3>
+<index name="classes/TreeSplitConstructor">
 
 <p>The usual tree split constructor chooses an attribute on which the split is based and construct a <code>ClassifierFromVarFD</code> to return the chosen attribute's value. They are capable of much more. To demonstrate this, we will write a split constructor that constructs a split based on values of two attributes, joined in a Cartesian product. We will utilize a <code>CartesianClassifier</code> that we've already written above.</p>
 
@@ -447,6 +455,7 @@ orngTree.printTxt(tree)
 </xmp>
 
 <H4>TreeStopCriteria</H4>
+<index name="classes/TreeStopCriteria">
 
 <p><code>TreeStopCriteria</code> is a simple class. Its arguments are examples, id of meta-attribute with weights (or 0 if examples are not weighted) and a <code>DomainContingency</code>. The induction stops if <code>TreeStopCriteria</code> returns 1 (or anything representing "true" in Python). The class is peculiar for being the only non-abstract class whose call operator can be (really) overloaded. Thus, it is possible to call the inherited call operator. Even more, you should do so.</p>
 
@@ -478,6 +487,7 @@ treeLearner.stop = StoppingCriterion_random()
 
 
 <H4>TreeExampleSplitter</H4>
+<index name="classes/TreeExampleSplitter">
 
 <p>Example splitter's task is to split a list of examples (usually an <code>ExamplePointerTable</code> or <code>ExampleTable</code>) into subsets and return them as <code>ExampleGeneratorList</code>. The arguments it gets are a <code>TreeNode</code> (it will need at least <code>branchSelector</code>, some splitters also use <code>branchSizes</code>), a list of examples and an id of meta-attribute with example weights (or 0, if they are not weighted).</p>
 
@@ -485,6 +495,7 @@ treeLearner.stop = StoppingCriterion_random()
 
 
 <H4>TreeDescender</H4>
+<index name="classes/TreeDescender">
 
 <p>Descenders are about the trickiest components of Orange trees. They get two arguments, a starting node (not necessarily a tree root) and an example, and return a tuple with the finishing node and, optionally, a discrete distribution.</p>
 
@@ -528,7 +539,7 @@ tear_rate=normal
 </xmp>
 
 
-<H5>Continuing the descend</H5>
+<H5>Continuing the descent</H5>
 
 <p>For the first exercise, will implement a descender that decides for a random branchs when descent stops. The decision will be random, it will ignore any probabilities that might be computed based on <code>branchSizes</code> or values of other example's attributes.</p>
 

@@ -6,7 +6,8 @@
 
 <BODY>
 
-<H1>Association Rules</H1>
+<index name="Agrawal's algorithm">
+<index name="association rules"><H1>Association Rules</H1>
 
 <P>Orange provides two algorithms for induction of association
 rules. One is the basic Agrawal's algorithm with dynamic induction of
@@ -28,8 +29,9 @@ simplified method for classification by association rules.</P>
 <HR>
 
 <H2>Association Rules Inducer with Agrawal's Algorithm</H2>
+<index name="classes/AssociationRulesSparseInducer">
 
-<P>The class that induces rules by Agrawal's algorithm, <CODE>AssociationRulesSparseInducer</CODE> accepts the data examples of two forms. The first is the standard form in which each examples is described by values of a fixed list of attributes, defined in domain. The algorithm, however, disregards the attribute values but only checks whether the value is defined or not. The rule shown above, "bread, butter -> jam" actually means that if "bread" and "butter" are defined, then "jam" is defined as well. It is expected that most of values will be undefined - if this is not so, you need to use the other association rules inducer, described in the next chapter.</P>
+<P>The class that induces rules by Agrawal's algorithm, <CODE></CODE> accepts the data examples of two forms. The first is the standard form in which each examples is described by values of a fixed list of attributes, defined in domain. The algorithm, however, disregards the attribute values but only checks whether the value is defined or not. The rule shown above, "bread, butter -> jam" actually means that if "bread" and "butter" are defined, then "jam" is defined as well. It is expected that most of values will be undefined - if this is not so, you need to use the other association rules inducer, described in the next chapter.</P>
 
 <P>Since the usual representation of examples described above is rather unsuitable for sparse examples, <CODE>AssociationRulesSparseInducer</CODE> can also use examples represented a bit differently. <EM>Sparse examples</EM> have no fixed attributes - the examples' domain is empty, there are neither ordinary nor class attributes. All values assigned to example are given as meta-attributes. All meta-attributes need, however, be <A href="Domain.htm#meta-attributes">registered with the domain descriptor</A>. If you have data of this kind, the most suitable format for it is the <A href="fileformats.htm#basket">.basket format</A>.</P>
 
@@ -102,7 +104,7 @@ for r in rules:
 <H2>Association Rules for Non-sparse Examples</H2>
 
 <P>The other algorithm for association rules provided by Orange,
-<CODE>AssociationRulesInducer</CODE> is optimized for non-sparse
+<CODE><index name="classes/AssociationRulesInducer">AssociationRulesInducer</CODE> is optimized for non-sparse
 examples in the usual Orange form. Each example is described by values
 of a fixed set of attributes. Unknown values are ignored, while values
 of attributes are not (as opposite to the above-described algorithm
@@ -174,8 +176,10 @@ for r in rules:
 
 
 <H2>Association Rule</H2>
+<index name="classes/AssociationRules">
+<index name="classes/AssociationRule">
 
-<P>Both classes for induction of association rules return the induced rules in <CODE>AssociationRules</CODE> which is basically a list of instances of <CODE>AssociationRule</CODE>.</P>
+<P>Both classes for induction of association rules return the induced rules in <CODE><index name="classes/AssociationRules">AssociationRules</CODE> which is basically a list of instances of <CODE>AssociationRule</CODE>.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>

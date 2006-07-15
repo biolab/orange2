@@ -5,6 +5,8 @@
 </HEAD>
 
 <BODY>
+<index name="k nearest neighbours">
+<index name="nearest neighbours">
 <h1>Classes for Finding Nearest Neighbours</h1>
 
 <P>Orange provides classes for finding the nearest neighbours of the given reference example. While we might add some smarter classes in future, we now have only two - abstract classes that defines the general behaviour of neighbour searching classes, and classes that implement brute force search.</P>
@@ -14,6 +16,7 @@
 <hr>
 
 <H2>FindNearest</H2>
+<index name="classes/FindNearest">
 
 <P><CODE>FindNearest</CODE> returns nearest neighbours of a given example. The class is abstract and it is up to derived classes to decide how the examples are stored and searched. Note that the class even does not have a component for measuring distances between examples; derived classes can either store such a component or store examples in such a way that the component is unnecessary.</P>
 
@@ -36,6 +39,7 @@
 
 
 <H2>FindNearestConstructor</H2>
+<index name="classes/FindNearestConstructor">
 
 <P>The job of <CODE>FindNearestConstructor</CODE> is to construct an instance of <CODE>FindNearest</CODE>.
 
@@ -56,6 +60,7 @@
 
 
 <H2>FindNearest_BruteForce</H2>
+<index name="classes/FindNearest_BruteForce">
 
 A class for brute force search for nearest neighbours. It stores a table of examples (it's its own copy of examples, not only <CODE>ExampleTable</CODE> with references to another <CODE>ExampleTable</CODE>). When asked for neighbours, it measures distances to all examples, stores them in a heap and returns the first <CODE>k</CODE> as an <CODE>ExampleTable</CODE> with references to examples stored in <CODE>FindNearest_BruteForce</CODE>'s field <CODE>examples</CODE>).
 
@@ -73,6 +78,7 @@ A class for brute force search for nearest neighbours. It stores a table of exam
 </DL>
 
 <H2>FindNearestConstructor_BruteForce</H2>
+<index name="classes/FindNearestConstructor_BruteForce">
 
 <P>A class that constructs <CODE>FindNearest_BruteForce</CODE>. It calls the inherited <CODE>distanceConstructor</CODE> and then passes the constructed distance measure, among with <CODE>examples</CODE>, <CODE>weightID</CODE> and <CODE>distanceID</CODE>, to the just constructed instance of <CODE>FindNearest_BruteForce</CODE>.</P>
 

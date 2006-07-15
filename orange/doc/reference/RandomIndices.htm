@@ -6,6 +6,9 @@
 
 <BODY>
 <h1>Classes for Random Sampling</h1>
+<index name="preprocessing+sampling">
+<index name="splitting data sets">
+<index name="cross validation">
 
 <P>Example sampling is one of the basic procedures in machine learning. If for nothing else, everybody needs to split dataset into training and testing examples.</p>
 
@@ -20,6 +23,7 @@
 <hr>
 
 <h2>MakeRandomIndices</h2>
+<index name="classes/MakeRandomIndices">
 
 <p class=section>Attributes</p>
 <DL class=attributes>
@@ -42,6 +46,7 @@ The example for <code>MakeRandomIndices2</code> shows the difference between tho
 <p><code>MakeRandomIndices</code> can be called to return a list of indices. The argument can be either the desired length of the list (presumably corresponding to a length of some list of examples) or a set of examples, given as <CODE>ExampleTable</CODE> or plain Python list. It is obvious that in the former case, indices cannot correspond to a stratified division; if <code>stratified</code> is set to <code>MakeRandomIndices.Stratified</code>, an exception is raised.</p>
 
 <h2>MakeRandomIndices2</h2>
+<index name="classes/MakeRandomIndices2">
 
 <p>This object prepares a list of 0's and 1's.</p>
 
@@ -160,6 +165,7 @@ The example for <code>MakeRandomIndices2</code> shows the difference between tho
 <p>For a final test, you can set the class of one of the examples to unknown and rerun the last script with setting <code>stratified</code> once to <code>Stratified</code> and once to <code>StratifiedIfPossible</code>. In the first case you'll get an error and in the second you'll have a non-stratified indices.</p>
 
 <h2>MakeRandomIndicesN</h2>
+<index name="classes/MakeRandomIndicesN">
 
 <p><code>MakeRandomIndicesN</code> is a straight generalization of <code>RandomIndices2</code>, so there's not much to be told about it.</P>
 
@@ -183,6 +189,7 @@ The example for <code>MakeRandomIndices2</code> shows the difference between tho
 <p>Count them and you'll see there are 12 zero's and 6 one's and two's out of 24.</p>
 
 <h2>MakeRandomIndicesCV</h2>
+<index name="classes/MakeRandomIndicesCV">
 
 <p><code>MakeRandomIndicesCV</code> computes indices for cross-validation.</p>
 

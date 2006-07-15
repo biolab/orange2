@@ -190,6 +190,8 @@ for example in data:
 <h2>A Few Things You Might Miss</h2>
 
 <h3>Pickle and Deep-copy</h3>
+<index name="pickling Orange objects">
+<index name="deep-copying Orange objects">
 
 Orange classes cannot be pickled (yet). This also prevents deep-copying, which works through pickling. Shallow copying can sometimes be achieved by calling constructor with the object that is to be copied as an argument. Deep-copying is, by our experience and by experience of other users, seldom needed and can be circumvented. Pickling, in contrast, would be very useful.
 

@@ -6,6 +6,8 @@
 
 <BODY>
 <h1>Attribute Descriptors</h1>
+<index name="attributes">
+<index name="attribute types">
 
 <P>Attribute descriptors are stored in objects derived from type
 <CODE>orange.Variable</CODE>. Their role is to identify the
@@ -18,7 +20,7 @@ attributes; this is used in, for instance, discretization.</P>
 
 <H2>Variable</H2>
 
-<P><CODE>orange.Variable</CODE> is a base class for attribute descriptors.</P>
+<P><CODE>orange.<INDEX name="classes/Variable">Variable</CODE> is a base class for attribute descriptors.</P>
 
 <p class=section>Attributes</P>
 
@@ -124,7 +126,7 @@ of attribute <CODE>var</CODE>, when possible.</DD>
 <A name="EnumVariable"></A>
 <H2>EnumVariable</H2>
 
-<P><CODE>EnumVariable</CODE> is a descriptor for nominal and
+<P><CODE><INDEX name="classes/EnumVariable">EnumVariable</CODE> is a descriptor for nominal and
 ordinal attributes. It defines two additional attributes,
 <CODE>values</CODE> and <CODE>baseValue</CODE>, and no additional
 methods. Iterating and returning random values is supported.
@@ -162,7 +164,7 @@ indicated by <CODE>-1</CODE>.</DD> </DL>
 <H2>FloatVariable</H2>
 
 
-<P><CODE>FloatVariable</CODE> is a descriptor for continuous
+<P><CODE><INDEX name="classes/FloatVariable">FloatVariable</CODE> is a descriptor for continuous
 attributes.
 
 <DL class=attributes>
@@ -189,7 +191,7 @@ iterations. (I can't recall ever using them...)</DD>
 <A name="StringVariable">
 <H2>StringVariable</H2>
 
-<P><CODE>StringVariable</CODE> describes attributes that contains
+<P><CODE><INDEX name="classes/StringVariable">StringVariable</CODE> describes attributes that contains
 strings. No method can use them for learning; some will complain
 and other will silently ignore them when the encounter them. They
 can be, however, useful for meta-attributes; if examples in
@@ -208,7 +210,7 @@ href="Domain.htm"><CODE>Domain</CODE></A>.</P>
 
 <H2>PythonVariable</H2>
 
-<P><CODE>PythonVariable</CODE> is a base class for descriptors defined in Python. Itself fully functional, <CODE>PythonVariable</CODE> can already be used as a descriptor for attributes that contain arbitrary Python values. Since this is an advanced topic, <CODE>PythonVariable</CODE>s are described on a <A href="PythonVariable.htm">a separate page</A>.
+<P><CODE><INDEX name="classes/PythonVariable">PythonVariable</CODE> is a base class for descriptors defined in Python. Itself fully functional, <CODE>PythonVariable</CODE> can already be used as a descriptor for attributes that contain arbitrary Python values. Since this is an advanced topic, <CODE>PythonVariable</CODE>s are described on a <A href="PythonVariable.htm">a separate page</A>.
 
 <A name="getValueFrom">
 <H2>Using getValueFrom</H2>

@@ -6,6 +6,7 @@
 
 <BODY>
 
+<index name="filtering examples">
 <H1>Filters</H1>
 
 <P>Filters are objects that can be used for selecting examples. They are somewhat related to <A href="preprocessing.htm">preprocessors</A>. Filters are more limited, they can accept or reject examples, but cannot modify them. Additional restriction of filters is that they only see individual examples, not entire datasets. This is important at random selection of examples (see <A href="#randomfilter"><CODE>Filter_random</CODE></A>).</P>
@@ -29,6 +30,7 @@
 
 <H2>Random filter</H2>
 <A name="randomfilter">
+<index name="classes/Filter_random">
 
 <P><CODE>Filter_random</CODE> accepts an example with a given probability.</CODE>
 
@@ -60,6 +62,8 @@
 
 
 <H2>Filtering examples with(out) unknown values</H2>
+<index name="classes/Filter_isDefined">
+<index name="classes/Filter_hasClass">
 
 <P><CODE>Filter_isDefined</CODE> selects examples for which all attribute values are defined (known). By default, the filter checks all attributes; you can modify the list <CODE>check</CODE> to select the attributes to be checked. This filter never checks meta-attributes are not checked. (There is an obsolete filter <CODE>Filter_hasSpecial</CODE>, which does the opposite, that is, selects examples with at least one unknown value, in any of attributes, including the class attribute. <CODE>Filter_hasSpecial</CODE> always checks all attributes except meta-attributes.) <CODE>Filter_hasClass</CODE> selects examples with defined class value. You can use <CODE>negate</CODE> to invert the selection, as shown in the script below.</P>
 
@@ -108,6 +112,7 @@ for ex in orange.Filter_hasClassValue(data2, negate=1):
 <H2>Filtering by attribute values</H2>
 
 <H3>Fast filter for single values</H3>
+<index name="classes/Filter_sameValue">
 
 <P><CODE>Filter_sameValue</CODE> is a fast filter for selecting examples with particular value of some attribute.
 
@@ -138,6 +143,12 @@ for ex in filteryoung(data):
 <P>As you can see, this filter is dirty but quick.</P>
 
 <H3>Filter for multiple values and attributes</H3>
+<index name="classes/Filter_Values">
+<index name="classes/ValueFilterList">
+<index name="classes/ValueFilter">
+<index name="classes/ValueFilter_discrete">
+<index name="classes/ValueFilter_continuous_">
+
 
 <P><CODE>Filter_Values</CODE> performs a similar function as <CODE>Filter_sameValue</CODE>, but can handle conjunctions and disjunctions of more complex conditions.</P>
 

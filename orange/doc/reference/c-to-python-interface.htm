@@ -4,9 +4,11 @@
 </HEAD> <body>
 
 
+<index name="extensions in C++">
+
 <H1>Writing Orange Extensions in C++</H1>
 
-<P>This page is a draft of documentation for writing Orange extensions in C++. It has been written quite a while ago and never really polished, but we publishe it due to requests and questions about the topic.</P>
+<P>This page is a draft of documentation for writing Orange extensions in C++. It has been written quite a while ago and never really polished, but we publish it due to requests and questions about the topic.</P>
 
 <P>There is an additional example module in C++ with a trivial learner and classifier, which you can easily extended into something serious. The example is not included in this documentation yet, but you can download it (<a href="mymodule.zip">mymodule.zip</a>). It includes the workspace file for Visual Studio, but no makefiles for Linux. There's not much to build anyway. Do not forget to run the included <code>_pyxtract.bat</code> before compiling.</P>
 
@@ -205,7 +207,7 @@ need to debug.
 
 <H1>A more complex example: extending Orange class hierarchy</H1>
 
-<P>To demonstrate how to
+<P>To be written.</P>
 
 
 <H1>General mechanism and tools used in Orange's C to Python interface</H1>
@@ -213,7 +215,7 @@ need to debug.
 
 <P>This page is not meant to be a comprehensive and self-sufficient guide to exporting C++ classes into Python using the Orange's machinery. To learn how to export your functions and classes to Python, you should open some Orange's files (lib_*.cpp and cls_*.cpp) and search for examples there, while this page will hopefully help you to understand them. The easiest way to write your interfaces will be to copy and modify the existing Orange's code. (This is what we do all the time. :)</P>
 
-<P>If you are writing extension modules for Python, you by no means have to use Orange's scripts (pyxtract, pyprops) compiling the interface. Compile your interface with any tool you want, e.g. Swig. The only possible complications would arise if you are deriving and exporting new C++ classes from Orange's classes (to those that know something on the topic: Orange uses a slightly extended version of <CODE>PyTypeObject</CODE>, and the derived classes can't return to the original). If need be, ask and we may try to provide some more insight and help to overcome them.</P>
+<P>If you are writing extension modules for Python, you by no means <em>have to</em> use Orange's scripts (pyxtract, pyprops) compiling the interface. Compile your interface with any tool you want, e.g. Swig. The only possible complications would arise if you are deriving and exporting new C++ classes from Orange's classes (to those that know something on the topic: Orange uses a slightly extended version of <CODE>PyTypeObject</CODE>, and the derived classes can't return to the original). If need be, ask and we may try to provide some more insight and help to overcome them.</P>
 
 
 <H1>Orange's C++ to Python interface</H1>
@@ -275,6 +277,7 @@ Also, <CODE>ExampleTable</CODE> has a method <CODE>sort([list-of-attributes])</C
 
 
 <H2>pyprops</H2>
+<index name="pyprops">
 
 <P>Pyprops scans each hpp file for classes we want to export to Python (or, in general, some other scripting language). Properties can be <CODE>bool</CODE>, <CODE>int</CODE>, <CODE>float</CODE>, <CODE>string</CODE>, <CODE>TValue</CODE> or a wrapped Orange type.</P>
 
@@ -306,6 +309,7 @@ If a class directly or indirectly holds references to any wrapped objects that a
 
 
 <h2>pyxtract</h2>
+<index name="pyxtract">
 
 <P>Pyxtract's job is to detect the functions that define special methods (such as printing, conversion, sequence and arithmetic related operations...) and member functions. Based on what it finds for each specific class, it constructs the corresponding <CODE>PyTypeObject</CODE>s. For the functions to be recognized, they must follow a specific syntax.</P>
 

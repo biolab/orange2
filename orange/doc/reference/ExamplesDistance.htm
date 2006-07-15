@@ -5,6 +5,7 @@
 </HEAD>
 
 <BODY>
+<index name="distances between examples">
 <h1>Distances between Examples</h1>
 
 <p>This page describes a bunch of classes for different metrics for measure distances between examples.</p>
@@ -18,6 +19,7 @@
 <hr>
 
 <H2>ExamplesDistance</H2>
+<index name="classes/ExamplesDistance">
 
 <P class=section>Methods</P>
 <DL class=attributes><DT>__call__(example1, example2)</DT>
@@ -26,6 +28,7 @@
 
 
 <H2>ExamplesDistanceConstructor</H2>
+<index name="classes/ExamplesDistanceConstructor">
 
 <P class=section>Methods</P>
 <DL class=attributes><DT>__call__([examples, weightID][, DomainDistributions][, DomainBasicAttrStat])</DT>
@@ -33,6 +36,7 @@
 </DL>
 
 <H2>ExamplesDistance_Normalized</H2>
+<index name="classes/ExamplesDistance_Normalized">
 
 <P>This abstract class provides a function which is given two examples and returns a list of normalized distances between values of their attributes. Many distance measuring classes need such a function and are therefore derived from this class.</p>
 
@@ -60,6 +64,9 @@
 </DL>
 
 <H2>ExamplesDistance_Hamiltonian / ExamplesDistanceConstructor_Hamiltonian</H2>
+<index name="Hamiltonian distance">
+<index name="classes/ExamplesDistance_Hamiltonian">
+<index name="classes/ExamplesDistanceConstructor_Hamiltonian">
 
 <P>Hamiltonian distance between two examples is defined as the number of attributes in which the two examples differ. Note that this measure is not really appropriate for examples that contain continuous attributes.</P>
 
@@ -67,16 +74,23 @@
 
 
 <H2>ExamplesDistance_Maximal / ExamplesDistanceConstructor_Maximal</H2>
+<index name="classes/ExamplesDistance_Maximal">
+<index name="classes/ExamplesDistanceConstructor_Maximal">
 
 <P>The maximal (also called infinite distance) between two examples is defined as the maximal distance between two attribute values. If <CODE>dist</CODE> is the result of <CODE>ExamplesDistance_Normalized.attributeDistances</CODE>, then <CODE>ExamplesDistance_Maximal</CODE> returns <CODE>max(dist)</CODE>.</P>
 
 
 <H2>ExamplesDistance_Manhattan / ExamplesDistanceConstructor_Manhattan</H2>
+<index name="Manhattan distance">
+<index name="classes/ExamplesDistance_Manhattan">
+<index name="classes/ExamplesDistanceConstructor_Manhattan">
 
 <P>Manhattan distance between two examples is a sum of absolute values of distances between pairs of attributes, e.g. <CODE>apply(add, [abs(x) for x in dist])</CODE>, where <CODE>dist</CODE> is the result of <CODE>ExamplesDistance_Normalized.attributeDistances</CODE>.</P>
 
-
 <H2>ExamplesDistance_Euclidean / ExamplesDistanceConstructor_Euclidean</H2>
+<index name="Euclidean distance">
+<index name="classes/ExamplesDistance_Euclidean">
+<index name="classes/ExamplesDistanceConstructor_Euclidean">
 
 <P>Euclidean distance is a square root of sum of squared per-attribute distances, i.e. <CODE>sqrt(apply(add, [x*x for x in dist]))</CODE>, where <CODE>dist</CODE> is the result of <CODE>ExamplesDistance_Normalized.attributeDistances</CODE>.</P>
 
@@ -104,6 +118,8 @@
 
 
 <H2>ExampleDistance_Relief / ExampleDistanceConstructor_Relief</H2>
+<index name="classes/ExamplesDistance_Relief">
+<index name="classes/ExamplesDistanceConstructor_Relief">
 
 <p><CODE>ExamplesDistance_Relief</CODE> is similar to Manhattan distance, but incorporates a more correct treatment of undefined values, which is used by ReliefF measure.</p>
 

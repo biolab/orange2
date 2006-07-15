@@ -6,15 +6,16 @@
 
 <BODY>
 
+<index name="clustering">
 <H1>Clustering</H1>
 
-<P>For now, Orange only provides hierarchical clustering, limited to single, complete and average linkage. For external support for other clustering methods, see <A href="http://www.ailab.si/~aleks/orng/">Orange extensions</A> by Aleks Jakulin.</P>
+<P>For now, Orange only provides <INDEX>hierarchical clustering</INDEX>, limited to single, complete and average linkage. For external support for other clustering methods, see <A href="http://www.ailab.si/~aleks/orng/">Orange extensions</A> by Aleks Jakulin.</P>
 
 <h2>Hierarchical Clustering</h2>
 
 <H3>Classes</H3>
 
-<P>The method for hierarchical clustering, encapsulated in class <CODE>HierarchicalClustering</CODE> works on a distance matrix stored as <a href="SymMatrix.htm"><CODE>SymMatrix</CODE></A>. The method works in approximately O(n<SUP>2</SUP>) time (with the worst case O(n<SUP>3</SUP>)). For orientation, clustering ten thousand of elements should take roughly 15 seconds on a 2 GHz computer. The algorithm can either make a copy of the distances matrix and work on it, or work on the original distance matrix, destroying it in the process. The latter is useful for clustering larger number of objects. Since the distance matrix stores (n+1)(n+2)/2 floats (cca 2 MB for 1000 objects and 200 MB for 10000, assuming the a float takes 4 bytes), by copying it we would quickly run out of physical memory. Using virtual memory is not an option since the matrix is accessed in a random manner.</P>
+<P>The method for hierarchical clustering, encapsulated in class <CODE><INDEX name="classes/HierarchicalClustering">HierarchicalClustering</CODE> works on a distance matrix stored as <a href="SymMatrix.htm"><CODE>SymMatrix</CODE></A>. The method works in approximately O(n<SUP>2</SUP>) time (with the worst case O(n<SUP>3</SUP>)). For orientation, clustering ten thousand of elements should take roughly 15 seconds on a 2 GHz computer. The algorithm can either make a copy of the distances matrix and work on it, or work on the original distance matrix, destroying it in the process. The latter is useful for clustering larger number of objects. Since the distance matrix stores (n+1)(n+2)/2 floats (cca 2 MB for 1000 objects and 200 MB for 10000, assuming the a float takes 4 bytes), by copying it we would quickly run out of physical memory. Using virtual memory is not an option since the matrix is accessed in a random manner.</P>
 
 <P>The distance should contain no negative elements. This limitation is due to implementation details of the algorithm (it is not absolutely necessary and can be lifted in future versions if often requested; it only helps the algorithm run a bit faster). The elements on the diagonal (representing the element's distance from itself) are ignored.</P>
 
@@ -32,7 +33,8 @@
 <DD>A callback function (<CODE>None</CODE> by default). It can be any function or callable class in Python, which accepts a single float as an argument. The function only gets called if the number of objects being clustered is at least 1000. It will be called for 101 times, and the argument will give the proportion of the work been done. The time intervals between the function calls won't be equal (sorry about that...) since the clustering proceeds faster as the number of clusters decreases.</DD>
 </DL>
 
-<P>The <CODE>HierarchicalClustering</CODE> is called with a distance matrix as an argument. It returns an instance of <CODE>HierarchicalCluster</CODE> representing the root of the hierarchy.</P>
+<P>The <CODE>HierarchicalClustering</CODE> is called with a distance matrix as an argument. It returns an instance of <CODE><index name="classes/HierarchicalCluster">
+HierarchicalCluster</CODE> representing the root of the hierarchy.</P>
 
 
 <P class=section>Attributes of <CODE>HierarchicalCluster</CODE></P>

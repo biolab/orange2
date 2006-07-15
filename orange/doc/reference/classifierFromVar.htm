@@ -3,6 +3,7 @@
 <LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
 </HEAD> <body>
 
+<index name="classifiers/from a single attribute">
 <h1>Classifier from Attribute</h1>
 
 <P>Classifiers from attribute predict the class based on the value of a single attribute. While they can be used for making predictions, they actually play a different, yet important role in Orange. They are used not to predict class values but to compute attribute's values. For instance, when a continuous attribute is discretized and replaced by a discrete attribute, an instance of a classifier from attribute takes care of automatic value computation when needed. Similarly, a classifier from attribute usually decides the branch when example is classified in decision trees.</P>
@@ -12,6 +13,7 @@
 <P>Both classifiers can be given a transformer that can modify the value. In discretization, for instance, the transformer is responsible to compute a discrete interval for a continuous value of the original attribute.</P>
 
 <H2>ClassifierFromVar</H2>
+<index name="classes/ClassifierFromVarFD">
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -64,6 +66,7 @@ for i in data2:
 
 
 <H2>ClassifierFromVarFD</H2>
+<index name="classes/ClassifierFromVarFD">
 
 <P><CODE>ClassifierFromVarFD</CODE> is very similar to <CODE>ClassifierFromVar</CODE> except that the attribute is not given as a descriptor (like <CODE>whichVar</CODE>) but as an index. The index can be either a position of the attribute in the domain or a meta-id. Given that <CODE>ClassifierFromVarFD</CODE> is practically no faster than <CODE>ClassifierFromVar</CODE> (and can in future even be merged with the latter), you should seldom need to use the class.</P>
 

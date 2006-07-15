@@ -6,6 +6,7 @@
 
 <BODY>
 <h1>Generators for Subsets of Attributes</h1>
+<index name="subsets of attributes">
 
 <P>Subsets generators are classes that generate subsets of a given set of attributes. Their primary mission was to generate bound sets for function decomposition, although they can also be used for other purposes.</P>
 
@@ -13,7 +14,7 @@
 
 <H2>SubsetsGenerator</H2>
 
-<P><CODE>SubsetsGenerator</CODE> is an abstract class that defines the behaviour of derived classes.</P>
+<P><CODE><INDEX name="classes/SubsetsGenerator">SubsetsGenerator</CODE> is an abstract class that defines the behaviour of derived classes.</P>
 
 <H3>Using Subsets Generators</H3>
 
@@ -64,7 +65,7 @@ for attrs in sgen(data.domain.attributes):
 
 <H2>SubsetsGenerator_constSize</H2>
 
-<P><CODE>SubsetsGenerator_constSize</CODE> returns subsets of predefined size.</P>
+<P><CODE><INDEX name="classes/SubsetsGenerator_constSize">SubsetsGenerator_constSize</CODE> returns subsets of predefined size.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -117,7 +118,7 @@ f(gen, data)
 
 <H2>SubsetsGenerator_minMaxSize</H2>
 
-<P><CODE>SubsetsGenerator_minMaxSize</CODE> returns subsets of sizes within given limits. Subsets are sorted by increasing cardinality.</P>
+<P><CODE><INDEX name="classes/SubsetsGenerator_minMaxSize">SubsetsGenerator_minMaxSize</CODE> returns subsets of sizes within given limits. Subsets are sorted by increasing cardinality.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -147,7 +148,7 @@ for attrs in gen4(data.domain.attributes):
 
 <H3>SubsetsGenerator_constant</H3>
 
-<p><code>SubsetsGenerator_constant</code> "generates" a single subset, prescribed by the user.
+<p><code><INDEX name="classes/SubsetsGenerator_constant">SubsetsGenerator_constant</code> "generates" a single subset, prescribed by the user.
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -168,6 +169,7 @@ for attrs in gen5(data.domain.attributes):
 <p>Why the hell would you need such a generator? There are object that require a subsets generator as a component. In function decomposition, for instance, subsets generators are used to construct a list of candidate subsets. This is a way to force them into observing a single prescribed subset.</p>
 
 <H3>SubsetsGenerator_withRestrictions</H3>
+<index name="classes/SubsetsGenerator_withRestrictions">
 
 <p>This is the most complex subsets generator. It uses a generator - one of the above generators - stored in a field <code>subGenerator</code> to generate subsets, but it filters out all the subsets that do not comply to restrictions.</P>
 

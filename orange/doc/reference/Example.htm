@@ -6,6 +6,7 @@
 
 <BODY>
 <h1>Example</h1>
+<index name="classes/Example">
 
 <P><CODE>orange.Example</CODE> holds examples - a list of attribute values, together with some auxiliary data. That is how you see them in Python: as a list, resembling ordinary Python's list to extent possible. There are, however, differences; each example corresponds to some domain and therefore the number of attributes ("list elements") and their types are always as prescribed.</P>
 
@@ -174,6 +175,7 @@ young
 
 <P>Hash function for example (accessible via Python's built-in function <CODE>hash</CODE>, see Python documentation) is computed using CRC32. To some extent, you can also use it as random number (this is done, for instance, by <a href="RandomClassifier.htm"><CODE>RandomClassifier</CODE></A>.</P>
 
+<index name="meta attributes">
 <H2>Meta-values</H2>
 
 <P>Data examples in Orange are described by a fixed number and types of values, defined by domain descriptor. There is, however a way to attach additional attributes to examples. Such attributes (we call them meta-attributes) are not used for learning, but can carry additional information, such as, for instance, patient's name or the number of times the example was missclassified during some test procedure. The most common additional information is example's weight. To make things even more complex, we have already encountered problems for which examples had to have more than one weight each.</P>
@@ -284,6 +286,8 @@ TypeError: cannot convert 'yes' to a value of an unknown attribute
 
 <DT>removemeta(id | attribute-descriptor | name)</DT>
 <DD>Removes a meta-value. To use an attribute-descriptor or name, the corresponding attribute must be registered.</DD>
+
+<index name="example weights">
 
 <DT>getweight(id | attribute-descriptor | name | None)</DT>
 <DD>Returns a value of specified meta-attribute. Value must be continuous; an exception is raised otherwise. If the argument is zero or <CODE>None</CODE>, function returns 1.0 (since weight id of 0 normally means that examples are not weighted).</P>

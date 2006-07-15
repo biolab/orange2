@@ -6,13 +6,14 @@
 
 <BODY>
 
+<index name="distributions">
 <H1>Distributions</H1>
 
 <P>Objects derived from <CODE>Distribution</CODE> are used throughout Orange to store various distributions. These often - but not necessarily - apply to distribution of values of certain attribute on some dataset. You will most often encounter two classes derived from <CODE>Distribution</CODE>: <CODE>DiscDistribution</CODE> stores discrete and <CODE>ContDistribution</CODE> stores continuous distributions. To some extent, they both resemble dictionaries, with attribute values as keys and number of examples with particular value as elements.</P>
 
 <H2>General Distributions</H2>
 
-<P>Class <CODE>Distribution</CODE> contains the common methods for different types of distributions. Even more, its constructor can be used to construct objects of type <CODE>DiscDistribution</CODE> and <CODE>ContDistribution</CODE> (class <CODE>Distribution</CODE> itself is abstract, so no instances of that class can actually exist).</P>
+<P>Class <CODE><index name="classes/Distribution">Distribution</CODE> contains the common methods for different types of distributions. Even more, its constructor can be used to construct objects of type <CODE>DiscDistribution</CODE> and <CODE>ContDistribution</CODE> (class <CODE>Distribution</CODE> itself is abstract, so no instances of that class can actually exist).</P>
 
 <p class="header"><a href="distributions.py">part of distributions.py</a>
 (uses <a href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
@@ -133,6 +134,8 @@ print "Private: ", disc[orange.Value(workclass, "Private")]
 </DL>
 
 <H2>Discrete distributions</H2>
+<index name="classes/DiscDistribution">
+<index name="distributions/discrete">
 
 <P>Discrete distributions can be constructed directly.</P>
 
@@ -167,8 +170,10 @@ disc.variable = v
 
 
 <H2>Continuous distributions</H2>
+<index name="distributions/continuous">
+<index name="classes/ContDistribution">
 
-<P>Continuous distribution (<CODE>ContDistribution</CODE>) offers similar constructors as discrete distributions, except that instead of a list, it expects a dictionary, such as one returned by <CODE>native</CODE>. There are some specific methods.</P>
+<P>Continuous distribution (<CODE><INDEX>ContDistribution</INDEX></CODE>) offers similar constructors as discrete distributions, except that instead of a list, it expects a dictionary, such as one returned by <CODE>native</CODE>. There are some specific methods.</P>
 
 <P class=section>Methods</P>
 <DL class=attributes>
@@ -203,8 +208,9 @@ disc.variable = v
 <DD>Returns probability density at <CODE>x</CODE>. If value is not present, it is interpolated.</dd>
 </DL>
 
-
 <H2>Gaussian distribution</H2>
+<index name="distribution/Gaussian">
+<index name="classes/GaussianDistribution">
 
 <P>Represents Gaussian distribution.</P>
 
@@ -238,8 +244,8 @@ disc.variable = v
 </DL>
 
 
-
 <H2>Computing class distributions</H2>
+<index name="distribution/computation from examples">
 
 <P>Class distributions can be computed by calling <CODE>orange.Distribution(data.domain.classVar, weightID)</CODE> (<CODE>weightID</CODE> can be left out if examples are not weighted). Since this is a frequent operation a shortcut is provided.</p>
 

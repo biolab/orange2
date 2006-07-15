@@ -7,13 +7,14 @@
 <BODY>
 
 
-<H1>Attributes Defined in Python</H1>
+<H1>Attribute Types Defined in Python</H1>
+<index name="attribute types defined in Python">
 
 <P><SMALL><B>Note</B>: this page includes some advanced technical details. The recommended approach is that you read it and ignore the parts you don't understand. If the things later don't work as expected, read it again...</SMALL></P>
 
 <P><SMALL><B>Warning</B>: at the time of writing this (Aug 24 2004), this stuff is relatively untested, but we will use it in our own work as a kind of beta-testing. Please report any bugs (or remind as to remove this notice eventually :)</SMALL></P>
 
-<P>Besides the usual discrete and continuous attributes, which are used by learning algorithms, and strings and distributions that are here for convenience, Orange also supports arbitrary attribute types which defined in Python, that is, attributes with descriptors that are Python classes derived from <CODE>PythonVariable</CODE> (which is itself derived from <CODE>Variable</CODE>).
+<P>Besides the usual discrete and continuous attributes, which are used by learning algorithms, and strings and distributions that are here for convenience, Orange also supports arbitrary attribute types which defined in Python, that is, attributes with descriptors that are Python classes derived from <CODE><INDEX name="classes/PythonVariable">PythonVariable</CODE> (which is itself derived from <CODE>Variable</CODE>).
 
 <P>Such attributes cannot be used by Orange's learning methods, since most learning algorithms only handle discrete and continuous attributes (with many of them covering only one of the two types). You can, however, use attributes defined in Python in your specific learning algorithms. Another use for such attributes can be describing the examples: by using Python-defined attributes as meta attributes, you can attach arbitrary descriptors to examples. These descriptors won't be used while learning, but can be useful when presenting the examples, or by any auxiliary processes, such as example subset selections. Finally, Python-defined attributes can store data that is converted to ordinary (discrete and continuous attributes) when needed. If a Python-defined value is a list with the dates of patient's visits to the doctor, it can be used for constructing a continuous attribute that will tell the number of visits, the longest span between two consecutive visits or the time between the first and the second visit.</P>
 

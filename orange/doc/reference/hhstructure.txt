@@ -54,3 +54,4 @@ Orange Reference Guide ---> default.htm
 		Warnings ---> warnings.htm
 		Orange peculiarities: non-Pythonic behaviour ---> peculiarities.htm
 		Subtyping Orange classes in Python ---> callbacks.htm
+		Writing Extensions in C++ ---> c-to-python-interface.htm

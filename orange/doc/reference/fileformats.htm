@@ -5,6 +5,14 @@
 </HEAD>
 
 <BODY>
+<index name="file formats">
+<index name="c45 file format">
+<index name="Assistant file format">
+<index name="Retis file format">
+<index name="tab-delimited file format">
+<index name="comma-separated file format">
+<index name="basket file format">
+
 <h1>Loading Data from Files</h1>
 
 <P>Orange reads and writes files in a number of different formats.
@@ -34,6 +42,8 @@
 <DD>You can define your own function(s) for reading and/or writing examples, and register them with Orange.</DD>
 </DL>
 
+<index name="loading examples">
+
 <H2>Loading Examples</H2>
 
 <P>Loading examples is trivial. To load the data from the file <CODE>iris.tab</CODE>, you simply type</P>
@@ -53,7 +63,7 @@
 <XMP class="code">>>> data = orange.ExampleTable("")
 </XMP>
 
-<P>it will load the file with the same name as the current directory name. So, if your current directory is "c:\mydata\iris", it will look for files with stem "iris" and any known extensions. This might come handy if you perform some massive experiments and you want to run the same script for many different datasets located in separate directories.</P>
+<P>it will load the file with the same name as the current directory name. So, if your current directory is "c:\mydata\iris", it will look for files with stem "iris" and any known extensions. This might come handy if you perform some massive experiments and you want to run the same script for many different data sets located in separate directories.</P>
 
 <P>There's a special trick for reading Excel files. If the file has multiple worksheets, the active worksheet (the one which was visible when the file was last saved) is read. To override this, you can specify a worksheet by appending a "#" and the worksheet's name to the file name. If your iris file is in Excel's format in a worksheet named "train", you can read it by
 
@@ -72,15 +82,15 @@
 
 <P>When loading the first file, Orange constructs a corresponding <a href="Domain.htm">domain</A> with descriptions of attributes. When it loads the second file, it notices that the attribute names, types and their order is the (same). In such a case it reuses the existing domain instead of constructing a new one. An old domain can be reused if all the names, types and order of the attributes matches, together with the class attribute if present. Order of meta-attributes is not important. Reuse is restricted to domains coming from the same file-format; when reading C4.5 files, only domains constructed from C4.5 files are checked for potential reuse. It is possible to explicitly tell Orange to reuse another domain, though (see below).<P>
 
-<P>A situtation that would probably occur even more often is to have an Excel file with two spreadsheets, one containing training and the other testing examples. They can be loaded by:</P>
+<P>A situation that would probably occur even more often is to have an Excel file with two spreadsheets, one containing training and the other testing examples. They can be loaded by:</P>
 
 <XMP class="code">>>> train = orange.ExampleTable("breast.xls#train")
 >>> test = orange.ExampleTable("breast.xls#test")
 </XMP>
 
-<P>The purpose of reuse is far beyond saving a little space. If new attribute descriptors were constructed for each file, the attributes in the two datasets would have same names, but would be treated as different attributes. Orange does not distinguish attributes by names but by descriptors. Names are there for your eyes only. Classifier induced from dataset <CODE>iris_train</CODE> wouldn't recognize attributes from dataset <CODE>iris_test</CODE> if there was no reuse.</P>
+<P>The purpose of reuse is far beyond saving a little space. If new attribute descriptors were constructed for each file, the attributes in the two data sets would have same names, but would be treated as different attributes. Orange does not distinguish attributes by names but by descriptors. Names are there for your eyes only. Classifier induced from data set <CODE>iris_train</CODE> wouldn't recognize attributes from data set <CODE>iris_test</CODE> if there was no reuse.</P>
 
-<P>You can override the default behaviour by adding a few keyword parameters. You can prohibit reusing domains by setting <code>dontCheckStored</code> to 1. Therefore, if you would, for any weird reason, want to have the above iris datasets belonging to two unrelated domains, you can load them by</p>
+<P>You can override the default behaviour by adding a few keyword parameters. You can prohibit reusing domains by setting <code>dontCheckStored</code> to 1. Therefore, if you would, for any weird reason, want to have the above iris data sets belonging to two unrelated domains, you can load them by</p>
 
 <XMP class="code">>>> train = orange.ExampleTable("iris.data")
 >>> test = orange.ExampleTable("iris.test", dontCheckStored = 1)
@@ -88,7 +98,7 @@
 
 <P>Similarly, you can prohibit storing a domain by setting <code>dontStore</code> to 1. This way, the domain will never be reused at further loading.</p>
 
-<p>You can give the <code>ExampleTable</code> a list of attributes that can be reused. For instance, you might have testing set that contains some attributes not present in the training set. By the usual mechanism, these datasets would have separate domain and attribute definitions - even the attributes with the same names would be actually unrelated; models induced from the training data would be completely useless on the testing data, as none of its attributes would be recognized. So, to tell Orange to reuse the attributes, you can use the <code>use</code> keyword:</p>
+<p>You can give the <code>ExampleTable</code> a list of attributes that can be reused. For instance, you might have testing set that contains some attributes not present in the training set. By the usual mechanism, these data sets would have separate domain and attribute definitions - even the attributes with the same names would be actually unrelated; models induced from the training data would be completely useless on the testing data, as none of its attributes would be recognized. So, to tell Orange to reuse the attributes, you can use the <code>use</code> keyword:</p>
 
 <XMP class="code">>>> train = orange.ExampleTable("breast.xls#train")
 >>> test = orange.ExampleTable("breast.xls#test", \
@@ -115,6 +125,7 @@
 
 <H2>Saving Examples</H2>
 <A name="saving"></a>
+<index name="saving examples">
 
 <P>Saving examples to files is even simpler. <CODE>ExampleTable</CODE> (actually its ancestor, <CODE>ExampleGenerator</CODE>) implements a method <CODE>save</CODE> which accepts a single argument, file name, from which it also deduces the format. For instance, if examples are stored in <CODE>ExampleTable</CODE> <CODE>data</CODE>, we can save them as tab-delimited file by
 
@@ -131,7 +142,7 @@ or
 
 Orange will write both files, <CODE>mydata.names</CODE> and <CODE>mydata.data</CODE> in both cases.</P>
 
-<P>Some formats are not able to store all types of datasets. For instance, Retis can only store examples where the outcome is continuous. You cannot store the iris data with its three-valued discrete outcome as Retis file.</P>
+<P>Some formats are not able to store all types of data sets. For instance, Retis can only store examples where the outcome is continuous. You cannot store the iris data with its three-valued discrete outcome as Retis file.</P>
 
-<P>Can I save the files using some other extension than the default? Yes, for each file format there is a separater saving function (<CODE>saveAssistant</CODE>, <CODE>saveC45</CODE>, <CODE>saveRetis</CODE> <CODE>saveTabDelimited</CODE>, <CODE>saveBasket</CODE>, <CODE>saveCsv</CODE> or <CODE>saveTxt</CODE>), which accepts two arguments, a filename and the examples. The function will decorate the file name according to the format's customs. One-file formats (such as tab-delimited or basket) will be given the default extension (such as .tab or .basket) unless you provide one. For Assistant's format, the domain description file will always be prefixed with <CODE>asdo</CODE> and the data file with <CODE>asda</CODE>. For C45 and Retis, the domain definition files will be given extension .names and .rdo, respectively, while data files will be given the standard extensions (.data, .rda) only if the filename that you've given as argument doesn't have an extension (ie, doesn't have any dots to the left of the last path separator). These functions are otherwise rather obsolete, so you should avoid them when possible.</P>
+<P>Can I save the files using some other extension than the default? Yes, for each file format there is a separate saving function (<CODE>saveAssistant</CODE>, <CODE>saveC45</CODE>, <CODE>saveRetis</CODE> <CODE>saveTabDelimited</CODE>, <CODE>saveBasket</CODE>, <CODE>saveCsv</CODE> or <CODE>saveTxt</CODE>), which accepts two arguments, a filename and the examples. The function will decorate the file name according to the format's customs. One-file formats (such as tab-delimited or basket) will be given the default extension (such as .tab or .basket) unless you provide one. For Assistant's format, the domain description file will always be prefixed with <CODE>asdo</CODE> and the data file with <CODE>asda</CODE>. For C45 and Retis, the domain definition files will be given extension .names and .rdo, respectively, while data files will be given the standard extensions (.data, .rda) only if the filename that you've given as argument doesn't have an extension (ie, doesn't have any dots to the left of the last path separator). These functions are otherwise rather obsolete, so you should avoid them when possible.</P>
 

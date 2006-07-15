@@ -8,6 +8,8 @@
 
 <BODY>
 <h1>Learning Rules</h1>
+<index name="classifiers+rule learning">
+<index name="classifiers+CN2">
 
 <p> This document describes main classes used for supervised learning of if-then rules. First two classes, <A href=#rulelearner">RuleLearner</A>  and <A href="#rulebeamfinder">RuleBeamFinder</A> , implement learning of rules by following separate-and-conquer strategy. This strategy consists of several replaceable functions, which are, in our classes, presented as components. As usual for all Orange classes, these components can be easily rewritten (in Python) and can replace the default ones. As there are many components here and to make the presentation of components a bit easier, the description of classes will start with the pseudo code of implemented algorithm to show where functions (components) do actually take place. After the algorithm, the actual description of individual components is given. The third class, class <A href="#rule">Rule</A>, is a class used to represent a single rule. <A href="#examples">Examples</A> at the end are used to illustrate how these three classes can be used to implement different ways of learning rules. </p>
 
@@ -16,7 +18,7 @@
 <A name="rulelearner"></A>
 <H2>RuleLearner class</H2>
 
-<p>Rulelearner is a class for inductive learning rules from data. The algorithm follows separate-and-conquer strategy, which has its origins in the AQ family of algorithms (Fuernkranz J.; Separate-and-Conquer Rule Learning, Artificial Intelligence Review 13, 3-54, 1999). Basically, such algorithms search for the "best" possible rule in learning examples, remove covered data from learning examples (separate) and repeat the process (conquers) on the remaining examples. Follows the algorithm of separate-and-conquer rule learning:
+<p><INDEX name="classes/RuleLearner">RuleLearner is a class for inductive learning rules from data. The algorithm follows separate-and-conquer strategy, which has its origins in the AQ family of algorithms (Fuernkranz J.; Separate-and-Conquer Rule Learning, Artificial Intelligence Review 13, 3-54, 1999). Basically, such algorithms search for the "best" possible rule in learning examples, remove covered data from learning examples (separate) and repeat the process (conquers) on the remaining examples. Follows the algorithm of separate-and-conquer rule learning:
 
 <br><br>
 <u>RuleLearner's call function</u>:<br>
@@ -142,7 +144,7 @@ As ruleLearner is derived from orange Learner class, it has the classical call m
 <A name="rulebeamfinder"></A>
 <H2>RuleBeamFinder class</H2>
 
-<p>RuleBeamFinder class performs beam search for the best rule. This is the default class used in RuleLearner to find the best rule. Pseudo code of the algorithm is shown here:
+<p><INDEX name="classes/RuleBeamFinder">RuleBeamFinder class performs beam search for the best rule. This is the default class used in RuleLearner to find the best rule. Pseudo code of the algorithm is shown here:
 <br><br>
 <u>RuleBeamFinder's call function</u>:<br>
 <PRE class = "code">
@@ -164,7 +166,7 @@ As ruleLearner is derived from orange Learner class, it has the classical call m
         return bestRule
 </PRE>
 <br>
-As you can see, there are several exchangable components. Each of those is explained in the attributes section.
+As you can see, there are several exchangeable components. Each of those is explained in the attributes section.
 
  </p>
 
@@ -322,7 +324,7 @@ If baseRules are not set, this class will return rulesStar with rule that covers
 <A name="rule"></A>
 <H2>Rule class</H2>
 
-<p>Rule class is the base class for presentation of a single rule.</p>
+<p><INDEX name="classes/Rule">Rule class is the base class for presentation of a single rule.</p>
 
 <P class=section>Attributes</P>
 <DL class=attributes>

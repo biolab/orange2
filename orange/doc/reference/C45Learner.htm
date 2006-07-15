@@ -3,13 +3,14 @@
 <LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
 </HEAD> <body>
 
+<index name="classifiers+c45">
 <h1>C4.5 Classifier and Learner</h1>
 
 <P>C4.5 is a standard benchmark in machine learning. For this
 reason, it is incorporated in Orange, although Orange has its own
 implementation of decision trees.</P>
 
-<P><CODE>C45Learner</CODE> uses the original Quinlan's code for learning so the tree you get is exactly like the one that would be build by standalone C4.5. Upon return, however, the original tree is copied to Orange components that contain exactly the same information plus what is needed to make them visible from Python. To be sure that the algorithm behaves just as the original, we use a dedicated class <CODE>orange.C45TreeNode</CODE> instead of reusing the components used by Orange's tree inducer (ie, <CODE>orange.TreeNode</CODE>). This, however, could be done and probably will be done in the future; we shall still retain <CODE>orange.C45TreeNode</CODE> but offer transformation to <CODE>orange.TreeNode</CODE> so that routines that work on Orange trees will also be usable for C45 trees.</P>
+<P><CODE></CODE> uses the original Quinlan's code for learning so the tree you get is exactly like the one that would be build by standalone C4.5. Upon return, however, the original tree is copied to Orange components that contain exactly the same information plus what is needed to make them visible from Python. To be sure that the algorithm behaves just as the original, we use a dedicated class <CODE>orange.C45TreeNode</CODE> instead of reusing the components used by Orange's tree inducer (ie, <CODE>orange.TreeNode</CODE>). This, however, could be done and probably will be done in the future; we shall still retain <CODE>orange.C45TreeNode</CODE> but offer transformation to <CODE>orange.TreeNode</CODE> so that routines that work on Orange trees will also be usable for C45 trees.</P>
 
 <P><CODE>C45Learner</CODE> and <CODE>C45Classifier</CODE> behave
 like any other Orange learner and classifier. Unlike most of Orange learning algorithms, C4.5 does not accepts weighted examples.</P>
@@ -38,6 +39,7 @@ href="http://www.rulequest.com/">Rule Quest's site</a> and extract them into som
 <P><B>If the process fails</B>, here's what buildC45.py really does: it creates .h files that wrap Quinlan's .i files and ensure that they are not included twice. It modifies C4.5 sources to include .h's instead of .i's. This step can hardly fail. Then follows the platform dependent step which compiles ensemble.c (which includes all the Quinlan's .c files it needs) into c45.dll or c45.so and puts it next to Orange. If this fails, but you do have a C compiler and linker, and you know how to use them, you can compile the ensemble.c into a dynamic library yourself. See the compile and link steps in buildC45.py, if it helps. Anyway, after doing this check that the built C4.5 gives the same results as the original.</P>
 
 <H2>C45Learner</H2>
+<index name="classes/C45Learner">
 
 <P><CODE>C45Learner</CODE>'s attributes have double names - those that you know from C4.5 command lines and the corresponding names of C4.5's internal variables. All defaults are set as in C4.5; if you change nothing, you are running C4.5.</P>
 
@@ -82,6 +84,7 @@ parse its command line.</P>
 
 
 <H2>C45Classifier</H2>
+<index name="classes/C45Classifier">
 
 <P><CODE>C45Classifier</CODE> contains a faithful reimplementation of Quinlan's function from C4.5. The only difference (and the only reason it's been rewritten) is that it uses a tree composed of <CODE>orange.C45TreeNode</CODE>s instead of C4.5's original tree structure.</P>
 
@@ -93,6 +96,7 @@ parse its command line.</P>
 
 
 <H2>C45TreeNode</H2>
+<index name="classes/C45TreeNode">
 
 <P>This class is a reimplementation of the corresponding <CODE>struct</CODE> from Quinlan's C4.5 code.
 
