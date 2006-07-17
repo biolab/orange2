@@ -4,9 +4,12 @@
 </head>
 <body>
 <h1>orngSVM</h1>
+<index name="classifiers+support vector machines">
+<index name="modules/support vector machines">
+
 <p>orngSVM provides accsess to orange Support Vector Machine functionality</p>
 <h2>SVMLearner</h2>
-<p>SVMLearner is a function that constructs a SVMLearner class and optionaly trains it on provided examples</p>
+<p><INDEX name="classes/SVMLearner (in orngSVM)">SVMLearner is a function that constructs a SVMLearner class and optionaly trains it on provided examples</p>
 <p class=section >Arguments</p>
 <dl class=arguments>
   <dt>svm_type</dt>
@@ -53,30 +56,30 @@
 </dl>
 
 <h2>KernelWrapper (DualKernelWrapper)</h2>
-<p>KernelWrapper (DualKernelWrapper) is an abstract wrapper class that takea one (two) kernel function (functions) as a initalization parameters
+<p><INDEX name="classes/KernelWrapper (in orngSVM)">KernelWrapper (DualKernelWrapper) is an abstract wrapper class that take one (two) kernel function (functions) as a initalization parameters
 and uses them to compute a new kernel function. The available kernel wrappers are RBFKernelWrapper, PolyKernelWrapper, AdditionKernelWrapper, MultiplicationKernelWrapper.</p>
 <p class=section>Methods</p>
 <dl class=methods>
     <dt>__call__(example1, example2)</dt>
     <dd>Computes the kernel function for the two examples</dd>
 </dl>
-<h2>RBFKernelWrapper</h2>
+<h2><INDEX name="classes/RBFKernelWrapper (in orngSVM)">RBFKernelWrapper</h2>
 <p>Takes one kernel function (K1) in initialization and uses it to compute a new kernel function: K(x,y)=exp(K1(x,y)^2/gamma)
 <p class=section>Attributes</p>
 <dl class=attributes>
     <dt>gamma</dt>
     <dd>gamma to use in the kernel function</dd>
 </dl>
-<h2>PolyKernelWrapper</h2>
+<h2><INDEX name="classes/PolyKernelWrapper (in orngSVM)">PolyKernelWrapper</h2>
 <p>Takes one kernel function (K1) in initialization and uses it to compute a new kernel function: K(x,y)=K1(x,y)^degree
 <p class=section>Attributes</p>
 <dl class=attributes>
     <dt>degree</dt>
     <dd>degree to use in the kernel function</dd>
 </dl>
-<h2>AdditionKernelWrapper</h2>
+<h2><INDEX name="classes/AdditionKernelWrapper (in orngSVM)">AdditionKernelWrapper</h2>
 <p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)+K2(x,y)
-<h2>MultiplicationKernelWrapper</h2>
+<h2><INDEX name="classes/MultiplicationKernelWrapper (in orngSVM)">MultiplicationKernelWrapper</h2>
 <p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)*K2(x,y)
 </p>
 <h2>Examples</h2>

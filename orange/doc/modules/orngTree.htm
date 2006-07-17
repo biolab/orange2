@@ -5,6 +5,8 @@
 <body>
 
 <h1>orngTree: Orange Decision Trees Module</h1>
+<index name="classifiers/classification trees">
+<index name="modules/classification trees">
 
 <P>Module orngTree implements a class
 <code>TreeLearner</code> for building both decision and regression
@@ -17,7 +19,7 @@ trees. <code>orngTree.TreeLearner</code> is essentially a wrapper around <a href
 
 <h2>TreeLearner</h2>
 
-<p><code>TreeLearner</code> is a class that assembles the generic
+<p><code><INDEX name="classes/TreeLearner (in orngTree)">TreeLearner</code> is a class that assembles the generic
 classification tree learner (from Orange's objects for induction of
 decision trees). It sets a number of parameters used in induction that
 can also be set after the creation of the object, most often through
@@ -49,6 +51,8 @@ of <code>TreeClassifier</code> object is returned instead.</p>
 </dl>
 
 <h4>Pruning</h4>
+<index name="classification trees/pruning">
+<index name="pruning classification trees">
 <dl class="attributes">
   <dt>worstAcceptable</dt>
   <dd><P>Used in pre-pruning, sets the lowest required attribute
@@ -160,6 +164,7 @@ big.</p>
 
 
 <h2>Printing the Tree</h2>
+<index name="classification trees/printing">
 
 <P>Function <code>dumpTree</code> dumps a tree to a string, and <code>printTree</code> prints out the tree (<code>printTxt</code> is alias for <code>printTree</code>, and it's there for compatibility). Functions have same arguments.</P>
 

@@ -4,12 +4,14 @@
 <body>
 
 <h1>orngImpute: An Imputation Wrapper for Learning Algorithms</h1>
+<index name="modules+imputation">
+<index name="classifiers/with imputation">
 
 <P>This module used to be larger, but most of its code went into the Orange's core for various reasons. So now it only contains a wrapper to be used with learning algorithms that cannot handle missing values: it will impute the missing examples using the imputer, call the learning and, if the imputation is also needed by the classifier, wrap the resulting classifier into another wrapper that will impute the missing values in examples to be classified.</P>
 
 <P>Even so, the module is somewhat redundant, as all learners that cannot handle missing values should, in principle, provide the slots for imputer constructor. For instance, <code>orange.LogRegLearner</code> has an attribute <code>imputerConstructor</code>, and even if you don't set it, it will do some imputation by default.</P>
 
-<P>The module consists of two classes. First is <code>ImputeLearner</code>. It is basically a learner, so the constructor will construct either an instance of <code>ImputerLearner</code> or, if called with examples, an instance of some classifier. There are a few attributes that need to be set, though.</P>
+<P>The module consists of two classes. First is <code><INDEX name="classes/ImputeLearner (in orngImpute)">ImputeLearner</code>. It is basically a learner, so the constructor will construct either an instance of <code>ImputerLearner</code> or, if called with examples, an instance of some classifier. There are a few attributes that need to be set, though.</P>
 
 <p class="section">Attributes</p>
 <dl class="attributes">
@@ -34,7 +36,7 @@
             return ImputeClassifier(baseClassifier, trained_imputer)
 </xmp>
 
-<P>So "learning" goes like this. <code>ImputeLearner</code> will first construct the imputer (that is, call <code>self.imputerConstructor</code> to get a (trained) imputer. Than it will use the imputer to impute the data, and call the given <code>baseLearner</code> to construct a classifier. For instance, <code>baseLearner</code> could be a learner for logistic regression and the result would be a logistic regression model. If the classifier can handle unknown values (that is, if <code>dontImputeClassifier</code>, we return it as it is, otherwise we wrap it into <code>ImputeClassifier</code>, which is given the base classifier and the imputer which it can use to impute the missing values in (testing) examples.</P>
+<P>So "learning" goes like this. <code>ImputeLearner</code> will first construct the imputer (that is, call <code>self.imputerConstructor</code> to get a (trained) imputer. Than it will use the imputer to impute the data, and call the given <code>baseLearner</code> to construct a classifier. For instance, <code>baseLearner</code> could be a learner for logistic regression and the result would be a logistic regression model. If the classifier can handle unknown values (that is, if <code>dontImputeClassifier</code>, we return it as it is, otherwise we wrap it into <code><INDEX name="classes/ImputeClassifier (in orngImpute)">ImputeClassifier</code>, which is given the base classifier and the imputer which it can use to impute the missing values in (testing) examples.</P>
 
 <P>The other class in the module is, of course, the classifier with imputation, <code>ImputeClassifier</code>.</P>
 

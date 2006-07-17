@@ -8,13 +8,16 @@
 
 <body>
 <h1>orngEnsemble: Orange Bagging and Boosting Module</h1>
+<index name="modules/ensemble methods">
 
 <p>Module orngEnsemble implements Breiman's bagging and Random Forest,
-and Freund and Schapire's boosting algorithms.</p> 
+and Freund and Schapire's boosting algorithms.</p>
 
 <h2>BaggedLearner</h2>
+<index name="modules+bagging">
+<index name="classifiers/bagging">
 
-<p><code>BaggedLearner</code> takes a learner and returns a bagged
+<p><code><index name="classes/BaggedLearner (in orngEnsemble)">BaggedLearner</code> takes a learner and returns a bagged
 learner, which is essentially a wrapper around the learner passed as
 an argument. If examples are passed in arguments,
 <code>BaggedLearner</code> returns a bagged classifiers. Both learner
@@ -28,7 +31,7 @@ in Orange.</p>
 
   <dt>examples</dt>
   <dd>If examples are passed to <code>BaggedLearner</code>, this
-  returns a <code>BaggedClassifier</code>, that is, creates
+  returns a <code><index name="classes/BaggedClassifier (in orngEnsemble)">BaggedClassifier</code>, that is, creates
   <code>t</code> classifiers using learner and a subset of examples,
   as appropriate for bagging (default: None).</dd>
 
@@ -50,6 +53,8 @@ votes for a particular class.<p>
 
 
 <h2>BoostedLearner</h2>
+<index name="modules+boosting">
+<index name="classifiers/boosting">
 
 <p>Instead of drawing a series of bootstrap samples from the training
 set, bootstrap maintains a weight for each instance. When classifier
@@ -58,7 +63,7 @@ instances are increased. Just like in bagged learner, the class is
 decided based on voting of classifiers, but in boosting votes are
 weighted by accuracy obtained on training set.</p>
 
-<p>BoostedLearner is an implementation of AdaBoost.M1 (Freund and
+<p><index name="classes/BoostedLearner (in orngEnsemble)">BoostedLearner is an implementation of AdaBoost.M1 (Freund and
 Shapire, 1996). From user's viewpoint, the use of the
 <code>BoostedLearner</code> is similar to that of
 <code>BaggedLearner</code>. The learner passed as an argument needs to
@@ -71,7 +76,7 @@ deal with example weights.</p>
 
   <dt>examples</dt>
   <dd>If examples are passed to <code>BoostedLearner</code>, this
-  returns a <code>BoostedClassifier</code>, that is, creates
+  returns a <code><index name="classes/BoostedClassifier (in orngEnsemble)">BoostedClassifier</code>, that is, creates
   <code>t</code> classifiers using learner and a subset of examples,
   as appropriate for AdaBoost.M1 (default: None).</dd>
 
@@ -84,6 +89,8 @@ deal with example weights.</p>
 
 
 <h2>RandomForestLearner</h2>
+<index name="modules+random forest">
+<index name="classifiers/random forest">
 
 <p>Just like bagging, classifiers in random forests are trained from
 bootstrap samples of training data. Here, classifiers are trees, but to
@@ -92,11 +99,13 @@ attribute is chosen from a subset of attributes in the training
 set. We closely follows the original algorithm (Brieman, 2001) both in
 implementation and parameter defaults.</p>
 
+<P>Learner is encapsulated in class <index name="classes/RandomForestLearner (in orngEnsemble)"><CODE>RandomForestLearner</CODE>.</P>
+
 <p class=section>Attributes</p>
 <dl class=attributes>
   <dt>examples</dt>
   <dd>If these are passed, the call returns
-  <code>RandomForestClassifier</code>, that is, creates the required
+  <code><index name="classes/RandomForestClassifier (in orngEnsemble)">RandomForestClassifier</code>, that is, creates the required
   set of decision trees, which, when presented with an examples, vote
   for the predicted class.</dd>
 
@@ -110,7 +119,7 @@ implementation and parameter defaults.</p>
   algorithm such that in induction nodes with less then 5 examples
   will not be considered for (further) splitting. (default: None)</dd>
 
-  <dt>attributes</dt> 
+  <dt>attributes</dt>
   <dd>Number of attributes used in a randomly drawn subset when
   searching for best attribute to split the node in tree growing
   (default: None, and if kept this way, this is turned into square
@@ -192,7 +201,7 @@ results = orngTest.crossValidation(learners, data, folds=10)
 print "Learner  CA     Brier  AUC"
 for i in range(len(learners)):
     print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \
-        orngStat.CA(results)[i], 
+        orngStat.CA(results)[i],
         orngStat.BrierScore(results)[i],
         orngStat.AUC(results)[i])
 </xmp>

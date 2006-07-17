@@ -5,6 +5,8 @@
 <body>
 
 <h1>orngMySQL: Orange's Interface to MySQL</h1>
+<index name="modules+database access">
+<index name="SQL">
 
 <p>Module orngMySQL is Orange's gateway to <a
 href="http://www.mysql.com/">MySQL DBMS</a>. It sits on a top of a <a
@@ -18,7 +20,7 @@ with the data base and provides means for communication.</p>
 
 <h2>Connect</h2>
 
-<p><code>Connect</code> establishes a connection with a data base and
+<p><code><INDEX name="classes/Connect (in orngMySQL)">Connect</code> establishes a connection with a data base and
 provides for a number of methods that are used for interchange of the
 data between Orange and MySQL.</p>
 
@@ -120,12 +122,12 @@ our examples:</p>
 <xmp class=code>SELECT VERSION();
 USE test;
 -- DROP TABLE bus;
-CREATE TABLE bus 
-  (id varchar(5), 
-   line enum('9','10','11'), 
-   daytime enum('morning','evening', 'midday'), 
-   temp float, 
-   weather enum('rainy','sunny'), 
+CREATE TABLE bus
+  (id varchar(5),
+   line enum('9','10','11'),
+   daytime enum('morning','evening', 'midday'),
+   temp float,
+   weather enum('rainy','sunny'),
    arrival enum('late','on-time'));
 LOAD DATA LOCAL INFILE 'bus.txt' INTO TABLE bus;
 
@@ -199,11 +201,11 @@ little different and would
 "bus.txt">bus.txt</a>)</p>
 <xmp class=code>USE test;
 -- DROP TABLE busclass;
-CREATE TABLE busclass 
-  (m$id varchar(5), 
-   line enum('9','10','11'), 
-   daytime enum('morning','evening', 'midday'), 
-   temp float, weather enum('rainy','sunny'), 
+CREATE TABLE busclass
+  (m$id varchar(5),
+   line enum('9','10','11'),
+   daytime enum('morning','evening', 'midday'),
+   temp float, weather enum('rainy','sunny'),
    c$arrival enum('late','on-time'));
 LOAD DATA LOCAL INFILE 'bus.txt' INTO TABLE busclass;
 

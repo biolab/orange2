@@ -4,9 +4,12 @@
 </head>
 <body>
 <h1>orngSOM</h1>
+<index name="modules+self organizing maps">
+<index name="classifiers/self organizing maps">
+
 <p>Interface to Self Organizing Maps algorithm. For implementation of SOM, Orange integrates a <a href="http://www.cis.hut.fi/research/som-research/nnrc-programs.shtml">SOM_PAK package</a> from the inventors of the method. </p>
 <h2>SOMLearner</h2>
-<p>SOMLearner is a function that constructs an instance of SOMLearner instance. If an optional data set is provided, a corresponding Self Organizing Map will be constructed (training).</p>
+<p><INDEX name="classes/SOMLearner (in orngSOM)">SOMLearner is a function that constructs an instance of SOMLearner instance. If an optional data set is provided, a corresponding Self Organizing Map will be constructed (training).</p>
 <p class=section>Arguments</p>
 <dl class=arguments>
     <dt>examples</dt>
@@ -26,7 +29,7 @@
     <DT>randomSeed</DT>
     <DD>Random seed used to initialize the codebook vectors. Use -1 to use current time as a seed (default 0).</DD>
     <DT>parameters</DT>
-    
+
     <DD>Specifies the radius, alpha and number of iterations for each
 phase of training. The parameters are passed as a list of dictionaries
 (e.g. parameters=[{"iterations":1000, "radius":5.0, "alpha":0.05},

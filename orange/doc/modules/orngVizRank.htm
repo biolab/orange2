@@ -3,6 +3,7 @@
 </HEAD>
 <body>
 <h1>orngVizRank: Orange VizRank module</h1>
+<index name="modules+vizualization ranking">
 
 <p>Module orngVizRank implements VizRank algorithm (Leban et al, 2004; Leban et al, 2005) which is able to rank possible data projections generated using two different visualization methods - scatterplot and radviz method. For a given class labeled data set, VizRank creates different possible data projections and assigns a score of interestingness to each of the projections. VizRank scores the projections based on how well are different classes separated in the projection. If different classes are well separated the projection gets a high score, otherwise the score it is correspondingly lower. After evaluation it is sensible to focus on top-ranked projections that provide the greatest insight on how to separate between different classes.</P>
 
@@ -11,6 +12,7 @@
 <hr>
 
 <H2>VizRank in Orange</H2>
+<index name="classes/VizRank (in orngVizRank)">
 
 <P>The easiest way to use VizRank in Orange is through Orange widgets. Widgets like Scatterplot, Radviz and Polyviz (which can be found in Visualize tab in Orange Canvas) contain a button "VizRank" which opens VizRank's dialog where you can change all possible settings and find interesting data projections. </P>
 
@@ -29,8 +31,8 @@
 >>> vizrank.setData(data)     # set the data set
 >>> vizrank.evaluateProjections()      # evaluate possible projections
 >>> print vizrank.results[0]
-(86.88861657813024, (86.88861657813024, [87.603105074268271, 82.08174408531525, 93.120556697249413], 
-	[59, 71, 48]), 178, ['A7', 'A10'], 5, {})
+(86.88861657813024, (86.88861657813024, [87.603105074268271, 82.08174408531525, 93.120556697249413],
+    [59, 71, 48]), 178, ['A7', 'A10'], 5, {})
 </xmp>
 
 
@@ -43,7 +45,7 @@
 <DD class=ddfun>the number of examples used in predicting the class value. By default it is set to <i>N/c</i>, where <i>N</i> is number of examples in the data set and <i>c</i> is the number of class values</DD>
 
 <DT><B>percentDataUsed</b>
-<DD class=ddfun>when handling large data sets, the kNN method might take a lot of time to evaluate each projection. We can still get a good estimate of projection interestingness if we consider only a subset of examples. You can 
+<DD class=ddfun>when handling large data sets, the kNN method might take a lot of time to evaluate each projection. We can still get a good estimate of projection interestingness if we consider only a subset of examples. You can
 specify a value between 0 and 100. Default: 100</DD>
 
 <DT><B>qualityMeasure</b>
@@ -71,6 +73,7 @@ specify a value between 0 and 100. Default: 100</DD>
 </DL>
 
 <p><b>Radviz specific settings:</b><br>
+<index name="RadViz">
 
 <DL>
 <DT><B>optimizationType</b>
@@ -102,7 +105,7 @@ specify a value between 0 and 100. Default: 100</DD>
 
 <xmp class = "code">learner = VizRankLearner(SCATTERPLOT)</xmp>
 
-<p>VizRankLearner can actually accept three parameters. First is the type of the visualization method to use (<CODE>SCATTERPLOT</CODE> or 
+<p>VizRankLearner can actually accept three parameters. First is the type of the visualization method to use (<CODE>SCATTERPLOT</CODE> or
 <CODE>RADVIZ</CODE>). The second parameter is an instance of VizRank class. If it is not given, a new instance is created. The third parameter is a graph instance - <CODE>orngScaleScatterPlotData</CODE> or <CODE>orngScaleRadvizData</CODE> instance. If it is not specified, a new instance is created.</p>
 
 <p>To change the VizRank's settings we simply access them through the learner.VizRank instance (e.g. <CODE>learner.VizRank.kValue = 10</CODE>).</p>
@@ -141,9 +144,9 @@ specify a value between 0 and 100. Default: 100</DD>
 
 <h2>References</h2>
 
-<p>Leban, G., Bratko, I., Petrovic, U., Curk, T., Zupan, B. VizRank: finding informative data projections in functional genomics 
+<p>Leban, G., Bratko, I., Petrovic, U., Curk, T., Zupan, B. VizRank: finding informative data projections in functional genomics
 by machine learning. <i>Bioinformatics</i> <b>21</b>, 413-414 (2005).</p>
-<p>Leban, G., Mramor, M., Bratko, I., Zupan, B.: Simple and Effective Visual Models for Gene Expression Cancer Diagnostics, <i>KDD-2005</i> 
+<p>Leban, G., Mramor, M., Bratko, I., Zupan, B.: Simple and Effective Visual Models for Gene Expression Cancer Diagnostics, <i>KDD-2005</i>
 167--177 (Chicago, 2005).</p>
 <p>Hoffman, P. E., Grinstein, G. G., Marx, K., Grosse, I. & Stanley, E.: DNA Visual and Analytic Data Mining. <i>IEEE Visualization 1997</i> 1, 437-441 (1997).</p>
 </body> </html>

@@ -4,8 +4,10 @@
 <body>
 
 <h1>orngStat: Orange Statistics for Classifiers</h1>
+<index name="modules/performance of classifiers">
+<index name="classifiers/accuracy of">
 
-<P>This module contains various measures of quality, such as classification accuracy, ROC statistics and similar. Most functions require an argument named <code>res</code>, an instance of <code>ExperimentResults</code> as computed by functions from <a href="orngTest.htm">orngTest</a> and which contains classifications and probabilities obtained through cross-validation, leave one-out, testing on training or new examples...</P>
+<P>This module contains various measures of quality, such as classification accuracy, ROC statistics and similar. Most functions require an argument named <code>res</code>, an instance of <code><INDEX name="classes/ExperimentResults (in orngTest)">ExperimentResults</code> as computed by functions from <a href="orngTest.htm">orngTest</a> and which contains classifications and probabilities obtained through cross-validation, leave one-out, testing on training or new examples...</P>
 
 <P>To prepare some data for examples on this page, we shall load the voting data set (problem of predicting the congressman's party (republican, democrat) based on a selection of votes) and evaluate naive bayesian learner, classification trees and majority classifier using cross-validation. For examples requiring a multivalued class problem, we shall do the same with the vehicle data set (telling whether a vehicle described by the features extracted from a picture is a van, bus, or Opel or Saab car).</P>
 
@@ -32,6 +34,7 @@ resVeh = orngTest.crossValidation(learners, vehicle)
 <DL class="attributes">
 
 <DT>CA(res, reportSE=False)</DT>
+<index name="performance scores+classification accuracy">
 
 <DD><P>Computes classification accuracy, i.e. percentage of matches
 between predicted and actual class. The function returns a list of
@@ -53,9 +56,11 @@ classification accuracy and N is number of test examples.</P>
 </DD>
 
 <DT>AP(res, reportSE=False)</DT>
+<index name="performance scores+average probability of the correct class">
 <DD>Computes the average probability assigned to the correct class.</DD><P>
 
 <DT>BrierScore(res, reportSE=False)</DT>
+<index name="performance scores+Brier score">
 <DD>Computes the Brier's score, defined as the average (over test
 examples) of sum<SUB>x</SUB>(t(x)-p(x))<SUP>2</SUP>, where x is a
 class, t(x) is 1 for the correct class and 0 for the others, and p(x)
@@ -63,7 +68,8 @@ is the probability that the classifier assigned to the class
 x.</DD><P>
 
 <DT>IS(res, apriori=None, reportSE=False)</DT>
-<DD>Computes information scores as defined by Kononenko and Bratko
+<index name="performance scores+information score">
+<DD>Computes information score as defined by Kononenko and Bratko
 (1991). Argument 'apriori' gives the apriori class distribution; if it
 is omitted, the class distribution is computed from the actual classes
 of examples in res.</DD><P>
@@ -96,6 +102,7 @@ majrty  0.614   0.526   0.474   -0.000
 <P>Script <a href="statExamples.py">statExamples.py</a> contains another example that also prints out the standard errors.</P>
 
 <H2>Confusion Matrix</H2>
+<index name="performance scores+confusion matrix">
 
 <DL class="attributes">
 
@@ -168,6 +175,10 @@ Van's are clearly simple: 189 vans were classified as vans (we know this already
 </DD>
 
 <DT>sens(confm), spec(confm), PPV(confm), NPV(confm)</DT>
+<index name="performance scores+sensitivity">
+<index name="performance scores+specificity">
+<index name="performance scores+positive prediction value">
+<index name="performance scores+negative prediction value">
 
 <DD>With the confusion matrix defined in terms of positive and negative classes, you can also compute the sensitivity [TP/(TP+FN)], specificity [TN/(TN+FP)],
 positive predictive value [TP/(TP+FP)] and negative predictive value
@@ -193,6 +204,8 @@ for l in range(len(learners)):
 
 
 <H2>ROC Analysis</H2>
+<index name="performance scores+ROC analysis">
+<index name="performance scores+AUC">
 
 <P>ROC analysis was initially developed for a binary-like problems and there is no consensus on how to apply it in multi-class problems, nor do we know for sure how to do ROC analysis after cross validation and similar multiple sampling techniques. If you are interested in the area under the curve, function <code>AUC</code> will deal with those problems as specifically described below.</P>
 
@@ -312,6 +325,7 @@ AUC (for AROCFromCDT), and compare2AUCs (for compare2AROCs).</em></dd><p>
 
 <DL>
 <DT><B>McNemar(res)</B></DT>
+<index name="performance scores+McNemar test">
 <DD>Computes a triangular matrix with McNemar statistics for each pair of classifiers. The statistics is distributed by chi-square distribution with one degree of freedom; critical value for 5% significance is around 3.84.</DD><P>
 
 <DT><B>McNemarOfTwo(res, learner1, learner2)</B></DT>

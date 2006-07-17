@@ -8,10 +8,13 @@
 <P>This module contains miscellaneous useful functions for counting, criteria-based selections and similar.</P>
 
 <h2>Counters</h2>
+<index name="modules+counters">
+<index name="subsets generators">
 
 <P><code>orngMisc</code> contains a bunch of classes that generate sequences of various kinds.</P>
 
 <H3>BooleanCounter</H3>
+<index name="classes/BooleanCounter (in orngMisc)">
 
 <P>A class which represents a boolean counter. The constructor is given the number of bits and during the iteration the counter returns a list of that length with 0 and 1's in it.</P>
 
@@ -45,6 +48,7 @@
 
 
 <h3>LimitedCounter</h3>
+<index name="classes/LimitedCounter (in orngMisc)">
 
 <P>This class is similar to <code>BooleanCounter</code> except that the digits do not count from 0 to 1, but to the limits that are specified individually for each digit.</P>
 
@@ -71,6 +75,7 @@
 <P>The class can be used in a for-loop or by manually calling <code>next</code>, just as <code>BooleanCounter</code> above.</P>
 
 <h3>NondecreasingCounter</h3>
+<index name="classes/NondecreasingCounter (in orngMisc)">
 
 <P>Nondecreasing counter generates all non-decreasing integer sequences in which no numbers are skipped, that is, if <em>n</em> is in the sequence, the sequence also includes all numbers between 0 and <em>n</em>. For instance, [0, 0, 1, 0] is illegal since it decreases, and [0, 0, 2, 2] is illegal since it has 2 without having 1 first. Or, with an example</P>
 
@@ -89,6 +94,7 @@
 
 
 <h3>CannonicFuncCounter</h3>
+<index name="classes/CannonicFuncCounter (in orngMisc)">
 
 <P>Returns all sequences of a given length where no numbers are skipped (see above) and none of the generated sequence is equal to another if only the labels are changed. For instance, [0, 2, 2, 1] and [1, 0, 0, 2] are considered equivalent: if we take the former and replace 0 by 1, 2 by 0 and 1 by 2 we get the second list.</P>
 
@@ -121,6 +127,7 @@
 <P><code>orngMisc</code> provides a class that makes a random choice in such cases. Each new candidate is compared with the currently optimal one; it replaces the optimal if it is better, while if they are equal, one is chosen by random. The number of competing optimal candidates is stored, so in this random choice the probability to select the new candidate (over the current one) is <em>1/w</em>, where <code>w</code> is the current number of equal candidates, including the present one. One can easily verify that this gives equal chances to all candidates, independent of the order in which they are presented.</P>
 
 <h3>BestOnTheFly</h3>
+<index name="classes/BestOnTheFly (in orngMisc)">
 
 <p>A class which finds the optimal object in a sequence of objects. The class is fed the candidates one by one, and remembers the "winner". It can thus be used by methods that generate different "solutions" to a problem and need to select the optimal one, but do not want to store them all.</p>
 

@@ -3,6 +3,8 @@
 </HEAD>
 <body>
 <h1>orngLinProj: Orange LinProj module</h1>
+<index name="modules/linear projections">
+<index name="freeviz algorithm">
 
 <p>Module orngLinProj implements interface to FreeViz algorithm (<a href="http://www.ailab.si/idamap/idamap2005/papers/12%20Demsar%20CR.pdf">Demsar et al, 2005</a>) which finds a good two-dimensional projection of the given data, where the quality is defined by a separation of the data from different classes and the proximity of the examples from the same class. FreeViz would normally be used through a widget since it is primarily a method for graphical exploration of the data. About the only case where one would like to use this module directly is to tests the classification aspects of the method, that is, to verify the accuracy of the resulting kNN-like classifiers on a set of benchmark data sets.</p>
 
@@ -10,7 +12,7 @@
 
 <H2>Optimizer: FreeViz class</H2>
 
-<P>Class <CODE>FreeViz</CODE> contains an easy-to-use interface to the core of the method which is written in C++.</P>
+<P>Class <CODE><INDEX name="classes/FreeViz (in orngLinProj)">FreeViz</CODE> contains an easy-to-use interface to the core of the method which is written in C++.</P>
 
 <p class=section>Attributes</P>
 <DL class=attributes>
@@ -48,7 +50,7 @@
 
 <H2>Learner and Classifier</H2>
 
-<p><tt>FreeVizLearner</tt> is an ordinary learner: when given the data, it creates an instance of <tt>FreeVizClassifier</tt> with the optimal separation for the learning data. The classifier then uses kNN to classify new examples projected into the optimized two-dimensional projection.
+<p><tt><INDEX name="classes/FreeVizLearner (in orngLinProj)">FreeVizLearner</tt> is an ordinary learner: when given the data, it creates an instance of <tt><INDEX name="classes/FreeVizClassifier (in orngLinProj)">FreeVizClassifier</tt> with the optimal separation for the learning data. The classifier then uses kNN to classify new examples projected into the optimized two-dimensional projection.
 
 <h2>References</h2>
 

@@ -4,7 +4,7 @@ import re, sys, os
 
 #execfile("constants.py")
 
-toCopy = ["ofb", "reference", "modules", "datasets", "style.css", "Orange.hs"]
+toCopy = ["ofb", "reference", "modules", "datasets", "style.css"]
 
 class TOCEntry:
     def __init__(self, title, url, dummy = 0):

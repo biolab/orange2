@@ -3,7 +3,7 @@
 </HEAD>
 <body>
 <h1>orngTest: Orange Module for Sampling and Testing</h1>
-<br>
+<index name="sampling techniques">
 
 <p><CODE>orngTest</CODE> is Orange module for testing learning
 algorithms. It includes functions for data sampling and splitting, and
@@ -184,14 +184,14 @@ strat = ..., pps = [])</DT>
 </XMP>
 <P>Note that Python allows naming the arguments; instead of "<CODE>100</CODE>" you can use "<CODE>times = 100</CODE>" to increase the clarity (not so with keyword arguments, such as <CODE>storeClassifiers</CODE>, <CODE>randseed</CODE> or <CODE>verbose</CODE> that must always be given with a name, as shown in examples above).</DD>
 
-<DT>leaveOneOut(learners, examples, pps = [])</DT>
+<DT><INDEX>leaveOneOut</INDEX>(learners, examples, pps = [])</DT>
 <DD>Performs a leave-one-out experiment with the given list of
 learners and examples. This is equivalent to performing
 len(examples)-fold cross validation. Function accepts additional
 keyword arguments for preprocessing, storing classifiers and verbose
 output.</DD>
 
-<DT>crossValidation(learners, examples, folds = 10, strat = ..., pps = [])</DT>
+<DT><INDEX>crossValidation</INDEX>(learners, examples, folds = 10, strat = ..., pps = [])</DT>
 <DD>Performs a cross validation with the given number of folds.</DD>
 
 
@@ -229,7 +229,7 @@ for i, p in enumerate(prop):
 </DD>
 
 
-<DT>learningCurve(learners, examples, cv = None, pick = None,
+<DT><INDEX>learningCurve</INDEX>(learners, examples, cv = None, pick = None,
 proportions = ..., pps=[])</DT>
 
 <DD>Computes learning curves using a procedure recommended by Salzberg
@@ -303,7 +303,7 @@ for i, p in enumerate(prop):
 
 <H3>TestedExample</H3>
 
-<p>TestedExample stores predictions of different classifiers for a single testing example.</p>
+<p><INDEX name="classes/TestedExample (in orngTest)">TestedExample stores predictions of different classifiers for a single testing example.</p>
 
 <p class=section>Attributes</p>
 <DL class=attributes>
@@ -339,7 +339,7 @@ for i, p in enumerate(prop):
 
 <H3>ExperimentResults</H3>
 
-<p>Stores results of one or more repetitions of some test (cross
+<p><INDEX name="classes/ExperimentResults (in orngTest)">ExperimentResults stores results of one or more repetitions of some test (cross
 validation, repeated sampling...) under the same circumstances.</p>
 
 <p class=section>Attributes</p>

@@ -3,6 +3,9 @@
 </HEAD>
 <body>
 <h1>orngCI: Orange Constructive Induction Module</h1>
+<index name="modules+constructive induction (CI)">
+<index name="classifiers+function decomposition">
+<index name="feature construction">
 
 <p>Module orngCI implements classes and function that support
 constructive induction (CI). It includes minimal-complexity function
@@ -50,7 +53,7 @@ function decomposition. Its most crucial parameter, <em>m</em>, is
 is an attribute of an m-estimate based column assessor component of
 the column quality assessor based algorithm for column clustering.  To
 save the user from having to remember this, <CODE>orngCI</CODE> offers
-its own class <CODE>FeatureByIM</CODE>. Now, if <CODE>fim</CODE> is an
+its own class <CODE><INDEX name="classes/FeatureByIM (in orngCI)">FeatureByIM</CODE>. Now, if <CODE>fim</CODE> is an
 instance of <CODE>orngCI.FeatureByIM</CODE> the user needs to set
 <CODE>fim.m</CODE>. Before the actual feature construction takes
 place, <CODE>orngCI.FeatureByIM</CODE> constructs an appropriate
@@ -132,7 +135,7 @@ operator expects two or three arguments: examples, bound-attributes
 and, optionally an id of a weight meta attribute. It returns a tuple
 containing the attribute and its quality estimation. This is the same
 for all feature constructors in <code>orngCI</code>, although some may
-ignore some arguments or return useless quality assesments.</p>
+ignore some arguments or return useless quality assessments.</p>
 
 <p>The method of quality estimation depends upon the algorithm used -
 it can be a decrease of error, an increase of impurity, ets. Qualities
@@ -142,7 +145,7 @@ numbers mean better attributes. If the measure of quality is negated
 (ie. low numbers meaning better attributes), they will have a negative
 sign.</P>
 
-<P>The famous Monk 1 dataset (Thrun et al, 1991) has the goal concept <EM>y := a=b or e=1</EM>. When joining attributes 'a' and 'b', the new attribute should express equality of a and b. Let us see if the minimal-complexity function decomposition can find the appropriate function.</P>
+<P>The famous Monk 1 data set (Thrun et al, 1991) has the goal concept <EM>y := a=b or e=1</EM>. When joining attributes 'a' and 'b', the new attribute should express equality of a and b. Let us see if the minimal-complexity function decomposition can find the appropriate function.</P>
 
 <xmp class="code">>>> import orange, orngCI
 >>> data = orange.ExampleTable("monk2")
@@ -237,7 +240,7 @@ EnumVariable 'b'
 
 <H3>FeatureByMinComplexity</H3>
 
-<P>FeatureByMinComplexity constructs features using a modified algorithm of Ashenhurst and Curtis, as described by Zupan (1997, 1998). It has two attributes.</P>
+<P><INDEX name="classes/FeatureByMinComplexity (in orngCI)">FeatureByMinComplexity constructs features using a modified algorithm of Ashenhurst and Curtis, as described by Zupan (1997, 1998). It has two attributes.</P>
 
 <DL>
 <DT>colorIG</DT><DD> defines the component that colors the graph. Since only one class (<CODE>orange.ColorIG_MCF</CODE>) is available, there is no point in changing this (more accurately, there is nothing to change it to).</DD>
@@ -248,7 +251,7 @@ EnumVariable 'b'
 
 <H3>FeatureByIM</H3>
 
-<P>This class implements and extends Zupan's (1997, 1998) method for minimal-error decomposition. It is analogous to minimal-complexity decomposition. While minimal-complexity decomposition supposes that the dataset is noise-free, minimal-error decomposition can also handle noisy data.</p>
+<P>Class <INDEX name="classes/FeatureByIM (in orngCI)">FeatureByIM implements and extends Zupan's (1997, 1998) method for minimal-error decomposition. It is analogous to minimal-complexity decomposition. While minimal-complexity decomposition supposes that the dataset is noise-free, minimal-error decomposition can also handle noisy data.</p>
 
 <p>The algorithm builds an incompatibility matrix (also called partition matrix) and merges the columns until a stopping criterion is reached. In Zupan's method, columns are compared by how the merge would affect the average m-error estimate over elements of the matrix. Merging is stopped when the error stops decreasing. In Orange, different similarity measures and stopping criteria can be used.</P>
 
@@ -350,7 +353,7 @@ Perfect. We could add "binary=1" to the call, but it is obviously not needed. Va
 
 <H3>FeatureByKramer</H3>
 
-<p><code>FeatureByKramer</code> implements Kramer's algorithm for feature construction (Kramer, 1994). <P>Basically, it computes a distribution of classes for each combination of values of bound attributes and merges them, just like the minimal-error decomposition merges columns of incompatibility matrix - and hopefully. In case of Monk 1, it extract a 0:36 distribution for combinations 1-1, 2-2 and 3-3, and 36:12 for other values. It is straightforward for any clustering algorithm to see that the former three values belong to one and the latter three to another group.</p>
+<p><code><INDEX name="classes/FeatureByKramer (in orngCI)">FeatureByKramer</code> implements Kramer's algorithm for feature construction (Kramer, 1994). <P>Basically, it computes a distribution of classes for each combination of values of bound attributes and merges them, just like the minimal-error decomposition merges columns of incompatibility matrix - and hopefully. In case of Monk 1, it extract a 0:36 distribution for combinations 1-1, 2-2 and 3-3, and 36:12 for other values. It is straightforward for any clustering algorithm to see that the former three values belong to one and the latter three to another group.</p>
 
 <p>This method is somewhat similar to minimal-error decomposition. If you sum all rows of incompability matrix to a single row, you get a list of distributions corresponding to combinations of value of bound attributes. And that's exactly the data that Kramer's algorithm operates on. The remaining differences between the algorithms are only in the choice of components; while minimal-error estimation uses a change of m-error estimate as a measure of distance between two values of the new attribute, Kramer's algorithm uses a special impurity measure (which can be, as Kramer himself states, replaced by any other impurity measure or even by some measure of similarity between two distributions).</p>
 
@@ -425,7 +428,7 @@ m=10.0: 1.334 <1-1+2-2+3-3, 3-1+1-2+2-1+2-3+3-2+1-3>
 
 <h3>FeatureByRandomMerge</h3>
 
-<p><code>FeatureByRandomMerge</code> constructs features with the given number of values. Grouping of combinations of bound values is random and the estimated quality of the feature is a random value between 0 and 100, inclusive. The class is useful for comparisons - if a "real" method of constructive induction does not outperform this, it is of no use.</p>
+<p><code><INDEX name="classes/FeatureByRandomMerge (in orngCI)">FeatureByRandomMerge</code> constructs features with the given number of values. Grouping of combinations of bound values is random and the estimated quality of the feature is a random value between 0 and 100, inclusive. The class is useful for comparisons - if a "real" method of constructive induction does not outperform this, it is of no use.</p>
 
 <DL>
 <DT>n</dt><dd>Sets the number of values for the new feature</dd></dl>
@@ -444,7 +447,7 @@ m=10.0: 1.334 <1-1+2-2+3-3, 3-1+1-2+2-1+2-3+3-2+1-3>
 
 <h3>FeatureByCartesianProduct</h3>
 
-<p><code>FeatureByRandomMerge</code> constructs an attribute which presents a Cartesian product of bound attributes. Its quality is estimated by a given attribute quality estimator of type <code>orange.MeasureAttribute</code>. If none is given, all qualities are 0.</p>
+<p><code><INDEX name="classes/FeatureByCartesianProduct (in orngCI)">FeatureByCartesianProduct</code> constructs an attribute which presents a Cartesian product of bound attributes. Its quality is estimated by a given attribute quality estimator of type <code>orange.MeasureAttribute</code>. If none is given, all qualities are 0.</p>
 
 <DL>
 <DT>measure</dt><dd>The measure of attribute quality.</dd></dl>
@@ -461,7 +464,7 @@ m=10.0: 1.334 <1-1+2-2+3-3, 3-1+1-2+2-1+2-3+3-2+1-3>
 
 <h3>FeatureGenerator</h3>
 
-<p><code>orngCI.featureGenerator</code> is a class that constructs a list of features using the given feature construction algorithm. Besides, you can also specify a subset generator - an object that generates bound sets.</p>
+<p><code>orngCI.<INDEX name="classes/FeatureGenerator (in orngCI)">FeatureGenerator</code> is a class that constructs a list of features using the given feature construction algorithm. Besides, you can also specify a subset generator - an object that generates bound sets.</p>
 
 <dl>
 <dt>featureInducer</dt><dd>The object that builds features from given examples and sets of bound attributes. You can use any of the above feature inducers for this purpose. This attribute needs to be specified; no default is provided.</dd>
@@ -491,7 +494,7 @@ m=10.0: 1.334 <1-1+2-2+3-3, 3-1+1-2+2-1+2-3+3-2+1-3>
 
 <h3>StructureInducer</h3>
 
-<P><CODE>StructureInducer</CODE> induces a hierarchy of attributes as proposed by Zupan et al (1998). At each step, it induces attributes from subset of the current attribute set. If any attributes are found, one of them is selected, inserted into domain and its bound attributes are removed. This is the repeated until there is only one attribute left or the selected attribute includes all attributes as bound set (<EM>i.e.</EM> if new attributes are induced from pairs of existing attributes, this would stop the induction when there are only two attributes left. The result of calling <CODE>StructureInducer</CODE> is a function that computes the class attribute from the remaining attributes. Through using functions <CODE>boundset()</CODE> and <CODE>getValueFrom</CODE> it is possible to descend down through hierarchy.</P>
+<P><CODE><INDEX name="classes/StructureInducer (in orngCI)">StructureInducer</CODE> induces a hierarchy of attributes as proposed by Zupan et al (1998). At each step, it induces attributes from subset of the current attribute set. If any attributes are found, one of them is selected, inserted into domain and its bound attributes are removed. This is the repeated until there is only one attribute left or the selected attribute includes all attributes as bound set (<EM>i.e.</EM> if new attributes are induced from pairs of existing attributes, this would stop the induction when there are only two attributes left. The result of calling <CODE>StructureInducer</CODE> is a function that computes the class attribute from the remaining attributes. Through using functions <CODE>boundset()</CODE> and <CODE>getValueFrom</CODE> it is possible to descend down through hierarchy.</P>
 
 <DL>
 <DT>featureInducer</DT>
@@ -528,8 +531,9 @@ y/2 <0, 1>
 <h2>Learning</h2>
 
 <h3>HINT</h3>
+<index name="classifiers+HINT">
 
-<P>Class <CODE>HINT</CODE> can be used as a <CODE>Learner</CODE>.</P>
+<P>Class <CODE><INDEX name="classes/HINT (in orngCI)">HINT</CODE> can be used as a <CODE>Learner</CODE>.</P>
 
 <P>Basically, <CODE>HINT</CODE> is just a wrapper around <CODE>StructureInducer</CODE>. The user can specify the type of decomposition (minimal complexity, minimal error) and the size of bound sets. Alternatively, <CODE>HINT</CODE> can use defaults. When minimal error decomposition is used, <CODE>HINT</CODE> fits parameter <EM>m</EM> for error estimation by performing a 5-fold cross validation to find the value that gives the maximal classification accuracy.</P>
 
@@ -546,7 +550,7 @@ y/2 <0, 1>
 
 <H3>RemoveAttributeRedundancies</H3>
 
-<P>A class for removing (merging) redundant attribute values. The class works as proposed by Zupan (1997). First it ranks the attributes according to some measure of quality (ReliefF, by default). Then it induces a new attribute from each attribute, starting with the worst ranked. If the induced attribute is the same as the original, nothing happens. If some values were merged, the original attribute is replaced with the induced. If all values are merged into one, the attribute is redundant and is removed.</P>
+<P><INDEX name="classes/RemoveAttributeRedundancies (in orngCI)">RemoveAttributeRedundancies is a class for removing (merging) redundant attribute values. The class works as proposed by Zupan (1997). First it ranks the attributes according to some measure of quality (ReliefF, by default). Then it induces a new attribute from each attribute, starting with the worst ranked. If the induced attribute is the same as the original, nothing happens. If some values were merged, the original attribute is replaced with the induced. If all values are merged into one, the attribute is redundant and is removed.</P>
 
 <DL>
 <DT>m</DT>
