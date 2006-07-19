@@ -61,10 +61,9 @@ class OWAssociationRulesViewer(OWWidget):
 
     def displayRules(self):
         """ Display rules as a tree. """
+        self.treeRules.clear()
+        self.wrlist = []
         if self.rules:
-            self.treeRules.clear()
-            self.wrlist = []
-            
             item0 = QListViewItem(self.treeRules,"")        #the first row is different
             
             rulesLC=[]
