@@ -18,20 +18,21 @@ class OWAssociationRules(OWWidget):
         self.outputs = [("Association Rules", orange.AssociationRules)]
 
         self.settingsList = ["useSparseAlgorithm", "classificationRules", "minSupport", "minConfidence", "maxRules"]
-        self.loadSettings()
                 
-        self.dataset = None
-
         self.useSparseAlgorithm = 0
         self.classificationRules = 0
+        self.minSupport = 40
+        self.minConfidence = 20
+        self.maxRules = 10000
+        self.loadSettings()
+
+        self.dataset = None
+
         box = OWGUI.widgetBox(self.space, "Algorithm")
         self.cbSparseAlgorithm = OWGUI.checkBox(box, self, 'useSparseAlgorithm', 'Use algorithm for sparse data', tooltip="Use original Agrawal's algorithm", callback = self.checkSparse)
         self.cbClassificationRules = OWGUI.checkBox(box, self, 'classificationRules', 'Induce classification rules', tooltip="Induce classifaction rules")
         OWGUI.separator(self.space, 0, 8)
 
-        self.minSupport = 20
-        self.minConfidence = 20
-        self.maxRules = 10000
         box = OWGUI.widgetBox(self.space, "Pruning")
         OWGUI.widgetLabel(box, "Minimal support [%]")
         OWGUI.hSlider(box, self, 'minSupport', minValue=10, maxValue=100, ticks=10, step = 1)
@@ -51,17 +52,24 @@ class OWAssociationRules(OWWidget):
 
 
     def generateRules(self):
+        self.error()
         if self.dataset:
-            num_steps = 20
-            for i in range(num_steps):
-                build_support = 1 - float(i) / num_steps * (1 - self.minSupport/100.0)
-                if self.useSparseAlgorithm:
-                    rules = orange.AssociationRulesSparseInducer(self.dataset, support = build_support, confidence = self.minConfidence/100.)
-                else:
-                    rules = orange.AssociationRulesInducer(self.dataset, support = build_support, confidence = self.minConfidence/100., classificationRules = self.classificationRules)
-                if len(rules) >= self.maxRules:
-                    break
-            self.send("Association Rules", rules)
+            try:
+                num_steps = 20
+                for i in range(num_steps):
+                    build_support = 1 - float(i) / num_steps * (1 - self.minSupport/100.0)
+                    if self.useSparseAlgorithm:
+                        rules = orange.AssociationRulesSparseInducer(self.dataset, support = build_support, confidence = self.minConfidence/100.)
+                    else:
+                        rules = orange.AssociationRulesInducer(self.dataset, support = build_support, confidence = self.minConfidence/100., classificationRules = self.classificationRules)
+                    if len(rules) >= self.maxRules:
+                        break
+                self.send("Association Rules", rules)
+            except orange.KernelException, (errValue):
+                self.error(str(errValue))
+                self.send("Association Rules", None)
+        else:
+            self.send("Association Rules", None)
 
     def checkSparse(self):
         state = self.cbSparseAlgorithm.isChecked()
