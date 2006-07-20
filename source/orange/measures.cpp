@@ -445,11 +445,11 @@ void TMeasureAttribute::checkClassTypeExc(const int &varType)
 {
   if (varType==TValue::INTVAR) {
     if (!handlesDiscrete)
-      raiseError("cannot evaluate discrete attributes");
+      raiseError("cannot work with discrete classes");
   }
   else if (varType==TValue::FLOATVAR) {
     if (!handlesContinuous)
-      raiseError("cannot evaluate continuous attributes");
+      raiseError("cannot work with continuous classes");
   }
 }
 
