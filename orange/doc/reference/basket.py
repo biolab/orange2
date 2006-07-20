@@ -15,3 +15,9 @@ print "Sentences in 'inquisition'"
 data = orange.ExampleTable("inquisition2")
 for ex in data:
     print ex
+
+example = data[4]
+print example.getmetas()
+print example.getmetas(int)
+print example.getmetas(str)
+print example.getmetas(orange.Variable)

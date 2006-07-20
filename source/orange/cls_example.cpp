@@ -378,6 +378,55 @@ PyObject *Example_getmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id 
 }
 
 
+PyObject *Example_getmetas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "([key-type]) -> dictionary with a copy of example's meta attributes")
+{
+  PyTRY
+    PyTypeObject *keytype = &PyInt_Type;
+    if (!PyArg_ParseTuple(args, "|O:Example.getmetas", &keytype))
+      return NULL;
+
+    if ((keytype != &PyInt_Type) && (keytype != &PyString_Type) && (keytype != (PyTypeObject *)&PyOrVariable_Type))
+      PYERROR(PyExc_TypeError, "invalid key type (should be nothing, int, str, or orange.Variable)", NULL);
+      
+    PExample ex = PyExample_AS_Example(pex);
+    const TDomain &dom = ex->domain.getReference();
+
+    PyObject *res = PyDict_New();
+
+    try {
+      const_ITERATE(TMetaValues, mi, ex->meta) {
+        PyObject *key;
+        PVariable variable = dom.getMetaVar(mi->first, false);
+
+        if (keytype == &PyInt_Type)
+          key = PyInt_FromLong(mi->first);
+        else {
+          if (!variable)
+            continue;
+          if (keytype == &PyString_Type)
+            key = PyString_FromString(variable->name.c_str());
+          else
+            key = WrapOrange(variable);
+        }
+
+        PyObject *value = Value_FromVariableValue(variable, mi->second);
+        PyDict_SetItem(res, key, value);
+        Py_DECREF(key);
+        Py_DECREF(value);
+      }
+
+      return res;
+    }
+    catch (...) {
+      Py_DECREF(res);
+      throw;
+    }
+
+  PyCATCH
+
+}
+
+
 PyObject *Example_hasmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id | var) -> bool")
 { PyTRY
     PVariable var;
