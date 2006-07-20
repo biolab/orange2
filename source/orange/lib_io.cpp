@@ -292,8 +292,11 @@ PyObject *saveC45(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, e
     if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
   
+    if (!gen->domain->classVar)
+      PYERROR(PyExc_SystemError, "C4.5 file cannot store classless data sets.", PYNULL);
+
     if (gen->domain->classVar->varType!=TValue::INTVAR)
-      PYERROR(PyExc_SystemError, "Class in C4.5 must be discrete.", PYNULL);
+      PYERROR(PyExc_SystemError, "Class in C4.5 file must be discrete.", PYNULL);
 
     const char *oldExtension = getExtension(filename);
 
@@ -326,8 +329,11 @@ PyObject *saveAssistant(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filen
     if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
   
+    if (!gen->domain->classVar)
+      PYERROR(PyExc_SystemError, "Assistant file cannot store classless data sets.", PYNULL);
+
     if (gen->domain->classVar->varType!=TValue::INTVAR)
-      PYERROR(PyExc_SystemError, "Class in assistant must be discrete.", PYNULL);
+      PYERROR(PyExc_SystemError, "Class in Assistant format must be discrete.", PYNULL);
 
     FILE *ostr = fopen(("asdo" + string(filename)+".dat").c_str(), "wt");
     if (!ostr) {
@@ -367,6 +373,9 @@ PyObject *saveRetis(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename,
     if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
   
+    if (!gen->domain->classVar)
+      PYERROR(PyExc_SystemError, "Retis file cannot store classless data sets.", PYNULL);
+
     if (gen->domain->classVar->varType!=TValue::FLOATVAR)
       PYERROR(PyExc_SystemError, "Class in Retis domain must be continuous.", PYNULL);
 

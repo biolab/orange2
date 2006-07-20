@@ -166,9 +166,12 @@ bool writeValues(FILE *file, PVariable var, bool justDiscrete=false)
 
 void c45_writeDomain(FILE *file, PDomain dom)
 { 
+  if (!dom->classVar)
+    raiseErrorWho("c45_writeDomain", "C4.5 format cannot store data sets without a class attribute");
+
   fprintf(file, "| Names file for %s\n", dom->classVar->name.c_str());
   if (!writeValues(file, dom->classVar))
-     fprintf(file, "| Error: class variable %s is not discrete\n", dom->classVar->name.c_str());
+    raiseErrorWho("c45_writeDomain", "C4.5 format cannot store a data set with non-discrete class attribute");
   
   const_PITERATE(TVarList, vi, dom->attributes) {
     fprintf(file, "%s: ", (*vi)->name.c_str());
