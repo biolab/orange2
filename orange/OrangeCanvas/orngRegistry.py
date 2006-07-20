@@ -51,6 +51,7 @@ class WidgetsToXML:
             name        = self.GetCustomText(data, '<name>.*</name>')
             #category    = self.GetCustomText(data, '<category>.*</category>')
             author      = self.GetCustomText(data, '<author>.*</author>')
+            contact     = self.GetCustomText(data, '<contact>.*</contact>') or ""
             icon        = self.GetCustomText(data, '<icon>.*</icon>')
             priorityStr = self.GetCustomText(data, '<priority>.*</priority>')
             if priorityStr == None:    priorityStr = "5000"
@@ -82,6 +83,7 @@ class WidgetsToXML:
             widget.setAttribute("icon", icon)
             widget.setAttribute("priority", priorityStr)
             widget.setAttribute("author", author)
+            widget.setAttribute("contact", contact)
             
             # description            
             if (description != ""):
