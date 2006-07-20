@@ -239,7 +239,7 @@ void TEnumVariable::addValue(const string &val)
       createValuesTree();
 
     map<string, int>::iterator lb = valuesTree.lower_bound(val);
-    if (lb->first != val) {
+    if ((lb != valuesTree.end()) && (lb->first != val)) {
       // watch the order!
       valuesTree.insert(lb, make_pair(val, values->size()));
       values->push_back(val);
@@ -289,7 +289,7 @@ void TEnumVariable::str2val_add(const string &valname, TValue &valu)
       createValuesTree();
 
     map<string, int>::iterator lb = valuesTree.lower_bound(valname);
-    if (lb->first == valname)
+    if ((lb != valuesTree.end()) && (lb->first == valname))
       valu = TValue(lb->second);
     else if (!str2special(valname, valu)) {
       valuesTree.insert(lb, make_pair(valname, noValues));
