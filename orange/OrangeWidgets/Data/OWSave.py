@@ -15,6 +15,7 @@
 from OWWidget import *
 import OWGUI
 import re, os.path
+from exceptions import Exception
 
 class OWSave(OWWidget):
     settingsList=["recentFiles","selectedFileName"]
@@ -52,7 +53,8 @@ class OWSave(OWWidget):
     savers = {".txt": orange.saveTxt, ".tab": orange.saveTabDelimited,
               ".names": orange.saveC45, ".test": orange.saveC45, ".data": orange.saveC45,
               ".rda": orange.saveRetis, ".rdo": orange.saveRetis,
-              ".csv": orange.saveCsv}
+              ".csv": orange.saveCsv#, ".dat": orange.saveAssistant
+              }
     
     re_filterExtension = re.compile(r"\(\*(?P<ext>\.[^ )]+)")
 
@@ -67,7 +69,7 @@ class OWSave(OWWidget):
             startfile = "."
 
         dlg = QFileDialog(startfile,
-                          'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
+                          'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nRetis files (*.rda *.rdo)\nAll files(*.*)', #\nAssistant files (*.dat)
                           None, "Orange Data File", True)
         dlg.exec_loop()
 
@@ -90,8 +92,15 @@ class OWSave(OWWidget):
         if self.data:
             filename = self.recentFiles[self.filecombo.currentItem()]
             fileExt = lower(os.path.splitext(filename)[1])
-            if fileExt == "": fileExt = ".tab"
-            self.savers[fileExt](filename, self.data)
+            if fileExt == "":
+                fileExt = ".tab"
+            try:
+                self.savers[fileExt](filename, self.data)
+            except Exception, (errValue):
+                self.error(str(errValue))
+                return
+            self.error()
+            
 
 
     def addFileToList(self,fn):

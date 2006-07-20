@@ -143,7 +143,16 @@ class OWITree(OWClassificationTreeViewer):
             return
 
         self.attrsCombo.clear()
-        self.data = data
+
+        if data and not data.domain.classVar:
+            self.error("This data set has no class.")
+            self.data = None
+        elif data and data.domain.classVar.varType != orange.VarTypes.Discrete:
+            self.error("This widget only works with discrete classes.")
+            self.data = None
+        else:
+            self.error()
+            self.data = data
         if self.data:
             for attr in data.domain.attributes:
                 self.attrsCombo.insertItem(attr.name)

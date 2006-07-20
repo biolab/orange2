@@ -8,6 +8,7 @@
 
 from OWWidget import *
 import OWGUI
+from exceptions import Exception
 
 class OWC45Tree(OWWidget):
     settingsList = ["name",
@@ -103,14 +104,29 @@ class OWC45Tree(OWWidget):
 
         
     def learn(self):
+        self.error()
         if self.data and self.learner:
-            self.classifier = self.learner(self.data)
-            self.classifier.name = self.name
-            self.send("Classifier", self.classifier)
-            if self.convertToOrange:
-                self.send("Classification Tree", self.classifier)
+            if not self.data.domain.classVar:
+                self.error("This data set has no class.")
+                self.classifier = None
+            elif self.data.domain.classVar.varType != orange.VarTypes.Discrete:
+                self.error("This algorithm only works with discrete classes.")
+                self.classifier = None
             else:
-                self.send("C45 Tree", self.classifier)
+                try:
+                    self.classifier = self.learner(self.data)
+                    self.classifier.name = self.name
+                except Exception, (errValue):
+                    self.error(str(errValue))
+                    self.classifier = None
+        else:
+            self.classifier = None
+
+        self.send("Classifier", self.classifier)
+        if self.convertToOrange:
+            self.send("Classification Tree", self.classifier)
+        else:
+            self.send("C45 Tree", self.classifier)
 
 ##############################################################################
 # Test the widget, run from DOS prompt

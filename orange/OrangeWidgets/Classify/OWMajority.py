@@ -8,6 +8,7 @@
 
 from OWWidget import *
 import OWGUI
+from exceptions import Exception
 
 class OWMajority(OWWidget):
     settingsList = ["name"]
@@ -38,10 +39,20 @@ class OWMajority(OWWidget):
         self.send("Learner", self.learner)
 
     def cdata(self,data):
+        if data and not data.domain.classVar:
+            self.error("This data set has no class")
+            data = None
+        else:
+            self.error("")
+
         self.data = data
         if data:
-            self.classifier = self.learner(data)
-            self.classifier.name = self.name
+            try:
+                self.classifier = self.learner(data)
+                self.classifier.name = self.name
+            except Exception, (errValue):
+                self.classifier = None
+                self.error(str(errValue))
         else:
             self.classifier = None
         self.send("Classifier", self.classifier)

@@ -77,7 +77,7 @@ class OWClassificationTreeViewer(OWWidget):
         self.infBox = QVGroupBox(self.controlArea)
         self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         self.infBox.setTitle('Tree Size Info')
-	self.infoa = QLabel('No tree.', self.infBox)
+        self.infoa = QLabel('No tree.', self.infBox)
         self.infob = QLabel('', self.infBox)
 
         # list view
@@ -177,7 +177,13 @@ class OWClassificationTreeViewer(OWWidget):
     # slots: handle input signals        
         
     def ctree(self, tree):
-        self.tree = tree
+        if tree and (not tree.classVar or tree.classVar.varType != orange.VarTypes.Discrete):
+            self.error("This viewer only shows trees with discrete classes.\nThere is another viewer for regression trees")
+            self.tree = None
+        else:
+            self.error()
+            self.tree = tree
+            
         self.setTreeView()
 
         if tree:

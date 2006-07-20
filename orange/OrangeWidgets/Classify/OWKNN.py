@@ -8,6 +8,7 @@
 
 from OWWidget import *
 import OWGUI
+from exceptions import Exception
 
 class OWKNN(OWWidget):
     settingsList = ["name", "k", "metrics", "ranks", "normalize", "ignoreUnknowns"]
@@ -62,7 +63,12 @@ class OWKNN(OWWidget):
 
 
     def cdata(self,data):
-        self.data=data
+        if data and not data.domain.classVar:
+            self.error("This data set has no class")
+            self.data = None
+        else:
+            self.error("")
+            self.data = data
         self.setLearner()
 
 
@@ -72,6 +78,7 @@ class OWKNN(OWWidget):
         distconst.normalize = self.normalize
         self.learner = orange.kNNLearner(k = self.k, rankWeight = self.ranks, distanceConstructor = distconst)
         self.learner.name = self.name
+
         self.send("Learner", self.learner)
 
         self.learn()
@@ -79,8 +86,12 @@ class OWKNN(OWWidget):
 
     def learn(self):
         if self.data and self.learner:
-            self.classifier = self.learner(self.data)
-            self.classifier.name = self.name
+            try:
+                self.classifier = self.learner(self.data)
+                self.classifier.name = self.name
+            except Exception, (errValue):
+                self.classifier = None
+                self.error(str(errValue))
             self.send("KNN Classifier", self.classifier)
 
 ##############################################################################

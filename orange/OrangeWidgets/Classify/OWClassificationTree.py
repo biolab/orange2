@@ -8,6 +8,7 @@
 
 from OWWidget import *
 import orngTree, OWGUI
+from exceptions import Exception
 
 class OWClassificationTree(OWWidget):
     settingsList = ["name",
@@ -93,10 +94,27 @@ class OWClassificationTree(OWWidget):
                                    
         self.learner.name = self.name
         self.send("Learner", self.learner)
-        if self.data <> None:
-            self.classifier = self.learner(self.data)
-            self.classifier.name = self.name
-            self.send("Classification Tree", self.classifier)
+
+        self.error()
+        if self.data:
+            if not self.data.domain.classVar:
+                self.error("This data set has no class.")
+                self.classifier = None
+            elif self.data.domain.classVar.varType != orange.VarTypes.Discrete:
+                self.error("This algorithm only works with discrete classes.\nThere is another algorithm for regression classes.")
+                self.classifier = None
+            else:
+                try:
+                    self.classifier = self.learner(self.data)
+                    self.classifier.name = self.name
+                except Exception, (errValue):
+                    self.error(str(errValue))
+                    self.classifier = None
+        else:
+            self.classifier = None
+
+        self.send("Classification Tree", self.classifier)
+
 
     def measureChanged(self):
         relief = self.estim == 3

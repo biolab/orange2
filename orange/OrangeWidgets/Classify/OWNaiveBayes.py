@@ -15,6 +15,7 @@
 
 from OWWidget import *
 import OWGUI, orange
+from exceptions import Exception
 
 ##############################################################################
 
@@ -145,11 +146,10 @@ class OWNaiveBayes(OWWidget):
             try:
                 self.classifier = self.learner(self.data)
                 self.classifier.setattr("data", self.data)
-            except orange.KernelException, (errValue):
+            except Exception, (errValue):
                 self.classifier = None
+                self.send("Naive Bayesian Classifier", self.classifier)
                 self.error("Naive Bayes error:"+str(errValue))
-#                QMessageBox("Naive Bayes error:", str(errValue), QMessageBox.Warning,
-#                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
                 return            
             self.classifier.name = self.name
             self.send("Naive Bayesian Classifier", self.classifier)
@@ -157,6 +157,15 @@ class OWNaiveBayes(OWWidget):
 
     # handles input signal
     def cdata(self,data):
+        if data and not data.domain.classVar:
+            self.error("This data set has no class.")
+            data = None
+        elif data and data.domain.classVar.varType != orange.VarTypes.Discrete:
+            self.error("This widget only works with discrete classes.")
+            data = None
+        else:
+            self.error()
+
         self.data = data
         if data:
             self.setLearner()
