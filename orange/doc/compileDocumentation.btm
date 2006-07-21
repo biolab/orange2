@@ -1,8 +1,0 @@
-cd ..\doc
-python htmlparser.py
-cd processed
-"C:\Program Files\HTML Help Workshop\hhc.exe" orange.hhp
-cd ..
-copy processed\orange.chm ..\download
-del /fsykx processed
-

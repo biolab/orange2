@@ -8,7 +8,7 @@
 
 <P>Classifiers and learners can be written in Python.</P>
 
-<P>You can often program them as classes or functions written entirely in Python and independent from Orange, as shown in  <A href="..\ofb\c_nb_disc.htm">Orange for Beginners</A>. Such classes can participate, for instance, in the common evaluation functions like those available in modules <CODE>orngTest</CODE> and <CODE>orngStat</CODE>.</P>
+<P>You can often program them as classes or functions written entirely in Python and independent from Orange, as shown in  <A href="../ofb/c_nb_disc.htm">Orange for Beginners</A>. Such classes can participate, for instance, in the common evaluation functions like those available in modules <CODE>orngTest</CODE> and <CODE>orngStat</CODE>.</P>
 
 <P>On the other hand, these classes can't be used as components for pure C++ classes. For instance, <CODE>TreeLearner</CODE>'s attribute <CODE>nodeLearner</CODE> should contain a (wrapped) C++ object derived from <CODE>Learner</CODE>, such as <CODE>MajorityLearner</CODE> or <CODE>BayesLearner</CODE>, and <CODE>Variables</CODE>'s <CODE>getValueFrom</CODE> can only store classes derived from <CODE>Classifier</CODE>, like for instance <CODE>ClassifierFromVar</CODE>. They cannot accommodate Python's classes or even functions.</P>
 

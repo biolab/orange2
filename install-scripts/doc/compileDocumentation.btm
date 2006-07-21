@@ -43,6 +43,6 @@ for %x in (orange.hhp orange.hhk orange.hhc orange.htm orange.chw) del %x
 del /fsykxq processed
 del htmlparser.py
 
-"c:\program files\winrar\winrar.exe" a ../download/orange-chm.rar *.chm
+"c:\program files\winrar\winrar.exe" a ../download/orange-chm.zip *.chm
 
 cd %scriptsdir

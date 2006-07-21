@@ -5,13 +5,13 @@
 </HEAD>
 <body>
 <index name="classifiers+logistic regression>"
-<h1>Logistic&nbsp;Regression&nbsp;Classifier and Learner</h1>
+<h1>Logistic Regression Classifier and Learner</h1>
 <P align=left>Logistic regression is a popular classification method that comes from statistics. The model is described by a linear combination of coefficients,
 <P align=center>F = beta_0 + beta_1*X_1 + beta_2*X_2 + ... + beta_k*X_k<BR></P>
 <P>and the probability (p)&nbsp;of a class value is&nbsp; computed as:</P>
 <P align=center>p = exp(F)/(1+exp(F))</P>
 
-<P>The outcome variable (class) must be binary (dichotomous) and discrete attributes must be translated to continuous. While Orange kernel provides the basic functionality, module <A href="../orngLR.htm">orngLR.py</A> covers the necessary adaptations and conversions.</P>
+<P>The outcome variable (class) must be binary (dichotomous) and discrete attributes must be translated to continuous. While Orange kernel provides the basic functionality, module <A href="../modules/orngLR.htm">orngLR.py</A> covers the necessary adaptations and conversions.</P>
 
 <hr>
 
@@ -67,7 +67,7 @@ else:
 </XMP>
 </DL>
 
-<P>As all learners, <CODE>LogRegLearner</CODE> naturally provides the usual call operator, whom you pass examples (and weights, if you have them) and which returns a classifier or throws an exception if it can't. Use <CODE>fitModel</CODE> in the code that will iteratively remove problem attributes until it gets a classifier; in fact, that's exactly what <a href="../orngLR.htm"><CODE>orngLR</CODE></A> does.</DD>
+<P>As all learners, <CODE>LogRegLearner</CODE> naturally provides the usual call operator, whom you pass examples (and weights, if you have them) and which returns a classifier or throws an exception if it can't. Use <CODE>fitModel</CODE> in the code that will iteratively remove problem attributes until it gets a classifier; in fact, that's exactly what <a href="../modules/orngLR.htm"><CODE>orngLR</CODE></A> does.</DD>
 </DL>
 
 <H2><A name=fitters></A>Logistic Regression Fitters</H2>

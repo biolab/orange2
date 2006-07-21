@@ -76,6 +76,13 @@ H3 {
     white-space: nowrap;
 }
 
+h4 {
+    font-weight: bold;
+    font-family: Verdana;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
 .Links {
     font-family: Verdana;
     color: #FFFFFF;

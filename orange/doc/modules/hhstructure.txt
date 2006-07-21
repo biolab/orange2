@@ -1,4 +1,5 @@
 Orange Modules ---> default.htm
+	Association Rules ---> orngAssoc.htm
 	Bayesian Classifier ---> orngBayes.htm
 	C4.5 ---> orngC45.htm
 	Constructive induction ---> orngCI.htm
