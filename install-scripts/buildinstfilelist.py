@@ -81,7 +81,7 @@ def buildLists(rhter, fname):
         buildListLow(root, here, there, regexp and re.compile(regexp, re.IGNORECASE), recursive)
     open(fileprefix+"_"+fname+".inc", "wt").write(hass+outfs)
         
-buildList(basedir, "orange\\", "", "((.*[.]pyd?)|(ensemble.c)|(COPYING))\Z", "base", 0)
+buildList(basedir, "orange\\", "", "((.*[.]pyd?)|(ensemble.c)|(COPYING))|(c45.dll)\Z", "base", 0)
 buildList(basedir, "orange\\OrangeWidgets\\", "OrangeWidgets\\", ".*[.]((py)|(png))\\Z", "widgets")
 buildList(basedir, "orange\\OrangeCanvas\\", "OrangeCanvas\\", ".*[.]((py)|(pyw)|(png))\\Z", "canvas")
 
@@ -90,8 +90,9 @@ buildLists([(basedir, "genomics\\", "OrangeWidgets\\Genomics\\", ".*[.]py\\Z", 0
             (basedir, "genomics\\Annotation\\", "OrangeWidgets\\Genomics\\Annotation\\", "", 0),
             (basedir, "genomics\\Genome Map\\", "OrangeWidgets\\Genomics\\Genome Map\\", "", 0)], "genomics")
 
-buildLists([(basedir, "orange\\doc\\", "doc\\", "", 1)], "doc")
-#            (basedir, "orange\\doc\\datasets\\", "doc\\datasets\\", "", 0),
-#            (basedir, "orange\\doc\\reference\\", "doc\\reference\\", "", 0),
-#            (basedir, "orange\\doc\\modules\\", "doc\\modules\\", "", 0),
-#            (basedir, "orange\\doc\\ofb\\", "doc\\ofb\\", "", 0)], "doc")
+buildLists([(basedir, "orange\\doc\\", "doc\\", "", 0), 
+            (basedir, "orange\\doc\\datasets\\", "doc\\datasets\\", "", 0),
+            (basedir, "orange\\doc\\reference\\", "doc\\reference\\", "", 0),
+            (basedir, "orange\\doc\\modules\\", "doc\\modules\\", "", 0),
+            (basedir, "orange\\doc\\widgets\\", "doc\\widgets\\", "", 0),
+            (basedir, "orange\\doc\\ofb\\", "doc\\ofb\\", "", 0)], "doc")

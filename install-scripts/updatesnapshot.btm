@@ -30,10 +30,10 @@ rem ************************************************
 rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
 del /qsyfx orange
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD orange
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD genomics
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD orange
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD genomics
 cd orange
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -kb -r HEAD source
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -kb -r HEAD source
 
 
 rem ************************************************

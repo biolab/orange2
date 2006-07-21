@@ -25,8 +25,8 @@ cancel
 rem ************************************************
 rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f
-rem cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS update -r stable -f
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f
+rem cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS update -r stable -f
 
 
 rem ************************************************
@@ -60,7 +60,7 @@ call updateVersionsPy__.btm
 rem ************************************************
 rem *** TAG THE FILES ON CVS AND UPDATE versions.set
 
-rem cvs -d :sspi:cvs@estelle.fri.uni-lj.si:/CVS rtag -r stable -f %TAG orange source
+rem cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS rtag -r stable -f %TAG orange source
 rem set | grep  orange.*Version > %SCRIPTDIR\versions.set
 
 rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh %TAG %PLINK_MACINTOSH MACINTOSH 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh %TAG %PLINK_MACINTOSH_GENOMICS MACINTOSH_GENOMICS 1 0
