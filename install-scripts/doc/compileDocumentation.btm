@@ -1,4 +1,5 @@
 set scriptsdir=%_CWD
+set .py=python
 
 cd ..\..\doc
 copy %scriptsdir\htmlparser.py
