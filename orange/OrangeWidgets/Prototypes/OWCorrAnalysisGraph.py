@@ -80,7 +80,16 @@ class OWCorrAnalysisGraph(OWGraph):
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
             yFloat = self.invTransform(QwtPlot.yLeft, e.y())  
             
-            self.createCurve(xFloat, yFloat)
+            self.createCurve(xFloat, yFloat, 0)
+            
+            ##
+            self.removeMarkers()
+            cor = [(x, y, self.tips.texts[i]) for (i,(x,y)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius]
+            for x, y, text in cor:
+                self.addMarker(text, x, y)
+            
+            ##
+            
             self.replot()
 
             self.event(e)            
