@@ -16,6 +16,7 @@ from OWWidget import *
 from OWGraph import *
 import OWGUI
 import math
+import statc
 
 class distribErrorBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
@@ -56,6 +57,7 @@ class OWDistributionGraph(OWGraph):
         
         self.numberOfBars = 5
         self.barSize = 50
+        self.showContinuousClassGraph=1
         self.showProbabilities = 0
         self.showConfidenceIntervals = 0
         self.smoothLines = 0
@@ -92,6 +94,20 @@ class OWDistributionGraph(OWGraph):
     def setData(self, data, variable):
         self.data = data
         if data: self.dc = orange.DomainContingency(self.data)
+        if data and data.domain.classVar and data.domain.classVar.varType!=orange.VarTypes.Discrete:
+            self.pureHistogram=True #No class colors
+        else:
+            self.pureHistogram=False
+            
+        if data and data.domain.classVar:
+            self.dataHasClass=True
+            if data.domain.classVar.varType==orange.VarTypes.Continuous:
+                self.dataHasDiscreteClass=False
+            else:
+                self.dataHasDiscreteClass=True
+        else:
+            self.dataHasClass=False
+            
         self.setVariable(variable)
 
     def setVariable(self, variable):
@@ -105,8 +121,6 @@ class OWDistributionGraph(OWGraph):
             self.variableContinuous = TRUE
         else: self.variableContinuous = FALSE
 
-        self.calcHistogramAndProbGraph()
-
         if self.variableContinuous:
             self.setXlabels(None)
         else:
@@ -114,6 +128,7 @@ class OWDistributionGraph(OWGraph):
             self.setXlabels(labels)
             self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels) - 0.5, 1)
 
+        self.calcHistogramAndProbGraph()
         self.refreshVisibleOutcomes()
         
 
@@ -131,12 +146,35 @@ class OWDistributionGraph(OWGraph):
             self.refreshVisibleOutcomes()
             #self.replot()
             self.repaint()
-        
+
+    def calcPureHistogram(self):
+        if self.data==None:
+            return
+        if self.variableContinuous:
+            "Continuous variable, break data into self.NumberOfBars subintervals"
+            "use orange.EquiDistDiscretization(numberOfIntervals)"
+            equiDist = orange.EquiDistDiscretization(numberOfIntervals = self.numberOfBars)
+            d_variable = equiDist(self.attributeName, self.data)
+            d_data = self.data.select([d_variable])
+            tmphdata = orange.Distribution(0, d_data)
+            
+            curPos = d_variable.getValueFrom.transformer.firstVal - d_variable.getValueFrom.transformer.step
+            self.subIntervalStep = d_variable.getValueFrom.transformer.step
+            self.hdata = {}
+            for key in tmphdata.keys():
+                self.hdata[curPos] = tmphdata[key]
+                curPos += self.subIntervalStep
+        else:
+            "Discrete variable"
+            self.hdata = orange.Distribution(self.attributeName, self.data) #self.dc[self.attributeName]
+
     def calcHistogramAndProbGraph(self):
         "Calculates the histogram."
         if self.data == None:
             return
-
+        if self.pureHistogram:
+            self.calcPureHistogram()
+            return
         if self.variableContinuous:
             "Continuous variable, break data into self.NumberOfBars subintervals"
             "use orange.EquiDistDiscretization(numberOfIntervals)"
@@ -177,9 +215,62 @@ class OWDistributionGraph(OWGraph):
                     ps.append(p)
                     cis.append(ci)
                 self.probGraphValues.append( (x, ps, cis) )
-
+                
+    def refreshPureVisibleOutcomes(self):
+        if self.dataHasDiscreteClass:
+            return 
+        keys=self.hdata.keys()
+        if self.variableContinuous:
+            keys.sort()
+        self.removeCurves()
+        cn=0
+        for key in keys:
+            curve=PolygonCurve(self, pen=QPen(Qt.black), brush=QBrush(Qt.gray))
+            ckey=self.insertCurve(curve)
+            if self.variableContinuous:
+                self.setCurveData(ckey, [key, key + self.subIntervalStep, key + self.subIntervalStep, key],[0, 0, self.hdata[key], self.hdata[key]])
+            else:
+                tmpx = cn - (self.barSize/2.0)/100.0
+                tmpx2 = cn + (self.barSize/2.0)/100.0
+                self.setCurveData(ckey, [tmpx, tmpx2, tmpx2, tmpx], [0, 0, self.hdata[key], self.hdata[key]])
+                cn+=1
+        
+        if self.dataHasClass and not self.dataHasDiscreteClass and self.showContinuousClassGraph:
+            self.enableYRaxis(1)
+            self.setAxisAutoScale(QwtPlot.yRight)
+            self.setYRaxisTitle(str(self.data.domain.classVar.name))
+            if self.variableContinuous:
+                equiDist = orange.EquiDistDiscretization(numberOfIntervals = self.numberOfBars)
+                d_variable = equiDist(self.attributeName, self.data)
+                d_data=self.data.select([d_variable, self.data.domain.classVar])
+                c=orange.ContingencyAttrClass(d_variable, d_data)
+                XY=[(key+self.subIntervalStep/2.0, val.average()) for key, val in zip(keys, c.values()) if val.cases]
+                XY=statc.loess(XY, 10, 4.0, 1)
+            else:
+                d_data=orange.ContingencyAttrClass(self.attributeName, self.data)
+                XY=[(i, dist.average()) for i, dist in zip(range(len(d_data.values())), d_data.values()) if dist.cases]
+            key=self.insertCurve("")
+            self.setCurveYAxis(key, QwtPlot.yRight)
+            self.setCurveData(key, [a[0] for a in XY], [a[1] for a in XY])
+            if self.variableContinuous:
+                self.setCurvePen(key, QPen(Qt.black))
+            else:
+                self.setCurveStyle(key, QwtCurve.Dots)
+                self.setCurveSymbol(key, QwtSymbol(QwtSymbol.Diamond, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(7,7)))
+        else:
+            self.enableYRaxis(0)
+            self.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.1)
+        
+        self.repaint()
+        
     def refreshVisibleOutcomes(self):
         if not self.data or not self.visibleOutcomes: return
+        if self.pureHistogram:
+            self.refreshPureVisibleOutcomes()
+            return
+        self.enableYRaxis(0)
+        self.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.1)
+        self.setYRaxisTitle("")
         keys = self.hdata.keys()
         if self.variableContinuous:
             keys.sort()
@@ -277,7 +368,7 @@ class OWDistributionGraph(OWGraph):
         
         
 class OWDistributions(OWWidget):
-    settingsList = ["numberOfBars", "barSize", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
+    settingsList = ["numberOfBars", "barSize", "showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
 
     def __init__(self,parent=None, signalManager = None):
         "Constructor"
@@ -285,6 +376,7 @@ class OWDistributions(OWWidget):
         # settings
         self.numberOfBars = 5
         self.barSize = 50
+        self.showContinuousClassGraph=1
         self.showProbabilities = 1
         self.showConfidenceIntervals = 0
         self.smoothLines = 0
@@ -350,6 +442,8 @@ class OWDistributions(OWWidget):
         box4 = OWGUI.widgetBox(box, orientation = "horizontal")
         OWGUI.checkBox(box4, self, 'showYaxisTitle', 'Show Y axis title', callback = self.setShowYaxisTitle)
         OWGUI.lineEdit(box4, self, 'yaxisTitle', callback = self.setYaxisTitle)
+
+        OWGUI.checkBox(box, self, 'showContinuousClassGraph', 'Show continuous class graph', callback=self.setShowContinuousClassGraph)
         
         box5 = OWGUI.widgetBox(self.SettingsTab, " Probability graph ")
         self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', ' Show Probabilities ', callback = self.setShowProbabilities)
@@ -434,6 +528,10 @@ class OWDistributions(OWWidget):
         self.graph.refreshProbGraph()
         #self.graph.replot()
         self.repaint()
+        
+    def setShowContinuousClassGraph(self):
+        self.graph.showContinuousClassGraph=self.showContinuousClassGraph
+        self.graph.refreshPureVisibleOutcomes()
 
     #Sets the number of bars for histograms of continuous variables 
     def setNumberOfBars(self):
@@ -482,15 +580,23 @@ class OWDistributions(OWWidget):
             self.graph.setData(None, None)
             self.data = None
             return
-       
+        
+        if data.domain.classVar:
+            self.dataHasClass=True
+            if data.domain.classVar.varType==orange.VarTypes.Continuous:
+                self.dataHasDiscreteClass=False
+            else:
+                self.dataHasDiscreteClass=True
+        else:
+            self.dataHasClass=False
         # if same domain, don't reset variable, target and outcome
-	sameDomain = data and self.data and data.domain == self.data.domain
-	
+        sameDomain = data and self.data and data.domain == self.data.domain
+
         self.data = orange.Preprocessor_dropMissingClasses(data)	
-	if sameDomain:
+        if sameDomain:
             self.graph.setData(self.data, self.graph.attributeName)
-	    ##self.graph.setTargetValue(self.graph.targetValue)
-            ##self.graph.setVisibleOutcomes(None)
+        ##self.graph.setTargetValue(self.graph.targetValue)
+        ##self.graph.setVisibleOutcomes(None)
         else:
             self.graph.setData(None, None)
             self.graph.setTargetValue(None)
@@ -504,7 +610,7 @@ class OWDistributions(OWWidget):
                 self.setTarget(self.data.domain.classVar.values[0])
 
             # set variable combo box
-	    self.variablesQCB.clear()
+            self.variablesQCB.clear()
             for attr in self.data.domain.attributes:
                 self.variablesQCB.insertItem(self.icons[attr.varType], attr.name)
 
@@ -512,14 +618,15 @@ class OWDistributions(OWWidget):
                 self.graph.setData(self.data, self.data.domain.attributes[0].name) # pick first variable
                 self.variablesQCB.setCurrentItem(0) # select first variable
                 self.setVariable(self.variablesQCB.text(0)) # select first variable
-	                
-            self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
-            self.graph.setTargetValue(0) #str(self.data.domain.classVar.values[0])) # pick first target
 
-            # set outcomes
-            self.setOutcomeNames([])
-            if self.data.domain.classVar:
-                self.setOutcomeNames(self.data.domain.classVar.values.native())
+            self.setOutcomeNames([])                
+            if self.dataHasClass and self.dataHasDiscreteClass:
+                self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
+                self.graph.setTargetValue(0) #str(self.data.domain.classVar.values[0])) # pick first target
+
+                # set outcomes
+                if self.data.domain.classVar and self.data.domain.classVar.varType==orange.VarTypes.Discrete:
+                    self.setOutcomeNames(self.data.domain.classVar.values.native())
 
     def setOutcomeNames(self, list):
         "Sets the outcome target names."
@@ -553,5 +660,8 @@ if __name__ == "__main__":
     owd = OWDistributions()
     a.setMainWidget(owd)
     owd.show()
+    data=orange.ExampleTable("../../doc/datasets/auto-mpg.tab")
+    owd.cdata(data)
     a.exec_loop()
     owd.saveSettings()
+    orange.VarTypes.Continuous
