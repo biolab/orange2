@@ -21,16 +21,19 @@ ifeq ($(OS), Darwin)
   COMPILEOPTIONS=-fPIC -fpermissive -w -DDARWIN -O3
   LINKOPTIONS=-W1,-F. -bundle -framework Python -lstdc++ -L$(OLD) -lorange_include
   MAKE=make
+  CCL=g++
 else
 ifeq ($(OS), FreeBSD)
   COMPILEOPTIONS=-fPIC -fpermissive -w -DFREEBSD -O3
   LINKOPTIONS=-shared -lstdc++ -L$(OLD) -lorange_include
   LINKOPTIONS+=`gsl-config --libs`
   MAKE=gmake
+  CCL=gcc
 else
   COMPILEOPTIONS=-fPIC -fpermissive -w -DLINUX -O3
   LINKOPTIONS=-shared -lstdc++ -L$(OLD) -lorange_include
   MAKE=make
+  CCL=gcc
 endif
 endif
 

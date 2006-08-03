@@ -111,7 +111,7 @@ void dynloadC45(const char *pathname)
   c45garbage = (garbageFunc *)(getsym(c45Dll, "guarded_collect"));
 }
 
-#elif defined LINUX || defined FREEBSD 
+#elif defined LINUX || defined FREEBSD || defined DARWIN
 
 #include <dlfcn.h>
 #include <unistd.h>
@@ -134,41 +134,7 @@ void dynloadC45(char pathname[])
   c45learn = (learnFunc *)getsym(handle, "learn");
   c45garbage = (garbageFunc *)getsym(handle, "guarded_collect");
 }
-
-#elif defined DARWIN
-
-#include <mach-o/dyld.h>
-#include <string.h>
-
-void *getsym(NSModule &newModule, const char *name)
-{
-  NSSymbol theSym = NSLookupSymbolInModule(newModule, name);
-  if (!theSym)
-    raiseErrorWho("C45Loader", "invalid %s, cannot find symbol %s", C45NAME, name);
-  return theSym;
-}
-
-void dynloadC45(char pathname[])
-{
-  NSObjectFileImageReturnCode rc;
-  NSObjectFileImage image;
-  NSModule newModule;
-  
-  rc = NSCreateObjectFileImageFromFile(pathname, &image);
-  if (rc != NSObjectFileImageSuccess)
-    raiseErrorWho("C45Loader", "Cannot load %s", C45NAME);
-      
-  newModule = NSLinkModule(image, pathname, NSLINKMODULE_OPTION_BINDNOW | \
-                                            NSLINKMODULE_OPTION_RETURN_ON_ERROR | \
-                                            NSLINKMODULE_OPTION_PRIVATE); 
-  if (!newModule)
-    raiseErrorWho("C45Loader", "Cannot link module %s", C45NAME);
-
-  pc45data = getsym(newModule, "_c45Data");
-  c45learn = (learnFunc *)getsym(newModule, "_learn");
-  c45garbage = (garbageFunc *)getsym(newModule, "_guarded_collect");
-}
-    
+   
 #else
 
 void dynloadC45(char [])
