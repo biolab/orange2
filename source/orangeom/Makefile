@@ -20,7 +20,7 @@ WML_OBJECTS=obj/WmlDelaunay2a.o obj/WmlMath.o obj/WmlSystem.o obj/WmlVector2.o
 SOM_OBJECTS=obj/som_pak_DATA.o obj/som_pak_LVQ.o obj/som_pak_SOM.o obj/som_pak_FILE.o obj/som_pak_VERSION.o obj/som_pak_LABELS.o
 
 $(OLD)/orangeom.so:	px/stamp ppp/stamp $(ORANGEOM_OBJECTS) $(WML_OBJECTS) $(SOM_OBJECTS)
-	$(CCL) $(ORANGEOM_OBJECTS) $(WML_OBJECTS) $(SOM_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orangeom.so
+	$(LINKER) $(ORANGEOM_OBJECTS) $(WML_OBJECTS) $(SOM_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orangeom.so
 
 clean:	cleantemp
 	rm -f $(OLD)/orangeom.so

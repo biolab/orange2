@@ -16,24 +16,25 @@ INSTALL_SHARED = $(INSTALL) -m 555
 INSTALL_DIR = $(INSTALL) -d -m 755
 
 OS = $(shell uname)
+MAKE = make
+COMPILER = g++
+LINKER = gcc
+LIBRARY_FILE = liborange.so
 
 ifeq ($(OS), Darwin)
-  COMPILEOPTIONS=-fPIC -fpermissive -w -DDARWIN -O3
-  LINKOPTIONS=-W1,-F. -bundle -framework Python -lstdc++ -L$(OLD) -lorange_include
-  MAKE=make
-  CCL=g++
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DDARWIN -O3
+  LINKOPTIONS = -dynamiclib -framework Python -lstdc++ -L$(OLD) -lorange_include
+  LINKER = g++
+  LIBRARY_FILE = liborange.dylib
 else
 ifeq ($(OS), FreeBSD)
-  COMPILEOPTIONS=-fPIC -fpermissive -w -DFREEBSD -O3
-  LINKOPTIONS=-shared -lstdc++ -L$(OLD) -lorange_include
-  LINKOPTIONS+=`gsl-config --libs`
-  MAKE=gmake
-  CCL=gcc
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DFREEBSD -O3
+  LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include
+  LINKOPTIONS += `gsl-config --libs`
+  MAKE = gmake
 else
-  COMPILEOPTIONS=-fPIC -fpermissive -w -DLINUX -O3
-  LINKOPTIONS=-shared -lstdc++ -L$(OLD) -lorange_include
-  MAKE=make
-  CCL=gcc
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -O3
+  LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include
 endif
 endif
 
@@ -48,7 +49,7 @@ vpath %.ppp ppp
 vpath %.h orange:include:$(PYTHONINCLUDE):/usr/local/include/gsl:/usr/include/gsl
 
 obj/%.o :
-	g++ $(COMPILEOPTIONS) -c $< -o $@
+	$(COMPILER) $(COMPILEOPTIONS) -c $< -o $@
 
 
 export CPATH=ppp:px:../include:../orange:$(PYTHONINCLUDE):/usr/local/include:/usr/include
