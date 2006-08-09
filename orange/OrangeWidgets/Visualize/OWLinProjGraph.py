@@ -763,13 +763,21 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         import orangeom
         rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
         ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
+
+        rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, -1)
+        ry = self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 1)
+        ox = self.transform(QwtPlot.xBottom, 0) - self.transform(QwtPlot.xBottom, -1)
+        oy = self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 0)
+
         if not getattr(self, "potentialsBmp", None) \
            or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor):
             if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
                 imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
                 palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
             else:
-                imagebmp, nShades = orangeom.potentialsBitmapCircle(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+#                imagebmp, nShades = orangeom.potentialsBitmapCircle(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+#                imagebmp, nShades = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+                imagebmp, nShades = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, ox, oy, 3, self.trueScaleFactor/2)
                 colors = defaultRGBColors
 
                 palette = []
@@ -782,7 +790,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                         palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
                 palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
 
-            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
+#            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
+            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, palette, 256, QImage.LittleEndian)
             self.potentialsBmp = QPixmap()
             self.potentialsBmp.convertFromImage(image)
             self.potentialContext = (rx, ry, self.trueScaleFactor)
