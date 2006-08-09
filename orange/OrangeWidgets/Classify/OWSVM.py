@@ -63,6 +63,7 @@ class OWSVM(OWWidget):
         self.thread=MyThread(self)
         self.lock=thread.allocate_lock()
         self.terminateThread=False
+        self.applySettings()
         
     def changeKernel(self):
         if self.kernel_type==0:
@@ -121,9 +122,12 @@ class OWSVM(OWWidget):
             self.classifier=self.learner(self.data)
             self.supportVectors=self.classifier.supportVectors
             self.classifier.name=self.name
-        self.send("Learner", self.learner)
-        self.send("Classifier", self.classifier)
-        self.send("Support Vectors", self.supportVectors)
+        if self.learner:
+            self.send("Learner", self.learner)
+        if self.classifier:
+            self.send("Classifier", self.classifier)
+        if self.supportVectors:
+            self.send("Support Vectors", self.supportVectors)
 
     def parameterSearch(self):
         if self.thread.isAlive():
