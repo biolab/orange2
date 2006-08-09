@@ -131,6 +131,8 @@ class OWMDS(OWWidget):
             self.setExampleTable(data)
         elif type(data)==list:
             self.setList(data)
+        elif type(data)==orange.VarList:
+            self.setVarList(data)
         self.graph.ColorAttr=0
         self.graph.SizeAttr=0
         self.graph.ShapeAttr=0
@@ -142,7 +144,8 @@ class OWMDS(OWWidget):
             self.mds.points=RandomArray.random([self.mds.n, self.mds.dim])
             self.mds.getStress()
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
-            self.openContext("",self.data)
+            if data and type(data) == orange.ExampleTable:
+                self.openContext("",self.data)
             self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names)
         else:
             self.graph.clear()
@@ -228,7 +231,27 @@ class OWMDS(OWWidget):
                 self.names[i][2]=" "+d.strain
         except Exception, val:
             print val
-        
+
+    def setVarList(self, data):
+        self.colorCombo.clear()
+        self.sizeCombo.clear()
+        self.shapeCombo.clear()
+        self.nameCombo.clear()
+        for name in ["One color", "Variable"]:
+            self.colorCombo.insertItem(name)
+        for name in ["No name", "Var name"]:
+            self.nameCombo.insertItem(name)
+        self.colors=[[Qt.black]*3 for i in range(len(data))]
+        self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
+        self.sizes=[[5] for i in range(len(data))]
+        self.names=[[""]*4 for i in range(len(data))]
+        try:
+            c=OWGraphTools.ColorPaletteHSV(len(data))
+            for i, d in enumerate(data):
+                self.colors[i][1]=c[i]
+                self.names[i][1]=" " +str(d.name)
+        except Exception, val:
+            print val
         
     def smacofStep(self):
         for i in range(self.NumIter):
