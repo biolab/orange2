@@ -478,10 +478,15 @@ TP2NN::TP2NN(PDomain dom, double *aprojections, const int &nEx, double *ba, PFlo
   bases = ba;
   projections = aprojections;
   nExamples = nEx;
-  radii = mlnew double[2*domain->attributes->size()];
-  for(double *radiii = radii, *radiie = radii + domain->attributes->size(), *bi = bases;
-      radiii != radiie;
-      *radiii++ = sqrt(sqr(*bi++) + sqr(*bi++)));
+
+  if (bases) {
+    radii = mlnew double[2*domain->attributes->size()];
+    for(double *radiii = radii, *radiie = radii + domain->attributes->size(), *bi = bases;
+        radiii != radiie;
+        *radiii++ = sqrt(sqr(*bi++) + sqr(*bi++)));
+  }
+  else
+    radii = NULL;
 
   if (dom->classVar->varType == TValue::FLOATVAR) {
     double *proj = projections+2, *proje = projections + 3*nEx + 2;
@@ -526,6 +531,13 @@ void TP2NN::project(const TExample &example, double &x, double &y)
 
 TValue TP2NN::operator ()(const TExample &example)
 {
+  checkProperty(offsets);
+  checkProperty(normalizers);
+  checkProperty(averages);
+  checkProperty(bases);
+  if (normalizeExamples)
+    checkProperty(radii);
+
   if (classVar->varType == TValue::INTVAR)
     return TClassifier::call(example);
 
@@ -538,6 +550,13 @@ TValue TP2NN::operator ()(const TExample &example)
 
 PDistribution TP2NN::classDistribution(const TExample &example)
 {
+  checkProperty(offsets);
+  checkProperty(normalizers);
+  checkProperty(averages);
+  checkProperty(bases);
+  if (normalizeExamples)
+    checkProperty(radii);
+
 
   double x, y;
   getProjectionForClassification(example, x, y);

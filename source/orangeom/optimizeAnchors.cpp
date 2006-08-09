@@ -1014,6 +1014,92 @@ PyObject *potentialsBitmapCircle(PyObject *, PyObject *args, PyObject *) PYARGS(
 
 
 
+#define nColors 6
+#ifdef _MSC_VER
+#pragma warning (disable: 4305 4309)
+#endif
+
+PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, rx, ry, offx, offy, cellsize, scaleFactor) -> bitmap as string")
+{
+  PyTRY
+    PyObject *cls;
+    int rx, ry, cell;
+    int offx, offy;
+    double scaleFactor;
+    if (!PyArg_ParseTuple(args, "Oiiiiid:potentialsBitmap", &cls, &rx, &ry, &offx, &offy, &cell, &scaleFactor))
+      return PYNULL;
+
+    TP2NN *tp2nn = &dynamic_cast<TP2NN &>(PyOrange_AsOrange(cls).getReference());
+
+    bool contClass = tp2nn->classVar->varType == TValue::FLOATVAR;
+
+    const int nClasses = contClass ? 0 : tp2nn->classVar->noOfValues();
+    const int nShades = contClass ? 0 : 255/nClasses;
+
+    const int oneLine = (rx + 3) & 0xfffffffc;
+    const int bitmapSize = oneLine * ry;
+    char *bitmap = new char[bitmapSize];
+    memset(bitmap, 255, bitmapSize);
+
+    rx--; // precaution
+    ry--;
+
+    float *probs = new float[nClasses], *pe = probs + nClasses;
+    const double minClass = tp2nn->minClass;
+    const double divClass = tp2nn->maxClass == minClass ? 0.0 : 255.0 / (tp2nn->maxClass - minClass);
+
+    const double rxbysf = rx*scaleFactor;
+    const double rybysf = ry*scaleFactor;
+    for(int y = 0; y < ry; y+=cell) {
+      const double realy = (y-offy)/rybysf;
+      for(int x = 0; x < rx; x+=cell) {
+        const double realx = (x-offx)/rxbysf;
+
+        unsigned char color;
+
+        if (contClass) {
+          const int icolor = (tp2nn->averageClass(realx, -realy) - minClass) * divClass;
+          if (icolor < 0)
+            color = 0;
+          else if (icolor > 255)
+            color = 255;
+          else
+            color = icolor;
+        }
+        else {
+          tp2nn->classDistribution(realx, -realy, probs, nClasses);
+          double sprobs = *probs;
+          float *largest = probs;
+          for(float *pi = probs+1; pi != pe; pi++) {
+            sprobs += *pi;
+            if (*pi > *largest)
+              largest = pi;
+          }
+          color = floor(0.5 + nShades * (*largest/sprobs*nClasses - 1) / (nClasses - 1));
+          if (color >= nShades)
+            color = nShades - 1;
+          else if (color < 0)
+            color = 0;
+          color += nShades * (largest - probs);
+        }
+        const int ys = y+cell < ry ? cell : ry-y;
+        char *yy = bitmap + y*oneLine+x;
+
+        for(char *yye = yy + (ys-1)*oneLine; yy < yye; yy += oneLine)
+          memset(yy, color, cell-1);
+      }
+    }
+
+    return contClass ? Py_BuildValue("s#", bitmap, bitmapSize)
+                     : Py_BuildValue("s#i", bitmap, bitmapSize, nShades);
+
+  PyCATCH
+}
+
+
+
+/*
+
 PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, rx, ry, cellsize, scaleFactor) -> bitmap as string")
 {
   PyTRY
@@ -1089,3 +1175,4 @@ PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(
 
   PyCATCH
 }
+*/
