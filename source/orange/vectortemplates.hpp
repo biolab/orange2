@@ -189,6 +189,25 @@ public:
       RETURN_NONE;
     PyCATCH
   }
+
+
+  static PyObject *_reduce(TPyOrange *self)
+  { 
+    PyTRY
+
+      PyObject *res = Orange__reduce__((PyObject *)self, NULL, NULL);
+      if (!res)
+        return NULL;
+
+      CAST_TO(_ListType, aList)
+      if (aList->size()) {
+        _PyTuple_Resize(&res, 4);
+        PyTuple_SET_ITEM(res, 3, PySeqIter_New((PyObject *)self));
+      }
+
+      return res;
+    PyCATCH
+  }
 };
 
 
@@ -648,6 +667,15 @@ public:
     PyCATCH
   }
 
+  static PyObject *_extend(TPyOrange *self, PyObject *args)
+  { PyTRY
+      CAST_TO(_ListType, aList)
+      if (_setslice(self, aList->size(), aList->size(), args) == -1)
+        return NULL;
+      RETURN_NONE;
+    PyCATCH
+  }
+
   static PyObject *_sort(TPyOrange *self, PyObject *args)
   { 
     PyTRY
@@ -777,6 +805,7 @@ public:
         }
     PyCATCH_1
   }
+
 
   static PyObject *_richcmp(TPyOrange *self, PyObject *other, int op)
   { PyTRY
@@ -1088,6 +1117,17 @@ public:
         return newList;
     PyCATCH
   }
+
+
+  static PyObject *_extend(TPyOrange *self, PyObject *args)
+  { PyTRY
+      CAST_TO(_ListType, aList)
+      if (_setslice(self, aList->size(), aList->size(), args) == -1)
+        return NULL;
+      RETURN_NONE;
+    PyCATCH
+  }
+
 
   static PyObject *_sort(TPyOrange *self, PyObject *args)
   { 
