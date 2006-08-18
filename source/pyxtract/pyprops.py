@@ -264,57 +264,58 @@ def writeFile(hppfile, exportf):
 ##    renew(pppfile, newfile)
 
 
-orig_dir = os.getcwd()
+if __name__ == "__main__":
+  orig_dir = os.getcwd()
 
-if not os.path.isdir("ppp"):
-  os.mkdir("ppp")
+  if not os.path.isdir("ppp"):
+    os.mkdir("ppp")
 
-files = {}
-classes = { None: None}
-wrappers = {}
-vwrappers = {}
-  
-
-args = sys.argv
-
-modulename = ""
-i = quiet = 0
-while(i<len(args)):
-  if args[i][0]=="-":
-    if args[i][1]=="l":
-      i += 1
-      f = file(args[i], "rt")
-      cs = pickle.load(f)
-      for c in cs.values():
-        if c:
-          c.imported = True
-      classes.update(cs)
-      f.close()
-    elif args[i][1]=="n":
-      i += 1
-      modulename = args[i].lower()
-    elif args[i][1]=="d":
-      i += 1
-      import os
-      os.chdir(args[i])
-    elif args[i][1]=="q":
-      quiet = 1
-  i += 1
-
-if not modulename:
-  print "Module name (-n) missing"
-  sys.exit()
-  
-for filename in filter(lambda x: x[-4:]==".hpp", os.listdir(".")):
-    detectBuiltInProperties(filename)
-
-exportf = open("ppp/exportdefs.inc", "wt")
-for filename in files.keys():
-    writeFile(filename, exportf)
-exportf.close()
-
+  files = {}
+  classes = { None: None}
+  wrappers = {}
+  vwrappers = {}
     
-f=open("ppp/stamp", "wt")
-pickle.dump(classes, f)
-f.close()
+
+  args = sys.argv
+
+  modulename = ""
+  i = quiet = 0
+  while(i<len(args)):
+    if args[i][0]=="-":
+      if args[i][1]=="l":
+        i += 1
+        f = file(args[i], "rt")
+        cs = pickle.load(f)
+        for c in cs.values():
+          if c:
+            c.imported = True
+        classes.update(cs)
+        f.close()
+      elif args[i][1]=="n":
+        i += 1
+        modulename = args[i].lower()
+      elif args[i][1]=="d":
+        i += 1
+        import os
+        os.chdir(args[i])
+      elif args[i][1]=="q":
+        quiet = 1
+    i += 1
+
+  if not modulename:
+    print "Module name (-n) missing"
+    sys.exit()
     
+  for filename in filter(lambda x: x[-4:]==".hpp", os.listdir(".")):
+      detectBuiltInProperties(filename)
+
+  exportf = open("ppp/exportdefs.inc", "wt")
+  for filename in files.keys():
+      writeFile(filename, exportf)
+  exportf.close()
+
+      
+  f=open("ppp/stamp", "wt")
+  pickle.dump(classes, f)
+  f.close()
+      
