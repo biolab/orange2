@@ -40,6 +40,9 @@
 #define DATASTRUCTURE(type,structure,dictfield)
 
 #define BASED_ON(type, basetype)
+#define ABSTRACT(type, basetype)
+
+#define ALLOWS_EMPTY
 
 #define C_UNNAMED(type, basetype, doc)
 #define C_NAMED(type, basetype, doc)
@@ -48,6 +51,7 @@
 #define HIDDEN(type, base)
 
 #define CONSTRUCTOR_KEYWORDS(type, keywords)
+#define NO_PICKLE(type)
 #define RECOGNIZED_ATTRIBUTES(type, keywords)
 
 #endif
