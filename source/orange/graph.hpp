@@ -138,7 +138,7 @@ public:
   virtual void getNeighboursFrom_Single(const int &v, vector<int> &);
   virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &);
 
-  TEdge *createEdge(TEdge *next, const int &vertex);
+  TEdge *createEdge(TEdge *next, const int &vertex) const;
   bool findEdgePtr(const int &v1, const int &v2, TEdge **&, int &subvert);
   void getNeighbours_Undirected(const int &v, vector<int> &neighbours);
   void getNeighbours_Undirected(const int &v, const int &edgeType, vector<int> &neighbours);
@@ -180,7 +180,7 @@ public:
   virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &);
 
   double *getEdge(TEdge *node, const int &subvert);
-  TEdge *createEdge(const int &vertex);
+  TEdge *createEdge(const int &vertex) const;
   void sortIndices(const int &v1, const int &v2, TEdge **&e, int &subvert) const;
 
   void getNeighbours_fromTree(TEdge *edge, vector<int> &neighbours);

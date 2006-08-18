@@ -265,7 +265,7 @@ void TGraphAsMatrix::getNeighboursTo(const int &v, const int &edgeType, vector<i
 
 #undef CHECK_EDGE
 
-TGraphAsList::TEdge *TGraphAsList::createEdge(TEdge *next, const int &vertex)
+TGraphAsList::TEdge *TGraphAsList::createEdge(TEdge *next, const int &vertex) const
 {
   TEdge *newedge = (TEdge *)malloc(sizeof(TEdge) + (nEdgeTypes-1)*sizeof(double));
   newedge->next = next;
@@ -500,7 +500,7 @@ void TGraphAsList::getNeighboursTo(const int &v, const int &edgeType, vector<int
 #undef CHECK_EDGE_TO
 
 
-TGraphAsTree::TEdge *TGraphAsTree::createEdge(const int &vertex)
+TGraphAsTree::TEdge *TGraphAsTree::createEdge(const int &vertex) const
 {
   TEdge *newedge = (TEdge *)malloc(sizeof(TEdge) + (nEdgeTypes-1)*sizeof(double));
   newedge->vertex = vertex;
