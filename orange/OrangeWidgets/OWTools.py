@@ -9,6 +9,19 @@ FALSE=0
 from qt import *
 from random import *
 
+try:
+    import win32api, win32con
+    t = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, "SOFTWARE\\Python\\PythonCore\\%i.%i\\PythonPath\\Orange" % sys.version_info[:2], 0, win32con.KEY_READ)
+    t = win32api.RegQueryValueEx(t, "")[0]
+    orangedir = t[:t.find("orange")] + "orange"
+except:
+    import os
+    orangedir = os.getcwd()
+    if orangedir[-12:] == "OrangeCanvas":
+        orangedir = orangedir[:-13]
+
+if not os.path.exists(orangedir+"/orngStat.py"):
+    orangedir = None
 
 def getHtmlCompatibleString(strVal):
     strVal = strVal.replace("<", "&#60;")

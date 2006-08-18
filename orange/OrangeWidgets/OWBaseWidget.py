@@ -844,7 +844,39 @@ class OWBaseWidget(QDialog):
             self.eventHandler("")
         else:                
             self.eventHandler(type + " from " + self.captionTitle[3:] + ": " + text)
+
+    def openWidgetHelp(self):
+        url = "/widgets/catalog/%s/%s.htm" % (self.category, self.name())
+
+        if orangedir:
+            try:
+                import win32help
+                win32help.HtmlHelp(0, orangedir + "/doc/widgets.chm::" + url, win32help.HH_DISPLAY_TOPIC)
+                return
+            except:
+                pass
+
+            try:
+                import webbrowser
+                webbrowser.open("file://" + orangedir + "/doc" + url, 0, 1)
+                return
+            except:
+                pass
+
+        try:
+            import webbrowser
+            webbrowser.open("http://www.ailab.si/orange/doc"+url)
+            return
+        except:
+            pass
+
         
+    def keyPressEvent(self, e):
+        if e.key() != 0x1030:
+            e.ignore()
+        else:
+            self.openWidgetHelp()
+
     def information(self, text = None):
         self.printEvent("Information", text)
 
