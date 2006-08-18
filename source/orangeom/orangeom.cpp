@@ -34,4 +34,6 @@ void gcorangeomUnsafeStaticInitialization()
 
 #include "orangeom.px"
 
+ORANGEOM_API PyObject *orangeomModule;
+
 #include "initialization.px"
