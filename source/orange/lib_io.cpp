@@ -64,6 +64,14 @@ bool divDot(const string &name, string &before, string &after)
 }
 
 
+NO_PICKLE(AssistantExampleGenerator)
+NO_PICKLE(BasketExampleGenerator)
+NO_PICKLE(C45ExampleGenerator)
+NO_PICKLE(FileExampleGenerator)
+NO_PICKLE(RetisExampleGenerator)
+NO_PICKLE(TabDelimExampleGenerator)
+
+
 PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY
     char *fileName;
