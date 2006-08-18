@@ -101,7 +101,7 @@ inline void *guarded_cast(TOrange *op, void *res, const char *name)
 
 
 
-extern PyObject *orangeModule;
+extern ORANGE_API PyObject *orangeModule;
 
 extern ORANGE_API PyObject *PyExc_OrangeKernel,
                            *PyExc_OrangeAttributeWarning,
@@ -146,6 +146,7 @@ public:
   const type_info   &ot_classinfo;
   defaultconstrproc  ot_defaultconstruct;
   char             **ot_constructorkeywords;
+  bool               ot_constructorAllowsEmptyArgs;
   char             **ot_recognizedattributes;
   TAttributeAlias   *ot_aliases;
   argconverter       ot_converter;
@@ -157,12 +158,13 @@ public:
 */
   TOrangeType(const PyTypeObject &inh, const type_info &cinf, defaultconstrproc dc,
               argconverter otc, argconverter otcn,
-              char **ck = NULL, char **ra = NULL, TAttributeAlias *ali = NULL
+              char **ck = NULL, bool caea = false, char **ra = NULL, TAttributeAlias *ali = NULL
              )
    : ot_inherited(inh),
      ot_classinfo(cinf),
      ot_defaultconstruct(dc),
      ot_constructorkeywords(ck),
+     ot_constructorAllowsEmptyArgs(caea),
      ot_recognizedattributes(ra),
      ot_aliases(ali),
      ot_converter(otc),
@@ -188,5 +190,16 @@ TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *);
 ORANGE_API bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit = false);
 
 #define NO_KEYWORDS { if (!((TPyOrange *)self)->call_constructed && keywords && PyDict_Size(keywords)) PYERROR(PyExc_AttributeError, "this function accepts no keyword arguments", PYNULL); }
+
+PyObject *yieldNoPickleError(PyObject *self, PyObject *);
+
+
+// Returns a borrowed reference!
+inline PyObject *getExportedFunction(const char *func)
+{ return PyDict_GetItemString(PyModule_GetDict(orangeModule), func); }
+
+// Returns a borrowed reference!
+inline PyObject *getExportedFunction(PyObject *module, const char *func)
+{ return PyDict_GetItemString(PyModule_GetDict(module), func); }
 
 #endif
