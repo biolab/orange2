@@ -231,6 +231,13 @@ bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit)
 }
 
 
+PyObject *yieldNoPickleError(PyObject *self, PyObject *)
+{
+  PyErr_Format(PyExc_TypeError, "instances of type '%s' cannot be pickled", self->ob_type->tp_name);
+  return NULL;
+}
+
+ORANGE_API PyObject *orangeModule;
 
 #include "orange.px"
 #include "initialization.px"
