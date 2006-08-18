@@ -335,7 +335,7 @@ public:
 
   PRuleList rules; //P
   PExampleTable examples; //P
-  int weightID;
+  int weightID; //P
 
   TRuleClassifier();
   TRuleClassifier(PRuleList rules, PExampleTable examples, const int &weightID = 0);
