@@ -9,6 +9,8 @@ class ClassDefinition:
     self.hidden = 0
     self.imported = 0
     self.used = 0
+    self.abstract = False
+    self.allows_empty_args = False
     self.constructor_keywords = []
     self.recognized_attributes = []
     self.__dict__.update(argkw)
