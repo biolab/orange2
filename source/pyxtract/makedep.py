@@ -131,7 +131,7 @@ if ppp_timestamp_dep:
   makedepsfile.write("ppp/stamp: %s\n" % reduce(lambda a, b: a+" "+b, ppp_timestamp_dep))
   makedepsfile.write("\tpython ../pyxtract/pyprops.py -q -n %s" % modulename)
   if modulename != "ORANGE":
-    makedepsfile.write(" -l ../orange/ppp/stamp")
+    makedepsfile.write(" -l ../orange/ppp/stamp -l ../orange/ppp/lists")
   makedepsfile.write("\n\n")
 
 if px_timestamp_dep:
