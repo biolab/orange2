@@ -94,6 +94,7 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
     EXPIMP_TEMPLATE template class _API TOrangeVector< _TYPE, _WRAPPED >; \
     _API TClassDescription TOrangeVector< _TYPE, _WRAPPED >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE, _WRAPPED >), &TOrange::st_classDescription, TOrange_properties, TOrange_components }; 
 
+
   #ifndef __PLACEMENT_NEW_INLINE
     #define __PLACEMENT_NEW_INLINE
     inline void * operator new(size_t, void *_P)	{return (_P); }
@@ -104,6 +105,21 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
     template<> \
     TClassDescription TOrangeVector< _TYPE, _WRAPPED >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE, _WRAPPED >), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
 #endif
+
+
+
+  #define DEFINE_AttributedList_classDescription(_NAME, _PARENT) \
+  TPropertyDescription _NAME##_properties[] = { \
+    {"attributes", "list of attributes (for indexing)", &typeid(POrange), &TVarList::st_classDescription, offsetof(_NAME, attributes), false, false}, \
+    {NULL} \
+  }; \
+   \
+  size_t const _NAME##_components[] = { offsetof(_NAME, attributes), 0}; \
+   \
+  TClassDescription _NAME::st_classDescription = { #_NAME, &typeid(_NAME), &_PARENT::st_classDescription, _NAME##_properties, _NAME##_components }; \
+  TClassDescription const *_NAME::classDescription() const { return &_NAME::st_classDescription; } \
+  TOrange *_NAME::clone() const { return mlnew _NAME(*this); }
+
 
 
 int ORANGE_API _RoundUpSize(const int &n);
@@ -465,6 +481,67 @@ WRAPPER(Variable)
 #define TValueList _TOrangeVector<float>
 */
 
+
+
+#define TVarList TOrangeVector<PVariable> 
+VWRAPPER(VarList)
+
+
+#define __REGISTER_NO_PYPROPS_CLASS __REGISTER_CLASS
+
+class ORANGE_API TAttributedFloatList : public TOrangeVector<float, false>
+{
+public:
+  __REGISTER_NO_PYPROPS_CLASS
+
+  PVarList attributes;
+
+  inline TAttributedFloatList()
+  {}
+
+  inline TAttributedFloatList(PVarList vlist)
+  : attributes(vlist)
+  {}
+
+  inline TAttributedFloatList(PVarList vlist, const int &i_N, const float &f = 0.0)
+  : TOrangeVector<float, false>(i_N, f),
+    attributes(vlist)
+  {}
+
+  inline TAttributedFloatList(PVarList vlist, const vector<float> &i_X)
+  : TOrangeVector<float,false>(i_X),
+    attributes(vlist)
+  {}
+};
+
+
+class ORANGE_API TAttributedBoolList : public TOrangeVector<bool, false>
+{
+public:
+  __REGISTER_NO_PYPROPS_CLASS
+
+  PVarList attributes;
+
+  inline TAttributedBoolList()
+  {}
+
+  inline TAttributedBoolList(PVarList vlist)
+  : attributes(vlist)
+  {}
+
+  inline TAttributedBoolList(PVarList vlist, const int &i_N, const bool b= false)
+  : TOrangeVector<bool, false>(i_N, b),
+    attributes(vlist)
+  {}
+
+  inline TAttributedBoolList(PVarList vlist, const vector<bool> &i_X)
+  : TOrangeVector<bool, false>(i_X),
+    attributes(vlist)
+  {}
+};
+
+
+
 class ORANGE_API TValueList : public TOrangeVector<TValue, false>
 {
 public:
@@ -511,62 +588,6 @@ public:
 
 
 WRAPPER(ValueList)
-
-
-#define TVarList TOrangeVector<PVariable> 
-VWRAPPER(VarList)
-
-
-class ORANGE_API TAttributedFloatList : public TOrangeVector<float, false>
-{
-public:
-  __REGISTER_CLASS
-
-  PVarList attributes; //P list of attributes (for indexing)
-
-  inline TAttributedFloatList()
-  {}
-
-  inline TAttributedFloatList(PVarList vlist)
-  : attributes(vlist)
-  {}
-
-  inline TAttributedFloatList(PVarList vlist, const int &i_N, const float &f = 0.0)
-  : TOrangeVector<float, false>(i_N, f),
-    attributes(vlist)
-  {}
-
-  inline TAttributedFloatList(PVarList vlist, const vector<float> &i_X)
-  : TOrangeVector<float,false>(i_X),
-    attributes(vlist)
-  {}
-};
-
-
-class ORANGE_API TAttributedBoolList : public TOrangeVector<bool, false>
-{
-public:
-  __REGISTER_CLASS
-
-  PVarList attributes; //P list of attributes (for indexing)
-
-  inline TAttributedBoolList()
-  {}
-
-  inline TAttributedBoolList(PVarList vlist)
-  : attributes(vlist)
-  {}
-
-  inline TAttributedBoolList(PVarList vlist, const int &i_N, const bool b= false)
-  : TOrangeVector<bool, false>(i_N, b),
-    attributes(vlist)
-  {}
-
-  inline TAttributedBoolList(PVarList vlist, const vector<bool> &i_X)
-  : TOrangeVector<bool, false>(i_X),
-    attributes(vlist)
-  {}
-};
 
 #ifdef _MSC_VER
   #pragma warning(pop)

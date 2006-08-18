@@ -36,8 +36,10 @@ DEFINE_TOrangeVector_classDescription(string, "TStringList", false, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PFloatList, "TFloatListList", true, ORANGE_API)
 
 
+DEFINE_AttributedList_classDescription(TAttributedFloatList, TFloatList)
+DEFINE_AttributedList_classDescription(TAttributedBoolList, TBoolList)
+
 // TValueList's properties are defined in vars.cpp
-// TAttributeFloatList's properties are defined in vars.cpp
 
 #define pff pair<float, float>
 DEFINE_TOrangeVector_classDescription(pff, "TFloatFloatList", false, ORANGE_API)
