@@ -38,11 +38,7 @@ WRAPPER(ProbabilityEstimator)
 typedef vector<PDistribution> TDistributionVector;
 typedef map<float, PDistribution> TDistributionMap;
 
-/*  Distribution of attribute's values for a domain.
-    TContingency is a descendant of vector<TDiscDistribution> which holds a contingency table
-    for the variable's values; each element of the vector<TDiscDistribution> corresponds to one of
-    possible variable's values and each element of the 'subvector' corresponds to a class value and
-    holds the number of examples which had the corresponding value of attribute and class. */
+
 class ORANGE_API TContingency : public TOrange {
 public:
   __REGISTER_CLASS
@@ -58,7 +54,7 @@ public:
 
   PDistribution outerDistribution; //P distribution of values of outer attributes
   PDistribution innerDistribution; //P distribution of values of inner attributes
-  PDistribution innerDistributionUnknown; // distribution of inner variable for examples where the outer value was unknown
+  PDistribution innerDistributionUnknown; //P distribution of inner variable for examples where the outer value was unknown
 
   TContingency(PVariable variable=PVariable(), PVariable innervar=PVariable());
   TContingency(const TContingency &old);
@@ -161,7 +157,7 @@ class ORANGE_API TContingencyAttrAttr : public TContingency {
 public:
   __REGISTER_CLASS
 
-  TContingencyAttrAttr(PVariable, PVariable);
+  TContingencyAttrAttr(PVariable = PVariable(), PVariable = PVariable());
   TContingencyAttrAttr(PVariable variable, PVariable innervar, PExampleGenerator, const long weightID=0);
   TContingencyAttrAttr(const int &var, const int &innervar, PExampleGenerator, const long weightID=0);
 
@@ -197,8 +193,8 @@ WRAPPER(ProbabilityEstimator);
 public:
   __REGISTER_CLASS
 
-  PDistribution classes; //PR distribution of class values
-  bool classIsOuter; //PR tells whether the class is the outer variable
+  PDistribution classes; //P distribution of class values
+  bool classIsOuter; //P tells whether the class is the outer variable
   
   TDomainContingency(bool acout=false); // this is the preferred constructor; use computeMatrix to fill the matrix
   TDomainContingency(PExampleGenerator, const long weightID=0, bool acout=false);  // obsolete; use ComputeDomainContingency instead
