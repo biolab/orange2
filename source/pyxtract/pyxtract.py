@@ -103,10 +103,11 @@ if 1: ### Definitions of regular expressions
   constrdef_mac=re.compile(r'(?P<constype>ABSTRACT|C_UNNAMED|C_NAMED|C_CALL)\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<basename>\w*\s*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
   constrdef_mac_call3=re.compile(r'(?P<constype>C_CALL3)\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<callname>\w*\s*)\s*,\s*(?P<basename>\w*\s*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
   constrkeywords = re.compile(r'CONSTRUCTOR_KEYWORDS\s*\(\s*(?P<typename>\w*)\s*, \s*"(?P<keywords>[^"]*)"\s*\)')
-  constrwarndef=re.compile("[^\w](ABSTRACT|CONS|C_UNNAMED|C_NAMED|C_CALL)[^\w]")
+  nopickle=re.compile(r"NO_PICKLE\s*\(\s*(?P<typename>\w*)\s*\)")
+  constrwarndef=re.compile(r"[^\w](ABSTRACT|CONS|C_UNNAMED|C_NAMED|C_CALL)[^\w]")
 
   datastructuredef=re.compile(r'DATASTRUCTURE\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<structurename>\w*)\s*,\s*(?P<dictfield>\w*)\s*\)')
-  newbasedondef=re.compile(r'(inline)?\s*PyObject\s*\*(?P<typename>\w*)_new\s*\([^)]*\)\s*BASED_ON\s*\(\s*(?P<basename>\w*)\s*,\s*"(?P<doc>[^"]*)"\s*\)')
+  newbasedondef=re.compile(r'(inline)?\s*PyObject\s*\*(?P<typename>\w*)_new\s*\([^)]*\)\s*BASED_ON\s*\(\s*(?P<basename>\w*)\s*,\s*"(?P<doc>[^"]*)"\s*\)\s*(?P<allows_empty_args>ALLOWS_EMPTY)?')
   basedondef=re.compile(r'BASED_ON\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<basename>\w*)\s*\)')
   hiddendef=re.compile(r'HIDDEN\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<basename>\w*)\s*\)')
   
@@ -120,6 +121,7 @@ if 1: ### Definitions of regular expressions
   getdef=re.compile(r'PyObject\s*\*(?P<typename>\w*)_(?P<method>get)_(?P<attrname>\w*)\s*\([^)]*\)\s*(PYDOC\(\s*"(?P<doc>[^"]*)"\s*\))?')
   setdef=re.compile(r'int\s*(?P<typename>\w*)_(?P<method>set)_(?P<attrname>\w*)\s*\([^)]*\)\s*(PYDOC\(\s*"(?P<doc>[^"]*)"\s*\))?')
   methoddef=re.compile(r'PyObject\s*\*(?P<typename>\w\w+)_(?P<cname>\w*)\s*\([^)]*\)\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)(\s*//>(?P<methodname>\w\w+))?')
+  reducedef=re.compile(r'PyObject\s*\*(?P<typename>\w\w+)__reduce__')
 
   funcdef2=re.compile(r'(?P<defpart>PyObject\s*\*(?P<pyname>\w*)\s*\([^)]*\))\s*;?\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
   funcwarndef=re.compile("PYARGS")
@@ -149,18 +151,28 @@ def detectConstructors(line, classdefs):
     typename, basename, constype, doc=found.group("typename", "basename", "constype", "doc")
     printV2("%s (%s): Macro constructor %s", (typename, basename, constype))
     addClassDef(classdefs, typename, parsedFile, "basetype", basename)
-    if (constype!="ABSTRACT"):
-       addClassDef(classdefs, typename, parsedFile, "constructor", ConstructorDefinition(arguments=doc, type=constype))
+    if constype=="ABSTRACT":
+      classdefs[typename].abstract = True
+    else:
+       addClassDef(classdefs, typename, parsedFile, "constructor", ConstructorDefinition(arguments=doc, type=constype, allows_empty_args = True))
     return 1
   
   found = constrkeywords.search(line)
   if found:
     typename, keywords = found.group("typename", "keywords")
     addClassDef(classdefs, typename, parsedFile, "constructor_keywords", keywords.split())
+    return 1
   
   if constrwarndef.search(line):
     printV0("Warning: looks like constructor, but syntax is not matching")
+    return 1
 
+  found = nopickle.search(line)
+  if found:
+    typename = found.group("typename")
+    addClassDef(classdefs, typename, parsedFile)
+    classdefs[typename].methods["__reduce__"] = MethodDefinition(argkw="METH_NOARGS", cname="*yieldNoPickleError")
+    return 1
 
 def detectAttrs(line, classdefs):
   found = getdef.search(line) or setdef.search(line)
@@ -223,11 +235,22 @@ def detectMethods(line, classdefs):
       typename, methodname = found.group("typename", "methodname")
       addClassDef(classdefs, typename, parsedFile)
       classdefs[typename].specialmethods[methodname]=1
-    
-  found=methoddef.search(line)
-  if found:
-    typename, cname, methodname, argkw, doc = found.group("typename", "cname", "methodname", "argkw", "doc")
 
+  found=reducedef.search(line)
+  typename = None
+  if found:
+    typename = found.group("typename")
+    methodname = "__reduce__"
+    cname = "_reduce__"
+    argkw = "METH_NOARGS"
+    doc = "()"
+    
+  else:
+    found=methoddef.search(line)
+    if found:
+      typename, cname, methodname, argkw, doc = found.group("typename", "cname", "methodname", "argkw", "doc")
+
+  if typename:  
     if not classdefs.has_key(typename) and "_" in typename:
       com = typename.split("_")
       if len(com)==2 and classdefs.has_key(com[0]):
@@ -253,8 +276,9 @@ def detectHierarchy(line, classdefs):
   found=newbasedondef.match(line)
   if found:
     typename, basename, doc = found.group("typename", "basename", "doc")
+    allows_empty_args = bool(found.group("allows_empty_args"))
     addClassDef(classdefs, typename, parsedFile, "basetype", basename, 0)
-    addClassDef(classdefs, typename, parsedFile, "constructor", ConstructorDefinition(arguments=doc, type="MANUAL"))
+    addClassDef(classdefs, typename, parsedFile, "constructor", ConstructorDefinition(arguments=doc, type="MANUAL", allows_empty_args=allows_empty_args))
     return 1
 
   found=basedondef.match(line)
@@ -496,10 +520,11 @@ def writeAppendix(filename, targetname, classdefs, aliases):
       outfile.write("PyMethodDef "+type+"_methods[] = {\n")
       for methodname in methodnames:
         method=fields.methods[methodname]
+        cname = method.cname[0] == "*" and method.cname[1:] or type+"_"+method.cname
         if method.arguments:
-          outfile.write('     {"'+methodname+'", (binaryfunc)'+type+"_"+method.cname+", "+method.argkw+", \""+method.arguments+"\"},\n")
+          outfile.write('     {"'+methodname+'", (binaryfunc)'+cname+", "+method.argkw+", \""+method.arguments+"\"},\n")
         else:
-          outfile.write('     {"'+methodname+'", (binaryfunc)'+type+"_"+method.cname+", "+method.argkw+"},\n")
+          outfile.write('     {"'+methodname+'", (binaryfunc)'+cname+", "+method.argkw+"},\n")
       outfile.write("     {NULL, NULL}\n};\n\n")
       
 
@@ -663,7 +688,7 @@ def writeAppendix(filename, targetname, classdefs, aliases):
     outfile.write('PyTypeObject PyOr'+type+'_Type_inh = {\n')
     outfile.write('  PyObject_HEAD_INIT((_typeobject *)&PyType_Type)\n')
     outfile.write('  0,\n')
-    outfile.write('  "'+type+'",\n')
+    outfile.write('  "%s.%s",\n' % (modulename, type))
     outfile.write('  sizeof(%s), 0,\n' % fields.datastructure)
     innulls=writeslots(specialmethods, 1)
     outfile.write((innulls and '\n' or '') + '};\n\n')
@@ -678,10 +703,14 @@ def writeAppendix(filename, targetname, classdefs, aliases):
     else:
       outfile.write(', PyOr_noConversion, PyOr_noConversion')
     outfile.write(', ' + (fields.constructor_keywords and type+'_constructor_keywords' or 'NULL'))
+    outfile.write(', ' + (fields.constructor and fields.constructor.allows_empty_args and 'true' or 'false'))
     outfile.write(', ' + (fields.recognized_attributes and type+'_recognized_attributes' or 'NULL'))
     outfile.write(', ' + (aliases.has_key(type) and type+'_aliases' or 'NULL'))
     outfile.write(');\n\n\n\n')
 
+    if not (fields.abstract or fields.constructor and fields.constructor.allows_empty_args or fields.methods.has_key("__reduce__")):
+      printV0("Warning: class '%s' will not be picklable", type, False)
+      
   outfile.close()
 
 
@@ -834,7 +863,7 @@ def writeInitialization(functions, constants):
   BOOL APIENTRY DllMain( HANDLE, DWORD  ul_reason_for_call, LPVOID)  { return TRUE; }
 #endif
 
-PyObject *%(modulename)sModule;
+extern %(MODULENAME)s_API PyObject *%(modulename)sModule;
 
 ORANGE_API void addClassList(TOrangeType **);
 
@@ -997,17 +1026,18 @@ def printNQ(str):
   if not quiet:
     print str
     
-def printV0(str="", tup=()):
-  print "%20s:%4i:" % (parsedFile, lineno),
+def printV0(str="", tup=(), printLine = True):
+  if printLine:
+    print "%20s:%4i:" % (parsedFile, lineno),
   print str % tup
 
-def printV2(str="", tup=()):
+def printV2(str="", tup=(), printLine = True):
   if verbose==2:
-    printV0(str, tup)
+    printV0(str, tup, printLine)
     
-def printV1(str="", tup=()):
+def printV1(str="", tup=(), printLine = True):
   if verbose>=1:
-    print str % tup
+    printV0(str, tup, printLine)
 
 def printV1NoNL(str="", tup=()):
   if verbose>=1:
