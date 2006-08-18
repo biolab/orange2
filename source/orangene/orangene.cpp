@@ -2,6 +2,7 @@
 #include "heatmap.hpp"
 #include "px/externs.px"
 #include "cls_orange.hpp"
+#include "slist.hpp"
 #include "vectortemplates.hpp"
 
 PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap=None [, disregardClass=0]])")
@@ -15,6 +16,74 @@ PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *k
     return WrapNewOrange(mlnew THeatmapConstructor(table, baseHeatmap, (PyTuple_Size(args)==2) && !baseHeatmap, (disregardClass!=0)), type);
   PyCATCH
 }
+
+
+PyObject *HeatmapConstructor__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(THeatmapConstructor, hmc);
+    const int nColumns = hmc->nColumns;
+
+    TCharBuffer buf(0);
+
+    buf.writeInt(nColumns);
+    buf.writeInt(hmc->nRows);
+    buf.writeInt(hmc->nClasses);
+
+    ITERATE(vector<float *>, fmi, hmc->floatMap)
+      buf.writeBuf(*fmi, nColumns * sizeof(float));
+
+    buf.writeIntVector(hmc->classBoundaries);
+    buf.writeFloatVector(hmc->lineCenters);
+    buf.writeFloatVector(hmc->lineAverages);
+    buf.writeIntVector(hmc->sortIndices);
+
+    return Py_BuildValue("O(ONs#)N", getExportedFunction("__pickleLoaderHeatmapConstructor"),
+                                     self->ob_type,
+                                     WrapOrange(hmc->sortedExamples),
+                                     buf.buf, buf.length(),
+                                     packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderHeatmapConstructor(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, sortedExamples, packed-data)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PExampleTable sortedExamples;
+    char *pbuf;
+    int bufSize;
+
+    if (!PyArg_ParseTuple(args, "OO&s#:__pickleLoaderHeatmapConstructor", &type, ccn_ExampleTable, &sortedExamples, &pbuf, &bufSize))
+      return NULL;
+
+    TCharBuffer buf(pbuf);
+
+    THeatmapConstructor *hmc = new THeatmapConstructor();
+    hmc->sortedExamples = sortedExamples;
+
+    const int nColumns = hmc->nColumns = buf.readInt();
+    int rows = hmc->nRows = buf.readInt();
+    hmc->nClasses = buf.readInt();
+
+    vector<float *> &floatMap = hmc->floatMap;
+    floatMap.reserve(rows);
+    while(rows--) {
+      float *arow = new float[nColumns];
+      buf.readBuf(arow, nColumns * sizeof(float));
+      floatMap.push_back(arow);
+    }
+
+    buf.readIntVector(hmc->classBoundaries);
+    buf.readFloatVector(hmc->lineCenters);
+    buf.readFloatVector(hmc->lineAverages);
+    buf.readIntVector(hmc->sortIndices);
+
+    return WrapNewOrange(hmc, type);
+  PyCATCH
+}
+
 
 
 PyObject *HeatmapConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(squeeze) -> HeatmapList")
@@ -49,6 +118,53 @@ PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(ME
 
 BASED_ON(Heatmap, Orange)
 
+
+PyObject *Heatmap__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(THeatmap, hm)
+
+    TCharBuffer buf(3 * sizeof(int) + hm->height * (1 + hm->width) * sizeof(float));
+    buf.writeInt(hm->height);
+    buf.writeInt(hm->width);
+    buf.writeBuf(hm->cells, hm->height * hm->width * sizeof(float));
+    buf.writeBuf(hm->averages, hm->height * sizeof(float));
+
+    return Py_BuildValue("O(Os#NN)N", getExportedFunction("__pickleLoaderHeatmap"),
+                                     self->ob_type,
+                                     buf.buf, buf.length(),
+                                     WrapOrange(hm->examples),
+                                     WrapOrange(hm->exampleIndices),
+                                     packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderHeatmap(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed-data, examples, exampleIndices)")
+{
+  PyTRY
+    PyTypeObject *type;
+    char *pbuf;
+    int bufSize;
+    PExampleTable examples;
+    PIntList exampleIndices;
+    if (!PyArg_ParseTuple(args, "Os#O&O&:__pickleLoaderHeatmap", &type, &pbuf, &bufSize, ccn_ExampleTable, &examples, ccn_IntList, &exampleIndices))
+      return NULL;
+
+    TCharBuffer buf(pbuf);
+    const int height = buf.readInt();
+    const int width = buf.readInt();
+
+    THeatmap *hm = new THeatmap(height, width, examples);
+    hm->exampleIndices = exampleIndices;
+    buf.readBuf(hm->cells, height * width * sizeof(float));
+    buf.readBuf(hm->averages, height * sizeof(float));
+
+    return WrapNewOrange(hm, type);
+  PyCATCH
+}
+
+
 PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma[, grid, firstRow, nRows]) -> bitmap")
 {
   PyTRY
@@ -68,7 +184,7 @@ PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) 
 
     int size;
     unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, firstRow, nRows, absLow, absHigh, gamma, grid!=0, size);
-    PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * hm->width, cellHeight * nRows);
+    PyObject *res = Py_BuildValue("s#ii", (const char *)bitmap, size, cellWidth * hm->width, cellHeight * nRows);
     delete bitmap;
     return res;
   PyCATCH
@@ -97,7 +213,7 @@ PyObject *Heatmap_getAverages(PyObject *self, PyObject *args, PyObject *keywords
 
     int size;
     unsigned char *bitmap = hm->averages2string(width, height, firstRow, nRows, absLow, absHigh, gamma, grid!=0, size);
-    PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), width, height * hm->height);
+    PyObject *res = Py_BuildValue("s#ii", (const char *)bitmap, size, width, height * hm->height);
     delete bitmap;
     return res;
   PyCATCH
@@ -154,7 +270,7 @@ extern ORANGENE_API TOrangeType PyOrHeatmap_Type;
 
 PHeatmapList PHeatmapList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::P_FromArguments(arg); }
 PyObject *HeatmapList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_FromArguments(type, arg); }
-PyObject *HeatmapList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Heatmap>)") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_new(type, arg, kwds); }
+PyObject *HeatmapList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Heatmap>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_new(type, arg, kwds); }
 PyObject *HeatmapList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_getitem(self, index); }
 int       HeatmapList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_setitem(self, index, item); }
 PyObject *HeatmapList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_getslice(self, start, stop); }
@@ -167,6 +283,7 @@ PyObject *HeatmapList_str(TPyOrange *self) { return ListOfWrappedMethods<PHeatma
 PyObject *HeatmapList_repr(TPyOrange *self) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_str(self); }
 int       HeatmapList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_contains(self, obj); }
 PyObject *HeatmapList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Heatmap) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_append(self, item); }
+PyObject *HeatmapList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_extend(self, obj); }
 PyObject *HeatmapList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Heatmap) -> int") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_count(self, obj); }
 PyObject *HeatmapList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> HeatmapList") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_filter(self, args); }
 PyObject *HeatmapList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Heatmap) -> int") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_index(self, obj); }
@@ -176,6 +293,7 @@ PyObject *HeatmapList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, 
 PyObject *HeatmapList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Heatmap) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_remove(self, obj); }
 PyObject *HeatmapList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_reverse(self); }
 PyObject *HeatmapList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_sort(self, args); }
+PyObject *HeatmapList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_reduce(self); }
 
 
 bool initorangeneExceptions()
@@ -183,6 +301,8 @@ bool initorangeneExceptions()
 
 void gcorangeneUnsafeStaticInitialization()
 {}
+
+ORANGENE_API PyObject *orangeneModule;
 
 #include "px/initialization.px"
 
