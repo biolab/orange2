@@ -2,9 +2,6 @@
 #include "graph.hpp"
 #include "../orange/px/externs.px"
 
-PyObject *Orange__reduce__(PyObject *self, PyObject *, PyObject *)
-{ return NULL; }
-
 PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(Graph, steps, coordinates) -> None")
 {
   PyTRY
