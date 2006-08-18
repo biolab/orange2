@@ -24,13 +24,17 @@
 #define mixBits(u, v)   (hiBit(u)|loBits(v))
 #define SEED0           (4357U)
 
+
 class cMersenneTwister
 {
-private:
+// Made everything public by JD (need it for pickling)
+public:
+
   unsigned long   state[N+1];   // state vector
   unsigned long   *next;        // next random
   int      left;                // how many values left
-public:
+
+
   ////////////////////////////////////////////////////////////////////
   // initialize MT via linear conguential generator 
   // x[n+1] = (69069 * x[n]) mod 2^32
