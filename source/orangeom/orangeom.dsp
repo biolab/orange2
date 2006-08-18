@@ -258,6 +258,10 @@ SOURCE=.\som\version.c
 # End Group
 # Begin Source File
 
+SOURCE=.\graphDrawing.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\mds.cpp
 
 !IF  "$(CFG)" == "orangeom - Win32 Release"
