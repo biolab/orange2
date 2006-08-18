@@ -20,34 +20,6 @@
 */
 
 
-/* 
-
-Here are three kinds of classes, one being obsolete.
-
-Discretizers are derived from TTransformValue.
-They take a continuous value and discretize it.
-There are only two discretizers, one uses intervals
-of equal widths (TEquiDistDiscretizer) and the other
-uses a set of cut-off points (TIntervalDiscretizer).
-
-Discretizations construct discretizers. There's an
-abstract TDiscretization class, from which we derive
-TEquiDistDiscretization (the only one that constructs
-TEquiDistDiscretizer), and TEquiNDiscretization,
-TEntropyDiscretization and TBiModalDiscretization.
-
-DiscretizedDomains are obsolete. These are different
-classes derived from Domain. Their constructors get
-examples and the constructed domain has continuous
-attributes replaced by discretized.
-
-DiscretizedDomains are succeeded by DomainDiscretization,
-a class that is given a Discretization as a property,
-while it's call operator gets an example generator and
-returns a discretized domain.
-
-*/
-
 #ifndef __DISCRETIZE_HPP
 #define __DISCRETIZE_HPP
 
@@ -251,26 +223,6 @@ public:
 
   TBiModalDiscretization(const bool = true);
   virtual PVariable operator()(PExampleGenerator, PVariable, const long &weightID=0);
-};
-
-
-
-/* OBSOLETE */
-
-class ORANGE_API TDiscretizedDomain : public TDomain {
-public:
-  __REGISTER_CLASS
-
-  PDiscretization defaultDiscretization; //P default discretization
-  int defaultInt; //P default number of intervals
-  int weight; //P id of attribute with weight
-
-  TDiscretizedDomain(const int aweight=0, PDiscretization defaultdisc=PDiscretization());
-  TDiscretizedDomain(PExampleGenerator, const int aweight=0, PDiscretization defaultdisc=PDiscretization());
-  TDiscretizedDomain(PExampleGenerator, const vector<int> &discretizeId, const int aweight=0, PDiscretization defaultdisc=PDiscretization());
-
-  void learn(PExampleGenerator gen);
-  void learn(PExampleGenerator gen, const vector<int> &discretizeId);
 };
 
 
