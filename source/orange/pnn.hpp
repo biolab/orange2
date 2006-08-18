@@ -51,6 +51,7 @@ public:
   TPNN(PDomain domain, PExampleGenerator egen, double *bases, const int &law = InverseLinear, const bool normalizeExamples = true);
   TPNN(PDomain, double *, const int &nExamples, double *bases, const int &dimensions, PFloatList off, PFloatList norm, const int &law = InverseLinear, const bool normalizeExamples = true);
   TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const int &law, const vector<int> &attrIndices, int &nOrigRow, const bool normalizeExamples = true);
+  TPNN(const int &nDim, const int &nAtt, const int &nEx); // used for pickling: only allocates the memory for the (double *) fields
   TPNN(const TPNN &);
   TPNN &operator =(const TPNN &);
 
@@ -69,6 +70,8 @@ public:
 
   TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const int &law = InverseSquare, const bool normalizeExamples = true);
   TP2NN(PDomain, double *projections, const int &nExamples, double *bases, PFloatList off, PFloatList norm, PFloatList avgs, const int &law = InverseSquare, const bool normalizeExamples = true);
+
+  TP2NN(const int &nAttrs, const int &nExamples); // used for pickling: only allocates the memory for the (double *) fields
 
   virtual TValue operator ()(const TExample &);
   virtual PDistribution classDistribution(const TExample &);

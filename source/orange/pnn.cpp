@@ -160,6 +160,15 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
 }
 
 
+TPNN::TPNN(const int &nDim, const int &nAtt, const int &nEx)
+: dimensions(nDim),
+  bases(new double[2*nAtt]),
+  radii(new double[2*nAtt]),
+  nExamples(nEx),
+  projections(new double[3*nExamples])
+{}
+
+
 TPNN::TPNN(const TPNN &old)
 : TClassifierFD(old),
   dimensions(0),
@@ -500,6 +509,10 @@ TP2NN::TP2NN(PDomain dom, double *aprojections, const int &nEx, double *ba, PFlo
   }
 }
 
+
+TP2NN::TP2NN(const int &nAtt, const int &nEx)
+: TPNN(2, nAtt, nEx)
+{}
 
 void TP2NN::project(const TExample &example, double &x, double &y)
 {
