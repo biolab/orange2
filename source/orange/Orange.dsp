@@ -45,7 +45,8 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /Op- /Oy /Ob1 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /Zm700 /Gs /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /FD /Zm700 /Gs /c
+# SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -241,6 +242,19 @@ SOURCE=.\cls_misc.cpp
 # Begin Source File
 
 SOURCE=.\cls_orange.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi /Od
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -442,6 +456,19 @@ SOURCE=.\lib_kernel.cpp
 # Begin Source File
 
 SOURCE=.\lib_learner.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi /Od
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -450,6 +477,19 @@ SOURCE=.\lib_preprocess.cpp
 # Begin Source File
 
 SOURCE=.\lib_vectors.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi /Od
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -582,6 +622,19 @@ SOURCE=.\retisinter.cpp
 # Begin Source File
 
 SOURCE=.\root.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi /Od
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -861,10 +914,6 @@ SOURCE=.\hclust.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\heatmap.hpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\imputation.hpp
 # End Source File
 # Begin Source File
@@ -1018,10 +1067,6 @@ SOURCE=.\spec_gen.hpp
 # Begin Source File
 
 SOURCE=.\stringvars.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\student.hpp
 # End Source File
 # Begin Source File
 
@@ -1202,6 +1247,10 @@ SOURCE=.\ppp\filegen.ppp
 # Begin Source File
 
 SOURCE=.\ppp\filter.ppp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ppp\imputation.ppp
 # End Source File
 # Begin Source File
 

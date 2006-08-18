@@ -100,6 +100,8 @@ extern size_t const _no_components[];
 
 bool castableTo(const TClassDescription *objecttype, const TClassDescription *basetype);
 
+#define CONST_MEMBER(ofs) (((char const *)(this)) + ofs)
+
 WRAPPER(Orange)
 
 class ORANGE_API TOrange : public TWrapped {
@@ -124,7 +126,15 @@ public:
   void    setProperty(const char *name, const string &b);  void    getProperty(const char *name, string &b) const;
   void    setProperty(const char *name, const TValue &b);  void    getProperty(const char *name, TValue &b) const;
   void wr_setProperty(const char *name, const POrange &b); void wr_getProperty(const char *name, POrange &b) const;
-  
+
+  inline bool getProperty_bool(const TPropertyDescription *pd) const { return *(bool const *)CONST_MEMBER(pd->offset); }
+  inline int getProperty_int(const TPropertyDescription *pd) const { return *(int const *)CONST_MEMBER(pd->offset); }
+  inline float getProperty_float(const TPropertyDescription *pd) const { return *(float const *)CONST_MEMBER(pd->offset); }
+  inline void getProperty_string(const TPropertyDescription *pd, string &b) const { b = *(string const *)CONST_MEMBER(pd->offset); }
+  inline void getProperty_TValue(const TPropertyDescription *pd, TValue &b) const;
+  inline void getProperty_POrange(const TPropertyDescription *pd, POrange &b) const { b = *(POrange const *)CONST_MEMBER(pd->offset); }
+
+
   const TPropertyDescription *propertyDescription(const char *name, bool noException = false) const;
   const type_info &propertyType(const char *name) const;
   bool hasProperty(const char *name) const;
