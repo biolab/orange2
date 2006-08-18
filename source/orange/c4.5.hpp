@@ -127,7 +127,7 @@ public:
 
   PC45TreeNode tree; //P tree
 
-  TC45Classifier(PDomain domain, PC45TreeNode = PC45TreeNode());
+  TC45Classifier(PDomain domain = PDomain(), PC45TreeNode = PC45TreeNode());
   virtual TValue operator ()(const TExample &);
   PDistribution classDistribution(const TExample &);
   void predictionAndDistribution(const TExample &example, TValue &value, PDistribution &dist);
