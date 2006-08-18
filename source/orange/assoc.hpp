@@ -41,8 +41,8 @@ class ORANGE_API TAssociationRule : public TOrange {
 public:
   __REGISTER_CLASS
 
-  PExample left; //P left side of the rule
-  PExample right; //P right side of the rule
+  PExample left; //PR left side of the rule
+  PExample right; //PR right side of the rule
   float support; //P support for the rule
   float confidence; //P confidence of the rule
   float coverage; //P rule's coverage
@@ -53,10 +53,10 @@ public:
   float nAppliesRight; //P number of examples covered by the rule's right side 
   float nAppliesBoth; //P number of examples covered by the rule
   float nExamples; //P number of learning examples
-  int nLeft; //P number of items on the rule's left side
-  int nRight; //P number of items on the rule's right side
+  int nLeft; //PR number of items on the rule's left side
+  int nRight; //PR number of items on the rule's right side
 
-  TAssociationRule(PExample = PExample(), PExample = PExample());
+  TAssociationRule(PExample, PExample);
 
   TAssociationRule(PExample al, PExample ar,
                    const float &napLeft, const float &napRight, const float &napBoth, const float &nExamples,
