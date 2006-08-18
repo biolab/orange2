@@ -788,7 +788,7 @@ void TMeasureAttribute_cost::majorityCost(const TDiscDistribution &dval, float &
   checkProperty(cost);
 
   int dsize = dval.size();
-  if (dsize>cost->size())
+  if (dsize > cost->dimension)
     raiseError("cost matrix is too small");
 
   TRandomGenerator srgen(dval.sumValues());
@@ -799,7 +799,7 @@ void TMeasureAttribute_cost::majorityCost(const TDiscDistribution &dval, float &
   for(int predicted = 0; predicted < dsize; predicted++) {
     float thisCost = 0;
     for(int correct = 0; correct < dsize; correct++)
-      thisCost += dval[correct] * cost->getCost(predicted, correct);
+      thisCost += dval[correct] * cost->cost(predicted, correct);
 
     if (   (thisCost<ccost) && ((wins=1)==1)
         || (thisCost==ccost) && srgen.randbool(++wins)) {
