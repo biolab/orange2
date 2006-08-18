@@ -46,15 +46,14 @@ public:
 
   int B; //P subset size
 
+  bool moreToCome; //PR
+  TCounter counter;
+
   TSubsetsGenerator_constSize(int B);
 
   virtual bool reset();
   virtual bool reset(const TVarList &vl);
   virtual bool nextSubset(TVarList &);
-
-protected:
-  bool moreToCome;
-  TCounter counter;
 };
 
 
@@ -65,16 +64,15 @@ public:
   int min; //P minimal subset size
   int max; //P maximal subset size
 
+  bool moreToCome; //PR
+  int B; //PR
+  TCounter counter;
+
   TSubsetsGenerator_minMaxSize(int amin, int amax); // can be -1 to ignore
 
   virtual bool reset();
   virtual bool reset(const TVarList &vl);
   virtual bool nextSubset(TVarList &);
-
-protected:
-  bool moreToCome;
-  int B;
-  TCounter counter;
 };
 
 
@@ -84,15 +82,14 @@ public:
 
   PVarList constant; //P a subset that is returned (once!)
 
+  bool moreToCome; //PR
+
   TSubsetsGenerator_constant();
   TSubsetsGenerator_constant(const TVarList &);
 
   virtual bool reset();
   virtual bool reset(const TVarList &);
   virtual bool nextSubset(TVarList &);
-
-protected:
-  bool moreToCome;
 };
 
 
