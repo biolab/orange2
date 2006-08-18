@@ -78,7 +78,7 @@ class ORANGE_API TFilter_isDefined : public TFilter {
 public:
   __REGISTER_CLASS
 
-  PAttributedBoolList check; //PR tells which attributes to check; checks all if the list is empty
+  PAttributedBoolList check; //P tells which attributes to check; checks all if the list is empty
 
   TFilter_isDefined(bool=false, PDomain =PDomain());
   virtual bool operator()(const TExample &);
@@ -147,7 +147,7 @@ public:
   __REGISTER_CLASS
 
   PValueList values; //P accepted values
-  bool negate;
+  bool negate; //P negate
 
   TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = 0, bool negate = false);
   TValueFilter_discrete(const int &pos, PVariable, const int &accs = 0, bool negate = false);
