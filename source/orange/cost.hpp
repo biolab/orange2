@@ -31,20 +31,30 @@ public:
   __REGISTER_CLASS
 
   PVariable classVar; //P attribute to which the matrix applies
+  int dimension; //PR dimension (should equal classVar.noOfValues())
 
-  VECTOR_INTERFACE(PFloatList, costs)
+  float *costs;
 
   TCostMatrix(const int &dimension, const float &inside = 1.0);
   TCostMatrix(PVariable, const float &inside = 1.0);
   	  
-  inline const float &getCost(const int &predicted, const int &correct)
-    { return at(predicted)->at(correct); }
+  inline const float &cost(const int &predicted, const int &correct) const
+  { 
+    if ((predicted >= dimension) || (correct >= dimension))
+      raiseError("value out of range");
+    return costs[predicted*dimension + correct];
+  }
   
-  inline void setCost(const int &predicted, const int &correct, const float &cost)
-  	{ at(predicted)->at(correct) = cost; }
+  inline float &cost(const int &predicted, const int &correct)
+  { 
+    if ((predicted >= dimension) || (correct >= dimension))
+      raiseError("value out of range");
+    return costs[predicted*dimension + correct];
+  }
+  
 
 protected:
-  void init(const int &dimension, const float &inside);
+  void init(const float &inside);
 };
 
 WRAPPER(CostMatrix);

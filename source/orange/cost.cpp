@@ -22,36 +22,46 @@
 
 #include "cost.ppp"
 
-void TCostMatrix::init(const int &dimension, const float &inside)
+void TCostMatrix::init(const float &inside)
 { 
-  reserve(dimension);
-  for(int i = 0; i<dimension; i++) {
-    push_back(mlnew TFloatList(dimension, inside));
-    back()->operator[](i) = 0.0;
-  }
+  if (costs)
+    delete costs;
+
+  const int size = dimension * dimension;
+
+  costs = new float[dimension * dimension];
+  float *ci, *ce;
+  for(ci = costs, ce = costs + size; ci != ce; *ci++ = inside);
+
+  int dim = dimension;
+  for(ci = costs; dim--; *ci = 0, ci += dimension+1);
 }
 
 
 
-TCostMatrix::TCostMatrix(const int &dimension, const float &inside)
+TCostMatrix::TCostMatrix(const int &dim, const float &inside)
+: dimension(dim),
+  costs(NULL)
 {
   if (dimension <= 0)
     raiseError("invalid dimension (%i)", dimension);
 
-  init(dimension, inside);
+  init(inside);
 }
 
 
 TCostMatrix::TCostMatrix(PVariable acv, const float &inside)
-: classVar(acv)
+: classVar(acv),
+  dimension(0),
+  costs(NULL)
 { 
   TEnumVariable *dcv = classVar.AS(TEnumVariable);
   if (!dcv)
     raiseError("attribute '%s' is not discrete", classVar->name.c_str());
 
-  const int dimension = dcv->noOfValues();
+  dimension = dcv->noOfValues();
   if (!dimension)
     raiseError("attribute '%s' has no values", classVar->name.c_str());
 
-  init(dcv->noOfValues(), inside);
+  init(inside);
 }

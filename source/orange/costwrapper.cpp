@@ -55,7 +55,7 @@ PDiscDistribution TCostWrapperClassifier::getRisks(PDistribution wdval)
   for(int predicted=0, dsize = dval.size(); predicted<dsize; predicted++) {
     float thisCost=0;
     for(int correct=0; correct<dsize; correct++)
-      thisCost += dval[correct]*costMatrix->getCost(predicted, correct);
+      thisCost += dval[correct] * costMatrix->cost(predicted, correct);
     risks->push_back(thisCost);
   }
   return risks;
