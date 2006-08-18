@@ -94,6 +94,7 @@ public:
   int nClasses; //PR number of classes (0 if the data is not classified)
 
   THeatmapConstructor(PExampleTable, PHeatmapConstructor baseHeatmap = PHeatmapConstructor(), bool noSorting = false, bool disregardClass=false);
+  THeatmapConstructor(); // for pickle
   virtual ~THeatmapConstructor();
 
   PHeatmapList operator ()(const float &squeeze, float &absLow, float &absHigh);

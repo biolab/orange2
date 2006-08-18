@@ -252,6 +252,10 @@ void THeatmap::getPercentileInterval(const float &lowperc, const float &highperc
 { ::getPercentileInterval(cells, width*height, lowperc, highperc, min, max); }
 
 
+THeatmapConstructor::THeatmapConstructor()
+{}
+
+
 THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructor baseHeatmap, bool noSorting, bool disregardClass)
 : sortedExamples(new TExampleTable(table, 1)), // lock, but do not copy
   floatMap(),
