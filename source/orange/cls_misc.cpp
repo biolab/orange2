@@ -31,6 +31,7 @@
 
 
 DATASTRUCTURE(DomainDepot, TPyDomainDepot, 0)
+NO_PICKLE(DomainDepot)
 
 void DomainDepot_dealloc(TPyDomainDepot *self)
 { 

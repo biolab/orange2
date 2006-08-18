@@ -67,4 +67,10 @@ bool convertFromPython(PyObject *args, TPyValue *&value);
 inline bool convertFromPython(PyObject *args, TValue &value)
 { return convertFromPython(args, value, PVariable()); }
 
+class TCharBuffer;
+
+bool Value_pack(const TValue &value, TCharBuffer &buf, PyObject *&otherValues);
+bool Value_unpack(TValue &value, TCharBuffer &buf, PyObject *otherValues, int &otherValuesIndex);
+
+
 #endif

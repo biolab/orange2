@@ -56,4 +56,9 @@ ORANGE_API int ccn_Example(PyObject *obj, void *ptr);
 ORANGE_API int ptr_Example(PyObject *obj, void *ptr);
 ORANGE_API int ptrn_Example(PyObject *obj, void *ptr);
 
+class TCharBuffer;
+
+void Example_pack(const TExample &example, TCharBuffer &buf, PyObject *&otherValues);
+void Example_unpack(TExample &example, TCharBuffer &buf, PyObject *&otherValues, int &otherValuesIndex);
+
 #endif

@@ -48,7 +48,7 @@
 
 
 DATASTRUCTURE(Value, TPyValue, 0)
-BASED_ON(SomeValue, Orange)
+ABSTRACT(SomeValue, Orange)
 
 /* Converts a value into an appropriate python variable.
    Behaves as convertToPythonNative(const TValue &, PVariable)
@@ -941,6 +941,127 @@ PyObject *Value_native(TPyValue *self)   PYARGS(METH_NOARGS, "() -> bool; Conver
 }
 
 
+#include "slist.hpp"
+
+bool Value_pack(const TValue &value, TCharBuffer &buf, PyObject *&otherValues)
+{
+  const char svalFlag = value.svalV ? 1 << 5 : 0;
+  if (svalFlag) {
+    if (!otherValues)
+      otherValues = PyList_New(0);
+    PyObject *sv = WrapOrange(value.svalV);
+    PyList_Append(otherValues, sv);
+    Py_DECREF(sv);
+  }
+
+  if (value.valueType) {
+    buf.writeChar(svalFlag | (value.valueType & 0x3f));
+    return true;
+  }
+
+  if (value.varType == TValue::INTVAR) {
+    if (value.intV < (1 << (sizeof(char) << 3))) {
+      buf.writeChar((1 << 6) | svalFlag);
+      buf.writeChar(char(value.intV));
+    }
+
+    else if (value.intV < (1 << (sizeof(short) << 3))) {
+      buf.writeChar((2 << 6) | svalFlag);
+      buf.writeShort((unsigned short)(value.intV));
+    }
+
+    else {
+      buf.writeChar((3 << 6) | svalFlag);
+      buf.writeInt(value.intV);
+    }
+
+    return true;
+  }
+
+  else if (value.varType == TValue::FLOATVAR) {
+    buf.writeChar(svalFlag);
+    buf.writeFloat(value.floatV);
+  }
+
+  else
+    buf.writeChar(svalFlag);
+
+  return true;
+}
+
+
+bool Value_unpack(TValue &value, TCharBuffer &buf, PyObject *otherValues, int &otherValuesIndex)
+{
+  char flags = buf.readChar();
+
+  if (flags & (1 << 5))
+    value.svalV = PyOrange_AsSomeValue(PyList_GetItem(otherValues, otherValuesIndex++));
+
+  value.valueType = flags & 0x1f;
+
+  if (value.valueType) {
+    value.floatV = numeric_limits<float>::quiet_NaN();
+    value.intV = numeric_limits<int>::max();
+    return true;
+  }
+
+  if (value.varType == TValue::INTVAR) {
+    flags >>= 6;
+    if (flags == 1)
+      value.intV = buf.readChar();
+    else if (flags == 2)
+      value.intV = buf.readShort();
+    else if (flags == 3)
+      value.intV = buf.readInt();
+    value.floatV = numeric_limits<float>::quiet_NaN();
+  }
+
+  else if (value.varType == TValue::FLOATVAR) {
+    value.floatV = buf.readFloat();
+    value.intV = numeric_limits<int>::max();
+  }
+    
+  return true;
+}
+
+PyObject *Value__reduce__(PyObject *self)
+{
+  PyTRY
+    TCharBuffer buf(16);
+    PyObject *otherValues = NULL;
+    buf.writeChar(PyValue_AS_Value(self).varType);
+    Value_pack(PyValue_AS_Value(self), buf, otherValues);
+    if (!otherValues) {
+      otherValues = Py_None;
+      Py_INCREF(otherValues);
+    }
+    
+    return Py_BuildValue("O(Ns#N)", getExportedFunction("__pickleLoaderValue"),
+                                   WrapOrange(PyValue_AS_Variable(self)),
+                                   buf.buf, buf.length(),
+                                   otherValues);
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderValue(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(variable, packed_values, other_values)")
+{
+  PyTRY
+    PVariable var;
+    char *pbuf;
+    int bufSize;
+    PyObject *otherValues;
+    if (!PyArg_ParseTuple(args, "O&s#O:__pickleLoaderValue", ccn_Variable, &var, &pbuf, &bufSize, &otherValues))
+      return PYNULL;
+
+    TCharBuffer buf(pbuf);
+    int otherValuesIndex = 0;
+    TValue val((const unsigned char &)(buf.readChar()));
+    Value_unpack(val, buf, otherValues, otherValuesIndex);
+    return Value_FromVariableValue(var, val);
+  PyCATCH
+}
+
 #undef CHECK_VARIABLE
 #undef CHECK_SPECIAL_OTHER
 
@@ -957,7 +1078,7 @@ PyObject *ValueList_FromArguments(PyTypeObject *type, PyObject *arg, PVariable v
 { return TValueListMethods::_FromArguments(type, arg, var); }
 
 
-PyObject *ValueList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Value>)")
+PyObject *ValueList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Value>)")  ALLOWS_EMPTY
 { return TValueListMethods::_new(type, arg, kwds); }
 
 
@@ -969,8 +1090,10 @@ int       ValueList_len_sq(TPyOrange *self) { return TValueListMethods::_len(sel
 PyObject *ValueList_concat(TPyOrange *self, PyObject *obj) { return TValueListMethods::_concat(self, obj); }
 PyObject *ValueList_repeat(TPyOrange *self, int times) { return TValueListMethods::_repeat(self, times); }
 PyObject *ValueList_str(TPyOrange *self) { return TValueListMethods::_str(self); }
+PyObject *ValueList_repr(TPyOrange *self) { return TValueListMethods::_str(self); }
 int       ValueList_contains(TPyOrange *self, PyObject *obj) { return TValueListMethods::_contains(self, obj); }
 PyObject *ValueList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Value) -> None") { return TValueListMethods::_append(self, item); }
+PyObject *ValueList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return TValueListMethods::_extend(self, obj); }
 PyObject *ValueList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Value) -> int") { return TValueListMethods::_count(self, obj); }
 PyObject *ValueList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> ValueList") { return TValueListMethods::_filter(self, args); }
 PyObject *ValueList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Value) -> int") { return TValueListMethods::_index(self, obj); }
@@ -979,7 +1102,8 @@ PyObject *ValueList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { 
 PyObject *ValueList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Value") { return TValueListMethods::_pop(self, args); }
 PyObject *ValueList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Value) -> None") { return TValueListMethods::_remove(self, obj); }
 PyObject *ValueList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return TValueListMethods::_reverse(self); }
-PyObject *ValueList_sort(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return TValueListMethods::_reverse(self); }
+PyObject *ValueList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return TValueListMethods::_sort(self, args); }
+PyObject *ValueList__reduce__(TPyOrange *self, PyObject *) { return TValueListMethods::_reduce(self); }
 
 
 

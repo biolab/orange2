@@ -778,6 +778,104 @@ PyObject *Example_native(TPyExample *pex, PyObject *args, PyObject *keyws) PYARG
 }
 
 
+#include "slist.hpp"
+
+void Example_pack(const TExample &example, TCharBuffer &buf, PyObject *&otherValues)
+{
+  for(TValue *vali = example.values; vali != example.values_end; vali++)
+    Value_pack(*vali, buf, otherValues);
+
+  buf.writeInt(example.meta.size() | (example.name ? 1<<31 : 0));
+
+  if (example.name) {
+    if (!otherValues)
+      otherValues = PyList_New(0);
+    PyObject *pyname = PyString_FromString(example.name->c_str());
+    PyList_Append(otherValues, pyname);
+    Py_DECREF(pyname);
+  }
+
+  const_ITERATE(TMetaValues, mi, example.meta) {
+    buf.writeInt((int)(mi->first));
+    buf.writeChar(mi->second.varType);
+    Value_pack(mi->second, buf, otherValues);
+  }
+}
+
+
+void Example_unpack(TExample &example, TCharBuffer &buf, PyObject *&otherValues, int &otherValuesIndex)
+{
+  TVarList::const_iterator vi = example.domain->variables->begin();
+  for(TValue *vali = example.values; vali != example.values_end; vali++, vi++) {
+    vali->varType = (*vi)->varType;
+    Value_unpack(*vali, buf, otherValues, otherValuesIndex);
+  }
+
+  int nMetas = buf.readInt();
+
+  if (nMetas & (1<<31)) {
+    PyObject *pyname = PyList_GetItem(otherValues, otherValuesIndex++);
+    example.name = new string(PyString_AsString(pyname));
+  }
+
+  for(int i = nMetas & 0x7fffffff; i--; ) {
+    const int id = buf.readInt();
+    TValue val((const unsigned char &)(buf.readChar()));
+    Value_unpack(val, buf, otherValues, otherValuesIndex);
+    example.meta.setValue(id, val);
+  }
+}
+
+
+PyObject *Example__reduce__(TPyExample *pex)
+{
+  PyTRY
+    if (pex->lock)
+      PYERROR(PyExc_TypeError, "examples that reference tables cannot be pickled", PYNULL);
+
+    TExample &example = PyExample_AS_ExampleReference(pex);
+
+    TCharBuffer buf(1024);
+    PyObject *otherValues = NULL;
+    Example_pack(example, buf, otherValues);
+    if (!otherValues) {
+      otherValues = Py_None;
+      Py_INCREF(otherValues);
+    }
+    
+    if (pex->example.counter->orange_dict)
+      return Py_BuildValue("O(Ns#N)O", getExportedFunction("__pickleLoaderExample"),
+                                      WrapOrange(example.domain),
+                                      buf.buf, buf.length(),
+                                      otherValues,
+                                      pex->example.counter->orange_dict);
+    else
+      return Py_BuildValue("O(Ns#N)", getExportedFunction("__pickleLoaderExample"),
+                                      WrapOrange(example.domain),
+                                      buf.buf, buf.length(),
+                                      otherValues);
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderExample(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(domain, packed_values, other_values)")
+{
+  PyTRY
+    PDomain domain;
+    char *buf;
+    int bufSize;
+    PyObject *otherValues;
+
+    if (!PyArg_ParseTuple(args, "O&s#O:__pickleLoaderExample", cc_Domain, &domain, &buf, &bufSize, &otherValues))
+      return NULL;
+
+    TExample *newEx = new TExample(domain);
+    PExample wex = newEx;
+    int otherValuesIndex = 0;
+    Example_unpack(*newEx, TCharBuffer(buf), otherValues, otherValuesIndex);
+    return Example_FromWrappedExample(wex);
+  PyCATCH
+}
 
 inline void addValue(string &res, const TValue &val, PVariable var)
 { string str;

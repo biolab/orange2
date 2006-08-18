@@ -36,6 +36,9 @@ ORANGE_API int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *ar
 ORANGE_API int Orange_setattr1(TPyOrange *self, char *name, PyObject *args);
 ORANGE_API int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args);
 
+ORANGE_API PyObject *packOrangeDictionary(PyObject *self);
+ORANGE_API PyObject *Orange__reduce__(PyObject *self, PyObject *, PyObject *);
+
 ORANGE_API PyObject *objectOnTheFly(PyObject *args, PyTypeObject *objectType);
 
 ORANGE_API PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
@@ -48,6 +51,5 @@ ORANGE_API PyObject *PyOrange_DictProxy_New(TPyOrange *);
 ORANGE_API extern PyTypeObject PyOrange_DictProxy_Type;
 
 class ORANGE_API TPyOrange_DictProxy : public PyDictObject { public: TPyOrange *backlink; };
-
 
 #endif
