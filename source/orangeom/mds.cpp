@@ -144,6 +144,13 @@ PyObject* StressFunc_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BAS
     return WrapNewOrange(mlnew TStressFunc_Python(), type);
 }
 
+PyObject *StressFunc__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrStressFunc_Type);
+}
+
+extern ORANGEOM_API PyObject *orangeomModule;
+
 PyObject *MDS_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(dissMatrix[, dim, points])")
 {
     PyTRY
@@ -166,6 +173,58 @@ PyObject *MDS_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(dissMat
     return WrapOrange(mds);
     PyCATCH
 }
+
+
+PyObject *MDS__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TMDS, mds);
+
+    return Py_BuildValue("O(ONiNif)N", getExportedFunction(orangeomModule, "__pickleLoaderMDS"),
+                                       self->ob_type,
+                                       WrapOrange(mds->distances),
+                                       mds->dim,
+                                       mds->points,
+                                       mds->freshD ? 1 : 0,
+                                       mds->avgStress,
+                                       packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderMDS(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, distances, dim, points, freshD, avgStress)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PyObject *pydistances, *pydim, *pypoints;
+    int freshD;
+    float avgStress;
+    if (!PyArg_ParseTuple(args, "OOOOif:__pickleLoaderMDS", &type, &pydistances, &pydim, &pypoints, &freshD, &avgStress))
+      return NULL;
+
+    // SET_ITEM steals references
+    PyObject *newargs = PyTuple_New(3);
+    PyTuple_SET_ITEM(newargs, 0, pydistances);
+    PyTuple_SET_ITEM(newargs, 1, pydim);
+    PyTuple_SET_ITEM(newargs, 2, pypoints);
+
+    PyObject *pymds = MDS_new(type, newargs);
+    Py_DECREF(newargs);
+    if (!pymds) {
+      Py_DECREF((PyObject *)type);
+      return NULL;
+    }
+
+    PMDS mds = PyOrange_AsMDS(pymds);
+    mds->freshD = freshD != 0;
+    mds->avgStress = avgStress;
+
+    return pymds;
+  PyCATCH;
+}
+
+
+
 
 PyObject *MDS_SMACOFstep(PyTypeObject  *self) PYARGS(METH_NOARGS, "()")
 {
