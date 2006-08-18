@@ -48,6 +48,7 @@ This file includes constructors and specialized methods for ML* object, defined 
 
 
 #include "converts.hpp"
+#include "slist.hpp"
 
 #include "externs.px"
 
@@ -61,18 +62,16 @@ bool convertFromPython(PyObject *, PContingency &, bool allowNull=false, PyTypeO
 
 
 PyObject *convertToPython(const PCostMatrix &matrix)
-{ int dim=matrix->size();
-  PyObject *pycost=PyList_New(dim);
-  int i=0;
-  const_PITERATE(TCostMatrix, ci, matrix) {
-    PyObject *el=PyList_New(dim);
-    matrix->at(i)->operator[](dim);
-    int j=0;
-    const_PITERATE(TFloatList, di, matrix->at(i))
-      PyList_SetItem(el, j++, PyFloat_FromDouble(*di));
-    PyList_SetItem(pycost, i++, el);
+{ 
+  int dim = matrix->dimension;
+  PyObject *pycost = PyList_New(dim);
+  float *ci = matrix->costs;
+  for(int i = 0; i < dim; i++) {
+    PyObject *row = PyList_New(dim);
+    for(int j = 0; j < dim; j++)
+      PyList_SetItem(row, j, PyFloat_FromDouble(*ci++));
+    PyList_SetItem(pycost, i, row);
   }
-
   return pycost;
 }
 
@@ -82,7 +81,7 @@ bool readCostMatrix(PyObject *arg, TCostMatrix *&matrix)
   int dim;
   const int arglength = PyObject_Length(arg);
   if (matrix) {
-    dim = matrix->size();
+    dim = matrix->dimension;
     if (dim != arglength) {
       PyErr_Format(PyExc_TypeError, "invalid sequence length (expected %i, got %i)", dim, arglength);
       return false;
@@ -130,7 +129,7 @@ bool readCostMatrix(PyObject *arg, TCostMatrix *&matrix)
       }
       
       // this cannot fail:
-      matrix->setCost(i, j, f);
+      matrix->cost(i, j) = f;
     }
 
     if (j<dim) {
@@ -201,6 +200,36 @@ PyObject *CostMatrix_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(
 }
 
 
+PyObject *CostMatrix__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TCostMatrix, matrix);
+    const int dim = matrix->dimension;
+    return Py_BuildValue("O(Os#i)N", getExportedFunction("__pickleLoaderCostMatrix"),
+                                     self->ob_type,
+                                     matrix->costs, dim*dim*sizeof(float),
+                                     dim,
+                                     packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderCostMatrix(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_matrix, dimension)")
+{
+  PyTRY
+    PyTypeObject *type;
+    char *buf;
+    int bufSize, dim;
+    if (!PyArg_ParseTuple(args, "Os#i:__pickleLoaderCostMatrix", &type, &buf, &bufSize, &dim))
+      return NULL;
+
+    TCostMatrix *cm = new TCostMatrix(dim);
+    memcpy(cm->costs, buf, bufSize);
+    return WrapNewOrange(cm, type);
+  PyCATCH
+}
+
+
 PyObject *CostMatrix_native(PyObject *self) PYARGS(METH_O, "() -> list of lists of floats")
 { return convertToPython(PyOrange_AsCostMatrix(self)); }
 
@@ -209,7 +238,7 @@ int getCostIndex(PyObject *arg, TCostMatrix *matrix, char *error)
 {
   if (PyInt_Check(arg)) {
     int pred = PyInt_AsLong(arg);
-    if ((pred<0) || (pred >= matrix->size()))
+    if ((pred<0) || (pred >= matrix->dimension))
       PYERROR(PyExc_IndexError, error, -1);
     return pred;
   }
@@ -237,7 +266,7 @@ PyObject *CostMatrix_getcost(PyObject *self, PyObject *args) PYARGS(METH_VARARGS
     if ((pred==-1) || (corr==-1))
       return PYNULL;
 
-    return PyFloat_FromDouble(matrix->getCost(pred, corr));
+    return PyFloat_FromDouble(matrix->cost(pred, corr));
   PyCATCH
 }
 
@@ -258,28 +287,26 @@ PyObject *CostMatrix_setcost(PyObject *self, PyObject *args) PYARGS(METH_VARARGS
     if ((pred==-1) || (corr==-1))
       return PYNULL;
 
-    matrix->setCost(pred, corr, cost);
+    matrix->cost(pred, corr) = cost;
     RETURN_NONE;
   PyCATCH
 }
 
 
-PyObject *CostMatrix_get_dimension(PyObject *self)
-{
-  return PyInt_FromLong(SELF_AS(TCostMatrix).size());
-}
-
 /* ************ BASSTAT ************ */
 
 #include "basstat.hpp"
 
-PyObject *BasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(variable, [min=, max=, avg=, dev=, n=]) -> BasicAttrStat")
+PyObject *BasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(variable, [min=, max=, avg=, dev=, n=]) -> BasicAttrStat") ALLOWS_EMPTY
 { PyTRY
-    if (!PyOrVariable_Check(args))
-      PYERROR(PyExc_TypeError, "invalid parameters for constructor", PYNULL);
-    return WrapNewOrange(mlnew TBasicAttrStat(PyOrange_AsVariable(args)), type);
+    PVariable var;
+    if (!PyArg_ParseTuple(args, "|O&:BasicAttrStat.__new__", ccn_Variable, &var))
+      return NULL;
+
+    return WrapNewOrange(mlnew TBasicAttrStat(var), type);
   PyCATCH
 }
+
 
 PyObject *BasicAttrStat_add(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(value[, weight]) -> None")
 { PyTRY
@@ -317,6 +344,7 @@ PyObject *DomainBasicAttrStat_str(TPyOrange *self) { return ListOfWrappedMethods
 PyObject *DomainBasicAttrStat_repr(TPyOrange *self) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_str(self); }
 int       DomainBasicAttrStat_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_contains(self, obj); }
 PyObject *DomainBasicAttrStat_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(BasicAttrStat) -> None") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_append(self, item); }
+PyObject *DomainBasicAttrStat_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_extend(self, obj); }
 PyObject *DomainBasicAttrStat_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(BasicAttrStat) -> int") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_count(self, obj); }
 PyObject *DomainBasicAttrStat_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> DomainBasicAttrStat") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_filter(self, args); }
 PyObject *DomainBasicAttrStat_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(BasicAttrStat) -> int") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_index(self, obj); }
@@ -326,13 +354,17 @@ PyObject *DomainBasicAttrStat_pop(TPyOrange *self, PyObject *args) PYARGS(METH_V
 PyObject *DomainBasicAttrStat_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(BasicAttrStat) -> None") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_remove(self, obj); }
 PyObject *DomainBasicAttrStat_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_reverse(self); }
 PyObject *DomainBasicAttrStat_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_sort(self, args); }
+PyObject *DomainBasicAttrStat__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, &PyOrBasicAttrStat_Type>::_reduce(self); }
 
 
 /* Note that this is not like callable-constructors. They return different type when given
    parameters, while this one returns the same type, disregarding whether it was given examples or not.
 */
-PyObject *DomainBasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples | <list of BasicAttrStat>) -> DomainBasicAttrStat")
+PyObject *DomainBasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples | <list of BasicAttrStat>) -> DomainBasicAttrStat") ALLOWS_EMPTY
 { PyTRY
+    if (!args || !PyTuple_Size(args))
+      return WrapNewOrange(mlnew TDomainBasicAttrStat(), type);
+
     int weightID;
     PExampleGenerator gen = exampleGenFromArgs(args, weightID);
     if (gen)
@@ -428,7 +460,7 @@ int DomainBasicAttrStat_setitem(PyObject *self, PyObject *args, PyObject *obj)
 #include "contingency.hpp"
 #include "estimateprob.hpp"
 
-BASED_ON(ContingencyClass, Contingency)
+ABSTRACT(ContingencyClass, Contingency)
 
 PDistribution *Contingency_getItemRef(PyObject *self, PyObject *index)
 { CAST_TO_err(TContingency, cont, (PDistribution *)NULL);
@@ -479,6 +511,147 @@ PyObject *Contingency_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_
     return WrapNewOrange(mlnew TContingency(var1, var2), type);
   PyCATCH
 }
+
+
+PyObject *ContingencyReduceCommon(PyObject *self, const char *loaderFunc)
+{
+  PyTRY
+    CAST_TO(TContingency, cont);
+
+    if (cont->varType == TValue::INTVAR) {
+      PyObject *dvect = PyList_New(cont->discrete->size());
+      int i = 0;
+      PITERATE(TDistributionVector, di, cont->discrete)
+        PyList_SetItem(dvect, i++, WrapOrange(*di));
+
+      return Py_BuildValue("O(ON)N", getExportedFunction(loaderFunc),
+                                    (PyObject *)(self->ob_type),
+                                    dvect, 
+                                    packOrangeDictionary(self));
+    }
+
+    else if (cont->varType == TValue::FLOATVAR) {
+      PyObject *dvect = PyList_New(cont->continuous->size());
+      TCharBuffer buf(1024);
+      int i = 0;
+      PITERATE(TDistributionMap, di, cont->continuous) {
+        buf.writeFloat((*di).first);
+        PyList_SetItem(dvect, i++, WrapOrange((*di).second));
+      }
+
+      return Py_BuildValue("O(ONs#)N", getExportedFunction(loaderFunc),
+                                      (PyObject *)(self->ob_type),
+                                      dvect, 
+                                      buf.buf, buf.length(),
+                                      packOrangeDictionary(self));
+    }
+
+    else
+      PYERROR(PyExc_SystemError, "an instance of Contingency for this attribute type cannot be pickled", NULL);
+
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderContingencyCommon(TContingency *cont, PyObject *args)
+{
+  PyTRY
+    PyTypeObject *type;
+    PyObject *dvect, *packedF = NULL;
+    if (!PyArg_UnpackTuple(args, "__pickleLoaderContingency", 2, 3, &type, &dvect, &packedF)) {
+      delete cont;
+      return NULL;
+    }
+
+    if (packedF) {
+      char *pbuf;
+      int bufSize;
+      if (PyString_AsStringAndSize(packedF, &pbuf, &bufSize) == -1) {
+        delete cont;
+        return NULL;
+      }
+      TCharBuffer buf(pbuf);
+
+      cont->continuous = new TDistributionMap();
+      TDistributionMap &dmap = *cont->continuous;
+
+      for(int i = 0, e = PyList_Size(dvect); i < e; i++) {
+        PyObject *dist = PyList_GetItem(dvect, i);
+        if (!PyOrDistribution_Check(dist)) {
+          delete cont;
+          PYERROR(PyExc_TypeError, "a list of distributions expected", NULL);
+        }
+
+        dmap.insert(dmap.end(), pair<float, PDistribution>(buf.readFloat(), PyOrange_AsDistribution(dist)));
+      }
+
+      return WrapNewOrange(cont, type);
+    }
+
+    else {
+      cont->discrete = new TDistributionVector();
+      TDistributionVector &dvec = *cont->discrete;
+
+      for(int i = 0, e = PyList_Size(dvect); i < e; i++) {
+        PyObject *dist = PyList_GetItem(dvect, i);
+        if (!PyOrDistribution_Check(dist)) {
+          delete cont;
+          PYERROR(PyExc_TypeError, "a list of distributions expected", NULL);
+        }
+
+        dvec.push_back(PyOrange_AsDistribution(dist));
+      }
+
+      return WrapNewOrange(cont, type);
+    }
+
+  PyCATCH
+}
+
+
+PyObject *Contingency__reduce__(PyObject *self, const char *loaderFunc)
+{
+  return ContingencyReduceCommon(self, "__pickleLoaderContingency");
+}
+
+PyObject *__pickleLoaderContingency(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(list of PDistribution, [packed_floats])")
+{ 
+  return __pickleLoaderContingencyCommon(new TContingency(), args);
+}
+
+
+PyObject *ContingencyAttrClass__reduce__(PyObject *self, const char *loaderFunc)
+{
+  return ContingencyReduceCommon(self, "__pickleLoaderContingencyAttrClass");
+}
+
+PyObject *__pickleLoaderContingencyAttrClass(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(list of PDistribution, [packed_floats])")
+{
+  return __pickleLoaderContingencyCommon(new TContingencyAttrClass(), args);
+}
+
+
+PyObject *ContingencyClassAttr__reduce__(PyObject *self, const char *loaderFunc)
+{
+  return ContingencyReduceCommon(self, "__pickleLoaderContingencyClassAttr");
+}
+
+PyObject *__pickleLoaderContingencyClassAttr(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(list of PDistribution, [packed_floats])")
+{
+  return __pickleLoaderContingencyCommon(new TContingencyClassAttr(), args);
+}
+
+
+PyObject *ContingencyAttrAttr__reduce__(PyObject *self, const char *loaderFunc)
+{
+  return ContingencyReduceCommon(self, "__pickleLoaderContingencyAttrAttr");
+}
+
+PyObject *__pickleLoaderContingencyAttrAttr(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(list of PDistribution, [packed_floats])")
+{
+  return __pickleLoaderContingencyCommon(new TContingencyAttrAttr(), args);
+}
+
 
 
 PyObject *Contingency_add(PyObject *self, PyObject *args)  PYARGS(METH_VARARGS, "(outer_value, inner_value[, w=1]) -> None")
@@ -939,6 +1112,7 @@ PyObject *DomainContingency_str(TPyOrange *self) { return ListOfWrappedMethods<P
 PyObject *DomainContingency_repr(TPyOrange *self) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_str(self); }
 int       DomainContingency_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_contains(self, obj); }
 PyObject *DomainContingency_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Contingency) -> None") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_append(self, item); }
+PyObject *DomainContingency_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_extend(self, obj); }
 PyObject *DomainContingency_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Contingency) -> int") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_count(self, obj); }
 PyObject *DomainContingency_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> DomainContingency") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_filter(self, args); }
 PyObject *DomainContingency_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Contingency) -> int") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_index(self, obj); }
@@ -948,12 +1122,16 @@ PyObject *DomainContingency_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VAR
 PyObject *DomainContingency_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Contingency) -> None") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_remove(self, obj); }
 PyObject *DomainContingency_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_reverse(self); }
 PyObject *DomainContingency_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_sort(self, args); }
+PyObject *DomainContingency__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, &PyOrContingency_Type>::_reduce(self); }
 
 
 CONSTRUCTOR_KEYWORDS(DomainContingency, "classIsOuter")
 
-PyObject *DomainContingency_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples [, weightID] | <list of Contingency>) -> DomainContingency")
+PyObject *DomainContingency_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples [, weightID] | <list of Contingency>) -> DomainContingency") ALLOWS_EMPTY
 { PyTRY
+    if (!args || !PyTuple_Size(args))
+      return WrapNewOrange(mlnew TDomainContingency(), type);
+
     int weightID;
     PExampleGenerator gen = exampleGenFromArgs(args, weightID);
     if (gen) {
@@ -1104,7 +1282,7 @@ PyObject *DomainContingency_normalize(PyObject *self, PyObject *) PYARGS(0, "() 
 #include "distance.hpp"
 #include "distance_dtw.hpp"
 
-BASED_ON(ExamplesDistance_Normalized, ExamplesDistance)
+ABSTRACT(ExamplesDistance_Normalized, ExamplesDistance)
 C_NAMED(ExamplesDistance_Hamiltonian, ExamplesDistance, "()")
 C_NAMED(ExamplesDistance_Maximal, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Manhattan, ExamplesDistance_Normalized, "()")
@@ -1128,11 +1306,23 @@ PyObject *ExamplesDistanceConstructor_new(PyTypeObject *type, PyObject *args, Py
 }
 
 
+PyObject *ExamplesDistanceConstructor__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrExamplesDistanceConstructor_Type);
+}
+
+
 PyObject *ExamplesDistance_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrExamplesDistance_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TExamplesDistance_Python(), type), args);
   else
     return WrapNewOrange(mlnew TExamplesDistance_Python(), type);
+}
+
+
+PyObject *ExamplesDistance__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrExamplesDistance_Type);
 }
 
 
@@ -1261,10 +1451,10 @@ PyObject *ExamplesDistance_DTW_alignment(PyObject *self, PyObject *args) PYARGS(
 
 #include "nearest.hpp"
 
-BASED_ON(FindNearest, Orange)
+ABSTRACT(FindNearest, Orange)
 C_NAMED(FindNearest_BruteForce, FindNearest, "([distance=, distanceID=, includeSame=])")
 
-BASED_ON(FindNearestConstructor, Orange)
+ABSTRACT(FindNearestConstructor, Orange)
 C_CALL(FindNearestConstructor_BruteForce, FindNearestConstructor, "([examples[, weightID[, distanceID]], distanceConstructor=, includeSame=]) -/-> FindNearest")
 
 
@@ -1313,7 +1503,7 @@ PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) P
 
 #include "filter.hpp"
 
-BASED_ON(ValueFilter, Orange)
+ABSTRACT(ValueFilter, Orange)
 C_NAMED(ValueFilter_discrete, ValueFilter, "([position=, oper=, values=, acceptSpecial=])")
 C_NAMED(ValueFilter_continuous, ValueFilter, "([position=, oper=, min=, max=, acceptSpecial=])")
 C_NAMED(ValueFilter_string, ValueFilter, "([position=, oper=, min=, max=])");
@@ -1356,7 +1546,7 @@ C_CALL(Filter_values, Filter, "([examples], [negate=..., domain=..., values=<see
 
 PValueFilterList PValueFilterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::P_FromArguments(arg); }
 PyObject *ValueFilterList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_FromArguments(type, arg); }
-PyObject *ValueFilterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ValueFilter>)") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_new(type, arg, kwds); }
+PyObject *ValueFilterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ValueFilter>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_new(type, arg, kwds); }
 PyObject *ValueFilterList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_getitem(self, index); }
 int       ValueFilterList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_setitem(self, index, item); }
 PyObject *ValueFilterList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_getslice(self, start, stop); }
@@ -1369,6 +1559,7 @@ PyObject *ValueFilterList_str(TPyOrange *self) { return ListOfWrappedMethods<PVa
 PyObject *ValueFilterList_repr(TPyOrange *self) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_str(self); }
 int       ValueFilterList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_contains(self, obj); }
 PyObject *ValueFilterList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(ValueFilter) -> None") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_append(self, item); }
+PyObject *ValueFilterList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_extend(self, obj); }
 PyObject *ValueFilterList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ValueFilter) -> int") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_count(self, obj); }
 PyObject *ValueFilterList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> ValueFilterList") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_filter(self, args); }
 PyObject *ValueFilterList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ValueFilter) -> int") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_index(self, obj); }
@@ -1378,6 +1569,7 @@ PyObject *ValueFilterList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARAR
 PyObject *ValueFilterList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ValueFilter) -> None") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_remove(self, obj); }
 PyObject *ValueFilterList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_reverse(self); }
 PyObject *ValueFilterList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_sort(self, args); }
+PyObject *ValueFilterList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, &PyOrValueFilter_Type>::_reduce(self); }
 
 
 PyObject *applyFilterP(PFilter filter, PExampleTable gen);
@@ -1401,6 +1593,12 @@ PyObject *Filter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BA
     return setCallbackFunction(WrapNewOrange(mlnew TFilter_Python(), type), args);
   else
     return WrapNewOrange(mlnew TFilter_Python(), type);
+}
+
+
+PyObject *Filter__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrFilter_Type);
 }
 
 
@@ -1664,7 +1862,7 @@ PyObject *Filter_values_getitem(PyObject *self, PyObject *args)
 
 PFilterList PFilterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::P_FromArguments(arg); }
 PyObject *FilterList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_FromArguments(type, arg); }
-PyObject *FilterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Filter>)") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_new(type, arg, kwds); }
+PyObject *FilterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Filter>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_new(type, arg, kwds); }
 PyObject *FilterList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_getitem(self, index); }
 int       FilterList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_setitem(self, index, item); }
 PyObject *FilterList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_getslice(self, start, stop); }
@@ -1677,6 +1875,7 @@ PyObject *FilterList_str(TPyOrange *self) { return ListOfWrappedMethods<PFilterL
 PyObject *FilterList_repr(TPyOrange *self) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_str(self); }
 int       FilterList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_contains(self, obj); }
 PyObject *FilterList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Filter) -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_append(self, item); }
+PyObject *FilterList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_extend(self, obj); }
 PyObject *FilterList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Filter) -> int") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_count(self, obj); }
 PyObject *FilterList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> FilterList") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_filter(self, args); }
 PyObject *FilterList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Filter) -> int") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_index(self, obj); }
@@ -1686,9 +1885,10 @@ PyObject *FilterList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "
 PyObject *FilterList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Filter) -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_remove(self, obj); }
 PyObject *FilterList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_reverse(self); }
 PyObject *FilterList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_sort(self, args); }
+PyObject *FilterList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, &PyOrFilter_Type>::_reduce(self); }
 
 
-PyObject *Filter_conjunction_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Filter, "([filter-list])")
+PyObject *Filter_conjunction_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Filter, "([filter-list])") ALLOWS_EMPTY
 {
   if (!PyTuple_Size(args))
     return WrapNewOrange(mlnew TFilter_conjunction(), type);
@@ -1701,7 +1901,7 @@ PyObject *Filter_conjunction_new(PyTypeObject *type, PyObject *args, PyObject *k
 }
 
 
-PyObject *Filter_disjunction_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Filter, "([filter-list])")
+PyObject *Filter_disjunction_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Filter, "([filter-list])") ALLOWS_EMPTY
 {
   if (!PyTuple_Size(args))
     return WrapNewOrange(mlnew TFilter_disjunction(), type);
@@ -1719,7 +1919,7 @@ PyObject *Filter_disjunction_new(PyTypeObject *type, PyObject *args, PyObject *k
 
 C_NAMED(TransformValue_IsDefined, TransformValue, "([value=])")
 
-BASED_ON(Imputer, Orange)
+ABSTRACT(Imputer, Orange)
 C_NAMED(Imputer_asValue, Imputer, "() -> Imputer_asValue")
 C_NAMED(Imputer_model, Imputer, "() -> Imputer_model")
 C_NAMED(Imputer_random, Imputer, "() -> Imputer_random")
@@ -1739,7 +1939,17 @@ PyObject *Imputer_defaults_new(PyTypeObject *tpe, PyObject *args) BASED_ON(Imput
   PyCATCH
 }
 
-BASED_ON(ImputerConstructor, Orange)
+PyObject *Imputer_defaults__reduce__(PyObject *self)
+{
+  PyTRY
+    return Py_BuildValue("O(N)N", self->ob_type,
+                                  Example_FromWrappedExample(SELF_AS(TImputer_defaults).defaults),
+                                  packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+ABSTRACT(ImputerConstructor, Orange)
 C_CALL(ImputerConstructor_average, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 C_CALL(ImputerConstructor_minimal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 C_CALL(ImputerConstructor_maximal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
@@ -1790,7 +2000,7 @@ PyObject *ImputerConstructor_call(PyObject *self, PyObject *args, PyObject *keyw
 /* ************ RANDOM INDICES ******************** */
 #include "trindex.hpp"
 
-BASED_ON(MakeRandomIndices, Orange)
+ABSTRACT(MakeRandomIndices, Orange)
 C_CALL3(MakeRandomIndices2, MakeRandomIndices2, MakeRandomIndices, "[n | gen [, p0]], [p0=, stratified=, randseed=] -/-> [int]")
 C_CALL3(MakeRandomIndicesMultiple, MakeRandomIndicesMultiple, MakeRandomIndices, "[n | gen [, p]], [p=, stratified=, randseed=] -/-> [int]")
 C_CALL3(MakeRandomIndicesN, MakeRandomIndicesN, MakeRandomIndices, "[n | gen [, p]], [p=, stratified=, randseed=] -/-> [int]")
@@ -2078,8 +2288,8 @@ PyObject *MakeRandomIndicesCV_call(PyObject *self, PyObject *args, PyObject *key
 
 #include "estimateprob.hpp"
 
-BASED_ON(ProbabilityEstimator, Orange)
-BASED_ON(ProbabilityEstimatorConstructor, Orange)
+ABSTRACT(ProbabilityEstimator, Orange)
+ABSTRACT(ProbabilityEstimatorConstructor, Orange)
 C_NAMED(ProbabilityEstimator_FromDistribution, ProbabilityEstimator, "()")
 C_CALL(ProbabilityEstimatorConstructor_relative, ProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ProbabilityEstimator_FromDistribution")
 C_CALL(ProbabilityEstimatorConstructor_Laplace, ProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ProbabilityEstimator_FromDistribution")
@@ -2087,8 +2297,8 @@ C_CALL(ProbabilityEstimatorConstructor_m, ProbabilityEstimatorConstructor, "([ex
 C_CALL(ProbabilityEstimatorConstructor_kernel, ProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ProbabilityEstimator_FromCurve")
 C_CALL(ProbabilityEstimatorConstructor_loess, ProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ProbabilityEstimator_FromCurve")
 
-BASED_ON(ConditionalProbabilityEstimator, Orange)
-BASED_ON(ConditionalProbabilityEstimatorConstructor, Orange)
+ABSTRACT(ConditionalProbabilityEstimator, Orange)
+ABSTRACT(ConditionalProbabilityEstimatorConstructor, Orange)
 C_NAMED(ConditionalProbabilityEstimator_FromDistribution, ConditionalProbabilityEstimator, "()")
 C_NAMED(ConditionalProbabilityEstimator_ByRows, ConditionalProbabilityEstimator, "()")
 C_CALL(ConditionalProbabilityEstimatorConstructor_ByRows, ConditionalProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ConditionalProbabilityEstimator_[FromDistribution|ByRows]")
@@ -2240,7 +2450,7 @@ PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args, P
 #include "relief.hpp"
 
 BASED_ON(MeasureAttribute, Orange)
-BASED_ON(MeasureAttributeFromProbabilities, MeasureAttribute)
+ABSTRACT(MeasureAttributeFromProbabilities, MeasureAttribute)
 
 C_CALL(MeasureAttribute_info, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> float")
 C_CALL(MeasureAttribute_gini, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> float")
@@ -2282,6 +2492,12 @@ PyObject *MeasureAttribute_new(PyTypeObject *type, PyObject *args, PyObject *key
     return setCallbackFunction(WrapNewOrange(mlnew TMeasureAttribute_Python(), type), args);
   else
     return WrapNewOrange(mlnew TMeasureAttribute_Python(), type);
+}
+
+
+PyObject *MeasureAttribute__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrMeasureAttribute_Type);
 }
 
 
@@ -2478,7 +2694,7 @@ PyObject *MeasureAttribute_bestThreshold(PyObject *self, PyObject *args, PyObjec
 
 #include "exampleclustering.hpp"
 
-BASED_ON(GeneralExampleClustering, Orange)
+ABSTRACT(GeneralExampleClustering, Orange)
 C_NAMED(ExampleCluster, Orange, "([left=, right=, distance=, centroid=])")
 C_NAMED(ExampleClusters, GeneralExampleClustering, "([root=, quality=]")
 
@@ -2676,6 +2892,38 @@ PyObject *SymMatrix_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON
 
   PyCATCH
 }
+
+
+PyObject *SymMatrix__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TSymMatrix, matrix);
+    const int dim = matrix->dim;
+    return Py_BuildValue("O(Os#i)N", getExportedFunction("__pickleLoaderSymMatrix"),
+                                     self->ob_type,
+                                     matrix->elements, sizeof(float) * (((dim+1) * (dim+2)) >> 1),
+                                     dim,
+                                     packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderSymMatrix(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_matrix, dimension)")
+{
+  PyTRY
+    PyTypeObject *type;
+    char *buf;
+    int bufSize, dim;
+    if (!PyArg_ParseTuple(args, "Os#i:__pickleLoaderCostMatrix", &type, &buf, &bufSize, &dim))
+      return NULL;
+
+    TSymMatrix *cm = new TSymMatrix(dim);
+    memcpy(cm->elements, buf, bufSize);
+    return WrapNewOrange(cm, type);
+  PyCATCH
+}
+
+
 
 
 PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
@@ -3021,7 +3269,7 @@ PyObject *HierarchicalCluster_permute(PyObject *self, PyObject *arg, PyObject *k
 
 PHierarchicalClusterList PHierarchicalClusterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::P_FromArguments(arg); }
 PyObject *HierarchicalClusterList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_FromArguments(type, arg); }
-PyObject *HierarchicalClusterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of HierarchicalCluster>)") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_new(type, arg, kwds); }
+PyObject *HierarchicalClusterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of HierarchicalCluster>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_new(type, arg, kwds); }
 PyObject *HierarchicalClusterList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_getitem(self, index); }
 int       HierarchicalClusterList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_setitem(self, index, item); }
 PyObject *HierarchicalClusterList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_getslice(self, start, stop); }
@@ -3034,6 +3282,7 @@ PyObject *HierarchicalClusterList_str(TPyOrange *self) { return ListOfWrappedMet
 PyObject *HierarchicalClusterList_repr(TPyOrange *self) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_str(self); }
 int       HierarchicalClusterList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_contains(self, obj); }
 PyObject *HierarchicalClusterList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(HierarchicalCluster) -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_append(self, item); }
+PyObject *HierarchicalClusterList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_extend(self, obj); }
 PyObject *HierarchicalClusterList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(HierarchicalCluster) -> int") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_count(self, obj); }
 PyObject *HierarchicalClusterList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> HierarchicalClusterList") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_filter(self, args); }
 PyObject *HierarchicalClusterList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(HierarchicalCluster) -> int") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_index(self, obj); }
@@ -3043,6 +3292,7 @@ PyObject *HierarchicalClusterList_pop(TPyOrange *self, PyObject *args) PYARGS(ME
 PyObject *HierarchicalClusterList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(HierarchicalCluster) -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_remove(self, obj); }
 PyObject *HierarchicalClusterList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_reverse(self); }
 PyObject *HierarchicalClusterList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_sort(self, args); }
+PyObject *HierarchicalClusterList__reduce__(TPyOrange *self, PyObject *) PYARGS(METH_VARARGS, "()") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, &PyOrHierarchicalCluster_Type>::_reduce(self); }
 
 
 
@@ -3088,6 +3338,39 @@ PyObject *DistanceMapConstructor_getLegend(PyObject *self, PyObject *args) PYARG
 
 BASED_ON(DistanceMap, Orange)
 
+PyObject *DistanceMap__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TDistanceMap, matrix);
+    const int dim = matrix->dim;
+    return Py_BuildValue("O(Os#iO)N", getExportedFunction("__pickleLoaderDistanceMap"),
+                                     self->ob_type,
+                                     matrix->cells, dim*dim*sizeof(float),
+                                     dim,
+                                     WrapOrange(matrix->elementIndices),
+                                     packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderDistanceMap(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_matrix, dimension, elementIndices)")
+{
+  PyTRY
+    PyTypeObject *type;
+    char *buf;
+    int bufSize, dim;
+    PIntList elementIndices;
+    if (!PyArg_ParseTuple(args, "Os#iO&:__pickleLoaderDistanceMap", &type, &buf, &bufSize, &dim, ccn_IntList, &elementIndices))
+      return NULL;
+
+    TDistanceMap *cm = new TDistanceMap(dim);
+    memcpy(cm->cells, buf, bufSize);
+    cm->elementIndices = elementIndices;
+    return WrapNewOrange(cm, type);
+  PyCATCH
+}
+
+
 PyObject *DistanceMap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma) -> bitmap")
 {
   PyTRY
@@ -3102,7 +3385,7 @@ PyObject *DistanceMap_getBitmap(PyObject *self, PyObject *args, PyObject *keywor
 
     int size;
     unsigned char *bitmap = dm->distanceMap2string(cellWidth, cellHeight, absLow, absHigh, gamma, grid!=0, matrixType, size);
-    PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * dm->dim, cellHeight * dm->dim);
+    PyObject *res = Py_BuildValue("s#ii", (const char *)bitmap, size, cellWidth * dm->dim, cellHeight * dm->dim);
     delete bitmap;
     return res;
   PyCATCH
@@ -3588,7 +3871,7 @@ PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, double *weights
 }
 
 
-BASED_ON(Graph, Orange)
+ABSTRACT(Graph, Orange)
 RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices objectsOnEdges")
 
 int Graph_getindex(TGraph *graph, PyObject *index)
@@ -3999,6 +4282,41 @@ PyObject *GraphAsMatrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds) 
   PyCATCH
 }
 
+
+PyObject *GraphAsMatrix__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TGraphAsMatrix, graph)
+
+    return Py_BuildValue("O(Oiiis#)N", getExportedFunction("__pickleLoaderGraphAsMatrix"),
+                                     self->ob_type,
+                                     graph->nVertices,
+                                     graph->nEdgeTypes,
+                                     graph->directed ? 1 : 0,
+                                     graph->edges, graph->msize * sizeof(double),
+                                     packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderGraphAsMatrix(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, nVertices, nEdgeTypes, directed, packed_edges)")
+{
+  PyTRY
+    PyTypeObject *type;
+    int nv, ne, di;
+    char *buf;
+    int bufSize;
+
+    if (!PyArg_ParseTuple(args, "Oiiis#:__pickleLoaderGraphAsMatrix", &type, &nv, &ne, &di, &buf, &bufSize))
+      return NULL;
+
+    TGraphAsMatrix *graph = new TGraphAsMatrix(nv, ne, di != 0);
+    memcpy(graph->edges, buf, bufSize);
+    return WrapNewOrange(graph, type);
+  PyCATCH
+}
+
+
 int GraphAsMatrix_traverse(PyObject *self, visitproc visit, void *arg)
 { 
   int err = Orange_traverse((TPyOrange *)self, visit, arg);
@@ -4035,7 +4353,7 @@ int GraphAsMatrix_clear(PyObject *self)
 }
 
 
-void PyGraphAsMatrix_dealloc(PyObject *self)
+void GraphAsMatrix_dealloc(PyObject *self)
 {
   if (hasObjectsOnEdges(self))
     decrefGraph(SELF_AS(TGraphAsMatrix));
@@ -4055,6 +4373,63 @@ PyObject *GraphAsList_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
       PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
 
     return WrapNewOrange(mlnew TGraphAsList(nVertices, nEdgeTypes, directed != 0), type);
+  PyCATCH
+}
+
+
+PyObject *GraphAsList__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TGraphAsList, graph)
+
+    TCharBuffer buf(1024);
+
+    const int ebs = graph->nEdgeTypes * sizeof(double);
+    for(TGraphAsList::TEdge **ei = graph->edges, **ee = graph->edges + graph->nVertices; ei != ee; ei++) {
+      for(TGraphAsList::TEdge *eei = *ei; eei; eei = eei->next) {
+        buf.writeInt(eei->vertex);
+        buf.writeBuf(&(eei->weights), ebs);
+      }
+      buf.writeInt(-1);
+    }
+
+    return Py_BuildValue("O(Oiiis#)N", getExportedFunction("__pickleLoaderGraphAsList"),
+                                     self->ob_type,
+                                     graph->nVertices,
+                                     graph->nEdgeTypes,
+                                     graph->directed ? 1 : 0,
+                                     buf.buf, buf.length(),
+                                     packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderGraphAsList(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, nVertices, nEdgeTypes, directed, packed_edges)")
+{
+  PyTRY
+    PyTypeObject *type;
+    int nv, ne, di;
+    char *pbuf;
+    int bufSize;
+
+    if (!PyArg_ParseTuple(args, "Oiiis#:__pickleLoaderGraphAsList", &type, &nv, &ne, &di, &pbuf, &bufSize))
+      return NULL;
+
+    TCharBuffer buf(pbuf);
+
+    TGraphAsList *graph = new TGraphAsList(nv, ne, di != 0);
+    const int ebs = graph->nEdgeTypes * sizeof(double);
+
+    for(TGraphAsList::TEdge **ei = graph->edges, **ee = graph->edges + graph->nVertices; ei != ee; ei++) {
+      TGraphAsList::TEdge **last = ei;
+      for(int vertex = buf.readInt(); vertex != -1; vertex = buf.readInt()) {
+        *last = graph->createEdge(NULL, vertex);
+        buf.readBuf(&(*last)->weights, ebs);
+        last = &(*last)->next;
+      }
+    }
+
+    return WrapNewOrange(graph, type);
   PyCATCH
 }
 
@@ -4099,7 +4474,7 @@ int GraphAsList_clear(PyObject *self)
 }
 
 
-void PyGraphAsList_dealloc(PyObject *self)
+void GraphAsList_dealloc(PyObject *self)
 {
   if (hasObjectsOnEdges(self))
     decrefGraph(SELF_AS(TGraphAsList));
@@ -4122,6 +4497,81 @@ PyObject *GraphAsTree_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
     return WrapNewOrange(mlnew TGraphAsTree(nVertices, nEdgeTypes, directed != 0), type);
   PyCATCH
 }
+
+
+void reduceTree(const TGraphAsTree::TEdge *edge, TCharBuffer &buf, const int &ebs)
+{
+  if (edge) {
+    buf.writeChar(1);
+    buf.writeInt(edge->vertex);
+    buf.writeBuf(&edge->weights, ebs);
+    reduceTree(edge->left, buf, ebs);
+    reduceTree(edge->right, buf, ebs);
+  }
+  else
+    buf.writeChar(0);
+}
+
+
+TGraphAsTree::TEdge *readTree(TCharBuffer &buf, const int &ebs, const TGraphAsTree &graph)
+{
+  if (buf.readChar()) {
+    TGraphAsTree::TEdge *edge = graph.createEdge(buf.readInt());
+    buf.readBuf(&(edge)->weights, ebs);
+    edge->left = readTree(buf, ebs, graph);
+    edge->right = readTree(buf, ebs, graph);
+    return edge;
+  }
+  else
+    return NULL;
+}
+
+
+PyObject *GraphAsTree__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TGraphAsTree, graph)
+
+    TCharBuffer buf(1024);
+
+    const int ebs = graph->nEdgeTypes * sizeof(double);
+    for(TGraphAsTree::TEdge **ei = graph->edges, **ee = graph->edges + graph->nVertices; ei != ee; ei++)
+      reduceTree(*ei, buf, ebs);
+
+    return Py_BuildValue("O(Oiiis#)N", getExportedFunction("__pickleLoaderGraphAsTree"),
+                                     self->ob_type,
+                                     graph->nVertices,
+                                     graph->nEdgeTypes,
+                                     graph->directed ? 1 : 0,
+                                     buf.buf, buf.length(),
+                                     packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderGraphAsTree(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, nVertices, nEdgeTypes, directed, packed_edges)")
+{
+  PyTRY
+    PyTypeObject *type;
+    int nv, ne, di;
+    char *pbuf;
+    int bufSize;
+
+    if (!PyArg_ParseTuple(args, "Oiiis#:__pickleLoaderGraphAsTree", &type, &nv, &ne, &di, &pbuf, &bufSize))
+      return NULL;
+
+    TCharBuffer buf(pbuf);
+
+    TGraphAsTree *graph = new TGraphAsTree(nv, ne, di != 0);
+    const int ebs = graph->nEdgeTypes * sizeof(double);
+
+    for(TGraphAsTree::TEdge **ei = graph->edges, **ee = graph->edges + graph->nVertices; ei != ee; ei++)
+      *ei = readTree(buf, ebs, *graph);
+
+    return WrapNewOrange(graph, type);
+  PyCATCH
+}
+
 
 
 int traverse(TGraphAsTree::TEdge *edge, visitproc visit, void *arg, const int nEdgeTypes)
@@ -4191,7 +4641,7 @@ int GraphAsTree_clear(PyObject *self)
 }
 
 
-void PyGraphAsTree_dealloc(PyObject *self)
+void GraphAsTree_dealloc(PyObject *self)
 {
   if (hasObjectsOnEdges(self))
     decrefGraph(SELF_AS(TGraphAsTree));
