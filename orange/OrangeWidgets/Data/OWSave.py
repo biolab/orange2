@@ -74,7 +74,7 @@ class OWSave(OWWidget):
         dlg.exec_loop()
 
         filename = str(dlg.selectedFile())
-        if not filename:
+        if not filename or not os.path.split(filename)[1]:
             return
         
         ext = lower(os.path.splitext(filename)[1])

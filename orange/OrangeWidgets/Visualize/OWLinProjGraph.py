@@ -772,7 +772,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if not getattr(self, "potentialsBmp", None) \
            or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor):
             if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
-                imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+                imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, ox, oy, 3, self.trueScaleFactor)
                 palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
             else:
 #                imagebmp, nShades = orangeom.potentialsBitmapCircle(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)

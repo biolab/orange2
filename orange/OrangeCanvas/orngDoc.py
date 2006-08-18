@@ -250,6 +250,7 @@ class SchemaDoc(QMainWindow):
         qApp.setOverrideCursor(QWidget.waitCursor)
         try:
             newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
+            newwidget.instance.category = widget.getCategory()
             newwidget.instance.setEventHandler(self.canvasDlg.output.widgetEvents)
         except:
             type, val, traceback = sys.exc_info()

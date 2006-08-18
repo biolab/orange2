@@ -324,8 +324,14 @@ Pyxtract should also know how the class is constructed - it can have a specific 
 
 <P>The class is declared in one of the following ways.
 <DL>
-<DT><CODE>BASED_ON(Variable, Orange)</CODE></DT>
-<DD>This tells pyxtract that <CODE>Variable</CODE> is an abstract class derived from <CODE>Orange</CODE>. (<CODE>BASED_ON</CODE> is really a two-argument macro that does nothing.)</DD>
+<DT><CODE>BASED_ON(EFMDataDescription, Orange)</CODE></DT>
+<DD>This tells pyxtract that <CODE>EFMDataDescription</CODE> is an abstract class derived from <CODE>Orange</CODE>: there is no constructor for this class in Python, but the C++ class itself is not abstract and can appear and be used in Python. For example, when we construct an instance of <code>ClassifierByLookupTable</code> with more than three attributes, an instance of <code>EFMDataDescription</code> will appear in one of its fields.</DD>
+
+<DT><CODE>ABSTRACT(ClassifierFD, Classifier)</CODE></DT>
+<DD>This defines an abstract class, which will never be constructed in the C++ code and not even pretend to be seen in Python. At the moment, the only difference between this <code>BASED_ON</code> and <code>ABSTRACT</code> is that the former can have pickle interface, while the latter don't need one.<br>
+
+Abstract C++ classes are not necessarily defined as <CODE>ABSTRACT</CODE> in the Python interface. For example, <code>TClassifier</code> is an abstract C++ class, but you can seemingly construct an instance of <code>Classifier</code> in Python. What happens is that there is an additional C++ class <code>TClassifierPython</code>, which poses as Python's class <Code>Classifier</Code>. So the Python class <code>Classifier</code> is not defined as <code>ABSTRACT</code> or <CODE>BASED_ON</CODE> but using the <code>Classifier_new</code> function, as described below.</DD>
+
 
 <DT><CODE>C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")</CODE></DT>
 <DD><CODE>EnumVariable</CODE> is derived from <CODE>Variable</CODE>. Pyxtract will also create a constructor which will as an optional argument accept the object's name. The third argument is a string that describes the constructor, eg. gives a list of arguments. IDEs for Python, such as PythonWin, will show this string in a balloon help while the programmer is typing.</DD>

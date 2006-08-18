@@ -119,7 +119,7 @@ class OWSubFile(OWWidget):
                 return
 
             if dontCheckStored:
-                data = loader(fn **argdict)
+                data = loader(fn, **argdict)
             else:
                 # Load; if the domain is the same and there is no other file widget which
                 # uses any of the same attributes like this one, reload

@@ -168,7 +168,7 @@ Iris-setosa:  49    Iris-versicolor:   0    Iris-virginica:   0
 Iris-setosa:   1    Iris-versicolor:   0    Iris-virginica:   0   
 Iris-setosa:   0    Iris-versicolor:  50    Iris-virginica:  17   
 Iris-setosa:   0    Iris-versicolor:   0    Iris-virginica:  33   
-<type 'ExampleTable'> of length 49
-<type 'ExampleTable'> of length 1
-<type 'ExampleTable'> of length 67
-<type 'ExampleTable'> of length 33
+<type 'orange.ExampleTable'> of length 49
+<type 'orange.ExampleTable'> of length 1
+<type 'orange.ExampleTable'> of length 67
+<type 'orange.ExampleTable'> of length 33

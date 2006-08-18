@@ -130,6 +130,9 @@ class WidgetButton(QToolButton):
             if not signal.default: ret.append(signal)
         return ret
 
+    def getCategory(self):
+        return self.nameKey[:self.nameKey.index("-")].strip()
+    
     def clicked(self):
         win = self.canvasDlg.workspace.activeWindow()
         if (win and isinstance(win, orngDoc.SchemaDoc)):
