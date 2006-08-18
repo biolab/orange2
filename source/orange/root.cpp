@@ -77,8 +77,10 @@ const TPropertyDescription *TOrange::propertyDescription(const char *name, bool 
 }
 
 
+void TOrange::getProperty_TValue(const TPropertyDescription *pd, TValue &b) const
+{ b = *(TValue const *)CONST_MEMBER(pd->offset); }
+
 #define MEMBER(ofs) (((char *)(this)) + ofs)
-#define CONST_MEMBER(ofs) (((char const *)(this)) + ofs)
 
 #define SIMPLE_GETSET_PROPERTY(_TYPE)                           \
 void TOrange::setProperty(const char *name, const _TYPE &b)     \
@@ -97,7 +99,9 @@ void TOrange::getProperty(const char *name, _TYPE &b) const     \
   if (*pd->type != typeid(_TYPE))                               \
     raiseError("type mismatch, unable to read '%s.%s'", TYPENAME(typeid(*this)), name);         \
   b = *(_TYPE const *)CONST_MEMBER(pd->offset);                 \
-}
+}                                                               \
+                                                                \
+
 
 
 SIMPLE_GETSET_PROPERTY(bool)
@@ -109,12 +113,21 @@ SIMPLE_GETSET_PROPERTY(TValue)
 #undef SIMPLE_GETSET_PROPERTY
 
 
+#include "examples.hpp"
+
 void TOrange::wr_setProperty(const char *name, const POrange &b)
 { const TPropertyDescription *pd = propertyDescription(name);
   if (pd->readOnly)
     raiseError("'%s.%s' is read-only", TYPENAME(typeid(*this)), name);
-  if (b && !castableTo(b->classDescription(), pd->classDescription))
-    raiseError("type mismatch, unable to set '%s.%s' (expected %s, got %s).", TYPENAME(typeid(*this)), name, TYPENAME(*pd->type), TYPENAME(typeid(b)));
+  if (pd->type == &typeid(TExample)) {
+    if (b && !b.is_derived_from(TExample))
+      raiseError("type mismatch, unable to set '%s.%s' (expected 'orange.Example', got %s).", TYPENAME(typeid(*this)), name, TYPENAME(typeid(b)));
+  }
+  else {
+    if (b && !castableTo(b->classDescription(), pd->classDescription))
+      raiseError("type mismatch, unable to set '%s.%s' (expected %s, got %s).", TYPENAME(typeid(*this)), name, TYPENAME(*pd->type), TYPENAME(typeid(b)));
+  }
+
   *(POrange *)MEMBER(pd->offset) = b;
   afterSet(name);
 }
