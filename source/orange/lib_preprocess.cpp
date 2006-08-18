@@ -48,6 +48,7 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "maptemplates.hpp"
 
 #include "converts.hpp"
+#include "slist.hpp"
 
 #include "externs.px"
 
@@ -57,14 +58,13 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "discretize.hpp"
 
 
-BASED_ON(Discretizer, TransformValue)
+ABSTRACT(Discretizer, TransformValue)
 C_NAMED(EquiDistDiscretizer, Discretizer, "([numberOfIntervals=, firstCut=, step=])")
 C_NAMED(IntervalDiscretizer, Discretizer, "([points=])")
 C_NAMED(ThresholdDiscretizer, Discretizer, "([threshold=])")
 C_NAMED(BiModalDiscretizer, Discretizer, "([low=, high=])")
 
-BASED_ON(Discretization, Orange)
-BASED_ON(DiscretizedDomain, Domain)
+ABSTRACT(Discretization, Orange)
 C_CALL (EquiDistDiscretization, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
 C_CALL (   EquiNDiscretization, Discretization, "() | (attribute, examples[, weight, numberOfIntervals=]) -/-> Variable")
 C_CALL ( EntropyDiscretization, Discretization, "() | (attribute, examples[, weight]) -/-> Variable")
@@ -196,7 +196,7 @@ PyObject *DomainContinuizer_call(PyObject *self, PyObject *args, PyObject *keywo
 
 #include "redundancy.hpp"
 
-BASED_ON(RemoveRedundant, Orange)
+ABSTRACT(RemoveRedundant, Orange)
 
 C_CALL(RemoveRedundantByInduction, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 C_CALL(RemoveRedundantByQuality, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
@@ -246,7 +246,7 @@ PyObject *RemoveUnusedValues_call(PyObject *self, PyObject *args, PyObject *keyw
 
 #include "preprocessors.hpp"
 
-BASED_ON(Preprocessor, Orange)
+ABSTRACT(Preprocessor, Orange)
 
 C_CALL(Preprocessor_select, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
 C_CALL(Preprocessor_ignore, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
@@ -466,7 +466,7 @@ INITIALIZE_MAPMETHODS(TMM_VariableFilterMap, &PyOrVariable_Type, &PyOrValueFilte
 
 PVariableFilterMap PVariableFilterMap_FromArguments(PyObject *arg) { return TMM_VariableFilterMap::P_FromArguments(arg); }
 PyObject *VariableFilterMap_FromArguments(PyTypeObject *type, PyObject *arg) { return TMM_VariableFilterMap::_FromArguments(type, arg); }
-PyObject *VariableFilterMap_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(items)") { return TMM_VariableFilterMap::_new(type, arg, kwds); }
+PyObject *VariableFilterMap_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(items)") ALLOWS_EMPTY { return TMM_VariableFilterMap::_new(type, arg, kwds); }
 PyObject *VariableFilterMap_str(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
 PyObject *VariableFilterMap_repr(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
 PyObject *VariableFilterMap_getitem(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_getitem(self, key); }
@@ -482,6 +482,7 @@ PyObject *VariableFilterMap_keys(TPyOrange *self, PyObject *args) PYARGS(METH_NO
 PyObject *VariableFilterMap_values(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> values") { return TMM_VariableFilterMap::_values(self); }
 PyObject *VariableFilterMap_items(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> items") { return TMM_VariableFilterMap::_items(self); }
 PyObject *VariableFilterMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O, "(items) -> None") { return TMM_VariableFilterMap::_update(self, args); }
+PyObject *VariableFilterMap__reduce__(TPyOrange *self, PyObject *) { return TMM_VariableFilterMap::_reduce(self); }
 
 
 typedef MapMethods<PVariableFloatMap, TVariableFloatMap, PVariable, float> TMM_VariableFloatMap;
@@ -489,7 +490,7 @@ INITIALIZE_MAPMETHODS(TMM_VariableFloatMap, &PyOrVariable_Type, NULL, _orangeVal
 
 PVariableFloatMap PVariableFloatMap_FromArguments(PyObject *arg) { return TMM_VariableFloatMap::P_FromArguments(arg); }
 PyObject *VariableFloatMap_FromArguments(PyTypeObject *type, PyObject *arg) { return TMM_VariableFloatMap::_FromArguments(type, arg); }
-PyObject *VariableFloatMap_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(items)") { return TMM_VariableFloatMap::_new(type, arg, kwds); }
+PyObject *VariableFloatMap_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(items)") ALLOWS_EMPTY { return TMM_VariableFloatMap::_new(type, arg, kwds); } 
 PyObject *VariableFloatMap_str(TPyOrange *self) { return TMM_VariableFloatMap::_str(self); }
 PyObject *VariableFloatMap_repr(TPyOrange *self) { return TMM_VariableFloatMap::_str(self); }
 PyObject *VariableFloatMap_getitem(TPyOrange *self, PyObject *key) { return TMM_VariableFloatMap::_getitem(self, key); }
@@ -505,6 +506,7 @@ PyObject *VariableFloatMap_keys(TPyOrange *self, PyObject *args) PYARGS(METH_NOA
 PyObject *VariableFloatMap_values(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> values") { return TMM_VariableFloatMap::_values(self); }
 PyObject *VariableFloatMap_items(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> items") { return TMM_VariableFloatMap::_items(self); }
 PyObject *VariableFloatMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O, "(items) -> None") { return TMM_VariableFloatMap::_update(self, args); }
+PyObject *VariableFloatMap__reduce__(TPyOrange *self, PyObject *) { return TMM_VariableFloatMap::_reduce(self); }
 
 
 /* ************ INDUCE ************ */
@@ -512,11 +514,16 @@ PyObject *VariableFloatMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O
 #include "induce.hpp"
 #include "subsets.hpp"
 
-BASED_ON(FeatureInducer, Orange)
+ABSTRACT(FeatureInducer, Orange)
 
-BASED_ON(SubsetsGenerator, Orange)
+ABSTRACT(SubsetsGenerator, Orange)
 C_NAMED(SubsetsGenerator_constant, SubsetsGenerator, "()")
 C_NAMED(SubsetsGenerator_withRestrictions, SubsetsGenerator, "([subGenerator=])")
+
+NO_PICKLE(SubsetsGenerator_constSize)
+NO_PICKLE(SubsetsGenerator_minMaxSize)
+NO_PICKLE(SubsetsGenerator_constant)
+NO_PICKLE(SubsetsGenerator_withRestrictions)
 
 
 PyObject *FeatureInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples, bound-attrs, new-name, weightID) -> (Variable, float)")
@@ -610,7 +617,24 @@ PyObject *SubsetsGenerator_iternext(PyObject *self)
   PyCATCH
 }
 
+/*
+void packCounter(const TCounter &cnt, TCharBuffer &buf)
+{
+  buf.writeInt(cnt.limit);
+  buf.writeInt(cnt.size());
+  const_ITERATE(TCounter, ci, cnt)
+    buf.writeInt(*ci);
+}
 
+void unpackCounter(TCharBuffer &buf, TCounter &cnt)
+{
+  cnt.limit = buf.readInt();
+
+  int size = buf.readInt();
+  cnt.resize(size);
+  for(TCounter::iterator ci(cnt.begin()); size--; *ci++ = buf.readInt());
+}
+*/
 
 PyObject *SubsetsGenerator_constSize_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "(size)")
 { PyTRY
@@ -639,6 +663,45 @@ PyObject *SubsetsGenerator_constSize_new(PyTypeObject *type, PyObject *args, PyO
     return res;
   PyCATCH
 }
+
+/*
+PyObject *SubsetsGenerator_constSize_ _ r e d u c e _ _(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TSubsetsGenerator_constSize, gen);
+
+    TCharBuffer buf((gen->counter.size() + 4) * sizeof(int));
+    buf.writeInt(gen->B);
+    packCounter(gen->counter, buf);
+    buf.writeChar(gen->moreToCome ? 1 : 0);
+
+    return Py_BuildValue("O(Os#)N", getExportedFunction("__pickleLoaderSubsetsGeneratorConstSize"),
+                                    self->ob_type,
+                                    buf.buf, buf.length(),
+                                    packOrangeDictionary(self));
+ PyCATCH
+}
+
+
+PyObject *__pickleLoaderSubsetsGeneratorConstSize(PyObject *, PyObject *args) P Y A R G S(METH_VARARGS, "(type, packed_counter)")
+{
+  PyTRY
+    PyTypeObject *type;
+    char *pbuf;
+    int bufSize;
+    if (!PyArg_ParseTuple(args, "Os#:__pickleLoaderSubsetsGenerator_constSize", &type, &pbuf, &bufSize))
+      return NULL;
+
+    TCharBuffer buf(pbuf);
+
+    TSubsetsGenerator_constSize *gen = new TSubsetsGenerator_constSize(buf.readInt());
+    unpackCounter(buf, gen->counter);
+    gen->moreToCome = buf.readChar() != 0;
+
+    return WrapNewOrange(gen, type);
+  PyCATCH
+}
+*/
 
 
 PyObject *SubsetsGenerator_minMaxSize_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "([min=, max=])")
@@ -687,10 +750,10 @@ PyObject *SubsetsGenerator_constant_new(PyTypeObject *type, PyObject *args, PyOb
 
 #include "minimal_complexity.hpp"
 
-BASED_ON(IGConstructor, Orange)
+ABSTRACT(IGConstructor, Orange)
 C_CALL(IGBySorting, IGConstructor, "([examples, bound-attrs]) -/-> IG")
 
-BASED_ON(ColorIG, Orange)
+ABSTRACT(ColorIG, Orange)
 C_CALL(ColorIG_MCF, ColorIG, "([IG]) -/-> ColoredIG")
 
 C_CALL(FeatureByMinComplexity, FeatureInducer, "([examples, bound-attrs, name] [IGConstructor=, classifierFromIG=) -/-> Variable")
@@ -726,7 +789,7 @@ bool convertFromPython(PyObject *args, PIG &ig)
   ig=PIG(mlnew TIG());
   for(int i=0; i<PyList_Size(args); i++) {
     ig->nodes.push_back(TIGNode());
-    if (convertFromPython(PyList_GetItem(args, i), ig->nodes.back())) {
+    if (!convertFromPython(PyList_GetItem(args, i), ig->nodes.back())) {
       ig=PIG();
       PYERROR(PyExc_AttributeError, "invalid list argument", false);
     }
@@ -760,6 +823,14 @@ PyObject *IG_native(PyObject *self) PYARGS(0, "() -> [(Example, [incompatibility
       ));
 
     return result;
+  PyCATCH
+}
+
+
+PyObject *IG__reduce__(PyObject *self)
+{
+  PyTRY
+    return Py_BuildValue("O(N)N", self->ob_type, IG_native(self), packOrangeDictionary(self));
   PyCATCH
 }
 
@@ -834,32 +905,36 @@ PyObject *ColorIG_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC
 #include "minimal_error.hpp"
 
 C_CALL(FeatureByIM, FeatureInducer, "([examples, bound-attrs, name] [constructIM=, classifierFromIM=]) -/-> Variable")
-BASED_ON(IMConstructor, Orange)
+
+ABSTRACT(IMConstructor, Orange)
 C_CALL(IMBySorting, IMConstructor, "() | (examples, bound-attrs[[, free-attrs], weightID]) -/-> IM")
 C_CALL(IMByIMByRows, IMConstructor, "() | (examples, bound-attrs[[, free-attrs], weightID]) -/-> IM")
 C_CALL(IMByRelief, IMConstructor, "() | (examples, bound-attrs[[, free-attrs], weightID]) -/-> IM")
-BASED_ON(ClustersFromIM, Orange)
+
+ABSTRACT(ClustersFromIM, Orange)
 C_CALL(ClustersFromIMByAssessor, ClustersFromIM, "([IM] [minProfitProportion=, columnAssessor=, stopCriterion=]) -/-> IMClustering")
+
 C_NAMED(IMClustering, Orange, "([im= clusters=, maxCluster=])")
 
 BASED_ON(IMByRows, Orange)
+NO_PICKLE(IMByRows)
 
-BASED_ON(IMByRowsConstructor, Orange)
+ABSTRACT(IMByRowsConstructor, Orange)
 C_CALL(IMByRowsBySorting, IMByRowsConstructor, "() | (examples, bound-attrs[[, free-attrs], weightID]) -/-> IMByRows")
 C_CALL(IMByRowsByRelief, IMByRowsConstructor, "() | (examples, bound-attrs[[, free-attrs], weightID]) -/-> IMByRows")
 
-BASED_ON(IMByRowsPreprocessor, Orange)
+ABSTRACT(IMByRowsPreprocessor, Orange)
 C_CALL(IMBlurer, IMByRowsPreprocessor, "([IMByRows]) -> None")
 
 C_CALL3(AssessIMQuality, AssessIMQuality, Orange, "([IM] -/-> float)")
 
-BASED_ON(StopIMClusteringByAssessor, Orange)
+ABSTRACT(StopIMClusteringByAssessor, Orange)
 C_NAMED(StopIMClusteringByAssessor_noProfit, StopIMClusteringByAssessor, "([minProfitProportion=])")
 C_NAMED(StopIMClusteringByAssessor_binary, StopIMClusteringByAssessor, "()")
 C_NAMED(StopIMClusteringByAssessor_n, StopIMClusteringByAssessor, "(n=)")
 C_NAMED(StopIMClusteringByAssessor_noBigChange, StopIMClusteringByAssessor, "()")
 
-BASED_ON(ColumnAssessor, Orange)
+ABSTRACT(ColumnAssessor, Orange)
 C_NAMED(ColumnAssessor_m, ColumnAssessor, "([m=])")
 C_NAMED(ColumnAssessor_Laplace, ColumnAssessor, "()")
 C_NAMED(ColumnAssessor_mf, ColumnAssessor, "([m=])")
@@ -1144,6 +1219,14 @@ PyObject *IM_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange
 }
 
 
+PyObject *IM__reduce__(PyObject *self)
+{
+  PyTRY
+    return Py_BuildValue("O(N)N", self->ob_type, IM_native(self), packOrangeDictionary(self));
+  PyCATCH
+}
+
+
 PyObject *convertToPython(const TDIMRow &row)
 { PyObject *pyrow=PyList_New(row.nodes.size());
   int i = 0;
@@ -1216,14 +1299,14 @@ PyObject *AssessIMQuality_call(PyObject *self, PyObject *args, PyObject *keyword
 
 #include "dist_clustering.hpp"
 
-BASED_ON(ExampleDistConstructor, Orange)
+ABSTRACT(ExampleDistConstructor, Orange)
 C_CALL(ExampleDistBySorting, ExampleDistConstructor, "([examples, bound-attrs[, weightID]]) -/-> ExampleDistVector")
 BASED_ON(ExampleDistVector, Orange)
-BASED_ON(ClustersFromDistributions, Orange)
+ABSTRACT(ClustersFromDistributions, Orange)
 C_CALL(ClustersFromDistributionsByAssessor, ClustersFromDistributions, "([example-dist-vector] [minProfitProportion=, distributionAssessor=, stopCriterion=]) -/-> DistClustering")
 C_CALL(FeatureByDistributions, FeatureInducer, "() | ([examples, bound-attrs, name], [constructExampleDist=, completion=]) -/-> Variable")
 
-BASED_ON(DistributionAssessor, Orange)
+ABSTRACT(DistributionAssessor, Orange)
 C_NAMED(DistributionAssessor_Laplace, DistributionAssessor, "()")
 C_NAMED(DistributionAssessor_m, DistributionAssessor, "([m=])")
 C_NAMED(DistributionAssessor_mf, DistributionAssessor, "([m=])")
@@ -1231,7 +1314,7 @@ C_NAMED(DistributionAssessor_Relief, DistributionAssessor, "()")
 C_NAMED(DistributionAssessor_Measure, DistributionAssessor, "([measure=])")
 C_NAMED(DistributionAssessor_Kramer, DistributionAssessor, "()")
 
-BASED_ON(StopDistributionClustering, Orange)
+ABSTRACT(StopDistributionClustering, Orange)
 C_NAMED(StopDistributionClustering_noProfit, StopDistributionClustering, "([minProfitProportion=])")
 C_NAMED(StopDistributionClustering_binary, StopDistributionClustering, "()")
 C_NAMED(StopDistributionClustering_n, StopDistributionClustering, "([n=])")
@@ -1286,6 +1369,55 @@ PyObject *convertToPython(const PExampleDistVector &edv)
   return result;
 }
       
+
+PyObject *ExampleDistVector__reduce__(PyObject *self)
+{
+  PyTRY
+    vector<T_ExampleDist> &values = SELF_AS(TExampleDistVector).values;
+
+    PyObject *pyvalues = PyList_New(values.size() * 2);
+    int i = 0;
+    ITERATE(vector<T_ExampleDist>, edi, values) {
+      PyList_SetItem(pyvalues, i++, Example_FromWrappedExample(edi->example));
+      PyList_SetItem(pyvalues, i++, WrapOrange(edi->distribution));
+    }
+     
+    return Py_BuildValue("O(ON)N", getExportedFunction("__pickleLoaderExampleDistVector"),
+                                   self->ob_type,
+                                   pyvalues,
+                                   packOrangeDictionary(self));
+
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderExampleDistVector(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, values)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PyObject *pyvalues;
+    if (!PyArg_ParseTuple(args, "OO:__pickleLoaderExampleDistVector", &type, &pyvalues))
+      return NULL;
+
+    TExampleDistVector *ed = new TExampleDistVector();
+
+    try {
+      int i = 0, e = PyList_Size(pyvalues);
+      ed->values.reserve(e>>1);
+      while(i < e) {
+        PExample ex = PyExample_AS_Example(PyList_GetItem(pyvalues, i++));
+        PDistribution dist = PyOrange_AsDistribution(PyList_GetItem(pyvalues, i++));
+        ed->values.push_back(T_ExampleDist(ex, dist));
+      }
+
+      return WrapNewOrange(ed, type);
+    }
+    catch (...) {
+      delete ed;
+      throw;
+    }
+  PyCATCH
+}
 
 
 PyObject *ExampleDistVector_native(PyObject *self) PYARGS(0, "() -> [[[float]]] | [[{float: float}]]")

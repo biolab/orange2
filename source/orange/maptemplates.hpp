@@ -424,6 +424,32 @@ public:
       return PYNULL;
     RETURN_NONE;    
   }
+
+
+  static PyObject *_reduce(TPyOrange *self)
+  { 
+    PyTRY
+
+      PyObject *res = Orange__reduce__((PyObject *)self, NULL, NULL);
+      if (!res)
+        return NULL;
+
+      CAST_TO(_MapType, aMap)
+      if (aMap->size()) {
+        _PyTuple_Resize(&res, 5);
+
+        Py_INCREF(Py_None);
+        PyTuple_SET_ITEM(res, 3, Py_None);
+
+        PyObject *items = _items(self);
+        PyTuple_SET_ITEM(res, 4, PySeqIter_New(items));
+        Py_DECREF(items);
+      }
+
+      return res;
+    PyCATCH
+  }
+
 };
 
 #endif

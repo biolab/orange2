@@ -49,8 +49,22 @@ This file includes constructors and specialized methods for classes defined in p
 
 #include "converts.hpp"
 #include "cls_orange.hpp"
+#include "slist.hpp"
 
 WRAPPER(ExampleTable);
+
+
+/* This was moved from lib_vectors.cpp:
+    - nobody used it
+    - lib_vectors.cpp is automatically generated and I'd hate to add this as an exception
+
+int pt_FloatList(PyObject *args, void *floatlist)
+{
+  *(PFloatList *)(floatlist) = PFloatList_FromArguments(args);
+  return PyErr_Occurred() ? -1 : 0;
+}
+*/
+
 
 
 /* ************ PROGRESS CALLBACK ************ */
@@ -62,6 +76,12 @@ PyObject *ProgressCallback_new(PyTypeObject *type, PyObject *args, PyObject *key
     return setCallbackFunction(WrapNewOrange(mlnew TProgressCallback_Python(), type), args);
   else
     return WrapNewOrange(mlnew TProgressCallback_Python(), type);
+}
+
+
+PyObject *ProgressCallback__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrProgressCallback_Type);
 }
 
 
@@ -88,7 +108,7 @@ PyObject *ProgressCallback_call(PyObject *self, PyObject *targs, PyObject *keywo
 
 PVarList PVarList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::P_FromArguments(arg); }
 PyObject *VarList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_FromArguments(type, arg); }
-PyObject *VarList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Variable>)") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_new(type, arg, kwds); }
+PyObject *VarList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Variable>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_new(type, arg, kwds); }
 PyObject *VarList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_getitem(self, index); }
 int       VarList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_setitem(self, index, item); }
 PyObject *VarList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_getslice(self, start, stop); }
@@ -101,6 +121,7 @@ PyObject *VarList_str(TPyOrange *self) { return ListOfWrappedMethods<PVarList, T
 PyObject *VarList_repr(TPyOrange *self) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_str(self); }
 int       VarList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_contains(self, obj); }
 PyObject *VarList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Variable) -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_append(self, item); }
+PyObject *VarList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_extend(self, obj); }
 PyObject *VarList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Variable) -> int") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_count(self, obj); }
 PyObject *VarList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> VarList") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_filter(self, args); }
 PyObject *VarList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Variable) -> int") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_index(self, obj); }
@@ -110,11 +131,12 @@ PyObject *VarList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() 
 PyObject *VarList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Variable) -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_remove(self, obj); }
 PyObject *VarList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_reverse(self); }
 PyObject *VarList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_sort(self, args); }
+PyObject *VarList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, &PyOrVariable_Type>::_reduce(self); }
 
 
 PVarListList PVarListList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::P_FromArguments(arg); }
 PyObject *VarListList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_FromArguments(type, arg); }
-PyObject *VarListList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of VarList>)") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_new(type, arg, kwds); }
+PyObject *VarListList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of VarList>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_new(type, arg, kwds); }
 PyObject *VarListList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_getitem(self, index); }
 int       VarListList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_setitem(self, index, item); }
 PyObject *VarListList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_getslice(self, start, stop); }
@@ -127,6 +149,7 @@ PyObject *VarListList_str(TPyOrange *self) { return ListOfWrappedMethods<PVarLis
 PyObject *VarListList_repr(TPyOrange *self) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_str(self); }
 int       VarListList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_contains(self, obj); }
 PyObject *VarListList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(VarList) -> None") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_append(self, item); }
+PyObject *VarListList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_extend(self, obj); }
 PyObject *VarListList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(VarList) -> int") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_count(self, obj); }
 PyObject *VarListList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> VarListList") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_filter(self, args); }
 PyObject *VarListList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(VarList) -> int") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_index(self, obj); }
@@ -136,6 +159,7 @@ PyObject *VarListList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, 
 PyObject *VarListList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(VarList) -> None") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_remove(self, obj); }
 PyObject *VarListList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_reverse(self); }
 PyObject *VarListList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_sort(self, args); }
+PyObject *VarListList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, &PyOrVarList_Type>::_reduce(self); }
 
 
 PVarList knownVars(PyObject *keywords)
@@ -198,7 +222,7 @@ TMetaVector *knownMetas(PyObject *keywords)
   return NULL;
 }
 
-BASED_ON(Variable, Orange)
+ABSTRACT(Variable, Orange)
 C_NAMED(IntVariable, Variable, "([name=, startValue=, endValue=, distributed=, getValueFrom=])")
 C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
 C_NAMED(FloatVariable, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
@@ -225,10 +249,10 @@ PyObject *PythonValue_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
 }
 
 
-PyObject *PythonValueSpecial_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(int)")
+PyObject *PythonValueSpecial_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(int)") ALLOWS_EMPTY
 {
-  int vtype;
-  if (!PyArg_ParseTuple(args, "i:PythonValueSpecial.__init__", &vtype))
+  int vtype = 1;
+  if (!PyArg_ParseTuple(args, "|i:PythonValueSpecial.__init__", &vtype))
     return PYNULL;
 
   return WrapNewOrange(mlnew TPythonValueSpecial(vtype), type);
@@ -248,6 +272,12 @@ PyObject *PythonValue_get_value(PyObject *self)
   PyObject *res = SELF_AS(TPythonValue).value;
   Py_INCREF(res);
   return res;
+}
+
+
+PyObject *PythonValue__reduce__(PyObject *self)
+{
+  return Py_BuildValue("O(O)", (PyObject *)(self->ob_type), SELF_AS(TPythonValue).value);
 }
 
 
@@ -623,11 +653,31 @@ PyObject *StringValue_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_
 }
 
 
+PyObject *StringValue__reduce__(PyObject *self)
+{
+  return Py_BuildValue("O(s)", (PyObject *)(self->ob_type), SELF_AS(TStringValue).value.c_str());
+}
+
+
 /* ************ ATTRIBUTED FLOAT LIST ************ */
 
-PyObject *AttributedFloatList_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(FloatList, "(attributes, list)")
+PyObject *AttributedFloatList_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(FloatList, "(attributes, list)") ALLOWS_EMPTY
 {
-  PYERROR(PyExc_AttributeError, "not implemented", PYNULL);
+  PyObject *ob1 = NULL, *ob2 = NULL;
+  if (!PyArg_UnpackTuple(args, "AttributedFloatList.new", 0, 2, &ob1, &ob2))
+    return PYNULL;
+
+  PyObject *wabl = ListOfUnwrappedMethods<PAttributedFloatList, TAttributedFloatList, float>::_new(type, ob2 ? ob2 : ob1, keywds);
+
+  if (ob2) {
+    PVarList attributes = PVarList_FromArguments(ob1);
+    if (!attributes)
+      return PYNULL;
+
+    PyOrange_AsAttributedFloatList(wabl)->attributes = attributes;
+  }
+
+  return wabl;
 }
 
 
@@ -727,10 +777,10 @@ int AttributedFloatList_setitem(TPyOrange *self, PyObject *index, PyObject *valu
 
 
 
-PyObject *AttributedBoolList_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(BoolList, "(attributes, list)")
+PyObject *AttributedBoolList_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(BoolList, "(attributes, list)") ALLOWS_EMPTY
 {
-  PyObject *ob1, *ob2 = NULL;
-  if (!PyArg_UnpackTuple(args, "AttributedBoolList.new", 1, 2, &ob1, &ob2))
+  PyObject *ob1 = NULL, *ob2 = NULL;
+  if (!PyArg_UnpackTuple(args, "AttributedBoolList.new", 0, 2, &ob1, &ob2))
     return PYNULL;
 
   PyObject *wabl = ListOfUnwrappedMethods<PAttributedBoolList, TAttributedBoolList, bool>::_new(type, ob2 ? ob2 : ob1, keywds);
@@ -1141,6 +1191,56 @@ PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED
 }
 
 
+PyObject *Domain__reduce__(PyObject *self)
+{
+  CAST_TO(TDomain, domain)
+  return Py_BuildValue("O(ONNN)N", getExportedFunction("__pickleLoaderDomain"),
+                                   self->ob_type,
+                                   WrapOrange(domain->attributes),
+                                   WrapOrange(domain->classVar),
+                                   Domain_getmetas((TPyOrange *)self, NULL),
+                                   packOrangeDictionary(self));
+}
+
+PyObject *__pickleLoaderDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, attributes, classVar, metas)")
+{
+  PyTRY {
+    if (!args || !PyTuple_Check(args) || (PyTuple_Size(args) != 4))
+      PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
+
+    PyTypeObject *type = (PyTypeObject *)PyTuple_GET_ITEM(args, 0);
+    PyObject *attributes = PyTuple_GET_ITEM(args, 1);
+    PyObject *classVar = PyTuple_GET_ITEM(args, 2);
+    PyObject *metas = PyTuple_GET_ITEM(args, 3);
+
+    if (!PyOrVarList_Check(attributes) || !PyDict_Check(metas))
+      PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
+
+  
+    TDomain *domain = NULL;
+    if (classVar == Py_None)
+      domain = new TDomain(PVariable(), PyOrange_AsVarList(attributes).getReference());
+    else if (PyOrVariable_Check(classVar))
+      domain = new TDomain(PyOrange_AsVariable(classVar), PyOrange_AsVarList(attributes).getReference());
+    else
+      PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
+      
+
+    PyObject *pydomain = WrapNewOrange(domain, type);
+
+    PyObject *res = Domain_addmetas((TPyOrange *)pydomain, metas);
+    if (!res) {
+      Py_DECREF(pydomain);
+      return NULL;
+    }
+    Py_DECREF(res);
+
+    return pydomain;
+  }
+  PyCATCH
+}
+
+
 PyObject *Domain_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example) -> Example")
 { PyTRY
     NO_KEYWORDS
@@ -1288,6 +1388,40 @@ PyObject *RandomGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keyw
 
       return WrapNewOrange(mlnew TRandomGenerator(i), type);
   PyCATCH
+}
+
+
+PyObject *RandomGenerator__reduce__(PyObject *self)
+{
+  cMersenneTwister &mt = SELF_AS(TRandomGenerator).mt;
+
+  return Py_BuildValue("O(Os#ii)N", getExportedFunction("__pickleLoaderRandomGenerator"),
+                                    self->ob_type,
+                                    (char *)(mt.state), (mt.next-mt.state + mt.left + 1) * sizeof(long),
+                                    mt.next - mt.state,
+                                    mt.left,
+                                    packOrangeDictionary(self));
+}
+
+
+PyObject *__pickleLoaderRandomGenerator(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, state, next_offset, left)")
+{
+  PyTypeObject *type;
+  int offs;
+  int left;
+  char *buff;
+  int bufsize;
+  if (!PyArg_ParseTuple(args, "Os#ii", &type, &buff, &bufsize, &offs, &left))
+    return PYNULL;
+
+  TRandomGenerator *rg = new TRandomGenerator;
+
+  cMersenneTwister &mt = rg->mt;
+  memcpy(mt.state, buff, bufsize);
+  mt.next = mt.state + offs;
+  mt.left = left;
+
+  return WrapNewOrange(rg, type);
 }
 
 
@@ -1613,6 +1747,10 @@ converter ptd_ExampleGenerator(PDomain domain)
 
 
 CONSTRUCTOR_KEYWORDS(ExampleGenerator, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA noClass noCodedDiscrete")
+
+// Class ExampleGenerator is abstract in C++; this constructor returns the derived classes
+
+NO_PICKLE(ExampleGenerator)
 
 PyObject *ExampleGenerator_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(Orange, "(filename)")
 {  
@@ -2115,7 +2253,7 @@ PyObject *ExampleGenerator_weight(PyObject *self, PyObject *args, PyObject *) PY
 
 PExampleGeneratorList PExampleGeneratorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::P_FromArguments(arg); }
 PyObject *ExampleGeneratorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_FromArguments(type, arg); }
-PyObject *ExampleGeneratorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ExampleGenerator>)") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_new(type, arg, kwds); }
+PyObject *ExampleGeneratorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ExampleGenerator>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_new(type, arg, kwds); }
 PyObject *ExampleGeneratorList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_getitem(self, index); }
 int       ExampleGeneratorList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_setitem(self, index, item); }
 PyObject *ExampleGeneratorList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_getslice(self, start, stop); }
@@ -2128,6 +2266,7 @@ PyObject *ExampleGeneratorList_str(TPyOrange *self) { return ListOfWrappedMethod
 PyObject *ExampleGeneratorList_repr(TPyOrange *self) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_str(self); }
 int       ExampleGeneratorList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_contains(self, obj); }
 PyObject *ExampleGeneratorList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(ExampleGenerator) -> None") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_append(self, item); }
+PyObject *ExampleGeneratorList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_extend(self, obj); }
 PyObject *ExampleGeneratorList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ExampleGenerator) -> int") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_count(self, obj); }
 PyObject *ExampleGeneratorList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> ExampleGeneratorList") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_filter(self, args); }
 PyObject *ExampleGeneratorList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ExampleGenerator) -> int") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_index(self, obj); }
@@ -2137,6 +2276,7 @@ PyObject *ExampleGeneratorList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_
 PyObject *ExampleGeneratorList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ExampleGenerator) -> None") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_remove(self, obj); }
 PyObject *ExampleGeneratorList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_reverse(self); }
 PyObject *ExampleGeneratorList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_sort(self, args); }
+PyObject *ExampleGeneratorList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_reduce(self); }
   
 
 /* ************ EXAMPLE TABLE ************ */
@@ -2409,6 +2549,66 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
 
     PYERROR(PyExc_TypeError, "invalid arguments for ExampleTable.__init__", PYNULL);
 
+  PyCATCH
+}
+
+
+PyObject *ExampleTable__reduce__(PyObject *self)
+{
+  CAST_TO(TExampleTable, table)
+
+  if (!table->ownsExamples || table->lock)
+    PYERROR(PyExc_SystemError, "pickling example references is not supported (yet?)", PYNULL);
+
+  TCharBuffer buf(1024);
+  PyObject *otherValues = NULL;
+
+  buf.writeInt(table->size());
+  PEITERATE(ei, table)
+    Example_pack(*ei, buf, otherValues);
+
+  if (!otherValues) {
+    otherValues = Py_None;
+    Py_INCREF(otherValues);
+  }
+  
+  return Py_BuildValue("O(ONs#N)O", getExportedFunction("__pickleLoaderExampleTable"),
+                                    self->ob_type,
+                                    WrapOrange(table->domain),
+                                    buf.buf, buf.length(),
+                                    otherValues,
+                                    packOrangeDictionary(self));
+}
+
+
+PyObject *__pickleLoaderExampleTable(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, domain, packed_values, other_values)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PDomain domain;
+    char *buf;
+    int bufSize;
+    PyObject *otherValues;
+
+    if (!PyArg_ParseTuple(args, "OO&s#O:__pickleLoaderExample", &type, cc_Domain, &domain, &buf, &bufSize, &otherValues))
+      return NULL;
+
+    TCharBuffer cbuf(buf);
+    int otherValuesIndex = 0;
+
+    int noOfEx = cbuf.readInt();
+    TExampleTable *newTable = new TExampleTable(domain);
+    try {
+      newTable->reserve(noOfEx);
+      for(int i = noOfEx; i--;)
+        Example_unpack(newTable->new_example(), cbuf, otherValues, otherValuesIndex);
+
+      return WrapNewOrange(newTable, type);
+    }
+    catch (...) {
+      delete newTable;
+      throw;
+    }
   PyCATCH
 }
 
@@ -3485,6 +3685,12 @@ PyObject *TransformValue_new(PyTypeObject *type, PyObject *args, PyObject *keywo
 }
 
 
+PyObject *TransformValue__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrTransformValue_Type);
+}
+
+
 PyObject *TransformValue_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(value) -> Value")
 { PyTRY
     NO_KEYWORDS
@@ -3561,6 +3767,12 @@ PyObject *convertToPythonNative(const TDistribution &dist, int)
   PYERROR(PyExc_TypeError, "cannot convert to native python object", PYNULL);
 }
 
+
+/* Class Distribution has a constructor, but it constructs an instance of either DiscDistribution
+   or ContDistribution. Class Distribution is thus essentially abstract for Python, although it has
+   a constructor. */
+
+NO_PICKLE(Distribution) 
 
 PyObject *Distribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue, "(attribute[, examples[, weightID]])")
 {
@@ -3857,6 +4069,38 @@ PyObject *DiscDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) 
 }
       
 
+PyObject *DiscDistribution__reduce__(PyObject *self)
+{
+  PyTRY
+    TDiscDistribution *disc = getDiscDistribution(self);
+    TCharBuffer buf(sizeof(float)*(disc->size()+2));
+    buf.writeFloatVector(disc->distribution);
+
+    return Py_BuildValue("O(Os#)N", getExportedFunction("__pickleLoaderDiscDistribution"),
+                                    self->ob_type,
+                                    buf.buf, buf.length(),
+                                    packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderDiscDistribution(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_distribution)")
+{
+  PyTRY
+    PyTypeObject *type;
+    char *buf;
+    int bufSize;
+    if (!PyArg_ParseTuple(args, "Os#:__pickleLoadDiscDistribution", &type, &buf, &bufSize))
+      return PYNULL;
+
+    const int &size = (int &)*buf;
+    buf += sizeof(int);
+
+    return WrapNewOrange(new TDiscDistribution((float *)buf, size), type);
+  PyCATCH
+}
+
+
 int pt_DiscDistribution(PyObject *args, void *dist)
 { if (PyOrDiscDistribution_Check(args)) {
     *(PDiscDistribution *)(dist) = PyOrange_AsDiscDistribution(args);
@@ -4025,6 +4269,57 @@ PyObject *ContDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) 
 }
       
 
+PyObject *ContDistribution__reduce__(PyObject *self)
+{
+  PyTRY
+    TContDistribution *cont = getContDistribution(self);
+    TCharBuffer buf(sizeof(float) * 2 * (cont->size()  +  5));
+
+    buf.writeInt(cont->size());
+    PITERATE(TContDistribution, ci, cont) {
+      buf.writeFloat((*ci).first);
+      buf.writeFloat((*ci).second);
+    }
+
+    buf.writeFloat(cont->sum);
+    buf.writeFloat(cont->sum2);
+
+    return Py_BuildValue("O(Os#)N", getExportedFunction("__pickleLoaderContDistribution"),
+                                    self->ob_type,
+                                    buf.buf, buf.length(),
+                                    packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderContDistribution(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_distribution)")
+{
+  PyTRY
+    PyTypeObject *type;
+    char *pbuf;
+    int bufSize;
+    if (!PyArg_ParseTuple(args, "Os#:__pickleLoadDiscDistribution", &type, &pbuf, &bufSize))
+      return PYNULL;
+
+    TContDistribution *cdi = new TContDistribution();
+
+    TCharBuffer buf(pbuf);
+    for(int size = buf.readInt(); size--; ) {
+      // cannot call buf.readFloat() in the make_pair call since we're not sure about the
+      // order in which the arguments are evaluated
+      const float p1 = buf.readFloat();
+      const float p2 = buf.readFloat();
+      cdi->insert(cdi->end(), make_pair(p1, p2));
+    }
+
+    cdi->sum = buf.readFloat();
+    cdi->sum2 = buf.readFloat();
+
+    return WrapNewOrange(cdi, type);
+  PyCATCH
+}
+
+
 int ContDistribution_len(PyObject *self)
 { PyTRY
     TContDistribution *cont = getContDistribution(self);
@@ -4174,7 +4469,7 @@ PyObject *ContDistribution_density(PyObject *self, PyObject *args) PYARGS(METH_V
 }
 
 
-PyObject *GaussianDistribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Distribution, "(mean, sigma) | (distribution) | () -> distribution")
+PyObject *GaussianDistribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Distribution, "(mean, sigma) | (distribution) | () -> distribution") ALLOWS_EMPTY
 { PyTRY
     float mean = 0.0, sigma = 1.0;
 
@@ -4262,6 +4557,7 @@ PyObject *DomainDistributions_str(TPyOrange *self) { return ListOfWrappedMethods
 PyObject *DomainDistributions_repr(TPyOrange *self) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_str(self); }
 int       DomainDistributions_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_contains(self, obj); }
 PyObject *DomainDistributions_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Distribution) -> None") { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_append(self, item); }
+PyObject *DomainDistributions_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_extend(self, obj); }
 PyObject *DomainDistributions_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Distribution) -> int") { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_count(self, obj); }
 PyObject *DomainDistributions_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> DomainDistributions") { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_filter(self, args); }
 PyObject *DomainDistributions_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Distribution) -> int") { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_index(self, obj); }
@@ -4271,6 +4567,7 @@ PyObject *DomainDistributions_pop(TPyOrange *self, PyObject *args) PYARGS(METH_V
 PyObject *DomainDistributions_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Distribution) -> None") { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_remove(self, obj); }
 PyObject *DomainDistributions_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_reverse(self); }
 PyObject *DomainDistributions_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_sort(self, args); }
+PyObject *DomainDistributions__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, &PyOrDistribution_Type>::_reduce(self); }
 
 
 /* Note that this is not like callable-constructors. They return different type when given
@@ -4365,7 +4662,7 @@ int DomainDistributions_setitem(PyObject *self, PyObject *args, PyObject *obj)
 
 PDistributionList PDistributionList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::P_FromArguments(arg); }
 PyObject *DistributionList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_FromArguments(type, arg); }
-PyObject *DistributionList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Distribution>)") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_new(type, arg, kwds); }
+PyObject *DistributionList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Distribution>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_new(type, arg, kwds); }
 PyObject *DistributionList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_getitem(self, index); }
 int       DistributionList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_setitem(self, index, item); }
 PyObject *DistributionList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_getslice(self, start, stop); }
@@ -4378,6 +4675,7 @@ PyObject *DistributionList_str(TPyOrange *self) { return ListOfWrappedMethods<PD
 PyObject *DistributionList_repr(TPyOrange *self) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_str(self); }
 int       DistributionList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_contains(self, obj); }
 PyObject *DistributionList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Distribution) -> None") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_append(self, item); }
+PyObject *DistributionList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_extend(self, obj); }
 PyObject *DistributionList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Distribution) -> int") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_count(self, obj); }
 PyObject *DistributionList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> DistributionList") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_filter(self, args); }
 PyObject *DistributionList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Distribution) -> int") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_index(self, obj); }
@@ -4387,6 +4685,7 @@ PyObject *DistributionList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARA
 PyObject *DistributionList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Distribution) -> None") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_remove(self, obj); }
 PyObject *DistributionList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_reverse(self); }
 PyObject *DistributionList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_sort(self, args); }
+PyObject *DistributionList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, &PyOrDistribution_Type>::_reduce(self); }
 
 
 
@@ -4397,13 +4696,60 @@ PyObject *DistributionList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VAR
 
 BASED_ON(EFMDataDescription, Orange)
 
-BASED_ON(LearnerFD, Learner)
+PyObject *EFMDataDescription__reduce__(PyObject *self)
+{
+  CAST_TO(TEFMDataDescription, edd);
+
+  TCharBuffer buf(0);
+  buf.writeFloatVector(edd->averages);
+  buf.writeFloatVector(edd->matchProbabilities);
+  buf.writeInt(edd->originalWeight);
+  buf.writeInt(edd->missingWeight);
+
+  return Py_BuildValue("O(OOs#)N", getExportedFunction("__pickleLoaderEFMDataDescription"),
+                                  WrapOrange(edd->domain),
+                                  WrapOrange(edd->domainDistributions),
+                                  buf.buf, buf.length(),
+                                  packOrangeDictionary(self));
+}
+
+
+PyObject *__pickleLoaderEFMDataDescription(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(domain, domainDistributions, packed_data)")
+{
+  PDomain domain;
+  PDomainDistributions domainDistributions; 
+  char *pbuf;
+  int bufSize;
+  
+  if (!PyArg_ParseTuple(args, "O&O&s#", ccn_Domain, &domain, ccn_DomainDistributions, &domainDistributions, &pbuf, &bufSize))
+    return PYNULL;
+
+  TEFMDataDescription *edd = new TEFMDataDescription(domain, domainDistributions);
+  PEFMDataDescription wedd = edd;
+
+  TCharBuffer buf(pbuf);
+  buf.readFloatVector(edd->averages);
+  buf.readFloatVector(edd->matchProbabilities);
+  edd->originalWeight = buf.readInt();
+  edd->missingWeight = buf.readInt();
+
+  return WrapOrange(wedd);
+}
+
+
+ABSTRACT(LearnerFD, Learner)
 
 PyObject *Learner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrLearner_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TLearner_Python(), type), args);
   else
     return WrapNewOrange(mlnew TLearner_Python(), type);
+}
+
+
+PyObject *Learner__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrLearner_Type);
 }
 
 
@@ -4446,9 +4792,9 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
 
 #include "classify.hpp"
 
-BASED_ON(ClassifierFD, Classifier)
+ABSTRACT(ClassifierFD, Classifier)
 
-PyObject *DefaultClassifier_new(PyTypeObject *tpe, PyObject *args, PyObject *kw) BASED_ON(Classifier, "([defaultVal])")
+PyObject *DefaultClassifier_new(PyTypeObject *tpe, PyObject *args, PyObject *kw) BASED_ON(Classifier, "([defaultVal])") ALLOWS_EMPTY
 {
   PyObject *arg1 = NULL, *arg2 = NULL;
   if (!PyArg_UnpackTuple(args, "DefaultClassifier.__new__", 0, 2, &arg1, &arg2))
@@ -4482,7 +4828,7 @@ C_NAMED(RandomClassifier, Classifier, "([probabilities=])")
 
 PClassifierList PClassifierList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::P_FromArguments(arg); }
 PyObject *ClassifierList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_FromArguments(type, arg); }
-PyObject *ClassifierList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Classifier>)") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_new(type, arg, kwds); }
+PyObject *ClassifierList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Classifier>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_new(type, arg, kwds); }
 PyObject *ClassifierList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_getitem(self, index); }
 int       ClassifierList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_setitem(self, index, item); }
 PyObject *ClassifierList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_getslice(self, start, stop); }
@@ -4495,6 +4841,7 @@ PyObject *ClassifierList_str(TPyOrange *self) { return ListOfWrappedMethods<PCla
 PyObject *ClassifierList_repr(TPyOrange *self) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_str(self); }
 int       ClassifierList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_contains(self, obj); }
 PyObject *ClassifierList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Classifier) -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_append(self, item); }
+PyObject *ClassifierList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_extend(self, obj); }
 PyObject *ClassifierList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Classifier) -> int") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_count(self, obj); }
 PyObject *ClassifierList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> ClassifierList") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_filter(self, args); }
 PyObject *ClassifierList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Classifier) -> int") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_index(self, obj); }
@@ -4504,6 +4851,7 @@ PyObject *ClassifierList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARG
 PyObject *ClassifierList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Classifier) -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_remove(self, obj); }
 PyObject *ClassifierList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_reverse(self); }
 PyObject *ClassifierList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_sort(self, args); }
+PyObject *ClassifierList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_reduce(self); }
 
 
 PYCONSTANT_INT(GetValue, 0)
@@ -4520,6 +4868,12 @@ PyObject *Classifier_new(PyTypeObject *type, PyObject *args, PyObject *keywords)
     return setCallbackFunction(WrapNewOrange(mlnew TClassifier_Python(), type), args);
   else
     return WrapNewOrange(mlnew TClassifier_Python(), type);
+}
+
+
+PyObject *Classifier__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrClassifier_Type);
 }
 
 
@@ -4725,6 +5079,18 @@ PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObj
 }
 
 
+PyObject *ClassifierByLookupTable1__reduce__(PyObject *self)
+{ 
+  CAST_TO(TClassifierByLookupTable1, cblt);
+  return Py_BuildValue("O(OOOO)N", (PyObject *)(self->ob_type), 
+                                   WrapOrange(cblt->classVar),
+                                   WrapOrange(cblt->variable1),
+                                   WrapOrange(cblt->lookupTable),
+                                   WrapOrange(cblt->distributions),
+                                   packOrangeDictionary(self));
+}
+
+
 PyObject *ClassifierByLookupTable2_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, desc0, desc1)")
 { PyTRY
     PVariable vcl, vvl1, vvl2;
@@ -4736,6 +5102,19 @@ PyObject *ClassifierByLookupTable2_new(PyTypeObject *type, PyObject *args, PyObj
     TClassifierByLookupTable2 *cblt = mlnew TClassifierByLookupTable2(vcl, vvl1, vvl2);
     return initializeTables(pyvlist, pydlist, cblt) ? WrapNewOrange(cblt, type) : PYNULL;
   PyCATCH
+}
+
+
+PyObject *ClassifierByLookupTable2__reduce__(PyObject *self)
+{ 
+  CAST_TO(TClassifierByLookupTable2, cblt);
+  return Py_BuildValue("O(OOOOO)N", (PyObject *)(self->ob_type), 
+                                   WrapOrange(cblt->classVar),
+                                   WrapOrange(cblt->variable1),
+                                   WrapOrange(cblt->variable2),
+                                   WrapOrange(cblt->lookupTable),
+                                   WrapOrange(cblt->distributions),
+                                   packOrangeDictionary(self));
 }
 
 
@@ -4751,6 +5130,20 @@ PyObject *ClassifierByLookupTable3_new(PyTypeObject *type, PyObject *args, PyObj
     return initializeTables(pyvlist, pydlist, cblt) ? WrapNewOrange(cblt, type) : PYNULL;
   PyCATCH
 }
+
+PyObject *ClassifierByLookupTable3__reduce__(PyObject *self)
+{ 
+  CAST_TO(TClassifierByLookupTable3, cblt);
+  return Py_BuildValue("O(OOOOOO)N", (PyObject *)(self->ob_type), 
+                                   WrapOrange(cblt->classVar),
+                                   WrapOrange(cblt->variable1),
+                                   WrapOrange(cblt->variable2),
+                                   WrapOrange(cblt->variable3),
+                                   WrapOrange(cblt->lookupTable),
+                                   WrapOrange(cblt->distributions),
+                                   packOrangeDictionary(self));
+}
+
 
 
 PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Classifier, "(class-descriptor, descriptor)")
@@ -4825,5 +5218,17 @@ PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObje
 }
 
 
+PyObject *ClassifierByLookupTable__reduce__(PyObject *self)
+{
+  // Python class ClassifierByLookupTable represents C++'s ClassifierByLookupTableN
+  CAST_TO(TClassifierByLookupTableN, cblt);
+
+  return Py_BuildValue("O(OOOO)N", (PyObject *)(self->ob_type), 
+                                   WrapOrange(cblt->classVar),
+                                   WrapOrange(cblt->variables),
+                                   WrapOrange(cblt->lookupTable),
+                                   WrapOrange(cblt->distributions),
+                                   packOrangeDictionary(self));
+}
 
 #include "lib_kernel.px"

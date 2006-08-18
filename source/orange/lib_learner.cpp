@@ -54,6 +54,7 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "converts.hpp"
 
 #include "vectortemplates.hpp"
+#include "slist.hpp"
 
 #include "externs.px"
 
@@ -123,6 +124,17 @@ PyObject *AssociationRule_new(PyTypeObject *type, PyObject *args, PyObject *) BA
   PyCATCH
 }
 
+PyObject *AssociationRule__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TAssociationRule, arule);
+    return Py_BuildValue("O(NN)N", self->ob_type,
+                                   Example_FromWrappedExample(arule->left),
+                                   Example_FromWrappedExample(arule->right),
+                                   packOrangeDictionary(self));
+  PyCATCH                          
+}
+
 
 PyObject *AssociationRule_appliesLeft(PyObject *self, PyObject *arg, PyObject *) PYARGS(METH_O, "(example) -> bool")
 { PyTRY
@@ -180,7 +192,7 @@ bool convertFromPython(PyObject *obj, PAssociationRule &rule)
   switch (PyTuple_Size(obj)) {
     case 6:
       float nAppliesLeft, nAppliesRight, nAppliesBoth, nExamples;
-      if (PyArg_ParseTuple(obj, "O&O&ffff", ptr_Example, &le, ptr_Example, &re, &nAppliesLeft, &nAppliesRight, &nAppliesBoth, &nExamples)) {
+      if (PyArg_ParseTuple(obj, "O&O&ffff:convertFromPython(AssociationRule)", ptr_Example, &le, ptr_Example, &re, &nAppliesLeft, &nAppliesRight, &nAppliesBoth, &nExamples)) {
         PExample nle = mlnew TExample(*le);
         PExample nre = mlnew TExample(*re);
         rule = mlnew TAssociationRule(nle, nre, nAppliesLeft, nAppliesRight, nAppliesBoth, nExamples);
@@ -189,9 +201,11 @@ bool convertFromPython(PyObject *obj, PAssociationRule &rule)
       else
         break;
 
-    case 4:
-      float support, confidence;
-      if (PyArg_ParseTuple(obj, "O&O&ff", ptr_Example, &le, ptr_Example, &re, &support, &confidence)) {
+    case 2:
+    case 3:
+    case 4: {
+      float support = -1, confidence = -1;
+      if (PyArg_ParseTuple(obj, "O&O&|ff:convertFromPython(AssociationRule)", ptr_Example, &le, ptr_Example, &re, &support, &confidence)) {
         PExample nle = mlnew TExample(*le);
         PExample nre = mlnew TExample(*re);
         rule = mlnew TAssociationRule(nle, nre);
@@ -201,6 +215,7 @@ bool convertFromPython(PyObject *obj, PAssociationRule &rule)
       }
       else
         break;
+    }
 
     case 1: 
       if (PyArg_ParseTuple(obj, "O&:convertFromPython(AssociationRule)", cc_AssociationRule, &rule))
@@ -263,7 +278,7 @@ PyObject *AssociationRule_repr(TPyOrange *self)
 
 PAssociationRules PAssociationRules_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::P_FromArguments(arg); }
 PyObject *AssociationRules_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_FromArguments(type, arg); }
-PyObject *AssociationRules_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of AssociationRule>)") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_new(type, arg, kwds); }
+PyObject *AssociationRules_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of AssociationRule>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_new(type, arg, kwds); }
 PyObject *AssociationRules_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_getitem(self, index); }
 int       AssociationRules_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_setitem(self, index, item); }
 PyObject *AssociationRules_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_getslice(self, start, stop); }
@@ -276,6 +291,7 @@ PyObject *AssociationRules_str(TPyOrange *self) { return ListOfWrappedMethods<PA
 PyObject *AssociationRules_repr(TPyOrange *self) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_str(self); }
 int       AssociationRules_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_contains(self, obj); }
 PyObject *AssociationRules_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(AssociationRule) -> None") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_append(self, item); }
+PyObject *AssociationRules_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_extend(self, obj); }
 PyObject *AssociationRules_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(AssociationRule) -> int") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_count(self, obj); }
 PyObject *AssociationRules_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> AssociationRules") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_filter(self, args); }
 PyObject *AssociationRules_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(AssociationRule) -> int") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_index(self, obj); }
@@ -285,6 +301,7 @@ PyObject *AssociationRules_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARA
 PyObject *AssociationRules_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(AssociationRule) -> None") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_remove(self, obj); }
 PyObject *AssociationRules_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_reverse(self); }
 PyObject *AssociationRules_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_sort(self, args); }
+PyObject *AssociationRules__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, &PyOrAssociationRule_Type>::_reduce(self); }
 
 /************* CLASSIFICATION TREES ************/
 
@@ -300,10 +317,11 @@ C_NAMED(TreeClassifier, ClassifierFD, "([domain=, tree=, descender=])")
 
 C_NAMED(TreeStopCriteria_common, TreeStopCriteria, "([maxMajority=, minExamples=])")
 HIDDEN(TreeStopCriteria_Python, TreeStopCriteria)
+NO_PICKLE(TreeStopCriteria_Python)
 
 C_CALL(TreeSplitConstructor_Combined, TreeSplitConstructor, "([examples, [weight, domainContingency, apriorClass, candidates] [discreteTreeSplitConstructor=, continuousTreeSplitConstructor=]) -/-> (Classifier, descriptions, sizes, quality)")
 
-BASED_ON(TreeSplitConstructor_Measure, TreeSplitConstructor)
+ABSTRACT(TreeSplitConstructor_Measure, TreeSplitConstructor)
 C_CALL(TreeSplitConstructor_Attribute, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
 C_CALL(TreeSplitConstructor_ExhaustiveBinary, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
 C_CALL(TreeSplitConstructor_Threshold, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
@@ -326,7 +344,7 @@ C_CALL(TreeDescender_UnknownToCommonSelector, TreeDescender, "(node, example) -/
 C_CALL(TreeDescender_UnknownMergeAsBranchSizes, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
 C_CALL(TreeDescender_UnknownMergeAsSelector, TreeDescender, "(node, example) -/-> (node, {distribution | None})")
 
-BASED_ON(TreePruner, Orange)
+ABSTRACT(TreePruner, Orange)
 C_CALL (TreePruner_SameMajority, TreePruner, "([tree]) -/-> tree")
 C_CALL (TreePruner_m, TreePruner, "([tree]) -/-> tree")
 
@@ -366,6 +384,31 @@ PyObject *TreeStopCriteria_new(PyTypeObject *type, PyObject *args, PyObject *key
   return WrapNewOrange(mlnew TTreeStopCriteria_Python(), type);
 }
 
+
+/* This is all twisted: Python classes are derived from TreeStopCriteria;
+   although the underlying C++ structure is TreeStopCriteria_Python,
+   the Python base is always TreeStopCritera. We must therefore define
+   TreeStopCriteria__reduce__ to handle both C++ objects, and need not
+   define TreeStopCriteria_Python__reduce__
+*/
+
+PyObject *TreeStopCriteria__reduce__(PyObject *self)
+{
+  POrange orself = PyOrange_AS_Orange(self);
+
+  if (orself.is_derived_from(TTreeStopCriteria_Python) && PyObject_HasAttrString(self, "__callback")) {
+    PyObject *packed = packOrangeDictionary(self);
+    PyObject *callback = PyDict_GetItemString(packed, "__callback");
+    PyDict_DelItemString(packed, "__callback");
+    return Py_BuildValue("O(O)N", self->ob_type, callback, packed);
+  }
+
+  /* This works for ordinary (not overloaded) TreeStopCriteria
+     and for Python classes derived from TreeStopCriteria. 
+     The latter have different self->ob_type, so TreeStopCriteria_new will construct
+     an instance of TreeStopCriteria_Python */
+  return Py_BuildValue("O()N", self->ob_type, packOrangeDictionary(self));
+}
 
 
 PyObject *TreeStopCriteria_lowcall(PyObject *self, PyObject *args, PyObject *keywords, bool allowPython)
@@ -410,6 +453,12 @@ PyObject *TreeSplitConstructor_new(PyTypeObject *type, PyObject *args, PyObject 
     return setCallbackFunction(WrapNewOrange(mlnew TTreeSplitConstructor_Python(), type), args);
   else
     return WrapNewOrange(mlnew TTreeSplitConstructor_Python(), type);
+}
+
+
+PyObject *TreeSplitConstructor__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrTreeSplitConstructor_Type);
 }
 
 
@@ -469,6 +518,12 @@ PyObject *TreeExampleSplitter_new(PyTypeObject *type, PyObject *args, PyObject *
 }
 
 
+PyObject *TreeExampleSplitter__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrTreeExampleSplitter_Type);
+}
+
+
 PyObject *TreeExampleSplitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(node, examples[, weight]) -/-> (ExampleGeneratorList, list of weight ID's")
 { PyTRY
     NO_KEYWORDS
@@ -511,6 +566,12 @@ PyObject *TreeDescender_new(PyTypeObject *type, PyObject *args, PyObject *keywor
     return setCallbackFunction(WrapNewOrange(mlnew TMeasureAttribute_Python(), type), args);
   else
     return WrapNewOrange(mlnew TTreeDescender_Python(), type);
+}
+
+
+PyObject *TreeDescender__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrTreeDescender_Type);
 }
 
 
@@ -580,7 +641,7 @@ PyObject *TreeClassifier_treesize(PyObject *self, PyObject *, PyObject *) PYARGS
 
 PTreeNodeList PTreeNodeList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::P_FromArguments(arg); }
 PyObject *TreeNodeList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_FromArguments(type, arg); }
-PyObject *TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of TreeNode>)") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_new(type, arg, kwds); }
+PyObject *TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of TreeNode>)")  ALLOWS_EMPTY { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_new(type, arg, kwds); }
 PyObject *TreeNodeList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_getitem(self, index); }
 int       TreeNodeList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_setitem(self, index, item); }
 PyObject *TreeNodeList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_getslice(self, start, stop); }
@@ -593,6 +654,7 @@ PyObject *TreeNodeList_str(TPyOrange *self) { return ListOfWrappedMethods<PTreeN
 PyObject *TreeNodeList_repr(TPyOrange *self) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_str(self); }
 int       TreeNodeList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_contains(self, obj); }
 PyObject *TreeNodeList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(TreeNode) -> None") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_append(self, item); }
+PyObject *TreeNodeList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_extend(self, obj); }
 PyObject *TreeNodeList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(TreeNode) -> int") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_count(self, obj); }
 PyObject *TreeNodeList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> TreeNodeList") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_filter(self, args); }
 PyObject *TreeNodeList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(TreeNode) -> int") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_index(self, obj); }
@@ -602,6 +664,7 @@ PyObject *TreeNodeList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS,
 PyObject *TreeNodeList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(TreeNode) -> None") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_remove(self, obj); }
 PyObject *TreeNodeList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_reverse(self); }
 PyObject *TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_sort(self, args); }
+PyObject *TreeNodeList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, &PyOrTreeNode_Type>::_reduce(self); }
 
  
 /************* C45 ************/
@@ -609,7 +672,7 @@ PyObject *TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS
 #include "c4.5.hpp"
 
 C_CALL(C45Learner, Learner, "([examples] [, weight=, gainRatio=, subset=, batch=, probThresh=, minObjs=, window=, increment=, cf=, trials=]) -/-> Classifier")
-BASED_ON(C45Classifier, Classifier)
+C_NAMED(C45Classifier, Classifier, "()")
 
 PyObject *C45Learner_commandline(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(line) -> None")
 { PyTRY
@@ -632,7 +695,7 @@ PYCLASSCONSTANT_INT(C45TreeNode, Subset, TC45TreeNode::Subset)
 
 PC45TreeNodeList PC45TreeNodeList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::P_FromArguments(arg); }
 PyObject *C45TreeNodeList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_FromArguments(type, arg); }
-PyObject *C45TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of C45TreeNode>)") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_new(type, arg, kwds); }
+PyObject *C45TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of C45TreeNode>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_new(type, arg, kwds); }
 PyObject *C45TreeNodeList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_getitem(self, index); }
 int       C45TreeNodeList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_setitem(self, index, item); }
 PyObject *C45TreeNodeList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_getslice(self, start, stop); }
@@ -645,6 +708,7 @@ PyObject *C45TreeNodeList_str(TPyOrange *self) { return ListOfWrappedMethods<PC4
 PyObject *C45TreeNodeList_repr(TPyOrange *self) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_str(self); }
 int       C45TreeNodeList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_contains(self, obj); }
 PyObject *C45TreeNodeList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(C45TreeNode) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_append(self, item); }
+PyObject *C45TreeNodeList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_extend(self, obj); }
 PyObject *C45TreeNodeList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(C45TreeNode) -> int") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_count(self, obj); }
 PyObject *C45TreeNodeList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> C45TreeNodeList") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_filter(self, args); }
 PyObject *C45TreeNodeList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(C45TreeNode) -> int") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_index(self, obj); }
@@ -654,6 +718,7 @@ PyObject *C45TreeNodeList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARAR
 PyObject *C45TreeNodeList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(C45TreeNode) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_remove(self, obj); }
 PyObject *C45TreeNodeList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_reverse(self); }
 PyObject *C45TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_sort(self, args); }
+PyObject *C45TreeNodeList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, &PyOrC45TreeNode_Type>::_reduce(self); }
 
 
 /************* kNN ************/
@@ -798,6 +863,102 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
   PyCATCH;
 }
 
+
+PyObject *P2NN__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TP2NN, p2nn);
+
+    if (!p2nn->offsets)
+      PYERROR(PyExc_SystemError, "cannot pickle an invalid instance of P2NN (no offsets)", NULL);
+
+    const int nAttrs = p2nn->offsets->size();
+    const int nExamples = p2nn->nExamples;
+
+    TCharBuffer buf(3 + 2 * sizeof(int) + (4 * nAttrs + 3 * nExamples + 2) * sizeof(double));
+
+    buf.writeInt(nAttrs);
+    buf.writeInt(nExamples);
+
+    if (p2nn->bases) {
+      buf.writeChar(1);
+      buf.writeBuf(p2nn->bases, 2 * nAttrs * sizeof(double));
+    }
+    else
+      buf.writeChar(0);
+
+    if (p2nn->radii) {
+      buf.writeChar(1);
+      buf.writeBuf(p2nn->radii, 2 * nAttrs * sizeof(double));
+    }
+    else
+      buf.writeChar(0);
+
+    if (p2nn->projections) {
+      buf.writeChar(1);
+      buf.writeBuf(p2nn->projections, 3 * nExamples * sizeof(double));
+    }
+    else
+      buf.writeChar(0);
+
+    buf.writeDouble(p2nn->minClass);
+    buf.writeDouble(p2nn->maxClass);
+   
+    return Py_BuildValue("O(Os#)N", getExportedFunction("__pickleLoaderP2NN"),
+                                    self->ob_type,
+                                    buf.buf, buf.length(),
+                                    packOrangeDictionary(self));
+  PyCATCH
+}
+
+
+PyObject *__pickleLoaderP2NN(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_data)")
+{
+  PyTRY
+    PyTypeObject *type;
+    char *pbuf;
+    int bufSize;
+    if (!PyArg_ParseTuple(args, "Os#:__pickleLoaderP2NN", &type, &pbuf, &bufSize))    
+      return NULL;
+
+    TCharBuffer buf(pbuf);
+
+    const int nAttrs = buf.readInt();
+    const int nExamples = buf.readInt();
+
+    TP2NN *p2nn = new TP2NN(nAttrs, nExamples);
+    if (buf.readChar()) {
+      buf.readBuf(p2nn->bases, 2 * nAttrs * sizeof(double));
+    }
+    else {
+      delete p2nn->bases;
+      p2nn->bases = NULL;
+    }
+
+    if (buf.readChar()) {
+      buf.readBuf(p2nn->radii, 2 * nAttrs * sizeof(double));
+    }
+    else {
+      delete p2nn->radii;
+      p2nn->radii = NULL;
+    }
+
+    if (buf.readChar()) {
+      buf.readBuf(p2nn->projections, 3 * nExamples * sizeof(double));
+    }
+    else {
+      delete p2nn->projections;
+      p2nn->projections = NULL;
+    }
+
+    p2nn->minClass = buf.readDouble();
+    p2nn->maxClass = buf.readDouble();
+
+    return WrapNewOrange(p2nn, type);
+  PyCATCH
+}
+
+
 C_CALL(kNNLearner, Learner, "([examples] [, weight=, k=] -/-> Classifier")
 C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
 
@@ -815,6 +976,12 @@ PyObject *LogRegFitter_new(PyTypeObject *type, PyObject *args, PyObject *keyword
   else
     return WrapNewOrange(mlnew TLogRegFitter_Python(), type);
 }
+
+PyObject *LogRegFitter__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrLogRegFitter_Type);
+}
+
 
 C_CALL(LogRegFitter_Cholesky, LogRegFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 
@@ -879,6 +1046,7 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 #include "svm.hpp"
 C_CALL(SVMLearner, Learner, "([examples] -/-> Classifier)")
 BASED_ON(SVMClassifier, Classifier)
+NO_PICKLE(SVMClassifier)
 
 PYCLASSCONSTANT_INT(SVMLearner, C_SVC, 0)
 PYCLASSCONSTANT_INT(SVMLearner, NU_SVC, 1)
@@ -898,6 +1066,12 @@ PyObject *KernelFunc_new(PyTypeObject *type, PyObject *args, PyObject *keywords)
     return setCallbackFunction(WrapNewOrange(mlnew TKernelFunc_Python(), type), args);
   else
     return WrapNewOrange(mlnew TKernelFunc_Python(), type);
+}
+
+
+PyObject *KernelFunc__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrKernelFunc_Type);
 }
 
 
@@ -986,7 +1160,7 @@ C_NAMED(RuleCovererAndRemover_Default, RuleCovererAndRemover, "()")
 C_NAMED(RuleStoppingCriteria_NegativeDistribution, RuleStoppingCriteria, "()")
 C_CALL(RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
 
-BASED_ON(RuleClassifier, Classifier)
+ABSTRACT(RuleClassifier, Classifier)
 C_NAMED(RuleClassifier_firstRule, RuleClassifier, "([rules,examples[,weightID]])")
 
 PyObject *Rule_call(PyObject *self, PyObject *args, PyObject *keywords)
@@ -1035,6 +1209,12 @@ PyObject *RuleEvaluator_new(PyTypeObject *type, PyObject *args, PyObject *keywor
     return WrapNewOrange(mlnew TRuleEvaluator_Python(), type);
 }
 
+PyObject *RuleEvaluator__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleEvaluator_Type);
+}
+
+
 PyObject *RuleEvaluator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass, apriori) -/-> (quality)")
 {
   PyTRY
@@ -1062,6 +1242,12 @@ PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywor
   else
     return WrapNewOrange(mlnew TRuleValidator_Python(), type);
 }
+
+PyObject *RuleValidator__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleValidator_Type);
+}
+
 
 PyObject *RuleValidator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass, apriori) -/-> (quality)")
 {
@@ -1092,6 +1278,12 @@ PyObject *RuleCovererAndRemover_new(PyTypeObject *type, PyObject *args, PyObject
     return WrapNewOrange(mlnew TRuleCovererAndRemover_Python(), type);
 }
 
+PyObject *RuleCovererAndRemover__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleCovererAndRemover_Type);
+}
+
+
 PyObject *RuleCovererAndRemover_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass) -/-> (table,newWeight)")
 {
   PyTRY
@@ -1119,6 +1311,12 @@ PyObject *RuleStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject 
     return WrapNewOrange(mlnew TRuleStoppingCriteria_Python(), type);
 }
 
+PyObject *RuleStoppingCriteria__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleStoppingCriteria_Type);
+}
+
+
 PyObject *RuleStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rulelist, rule, table, weightID) -/-> (table)")
 {
   PyTRY
@@ -1145,6 +1343,12 @@ PyObject *RuleDataStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObj
     return WrapNewOrange(mlnew TRuleDataStoppingCriteria_Python(), type);
 }
 
+PyObject *RuleDataStoppingCriteria__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleDataStoppingCriteria_Type);
+}
+
+
 PyObject *RuleDataStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass) -/-> (table)")
 {
   PyTRY
@@ -1169,6 +1373,12 @@ PyObject *RuleFinder_new(PyTypeObject *type, PyObject *args, PyObject *keywords)
   else
     return WrapNewOrange(mlnew TRuleFinder_Python(), type);
 }
+
+PyObject *RuleFinder__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleFinder_Type);
+}
+
 
 PyObject *RuleFinder_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass, baseRules) -/-> (rule)")
 {
@@ -1196,6 +1406,12 @@ PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keyw
     return WrapNewOrange(mlnew TRuleBeamRefiner_Python(), type);
 }
 
+PyObject *RuleBeamRefiner__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleBeamRefiner_Type);
+}
+
+
 PyObject *RuleBeamRefiner_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass) -/-> (rules)")
 {
   PyTRY
@@ -1221,6 +1437,12 @@ PyObject *RuleBeamInitializer_new(PyTypeObject *type, PyObject *args, PyObject *
   else
     return WrapNewOrange(mlnew TRuleBeamInitializer_Python(), type);
 }
+
+PyObject *RuleBeamInitializer__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleBeamInitializer_Type);
+}
+
 
 PyObject *RuleBeamInitializer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass, baseRules, evaluator, prior) -/-> (rules, bestRule)")
 {
@@ -1252,6 +1474,12 @@ PyObject *RuleBeamCandidateSelector_new(PyTypeObject *type, PyObject *args, PyOb
     return WrapNewOrange(mlnew TRuleBeamCandidateSelector_Python(), type);
 }
 
+PyObject *RuleBeamCandidateSelector__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleBeamCandidateSelector_Type);
+}
+
+
 PyObject *RuleBeamCandidateSelector_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(existingRules, table, weightID) -/-> (candidates, remainingRules)")
 {
   PyTRY
@@ -1278,6 +1506,12 @@ PyObject *RuleBeamFilter_new(PyTypeObject *type, PyObject *args, PyObject *keywo
     return WrapNewOrange(mlnew TRuleBeamFilter_Python(), type);
 }
 
+PyObject *RuleBeamFilter__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleBeamFilter_Type);
+}
+
+
 PyObject *RuleBeamFilter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, table, weightID) -/-> (rules)")
 {
   PyTRY
@@ -1301,6 +1535,12 @@ PyObject *RuleClassifierConstructor_new(PyTypeObject *type, PyObject *args, PyOb
     return setCallbackFunction(WrapNewOrange(mlnew TRuleClassifierConstructor_Python(), type), args);
   else
     return WrapNewOrange(mlnew TRuleClassifierConstructor_Python(), type);
+}
+
+
+PyObject *RuleClassifierConstructor__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrRuleClassifierConstructor_Type);
 }
 
 
@@ -1330,7 +1570,7 @@ PyObject *RuleClassifierConstructor_call(PyObject *self, PyObject *args, PyObjec
 
 PRuleList PRuleList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::P_FromArguments(arg); }
 PyObject *RuleList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_FromArguments(type, arg); }
-PyObject *RuleList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Rule>)") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_new(type, arg, kwds); }
+PyObject *RuleList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Rule>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_new(type, arg, kwds); }
 PyObject *RuleList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_getitem(self, index); }
 int       RuleList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_setitem(self, index, item); }
 PyObject *RuleList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_getslice(self, start, stop); }
@@ -1343,6 +1583,7 @@ PyObject *RuleList_str(TPyOrange *self) { return ListOfWrappedMethods<PRuleList,
 PyObject *RuleList_repr(TPyOrange *self) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_str(self); }
 int       RuleList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_contains(self, obj); }
 PyObject *RuleList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Rule) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_append(self, item); }
+PyObject *RuleList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_extend(self, obj); }
 PyObject *RuleList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Rule) -> int") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_count(self, obj); }
 PyObject *RuleList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> RuleList") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_filter(self, args); }
 PyObject *RuleList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Rule) -> int") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_index(self, obj); }
@@ -1352,6 +1593,7 @@ PyObject *RuleList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "()
 PyObject *RuleList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Rule) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_remove(self, obj); }
 PyObject *RuleList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_reverse(self); }
 PyObject *RuleList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_sort(self, args); }
+PyObject *RuleList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_reduce(self); }
 
 
 #include "lib_learner.px"
