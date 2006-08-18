@@ -29,6 +29,8 @@
 ORANGE_API PyObject *callCallback(PyObject *self, PyObject *args);
 ORANGE_API PyObject *setCallbackFunction(PyObject *self, PyObject *func);
 
+ORANGE_API PyObject *callbackReduce(PyObject *self, TOrangeType &basetype);
+
 #include "filter.hpp"
 class ORANGE_API TFilter_Python : public TFilter {
 public:

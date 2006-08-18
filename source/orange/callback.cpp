@@ -74,6 +74,22 @@ PyObject *setCallbackFunction(PyObject *self, PyObject *args)
 }
 
 
+PyObject *callbackReduce(PyObject *self, TOrangeType &basetype)
+{
+  if (self->ob_type == (PyTypeObject *)&basetype) {
+    PyObject *packed = packOrangeDictionary(self);
+    PyObject *callback = PyDict_GetItemString(packed, "__callback");
+    if (!callback)
+      PYERROR(PyExc_AttributeError, "cannot pickle an invalid callback object ('__callback' attribute is missing)", NULL);
+
+    PyDict_DelItemString(packed, "__callback");
+    return Py_BuildValue("O(O)N", self->ob_type, callback, packed);
+  }
+  else
+    return Py_BuildValue("O()N", self->ob_type, packOrangeDictionary(self));
+}
+
+
 bool TFilter_Python::operator()(const TExample &ex)
 { 
   PyObject *args = Py_BuildValue("(N)", Example_FromExampleCopyRef(ex));
