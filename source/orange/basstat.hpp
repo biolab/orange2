@@ -31,9 +31,9 @@ class ORANGE_API TBasicAttrStat : public TOrange {
 public:
   __REGISTER_CLASS
 
-  float sum; //PR sum of values
-  float sum2; //PR sum of squares of values
-  float n; //PR number of examples for which the attribute is defined
+  float sum; //P sum of values
+  float sum2; //P sum of squares of values
+  float n; //P number of examples for which the attribute is defined
 
   float min; //P the lowest value of the attribute
   float max; //P the highest value of the attribute
