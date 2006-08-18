@@ -72,7 +72,7 @@ PyObject *PyOrType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *)
       }
 
     // we assert PyOrange_OrangeBaseClass will succeed and that ot_defaultconstruct is defined.
-    // the latter is pyxtract responsibility and pyxtract shouldn't be doubted
+    // the latter is pyxtract responsibility and pyxtract shouldn't be doubted  ;)
     POrange obj = PyOrange_OrangeBaseClass(type)->ot_defaultconstruct(type);
     if (!obj) {
       PyErr_Format(PyExc_SystemError, "constructor for '%s' failed", type->tp_name);
@@ -399,6 +399,79 @@ PyObject *Orange_getattr1(TPyOrange *self, PyObject *pyname)
 }
 
 
+inline void PyDict_SIS_Steal(PyObject *dict, const char *name, PyObject *obj) {
+  PyDict_SetItemString(dict, name, obj);
+  Py_DECREF(obj);
+}
+
+PyObject *packOrangeDictionary(PyObject *self)
+{
+  PyTRY
+    PyObject *packed = ((TPyOrange *)self)->orange_dict ? PyDict_Copy(((TPyOrange *)self)->orange_dict) : PyDict_New();
+
+    TOrange *me = (TOrange *)((TPyOrange *)self)->ptr;
+
+    for (const TPropertyDescription *pd = me->classDescription()->properties; pd->name; pd++) {
+      if (!pd->readOnly) {
+ 
+  //      const type_info &propertyType = pd->type;
+
+        if (pd->type == &typeid(bool))
+          PyDict_SIS_Steal(packed, pd->name, PyInt_FromLong(me->getProperty_bool(pd) ? 1 : 0));
+
+        else if (pd->type == &typeid(int))
+          PyDict_SIS_Steal(packed, pd->name, PyInt_FromLong(me->getProperty_int(pd)));
+
+        else if (pd->type == &typeid(float))
+          PyDict_SIS_Steal(packed, pd->name, PyFloat_FromDouble(me->getProperty_float(pd)));
+
+        else if (pd->type == &typeid(string)) {
+          string value;
+          me->getProperty_string(pd, value);
+          PyDict_SIS_Steal(packed, pd->name, PyString_FromString(value.c_str()));
+        }
+
+        else if (pd->type == &typeid(TValue)) {
+          TValue value;
+          me->getProperty_TValue(pd, value);
+          PyDict_SIS_Steal(packed, pd->name, Value_FromValue(value));
+        }
+
+        else if (pd->type == &typeid(TExample)) {
+          POrange mlobj;
+          me->getProperty_POrange(pd, mlobj);
+          if (mlobj)
+            PyDict_SIS_Steal(packed, pd->name, Example_FromWrappedExample(PExample(mlobj)));
+          else
+            PyDict_SetItemString(packed, pd->name, Py_None);
+        }
+    
+        else {
+          POrange mlobj;
+          me->getProperty_POrange(pd, mlobj);
+          PyDict_SIS_Steal(packed, pd->name, (PyObject *)WrapOrange(mlobj));
+        }
+      }
+    }
+
+    return packed;
+  PyCATCH
+}
+
+
+
+ORANGE_API PyObject *Orange__reduce__(PyObject *self, PyObject *, PyObject *)
+{
+    if (!((TOrangeType *)(self->ob_type))->ot_constructorAllowsEmptyArgs) {
+      PyErr_Format(PyExc_TypeError, "instances of type '%s' cannot be pickled", self->ob_type->tp_name);
+      return NULL;
+    }
+
+    return Py_BuildValue("O()N", self->ob_type, packOrangeDictionary(self));
+}
+
+
+
 PyObject *objectOnTheFly(PyObject *args, PyTypeObject *objectType)
 {
   PyObject *emptyDict = PyDict_New();
@@ -522,7 +595,7 @@ int Orange_setattr1(TPyOrange *self, char *name, PyObject *args)
           return 0;
         }
         else {
-          if (PyOrExample_Check(args)) {
+          if (!PyOrExample_Check(args)) {
             PyErr_Format(PyExc_TypeError, "invalid parameter type for '%s.%s', (expected 'Example', got '%s')", self->ob_type->tp_name, name, args->ob_type->tp_name);
             return -1;
           }
@@ -820,9 +893,10 @@ PyObject *Orange_repr(TPyOrange *self)
     if (result)
       return result;
 
+    const char *tp_name = self->ob_type->tp_name + (strncmp(self->ob_type->tp_name, "orange.", 7) ? 0 : 7);
     const char *name = getName(self);
-    return name ? PyString_FromFormat("%s '%s'", self->ob_type->tp_name, name)
-                : PyString_FromFormat("<%s instance at %p>", self->ob_type->tp_name, self->ptr);
+    return name ? PyString_FromFormat("%s '%s'", tp_name, name)
+                : PyString_FromFormat("<%s instance at %p>", tp_name, self->ptr);
   PyCATCH
 }
 
@@ -833,9 +907,10 @@ PyObject *Orange_str(TPyOrange *self)
     if (result)
       return result;
 
+    const char *tp_name = self->ob_type->tp_name + (strncmp(self->ob_type->tp_name, "orange.", 7) ? 0 : 7);
     const char *name = getName(self);
-    return name ? PyString_FromFormat("%s '%s'", self->ob_type->tp_name, name)
-                : PyString_FromFormat("<%s instance at %p>", self->ob_type->tp_name, self->ptr);
+    return name ? PyString_FromFormat("%s '%s'", tp_name, name)
+                : PyString_FromFormat("<%s instance at %p>", tp_name, self->ptr);
   PyCATCH
 }
 
