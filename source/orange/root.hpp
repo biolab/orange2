@@ -131,7 +131,7 @@ public:
   inline int getProperty_int(const TPropertyDescription *pd) const { return *(int const *)CONST_MEMBER(pd->offset); }
   inline float getProperty_float(const TPropertyDescription *pd) const { return *(float const *)CONST_MEMBER(pd->offset); }
   inline void getProperty_string(const TPropertyDescription *pd, string &b) const { b = *(string const *)CONST_MEMBER(pd->offset); }
-  inline void getProperty_TValue(const TPropertyDescription *pd, TValue &b) const;
+  void getProperty_TValue(const TPropertyDescription *pd, TValue &b) const;
   inline void getProperty_POrange(const TPropertyDescription *pd, POrange &b) const { b = *(POrange const *)CONST_MEMBER(pd->offset); }
 
 
