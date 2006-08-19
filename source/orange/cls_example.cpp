@@ -862,17 +862,19 @@ PyObject *__pickleLoaderExample(PyObject *, PyObject *args) PYARGS(METH_VARARGS,
 {
   PyTRY
     PDomain domain;
-    char *buf;
+    char *pbuf;
     int bufSize;
     PyObject *otherValues;
 
-    if (!PyArg_ParseTuple(args, "O&s#O:__pickleLoaderExample", cc_Domain, &domain, &buf, &bufSize, &otherValues))
+    if (!PyArg_ParseTuple(args, "O&s#O:__pickleLoaderExample", cc_Domain, &domain, &pbuf, &bufSize, &otherValues))
       return NULL;
 
     TExample *newEx = new TExample(domain);
     PExample wex = newEx;
     int otherValuesIndex = 0;
-    Example_unpack(*newEx, TCharBuffer(buf), otherValues, otherValuesIndex);
+
+    TCharBuffer buf(pbuf);
+    Example_unpack(*newEx, buf, otherValues, otherValuesIndex);
     return Example_FromWrappedExample(wex);
   PyCATCH
 }
