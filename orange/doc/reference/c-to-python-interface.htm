@@ -622,6 +622,46 @@ Pyxtract will convert the given constant to a Python object (using <CODE>PyInt_F
 <P>When the constant is an object of some other type, use <CODE>PYCLASSCONSTANT</CODE>. In this form (not used in Orange so far), the third argument can be either an instance of <CODE>PyObject *</CODE> or a function call. In either case, the object or function must be known at the point where the pyxtract generated file is included.</P>
 
 
+<h3>Pickling</h3>
+
+<P>Pickling is taken care of automatically if the class provides a Python constructor which can construct the object without arguments (it may <em>accept</em> arguments, but should be able to do without them. If there is no such constructor, the class should provide a <Code>__reduce__</Code> method or it should explicitly declare that it cannot be pickled. If it doesn't pyxtract will issue a warning that the class will not be picklable.</P>
+
+<P>Here are the rules:
+<ol>
+<li>Classes that provide a <code>__reduce__</code> method (details follow below) are pickled through that method.</li>
+<li>Class <code>Orange</code>, the base class, already provides a <code>__reduce__</code> method, which is only useful if the constructor accepts empty arguments. So, if the constructor is declared as <code>C_NAMED</code>, <Code>C_UNNAMED</Code>, <COde>C_CALL</COde> or <code>C_CALL3</code>, the class is the class will be picklable. See the warning below.</li>
+<li>If the constructor is defined by <code>_new</code> method, and the <code>BASED_ON</code> definition is followed be <code>ALLOWS_EMPTY</code>, this signifies that it accepts empty arguments, so it will be picklable just as in the above point. For example, the constructor for the class <code>DefaultClassifier</code> is defined like this
+<xmp class="code">PyObject *DefaultClassifier_new(PyTypeObject *tpe, PyObject *args) BASED_ON(Classifier, "([defaultVal])") ALLOWS_EMPTY</xmp>
+and is picklable through code <code>Orange.__reduce__</code>. But again, see the warning below.
+</li>
+<li>If the constructor is defined as <code>ABSTRACT</code>, there cannot be any instances of this class, so pyxtract will give no warning that it is not picklable.</li>
+<li>The class can be explicitly defined as not picklable by <code>NO_PICKLE</code> macro, as in
+<xmp class="code">NO_PICKLE(TabDelimExampleGenerator)</xmp>
+Such classes won't be picklable even if they define the appropriate constructors. This effectively defined a <code>__reduce__</code> method which yields an exception; if you manually provide a <code>__reduce__</code> method for such a class, pyxtract will detect that the method is multiply defined.</li>
+<li>If there are no suitable constructors, no <code>__reduce__</code> method and no <code>ABSTRACT</code> or <code>NO_PICKLE</code> flag, pyxtract will warn you about that.</li>
+</ol>
+</P>
+
+<P>When the constructor is used, as in points 2 and 3, pickling will only work if all fields of the C++ class can be set "manually" from Python, are set through the constructor, or are set when assigning other fields (search the source code for the <code>afterSet</code> method). In other words, if there are fields that are not marked as <code>//P</code> for pyprops, you will most probably need to manually define a <code>__reduce__</code> method, as in point 1.</P>
+
+<P>The details of what the <code>__reduce__</code> method must do are described in the Python documentation. In our circumstances it can be implemented in two ways which differ in what function is used for unpickling: it can either use the class' constructor or we can define a special method for unpickling.</P>
+
+<P>The former usually happens when the class has a read-only property (<code>//PR</code>) which is set by the constructor. For instance, <code>AssociationRule</code> has read-only fields <Code>left</Code> and <code>right</code>, which are needs to be given to the constructor. This is the <code>__reduce__</code> method for the class.
+<xmp class="code">PyObject *AssociationRule__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TAssociationRule, arule);
+    return Py_BuildValue("O(NN)N", self->ob_type,
+                                   Example_FromWrappedExample(arule->left),
+                                   Example_FromWrappedExample(arule->right),
+                                   packOrangeDictionary(self));
+  PyCATCH
+}
+</xmp>
+As you can learn from the Python documentation, the <code>__reduce__</code> should return the tuple in which the first element is the function that will do the unpickling, and the second argument are the arguments for that function. Our unpickling function is simply the classes' type (calling a type corresponds to calling a constructor) and the arguments for the constructor are the left- and right-hand side of the rule. The third element of the tuple is classes' dictionary.</P>
+
+<P>When unpickling is more complicated, usually when the class has no constructor and contains fields of type <code>float *</code> or similar, we need a special unpickling function. The function needs to be directly in the modules' namespace (it cannot be a static method of a class), so we named them <code>__pickleLoader&lt;classname&gt;</code>. Search for examples of such functions in the source code; note that the instance's true class need to be pickled, too. Also, check how we use <code>TCharBuffer</code> throughout the code to store and pickle binary data as Python strings.</P>
+
 <A name="nonmember"></A>
 <H3>Non-member functions and constants</H3>
 
