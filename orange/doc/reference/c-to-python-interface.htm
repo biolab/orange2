@@ -662,6 +662,8 @@ As you can learn from the Python documentation, the <code>__reduce__</code> shou
 
 <P>When unpickling is more complicated, usually when the class has no constructor and contains fields of type <code>float *</code> or similar, we need a special unpickling function. The function needs to be directly in the modules' namespace (it cannot be a static method of a class), so we named them <code>__pickleLoader&lt;classname&gt;</code>. Search for examples of such functions in the source code; note that the instance's true class need to be pickled, too. Also, check how we use <code>TCharBuffer</code> throughout the code to store and pickle binary data as Python strings.</P>
 
+<P>Be careful when manually writing the unpickler: if a C++ class derived from that class inherits its <code>__reduce__</code>, the corresponding unpickler will construct an instance of a wrong class (unless the unpickler functions through Python's constructor, <code>ob_type->tp_new</code>). Hence, classes derived from a class which defines an unpickler have to define their own <code>__reduce__</code>, too.
+
 <A name="nonmember"></A>
 <H3>Non-member functions and constants</H3>
 
