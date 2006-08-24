@@ -29,42 +29,57 @@ class OWAttributeDistance(OWWidget):
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
+        self.data = None        
+
         self.ClassInteractions = 0
         self.loadSettings()
-        self.classIntCB = OWGUI.checkBox(self.controlArea, self, "ClassInteractions", "Use class information", callback=self.toggleClass, disabled=1)
+        self.classIntCB = OWGUI.checkBox(self.controlArea, self, "ClassInteractions", "Use class information", callback=self.toggleClass)
         self.resize(215,100)
 
     ##############################################################################
     # callback functions
 
     def computeMatrix(self):
-        if not self.data:
-            return
-        atts = self.data.domain.attributes
-        im = orngInteract.InteractionMatrix(self.data, dependencies_too=1)
-        (diss,labels) = im.depExportDissimilarityMatrix(jaccard=1)  # 2-interactions
+        if self.data:
+            atts = self.data.domain.attributes
+            im = orngInteract.InteractionMatrix(self.data, dependencies_too=1)
+            (diss,labels) = im.depExportDissimilarityMatrix(jaccard=1)  # 2-interactions
 
-        matrix = orange.SymMatrix(len(atts))
-        matrix.setattr('items', atts)
-        for i in range(len(atts)-1):
-            for j in range(i+1):
-                matrix[i+1, j] = diss[i][j]
-        self.send("Distance Matrix", matrix)
+            matrix = orange.SymMatrix(len(atts))
+            matrix.setattr('items', atts)
+            for i in range(len(atts)-1):
+                for j in range(i+1):
+                    matrix[i+1, j] = diss[i][j]
+            return matrix
+        else:
+            return None
 
     def toggleClass(self):
-        pass
+        """TODO!!!
+        """
+        self.sendData()
+
 
     ##############################################################################
-    # input signal management
+    # input output signal management
 
     def dataset(self, data):
         if data and len(data.domain.attributes):
             self.data = orange.Preprocessor_discretize(data, method=orange.EquiNDiscretization(numberOfIntervals=5))
-            print self.data.domain
-            self.classIntCB.setDisabled(self.data.domain.classVar == None)
-            self.computeMatrix()
+##            print self.data.domain
+##            self.classIntCB.setDisabled(self.data.domain.classVar == None)
         else:
-            self.send("Distance Matrix", None)
+            self.data = None
+        self.sendData()
+
+
+    def sendData(self):
+        if self.data:
+            matrix = self.computeMatrix()
+        else:
+            matrix = None
+        self.send("Distance Matrix", matrix)
+        
 
 ##################################################################################################
 # test script
