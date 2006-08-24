@@ -80,7 +80,13 @@ class InteractionMatrix:
         ### FIX MISSING VALUES ###
             
         special_attributes = []
-        all_attributes = [i for i in t.domain.attributes]+[t.domain.classVar]
+
+        # 2006-08-23: fixed by PJ: append classVar only if it exists
+##        all_attributes = [i for i in t.domain.attributes]+[t.domain.classVar]
+        all_attributes = [i for i in t.domain.attributes]
+        if t.domain.classVar:
+            all_attributes += [t.domain.classVar]
+
         for i in range(len(all_attributes)):
             for j in t:
                 if j[i].isSpecial():
@@ -102,6 +108,12 @@ class InteractionMatrix:
                     newatts.append(old)
             # convert table
             exs = []
+
+            # 2006-08-23: added by PJ: add a class variable (if not already existing)
+            if not t.domain.classVar:
+                newatts.append(orange.EnumVariable("class", values=["."]))
+                t = orange.ExampleTable(orange.Domain(t.domain.attributes, newatts[-1]), t)
+
             newd = orange.Domain(newatts)
             for ex in t:
                 nex = []
