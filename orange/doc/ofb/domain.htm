@@ -48,17 +48,17 @@ for i in range(len(data.domain.attributes)):
 
 <p>The script prints out a following report:</p>
 
-<xmp class="code">imports-85.tab includes 25 attributes and a class variable price 
+<xmp class="code">imports-85.tab includes 25 attributes and a class variable price
 Attribute names and indices:
-( 0) symboling         ( 1) normalized-losses ( 2) make             
-( 3) fuel-type         ( 4) aspiration        ( 5) num-of-doors     
-( 6) body-style        ( 7) drive-wheels      ( 8) engine-location  
-( 9) wheel-base        (10) length            (11) width            
-(12) height            (13) curb-weight       (14) engine-type      
-(15) num-of-cylinders  (16) engine-size       (17) fuel-system      
+( 0) symboling         ( 1) normalized-losses ( 2) make
+( 3) fuel-type         ( 4) aspiration        ( 5) num-of-doors
+( 6) body-style        ( 7) drive-wheels      ( 8) engine-location
+( 9) wheel-base        (10) length            (11) width
+(12) height            (13) curb-weight       (14) engine-type
+(15) num-of-cylinders  (16) engine-size       (17) fuel-system
 (18) bore              (19) stroke            (20) compression-ratio
-(21) horsepower        (22) peak-rpm          (23) city-mpg         
-(24) highway-mpg      
+(21) horsepower        (22) peak-rpm          (23) city-mpg
+(24) highway-mpg
 </xmp>
 
 <h2>Attribute Selection and Construction of Class-Based Domains</h2>
@@ -110,16 +110,16 @@ reportAttributes(newData4, "Attributes by domain")
 body-style drive-wheels engine-location wheel-base length width
 height curb-weight engine-type num-of-cylinders engine-size fuel-system
 bore stroke compression-ratio horsepower peak-rpm city-mpg
-highway-mpg 
+highway-mpg
 
 No Class, First five attributes:
-symboling normalized-losses make fuel-type aspiration 
+symboling normalized-losses make fuel-type aspiration
 
 No Class, Attributes selected by name:
-engine-location wheel-base length 
+engine-location wheel-base length
 
 Class variable: make, Attributes by domain:
-symboling curb-weight 
+symboling curb-weight
 
 No Class, Attributes by domain:
 symboling curb-weight make
@@ -175,7 +175,7 @@ for args in tests:
 <xmp class=code>import orange
 
 def report_prob(header, data):
-  print 'Size of %s: %i instances; ' % (header, len(data)), 
+  print 'Size of %s: %i instances; ' % (header, len(data)),
   n = 0
   for i in data:
     if int(i.getclass())==0:
@@ -343,7 +343,7 @@ for d in datasets:
     class noise 0.60   0.632
 </xmp>
 
-<p>We can also add noise to attributes. Here, we should distinguish between continuous and discrete attributes. 
+<p>We can also add noise to attributes. Here, we should distinguish between continuous and discrete attributes.
 
 <h2>Crafting New Attributes</h2>
 
@@ -387,7 +387,7 @@ for i in [10,50,100,130]:
 <p>The story is slightly different with nominal attributes, where apart from their
 name we need to declare its set of values as well. Everything else is quite similar.
 Below is an example that adds a new attribute to car data set (see more at
-<a href="http://magix.fri.uni-lj.si/hint/car_dataset.htm">car data set web page</a>):</p>
+<a href="http://www.ailab.si/hint/car_dataset.htm">car data set web page</a>):</p>
 
 <p class="header"><a href="domain12.py">domain12.py</a>  (uses <a href=
 "glass.tab">car.tab</a>) </p>

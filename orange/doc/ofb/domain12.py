@@ -8,7 +8,7 @@ import orange
 data = orange.ExampleTable('../datasets/car')
 
 # add attribute price = f(buying, maint)
-# see also http://magix.fri.uni-lj.si/hint/car_dataset.asp
+# see also http://www.ailab.si/hint/car_dataset.asp
 
 priceTable={}
 priceTable['v-high:v-high'] = 'v-high'
