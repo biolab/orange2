@@ -7,6 +7,8 @@ BROWSE_CIRCLE= 5
 
 
 from OWGraph import *
+from math import sqrt
+from numpy import arange
 
 class OWCorrAnalysisGraph(OWGraph):
     def __init__(self, parent = None, name = "None"):
@@ -96,8 +98,18 @@ class OWCorrAnalysisGraph(OWGraph):
         elif self.state == BROWSE_CIRCLE:
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
             yFloat = self.invTransform(QwtPlot.yLeft, e.y())     
-            self.createCurve(xFloat, yFloat)
+            self.createCurve(xFloat, yFloat, 1)
+                
+            #
+            self.removeMarkers()
+            cor = [(x, y, self.tips.texts[i]) for (i,(x,y)) in enumerate(self.tips.positions) if ((xFloat - x)*(xFloat - x) + (yFloat - y)*(yFloat - y) <= self.radius * self.radius)]
+            for x, y, text in cor:
+                self.addMarker(text, x, y)
+    
+            #
             self.replot()   
+            
+            self.event(e) 
         else:   
             OWGraph.onMouseMoved(self, e)
             
@@ -116,10 +128,17 @@ class OWCorrAnalysisGraph(OWGraph):
             OWGraph.onMouseReleased(self, e)
             
     def createCurve(self, x, y, circle = 0):
-        if circle:
+        if not circle:
             self.browseCurve.setData([x - self.radius, x + self.radius, x + self.radius, x - self.radius, x - self.radius], [y - self.radius, y - self.radius, y + self.radius, y + self.radius, y - self.radius])
         else:
-            self.browseCurve.setData([x - self.radius, x + self.radius, x + self.radius, x - self.radius, x - self.radius], [y - self.radius, y - self.radius, y + self.radius, y + self.radius, y - self.radius]) ## TODO: change to circle
+            xDataU = arange(x - self.radius + 0.0002, x + self.radius - 0.0002, 0.0001).tolist()
+            xDataD = xDataU[:]
+            xDataD.reverse()
+            yDataU = [(y  + sqrt(self.radius*self.radius - (t - x)*(t - x))) for t in xDataU]
+            yDataD = [(y  - sqrt(self.radius*self.radius - (t - x)*(t - x))) for t in xDataD]
+            xDataU.extend(xDataD)
+            yDataU.extend(yDataD)
+            self.browseCurve.setData(xDataU, yDataU)
             
     def activateZooming(self):
 ##        self.browseButton.setOn(0)

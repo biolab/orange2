@@ -25,7 +25,7 @@ def input(filename):
 class CA(object):
     """Main class for computation of correspondance analysis"""
     def __init__(self, contingencyTable):
-        """ @contingencyTable   instance of orange.ContingencyAttrAttr
+        """ @contingencyTable   instance of "list of lists"
         """
         #private variables in this class
         #
@@ -47,11 +47,18 @@ class CA(object):
         
         #calculating correspondance analysis from the data matrix
         #algorithm described in the book (put reference) is used
-##        self.__dataMatrix = array(input('out'))
-        assert(isinstance(contingencyTable, orange.ContingencyAttrAttr))
-        self.__ct = contingencyTable
-        self.__dataMatrix = array([list(a) for a in contingencyTable])
-        
+
+        self.__dataMatrix = contingencyTable
+
+##        if isinstance(contingencyTable, orange.ContingencyAttrAttr):
+##            self.__ct = contingencyTable
+##            self.__dataMatrix = array([list(a) for a in contingencyTable])
+##        elif isinstance(contingencyTable, orange.ExampleTable):
+##            self.__ct = contingencyTable
+##            keys = contingencyTable.domain.getmetas().keys()
+##            self.__dataMatrix = zero((len(data), len(keys)))
+##            self.__dataMatrix = array([],[])
+            
         #self.__dataMatrix = array(matrix)
         self.__sumElem = sum(sum(self.__dataMatrix))
         
@@ -113,10 +120,10 @@ class CA(object):
         """
         return self.__dataMatrix   
         
-    def getCT(self): return self.__ct
+##    def getCT(self): return self.__ct
         
     dataMatrix = property(getMatrix)
-    contingencyTable = property(getCT)
+##    contingencyTable = property(getCT)
     
     def getCorrMatrix(self):
         """
@@ -219,9 +226,9 @@ class CA(object):
     G = property(getG)
     
 if __name__ == '__main__':
-    d = orange.ExampleTable('smokers_ct')
-    c = CA(orange.ContingencyAttrAttr(1, 2, d))
-    #c.dataMatrix = input('smokers.tab')
+##    d = orange.ExampleTable('smokers_ct')
+##    c = CA(orange.ContingencyAttrAttr(1, 2, d))
+    c = CA(input('smokers.tab'))
     print c.dataMatrix
 
 ##    c = CA(None)

@@ -15,6 +15,8 @@ import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
 
+import os
+
 class OWCorrAnalysis(OWWidget):
     settingsList = ['graph.pointWidth', "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
                     "graph.showLegend", 'autoSendSelection', "graph.showFilledSymbols", 'toolbarSelection',
@@ -79,29 +81,29 @@ class OWCorrAnalysis(OWWidget):
         self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
         
-        # Data Table
-        self.DataTab = QTable(None)
-        self.DataTab.setSelectionMode(QTable.NoSelection)          
-        self.tabsMain.insertTab(self.DataTab, "Data Table")       
-        self.tabsMain.showPage(self.DataTab) 
+##        # Data Table
+##        self.DataTab = QTable(None)
+##        self.DataTab.setSelectionMode(QTable.NoSelection)          
+##        self.tabsMain.insertTab(self.DataTab, "Data Table")       
+##        self.tabsMain.showPage(self.DataTab) 
         
-        # Correspondence Table
-        self.CorrTab = QTable(None)
-        self.CorrTab.setSelectionMode(QTable.NoSelection)
-        self.tabsMain.insertTab(self.CorrTab, "Correspondence Table")       
-        self.tabsMain.showPage(self.CorrTab)  
+##        # Correspondence Table
+##        self.CorrTab = QTable(None)
+##        self.CorrTab.setSelectionMode(QTable.NoSelection)
+##        self.tabsMain.insertTab(self.CorrTab, "Correspondence Table")       
+##        self.tabsMain.showPage(self.CorrTab)  
   
-        # Row profiles 
-        self.RowProfilesTab = QTable(None)
-        self.RowProfilesTab.setSelectionMode(QTable.NoSelection)          
-        self.tabsMain.insertTab(self.RowProfilesTab, "Row profiles")       
-        self.tabsMain.showPage(self.RowProfilesTab)        
+##        # Row profiles 
+##        self.RowProfilesTab = QTable(None)
+##        self.RowProfilesTab.setSelectionMode(QTable.NoSelection)          
+##        self.tabsMain.insertTab(self.RowProfilesTab, "Row profiles")       
+##        self.tabsMain.showPage(self.RowProfilesTab)        
         
-        # Column profiles 
-        self.ColProfilesTab = QTable(None)
-        self.ColProfilesTab.setSelectionMode(QTable.NoSelection)          
-        self.tabsMain.insertTab(self.ColProfilesTab, "Column profiles")       
-        self.tabsMain.showPage(self.ColProfilesTab)
+##        # Column profiles 
+##        self.ColProfilesTab = QTable(None)
+##        self.ColProfilesTab.setSelectionMode(QTable.NoSelection)          
+##        self.tabsMain.insertTab(self.ColProfilesTab, "Column profiles")       
+##        self.tabsMain.showPage(self.ColProfilesTab)
         
         # ####################################
         # SETTINGS TAB
@@ -152,85 +154,89 @@ class OWCorrAnalysis(OWWidget):
         self.openContext("", dataset)
         self.updateGraph()
             
-    def fill_table(self, matrix, table):
-        for i in range(matrix.shape[0]):
-            for j in range(matrix.shape[1]):
-                OWGUI.tableItem(table, i, j, '%.4f' % matrix[i][j], editType=QTableItem.Never, background = Qt.white)
-        
-    def fill_headers(self, ca, table, numRows = None, numCols = None):        
-        if not numRows:
-            table.setNumCols(len(ca.innerDistribution.items()))
-            table.setNumRows(len(ca.outerDistribution.items()))
-        else:
-            table.setNumCols(numCols)
-            table.setNumRows(numRows)
-        
-        hheader = table.horizontalHeader()
-        for i,var in enumerate(ca.innerDistribution.items()):
-            hheader.setLabel(i, var[0])
-            
-        vheader = table.verticalHeader()
-        for i, var in enumerate(ca.outerDistribution.items()):
-            vheader.setLabel(i, var[0])
-            
-        table.show()
+##    def fill_table(self, matrix, table):
+##        for i in range(matrix.shape[0]):
+##            for j in range(matrix.shape[1]):
+##                OWGUI.tableItem(table, i, j, '%.4f' % matrix[i][j], editType=QTableItem.Never, background = Qt.white)
+##        
+##    def fill_headers(self, ca, table, numRows = None, numCols = None):        
+##        if not numRows:
+##            table.setNumCols(len(ca.innerDistribution.items()))
+##            table.setNumRows(len(ca.outerDistribution.items()))
+##        else:
+##            table.setNumCols(numCols)
+##            table.setNumRows(numRows)
+##        
+##        hheader = table.horizontalHeader()
+##        for i,var in enumerate(ca.innerDistribution.items()):
+##            hheader.setLabel(i, var[0])
+##            
+##        vheader = table.verticalHeader()
+##        for i, var in enumerate(ca.outerDistribution.items()):
+##            vheader.setLabel(i, var[0])
+##            
+##        table.show()
     
-    def fill_dataTable(self, ca, c):
-        dim = c.dataMatrix.shape
-        #data tabs
-        self.tabsMain.showPage(self.DataTab)   
-        self.fill_headers(ca, self.DataTab, dim[0] + 1, dim[1] + 1)
-        self.DataTab.horizontalHeader().setLabel(dim[1], "Sum")
-        self.DataTab.verticalHeader().setLabel(dim[0], "Sum")            
-        self.fill_table(c.dataMatrix, self.DataTab)
-        #filling row and col sum
-        rowSums = sum(c.dataMatrix, 1).reshape(-1,1)
-        colSums = sum(c.dataMatrix).reshape(-1,1)
-        for i in range(dim[0]):
-            OWGUI.tableItem(self.DataTab, i, dim[1], '%.4f' % rowSums[i][0], editType=QTableItem.Never, background = Qt.green)
-        for i in range(dim[1]):
-            OWGUI.tableItem(self.DataTab, dim[0], i, '%.4f' % colSums[i][0], editType=QTableItem.Never, background = Qt.green)               
-        OWGUI.tableItem(self.DataTab, dim[0], dim[1], '%.4f' % sum(colSums), editType=QTableItem.Never, background = Qt.red)          
-        
-    def fill_corrTable(self, ca, c):  
-        dim = c.dataMatrix.shape      
-        #contingency tab
-        self.tabsMain.showPage(self.CorrTab)   
-        self.fill_headers(ca, self.CorrTab, dim[0] + 1, dim[1] + 1)
-        self.CorrTab.horizontalHeader().setLabel(dim[1], "Sum")
-        self.CorrTab.verticalHeader().setLabel(dim[0], "Sum")            
-        self.fill_table(c.corrMatrix, self.CorrTab)
-        #filling row and col sum
-        for i in range(dim[0]):
-            OWGUI.tableItem(self.CorrTab, i, dim[1], '%.4f' % c.rowSums[i][0], editType=QTableItem.Never, background = Qt.green)
-        for i in range(dim[1]):
-            OWGUI.tableItem(self.CorrTab, dim[0], i, '%.4f' % c.colSums[i][0], editType=QTableItem.Never, background = Qt.green)          
-            
-    def fill_rowProfiles(self, c):
-            dim = c.dataMatrix.shape    
-            #row profiles tab
-            self.tabsMain.showPage(self.RowProfilesTab)    
-            self.RowProfilesTab.setNumCols(dim[1])
-            self.RowProfilesTab.setNumRows(dim[0])
-            self.fill_table(c.rowProfiles, self.RowProfilesTab)    
-     
-    def fill_colProfiles(self, c):
-        dim = c.dataMatrix.shape    
-        #column profiles tab
-        self.ColProfilesTab.setNumCols(dim[0])
-        self.ColProfilesTab.setNumRows(dim[1])
-        self.tabsMain.showPage(self.ColProfilesTab)    
-        self.fill_table(c.colProfiles, self.ColProfilesTab)         
+##    def fill_dataTable(self, ca, c):
+##        dim = c.dataMatrix.shape
+##        #data tabs
+##        self.tabsMain.showPage(self.DataTab)   
+##        self.fill_headers(ca, self.DataTab, dim[0] + 1, dim[1] + 1)
+##        self.DataTab.horizontalHeader().setLabel(dim[1], "Sum")
+##        self.DataTab.verticalHeader().setLabel(dim[0], "Sum")            
+##        self.fill_table(c.dataMatrix, self.DataTab)
+##        #filling row and col sum
+##        rowSums = sum(c.dataMatrix, 1).reshape(-1,1)
+##        colSums = sum(c.dataMatrix).reshape(-1,1)
+##        for i in range(dim[0]):
+##            OWGUI.tableItem(self.DataTab, i, dim[1], '%.4f' % rowSums[i][0], editType=QTableItem.Never, background = Qt.green)
+##        for i in range(dim[1]):
+##            OWGUI.tableItem(self.DataTab, dim[0], i, '%.4f' % colSums[i][0], editType=QTableItem.Never, background = Qt.green)               
+##        OWGUI.tableItem(self.DataTab, dim[0], dim[1], '%.4f' % sum(colSums), editType=QTableItem.Never, background = Qt.red)          
+##        
+##    def fill_corrTable(self, ca, c):  
+##        dim = c.dataMatrix.shape      
+##        #contingency tab
+##        self.tabsMain.showPage(self.CorrTab)   
+##        self.fill_headers(ca, self.CorrTab, dim[0] + 1, dim[1] + 1)
+##        self.CorrTab.horizontalHeader().setLabel(dim[1], "Sum")
+##        self.CorrTab.verticalHeader().setLabel(dim[0], "Sum")            
+##        self.fill_table(c.corrMatrix, self.CorrTab)
+##        #filling row and col sum
+##        for i in range(dim[0]):
+##            OWGUI.tableItem(self.CorrTab, i, dim[1], '%.4f' % c.rowSums[i][0], editType=QTableItem.Never, background = Qt.green)
+##        for i in range(dim[1]):
+##            OWGUI.tableItem(self.CorrTab, dim[0], i, '%.4f' % c.colSums[i][0], editType=QTableItem.Never, background = Qt.green)          
+##            
+##    def fill_rowProfiles(self, c):
+##            dim = c.dataMatrix.shape    
+##            #row profiles tab
+##            self.tabsMain.showPage(self.RowProfilesTab)    
+##            self.RowProfilesTab.setNumCols(dim[1])
+##            self.RowProfilesTab.setNumRows(dim[0])
+##            self.fill_table(c.rowProfiles, self.RowProfilesTab)    
+##     
+##    def fill_colProfiles(self, c):
+##        dim = c.dataMatrix.shape    
+##        #column profiles tab
+##        self.ColProfilesTab.setNumCols(dim[0])
+##        self.ColProfilesTab.setNumRows(dim[1])
+##        self.tabsMain.showPage(self.ColProfilesTab)    
+##        self.fill_table(c.colProfiles, self.ColProfilesTab)         
         
     def initAttrValues(self):
         self.attrRowCombo.clear()
         self.attrColCombo.clear()
  
         if self.data == None: return 
-            
-        for attr in self.data.domain:
-            if attr.varType == orange.VarTypes.Discrete: self.attrRowCombo.insertItem(self.icons[attr.varType], attr.name)
-            if attr.varType == orange.VarTypes.Discrete: self.attrColCombo.insertItem(self.icons[attr.varType], attr.name)
+        
+        if hasattr(self.data, "meta_names"):
+            return
+            pass
+        else:        
+            for attr in self.data.domain:
+                if attr.varType == orange.VarTypes.Discrete: self.attrRowCombo.insertItem(self.icons[attr.varType], attr.name)
+                if attr.varType == orange.VarTypes.Discrete: self.attrColCombo.insertItem(self.icons[attr.varType], attr.name)
 
         self.attrRow = str(self.attrRowCombo.text(0))
         if self.attrColCombo.count() > 1: 
@@ -241,13 +247,19 @@ class OWCorrAnalysis(OWWidget):
         self.updateTables()
         
     def updateTables(self):
-        ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
-        self.CA = orngCA.CA(ca)            
+        if hasattr(self.data, "meta_names"):
+            return
+            pass
+        else:            
+            ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
+            self.CA = orngCA.CA(ca)
+            self.tipsR = [s for s, v in ca.outerDistribution.items()]
+            self.tipsC = [s for s, v in ca.innerDistribution.items()]
         
-        self.fill_dataTable(ca, self.CA) 
-        self.fill_corrTable(ca, self.CA)
-        self.fill_rowProfiles(self.CA)
-        self.fill_colProfiles(self.CA)
+##        self.fill_dataTable(ca, self.CA) 
+##        self.fill_corrTable(ca, self.CA)
+##        self.fill_rowProfiles(self.CA)
+##        self.fill_colProfiles(self.CA)
         
         self.initAxesValues()
         self.tabsMain.showPage(self.graph)
@@ -294,12 +306,11 @@ class OWCorrAnalysis(OWWidget):
         else: self.graph.setYLaxisTitle(None)        
         
         cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX), int(self.attrY)))        
-        tips = [s for s, v in self.CA.contingencyTable.outerDistribution.items()]
-        self.plotPoint(cor, 0, tips, "Row points", self.graph.showFilledSymbols)            
+        
+        self.plotPoint(cor, 0, self.tipsR, "Row points", self.graph.showFilledSymbols)            
             
         cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX), int(self.attrY)))        
-        tips = [s for s, v in self.CA.contingencyTable.innerDistribution.items()]
-        self.plotPoint(cor, 1, tips, "Column points", self.graph.showFilledSymbols)
+        self.plotPoint(cor, 1, self.tipsC, "Column points", self.graph.showFilledSymbols)
 
         self.graph.enableLegend(1)
         self.graph.replot()
@@ -412,11 +423,12 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
             self.buttonZoom.setOn(1)
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
 
-if __name__=="__main__": 
+if __name__=="__main__":
+##    os.chdir("/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/")
     appl = QApplication(sys.argv) 
     ow = OWCorrAnalysis() 
     appl.setMainWidget(ow) 
     ow.show() 
-    dataset = orange.ExampleTable('smokers_ct.tab') 
+    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/smokers_ct.tab') 
     ow.dataset(dataset) 
     appl.exec_loop()            

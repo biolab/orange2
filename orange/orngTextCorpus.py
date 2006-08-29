@@ -1,11 +1,9 @@
 import sys
 from xml.sax import handler, make_parser
-#from tokenizer import *
-#import lemmatizer
 from loadWordSet import *
-
 from modulTMT import tokenize
 import modulTMT as lemmatizer
+import orange
 
 
 def flatten(l):
@@ -28,12 +26,18 @@ def removeDuplicates(l):
 def intersection(l1, l2):
     return [e for e in l1 if e in l2]
 
-class orngXMLData:
+class orngTextCorpus:
     def __init__(self, fileName, tags = None, lem = None ):
-        self.docIDs = []        # meta information for each document
-        self.categories = []  # categories for each document
-        self.docWords = []   # document words matrix
-        self.allWords = {}   # contains words and their indices
+        self.id2var = {}
+        self.word2id = {}
+        
+        cat = orange.StringVariable("category")
+        meta = orange.StringVariable("meta")
+        addCat = [cat, meta]
+        if tags:
+            addCat.extend([orange.StringVariable(s) for s in tags])
+        dom = orange.Domain(addCat)
+        self.data = orange.ExampleTable(dom)
         
         # lemmatizer should have
         #   method isStopwords(string) -> bool
@@ -54,44 +58,45 @@ class orngXMLData:
         
         while 1:
             # load document
+            ex = orange.Example(dom)
+            
             doc = t.getNextDocument()
             if not len(doc): break
-            self.docIDs.append(doc['meta'])
-            self.categories.append(doc['categories'])
+            ex['meta'] = " ".join([("%s=\"%s\"" % meta).encode('iso-8859-2') for meta in doc['meta']])
+            ex['category'] = ".".join([d.encode('iso-8859-2') for d in doc['categories']])
         
             # extract words from document
             tokens = tokenize(doc['content'].lower().encode('iso-8859-2'))
             words = []
             for token in tokens:
                 if not self.lem.isStopword(token):
-                    lemmas = self.lem.getLemmas(token)
+                    lemmas = self.lem.getLemmas(token)                    
                     if lemmas.empty():
-                        words.append(token)
+                        self.__incFreqWord(ex, token)
                     else:                        
                         for lemma in lemmas:
-                            words.append(lemma)
+                            self.__incFreqWord(ex, lemma)
             
-            # convert words to thier integer representation -- index from allWords
-            intWords = []
-            for word in words:
-                if not self.allWords.has_key(word):
-                    tmp = self.allWords[word] = len(self.allWords)
-                    intWords.append(tmp)
-                else:
-                    intWords.append(self.allWords[word])
-                
-            self.docWords.append(intWords)
+            self.data.append(ex)
+            
+        self.data.setattr("meta_names", self.word2id)
+        dom.addmetas(self.id2var)            
+                            
+    def __incFreqWord(self, ex, w):
+        if not self.word2id.has_key(w):
+            id = orange.newmetaid()
+            var = orange.FloatVariable(w)
+            self.id2var[id] = var
+            self.word2id[w] = id
+            ex[id] = 1.0
+        else:
+            id = self.word2id[w]
+            try:
+                ex[id] += 1.0
+            except:
+                ex[id] = 1.0             
 
-        # compact doc - word representation
-        tmp = []
-        for (i, words) in zip(range(len(self.docIDs)), self.docWords):
-            singleDoc = [0] * len(self.allWords)
-            for j in words:
-                singleDoc[j] = singleDoc[j] + 1
-            tmp.append(singleDoc)
-                
-        self.docWords = tmp
-        
+
     def getCategories(self):
         categories = flatten(self.categories)                    
         return removeDuplicates(categories)
@@ -113,8 +118,8 @@ class orngXMLData:
 ###############
 
 class DocumentSetHandler(handler.ContentHandler):            
-    def __init__(self, tags = None, doNotParse = []):
-        self.tagsToHandle = ["document", "content", "categories", "category"]
+    def __init__(self, tags = None, doNotParse = [], additionalTags = []):
+        self.tagsToHandle = ["content", "category", "document", "categories"]
         # set default XML tags
         if not tags:
             self.tags = {}
@@ -123,26 +128,34 @@ class DocumentSetHandler(handler.ContentHandler):
         else:
             self.tags = tags
             
+        for k in additionalTags:
+            if k not in self.tagsToHandle:
+                self.tags[k] = k
+            
         # for current document being parsed
         self.curDoc = {}
         self.documents = []
         self.level = {}
-        for tag in self.tagsToHandle:
+        for tag in self.tags:
             self.level[tag] = 0
             
         # other settings
         self.doNotParse = doNotParse[:]
         self.doNotParseFlag = 0
-    def startElement(self, name, attrs):                       
-        try:
-            func = getattr(self, 'do' + name.capitalize())
-            self.level[name] += 1
-            func(attrs)
-        except:
-            if name in self.doNotParse:
-                self.doNotParseFlag += 1
+    def startElement(self, name, attrs):       
+        if name in self.doNotParse:
+            self.doNotParseFlag += 1
+        else:
+            try:
+                func = getattr(self, 'do' + name.capitalize())
+                self.level[name] += 1
+                func(attrs)
+            except:
+                if name in self.tags:
+                    self.level[name] += 1
+                    self.curDoc[name] = []
     def endElement(self, name):                                
-        if name in self.tagsToHandle:
+        if name in self.tags:
             self.level[name] -= 1
             if name == self.tags["document"]:
                 self.curDoc["category"] = []
@@ -151,6 +164,8 @@ class DocumentSetHandler(handler.ContentHandler):
                 self.curDoc = {}
             elif name == self.tags["category"]:
                 self.curDoc["categories"].append("".join(self.curDoc["category"]))
+            elif name != self.tags["categories"]:
+                self.curDoc[name] = "".join(self.curDoc[name])
         elif name in self.doNotParse:
             self.doNotParseFlag -= 1
     def characters(self, chrs):
@@ -166,11 +181,10 @@ class DocumentSetHandler(handler.ContentHandler):
         self.curDoc["meta"] = attrs.items()[:]
     def doContent(self, attrs):
         self.curDoc["content"] = []
-    def doCategories(self, attrs):
-        self.curDoc["categories"] = []
     def doCategory(self, attrs):
         self.curDoc["category"] = []
-        
+    def doCategories(self, attrs):
+        self.curDoc["categories"] = []        
 class DocumentSetRetriever:
     def __init__(self, source):
         self.source = source
@@ -193,7 +207,7 @@ class DocumentSetRetriever:
                 self.parser.feed(chunk)     
                 
 if __name__ == "__main__":
-    a = orngXMLData('reuters-exchanges.xml')
-    print a.getCategories()
-    print a.getDocumentInCategories("nyse")
+    a = orngTextCorpus('reuters-exchanges-small.xml')
+##    print a.getCategories()
+##    print a.getDocumentInCategories("nyse")
 ##    print len(a.docWords)
