@@ -47,7 +47,7 @@ class CA(object):
         
         #calculating correspondance analysis from the data matrix
         #algorithm described in the book (put reference) is used
-        #self.__dataMatrix = array(input('smokers.tab'))
+##        self.__dataMatrix = array(input('out'))
         assert(isinstance(contingencyTable, orange.ContingencyAttrAttr))
         self.__ct = contingencyTable
         self.__dataMatrix = array([list(a) for a in contingencyTable])
@@ -223,6 +223,9 @@ if __name__ == '__main__':
     c = CA(orange.ContingencyAttrAttr(1, 2, d))
     #c.dataMatrix = input('smokers.tab')
     print c.dataMatrix
+
+##    c = CA(None)
+##    print c.dataMatrix[0]
 
 
     
