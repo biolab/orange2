@@ -662,15 +662,9 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
   if (!self)
     PYERROR(PyExc_SystemError, "NULL Orange object", -1);
 
-  char *name=PyString_AsString(pyname);
-  int res = Orange_setattr1(self, name, args);
-  if (res != 1)
-    return res;
-
-  /* no property description, but we might have a special set handler
-     The following code is pasted from PyObject_GenericSetAttr.
-     If I'd call it here, PyObject_GenericSetAttr would blatantly store it in the dictionary
-     in case there is no handler. We don't want that. */
+  /* We first have to check for a specific handler.
+     The following code is pasted from PyObject_GenericSetAttr, but we can't
+     call it since it would store *all* attributes in the dictionary. */
   PyObject *descr = _PyType_Lookup(self->ob_type, pyname);
   PyObject *f = PYNULL;
   if (descr != NULL && PyType_HasFeature(descr->ob_type, Py_TPFLAGS_HAVE_CLASS)) {
@@ -678,7 +672,12 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
     if (f != NULL && PyDescr_IsData(descr))
       return f(descr, (PyObject *)self, args);
   }
-  
+ 
+  char *name=PyString_AsString(pyname);
+  int res = Orange_setattr1(self, name, args);
+  if (res != 1)
+    return res;
+
   return 1; // attribute not set (not even attempted to), try something else
 }
 
