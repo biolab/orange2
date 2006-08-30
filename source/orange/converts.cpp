@@ -187,3 +187,14 @@ PyObject *convertToPython(const vector<int> &v)
     PyList_SetItem(res, i, PyInt_FromLong(*vi));
   return res;
 }
+
+
+int getBool(PyObject *arg, void *isTrue)
+{ 
+  int it = PyObject_IsTrue(arg);
+  if (it == -1)
+    return 0;
+
+  *(bool *)isTrue = it != 0;
+  return 1;
+}

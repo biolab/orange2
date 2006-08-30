@@ -69,6 +69,8 @@ PyObject *convertToPython(const T &);
 template<class T>
 string convertToString(const T &);
 
+int getBool(PyObject *args, void *isTrue);
+
 // This is defined by Python but then redefined by STLPort
 #undef LONGLONG_MAX
 #undef ULONGLONG_MAX
