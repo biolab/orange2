@@ -59,9 +59,10 @@ class ORANGE_API TMetaDescriptor {
 public:
   long   id;
   PVariable variable;
+  bool optional;
 
   TMetaDescriptor();
-  TMetaDescriptor(const long &ai, const PVariable &avar);
+  TMetaDescriptor(const long &ai, const PVariable &avar, const bool opt = false);
   TMetaDescriptor(const TMetaDescriptor &);
 
   /* We don't need this, but need to provide it to be able to export the class to a DLL*/
