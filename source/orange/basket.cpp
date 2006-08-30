@@ -75,17 +75,20 @@ void TBasketExampleGenerator::addItem(TExample &example, const string &atom2, co
     // Check the sourceDomain, if there is one
     if (sourceDomain) {
       const TMetaDescriptor *md = sourceDomain->metas[atom];
+
       if (md) {
         id = md->id;
+
+        TMetaDescriptor nmd(id, md->variable, true); // optional meta!
 
         // store to global cache, if allowed and if sth with that name is not already there
         if (!dontStore) {
           map<string, TMetaDescriptor>::const_iterator gitem(itemCache.find(atom));
           if (gitem == itemCache.end())
-            itemCache[atom] = *md;
+            itemCache[atom] = nmd;
         }
 
-        domain->metas.push_back(*md);
+        domain->metas.push_back(nmd);
       }
     }
 
@@ -101,7 +104,7 @@ void TBasketExampleGenerator::addItem(TExample &example, const string &atom2, co
     if (id == ILLEGAL_INT) {
       id = getMetaID();
       // Variable is created solely to hold the name
-      domain->metas.push_back(TMetaDescriptor(id, mlnew TFloatVariable(atom)));
+      domain->metas.push_back(TMetaDescriptor(id, mlnew TFloatVariable(atom), true));
 
       // store to global cache, if allowed and if not already there
       // Why dontCheckStored? If we have already searched there, we don't have to confirm again it doesn't exist
