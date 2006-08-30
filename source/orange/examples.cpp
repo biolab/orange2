@@ -58,7 +58,8 @@ TExample::TExample(PDomain dom, bool initMetas)
 
   if (initMetas)
     ITERATE(TMetaVector, mi, dom->metas)
-      setMeta((*mi).id, (*mi).variable->DK());
+      if (!(*mi).optional)
+        setMeta((*mi).id, (*mi).variable->DK());
 }
 
 
@@ -166,7 +167,7 @@ TExample::TExample(PDomain dom, PExampleList elist)
   }
 
   ITERATE(TMetaVector, mai, domain->metas)
-    if (!hasMeta((*mai).id))
+    if (!(*mai).optional && !hasMeta((*mai).id))
       setMeta((*mai).id, (*mai).variable->DK());
 }
 
