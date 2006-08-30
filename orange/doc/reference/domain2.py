@@ -31,6 +31,9 @@ id = orange.newmetaid()
 data.domain.addmeta(id, misses)
 print data[55]
 
+print data.domain.hasmeta(id)
+print data.domain.hasmeta(id-1)
+
 for example in data:
     example[misses] = 0
 
@@ -52,3 +55,13 @@ data2 = orange.ExampleTable(d2, data)
 
 print data[55]
 print data2[55]
+
+ido = -99
+idr = -100
+data.domain.addmeta(idr, orange.FloatVariable("required"), False)
+data.domain.addmeta(ido, orange.FloatVariable("optional"), True)
+print data.domain.isOptionalMeta(ido)
+print data.domain.isOptionalMeta(idr)
+print data.domain.getmetas()
+print data.domain.getmetas(True)
+print data.domain.getmetas(False)

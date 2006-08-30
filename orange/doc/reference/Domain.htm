@@ -164,9 +164,32 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 
 <P>Meta-values are additional values that can be attached to examples and can have any meaning you want. It is not necessary that all examples in an example table (or even all examples from some domain) have certain meta-value. See documentation on <a href="example.htm"><CODE>Example</CODE></A> for a more thorough description of meta-values.</p>
 
-<P>Meta-values that are expected to appear in all examples for certain domain can be "registered" in the domain's descriptor. No obligations in one way or another: domain does not need to know about any meta values that are attached to examples, and examples do not need to have (all) meta values that are "registered" in the corresponding <CODE>domain</CODE>.</P>
+<P>Meta-attributes that appear in examples can, but don't need to be known to the domain descriptor. Even if they are known, there are no obligations in one way or another: domain does not need to know about any meta values that are attached to examples, and examples do not need to have (all) meta values that are "registered" in the corresponding <CODE>domain</CODE>.</P>
+
+<P>Why registering meta attributes by the domain?
+<ul>
+<li>
+If the domain knows about a meta-attribute, example indexing can be made smarter. While values of unregistered meta attributes can be obtained only through indices (e.g. <code>example[id]</code>, where <code>id</code> needs to be an integer), values of registered meta attributes are also accessible through string or variable descriptor indices (<code>example["age"]</code>).
+</li>
+
+<li>When printing out an example, the symbolic values of discrete attributes can only be printed if the attribute is registered. Also, if the attribute is registered, the printed out example will show a (more informative) attribute's name instead of a meta-id.</li>
+
+<li>Registering an attribute provides a way to attach a descriptor to a meta-id. See how the <a href="basket.htm">basket file format</a> uses this feature.</li>
+
+<li>When saving examples to a file, only the values of registered meta attributes are saved (and even this only in tab-delimited and related formats since traditional file formats like C4.5's have no meta attributes).</li>
+
+<li>When a new example is constructed, it is automatically assigned the meta attributes listed in the domain; their values are, of course, set to unknown.</li>
+</ul></P>
+
+<P>For the latter two points - saving to a file and construction of new examples - there is an additional flag, added for several practical reasons: a meta attribute can be marked as "optional". Such meta attributes are not saved and not added to newly constructed examples. This functionality is used in, for instance, the above mentioned basket format, where new meta attributes are created while loading the file and we certainly don't want a new example to contain all words from the past examples.</P>
+
+<P>There is another distinction between the optional and non-optional meta attributes: the latter are <em>expected to be present</em> in all examples of that domain. Saving to files, for one, expects them and will fail if a non-optional meta value is missing. Optional attributes may be missing. These rules are, however, mostly not strictly enforced, so adhering to them is rather up to your choice.</P>
+
+<P>In general, register the meta attributes which are permanent and have a certain meaning. If you can't name it, you possibly don't want to register it. An animal name in the zoo data set or a patient ID in a typical medical data set is a good example for a non-optional registered attribute. Word counts in basket format are optional registered attributes. The temporary example weights in bagging or example weights in certain configurations of tree induction or rule learning should be left unregistered.</P>
 
 <P>Since meta-attributes do not have a great impact, they can be added and removed even after the domain is constructed and examples of that domain already exist. For instance, if <CODE>data</CODE> contains the Monk 1 data set, we can add a new continuous attribute named <CODE>"misses"</CODE> with the following code.</P>
+
+<P>We shall first provide a few examples, detailed description of the methods follows later.</P>
 
 <p class="header"><a href="domain2.py">domain2.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
@@ -177,7 +200,7 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 >>> ['1', '2', '1', '1', '4', '2', '0']
 </XMP>
 
-<P>Note that nothing changed in the example. No attributes are added. (This is only natural; the domain descriptor has no idea about which objects refer to it.) So, why bother registering meta-attributes? To make <CODE>Example</CODE>s smarter. Registering meta-attributes enables you to address them by indexing, either by attribute name or by its descriptor. For instance, to set the attribute to 0 for all examples in the table, you could proceed with</P>
+<P>Note that nothing changed in the example. No attributes are added. (This is only natural; the domain descriptor has no idea about which objects refer to it.) As already told, registering meta-attributes enables addressing by indexing, either by attribute name or by its descriptor. For instance, to set the attribute to 0 for all examples in the table, you could proceed with</P>
 
 <p class="header"><a href="domain2.py">domain2.py</a>
 (uses <a href="monk1.tab">monk1.tab</a>)</p>
@@ -238,24 +261,39 @@ data2 = orange.ExampleTable(d2, data)
 <P>After conversion, the three attributes are moved to meta attributes and the new attribute appears as unknown.</P>
 
 <DL class=attributes>
-<DT>addmeta(id, descriptor)</B></CODE></DT>
-<DD>You have seen this function in action already. The id is a negative integer, which you get from <CODE>orange.newmetaid()</CODE>. (You can cheat by just giving any negative integer, say -42, when you would only like to quickly try something. You shouldn't do that in final code, since calling <CODE>orange.newmetaid</CODE> assures that id's are unique.) The descriptor should be an attribute descriptor derived from <CODE>orange.Variable</CODE>, such as <CODE>EnumVariable</CODE>, <CODE>FloatVariable></CODE> or <CODE>StringVariable</CODE>.
+<DT>addmeta(id, descriptor[, optional])</B></CODE></DT>
+<DD>You have seen this function in action already. The id is a negative integer, which you get from <CODE>orange.newmetaid()</CODE>. (You can cheat by just giving any negative integer, say -42, when you would only like to quickly try something. You shouldn't do that in final code, since calling <CODE>orange.newmetaid</CODE> assures that id's are unique. We did so here to ensure that the code's printout is always the same.) The descriptor should be an attribute descriptor derived from <CODE>orange.Variable</CODE>, such as <CODE>EnumVariable</CODE>, <CODE>FloatVariable></CODE> or <CODE>StringVariable</CODE>.
 
 <XMP class="code">>>> d2.addmeta(-42, orange.StringVariable("name"))
 >>> data2[55]["name"] = "Joe"
 >>> print data2[55]
 ['1', '2', '4', '0'], {"c":'1', "d":'1', "f":'2', "X":'?', "name":'Joe'}
 </XMP>
+
+<P>The optional third argument tells whether the meta attribute is optional (<code>True</code>) or not (<code>False</code>). If omitted, the attribute is not optional.
 </DD>
 
-<DT>metaid(name | descriptor)</B></CODE></DT>
+<DT>addmetas(dict[, optional])</B></CODE></DT>
+<DD>This method is similar to <CODE>addmeta</CODE> described above, except that it can be used to add multiple meta-attributes at once. The dictionary it accepts as an argument is in the same form as the one returned by <CODE>getmetas()</CODE>. Therefore, to add all meta attributes from <CODE>domain</CODE> to <CODE>newdomain</CODE>, use the following statement.
+
+<XMP class="code">newdomain.addmetas(domain.getmetas())
+</XMP>
+
+The optional third argument tells whether the attributes need to be added as optional or non-optional. Default is the latter.
+</DD>
+
+<DT>removemeta(meta-attribute | list-of-attributes)</B></CODE></DT>
+<DD>Removes meta attributes. You can give a single attribute or a list of them. Attributes can be described by descriptors, names or id's (or a mix of that). Removing meta attributes from domain descriptor has no effect on examples.</DD>
+
+<dt>hasmeta(name | descriptor | id)</b></dt>
+<dd>Tells whether the domain has the given meta attribute.</dd>
+
+<DT>metaid(name | descriptor | id)</B></CODE></DT>
 <DD>With this function, you can retrieve a lost id of a meta-attribute. You will use this function to get id's of meta-attributes that are loaded from tab-delimited files, where you will know their names but not the id's.
 
 <XMP class="code">>>> d2.metaid("name")
 -42
 </XMP>
-
-<P>(Are we clever or what? By cheating and assigning an id -42 we assured that the above snippet would always give the same result, regardless of how many meta-attributes you construct before running it. :)</P>
 </DD>
 
 <DT>getmeta(name | id)</B></CODE></DT>
@@ -265,23 +303,17 @@ data2 = orange.ExampleTable(d2, data)
 StringVariable 'name'
 </XMP>
 
-<DT>getmetas()</B></CODE></DT>
-<DD>Returns a list of meta attributes as dictionary where id's are keys and descriptors are values.</P></DD>
+<DT>getmetas([optional])</B></CODE></DT>
+<DD>Returns a list of meta attributes as dictionary where id's are keys and descriptors are values. If the argument optional is given, the function will return only the optional or the non-optional meta attributes.</DD>
 
-<DT>addmetas(dict)</B></CODE></DT>
-<DD>This method is similar to <CODE>addmeta</CODE> described above, except that it can be used to add multiple meta-attributes at once. The dictionary it accepts as an argument is in the same form as the one returned by <CODE>getmetas()</CODE>. Therefore, to add all meta attributes from <CODE>domain</CODE> to <CODE>newdomain</CODE>, use the following statement.
+<DT>isOptionalMeta(name | descriptor | id)</B></CODE></DT>
+<DD>The function returns <code>True</code> if the meta attribute is optional and <code>False</code> if it's not.</DD>
 
-<XMP class="code">newdomain.addmetas(domain.getmetas())
-</XMP>
-</P></DD>
-
-<DT>removemeta(meta-attribute | list-of-attributes)</B></CODE></DT>
-<DD>Removes meta attributes. You can give a single attribute or a list of them. Attributes can be described by descriptors, names or id's (or a mix of that). Removing meta attributes from domain descriptor has no effect on examples.</DD>
 </dl>
 
 <H2>Domains as lists</H2>
 
-<P>To certain extent, domains behave like lists. The length of domain is the number of its attributes, including the class attribute. Iterating through domain goes through attributes and the class attribute, but not through meta-attributes. You can get slices, but cannot set them (since domains are immutable). Domains can be indexed by integer indices, attribute names or descriptors. Domain has a method <CODE>index(var)</CODE> that returns the index of an attribute specified by a descriptor, name (or index, if you believe this makes sense).</P>
+<P>To a certain extent, domains behave like lists. The length of domain is the number of its attributes, including the class attribute. Iterating through domain goes through attributes and the class attribute, but not through meta-attributes. You can get slices, but cannot set them (since domains are immutable). Domains can be indexed by integer indices, attribute names or descriptors. Domain has a method <CODE>index(var)</CODE> that returns the index of an attribute specified by a descriptor, name (or index, if you believe this makes sense).</P>
 
 <XMP class="code">>>> print d2
 [a, b, e, y], {-4:c, -5:d, -6:f, -7:X}
