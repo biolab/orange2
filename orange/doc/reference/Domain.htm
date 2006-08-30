@@ -159,14 +159,14 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 
 
 <H2>Meta-attributes</H2>
-<A name="meta-attributes">
+<A name="meta-attributes"></a>
 <index name="meta attributes">
 
 <P>Meta-values are additional values that can be attached to examples and can have any meaning you want. It is not necessary that all examples in an example table (or even all examples from some domain) have certain meta-value. See documentation on <a href="example.htm"><CODE>Example</CODE></A> for a more thorough description of meta-values.</p>
 
 <P>Meta-attributes that appear in examples can, but don't need to be known to the domain descriptor. Even if they are known, there are no obligations in one way or another: domain does not need to know about any meta values that are attached to examples, and examples do not need to have (all) meta values that are "registered" in the corresponding <CODE>domain</CODE>.</P>
 
-<P>Why registering meta attributes by the domain?
+<P>Why register meta attributes by the domain?
 <ul>
 <li>
 If the domain knows about a meta-attribute, example indexing can be made smarter. While values of unregistered meta attributes can be obtained only through indices (e.g. <code>example[id]</code>, where <code>id</code> needs to be an integer), values of registered meta attributes are also accessible through string or variable descriptor indices (<code>example["age"]</code>).
