@@ -833,66 +833,124 @@ int AttributedBoolList_setitem(TPyOrange *self, PyObject *index, PyObject *value
 
 #include "domain.hpp"
 
+const TMetaDescriptor *metaDescriptorFromArg(TDomain &domain, PyObject *rar)
+{
+  TMetaDescriptor *desc = NULL;
+
+  if (PyString_Check(rar))
+    desc = domain.metas[string(PyString_AsString(rar))];
+
+  else if (PyOrVariable_Check(rar))
+    desc = domain.metas[PyOrange_AsVariable(rar)->name];
+
+  else if (PyInt_Check(rar))
+    desc = domain.metas[PyInt_AsLong(rar)];
+
+  else
+    PYERROR(PyExc_TypeError, "invalid meta descriptor", NULL);
+
+  if (!desc)
+    PYERROR(PyExc_AttributeError, "meta attribute does not exist", NULL);
+
+  return desc;
+}
+
+
 PyObject *Domain_metaid(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | descriptor) -> int")
 { PyTRY
-    CAST_TO(TDomain, domain);
+    const TMetaDescriptor *desc = metaDescriptorFromArg(SELF_AS(TDomain), rar);
+    return desc ? PyInt_FromLong(desc->id) : NULL;
+  PyCATCH
+}
+
+
+PyObject *Domain_isOptionalMeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int | descriptor) -> bool")
+{
+  PyTRY
+    const TMetaDescriptor *desc = metaDescriptorFromArg(SELF_AS(TDomain), rar);
+    return desc ? PyBool_FromLong(desc->optional ? 1 : 0) : NULL;
+
+  PyCATCH
+}
+
+
+PyObject *Domain_hasmeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int | descriptor) -> bool")
+{
+  PyTRY
+    CAST_TO(TDomain, domain)
+
     TMetaDescriptor *desc = NULL;
 
     if (PyString_Check(rar))
       desc = domain->metas[string(PyString_AsString(rar))];
+
     else if (PyOrVariable_Check(rar))
       desc = domain->metas[PyOrange_AsVariable(rar)->name];
 
-    if (!desc)
-      PYERROR(PyExc_AttributeError, "meta variable does not exist", PYNULL);
+    else if (PyInt_Check(rar))
+      desc = domain->metas[PyInt_AsLong(rar)];
 
-    return PyInt_FromLong(desc->id);
+    else
+      PYERROR(PyExc_TypeError, "invalid meta descriptor", NULL);
+
+    return PyBool_FromLong(desc ? 1 : 0);
   PyCATCH
 }
 
 
 PyObject *Domain_getmeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int) -> Variable")
 { PyTRY
-    CAST_TO(TDomain, domain);
-    TMetaDescriptor *desc = NULL;
-
-    if (PyString_Check(rar))
-      desc = domain->metas[string(PyString_AsString(rar))];
-    else if (PyInt_Check(rar))
-      desc = domain->metas[PyInt_AsLong(rar)];
-    else
-      PYERROR(PyExc_AttributeError, "invalid argument; name or integer expected", PYNULL);
-
-    if (!desc)
-      PYERROR(PyExc_AttributeError, "meta variable does not exist", PYNULL);
-
-    return WrapOrange(desc->variable);
+    const TMetaDescriptor *desc = metaDescriptorFromArg(SELF_AS(TDomain), rar);
+    return desc ? WrapOrange(desc->variable) : NULL;
   PyCATCH
 }
 
 
-PyObject *Domain_getmetas(TPyOrange *self, PyObject *args) PYARGS(0, "() -> {int: Variable}")
-{ PyTRY
-    CAST_TO(TDomain, domain);
+PyObject *Domain_getmetasLow(const TDomain &domain)
+{
+  PyObject *dict = PyDict_New();
+  const_ITERATE(TMetaVector, mi, domain.metas)
+    PyDict_SetItem(dict, PyInt_FromLong((*mi).id), WrapOrange((*mi).variable));
+  return dict;
+}
 
-    PyObject *dict=PyDict_New();
-    ITERATE(TMetaVector, mi, domain->metas)
+
+PyObject *Domain_getmetasLow(const TDomain &domain, const bool optional)
+{
+  PyObject *dict = PyDict_New();
+  const_ITERATE(TMetaVector, mi, domain.metas)
+    if (optional == (*mi).optional)
       PyDict_SetItem(dict, PyInt_FromLong((*mi).id), WrapOrange((*mi).variable));
+  return dict;
+}
 
-    return dict;
+
+PyObject *Domain_getmetas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([optional]) -> {int: Variable}")
+{ PyTRY
+    if (PyTuple_Size(args)) {
+      bool opt;
+      if (!PyArg_ParseTuple(args, "O&:Domain.getmetas", &getBool, &opt))
+        return NULL;
+
+      return Domain_getmetasLow(SELF_AS(TDomain), opt);
+    }
+
+    return Domain_getmetasLow(SELF_AS(TDomain));
   PyCATCH
 }
-    
-PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(id, descriptor) -> None")
+
+
+PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(id, descriptor[, optional]) -> None")
 { PyTRY
     CAST_TO(TDomain, domain);
 
     int id;
     PVariable var;
-    if (!PyArg_ParseTuple(args, "iO&", &id, cc_Variable, &var))
+    bool opt = false;
+    if (!PyArg_ParseTuple(args, "iO&|O&", &id, cc_Variable, &var, &getBool, &opt))
       return PYNULL;
 
-    domain->metas.push_back(TMetaDescriptor(id, var));
+    domain->metas.push_back(TMetaDescriptor(id, var, opt));
     domain->domainHasChanged();
     RETURN_NONE;
   PyCATCH
@@ -918,22 +976,31 @@ bool convertMetasFromPython(PyObject *dict, TMetaVector &metas)
 }
 
 
-PyObject *Domain_addmetas(TPyOrange *self, PyObject *arg) PYARGS(METH_O, "{id: descriptor, id: descriptor, ...} -> None")
+PyObject *Domain_addmetasLow(TDomain &domain, PyObject *dict, const bool opt = false)
+{
+  TMetaVector metas;
+  if (!convertMetasFromPython(dict, metas))
+    return PYNULL;
+
+  ITERATE(TMetaVector, mi, metas) {
+    (*mi).optional = opt;
+    domain.metas.push_back(*mi);
+  }
+
+  domain.domainHasChanged();
+
+  RETURN_NONE;
+}
+
+
+PyObject *Domain_addmetas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "({id: descriptor, id: descriptor, ...}[, optional]) -> None")
 { PyTRY
-    CAST_TO(TDomain, domain);
+    PyObject *pymetadict;
+    bool opt = false;
+    if (!PyArg_ParseTuple(args, "O|O&", &pymetadict, &getBool, &opt))
+      PYERROR(PyExc_AttributeError, "Domain.addmetas expects a dictionary with id's and descriptors, optionally follow by a boolean flag 'optional'", PYNULL);
 
-    if (!PyDict_Check(arg)) 
-      PYERROR(PyExc_AttributeError, "Domain.addmetas expects a dictionary with id's and descriptors", PYNULL);
-
-    TMetaVector metas;
-    if (!convertMetasFromPython(arg, metas))
-      return PYNULL;
-
-    ITERATE(TMetaVector, mi, metas)
-      domain->metas.push_back(*mi);
-
-    domain->domainHasChanged();
-    RETURN_NONE;
+    return Domain_addmetasLow(SELF_AS(TDomain), pymetadict, opt);
   PyCATCH
 }
 
@@ -1194,26 +1261,30 @@ PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED
 PyObject *Domain__reduce__(PyObject *self)
 {
   CAST_TO(TDomain, domain)
-  return Py_BuildValue("O(ONNN)N", getExportedFunction("__pickleLoaderDomain"),
+
+  
+  return Py_BuildValue("O(ONNNN)N", getExportedFunction("__pickleLoaderDomain"),
                                    self->ob_type,
                                    WrapOrange(domain->attributes),
                                    WrapOrange(domain->classVar),
-                                   Domain_getmetas((TPyOrange *)self, NULL),
+                                   Domain_getmetasLow(SELF_AS(TDomain), false),
+                                   Domain_getmetasLow(SELF_AS(TDomain), true),
                                    packOrangeDictionary(self));
 }
 
 PyObject *__pickleLoaderDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, attributes, classVar, metas)")
 {
   PyTRY {
-    if (!args || !PyTuple_Check(args) || (PyTuple_Size(args) != 4))
+    if (!args || !PyTuple_Check(args) || (PyTuple_Size(args) != 5))
       PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
 
     PyTypeObject *type = (PyTypeObject *)PyTuple_GET_ITEM(args, 0);
     PyObject *attributes = PyTuple_GET_ITEM(args, 1);
     PyObject *classVar = PyTuple_GET_ITEM(args, 2);
-    PyObject *metas = PyTuple_GET_ITEM(args, 3);
+    PyObject *req_metas = PyTuple_GET_ITEM(args, 3);
+    PyObject *opt_metas = PyTuple_GET_ITEM(args, 4);
 
-    if (!PyOrVarList_Check(attributes) || !PyDict_Check(metas))
+    if (!PyOrVarList_Check(attributes) || !PyDict_Check(req_metas) || !PyDict_Check(opt_metas))
       PYERROR(PyExc_TypeError, "invalid arguments for the domain unpickler", NULL);
 
   
@@ -1228,7 +1299,15 @@ PyObject *__pickleLoaderDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, 
 
     PyObject *pydomain = WrapNewOrange(domain, type);
 
-    PyObject *res = Domain_addmetas((TPyOrange *)pydomain, metas);
+    PyObject *res;
+    res = Domain_addmetasLow(*domain, req_metas, false);
+    if (!res) {
+      Py_DECREF(pydomain);
+      return NULL;
+    }
+    Py_DECREF(res);
+
+    res = Domain_addmetasLow(*domain, opt_metas, true);
     if (!res) {
       Py_DECREF(pydomain);
       return NULL;
