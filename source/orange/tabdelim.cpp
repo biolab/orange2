@@ -875,6 +875,8 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const 
     }
 
     const_ITERATE(TMetaVector, mi, (*ex).domain->metas) {
+      if ((*mi).optional)
+        continue;
       PUTDELIM;
       if (DK && ((*ri).valueType == valueDK))
         fprintf(file, DK);
@@ -948,6 +950,8 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     fprintf(file, "%s", (*vi)->name.c_str());
   }
   for(mi = mb; mi!=me; mi++) {
+    if (mi->optional)
+      continue;
     PUTDELIM;
     fprintf(file, "%s", (*mi).variable->name.c_str());
   }
@@ -961,6 +965,8 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     printVarType(file, *vi, listDiscreteValues);
   }
   for(mi = mb; mi!=me; mi++) {
+    if (mi->optional)
+      continue;
     PUTDELIM;
     printVarType(file, (*mi).variable, listDiscreteValues);
   }
@@ -979,6 +985,8 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     fprintf(file, "class");
   }
   for(mi = mb; mi!=me; mi++) {
+    if (mi->optional)
+      continue;
     PUTDELIM;
     fprintf(file, "meta");
     if (((*mi).variable->varType == TValue::INTVAR) && (*mi).variable->ordered)
@@ -1046,6 +1054,8 @@ void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
   }
 
   const_ITERATE(TMetaVector, mi, dom->metas) {
+    if (mi->optional)
+      continue;
     PUTDELIM;
     fprintf(file, "%s%s", (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
   }
