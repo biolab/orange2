@@ -1,10 +1,22 @@
 import sys
 from xml.sax import handler, make_parser
-from loadWordSet import *
 from modulTMT import tokenize
 import modulTMT as lemmatizer
 import orange
 
+def loadWordSet(f):
+    f = open(f, 'r')
+    setW = []
+    lines = f.readlines()
+    f.close()
+    for line in lines:
+        line = line.lower()
+        if line.find(';') != -1:
+            line = line[:line.find(';')]
+        line = line.strip(' \t\r\n')
+        if len(line):
+            setW.append(line)
+    return setW
 
 def flatten(l):
     ret = []
@@ -27,34 +39,23 @@ def intersection(l1, l2):
     return [e for e in l1 if e in l2]
 
 class orngTextCorpus:
-    def __init__(self, fileName, tags = None, lem = None ):
-        self.id2var = {}
-        self.word2id = {}
+    def __init__(self, fileName, tags = {}, additionalTags = [], lem = None ):
+        if lem:
+            self.lem = lem
+        else:
+            self.lem = lemmatizer.NOPLemmatization()
         
         cat = orange.StringVariable("category")
         meta = orange.StringVariable("meta")
         addCat = [cat, meta]
-        if tags:
-            addCat.extend([orange.StringVariable(s) for s in tags])
-        dom = orange.Domain(addCat)
+        if additionalTags:
+            addCat.extend([orange.StringVariable(s) for s in additionalTags])
+        dom = orange.Domain(addCat, 0)
         self.data = orange.ExampleTable(dom)
-        
-        # lemmatizer should have
-        #   method isStopwords(string) -> bool
-        #   method getLemmas(string) -> vectorStr // std::vector<std::string>
-        
-        ## remove this
-        if not lem:
-                self.lem = lemmatizer.FSALemmatization('vjesnik-10m.molex-3.3-1-ex-2way.fsa')
-                for word in loadWordSet('hrvatski_stoprijeci.txt'):
-                    self.lem.stopwords.append(word)    
-                    
-        ## user should provide lemmatizer
-        ##############################
         
         self.fileName = fileName
         f = open(fileName, "r")
-        t = DocumentSetRetriever(f)       
+        t = DocumentSetRetriever(f, tags = tags, additionalTags = additionalTags)       
         
         while 1:
             # load document
@@ -79,22 +80,20 @@ class orngTextCorpus:
             
             self.data.append(ex)
             
-        self.data.setattr("meta_names", self.word2id)
-        dom.addmetas(self.id2var)            
+        self.data.setattr("meta_names", "fromText")
                             
-    def __incFreqWord(self, ex, w):
-        if not self.word2id.has_key(w):
-            id = orange.newmetaid()
-            var = orange.FloatVariable(w)
-            self.id2var[id] = var
-            self.word2id[w] = id
-            ex[id] = 1.0
-        else:
-            id = self.word2id[w]
-            try:
+    def __incFreqWord(self, ex, w):         
+        domain = ex.domain
+        if domain.hasmeta(w):
+            id = domain.metaid(w)
+            if ex.hasmeta(id):
                 ex[id] += 1.0
-            except:
-                ex[id] = 1.0             
+            else:
+                ex[id] = 1.0
+        else:
+            id = orange.newmetaid()
+            domain.addmeta(id, orange.FloatVariable(w), True)
+            ex[id] = 1.0          
 
 
     def getCategories(self):
@@ -186,9 +185,9 @@ class DocumentSetHandler(handler.ContentHandler):
     def doCategories(self, attrs):
         self.curDoc["categories"] = []        
 class DocumentSetRetriever:
-    def __init__(self, source):
+    def __init__(self, source, tags = None, doNotParse = [], additionalTags = []):
         self.source = source
-        self.handler = DocumentSetHandler()
+        self.handler = DocumentSetHandler(tags, doNotParse, additionalTags)
         self.parser = make_parser()
         self.parser.reset()
         self.parser.setContentHandler(self.handler)    
@@ -207,7 +206,8 @@ class DocumentSetRetriever:
                 self.parser.feed(chunk)     
                 
 if __name__ == "__main__":
-    a = orngTextCorpus('reuters-exchanges-small.xml')
-##    print a.getCategories()
-##    print a.getDocumentInCategories("nyse")
-##    print len(a.docWords)
+    lem = lemmatizer.FSALemmatization('OrangeWidgets/TextData/engleski_rjecnik.fsa')
+    for word in loadWordSet('OrangeWidgets/TextData/engleski_stoprijeci.txt'):
+        lem.stopwords.append(word)       
+    a = orngTextCorpus('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
+

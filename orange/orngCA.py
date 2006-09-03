@@ -26,62 +26,25 @@ class CA(object):
     """Main class for computation of correspondance analysis"""
     def __init__(self, contingencyTable):
         """ @contingencyTable   instance of "list of lists"
-        """
-        #private variables in this class
-        #
-        #used for personal reference
-        self.__dataMatrix = array([[],[]])
-        self.__corrMatrix = array([[],[]])    
-        self.__sumElem = 0;
-        self.__rowSums = array([])
-        self.__colSums = array([])
-        self.__rowProfiles = array([[],[]])
-        self.__colProfiles = array([[],[]])
-        self.__diagRowInv = array([[],[]])
-        self.__diagcolInv = array([[],[]])
-        self.__a = array([[],[]])
-        self.__d = array([[],[]])
-        self.__b = array([[],[]])
-        self.__f = array([[],[]])
-        self.__g = array([[],[]])
-        
+        """     
         #calculating correspondance analysis from the data matrix
         #algorithm described in the book (put reference) is used
 
-        self.__dataMatrix = contingencyTable
-
-##        if isinstance(contingencyTable, orange.ContingencyAttrAttr):
-##            self.__ct = contingencyTable
-##            self.__dataMatrix = array([list(a) for a in contingencyTable])
-##        elif isinstance(contingencyTable, orange.ExampleTable):
-##            self.__ct = contingencyTable
-##            keys = contingencyTable.domain.getmetas().keys()
-##            self.__dataMatrix = zero((len(data), len(keys)))
-##            self.__dataMatrix = array([],[])
-            
-        #self.__dataMatrix = array(matrix)
-        self.__sumElem = sum(sum(self.__dataMatrix))
+        self.__dataMatrix = matrix(contingencyTable)
+        sumElem = sum(sum(array(self.__dataMatrix))) * 1.
         
         #corrMatrix is a matrix of relative frequencies of elements in data matrix
-        self.__corrMatrix = self.__dataMatrix * 1. / self.__sumElem
-        self.__colSums = sum(self.__corrMatrix).reshape(-1,1)
-        self.__rowSums = sum(self.__corrMatrix, 1).reshape(-1,1)
+        self.__corr = self.__dataMatrix / sumElem        
+        self.__colSums = sum(self.__corr)
+        self.__rowSums = sum(self.__corr, 1)
         
-        #diagRowInv is a diagonal matrix whoose elements are sums of each row of corrMatrix
-        invRowSums = 1. / self.__rowSums
-        self.__diagRowInv = invRowSums * eye(invRowSums.shape[0])
-        
-        #diagRowInv is a diagonal matrix whoose elements are sums of each column of corrMatrix
-        invcolSums = 1. / self.__colSums
-        self.__diagcolInv = invcolSums * eye(invcolSums.shape[0])
-        
-        self.__rowProfiles = matrixmultiply(self.__diagRowInv, self.__corrMatrix)
-        self.__colProfiles = matrixmultiply(self.__diagcolInv, transpose(self.__corrMatrix))
+        self.__colProfiles =  matrix(diag((1. / array(self.__colSums))[0])) * transpose(self.__corr)
+        self.__rowProfiles = matrix(diag((1. / array(self.__rowSums).reshape(1,-1))[0])) * self.__corr
     
         self.__a, self.__d, self.__b = self.__calculateSVD();    
         
-        self.__f = matrixmultiply(matrixmultiply(self.__diagRowInv, self.__a), self.__d)
-        self.__g = matrixmultiply(matrixmultiply(self.__diagcolInv, self.__b), transpose(self.__d))
+        self.__f = diag((1. / self.__rowSums).reshape(1,-1).tolist()[0]) * self.__a * self.__d
+        self.__g = diag((1. / self.__colSums).tolist()[0]) * self.__b * transpose(self.__d)
         
     def __calculateSVD(self):
         """
@@ -98,19 +61,13 @@ class CA(object):
             
             returns (N, D_mi, M)            
         """
-        a = self.__corrMatrix - matrixmultiply(self.__rowSums, transpose(self.__colSums))
-        b = matrixmultiply(matrixmultiply(sqrt(self.__diagRowInv), a), sqrt(self.__diagcolInv))
-        u, d, v = numpy.linalg.svd(b)
-        N = matrixmultiply(sqrt(self.__rowSums * eye(self.__rowSums.shape[0])), u)
-        M = matrixmultiply(sqrt(self.__colSums * eye(self.__colSums.shape[0])), transpose(v))
-        if a.shape[0] > a.shape[1]:
-            list = [0] * (a.shape[1] * (a.shape[0] - a.shape[1]))
-            d = concatenate((diag(d), array(list).reshape(a.shape[0] - a.shape[1], -1)))
-        elif a.shape[0] < a.shape[1]:
-            list = [0] * (a.shape[0] * (a.shape[1] - a.shape[0]))
-            d = concatenate((diag(d), array(list).reshape(-1, a.shape[1] - a.shape[0])), 1)
-        else:
-            d = diag(d)
+        
+        a = self.__corr - self.__rowSums * self.__colSums
+        b = diag(sqrt((1. / self.__rowSums).reshape(1,-1).tolist()[0])) * a * diag(sqrt((1. / self.__colSums).tolist()[0]))
+        u, d, v = numpy.linalg.svd(b, 0)
+        N = diag(sqrt(self.__rowSums.reshape(1, -1).tolist()[0])) * u
+        M = diag(sqrt(self.__colSums.tolist()[0])) * transpose(v)
+        d = diag(d.tolist())
         
         return (N, d, M)       
         
@@ -123,18 +80,7 @@ class CA(object):
 ##    def getCT(self): return self.__ct
         
     dataMatrix = property(getMatrix)
-##    contingencyTable = property(getCT)
-    
-    def getCorrMatrix(self):
-        """
-            corrMatrix = dataMatrix / (dataMatrix..)
-        """
-        return self.__corrMatrix
-    def getSumElem(self): return self.__sumElem
-    def getRowSums(self): return self.__rowSums
-    def getcolSums(self): return self.__colSums
-    def getRowProfiles(self): return self.__rowProfiles
-    def getColProfiles(self): return self.__colProfiles
+
     def getA(self): 
         """
             columns of A defines the principal axes of the column clouds
@@ -167,7 +113,7 @@ class CA(object):
        """
        if len(dim) == 0:
            raise Exception("Dim tuple cannot be of lenght zero")
-       return take(self.__f, dim, 1)
+       return array(take(self.__f, dim, 1))
     def getPrincipalColProfilesCoordinates(self, dim = (0, 1)): 
        """Returns principal co-ordinates of column profiles with respect
        to principal axes A.
@@ -175,7 +121,7 @@ class CA(object):
        """    
        if len(dim) == 0:
            raise Exception("Dim tuple cannot be of lenght zero")      
-       return take(self.__g, dim, 1)
+       return array(take(self.__g, dim, 1))
     def getStandardRowCoordinates(self):
         dinv = where(self.__d != 0, 1. / self.__d, 0)
         return matrixmultiply(self.__f, transpose(dinv))
@@ -208,17 +154,11 @@ class CA(object):
     def Biplot(self, dim = (0, 1)):
         if len(dim) != 2:
            raise Exception("Dim tuple must be of length two")
-        pylab.plot(c.getPrincipalRowProfilesCoordinates()[:, dim[0]], c.getPrincipalRowProfilesCoordinates()[:, dim[1]], 'ro',
-            c.getPrincipalColProfilesCoordinates()[:, dim[0]], c.getPrincipalColProfilesCoordinates()[:, dim[1]], 'bs')
+        pylab.plot(self.getPrincipalRowProfilesCoordinates()[:, dim[0]], self.getPrincipalRowProfilesCoordinates()[:, dim[1]], 'ro',
+            self.getPrincipalColProfilesCoordinates()[:, dim[0]], self.getPrincipalColProfilesCoordinates()[:, dim[1]], 'bs')
         pylab.grid()
-        pylab.  show()        
-        
-    corrMatrix = property(getCorrMatrix)
-    sumElem = property(getSumElem)
-    rowSums = property(getRowSums)
-    colSums = property(getcolSums)
-    rowProfiles = property(getRowProfiles)
-    colProfiles = property(getColProfiles)
+        pylab.  show()                
+    
     A = property(getA)
     B = property(getB)
     D = property(getD)
@@ -226,14 +166,34 @@ class CA(object):
     G = property(getG)
     
 if __name__ == '__main__':
-##    d = orange.ExampleTable('smokers_ct')
-##    c = CA(orange.ContingencyAttrAttr(1, 2, d))
-    c = CA(input('smokers.tab'))
-    print c.dataMatrix
+    a = random.random_integers(0, 100, 100).reshape(10,-1)
+    c = CA(a)
+##    c.Biplot()
 
-##    c = CA(None)
-##    print c.dataMatrix[0]
+##    data = matrix([[72,    39,    26,    23 ,    4],
+##    [95,    58,    66,    84,    41],
+##    [80,    73,    83,     4 ,   96],
+##    [79,    93,    35,    73,    63]])
+##
+##    c = CA(data)
 
 
-    
+
+##    data = matrix(random.random_integers(0, 100, 500000).reshape(400,-1))
+##    
+##    sumElem = sum(sum(data), 1).tolist()[0][0]
+##    corr = data * 1. / sumElem
+##    colSums = sum(corr)
+##    rowSums = sum(corr, 1)
+##    colProfiles =  diag((1. / colSums).tolist()[0]) * transpose(corr)
+##    rowProfiles = diag((1. / rowSums).reshape(1,-1).tolist()[0]) * corr 
+##    a = corr - rowSums * colSums   
+##    b = sqrt(diag((1. / rowSums).reshape(1,-1).tolist()[0])) * a * sqrt(diag((1. / colSums).tolist()[0]))    
+##    u, d, v = numpy.linalg.svd(b, 0)
+##    
+##    N = sqrt(diag(rowSums.reshape(1, -1).tolist()[0])) * u
+##    M = sqrt(diag(colSums.tolist()[0])) * transpose(v)
+##    d = diag(d.tolist()) 
+##    
+##    print "pero"
     

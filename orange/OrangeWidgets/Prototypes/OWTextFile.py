@@ -1,7 +1,7 @@
 """
-<name>XML File Data</name>
+<name>Text File</name>
 <description>Loads XML File</description>
-<icon>icons/ca.png</icon>
+<icon></icon>
 <priority>3500</priority>
 """
 
@@ -9,7 +9,9 @@ from qt import *
 from OWWidget import *
 import OWGUI, OWToolbars, OWDlgs
 from xml.sax import make_parser, handler
-from orngXMLData import orngXMLData
+from orngTextCorpus import orngTextCorpus, loadWordSet
+import os
+import modulTMT as lemmatizer
 
 class XMLEcho(handler.ContentHandler):
     def __init__(self, lv):
@@ -58,22 +60,16 @@ class XMLEcho(handler.ContentHandler):
     def characters(self, chrs):                              
         self.chars.append(chrs)     
 
-class OWXMLFile(OWWidget):
+class OWTextFile(OWWidget):
     settingsList = []                    
     contextHandlers = {}
     
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'XML File Data')
+        OWWidget.__init__(self, parent, signalManager, 'Text File')
         
         self.inputs = []
-        self.outputs = [("XML Data file", orngXMLData)]
-        
-##        self.catListBoxSelection = []
-##        self.catListBoxElems = []        
-##        
-##        self.docListBoxSelection = []
-##        self.docListBoxElems = []
-        
+        self.outputs = [("Examples", ExampleTable)]
+            
         self.mainArea.setFixedWidth(0)
         ca = QFrame(self.controlArea)
         ca.adjustSize()
@@ -87,7 +83,6 @@ class OWXMLFile(OWWidget):
         self.fileNameLabel.setMinimumWidth(350)
         button = OWGUI.button(box, self, '...', callback = self.browseFile, disabled=0)
         button.setMaximumWidth(25)
-##        gl.addWidget(box, 0, 0)
 
         # XML table
         QLabel(col1).setText("XML Document")
@@ -96,47 +91,14 @@ class OWXMLFile(OWWidget):
         self.listView.setRootIsDecorated(1) 
         self.listView.addColumn("Document", 500) 
         self.listView.setSorting(-1)        
-##        self.listView.setMinimumSize(QSize(600, 400))
-##        gl.addWidget(self.listView, 1, 0)
         
         # text edit -- displat text node of XML
         QLabel(col1).setText("Node text")
         self.textEdit = QTextEdit(col1)
-##        self.textEdit.setMinimumSize(QSize(600, 200))
-##        gl.addWidget(self.textEdit, 2, 0)
+
         gl.addMultiCellWidget(col1, 0, 3, 0, 0)
         
-        self.connect( self.listView, SIGNAL( 'clicked( QListViewItem* )' ),  self.fillText);
-
-##        # statistics - number of documents per category
-####        frame = QFrame(self.controlArea, "Pero detlic")
-####        gl.addMultiCellWidget(frame, 0, 2, 1, 1)        
-####        frame.setMinimumWidth(200)
-####        frame.adjustSize()
-##        self.statDocPerCat = QListView(ca)
-##        self.statDocPerCat.setAllColumnsShowFocus(1)
-##        self.statDocPerCat.setRootIsDecorated(1) 
-##        self.statDocPerCat.addColumn("Category", 150) 
-##        self.statDocPerCat.addColumn("Num. documents", 100)
-##        self.statDocPerCat.setColumnAlignment(1, Qt.AlignRight)
-##        self.statDocPerCat.setSelectionMode(QListView.Single)        
-##        gl.addMultiCellWidget(self.statDocPerCat, 0, 2, 1, 1)
-
-##        
-##        self.catListBox = OWGUI.listBox(ca, self, "catListBoxSelection", "catListBoxElems", selectionMode = QListBox.Single)
-##        gl.addMultiCellWidget(self.catListBox, 0, 0, 2, 3)
-##        self.catListBox.setMinimumWidth(300)
-##        self.docListBox = OWGUI.listBox(ca, self, "docListBoxSelection", "docListBoxElems", selectionMode = QListBox.Single)
-##        gl.addMultiCellWidget(self.docListBox, 1, 1, 2, 3)
-##        
-##        self.apply = OWGUI.button(ca, self, "Apply", self.onApplyClicked)
-##        gl.addWidget(self.apply, 2, 2)
-##
-##        self.reset = OWGUI.button(ca, self, "Reset", self.onResetClicked)
-##        gl.addWidget(self.reset, 2, 3)
-        
-##        self.categoryButton = OWGUI.button(self.mainArea, self, ">", self.onCategoryButtonClicked)
-##        self.listCategory = OWGUI.listBox(self.mainArea, self, "listBoxSelection", "selectedCategories", selectionMode = QListBox.NoSelection)
+        self.connect( self.listView, SIGNAL( 'clicked( QListViewItem* )' ),  self.fillText)
     
         self.listTags = []
         self.listTagsSelected = []
@@ -144,13 +106,30 @@ class OWXMLFile(OWWidget):
         self.listBoxTags = OWGUI.listBox(col2, self, "listTagsSelected", "listTags")
         gl.addMultiCellWidget(col2, 0, 3, 1, 1)
         
+        preproc = QVGroupBox("Preprocessing info", ca)
+        hboxLem = QHBox(preproc)
+        hboxStop = QHBox(preproc)
+        
+        QLabel('Lemmatizer:', hboxLem)
+##        OWGUI.separator(hboxLem, 1, 1)
+        self.lemmatizer = '(none)'
+        items = ['(none)']
+        items.extend([a for a in os.listdir('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData') if a[-3:] == 'fsa'])        
+        OWGUI.comboBox(hboxLem, self, 'lemmatizer', items = items, sendSelectedValue = 1)
+            
+        QLabel('Stop words:', hboxStop)
+##        OWGUI.separator(hboxStop, 1, 1)
+        self.stopwords = '(none)'
+        items = ['(none)']
+        items.extend([a for a in os.listdir('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData') if a[-3:] == 'txt'])
+        OWGUI.comboBox(hboxStop, self, 'stopwords', items = items, sendSelectedValue = 1) 
+        
+        preproc.setFixedHeight(100)
+        gl.addWidget(preproc, 0, 2)
+        
         col3 = QVGroupBox("Separation tags", ca)
-        hbox1 = QHGroupBox("Document tag", col3)
-        vbox1 = QVBox(hbox1)
-        OWGUI.button(vbox1, self, ">", self.onDocumentAdd)
-        OWGUI.button(vbox1, self, "<", self.onDocumentRemove)
         self.documentTag = ""
-        OWGUI.lineEdit(hbox1, self, "documentTag")
+        self.categoriesTag = ""
         
         hbox2 = QHGroupBox("Content tag", col3)
         vbox2 = QVBox(hbox2)
@@ -158,13 +137,6 @@ class OWXMLFile(OWWidget):
         OWGUI.button(vbox2, self, "<", self.onContentRemove)
         self.contentTag = ""
         OWGUI.lineEdit(hbox2, self, "contentTag")        
-
-        hbox3 = QHGroupBox("Categories tag", col3)
-        vbox3 = QVBox(hbox3)
-        OWGUI.button(vbox3, self, ">", self.onCategoriesAdd)
-        OWGUI.button(vbox3, self, "<", self.onCategoriesRemove)
-        self.categoriesTag = ""
-        OWGUI.lineEdit(hbox3, self, "categoriesTag")      
         
         hbox4 = QHGroupBox("Category tag", col3)
         vbox4 = QVBox(hbox4)
@@ -172,11 +144,19 @@ class OWXMLFile(OWWidget):
         OWGUI.button(vbox4, self, "<", self.onCategoryRemove)
         self.categoryTag = ""
         OWGUI.lineEdit(hbox4, self, "categoryTag") 
-
-        OWGUI.button(col3, self, "Apply", self.apply)
         
+        hbox5 = QHGroupBox("Informative tags", col3)
+        vbox5 = QVBox(hbox5)
+        OWGUI.button(vbox5, self, ">", self.onInformativeAdd)
+        OWGUI.button(vbox5, self, "<", self.onInformativeRemove)        
+        self.informativeTags = []
+        self.informativeTagsSelected = []
+        OWGUI.listBox(hbox5, self, "informativeTagsSelected", "informativeTags")
 
-        gl.addMultiCellWidget(col3, 0, 3,  2, 2)
+        app = OWGUI.button(ca, self, "Apply", self.apply)
+        
+        gl.addMultiCellWidget(col3, 1, 2,  2, 2)
+        gl.addWidget(app, 3, 2)
         
         self.resize(1200, 700)
         
@@ -202,40 +182,13 @@ class OWXMLFile(OWWidget):
 
         self.listTags = h.tags[:]
         
-    def browseFile(self, inDemos=0):
-##        "Display a FileDialog and select a file"
-##        if inDemos:
-##            import os
-##            try:
-##                import win32api, win32con
-##                t = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, "SOFTWARE\\Python\\PythonCore\\%i.%i\\PythonPath\\Orange" % sys.version_info[:2], 0, win32con.KEY_READ)
-##                t = win32api.RegQueryValueEx(t, "")[0]
-##                startfile = t[:t.find("orange")] + "orange\\doc\\datasets"
-##            except:
-##                d = os.getcwd()
-##                if d[-12:] == "OrangeCanvas":
-##                    startfile = d[:-12]+"doc/datasets"
-##                else:
-##                    startfile = d+"doc/datasets"
-##
-##            if not os.path.exists(startfile):                    
-##                QMessageBox.information( None, "File", "Cannot find the directory with example data sets", QMessageBox.Ok + QMessageBox.Default)
-##                return
-##        else:
-##            if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
-##                startfile="."
-##            else:
-##                startfile=self.recentFiles[0]
-                
+    def browseFile(self, inDemos=0):                
         startfile = "."
         filename = str(QFileDialog.getOpenFileName(startfile,
         'XML files (*.xml)\nAll files(*.*)',None,'Open Orange XML File'))
     
         self.fileNameLabel.setText(filename)
         if filename == "": return
-##        if filename in self.recentFiles: self.recentFiles.remove(filename)
-##        self.recentFiles.insert(0, filename)
-##        self.setFileList()
         self.openFile(filename)        
         
     def fillText(self, lvi):
@@ -243,31 +196,6 @@ class OWXMLFile(OWWidget):
             self.textEdit.setText(lvi.myText)
         else:
             self.textEdit.setText("")
-##    def onCategoryButtonClicked(self):
-##        item = self.statDocPerCat.firstChild()
-##        if item.isSelected():
-##            self.selectedCategories.append(item.text())
-##        while item.nextSibling():
-##            item = item.nextSibling()
-##            if item.isSelected():
-##                self.selectedCategories.append(item.text())
-                
-##    def onApplyClicked(self):
-##        pass
-##    def onResetClicked(self):
-##        pass
-    def onDocumentAdd(self):
-        if not len(self.listTagsSelected):
-            return
-        self.documentTag = self.listTags.pop(self.listTagsSelected[0])                
-        self.listTagsSelected = []
-        self.listTags = self.listTags[:]
-
-    def onDocumentRemove(self):
-        if self.documentTag:
-            self.listTags.append(self.documentTag)
-            self.documentTag = ""
-            self.listTags = self.listTags
             
     def onContentAdd(self):
         if not len(self.listTagsSelected):
@@ -282,20 +210,6 @@ class OWXMLFile(OWWidget):
             self.contentTag = ""
             self.listTags = self.listTags            
             
-            
-    def onCategoriesAdd(self):
-        if not len(self.listTagsSelected):
-            return
-        self.categoriesTag = self.listTags.pop(self.listTagsSelected[0])                
-        self.listTagsSelected = []
-        self.listTags = self.listTags[:]
-
-    def onCategoriesRemove(self):
-        if self.contentTag:
-            self.listTags.append(self.categoriesTag)
-            self.categoriesTag = ""
-            self.listTags = self.listTags[:]
-            
     def onCategoryAdd(self):
         if not len(self.listTagsSelected):
             return
@@ -307,7 +221,24 @@ class OWXMLFile(OWWidget):
         if self.contentTag:
             self.listTags.append(self.categoryTag)
             self.categoryTag = ""
-            self.listTags = self.listTags[:]            
+            self.listTags = self.listTags[:]  
+                
+    def onInformativeAdd(self):
+        if not len(self.listTagsSelected):
+            return
+        self.informativeTags.append(self.listTags.pop(self.listTagsSelected[0]))
+        self.listTagsSelected = []
+        self.listTags = self.listTags[:]
+        self.informativeTags = self.informativeTags[:]
+
+    def onInformativeRemove(self):
+        if len(self.informativeTagsSelected):
+            self.listTags.append(self.informativeTags.pop(self.informativeTagsSelected[0]))
+            self.informativeTagsSelected = []
+            self.listTags = self.listTags[:]
+            self.informativeTags = self.informativeTags[:]
+      
+      
     def apply(self):
         tags = {
                         "document" : self.documentTag and self.documentTag or "document",
@@ -315,10 +246,18 @@ class OWXMLFile(OWWidget):
                         "categories" : self.categoriesTag and self.categoriesTag or "categories",
                         "category" : self.categoryTag and self.categoryTag or "category",
                     }
-        self.send("XML Data file", orngXMLData(self.fileNameLabel.text(), tags, None))
+        if self.lemmatizer == '(none)':
+            lem = lemmatizer.NOPLemmatization()
+        else:
+            lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/'+self.lemmatizer)
+        if not self.stopwords == '(none)':
+            for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/'+self.stopwords):
+                lem.stopwords.append(word)
+        a = orngTextCorpus(self.fileNameLabel.text(), tags, self.informativeTagsSelected, lem)
+        self.send("Examples", a.data)
 if __name__=="__main__": 
     appl = QApplication(sys.argv) 
-    ow = OWXMLFile() 
+    ow = OWTextFile() 
     appl.setMainWidget(ow) 
     ow.show() 
     appl.exec_loop()            
