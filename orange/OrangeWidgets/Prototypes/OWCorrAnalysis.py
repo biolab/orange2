@@ -80,31 +80,8 @@ class OWCorrAnalysis(OWWidget):
         #zooming
         self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
-        
-##        # Data Table
-##        self.DataTab = QTable(None)
-##        self.DataTab.setSelectionMode(QTable.NoSelection)          
-##        self.tabsMain.insertTab(self.DataTab, "Data Table")       
-##        self.tabsMain.showPage(self.DataTab) 
-        
-##        # Correspondence Table
-##        self.CorrTab = QTable(None)
-##        self.CorrTab.setSelectionMode(QTable.NoSelection)
-##        self.tabsMain.insertTab(self.CorrTab, "Correspondence Table")       
-##        self.tabsMain.showPage(self.CorrTab)  
-  
-##        # Row profiles 
-##        self.RowProfilesTab = QTable(None)
-##        self.RowProfilesTab.setSelectionMode(QTable.NoSelection)          
-##        self.tabsMain.insertTab(self.RowProfilesTab, "Row profiles")       
-##        self.tabsMain.showPage(self.RowProfilesTab)        
-        
-##        # Column profiles 
-##        self.ColProfilesTab = QTable(None)
-##        self.ColProfilesTab.setSelectionMode(QTable.NoSelection)          
-##        self.tabsMain.insertTab(self.ColProfilesTab, "Column profiles")       
-##        self.tabsMain.showPage(self.ColProfilesTab)
-        
+            
+            
         # ####################################
         # SETTINGS TAB
         # point width
@@ -154,76 +131,6 @@ class OWCorrAnalysis(OWWidget):
         self.openContext("", dataset)
         self.updateGraph()
             
-##    def fill_table(self, matrix, table):
-##        for i in range(matrix.shape[0]):
-##            for j in range(matrix.shape[1]):
-##                OWGUI.tableItem(table, i, j, '%.4f' % matrix[i][j], editType=QTableItem.Never, background = Qt.white)
-##        
-##    def fill_headers(self, ca, table, numRows = None, numCols = None):        
-##        if not numRows:
-##            table.setNumCols(len(ca.innerDistribution.items()))
-##            table.setNumRows(len(ca.outerDistribution.items()))
-##        else:
-##            table.setNumCols(numCols)
-##            table.setNumRows(numRows)
-##        
-##        hheader = table.horizontalHeader()
-##        for i,var in enumerate(ca.innerDistribution.items()):
-##            hheader.setLabel(i, var[0])
-##            
-##        vheader = table.verticalHeader()
-##        for i, var in enumerate(ca.outerDistribution.items()):
-##            vheader.setLabel(i, var[0])
-##            
-##        table.show()
-    
-##    def fill_dataTable(self, ca, c):
-##        dim = c.dataMatrix.shape
-##        #data tabs
-##        self.tabsMain.showPage(self.DataTab)   
-##        self.fill_headers(ca, self.DataTab, dim[0] + 1, dim[1] + 1)
-##        self.DataTab.horizontalHeader().setLabel(dim[1], "Sum")
-##        self.DataTab.verticalHeader().setLabel(dim[0], "Sum")            
-##        self.fill_table(c.dataMatrix, self.DataTab)
-##        #filling row and col sum
-##        rowSums = sum(c.dataMatrix, 1).reshape(-1,1)
-##        colSums = sum(c.dataMatrix).reshape(-1,1)
-##        for i in range(dim[0]):
-##            OWGUI.tableItem(self.DataTab, i, dim[1], '%.4f' % rowSums[i][0], editType=QTableItem.Never, background = Qt.green)
-##        for i in range(dim[1]):
-##            OWGUI.tableItem(self.DataTab, dim[0], i, '%.4f' % colSums[i][0], editType=QTableItem.Never, background = Qt.green)               
-##        OWGUI.tableItem(self.DataTab, dim[0], dim[1], '%.4f' % sum(colSums), editType=QTableItem.Never, background = Qt.red)          
-##        
-##    def fill_corrTable(self, ca, c):  
-##        dim = c.dataMatrix.shape      
-##        #contingency tab
-##        self.tabsMain.showPage(self.CorrTab)   
-##        self.fill_headers(ca, self.CorrTab, dim[0] + 1, dim[1] + 1)
-##        self.CorrTab.horizontalHeader().setLabel(dim[1], "Sum")
-##        self.CorrTab.verticalHeader().setLabel(dim[0], "Sum")            
-##        self.fill_table(c.corrMatrix, self.CorrTab)
-##        #filling row and col sum
-##        for i in range(dim[0]):
-##            OWGUI.tableItem(self.CorrTab, i, dim[1], '%.4f' % c.rowSums[i][0], editType=QTableItem.Never, background = Qt.green)
-##        for i in range(dim[1]):
-##            OWGUI.tableItem(self.CorrTab, dim[0], i, '%.4f' % c.colSums[i][0], editType=QTableItem.Never, background = Qt.green)          
-##            
-##    def fill_rowProfiles(self, c):
-##            dim = c.dataMatrix.shape    
-##            #row profiles tab
-##            self.tabsMain.showPage(self.RowProfilesTab)    
-##            self.RowProfilesTab.setNumCols(dim[1])
-##            self.RowProfilesTab.setNumRows(dim[0])
-##            self.fill_table(c.rowProfiles, self.RowProfilesTab)    
-##     
-##    def fill_colProfiles(self, c):
-##        dim = c.dataMatrix.shape    
-##        #column profiles tab
-##        self.ColProfilesTab.setNumCols(dim[0])
-##        self.ColProfilesTab.setNumRows(dim[1])
-##        self.tabsMain.showPage(self.ColProfilesTab)    
-##        self.fill_table(c.colProfiles, self.ColProfilesTab)         
-        
     def initAttrValues(self):
         self.attrRowCombo.clear()
         self.attrColCombo.clear()
@@ -231,8 +138,9 @@ class OWCorrAnalysis(OWWidget):
         if self.data == None: return 
         
         if hasattr(self.data, "meta_names"):
-            return
-            pass
+            self.attrRowCombo.insertItem('document')
+            self.attrRowCombo.insertItem('category')
+            self.attrColCombo.insertItem('words')
         else:        
             for attr in self.data.domain:
                 if attr.varType == orange.VarTypes.Discrete: self.attrRowCombo.insertItem(self.icons[attr.varType], attr.name)
@@ -248,25 +156,33 @@ class OWCorrAnalysis(OWWidget):
         
     def updateTables(self):
         if hasattr(self.data, "meta_names"):
-            return
-            pass
+            metas = self.data.domain.getmetas()
+            lenMetas = len(metas)
+            caList = []
+            for ex in self.data:
+                cur = [0] * lenMetas
+                for i, m in zip(range(lenMetas), metas.keys()):
+                    try:
+                        cur[i] = ex[m].native()
+                    except:
+                        cur[i] = 0
+                caList.append(cur)
+            self.CA = orngCA.CA(caList)
+            self.tipsR = [ex['meta'].native() for ex in self.data]
+            self.tipsC = [a.name for a in self.data.domain.getmetas().values()]
         else:            
             ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
-            self.CA = orngCA.CA(ca)
+            caList = [[col for col in row] for row in ca]
+            self.CA = orngCA.CA(caList)
             self.tipsR = [s for s, v in ca.outerDistribution.items()]
             self.tipsC = [s for s, v in ca.innerDistribution.items()]
-        
-##        self.fill_dataTable(ca, self.CA) 
-##        self.fill_corrTable(ca, self.CA)
-##        self.fill_rowProfiles(self.CA)
-##        self.fill_colProfiles(self.CA)
-        
+            del ca
+               
         self.initAxesValues()
         self.tabsMain.showPage(self.graph)
         self.calcRadius()
         
-        del ca
-        
+        del caList
         
     def initAxesValues(self):
         self.attrXCombo.clear()
@@ -276,8 +192,7 @@ class OWCorrAnalysis(OWWidget):
             
         for i in range(min(self.CA.D.shape)):
             self.attrXCombo.insertItem(str(i))
-            self.attrYCombo.insertItem(str(i))
-        
+            self.attrYCombo.insertItem(str(i))        
         
         self.attrX = str(self.attrXCombo.text(0))
         if self.attrYCombo.count() > 1: 
@@ -297,8 +212,6 @@ class OWCorrAnalysis(OWWidget):
         self.graph.removeMarkers()
         self.graph.tips.removeAll()
         
-##        self.graph.enableLegend(self.graph.showLegend)
-        
         if self.graph.showXaxisTitle == 1: self.graph.setXaxisTitle("Axis " + self.attrX)
         else: self.graph.setXaxisTitle(None)
 
@@ -314,15 +227,12 @@ class OWCorrAnalysis(OWWidget):
 
         self.graph.enableLegend(1)
         self.graph.replot()
-        
-##        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.attrLabel)
-##        self.graph.repaint()        
+    
         
     def plotPoint(self, cor, color, tips, curveName = "", showFilledSymbols = 1):
         fillColor = self.colors[color]
         edgeColor = self.colors[color]
-        
-##        key = self.graph.addCurve("row" + str(i), fillColor, edgeColor, self.graph.pointWidth, xData = [x], yData = [y])         
+               
         key = self.graph.addCurve(curveName, fillColor, edgeColor, self.graph.pointWidth, xData = list(cor[:, 0]), yData = list(cor[:, 1]), showFilledSymbols = showFilledSymbols)                 
         
         for i in range(len(cor)):
@@ -330,7 +240,6 @@ class OWCorrAnalysis(OWWidget):
             y = cor[i][1]           
          
             self.graph.tips.addToolTip(x, y, tips[i])   
-##            self.graph.addMarker(tips[i], x, y)
 
     def sendSelections(self):
         pass
@@ -424,11 +333,18 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
 
 if __name__=="__main__":
+    from orngTextCorpus import *
 ##    os.chdir("/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/")
     appl = QApplication(sys.argv) 
     ow = OWCorrAnalysis() 
     appl.setMainWidget(ow) 
     ow.show() 
-    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/smokers_ct.tab') 
-    ow.dataset(dataset) 
+##    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab') 
+
+    lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_rjecnik.fsa')
+    for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_stoprijeci.txt'):
+        lem.stopwords.append(word)       
+    a = orngTextCorpus('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
+    
+    ow.dataset(a.data) 
     appl.exec_loop()            
