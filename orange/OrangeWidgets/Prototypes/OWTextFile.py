@@ -111,17 +111,32 @@ class OWTextFile(OWWidget):
         hboxStop = QHBox(preproc)
         
         QLabel('Lemmatizer:', hboxLem)
-##        OWGUI.separator(hboxLem, 1, 1)
         self.lemmatizer = '(none)'
         items = ['(none)']
-        items.extend([a for a in os.listdir('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData') if a[-3:] == 'fsa'])        
+        
+        
+##        items.extend([a for a in os.listdir('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData') if a[-3:] == 'fsa'])     
+        
+        #################
+        # check if this is ok
+        ##
+        d = os.getcwd()
+        if d[-12:] == "OrangeCanvas":
+            startfile = d[:-12]+"/OrangeWidgets/TextData"
+        else:
+            startfile = d+"/OrangeWidgets/TextData"
+            
+        items.extend([a for a in os.listdir(startfile) if a[-3:] == 'fsa'])  
+            
+        #################
+            
         OWGUI.comboBox(hboxLem, self, 'lemmatizer', items = items, sendSelectedValue = 1)
             
         QLabel('Stop words:', hboxStop)
-##        OWGUI.separator(hboxStop, 1, 1)
         self.stopwords = '(none)'
         items = ['(none)']
-        items.extend([a for a in os.listdir('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData') if a[-3:] == 'txt'])
+##        items.extend([a for a in os.listdir('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData') if a[-3:] == 'txt'])
+        items.extend([a for a in os.listdir(startfile) if a[-3:] == 'txt'])  
         OWGUI.comboBox(hboxStop, self, 'stopwords', items = items, sendSelectedValue = 1) 
         
         preproc.setFixedHeight(100)
