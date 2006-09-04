@@ -136,9 +136,9 @@ class CA(object):
             Columns of this matrix represents contribution of the rows or columns to the inertia of axis.
         """
         if axis == 0:
-            return take(self.__rowSums * self.__f * self.__f, tuple(range(min(self.__dataMatrix.shape))))
+            return take(array(self.__rowSums) * array(self.__f) * array(self.__f), tuple(range(min(self.__dataMatrix.shape))))
         else:
-            return take(self.__colSums * self.__g * self.__g, tuple(range(min(self.__dataMatrix.shape))))
+            return take(array(self.__colSums) * array(self.__g) * array(self.__g), tuple(range(min(self.__dataMatrix.shape))))
     def InertiaOfAxis(self):
         return sum(self.DecompositionOfInertia())
     def PercentageOfInertia(self):
@@ -148,7 +148,7 @@ class CA(object):
     def PlotScreeDiagram(self):
         ## todo: legend, axis, etc
         pylab.plot(range(1, min(self.__dataMatrix.shape) + 1), self.PercentageOfInertia())
-        pylab.axis([0, min(c.dataMatrix.shape) + 1, 0, 100])
+        pylab.axis([0, min(self.__dataMatrix.shape) + 1, 0, 100])
         pylab.show()
         
     def Biplot(self, dim = (0, 1)):
@@ -166,8 +166,8 @@ class CA(object):
     G = property(getG)
     
 if __name__ == '__main__':
-    a = random.random_integers(0, 100, 100).reshape(10,-1)
-    c = CA(a)
+##    a = random.random_integers(0, 100, 100).reshape(10,-1)
+##    c = CA(a)
 ##    c.Biplot()
 
 ##    data = matrix([[72,    39,    26,    23 ,    4],
@@ -196,4 +196,32 @@ if __name__ == '__main__':
 ##    d = diag(d.tolist()) 
 ##    
 ##    print "pero"
+
+##    data = [[9, 11, 4], 
+##                [ 3,          5,          3], 
+##                [     11,          6,          3], 
+##                [24,         73,         48]] 
+##    c = CA(data)
     
+    import orange
+    from orngCA import CA
+    
+    data = input('doc/datasets/smokers.tab')
+    c = CA(data)
+    print "Column profiles:"
+    print c._CA__colProfiles
+    print
+    print "Row profiles:"
+    print c._CA__rowProfiles
+    print 
+    print "Singular values: " + str(diag(c.D))
+    print "Eigen values: " + str(square(diag(c.D)))
+    print "Percentage of Inertia:" + str(c.PercentageOfInertia())
+    print 
+    print "Principal row coordinates:"
+    print c.getPrincipalRowProfilesCoordinates()
+    print 
+    print "Decomposition Of Inertia:"
+    print c.DecompositionOfInertia()
+    c.PlotScreeDiagram()
+    c.Biplot()

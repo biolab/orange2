@@ -9,7 +9,7 @@ from qt import *
 from OWWidget import *
 import OWGUI, OWToolbars, OWDlgs
 from xml.sax import make_parser, handler
-from orngTextCorpus import orngTextCorpus, loadWordSet
+from orngTextCorpus import TextCorpusLoader, loadWordSet
 import os
 import modulTMT as lemmatizer
 
@@ -268,7 +268,7 @@ class OWTextFile(OWWidget):
         if not self.stopwords == '(none)':
             for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/'+self.stopwords):
                 lem.stopwords.append(word)
-        a = orngTextCorpus(self.fileNameLabel.text(), tags, self.informativeTagsSelected, lem)
+        a = TextCorpusLoader(self.fileNameLabel.text(), tags, self.informativeTagsSelected, lem)
         self.send("Examples", a.data)
 if __name__=="__main__": 
     appl = QApplication(sys.argv) 

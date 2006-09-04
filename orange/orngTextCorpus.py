@@ -4,6 +4,10 @@ from modulTMT import tokenize
 import modulTMT as lemmatizer
 import orange
 
+
+################
+## utility functions
+################
 def loadWordSet(f):
     f = open(f, 'r')
     setW = []
@@ -38,8 +42,11 @@ def removeDuplicates(l):
 def intersection(l1, l2):
     return [e for e in l1 if e in l2]
 
-class orngTextCorpus:
-    def __init__(self, fileName, tags = {}, additionalTags = [], lem = None ):
+################
+
+
+class TextCorpusLoader:
+    def __init__(self, fileName, tags = {}, additionalTags = [], lem = None, doNotParse = []):
         if lem:
             self.lem = lem
         else:
@@ -52,10 +59,9 @@ class orngTextCorpus:
             addCat.extend([orange.StringVariable(s) for s in additionalTags])
         dom = orange.Domain(addCat, 0)
         self.data = orange.ExampleTable(dom)
-        
-        self.fileName = fileName
+    
         f = open(fileName, "r")
-        t = DocumentSetRetriever(f, tags = tags, additionalTags = additionalTags)       
+        t = DocumentSetRetriever(f, tags = tags, doNotParse = doNotParse, additionalTags = additionalTags)       
         
         while 1:
             # load document
@@ -65,6 +71,8 @@ class orngTextCorpus:
             if not len(doc): break
             ex['meta'] = " ".join([("%s=\"%s\"" % meta).encode('iso-8859-2') for meta in doc['meta']])
             ex['category'] = ".".join([d.encode('iso-8859-2') for d in doc['categories']])
+            for tag in additionalTags:
+                ex[tag.encode('iso-8859-2')] = doc[tag].encode('iso-8859-2')
         
             # extract words from document
             tokens = tokenize(doc['content'].lower().encode('iso-8859-2'))
@@ -73,8 +81,9 @@ class orngTextCorpus:
                 if not self.lem.isStopword(token):
                     lemmas = self.lem.getLemmas(token)                    
                     if lemmas.empty():
-                        self.__incFreqWord(ex, token)
-                    else:                        
+##                        self.__incFreqWord(ex, token)
+                        pass
+                    else:                       
                         for lemma in lemmas:
                             self.__incFreqWord(ex, lemma)
             
@@ -96,21 +105,7 @@ class orngTextCorpus:
             ex[id] = 1.0          
 
 
-    def getCategories(self):
-        categories = flatten(self.categories)                    
-        return removeDuplicates(categories)
-        
-    def getDocumentInCategories(self, categories):
-        if isinstance(categories, str):
-            categories = [categories]        
-        doc = []
-        for i, category in zip(range(len(self.categories)), self.categories):
-            if len(intersection(category, categories)):
-                doc.append(self.docIDs[i]) 
- 
-        doc = [" ".join(["%s %s" % meta for meta in metas])
-                            for metas in self.docIDs]
-        return doc
+
     
 
 
@@ -178,6 +173,9 @@ class DocumentSetHandler(handler.ContentHandler):
                 pass
     def doDocument(self, attrs):
         self.curDoc["meta"] = attrs.items()[:]
+        self.curDoc["content"] = []
+        self.curDoc["category"] = []
+        self.curDoc["categories"] = [] 
     def doContent(self, attrs):
         self.curDoc["content"] = []
     def doCategory(self, attrs):
@@ -209,5 +207,5 @@ if __name__ == "__main__":
     lem = lemmatizer.FSALemmatization('OrangeWidgets/TextData/engleski_rjecnik.fsa')
     for word in loadWordSet('OrangeWidgets/TextData/engleski_stoprijeci.txt'):
         lem.stopwords.append(word)       
-    a = orngTextCorpus('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
-
+    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml', lem = lem, additionalTags = ['date'], doNotParse = ['dontparse'])
+##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test1.xml', lem = lem)

@@ -920,13 +920,7 @@ if __name__=="__main__":
     lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_rjecnik.fsa')
     for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_stoprijeci.txt'):
         lem.stopwords.append(word)       
-    data = orngTextCorpus('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)    
-    
-##    data = orange.ExampleTable(r'/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab')
-##    # add meta attribute
-##    data.domain.addmeta(orange.newmetaid(), orange.StringVariable("workclass_name"))
-##    for ex in data:
-##        ex["workclass_name"] = str(ex[1])
+    data = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)    
 
     a=QApplication(sys.argv)
     ow=OWFeatureSelection()
