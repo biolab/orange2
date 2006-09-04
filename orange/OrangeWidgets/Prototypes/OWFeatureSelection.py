@@ -298,7 +298,7 @@ class OWFeatureSelection(OWWidget):
             fdata = filter(self.data, negate = 1)
             removeMeta = [ex.name for ex in fdata if matchingOutput.domain.hasmeta(ex.name)]
             newDomain.removemeta(removeMeta)
-            matchingOutput = orange.ExampleTable(self.dataInput.domain, self.dataInput)
+            matchingOutput = orange.ExampleTable(newDomain, self.dataInput)
         else:
             matchingOutput = None
 
