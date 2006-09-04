@@ -77,6 +77,10 @@ class OWCorrAnalysis(OWWidget):
         self.attrY = 0
         self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Principal axis Y ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
         
+        contribution = QVGroupBox('Contribution to inertia', self.GeneralTab)
+        self.firstAxis = OWGUI.widgetLabel(contribution, 'Axis 1: 10%')
+        self.secondAxis = OWGUI.widgetLabel(contribution, 'Axis 2: 10%')
+        
         #zooming
         self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
@@ -178,6 +182,7 @@ class OWCorrAnalysis(OWWidget):
             self.tipsC = [s for s, v in ca.innerDistribution.items()]
             del ca
                
+               
         self.initAxesValues()
         self.tabsMain.showPage(self.graph)
         self.calcRadius()
@@ -217,6 +222,9 @@ class OWCorrAnalysis(OWWidget):
 
         if self.graph.showYLaxisTitle == 1: self.graph.setYLaxisTitle("Axis " + self.attrY)
         else: self.graph.setYLaxisTitle(None)        
+        
+        self.firstAxis.setText  ('Axis %d: %f%%' % (int(self.attrX), self.CA.PercentageOfInertia()[int(self.attrX)]))
+        self.secondAxis.setText ('Axis %d: %f%%' % (int(self.attrY), self.CA.PercentageOfInertia()[int(self.attrY)]))
         
         cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX), int(self.attrY)))        
         
@@ -344,7 +352,7 @@ if __name__=="__main__":
     lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_rjecnik.fsa')
     for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_stoprijeci.txt'):
         lem.stopwords.append(word)       
-    a = orngTextCorpus('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
+    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
     
     ow.dataset(a.data) 
     appl.exec_loop()            

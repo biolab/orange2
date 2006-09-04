@@ -287,14 +287,7 @@ class OWFeatureSelection(OWWidget):
         """Sends out data, updates data out info.
         """
         if self.dataInput:
-##            matchingOutput = self.dataInput.clone()
-##            matchingOutput.domain = self.dataInput.domain.clone()            
-##            #cloning example table with new domain
-##            dom = orange.Domain(self.dataInput.domain)
-##            matchingOutput  = orange.ExampleTable(dom)
-##            for ex in self.dataInput:
-##                matchingOutput.append(orange.Example(ex))
-            matchingOutput = orange.ExampleTable(self.dataInput, False)
+            newDomain = orange.Domain(self.dataInput.domain)
             
             filterList = self.getFilterList(self.data.domain, self.Conditions, enabledOnly=True)
             if len(filterList)>0:
@@ -304,7 +297,8 @@ class OWFeatureSelection(OWWidget):
                 
             fdata = filter(self.data, negate = 1)
             removeMeta = [ex.name for ex in fdata if matchingOutput.domain.hasmeta(ex.name)]
-            matchingOutput.domain.removemeta(removeMeta) 
+            newDomain.removemeta(removeMeta)
+            matchingOutput = orange.ExampleTable(self.dataInput.domain, self.dataInput)
         else:
             matchingOutput = None
 
