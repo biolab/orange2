@@ -460,16 +460,19 @@ void TDomain::convert(TExample &dest, const TExample &src, bool filterMetas)
     TMetaVector::iterator mvi(metas.begin());
     for(vector<pair<int, int> >::const_iterator vpii((*lastDomain).metaPositions.begin()), vpie((*lastDomain).metaPositions.end());
         vpii!=vpie; 
-        vpii++, mvi++)
-      if (!(*mvi).optional || ((*vpii).second!=ILLEGAL_INT))
+        vpii++, mvi++) {
+      if (!(*mvi).optional)
         dest.setMeta((*vpii).first, (*vpii).second==ILLEGAL_INT ? (*mvi).variable->computeValue(src) : src[(*vpii).second]);
-      else {
-        if ((*mvi).variable->getValueFrom) {
+      else if ((*vpii).second != ILLEGAL_INT) {
+        if (src.hasMeta((*vpii).second))
+          dest.setMeta((*vpii).first, src[(*vpii).second]);
+      }
+      else if ((*mvi).variable->getValueFrom) {
           TValue mval = (*mvi).variable->computeValue(src);
           if (!mval.isSpecial())
             dest.setMeta((*vpii).first, mval);
-        }
       }
+    }
 
     if (!filterMetas) {
       set<int>::iterator mend = (*lastDomain).metasNotToCopy.end();
