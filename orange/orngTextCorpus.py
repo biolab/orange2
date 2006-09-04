@@ -72,7 +72,7 @@ class TextCorpusLoader:
             ex['meta'] = " ".join([("%s=\"%s\"" % meta).encode('iso-8859-2') for meta in doc['meta']])
             ex['category'] = ".".join([d.encode('iso-8859-2') for d in doc['categories']])
             for tag in additionalTags:
-                ex[tag.encode('iso-8859-2')] = doc[tag].encode('iso-8859-2')
+                ex[tag.encode('iso-8859-2')] = (doc.has_key(tag) and [doc[tag].encode('iso-8859-2')] or [''])[0]
         
             # extract words from document
             tokens = tokenize(doc['content'].lower().encode('iso-8859-2'))
@@ -104,61 +104,68 @@ class TextCorpusLoader:
             domain.addmeta(id, orange.FloatVariable(w), True)
             ex[id] = 1.0          
 
-
-
-    
-
-
 ###############
 
 class DocumentSetHandler(handler.ContentHandler):            
     def __init__(self, tags = None, doNotParse = [], additionalTags = []):
         self.tagsToHandle = ["content", "category", "document", "categories"]
         # set default XML tags
+        self.name2tag = {}
         if not tags:
             self.tags = {}
             for tag in self.tagsToHandle:
                 self.tags[tag] = tag
+                self.name2tag[tag] = tag
         else:
-            self.tags = tags
+            self.tags = {}
+            for tag in self.tagsToHandle:
+                if not tags.has_key(tag):
+                    self.tags[tag] = tag
+                    self.name2tag[tag] = tag
+                else:
+                    self.tags[tag] = tags[tag]
+                    self.name2tag[tags[tag]] = tag
             
         for k in additionalTags:
             if k not in self.tagsToHandle:
                 self.tags[k] = k
+                
             
         # for current document being parsed
         self.curDoc = {}
         self.documents = []
-        self.level = {}
-        for tag in self.tags:
-            self.level[tag] = 0
+        self.level = []
             
         # other settings
         self.doNotParse = doNotParse[:]
         self.doNotParseFlag = 0
-    def startElement(self, name, attrs):       
+    def startElement(self, name, attrs):
+        if self.name2tag.has_key(name):
+            name = self.name2tag[name]
         if name in self.doNotParse:
             self.doNotParseFlag += 1
         else:
             try:
                 func = getattr(self, 'do' + name.capitalize())
-                self.level[name] += 1
+                self.level.append(name)
                 func(attrs)
             except:
                 if name in self.tags:
-                    self.level[name] += 1
+                    self.level.append(name)
                     self.curDoc[name] = []
-    def endElement(self, name):                                
+    def endElement(self, name):
+        if self.name2tag.has_key(name):
+            name = self.name2tag[name]        
         if name in self.tags:
-            self.level[name] -= 1
-            if name == self.tags["document"]:
+            self.level.pop()
+            if name == "document":
                 self.curDoc["category"] = []
                 self.curDoc["content"] = "".join(self.curDoc["content"])
                 self.documents.append(self.curDoc)
                 self.curDoc = {}
-            elif name == self.tags["category"]:
+            elif name == "category":
                 self.curDoc["categories"].append("".join(self.curDoc["category"]))
-            elif name != self.tags["categories"]:
+            elif name != "categories":
                 self.curDoc[name] = "".join(self.curDoc[name])
         elif name in self.doNotParse:
             self.doNotParseFlag -= 1
@@ -167,8 +174,9 @@ class DocumentSetHandler(handler.ContentHandler):
             try:
                 # check in which tag are the characters
                 # only tagsToHandle are parsed, others will raise exception that is ignored
-                name = [k  for k, v in self.level.items() if k not in ["document", "categories"] and v][0]
-                self.curDoc[name].append(chrs)
+                name = self.level[-1]
+                if name not in ["document", "categories"]:
+                    self.curDoc[name].append(chrs)
             except:
                 pass
     def doDocument(self, attrs):
@@ -207,5 +215,6 @@ if __name__ == "__main__":
     lem = lemmatizer.FSALemmatization('OrangeWidgets/TextData/engleski_rjecnik.fsa')
     for word in loadWordSet('OrangeWidgets/TextData/engleski_stoprijeci.txt'):
         lem.stopwords.append(word)       
-    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml', lem = lem, additionalTags = ['date'], doNotParse = ['dontparse'])
-##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test1.xml', lem = lem)
+##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml', lem = lem, additionalTags = ['date'], doNotParse = ['dontparse'])
+    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml', lem = lem,
+      tags = {"content":"cont"}, additionalTags = ['todo'])
