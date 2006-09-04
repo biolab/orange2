@@ -914,11 +914,12 @@ if __name__=="__main__":
     lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_rjecnik.fsa')
     for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_stoprijeci.txt'):
         lem.stopwords.append(word)       
-    data = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)    
+    data = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)  
+  
 
-    a=QApplication(sys.argv)
-    ow=OWFeatureSelection()
-    a.setMainWidget(ow)
-    ow.show()
-    ow.onDataInput(data.data)
-    a.exec_loop()
+##    a=QApplication(sys.argv)
+##    ow=OWFeatureSelection()
+##    a.setMainWidget(ow)
+##    ow.show()
+##    ow.onDataInput(data.data)
+##    a.exec_loop()
