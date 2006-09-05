@@ -188,50 +188,12 @@ class OWFeatureSelection(OWWidget):
         self.lbOperatorsS.setCurrentItem(0)
         self.resize(500,661)
         
-##        self.measures = [('Document Frequency', 'DF'), ('Information gain', 'IG')]
-##        self.measures = [('Document Frequency', 'DF')]
         self.measures = FeatureSelection.measures.keys() 
 
 
     ############################################################################################################################################################
     ## Data input and output management ########################################################################################################################
     ############################################################################################################################################################
-##    def DF(self, nameOfAttribute):
-##        
-##        df = [[len([ex for ex in self.dataInput if ex.hasmeta(meta.name)])] 
-##            for meta in self.dataInput.domain.getmetas().values()]
-##            
-##        dom = orange.Domain([orange.FloatVariable(nameOfAttribute)])
-##        exTable = orange.ExampleTable(dom, df)
-##        if len(self.data):
-##            self.data = orange.ExampleTable(self.data, exTable)
-##        else:
-##            self.data = orange.ExampleTable(exTable)
-##        
-####        for i, meta in zip(range(len(self.dataInput.domain.getmetas())), self.dataInput.domain.getmetas().values()):
-####            name = meta.name
-####            self.data[i][nameOfAttribute] = len([ex for ex in self.dataInput if ex.hasmeta(name)])
-##            
-##    def IG(self):
-##        pass
-##
-##    def createMeasures(self):
-##        if self.dataInput:
-##            
-##            if not hasattr(self.dataInput, 'meta_names'):
-##                self.dataInput = None
-##                self.data = None
-##                return
-##                
-####            addCat = [orange.FloatVariable(measure) for measure, fun in self.measures]
-####            dom = orange.Domain(addCat, 0)
-##            self.data = orange.ExampleTable(orange.Domain([]))
-##            for measure, fun in self.measures:
-##                getattr(self, fun)(measure)
-##            for id, name in zip(range(len(self.data)), self.dataInput.domain.getmetas().values()):
-##                self.data[id].name = name.name                
-##        else:
-##            self.data = None
 
     def onDataInput(self, data):
         """Loads stored conditions (if we have a similar domain), updates list boxes and data in info, sends out data.

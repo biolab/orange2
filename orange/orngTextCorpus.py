@@ -94,9 +94,7 @@ class TextCorpusLoader:
             self.lem = lem
         else:
             self.lem = lemmatizer.NOPLemmatization()
-        
-        
-        
+            
         cat = orange.StringVariable("category")
         meta = orange.StringVariable("meta")
         addCat = [cat, meta]
@@ -165,6 +163,33 @@ class TextCorpusLoader:
             domain.addmeta(id, orange.FloatVariable(w), True)
             ex[id] = 1.0          
 
+    def categoryDocument(self):
+        newDomain = orange.Domain([])
+        newDomain.addmetas(self.data.domain.getmetas(), True)
+        self.dataCD = orange.ExampleTable(newDomain)
+        categories = set()
+        for ex in self.data:
+            if ex['category']:
+                for cat in ex['category'].native().split('.'):
+                    categories.add(cat)
+        categories = list(categories)
+        if not len(categories): return None
+        for cat in categories:
+            ex =  orange.Example(newDomain)
+            ex.name = cat
+            self.dataCD.append(ex)
+        for ex in self.data:
+            cat = (ex['category'] and [ex['category'].native().split('.')] or [[]])[0]
+            if not cat: continue
+            indices = [categories.index(c) for c in cat]
+            for id, val in ex.getmetas().items():
+                for i in indices:
+                    try:
+                        self.dataCD[i][id] = self.dataCD[i][id].native() + val.native()
+                    except:
+                        self.dataCD[i][id] = val.native()
+            
+        
 ###############
 
 class DocumentSetHandler(handler.ContentHandler):            
@@ -275,15 +300,33 @@ class DocumentSetRetriever:
                 self.parser.feed(chunk)     
                 
 if __name__ == "__main__":
-    lem = lemmatizer.FSALemmatization('OrangeWidgets/TextData/engleski_rjecnik.fsa')
-    for word in loadWordSet('OrangeWidgets/TextData/engleski_stoprijeci.txt'):
+    hrdict = 'OrangeWidgets/TextData/hrvatski_rjecnik.fsa'
+    engdict = 'OrangeWidgets/TextData/engleski_rjecnik.fsa'
+    hrstop = 'OrangeWidgets/TextData/hrvatski_stoprijeci.txt'
+    engstop = 'OrangeWidgets/TextData/engleski_stoprijeci.txt'    
+    
+    lem = lemmatizer.FSALemmatization(engdict)
+    for word in loadWordSet(engstop):
         lem.stopwords.append(word)       
 
-    fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml'
+    #fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small1.xml'
+    fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml'
     #fName = '/home/mkolar/Docs/Diplomski/repository/orange/HR-learn-norm.xml'
 
     a = TextCorpusLoader(fName
             , lem = lem
 ##            , wordsPerDocRange = (50, -1)
 ##            , doNotParse = ['small', 'a']
+            , tags = {"content":"cont"}
             )
+    df = a.categoryDocument()
+            
+##    import cPickle
+##    f = open('teDataCW', 'r')
+##    data=cPickle.load(f)
+##    f.close()
+##    data.setattr("meta_names", "fromText")    
+##    fs = FeatureSelection(data)
+##    dataFS = fs.data
+    
+    

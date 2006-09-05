@@ -7,6 +7,7 @@ from numpy import *
 import numpy.linalg
 import orange
 import pylab
+import operator
 
 def input(filename):
     """ Loads contingency matrix from the file. """
@@ -136,15 +137,26 @@ class CA(object):
             Columns of this matrix represents contribution of the rows or columns to the inertia of axis.
         """
         if axis == 0:
-            return take(array(self.__rowSums) * array(self.__f) * array(self.__f), tuple(range(min(self.__dataMatrix.shape))))
+            return multiply(self.__rowSums, multiply(self.__f, self.__f))
         else:
-            return take(array(self.__colSums) * array(self.__g) * array(self.__g), tuple(range(min(self.__dataMatrix.shape))))
-    def InertiaOfAxis(self):
-        return sum(self.DecompositionOfInertia())
-    def PercentageOfInertia(self):
-        inertias = sum(self.DecompositionOfInertia())
-        return inertias / sum(inertias) * 100
-        
+            return multiply(transpose(self.__colSums), multiply(self.__g, self.__g))
+    def InertiaOfAxis(self, percentage = 0):
+        inertias = array(sum(self.DecompositionOfInertia()).tolist()[0])
+        if percentage:
+            return inertias / sum(inertias) * 100
+        else:
+            return inertias
+    def ContributionOfPointsToAxis(self, rowColumn = 0, axis = 0, percentage = 0):
+        contribution = array(transpose(self.DecompositionOfInertia(rowColumn)[:,axis]).tolist()[0])
+        if percentage:
+            return contribution / sum(contribution) * 100
+        else:
+            return contribution
+    def PointsWithMostInertia(self, rowColumn = 0, axis = 0):
+        contribution = self.ContributionOfPointsToAxis(rowColumn = rowColumn, axis = axis, percentage = 0)
+        a = [i for i, v in sorted(zip(range(len(contribution)), contribution), key = operator.itemgetter(1))]
+        a.reverse()
+        return a
     def PlotScreeDiagram(self):
         ## todo: legend, axis, etc
         pylab.plot(range(1, min(self.__dataMatrix.shape) + 1), self.PercentageOfInertia())
@@ -175,53 +187,11 @@ if __name__ == '__main__':
 ##    [80,    73,    83,     4 ,   96],
 ##    [79,    93,    35,    73,    63]])
 ##
-##    c = CA(data)
-
-
-
-##    data = matrix(random.random_integers(0, 100, 500000).reshape(400,-1))
-##    
-##    sumElem = sum(sum(data), 1).tolist()[0][0]
-##    corr = data * 1. / sumElem
-##    colSums = sum(corr)
-##    rowSums = sum(corr, 1)
-##    colProfiles =  diag((1. / colSums).tolist()[0]) * transpose(corr)
-##    rowProfiles = diag((1. / rowSums).reshape(1,-1).tolist()[0]) * corr 
-##    a = corr - rowSums * colSums   
-##    b = sqrt(diag((1. / rowSums).reshape(1,-1).tolist()[0])) * a * sqrt(diag((1. / colSums).tolist()[0]))    
-##    u, d, v = numpy.linalg.svd(b, 0)
-##    
-##    N = sqrt(diag(rowSums.reshape(1, -1).tolist()[0])) * u
-##    M = sqrt(diag(colSums.tolist()[0])) * transpose(v)
-##    d = diag(d.tolist()) 
-##    
-##    print "pero"
-
 ##    data = [[9, 11, 4], 
 ##                [ 3,          5,          3], 
 ##                [     11,          6,          3], 
 ##                [24,         73,         48]] 
-##    c = CA(data)
-    
-    import orange
-    from orngCA import CA
+
     
     data = input('doc/datasets/smokers.tab')
     c = CA(data)
-    print "Column profiles:"
-    print c._CA__colProfiles
-    print
-    print "Row profiles:"
-    print c._CA__rowProfiles
-    print 
-    print "Singular values: " + str(diag(c.D))
-    print "Eigen values: " + str(square(diag(c.D)))
-    print "Percentage of Inertia:" + str(c.PercentageOfInertia())
-    print 
-    print "Principal row coordinates:"
-    print c.getPrincipalRowProfilesCoordinates()
-    print 
-    print "Decomposition Of Inertia:"
-    print c.DecompositionOfInertia()
-    c.PlotScreeDiagram()
-    c.Biplot()
