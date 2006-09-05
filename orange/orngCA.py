@@ -152,8 +152,9 @@ class CA(object):
             return contribution / sum(contribution) * 100
         else:
             return contribution
-    def PointsWithMostInertia(self, rowColumn = 0, axis = 0):
-        contribution = self.ContributionOfPointsToAxis(rowColumn = rowColumn, axis = axis, percentage = 0)
+    def PointsWithMostInertia(self, rowColumn = 0, axis = (0, 1)):
+        contribution = self.ContributionOfPointsToAxis(rowColumn = rowColumn, axis = axis[0], percentage = 0) + \
+                        self.ContributionOfPointsToAxis(rowColumn = rowColumn, axis = axis[1], percentage = 0)
         a = [i for i, v in sorted(zip(range(len(contribution)), contribution), key = operator.itemgetter(1))]
         a.reverse()
         return a

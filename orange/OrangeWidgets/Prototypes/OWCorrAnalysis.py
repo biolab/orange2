@@ -14,6 +14,7 @@ import OWGUI, OWToolbars, OWDlgs
 import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
+from orngTextCorpus import CategoryDocument
 
 import os
 
@@ -80,6 +81,15 @@ class OWCorrAnalysis(OWWidget):
         contribution = QVGroupBox('Contribution to inertia', self.GeneralTab)
         self.firstAxis = OWGUI.widgetLabel(contribution, 'Axis 1: 10%')
         self.secondAxis = OWGUI.widgetLabel(contribution, 'Axis 2: 10%')
+        
+        sliders = QVGroupBox('Percentage of points', self.GeneralTab)
+        OWGUI.widgetLabel(sliders, 'Row points')
+        self.percRow = 100        
+        OWGUI.hSlider(sliders, self, 'percRow', minValue=1, maxValue=100, step=1, callback = self.updateGraph)
+        OWGUI.widgetLabel(sliders, 'Column points')
+        self.percCol = 100        
+        OWGUI.hSlider(sliders, self, 'percCol', minValue=1, maxValue=100, step=1, callback = self.updateGraph)
+
         
         #zooming
         self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
@@ -160,10 +170,11 @@ class OWCorrAnalysis(OWWidget):
         
     def updateTables(self):
         if hasattr(self.data, "meta_names"):
-            metas = self.data.domain.getmetas()
+            data = (self.attrRow == 'document' and [self.data] or [CategoryDocument(self.data).dataCD])[0]
+            metas = data.domain.getmetas()
             lenMetas = len(metas)
             caList = []
-            for ex in self.data:
+            for ex in data:
                 cur = [0] * lenMetas
                 for i, m in zip(range(lenMetas), metas.keys()):
                     try:
@@ -172,8 +183,11 @@ class OWCorrAnalysis(OWWidget):
                         cur[i] = 0
                 caList.append(cur)
             self.CA = orngCA.CA(caList)
-            self.tipsR = [ex['meta'].native() for ex in self.data]
-            self.tipsC = [a.name for a in self.data.domain.getmetas().values()]
+            try:
+                self.tipsR = [ex['meta'].native() for ex in data]
+            except:
+                self.tipsR = [ex.name for ex in data]
+            self.tipsC = [a.name for a in data.domain.getmetas().values()]
         else:            
             ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
             caList = [[col for col in row] for row in ca]
@@ -223,15 +237,24 @@ class OWCorrAnalysis(OWWidget):
         if self.graph.showYLaxisTitle == 1: self.graph.setYLaxisTitle("Axis " + self.attrY)
         else: self.graph.setYLaxisTitle(None)        
         
-        self.firstAxis.setText  ('Axis %d: %f%%' % (int(self.attrX), self.CA.PercentageOfInertia()[int(self.attrX)]))
-        self.secondAxis.setText ('Axis %d: %f%%' % (int(self.attrY), self.CA.PercentageOfInertia()[int(self.attrY)]))
+        self.firstAxis.setText  ('Axis %d: %f%%' % (int(self.attrX), self.CA.InertiaOfAxis(1)[int(self.attrX)]))
+        self.secondAxis.setText ('Axis %d: %f%%' % (int(self.attrY), self.CA.InertiaOfAxis(1)[int(self.attrY)]))
         
-        cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX), int(self.attrY)))        
-        
-        self.plotPoint(cor, 0, self.tipsR, "Row points", self.graph.showFilledSymbols)            
+        cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX), int(self.attrY)))
+        numCor = int(len(cor) / 100. * self.percRow)
+        if not numCor: numCor = 1
+        indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX), int(self.attrY)))[:numCor]
+        cor = [cor[i] for i in indices]
+        tipsR = [self.tipsR[i] for i in indices]
+        self.plotPoint(cor, 0, tipsR, "Row points", self.graph.showFilledSymbols)            
             
-        cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX), int(self.attrY)))        
-        self.plotPoint(cor, 1, self.tipsC, "Column points", self.graph.showFilledSymbols)
+        cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX), int(self.attrY)))      
+        numCor = int(len(cor) / 100. * self.percCol)
+        if not numCor: numCor = 1
+        indices = self.CA.PointsWithMostInertia(rowColumn = 1, axis = (int(self.attrX), int(self.attrY)))[:numCor]
+        cor = [cor[i] for i in indices]
+        tipsC = [self.tipsC[i] for i in indices]
+        self.plotPoint(cor, 1, tipsC, "Column points", self.graph.showFilledSymbols)
 
         self.graph.enableLegend(1)
         self.graph.replot()
@@ -241,6 +264,7 @@ class OWCorrAnalysis(OWWidget):
         fillColor = self.colors[color]
         edgeColor = self.colors[color]
                
+        cor = array(cor)
         key = self.graph.addCurve(curveName, fillColor, edgeColor, self.graph.pointWidth, xData = list(cor[:, 0]), yData = list(cor[:, 1]), showFilledSymbols = showFilledSymbols)                 
         
         for i in range(len(cor)):
@@ -353,6 +377,7 @@ if __name__=="__main__":
     for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_stoprijeci.txt'):
         lem.stopwords.append(word)       
     a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
-    
+
+    #a = orange.ExampleTable('../../doc/datasets/smokers_ct.tab')
     ow.dataset(a.data) 
     appl.exec_loop()            

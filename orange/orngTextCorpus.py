@@ -163,7 +163,9 @@ class TextCorpusLoader:
             domain.addmeta(id, orange.FloatVariable(w), True)
             ex[id] = 1.0          
 
-    def categoryDocument(self):
+class CategoryDocument:
+    def __init__(self, data):
+        self.data = data
         newDomain = orange.Domain([])
         newDomain.addmetas(self.data.domain.getmetas(), True)
         self.dataCD = orange.ExampleTable(newDomain)
@@ -319,7 +321,7 @@ if __name__ == "__main__":
 ##            , doNotParse = ['small', 'a']
             , tags = {"content":"cont"}
             )
-    df = a.categoryDocument()
+    df = CategoryDocument(a.data).dataCD
             
 ##    import cPickle
 ##    f = open('teDataCW', 'r')
