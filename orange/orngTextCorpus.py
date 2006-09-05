@@ -43,10 +43,11 @@ def intersection(l1, l2):
     return [e for e in l1 if e in l2]
 
 ################
-
+class FeatureSelectionMeasure:
+    pass
 
 class TextCorpusLoader:
-    def __init__(self, fileName, tags = {}, additionalTags = [], lem = None, doNotParse = []):
+    def __init__(self, fileName, tags = {}, additionalTags = [], lem = None, doNotParse = [] , wordsPerDocRange = (-1, -1), charsPerDocRange = (-1, -1)):
         if lem:
             self.lem = lem
         else:
@@ -69,6 +70,14 @@ class TextCorpusLoader:
             
             doc = t.getNextDocument()
             if not len(doc): break
+                
+            if not len(charsPerDocRange) == 2:
+                raise Exception('length of charsPerDocRange != 2')                
+            if not charsPerDocRange[0] == -1:
+                if len(doc['content']) <= charsPerDocRange[0]: continue
+            if not charsPerDocRange[1] == -1:
+                if len(doc['content']) >= charsPerDocRange[1]: continue
+            
             ex['meta'] = " ".join([("%s=\"%s\"" % meta).encode('iso-8859-2') for meta in doc['meta']])
             ex['category'] = ".".join([d.encode('iso-8859-2') for d in doc['categories']])
             for tag in additionalTags:
@@ -76,6 +85,14 @@ class TextCorpusLoader:
         
             # extract words from document
             tokens = tokenize(doc['content'].lower().encode('iso-8859-2'))
+            
+            if not len(wordsPerDocRange) == 2:
+                raise Exception('length of wordsPerDocRange != 2')                
+            if not wordsPerDocRange[0] == -1:
+                if len(tokens) <= wordsPerDocRange[0]: continue
+            if not wordsPerDocRange[1] == -1:
+                if len(tokens) >= wordsPerDocRange[1]: continue
+
             words = []
             for token in tokens:
                 if not self.lem.isStopword(token):
@@ -215,6 +232,9 @@ if __name__ == "__main__":
     lem = lemmatizer.FSALemmatization('OrangeWidgets/TextData/engleski_rjecnik.fsa')
     for word in loadWordSet('OrangeWidgets/TextData/engleski_stoprijeci.txt'):
         lem.stopwords.append(word)       
-##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml', lem = lem, additionalTags = ['date'], doNotParse = ['dontparse'])
-    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml', lem = lem,
-      tags = {"content":"cont"}, additionalTags = ['todo'])
+    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/odgovori1.txt', 
+            lem = lem, 
+            wordsPerDocRange = (20, -1),
+            doNotParse = ['small', 'a'])
+##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml', lem = lem,
+##      tags = {"content":"cont"}, additionalTags = ['todo'])
