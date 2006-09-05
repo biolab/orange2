@@ -28,6 +28,7 @@
 #include "filegen.hpp"
 #include "domain.hpp"
 #include "domaindepot.hpp"
+#include "basket.hpp"
 
 using namespace std;
 
@@ -71,8 +72,11 @@ public:
   char *DK; // general character that denotes DK
   char *DC; // general character that denotes DC
   int classPos; //P position of the class attribute
+  int basketPos; //P position of the (virtual) basket attribute
   int headerLines; //P number of header lines (3 for .tab, 1 for .txt)
   bool csv; //P also allow ',' as a separator
+
+  PBasketFeeder basketFeeder; //P takes care of inserting the meta attributes from the basket if need be
 
   typedef struct {
     char *identifier;

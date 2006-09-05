@@ -28,23 +28,23 @@
 
 #include "basket.ppp"
 
-map<string, TMetaDescriptor> TBasketExampleGenerator::itemCache;
+map<string, TMetaDescriptor> TBasketFeeder::itemCache;
 
-TBasketExampleGenerator::TBasketExampleGenerator(const string &datafile, PDomain sd, bool dcs, bool ds)
-: TFileExampleGenerator(datafile, mlnew TDomain()),
-  dontStore(ds),
+
+TBasketFeeder::TBasketFeeder(PDomain sd, bool dcs, bool ds)
+: dontStore(ds),
   dontCheckStored(dcs),
   sourceDomain(sd)
 {}
 
 
-void TBasketExampleGenerator::clearCache()
+void TBasketFeeder::clearCache()
 { 
   itemCache.clear();
 }
 
 
-void TBasketExampleGenerator::addItem(TExample &example, const string &atom2, const int &lineno)
+void TBasketFeeder::addItem(TExample &example, const string &atom2, const int &lineno)
 {
   string atom;
   float quantity;
@@ -121,6 +121,18 @@ void TBasketExampleGenerator::addItem(TExample &example, const string &atom2, co
     example.setMeta(id, TValue(quantity));
 }
 
+
+
+
+
+TBasketExampleGenerator::TBasketExampleGenerator(const string &datafile, PDomain sd, bool dcs, bool ds)
+: TFileExampleGenerator(datafile, mlnew TDomain()),
+  basketFeeder(new TBasketFeeder(sd, dcs, ds))
+{
+  basketFeeder->domain = domain;
+}
+
+
 bool TBasketExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &example)
 {
   if (!fei.file)
@@ -144,7 +156,7 @@ bool TBasketExampleGenerator::readExample(TFileExampleIteratorData &fei, TExampl
 
     if (*ae) {
       if (atom.length()) {
-        addItem(example, atom, fei.line);
+        basketFeeder->addItem(example, atom, fei.line);
         atom = string();
       }
  

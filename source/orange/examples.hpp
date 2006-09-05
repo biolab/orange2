@@ -115,6 +115,9 @@ public:
   void removeMetaIfExists(const int &i)
   { meta.removeValueIfExists(i); }
 
+  void removeMetas()
+  { meta.clear(); }
+
   bool operator < (const TExample &) const;
   bool operator == (const TExample &) const;
   int  compare(const TExample &other, const bool ignoreClass = false) const;

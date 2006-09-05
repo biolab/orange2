@@ -61,7 +61,7 @@ LINK32=link.exe
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
-PostBuild_Cmds=del "..\..\orange.pyd"	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\orange.pyd"	copy obj\Release\orange.lib ..\..\lib\orange.lib	rem copy "obj\Release\orange.pyd" "..\..\orange.pyd"
+PostBuild_Cmds=del "..\..\..\orange\orange.pyd"	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\..\orange\orange.pyd"	copy obj\Release\orange.lib ..\..\lib\orange.lib	rem copy "obj\Release\orange.pyd" "..\..\orange.pyd"
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"

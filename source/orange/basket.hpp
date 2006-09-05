@@ -19,6 +19,9 @@
     Contact: janez.demsar@fri.uni-lj.si
 */
 
+#ifndef __BASKET_HPP
+#define __BASKET_HPP
+
 #include <map>
 #include <string>
 
@@ -27,19 +30,18 @@
 
 using namespace std;
 
-class ORANGE_API TBasketExampleGenerator : public TFileExampleGenerator {
+class ORANGE_API TBasketFeeder : public TOrange {
 public:
   __REGISTER_CLASS
 
   bool dontStore; //P disables items storing
   bool dontCheckStored; //P disables items lookup in the global cache
+  PDomain domain; //P domain where the meta attributes are stored
   PDomain sourceDomain; //P domain with items that can be reused
 
-  TBasketExampleGenerator(const string &datafile, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  TBasketFeeder(PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
   void addItem(TExample &example, const string &atom, const int &lineno);
-  virtual bool readExample(TFileExampleIteratorData &, TExample &);
-
   static void clearCache();
 
 protected:
@@ -48,3 +50,17 @@ protected:
   static map<string, TMetaDescriptor> itemCache;
 };
 
+WRAPPER(BasketFeeder);
+
+
+class ORANGE_API TBasketExampleGenerator : public TFileExampleGenerator {
+public:
+  __REGISTER_CLASS
+  PBasketFeeder basketFeeder;
+
+  TBasketExampleGenerator(const string &datafile, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+
+  virtual bool readExample(TFileExampleIteratorData &, TExample &);
+};
+
+#endif

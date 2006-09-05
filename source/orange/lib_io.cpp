@@ -70,7 +70,9 @@ NO_PICKLE(C45ExampleGenerator)
 NO_PICKLE(FileExampleGenerator)
 NO_PICKLE(RetisExampleGenerator)
 NO_PICKLE(TabDelimExampleGenerator)
+NO_PICKLE(BasketFeeder)
 
+BASED_ON(BasketFeeder, Orange)
 
 PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY
@@ -102,9 +104,9 @@ PyObject *BasketExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObjec
 }
 
 
-PyObject *BasketExampleGenerator_clearCache(PyObject *, PyObject *) PYARGS(METH_O, "() -> None")
+PyObject *BasketFeeder_clearCache(PyObject *, PyObject *) PYARGS(METH_O, "() -> None")
 { PyTRY
-    TBasketExampleGenerator::clearCache();
+    TBasketFeeder::clearCache();
     RETURN_NONE;
   PyCATCH
 }

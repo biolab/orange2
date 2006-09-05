@@ -120,6 +120,8 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
     atoms.push_back(string(""));
   _ASSERT(exam.domain==domain);
 
+  exam.removeMetas();
+
   TExample::iterator ei(exam.begin());
   TVarList::iterator vi(domain->attributes->begin());
   vector<string>::iterator ai(atoms.begin());
@@ -127,7 +129,7 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
   vector<vector<string> >::iterator dci(DCs.begin()), dce(DCs.end());
   int pos=0;
   for (; (si!=se); pos++, si++, ai++) {
-    if (*si) { // if attribute is not to be skipped
+    if (*si) { // if attribute is not to be skipped and is not a basket
       string valstr;
 
       // Check for don't care
@@ -165,6 +167,16 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
       }
       catch (mlexception &err) {
         raiseError("file '%s', line '%i': %s", fei.filename.c_str(), fei.line, err.what());
+      }
+    }
+
+    // the attribute is marked to be skipped, but may also be a basket
+    else { 
+      if (pos == basketPos) {
+        TSplits splits;
+        split(*ai, splits);
+        ITERATE(TSplits, si, splits)
+          basketFeeder->addItem(exam, string(si->first, si->second), fei.line);
       }
     }
 
@@ -235,6 +247,9 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
       sprintf(res, "empty type entry for attribute '%s'", (*vi).c_str());
       return res;
     }
+
+    if (!strcmp("basket", c))
+      continue;
 
     const TIdentifierDeclaration *tid = typeIdentifiers;
     for(; tid->identifier && (tid->matchRoot ? strncmp(tid->identifier, c, tid->matchRoot) : strcmp(tid->identifier, c)); tid++);
@@ -371,21 +386,22 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
 
   TDomainDepot::TAttributeDescriptions attributeDescriptions, metas;
   classPos = -1;
+  basketPos = -1;
   int classType = -1;
 
 
   list<TSearchWarranty> searchWarranties;
 
-  /**** Parsing the header row */
+  /**** Parse the header row */
   
   ITERATE(vector<string>, ni, varNames) {
     /* Parses the header line
        - sets *ni to a real name (without prefix)
-       - sets varType to TValue::varType or -1 if the type is not specified
-       - sets classPos to the current position, if the attribute is class attribute
+       - sets varType to TValue::varType or -1 if the type is not specified and -2 if it's a basket
+       - sets classPos/basketPos to the current position, if the attribute is class/basket attribute
          (and reports an error if there is more than one such attribute)
-       - to attributeTypes, appends -1 for ordinary atributes, 1 for metas and 0 for ignored */
-    int varType = -1; // varType, or -1 for unnown
+       - to attributeTypes, appends -1 for ordinary atributes, 1 for metas and 0 for ignored or baskets*/
+    int varType = -1; // varType, or -1 for unnown, -2 for basket
     attributeTypes->push_back(-1);
     int &attributeType = attributeTypes->back();
 
@@ -408,7 +424,14 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
         varType = TValue::FLOATVAR;
       else if (*cptr == 'S')
         varType = STRINGVAR;
-
+      else if (*cptr == 'B') {
+          varType = -2;
+          attributeType = 0;
+          if (basketPos > -1)
+            ::raiseError("more than one basket attribute");
+          else
+            basketPos = ni - varNames.begin();
+      }
       else
         ::raiseError("unrecognized flags in attribute name '%s'", cptr);
 
@@ -437,6 +460,16 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
         varType = TValue::FLOATVAR;
       else if (*cptr == 'S')
         varType = STRINGVAR;
+      else if (*cptr == 'B') {
+        if (attributeType) { // basket can be ignored, too
+          varType = -2;
+          attributeType = 0;  // this is ugly, but baskets are a patch anyway: if not ignored by 'i' flag, it's ignored by 'basket'
+          if (basketPos > -1)
+            ::raiseError("there can only be one basket attribute");
+          else
+            basketPos = ni - varNames.begin();
+        }
+      }
       else
         ::raiseError("unrecognized flags in attribute name '%s'", cptr);
 
@@ -566,11 +599,18 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
         i++;
   }
 
+
+  if (basketPos > 0)
+    basketFeeder = mlnew TBasketFeeder(sourceDomain, dontCheckStored, false);
+    
   if (sourceDomain) {
     if (!domainDepot_txt.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, classPos>-1, NULL))
       raiseError("given domain does not match the file");
-    else
+    else {
+      if (basketFeeder)
+        basketFeeder->domain = sourceDomain;
       return sourceDomain;
+    }
   }
 
   int *metaIDs = mlnew int[metas.size()];
@@ -582,6 +622,9 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
       *ii = *(mid++);
 
   mldelete metaIDs;
+
+  if (basketFeeder)
+    basketFeeder->domain = newDomain;
 
   return newDomain;
 }
@@ -613,6 +656,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
   TDomainDepot::TAttributeDescriptions attributeDescriptions, metas;
   TDomainDepot::TAttributeDescription classDescription("", 0);
   classPos = -1;
+  basketPos = -1;
   headerLines = 3;
 
   attributeTypes = mlnew TIntList(varNames.size(), -1);
@@ -661,6 +705,14 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
 
     if (!*ati)
       continue;
+
+    if (!strcmp((*ti).c_str(), "basket")) {
+      if (basketPos > -1)
+        ::raiseError("multiple basket attributes are defined");
+      basketPos = vni - varNames.begin();
+      *ati = 0;
+      continue;
+    }
 
     if (!attributeDescription) {// this can only be defined if the attribute is a class attribute
       if (*ati==1) {
@@ -713,11 +765,17 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
   if (classPos > -1)
     attributeDescriptions.push_back(classDescription);
 
+  if (basketPos > 0)
+    basketFeeder = mlnew TBasketFeeder(sourceDomain, dontCheckStored, false);
+    
   if (sourceDomain) {
     if (!domainDepot_tab.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, classPos >= 0, NULL))
       raiseError("given domain does not match the file");
-    else
+    else {
+      if (basketFeeder)
+        basketFeeder->domain = sourceDomain;
       return sourceDomain;
+    }
   }
 
   int *metaIDs = mlnew int[metas.size()];
@@ -729,6 +787,9 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
       *ii = *(mid++);
 
   mldelete metaIDs;
+
+  if (basketFeeder)
+    basketFeeder->domain = newDomain;
 
   return newDomain;
 }
@@ -856,8 +917,11 @@ void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
 
 void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const char *DK, const char *DC)
 { 
+  const TDomain domain = rg->domain.getReference();
+  TVarList::const_iterator vb(domain.variables->begin()), vi, ve(domain.variables->end());
+
   PEITERATE(ex, rg) {
-    TVarList::const_iterator vi((*ex).domain->variables->begin()), ve((*ex).domain->variables->end());
+    vi = vb;
     TExample::const_iterator ri((*ex).begin());
     string st;
     bool ho = false;
@@ -874,17 +938,44 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const 
       }
     }
 
-    const_ITERATE(TMetaVector, mi, (*ex).domain->metas) {
-      if ((*mi).optional)
-        continue;
-      PUTDELIM;
-      if (DK && ((*ri).valueType == valueDK))
-        fprintf(file, DK);
-      else if (DC && ((*ri).valueType == valueDC))
-        fprintf(file, DC);
-      else {
-        (*mi).variable->val2filestr((*ex)[(*mi).id], st, *ex);
-        fprintf(file, "%s", st.c_str());
+    TMetaVector::const_iterator mb((*ex).domain->metas.begin()), mi, me((*ex).domain->metas.end());
+
+    for(mi = mb; mi != me; mi++) {
+      if (!(*mi).optional) {
+        PUTDELIM;
+        if (DK && ((*ri).valueType == valueDK))
+          fprintf(file, DK);
+        else if (DC && ((*ri).valueType == valueDC))
+          fprintf(file, DC);
+        else {
+          (*mi).variable->val2filestr((*ex)[(*mi).id], st, *ex);
+          fprintf(file, "%s", st.c_str());
+        }
+      }
+    }
+    
+    bool first = true;
+    for(mi = mb; mi != me; mi++) {
+      if ((*mi).optional) {
+        const TVariable &var = (*mi).variable.getReference();
+        if ((var.varType == TValue::FLOATVAR) && (*ex).hasMeta((*mi).id)) {
+          const TValue &mval = (*ex).getMeta((*mi).id);
+          if (!mval.isSpecial()) {
+            if (first) {
+              PUTDELIM;
+              first = false;
+            }
+            else
+              fprintf(file, " ");
+
+            if (mval.floatV == 1.0)
+              fprintf(file, var.name.c_str());
+            else {
+              var.val2filestr(mval, st, *ex);
+              fprintf(file, "%s=%s", var.name.c_str(), st.c_str());
+            }
+          }
+        }
       }
     }
     fprintf(file, "\n");
@@ -944,17 +1035,29 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
   TMetaVector::const_iterator mi, mb(dom->metas.begin()), me(dom->metas.end());
 
   bool ho = false;
+  bool hasOptionalFloats = false;
+
   // First line: attribute names
   for(vi = vb; vi!=ve; vi++) {
     PUTDELIM;
     fprintf(file, "%s", (*vi)->name.c_str());
   }
   for(mi = mb; mi!=me; mi++) {
-    if (mi->optional)
-      continue;
-    PUTDELIM;
-    fprintf(file, "%s", (*mi).variable->name.c_str());
+    if (mi->optional) {
+      if ((*mi).variable->varType == TValue::FLOATVAR)
+        hasOptionalFloats = true;
+    }
+    else {
+      PUTDELIM;
+      fprintf(file, "%s", (*mi).variable->name.c_str());
+    }
   }
+
+  if (hasOptionalFloats) {
+    PUTDELIM;
+    fprintf(file, "__basket_foo");
+  }
+
   fprintf(file, "\n");
 
   
@@ -970,6 +1073,12 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     PUTDELIM;
     printVarType(file, (*mi).variable, listDiscreteValues);
   }
+
+  if (hasOptionalFloats) {
+    PUTDELIM;
+    fprintf(file, "basket");
+  }
+
   fprintf(file, "\n");
 
 
@@ -992,6 +1101,10 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     if (((*mi).variable->varType == TValue::INTVAR) && (*mi).variable->ordered)
       fprintf(file, " -ordered");
  }
+
+ if (hasOptionalFloats)
+   PUTDELIM;
+
  fprintf(file, "\n");
 }
 
@@ -1053,11 +1166,23 @@ void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
     fprintf(file, "%s%s", (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), dom->classVar->name.c_str());
   }
 
+
+  bool hasOptionalFloats = false;
+
   const_ITERATE(TMetaVector, mi, dom->metas) {
-    if (mi->optional)
-      continue;
+    if (mi->optional) {
+      if ((*mi).variable->varType == TValue::FLOATVAR)
+        hasOptionalFloats = true;
+    }
+    else {
+      PUTDELIM;
+      fprintf(file, "%s%s", (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
+    }
+  }
+
+  if (hasOptionalFloats) {
     PUTDELIM;
-    fprintf(file, "%s%s", (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
+    fprintf(file, "B#__basket_foo");
   }
 
   fprintf(file, "\n");

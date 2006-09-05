@@ -26,3 +26,20 @@ void trim(char *s)
     *(s++) = *(si++);
   *s = 0;
 }
+
+
+void split(const string &s, TSplits &atoms)
+{
+  atoms.clear();
+
+  for(string::const_iterator si(s.begin()), se(s.end()), sii; si != se;) {
+    while ((si != se) && (*si <= ' '))
+      si++;
+    if (si == se)
+      break;
+    sii = si;
+    while ((si != se) && (*si > ' '))
+      si++;
+    atoms.push_back(make_pair(sii, si));
+  }
+}
