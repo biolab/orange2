@@ -43,8 +43,50 @@ def intersection(l1, l2):
     return [e for e in l1 if e in l2]
 
 ################
-class FeatureSelectionMeasure:
-    pass
+class FeatureSelection:
+    measures = {
+                            'Document Frequency': 'DF'
+                        }
+    def __init__(self, dataInput, userMeasures = []):
+        self.dataInput = dataInput
+        self.data = None
+        
+        if not hasattr(self.dataInput, 'meta_names'):
+            self.dataInput = None
+            self.data = None
+            return
+            
+        if not userMeasures:
+            userMeasures = self.measures.keys()
+        self.data = orange.ExampleTable(orange.Domain([]))
+        lstMeasures  = [m for m in userMeasures if FeatureSelection.measures.has_key(m)]
+        for measure in lstMeasures:
+            getattr(self, "_" + FeatureSelection.measures[measure])(measure)
+        for id, name in zip(range(len(self.data)), self.dataInput.domain.getmetas().values()):
+            self.data[id].name = name.name     
+        
+    def _DF(self, nameOfAttribute):
+        df = [[len([ex for ex in self.dataInput if ex.hasmeta(meta.name)])] 
+            for meta in self.dataInput.domain.getmetas().values()]
+            
+        dom = orange.Domain([orange.FloatVariable(nameOfAttribute)])
+        exTable = orange.ExampleTable(dom, df)
+        if len(self.data):
+            self.data = orange.ExampleTable(self.data, exTable)
+        else:
+            self.data = orange.ExampleTable(exTable)
+            
+    def getFeatureMeasures(self):
+        return self.data
+        
+    def selectFeatures(self, filter):
+        if not self.dataInput:
+            return None
+        newDomain = orange.Domain(self.dataInput.domain)
+        fdata = filter(self.data, negate = 1)
+        removeMeta = [ex.name for ex in fdata if self.dataInput.domain.hasmeta(ex.name)]
+        newDomain.removemeta(removeMeta)
+        return orange.ExampleTable(newDomain, self.dataInput)
 
 class TextCorpusLoader:
     def __init__(self, fileName, tags = {}, additionalTags = [], lem = None, doNotParse = [] , wordsPerDocRange = (-1, -1), charsPerDocRange = (-1, -1)):
@@ -52,6 +94,8 @@ class TextCorpusLoader:
             self.lem = lem
         else:
             self.lem = lemmatizer.NOPLemmatization()
+        
+        
         
         cat = orange.StringVariable("category")
         meta = orange.StringVariable("meta")
@@ -159,6 +203,8 @@ class DocumentSetHandler(handler.ContentHandler):
     def startElement(self, name, attrs):
         if self.name2tag.has_key(name):
             name = self.name2tag[name]
+##        if name == "document": 
+##            globals()['countdoc'] =globals()['countdoc'] + 1
         if name in self.doNotParse:
             self.doNotParseFlag += 1
         else:
@@ -232,9 +278,12 @@ if __name__ == "__main__":
     lem = lemmatizer.FSALemmatization('OrangeWidgets/TextData/engleski_rjecnik.fsa')
     for word in loadWordSet('OrangeWidgets/TextData/engleski_stoprijeci.txt'):
         lem.stopwords.append(word)       
-    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/odgovori1.txt', 
-            lem = lem, 
-            wordsPerDocRange = (20, -1),
-            doNotParse = ['small', 'a'])
-##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml', lem = lem,
-##      tags = {"content":"cont"}, additionalTags = ['todo'])
+
+    fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml'
+    #fName = '/home/mkolar/Docs/Diplomski/repository/orange/HR-learn-norm.xml'
+
+    a = TextCorpusLoader(fName
+            , lem = lem
+##            , wordsPerDocRange = (50, -1)
+##            , doNotParse = ['small', 'a']
+            )

@@ -9,6 +9,7 @@ import orange
 from OWWidget import *
 from qttable import *
 import OWGUI
+from orngTextCorpus import *
 
 class OWFeatureSelection(OWWidget):
 
@@ -188,58 +189,58 @@ class OWFeatureSelection(OWWidget):
         self.resize(500,661)
         
 ##        self.measures = [('Document Frequency', 'DF'), ('Information gain', 'IG')]
-        self.measures = [('Document Frequency', 'DF')]
+##        self.measures = [('Document Frequency', 'DF')]
+        self.measures = FeatureSelection.measures.keys() 
 
 
     ############################################################################################################################################################
     ## Data input and output management ########################################################################################################################
     ############################################################################################################################################################
-    def DF(self, nameOfAttribute):
-        
-        df = [[len([ex for ex in self.dataInput if ex.hasmeta(meta.name)])] 
-            for meta in self.dataInput.domain.getmetas().values()]
-            
-        dom = orange.Domain([orange.FloatVariable(nameOfAttribute)])
-        exTable = orange.ExampleTable(dom, df)
-        if len(self.data):
-            self.data = orange.ExampleTable(self.data, exTable)
-        else:
-            self.data = orange.ExampleTable(exTable)
-        
-##        for i, meta in zip(range(len(self.dataInput.domain.getmetas())), self.dataInput.domain.getmetas().values()):
-##            name = meta.name
-##            self.data[i][nameOfAttribute] = len([ex for ex in self.dataInput if ex.hasmeta(name)])
-            
-    def IG(self):
-        pass
-
-    def createMeasures(self):
-        if self.dataInput:
-            
-            if not hasattr(self.dataInput, 'meta_names'):
-                self.dataInput = None
-                self.data = None
-                return
-                
-##            addCat = [orange.FloatVariable(measure) for measure, fun in self.measures]
-##            dom = orange.Domain(addCat, 0)
-            self.data = orange.ExampleTable(orange.Domain([]))
-            for measure, fun in self.measures:
-                getattr(self, fun)(measure)
-            for id, name in zip(range(len(self.data)), self.dataInput.domain.getmetas().values()):
-                self.data[id].name = name.name                
-        else:
-            self.data = None
+##    def DF(self, nameOfAttribute):
+##        
+##        df = [[len([ex for ex in self.dataInput if ex.hasmeta(meta.name)])] 
+##            for meta in self.dataInput.domain.getmetas().values()]
+##            
+##        dom = orange.Domain([orange.FloatVariable(nameOfAttribute)])
+##        exTable = orange.ExampleTable(dom, df)
+##        if len(self.data):
+##            self.data = orange.ExampleTable(self.data, exTable)
+##        else:
+##            self.data = orange.ExampleTable(exTable)
+##        
+####        for i, meta in zip(range(len(self.dataInput.domain.getmetas())), self.dataInput.domain.getmetas().values()):
+####            name = meta.name
+####            self.data[i][nameOfAttribute] = len([ex for ex in self.dataInput if ex.hasmeta(name)])
+##            
+##    def IG(self):
+##        pass
+##
+##    def createMeasures(self):
+##        if self.dataInput:
+##            
+##            if not hasattr(self.dataInput, 'meta_names'):
+##                self.dataInput = None
+##                self.data = None
+##                return
+##                
+####            addCat = [orange.FloatVariable(measure) for measure, fun in self.measures]
+####            dom = orange.Domain(addCat, 0)
+##            self.data = orange.ExampleTable(orange.Domain([]))
+##            for measure, fun in self.measures:
+##                getattr(self, fun)(measure)
+##            for id, name in zip(range(len(self.data)), self.dataInput.domain.getmetas().values()):
+##                self.data[id].name = name.name                
+##        else:
+##            self.data = None
 
     def onDataInput(self, data):
         """Loads stored conditions (if we have a similar domain), updates list boxes and data in info, sends out data.
         """
-        self.dataInput = data
-        self.createMeasures()
-        self.bas = orange.DomainBasicAttrStat(self.data)
-        if self.data:
+        self.fs = FeatureSelection(data)
+        self.bas = orange.DomainBasicAttrStat(self.fs.data)
+        if self.fs.data:
             # set self.name2var
-            varList = self.data.domain.variables.native() + self.data.domain.getmetas().values()
+            varList = self.fs.data.domain.variables.native() + self.fs.data.domain.getmetas().values()
             varNames = []
             for v in varList:
                 self.name2var[v.name] = v
@@ -279,26 +280,21 @@ class OWFeatureSelection(OWWidget):
         # update operators, values and info, and send out data
         self.updateOperatorStack()
         self.updateValuesStack()
-        self.updateInfoIn(self.dataInput)
+        self.updateInfoIn(data)
         self.setOutput()
         
 
     def setOutput(self):
         """Sends out data, updates data out info.
         """
-        if self.dataInput:
-            newDomain = orange.Domain(self.dataInput.domain)
-            
-            filterList = self.getFilterList(self.data.domain, self.Conditions, enabledOnly=True)
+        if self.fs.data:            
+            filterList = self.getFilterList(self.fs.data.domain, self.Conditions, enabledOnly=True)
             if len(filterList)>0:
                 filter = orange.Filter_disjunction([orange.Filter_conjunction(l) for l in filterList])
             else:
                 filter = orange.Filter_conjunction([]) # a filter that does nothing
                 
-            fdata = filter(self.data, negate = 1)
-            removeMeta = [ex.name for ex in fdata]
-            newDomain.removemeta(removeMeta)
-            matchingOutput = orange.ExampleTable(newDomain, self.dataInput)
+            matchingOutput = self.fs.selectFeatures(filter)
         else:
             matchingOutput = None
 
@@ -338,7 +334,7 @@ class OWFeatureSelection(OWWidget):
         else:
             prevVarType = None
             prevVarName = None
-        self.currentVar = self.data.domain[text]
+        self.currentVar = self.fs.data.domain[text]
         if self.currentVar:
             currVarType = self.currentVar.varType
             currVarName = self.currentVar.name
@@ -693,7 +689,7 @@ class OWFeatureSelection(OWWidget):
         if cond.type == "OR":
             cw = QLabel("", self)
         else:
-            cw = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
+            cw = QCheckBox(str(len(cond.operator.getFilter(self.fs.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.fs.data))), self)
             cw.setChecked(cond.enabled)
             self.connect(cw, SIGNAL("toggled(bool)"), lambda val: self.criteriaActiveChange(cond, val))
         self.criteriaTable.setCellWidget(row, 0, cw)
@@ -753,20 +749,20 @@ class OWFeatureSelection(OWWidget):
                 if self.Conditions[i].type == "OR":
                     idx2 = i
                     break
-            fdListAll = self.getFilterList(self.data.domain, self.Conditions[idx1:idx2], enabledOnly=False)
-            fdListEnabled = self.getFilterList(self.data.domain, self.Conditions[idx1:idx2], enabledOnly=True)
+            fdListAll = self.getFilterList(self.fs.data.domain, self.Conditions[idx1:idx2], enabledOnly=False)
+            fdListEnabled = self.getFilterList(self.fs.data.domain, self.Conditions[idx1:idx2], enabledOnly=True)
             # if we click on the row which has a preceeding OR: update OR at index idx1-1
             if idx1 > 0:
-                self.criteriaTable.cellWidget(idx1-1,0).setText(str(len(orange.Filter_conjunction(fdListEnabled[0])(self.data))))
+                self.criteriaTable.cellWidget(idx1-1,0).setText(str(len(orange.Filter_conjunction(fdListEnabled[0])(self.fs.data))))
             # update the clicked row
-            self.criteriaTable.cellWidget(condIdx,0).setText(str(len(fdListAll[0][condIdx-idx1](self.data))))
+            self.criteriaTable.cellWidget(condIdx,0).setText(str(len(fdListAll[0][condIdx-idx1](self.fs.data))))
         elif len(self.Conditions) > 0:
             # update all "OR" rows
-            fdList = self.getFilterList(self.data.domain, self.Conditions, enabledOnly=True)
+            fdList = self.getFilterList(self.fs.data.domain, self.Conditions, enabledOnly=True)
             idx = 1
             for row,cond in enumerate(self.Conditions):
                 if cond.type == "OR":
-                    self.criteriaTable.cellWidget(row,0).setText(str(len(orange.Filter_conjunction(fdList[idx])(self.data))))
+                    self.criteriaTable.cellWidget(row,0).setText(str(len(orange.Filter_conjunction(fdList[idx])(self.fs.data))))
                     idx += 1
 
 
