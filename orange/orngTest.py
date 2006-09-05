@@ -128,12 +128,15 @@ class ExperimentResults:
                     self.classifiers[replace] = results.classifiers[i][index]
 
 #### Experimental procedures
-def leaveOneOut(learners, examples, pps=[], **argkw):
+def leaveOneOut(learners, examples, pps=[], indicesrandseed="*", **argkw):
     (examples, weight) = demangleExamples(examples)
-    return testWithIndices(learners, examples, range(len(examples)), pps)
+    return apply(testWithIndices, (learners, examples, range(len(examples)), indicesrandseed, pps), argkw)
+    # return testWithIndices(learners, examples, range(len(examples)), pps=pps, argkw)
+
+# apply(testWithIndices, (learners, (examples, weight), indices, indicesrandseed, pps), argkw)
 
 
-def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], **argkw):
+def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], callback=None, **argkw):
     # randomGenerator is set either to what users provided or to orange.RandomGenerator(0)
     # If we left it None or if we set MakeRandomIndices2.randseed, it would give same indices each time it's called
     randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
@@ -146,6 +149,7 @@ def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRan
         learnset = examples.selectref(indices, 0)
         testset = examples.selectref(indices, 1)
         apply(learnAndTestOnTestData, (learners, (learnset, weight), (testset, weight), testResults, time, pps), argkw)
+        if callback: callback()
     return testResults
 
 
@@ -280,7 +284,6 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
 
    
 def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], callback=None, **argkw):
-    
     verb = argkw.get("verbose", 0)
     cache = argkw.get("cache", 0)
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
