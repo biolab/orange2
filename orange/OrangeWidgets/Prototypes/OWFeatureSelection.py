@@ -917,9 +917,9 @@ if __name__=="__main__":
     data = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)  
   
 
-##    a=QApplication(sys.argv)
-##    ow=OWFeatureSelection()
-##    a.setMainWidget(ow)
-##    ow.show()
-##    ow.onDataInput(data.data)
-##    a.exec_loop()
+    a=QApplication(sys.argv)
+    ow=OWFeatureSelection()
+    a.setMainWidget(ow)
+    ow.show()
+    ow.onDataInput(data.data)
+    a.exec_loop()

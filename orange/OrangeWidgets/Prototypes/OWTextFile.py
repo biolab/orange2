@@ -1,7 +1,7 @@
 """
 <name>Text File</name>
 <description>Loads XML File</description>
-<icon></icon>
+<icon>icons/File.png</icon>
 <priority>3500</priority>
 """
 
@@ -12,17 +12,15 @@ from xml.sax import make_parser, handler
 from orngTextCorpus import TextCorpusLoader, loadWordSet
 import os
 import modulTMT as lemmatizer
+from OWTools import *
 
 class XMLEcho(handler.ContentHandler):
     def __init__(self, lv):
-##        self.categoryNumber = {}
-##        self.categoryDocs = {}
         self.lv = lv
         self.chars = []
         self.lv.lastAdded = None
         self.lv.parent = self.lv
         self.tags = []
-##        self.inCategory = 0
     def startElement(self, name, attrs):    
         if not name in self.tags:
             self.tags.append(name)
@@ -32,10 +30,6 @@ class XMLEcho(handler.ContentHandler):
         self.lv.parent = parent
         self.lv.lastAdded = None
         self.lv.setText(0, "<%s %s>" % (name, " ".join(["%s=\"%s\"" % (k, v) for k, v in attrs.items()])))
-##        if name == "category":
-##            self.inCategory += 1
-##        elif name == "document":
-##            self.documentName = " ".join(["%s=\"%s\"" % (k, v) for k, v in attrs.items()])
 
     def endElement(self, name):
         str =  "".join(self.chars).strip(" \n\t\r")
@@ -48,15 +42,7 @@ class XMLEcho(handler.ContentHandler):
         new = QListViewItem(self.lv, self.lv.lastAdded)
         new.setText(0, "</%s>" % name)
         self.lv.lastAdded = new
-##        if name == "category":
-##            self.inCategory -= 1
-##            if self.categoryNumber.has_key(str):
-##                self.categoryNumber[str] = self.category[str] + 1
-##                self.categoryDocs[str] = self.categoryDocs[str].append(self.documentName)
-##            else:
-##                self.categoryNumber[str] = 1
-##                self.categoryDocs[str] = [self.documentName]
-##        
+   
     def characters(self, chrs):                              
         self.chars.append(chrs)     
 
@@ -68,7 +54,7 @@ class OWTextFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Text File')
         
         self.inputs = []
-        self.outputs = [("Examples", ExampleTable)]
+        self.outputs = [("Documents", ExampleTable)]
             
         self.mainArea.setFixedWidth(0)
         ca = QFrame(self.controlArea)
@@ -110,32 +96,17 @@ class OWTextFile(OWWidget):
         hboxLem = QHBox(preproc)
         hboxStop = QHBox(preproc)
         
+        startfile = str(orangedir) +'/OrangeWidgets/TextData'
+        
         QLabel('Lemmatizer:', hboxLem)
         self.lemmatizer = '(none)'
-        items = ['(none)']
-        
-        
-##        items.extend([a for a in os.listdir('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData') if a[-3:] == 'fsa'])     
-        
-        #################
-        # check if this is ok
-        ##
-        d = os.getcwd()
-        if d[-12:] == "OrangeCanvas":
-            startfile = d[:-12]+"/OrangeWidgets/TextData"
-        else:
-            startfile = d+"/OrangeWidgets/TextData"
-            
-        items.extend([a for a in os.listdir(startfile) if a[-3:] == 'fsa'])  
-            
-        #################
-            
+        items = ['(none)']      
+        items.extend([a for a in os.listdir(startfile) if a[-3:] == 'fsa'])              
         OWGUI.comboBox(hboxLem, self, 'lemmatizer', items = items, sendSelectedValue = 1)
             
         QLabel('Stop words:', hboxStop)
         self.stopwords = '(none)'
         items = ['(none)']
-##        items.extend([a for a in os.listdir('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData') if a[-3:] == 'txt'])
         items.extend([a for a in os.listdir(startfile) if a[-3:] == 'txt'])  
         OWGUI.comboBox(hboxStop, self, 'stopwords', items = items, sendSelectedValue = 1) 
         
@@ -160,7 +131,7 @@ class OWTextFile(OWWidget):
         self.categoryTag = ""
         OWGUI.lineEdit(hbox4, self, "categoryTag") 
         
-        hbox5 = QHGroupBox("Informative tags", col3)
+        hbox5 = QHGroupBox("Additional tags", col3)
         vbox5 = QVBox(hbox5)
         OWGUI.button(vbox5, self, ">", self.onInformativeAdd)
         OWGUI.button(vbox5, self, "<", self.onInformativeRemove)        
@@ -178,7 +149,6 @@ class OWTextFile(OWWidget):
     def openFile(self, fPath):
         self.listView.clear()
         self.textEdit.clear()
-##        self.statDocPerCat.clear()
         self.listBoxTags.clear()
         f = open(fPath, "r")
         
@@ -189,12 +159,6 @@ class OWTextFile(OWWidget):
         parser.parse(f)        
         f.close()
         
-##        item = None
-##        for c, nd in h.categoryNumber.items():
-##            item = QListViewItem(self.statDocPerCat)
-##            item.setText(0, c)
-##            item.setText(1, str(nd))
-
         self.listTags = h.tags[:]
         
     def browseFile(self, inDemos=0):                
@@ -269,7 +233,7 @@ class OWTextFile(OWWidget):
             for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/'+self.stopwords):
                 lem.stopwords.append(word)
         a = TextCorpusLoader(self.fileNameLabel.text(), tags, self.informativeTagsSelected, lem)
-        self.send("Examples", a.data)
+        self.send("Documents", a.data)
 if __name__=="__main__": 
     appl = QApplication(sys.argv) 
     ow = OWTextFile() 
