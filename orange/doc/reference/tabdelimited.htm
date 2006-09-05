@@ -23,6 +23,7 @@
 <LI><B>Discrete attributes</B>, denoted by <CODE>d</CODE> or <CODE>discrete</CODE> for discrete attributes. Alternatively, you can list the possible values of the attribute instead of "d" or "discrete"; values should be separated by spaces. Spaces contained in values must be "escaped" (that is, preceded by a backslash): a value named "light blue" would be written as <CODE>light\ blue</CODE>. Listing attributes is useful since it prescribes the order of the values; if you only described the attribute type by "d", the order of values will be the same as encountered when reading the examples. The corresponding attribute descriptor is of type <A href="Variable.htm#EnumVariable"><CODE>EnumVariable</CODE></A>.</LI>
 <LI><B>Continuous attribute</B>, defined by <CODE>c</CODE> or <CODE>continuous</CODE> for continuous attributes. They are described by an instance of <A href="Variable.htm#FloatVariable"><CODE>FloatVariable</CODE></A>.</LI>
 <LI><B>String attributes</B>, marked by <CODE>string</CODE> and described by <a href="Variable.htm#StringVariable"><CODE>StringVariable</CODE></A>.</LI>
+<LI><B>Basket</B>, marked by <CODE>basket</CODE>; this does not create a single attribute but rather tells the parser that this column will list values of optional continuous meta attributes. There can only be one basket. The attribute needs a name to simplify the parser, yet the name is not used anywhere. <a href="#basket">More on baskets</a> in a dedicated chapter.</LI>
 <LI><B>Python attributes</B> are meant for advanced users who want to store additional with examples or who write specific learning algorithms that can make use of such data. The definition and use of such attributes is described in a specific page on <a href="PythonVariable.htm"><CODE>Python attribute type</CODE></A>.
 </UL>
 
@@ -44,6 +45,8 @@
 <DT><CODE>-dc</CODE></DT>
 <DD>followed by a value that serves as "don't care" symbol for this attribute. This option can be used more than once for each attribute if don't cares are specified with different symbols. See below for the details.</DD>
 </DL>
+
+<P>The basket can be ignored, while other flags have no effect.</P>
 
 <P>The first few lines of iris dataset in this format look like this:</P>
 
@@ -74,7 +77,7 @@ Symbolic values representing unknown values ("?", "~", "NA"... are ignored).
 
 <P>This procedure is not foolproof. You can have continuous attributes whose values are accidentally only digits from 0-9. Or you can have a discrete attribute with values 1.1, 1.2, 1.3 and 2.1. You may want to designate some other attribute as class attribute, ignore another attribute and have a few meta attribute. This can be achieved by prefixes.</P>
 
-<P>Prefixed attributes contain one- or two-lettered prefix, followed by "#" and the name. The first letter of the prefix can be either "m" for meta-attributes, "i" to ignore the attribute, and "c" to define the class attribute. As always, only one attribute can be a class attribue. The second letter denotes the attribute type, "D" for discrete, "C" for continuous and "S" for string attributes.</P>
+<P>Prefixed attributes contain one- or two-lettered prefix, followed by "#" and the name. The first letter of the prefix can be either "m" for meta-attributes, "i" to ignore the attribute, and "c" to define the class attribute. As always, only one attribute can be a class attribue. The second letter denotes the attribute type, "D" for discrete, "C" for continuous, "S" for string attributes and "B" for baskets.</P>
 
 <P>In most cases, however, the attribute detection mechanism will suffice. Therefore, Iris can be given like this:</P>
 
@@ -89,6 +92,39 @@ Symbolic values representing unknown values ("?", "~", "NA"... are ignored).
 
 <XMP class="code">i#sepal length   c#sepal width    D#petal length    mC#petal width    iris
 </XMP>
+
+<a name="basket"></a>
+<H3>Baskets</H3>
+
+<P>Baskets can be used for storing sparse data in tab delimited files. They were specifically designed for text mining needs. If text mining and sparse data is not your business, you can skip this section.</P>
+
+<P>Baskets are given as a list of space-separated <code>&lt;name&gt;=&lt;value&gt;</code> atoms. A continuous meta attribute named &lt;name&gt; will be created and added to the domain as optional if it is not already there. A meta value for that variable will be added to the example. If the value is 1, you can omit the <code>=&lt;value&gt;</code> part.</P>
+
+<P>It is not possible to put meta attributes of other types than continuous in the basket.</P>
+
+<P>A tab delimited file with a basket can look like this:
+<xmp class="code">K       Ca      b_foo     Ba  y
+c       c       basket    c   c
+        meta              i   class
+0.06    8.75    a b a c   0   1
+0.48            b=2 d     0   1
+0.39    7.78              0   1
+0.57    8.22    c=13      0   1</xmp>
+These are the examples read from such a file:
+<xmp class="code">[0.06, 1], {"Ca":8.75, "a":2.000, "b":1.000, "c":1.000}
+[0.48, 1], {"Ca":?, "b":2.000, "d":1.000}
+[0.39, 1], {"Ca":7.78}
+[0.57, 1], {"Ca":8.22, "c":13.000}</xmp>
+Note a few things. The basket column's name, b_foo, is not used. In the first example, the value of a is 2 since it appears twice. The ordinary meta attribute, Ca, appears in all examples, even in those where its value is undefined. Meta attributes from the basket appear only where they are defined. This is due to the different nature of these meta attributes: Ca is required while the others are optional.
+<xmp class="code">>>> d.domain.getmetas()
+{-6: FloatVariable 'd', -22: FloatVariable 'Ca', -5: FloatVariable 'c', -4: FloatVariable 'b', -3: FloatVariable 'a'}
+>>> d.domain.getmetas(False)
+{-22: FloatVariable 'Ca'}
+>>> d.domain.getmetas(True)
+{-6: FloatVariable 'd', -5: FloatVariable 'c', -4: FloatVariable 'b', -3: FloatVariable 'a'}
+</xmp>
+To fully understand all this, you should read the documentation on <a href="Domain.htm#meta-attributes">meta attributes in <code>Domain</code></a> and on the <a href="basket.htm">basket file format</a> (a simple format that is limited to baskets only).
+</P>
 
 
 <H3>Comma separated files</H3>
