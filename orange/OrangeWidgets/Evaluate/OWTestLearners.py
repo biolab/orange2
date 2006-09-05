@@ -12,6 +12,8 @@
 from qttable import *
 from OWWidget import *
 import orngTest, orngStat, OWGUI
+import warnings
+warnings.filterwarnings("ignore", "'id' is not a builtin attribute", orange.AttributeWarning)
 
 ##############################################################################
 
@@ -34,18 +36,19 @@ class OWTestLearners(OWWidget):
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 
         # Settings
-        self.sampleMethod = 0               # cross validation
-        self.nFolds = 5                     # cross validation folds
-        self.pLearning = 70                 # size of learning set when sampling [%]
+        self.sampleMethod = 0           # cross validation
+        self.nFolds = 5                 # cross validation folds
+        self.pLearning = 70   # size of learning set when sampling [%]
         self.useStat = [1] * len(self.stat)
         self.pRepeat = 10
         self.precision = 4
         self.loadSettings()
         
-        self.data = None                    # input data set
-        self.testdata = None                # separate test data set
-        self.learnDict = {}; self.learners = []
-        self.results = None; self.scores = None
+        self.data = None                # input data set
+        self.testdata = None            # separate test data set
+        self.learners = None            # set of learners (input)
+        self.results = None             # from orngTest
+        self.scores = None              # to be displayed in the table
 
         # GUI
         self.s = [None] * 5
@@ -112,34 +115,35 @@ class OWTestLearners(OWWidget):
             self.dummy2[i] = lambda x, v=i: self.statChanged(x, v)
             self.connect(self.statBtn[i], SIGNAL('toggled(bool)'), self.dummy2[i])
 
-        self.resize(500,400)
+        self.resize(600,400)
 
     # test() evaluates the learners on a sigle data set
     # if learner is specified, this is either a new or an oldlearner to
     # be tested. the list in results should either be recomputed or added
     # else, if learner=None, all results are recomputed (user pressed apply button)
     def test(self, learner=None):
-        # testing
-        if self.results and learner:
+        if not self.data:
+            return
+        if learner:
             learners = [learner]
         else:
-            learners = self.learnDict.values()
-            if not learners:
-                return
+            learners = self.learners
 
         if self.sampleMethod==4 and not self.testdata:
             self.results = None
-            self.setStatTable()
+            self.setStatTable() # makes table with results empty
             return
 
-        pb = ProgressBar(self, iterations=self.nFolds)
-
+        pb = None
         if self.sampleMethod==0:
+            pb = ProgressBar(self, iterations=self.nFolds)
             res = orngTest.crossValidation(learners, self.data, folds=self.nFolds, strat=orange.MakeRandomIndices.StratifiedIfPossible, callback=pb.advance)
         elif self.sampleMethod==1:
-            res = orngTest.leaveOneOut(learners, self.data)
+            pb = ProgressBar(self, iterations=len(self.data))
+            res = orngTest.leaveOneOut(learners, self.data, callback=pb.advance)
         elif self.sampleMethod==2:
-            res = orngTest.proportionTest(learners, self.data, self.pLearning/100., times=self.pRepeat)
+            pb = ProgressBar(self, iterations=self.pRepeat)
+            res = orngTest.proportionTest(learners, self.data, self.pLearning/100., times=self.pRepeat, callback=pb.advance)
         elif self.sampleMethod==3:
             res = orngTest.learnAndTestOnLearnData(learners, self.data)
         elif self.sampleMethod==4:                
@@ -150,7 +154,7 @@ class OWTestLearners(OWWidget):
 
         # merging of results and scores (if necessary)
         if self.results and learner:
-            if len(self.learners) > len(self.scores[0]):
+            if learner.id not in [l.id for l in self.learners]:
                 # this is a new learner, add new results
                 self.results.classifierNames.append(learner.name)
                 self.results.numberOfLearners += 1
@@ -167,7 +171,7 @@ class OWTestLearners(OWWidget):
                         self.error("Caught an exception while evaluating classifiers")
             else:
                 # this is an old but updated learner
-                indx = self.learners.index(learner)
+                indx = [l.id for l in self.learners].index(learner.id)
                 self.results.classifierNames[indx] = learner.name
                 for i,r in enumerate(self.results.results):
                     r.classes[indx] = res.results[i].classes[0]
@@ -180,16 +184,15 @@ class OWTestLearners(OWWidget):
                         type, val, traceback = sys.exc_info()
                         sys.excepthook(type, val, traceback)  # print the exception
                         self.error("Caught an exception while evaluating classifiers")
-                        
                     
-        else: # test on all learners
+        else: # test on all learners, or on the new learner with no other learners in the memory
             self.results = res
             self.scores = []
             for i in range(len(self.stat)):
                 try:
                     self.scores.append(eval('orngStat.' + self.stat[i][2]))
                 except:
-                    self.scores.append([-1 for c in range(len(self.learners))]) # handle the exception
+                    self.scores.append([-1 for c in range(len(self.results.learners))]) # handle the exception
                     type, val, traceback = sys.exc_info()
                     sys.excepthook(type, val, traceback)  # print the exception
                     self.error("Caught an exception while evaluating classifiers")
@@ -197,22 +200,23 @@ class OWTestLearners(OWWidget):
         # update the tables that show the results
         self.setStatTable()
         self.send("Evaluation Results", self.results)
-        pb.finish()
+        if pb: pb.finish()
 
 #        except Exception, msg:
 #            QMessageBox.critical(self, self.title + ": Execution error", "Error while testing: '%s'" % msg)
 
-    # slots: handle input signals        
+    # slots: handle input signals
     def cdata(self, data):
         if not data:
             self.data = None
             self.results = None
             self.setStatTable()
-            return # have to handle this appropriately
+            return
+
         if self.testdata and data.domain <> self.testdata.domain:
             self.testdata = None
             self.results = None
-            self.setStatTable()
+            # self.setStatTable()
         self.data = orange.Filter_hasClassValue(data)
         self.classindex = 0 # data.targetValIndx
         if self.learners:
@@ -226,31 +230,35 @@ class OWTestLearners(OWWidget):
             self.test()
 
     def learner(self, learner, id=None):
-        if not learner: # remove a learner and corresponding results
-            # print 'Remove', id
-            indx = self.learners.index(self.learnDict[id])
+        if learner: # a new or updated learner
+            # print 'Add/Upd', learner.name, ", id:", id
+            learner.id = id # remember id's of learners
+            self.test(learner)
+            if self.learners:
+                if id not in [l.id for l in self.learners]:
+                    self.learners.append(learner)
+            else:
+                self.learners = [learner]
+            self.applyBtn.setDisabled(FALSE)
+        else: # remove a learner and corresponding results
+            print 'REMOVE', id, 'FROM', self.learners
+            ids = [l.id for l in self.learners]
+            if id not in ids:
+                return                  # happens if a widget with learner empties the signal first
+            indx = ids.index(id)
+
             if self.results:
                 for i,r in enumerate(self.results.results):
                     del r.classes[indx]
                     del r.probabilities[indx]
-                del self.results.classifierNames[indx]
-                self.results.numberOfLearners -= 1
-                for (i, stat) in enumerate(self.stat):
-                    del self.scores[i][indx]
+                    del self.results.classifierNames[indx]
+                    self.results.numberOfLearners -= 1
+                    for (i, stat) in enumerate(self.stat):
+                        del self.scores[i][indx]
+                self.setStatTable()
+                self.send("Evaluation Results", self.results)
+
             del self.learners[indx]
-            del self.learnDict[id]
-            self.setStatTable()
-            self.send("Evaluation Results", self.results)
-        else: # a new or updated learner
-            # print 'Add/Upd', learner.name, ", id:", id
-            if not self.learnDict.has_key(id): # new
-                self.learners.append(learner)
-            else: # updated
-                self.learners[self.learners.index(self.learnDict[id])] = learner
-            self.learnDict[id] = learner
-            if self.data:
-                self.test(learner)
-                self.applyBtn.setDisabled(FALSE)
             
     # signal processing
     def statChanged(self, value, id):
@@ -264,8 +272,8 @@ class OWTestLearners(OWWidget):
     def sChanged(self, value, id):
         if self.sampleMethod <> id:
             self.sampleMethod = id
-            self.results = None
             if self.data:
+                self.results = None
                 self.test()
 
     # reporting on evaluation results
@@ -279,13 +287,13 @@ class OWTestLearners(OWWidget):
         for i in range(len(self.stat)):
             self.tabHH.setLabel(i+1, self.stat[i][1])
 
-        self.tab.setNumRows(len(self.learners))
+        self.tab.setNumRows(self.results.numberOfLearners)
         for i in range(len(self.results.classifierNames)):
             self.tab.setText(i, 0, self.results.classifierNames[i])
 
         prec="%%.%df" % self.precision
 
-        for i in range(len(self.learners)):
+        for i in range(self.results.numberOfLearners):
             for j in range(len(self.stat)):
                 if self.scores[j][i] < 1e-8:
                     self.tab.setText(i, j+1, "N/A")
@@ -333,7 +341,7 @@ if __name__=="__main__":
 
     l4 = orange.MajorityLearner(); l4.name = "4 - Majority"
 
-    testcase = 0
+    testcase = 1
 
     if testcase == 0: # 1(UPD), 3, 4
         ow.cdata(data)
@@ -347,8 +355,9 @@ if __name__=="__main__":
     if testcase == 1: # no data, all learners removed
         ow.learner(l1, 1)
         ow.learner(l2, 2)
+#        ow.learner(None, 2)
         ow.learner(None, 1)
-        ow.learner(None, 2)
+        ow.cdata(data)
         
     ow.show()
     a.exec_loop()
