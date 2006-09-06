@@ -85,10 +85,10 @@ class OWCorrAnalysis(OWWidget):
         sliders = QVGroupBox('Percentage of points', self.GeneralTab)
         OWGUI.widgetLabel(sliders, 'Row points')
         self.percRow = 100        
-        OWGUI.hSlider(sliders, self, 'percRow', minValue=1, maxValue=100, step=1, callback = self.updateGraph)
+        OWGUI.hSlider(sliders, self, 'percRow', minValue=1, maxValue=100, step=5, callback = self.updateGraph)
         OWGUI.widgetLabel(sliders, 'Column points')
         self.percCol = 100        
-        OWGUI.hSlider(sliders, self, 'percCol', minValue=1, maxValue=100, step=1, callback = self.updateGraph)
+        OWGUI.hSlider(sliders, self, 'percCol', minValue=1, maxValue=100, step=5, callback = self.updateGraph)
 
         
         #zooming
@@ -366,6 +366,7 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
 
 if __name__=="__main__":
     from orngTextCorpus import *
+    import cPickle
 ##    os.chdir("/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/")
     appl = QApplication(sys.argv) 
     ow = OWCorrAnalysis() 
@@ -373,11 +374,14 @@ if __name__=="__main__":
     ow.show() 
 ##    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab') 
 
-    lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_rjecnik.fsa')
-    for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_stoprijeci.txt'):
-        lem.stopwords.append(word)       
-    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
+##    lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_rjecnik.fsa')
+##    for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_stoprijeci.txt'):
+##        lem.stopwords.append(word)       
+##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
 
     #a = orange.ExampleTable('../../doc/datasets/smokers_ct.tab')
-    ow.dataset(a.data) 
+    f=open('../../CDFSallDataCW', 'r')
+    a =cPickle.load(f)
+    f.close()
+    ow.dataset(a) 
     appl.exec_loop()            

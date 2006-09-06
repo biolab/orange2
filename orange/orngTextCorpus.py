@@ -3,7 +3,7 @@ from xml.sax import handler, make_parser
 from modulTMT import tokenize
 import modulTMT as lemmatizer
 import orange
-
+import operator
 
 ################
 ## utility functions
@@ -22,25 +22,25 @@ def loadWordSet(f):
             setW.append(line)
     return setW
 
-def flatten(l):
-    ret = []
-    if isinstance(l, list):
-        for elem in l:
-            ret.append(flatten(elem))
-    else:
-        return l
-    return ret
+##def flatten(l):
+##    ret = []
+##    if isinstance(l, list):
+##        for elem in l:
+##            ret.append(flatten(elem))
+##    else:
+##        return l
+##    return ret
 
-def removeDuplicates(l):
-    if not l: return []
-    ret = []
-    for elem in l:
-        if elem not in ret:
-            ret.append(elem)
-    return elem
+##def removeDuplicates(l):
+##    if not l: return []
+##    ret = []
+##    for elem in l:
+##        if elem not in ret:
+##            ret.append(elem)
+##    return elem
 
-def intersection(l1, l2):
-    return [e for e in l1 if e in l2]
+##def intersection(l1, l2):
+##    return [e for e in l1 if e in l2]
 
 ################
 class FeatureSelection:
@@ -66,10 +66,19 @@ class FeatureSelection:
             self.data[id].name = name.name     
         
     def _DF(self, nameOfAttribute):
-        df = [[len([ex for ex in self.dataInput if ex.hasmeta(meta.name)])] 
-            for meta in self.dataInput.domain.getmetas().values()]
+        meta2index = dict(zip(self.dataInput.domain.getmetas().keys(), range(len(self.dataInput.domain.getmetas().keys()))))
+        df  = [0] * len(self.dataInput.domain.getmetas().keys())
+        
+        for ex in self.dataInput:
+            toinc = [meta2index[meta] for meta in ex.getmetas().keys()]
+            for i in toinc:
+                df[i] = df[i] + 1
+        
+        df = [[i] for i in df]
+##        df = [[len([ex for ex in self.dataInput if ex.hasmeta(meta.name)])] 
+##            for meta in self.dataInput.domain.getmetas().values()]
             
-        dom = orange.Domain([orange.FloatVariable(nameOfAttribute)])
+        dom = orange.Domain([orange.FloatVariable(nameOfAttribute)], 0)
         exTable = orange.ExampleTable(dom, df)
         if len(self.data):
             self.data = orange.ExampleTable(self.data, exTable)
@@ -79,15 +88,20 @@ class FeatureSelection:
     def getFeatureMeasures(self):
         return self.data
         
-    def selectFeatures(self, filter):
+    def selectFeatures(self, filter = None, list = None):
         if not self.dataInput:
             return None
-        newDomain = orange.Domain(self.dataInput.domain)
-        fdata = filter(self.data, negate = 1)
-        removeMeta = [ex.name for ex in fdata if self.dataInput.domain.hasmeta(ex.name)]
-        newDomain.removemeta(removeMeta)
+        newDomain = orange.Domain(self.dataInput.domain)            
+        if filter:            
+            fdata = filter(self.data, negate = 1)
+            removeMeta = [ex.name for ex in fdata if self.dataInput.domain.hasmeta(ex.name)]            
+        elif list:
+            removeMeta = [el for el in list if self.dataInput.domain.hasmeta(el)]
+        else:
+            return None
+        newDomain.removemeta(removeMeta)            
         return orange.ExampleTable(newDomain, self.dataInput)
-
+        
 class TextCorpusLoader:
     def __init__(self, fileName, tags = {}, additionalTags = [], lem = None, doNotParse = [] , wordsPerDocRange = (-1, -1), charsPerDocRange = (-1, -1)):
         if lem:
@@ -190,6 +204,7 @@ class CategoryDocument:
                         self.dataCD[i][id] = self.dataCD[i][id].native() + val.native()
                     except:
                         self.dataCD[i][id] = val.native()
+        self.dataCD.setattr("meta_names", "fromText")
             
         
 ###############
@@ -311,24 +326,28 @@ if __name__ == "__main__":
     for word in loadWordSet(engstop):
         lem.stopwords.append(word)       
 
-    #fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small1.xml'
-    fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml'
+    fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small1.xml'
+    #fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml'
     #fName = '/home/mkolar/Docs/Diplomski/repository/orange/HR-learn-norm.xml'
 
-    a = TextCorpusLoader(fName
-            , lem = lem
-##            , wordsPerDocRange = (50, -1)
-##            , doNotParse = ['small', 'a']
-            , tags = {"content":"cont"}
-            )
-    df = CategoryDocument(a.data).dataCD
+##    a = TextCorpusLoader(fName
+##            , lem = lem
+####            , wordsPerDocRange = (50, -1)
+####            , doNotParse = ['small', 'a']
+##            , tags = {"content":"cont"}
+##            )
+##    df = CategoryDocument(a.data).dataCD
             
-##    import cPickle
-##    f = open('teDataCW', 'r')
-##    data=cPickle.load(f)
-##    f.close()
-##    data.setattr("meta_names", "fromText")    
-##    fs = FeatureSelection(data)
-##    dataFS = fs.data
+    import cPickle
+    f = open('allDataCW', 'r')
+    data=cPickle.load(f)
+    f.close()
+    data.setattr("meta_names", "fromText")    
+    fs = FeatureSelection(data)
+    rem = []
+    for ex in fs.data:
+        if ex[0] <= 7:
+            rem.append(ex.name)
+    newData = fs.selectFeatures(list = rem)
     
     
