@@ -14,7 +14,7 @@ import OWGUI, OWToolbars, OWDlgs
 import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
-from orngTextCorpus import CategoryDocument
+from orngTextCorpus import CategoryDocument, checkFromText
 
 import os
 
@@ -72,11 +72,11 @@ class OWCorrAnalysis(OWWidget):
        
         #x principal axis
         self.attrX = 0
-        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " Principal axis X ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " Principal axis X ", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
         
         #y principal axis
         self.attrY = 0
-        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Principal axis Y ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Principal axis Y ", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
         
         contribution = QVGroupBox('Contribution to inertia', self.GeneralTab)
         self.firstAxis = OWGUI.widgetLabel(contribution, 'Axis 1: 10%')
@@ -85,16 +85,18 @@ class OWCorrAnalysis(OWWidget):
         sliders = QVGroupBox('Percentage of points', self.GeneralTab)
         OWGUI.widgetLabel(sliders, 'Row points')
         self.percRow = 100        
-        OWGUI.hSlider(sliders, self, 'percRow', minValue=1, maxValue=100, step=5, callback = self.updateGraph)
+        self.rowSlider = OWGUI.hSlider(sliders, self, 'percRow', minValue=1, maxValue=100, step=10, callback = self.updateGraph)
         OWGUI.widgetLabel(sliders, 'Column points')
         self.percCol = 100        
-        OWGUI.hSlider(sliders, self, 'percCol', minValue=1, maxValue=100, step=5, callback = self.updateGraph)
+        self.colSlider = OWGUI.hSlider(sliders, self, 'percCol', minValue=1, maxValue=100, step=10, callback = self.updateGraph)
 
         
         #zooming
         self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
-            
+        
+        self.apply = False
+        OWGUI.button(self.GeneralTab, self, 'Update Graph', self.buttonUpdate)
             
         # ####################################
         # SETTINGS TAB
@@ -143,7 +145,7 @@ class OWCorrAnalysis(OWWidget):
             self.initAttrValues() 
             
         self.openContext("", dataset)
-        self.updateGraph()
+        self.buttonUpdate()
             
     def initAttrValues(self):
         self.attrRowCombo.clear()
@@ -151,7 +153,7 @@ class OWCorrAnalysis(OWWidget):
  
         if self.data == None: return 
         
-        if hasattr(self.data, "meta_names"):
+        if checkFromText(self.data):
             self.attrRowCombo.insertItem('document')
             self.attrRowCombo.insertItem('category')
             self.attrColCombo.insertItem('words')
@@ -169,7 +171,7 @@ class OWCorrAnalysis(OWWidget):
         self.updateTables()
         
     def updateTables(self):
-        if hasattr(self.data, "meta_names"):
+        if checkFromText(self.data):
             data = (self.attrRow == 'document' and [self.data] or [CategoryDocument(self.data).dataCD])[0]
             metas = data.domain.getmetas()
             lenMetas = len(metas)
@@ -196,7 +198,14 @@ class OWCorrAnalysis(OWWidget):
             self.tipsC = [s for s, v in ca.innerDistribution.items()]
             del ca
                
-               
+        self.rowSlider.setMinValue(1)
+        self.rowSlider.setMaxValue(len(self.tipsR))
+        self.percRow = len(self.tipsR) > 100 and 0.5 * len(self.tipsR) or len(self.tipsR)
+        self.colSlider.setMinValue(1)
+        self.colSlider.setMaxValue(len(self.tipsC))
+        self.percCol = len(self.tipsC) > 100 and 0.5 * len(self.tipsC) or len(self.tipsC)
+        
+        
         self.initAxesValues()
         self.tabsMain.showPage(self.graph)
         self.calcRadius()
@@ -209,7 +218,7 @@ class OWCorrAnalysis(OWWidget):
         
         if self.data == None: return 
             
-        for i in range(min(self.CA.D.shape)):
+        for i in range(1, min(self.CA.D.shape) + 1):
             self.attrXCombo.insertItem(str(i))
             self.attrYCombo.insertItem(str(i))        
         
@@ -218,12 +227,25 @@ class OWCorrAnalysis(OWWidget):
             self.attrY = str(self.attrYCombo.text(1))
         else:                           
             self.attrY = str(self.attrYCombo.text(0))
+            
+        self.contributionBox()
+        
+    def contributionBox(self):
+        self.firstAxis.setText ('Axis %d: %f%%' % (int(self.attrX), self.CA.InertiaOfAxis(1)[int(self.attrX)-1]))
+        self.secondAxis.setText ('Axis %d: %f%%' % (int(self.attrY), self.CA.InertiaOfAxis(1)[int(self.attrY)-1]))            
+        
         self.updateGraph()
         
+    def buttonUpdate(self):
+        self.apply = True
+        self.updateGraph()
+        self.apply = False
     def updateGraph(self):
         self.graph.zoomStack = []
         if not self.data:
             return        
+        if not self.apply:
+            return
             
         self.graph.removeAllSelections()
         self.graph.removeBrowsingCurve()        
@@ -237,21 +259,16 @@ class OWCorrAnalysis(OWWidget):
         if self.graph.showYLaxisTitle == 1: self.graph.setYLaxisTitle("Axis " + self.attrY)
         else: self.graph.setYLaxisTitle(None)        
         
-        self.firstAxis.setText  ('Axis %d: %f%%' % (int(self.attrX), self.CA.InertiaOfAxis(1)[int(self.attrX)]))
-        self.secondAxis.setText ('Axis %d: %f%%' % (int(self.attrY), self.CA.InertiaOfAxis(1)[int(self.attrY)]))
-        
-        cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX), int(self.attrY)))
-        numCor = int(len(cor) / 100. * self.percRow)
-        if not numCor: numCor = 1
-        indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX), int(self.attrY)))[:numCor]
+        cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
+        numCor = int(self.percRow)
+        indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
         tipsR = [self.tipsR[i] for i in indices]
         self.plotPoint(cor, 0, tipsR, "Row points", self.graph.showFilledSymbols)            
             
-        cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX), int(self.attrY)))      
-        numCor = int(len(cor) / 100. * self.percCol)
-        if not numCor: numCor = 1
-        indices = self.CA.PointsWithMostInertia(rowColumn = 1, axis = (int(self.attrX), int(self.attrY)))[:numCor]
+        cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))      
+        numCor = int(self.percCol)
+        indices = self.CA.PointsWithMostInertia(rowColumn = 1, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
         tipsC = [self.tipsC[i] for i in indices]
         self.plotPoint(cor, 1, tipsC, "Column points", self.graph.showFilledSymbols)
@@ -318,8 +335,8 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
         ZoomSelectToolbar.__init__(self, widget, parent, graph, autoSend)
         
         group = QHButtonGroup("Browsing", parent)
-        self.buttonBrowse = OWToolbars.createButton(group, "Browsing tool - Rectangle", self.actionBrowse, QPixmap(OWToolbars.dlg_zoom), toggle = 1)
-        self.buttonBrowseCircle = OWToolbars.createButton(group, "Browsing tool - Circle", self.actionBrowseCircle, QPixmap(OWToolbars.dlg_zoom), toggle = 1)        
+        self.buttonBrowse = OWToolbars.createButton(group, "Browsing tool - Rectangle", self.actionBrowse, QPixmap(OWToolbars.dlg_browseRectangle), toggle = 1)
+        self.buttonBrowseCircle = OWToolbars.createButton(group, "Browsing tool - Circle", self.actionBrowseCircle, QPixmap(OWToolbars.dlg_browseCircle), toggle = 1)        
         
     def actionZooming(self):
         ZoomSelectToolbar.actionZooming(self)

@@ -59,7 +59,7 @@ class OWTextFile(OWWidget):
         self.mainArea.setFixedWidth(0)
         ca = QFrame(self.controlArea)
         ca.adjustSize()
-        gl=QGridLayout(ca,4,3,5)      
+        gl=QGridLayout(ca,5,3,5)      
         
         col1 = QVBox(ca)
         
@@ -82,7 +82,7 @@ class OWTextFile(OWWidget):
         QLabel(col1).setText("Node text")
         self.textEdit = QTextEdit(col1)
 
-        gl.addMultiCellWidget(col1, 0, 3, 0, 0)
+        gl.addMultiCellWidget(col1, 0, 4, 0, 0)
         
         self.connect( self.listView, SIGNAL( 'clicked( QListViewItem* )' ),  self.fillText)
     
@@ -90,7 +90,7 @@ class OWTextFile(OWWidget):
         self.listTagsSelected = []
         col2 = QVGroupBox("Tags", ca)
         self.listBoxTags = OWGUI.listBox(col2, self, "listTagsSelected", "listTags")
-        gl.addMultiCellWidget(col2, 0, 3, 1, 1)
+        gl.addMultiCellWidget(col2, 0, 4, 1, 1)
         
         preproc = QVGroupBox("Preprocessing info", ca)
         hboxLem = QHBox(preproc)
@@ -140,9 +140,12 @@ class OWTextFile(OWWidget):
         OWGUI.listBox(hbox5, self, "informativeTagsSelected", "informativeTags")
 
         app = OWGUI.button(ca, self, "Apply", self.apply)
+        self.catDoc = False
+        chBox  = OWGUI.checkBox(col3, self, 'catDoc', label = 'Output category-word', box = '')
+
         
-        gl.addMultiCellWidget(col3, 1, 2,  2, 2)
-        gl.addWidget(app, 3, 2)
+        gl.addMultiCellWidget(col3, 1, 3,  2, 2)
+        gl.addWidget(app, 4, 2)
         
         self.resize(1200, 700)
         
@@ -233,7 +236,10 @@ class OWTextFile(OWWidget):
             for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/'+self.stopwords):
                 lem.stopwords.append(word)
         a = TextCorpusLoader(self.fileNameLabel.text(), tags, self.informativeTagsSelected, lem)
-        self.send("Documents", a.data)
+        if self.catDoc:
+            self.send("Documents", CategoryDocument(a.data).dataCD)
+        else:
+            self.send("Documents", a.data)
 if __name__=="__main__": 
     appl = QApplication(sys.argv) 
     ow = OWTextFile() 

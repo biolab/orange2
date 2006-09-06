@@ -9,6 +9,8 @@ dlg_poly = dir + "Dlg_poly.png"
 dlg_undo = dir + "Dlg_undo.png"
 dlg_clear = dir + "Dlg_clear.png"
 dlg_send = dir + "Dlg_send.png"
+dlg_browseRectangle = dir + "Dlg_browseRectangle.png"
+dlg_browseCircle = dir + "Dlg_browseCircle.png"
 
 def createButton(parent, text, action = None, icon = None, toggle = 0):
     btn = QToolButton(parent)

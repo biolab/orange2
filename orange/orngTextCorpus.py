@@ -22,6 +22,15 @@ def loadWordSet(f):
             setW.append(line)
     return setW
 
+def checkFromText(data):
+    if not isinstance(data, orange.ExampleTable):
+        return False
+    if len(data.domain.attributes) < 10 and len(data.domain.getmetas()) > 15:
+        return True
+    elif len(data.domain.attributes) * 2 < len(data.domain.getmetas()):
+        return True
+    return False
+
 ##def flatten(l):
 ##    ret = []
 ##    if isinstance(l, list):
@@ -51,7 +60,7 @@ class FeatureSelection:
         self.dataInput = dataInput
         self.data = None
         
-        if not hasattr(self.dataInput, 'meta_names'):
+        if not checkFromText(self.dataInput):
             self.dataInput = None
             self.data = None
             return
@@ -161,8 +170,6 @@ class TextCorpusLoader:
                             self.__incFreqWord(ex, lemma)
             
             self.data.append(ex)
-            
-        self.data.setattr("meta_names", "fromText")
                             
     def __incFreqWord(self, ex, w):         
         domain = ex.domain
@@ -179,6 +186,9 @@ class TextCorpusLoader:
 
 class CategoryDocument:
     def __init__(self, data):
+        if not checkFromText(data) or not data: 
+            self.dataCD = None
+            return
         self.data = data
         newDomain = orange.Domain([])
         newDomain.addmetas(self.data.domain.getmetas(), True)
@@ -204,7 +214,6 @@ class CategoryDocument:
                         self.dataCD[i][id] = self.dataCD[i][id].native() + val.native()
                     except:
                         self.dataCD[i][id] = val.native()
-        self.dataCD.setattr("meta_names", "fromText")
             
         
 ###############
@@ -330,24 +339,24 @@ if __name__ == "__main__":
     #fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml'
     #fName = '/home/mkolar/Docs/Diplomski/repository/orange/HR-learn-norm.xml'
 
-##    a = TextCorpusLoader(fName
-##            , lem = lem
-####            , wordsPerDocRange = (50, -1)
-####            , doNotParse = ['small', 'a']
-##            , tags = {"content":"cont"}
-##            )
-##    df = CategoryDocument(a.data).dataCD
+    a = TextCorpusLoader(fName
+            , lem = lem
+##            , wordsPerDocRange = (50, -1)
+##            , doNotParse = ['small', 'a']
+            , tags = {"content":"cont"}
+            )
+    df = CategoryDocument(a.data).dataCD
             
-    import cPickle
-    f = open('allDataCW', 'r')
-    data=cPickle.load(f)
-    f.close()
-    data.setattr("meta_names", "fromText")    
-    fs = FeatureSelection(data)
-    rem = []
-    for ex in fs.data:
-        if ex[0] <= 7:
-            rem.append(ex.name)
-    newData = fs.selectFeatures(list = rem)
+##    import cPickle
+##    f = open('allDataCW', 'r')
+##    data=cPickle.load(f)
+##    f.close()
+##    data.setattr("meta_names", "fromText")    
+##    fs = FeatureSelection(data)
+##    rem = []
+##    for ex in fs.data:
+##        if ex[0] <= 7:
+##            rem.append(ex.name)
+##    newData = fs.selectFeatures(list = rem)
     
     
