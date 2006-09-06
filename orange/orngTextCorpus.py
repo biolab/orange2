@@ -4,6 +4,7 @@ from modulTMT import tokenize
 import modulTMT as lemmatizer
 import orange
 import operator
+from numpy import *
 
 ################
 ## utility functions
@@ -30,7 +31,23 @@ def checkFromText(data):
     elif len(data.domain.attributes) * 2 < len(data.domain.getmetas()):
         return True
     return False
+    
+def getCategories(data):
+    categories = []
+    try:
+        cInd = data.domain.attributes.index(data.domain['category'])
+        for ex in data:
+            if ex['category']:
+                for cat in ex['category'].native().split('.'):
+                    categories.append(cat)
+        categories = [(a, categories.count(a)) for a in set(categories)]        
+    except:
+        pass           
+  
+    return dict(categories)
+    
 
+    
 ##def flatten(l):
 ##    ret = []
 ##    if isinstance(l, list):
@@ -54,7 +71,8 @@ def checkFromText(data):
 ################
 class FeatureSelection:
     measures = {
-                            'Document Frequency': 'DF'
+                            'Document Frequency': 'DF',
+                            'Information Gain': 'IG'
                         }
     def __init__(self, dataInput, userMeasures = []):
         self.dataInput = dataInput
@@ -65,6 +83,7 @@ class FeatureSelection:
             self.data = None
             return
             
+        self.meta2index = dict(zip(self.dataInput.domain.getmetas().keys(), range(len(self.dataInput.domain.getmetas().keys()))))
         if not userMeasures:
             userMeasures = self.measures.keys()
         self.data = orange.ExampleTable(orange.Domain([]))
@@ -75,17 +94,14 @@ class FeatureSelection:
             self.data[id].name = name.name     
         
     def _DF(self, nameOfAttribute):
-        meta2index = dict(zip(self.dataInput.domain.getmetas().keys(), range(len(self.dataInput.domain.getmetas().keys()))))
         df  = [0] * len(self.dataInput.domain.getmetas().keys())
         
         for ex in self.dataInput:
-            toinc = [meta2index[meta] for meta in ex.getmetas().keys()]
+            toinc = [self.meta2index[meta] for meta in ex.getmetas().keys()]
             for i in toinc:
                 df[i] = df[i] + 1
         
         df = [[i] for i in df]
-##        df = [[len([ex for ex in self.dataInput if ex.hasmeta(meta.name)])] 
-##            for meta in self.dataInput.domain.getmetas().values()]
             
         dom = orange.Domain([orange.FloatVariable(nameOfAttribute)], 0)
         exTable = orange.ExampleTable(dom, df)
@@ -94,6 +110,48 @@ class FeatureSelection:
         else:
             self.data = orange.ExampleTable(exTable)
             
+    def _IG(self, nameOfAttribute):
+        df  = [0] * len(self.dataInput.domain.getmetas().keys())
+        
+        for ex in self.dataInput:
+            toinc = [self.meta2index[meta] for meta in ex.getmetas().keys()]
+            for i in toinc:
+                df[i] = df[i] + 1
+        
+        dom = orange.Domain([orange.FloatVariable(nameOfAttribute)], 0)
+            
+        categories = getCategories(self.dataInput)
+        if len(categories):
+            prC = [(cat, 1. * count / len(self.dataInput)) for (cat, count) in categories.items()]
+            prC = dict(prC)
+            ig = [- sum(prC.values() * log(prC.values()))] * len(self.dataInput.domain.getmetas().keys())
+            for t, ind in self.meta2index.items():
+                prCnT = [0] * len(categories)
+                prCT = [0] * len(categories)
+                for ex in self.dataInput:
+                    true = [categories.keys().index(cat) for cat in ex['category'].native().split('.')]
+##                    false = list(set(range(len(categories))).difference(true))
+                    for i in true:
+                        if ex.hasmeta(t):
+                            prCT[i] = prCT[i] + 1
+                        else:
+                            prCnT[i] = prCnT[i] + 1
+                prCT = 1. * array(prCT) / df[ind]
+                prCT = [i for i in prCT if i > 0]
+                prCnT = 1. * array(prCnT) / (len(self.dataInput) - df[ind])
+                prCnT = [i for i in prCnT if i > 0]
+                ig[ind] = ig[ind] + 1. * df[ind] / len(self.dataInput) * sum(prCT * log(prCT)) + 1. * (len(self.dataInput) - df[ind]) / len(self.dataInput) * sum(prCnT * log(prCnT))
+        else:
+            ig = [0] * len(self.dataInput.domain.getmetas().keys())            
+
+        ig = [[i] for i in ig]
+        exTable = orange.ExampleTable(dom, ig)
+        if len(self.data):
+            self.data = orange.ExampleTable([self.data, exTable])
+        else:
+            self.data = orange.ExampleTable(exTable)       
+        
+        
     def getFeatureMeasures(self):
         return self.data
         
@@ -193,12 +251,7 @@ class CategoryDocument:
         newDomain = orange.Domain([])
         newDomain.addmetas(self.data.domain.getmetas(), True)
         self.dataCD = orange.ExampleTable(newDomain)
-        categories = set()
-        for ex in self.data:
-            if ex['category']:
-                for cat in ex['category'].native().split('.'):
-                    categories.add(cat)
-        categories = list(categories)
+        categories = getCategories(self.data)
         if not len(categories): return None
         for cat in categories:
             ex =  orange.Example(newDomain)
@@ -335,7 +388,7 @@ if __name__ == "__main__":
     for word in loadWordSet(engstop):
         lem.stopwords.append(word)       
 
-    fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small1.xml'
+    fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml'
     #fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml'
     #fName = '/home/mkolar/Docs/Diplomski/repository/orange/HR-learn-norm.xml'
 
@@ -345,7 +398,7 @@ if __name__ == "__main__":
 ##            , doNotParse = ['small', 'a']
             , tags = {"content":"cont"}
             )
-    df = CategoryDocument(a.data).dataCD
+    df = FeatureSelection(a.data).data
             
 ##    import cPickle
 ##    f = open('allDataCW', 'r')
