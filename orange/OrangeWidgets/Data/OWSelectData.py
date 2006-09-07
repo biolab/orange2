@@ -69,6 +69,11 @@ class OWSelectData(OWWidget):
         self.lbAttr = QListBox(boxAttr, 'SelAttr')
         self.connect(self.lbAttr, SIGNAL('selectionChanged()'), self.lbAttrChange)
 
+        sbox = QHBox(boxAttr)
+        QLabel("Search: ", sbox)
+        self.leSelect = QLineEdit(sbox)
+        self.connect(self.leSelect, SIGNAL('textChanged(const QString &)'), self.setLbAttr)
+
         # operators
         boxOper = QVGroupBox('Operator', frmAttrCond)
         # operators 0: empty
@@ -115,6 +120,7 @@ class OWSelectData(OWWidget):
         self.lblMin = QLabel("Min: ", boxAttrStat)
         self.lblAvg = QLabel("Avg: ", boxAttrStat)
         self.lblMax = QLabel("Max: ", boxAttrStat)
+        self.lblDefined = QLabel("Defined for ---- examples", boxAttrStat)
         # values 1: discrete
         boxVal = QVGroupBox("Values", None)
         self.valuesStack.addWidget(boxVal, orange.VarTypes.Discrete)
@@ -131,7 +137,7 @@ class OWSelectData(OWWidget):
         # buttons Add, Update, Remove, Disjunction, Up, Down
         self.boxButtons = QHBox(ca)
         gl.addMultiCellWidget(self.boxButtons, 1,1,0,2)
-        btnNew = OWGUI.button(self.boxButtons, self, "Add", self.OnNewCondition)
+        self.btnNew = OWGUI.button(self.boxButtons, self, "Add", self.OnNewCondition)
         self.btnUpdate = OWGUI.button(self.boxButtons, self, "Update", self.OnUpdateCondition)
         self.btnRemove = OWGUI.button(self.boxButtons, self, "Remove", self.OnRemoveCondition)        
         self.btnOR = OWGUI.button(self.boxButtons, self, "OR", self.OnDisjunction)        
@@ -201,9 +207,11 @@ class OWSelectData(OWWidget):
         self.bas = orange.DomainBasicAttrStat(data)
         if self.data:
             # set self.name2var
-            varList = self.data.domain.variables.native() + self.data.domain.getmetas().values()
+            optmetas = self.data.domain.getmetas(True).values()
+            optmetas.sort(lambda x,y: cmp(x.name, y.name))
+            self.varList = self.data.domain.variables.native() + self.data.domain.getmetas(False).values() + optmetas
             varNames = []
-            for v in varList:
+            for v in self.varList:
                 self.name2var[v.name] = v
                 varNames.append(v.name)
             if varNames == self.loadedVarNames:
@@ -211,12 +219,7 @@ class OWSelectData(OWWidget):
                     self.Conditions = self.loadedConditions
             else:
                 self.loadedVarNames = varNames
-            if self.lbAttr.count() <> len(varList):
-                # update attribute listbox
-                self.lbAttr.clear()
-                for v in varList:
-                    self.lbAttr.insertItem(self.icons[v.varType], v.name)
-                self.lbAttr.setSelected(0,True)
+
                 # clear conditions and criteria table
                 self.Conditions = []
                 for row in range(self.criteriaTable.numRows()-1,-1,-1):
@@ -224,12 +227,18 @@ class OWSelectData(OWWidget):
                     self.criteriaTable.clearCell(row,1)
                     self.criteriaTable.hideRow(row)
                 self.criteriaTable.setNumRows(0)
+
+            self.setLbAttr()
+
             self.criteriaTable.setCurrentCell(-1,1)
             self.boxButtons.setEnabled(True)
+
         else:
             self.name2var = {}
+            self.varList = []
             self.Conditions = []
             self.lbAttr.clear()
+            self.leSelect.clear()
             self.currentVar = None
             for row in range(self.criteriaTable.numRows()-1,-1,-1):
                 self.criteriaTable.clearCellWidget(row,0)
@@ -243,7 +252,24 @@ class OWSelectData(OWWidget):
         self.updateValuesStack()
         self.updateInfoIn(self.data)
         self.setOutput()
-        
+
+    def setLbAttr(self, filter=None):
+        # update attribute listbox
+        self.lbAttr.clear()
+        if not filter:
+            for v in self.varList:
+                self.lbAttr.insertItem(self.icons[v.varType], v.name)
+        else:
+            flen = len(filter)
+            for v in self.varList:
+                if v.name[:flen] == filter:
+                    self.lbAttr.insertItem(self.icons[v.varType], v.name)
+
+        if self.lbAttr.count():
+            self.lbAttr.setSelected(0,True)
+        else:
+            self.lbAttrChange()
+
 
     def setOutput(self):
         """Sends out data, updates data out info.
@@ -307,7 +333,7 @@ class OWSelectData(OWWidget):
         else:
             prevVarType = None
             prevVarName = None
-        self.currentVar = self.data.domain[text]
+        self.currentVar = text and self.data.domain[text]
         if self.currentVar:
             currVarType = self.currentVar.varType
             currVarName = self.currentVar.name
@@ -356,6 +382,7 @@ class OWSelectData(OWWidget):
         # send out new data 
         if self.updateOnChange:
             self.setOutput()
+        self.leSelect.clear()
 
 
     def OnUpdateCondition(self):
@@ -376,6 +403,7 @@ class OWSelectData(OWWidget):
         # send out new data
         if self.updateOnChange:
             self.setOutput()        
+        self.leSelect.clear()
 
 
     def OnRemoveCondition(self):
@@ -550,11 +578,17 @@ class OWSelectData(OWWidget):
         """
         if self.currentVar:
             varType = self.currentVar.varType
+            self.btnNew.setEnabled(True)
         else:
             varType = 0
+            self.btnNew.setEnabled(False)
         for vt,lb in self.lbOperatorsDict.items():
             if vt == varType:
                 lb.show()
+                try:
+                    lb.setCurrentItem(self.data.domain.isOptionalMeta(self.currentVar) and lb.count() - 1)
+                except:
+                    lb.setCurrentItem(0)
             else:
                 lb.hide()
 
@@ -608,11 +642,23 @@ class OWSelectData(OWWidget):
                     self.lblAndCon.hide()
                     self.leNum2.hide()
                 # display attribute statistics
-                self.lblMin.setText("Min: %.3f" % self.bas[self.currentVar].min)
-                self.lblAvg.setText("Avg: %.3f" % self.bas[self.currentVar].avg)
-                self.lblMax.setText("Max: %.3f" % self.bas[self.currentVar].max)
-                self.Num1 = self.bas[self.currentVar].min
-                self.Num2 = self.bas[self.currentVar].max
+                if self.currentVar in self.data.domain.variables:
+                    basstat = self.bas[self.currentVar]
+                else:
+                    basstat = orange.BasicAttrStat(self.currentVar, self.data)
+
+                if basstat.n:
+                    min, avg, max = ["%.3f" % x for x in (basstat.min, basstat.avg, basstat.max)]
+                    self.Num1, self.Num2 = basstat.min, basstat.max
+                else:
+                    min = avg = max = "-"
+                    self.Num1 = self.Num2 = 0
+
+                self.lblMin.setText("Min: %s" % min)
+                self.lblAvg.setText("Avg: %s" % avg)
+                self.lblMax.setText("Max: %s" % max)
+                self.lblDefined.setText("Defined for %i example(s)" % basstat.n)
+
             elif currentOper.varType==orange.VarTypes.String:
                 # show / hide "and" label and 2nd line edit box
                 if currentOper.isInterval:
@@ -855,13 +901,18 @@ class Operator:
         """Returns orange filter.
         """
         if self.operator == Operator.operatorDef:
-            f = orange.Filter_isDefined(domain=domain)
-            for v in domain.variables:
-                f.check[v] = 0
             try:
-                f.check[variable] = 1
+                id = domain.index(variable)
             except:
-                print "Error: orange.Filter_isDefined cannot handle meta attributes (%s)." % variable
+                error("Error: unknown attribute (%s)." % variable)
+
+            if id >= 0:
+                f = orange.Filter_isDefined(domain=domain)
+                for v in domain.variables:
+                    f.check[v] = 0
+                f.check[variable] = 1
+            else: # variable is a meta
+                    f = orange.Filter_hasMeta(id = domain.index(variable))
         elif self.operator in Operator.operatorsD:
             f = orange.Filter_values(domain=domain)
             f[variable] = value1
@@ -886,6 +937,8 @@ if __name__=="__main__":
     data.domain.addmeta(orange.newmetaid(), orange.StringVariable("workclass_name"))
     for ex in data:
         ex["workclass_name"] = str(ex[1])
+##    import cPickle
+##    data = cPickle.load(file("..\\Other\\dump2"))
 
     a=QApplication(sys.argv)
     ow=OWSelectData()
