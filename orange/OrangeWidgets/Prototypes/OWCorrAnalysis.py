@@ -62,6 +62,9 @@ class OWCorrAnalysis(OWWidget):
 
         self.icons = self.createAttributeIconDict()
         
+        self.textData = False
+        OWGUI.checkBox(self.GeneralTab, self, 'textData', 'Textual data', callback = self.initAttrValues)
+        
         #col attribute
         self.attrCol = ""
         self.attrColCombo = OWGUI.comboBox(self.GeneralTab, self, "attrCol", " Column Table Attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
@@ -138,7 +141,8 @@ class OWCorrAnalysis(OWWidget):
     def dataset(self, dataset):
         self.closeContext()
         if dataset:
-            self.data = dataset            
+            self.data = dataset          
+            self.textData = checkFromText(self.data)
             self.initAttrValues()            
         else:
             self.data = None
@@ -153,7 +157,7 @@ class OWCorrAnalysis(OWWidget):
  
         if self.data == None: return 
         
-        if checkFromText(self.data):
+        if self.textData:
             self.attrRowCombo.insertItem('document')
             self.attrRowCombo.insertItem('category')
             self.attrColCombo.insertItem('words')
@@ -171,7 +175,7 @@ class OWCorrAnalysis(OWWidget):
         self.updateTables()
         
     def updateTables(self):
-        if checkFromText(self.data):
+        if self.textData:
             data = (self.attrRow == 'document' and [self.data] or [CategoryDocument(self.data).dataCD])[0]
             metas = data.domain.getmetas()
             lenMetas = len(metas)

@@ -231,9 +231,9 @@ class OWTextFile(OWWidget):
         if self.lemmatizer == '(none)':
             lem = lemmatizer.NOPLemmatization()
         else:
-            lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/'+self.lemmatizer)
+            lem = lemmatizer.FSALemmatization(str(orangedir) +'/OrangeWidgets/TextData/'+self.lemmatizer)
         if not self.stopwords == '(none)':
-            for word in loadWordSet('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/'+self.stopwords):
+            for word in loadWordSet(str(orangedir) +'/OrangeWidgets/TextData/'+self.stopwords):
                 lem.stopwords.append(word)
         a = TextCorpusLoader(self.fileNameLabel.text(), tags, self.informativeTagsSelected, lem)
         if self.catDoc:
@@ -241,6 +241,8 @@ class OWTextFile(OWWidget):
         else:
             self.send("Documents", a.data)
 if __name__=="__main__": 
+    import os
+    os.chdir('/home/mkolar/Docs/Diplomski/repository/orange/')
     appl = QApplication(sys.argv) 
     ow = OWTextFile() 
     appl.setMainWidget(ow) 
