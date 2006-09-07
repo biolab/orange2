@@ -221,8 +221,8 @@ class TextCorpusLoader:
                 if not self.lem.isStopword(token):
                     lemmas = self.lem.getLemmas(token)                    
                     if lemmas.empty():
-##                        self.__incFreqWord(ex, token)
-                        pass
+                        self.__incFreqWord(ex, token)
+##                        pass
                     else:                       
                         for lemma in lemmas:
                             self.__incFreqWord(ex, lemma)
