@@ -388,6 +388,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
   classPos = -1;
   basketPos = -1;
   int classType = -1;
+  int lastRegular = -1;
 
 
   list<TSearchWarranty> searchWarranties;
@@ -495,6 +496,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
           searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -(signed int)(metas.size())));
       }
       else if (attributeType) {
+        lastRegular = ni-varNames.begin();
         attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(*ni, varType));
         if (varType==-1)
           searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), attributeType==-2 ? -1 : attributeDescriptions.size()-1));
@@ -509,7 +511,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
   }
   else {
     if (!noClass)
-      classPos = attributeDescriptions.size()-1;
+      classPos = lastRegular;
   }
 
   if (!searchWarranties.empty()) {
@@ -600,7 +602,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
   }
 
 
-  if (basketPos > 0)
+  if (basketPos >= 0)
     basketFeeder = mlnew TBasketFeeder(sourceDomain, dontCheckStored, false);
     
   if (sourceDomain) {
@@ -765,7 +767,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
   if (classPos > -1)
     attributeDescriptions.push_back(classDescription);
 
-  if (basketPos > 0)
+  if (basketPos >= 0)
     basketFeeder = mlnew TBasketFeeder(sourceDomain, dontCheckStored, false);
     
   if (sourceDomain) {
