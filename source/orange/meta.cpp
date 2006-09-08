@@ -31,6 +31,8 @@ const char *_getweightwho = "_getweight";
 
 long metaID = -1;
 
+ORANGE_API TValue missingMetaValue;
+
 
 long getMetaID()
 { return --metaID; }
@@ -122,6 +124,26 @@ const TValue &TMetaValues::operator[](long id) const
   throw 0;
 }
 
+
+const TValue &TMetaValues::getValueIfExists(long id) const
+{ 
+  const_this_ITERATE(si)
+    if ((*si).first==id)
+      return (*si).second;
+
+  return missingMetaValue;
+}
+  
+
+TValue &TMetaValues::getValueIfExists(long id)
+{ 
+  this_ITERATE(si)
+    if ((*si).first==id)
+      return (*si).second;
+
+  return missingMetaValue;
+}
+  
 
 bool TMetaValues::exists(long id) const
 { const_this_ITERATE(si)

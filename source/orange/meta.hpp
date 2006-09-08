@@ -39,6 +39,8 @@ WRAPPER(Variable)
   #pragma warning (disable: 4275 4251)
 #endif
 
+extern ORANGE_API TValue missingMetaValue;
+
 // A vector of meta values with id's
 class ORANGE_API TMetaValues : public vector<pair<long, TValue> > {
 public:
@@ -48,6 +50,9 @@ public:
   void setValue(const long &id, const TValue &val);
   void removeValue(const long &id);
   void removeValueIfExists(const long &id);
+
+  const TValue &getValueIfExists(long id) const;
+  TValue &getValueIfExists(long id);
 };
 
 #ifdef _MSC_VER
