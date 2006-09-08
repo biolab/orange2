@@ -43,9 +43,12 @@ public:
   bool holdRecomputation; //P temporarily disables recomputation of avg and dev while adding values
 
   TBasicAttrStat(PVariable var, const bool &ahold=false);
+  TBasicAttrStat(PExampleGenerator gen, PVariable var, const long &weightID = 0);
 
   void add(float f, float p=1);
   void recompute();
+
+  void reset();
 };
 
 WRAPPER(BasicAttrStat);

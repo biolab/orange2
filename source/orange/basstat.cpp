@@ -38,16 +38,50 @@ DEFINE_TOrangeVector_classDescription(PBasicAttrStat, "TBasicAttrStatList", true
 
 // Initializes min to max_float, max to min_float, avg, dev and n to 0.
 TBasicAttrStat::TBasicAttrStat(PVariable var, const bool &ahold)
-: sum(0.0),
-  sum2(0.0),
-  n(0.0),
-  min(numeric_limits<float>::max()),
-  max(-numeric_limits<float>::max()),
-  avg(0.0),
-  dev(0.0),
-  variable(var),
+: variable(var),
   holdRecomputation(ahold)
-{}
+{ reset(); }
+
+
+TBasicAttrStat::TBasicAttrStat(PExampleGenerator gen, PVariable var, const long &weightID)
+: variable(var),
+  holdRecomputation(true)
+{
+  reset();
+
+  if (var->varType != TValue::FLOATVAR)
+    raiseError("cannot compute statistics of non-continuous attribute");
+
+  int attrNo = gen->domain->getVarNum(var, false);
+
+  if (attrNo != ILLEGAL_INT) {
+    if (!weightID)
+      PEITERATE(ei, gen) {
+        const TValue &val = (*ei).getValue(attrNo);
+        if (!val.isSpecial())
+          add(val.floatV);
+      }
+    else
+      PEITERATE(ei, gen) {
+        const TValue &val = (*ei).getValue(attrNo);
+        if (!val.isSpecial())
+          add(val.floatV, WEIGHT(*ei));
+      }
+  }
+
+  else {
+    TVariable &varr = var.getReference();
+    if (var->getValueFrom)
+      PEITERATE(ei, gen) {
+        const TValue &val = varr.computeValue(*ei);
+        if (!val.isSpecial())
+          add(val.floatV, WEIGHT(*ei));
+      }
+  }
+
+  holdRecomputation = false;
+  recompute();
+}
 
 
 // Adds an example with value f and weight p; n is increased by p, avg by p*f and dev by p*sqr(f)
@@ -74,6 +108,14 @@ void TBasicAttrStat::recompute()
   else
     avg = dev = -1;
 }
+
+
+void TBasicAttrStat::reset()
+{ sum = sum2 = n = avg = dev = 0.0;
+  min = numeric_limits<float>::max();
+  max = -numeric_limits<float>::max();
+}
+
 
 
 
