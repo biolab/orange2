@@ -297,13 +297,31 @@ PyObject *CostMatrix_setcost(PyObject *self, PyObject *args) PYARGS(METH_VARARGS
 
 #include "basstat.hpp"
 
-PyObject *BasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(variable, [min=, max=, avg=, dev=, n=]) -> BasicAttrStat") ALLOWS_EMPTY
+PyObject *BasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(variable, [examples, weightID, min=, max=, avg=, dev=, n=]) -> BasicAttrStat") ALLOWS_EMPTY
 { PyTRY
-    PVariable var;
-    if (!PyArg_ParseTuple(args, "|O&:BasicAttrStat.__new__", ccn_Variable, &var))
+    PyObject *pyvar = NULL;
+    PExampleGenerator egen;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "|OO&i:BasicAttrStat.__new__", &pyvar, pt_ExampleGenerator, &egen, &weightID))
       return NULL;
 
-    return WrapNewOrange(mlnew TBasicAttrStat(var), type);
+    if (!pyvar)
+      return WrapNewOrange(mlnew TBasicAttrStat(PVariable()), type);
+
+    if (!egen) {
+      if (!PyOrVariable_Check(pyvar)) {
+        PyErr_Format(PyExc_TypeError, "BasicAttrStat expects a 'Variable', not a '%s'", pyvar->ob_type->tp_name);
+        return NULL;
+      }
+     
+      return WrapNewOrange(mlnew TBasicAttrStat(PyOrange_AsVariable(pyvar)), type);
+    }
+
+    PVariable var = varFromArg_byDomain(pyvar, egen->domain, false);
+    if (!var)
+      return NULL;
+
+    return WrapNewOrange(mlnew TBasicAttrStat(egen, var, weightID), type);
   PyCATCH
 }
 
@@ -319,9 +337,17 @@ PyObject *BasicAttrStat_add(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 }
 
 
-PyObject *BasicAttrStat_recompute(PyObject *self) PYARGS(METH_O, "() -> None")
+PyObject *BasicAttrStat_recompute(PyObject *self) PYARGS(METH_NOARGS, "() -> None")
 { PyTRY
     SELF_AS(TBasicAttrStat).recompute();
+    RETURN_NONE;
+  PyCATCH
+}
+
+
+PyObject *BasicAttrStat_reset(PyObject *self) PYARGS(METH_NOARGS, "() -> None")
+{ PyTRY
+    SELF_AS(TBasicAttrStat).reset();
     RETURN_NONE;
   PyCATCH
 }
@@ -1539,6 +1565,7 @@ PYCLASSCONSTANT_INT(Filter_values, EndsWith, int(TValueFilter::EndsWith))
 C_CALL(Filter_random, Filter, "([examples], [negate=..., p=...]) -/-> ExampleTable")
 C_CALL(Filter_hasSpecial, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
 C_CALL(Filter_isDefined, Filter, "([examples], [negate=..., domain=..., check=]) -/-> ExampleTable")
+C_CALL(Filter_hasMeta, Filter, "([examples], [id=...]) -/-> ExampleTable")
 C_CALL(Filter_hasClassValue, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
 C_CALL(Filter_sameValue, Filter, "([examples], [negate=..., domain=..., position=<int>, value=...]) -/-> ExampleTable")
 C_CALL(Filter_values, Filter, "([examples], [negate=..., domain=..., values=<see the manual>) -/-> ExampleTable")
