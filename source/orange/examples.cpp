@@ -272,6 +272,22 @@ const TValue &TExample::operator[] (const string &name) const
 { return operator[](domain->getVarNum(name)); }
 
 
+const TValue &TExample::missingMeta(const int &i) const
+{
+  const TMetaDescriptor *md = domain->metas[i];
+  if (md)
+    if (md->optional)
+      return md->variable->DK();
+    else
+      if (md->variable->name.size())
+        raiseError("the value of meta attribute '%s' is missing");
+
+  // no descriptor or no name
+  raiseError("meta value with id %i is missing", i);
+  throw 0;
+}
+
+
 bool TExample::operator < (const TExample &other) const
 { 
   if (domain != other.domain)

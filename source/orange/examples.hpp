@@ -74,10 +74,14 @@ public:
 
 
   TValue &operator[] (const int &i)
-  { return i>=0 ? values[i] : meta[i]; }
+  { return i>=0 ? values[i] : getMeta(i); }
 
   const TValue &operator[] (const int &i) const
-  { return i>=0 ? values[i] : meta[i]; }
+  { return i>=0 ? values[i] : getMetaIfExists(i); }
+
+  // this is duplicated from above, but can be used on non-const examples
+  const TValue &getValue(const int &i)
+  { return i>=0 ? values[i] : getMetaIfExists(i); }
 
   TValue &operator[] (PVariable &var);
   const TValue &operator[] (PVariable &var) const;
@@ -97,11 +101,36 @@ public:
   void setClass(const TValue &val)
   { values_end[-1] = val; }
 
+
+  const TValue &missingMeta(const int &i) const;
+
+  // these two require that meta is defined
   const TValue &getMeta(const int &i) const
-  { return meta[i]; }
+  { 
+    return meta[i];
+  }
 
   TValue &getMeta(const int &i)
-  { return meta[i]; }
+  { 
+    return meta[i];
+  }
+
+  // these two will set it to undefined if it is optional and undefined
+  TValue &getMetaIfExists(const int &i)
+  { 
+    TValue &val = meta.getValueIfExists(i);
+    return &val != &missingMetaValue ? val : missingMeta(i);
+  }
+
+
+  const TValue &getMetaIfExists(const int &i) const
+  { 
+    const TValue &val = meta.getValueIfExists(i);
+    return &val != &missingMetaValue ? val : missingMeta(i);
+  }
+
+
+
 
   bool hasMeta(const int &i) const
   { return meta.exists(i); }
