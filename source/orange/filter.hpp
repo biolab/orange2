@@ -87,6 +87,18 @@ public:
 };
 
 
+/// Selects examples with all values defined
+class ORANGE_API TFilter_hasMeta: public TFilter {
+public:
+  __REGISTER_CLASS
+
+  int id; //P meta attribute id
+
+  TFilter_hasMeta(const int &anid = 0, bool = false, PDomain = PDomain());
+  virtual bool operator()(const TExample &);
+};
+
+
 /// Selects examples with known class value
 class ORANGE_API TFilter_hasClassValue : public TFilter {
 public:

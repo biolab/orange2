@@ -126,13 +126,24 @@ bool TFilter_isDefined::operator()(const TExample &exam)
 }
 
 
-
 void TFilter_isDefined::afterSet(const char *name)
 {
   if (!strcmp(name, "domain") && domain && (!check || !check->size()) && (domain->variables != check->attributes))
     check = mlnew TAttributedBoolList(domain->variables, domain->variables->size(), true);
 
   TFilter::afterSet(name);
+}
+
+
+TFilter_hasMeta::TFilter_hasMeta(const int &anid, bool aneg, PDomain dom)
+: TFilter(aneg, dom),
+  id(anid)
+{}
+
+
+bool TFilter_hasMeta::operator()(const TExample &exam)
+{
+  return exam.hasMeta(id) != negate;
 }
 
 
