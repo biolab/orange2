@@ -209,7 +209,7 @@ PImputer TImputerConstructor_average::operator()(PExampleGenerator egen, const i
     else if ((*di)->supportsContinuous)
       *vi = TValue((*di)->percentile(50));
     else
-      *vi = (*doi)->DK();
+      *vi = TValue((*doi)->DK());
 
   if (!imputeClass && egen->domain->classVar)
     imputer->defaults->setClass(egen->domain->classVar->DK());
