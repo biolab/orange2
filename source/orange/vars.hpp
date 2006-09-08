@@ -66,11 +66,16 @@ public:
   PClassifier getValueFrom; //P Function to compute the value from values of other variables
   bool getValueFromLocked;
 
+protected:
+  TValue DC_value;
+  TValue DK_value;
+
+public:
   TVariable(const int &avarType=TValue::NONE, const bool &ordered = false);
   TVariable(const string &aname, const int &avarType=TValue::NONE, const bool &ordered = false);
 
-  virtual TValue DC() const;
-  virtual TValue DK() const;
+  virtual const TValue &DC() const;
+  virtual const TValue &DK() const;
   virtual TValue specialValue(int) const;
 
   bool str2special(const string &valname, TValue &valu) const;  // Those two functions convert ? to DK, ~ to DC and vice-versa

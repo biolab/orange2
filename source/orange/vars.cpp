@@ -48,7 +48,9 @@ TVariable::TVariable(const int &avarType, const bool &ord)
 : varType(avarType),
   ordered(ord),
   distributed(false),
-  getValueFromLocked(false)
+  getValueFromLocked(false),
+  DC_value(varType, valueDC),
+  DK_value(varType, valueDK)
 {}
 
 
@@ -56,16 +58,18 @@ TVariable::TVariable(const string &aname, const int &avarType, const bool &ord)
 : varType(avarType),
   ordered(ord),
   distributed(false),
-  getValueFromLocked(false)
+  getValueFromLocked(false),
+  DC_value(varType, valueDC),
+  DK_value(varType, valueDK)
 { name = aname; };
 
 
-TValue  TVariable::DC() const
-{ return TValue(varType, valueDC); }
+const TValue &TVariable::DC() const
+{ return DC_value; }
 
 
-TValue  TVariable::DK() const
-{ return TValue(varType, valueDK); }
+const TValue &TVariable::DK() const
+{ return DK_value; }
 
 
 TValue  TVariable::specialValue(int spec) const
@@ -77,11 +81,11 @@ TValue  TVariable::specialValue(int spec) const
     are left intact.*/
 bool TVariable::str2special(const string &valname, TValue &valu) const
 { if ((valname=="?") || !valname.length()){
-    valu = DK();
+    valu = TValue(DK());
     return true;
   }
   else if (valname=="~") {
-    valu = DC();
+    valu = TValue(DC());
     return true;
   }
   return false;
@@ -208,7 +212,7 @@ bool TEnumVariable::firstValue(TValue &val) const
     return true; 
   }
   else {
-    val=DK();
+    val = TValue(DK());
     return false;
   }
 }
