@@ -60,13 +60,18 @@ public:
   bool usePickle; //P tells whether to use pickle for saving to/loading from files
   bool useSomeValue; //P tells whether the Variable will operate on Value or SomeValue (default)
 
+protected:
+  TValue DC_somevalue;
+  TValue DK_somevalue;
+
+public:
   TPythonVariable();
   TPythonVariable(const string &aname);
 
   bool isOverloaded(char *method) const;
 
-  virtual TValue DC() const;
-  virtual TValue DK() const;
+  virtual const TValue &DC() const;
+  virtual const TValue &DK() const;
   virtual TValue specialValue(int) const;
 
   virtual void val2str(const TValue &val, string &str) const;

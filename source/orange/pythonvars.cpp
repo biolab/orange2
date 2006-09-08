@@ -128,14 +128,31 @@ bool TPythonValue::compatible(const TSomeValue &v) const
 TPythonVariable::TPythonVariable()
 : usePickle(false),
   useSomeValue(true)
-{ varType = PYTHONVAR; }
+{
+  varType = PYTHONVAR; 
+
+  DC_value = TValue(varType, valueDC);
+  DK_value = TValue(varType, valueDK);
+
+  DC_somevalue = TValue(PSomeValue(mlnew TPythonValue(Py_None)), PYTHONVAR, valueDC);
+  DK_somevalue = TValue(PSomeValue(mlnew TPythonValue(Py_None)), PYTHONVAR, valueDK);
+}
+
 
 
 TPythonVariable::TPythonVariable(const string &aname)
 : TVariable(aname),
   usePickle(false),
   useSomeValue(true)
-{ varType = PYTHONVAR; }
+{
+  varType = PYTHONVAR; 
+ 
+  DC_value = TValue(varType, valueDC);
+  DK_value = TValue(varType, valueDK);
+
+  DC_somevalue = TValue(PSomeValue(mlnew TPythonValue(Py_None)), PYTHONVAR, valueDC);
+  DK_somevalue = TValue(PSomeValue(mlnew TPythonValue(Py_None)), PYTHONVAR, valueDK);
+}
 
 
 PyObject *TPythonVariable::toPyObject(const TValue &valu) const
@@ -180,6 +197,12 @@ TValue TPythonVariable::toValue(PyObject *pyvalue) const
 
 TValue TPythonVariable::toNoneValue(const signed char &valueType) const
 { 
+  if (valueType == valueDK)
+    return DK();
+
+  if (valueType == valueDC)
+    return DC();
+
   if (useSomeValue) {
     Py_INCREF(Py_None);
     return TValue(PSomeValue(mlnew TPythonValue(Py_None)), PYTHONVAR, valueType);
@@ -217,15 +240,15 @@ bool TPythonVariable::isOverloaded(char *method) const
 }
 
 
-TValue TPythonVariable::DC() const
+const TValue &TPythonVariable::DC() const
 {
-  return toNoneValue(valueDC);
+  return useSomeValue ? DC_somevalue : DC_value;
 }
 
 
-TValue TPythonVariable::DK() const
+const TValue &TPythonVariable::DK() const
 {
-  return toNoneValue(valueDK);
+  return useSomeValue ? DK_somevalue : DK_value;
 }
 
 
