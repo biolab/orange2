@@ -873,7 +873,8 @@ class OWBaseWidget(QDialog):
         
     def keyPressEvent(self, e):
         if e.key() != 0x1030:
-            e.ignore()
+            QDialog.keyPressEvent(self, e)
+            #e.ignore()
         else:
             self.openWidgetHelp()
 
