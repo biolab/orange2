@@ -115,13 +115,13 @@ public:
     return meta[i];
   }
 
-  // these two will set it to undefined if it is optional and undefined
-  TValue &getMetaIfExists(const int &i)
+  // this one will set it to undefined if it is optional and undefined
+/*  TValue &getMetaIfExists(const int &i)
   { 
     TValue &val = meta.getValueIfExists(i);
     return &val != &missingMetaValue ? val : missingMeta(i);
   }
-
+*/
 
   const TValue &getMetaIfExists(const int &i) const
   { 
