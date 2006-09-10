@@ -1,7 +1,7 @@
 """
-<name>Correspondence analysis</name>
+<name>Correspondence Analysis</name>
 <description>Takes a ExampleTable and makes correspondence analysis</description>
-<icon>icons/ca.png</icon>
+<icon>icons/CorrespondenceAnalysis.png</icon>
 <priority>3300</priority>
 """
 
