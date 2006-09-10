@@ -39,7 +39,7 @@ class OWCorrAnalysis(OWWidget):
         self.showGridlines = 0
         self.autoSendSelection = 0
         self.toolbarSelection = 0
-        self.percRadius = 10
+        self.percRadius = 5
         
         
         self.colorSettings = None
@@ -252,7 +252,7 @@ class OWCorrAnalysis(OWWidget):
             return
             
         self.graph.removeAllSelections()
-        self.graph.removeBrowsingCurve()        
+##        self.graph.removeBrowsingCurve()        
         self.graph.removeCurves()
         self.graph.removeMarkers()
         self.graph.tips.removeAll()
@@ -337,7 +337,7 @@ class OWCorrAnalysis(OWWidget):
 class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
     def __init__(self, widget, parent, graph, autoSend = 0):
         ZoomSelectToolbar.__init__(self, widget, parent, graph, autoSend)
-        
+        self.widget = widget
         group = QHButtonGroup("Browsing", parent)
         self.buttonBrowse = OWToolbars.createButton(group, "Browsing tool - Rectangle", self.actionBrowse, QPixmap(OWToolbars.dlg_browseRectangle), toggle = 1)
         self.buttonBrowseCircle = OWToolbars.createButton(group, "Browsing tool - Circle", self.actionBrowseCircle, QPixmap(OWToolbars.dlg_browseCircle), toggle = 1)        
@@ -367,6 +367,7 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
             self.buttonSelectRect.setOn(0)
             self.buttonSelectPoly.setOn(0)   
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 3
+            self.widget.calcRadius()
         else:
             self.buttonZoom.setOn(1)            
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
@@ -381,6 +382,7 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
             self.buttonSelectRect.setOn(0)
             self.buttonSelectPoly.setOn(0)
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 4
+            self.widget.calcRadius()
         else:
             self.buttonZoom.setOn(1)
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
