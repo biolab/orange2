@@ -388,7 +388,7 @@ class OWGraph(QwtPlot):
             
         return newCurveKey
 
-    def addMarker(self, name, x, y, alignment = -1, bold = 0):
+    def addMarker(self, name, x, y, alignment = -1, bold = 0, color = None):
         mkey = self.insertMarker(name)
         self.marker(mkey).setXValue(x)
         self.marker(mkey).setYValue(y)
@@ -396,6 +396,8 @@ class OWGraph(QwtPlot):
             self.marker(mkey).setLabelAlignment(alignment)
         if bold:
             font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
+        if color:
+            self.marker(mkey).setLabelColor(color)
         return mkey
 
     # show a tooltip at x,y with text. if the mouse will move for more than 2 pixels it will be removed

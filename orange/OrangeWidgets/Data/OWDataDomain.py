@@ -351,7 +351,7 @@ class OWDataDomain(OWWidget):
 
 if __name__=="__main__":
     import sys
-    data = orange.ExampleTable(r'..\..\doc\datasets\iris.tab')
+    data = orange.ExampleTable(r'../../doc/datasets/iris.tab')
     # add meta attribute
     data.domain.addmeta(orange.newmetaid(), orange.StringVariable("name"))
     for ex in data:

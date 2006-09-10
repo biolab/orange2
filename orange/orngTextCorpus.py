@@ -86,22 +86,33 @@ class FeatureSelection:
         self.meta2index = dict(zip(self.dataInput.domain.getmetas().keys(), range(len(self.dataInput.domain.getmetas().keys()))))
         if not userMeasures:
             userMeasures = self.measures.keys()
+##        else:
+##            userMeasures = list(set(userMeasures))
+##            try:
+##                userMeasures.remove('Document Frequency')
+##            except:
+##                pass
+##            userMeasures.insert(0, 'Document Frequency')
+
+        self._calcDF()
         self.data = orange.ExampleTable(orange.Domain([]))
         lstMeasures  = [m for m in userMeasures if FeatureSelection.measures.has_key(m)]
         for measure in lstMeasures:
             getattr(self, "_" + FeatureSelection.measures[measure])(measure)
         for id, name in zip(range(len(self.data)), self.dataInput.domain.getmetas().values()):
             self.data[id].name = name.name     
-        
-    def _DF(self, nameOfAttribute):
-        df  = [0] * len(self.dataInput.domain.getmetas().keys())
+            
+            
+    def _calcDF(self):
+        self.df  = [0] * len(self.dataInput.domain.getmetas().keys())
         
         for ex in self.dataInput:
             toinc = [self.meta2index[meta] for meta in ex.getmetas().keys()]
             for i in toinc:
-                df[i] = df[i] + 1
-        
-        df = [[i] for i in df]
+                self.df[i] = self.df[i] + 1        
+                
+    def _DF(self, nameOfAttribute):        
+        df = [[i] for i in self.df]
             
         dom = orange.Domain([orange.FloatVariable(nameOfAttribute)], 0)
         exTable = orange.ExampleTable(dom, df)
@@ -110,14 +121,7 @@ class FeatureSelection:
         else:
             self.data = orange.ExampleTable(exTable)
             
-    def _IG(self, nameOfAttribute):
-        df  = [0] * len(self.dataInput.domain.getmetas().keys())
-        
-        for ex in self.dataInput:
-            toinc = [self.meta2index[meta] for meta in ex.getmetas().keys()]
-            for i in toinc:
-                df[i] = df[i] + 1
-        
+    def _IG(self, nameOfAttribute):        
         dom = orange.Domain([orange.FloatVariable(nameOfAttribute)], 0)
             
         categories = getCategories(self.dataInput)
@@ -136,11 +140,11 @@ class FeatureSelection:
                             prCT[i] = prCT[i] + 1
                         else:
                             prCnT[i] = prCnT[i] + 1
-                prCT = 1. * array(prCT) / df[ind]
+                prCT = 1. * array(prCT) / self.df[ind]
                 prCT = [i for i in prCT if i > 0]
-                prCnT = 1. * array(prCnT) / (len(self.dataInput) - df[ind])
+                prCnT = 1. * array(prCnT) / (len(self.dataInput) - self.df[ind])
                 prCnT = [i for i in prCnT if i > 0]
-                ig[ind] = ig[ind] + 1. * df[ind] / len(self.dataInput) * sum(prCT * log(prCT)) + 1. * (len(self.dataInput) - df[ind]) / len(self.dataInput) * sum(prCnT * log(prCnT))
+                ig[ind] = ig[ind] + 1. * self.df[ind] / len(self.dataInput) * sum(prCT * log(prCT)) + 1. * (len(self.dataInput) - self.df[ind]) / len(self.dataInput) * sum(prCnT * log(prCnT))
         else:
             ig = [0] * len(self.dataInput.domain.getmetas().keys())            
 
