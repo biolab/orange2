@@ -1,7 +1,7 @@
 """
 <name>Text File</name>
 <description>Loads XML File</description>
-<icon>icons/File.png</icon>
+<icon>icons/TextFile.png</icon>
 <priority>3500</priority>
 """
 
