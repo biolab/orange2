@@ -126,7 +126,7 @@ class updateOrangeDlg(QMainWindow):
             self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
         except:
-            self.addText("Failed to locate file 'whatsdown.txt'. There is no information on installed Orange files.", nobr = 0)
+            self.addText("Failed to locate file 'whatsdown.txt'. There is no information on current versions of Orange files. By clicking 'Update files' you will download the latest versions of files.", nobr = 0)
             return
 
 
@@ -239,8 +239,8 @@ class updateOrangeDlg(QMainWindow):
             self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
         except:
-            res = QMessageBox.information(self,'Update Orange',"There is no 'whatsdown.txt' file. This file contains information about versions of your local Orange files.\nIf you press 'Download Latest Files' you will replace all your local Orange files with the latest versions from the web.\n",'Download Latest Files', "Cancel", 0, 1)
-            if res == 1: return
+            res = QMessageBox.information(self, 'Update Orange', "The 'whatsdown.txt' file if missing (most likely because you downloaded Orange from CVS).\nThis file contains information about versions of your local Orange files.\n\nIf you press 'Replace Local Files' you will not replace only updated files, but will \noverwrite all your local Orange files with the latest versions from the web.\n", 'Replace Local Files', "Cancel", None, 0, 1)
+            if res != 0: return
 
         itms = upstuff.items()
         itms.sort(lambda x,y:cmp(x[0], y[0]))
