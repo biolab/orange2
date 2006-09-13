@@ -9,7 +9,7 @@ from qt import *
 from OWWidget import *
 import OWGUI, OWToolbars, OWDlgs
 from xml.sax import make_parser, handler
-from orngTextCorpus import TextCorpusLoader, loadWordSet
+from orngTextCorpus import *
 import os
 import modulTMT as lemmatizer
 from OWTools import *

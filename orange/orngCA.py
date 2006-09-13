@@ -25,18 +25,21 @@ def input(filename):
     
 class CA(object):
     """Main class for computation of correspondance analysis"""
-    def __init__(self, contingencyTable):
+    def __init__(self, contingencyTable, labelR = [], labelC = []):
         """ @contingencyTable   instance of "list of lists"
         """     
         #calculating correspondance analysis from the data matrix
         #algorithm described in the book (put reference) is used
+
+        self.labelR = labelR
+        self.labelC = labelC
 
         self.__dataMatrix = matrix(contingencyTable)
         sumElem = sum(sum(array(self.__dataMatrix))) * 1.
         
         #corrMatrix is a matrix of relative frequencies of elements in data matrix
         self.__corr = self.__dataMatrix / sumElem        
-        self.__colSums = sum(self.__corr)
+        self.__colSums = sum(self.__corr, 0)
         self.__rowSums = sum(self.__corr, 1)
         
         self.__colProfiles =  matrix(diag((1. / array(self.__colSums))[0])) * transpose(self.__corr)
@@ -141,7 +144,7 @@ class CA(object):
         else:
             return multiply(transpose(self.__colSums), multiply(self.__g, self.__g))
     def InertiaOfAxis(self, percentage = 0):
-        inertias = array(sum(self.DecompositionOfInertia()).tolist()[0])
+        inertias = array(sum(self.DecompositionOfInertia(), 0).tolist()[0])
         if percentage:
             return inertias / sum(inertias) * 100
         else:
@@ -169,8 +172,18 @@ class CA(object):
            raise Exception("Dim tuple must be of length two")
         pylab.plot(self.getPrincipalRowProfilesCoordinates()[:, dim[0]], self.getPrincipalRowProfilesCoordinates()[:, dim[1]], 'ro',
             self.getPrincipalColProfilesCoordinates()[:, dim[0]], self.getPrincipalColProfilesCoordinates()[:, dim[1]], 'bs')
+        if self.labelR:
+            for i, x, y in zip(range(len(self.getPrincipalRowProfilesCoordinates()[:, dim[0]])), \
+                                    self.getPrincipalRowProfilesCoordinates()[:, dim[0]], \
+                                    self.getPrincipalRowProfilesCoordinates()[:, dim[1]]):
+                pylab.text(x, y, self.labelR[i], horizontalalignment='center')
+        if self.labelC:
+            for i, x, y in zip(range(len(self.getPrincipalColProfilesCoordinates()[:, dim[0]])), \
+                                    self.getPrincipalColProfilesCoordinates()[:, dim[0]], \
+                                    self.getPrincipalColProfilesCoordinates()[:, dim[1]]):
+                pylab.text(x, y, self.labelC[i], horizontalalignment='center')                
         pylab.grid()
-        pylab.  show()                
+        pylab.show()                
     
     A = property(getA)
     B = property(getB)
@@ -195,4 +208,5 @@ if __name__ == '__main__':
 
     
     data = input('doc/datasets/smokers.tab')
-    c = CA(data)
+    c = CA(data, ['Senior Managers', 'Junior Managers', 'Senior Employees', 'Junior Employees', 'Secretaries'], 
+        ['None', 'Light', 'Medium', 'Heavy'])

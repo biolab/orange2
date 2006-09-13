@@ -255,7 +255,7 @@ class CategoryDocument:
         newDomain = orange.Domain([])
         newDomain.addmetas(self.data.domain.getmetas(), True)
         self.dataCD = orange.ExampleTable(newDomain)
-        categories = getCategories(self.data)
+        categories = getCategories(self.data).keys()
         if not len(categories): return None
         for cat in categories:
             ex =  orange.Example(newDomain)
