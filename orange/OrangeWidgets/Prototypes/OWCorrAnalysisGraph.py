@@ -174,12 +174,14 @@ class OWCorrAnalysisGraph(OWGraph):
         self.__backToZoom()
         self.state = SELECT_POLYGON
         if self.tempSelectionCurve: self.removeLastSelection()       
-       
+
+    def _sort(self, x, y):
+        return int(sign((y[1] - x[1] and [y[1] - x[1]] or [x[0] - y[0]])[0]))
     def addMarkers(self, cor, x, y, r, bold = 0):
         if not len(cor):
             return
 
-        cor.sort(cmp = lambda x, y: int(sign((operator.itemgetter(1)(y) - operator.itemgetter(1)(x) and [operator.itemgetter(1)(y) - operator.itemgetter(1)(x)] or [operator.itemgetter(0)(x) - operator.itemgetter(0)(y)])[0])))
+        cor.sort(self._sort)
         
         top = y + r
         top = self.transform(QwtPlot.yLeft, top)

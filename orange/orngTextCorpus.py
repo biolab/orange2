@@ -71,8 +71,8 @@ def getCategories(data):
 ################
 class FeatureSelection:
     measures = {
-                            'Document Frequency': 'DF',
-                            'Information Gain': 'IG'
+                            'Document Frequency': 'DF'
+##                            ,'Information Gain': 'IG'
                         }
     def __init__(self, dataInput, userMeasures = []):
         self.dataInput = dataInput

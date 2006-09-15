@@ -9,7 +9,7 @@ from qt import *
 from OWWidget import *
 import OWGUI, OWToolbars, OWDlgs
 from xml.sax import make_parser, handler
-from orngTextCorpus import *
+from orngTextCorpus import TextCorpusLoader, loadWordSet
 import os
 import modulTMT as lemmatizer
 from OWTools import *
@@ -80,7 +80,7 @@ class OWTextFile(OWWidget):
         
         # text edit -- displat text node of XML
         QLabel(col1).setText("Node text")
-        self.textEdit = QTextEdit(col1)
+        self.textEdit = QTextView(col1)
 
         gl.addMultiCellWidget(col1, 0, 4, 0, 0)
         
@@ -96,8 +96,8 @@ class OWTextFile(OWWidget):
         hboxLem = QHBox(preproc)
         hboxStop = QHBox(preproc)
         
-        startfile = str(orangedir) +'/OrangeWidgets/TextData'
-        
+        startfile = os.path.join(str(orangedir), 'OrangeWidgets', 'TextData','.')
+
         QLabel('Lemmatizer:', hboxLem)
         self.lemmatizer = '(none)'
         items = ['(none)']      
@@ -151,7 +151,8 @@ class OWTextFile(OWWidget):
         
     def openFile(self, fPath):
         self.listView.clear()
-        self.textEdit.clear()
+        #self.textEdit.clear()
+        self.textEdit.setText("")
         self.listBoxTags.clear()
         f = open(fPath, "r")
         
@@ -231,11 +232,11 @@ class OWTextFile(OWWidget):
         if self.lemmatizer == '(none)':
             lem = lemmatizer.NOPLemmatization()
         else:
-            lem = lemmatizer.FSALemmatization(str(orangedir) +'/OrangeWidgets/TextData/'+self.lemmatizer)
+            lem = lemmatizer.FSALemmatization(os.path.join(str(orangedir), 'OrangeWidgets', 'TextData', self.lemmatizer))
         if not self.stopwords == '(none)':
-            for word in loadWordSet(str(orangedir) +'/OrangeWidgets/TextData/'+self.stopwords):
+            for word in loadWordSet(os.path.join(str(orangedir), 'OrangeWidgets', 'TextData', self.stopwords)):
                 lem.stopwords.append(word)
-        a = TextCorpusLoader(self.fileNameLabel.text(), tags, self.informativeTagsSelected, lem)
+        a = TextCorpusLoader(str(self.fileNameLabel.text()), tags, self.informativeTagsSelected, lem)
         if self.catDoc:
             self.send("Documents", CategoryDocument(a.data).dataCD)
         else:

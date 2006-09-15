@@ -158,7 +158,9 @@ class CA(object):
     def PointsWithMostInertia(self, rowColumn = 0, axis = (0, 1)):
         contribution = self.ContributionOfPointsToAxis(rowColumn = rowColumn, axis = axis[0], percentage = 0) + \
                         self.ContributionOfPointsToAxis(rowColumn = rowColumn, axis = axis[1], percentage = 0)
-        a = [i for i, v in sorted(zip(range(len(contribution)), contribution), key = operator.itemgetter(1))]
+        tmp = zip(range(len(contribution)), contribution)
+        tmp.sort(lambda x, y: cmp(x[1], y[1]))
+        a = [i for (i, v) in tmp]
         a.reverse()
         return a
     def PlotScreeDiagram(self):
