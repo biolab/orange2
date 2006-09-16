@@ -1,5 +1,5 @@
 """
-<name>ROC Anaylsis</name>
+<name>ROC Analysis</name>
 <description>Displays Receiver Operating Characteristics curve based on evaluation of classifiers.</description>
 <contact>Tomaz Curk</contact>
 <icon>ROCAnalysis.png</icon>
@@ -706,8 +706,10 @@ class OWROC(OWWidget):
 
         OWGUI.hSlider(self.performanceTabCosts, self, 'FPcost', box='FP Cost', minValue=mincost, maxValue=maxcost, step=stepcost, callback=self.costsChanged, ticks=50)
         OWGUI.hSlider(self.performanceTabCosts, self, 'FNcost', box='FN Cost', minValue=mincost, maxValue=maxcost, step=stepcost, callback=self.costsChanged, ticks=50)
-        OWGUI.hSlider(self.performanceTabCosts, self, 'pvalue', box='p(cl) [%]', minValue=self.minp, maxValue=self.maxp, step=stepp, callback=self.pvaluesUpdated, ticks=5, labelFormat="%2.1f")
-        OWGUI.button(self.performanceTabCosts, self, 'Default p(cl)', self.setDefaultPValues) ## reset p values to default
+
+        ptc = OWGUI.widgetBox(self.performanceTabCosts, "Prior target class probability [%]")
+        OWGUI.hSlider(ptc, self, 'pvalue', minValue=self.minp, maxValue=self.maxp, step=stepp, callback=self.pvaluesUpdated, ticks=5, labelFormat="%2.1f")
+        OWGUI.button(ptc, self, 'Compute from data', self.setDefaultPValues) ## reset p values to default
 
         ## test set selection (testSetsQLB)
         self.testSetsQVGB = QVGroupBox(self.performanceTab)
@@ -924,9 +926,10 @@ class OWROC(OWWidget):
             graph.pChanged(float(self.pvalueList[index]) / float(self.maxp))
 
     def setDefaultPValues(self):
-        self.pvaluesList = [v for v in self.defaultPerfLinePValues]
-        self.pvalue = self.pvaluesList[self.targetClass]
-        self.pvaluesUpdated()
+        if self.defaultPerfLinePValues:
+            self.pvaluesList = [v for v in self.defaultPerfLinePValues]
+            self.pvalue = self.pvaluesList[self.targetClass]
+            self.pvaluesUpdated()
 
     def test_results(self, dres):
         self.FPcostList = []
