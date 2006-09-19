@@ -12,6 +12,18 @@ from OWGraph import *
 from qt import *
 from qtcanvas import *
 import OWGUI, OWGraphTools
+import Numeric
+
+def MeasureAttribute_chiSquare(variable, data):
+    cont=orange.ContingencyAttrClass(variable, data)
+    freq=Numeric.array([list(d) for d in cont])
+    iDist=Numeric.array([[a for a in cont.innerDistribution]]) #Numeric.sum(freq, 0)
+    oDist=Numeric.transpose(Numeric.array([[a for a in cont.outerDistribution]])) #Numeric.sum(freq, 1)
+    expected=Numeric.matrixmultiply(oDist, iDist)/float(Numeric.sum(iDist,1))+1 #+1 so no element in expected equals 0
+    dif=freq-expected
+    dif=Numeric.divide(Numeric.multiply(dif,dif), expected)
+    #print expected, Numeric.sum(Numeric.sum(dif,1),0)
+    return Numeric.sum(Numeric.sum(dif,1),0)
 
 def frange(low, up, steps):
     inc=(up-low)/steps
@@ -329,8 +341,8 @@ class OWInteractiveDiscretization(OWWidget):
         self.measures=[("Information gain", orange.MeasureAttribute_info),
                        #("Gain ratio", orange.MeasureAttribute_gainRatio),
                        ("Gini", orange.MeasureAttribute_gini),
-                       ("Relevance", orange.MeasureAttribute_relevance)]
-                       #("chi-square",)]
+                       ("Relevance", orange.MeasureAttribute_relevance),
+                       ("chi-square", MeasureAttribute_chiSquare)]
         self.discretizationMethods=[("Entropy discretization", orange.EntropyDiscretization),
                                     ("Equal-Frequancy discretizaion", orange.EquiNDiscretization), 
                                     ("Equal-distance discretization", orange.EquiDistDiscretization)]
