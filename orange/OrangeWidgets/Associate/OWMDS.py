@@ -101,8 +101,7 @@ class OWMDS(OWWidget):
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
         #OWGUI.checkBox(stopping, self, "computeStress", "Compute stress")
         stress=OWGUI.widgetBox(self.stopping, "Min. Avg. Stress Delta")
-        OWGUI.comboBox(self.stopping, self, "StressFunc", box="Stress Function", items=[a[0] for a in self.stressFunc],
-                       callback=lambda: not self.mds.getStress(self.stressFunc[self.StressFunc][1]) and self.graph.setLines(True) and self.graph.replot())
+        OWGUI.comboBox(self.stopping, self, "StressFunc", box="Stress Function", items=[a[0] for a in self.stressFunc], callback=self.updateStress)
         OWGUI.qwtHSlider(stress, self, "minStressDelta", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
         OWGUI.spin(self.stopping, self, "maxIterations", box="Max. Number of Steps", min=1, max=100)
         #OWGUI.spin(stopping, self, "maxImprovment", box="Max. improvment of a run", min=0, max=100, postfix="%")
@@ -254,17 +253,21 @@ class OWMDS(OWWidget):
             print val
         
     def smacofStep(self):
+        if not getattr(self, "mds", None):
+            return
         for i in range(self.NumIter):
             self.mds.SMACOFstep()
         if self.computeStress:
             self.mds.getStress(self.stressFunc[self.StressFunc][1])
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
-        st=time.clock()
+        #st=time.clock()
         if self.ReDraw:
             self.graph.updateData()
         #print "Update:", time.clock()-st
 
     def LSMT(self):
+        if not getattr(self, "mds", None):
+            return
         self.mds.LSMT()
         if self.computeStress:
             self.mds.getStress(self.stressFunc[self.StressFunc][1])
@@ -273,14 +276,17 @@ class OWMDS(OWWidget):
             self.graph.updateData()
 
     def torgerson(self):
-        if self.mds:
-            self.mds.Torgerson()
-            if self.computeStress:
-                self.mds.getStress(self.stressFunc[self.StressFunc][1])
-                self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
-            self.graph.updateData()
+        if not getattr(self, "mds", None):
+            return
+        self.mds.Torgerson()
+        if self.computeStress:
+            self.mds.getStress(self.stressFunc[self.StressFunc][1])
+            self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
+        self.graph.updateData()
 
     def randomize(self):
+        if not getattr(self, "mds", None):
+            return
         self.mds.points = RandomArray.random(shape=[self.mds.n,2])
         if self.computeStress:
             self.mds.getStress(self.stressFunc[self.StressFunc][1])
@@ -288,6 +294,8 @@ class OWMDS(OWWidget):
         self.graph.updateData()
 
     def jitter(self):
+        if not getattr(self, "mds", None):
+            return
         mi = Numeric.argmin(self.mds.points,0)
         ma = Numeric.argmax(self.mds.points,0)
         st = 0.01*(ma-mi)
@@ -300,6 +308,8 @@ class OWMDS(OWWidget):
         self.graph.updateData()
 
     def start(self):
+        if not getattr(self, "mds", None):
+            return
         if self.done==False:
             self.done=True
             return
@@ -343,6 +353,8 @@ class OWMDS(OWWidget):
         #print "time %i " % (time.clock()-startTime)
 
     def testStart(self):
+        if not getattr(self, "mds", None):
+            return
         if self.done==False:
             self.done=True
             return
@@ -385,6 +397,8 @@ class OWMDS(OWWidget):
         """
 
     def sendSelections(self):
+        if not getattr(self, "mds", None):
+            return
         selectedInd=[]
         for i,(x,y) in enumerate(self.mds.points):
             if self.graph.isPointSelected(x,y):
@@ -423,6 +437,13 @@ class OWMDS(OWWidget):
             names=list(Set([d.dirname for d in datasets]))
             data=[(name, [d for d in filter(lambda a:a.strain==name, datasets)]) for name in names]
             self.send("Structured Data Files",data)
+
+    def updateStress(self):
+        if not getattr(self, "mds", None):
+            return
+        self.mds.getStress(self.stressFunc[self.StressFunc][1])
+        self.graph.setLines(True)
+        self.graph.replot()
 
 class MDSGraph(OWGraph):
     def __init__(self, parent=None, name=None):
@@ -526,6 +547,7 @@ class MDSGraph(OWGraph):
             #for k in self.lineKeys:
             #    removeCurve(k)
             self.lineKeys=[]
+        if not getattr(self, "mds", None): return 
         if self.NumStressLines<len(self.lineKeys):
             for k in self.lineKeys[self.NumStressLines:]:
                 removeCurve(k)
