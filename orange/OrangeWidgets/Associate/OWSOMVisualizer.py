@@ -643,6 +643,7 @@ class OWSOMVisualizer(OWWidget):
         self.setMode()
 
     def setHistogram(self):
+        if not self.somMap: return
         if self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete:
             self.tabWidget.setTabEnabled(self.discTab,True)
             self.tabWidget.setTabEnabled(self.contTab,False)
@@ -707,6 +708,7 @@ class OWSOMVisualizer(OWWidget):
                 
 
     def clear(self):
+        self.canvasView.clearSelection()
         self.componentCombo.clear()
         self.canvas.component=0
         self.canvas.setSom(None)
@@ -718,6 +720,7 @@ class OWSOMVisualizer(OWWidget):
             self.commit()
             
     def commit(self):
+        if not self.somMap: return
         ex=orange.ExampleTable(self.somMap.examples.domain)
         for n in self.selectionList:
             if self.inputSet==0 and n.examples:
