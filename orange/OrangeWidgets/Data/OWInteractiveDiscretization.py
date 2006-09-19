@@ -99,7 +99,8 @@ class DiscGraph(OWGraph):
             self.vars=[]
             self.cutLineKeys=[]
             self.rugKeys=[]
-            self.curAttribute=0            
+            self.curAttribute=0
+            self.curCutPoints=[]
             return
         self.vars=self.master.vars
         self.condProb=[orange.ConditionalProbabilityEstimatorConstructor_loess(orange.ContingencyAttrClass(var, self.data)) for var in self.vars]
@@ -197,10 +198,13 @@ class DiscGraph(OWGraph):
         return curve
         
     def onMousePressed(self, e):
+        if not self.data: return
         self.mouseCurrentlyPressed=1
         cut=self.invTransform(QwtPlot.xBottom, e.x())
-        cut=self.snap(cut)
         curve=self.getCutCurve(cut)
+        if not curve:
+            cut=self.snap(cut)
+            curve=self.getCutCurve(cut)
         if curve:
             if e.button()==Qt.RightButton:
                 self.curCutPoints.pop(curve.curveInd)
@@ -217,6 +221,7 @@ class DiscGraph(OWGraph):
             self.update()
 
     def onMouseMoved(self, e):
+        if not self.data: return
         if self.mouseCurrentlyPressed:
             if self.selectedCutPoint:
                 pos1=self.invTransform(QwtPlot.xBottom, e.x())
@@ -235,12 +240,13 @@ class DiscGraph(OWGraph):
                 self.plotLookaheadCurve()
                 self.curve(self.lookaheadCurveKey).setEnabled(1)
                 self.update()
-        elif self.getCutCurve(self.snap(self.invTransform(QwtPlot.xBottom, e.x()))):
+        elif self.getCutCurve(self.invTransform(QwtPlot.xBottom, e.x())):
             self.canvas().setCursor(Qt.sizeHorCursor)
         else:
             self.canvas().setCursor(Qt.arrowCursor)
                                   
     def onMouseReleased(self, e):
+        if not self.data: return
         self.mouseCurrentlyPressed=0
         self.selectedCutPoint=None
         self.computeBaseScore()
@@ -362,6 +368,7 @@ class OWInteractiveDiscretization(OWWidget):
         self.sets=[("First set",1), ("Second set", 2), ("Third set", 3)]
         OWGUI.attributeIconDict=cc
         self.candidate=[0]
+        self.data=None
 
     def cdata(self, data=None):
         if data:
@@ -401,6 +408,7 @@ class OWInteractiveDiscretization(OWWidget):
         self.intervalSlider.parentWidget().setEnabled(self.discretization!=0)
 
     def discretize(self):
+        if not self.data: return
         if self.discretization==0:
             entro=orange.EntropyDiscretization()
             disc=entro(self.vars[self.attribute], self.data)
