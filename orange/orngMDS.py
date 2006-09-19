@@ -59,6 +59,9 @@ class MDS:
         else:
             self.__dict__[name]=value
             
+    def __nonzero__(self):
+        return True
+            
     def SMACOFstep(self):
         self.mds.SMACOFstep()
 
