@@ -110,16 +110,16 @@ def moreGeneral(gen, spec):
     revGen=reverseString(gen)
     for s in spec:
         #if len(gen)>len(s): continue
-        if gen in s and gen!=s: return True
-        elif revGen in s and revGen!=s: return True
+        if gen in s: return True
+        elif revGen in s: return True
     return False
 
 def moreSpecific(spec, gen):
     revSpec=reverseString(spec)
     for g in gen:
         #if len(g)<len(spec): continue
-        if g in spec and g!=spec: return True
-        elif g in revSpec and g!=revSpec: return True
+        if g in spec: return True
+        elif g in revSpec: return True
     return False
 
 def removeDuplicates(smiles):
@@ -129,6 +129,28 @@ def removeDuplicates(smiles):
         if a not in smiles and reverseString(a) not in smiles:
             r.append(a)
     return r
+
+def filterMaxSpecific(fragments):
+    fragments=list(fragments)
+    fragments.sort(lambda a,b: -cmp(len(a), len(b)))
+    #print fragments
+    ret=[]
+    while fragments:
+        a=fragments.pop(-1)
+        if not moreGeneral(a, fragments):
+            ret.append(a)
+    return ret
+
+def filterMaxGeneral(fragments):
+    fragments=list(fragments)
+    fragments.sort(lambda a,b:cmp(len(a), len(b)))
+    #print fragments
+    ret=[]
+    while fragments:
+        a=fragments.pop(-1)
+        if not moreSpecific(a, fragments):
+            ret.append(a)
+    return ret
 
 def updateSpecific(G,S,c, cache={}):
     first, f, data=c
@@ -148,16 +170,18 @@ def updateSpecific(G,S,c, cache={}):
         C=filter(lambda c: moreGeneral(c, S), C)
         #print "filter dup"
         C=removeDuplicates(C)
-        #print "filter freq",len(C)
+        print "filter freq",len(C)
         F.append(filter(filterFunc,C))
         #print C
         #print F
     UF=Set()
     for f in F:
         UF.union_update(f)
-    #print "filtering S", len(UF)
-    S=filter(lambda s: (not moreGeneral(s, UF)) and moreSpecific(s, G), UF)
-    #print "S:",S
+    print "filtering S", len(UF)
+    UF=filterMaxSpecific(UF)
+    S=filter(lambda s: moreSpecific(s, G), UF)
+    #S=filter(lambda s: (not moreGeneral(s, UF)) and moreSpecific(s, G), UF)
+    print "S:",[decodeSmiles(s) for s in S]
     return G,S
 
 def updateGeneral(G,S,c):
@@ -178,7 +202,7 @@ def updateGeneral(G,S,c):
         C=Set(filter(lambda c: moreGeneral(c, S), C))
         #print "filter dup"
         C=Set(removeDuplicates(C))
-        #print "filter freq",len(C)
+        print "filter freq",len(C)
         F.append(filter(filterFunc, C))
         I.append(C.difference(Set(F[-1])))
         #print C
@@ -186,19 +210,24 @@ def updateGeneral(G,S,c):
     UI=Set()
     for i in I:
         UI.union_update(i)
-    UI=list(UI)
-    UI.sort(lambda a,b:-cmp(len(a),len(b)))
-    UIr=list(UI)
-    UIr.reverse()
-    #print UI[:10]
-    #print "filtering G", len(UI)
-    G=filter(lambda g: (not moreSpecific(g, UI)) and moreGeneral(g,S), UIr)
-    #print "G:",G
+    print "filtering G", len(UI)
+    UI=filterMaxGeneral(UI)
+    G=filter(lambda g: moreGeneral(g,S), UI)
+    #G=filter(lambda g: (not moreSpecific(g, UI)) and moreGeneral(g,S), UIr)
+    print "G:",[decodeSmiles(g) for g in G]
     return G,S
 
 def extractFragments(genBorder, specBorder):
     frag=[]
-    #pywin.debugger.brk()
+    for s in specBorder:
+        for i in range(0, len(s),2):
+            for j in range(1,len(s)-i+2,2):
+                frag.append(s[i:i+j])
+    frag=removeDuplicates(frag)
+    frag.sort()
+    frag.reverse()
+    return frag
+    """
     for s in specBorder:
         for i in range(0,len(s),2):
             for j in range(1,len(s)-i+2,2):
@@ -208,10 +237,7 @@ def extractFragments(genBorder, specBorder):
                     if g in st or g in rst:
                         frag.append(st)
                         break
-                """
-                if moreSpecific(st, genBorder):
-                    frag.append(st)"""
-    return frag
+    return frag"""
 
 def fragment_search(query=[]):
     """query is a list of constraints in a form ("<"|">", f, data) meaning freq(fragment, data)<|>f  i.e. that frequency of
@@ -225,25 +251,50 @@ def fragment_search(query=[]):
             GeneralBorder, SpecificBorder=updateSpecific(GeneralBorder, SpecificBorder, q)
     frag=removeDuplicates(extractFragments(GeneralBorder, SpecificBorder))
     frag=[decodeSmiles(f) for f in frag]
-    """
+    
     GeneralBorder=[decodeSmiles(g) for g in GeneralBorder]
     SpecificBorder=[decodeSmiles(s) for s in SpecificBorder]
     print "G:", GeneralBorder
     print "S:", SpecificBorder
-    print "Fragments:", frag"""
+    print "Fragments:", frag
     return frag
 
+def find_fragments(active, activeFreq, inactive, inactiveFreq):
+    """active and inactive are lists of smiles.
+    activeFreq and inactiveFreq are floats from [0..1].
+    Finds the fragments that ocur with a freqency higher the activeFreq in active compounds
+    and lower then inactiveFreq in inactive compounds"""
+    return fragment_search([(">", activeFreq, active), ("<", inactiveFreq, inactive)])
 
+def map_fragments(fragments, smiles, binary=True):
+    """Returns a dictionary with smiles codes as keys. The items are also dictionaries
+    with fragment codes as keys, items are [0,1] if binary is True else, number of ocurances of
+    this fragments in the coresponding chemical"""
+    ret={}
+    pat=OESubSearch()
+    for s in smiles:
+        c=molGraph(s)
+        d={}
+        for f in fragments:
+            pat.Init(f)
+            count=0
+            for m in pat.Match(c,1):
+                count+=1
+            if binary:
+                d[f]=count!=0 and 1 or 0
+            else:
+                d[f]=count
+        ret[s]=d
+    return ret
 
 def test():
     import orange
     d=orange.ExampleTable("mutagen_raw.tab")
     active=[str(e["SMILES"]) for e in d if e[-1]==1]
     inactive=[str(e["SMILES"]) for e in d if e[-1]==0]
-    #frag=fragment_search([(">",0.05,active),("<",0.05,inactive)])
-    frag=fragment_search([(">",0.10,active),("<",0.10,inactive)])
-    #frag+=fragment_search([(">",0.05,inactive),("<",0.5,active)])
-    frag=removeDuplicates(frag)
+    #frag=find_fragments(active, 0.5, inactive, 0.5)
+    frag=find_fragments(active, 0.01, inactive, 0.01)
+    #frag=find_fragments(inactive, 0.1, active, 0.1)
     for f in frag:
         print f, freq(encodeSmiles(f), [molGraph(g) for g in active]),freq(encodeSmiles(f), [molGraph(g) for g in inactive])
     file=open("fragments.txt", "w")
