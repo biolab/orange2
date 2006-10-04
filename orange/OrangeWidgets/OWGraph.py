@@ -388,14 +388,19 @@ class OWGraph(QwtPlot):
             
         return newCurveKey
 
-    def addMarker(self, name, x, y, alignment = -1, bold = 0, color = None):
+    def addMarker(self, name, x, y, alignment = -1, bold = 0, color = None, size=None):
         mkey = self.insertMarker(name)
         self.marker(mkey).setXValue(x)
         self.marker(mkey).setYValue(y)
         if alignment != -1:
             self.marker(mkey).setLabelAlignment(alignment)
-        if bold:
-            font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
+        if bold or size:
+            font = self.marker(mkey).font()
+            if bold:
+                font.setBold(1)
+            if size:
+                font.setPixelSize(size)
+            self.marker(mkey).setFont(font)
         if color:
             self.marker(mkey).setLabelColor(color)
         return mkey
