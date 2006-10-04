@@ -113,13 +113,14 @@ class ContextHandler:
                 self.settingsToWidget(widget, context)
         return context
 
-    def findOrCreateContext(self, widget, *arg, **argkw):        
+    def initLocalContext(self, widget):
         if not hasattr(widget, self.localContextName):
             if self.syncWithGlobal:
                 setattr(widget, self.localContextName, self.globalContexts)
             else:
                 setattr(widget, self.localContextName, copy.deepcopy(self.globalContexts))
-
+        
+    def findOrCreateContext(self, widget, *arg, **argkw):        
         index, context, score = self.findMatch(widget, self.findImperfect and self.loadImperfect, *arg, **argkw)
         if context:
             if index < 0:
@@ -481,6 +482,10 @@ class OWBaseWidget(QDialog):
         #the title
         self.setCaption(self.captionTitle)
 
+        if hasattr(self, "contextHandlers"):
+            for contextHandler in self.contextHandlers.values():
+                contextHandler.initLocalContext(self)
+
     # uncomment this when you need to see which events occured
     """
     def event(self, e):
@@ -799,10 +804,11 @@ class OWBaseWidget(QDialog):
             h = int(remaining/3600)
             min = int((remaining - h*3600)/60)
             sec = int(remaining - h*3600 - min*60)
-            text = ""
-            if h > 0: text += "%d h, " % (h)
-            text += "%d min, %d sec" %(min, sec)
-            self.setCaption(self.captionTitle + " (%.2f%% complete, remaining time: %s)" % (value, text))
+            if h > 0:
+                text = _("%(h)d h, %(min)d min, %(sec)d sec") % vars()
+            else:
+                text = _("%(min)d min, %(sec)d sec") % vars()
+            self.setCaption(self.captionTitle + _(" (%(value).2f%% complete, remaining time: %(text)s)") % vars())
         else:
             self.setCaption(self.captionTitle + " (0% complete)" )
         if self.progressBarHandler: self.progressBarHandler(self, value)
