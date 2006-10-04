@@ -15,7 +15,7 @@ def widgetBox(widget, box=None, orientation='vertical'):
             b = QHGroupBox(widget)
         else:
             b = QVGroupBox(widget)
-        if type(box) == str: # if you pass 1 for box, there will be a box, but no text
+        if type(box) in (str, unicode): # if you pass 1 for box, there will be a box, but no text
             b.setTitle(box)
     else:
         if orientation == 'horizontal':
@@ -35,12 +35,16 @@ def widgetLabel(widget, label=None, labelWidth=None):
     return lbl
 
 
-def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, debuggingEnabled = 1):
+def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, debuggingEnabled = 1, controlWidth = None):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     
-    wa = QSpinBox(min, max, step, b)
+    wa = b.control = QSpinBox(min, max, step, b)
     wa.setValue(mygetattr(master, value))
+
+    if controlWidth:
+        wa.setFixedWidth(controlWidth)
+        
     if tooltip:
         QToolTip.add(wa, tooltip)
 
@@ -50,12 +54,16 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
     return b
 
 
-def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None):
+def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     
-    wa = DoubleSpinBox(min, max, step, value, master, b)
+    wa = b.control = DoubleSpinBox(min, max, step, value, master, b)
     wa.setValue(mygetattr(master, value))
+
+    if controlWidth:
+        wa.setFixedWidth(controlWidth)
+        
     if tooltip:
         QToolTip.add(wa, tooltip)
 
@@ -84,11 +92,11 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     return wa
 
 
-def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = str, validator=None):
+def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = unicode, validator=None):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     wa = QLineEdit(b)
-    wa.setText(str(mygetattr(master,value)))
+    wa.setText(unicode(mygetattr(master,value)))
     if tooltip:
         QToolTip.add(wa, tooltip)
     if validator:
@@ -99,12 +107,16 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     return wa
 
 
-def checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None, debuggingEnabled = 1):
+def checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None, debuggingEnabled = 1, controlWidth=55):
     hb = QHBox(widget)
     wa = checkBox(hb, master, checked, label, callback = checkCallback, labelWidth = labelWidth)
 
     wb = QSpinBox(min, max, step, hb)
     wb.setValue(mygetattr(master, value))
+
+    if controlWidth:
+        wb.setFixedWidth(controlWidth)
+
     if posttext <> None:
         QLabel(posttext, hb)
     # HANDLE TOOLTIP XXX
@@ -137,6 +149,11 @@ def separator(widget, width=0, height=8):
     sep.setFixedSize(width, height)
     return sep
 
+def rubber(widget):
+    sep = QWidget(widget)
+    sep.setMinimumSize(1, 1)
+    sep.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+    return sep
 
 def createAttributePixmap(char, color = Qt.black):
     pixmap = QPixmap()
@@ -197,10 +214,10 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
     bg.setRadioButtonExclusive(1)
     bg.buttons = []
     for i in range(len(btnLabels)):
-        if type(btnLabels[i]) == str:
+        if type(btnLabels[i]) in (str, unicode):
             w = QRadioButton(btnLabels[i], bg)
         else:
-            w = QRadioButton(str(i), bg)
+            w = QRadioButton(unicode(i), bg)
             w.setPixmap(btnLabels[i])
         w.setOn(mygetattr(master, value) == i)
         bg.buttons.append(w)
@@ -219,7 +236,7 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
     else:
         bg = widget
 
-    if type(label) == str:
+    if type(label) in (str, unicode):
         w = QRadioButton(label, bg)
     else:
         w = QRadioButton("X")
@@ -318,7 +335,7 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     return slider
 
 
-def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str, control2attributeDict = {}, emptyString = None, debuggingEnabled = 1):
+def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = unicode, control2attributeDict = {}, emptyString = None, debuggingEnabled = 1):
     hb = widgetBox(widget, box, orientation)
     widgetLabel(hb, label, labelWidth)
     if tooltip: QToolTip.add(hb, tooltip)
@@ -326,7 +343,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
 
     if items:
         for i in items:
-            combo.insertItem(str(i))
+            combo.insertItem(unicode(i))
         if len(items)>0:
                 if sendSelectedValue and mygetattr(master, value) in items: combo.setCurrentItem(items.index(mygetattr(master, value)))
                 elif not sendSelectedValue: combo.setCurrentItem(mygetattr(master, value))
@@ -447,7 +464,7 @@ class ControlledCallback:
             return
 
         if isinstance(value, QString):
-            value = str(value)
+            value = unicode(value)
         if self.f:
            value = self.f(value)
 
@@ -478,7 +495,7 @@ class ValueCallbackCombo(ValueCallback):
         self.control2attributeDict = control2attributeDict
 
     def __call__(self, value):
-        value = str(value)
+        value = unicode(value)
         return ValueCallback.__call__(self, self.control2attributeDict.get(value, value))
 
                                        
@@ -635,7 +652,7 @@ class CallFront_logSlider(ControlledCallFront):
                 
 class CallFront_lineEdit(ControlledCallFront):
     def action(self, value):
-        self.control.setText(str(value))
+        self.control.setText(unicode(value))
 
 
 class CallFront_radioButtons(ControlledCallFront):
