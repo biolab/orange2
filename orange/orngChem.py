@@ -259,12 +259,16 @@ def fragment_search(query=[]):
     print "Fragments:", frag
     return frag
 
-def find_fragments(active, activeFreq, inactive, inactiveFreq):
+def find_fragments(active, activeFreq, inactive=[], inactiveFreq=0):
     """active and inactive are lists of smiles.
     activeFreq and inactiveFreq are floats from [0..1].
     Finds the fragments that ocur with a freqency higher the activeFreq in active compounds
     and lower then inactiveFreq in inactive compounds"""
-    return fragment_search([(">", activeFreq, active), ("<", inactiveFreq, inactive)])
+    if inactive and inactiveFreq:
+        return fragment_search([(">", activeFreq, active), ("<", inactiveFreq, inactive)])
+    else:
+        return fragment_search([(">", activeFreq, active)])
+        
 
 def map_fragments(fragments, smiles, binary=True):
     """Returns a dictionary with smiles codes as keys. The items are also dictionaries
