@@ -518,8 +518,14 @@ PExamplesDistance TExamplesDistanceConstructor_Relief::operator()(PExampleGenera
       }
       else {
         const TContDistribution *contd = ddist->at(attrIndex).AS(TContDistribution);
-        edr->averages->push_back(contd->average());
-        edr->normalizations->push_back((*contd->distribution.rbegin()).first - (*contd->distribution.begin()).first);
+        if (contd->size()) {
+          edr->averages->push_back(contd->average());
+          edr->normalizations->push_back((*contd->distribution.rbegin()).first - (*contd->distribution.begin()).first);
+        }
+        else {
+          edr->averages->push_back(0.0);
+          edr->normalizations->push_back(1.0);
+        }
       }
       edr->bothSpecial->push_back(0.5);
     }
