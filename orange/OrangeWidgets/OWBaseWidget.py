@@ -805,10 +805,10 @@ class OWBaseWidget(QDialog):
             min = int((remaining - h*3600)/60)
             sec = int(remaining - h*3600 - min*60)
             if h > 0:
-                text = _("%(h)d h, %(min)d min, %(sec)d sec") % vars()
+                text = "%(h)d h, %(min)d min, %(sec)d sec" % vars()
             else:
-                text = _("%(min)d min, %(sec)d sec") % vars()
-            self.setCaption(self.captionTitle + _(" (%(value).2f%% complete, remaining time: %(text)s)") % vars())
+                text = "%(min)d min, %(sec)d sec" % vars()
+            self.setCaption(self.captionTitle + " (%(value).2f%% complete, remaining time: %(text)s)" % vars())
         else:
             self.setCaption(self.captionTitle + " (0% complete)" )
         if self.progressBarHandler: self.progressBarHandler(self, value)
