@@ -14,7 +14,10 @@ import OWGUI
 
 class OWSelectData(OWWidget):
 
-    settingsList = ["updateOnChange", "loadedConditions", "loadedVarNames"]
+    # loadedConditions and loadedVarNames saved the last conditions, but they failed to show
+    # in the table when they are reloaded!
+    # I removed them; we shall have the context settings doing that some day
+    settingsList = ["updateOnChange", "purgeAttributes"]#, "loadedConditions", "loadedVarNames"]
 
     def __init__(self, parent = None, signalManager = None, name = "Select data"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
@@ -40,6 +43,7 @@ class OWSelectData(OWWidget):
         self.currentVals = []
         self.CaseSensitive = False
         self.updateOnChange = True
+        self.purgeAttributes = True
 
         # load settings
         self.loadedVarNames = []
@@ -184,6 +188,7 @@ class OWSelectData(OWWidget):
         boxSettings = QVGroupBox(ca)
         boxSettings.setTitle('Update')
         gl.addWidget(boxSettings, 3,2)
+        OWGUI.checkBox(boxSettings, self, "purgeAttributes", "Remove unused values/attributes", box=None, callback=self.OnPurgeChange)
         OWGUI.checkBox(boxSettings, self, "updateOnChange", "Update on any change", box=None)
         btnUpdate = OWGUI.button(boxSettings, self, "Update", self.setOutput)
 
@@ -290,6 +295,18 @@ class OWSelectData(OWWidget):
             nonMatchingOutput = filter(self.data, negate=1)
             nonMatchingOutput.name = self.data.name
 ##            print "len(nonMatchingOutput)", len(nonMatchingOutput)
+
+            if self.purgeAttributes:
+                remover = orange.RemoveUnusedValues(removeOneValued=True)
+
+                newDomain = remover(matchingOutput)
+                if newDomain != matchingOutput.domain:
+                    matchingOutput = orange.ExampleTable(newDomain, matchingOutput)
+                    
+                newDomain = remover(nonMatchingOutput)
+                if newDomain != nonMatchingOutput.domain:
+                    nonmatchingOutput = orange.ExampleTable(newDomain, nonMatchingOutput)
+
         self.send("Matching Examples", matchingOutput)
         self.send("Non-Matching Examples", nonMatchingOutput)
 
@@ -385,6 +402,10 @@ class OWSelectData(OWWidget):
         self.leSelect.clear()
 
 
+    def OnPurgeChange(self):
+        if self.updateOnChange:
+            self.setOutput()
+            
     def OnUpdateCondition(self):
         """Calls remove and insert.
         TODO: sends out data twice - fix that!
