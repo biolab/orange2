@@ -174,9 +174,14 @@ def updateSpecific(G,S,c, cache={}):
         F.append(filter(filterFunc,C))
         #print C
         #print F
-    UF=Set()
+    """UF=Set()
     for f in F:
         UF.union_update(f)
+    """
+    UF=[]
+    for f in F:
+        UF.extend(f)
+    UF=removeDuplicates(UF)
     print "filtering S", len(UF)
     UF=filterMaxSpecific(UF)
     S=filter(lambda s: moreSpecific(s, G), UF)
@@ -207,9 +212,14 @@ def updateGeneral(G,S,c):
         I.append(C.difference(Set(F[-1])))
         #print C
         #print F
-    UI=Set()
+    """UI=Set()
     for i in I:
         UI.union_update(i)
+    """
+    UI=[]
+    for i in I:
+        UI.extend(i)
+    UI=removeDuplicates(UI)
     print "filtering G", len(UI)
     UI=filterMaxGeneral(UI)
     G=filter(lambda g: moreGeneral(g,S), UI)
