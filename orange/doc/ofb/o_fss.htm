@@ -10,17 +10,16 @@ Up: <a href="other.htm">Other Techniques for Orange Scripting</a>
 </p>
 
 <H1>Feature Subset Selection</H1>
+<index name="feature subset selection/on complete data set">
 
-<p>
-While the core Orange provides mechanisms to estimate relevance of
-attributes that describe classified instances, a module called
-<a href="../modules/orngFSS.htm">orngFSS</a> provides functions
-and wrappers that simplify feature subset selection. For instance,
-the following code loads the data, sets-up a filter that will use
-Relief measure to estimate the relevance of attributes and remove
-attribute with relevance lower than 0.01, and in this way construct
-a new data set.
-</p>
+<p> While the core Orange provides mechanisms to estimate relevance of
+attributes that describe classified instances, a module called <a
+href="../modules/orngFSS.htm">orngFSS</a> provides functions and
+wrappers that simplify feature subset selection. For instance, the
+following code loads the data, sets-up a filter that will use Relief
+measure to estimate the relevance of attributes and remove attribute
+with relevance lower than 0.01, and in this way construct a new data
+set.  </p>
 
 <p class="header"><a href="fss6.py">fss6.py</a> (uses <a href=
 "../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
@@ -46,7 +45,17 @@ print "\nAfter feature subset selection with margin %5.3f (%d attributes):" % \
 report_relevance(ndata)
 </xmp>
 
-<p>Notice that we have also defined a function <code>report_relevance</code> that takes the data, computes the relevance of attributes (by calling <code>orngFSS.attMeasure</code>) and then reports the computed relevance. Notice that (by chance!) both <code>orngFSS.attMeasure</code> and <code>orngFSS.FilterRelief</code> use the same measure to estimate attributes, so this code would actually get better if one would first set up an object that would measure the attributes, and give it to both  <code>orngFSS.FilterRelief</code> and <code>report_relevance</code> (we leave this for you as an exercise). The output of the above script is:</p>
+<p>Notice that we have also defined a function
+<code>report_relevance</code> that takes the data, computes the
+relevance of attributes (by calling <code>orngFSS.attMeasure</code>)
+and then reports the computed relevance. Notice that (by chance!) both
+<code>orngFSS.attMeasure</code> and <code>orngFSS.FilterRelief</code>
+use the same measure to estimate attributes, so this code would
+actually get better if one would first set up an object that would
+measure the attributes, and give it to both
+<code>orngFSS.FilterRelief</code> and <code>report_relevance</code>
+(we leave this for you as an exercise). The output of the above script
+is:</p>
 
 <xmp class="code">Before feature subset selection (14 attributes):
 0.183 relationship
@@ -76,7 +85,16 @@ After feature subset selection with margin 0.010 (9 attributes):
 0.010 hours-per-week
 </xmp>
 
-Out of 14 attributes, 5 were considered to be most relevant. We can not check if this would help some classifier to achieve a better performance. We will use 10-fold cross validation for comparison. To do thinks rightfully, we need to do feature subset selection every time we see new learning data, so we need to construct a learner that has feature subset selection up-front, i.e., before it actually learns. For a learner, we will use Naive Bayes with categorization (a particular wrapper from orngDisc). The code is quite short since we will also use a wrapper called FilteredLearner from orngFSS module:
+<p>Out of 14 attributes, 5 were considered to be most relevant. We can
+not check if this would help some classifier to achieve a better
+performance. We will use 10-fold cross validation for comparison. To
+do thinks rightfully, we need to do feature subset selection every
+time we see new learning data, so we need to construct a learner that
+has feature subset selection up-front, i.e., before it actually
+learns. For a learner, we will use Naive Bayes with categorization (a
+particular wrapper from orngDisc). The code is quite short since we
+will also use a wrapper called FilteredLearner from orngFSS module:</p>
+<index name="feature subset selection/wrapper">
 
 
 <p class="header">an excerpt from <a href="fss7.py">fss7.py</a> (uses <a href=
@@ -94,7 +112,11 @@ learners = [dBayes, fBayes]
 results = orngTest.crossValidation(learners, data, folds=10, storeClassifiers=1)
 </xmp>
 
-Below is the result. In terms of classification accuracy, feature subset selection did not help. But, the rightmost column shows the number of features used in each classifier (results are averaged across ten trials of cross validation), and it is quite surprising that on average only the use of about two features was sufficient. 
+<p>Below is the result. In terms of classification accuracy, feature
+subset selection did not help. But, the rightmost column shows the
+number of features used in each classifier (results are averaged
+across ten trials of cross validation), and it is quite surprising
+that on average only the use of about two features was sufficient.</p>
 
 
 <xmp class="code">Learner         Accuracy  #Atts
@@ -102,8 +124,8 @@ disc bayes      0.857     14.00
 bayes & fss     0.846      2.60
 </xmp>
 
-
-The code that computes this statistics, as well as determines which are those features that were used, is shown below.
+The code that computes this statistics, as well as determines which
+are those features that were used, is shown below.
 
 <p class="header">another excerpt from <a href="fss7.py">fss7.py</a> (uses <a href=
 "../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
@@ -133,7 +155,10 @@ for a in used.keys():
   print '%2d x %s' % (used[a], a)
 </xmp>
 
-Following is the part of the output that shows the attribute usage. Quite interesting, four attributes were used in constructed classifiers, but only one (A9) in all ten classifiers constructed by cross validation.
+<p>Following is the part of the output that shows the attribute
+usage. Quite interesting, four attributes were used in constructed
+classifiers, but only one (A9) in all ten classifiers constructed by
+cross validation.</p>
 
 <xmp class="code">Attribute usage (in how many folds attribute was used?):
 10 x A9
@@ -142,7 +167,9 @@ Following is the part of the output that shows the attribute usage. Quite intere
  6 x A6
 </xmp>
 
-<p>There are more examples on feature subset selection in the documentation of <a href="../modules/orngFSS.htm">orngFSS</a> module.</p>
+<p>There are more examples on feature subset selection in the
+documentation of <a href="../modules/orngFSS.htm">orngFSS</a>
+module.</p>
 
 <hr><br><p class="Path">
 Prev: <a href="o_categorization.htm">Categorization</a>,

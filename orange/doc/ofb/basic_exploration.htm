@@ -10,6 +10,7 @@ Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a>
 </p>
 
 <H1>Basic Data Exploration</H1>
+<index name="basic data exploration">
 
 <p>Until now (in <a href="load_data.htm">Loading-in the data</a>) we
 have looked only at data files that include solely nominal (discrete)
@@ -19,10 +20,10 @@ data set from UCI ML Repository. The prediction task related to this
 data set is to determine whether a person characterized by 14
 attributes like education, race, occupation, etc., makes over
 $50K/year. Because of the original set <a
-href="../datasets/adult.zip">adult.tab</a>
-is rather big (32561 data instances, about 4 MBytes), we will first
-create a smaller sample of about 3% of instances and use it in our
-examples. If you are curious how we do this, here is the code:</p>
+href="../datasets/adult.zip">adult.tab</a> is rather big (32561 data
+instances, about 4 MBytes), we will first create a smaller sample of
+about 3% of instances and use it in our examples. If you are curious
+how we do this, here is the code:</p>
 
 <p class="header"><a href="../datasets/sample_adult.py">sample_adult.py</a> (uses <a
 href="../datasets/adult.zip">adult.tab</a> and generates <a href=
@@ -35,23 +36,27 @@ sample = data.select(selection, 0)
 sample.save("adult_sample_sample.tab")
 </xmp>
 
-<p>Above loads the data, prepares a selection vector of length
-equal to the number of data instances, which includes 0&rsquo;s and
+<p>Above loads the data, prepares a selection vector of length equal
+to the number of data instances, which includes 0&rsquo;s and
 1&rsquo;s, but it is told that there should be about 0.03% of
 0&rsquo;s. Then, those instances are selected which have a
 corresponding 0 in selection vector, and stored in an object called
-&ldquo;sample&rdquo;. The sampled data is then saved in a file.
-Note that MakeRandomIndices2 performs a stratified selection, i.e.,
-the class distribution of original and sampled data should be
-nearly the same.</p>
+&ldquo;sample&rdquo;. The sampled data is then saved in a file.  Note
+that MakeRandomIndices2 performs a stratified selection, i.e., the
+class distribution of original and sampled data should be nearly the
+same.</p>
 
 <h2>Basic Data Set Characteristics</h2>
 
-<p>For classification data sets, basic data characteristics are
-most often number of classes, number of attributes (and of these,
-how many are nominal and continuous), information if data contains
-missing values, and class distribution. Below is the script that
-does all this:</p>
+<p>For classification data sets, basic data characteristics are most
+often number of classes, number of attributes (and of these, how many
+are nominal and continuous), information if data contains missing
+values, and class distribution. Below is the script that does all
+this:</p>
+<index name="basic data exploration/attributes">
+<index name="basic data exploration/classes">
+<index name="basic data exploration/missing values">
+
 
 <p class="header"><a href=
 "data_characteristics.py">data_characteristics.py</a> (uses
@@ -82,40 +87,40 @@ for i in range(len(data.domain.classVar.values)):
 print
 </xmp>
 
-<p>The first part is the one that we know already: the script
-import Orange library into Python, and loads the data. The
-information on domain (class and attribute names, types, values,
-etc.) are stored in data.domain. Information on class variable is
-accessible through the data.domain.classVar object, where
-data.domain.classVar.values stores a vector of its values. Its
-length is obtained using a function len(). Similarly, the list of
-attributes is stored in data.domain.attributes. Notice that to
-obtain the information on i-th attribute, this list can be indexed,
-e.g., data.domain.attributes[i].</p>
+<p>The first part is the one that we know already: the script import
+Orange library into Python, and loads the data. The information on
+domain (class and attribute names, types, values, etc.) are stored in
+data.domain. Information on class variable is accessible through the
+data.domain.classVar object, where data.domain.classVar.values stores
+a vector of its values. Its length is obtained using a function
+len(). Similarly, the list of attributes is stored in
+data.domain.attributes. Notice that to obtain the information on i-th
+attribute, this list can be indexed, e.g.,
+data.domain.attributes[i].</p>
 
-<p>To count the number of continuous and discrete attributes, we
-have first initialized two counters (ncont, ndisc), and then
-iterated through the attributes (variable a is an iteration
-variable that in is each loop associated with a single attribute).
-The field varType contains the type of the attribute; for discrete
-attributes, varType is equal to orange.VarTypes.Discrete, and for
-continuous varType is equal to orange.VarTypes.Continuous.</p>
+<p>To count the number of continuous and discrete attributes, we have
+first initialized two counters (ncont, ndisc), and then iterated
+through the attributes (variable a is an iteration variable that in is
+each loop associated with a single attribute).  The field varType
+contains the type of the attribute; for discrete attributes, varType
+is equal to orange.VarTypes.Discrete, and for continuous varType is
+equal to orange.VarTypes.Continuous.</p>
 
 <p>To obtain the number of instances for each class, we first
-initialized a vector c that would of the length equal to the number
-of different classes. Then, we iterated through the data;
-<code>e.getclass()</code> returns a class of an instance e, and to turn it into
-a class index (a number that is in range from 0 to n-1, where n is
-the number of classes) and is used for an index of a element of c
-that should be incremented.</p>
+initialized a vector c that would of the length equal to the number of
+different classes. Then, we iterated through the data;
+<code>e.getclass()</code> returns a class of an instance e, and to
+turn it into a class index (a number that is in range from 0 to n-1,
+where n is the number of classes) and is used for an index of a
+element of c that should be incremented.</p>
 
-<p>Throughout the code, notice that a print statement in Python
-prints whatever items it has in the line that follows. The items
-are separated with commas, and Python will by default put a blank
-between them when printing. It will also print a new line, unless
-the print statement ends with a comma. It is possible to use print
-statement in Python with formatting directives, just like in C or
-C++, but this is beyond this text.</p>
+<p>Throughout the code, notice that a print statement in Python prints
+whatever items it has in the line that follows. The items are
+separated with commas, and Python will by default put a blank between
+them when printing. It will also print a new line, unless the print
+statement ends with a comma. It is possible to use print statement in
+Python with formatting directives, just like in C or C++, but this is
+beyond this text.</p>
 
 <p>Running the above script, we obtain the following output
 (although running using the Command Prompt is shown, you may
@@ -161,19 +166,20 @@ Instances:  977 total , 236(24.2%) with class >50K , 741(75.8%) with class <=50K
 >
 </pre>
 
-<p>As it turns out, there are more people that earn less than
-those, that earn more&hellip; On a more technical site, such
-information may be important when your build your classifier; the
-base error for this data set is 1-.758 = .242, and your constructed
-models should only be better than this.</p>
+<p>As it turns out, there are more people that earn less than those,
+that earn more&hellip; On a more technical site, such information may
+be important when your build your classifier; the base error for this
+data set is 1-.758 = .242, and your constructed models should only be
+better than this.</p>
 
 <h2>Contingency matrix for nominal and mean for continuous
 attributes</h2>
 
+<index name="basic data exploration/class distribution">
 <p>Another interesting piece of information that we can obtain from
-the data is the distribution of classes for each value of the
-discrete attribute, and means for continuous attribute (we will
-leave the computation of standard deviation and other statistics to
+the data is the distribution of classes for each value of the discrete
+attribute, and means for continuous attribute (we will leave the
+computation of standard deviation and other statistics to
 you). Let&rsquo;s compute means of continuous attributes first:</p>
 
 <p class="header">part of <a href=
@@ -190,14 +196,14 @@ for a in range(len(data.domain.attributes)):
         print "  %s, mean=%3.2f" % (data.domain.attributes[a].name, d/n)
 </xmp>
 
-<p>This script iterates through attributes (outer for loop), and
-for attributes that are continuous (first if statement) computes a
-sum over all instances. A single new trick that the script uses is
-that it checks if the instance has a defined attribute value.
-Namely, for instance e and attribute a, e[a].isSpecial() is true if
-the value is not defined (unknown). Variable n stores the number of
-instances with defined values of attribute. For our sampled adult
-data set, this part of the code outputs:</p>
+<p>This script iterates through attributes (outer for loop), and for
+attributes that are continuous (first if statement) computes a sum
+over all instances. A single new trick that the script uses is that it
+checks if the instance has a defined attribute value.  Namely, for
+instance e and attribute a, e[a].isSpecial() is true if the value is
+not defined (unknown). Variable n stores the number of instances with
+defined values of attribute. For our sampled adult data set, this part
+of the code outputs:</p>
 
 <xmp class="code">Continuous attributes:
   age, mean=37.74
@@ -208,11 +214,11 @@ data set, this part of the code outputs:</p>
   hours-per-week, mean=40.27
 </xmp>
 
-<p>For nominal attributes, we could now compose a code that
-computes, for each attribute, how many times a specific value was
-used for each class. Instead, we used a build-in method
-DomainContingency, which does just that. All that our script will
-do is, mainly, to print it out in a readable form.</p>
+<p>For nominal attributes, we could now compose a code that computes,
+for each attribute, how many times a specific value was used for each
+class. Instead, we used a build-in method DomainContingency, which
+does just that. All that our script will do is, mainly, to print it
+out in a readable form.</p>
 
 <p class="header">part of <a href=
 "data_characteristics3.py">data_characteristics3.py</a> (uses
@@ -264,23 +270,24 @@ only the output for two attributes:</p>
 </xmp>
 
 <p>First, notice that the in the vectors the first number refers to a
-higher income, and the second number to the lower income (e.g.,
-from this data it looks like that women earn less than men). Notice
-that Orange outputs the tuples in the form &ldquo;&lt; tuple-data
+higher income, and the second number to the lower income (e.g., from
+this data it looks like that women earn less than men). Notice that
+Orange outputs the tuples in the form &ldquo;&lt; tuple-data
 &gt;&rdquo;. To change this, we would need another loop that would
 iterate through members of the tuples. You may also foresee that it
-would be interesting to compute the proportions rather than number
-of instances in above contingency matrix, but that we leave for
-your exercise.</p>
+would be interesting to compute the proportions rather than number of
+instances in above contingency matrix, but that we leave for your
+exercise.</p>
 
 <h2>Missing Values</h2>
+<index name="missing values/statistics">
 
 <p>It is often interesting to see, given the attribute, what is the
 proportion of the instances with that attribute unknown. We have
 already learned that if a function isSpecial() can be used to
 determine if for specific instances and attribute the value is not
-defined. Let us use this function to compute the proportion of
-missing values per each attribute:</p>
+defined. Let us use this function to compute the proportion of missing
+values per each attribute:</p>
 
 <p class="header"><a href="../report_missing.py">report_missing.py</a> (uses <a
 href="../datasets/adult_sample.tab">adult_sample.tab</a>)</p>

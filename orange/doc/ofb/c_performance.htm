@@ -10,27 +10,86 @@ Up: <a href="classification.htm">Classification</a>
 </p>
 
 <H1>Testing and Evaluating Your Classifiers</H1>
+<index name="classifiers/accuracy of">
 
-<p>In this lesson you will learn how to test the performance of the
-classification methods. We will start with a quite simple script
-that computes the classification accuracy of naive Bayes. Then, we
-will show hot to put in a function that can be called with a list
-of classifiers, and with that compare naive Bayes with
-classification trees. We then show how to use separate data sets
-for learning and testing. The lesson continues with introduction of
-more systematic and known evaluation schemas, which include
-cross-validation, leave-on-out and random sampling. While all that
-is demonstrated on classification accuracy, we show that an
-area-under-ROC curve is rather easy to compute in Python.</p>
+<p>In this lesson you will learn how to evaluate the classification
+methods in terms of their power to accuratly predict the class of the
+testing examples.
 
-<p>A substantial effort went into evaluation methods in Orange, and
-they have recently been merged into <a
+<p>The simplest way to estimate the accuracy and report on score
+metrics is to use Orange's <a
 href="../modules/orngTest.htm">orngTest</a> and <a
-href="../modules/orngStat.htm">orngStat</a> modules. The final part of
-this lesson briefly introduces it, and shows how to test the
-performance of your classifiers using only a few lines of code.</p>
+href="../modules/orngStat.htm">orngStat</a> modules. This is probably
+how you will perform evaluation in your scripts, and thus we start
+with examples that uses these two modules.</p>
 
-<h2>A Warm-Up</h2>
+<p>You may as well perform testing and scoring on your own, so we
+further provide several example scripts to compute classification
+accuracy, measure it on a list of classifiers, do cross-validation,
+leave-on-out and random sampling. While all of this functionality is
+available in <a href="../modules/orngTest.htm">orngTest</a> and <a
+href="../modules/orngStat.htm">orngStat</a> modules, these example
+scripts may still be useful for those that want to learn more about
+Orange's learner/classifier objects and the way to use them in
+combination with data sampling.</p>
+
+
+<h2>Testing the Easy Way: orngTest and orngStat Modules</h2>
+<index name="crossValidation">
+
+<p>Below is a script that takes a list of learners (naive Bayesian
+classifer and classification tree) and scores their predictive
+performance on a single data set using ten-fold cross validation. The
+script reports on four different scores: classification accuracy,
+information score, Brier score and area under ROC curve.</p>
+
+<p class="header"><a href="accuracy7.py">accuracy7.py</a> (uses <a
+href="voting.tab">voting.tab</a>)</p>
+<xmp class="code">import orange, orngTest, orngStat, orngTree
+
+# set up the learners
+bayes = orange.BayesLearner()
+tree = orngTree.TreeLearner(mForPruning=2)
+bayes.name = "bayes"
+tree.name = "tree"
+learners = [bayes, tree]
+
+# compute accuracies on data
+data = orange.ExampleTable("voting")
+results = orngTest.crossValidation(learners, data, folds=10)
+
+# output the results
+print "Learner  CA     IS     Brier    AUC"
+for i in range(len(learners)):
+    print "%-8s %5.3f  %5.3f  %5.3f  %5.3f" % (learners[i].name, \
+        orngStat.CA(results)[i], orngStat.IS(results)[i],
+        orngStat.BrierScore(results)[i], orngStat.AUC(results)[i])
+</xmp>
+
+
+<p>The output of this script is:</p>
+<xmp class="code">Learner  CA     IS     Brier    AUC
+bayes    0.903  0.759  0.175  0.974
+tree     0.961  0.850  0.070  0.960
+</xmp>
+
+
+<p>The call to <code>orngEval.CrossValidation</code> does the hard
+work.  Function <code>crossValidation</code> returns the object stored
+in <code>results</code>, which essentially stores the probabilities
+and class values of the instances that were used as test cases. Based
+on <code>results</code>, the classification accuracy, information
+score, Brier score and area under ROC curve (AUC) for each of the
+learners are computed (function <code>CA</code>,
+<code>IS</code> and <code>AUC</code>).</p>
+
+<p>Apart from statistics that we have mentioned above, 
+<a href="../modules/orngStat.htm">orngStat</a> has build-in functions that can compute other performance
+metrics, and <a href="../modules/orngTest.htm">orngTest</a> includes other testing schemas and includes caching of results. 
+If you need to test your learners with standard statistics, these are probably all you need.</p>
+
+
+<h2>Do It On Your Own: A Warm-Up</h2>
 
 <p>Let us continue with a line of exploration of voting data set,
 and build a naive Bayesian classifier from it, and compute the
@@ -469,67 +528,12 @@ included in the test case this time. As expected, its area under
 ROC is minimal and equal to 0.5.</p>
 
 
-<h2>Testing the Easy Way: orngTest and orngStat Modules</h2>
-
-<p>Quite everything (and much, much more) than sampling and evaluation 
-methods introduced in this lesson is contained in modules <a href="../modules/orngTest.htm">orngTest</a> and 
-<a href="../modules/orngStat.htm">orngStat</a>. For instance, to compute accuracy and information scores
-(see Kononenko and Bratko&rsquo;s paper in Machine Learning
-Journal, 1991) and use 10-fold cross validation as learn-and-test
-methodology, the essential part of the script (other than importing
-the libraries and modules, setting the learners, and computing the
-class probability distributions from complete data set) is:</p>
-
-<p class="header"><a href="accuracy7.py">accuracy7.py</a> (uses <a
-href="voting.tab">voting.tab</a>)</p>
-<xmp class="code">import orange, orngTest, orngStat, orngTree
-
-# set up the learners
-bayes = orange.BayesLearner()
-tree = orngTree.TreeLearner(mForPruning=2)
-bayes.name = "bayes"
-tree.name = "tree"
-learners = [bayes, tree]
-
-# compute accuracies on data
-data = orange.ExampleTable("voting")
-results = orngTest.crossValidation(learners, data, folds=10)
-
-# output the results
-print "Learner  CA     IS     Brier    AUC"
-for i in range(len(learners)):
-    print "%-8s %5.3f  %5.3f  %5.3f  %5.3f" % (learners[i].name, \
-        orngStat.CA(results)[i], orngStat.IS(results)[i],
-        orngStat.BrierScore(results)[i], orngStat.AUC(results)[i])
-</xmp>
-
-
-<p>The output of this script is:</p>
-<xmp class="code">Learner  CA     IS     Brier    AUC
-bayes    0.903  0.759  0.175  0.974
-tree     0.961  0.850  0.070  0.960
-</xmp>
-
-
-<p>The call to <code>orngEval.CrossValidation</code> does the hard
-work.  Function <code>crossValidation</code> returns the object stored
-in <code>results</code>, which essentially stores the probabilities
-and class values of the instances that were used as test cases. Based
-on <code>results</code>, the classification accuracy, information
-score, Brier score and area under ROC curve (AUC) for each of the
-learners are computed (function <code>CA</code>,
-<code>IS</code> and <code>AUC</code>).</p>
-
-<p>Apart from statistics that we have mentioned above, 
-<a href="../modules/orngStat.htm">orngStat</a> has build-in functions that can compute other performance
-metrics, and <a href="../modules/orngTest.htm">orngTest</a> includes other testing schemas and includes caching of results. 
-If you need to test your learners with standard statistics, these are probably all you need.</p>
-
 <hr><br><p class="Path">
 Prev: <a href="c_otherclass.htm">Selected Classification Methods</a>,
 Next: <a href="c_pythonlearner.htm">Build your own learner</a>,
 Up: <a href="classification.htm">Classification</a>
 </p>
+
 
 </body>
 </html>
