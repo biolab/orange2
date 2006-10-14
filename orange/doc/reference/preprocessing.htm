@@ -9,9 +9,21 @@
 <H1>Preprocessing</H1>
 <index name="preprocessing data sets">
 
-<P>Preprocessors are classes that take examples, usually stored as <CODE>ExampleTable</CODE> and return a new <CODE>ExampleTable</CODE> with the examples somehow preprocessed - filtered, weighted etc. All preprocessors can therefore be called and given an example generator and, optionally, an id of a meta-attribute with weights. They return either an <CODE>ExampleTable</code> or a tuple with <CODE>ExampleTable</code> and meta-attribute id; tuple is returned if id was passed to a preprocessor or if the preprocessor itself added a weight. All other parameters (such as, for example, level of noise or attributes that are to be removed) are properties and not (direct) arguments to the call.</P>
+<P>Preprocessors are classes that take examples, usually stored as
+<CODE>ExampleTable</CODE> and return a new <CODE>ExampleTable</CODE>
+with the examples somehow preprocessed - filtered, weighted etc. All
+preprocessors can therefore be called and given an example generator
+and, optionally, an id of a meta-attribute with weights. They return
+either an <CODE>ExampleTable</code> or a tuple with
+<CODE>ExampleTable</code> and meta-attribute id; tuple is returned if
+id was passed to a preprocessor or if the preprocessor itself added a
+weight. All other parameters (such as, for example, level of noise or
+attributes that are to be removed) are properties and not (direct)
+arguments to the call.</P>
 
-<P>Preprocessors can be used as classes or called, as many other classes in Orange, as functions. The example for both ways are following shortly.</P>
+<P>Preprocessors can be used as classes or called, as many other
+classes in Orange, as functions. The example for both ways are
+following shortly.</P>
 
 <P>Most of code samples will work with lenses dataset. We thus suppose that Orange is imported, data is loaded and there are variables that correspond to attribute descriptors:</P>
 
@@ -149,7 +161,8 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 
 
 <H3>Selection by missing values</H3>
-<index name="preprocessing+missing values removal">
+<index name="preprocessing/missing values removal">
+<index name="missing values/removal of">
 
 <P>There are four preprocessors that select or remove examples with missing values. <CODE><INDEX name="classes/Preprocessor_dropMissing">Preprocessor_dropMissing</CODE> removes examples with any missing values and <CODE><INDEX name="classes/Preprocessor_dropMissingClasses">Preprocessor_dropMissingClasses</CODE> removes examples with missing the class value. The other pair is <CODE><INDEX name="classes/Preprocessor_takeMissing">Preprocessor_takeMissing</CODE> and <CODE><INDEX name="classes/Preprocessor_takeMissingClasses">Preprocessor_takeMissingClasses</CODE> that select only examples with at least one missing value or without class value, respectively. See examples in the section about <a href="#adding_missing_values">adding missing values</A>.</P>
 

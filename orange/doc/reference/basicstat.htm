@@ -44,7 +44,11 @@
 
 <P>Nevertheless, here's how the class works. Values are fed into <code>add</code>; this is usually done by <CODE>DomainBasicAttrStat</Code>, but you can traverse the examples and feed the values in Python, if you want to. For each value it checks and, if necessary, adjusts <code>min</code> and <code>max</code>, adds the value to <code>sum</code> and its square to <code>sum2</code>. The weight is added to <code>n</code>. If <code>holdRecomputation</code> is <CODE>false</CODE>, it also computes the average and the deviation. If <CODE>true</CODE>, this gets postponed until <code>recompute</code> is called. It makes sense to postpone recomputation when using the class from C++, while when using it from Python, the recomputation will take much much less time than the Python interpreter, so you can leave it on.</p>
 
-<p>You can see that the statistics does not include the median or, more generally, any quantiles. That's because it only collects statistics that can be computed on the fly, without remembering the data. If you need quartiles, you will need to construct a <a href="distributions.htm"><code>ContDistribution</code></A>.</p>
+<p>You can see that the statistics does not include the median or,
+more generally, any quantiles. That's because it only collects
+statistics that can be computed on the fly, without remembering the
+data. If you need quantiles, you will need to construct a <a
+href="distributions.htm"><code>ContDistribution</code></A>.</p>
 
 <h2>DomainBasicAttrStat</h2>
 <index name="classes/DomainBasicAttrStat">

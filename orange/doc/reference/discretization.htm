@@ -26,7 +26,7 @@
 </TR>
 
 <TR valign=top>
-<TD nowrap><B>Quartile discretization</B><BR>
+<TD nowrap><B>Quantile discretization</B><BR>
 <CODE>EquiNDiscretization<CODE><BR>
 <CODE>IntervalDiscretizer<CODE></TD>
 
@@ -67,9 +67,10 @@ or <CODE>BiModalDiscretizer</CODE></TD>
 <CODE>EquiDistDiscretizer</CODE>)</B></DT>
 <DD>The range of attribute's values is split into prescribed number equal-sized intervals.<P></DD>
 
-<DT><B>Quartile discretization (<CODE>EquiNDiscretization</CODE>,
-<CODE>IntervalDiscretizer</CODE>)</B></DT>
-<DD>The range is split into intervals containing equal number of examples.<P></DD>
+<DT><B>Quantile-based discretization
+(<CODE>EquiNDiscretization</CODE>,
+<CODE>IntervalDiscretizer</CODE>)</B></DT> <DD>The range is split into
+intervals containing equal number of examples.<P></DD>
 
 <DT><B>Entropy-based discretization (<CODE>EntropyDiscretization</CODE>,
 <CODE>IntervalDiscretizer</CODE>)</B></DT>
@@ -309,7 +310,7 @@ for ex in data2[:10]:
 
 
 <H3>Discretization with Intervals Containing (Approximately) Equal Number of Examples</H3>
-<index name="discretization/to quartiles">
+<index name="discretization/quantiles-based">
 <index name="classes/EquiNDiscretization">
 
 <P><CODE>EquiNDiscretization</CODE> discretizes the attribute by cutting it into the prescribed number of intervals so that each of them contains equal number of examples. The examples are obviously needed for this discretization, too.</P>
