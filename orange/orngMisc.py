@@ -183,7 +183,7 @@ class BestOnTheFly:
         return self.best
 
     def winnerIndex(self):
-        if self.best:
+        if self.best is not None:
             return self.bestIndex
         else:
             return None
