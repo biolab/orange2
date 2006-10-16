@@ -192,7 +192,7 @@ class OWMDS(OWWidget):
                 minVal=min(val)
                 maxVal=max(val)
                 for i in range(len(data)):
-                    self.colors[i][attrI]=data[i][attr].isSpecial() and Qt.black or c.getColor((data[i][attr]-minVal)/abs(maxVal-minVal))
+                    self.colors[i][attrI]=data[i][attr].isSpecial() and Qt.black or c.getColor((data[i][attr]-minVal)/max(maxVal-minVal, 1e-6))
                     #self.shapes[i][discI]=self.graph.shapeList[0]
                     self.names[i][attrI]=" "+str(data[i][attr])
                     self.sizes[i][contI]=data[i][attr].isSpecial() and 5 or int(self.data[i][attr]/maxVal*9)+1
