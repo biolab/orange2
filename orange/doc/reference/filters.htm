@@ -165,6 +165,29 @@ for ex in filteryoung(data):
 
 <P>As you can see, this filter is dirty but quick.</P>
 
+<H3>Simple filter for continuous attributes</H3>
+
+<P>ValueFilter class provides different methods for filtering values of countinuous attributes: <CODE>ValueFilter.Equal</CODE>, <CODE>ValueFilter.Less</CODE>, <CODE>ValueFilter.LessEqual</CODE>, <CODE>ValueFilter.Greater</CODE>, <CODE>ValueFilter.GreaterEqual</CODE>, <CODE>ValueFilter.Between</CODE>, <CODE>ValueFilter.Outside</CODE>.
+
+<P>In the following excerpt there are two different filters used: <CODE>ValueFilter.GreaterEqual</CODE> which needs only one parameter and <CODE>ValueFilter.Between</CODE> which needs to be defined by two parameters.
+
+<p class="header"><a href="filterv.py">part of filterv.py</a>
+(uses <a href="iris.tab">iris.tab</a>)</p>
+
+<XMP class="code">fcont = orange.Filter_values(domain = data.domain)
+
+fcont[0] = (orange.ValueFilter.GreaterEqual, 7.6)
+print "\n\nThe first attribute is greater than or equal to 7.6"
+for ex in fcont(data):
+    print ex
+
+fcont[0] = (orange.ValueFilter.Between, 4.6, 5.0)
+print "\n\nThe first attribute is between to 4.5 and 5.0"
+for ex in fcont(data):
+    print ex
+</XMP>
+
+
 <H3>Filter for multiple values and attributes</H3>
 <index name="classes/Filter_Values">
 <index name="classes/ValueFilterList">
@@ -199,7 +222,7 @@ fya.domain = data.domain
 age, astigm = data.domain["age"], data.domain["astigmatic"]
 fya.conditions.append(orange.ValueFilter_discrete(
                         position = data.domain.attributes.index(age),
-                        values=[orange.Value(age, "young"),
+                        values=[orange.Value(age,"young"),
                                 orange.Value(age, "presbyopic")])
                      )
 fya.conditions.append(orange.ValueFilter_discrete(
