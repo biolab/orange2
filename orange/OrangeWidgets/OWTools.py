@@ -60,8 +60,8 @@ class TooltipManager:
         self.texts=[]
 
     # Adds a tool tip. If a tooltip with the same name already exists, it updates it instead of adding a new one.
-    def addToolTip(self,x, y,text):
-        self.positions.append((x,y))
+    def addToolTip(self,x, y,text, customX = 0, customY = 0):
+        self.positions.append((x,y, customX, customY))
         self.texts.append(text)
 
     #Decides whether to pop up a tool tip and which text to pop up
@@ -71,11 +71,15 @@ class TooltipManager:
         nearestIndex = dists.index(min(dists))
 
         intX = abs(self.qwtplot.transform(self.qwtplot.xBottom, x) - self.qwtplot.transform(self.qwtplot.xBottom, self.positions[nearestIndex][0]))
-        intY = abs(self.qwtplot.transform(self.qwtplot.xBottom, y) - self.qwtplot.transform(self.qwtplot.xBottom, self.positions[nearestIndex][1]))
-        if intX + intY < 6:
-            return (self.texts[nearestIndex], self.positions[nearestIndex][0], self.positions[nearestIndex][1])
+        intY = abs(self.qwtplot.transform(self.qwtplot.yLeft, y) - self.qwtplot.transform(self.qwtplot.yLeft, self.positions[nearestIndex][1]))
+        if self.positions[nearestIndex][2] == 0 and self.positions[nearestIndex][3] == 0:   # if we specified no custom range then assume 6 pixels
+            if intX + intY < 6:  return (self.texts[nearestIndex], self.positions[nearestIndex][0], self.positions[nearestIndex][1])
+            else:                return ("", None, None)
         else:
-            return ("", None, None)
+            if abs(self.positions[nearestIndex][0] - x) <= self.positions[nearestIndex][2] and abs(self.positions[nearestIndex][1] - y) <= self.positions[nearestIndex][3]:
+                return (self.texts[nearestIndex], x, y)
+            else:
+                return ("", None, None)
                 
     def removeAll(self):
         self.positions = []
