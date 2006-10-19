@@ -306,7 +306,7 @@ class FreeViz:
 ##            self.energyLabel.setText("Energy: %.3f" % newEnergy)
 ##            self.energyLabel.repaint()
 
-    def findSPCAProjection(self, attrIndices = None, setGraphAnchors = 1):
+    def findSPCAProjection(self, attrIndices = None, setGraphAnchors = 1, percentDataUsed = 100):
         try:
             ai = self.graph.attributeNameIndex
             if not attrIndices:
@@ -318,6 +318,12 @@ class FreeViz:
             
             selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
             classData = Numeric.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
+
+            if percentDataUsed != 100:
+                indices = orange.MakeRandomIndices2(self.graph.rawdata, 1.0-(float(percentDataUsed)/100.0))
+                selectedData = Numeric.compress(indices, selectedData)
+                classData = Numeric.compress(indices, classData)
+            
             selectedData = Numeric.transpose(selectedData)
             
             s = Numeric.sum(selectedData)/float(len(selectedData))  
