@@ -1,12 +1,12 @@
-[(1, 0), (2, 0), (2, 1)]
+[(1, 0), (2, 1)]
 [1, 2, 3]
 [1, 2, 3]
 a string
-<module 'orange' from 'c:\d\ai\orange\orange.pyd'>
+None
 a string
 [1, 2, 3]
-['Gender', 'Height']
-[1, 2]
+['Gender']
+[1]
 (None, None, None)
 12.0
 (None, 12, None)

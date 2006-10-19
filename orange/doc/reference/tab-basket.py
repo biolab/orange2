@@ -19,6 +19,11 @@ for i in d[:5]:
 import os
 os.remove("del.tab")
 
-print "All metas: ", d.domain.getmetas().values()
-print "Required metas: ", d.domain.getmetas(False).values()
-print "Optional metas: ", d.domain.getmetas(True).values()
+def sorted(metas):
+    l = metas.values()
+    l.sort(lambda x,y:cmp(x.name, y.name))
+    return l
+
+print "All metas: ", sorted(d.domain.getmetas())
+print "Required metas: ", sorted(d.domain.getmetas(False))
+print "Optional metas: ", sorted(d.domain.getmetas(True))
