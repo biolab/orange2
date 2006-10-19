@@ -5,7 +5,7 @@ import OWGUI, orngVisFuncts
 from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
-mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlation With Class)", CRAMERS_PHI),("Information Gain (In Percents Of Class Entropy Removed)", INFORMATION_GAIN), ("Gain Ratio", GAIN_RATIO), ("Interaction Gain (In Percents Of Class Entropy Removed)", INTERACTION_GAIN),("Average Probability Of Correct Classification", AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION)]
+mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlation With Class)", CRAMERS_PHI),("Information Gain (In Percents Of Class Entropy Removed)", INFORMATION_GAIN), ("Gain Ratio", GAIN_RATIO), ("Interaction Gain (In Percents Of Class Entropy Removed)", INTERACTION_GAIN),("Average Probability Of Correct Classification", AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION), ("Gini index", GINI_INDEX)]
 
 class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
@@ -247,7 +247,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         for i in range(len(self.results)):
             if self.attrLenDict.has_key(len(self.results[i][ATTR_LIST])) and self.attrLenDict[len(self.results[i][ATTR_LIST])] == 1:
-                self.resultList.insertItem("%.2f : %s" % (self.results[i][SCORE], self.buildAttrString(self.results[i][ATTR_LIST])))
+                self.resultList.insertItem("%.3f : %s" % (self.results[i][SCORE], self.buildAttrString(self.results[i][ATTR_LIST])))
                 self.resultListIndices.append(i)
         qApp.processEvents()
         
@@ -387,23 +387,13 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
 
-        # open, write and save file
-        dict = {}
-        for attr in ["attrDisc", "qualityMeasure", "percentDataUsed"]: dict[attr] = self.__dict__[attr]
-        dict["dataCheckSum"] = self.data.checksum()
-
-        file = open(name, "wt")        
-        file.write("%s\n" % (str(dict)))
-        for (score, attrList, tryIndex) in self.results:
-            file.write("(%.4f, %s, %d)\n" % (score, attrList, tryIndex))
-        file.flush()
-        file.close()
+        orngMosaic.save(self, name)
+        
         self.setStatusBarText("Saved %d visualizations" % (len(self.results)))
 
 
     # load projections from a file
     def load(self, name = None, ignoreCheckSum = 0):
-        self.clearResults()
         self.setStatusBarText("Loading visualizations")
         if self.data == None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
@@ -417,26 +407,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
 
-        file = open(name, "rt")
-        settings = eval(file.readline()[:-1])
-
-        if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
-            if QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate visualizations in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
-                file.close()
-                return
-
-        self.setSettings(settings)
-
-        ind = 0
-        for line in file.xreadlines():
-            (score, attrList, tryIndex) = eval(line)
-            self.insertItem(score, attrList, ind, tryIndex)
-            ind+=1
-        file.close()
+        count = orngMosaic.load(self, name, ignoreCheckSum)
 
         # update loaded results
         self.finishedAddingResults()
-        self.setStatusBarText("Loaded %d visualizations" % (ind))
+        self.setStatusBarText("Loaded %d visualizations" % (count))
 
 
     # disable all controls while evaluating projections
