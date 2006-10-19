@@ -33,12 +33,12 @@
 #include "px/externs.px"
 
 //V WR AP PE R(FloatList)
-#if _MSC_VER!=0 && _MSC_VER<1300
-OMVWRAPPER(FloatListList)
+/*#if _MSC_VER!=0 && _MSC_VER<1300
+VWRAPPER(FloatListList)
 #else
 VWRAPPER(FloatListList)
 #endif
-
+*/
 class ORANGEOM_API TStressFunc: public TOrange{
 public:
     __REGISTER_ABSTRACT_CLASS
