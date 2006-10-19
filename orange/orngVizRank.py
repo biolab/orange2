@@ -688,6 +688,17 @@ class VizRank:
                 for proj in orngVisFuncts.createProjections(len(self.data.domain.classVar.values), sum([len(group) for group in combination])):
                     try: permutations.append([combination[i][j] for (i,j) in proj])
                     except: pass
+                """
+                print "c=%d, g = %s, before = %d" % (len(self.data.domain.classVar.values), str([len(group) for group in combination]), len(permutations)),
+                for p in permutations:
+                    for i in range(len(p)-1):
+                        p = p[1:] + [p[0]]
+                        if p in permutations:
+                            permutations.remove(p)
+                        if p[::-1] in permutations:
+                            permutations.remove(p[::-1])
+                print ", after=%d" % (len(permutations))
+                """
         else:
             permutationIndices = self.evaluationData["permutationIndices"]
             permutations = [[combination[val] for val in ind] for ind in permutationIndices[len(combination)]]
@@ -776,7 +787,7 @@ class VizRank:
                     attrIndices = permutations[0]
                        
                     if self.useSupervisedPCA:
-                        xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0)
+                        xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0, percentDataUsed = self.percentDataUsed)
                         table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
                         if len(table) < self.minNumOfExamples: continue
                         self.evaluatedProjectionsCount += 1
