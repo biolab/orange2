@@ -13,6 +13,7 @@ INFORMATION_GAIN = 2
 GAIN_RATIO = 3
 INTERACTION_GAIN = 4
 AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION = 5
+GINI_INDEX = 6
 
 # conditional probability estimation
 RELATIVE = 0
@@ -184,6 +185,8 @@ class orngMosaic:
                 
                 for attrList in combinations:
                     attrs = [evaluatedAttrs[z]] + attrList
+                    diffVals = reduce(operator.mul, [max(1, len(self.data.domain[attr].values)) for attr in attrs])
+                    if diffVals > 200: continue     # we cannot efficiently deal with projections with more than 200 different values
 
                     val = self._Evaluate(attrs)
 
@@ -216,8 +219,6 @@ class orngMosaic:
     def _Evaluate(self, attrs):
         newFeature, quality = FeatureByCartesianProduct(self.data, attrs)
         
-        classEntropy = orngContingency.Entropy(Numeric.array([val for val in self.aprioriDistribution]))
-
         retVal = -1
         if self.qualityMeasure in [CHI_SQUARE, CRAMERS_PHI]:
             aprioriSum = sum(self.aprioriDistribution)
@@ -237,16 +238,26 @@ class orngMosaic:
                     
         elif self.qualityMeasure == GAIN_RATIO:
             retVal = orange.MeasureAttribute_gainRatio(newFeature, self.data)
+
+        elif self.qualityMeasure == GINI_INDEX:
+            retVal = orange.MeasureAttribute_gini(newFeature, self.data)
+
         elif self.qualityMeasure == INFORMATION_GAIN:
             retVal = orange.MeasureAttribute_info(newFeature, self.data)
-            if classEntropy: retVal = retVal * 100.0 / classEntropy
+            classEntropy = orngContingency.Entropy(Numeric.array([val for val in self.aprioriDistribution]))
+            if classEntropy:
+                retVal = retVal * 100.0 / classEntropy
+
         elif self.qualityMeasure == INTERACTION_GAIN:
             new = orange.MeasureAttribute_info(newFeature, self.data)
             gains = [orange.MeasureAttribute_info(attr, self.data) for attr in attrs]
             retVal = new - sum(gains)
-            if classEntropy: retVal = retVal * 100.0 / classEntropy
+
+            classEntropy = orngContingency.Entropy(Numeric.array([val for val in self.aprioriDistribution]))
+            if classEntropy:
+                retVal = retVal * 100.0 / classEntropy
+
         elif self.qualityMeasure == AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION:
-            
             d = self.data.select([newFeature, self.data.domain.classVar])     # create a dataset that has only this new feature and class info
             
             if self.testingMethod == PROPORTION_TEST:
@@ -281,6 +292,7 @@ class orngMosaic:
                 if s: retVal += (100.0 * s * sum([(v/float(s))**2 for v in dist])) /float(len(self.data))
             """
 
+        del newFeature, quality
         return retVal
 
 
@@ -305,7 +317,7 @@ class orngMosaic:
         
         if self.__class__.__name__ == "OWMosaicOptimization":
             
-            self.resultList.insertItem("%.2f : %s" % (score, self.buildAttrString(attrList)), index)
+            self.resultList.insertItem("%.3f : %s" % (score, self.buildAttrString(attrList)), index)
             self.resultListIndices.insert(index, index)
 
     # from a list of attributes build a nice string with attribute names
@@ -358,9 +370,9 @@ class orngMosaic:
             
         # use predictions from all arguments to classify an example
         probabilities = []
-        for i, val in enumerate(predictions):
-            if val < -100: p = 0
-            else:         p = 1 / (1 + e**-val)
+        for val in predictions:
+            if val < -50:  p = 0
+            else:          p = e**val / (1 + e**val)
             probabilities.append(p)
 
         classValue = self.data.domain.classVar[probabilities.index(max(probabilities))]
@@ -480,7 +492,8 @@ class orngMosaic:
                     splits = orngVisFuncts.getPossibleSplits(list(key))
                     for split in splits:
                         vals = [argList[len(v)].get(tuple(v), [None, None])[0] for v in split]
-                        if None in vals or abs(sum(vals)) >= abs(args[key][0]) or not sum([abs(val) == val for val in vals]) in [0, len(vals)]:   # do all values in vals have the same sign
+                        #if None in vals or abs(sum(vals)) >= abs(args[key][0]) or not sum([abs(val) == val for val in vals]) in [0, len(vals)]:   # do all values in vals have the same sign
+                        if None in vals or abs(sum(vals)) >= abs(args[key][0]):
                             args.pop(key)   # remove the combination of attributes because a split exists, that produces a more important argument
                             break
                     if args.has_key(key):
@@ -687,7 +700,47 @@ class orngMosaic:
         bestPlacements.sort()
         bestPlacements.reverse()
         return bestPlacements
-        
+
+    # save evaluated projections into a file        
+    def save(self, filename):
+        dict = {}
+        for attr in ["attrDisc", "qualityMeasure", "percentDataUsed"]:
+            dict[attr] = self.__dict__[attr]
+        dict["dataCheckSum"] = self.data.checksum()
+
+        file = open(filename, "wt")        
+        file.write("%s\n" % (str(dict)))
+        for (score, attrList, tryIndex) in self.results:
+            file.write("(%.4f, %s, %d)\n" % (score, attrList, tryIndex))
+        file.flush()
+        file.close()
+
+    def load(self, filename, ignoreCheckSum = 0):
+        self.clearResults()
+        file = open(filename, "rt")
+        settings = eval(file.readline()[:-1])
+
+        if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
+            if self.__class__.__name__ == "OWMosaicOptimization":
+                import qt
+                if QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate visualizations in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
+                    file.close()
+                    return
+            else:
+                print "dataset checksum does not agree with the checksum in the projections file. loading anyway"
+                
+        #self.setSettings(settings)
+        for key in settings.keys():
+            setattr(self, key, settings[key])
+
+        ind = 0
+        for line in file.xreadlines():
+            (score, attrList, tryIndex) = eval(line)
+            self.insertItem(score, attrList, ind, tryIndex)
+            ind+=1
+        file.close()
+
+        return ind
         
 
 # #############################################################################
@@ -750,9 +803,11 @@ if __name__=="__main__":
     mosaic.evaluateProjections()
     mosaic.findArguments(example[0])
     """
+    """
     #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
     data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\datasets\microarray\brown\brown-imputed.tab")
     mosaic = orngMosaic()
     mosaic.setData(data)
     ret = mosaic.findOptimalAttributeOrder(["spo- early", "heat 20"], 1) #optimizeValueOrder = 1
     print ret
+    """
