@@ -19,6 +19,6 @@ for i in d[:5]:
 import os
 os.remove("del.tab")
 
-print "All metas: ", d.domain.getmetas()
-print "Required metas: ", d.domain.getmetas(False)
-print "Optional metas: ", d.domain.getmetas(True)
+print "All metas: ", d.domain.getmetas().values()
+print "Required metas: ", d.domain.getmetas(False).values()
+print "Optional metas: ", d.domain.getmetas(True).values()

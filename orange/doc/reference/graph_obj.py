@@ -10,7 +10,8 @@ graph = orange.GraphAsMatrix(4, 0, objectsOnEdges = 1)
 graph.objects = ["Age", "Gender", "Height", "Weight"]
 
 graph["Age", "Gender"] = "a string"
-graph["Age", "Height"] = orange
+# commented out: causes differences in regression tests between machines
+#graph["Age", "Height"] = orange
 graph["Gender", "Height"] = [1, 2, 3]
 print graph.getEdges()
 
