@@ -202,7 +202,7 @@ C_CALL(RemoveRedundantByInduction, RemoveRedundant, "([examples[, weightID][, su
 C_CALL(RemoveRedundantByQuality, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 C_CALL(RemoveRedundantOneValue, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 
-C_CALL3(RemoveUnusedValues, RemoveUnusedValues, Orange, "([attribute, examples[, weightId]]) -/-> attribute")
+C_CALL3(RemoveUnusedValues, RemoveUnusedValues, Orange, "([[attribute, ]examples[, weightId]]) -/-> attribute")
 
 PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("([examples[, weightID][, suspicious]) -/-> Domain")
 {
@@ -230,14 +230,35 @@ PyObject *RemoveUnusedValues_call(PyObject *self, PyObject *args, PyObject *keyw
 {
   PyTRY
     NO_KEYWORDS
+    CAST_TO(TRemoveUnusedValues, ruv);
+    bool storeOv = ruv->removeOneValued;
 
     PExampleGenerator egen;
     PVariable var;
     int weightID = 0;
-    if (!PyArg_ParseTuple(args, "O&O&|O&:RemoveUnusedValues.call", cc_Variable, &var, pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID))
-      return PYNULL;
+    int removeOneValued = -1;
+    int checkClass = 0;
 
-    return WrapOrange(SELF_AS(TRemoveUnusedValues)(var, egen, weightID));
+    if (PyArg_ParseTuple(args, "O&O&|O&i:RemoveUnusedValues.call", cc_Variable, &var, pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID, &removeOneValued)) {
+      if (removeOneValued >= 0)
+        ruv->removeOneValued = removeOneValued != 0;
+      PyObject *res = WrapOrange(ruv->call(var, egen, weightID));
+      ruv->removeOneValued = storeOv;
+      return res;
+    }
+
+    PyErr_Clear();
+
+    if (PyArg_ParseTuple(args, "O&|O&ii:RemoveUnusedValues.call", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID, &removeOneValued, &checkClass)) {
+      if (removeOneValued >= 0)
+        ruv->removeOneValued = removeOneValued != 0;
+      PyObject *res = WrapOrange(ruv->call(egen, weightID, checkClass != 0));
+      ruv->removeOneValued = storeOv;
+      return res;
+    }
+
+    PYERROR(PyExc_AttributeError, "RemoveUnusedValues.__call__: invalid arguments", PYNULL);
+
   PyCATCH
 }
 
