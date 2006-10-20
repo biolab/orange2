@@ -19,7 +19,7 @@
     Contact: janez.demsar@fri.uni-lj.si
 */
 
-#include "orangeom_globals.hpp"
+#include "px/orangeom_globals.hpp"
 #include "cls_orange.hpp"
 
 #include "mds.hpp"

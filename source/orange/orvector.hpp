@@ -91,7 +91,7 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
 
 #ifdef _MSC_VER_60
   #define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME, _WRAPPED, _API) \
-    EXPIMP_TEMPLATE template class _API TOrangeVector< _TYPE, _WRAPPED >; \
+    ORANGE_EXTERN template class _API TOrangeVector< _TYPE, _WRAPPED >; \
     _API TClassDescription TOrangeVector< _TYPE, _WRAPPED >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE, _WRAPPED >), &TOrange::st_classDescription, TOrange_properties, TOrange_components }; 
 
 
@@ -436,15 +436,15 @@ class TOrangeVector : public TOrange
 };
 
 
-/*EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<bool, false>;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<int, false>;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<long, false>;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<float, false>;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<int, false>;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<pair<int, float>, false>;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<pair<float, float>, false>;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<double, false>;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<string, false>;
+/*ORANGE_EXTERN template class ORANGE_API TOrangeVector<bool, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<int, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<long, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<float, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<int, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<pair<int, float>, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<pair<float, float>, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<double, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<string, false>;
 */
 #define TBoolList TOrangeVector<bool, false>
 #define TIntList TOrangeVector<int, false>

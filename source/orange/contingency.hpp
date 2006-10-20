@@ -180,7 +180,7 @@ WRAPPER(ProbabilityEstimator);
   #pragma warning(push)
   #pragma warning(disable: 4275)
 
-  EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<PContingencyClass>;
+  ORANGE_EXTERN template class ORANGE_API TOrangeVector<PContingencyClass>;
   class ORANGE_API TDomainContingency : public TOrangeVector<PContingencyClass> {
   #pragma warning(pop)
 

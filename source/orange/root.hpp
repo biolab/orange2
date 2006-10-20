@@ -27,9 +27,6 @@
 #include "errors.hpp"
 
 
-#define WRAPPER(x) BASIC_WRAPPER(x, ORANGE_API)
-#define VWRAPPER(x) BASIC_VWRAPPER(x, ORANGE_API)
-
 class TValue;
 
 #include <string>

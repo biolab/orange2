@@ -28,7 +28,7 @@ using namespace std;
 
 #include "root.hpp"
 #include "orvector.hpp"
-#include "orangene_globals.hpp"
+#include "px/orangene_globals.hpp"
 
 WRAPPER(ExampleTable)
 

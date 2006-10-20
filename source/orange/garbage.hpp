@@ -54,33 +54,15 @@ object receiving the wrapper will die before the wrapped object.
 #include <Python.h>
 using namespace std;
 
-// This is not the perfect place for this macros, but it's convenient
-#ifdef _MSC_VER
-  #pragma warning (disable : 4660 4661 4786 4114 4018 4267 4244 4702 4710 4290)
+// Not the most appropriate, but surely the most suitable place:
+#include "px/orange_globals.hpp"
 
-  #ifdef ORANGE_EXPORTS
-    #define ORANGE_API __declspec(dllexport)
-    #define EXPIMP_TEMPLATE
-  #else
-    #define ORANGE_API __declspec(dllimport)
-    #define EXPIMP_TEMPLATE
-    #ifdef _DEBUG
-      #pragma comment(lib, "orange_d.lib")
-    #else
-      #pragma comment(lib, "orange.lib")
-    #endif
-  #endif
-
-#else
-
-  #define ORANGE_API
-  #define EXPIMP_TEMPLATE
-
-#endif
-
+#define WRAPPER ORANGE_WRAPPER
+#define VWRAPPER ORANGE_VWRAPPER
 
 #ifdef _MSC_VER
   #include <crtdbg.h>
+  #pragma warning (disable : 4231 4660 4661 4786 4114 4018 4267 4244 4702 4710 4290)
   #pragma warning (disable : 4786 4114 4018 4267 4127)
   #define TYPENAME(x) (x).name()+7
 
@@ -360,27 +342,6 @@ inline bool castable_to(GCPtr<T> obj, U *)
 #define CAST(o,x) ((o).counter ? dynamic_cast<x *>((o).counter->ptr) : NULL)
 
 #define WRAPPEDVECTOR(x) GCPtrNML<vector<x> >
-
-
-#ifdef _MSC_VER
-    #define BASIC_VWRAPPER(x,api) \
-        EXPIMP_TEMPLATE template class api T##x; \
-        EXPIMP_TEMPLATE template class api GCPtr< T##x >; \
-        typedef GCPtr< T##x > P##x;
-
-    #define BASIC_WRAPPER(x,api) \
-        class api T##x; \
-        EXPIMP_TEMPLATE template class api GCPtr< T##x >; \
-        typedef GCPtr< T##x > P##x;
-
-#else
-    #define BASIC_VWRAPPER(x,api) \
-        typedef GCPtr< T##x > P##x;
-
-    #define BASIC_WRAPPER(x,api) \
-        class T##x; \
-        typedef GCPtr< T##x > P##x;
-#endif
 
 
 #endif

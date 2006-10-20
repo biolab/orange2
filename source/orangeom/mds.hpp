@@ -22,7 +22,12 @@
 #ifndef __MDS_HPP
 #define __MDS_HPP
 
-#include "orangeom_globals.hpp"
+#include "garbage.hpp"
+#include "px/orangeom_globals.hpp"
+
+#include "../pyxtract/pyxtract_macros.hpp"
+
+
 #include "orvector.hpp"
 #include "symmatrix.hpp"
 #include "progress.hpp"
@@ -34,9 +39,9 @@
 
 //V WR AP PE R(FloatList)
 /*#if _MSC_VER!=0 && _MSC_VER<1300
-VWRAPPER(FloatListList)
+V W RAPPER(FloatListList)
 #else
-VWRAPPER(FloatListList)
+O M V W RAPPER(FloatListList)
 #endif
 */
 class ORANGEOM_API TStressFunc: public TOrange{

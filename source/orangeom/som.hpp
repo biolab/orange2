@@ -22,7 +22,7 @@
 #ifndef __SOM_HPP
 #define __SOM_HPP
 
-#include "orangeom_globals.hpp"
+#include "px/orangeom_globals.hpp"
 #include "orange_api.hpp"
 #include "orvector.hpp"
 #include "learn.hpp"

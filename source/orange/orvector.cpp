@@ -49,7 +49,7 @@ DEFINE_TOrangeVector_classDescription(pif, "TIntFloatList", false, ORANGE_API)
 
 #ifdef _MSC_VER_60
 TClassDescription template TOrangeVector<TValue, false>::st_classDescription;
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<TValue, false>;
+ORANGE_EXTERN template class ORANGE_API TOrangeVector<TValue, false>;
 #else
  DEFINE_TOrangeVector_classDescription(TValue, "TOrangeVector<TValue, false>", false, ORANGE_API)
 //template<> TClassDescription TOrangeVector<TValue, false>::st_classDescription; // =  = { "StringList", &typeid(TValueList), &TOrange::st_classDescription, TOrange_properties, TOrange_components };

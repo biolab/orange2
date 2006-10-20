@@ -82,7 +82,7 @@ public:
 WRAPPER(AssociationRule)
 
 #ifdef _MSC_VER
-  EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<PAssociationRule>;
+  ORANGE_EXTERN template class ORANGE_API TOrangeVector<PAssociationRule>;
 #endif
 
 #define TAssociationRules TOrangeVector<PAssociationRule>
