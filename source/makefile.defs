@@ -33,7 +33,7 @@ ifeq ($(OS), FreeBSD)
   LINKOPTIONS += `gsl-config --libs`
   MAKE = gmake
 else
-  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -O3
+  COMPILEOPTIONS = -fPIC -fpermissive -w -DLINUX -D$(MODULENAME)_EXPORTS -O3
   LINKOPTIONS = -shared -lstdc++ -L$(OLD) -lorange_include
 endif
 endif
