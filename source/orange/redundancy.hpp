@@ -92,6 +92,7 @@ public:
 
   bool removeOneValued; //P if true (default is false), one valued attributes are also removed
   virtual PVariable operator()(PVariable, PExampleGenerator, const int &);
+  PDomain operator ()(PExampleGenerator gen, const int &weightID, bool checkClass = false, bool checkMetas = true);
 };
 
 #endif

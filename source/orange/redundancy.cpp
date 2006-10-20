@@ -397,3 +397,54 @@ PVariable TRemoveUnusedValues::operator()(PVariable var, PExampleGenerator gen, 
 
   return newVar;
 }
+
+
+PDomain TRemoveUnusedValues::operator ()(PExampleGenerator gen, const int &weightID, bool checkClass, bool checkMetas)
+{
+  TVarList attributes;
+  bool changed = false;
+  PITERATE(TVarList, ai, gen->domain->attributes)
+    if ((*ai)->varType != TValue::INTVAR)
+      attributes.push_back(*ai);
+    else {
+      PVariable newattr = call(*ai, gen, weightID);
+      if (newattr)
+        attributes.push_back(newattr);
+      if (newattr != *ai)
+        changed = true;
+    }
+
+  
+  PVariable &classVar = gen->domain->classVar;
+  PVariable newClass;
+  if (checkClass && classVar->varType == TValue::INTVAR) {
+    newClass = call(classVar, gen, weightID);
+    if (newClass != classVar)
+      changed = true;
+  }
+  else
+    newClass = classVar;
+
+
+  TMetaVector metas;
+  ITERATE(TMetaVector, mi, gen->domain->metas) {
+    if (!checkMetas || mi->optional || (mi->variable->varType != TValue::INTVAR))
+      metas.push_back(*mi);
+    else if (mi->variable->noOfValues() < 2)
+      changed = true;
+    else {
+      PVariable newattr = call(mi->variable, gen, weightID);
+      if (newattr)
+        attributes.push_back(newattr);
+      if (newattr != mi->variable)
+        changed = true;
+    }
+  }
+
+  if (!changed)
+    return gen->domain;
+
+  TDomain *newDomain = new TDomain(newClass, attributes);
+  newDomain->metas = metas;
+  return newDomain;
+}
