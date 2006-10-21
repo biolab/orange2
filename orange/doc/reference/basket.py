@@ -16,8 +16,18 @@ data = orange.ExampleTable("inquisition2")
 for ex in data:
     print ex
 
+# This is to make the regression test independent of the system
+# and the version of Python
+def printSortedMetas(metas, nm=0):
+    l = metas.items()
+    if nm:
+        l.sort(lambda x,y: cmp(x[0].name, y[0].name))
+    else:
+        l.sort(lambda x,y: cmp(x[0], y[0]))
+    print l
+    
 example = data[4]
-print example.getmetas()
-print example.getmetas(int)
-print example.getmetas(str)
-print example.getmetas(orange.Variable)
+printSortedMetas(example.getmetas())
+printSortedMetas(example.getmetas(int))
+printSortedMetas(example.getmetas(str))
+printSortedMetas(example.getmetas(orange.Variable), 1)
