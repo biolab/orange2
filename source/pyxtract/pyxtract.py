@@ -931,7 +931,6 @@ def writeGlobals():
    
 #define %(MODULENAME)s_WRAPPER(x) \
      class %(MODULENAME)s_API T##x; \
-     %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API GCPtr< T##x >; \
      typedef GCPtr< T##x > P##x;
 """
  % {"modulename": modulename, "MODULENAME": modulename.upper()})
