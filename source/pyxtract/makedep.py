@@ -141,7 +141,7 @@ if ppp_timestamp_dep:
 if px_timestamp_dep:
   makedepsfile.write("px/stamp: %s\n" % " ".join(px_timestamp_dep))
   short = {"ORANGEOM": "-w OM", "ORANGENE": "-w OG"}.get(modulename, "")
-  makedepsfile.write("\tpython ../pyxtract/pyxtract.py -m -q -n %s %s %s" % (modulename, short, " ".join(px_timestamp_dep))
+  makedepsfile.write("\tpython ../pyxtract/pyxtract.py -m -q -n %s %s %s" % (modulename, short, " ".join(px_timestamp_dep)))
   if modulename != "ORANGE":
     makedepsfile.write(" -l ../orange/px/stamp")
   makedepsfile.write("\n\n")
