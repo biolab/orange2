@@ -164,7 +164,7 @@ PyObject *MDS_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(dissMat
     if(points && points->size()==matrix->dim)
         mds->points=points;
     else{
-        PRandomGenerator rg=mlnew TRandomGenerator();
+        PRandomGenerator rg=mlnew TRandomGenerator(0);
         for(int i=0;i<mds->n; i++)
             for(int j=0; j<mds->dim; j++)
                 mds->points->at(i)->at(j)=rg->randfloat();
