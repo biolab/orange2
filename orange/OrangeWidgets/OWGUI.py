@@ -35,6 +35,22 @@ def widgetLabel(widget, label=None, labelWidth=None):
     return lbl
 
 
+import re
+__re_frmt = re.compile(r"(^|[^%])%\((?P<value>[a-zA-Z]\w*)\)")
+
+def label(widget, master, label, labelWidth = None):
+    lbl = QLabel("", widget)
+
+    reprint = CallFront_Label(lbl, label, master)
+    for mo in __re_frmt.finditer(label):
+        master.controlledAttributes[mo.group("value")] = reprint
+    reprint()
+
+    if labelWidth:
+        lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
+
+    return lbl
+    
 def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, debuggingEnabled = 1, controlWidth = None):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
@@ -87,6 +103,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     wa.disables = disables
     wa.makeConsistent = Disabler(wa, master, value)
     master.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
+    wa.makeConsistent.__call__(value)
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, value, callback)]
     return wa
@@ -207,7 +224,10 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
 # btnLabels is a list of either char strings or pixmaps
 def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1):
     if box:
-        bg = QVButtonGroup(box, widget)
+        if type(box) in [str, unicode]:
+            bg = QVButtonGroup(box, widget)
+        else:
+            bg = QVButtonGroup(widget)
     else:
         bg = widget
 
@@ -684,6 +704,15 @@ class CallFront_ListBoxLabels(ControlledCallFront):
                     self.control.insertItem(i)
             
 
+class CallFront_Label:
+    def __init__(self, control, label, master):
+        self.control = control
+        self.label = label
+        self.master = master
+
+    def __call__(self, *args):
+        self.control.setText(self.label % self.master.__dict__)
+        
 ##############################################################################
 ## Disabler is a call-back class for check box that can disable/enable other
 ## widgets according to state (checked/unchecked, enabled/disable) of the
