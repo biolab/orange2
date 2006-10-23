@@ -1,5 +1,5 @@
 Surgery	Age	Hospital	RectalTemp	Pulse	RR	TempExtr	PeriphPulse	MucousMembr	CapRefill	Pain	Peristalsis	AbdominalDist	NasogTube	NasogRefl	NasogReflpH	RectExFeces	Abdomen	CellVolume	TotProtein	AbdCentApp	AbdCenTotProt	Outcome	SurgLes	LesTypeSite1	LesTypeSite2	LesTypeSite3	cp_data
-no	d	d	c	c	c	normal	normal	normal	d	d	normal	none	none	none	c	normal	normal	c	c	clear	c	lived	d	d	d	d	d
+no yes	d	d	c	c	c	normal	normal	normal	d	d	normal	none	none	none	c	normal	normal	c	c	clear	c	lived	d	d	d	d	d
 	i	i																				class	i	i	i	i	i
 no	adult	528626	38.5	54	20	?	normal	bright	>= 3s	mild	absent	none	slight	> 1l	5.9	?	other	42	6.3	?	?	lived	2	3111	0	0	1
 no	adult	527950	37.6	48	36	?	?	normal	<3 s	?	hypomotile	?	?	?	?	?	?	44	6.3	clear	5	lived	2	3111	0	0	1

@@ -1019,14 +1019,15 @@ PyObject *potentialsBitmapCircle(PyObject *, PyObject *args, PyObject *) PYARGS(
 #pragma warning (disable: 4305 4309)
 #endif
 
-PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, rx, ry, offx, offy, cellsize, scaleFactor) -> bitmap as string")
+PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, rx, ry, offx, offy, cellsize, scaleFactor, grid) -> bitmap as string")
 {
   PyTRY
     PyObject *cls;
     int rx, ry, cell;
     int offx, offy;
     double scaleFactor;
-    if (!PyArg_ParseTuple(args, "Oiiiiid:potentialsBitmap", &cls, &rx, &ry, &offx, &offy, &cell, &scaleFactor))
+    int grid = 1;
+    if (!PyArg_ParseTuple(args, "Oiiiiid|i:potentialsBitmap", &cls, &rx, &ry, &offx, &offy, &cell, &scaleFactor, &grid))
       return PYNULL;
 
     TP2NN *tp2nn = &dynamic_cast<TP2NN &>(PyOrange_AsOrange(cls).getReference());
@@ -1051,7 +1052,7 @@ PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(
     const double rxbysf = rx*scaleFactor;
     const double rybysf = ry*scaleFactor;
     for(int y = 0; y < ry; y+=cell) {
-      const double realy = (y-offy)/rybysf;
+      const double realy = (ry-y-offy)/rybysf;
       for(int x = 0; x < rx; x+=cell) {
         const double realx = (x-offx)/rxbysf;
 
@@ -1067,7 +1068,7 @@ PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(
             color = icolor;
         }
         else {
-          tp2nn->classDistribution(realx, -realy, probs, nClasses);
+          tp2nn->classDistribution(realx, realy, probs, nClasses);
           double sprobs = *probs;
           float *largest = probs;
           for(float *pi = probs+1; pi != pe; pi++) {
@@ -1085,8 +1086,12 @@ PyObject *potentialsBitmapSquare(PyObject *, PyObject *args, PyObject *) PYARGS(
         const int ys = y+cell < ry ? cell : ry-y;
         char *yy = bitmap + y*oneLine+x;
 
-        for(char *yye = yy + (ys-1)*oneLine; yy < yye; yy += oneLine)
-          memset(yy, color, cell-1);
+        if (grid)
+          for(char *yye = yy + (ys-1)*oneLine; yy < yye; yy += oneLine)
+            memset(yy, color, cell-1);
+        else
+          for(char *yye = yy + ys*oneLine; yy < yye; yy += oneLine)
+            memset(yy, color, cell);
       }
     }
 
