@@ -931,7 +931,10 @@ def writeGlobals():
    
 #define %(MODULENAME)s_WRAPPER(x) \
      class %(MODULENAME)s_API T##x; \
+     %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API GCPtr< T##x >; \
      typedef GCPtr< T##x > P##x;
+
+// CHECK: the second line in %(MODULENAME)s_WRAPPER(x) may need to be removed for gcc     
 """
  % {"modulename": modulename, "MODULENAME": modulename.upper()})
 
