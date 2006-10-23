@@ -18,9 +18,9 @@
 
 <H3>Using Subsets Generators</H3>
 
-<P>Let <CODE>data</CODE> be a generator that constructs pair of attributes from domain Monk 1 (the section below describes how to create such generator). You can use it in <CODE>for</CODE> clauses, either in classical for-sentence:</P>
+<P>Let <CODE>sgen</CODE> be a generator that constructs pair of attributes from domain Monk 1 (the section below describes how to create such generator). You can use it in for sentences</P>
 
-<xmp class="code">>>> for attrs in data:
+<xmp class="code">>>> for attrs in sgen:
 ...     print attrs
 ...
 (EnumVariable 'a', EnumVariable 'b')
@@ -31,14 +31,14 @@
 
 <P>or in list comprehensions</P>
 
-<XMP class="code">subsets = [attrs for attrs in data]
+<XMP class="code">subsets = [attrs for attrs in sgen]
 </XMP>
 
-<P><SMALL>There is another, older way of using subset generators. You can reset generator by calling <CODE>reset</CODE>. Then, each subsequent call to <CODE>next</CODE> will give a subset of attributes. When combinations are exhausted, <CODE>next</CODE> will return <CODE>None</CODE>. This protocol is provided for compatibility with older versions of Orange, but you can still use it if it comes handy.</SMALL></P>
+<P><SMALL>There is another way of using subset generators. You can reset generator by calling <CODE>reset</CODE> and get a sequence of attribute subsets by calling <CODE>next</CODE> until it returns <CODE>None</CODE>. This is provided for compatibility with older versions of Orange and describe here for easier understanding of old code. Don't use it.</SMALL></P>
 
 <H3>Initializing the Generator</H3>
 
-<P>Before iterating through subsets, the generator needs to be given a set of attributes. You can specify the set at construction time, set it through <CODE>varList</CODE> attribute, or specify it at for-clause. So, to construct the above generator, one can say:</P>
+<P>Before iterating through subsets, the generator needs to be given a set of attributes. You can specify the set at construction time, set it through <CODE>varList</CODE> attribute, or specify it at for-clause. So, to construct the above generator, one can write</P>
 
 <XMP class="code">sgen = orange.SubsetsGenerator_constSize(data.domain.attributes)
 </XMP>
@@ -49,19 +49,14 @@
 sgen.varList = data.domain.attributes
 </XMP>
 
-<P>The former can be shortened to</P>
-
-<XMP class="code">sgen = orange.SubsetsGenerator_constSize(varList=data.domain.attributes)
-</XMP>
-
-<P>The third alternative, providing the attribute set at call time, goes like this:</P>
+<P>The third, somewhat ugly alternative, is providing the attribute set at call time.</P>
 
 <XMP class="code">sgen = orange.SubsetsGenerator_constSize()
 for attrs in sgen(data.domain.attributes):
   print attrs
 </XMP>
 
-<P><B>Warning</B>: do not modify the generator during iteration. The <CODE>for</CODE> loop, for instance, should neither change anything in the generator neither try to reuse the same generator in a nested for loop. This would result in unexpected results, at least.</P>
+<small>Why is it ugly? It's syntactically a call, and it's also implemented as one, but the code is equivalent to <code>def __call__(self, v): self.varList = v; return self</code>. Why is this dirt here at all? For compatibility with some stuff originating from before Python had the iterator protocol. And because it can come handy.</small>
 
 <H2>SubsetsGenerator_constSize</H2>
 
@@ -82,13 +77,7 @@ for attrs in gen1:
   print attrs
 </XMP>
 
-<P><SMALL><B>Note:</B> There has been a change in the way Orange treats arguments in a call.
-Setting the attributes in a call (eg <CODE>for attrs in gen1(data.domain.attributes, B=3):</CODE>)
-is no longer legal and will raise an exception.
-The change was required for various reasons, most importantly to avoid the confusion whether
-B is set for the duration of the call or permanently.</SMALL></P>
-
-<P>Output begins by:</P>
+<P>Output begins by</P>
 
 <XMP class="code">(EnumVariable 'a', EnumVariable 'b', EnumVariable 'c')
 (EnumVariable 'a', EnumVariable 'b', EnumVariable 'd')

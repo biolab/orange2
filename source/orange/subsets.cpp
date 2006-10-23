@@ -24,47 +24,47 @@
 #include "subsets.ppp"
 
 
-bool TSubsetsGenerator::reset()
-{ return true; }
-
-
-/* This is awkward for compatibility reasons:
-   vl can, but does not need to be specified.
-   If it is not, there must already exist a varList */
-bool TSubsetsGenerator::reset(const TVarList &vl)
-{ varList = mlnew TVarList(vl); 
-  return true;
-}
-
-
-TSubsetsGenerator_constSize::TSubsetsGenerator_constSize(int aB)
-: counter(aB, 0),
-  B(aB),
-  moreToCome(false)
+TSubsetsGenerator::TSubsetsGenerator()
 {}
 
 
-bool TSubsetsGenerator_constSize::reset(const TVarList &vl)
-{ moreToCome = TSubsetsGenerator::reset(vl) && reset();
-  return moreToCome;
-}
+TSubsetsGenerator::TSubsetsGenerator(PVarList vl)
+: varList(vl)
+{}
 
 
-bool TSubsetsGenerator_constSize::reset()
+TSubsetsGenerator_iterator::TSubsetsGenerator_iterator(PVarList vl)
+: varList(vl)
+{}
+
+
+TSubsetsGenerator_constSize::TSubsetsGenerator_constSize(int aB)
+: B(aB)
+{}
+
+
+TSubsetsGenerator_constSize::TSubsetsGenerator_constSize(PVarList vl, int aB)
+: TSubsetsGenerator(vl),
+  B(aB)
+{}
+
+
+PSubsetsGenerator_iterator  TSubsetsGenerator_constSize::operator()()
 {
-  if (!varList)
-    moreToCome = false;
-  else {
-    counter = TCounter(B, varList->size());
-    moreToCome = counter.reset();
-  }
-
-  return moreToCome;
+  return new TSubsetsGenerator_constSize_iterator(varList, B);
 }
 
 
-bool TSubsetsGenerator_constSize::nextSubset(TVarList &subset)
-{ if (!moreToCome)
+TSubsetsGenerator_constSize_iterator::TSubsetsGenerator_constSize_iterator(PVarList vl, int aB)
+: TSubsetsGenerator_iterator(vl),
+  moreToCome(!!varList),
+  counter(aB, varList ? varList->size() : 0)
+{}
+
+
+bool TSubsetsGenerator_constSize_iterator::operator()(TVarList &subset)
+{ 
+  if (!moreToCome)
     return false;
 
   if (!varList || (counter.limit != varList->size()))
@@ -81,40 +81,43 @@ bool TSubsetsGenerator_constSize::nextSubset(TVarList &subset)
 
 
 TSubsetsGenerator_minMaxSize::TSubsetsGenerator_minMaxSize(int amin, int amax)
-: counter(0, 0),
-  moreToCome(false),
+: min(amin),
+  max(amax)
+{}
+
+
+TSubsetsGenerator_minMaxSize::TSubsetsGenerator_minMaxSize(PVarList vl, int amin, int amax)
+: TSubsetsGenerator(vl),
   min(amin),
   max(amax)
 {}
 
 
-bool TSubsetsGenerator_minMaxSize::reset(const TVarList &vl)
+
+PSubsetsGenerator_iterator TSubsetsGenerator_minMaxSize::operator()()
 {
-  moreToCome = (min<=max) && TSubsetsGenerator::reset(vl) && reset();
-  return moreToCome;
+  return new TSubsetsGenerator_minMaxSize_iterator(varList, min, max);
+}
+
+
+TSubsetsGenerator_minMaxSize_iterator::TSubsetsGenerator_minMaxSize_iterator(PVarList vl, int amin, int amax)
+: TSubsetsGenerator_iterator(vl),
+  B(amin),
+  max(amax),
+  counter(0, 0)
+{
+  if ((B<=0) || (max<=0))
+    raiseError("invalid subset size limits");
+
+  for(counter = TCounter(B, varList->size());
+      !counter.reset() && (B<max);
+      counter = TCounter(++B, varList->size()));
+
+  moreToCome =  B <= max;
 }
 
   
-bool TSubsetsGenerator_minMaxSize::reset()
-{ 
-  if (!varList)
-    moreToCome = false;
-  else {
-    if ((min<=0) || (max<=0))
-      raiseError("invalid subset size limits");
-
-    for(B = min, counter = TCounter(B, varList->size());
-        !counter.reset() && (B<max);
-        counter = TCounter(++B, varList->size()));
-
-    moreToCome =  B<=max;
-  }
-
-  return moreToCome;
-}
-
-
-bool TSubsetsGenerator_minMaxSize::nextSubset(TVarList &subset)
+bool TSubsetsGenerator_minMaxSize_iterator::operator()(TVarList &subset)
 {
   if (!moreToCome)
     return false;
@@ -144,77 +147,95 @@ bool TSubsetsGenerator_minMaxSize::nextSubset(TVarList &subset)
 TSubsetsGenerator_constant::TSubsetsGenerator_constant()
 {}
 
-TSubsetsGenerator_constant::TSubsetsGenerator_constant(const TVarList &con)
- : constant(mlnew TVarList(con)) {}
+
+TSubsetsGenerator_constant::TSubsetsGenerator_constant(PVarList vl, PVarList cons)
+: TSubsetsGenerator(vl),
+  constant(cons)
+{}
 
 
-bool TSubsetsGenerator_constant::reset(const TVarList &vl)
-{ moreToCome = TSubsetsGenerator::reset(vl) && reset();
-  return moreToCome;
+PSubsetsGenerator_iterator TSubsetsGenerator_constant::operator()()
+{
+  return new TSubsetsGenerator_constant_iterator(varList, constant);
 }
 
 
-bool TSubsetsGenerator_constant::reset()
+TSubsetsGenerator_constant_iterator::TSubsetsGenerator_constant_iterator()
+: TSubsetsGenerator_iterator(PVarList()),
+  moreToCome(false)
+{}
+
+
+TSubsetsGenerator_constant_iterator::TSubsetsGenerator_constant_iterator(PVarList vl, PVarList cons)
+: TSubsetsGenerator_iterator(vl),
+  constant(cons)
 {
-  if (!varList || !constant)
-    moreToCome = false;
-  else {
-    moreToCome = true;
+  moreToCome = varList || constant;
+
+  if (moreToCome && varList && constant) {
     PITERATE(TVarList, vi, constant)
       if (!exists(varList.getReference(), *vi)) {
         moreToCome = false;
         break;
       }
   }
-
-  return moreToCome;
 }
 
 
-bool TSubsetsGenerator_constant::nextSubset(TVarList &subset)
-{ if (!moreToCome) 
+bool TSubsetsGenerator_constant_iterator::operator()(TVarList &subset)
+{ 
+  if (!moreToCome) 
     return false;
   
-  subset = constant.getReference();
+  subset = constant ? constant.getReference() : varList.getReference();
   moreToCome = false;
   return true;
 }
 
 
+
 TSubsetsGenerator_withRestrictions::TSubsetsGenerator_withRestrictions(PSubsetsGenerator sub)
- : subGenerator(sub)
- {}
-
-TSubsetsGenerator_withRestrictions::TSubsetsGenerator_withRestrictions
- (PSubsetsGenerator sub, const TVarList &areq, const TVarList &aforb)
- : subGenerator(sub), required(mlnew TVarList(areq)), forbidden(mlnew TVarList(aforb))
- {}
+: subGenerator(sub)
+{}
 
 
+TSubsetsGenerator_withRestrictions::TSubsetsGenerator_withRestrictions(PSubsetsGenerator sub, const TVarList &areq, const TVarList &aforb)
+: subGenerator(sub),
+  required(mlnew TVarList(areq)),
+  forbidden(mlnew TVarList(aforb))
+{}
 
-bool TSubsetsGenerator_withRestrictions::reset(const TVarList &vl)
-{ 
-  return TSubsetsGenerator::reset(vl) && subGenerator->reset(vl) && reset();
+
+PSubsetsGenerator_iterator TSubsetsGenerator_withRestrictions::operator()()
+{
+  return new TSubsetsGenerator_withRestrictions_iterator(subGenerator->call(), required, forbidden);
 }
 
 
-bool TSubsetsGenerator_withRestrictions::reset()
-{
-  if (!varList)
-    return false;
+TSubsetsGenerator_withRestrictions_iterator::TSubsetsGenerator_withRestrictions_iterator()
+: TSubsetsGenerator_iterator(PVarList())
+{}
 
+
+TSubsetsGenerator_withRestrictions_iterator::TSubsetsGenerator_withRestrictions_iterator(PSubsetsGenerator_iterator sub, PVarList areq, PVarList aforb)
+: TSubsetsGenerator_iterator(sub ? sub->varList : PVarList()),
+  subGenerator_iterator(sub),
+  required(areq),
+  forbidden(aforb)
+{
   if (required && forbidden)
     PITERATE(TVarList, ri, required)
       if (!exists(varList.getReference(), *ri) || exists(forbidden.getReference(), *ri))
-        return false;
-
-  return true;
+        subGenerator_iterator = NULL;
 }
 
 
-bool TSubsetsGenerator_withRestrictions::nextSubset(TVarList &varList)
+bool TSubsetsGenerator_withRestrictions_iterator::call(TVarList &varList)
 {
-  while(subGenerator->nextSubset(varList)) {
+  if (!subGenerator_iterator)
+    return false;
+
+  while(subGenerator_iterator->call(varList)) {
     TVarList::iterator ri, re;
 
     if (required) {
@@ -240,7 +261,7 @@ bool TSubsetsGenerator_withRestrictions::nextSubset(TVarList &varList)
         re=(*ssi)->end();
         for( ; (ri!=re) && (find(varList.begin(), varList.end(), *ri)!=varList.end()); ri++);
         if (ri==re)
-          break; // BAD: we have found such a subsubset, that all its elements can be found in subset
+          break; // BAD: we have found such a subsubset that all its elements can be found in subset
       }
       if (ssi==forbiddenSubSubsets->end())
         return true; // YES! No such subsubset.

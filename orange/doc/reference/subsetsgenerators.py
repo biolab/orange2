@@ -13,6 +13,9 @@ gen1 = orange.SubsetsGenerator_constSize(data.domain.attributes, B=3)
 for attrs in gen1:
   print attrs
 
+print "\n\nAttributes through list comprehension"
+print [ss for ss in gen1]
+
 print "\n\nSubsets by ordinary subsets generator"
 gen2 = orange.SubsetsGenerator_constSize(B=3)
 for attrs in gen2(data.domain.attributes):

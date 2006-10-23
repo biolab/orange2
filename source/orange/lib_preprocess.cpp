@@ -538,14 +538,13 @@ PyObject *VariableFloatMap__reduce__(TPyOrange *self, PyObject *) { return TMM_V
 ABSTRACT(FeatureInducer, Orange)
 
 ABSTRACT(SubsetsGenerator, Orange)
-C_NAMED(SubsetsGenerator_constant, SubsetsGenerator, "()")
 C_NAMED(SubsetsGenerator_withRestrictions, SubsetsGenerator, "([subGenerator=])")
 
-NO_PICKLE(SubsetsGenerator_constSize)
-NO_PICKLE(SubsetsGenerator_minMaxSize)
-NO_PICKLE(SubsetsGenerator_constant)
-NO_PICKLE(SubsetsGenerator_withRestrictions)
-
+ABSTRACT(SubsetsGenerator_iterator, Orange)
+C_NAMED(SubsetsGenerator_constant_iterator, SubsetsGenerator_iterator, "")
+BASED_ON(SubsetsGenerator_constSize_iterator, SubsetsGenerator_iterator)
+BASED_ON(SubsetsGenerator_minMaxSize_iterator, SubsetsGenerator_iterator)
+C_NAMED(SubsetsGenerator_withRestrictions_iterator, SubsetsGenerator_iterator, "")
 
 PyObject *FeatureInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples, bound-attrs, new-name, weightID) -> (Variable, float)")
 {
@@ -574,22 +573,16 @@ PyObject *FeatureInducer_call(PyObject *self, PyObject *args, PyObject *keywords
 
 PVarList PVarList_FromArguments(PyObject *arg);
 
-int SubsetsGeneratorResetFromVars(PyObject *self, PyObject *vars)
+PVarList varListForReset(PyObject *vars)
 {
-  if (vars) {
-    PVarList variables;
-    if (PyOrDomain_Check(vars))
-      variables = PyOrange_AsDomain(vars)->attributes;
-    else
-      variables = PVarList_FromArguments(vars);
-    
-    if (!variables)
-      PYERROR(PyExc_TypeError, "SubsetsGenerator.reset: invalid arguments", -1);
+  if (PyOrDomain_Check(vars))
+    return PyOrange_AsDomain(vars)->attributes;
 
-    return SELF_AS(TSubsetsGenerator).reset(variables.getReference()) ? 1 : 0;
-  }
-  else
-    return SELF_AS(TSubsetsGenerator).reset() ? 1 : 0;
+  PVarList variables = PVarList_FromArguments(vars);
+  if (!variables)
+    PYERROR(PyExc_TypeError, "SubsetsGenerator.reset: invalid arguments", NULL);
+
+  return variables;
 }
 
 
@@ -599,7 +592,15 @@ PyObject *SubsetsGenerator_reset(PyObject *self, PyObject *args) PYARGS(METH_VAR
     if (!PyArg_ParseTuple(args, "|O:SubsetsGenerator.reset", &vars))
       return PYNULL;
 
-    return PyInt_FromLong(SubsetsGeneratorResetFromVars(self, vars) ? 1L : 0L);
+    if (!vars)
+      PYERROR(PyExc_TypeError, "SubsetsGenerator.reset does not reset the generator (as it used to)", false);
+
+    PVarList varList = varListForReset(vars);
+    if (!varList)
+      return NULL;
+
+    SELF_AS(TSubsetsGenerator).varList = varList;
+    RETURN_NONE;
   PyCATCH
 }
 
@@ -608,7 +609,9 @@ PyObject *SubsetsGenerator_call(PyObject *self, PyObject *args, PyObject *keywor
 { PyTRY
     NO_KEYWORDS
 
-    SubsetsGenerator_reset(self, args);
+    if (args && PyTuple_Size(args) && !SubsetsGenerator_reset(self, args))
+      return NULL;
+
     Py_INCREF(self);
     return self;
   PyCATCH
@@ -616,18 +619,16 @@ PyObject *SubsetsGenerator_call(PyObject *self, PyObject *args, PyObject *keywor
 
 
 PyObject *SubsetsGenerator_iter(PyObject *self)
-{ if (!SELF_AS(TSubsetsGenerator).reset())
-    PYERROR(PyExc_SystemError, "'SubsetsGenerator.iter' cannot reset (check the arguments)", PYNULL);
-
-  Py_INCREF(self);
-  return self;
+{ PyTRY
+    return WrapOrange(SELF_AS(TSubsetsGenerator).call());
+  PyCATCH
 }
 
 
-PyObject *SubsetsGenerator_iternext(PyObject *self)
+PyObject *SubsetsGenerator_iterator_iternext(PyObject *self)
 { PyTRY
     TVarList vl;
-    if (!SELF_AS(TSubsetsGenerator).nextSubset(vl))
+    if (!SELF_AS(TSubsetsGenerator_iterator).call(vl))
       return PYNULL;
 
     PyObject *list=PyTuple_New(vl.size());
@@ -638,7 +639,13 @@ PyObject *SubsetsGenerator_iternext(PyObject *self)
   PyCATCH
 }
 
-/*
+
+PyObject *SubsetsGenerator_iterator_next(PyObject *self)
+{ Py_INCREF(self);
+  return self;
+}
+
+
 void packCounter(const TCounter &cnt, TCharBuffer &buf)
 {
   buf.writeInt(cnt.limit);
@@ -646,6 +653,7 @@ void packCounter(const TCounter &cnt, TCharBuffer &buf)
   const_ITERATE(TCounter, ci, cnt)
     buf.writeInt(*ci);
 }
+
 
 void unpackCounter(TCharBuffer &buf, TCounter &cnt)
 {
@@ -655,16 +663,16 @@ void unpackCounter(TCharBuffer &buf, TCounter &cnt)
   cnt.resize(size);
   for(TCounter::iterator ci(cnt.begin()); size--; *ci++ = buf.readInt());
 }
-*/
 
-PyObject *SubsetsGenerator_constSize_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "(size)")
+
+PyObject *SubsetsGenerator_constSize_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "(size)") ALLOWS_EMPTY
 { PyTRY
     int B = 2;
     PyObject *varlist = NULL;
     PyObject *res;
 
     // This is for compatibility ...
-    if (PyArg_ParseTuple(args, "i|O:SubsetsGenerator_constSize.__new__", &B, &varlist)) {
+    if (PyArg_ParseTuple(args, "|iO:SubsetsGenerator_constSize.__new__", &B, &varlist)) {
       TSubsetsGenerator *ssg = mlnew TSubsetsGenerator_constSize(B);
       res = WrapNewOrange(ssg, type);
       if (varlist) {
@@ -677,61 +685,64 @@ PyObject *SubsetsGenerator_constSize_new(PyTypeObject *type, PyObject *args, PyO
     // ... and this if for real
     if (!PyArg_ParseTuple(args, "|O:SubsetsGenerator_constSize.__new__", &varlist))
       return PYNULL;
-      
-    res = WrapNewOrange(mlnew TSubsetsGenerator_constSize(B), type);
-    if (SubsetsGeneratorResetFromVars(res, varlist) < 0)
-      return PYNULL;
-    return res;
+
+    TSubsetsGenerator *gen = mlnew TSubsetsGenerator_constSize(B);
+    if (varlist && !(gen->varList = varListForReset(varlist))) {
+      delete gen;
+      return NULL;
+    }
+
+    return WrapNewOrange(gen, type);
   PyCATCH
 }
 
-/*
-PyObject *SubsetsGenerator_constSize_ _ r e d u c e _ _(PyObject *self)
+PyObject *SubsetsGenerator_constSize_iterator__reduce__(PyObject *self)
 {
   PyTRY
-    CAST_TO(TSubsetsGenerator_constSize, gen);
+    CAST_TO(TSubsetsGenerator_constSize_iterator, gen);
 
     TCharBuffer buf((gen->counter.size() + 4) * sizeof(int));
-    buf.writeInt(gen->B);
     packCounter(gen->counter, buf);
     buf.writeChar(gen->moreToCome ? 1 : 0);
 
-    return Py_BuildValue("O(Os#)N", getExportedFunction("__pickleLoaderSubsetsGeneratorConstSize"),
+    return Py_BuildValue("O(OOs#)N", getExportedFunction("__pickleLoaderSubsetsGeneratorConstSizeIterator"),
                                     self->ob_type,
+                                    WrapOrange(gen->varList),
                                     buf.buf, buf.length(),
                                     packOrangeDictionary(self));
  PyCATCH
 }
 
 
-PyObject *__pickleLoaderSubsetsGeneratorConstSize(PyObject *, PyObject *args) P Y A R G S(METH_VARARGS, "(type, packed_counter)")
+PyObject *__pickleLoaderSubsetsGeneratorConstSizeIterator(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_counter)")
 {
   PyTRY
     PyTypeObject *type;
+    PVarList varList;
     char *pbuf;
     int bufSize;
-    if (!PyArg_ParseTuple(args, "Os#:__pickleLoaderSubsetsGenerator_constSize", &type, &pbuf, &bufSize))
+    if (!PyArg_ParseTuple(args, "OOs#:__pickleLoaderSubsetsGenerator_constSizeIterator", &type, ccn_VarList, &varList, &pbuf, &bufSize))
       return NULL;
 
     TCharBuffer buf(pbuf);
 
-    TSubsetsGenerator_constSize *gen = new TSubsetsGenerator_constSize(buf.readInt());
+    TSubsetsGenerator_constSize_iterator *gen = new TSubsetsGenerator_constSize_iterator(varList, buf.readInt());
     unpackCounter(buf, gen->counter);
     gen->moreToCome = buf.readChar() != 0;
 
     return WrapNewOrange(gen, type);
   PyCATCH
 }
-*/
 
 
-PyObject *SubsetsGenerator_minMaxSize_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "([min=, max=])")
+
+PyObject *SubsetsGenerator_minMaxSize_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "([min=, max=][, varList=])") ALLOWS_EMPTY
 { PyTRY
     int min = 2, max = 3;
     PyObject *varlist = NULL;
 
     // This is for compatibility ...
-    if (args && PyArg_ParseTuple(args, "i|iO", &min, &max, &varlist)) {
+    if (args && PyArg_ParseTuple(args, "|iiO", &min, &max, &varlist)) {
       PyObject *res = WrapNewOrange(mlnew TSubsetsGenerator_minMaxSize(min, max), type);
       if (varlist)
         SubsetsGenerator_reset(res, varlist);
@@ -744,27 +755,77 @@ PyObject *SubsetsGenerator_minMaxSize_new(PyTypeObject *type, PyObject *args, Py
     if (!PyArg_ParseTuple(args, "|O:SubsetsGenerator_minMaxSize.__new__", &varlist))
       return PYNULL;
       
-    PyObject *res = WrapNewOrange(mlnew TSubsetsGenerator_minMaxSize(min, max), type);
-    if (varlist && SubsetsGeneratorResetFromVars(res, varlist) < 0)
-      return PYNULL;
-    return res;
+    TSubsetsGenerator *gen = mlnew TSubsetsGenerator_minMaxSize(min, max);
+    if (varlist && !(gen->varList = varListForReset(varlist))) {
+      delete gen;
+      return NULL;
+    }
+
+    return WrapNewOrange(gen, type);
   PyCATCH
 }
 
 
-PyObject *SubsetsGenerator_constant_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "([min=, max=])")
+PyObject *SubsetsGenerator_minMaxSize_iterator__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TSubsetsGenerator_minMaxSize_iterator, gen);
+
+    TCharBuffer buf((gen->counter.size() + 5) * sizeof(int));
+    buf.writeInt(gen->B);
+    buf.writeInt(gen->max);
+    packCounter(gen->counter, buf);
+    buf.writeChar(gen->moreToCome ? 1 : 0);
+
+    return Py_BuildValue("O(OOs#)N", getExportedFunction("__pickleLoaderSubsetsGeneratorMinMaxSizeIterator"),
+                                    self->ob_type,
+                                    WrapOrange(gen->varList),
+                                    buf.buf, buf.length(),
+                                    packOrangeDictionary(self));
+ PyCATCH
+}
+
+
+PyObject *__pickleLoaderSubsetsGeneratorMinMaxSizeIterator(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, varList, packed_counter)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PVarList varList;
+    char *pbuf;
+    int bufSize;
+    if (!PyArg_ParseTuple(args, "OO&s#:__pickleLoaderSubsetsGenerator_minMaxSizeIterator", &type, ccn_VarList, &varList, &pbuf, &bufSize))
+      return NULL;
+
+    TCharBuffer buf(pbuf);
+
+    const int B = buf.readInt();
+    const int max = buf.readInt();
+    TSubsetsGenerator_minMaxSize_iterator *gen = new TSubsetsGenerator_minMaxSize_iterator(varList, B, max);
+    unpackCounter(buf, gen->counter);
+    gen->moreToCome = buf.readChar() != 0;
+
+    return WrapNewOrange(gen, type);
+  PyCATCH
+}
+
+
+
+
+PyObject *SubsetsGenerator_constant_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "([constant=])") ALLOWS_EMPTY
 { PyTRY
     PyObject *varlist = NULL;
 
     if (!PyArg_ParseTuple(args, "|O:SubsetsGenerator_constant.__new__", &varlist))
       return PYNULL;
 
-    TSubsetsGenerator_constant *ssg = mlnew TSubsetsGenerator_constant();
-    PyObject *res = WrapNewOrange(ssg, type);
-    if (varlist && SubsetsGeneratorResetFromVars(res, varlist) < 0)
-      return PYNULL;
-    ssg->constant = CLONE(TVarList, ssg->varList);
-    return res;
+    TSubsetsGenerator_constant *gen = mlnew TSubsetsGenerator_constant();
+    if (varlist && !(gen->varList = varListForReset(varlist))) {
+      delete gen;
+      return NULL;
+    }
+
+    gen->constant = CLONE(TVarList, gen->varList);
+    return WrapNewOrange(gen, type);
   PyCATCH
 }
 /* ************ MINIMAL COMPLEXITY ************ */
