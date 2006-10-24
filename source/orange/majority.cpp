@@ -80,3 +80,19 @@ PClassifier TCostLearner::operator()(PExampleGenerator gen, const int &weight)
                                                      clsfr.AS(TDefaultClassifier)->defaultVal);
   return clsfr;
 }
+
+
+
+TRandomLearner::TRandomLearner()
+{}
+
+
+TRandomLearner::TRandomLearner(PDistribution dist)
+: probabilities(dist)
+{}
+
+
+PClassifier TRandomLearner::operator()(PExampleGenerator gen, const int &weight)
+{
+  return new TRandomClassifier(probabilities ? probabilities : getClassDistribution(gen, weight));
+}

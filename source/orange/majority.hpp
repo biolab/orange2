@@ -52,4 +52,18 @@ public:
   virtual PClassifier operator()(PExampleGenerator, const int & =0);
 };
 
+
+
+class ORANGE_API TRandomLearner : public TLearner {
+public:
+  __REGISTER_CLASS
+
+  PDistribution probabilities; //P probabilities of predictions
+
+  TRandomLearner();
+  TRandomLearner(PDistribution);
+  
+  virtual PClassifier operator()(PExampleGenerator, const int & =0);
+};
+
 #endif

@@ -4870,6 +4870,7 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
 /* ************ CLASSIFIERS ************ */
 
 #include "classify.hpp"
+#include "majority.hpp"
 
 ABSTRACT(ClassifierFD, Classifier)
 
@@ -4903,6 +4904,7 @@ PyObject *DefaultClassifier_new(PyTypeObject *tpe, PyObject *args, PyObject *kw)
   PYERROR(PyExc_TypeError, "DefaultClassifier's constructor expects a Variable, a Value or both", PYNULL);
 }
 
+C_NAMED(RandomLearner, Learner, "([probabilities=])")
 C_NAMED(RandomClassifier, Classifier, "([probabilities=])")
 
 PClassifierList PClassifierList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::P_FromArguments(arg); }
