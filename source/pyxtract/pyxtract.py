@@ -913,6 +913,16 @@ def writeGlobals():
 
     #endif // exports
 
+    #define %(MODULENAME)s_VWRAPPER(x) \
+        %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API T##x; \
+        %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API GCPtr< T##x >; \
+        typedef GCPtr< T##x > P##x;
+   
+    #define %(MODULENAME)s_WRAPPER(x) \
+        class %(MODULENAME)s_API T##x; \
+        %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API GCPtr< T##x >; \
+        typedef GCPtr< T##x > P##x;
+
 #else // not _MSC_VER
     #define %(MODULENAME)s_API
 
@@ -922,19 +932,16 @@ def writeGlobals():
         #define %(MODULENAME)s_EXTERN extern
     #endif
 
-#endif
-
-#define %(MODULENAME)s_VWRAPPER(x) \
-     %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API T##x; \
-     %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API GCPtr< T##x >; \
-     typedef GCPtr< T##x > P##x;
+    #define %(MODULENAME)s_VWRAPPER(x) \
+        %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API T##x; \
+        %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API GCPtr< T##x >; \
+        typedef GCPtr< T##x > P##x;
    
-#define %(MODULENAME)s_WRAPPER(x) \
-     class %(MODULENAME)s_API T##x; \
-     %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API GCPtr< T##x >; \
-     typedef GCPtr< T##x > P##x;
+    #define %(MODULENAME)s_WRAPPER(x) \
+        class %(MODULENAME)s_API T##x; \
+        typedef GCPtr< T##x > P##x;
 
-// CHECK: the second line in %(MODULENAME)s_WRAPPER(x) may need to be removed for gcc     
+#endif
 """
  % {"modulename": modulename, "MODULENAME": modulename.upper()})
 
