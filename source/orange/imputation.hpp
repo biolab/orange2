@@ -94,8 +94,9 @@ public:
   __REGISTER_CLASS
   bool imputeClass;   //P Tells whether to impute the class values, too (default: true)
   bool deterministic; //P tells whether to initialize random by example's CRC (default: false)
+  PDistributionList distributions; //P probability functions
 
-  TImputer_random(const bool imputeClass = true, const bool deterministic = false);
+  TImputer_random(const bool imputeClass = true, const bool deterministic = false, PDistributionList = PDistributionList());
   virtual TExample *operator()(TExample &example);
 
 private:

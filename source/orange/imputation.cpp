@@ -148,9 +148,10 @@ TExample *TImputer_model::operator ()(TExample &example)
 
 
 
-TImputer_random::TImputer_random(const bool ic, const bool dete)
+TImputer_random::TImputer_random(const bool ic, const bool dete, PDistributionList dist)
 : imputeClass(ic),
-  deterministic(dete)
+  deterministic(dete),
+  distributions(dist)
 {}
 
 TExample *TImputer_random::operator()(TExample &example)
@@ -166,15 +167,36 @@ TExample *TImputer_random::operator()(TExample &example)
       return imputed;
   }
 
-  for(TExample::iterator ei(imputed->begin()); vi!=ve; vi++, ei++)
-    if ((*ei).isSpecial()) {
-      if (!initialized) {
-        randgen.initseed = imputed->sumValues();
-        randgen.reset();
-        initialized = true;
+  if (!distributions) {
+    for(TExample::iterator ei(imputed->begin()); vi!=ve; vi++, ei++)
+      if ((*ei).isSpecial()) {
+        if (!initialized) {
+          randgen.initseed = imputed->sumValues();
+          randgen.reset();
+          initialized = true;
+        }
+        *ei = (*vi)->randomValue(randgen.randint());
       }
-      *ei = (*vi)->randomValue(randgen.randint());
+  }
+
+  else {
+    TDistributionList::iterator di(distributions->begin());
+
+    for(TExample::iterator ei(imputed->begin()); vi!=ve; vi++, ei++, di++) {
+      if ((*ei).isSpecial()) {
+        if (!initialized) {
+          randgen.initseed = imputed->sumValues();
+          randgen.reset();
+          initialized = true;
+        }
+
+        if ((*ei).varType == TValue::INTVAR)
+          *ei = TValue((*di)->randomInt(randgen.randlong()));
+        else
+          *ei = TValue((*di)->randomFloat(randgen.randlong()));
+      }
     }
+  }
 
   return imputed;
 }
@@ -397,5 +419,33 @@ TImputerConstructor_random::TImputerConstructor_random(const bool dete)
 
 PImputer TImputerConstructor_random::operator()(PExampleGenerator egen, const int &weightID)
 {
-  return mlnew TImputer_random(imputeClass, deterministic);
+  PDomainBasicAttrStat dbas;
+  TDomainBasicAttrStat::const_iterator dbi;
+  if (egen->domain->hasContinuousAttributes(true)) {
+    dbas = new TDomainBasicAttrStat(egen, weightID);
+    dbi = dbas->begin();
+  }
+
+  
+  PDomainDistributions ddist;
+  TDomainDistributions::const_iterator ddi;
+  if (egen->domain->hasDiscreteAttributes(true)) {
+    ddist = new TDomainDistributions(egen, weightID, false, true);
+    ddi = ddist->begin();
+  }
+
+  PDistributionList distributions = new TDistributionList();
+
+  PITERATE(TVarList, vi, egen->domain->variables) {
+    if ((*vi)->varType == TValue::INTVAR)
+      distributions->push_back(*ddi);
+    else
+      distributions->push_back(new TGaussianDistribution((*dbi)->avg, (*dbi)->dev));
+    if (dbas)
+      dbi++;
+    if (ddist)
+      ddi++;
+  }
+
+  return mlnew TImputer_random(imputeClass, deterministic, distributions);
 }

@@ -92,7 +92,24 @@ TRandomLearner::TRandomLearner(PDistribution dist)
 {}
 
 
+#include "basstat.hpp"
 PClassifier TRandomLearner::operator()(PExampleGenerator gen, const int &weight)
 {
-  return new TRandomClassifier(probabilities ? probabilities : getClassDistribution(gen, weight));
+  if (probabilities)
+    return new TRandomClassifier(probabilities);
+
+  PVariable &classVar = gen->domain->classVar;
+  if (!classVar)
+    raiseError("classless domain");
+
+  if (classVar->varType == TValue::INTVAR)
+    return new TRandomClassifier(getClassDistribution(gen, weight));
+
+  if (classVar->varType == TValue::FLOATVAR) {
+    TBasicAttrStat stat(gen, classVar, weight);
+    return new TRandomClassifier(TGaussianDistribution(stat.avg, stat.dev));
+  }
+
+  raiseError("unsupported class type");
+  return NULL;
 }

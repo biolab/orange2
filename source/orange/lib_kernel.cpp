@@ -1845,8 +1845,13 @@ PyObject *ExampleGenerator_new(PyTypeObject *type, PyObject *argstuple, PyObject
 
 PExampleGenerator exampleGenFromParsedArgs(PyObject *args)
 {
- return PyOrOrange_Check(args) ? PyOrange_AsExampleGenerator(args)
-                               : PExampleGenerator(readListOfExamples(args));
+ if (PyOrOrange_Check(args)) {
+   if (PyOrExampleGenerator_Check(args))
+      return PyOrange_AsExampleGenerator(args);
+    else 
+      PYERROR(PyExc_TypeError, "example generator expected", NULL);
+  }
+  return PExampleGenerator(readListOfExamples(args));
 }
 
 
