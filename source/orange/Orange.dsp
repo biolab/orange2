@@ -444,6 +444,20 @@ SOURCE=.\learn.cpp
 # Begin Source File
 
 SOURCE=.\lib_components.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -452,6 +466,20 @@ SOURCE=.\lib_io.cpp
 # Begin Source File
 
 SOURCE=.\lib_kernel.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
