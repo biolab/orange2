@@ -360,6 +360,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     widgetLabel(hb, label, labelWidth)
     if tooltip: QToolTip.add(hb, tooltip)
     combo = QComboBox(hb)
+    combo.box = hb
 
     if items:
         for i in items:
