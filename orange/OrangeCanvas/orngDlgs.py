@@ -478,6 +478,10 @@ class CanvasOptionsDlg(QDialog):
         self.verboseCB = QCheckBox("Print extra messages to output (Verbose mode)", generalBox)
         self.dontAskBeforeCloseCB= QCheckBox("Don't ask to save schema before closing", generalBox)
         self.autoSaveSchemasOnCloseCB = QCheckBox("Automatically save temporary schemas on close", generalBox)
+        hb = QHBox(generalBox)
+        sep = QWidget(hb)
+        sep.setFixedWidth(30)
+        self.autoLoadSchemasOnStartCB = QCheckBox("Automatically reload last schema", hb)
 
         validator = QIntValidator(self)
         validator.setRange(0,10000)
