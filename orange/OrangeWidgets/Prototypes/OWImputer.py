@@ -15,8 +15,21 @@ class ImputeListboxItem(QListBoxPixmap):
         self.master = master
 
     def paint(self, painter):
-        painter.font().setBold(self.master.methods.has_key(str(self.text())))
+        btext = str(self.text())
+        meth, val = self.master.methods.get(btext, (0, None))
+        if meth:
+            if meth == 2:
+                ntext = self.master.data.domain[btext].varType == orange.VarTypes.Discrete and "major" or "avg"
+            elif meth < 5:
+                ntext = self.master.indiShorts[meth]
+            elif meth:
+                attr = self.master.data.domain[btext]
+                ntext = attr.varType == orange.VarTypes.Discrete and attr.values[val] or val
+            self.setText(btext + " -> " + ntext)
+        painter.font().setBold(meth)
         QListBoxPixmap.paint(self, painter)
+        if meth:
+            self.setText(btext)
 
 
 class LineEditWFocusOut(QLineEdit):
@@ -29,8 +42,9 @@ class LineEditWFocusOut(QLineEdit):
 
         
 class OWImputer(OWWidget):
-    settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "deterministicRandom", "autosend"]
+    settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
     contextHandlers = {"": DomainContextHandler("", ["methods"], False, False, False, False)}
+    indiShorts = ["", "leave", "avg", "model", "random", ""]
 
     def __init__(self,parent=None, signalManager = None, name = "Imputer"):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -43,7 +57,6 @@ class OWImputer(OWWidget):
         self.defaultMethod = 0
         self.selectedAttr = 0
         self.indiType = 0
-        self.deterministicRandom = 0
         self.imputeClass = 0
         self.autosend = 1
         self.methods = {}
@@ -61,12 +74,11 @@ class OWImputer(OWWidget):
 
         attrListBox = QVBox(indibox)        
         self.attrList = QListBox(attrListBox)
-        self.attrList.setFixedWidth(150)
+        self.attrList.setFixedWidth(220)
         self.connect(self.attrList, SIGNAL("highlighted ( int )"), self.individualSelected)
-#        OWGUI.separator(attrListBox)
 
         indiMethBox = QVBox(indibox)       
-        self.indiButtons = OWGUI.radioButtonsInBox(indiMethBox, self, "indiType", ["Default (above)", "Avg/Most frequent", "Model-based", "Random", "Value"], 1, callback=self.indiMethodChanged)
+        self.indiButtons = OWGUI.radioButtonsInBox(indiMethBox, self, "indiType", ["Default (above)", "Don't impute", "Avg/Most frequent", "Model-based", "Random", "Value"], 1, callback=self.indiMethodChanged)
         self.indiValueCtrlBox = QHBox(self.indiButtons)
         self.indiValueCtrlBox.setFixedWidth(150)
         OWGUI.separator(self.indiValueCtrlBox, 25, 0)
@@ -79,7 +91,6 @@ class OWImputer(OWWidget):
         OWGUI.separator(self.controlArea, 19, 8)        
 
         box = OWGUI.widgetBox(self.controlArea, "Settings")
-        OWGUI.checkBox(box, self, "deterministicRandom", "Use deterministic random", callback=self.sendIf)
         self.cbImputeClass = OWGUI.checkBox(box, self, "imputeClass", "Impute class values", callback=self.sendIf)
         
         OWGUI.separator(self.controlArea, 19, 8)        
@@ -140,11 +151,11 @@ class OWImputer(OWWidget):
         attr = self.data.domain[self.selectedAttr]
         attrName = attr.name
         if self.indiType:
-            if self.indiType == 4:
+            if self.indiType == 5:
                 if attr.varType == orange.VarTypes.Discrete:
-                    self.methods[attrName] = 4, self.indiValueCtrl.currentItem()
+                    self.methods[attrName] = 5, self.indiValueCtrl.currentItem()
                 else:
-                    self.methods[attrName] = 4, str(self.indiValueCtrl.text())
+                    self.methods[attrName] = 5, str(self.indiValueCtrl.text())
             else:
                 self.methods[attrName] = self.indiType, None
         else:
@@ -156,14 +167,14 @@ class OWImputer(OWWidget):
 
 
     def lineEditChanged(self, s):
-        self.indiType = 4
-        self.methods[self.data.domain[self.selectedAttr].name] = 4, str(s)
+        self.indiType = 5
+        self.methods[self.data.domain[self.selectedAttr].name] = 5, str(s)
         self.setBtAllToDefault()
 
 
     def valueComboChanged(self, i):
-        self.indiType = 4
-        self.methods[self.data.domain[self.selectedAttr].name] = 4, i
+        self.indiType = 5
+        self.methods[self.data.domain[self.selectedAttr].name] = 5, i
         self.setBtAllToDefault()
         self.sendIf()
 
@@ -213,9 +224,9 @@ class OWImputer(OWWidget):
     def constructImputer(self, *a):
         if not self.methods:
             if self.model and self.defaultMethod == 1:
-                self.imputer = orange.ImputerConstructor_model(model = self.model)
+                self.imputer = orange.ImputerConstructor_model(model = self.model, imputeClass = self.imputeClass)
             elif self.defaultMethod == 2:
-                self.imputer = orange.ImputerConstructor_random(imputeClass = self.imputeClass, deterministic = self.deterministicRandom)
+                self.imputer = orange.ImputerConstructor_random(imputeClass = self.imputeClass)
             else: # also falls here if method==1 but there is no model
                 self.imputer = orange.ImputerConstructor_average(imputeClass = self.imputeClass)
             return
@@ -248,20 +259,27 @@ class OWImputer(OWWidget):
                 newdata = orange.ExampleTable(orange.Domain([attr for attr in examples.domain if attr != self.attr] + [self.attr]), examples)
                 return self.model(newdata, weight)
                     
+        classVar = self.data.domain.classVar
+        imputeClass = self.imputeClass or classVar and self.methods.get(classVar.name, (0, None))[0]
         imputerModels = []
-        for attr in self.data.domain:
+        for attr in imputeClass and self.data.domain or self.data.domain.attributes:
             method, value = self.methods.get(attr.name, (0, None))
             if not method:
-                method = self.defaultMethod+1
+                method = self.defaultMethod + 2
 
-            if method == 2 and self.model:
+            if method == 1:
+                imputerModels.append(lambda e, wei=0: None)
+            elif method == 3 and self.model:
                 imputerModels.append(AttrModelLearner(attr, self.model))
-            elif method == 3:
+            elif method == 4:
                 imputerModels.append(AttrRandomLearner(attr))
-            elif method == 4 and (attr.varType == orange.VarTypes.Discrete or value):
+            elif method == 5 and (attr.varType == orange.VarTypes.Discrete or value):
                 imputerModels.append(lambda e, v=0, attr=attr, value=value: orange.DefaultClassifier(attr, attr(value)))
-            else:
+            else: # 2, or any of the above failed
                 imputerModels.append(AttrMajorityLearner(attr))
+
+        if classVar and not imputeClass:
+            imputerModels.append(lambda e, wei=0: None)
 
         self.imputer = lambda ex, wei=0, ic=imputerModels: orange.Imputer_model(models=[i(ex, wei) for i in ic])
 
