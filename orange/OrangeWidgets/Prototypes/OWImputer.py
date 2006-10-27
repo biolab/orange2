@@ -222,6 +222,8 @@ class OWImputer(OWWidget):
         
 
     def constructImputer(self, *a):
+        self.error("")
+        
         if not self.methods:
             if self.model and self.defaultMethod == 1:
                 self.imputer = orange.ImputerConstructor_model(model = self.model, imputeClass = self.imputeClass)
@@ -262,6 +264,8 @@ class OWImputer(OWWidget):
         classVar = self.data.domain.classVar
         imputeClass = self.imputeClass or classVar and self.methods.get(classVar.name, (0, None))[0]
         imputerModels = []
+        missingModels = []
+        missingValues = []
         for attr in imputeClass and self.data.domain or self.data.domain.attributes:
             method, value = self.methods.get(attr.name, (0, None))
             if not method:
@@ -269,15 +273,41 @@ class OWImputer(OWWidget):
 
             if method == 1:
                 imputerModels.append(lambda e, wei=0: None)
-            elif method == 3 and self.model:
-                imputerModels.append(AttrModelLearner(attr, self.model))
+            elif method==2:
+                imputerModels.append(AttrMajorityLearner(attr))
+            elif method == 3:
+                if self.model:
+                    imputerModels.append(AttrModelLearner(attr, self.model))
+                else:
+                    missingModels.append("'"+attr.name+"'")
+                    imputerModels.append(AttrMajorityLearner(attr))
             elif method == 4:
                 imputerModels.append(AttrRandomLearner(attr))
-            elif method == 5 and (attr.varType == orange.VarTypes.Discrete or value):
-                imputerModels.append(lambda e, v=0, attr=attr, value=value: orange.DefaultClassifier(attr, attr(value)))
-            else: # 2, or any of the above failed
-                imputerModels.append(AttrMajorityLearner(attr))
+            elif method == 5:
+                if (attr.varType == orange.VarTypes.Discrete or value):
+                    imputerModels.append(lambda e, v=0, attr=attr, value=value: orange.DefaultClassifier(attr, attr(value)))
+                else:
+                    missingValues.append("'"+attr.name+"'")
+                    imputerModels.append(AttrMajorityLearner(attr))
 
+
+        if missingModels:
+            if len(missingModels) <= 3:
+                msg = "The model, needed for imputation of some attributes (%s) is not given." % ", ".join(missingModels)
+            else:
+                msg = "The model, needed for imputation of some attributes (%s, ...) is not given." % ", ".join(missingModels[:3])
+            if missingValues:
+                msg += "\n"
+        else:
+            msg = ""
+        if missingValues:
+            if len(missingValues) <= 3:
+                msg += "The imputed values for some attributes (%s) are not specified." % ", ".join(missingValues)
+            else:
+                msg += "The imputed values for some attributes (%s, ...) are not specified." % ", ".join(missingValues[:3])
+        if msg:
+            self.warning(msg + "\nAverages and/or majority values are used instead.")
+            
         if classVar and not imputeClass:
             imputerModels.append(lambda e, wei=0: None)
 
@@ -296,9 +326,15 @@ class OWImputer(OWWidget):
         self.send("Imputer", self.imputer)
         if self.data and self.imputer:
             constructed = self.imputer(self.data)
-            data = constructed(self.data)
+            try:
+                data = constructed(self.data)
+            except:
+                self.error("Imputation failed; this is typically due to unsuitable model.")
+                data = None
             self.send("Classified Examples", data)
-        self.dataChanged = False
+
+        if data or not self.data: # don't mark it as done if imputer construction failed
+            self.dataChanged = False
 
 
 
