@@ -328,12 +328,13 @@ class OWImputer(OWWidget):
             constructed = self.imputer(self.data)
             try:
                 data = constructed(self.data)
+                # if the above fails, we dataChanged should be set to False
+                self.dataChanged = False
             except:
                 self.error("Imputation failed; this is typically due to unsuitable model.")
                 data = None
             self.send("Classified Examples", data)
-
-        if data or not self.data: # don't mark it as done if imputer construction failed
+        else:
             self.dataChanged = False
 
 
