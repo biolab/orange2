@@ -59,7 +59,7 @@ category("Visualize", ["Attribute Statistics", "Distributions", "Scatterplot", "
             "Radviz", "Polyviz", "Parallel Coordinates", "Survey Plot",
             "Sieve Diagram", "Mosaic Display", "Sieve Multigram"])
 
-category("Associate", ["Association Rules", "Association Rules Filter", "Association Rules Viewer", "Association Rules Print",
+category("Associate", ["Association Rules", "Association Rules Filter", "Association Rules Viewer",
           "Example Distance", "Attribute Distance", "Distance Map", "K-means Clustering",
           "Interaction Graph", "MDS", "Hierarchical Clustering"])
 
