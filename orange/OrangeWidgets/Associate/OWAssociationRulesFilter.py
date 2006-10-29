@@ -69,7 +69,9 @@ class AssociationRulesFilterCanvas(QCanvas):
             self.rect = None
 
         self.update()
-        self.master.zoomBar.setText('Support (H):  %3i%% - %3i%%,   Confidence (V): %3i%% - %3i%%' % (int(master.supp_min*100), int(master.supp_max*100), int(master.conf_min*100), int(master.conf_max*100)))
+        self.master.shownSupport.setText('%3i%% - %3i%%' % (int(master.supp_min*100), int(master.supp_max*100)))
+        self.master.shownConfidence.setText('%3i%% - %3i%%' % (int(master.conf_min*100), int(master.conf_max*100)))
+        self.master.shownRules.setText('%3i' % sum([sum([len(cell) for cell in row]) for row in master.ingrid]))
 
 
 class AssociationRulesFilterView(QCanvasView):
@@ -111,7 +113,15 @@ class AssociationRulesFilterView(QCanvasView):
 
 
 class OWAssociationRulesFilter(OWWidget):
-    settingsList = ["autoSend"]
+    measures = [("Support",    "Supp", "support"),
+                ("Confidence", "Conf", "confidence"),
+                ("Lift",       "Lift", "lift"),
+                ("Leverage",   "Lev",  "leverage"),
+                ("Strength",   "Strg", "strength"),
+                ("Coverage",   "Cov",  "coverage")]
+
+    settingsList = ["autoSend"] + [vn[2] for vn in measures]
+
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AssociationRulesFilter")
 
@@ -121,6 +131,10 @@ class OWAssociationRulesFilter(OWWidget):
         self.supp_min, self.supp_max = self.conf_min, self.conf_max = 0., 1.
         self.numcols = self.numrows = 20
         self.cellwidth = self.cellheight = 18
+
+        for m in self.measures:
+            setattr(self, m[2], False)
+        self.support = self.confidence = True
         self.autoSend = True
         
         self.loadSettings()
@@ -135,27 +149,34 @@ class OWAssociationRulesFilter(OWWidget):
         mainLeft = OWGUI.widgetBox(self.mainArea, "Filter")
         sep = OWGUI.separator(self.mainArea, 16, 0)
         mainRight = OWGUI.widgetBox(self.mainArea, "Rules")
+        mainRight.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+
+
+        info = QWidget(mainLeft)
+        infoGrid = QGridLayout(info, 3, 4, 0, 5)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Shown"), 1, 0)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Selected"), 2, 0)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Support (H)"), 0, 1)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Confidence (V)"), 0, 2)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "# Rules"), 0, 3)
         
-        self.zoomBar = OWGUI.widgetLabel(mainLeft, " ")
+        self.shownSupport = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.shownSupport, 1, 1)
+        self.shownConfidence = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.shownConfidence, 1, 2)
+        self.shownRules = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.shownRules, 1, 3)
+
+        self.selSupport = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.selSupport, 2, 1)
+        self.selConfidence = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.selConfidence, 2, 2)
+        self.selRules = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.selRules, 2, 3)
+        
         OWGUI.separator(mainLeft, 0, 4)
         self.ruleCanvas = AssociationRulesFilterCanvas(self, mainLeft)
         self.canvasView = AssociationRulesFilterView(self, self.ruleCanvas, mainLeft)
-
-        
-        self.suppLabel = OWGUI.widgetLabel(mainRight, "Support: ")
-        self.confLabel = OWGUI.widgetLabel(mainRight, "Confidence:")
-        OWGUI.separator(mainRight, 0, 4)
-        self.rulesLabel = OWGUI.widgetLabel(mainRight, "#rules: ")
-        OWGUI.separator(mainRight)
-        
-        self.edtRules = QMultiLineEdit(mainRight)
-        self.edtRules.setReadOnly(True)
-        self.edtRules.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
-
-        cbox = OWGUI.widgetBox(mainRight, box=None, orientation="horizontal")
-        self.commitButton = OWGUI.button(cbox, self, "Send Rules", callback = self.sendRules)
-        OWGUI.separator(cbox, 24, 0)
-        self.autoCommit = OWGUI.checkBox(cbox, self, "autoSend", "Send rules automatically", disables=[self.commitButton])
 
         boxb = OWGUI.widgetBox(mainLeft, box=None, orientation="horizontal")
         OWGUI.button(boxb, self, 'Zoom', callback = self.zoomButton)
@@ -163,6 +184,32 @@ class OWAssociationRulesFilter(OWWidget):
         OWGUI.button(boxb, self, 'No Zoom', callback = self.noZoomButton)
         OWGUI.separator(boxb, 16, 8)
         OWGUI.button(boxb, self, 'Unselect', callback = self.unselect)
+        
+
+        rightUpRight = QWidget(mainRight)
+        self.grid=QGridLayout(rightUpRight,2,3,5,5)
+        for i, m in enumerate(self.measures):
+            cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.displayRules)
+            self.grid.addWidget(cb.parentWidget(), i % 2, i / 2)
+
+        OWGUI.separator(mainRight, 0, 4)
+        
+        self.edtRules = QMultiLineEdit(mainRight)
+        self.edtRules.setReadOnly(True)
+        self.edtRules.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+
+        bottom = QWidget(mainRight)
+        bottomGrid = QGridLayout(bottom, 2, 2, 5, 5)
+
+        self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules)
+        commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules)        
+        autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)])
+        autoSend.makeConsistent()
+
+        bottomGrid.addWidget(self.saveButton, 1, 0)
+        bottomGrid.addWidget(autoSend.parentWidget(), 0, 1)
+        bottomGrid.addWidget(commitButton, 1, 1)
+
 
         self.controlArea.setFixedSize(0, 0)
         self.resize(800, 380)
@@ -180,18 +227,15 @@ class OWAssociationRulesFilter(OWWidget):
     def unselect(self):
         self.sel_colmin = self.sel_colmax = self.sel_rowmin = self.sel_rowmax = -1
 
-        if hasattr(self, "edtRules"):
-            edtRules = self.edtRules
-            edtRules.clear()
-            self.selectedRules = []
-            for row in self.ingrid:
-                for cell in row:
-                    for rule in cell:
-                        edtRules.append(`rule`)
-                        self.selectedRules.append(rule)
+        self.selectedRules = []
+        for row in self.ingrid:
+            for cell in row:
+                for rule in cell:
+                    self.selectedRules.append(rule)
 
-            if hasattr(self, "confLabel"):
-                self.updateConfSupp()            
+        self.displayRules()                
+        if hasattr(self, "selConfidence"):
+            self.updateConfSupp()
 
         if hasattr(self, "ruleCanvas"):
             self.ruleCanvas.unselect()
@@ -208,25 +252,44 @@ class OWAssociationRulesFilter(OWWidget):
             smin, cmin = self.supp_min, self.conf_min
             smax, cmax = self.supp_max, self.conf_max
             
-        self.confLabel.setText("Confidence: %3i%% - %3i%%" % (round(100*cmin), round(100*cmax)))
-        self.suppLabel.setText("Support: %3i%% - %3i%%" % (round(100*smin), round(100*smax)))
-        numlines = self.edtRules.numLines()
-        if numlines == 1 and not str(self.edtRules.textLine(0)).strip():
-            numlines = 0
-        self.rulesLabel.setText("Number of rules: %i" % numlines)
+        self.selConfidence.setText("%3i%% - %3i%%" % (round(100*cmin), round(100*cmax)))
+        self.selSupport.setText("%3i%% - %3i%%" % (round(100*smin), round(100*smax)))
+        self.selRules.setText("%3i" % len(self.selectedRules))
 
     # This function doesn't send anything to output! (Shouldn't because it's called by the mouse move event)            
     def updateRuleList(self):
-        edtRules = self.edtRules
-        edtRules.clear()
         self.selectedRules = []
         for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]:
             for cell in row[self.sel_colmin : self.sel_colmax+1]:
                 for rule in cell:
-                    edtRules.append(`rule`)
                     self.selectedRules.append(rule)
-                    
+
+        self.displayRules()
         self.updateConfSupp()
+        self.saveButton.setEnabled(len(self.selectedRules) > 0)
+
+    def displayRules(self):
+        if hasattr(self, "edtRules"):
+            edtRules = self.edtRules
+            edtRules.clear()
+
+            toWrite = [m for m in self.measures if getattr(self, m[2])]
+            if toWrite:
+                edtRules.append("\t".join([m[1] for m in toWrite]))
+            for rule in self.selectedRules:
+                self.edtRules.append("\t".join(["%.3f" % getattr(rule, m[2]) for m in toWrite] + [`rule`.replace(" ", "  ")]))
+
+
+    def saveRules(self):
+        fileName = QFileDialog.getSaveFileName( "myRules.txt", "Textfiles (*.txt)", self );
+        if not fileName.isNull() :
+            f = open(str(fileName), 'w')
+            if self.selectedRules:
+                toWrite = [m for m in self.measures if getattr(self, m[2])]
+                if toWrite:
+                    f.write("\t".join([m[1] for m in toWrite]) + "\n")
+                for rule in self.selectedRules:
+                    f.write("\t".join(["%.3f" % getattr(rule, m[2]) for m in toWrite] + [`rule`.replace(" ", "  ")]) + "\n")
 
 
     def setIngrid(self):
@@ -242,10 +305,8 @@ class OWAssociationRulesFilter(OWWidget):
     
     def zoomButton(self):
         if self.sel_rowmin >= 0:
-            print "ZB", self.sel_colmin, self.sel_colmax, self.sel_rowmin, self.sel_rowmax
             # have to compute both at ones!
             self.supp_min, self.conf_min, self.supp_max, self.conf_max = self.coordToSuppConf(self.sel_colmin, self.sel_rowmin) + self.coordToSuppConf(self.sel_colmax+1, self.sel_rowmax+1)
-            print "ZB", self.supp_min, self.supp_max, self.conf_min, self.conf_max
             self.checkScale()
 
             smin, sic, cmin, cic = self.supp_min, self.suppInCell, self.conf_min, self.confInCell
@@ -280,12 +341,6 @@ class OWAssociationRulesFilter(OWWidget):
     def noZoomButton(self):
         self.rezoom(0., 1., 0., 1.)
         
-    def setSelectionBar(self):
-        if getattr(self, "sel_supp_min", -1) >= 0:
-            self.selectionBar.setText('Selection:   Support: %3i%% - %3i%%,  Confidence: %3i%% - %3i%%' % (int(100*self.sel_supp_min), int(100*self.sel_supp_max), int(100*self.sel_conf_min), int(100*self.sel_conf_max)))
-        else:
-            self.selectionBar.clear()
-
     def sendIfAuto(self):
         if self.autoSend:
             self.sendRules()
