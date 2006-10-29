@@ -1,10 +1,11 @@
 from orngCI import FeatureByCartesianProduct
-import orange, orngVisFuncts
+import orange, orngVisFuncts, orngCN2
 import time, operator
 import Numeric, orngContingency
 from math import sqrt, log, e
 import orngTest, orngStat
 from orngScaleData import getVariableValuesSorted, getVariableValueIndices
+from copy import copy
 
 # quality measures
 CHI_SQUARE = 0
@@ -14,6 +15,7 @@ GAIN_RATIO = 3
 INTERACTION_GAIN = 4
 AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION = 5
 GINI_INDEX = 6
+CN2_RULES = 7
 
 # conditional probability estimation
 RELATIVE = 0
@@ -34,6 +36,7 @@ MEAS_GINI = 3
 SCORE = 0
 ATTR_LIST = 1
 TRY_INDEX = 2
+EXTRA_INFO = 3
 
 CROSSVALIDATION = 0
 PROPORTION_TEST = 1
@@ -168,40 +171,76 @@ class orngMosaic:
         if self.optimizationType == 0: maxLength = self.attributeCount; minLength = self.attributeCount
         else:                          maxLength = self.attributeCount; minLength = 1
 
-        evaluatedAttrs = self.getEvaluatedAttributes(self.data)
-        if evaluatedAttrs == []:
-            self.data = fullData
-            self.finishEvaluation(0)
-            return
-
         triedPossibilities = 0; totalPossibilities = 0
-        if self.optimizationType == 0: totalPossibilities = orngVisFuncts.combinationsCount(self.attributeCount, len(evaluatedAttrs))
-        else:
-            for i in range(1, self.attributeCount+1): totalPossibilities += orngVisFuncts.combinationsCount(i, len(evaluatedAttrs))
 
-        for z in range(len(evaluatedAttrs)):
-            for u in range(minLength-1, maxLength):
-                combinations = orngVisFuncts.combinations(evaluatedAttrs[:z], u)
-                
-                for attrList in combinations:
-                    attrs = [evaluatedAttrs[z]] + attrList
-                    diffVals = reduce(operator.mul, [max(1, len(self.data.domain[attr].values)) for attr in attrs])
-                    if diffVals > 200: continue     # we cannot efficiently deal with projections with more than 200 different values
+        # generate cn2 rules and show projections that have 
+        if self.qualityMeasure == CN2_RULES:
+            ruleFinder = orange.RuleBeamFinder()
+            ruleFinder.evaluator = orange.RuleEvaluator_Laplace()
+            ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha=0.2, min_coverage=0, max_rule_complexity = 4)
+            ruleFinder.validator = orange.RuleValidator_LRS(alpha=0.05, min_coverage=0, max_rule_complexity=4)
+            ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width=5)
 
-                    val = self._Evaluate(attrs)
+            learner = orngCN2.CN2UnorderedLearner()
+            learner.ruleFinder = ruleFinder
+            learner.coverAndRemove = orange.RuleCovererAndRemover_Default()
 
-                    if self.isOptimizationCanceled():
-                        self.data = fullData
-                        self.finishEvaluation(triedPossibilities)
-                        return
+            if self.__class__.__name__ == "OWMosaicOptimization":
+                from OWCN2 import CN2ProgressBar
+                learner.progressCallback = CN2ProgressBar(self.parentWidget)
+                                
+            classifier = learner(self.data)
+            
+            self.dictResults = {}
+            for rule in classifier.rules:
+                conds = rule.filter.conditions
+                domain = rule.filter.domain
+                attrs = [domain[c.position].name for c in conds]
+                if len(attrs) > self.attributeCount or (self.optimizationType == EXACT_NUMBER_OF_ATTRS and len(attrs) != self.attributeCount):
+                    continue
+                sortedAttrs = copy(attrs); sortedAttrs.sort()
+                vals = [domain[c.position].values[int(c.values[0])] for c in conds]
+                self.dictResults[tuple(sortedAttrs)] = self.dictResults.get(tuple(sortedAttrs), []) + [(rule.quality, attrs, vals)]
 
-                    triedPossibilities += 1
-                    self.insertItem(val, attrs, self.findTargetIndex(val, max), triedPossibilities)
+            for key in self.dictResults.keys():
+                el = self.dictResults[key]
+                score = sum([e[0] for e in el]) / float(len(el))
+                self.insertItem(score, el[0][1], self.findTargetIndex(score, max), 0, extraInfo = el)
+            
+        else:            
+            evaluatedAttrs = self.getEvaluatedAttributes(self.data)
+            if evaluatedAttrs == []:
+                self.data = fullData
+                self.finishEvaluation(0)
+                return
+
+            if self.optimizationType == 0: totalPossibilities = orngVisFuncts.combinationsCount(self.attributeCount, len(evaluatedAttrs))
+            else:
+                for i in range(1, self.attributeCount+1): totalPossibilities += orngVisFuncts.combinationsCount(i, len(evaluatedAttrs))
+
+            for z in range(len(evaluatedAttrs)):
+                for u in range(minLength-1, maxLength):
+                    combinations = orngVisFuncts.combinations(evaluatedAttrs[:z], u)
                     
-                    if self.__class__.__name__ == "OWMosaicOptimization":
-                        self.parentWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
-                        self.setStatusBarText("Evaluated %s visualizations..." % (orngVisFuncts.createStringFromNumber(triedPossibilities)))
-                        qApp.processEvents()        # allow processing of other events
+                    for attrList in combinations:
+                        attrs = [evaluatedAttrs[z]] + attrList
+                        diffVals = reduce(operator.mul, [max(1, len(self.data.domain[attr].values)) for attr in attrs])
+                        if diffVals > 200: continue     # we cannot efficiently deal with projections with more than 200 different values
+
+                        val = self._Evaluate(attrs)
+
+                        if self.isOptimizationCanceled():
+                            self.data = fullData
+                            self.finishEvaluation(triedPossibilities)
+                            return
+
+                        triedPossibilities += 1
+                        self.insertItem(val, attrs, self.findTargetIndex(val, max), triedPossibilities)
+                        
+                        if self.__class__.__name__ == "OWMosaicOptimization":
+                            self.parentWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
+                            self.setStatusBarText("Evaluated %s visualizations..." % (orngVisFuncts.createStringFromNumber(triedPossibilities)))
+                            qApp.processEvents()        # allow processing of other events
 
         self.data = fullData
         self.finishEvaluation(triedPossibilities)
@@ -312,8 +351,8 @@ class orngMosaic:
             return bottom
 
     # insert new result - give parameters: score of projection, number of examples in projection and list of attributes.
-    def insertItem(self, score, attrList, index, tryIndex):
-        self.results.insert(index, (score, attrList, tryIndex))
+    def insertItem(self, score, attrList, index, tryIndex, extraInfo = []):
+        self.results.insert(index, (score, attrList, tryIndex, extraInfo))
         
         if self.__class__.__name__ == "OWMosaicOptimization":
             
@@ -348,7 +387,7 @@ class orngMosaic:
             from qt import qApp
 
         for index in range(len(self.results)):
-            (score, attrList, tryIndex) = self.results[index]
+            (score, attrList, tryIndex, extraInfo) = self.results[index]
             args = self.evaluateArgument(example, attrList, score)      # call evaluation of a specific projection
             if not args: continue
             
@@ -622,8 +661,11 @@ class orngMosaic:
 
             xpos = triedIndices[-1]
             ypos = len(attrs) > 1 and 2 * triedIndices[-2]
-            if len(attrs) > 2: xpos += (len(attrs) + maxVals[-1]) * triedIndices[-3] # len(attrs) will add the factor 3 or 4
-            if len(attrs) > 3: ypos += (4 + maxVals[-2]) * triedIndices[-4]
+            if len(attrs) > 2: xpos += (2 + maxVals[-1]) * triedIndices[-3] # add the space of 3 between each different value of third attribute
+            if len(attrs) > 3: ypos += (4 + maxVals[-2]) * triedIndices[-4] # add the space of 4 between each different value of fourth attribute
+            
+
+        #orange.saveTabDelimited(r"E:\\ttt.tab", projData)
             
         learner = orange.kNNLearner(rankWeight = 0, k = len(projData)/2)
         if self.attributeOrderTestingMethod == AO_CROSSVALIDATION:
@@ -685,7 +727,7 @@ class orngMosaic:
             for order in possibleOrders:                # for all permutations of attribute values
                 currValueOrder = [order[i] for i in attrPerm]
                 val = self.evaluateAttributeOrder(currAttrs, currValueOrder, conditions, map(attrPerm.index, range(len(attrPerm))), domain)
-                tempPerms.append((val, currAttrs, currValueOrder))
+                tempPerms.append((val*100, currAttrs, currValueOrder))
                 current += 1
                 if current % 10 == 0 and self.__class__.__name__ == "OWMosaicOptimization":
                     self.setStatusBarText("Evaluated %s/%s attribute orders..." % (orngVisFuncts.createStringFromNumber(current), strCount))
@@ -710,7 +752,7 @@ class orngMosaic:
 
         file = open(filename, "wt")        
         file.write("%s\n" % (str(dict)))
-        for (score, attrList, tryIndex) in self.results:
+        for (score, attrList, tryIndex, extraInfo) in self.results:
             file.write("(%.4f, %s, %d)\n" % (score, attrList, tryIndex))
         file.flush()
         file.close()

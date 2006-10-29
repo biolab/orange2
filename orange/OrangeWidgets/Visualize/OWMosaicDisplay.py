@@ -118,6 +118,7 @@ class OWMosaicDisplay(OWWidget):
         self.conditionalDict = None
         self.conditionalSubsetDict = None
         self.updateSelectedData = 0     # do we need to update selected data?
+        self.activeRule = None
 
         self.selectionRectangle = None
         self.selectionConditionsArray = []
@@ -283,6 +284,8 @@ class OWMosaicDisplay(OWWidget):
             self.data = self.optimizationDlg.data
             if not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous:
                 self.interiorColoring = PEARSON
+            else:
+                self.interiorColoring = CLASS_DISTRIBUTION
             
         self.initCombos(self.data)
         self.openContext("", data)
@@ -324,7 +327,6 @@ class OWMosaicDisplay(OWWidget):
         self.box6.setEnabled(self.interiorColoring)
         self.updateGraph()
 
-
     def updateGraphAndPermList(self, **args):
         self.removeAllSelections()
         self.permutationList.clear()
@@ -360,10 +362,13 @@ class OWMosaicDisplay(OWWidget):
         attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
         while "(None)" in attrList: attrList.remove("(None)")
         while "" in attrList:       attrList.remove("")
+        if attrList == []: return
 
         selectList = attrList
-        if self.data.domain.classVar: data = self.data.select(attrList + [self.data.domain.classVar.name])
-        else: data = self.data.select(attrList)
+        if self.data.domain.classVar:
+            data = self.data.select(attrList + [self.data.domain.classVar.name])
+        else:
+            data = self.data.select(attrList)
         data = orange.Preprocessor_dropMissing(data)
 
         self.aprioriDistributions = []
@@ -466,7 +471,11 @@ class OWMosaicDisplay(OWWidget):
     ## DRAW TEXT - draw legend for all attributes in attrList and their possible values
     def DrawText(self, side, attr, (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute, attrVals):
         if self.drawnSides[side]: return
-        if side == RIGHT and lastValueForFirstAttribute != 2: return
+        #if side == RIGHT and lastValueForFirstAttribute != 2: return
+        if side == RIGHT:
+            if lastValueForFirstAttribute != 2: return
+            elif not self.conditionalDict[attrVals]:
+                self.conditionalDict[attrVals] = [1 for i in range(len(getVariableValuesSorted(self.data, attr)))]
         
         if not self.conditionalDict[attrVals]:
             if not self.drawPositions.has_key(side): self.drawPositions[side] = (x0, x1, y0, y1)
@@ -489,9 +498,12 @@ class OWMosaicDisplay(OWWidget):
         else:            OWCanvasText(self.canvas, attr, x1 + self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignLeft + Qt.AlignVCenter, bold = 1)
                 
         currPos = 0
-        if attrVals == "": counts = [self.conditionalDict[val] for val in values]
-        else:               counts = [self.conditionalDict[attrVals + "-" + val] for val in values]
+        if attrVals == "":  counts = [self.conditionalDict.get(val, 1) for val in values]
+        else:               counts = [self.conditionalDict.get(attrVals + "-" + val, 1) for val in values]
         total = sum(counts)
+        if total == 0:
+            counts = [1]*len(values)
+            total = sum(counts)
 
         for i in range(len(values)):
             val = values[i]
@@ -548,7 +560,6 @@ class OWMosaicDisplay(OWWidget):
 
         if x1-x0 + y1-y0 == 2: y1+=1        # if we want to show a rectangle of width and height 1 it doesn't show anything. in such cases we therefore have to increase size of one edge
 
-        # show rectangle selected or not
         rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 30)
 
         # we have to remember which conditions were new in this update so that when we right click we can only remove the last added selections
@@ -556,6 +567,7 @@ class OWMosaicDisplay(OWWidget):
             self.recentlyAdded = getattr(self, "recentlyAdded", []) + [usedAttrs]
             self.selectionConditionsDict[tuple(usedAttrs)] = 1
 
+        # show rectangle selected or not
         if self.selectionConditionsDict.has_key(tuple(usedAttrs)):
             rect.setPen(QPen(Qt.black, 3, Qt.DotLine))
 
@@ -567,6 +579,18 @@ class OWMosaicDisplay(OWWidget):
                 
                 if not self.selectedData: self.selectedData = tempData
                 else:                     self.selectedData.extend(tempData)
+
+        # if we have selected a rule that contains this combination of attr values then show a kind of selection of this rectangle
+        if self.activeRule and len(usedAttrs) == 2* len(self.activeRule[0]) and sum([v in usedAttrs[::2] for v in self.activeRule[0]]) == len(self.activeRule[0]):
+            projAttrs = usedAttrs[::2]
+            projVals = usedAttrs[1::2]
+            for vals in self.activeRule[1]:
+                if projVals == [vals[self.activeRule[0].index(a)] for a in projAttrs]:
+                    values = self.attributeValuesDict.get(self.data.domain.classVar.name, None) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
+                    counts = [self.conditionalDict[attrVals + "-" + val] for val in values]
+                    d = 2
+                    r = OWCanvasRectangle(self.canvas, x0-d, y0-d, x1-x0+2*d+1, y1-y0+2*d+1, z = 50)
+                    r.setPen(QPen(self.colorPalette[counts.index(max(counts))], 2, Qt.DashLine))
                
         # show a rectangle that will represent the example in the subset
         if self.subsetData and self.subsetData.domain.attributes == self.data.domain.attributes and self.conditionalDict[attrVals] > 0 and len(self.subsetData) == 1:
@@ -585,7 +609,7 @@ class OWMosaicDisplay(OWWidget):
         if self.interiorColoring == CLASS_DISTRIBUTION and (not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete):
             return rect
 
-        aprioriDist = None; actualDist = None; pearson = None; expected = None
+        aprioriDist = None; pearson = None; expected = None
 
         # draw pearsons residuals
         if self.interiorColoring == PEARSON or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete:

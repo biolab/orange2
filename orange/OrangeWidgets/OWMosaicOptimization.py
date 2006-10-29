@@ -5,7 +5,7 @@ import OWGUI, orngVisFuncts
 from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
-mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlation With Class)", CRAMERS_PHI),("Information Gain (In Percents Of Class Entropy Removed)", INFORMATION_GAIN), ("Gain Ratio", GAIN_RATIO), ("Interaction Gain (In Percents Of Class Entropy Removed)", INTERACTION_GAIN),("Average Probability Of Correct Classification", AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION), ("Gini index", GINI_INDEX)]
+mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlation With Class)", CRAMERS_PHI),("Information Gain (In Percents Of Class Entropy Removed)", INFORMATION_GAIN), ("Gain Ratio", GAIN_RATIO), ("Interaction Gain (In Percents Of Class Entropy Removed)", INTERACTION_GAIN),("Average Probability Of Correct Classification", AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION), ("Gini index", GINI_INDEX), ("CN2 Rules", CN2_RULES)]
 
 class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
@@ -175,7 +175,12 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         if not attrs:
             projection = self.getSelectedProjection()
             if not projection: return
-            (score, attrs, index) = projection
+            (score, attrs, index, extraInfo) = projection
+            if extraInfo:
+                ruleVals = []   # for which values of the attributes do we have a rule
+                for (q, a, vals) in extraInfo:
+                    ruleVals.append([vals[a.index(attr)] for attr in attrs])
+                self.parentWidget.activeRule = (attrs, ruleVals)
         valueOrder = None
         if self.optimizeAttributeOrder:
             self.resultList.setEnabled(0)
