@@ -820,19 +820,19 @@ CLUSTER = 1
 # #############################################################################
 # analyse the attributes that appear in the top projections. show how often do they appear also in other top projections
 class OWInteractionAnalysis(OWWidget):
-    settingsList = ["onlyLower", "useDarkness", "sortAttributesByQuality"]
+    settingsList = ["onlyLower", "rectColoring", "sortAttributesByQuality"]
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "VizRank's Interaction Analysis", wantGraph = 1)
 
         self.parent = parent
-        self.attributeCount = 10
-        self.projectionCount = 50
+        self.attributeCount = 15
+        self.projectionCount = 100
         self.rotateXAttributes = 1
-        self.onlyLower = 1
-        self.useDarkness = 1
+        self.onlyLower = 0
         self.results = None
         self.dialogType = -1
-        self.sortAttributesByQuality = 1
+        self.sortAttributesByQuality = 0
+        self.rectColoring = 1
 
         self.graph = OWGraph(self.mainArea)
         self.box = QVBoxLayout(self.mainArea)
@@ -844,20 +844,23 @@ class OWInteractionAnalysis(OWWidget):
         b1 = OWGUI.widgetBox(self.controlArea, 'Number Of Attributes')
         b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Projections')
         b3 = OWGUI.widgetBox(self.controlArea, "Settings")
+        b4 = OWGUI.widgetBox(self.controlArea, "Use color to represent ...")
 
         OWGUI.qwtHSlider(b1, self, 'attributeCount', minValue = 5, maxValue = 100, step=0, callback = self.updateGraph, precision = 0, maxWidth = 170)
-        self.projectionCountSlider = OWGUI.qwtHSlider(b2, self, 'projectionCount', minValue = 0, maxValue = 10000, step = 50, callback = self.updateGraph, precision = 0, maxWidth = 170)
+        self.projectionCountSlider = OWGUI.qwtHSlider(b2, self, 'projectionCount', minValue = 5, maxValue = 1000, step = 5, callback = self.updateGraph, precision = 0, maxWidth = 170)
         OWGUI.checkBox(b3, self, 'rotateXAttributes', label = "Rotate X labels", callback = self.updateGraph)
         OWGUI.checkBox(b3, self, 'onlyLower', label = "Show only lower diagonal", callback = self.updateGraph)
-        OWGUI.checkBox(b3, self, 'useDarkness', label = "Use color to represent projection quality", callback = self.updateGraph)
         OWGUI.checkBox(b3, self, 'sortAttributesByQuality', 'Sort attributes according to quality', callback = self.updateGraph, tooltip = "Do you want to show the attributes as they are ranked according to some quality measure\nor as they appear in the top ranked projections?")
 
+        OWGUI.comboBox(b4, self, "rectColoring", tooltip = "What should darkness of color of rectangles represent?", items = ["(don't use color)", "projection quality", "frequency of occurence in projections"], callback = self.updateGraph)
+        
         box = OWGUI.widgetBox(self.controlArea, "")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
 
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
         if self.parent.attrCont == CONT_MEAS_S2NMIX:
             self.attributes, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.parent.data, orngVisFuncts.S2NMeasureMix())
@@ -878,6 +881,8 @@ class OWInteractionAnalysis(OWWidget):
         white = QColor(255,255,255)
         self.graph.clear()
         self.graph.removeMarkers()
+        self.graph.tips.removeAll()
+        
         if not self.results or self.dialogType not in [VIZRANK, CLUSTER]: return
 
         self.projectionCount = int(self.projectionCount)
@@ -886,9 +891,6 @@ class OWInteractionAnalysis(OWWidget):
         attributes = []
         attrDict = {}
         
-        best = self.results[0][ACCURACY]
-        worst= self.results[min(len(self.results)-1, self.projectionCount)][ACCURACY]
-
         if self.sortAttributesByQuality:
             attributes = self.attributes[:self.attributeCount]
         else:
@@ -907,10 +909,25 @@ class OWInteractionAnalysis(OWWidget):
             for i in range(len(attrs)):
                 for j in range(i+1, len(attrs)):
                     if attrs[i] not in attributes or attrs[j] not in attributes: continue
-                    if not attrDict.has_key((attrs[i], attrs[j])) and not attrDict.has_key((attrs[j], attrs[i])):
-                        attrDict[(attrs[i], attrs[j])] = self.results[index][ACCURACY]
 
+                    Min = min(attrs[i], attrs[j])
+                    Max = max(attrs[i], attrs[j])
+                    
+                    # frequency of occurence
+                    if self.rectColoring == 2:
+                        attrDict[(Min, Max)] = attrDict.get((Min, Max), 0) + 1
+                    # projection quality
+                    elif not attrDict.has_key((Min, Max)):
+                        attrDict[(Min, Max)] = self.results[index][ACCURACY]
             index += 1
+
+        if self.rectColoring == 2:
+            if attrDict.values() != []: best = max(attrDict.values())
+            else: best = 1
+            worst = -1  # we could use 0 but those with 1 would be barely visible
+        else:
+            best = self.results[0][ACCURACY]
+            worst= self.results[min(len(self.results)-1, self.projectionCount)][ACCURACY]
    
         eps = 0.05
         num = len(attributes)
@@ -926,19 +943,32 @@ class OWInteractionAnalysis(OWWidget):
                 else:
                     continue
 
-                if self.useDarkness:
+                if not self.rectColoring:
+                    color = black
+                else: 
                     v = int(255 - 255*((val-worst)/float(best - worst)))
                     color = QColor(v,v,v)
-                else: color = black
-                
+
+                s = ""
+                if self.rectColoring == 1:  # projection quality
+                    s = "Pair: <b>%s</b> and <b>%s</b><br>Best projection quality: <b>%.3f</b>" % (attributes[x], attributes[yy], val)
+                elif self.rectColoring == 2:
+                    s = "Pair: <b>%s</b> and <b>%s</b><br>Number of appearances: <b>%d</b>" % (attributes[x], attributes[yy], val)
+
+                if s != "":
+                    self.graph.tips.addToolTip(x, y+1, s, 0.5, 0.5)
+                    
                 curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
                 key = self.graph.insertCurve(curve)
                 self.graph.setCurveData(key, [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps])
+                
 
                 if not self.onlyLower:
                     curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
                     key = self.graph.insertCurve(curve)
                     self.graph.setCurveData(key, [num-1-0.5-y+eps, num-1-0.5-y+eps, num-1+0.5-y-eps, num-1+0.5-y-eps], [num-0.5-x+eps, num+0.5-x-eps, num+0.5-x-eps, num-0.5-x+eps] )
+                    if s != "":
+                        self.graph.tips.addToolTip(num-1-y, num-x, s, 0.5, 0.5)
 
         # draw empty boxes at the diagonal
         for x in range(num):
@@ -1009,7 +1039,7 @@ class OWGraphAttributeHistogram(OWWidget):
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         self.attributeCount = 10
-        self.projectionCount = 1000
+        self.projectionCount = 100
         self.rotateXAttributes = 1
         self.colorAttributes = 1
         self.progressLines = 1
@@ -1024,7 +1054,7 @@ class OWGraphAttributeHistogram(OWWidget):
         OWGUI.checkBox(b1, self, 'progressLines', label = "Show intermediate lines", callback = self.updateGraph)
         OWGUI.checkBox(b1, self, 'rotateXAttributes', label = "Show attribute names vertically", callback = self.updateGraph)
         OWGUI.qwtHSlider(b2, self, 'attributeCount', minValue=0, maxValue = 100, step = 1, callback = self.updateGraph, precision = 0, maxWidth = 170)
-        OWGUI.qwtHSlider(b3, self, 'projectionCount', minValue = 0, maxValue = 10000, step=50, callback = self.updateGraph, precision = 0, maxWidth = 170)
+        OWGUI.qwtHSlider(b3, self, 'projectionCount', minValue = 5, maxValue = 1000, step=5, callback = self.updateGraph, precision = 0, maxWidth = 170)
         
 
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
