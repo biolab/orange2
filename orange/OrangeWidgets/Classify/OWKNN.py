@@ -1,7 +1,7 @@
 """
 <name>k Nearest Neighbours</name>
 <description>K-nearest neighbours learner/classifier.</description>
-<icon>icons/kNN.png</icon>
+<icon>icons/kNearestNeighbours.png</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>25</priority>
 """
@@ -22,7 +22,7 @@ class OWKNN(OWWidget):
         self.outputs = [("Learner", orange.Learner),("KNN Classifier", orange.kNNClassifier)]
 
         self.metricsList = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
-                       ("Hamiltonian", orange.ExamplesDistanceConstructor_Hamiltonian),
+                       ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
                        ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
                        ("Maximal", orange.ExamplesDistanceConstructor_Maximal),
 #                       ("Dynamic time warp", orange.ExamplesDistanceConstructor_DTW)
