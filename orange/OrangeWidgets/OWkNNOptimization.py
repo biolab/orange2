@@ -587,7 +587,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
 
     # load projections from a file
-    def loadProjections(self, name = None, ignoreCheckSum = 0):
+    def loadProjections(self, name = None, ignoreCheckSum = 0, maxCount = -1):
         self.setStatusBarText("Loading projections")
         if self.data == None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
@@ -604,7 +604,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         # show button to stop loading
         butt = OWGUI.button(self.statusBox, self, "Stop Loading", callback = self.abortOperation); butt.show()
 
-        selectedClasses, count = VizRank.load(self, name, ignoreCheckSum)
+        selectedClasses, count = VizRank.load(self, name, ignoreCheckSum, maxCount)
 
         self.dontUpdate = 1
         if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -948,7 +948,7 @@ class OWInteractionAnalysis(OWWidget):
                 else: 
                     v = int(255 - 255*((val-worst)/float(best - worst)))
                     color = QColor(v,v,v)
-
+                    
                 s = ""
                 if self.rectColoring == 1:  # projection quality
                     s = "Pair: <b>%s</b> and <b>%s</b><br>Best projection quality: <b>%.3f</b>" % (attributes[x], attributes[yy], val)
@@ -961,7 +961,6 @@ class OWInteractionAnalysis(OWWidget):
                 curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
                 key = self.graph.insertCurve(curve)
                 self.graph.setCurveData(key, [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps])
-                
 
                 if not self.onlyLower:
                     curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))

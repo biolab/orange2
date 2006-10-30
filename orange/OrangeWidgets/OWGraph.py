@@ -396,7 +396,7 @@ class OWGraph(QwtPlot):
             self.marker(mkey).setLabelAlignment(alignment)
         if bold or size:
             font = self.marker(mkey).font()
-            if bold:
+        if bold:
                 font.setBold(1)
             if size:
                 font.setPixelSize(size)

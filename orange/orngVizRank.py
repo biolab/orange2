@@ -1124,7 +1124,7 @@ class VizRank:
         return i
 
     # load projections from a file
-    def load(self, name, ignoreCheckSum = 1):
+    def load(self, name, ignoreCheckSum = 1, maxCount = -1):
         self.clearResults()
         self.clearArguments()
         self.abortCurrentOperation = 0
@@ -1141,12 +1141,13 @@ class VizRank:
             file.close()
             return [], 0
 
-        if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
-            if self.__class__.__name__ == "OWVizRank":
+        if settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
+            if not ignoreCheckSum and self.__class__.__name__ == "OWVizRank":
                 if qt.QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                     file.close()
                     return [], 0
-            else: print "'The current data set has a different checksum than the data set that was used to evaluate projections in this file. Continuing loading the file anyway..."
+            else:
+                print "The data set has a different checksum than the data set that was used in projection evaluation. Projection might be invalid but the file will be loaded anyway..."
                 
         for key in settings.keys():
             setattr(self, key, settings[key])
@@ -1159,6 +1160,7 @@ class VizRank:
             (acc, other_results, lenTable, attrList, tryIndex, generalDict) = eval(line)
             VizRank.insertItem(self, count, acc, other_results, lenTable, attrList, tryIndex, generalDict)
             count+=1
+            if maxCount != -1 and count >= maxCount: break
             if self.abortCurrentOperation: break
             if count % 100 == 0 and hasattr(self, "setStatusBarText"):
                 self.setStatusBarText("Loaded %s projections" % (orngVisFuncts.createStringFromNumber(count)))
@@ -1166,6 +1168,7 @@ class VizRank:
         file.close()
 
         self.abortCurrentOperation = 0
+
         # update loaded results
         return selectedClasses, count
 
