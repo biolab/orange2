@@ -46,7 +46,7 @@
 
 <P>Then, you can set the <b>Number of neighbours</b>. Neighbours are weighted by their proximity to the example being classified, so there's no harm in using ten or twenty examples as neighbours. Weights use a Gaussian kernel, so that the last neighbour has a weight of 0.001. If you check <b>Weighting by ranks, not distances</b>, the weighting formula will use the rank of the neighbour instead of its distance to the reference example.</P>
 
-<P>The <b>Metrics</b> you can use are Euclidean, Hamiltonian (the number of attributes in which the two examples differ - not suitable for continuous attributes), Manhattan (the sum of absolute differences for all attributes) and Maximal (the maximal difference between attributes).</P>
+<P>The <b>Metrics</b> you can use are Euclidean, Hamming (the number of attributes in which the two examples differ - not suitable for continuous attributes), Manhattan (the sum of absolute differences for all attributes) and Maximal (the maximal difference between attributes).</P>
 
 <P>If you check <b>Normalize continuous attributes</b>, their values will be divided by their span (on the training data). This ensures that all continuous attributes have equal impact, independent of their original scale.</P>
 
