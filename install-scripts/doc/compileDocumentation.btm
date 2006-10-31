@@ -1,0 +1,36 @@
+@echo off
+
+set DOCDIR=%_cwd\..\..\doc
+set PATH=%PATH;"c:\program files\html help workshop"
+
+mkdir processed 2> nul
+cd processed
+
+alias hhc `*hhc %1.hhp >& tmp   %+   for %line in (@tmp) (iff "%@left[3,%line]" == "HHC" .and. "%@left[8,%line]" != "HHC3004:" .and. "%@left[8,%line]" != "HHC1000:" then %+ echo %line %+ endiff)`
+alias compile `..\htmlparser.py %1 %+ hhc %1`
+
+for %dir in (modules ofb reference widgets) (
+  echo ^n=== %dir
+  mkdir %dir 2> nul
+  copy /q %DOCDIR\%dir %DOCDIR\style.css %dir
+  iff exist %dir\default-chm.htm then
+    move /q %dir\default-chm.htm %dir\default.htm
+  endiff
+  compile %dir
+)
+
+echo ^n=== catalog
+mkdir catalog 2> nul
+copy /q %DOCDIR\widgets\catalog %DOCDIR\style.css catalog
+move /q catalog\default-chm.htm catalog\default.htm
+..\widgetCatalogs.py html ..\..\..\orangeCanvas\widgetRegistry.xml catalog >> catalog/default.htm
+..\widgetCatalogs.py hh ..\..\..\orangeCanvas\widgetRegistry.xml catalog > catalog/hhstructure.txt
+compile catalog
+
+cd ..
+hhc scripting
+hhc orange
+
+del /fsykxq processed
+copy /q *.chm %DOCDIR
+pause

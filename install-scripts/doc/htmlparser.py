@@ -1,57 +1,31 @@
-from HTMLParser import HTMLParser
 from operator import add
-import re, sys, os
-
-PROCESSED = "processed/"
-#execfile("constants.py")
-
-toCopy = ["ofb", "reference", "modules", "datasets", "style.css"]
+from operator import add
+import re, sys, os, sets
 
 class TOCEntry:
-    def __init__(self, title, url, dummy = 0):
+    def __init__(self, title, url):
         self.title = title
         self.url = url
         self.subentries = []
-        self.dummyLink = dummy
 
     def __repr__(self):
         return self.title
 
-index = {}
-TOCRoot = TOCEntry("Index", "./default.htm")
-TOCStack = [TOCRoot]
-
-files = []#("style.css", None)]
-
-IDs = {}
-IDCounter = 0
-
-def removeNewlines(s): return s # s.replace("\n", " __HTMLHELP_NEWLINE ")
-def addNewlines(s): return s # s.replace(" __HTMLHELP_NEWLINE ", "\n")
-
-def copydir(dir):
-    if os.path.isdir(dir):
-        tryMk(PROCESSED + dir)
-        for f in os.listdir(dir):
-            copydir(dir+"/"+f)
+def copydir(src, target):
+    if os.path.isdir(src):
+        tryMk(target)
+        for f in os.listdir(src):
+            copydir(src+"/"+f, target+"/"+f)
     else:
-        file(PROCESSED+dir, "wb").write(file(dir, "rb").read())
+        file(target, "wb").write(file(src, "rb").read())
 
-def printToc(e, s=0):
-    print " "*(s*2), e.title
-    for se in e.subentries:
-        printToc(se, s+1)
-        
+
 def tryMk(dir):
     try:
         os.mkdir(dir)
     except:
         pass
 
-def newID(s):
-    global IDCounter
-    IDs[s] = "JH%i" % IDCounter
-    IDCounter += 1
 
 class IndexStore:
     def __init__(self, aname, entries = None):
@@ -62,17 +36,6 @@ class IndexStore:
             self.entries = []
         self.subentries = {}
 
-def addIndex(indexStoreList, name, title=None, filename=None, counter = None):
-    cateS = indexStoreList.get(name.lower(), None)
-    if not cateS:
-        cateS = IndexStore(name)
-        indexStoreList[name.lower()] = cateS
-    
-    if title:
-        cateS.entries.append((title, filename, counter))
-        newID("%s#HH%i" % (filename, counter))
-
-    return cateS
 
 htags = [tg % i for tg in ["<h%i>", "<h%i "] for i in range(5)]
 
@@ -91,6 +54,18 @@ def findLastTag(outp, tag, start = None):
     return -1, -1        
         
     
+def addIndex(indexStoreList, name, title=None, filename=None, counter = None):
+    cateS = indexStoreList.get(name.lower(), None)
+    if not cateS:
+        cateS = IndexStore(name)
+        indexStoreList[name.lower()] = cateS
+    
+    if title:
+        cateS.entries.append((title, filename, counter))
+
+    return cateS
+
+
 def addAName(outp, aname, lasttag=None):
     if not lasttag or lasttag == "here":
         ri = -1
@@ -110,15 +85,16 @@ def addAName(outp, aname, lasttag=None):
         outp[l] = outp[l][:ri] + aname + outp[l][ri:]
     else:
         outp.append(aname)
+
         
-def findIndices(page, filename, title):
+def findIndices(filename, title):
+    page = open(filename).read()
     lowpage = page.lower()
     outp = []
     lastout = 0
     counter = 0
     lidx = 0
     H2Entry = None
-#    re_idx = re.compile(r'<index(\s+name\s*=\s*(?P<name>("[^"]*"|0)))?>')
     re_idx = re.compile(r'<index(?P<options>\s+[^>]+)?>', re.IGNORECASE + re.DOTALL)
     re_h2 = re.compile(r'<h2(\s+toc\s*=\s*(?P<toc>("[^"]*"|0)))?>', re.IGNORECASE + re.DOTALL)
     re_h3 = re.compile(r'<h3(\s+toc\s*=\s*(?P<toc>("[^"]*"|0)))?>', re.IGNORECASE + re.DOTALL)
@@ -154,7 +130,7 @@ def findIndices(page, filename, title):
                     nameg = mg.group("name")
                     begopt = idxm.span("options")[0]
                     b, e = mg.span("name")
-                    name = addNewlines(page[begopt+b+1:begopt+e-1])
+                    name = page[begopt+b+1:begopt+e-1]
                 
                 mg = re_opt_pos.match(optionsg)
                 if mg:
@@ -176,7 +152,7 @@ def findIndices(page, filename, title):
                     print "Warning: suspiciously long index in '%s'" % filename
                     lidx = indxm.end()
                     continue
-                name = addNewlines(page[idxm.end():eidx])
+                name = page[idxm.end():eidx]
 
             name = name.replace("\n", " ")
             outp.append(page[lastout:idx])
@@ -216,7 +192,7 @@ def findIndices(page, filename, title):
                     skip = 1
                 else:
                     b, e = mo.span("toc")
-                    name = addNewlines(page[b+1:e-1])
+                    name = page[b+1:e-1]
             else:
                 eidx = lowpage.find("</%s>" % ht, idx)
                 if eidx == -1:
@@ -227,7 +203,7 @@ def findIndices(page, filename, title):
                     lidx = idx + 4
                     continue
 
-                name = addNewlines(page[idx+4:eidx])
+                name = page[idx+4:eidx]
             
             outp.append(page[lastout:idx])
             if not skip:
@@ -237,7 +213,6 @@ def findIndices(page, filename, title):
 
             if not skip:
                 newEntry = TOCEntry(name, "%s#HH%i" % (filename, counter))
-                newID("%s#HH%i" % (filename, counter))
                 if ht == "h2":
                     TOCStack[-1].subentries.append(newEntry)
                     H2Entry = newEntry
@@ -268,10 +243,11 @@ def writeIndexHH_store(hhk, indexStoreList):
     hhk.write("\n</UL>")
     
 def writeIndexHH(outputstub):
-    hhk = file(PROCESSED + "%s.hhk" % outputstub, "w")
+    hhk = file("%s.hhk" % outputstub, "w")
     hhk.write(hhkhead)
     writeIndexHH_store(hhk, index)
     hhk.close()
+
 
 def writeTocHHRec(hhc, node, l=0):
     spaces = " "*(l*4)
@@ -283,148 +259,81 @@ def writeTocHHRec(hhc, node, l=0):
         hhc.write(spaces + "</UL>\n\n")
     
 def writeTocHH(outputstub):
-    hhc = file(PROCESSED + "%s.hhc" % outputstub, "w")
+    hhc = file("%s.hhc" % outputstub, "w")
     hhc.write(hhchead)
     for s in TOCRoot.subentries:
         writeTocHHRec(hhc, s, 0)
     hhc.write(hhcfoot)
-    hhc.close()
+
     
 def writeHHP(outputstub, title):
-    hhp = file(PROCESSED + "%s.hhp" % outputstub, "w")
+    hhp = file("%s.hhp" % outputstub, "w")
     hhp.write(hhphead % {"stub": outputstub, "title": title})
-    hhp.write("[FILES]\n")
-    for filename, title in files:
-        hhp.write(filename+"\n")
-    hhp.close()
+    hhp.write("[FILES]\n" + "\n".join(files))
+
+
 
 def underspace(s):
     return s.replace("_", " ")
 
-def createCanvasCatalogPage():
-    def insertFile(cat, name):
-        import os
-        namep = name.replace(" ", "")
-        s = "widgets/catalog/" + cat + "/" + namep
-        if os.path.exists(s+".htm"):
-            catalogFile.write('<td><a href="%s.htm"><img src="icons/%s.png"></a></td>\n' % (s, namep) + \
-                           '<td style="padding-right: 15"><a href="%s.htm">%s</a></td>\n\n' % (s, name))
-            hhFile.write("\t\t%s ---> catalog/%s/%s.htm\n" % (name, cat, namep))
-        else:
-            catalogFile.write('<td><img style="padding: 2;" src="icons/%s.png"></td>\n' % namep + \
-                           '<td style="padding-right: 15"><FONT COLOR="#bbbbbb">%s</FONT></a></td>\n\n' % name)
-
-    def category(cat, names):
-        catalogFile.write('<tr><td COLSPAN="6"><H2>%s</H2></td></tr>\n\n\n' % cat)
-        catalogFile.write('<tr>\n')
-        hhFile.write("\t%s ---> catalog/default.htm\n" % cat)
-        for i, name in enumerate(names):
-            if i and not i % 3:
-                catalogFile.write('</tr><tr>')
-            insertFile(cat, name)
-        catalogFile.write('</tr>')
-
-    catalogFile = file("widgets/catalog/default.htm", "w")
-    catalogFile.write(cataloghead)
-
-    hhFile = file("widgets/hhstructure.txt", "w")
-    hhFile.write("Orange Canvas ---> default.htm\n")
-
-    category("Data", ["File", "Save", "Data Table", "Select Attributes", "Data Sampler", "Select Data", "Discretize", "Continuize", "Rank"])
-
-    category("Visualize", ["Attribute Statistics", "Distributions", "Scatterplot", "Scatterplot Matrix",
-                "Radviz", "Polyviz", "Parallel Coordinates", "Survey Plot",
-                "Sieve Diagram", "Mosaic Display", "Sieve Multigram"])
-
-    category("Associate", ["Association Rules", "Association Rules Filter", "Association Rules Viewer",
-              "Example Distance", "Attribute Distance", "Distance Map", "K-means Clustering",
-              "Interaction Graph", "MDS", "Hierarchical Clustering"])
-
-    category("Classify", ["Naive Bayes", "Logistic Regression", "Majority", "k-Nearest Neighbours", "Classification Tree",
-                             "C4.5", "Interactive Tree Builder", "SVM", "CN2", "Classification Tree Viewer",
-                             "Classification Tree Graph", "Rules Viewer", "Nomogram"])
-
-    category("Evaluate", ["Test Learners", "Classifications", "ROC Analysis", "Lift Curve", "Calibration Plot"])
-
-    catalogFile.write(catalogfoot)
-    
 def main():
-    import sys
-    global processHeaders
-    bookname = underspace(sys.argv[1])
-    outputstub = underspace(sys.argv[2])
+    global processHeaders, outputstub, TOCStack, title, files, index, TOCRoot, TOCStack
     
-    directories = []
-    i = 3
-    while i < len(sys.argv):
-        directories.append((underspace(sys.argv[i]), underspace(sys.argv[i+1])))
-        i += 2
+    bookname = ""
+    dir = outputstub = underspace(sys.argv[1])
+    
+    processHeaders = outputstub != "catalog"
 
-    if outputstub == "widgets":
-        createCanvasCatalogPage()
-        processHeaders = False
-    else:
-        processHeaders = True
-    
-    global TOCStack, title
-    tryMk(PROCESSED[:-1])
-##    for dir in toCopy:
-##        copydir(dir)
+    files = sets.Set()
+    files.add(dir+"/style.css")
+
+    index = {}
+    TOCRoot = TOCEntry("", dir + "/default.htm")
+    TOCStack = [TOCRoot]
 
     re_hrefomod = re.compile(r'href\s*=\s*"\.\.[/\\](?P<module>(ofb)|(reference)|(modules))[/\\](?P<rest>[^"]+)"', re.IGNORECASE + re.DOTALL)
-
-    for dir, contname in directories: #[(".", "Index"), ("modules", "Module"), ("ofb", "Orange for Beginners"), ("reference", "Reference Guide")]:
-        tryMk(PROCESSED + dir)
-        copydir(dir)
-        file(PROCESSED +dir+"/style.css", "w").write(file("style.css", "r").read())
-        files.append((dir+"/style.css", None))
-
-        newentry = TOCEntry(contname, dir+"/default.htm")
-        newID(dir+"/default.htm")
-        TOCStack = [TOCStack[0]]
+    
+    for fle in file(dir+"/hhstructure.txt"):
+        fle = fle.rstrip(" \n\r")
+        if not fle:
+            continue
         
-        for fle in file(dir+"/hhstructure.txt"):
-            level = 0
-            while fle[level] == "\t":
-                level += 1
+        level = 0
+        while fle[level] == "\t":
+            level += 1
 
-            arrow = fle.find("--->")
-            title = fle[:arrow].strip()
-            fn = fle[arrow+4:].strip()
+        arrow = fle.find("--->")
+        title = fle[:arrow].strip()
+        fn = fle[arrow+4:].strip()
+        if not TOCRoot.title:
+            TOCRoot.title = title
+            
 
-            dummyLink = fn[0] == "+"
-            if dummyLink:
-                fn = fn[1:]
-            filename = dir+"/"+fn
+        filename = dir+"/"+fn
 
-            newentry = TOCEntry(title, filename, dummyLink)
+        newentry = TOCEntry(title, filename)
 
-            if level > len(TOCStack)-1:
-                print "Error in '%s/hhstructure.txt' (invalid identation in line '%s')" % (dir, fle.strip())
-                sys.exit()
-            TOCStack = TOCStack[:level+1]
-            TOCStack[-1].subentries.append(newentry)
-            TOCStack.append(newentry)
+        if level > len(TOCStack)-1:
+            print "Error in '%s/hhstructure.txt' (invalid identation in line '%s')" % (dir, fle.strip())
+            sys.exit()
+        TOCStack = TOCStack[:level+1]
+        TOCStack[-1].subentries.append(newentry)
+        TOCStack.append(newentry)
 
-            #print "Processing %s" % filename
+        if not filename in files:
+            files.add(filename)
 
-            files.append((filename, title))
-            newID(filename)
-
-            l = removeNewlines(open(filename).read())
-            page = findIndices(l, filename, title)
-
-            page = addNewlines(page)
+            page = findIndices(filename, title)
             page = re_hrefomod.sub(r'href="ms-its:\g<module>.chm::/\g<module>/\g<rest>"', page)
             page = page.replace("../style.css", "ms-its:"+outputstub+".chm::/"+dir+"/style.css")
             page = page.replace('Up: <a href="../default.htm">Orange Documentation</a>', '')
 
-            file(PROCESSED + "%s/%s" % (dir, fn), "w").write(page)
+            file(filename, "w").write(page)    
 
 
     writeIndexHH(outputstub)
     writeTocHH(outputstub)
-    writeHHP(outputstub, contname)
+    writeHHP(outputstub, TOCRoot.title)
 
 
 hhphead = """
@@ -482,38 +391,4 @@ hhksubentry = """
 
 hhkendentry = "\n</OBJECT>\n"
 
-
-cataloghead = """
-<LINK REL=StyleSheet HREF="ms-its:widgets.chm::/widgets/style.css" TYPE="text/css" MEDIA=screen>
-
-<h1>Catalog of Orange Widgets</h1>
-
-<p>Orange Widgets are building blocks of Orange's graphical user's
-interface and its visual programming interface. The purpose of this
-documention is to describe the basic functionality of the widgets,
-and show how are they used in interaction with other widgets.</p>
-
-<p>Widgets in Orange can be used on their own, or within a separate
-application. This documention will however describe them as used
-within Orange Canvas, and application which trough visual programming
-allows gluing of widgets together in whatcan be anything from simple
-data analysis schema to a complex explorative data analysis
-application.</p>
-
-<p>In Orange Canvas, widgets are grouped according to their
-functionality. We stick to the same grouping in this documentation,
-and cluster widgets accoring to their arrangement withing Canvas's
-toolbar.</p>
-
-<P>The documentation refers to the last snapshot of Orange. The
-version you use might miss some stuff which is already described
-here. Download the new snapshot if you need it.</P>
-
-<table>
-"""
-
-catalogfoot = """
-</table>
-</body></html>
-"""
 main()

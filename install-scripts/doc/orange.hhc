@@ -8,6 +8,11 @@
 	<param name="ImageType" value="Folder">
 </OBJECT>
 	<OBJECT type="text/sitemap">
+		<param name="Merge" value="catalog.chm::/catalog.hhc">
+
+		</OBJECT>
+
+	<OBJECT type="text/sitemap">
 		<param name="Merge" value="scripting.htm">
 
 		</OBJECT>
