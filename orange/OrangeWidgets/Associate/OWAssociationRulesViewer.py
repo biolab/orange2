@@ -15,6 +15,18 @@ from OWTools import *
 
 
 class OWAssociationRulesViewer(OWWidget):
+    measures = [("Support",    "Supp", "support"),
+                ("Confidence", "Conf", "confidence"),
+                ("Lift",       "Lift", "lift"),
+                ("Leverage",   "Lev",  "leverage"),
+                ("Strength",   "Strg", "strength"),
+                ("Coverage",   "Cov",  "coverage")]
+
+    # only the last name can be taken for settings - the first two can be translated
+    settingsList = ["treeDepth", "showWholeRules"] + ["show%s" % m[2] for m in measures]
+
+    print settingsList
+    
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Association rules viewer")
 
@@ -25,29 +37,32 @@ class OWAssociationRulesViewer(OWWidget):
         self.showWholeRules = 1
         self.treeDepth = 2
  
-        self.settingsList = ["treeDepth", "showWholeRules"]
-
-        
-        OWGUI.widgetLabel("Tree depth")
-        OWGUI.hSlider(self.controlArea, self, "treeDepth", minValue = 0, maxValue = 10, step = 1, callback = self.displayRules)
-
-        self.layout=QVBoxLayout(self.mainArea)
-        self.treeRules = QListView(self.mainArea,'ListView')       #the rules and their properties are printed into this QListView
-        self.treeRules.setMultiSelection (1)              #allow multiple selection
-        self.treeRules.setAllColumnsShowFocus ( 1) 
-        self.treeRules.addColumn(self.tr("Rules"))        #column0
-
-##        self.gbox= QVGroupBox ( "Measures", self.controlArea, "gbox" )
-        for attr in ["Support", "Confidence", "Lift", "Leverage", "Strength", "Coverage"]:
-##            self.settingsList.append("show"+attr)
-##            setattr(self, "show"+attr, 0)
-##            OWGUI.checkBox(self.gbox, self, "show" + attr, attr, callback = self.displayRules)
-            self.treeRules.addColumn(self.tr(attr), 60)
-        
-        OWGUI.checkBox(self.controlArea, self, "showWholeRules", "Display whole rules", callback = self.setWholeRules)
-        self.showSupport = self.showConfidence = 1
+        self.showsupport = self.showconfidence = 1
+        self.showlift = self.showleverage = self.showstrength = self.showcoverage = 0
         self.loadSettings()
 
+        self.layout=QVBoxLayout(self.mainArea)
+        self.treeRules = QListView(self.mainArea)       #the rules and their properties are printed into this QListView
+#        self.treeRules.setMultiSelection (1)              #allow multiple selection
+        self.treeRules.setAllColumnsShowFocus ( 1) 
+        self.treeRules.addColumn("Rules")        #column0
+
+        mbox = OWGUI.widgetBox(self.controlArea, "Shown measures")
+        self.cbMeasures = []
+        for long, short, attr in self.measures:
+            self.cbMeasures.append(OWGUI.checkBox(mbox, self, "show"+attr, long, callback = self.showHideColumn))
+            self.treeRules.addColumn(short, 40)
+            
+        OWGUI.separator(self.controlArea)
+
+        box = OWGUI.widgetBox(self.controlArea, "Options")
+        OWGUI.widgetLabel(box, "Tree depth")
+        OWGUI.hSlider(box, self, "treeDepth", minValue = 0, maxValue = 10, step = 1, callback = self.displayRules)
+        OWGUI.separator(box)
+        OWGUI.checkBox(box, self, "showWholeRules", "Display whole rules", callback = self.setWholeRules)
+
+        OWGUI.rubber(self.controlArea)
+        
         self.layout.addWidget(self.treeRules)
         
         self.rules = None
@@ -59,14 +74,16 @@ class OWAssociationRulesViewer(OWWidget):
             line[0].setText(0,line[d])
         
 
+    def showHideColumn(self):
+        for i, cb in enumerate(self.cbMeasures):
+            self.treeRules.setColumnWidth(i+1, cb.isChecked() and 40)
+                
     def displayRules(self):
         """ Display rules as a tree. """
         self.treeRules.clear()
         self.wrlist = []
         if self.rules:
-            item0 = QListViewItem(self.treeRules,"")        #the first row is different
-            
-            rulesLC=[]
+            self.rulesLC=[]
             for rule in self.rules:                 # local copy of rules [[antecedens1,antecedens2,...], [consequens, support,...]] (without measures)
                 values = filter(lambda val: not val.isSpecial(), rule.left)
 
@@ -86,15 +103,20 @@ class OWAssociationRulesViewer(OWWidget):
                     else:
                         kons=kons + str(x.variable.name) + "  "
                 
-                rulesLC.append([antecedens, [kons, rule.support, rule.confidence, rule.lift, rule.leverage, rule.strength, rule.coverage]])
+                self.rulesLC.append([antecedens, [kons, rule.support, rule.confidence, rule.lift, rule.leverage, rule.strength, rule.coverage]])
             
-            self.buildLayer(item0, rulesLC, self.treeDepth )     # recursively builds as many layers as are in the.................
-            self.removeSingleGrouping(item0)        # if there is only 1 rule behind a +, the rule is
+            self.updateTree()
+            self.removeSingleGrouping()        # if there is only 1 rule behind a +, the rule is
             self.setWholeRules()
-            item0.setOpen(1)                        # display the rules
+            self.showHideColumn()
+            self.item0.setOpen(1)                        # display the rules
 
 
+    def updateTree(self):
+        self.item0 = QListViewItem(self.treeRules,"")        #the first row is different
+        self.buildLayer(self.item0, self.rulesLC, self.treeDepth)     # recursively builds as many layers as are in the.................
 
+        
     def buildLayer(self, parent, rulesLC, n):
         if n==0:
            self.printRules(parent, rulesLC)
@@ -134,7 +156,7 @@ class OWAssociationRulesViewer(OWWidget):
             self.wrlist.append([item, startOfRule + restOfRule+"  ->   "+rule[1][0] , restOfRule+"  ->   "+rule[1][0]])
 
 
-    def removeSingleGrouping(self,item0):         
+    def removeSingleGrouping(self):         
         """Removes a row if it has a "+" and only one child.  """
         for line in self.wrlist:                    # go through the leaves of the tree
             parent=line[0].parent()

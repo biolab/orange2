@@ -170,6 +170,9 @@ class OWDistanceMap(OWWidget):
         self.legendText2 = QCanvasText(self.canvas)
         self.legendText2.move(v_legend_width,0)
 
+        self.errorText = QCanvasText("Bitmap is too large.", self.canvas)
+        self.errorText.move(10,10)
+
         #restore color schemas from settings
         if self.ColorSchemas:
             self.colorPalette.setColorSchemas(self.ColorSchemas)
@@ -296,9 +299,15 @@ class OWDistanceMap(OWWidget):
         self.drawDistanceMap()
 
     def drawDistanceMap(self):
-
         if not self.matrix:
             return
+
+        if self.matrix.dim * max(int(self.CellWidth), int(self.getCellHeight())) > 32767:
+            self.errorText.show()
+            return
+
+        self.errorText.hide()
+            
         lo = self.CutEnabled and self.CutLow   or self.lowerBound
         hi = round(self.CutEnabled and self.CutHigh  or self.upperBound, 1)
 

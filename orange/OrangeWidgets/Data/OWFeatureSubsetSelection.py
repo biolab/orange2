@@ -1,7 +1,7 @@
 """
 <name>Feature Subset Selection</name>
 <description>Selection of the top-ranked attributes.</description>
-<icon>icons/Outcome.png</icon>
+<icon>icons/FeatureSubsetSelection.png</icon>
 <contact>Gregor Leban (gregor.leban(@at@)fri.uni-lj.si)</contact> 
 <priority>3000</priority>
 """

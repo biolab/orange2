@@ -32,20 +32,23 @@ class OWExampleDistance(OWWidget):
 
         self.metrics = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
                    ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
-                   ("Hamiltonian", orange.ExamplesDistanceConstructor_Hamiltonian),
+                   ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
                    ("Relief", orange.ExamplesDistanceConstructor_Relief)]
 
-        #set default settings
-        items = [x[0] for x in self.metrics]
-        OWGUI.comboBox(self.controlArea, self, "Metrics", box="Distance Metrics", items=items,
+        cb = OWGUI.comboBox(self.controlArea, self, "Metrics", box="Distance Metrics", items=[x[0] for x in self.metrics],
             tooltip="Choose metrics to measure pairwise distance between examples.",
             callback=self.computeMatrix)
+        cb.setMinimumWidth(170)
+        cb.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        OWGUI.separator(self.controlArea)        
         self.labelCombo = OWGUI.comboBox(self.controlArea, self, "Label", box="Example Label",
             items=[],
             tooltip="Choose attribute which will be used as a label of the example.",
             callback=self.setLabel, sendSelectedValue = 1)
+        
         self.labelCombo.setDisabled(1)
-        self.resize(100,100)
+        self.adjustSize()
 
     ##############################################################################
     # callback functions
@@ -93,7 +96,7 @@ class OWExampleDistance(OWWidget):
 
 if __name__=="__main__":
     import os
-    if os.path.isfile(r'../../doc/datasets/glass'):
+    if os.path.isfile(r'../../doc/datasets/glass.tab'):
         data = orange.ExampleTable(r'../../doc/datasets/glass')
     else:
         data = orange.ExampleTable('glass')

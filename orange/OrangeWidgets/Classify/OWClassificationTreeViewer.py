@@ -8,7 +8,7 @@
 
 from OWWidget import *
 from orngTree import TreeLearner
-from OWGUI import *
+import OWGUI
 
 import orngTree
 
@@ -68,17 +68,23 @@ class OWClassificationTreeViewer(OWWidget):
         for i in range(len(self.dataLabels)):
             checkColumn(self.dBox, self, self.dataLabels[i][0], self.settingsList[i])
 
+        OWGUI.separator(self.controlArea)
+        
         self.expBox = QHGroupBox(self.controlArea)
         self.expBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         self.expBox.setTitle('Expand/Shrink to Level')
         self.slider = QSlider(1, 9, 1, self.expslider, QSlider.Horizontal, self.expBox)
         self.sliderlabel = QLabel("%2i" % self.expslider, self.expBox)
 
+        OWGUI.separator(self.controlArea)
+        
         self.infBox = QVGroupBox(self.controlArea)
         self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         self.infBox.setTitle('Tree Size Info')
         self.infoa = QLabel('No tree.', self.infBox)
         self.infob = QLabel('', self.infBox)
+
+        OWGUI.rubber(self.controlArea)        
 
         # list view
         self.layout=QVBoxLayout(self.mainArea)
@@ -99,7 +105,7 @@ class OWClassificationTreeViewer(OWWidget):
         
         self.splitter.show()
         
-        self.resize(800,300)
+        self.resize(800,400)
 
         self.connect(self.v, SIGNAL("selectionChanged(QListViewItem *)"), self.viewSelectionChanged)
         self.connect(self.slider, SIGNAL("valueChanged(int)"), self.sliderChanged)

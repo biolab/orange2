@@ -8,9 +8,6 @@ class TOCEntry:
         self.url = url
         self.subentries = []
 
-    def __repr__(self):
-        return self.title
-
 def copydir(src, target):
     if os.path.isdir(src):
         tryMk(target)
@@ -334,6 +331,27 @@ def main():
     writeIndexHH(outputstub)
     writeTocHH(outputstub)
     writeHHP(outputstub, TOCRoot.title)
+
+    anoun = False
+    cfiles = sets.Set([f.lower() for f in files] + [dir+"/path.htm", dir+"/links.htm"])
+    dir = dir.lower()
+    if processHeaders:
+        for fn in os.listdir(dir):
+            if fn.lower()[-4:] == ".htm" and dir+"/"+fn.lower() not in cfiles:
+                if not anoun:
+                    print "\nFiles that are not referenced in hhstructure.txt:"
+                    anoun = True
+                print "  "+fn
+    else:
+        for dr in os.listdir(dir):
+            adr = (dir+"/"+dr).lower()
+            if os.path.isdir(adr):
+                for fn in os.listdir(adr):
+                    if fn.lower()[-4:] == ".htm" and adr+"/"+fn.lower() not in cfiles:
+                        if not anoun:
+                            print "\nFiles that are not used (possibly due to name mismatches):"
+                            anoun = True
+                        print "  "+fn
 
 
 hhphead = """

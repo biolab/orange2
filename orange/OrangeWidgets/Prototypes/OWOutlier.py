@@ -39,7 +39,7 @@ class OWOutlier(OWWidget):
 
         self.metrics = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
                         ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
-                        ("Hamiltonian", orange.ExamplesDistanceConstructor_Hamiltonian),
+                        ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
                         ("Relief", orange.ExamplesDistanceConstructor_Relief)]
 
 

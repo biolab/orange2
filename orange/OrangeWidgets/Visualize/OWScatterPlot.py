@@ -463,8 +463,13 @@ if __name__=="__main__":
 #    a=QApplication(sys.argv)
     a=QApplication([])
     ow=OWScatterPlot()
+
+    d = orange.ExampleTable("testXXXX.tab")
+    ow.cdata(d)
+    
     a.setMainWidget(ow)
     ow.show()
+    a.exec_loop()
 
     #save settings 
     ow.saveSettings()

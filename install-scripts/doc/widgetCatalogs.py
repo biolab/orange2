@@ -6,12 +6,13 @@ def getWidgetsByCategory(xmlfilename):
         for widgetNode in categoryNode.getElementsByTagName("widget"):
             categories.setdefault(category, []).append(dict([(x, widgetNode.getAttribute(x)) for x in ["name", "contact", "icon", "priority"]]))
     for cw in categories.values():
-        cw.sort(lambda x,y: cmp(x["priority"], y["priority"]) or cmp(x["name"], y["name"]))
+        cw.sort(lambda x,y: cmp(int(x["priority"]), int(y["priority"])) or cmp(x["name"], y["name"]))
     return categories
 
 
 def mergeCategories(categoriesOrder, xmlCategories):
-    return categoriesOrder + filter(lambda x:x not in categoriesOrder, xmlCategories.keys())
+    dontAdd = categoriesOrder + ["Genomics", "Other"]
+    return categoriesOrder + filter(lambda x:x not in dontAdd, xmlCategories.keys())
 
 
 def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Data", "Visualize", "Classify", "Evaluate", "Associate", "Regression"]):
@@ -22,18 +23,25 @@ def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Dat
         docpath += "/"
     
     for category in mergeCategories(categoriesOrder, xmlCategories):
-        catalogPage += '<tr><td COLSPAN="6"><H2>%s</H2></td></tr>\n\n\n' % category
+        catalogPage += '<tr><td style="padding-top:32px" COLSPAN="6"><H2>%s</H2></td></tr>\n\n\n' % category
         catalogPage += '<tr>\n'
         for i, widget in enumerate(xmlCategories[category]):
             if i and not i % 3:
                 catalogPage += '</tr><tr>'
-            htmlfile = docpath + category + "/" + widget["name"].replace(" ", "") + ".htm"
+            name = widget["name"]
+            namep = name.replace(" ", "")
+            htmlfile = docpath + category + "/" + namep + ".htm"
+            icon = widget["icon"]
+            if not exists(docpath + icon):
+                icon = "icons/" + namep + ".png"
+                if not exists(docpath + icon):
+                    icon = "icons/Unknown.png"
             if exists(htmlfile):
-                catalogPage += '<td><a href="%s"><img src="%s"></a></td>\n' % (htmlfile, widget["icon"]) + \
-                               '<td style="padding-right: 15"><a href="%s">%s</a></td>\n\n' % (htmlfile, widget["name"])
+                catalogPage += '<td><a href="%s"><img src="%s"></a></td>\n' % (htmlfile, icon) + \
+                               '<td style="padding-right: 15"><a href="%s">%s</a></td>\n\n' % (htmlfile, name)
             else:
-                catalogPage += '<td><img style="padding: 2;" src="%s"></td>\n' % widget["icon"] + \
-                               '<td style="padding-right: 15"><FONT COLOR="#bbbbbb">%s</FONT></a></td>\n\n' % widget["name"]
+                catalogPage += '<td><img style="padding: 2;" src="%s"></td>\n' % icon + \
+                               '<td style="padding-right: 15"><FONT COLOR="#bbbbbb">%s</FONT></a></td>\n\n' % name
         catalogPage += '</tr>'
 
     catalogPage += "</table>"

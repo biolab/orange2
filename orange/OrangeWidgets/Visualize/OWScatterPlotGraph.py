@@ -104,13 +104,15 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             yVarMax -= 1; yVar -= 1
             attrYIndices = getVariableValueIndices(self.rawdata, yAttrIndex)
             if self.showAxisScale: self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttrIndex))
-            self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize + 10.)/100., yVarMax + (self.jitterSize + 10.)/100., 1)
+            ymin, ymax = yVarMin - (self.jitterSize + 10.)/100., yVarMax + (self.jitterSize + 10.)/100.
+            self.setAxisScale(QwtPlot.yLeft, ymin, ymax, 1)
         else:
             self.setYLlabels(None)
             off  = (yVarMax - yVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
-            self.setAxisScale(QwtPlot.yLeft, yVarMin - off, yVarMax + off)
+            ymin, ymax = yVarMin - off, yVarMax + off
+            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
         # #######################################################
-            
+
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
         else: self.setXaxisTitle(None)
 
@@ -146,6 +148,48 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         if self.rawdata.domain[yAttrIndex].varType == orange.VarTypes.Discrete: yData = ((yData * 2*len(self.rawdata.domain[yAttrIndex].values)) - 1.0) / 2.0
         else:  yData = yData * (self.attrValues[yAttr][1] - self.attrValues[yAttr][0]) + float(self.attrValues[yAttr][0])
+
+
+        # #######################################################
+        # show probabilities
+
+        if False and self.showProbabilities and colorIndex >= 0:
+            import orangeom
+            rx = self.transform(QwtPlot.xBottom, xmax) - self.transform(QwtPlot.xBottom, xmin)
+            ox = self.transform(QwtPlot.xBottom, 0) - self.transform(QwtPlot.xBottom, xmin)
+
+            ry = self.transform(QwtPlot.yLeft, ymin) - self.transform(QwtPlot.yLeft, ymax)
+            oy = self.transform(QwtPlot.yLeft, ymin) - self.transform(QwtPlot.yLeft, 0)
+
+            domain = orange.Domain([self.rawdata.domain[xAttrIndex], self.rawdata.domain[yAttrIndex], self.rawdata.domain.classVar], self.rawdata.domain)
+            scX = [x/(xmax-xmin) for x in xData]
+            scY = [y/(ymax-ymin) for y in yData]
+
+            self.potentialsClassifier = orange.P2NN(domain,
+                                                    Numeric.transpose(Numeric.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawdata]])),
+                                                    None, None, None, None)
+
+            if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
+                imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, ox, oy, 3, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
+                palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
+            else:
+                imagebmp, nShades = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, ox, oy, 3, 1) # the last argument is self.trueScaleFactor (in LinProjGraph...)
+                colors = defaultRGBColors
+
+                palette = []
+                sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
+                for cls in self.potentialsClassifier.classVar.values:
+                    color = colors[sortedClasses.index(cls)]
+                    towhite = [255-c for c in color]
+                    for s in range(nShades):
+                        si = 1-float(s)/nShades
+                        palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+                palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+
+            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, palette, 256, QImage.LittleEndian)
+            self.potentialsBmp = QPixmap()
+            self.potentialsBmp.convertFromImage(image)
+            self.xmin, self.ymin = xmin, ymax
 
 
         # #######################################################
@@ -418,6 +462,11 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             self.addMarker("%s = %%.%df" % (colorAttr, self.rawdata.domain[colorAttr].numberOfDecimals) % (colorVarMin), x0 - xVar*1./100.0, yVarMin + yVar*0.04, Qt.AlignLeft)
             self.addMarker("%s = %%.%df" % (colorAttr, self.rawdata.domain[colorAttr].numberOfDecimals) % (colorVarMax), x0 - xVar*1./100.0, yVarMin + yVar*0.96, Qt.AlignLeft)
 
+
+    def drawCanvasItems(self, painter, rect, map, pfilter):
+        if getattr(self, "potentialsBmp", None):
+            painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, self.xmin), self.transform(QwtPlot.yLeft, self.ymin)), self.potentialsBmp)
+        OWGraph.drawCanvasItems(self, painter, rect, map, pfilter)
 
     # ##############################################################
     # ######  SHOW CLUSTER LINES  ##################################
