@@ -32,7 +32,7 @@
 
 <P class=section>Methods</P>
 <DL class=attributes><DT>__call__([examples, weightID][, DomainDistributions][, DomainBasicAttrStat])</DT>
-<DD>Constructs an instance of <CODE>ExamplesDistance</CODE>. Not all the data needs to be given. Most measures can be constructed from <CODE>DomainBasicAttrStat</CODE>; if it is not given, they can help themselves either by <CODE>examples</CODE> or <CODE>DomainDistributions</CODE>. Some (e.g. <CODE>ExamplesDistance_Hamiltonian)</CODE> even do not need any arguments.</DD>
+<DD>Constructs an instance of <CODE>ExamplesDistance</CODE>. Not all the data needs to be given. Most measures can be constructed from <CODE>DomainBasicAttrStat</CODE>; if it is not given, they can help themselves either by <CODE>examples</CODE> or <CODE>DomainDistributions</CODE>. Some (e.g. <CODE>ExamplesDistance_Hamming)</CODE> even do not need any arguments.</DD>
 </DL>
 
 <H2>ExamplesDistance_Normalized</H2>
@@ -63,14 +63,16 @@
 <DD>Returns a list of floats representing distances between pairs of attribute values of the two examples.</DD>
 </DL>
 
-<H2>ExamplesDistance_Hamiltonian / ExamplesDistanceConstructor_Hamiltonian</H2>
-<index name="Hamiltonian distance">
-<index name="classes/ExamplesDistance_Hamiltonian">
-<index name="classes/ExamplesDistanceConstructor_Hamiltonian">
+<H2>ExamplesDistance_Hamming / ExamplesDistanceConstructor_Hamming</H2>
+<index name="Hammming distance">
+<index name="classes/ExamplesDistance_Hamming">
+<index name="classes/ExamplesDistanceConstructor_Hamming">
 
-<P>Hamiltonian distance between two examples is defined as the number of attributes in which the two examples differ. Note that this measure is not really appropriate for examples that contain continuous attributes.</P>
+<P>Hamming distance between two examples is defined as the number of attributes in which the two examples differ. Note that this measure is not really appropriate for examples that contain continuous attributes.</P>
 
 <P>This class is derived directly from <CODE>ExamplesDistance</CODE>, not from <CODE>ExamplesDistance_Normalized</CODE>.</P>
+
+<P><B>Note: in some previous versions of Orange, this distance was wrongly referred to as Hamiltonian, not Hamming.</B> This has been corrected <em>without</em> providing any aliases for backward compatibility.</P>
 
 
 <H2>ExamplesDistance_Maximal / ExamplesDistanceConstructor_Maximal</H2>

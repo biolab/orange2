@@ -20,7 +20,7 @@ print "\n\n"
 data = orange.ExampleTable("iris")
 knn = orange.kNNLearner()
 knn.k = 10
-knn.distanceConstructor = orange.ExamplesDistanceConstructor_Hamiltonian()
+knn.distanceConstructor = orange.ExamplesDistanceConstructor_Hamming()
 knn = knn(train)
 for i in range(5):
     example = test.randomexample()
