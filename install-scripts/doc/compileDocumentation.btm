@@ -9,8 +9,6 @@ cd processed
 alias hhc `*hhc %1.hhp >& tmp   %+   for %line in (@tmp) (iff "%@left[3,%line]" == "HHC" .and. "%@left[8,%line]" != "HHC3004:" .and. "%@left[8,%line]" != "HHC1000:" then %+ echo %line %+ endiff) %+ del /q tmp`
 alias compile `..\htmlparser.py %1 %+ hhc %1`
 
-goto :cata
-
 for %dir in (modules ofb reference widgets) (
   echo ^n=== %dir
   mkdir %dir 2> nul
@@ -20,8 +18,6 @@ for %dir in (modules ofb reference widgets) (
   endiff
   compile %dir
 )
-
-:cata
 
 echo ^n=== catalog
 mkdir catalog 2> nul
@@ -39,7 +35,7 @@ hhc orange
 del /q style.css
 
 del /fsykxq processed
-rem move /q *.chm %DOCDIR
+move /q *.chm %DOCDIR
 
 echo ^s
 pause
