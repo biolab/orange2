@@ -72,6 +72,9 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
   size = rowSize * height * cellHeight;
 
   unsigned char *res = new unsigned char[size];
+  if (!res)
+    raiseErrorWho("bitmap2string", "not enough memory (%i bytes) for the bitmap", size);
+
   unsigned char *resi = res;
 
   if (grid && ((cellHeight<3) || (cellWidth < 3)))

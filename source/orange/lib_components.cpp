@@ -1309,14 +1309,14 @@ PyObject *DomainContingency_normalize(PyObject *self, PyObject *) PYARGS(0, "() 
 #include "distance_dtw.hpp"
 
 ABSTRACT(ExamplesDistance_Normalized, ExamplesDistance)
-C_NAMED(ExamplesDistance_Hamiltonian, ExamplesDistance, "()")
+C_NAMED(ExamplesDistance_Hamming, ExamplesDistance, "()")
 C_NAMED(ExamplesDistance_Maximal, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Manhattan, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Euclidean, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Relief, ExamplesDistance, "()")
 C_NAMED(ExamplesDistance_DTW, ExamplesDistance_Normalized, "()")
 
-C_CALL(ExamplesDistanceConstructor_Hamiltonian, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Hamiltonian")
+C_CALL(ExamplesDistanceConstructor_Hamming, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Hamming")
 C_CALL(ExamplesDistanceConstructor_Maximal, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Maximal")
 C_CALL(ExamplesDistanceConstructor_Manhattan, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Manhattan")
 C_CALL(ExamplesDistanceConstructor_Euclidean, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Euclidean")

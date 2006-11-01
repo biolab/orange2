@@ -50,29 +50,29 @@ public:
 
 
 
-/* Hamiltonian distance: 
+/* Hamming distance: 
       the number of different (incompatible) attribute values.
 */
-class ORANGE_API TExamplesDistance_Hamiltonian : public TExamplesDistance {
+class ORANGE_API TExamplesDistance_Hamming : public TExamplesDistance {
 public:
   __REGISTER_CLASS
 
   bool ignoreClass; //P if true (default), class value is ignored when computing distances
   bool ignoreUnknowns; //P if true (default: false) unknown values are ignored in computation
 
-  TExamplesDistance_Hamiltonian(const bool &ic = true, const bool &iu = false);
+  TExamplesDistance_Hamming(const bool &ic = true, const bool &iu = false);
   virtual float operator()(const TExample &, const TExample &) const;
 };
 
 
-class ORANGE_API TExamplesDistanceConstructor_Hamiltonian : public TExamplesDistanceConstructor {
+class ORANGE_API TExamplesDistanceConstructor_Hamming : public TExamplesDistanceConstructor {
 public:
   __REGISTER_CLASS
 
   bool ignoreClass; //P if true (default), class value is ignored when computing distances
   bool ignoreUnknowns; //P if true (default: false) unknown values are ignored in computation
 
-  TExamplesDistanceConstructor_Hamiltonian();
+  TExamplesDistanceConstructor_Hamming();
   virtual PExamplesDistance operator()(PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat()) const;
 };
 

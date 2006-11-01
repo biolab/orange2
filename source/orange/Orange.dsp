@@ -315,8 +315,7 @@ SOURCE=.\distancemap.cpp
 
 # ADD BASE CPP /O2
 # SUBTRACT BASE CPP /Z<none>
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
+# ADD CPP /Zi /Od
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 

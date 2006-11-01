@@ -40,23 +40,23 @@ TExamplesDistanceConstructor::TExamplesDistanceConstructor(const bool &ic)
 {}
 
 
-TExamplesDistanceConstructor_Hamiltonian::TExamplesDistanceConstructor_Hamiltonian()
+TExamplesDistanceConstructor_Hamming::TExamplesDistanceConstructor_Hamming()
 : ignoreClass(true),
   ignoreUnknowns(false)
 {}
 
 
-PExamplesDistance TExamplesDistanceConstructor_Hamiltonian::operator()(PExampleGenerator, const int &, PDomainDistributions, PDomainBasicAttrStat) const
-{ return mlnew TExamplesDistance_Hamiltonian(ignoreClass, ignoreUnknowns); }
+PExamplesDistance TExamplesDistanceConstructor_Hamming::operator()(PExampleGenerator, const int &, PDomainDistributions, PDomainBasicAttrStat) const
+{ return mlnew TExamplesDistance_Hamming(ignoreClass, ignoreUnknowns); }
 
 
-TExamplesDistance_Hamiltonian::TExamplesDistance_Hamiltonian(const bool &ic, const bool &iu)
+TExamplesDistance_Hamming::TExamplesDistance_Hamming(const bool &ic, const bool &iu)
 : ignoreClass(ic),
   ignoreUnknowns(iu)
 {}
 
 
-float TExamplesDistance_Hamiltonian::operator()(const TExample &e1, const TExample &e2) const 
+float TExamplesDistance_Hamming::operator()(const TExample &e1, const TExample &e2) const 
 { if (e1.domain != e2.domain)
     raiseError("cannot compare examples from different domains");
 
