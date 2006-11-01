@@ -14,7 +14,7 @@ from qt import *
 from OWTools import *
 
 
-class OWAssociationRulesViewer(OWWidget):
+class OWAssociationRulesTreeViewer(OWWidget):
     measures = [("Support",    "Supp", "support"),
                 ("Confidence", "Conf", "confidence"),
                 ("Lift",       "Lift", "lift"),
@@ -173,7 +173,7 @@ class OWAssociationRulesViewer(OWWidget):
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWAssociationRulesViewer()
+    ow=OWAssociationRulesTreeViewer()
     a.setMainWidget(ow)
 
     dataset = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')

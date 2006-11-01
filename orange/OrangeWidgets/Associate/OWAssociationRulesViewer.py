@@ -12,7 +12,7 @@ from qtcanvas import *
 from OWWidget import *
 import OWGUI
 
-class AssociationRulesFilterCanvas(QCanvas):
+class AssociationRulesViewerCanvas(QCanvas):
     def __init__(self, master, widget):
         QCanvas.__init__(self, widget)
         self.master = master
@@ -74,7 +74,7 @@ class AssociationRulesFilterCanvas(QCanvas):
         self.master.shownRules.setText('%3i' % sum([sum([len(cell) for cell in row]) for row in master.ingrid]))
 
 
-class AssociationRulesFilterView(QCanvasView):
+class AssociationRulesViewerView(QCanvasView):
     def __init__(self, master, canvas, widget):
         QCanvasView.__init__(self, canvas, widget)
         self.master = master
@@ -112,7 +112,7 @@ class AssociationRulesFilterView(QCanvasView):
         self.master.sendIfAuto()
 
 
-class OWAssociationRulesFilter(OWWidget):
+class OWAssociationRulesViewer(OWWidget):
     measures = [("Support",    "Supp", "support"),
                 ("Confidence", "Conf", "confidence"),
                 ("Lift",       "Lift", "lift"),
@@ -123,7 +123,7 @@ class OWAssociationRulesFilter(OWWidget):
     settingsList = ["autoSend"] + [vn[2] for vn in measures]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "AssociationRulesFilter")
+        OWWidget.__init__(self, parent, signalManager, "AssociationRulesViewer")
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
@@ -175,8 +175,8 @@ class OWAssociationRulesFilter(OWWidget):
         infoGrid.addWidget(self.selRules, 2, 3)
         
         OWGUI.separator(mainLeft, 0, 4)
-        self.ruleCanvas = AssociationRulesFilterCanvas(self, mainLeft)
-        self.canvasView = AssociationRulesFilterView(self, self.ruleCanvas, mainLeft)
+        self.ruleCanvas = AssociationRulesViewerCanvas(self, mainLeft)
+        self.canvasView = AssociationRulesViewerView(self, self.ruleCanvas, mainLeft)
 
         boxb = OWGUI.widgetBox(mainLeft, box=None, orientation="horizontal")
         OWGUI.button(boxb, self, 'Zoom', callback = self.zoomButton)
@@ -369,7 +369,7 @@ class OWAssociationRulesFilter(OWWidget):
        
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWAssociationRulesFilter()
+    ow=OWAssociationRulesViewer()
     a.setMainWidget(ow)
 
 
