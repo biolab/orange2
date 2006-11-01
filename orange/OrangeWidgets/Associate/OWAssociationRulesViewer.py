@@ -1,20 +1,118 @@
 """
 <name>Association Rules Viewer</name>
-<description>Association rules viewer.</description>
+<description>Association rules filter and viewer.</description>
 <icon>icons/AssociationRulesViewer.png</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
-<priority>300</priority>
+<priority>200</priority>
 """
 
+import orange, sys
+from qt import *
+from qtcanvas import *
 from OWWidget import *
 import OWGUI
 
-import sys, re
-from qt import *
-from OWTools import *
+class AssociationRulesFilterCanvas(QCanvas):
+    def __init__(self, master, widget):
+        QCanvas.__init__(self, widget)
+        self.master = master
+        self.rect = None
+        self.unselect()
+        self.draw()
+
+    def unselect(self):
+        if self.rect:
+            self.rect.hide()
+            self.rect = None
+        
+        
+    def draw(self):
+        master = self.master
+        nc, nr, cw, ch, ig = master.numcols, master.numrows, master.cellwidth, master.cellheight, master.ingrid
+        scmin, scmax, srmin, srmax = master.sel_colmin, master.sel_colmax, master.sel_rowmin, master.sel_rowmax
+
+        self.resize(nc * cw +1, nr * ch +1)
+
+        for a in self.allItems():
+            a.hide()
+                
+        maxcount = max([max([len(cell) for cell in row]) for row in master.ingrid])
+        maxcount = float(max(10, maxcount))
+
+        pens = [QPen(QColor(200,200,200), 1), QPen(QColor(200,200,255), 1)]
+        brushes = [QBrush(QColor(255, 255, 255)), QBrush(QColor(250, 250, 255))]
+        self.cells = []
+        for x in range(nc):
+            selx = x >= scmin and x <= scmax
+            for y in range(nr):
+                sel = selx and y >= srmin and y <= srmax
+                cell = QCanvasRectangle(x*cw, y*ch, cw+1, ch+1, self)
+                cell.setPen(pens[sel])
+                if not ig[y][x]:
+                    cell.setBrush(brushes[sel])
+                else:
+                    if sel:
+                        color = 220 - 220 * len(ig[y][x]) / maxcount
+                        cell.setBrush(QBrush(QColor(color, color, 255)))
+                    else:
+                        color = 255 - 235 * len(ig[y][x]) / maxcount
+                        cell.setBrush(QBrush(QColor(color-20, color-20, color)))
+                cell.show()
+
+        if self.rect:
+            self.rect.hide()
+        if scmin > -1:
+            self.rect = QCanvasRectangle(scmin*cw, srmin*ch, (scmax-scmin+1)*cw, (srmax-srmin+1)*ch, self)
+            self.rect.setPen(QPen(QColor(128, 128, 255), 2))
+            self.rect.show()
+        else:
+            self.rect = None
+
+        self.update()
+        self.master.shownSupport.setText('%3i%% - %3i%%' % (int(master.supp_min*100), int(master.supp_max*100)))
+        self.master.shownConfidence.setText('%3i%% - %3i%%' % (int(master.conf_min*100), int(master.conf_max*100)))
+        self.master.shownRules.setText('%3i' % sum([sum([len(cell) for cell in row]) for row in master.ingrid]))
 
 
-class OWAssociationRulesViewer(OWWidget):
+class AssociationRulesFilterView(QCanvasView):
+    def __init__(self, master, canvas, widget):
+        QCanvasView.__init__(self, canvas, widget)
+        self.master = master
+        self.canvas = canvas
+        self.setFixedSize(365, 365)
+        self.selecting = False
+        self.update()
+
+    def contentsMousePressEvent(self, ev):
+        self.sel_startX = ev.pos().x()
+        self.sel_startY = ev.pos().y()
+        master = self.master
+        self.master.sel_colmin = self.master.sel_colmax = self.sel_startX / self.master.cellwidth
+        self.master.sel_rowmin = self.master.sel_rowmax = self.sel_startY / self.master.cellheight
+        self.canvas.draw()
+        self.master.updateRuleList()
+
+    def contentsMouseMoveEvent(self, ev):
+        self.sel_endX = ev.pos().x()
+        self.sel_endY = ev.pos().y()
+        t = self.sel_startX /self.master.cellwidth, self.sel_endX /self.master.cellwidth
+        self.master.sel_colmin, self.master.sel_colmax = min(t), max(t)
+        t = self.sel_startY /self.master.cellheight, self.sel_endY /self.master.cellheight
+        self.master.sel_rowmin, self.master.sel_rowmax = min(t), max(t)
+
+        self.master.sel_colmin = max(self.master.sel_colmin, 0)
+        self.master.sel_rowmin = max(self.master.sel_rowmin, 0)
+        self.master.sel_colmax = min(self.master.sel_colmax, self.master.numcols-1)
+        self.master.sel_rowmax = min(self.master.sel_rowmax, self.master.numrows-1)
+
+        self.canvas.draw()
+        self.master.updateRuleList()
+
+    def contentsMouseReleaseEvent(self, ev):
+        self.master.sendIfAuto()
+
+
+class OWAssociationRulesFilter(OWWidget):
     measures = [("Support",    "Supp", "support"),
                 ("Confidence", "Conf", "confidence"),
                 ("Lift",       "Lift", "lift"),
@@ -22,164 +120,263 @@ class OWAssociationRulesViewer(OWWidget):
                 ("Strength",   "Strg", "strength"),
                 ("Coverage",   "Cov",  "coverage")]
 
-    # only the last name can be taken for settings - the first two can be translated
-    settingsList = ["treeDepth", "showWholeRules"] + ["show%s" % m[2] for m in measures]
+    settingsList = ["autoSend"] + [vn[2] for vn in measures]
 
-    print settingsList
-    
-    def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Association rules viewer")
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "AssociationRulesFilter")
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
-        self.outputs = []
+        self.outputs = [("Association Rules", orange.AssociationRules)]
+
+        self.supp_min, self.supp_max = self.conf_min, self.conf_max = 0., 1.
+        self.numcols = self.numrows = 20
+        self.cellwidth = self.cellheight = 18
+
+        for m in self.measures:
+            setattr(self, m[2], False)
+        self.support = self.confidence = True
+        self.autoSend = True
         
-        # Settings
-        self.showWholeRules = 1
-        self.treeDepth = 2
- 
-        self.showsupport = self.showconfidence = 1
-        self.showlift = self.showleverage = self.showstrength = self.showcoverage = 0
         self.loadSettings()
 
-        self.layout=QVBoxLayout(self.mainArea)
-        self.treeRules = QListView(self.mainArea)       #the rules and their properties are printed into this QListView
-#        self.treeRules.setMultiSelection (1)              #allow multiple selection
-        self.treeRules.setAllColumnsShowFocus ( 1) 
-        self.treeRules.addColumn("Rules")        #column0
-
-        mbox = OWGUI.widgetBox(self.controlArea, "Shown measures")
-        self.cbMeasures = []
-        for long, short, attr in self.measures:
-            self.cbMeasures.append(OWGUI.checkBox(mbox, self, "show"+attr, long, callback = self.showHideColumn))
-            self.treeRules.addColumn(short, 40)
-            
-        OWGUI.separator(self.controlArea)
-
-        box = OWGUI.widgetBox(self.controlArea, "Options")
-        OWGUI.widgetLabel(box, "Tree depth")
-        OWGUI.hSlider(box, self, "treeDepth", minValue = 0, maxValue = 10, step = 1, callback = self.displayRules)
-        OWGUI.separator(box)
-        OWGUI.checkBox(box, self, "showWholeRules", "Display whole rules", callback = self.setWholeRules)
-
-        OWGUI.rubber(self.controlArea)
-        
-        self.layout.addWidget(self.treeRules)
-        
         self.rules = None
+        self.selectedRules = []
+        self.noZoomButton()
 
 
-    def setWholeRules(self):
-        d = self.showWholeRules and 1 or 2
-        for line in self.wrlist:
-            line[0].setText(0,line[d])
+        self.mainLayout = QHBoxLayout(self.mainArea)
+        self.mainLayout.setAutoAdd(True)
+        mainLeft = OWGUI.widgetBox(self.mainArea, "Filter")
+        sep = OWGUI.separator(self.mainArea, 16, 0)
+        mainRight = OWGUI.widgetBox(self.mainArea, "Rules")
+        mainRight.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+
+
+        info = QWidget(mainLeft)
+        infoGrid = QGridLayout(info, 3, 4, 0, 5)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Shown"), 1, 0)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Selected"), 2, 0)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Support (H)"), 0, 1)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "Confidence (V)"), 0, 2)
+        infoGrid.addWidget(OWGUI.widgetLabel(info, "# Rules"), 0, 3)
+        
+        self.shownSupport = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.shownSupport, 1, 1)
+        self.shownConfidence = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.shownConfidence, 1, 2)
+        self.shownRules = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.shownRules, 1, 3)
+
+        self.selSupport = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.selSupport, 2, 1)
+        self.selConfidence = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.selConfidence, 2, 2)
+        self.selRules = OWGUI.widgetLabel(info, " ")
+        infoGrid.addWidget(self.selRules, 2, 3)
+        
+        OWGUI.separator(mainLeft, 0, 4)
+        self.ruleCanvas = AssociationRulesFilterCanvas(self, mainLeft)
+        self.canvasView = AssociationRulesFilterView(self, self.ruleCanvas, mainLeft)
+
+        boxb = OWGUI.widgetBox(mainLeft, box=None, orientation="horizontal")
+        OWGUI.button(boxb, self, 'Zoom', callback = self.zoomButton)
+        OWGUI.button(boxb, self, 'Show All', callback = self.showAllButton)
+        OWGUI.button(boxb, self, 'No Zoom', callback = self.noZoomButton)
+        OWGUI.separator(boxb, 16, 8)
+        OWGUI.button(boxb, self, 'Unselect', callback = self.unselect)
         
 
-    def showHideColumn(self):
-        for i, cb in enumerate(self.cbMeasures):
-            self.treeRules.setColumnWidth(i+1, cb.isChecked() and 40)
-                
-    def displayRules(self):
-        """ Display rules as a tree. """
-        self.treeRules.clear()
-        self.wrlist = []
-        if self.rules:
-            self.rulesLC=[]
-            for rule in self.rules:                 # local copy of rules [[antecedens1,antecedens2,...], [consequens, support,...]] (without measures)
-                values = filter(lambda val: not val.isSpecial(), rule.left)
+        rightUpRight = QWidget(mainRight)
+        self.grid=QGridLayout(rightUpRight,2,3,5,5)
+        for i, m in enumerate(self.measures):
+            cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.displayRules)
+            self.grid.addWidget(cb.parentWidget(), i % 2, i / 2)
 
-                antecedens = []
-                for x in values:
-                    if x.varType:
-                        antecedens.append(str(x.variable.name) + "=" + str(x))
-                    else:
-                        antecedens.append(str(x.variable.name))
-                                
-                values = filter(lambda val: not val.isSpecial(), rule.right)
-
-                kons=""
-                for x in values:
-                    if x.varType:
-                        kons=kons + str(x.variable.name) + "=" + str(x) + "  "
-                    else:
-                        kons=kons + str(x.variable.name) + "  "
-                
-                self.rulesLC.append([antecedens, [kons, rule.support, rule.confidence, rule.lift, rule.leverage, rule.strength, rule.coverage]])
-            
-            self.updateTree()
-            self.removeSingleGrouping()        # if there is only 1 rule behind a +, the rule is
-            self.setWholeRules()
-            self.showHideColumn()
-            self.item0.setOpen(1)                        # display the rules
-
-
-    def updateTree(self):
-        self.item0 = QListViewItem(self.treeRules,"")        #the first row is different
-        self.buildLayer(self.item0, self.rulesLC, self.treeDepth)     # recursively builds as many layers as are in the.................
-
+        OWGUI.separator(mainRight, 0, 4)
         
-    def buildLayer(self, parent, rulesLC, n):
-        if n==0:
-           self.printRules(parent, rulesLC)
-        elif n>0:
-            children = []
-            for rule in rulesLC:                                 # for every rule
-                for a in rule[0]:                                # for every antecedens 
-                    if a not in children:                        # if it is not in the list of children, add it
-                        children.append(a)
-            for childText in children:                           # for every entry in the list of children
-                item=QListViewItem(parent,childText)             # add a branch with the text
-                rules2=[]
-                for rule in rulesLC:                             # find rules that go in this branch
-                    if childText in rule[0]:
-                        if len(rule[0])==1:
-                            self.printRules(item, [[[],rule[1]]])
-                        else:
-                            rules2.append([rule[0][:],rule[1]]) # make a locla copy of rule
-                            rules2[-1][0].remove( childText)    # remove the element childText from the antecedenses
-                self.buildLayer(item, rules2, n-1)              # recursively build next levels
+        self.edtRules = QMultiLineEdit(mainRight)
+        self.edtRules.setReadOnly(True)
+        self.edtRules.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+
+        bottom = QWidget(mainRight)
+        bottomGrid = QGridLayout(bottom, 2, 2, 5, 5)
+
+        self.saveButton = OWGUI.button(bottom, self, "Save Rules", callback = self.saveRules)
+        commitButton = OWGUI.button(bottom, self, "Send Rules", callback = self.sendRules)        
+        autoSend = OWGUI.checkBox(bottom, self, "autoSend", "Send rules automatically", disables=[(-1, commitButton)])
+        autoSend.makeConsistent()
+
+        bottomGrid.addWidget(self.saveButton, 1, 0)
+        bottomGrid.addWidget(autoSend.parentWidget(), 0, 1)
+        bottomGrid.addWidget(commitButton, 1, 1)
 
 
-    def printRules(self, parent, rulesLC):
-        """ Prints whole rule or the rest of the rule, depending on WholeRules.isChecked(), as a child of parent."""
-        startOfRule=""                                          # the part of rule that is already in the tree
-        gparent=parent
-        while str(gparent.text(0))!="":
-            startOfRule = str(gparent.text(0)) +"  "+startOfRule 
-            gparent=gparent.parent()        
+        self.controlArea.setFixedSize(0, 0)
+        self.resize(800, 380)
+
+    
+    def checkScale(self):
+        if self.supp_min == self.supp_max:
+            self.supp_max += 0.01
+        if self.conf_max == self.conf_min:
+            self.conf_max += 0.01
+        self.suppInCell = (self.supp_max - self.supp_min) / self.numcols
+        self.confInCell = (self.conf_max - self.conf_min) / self.numrows
+
+
+    def unselect(self):
+        self.sel_colmin = self.sel_colmax = self.sel_rowmin = self.sel_rowmax = -1
+
+        self.selectedRules = []
+        for row in self.ingrid:
+            for cell in row:
+                for rule in cell:
+                    self.selectedRules.append(rule)
+
+        self.displayRules()                
+        if hasattr(self, "selConfidence"):
+            self.updateConfSupp()
+
+        if hasattr(self, "ruleCanvas"):
+            self.ruleCanvas.unselect()
+            self.ruleCanvas.draw()
+
+        self.sendIfAuto()            
+
+
+    def updateConfSupp(self):
+        if self.sel_colmin >= 0:
+            smin, cmin = self.coordToSuppConf(self.sel_colmin, self.sel_rowmin)
+            smax, cmax = self.coordToSuppConf(self.sel_colmax+1, self.sel_rowmax+1)
+        else:
+            smin, cmin = self.supp_min, self.conf_min
+            smax, cmax = self.supp_max, self.conf_max
             
-        for rule in rulesLC:
-            restOfRule=""                         # concatenate the part that is already in the tree
-            for s in rule[0]:                                   # with the rest of the antecedeses
-                restOfRule=restOfRule+"  "+s
-            
-            item=QListViewItem(parent,"", str('%.3f' %rule[1][1]),str('%.3f' %rule[1][2]),str('%.3f' %rule[1][3]),str('%.3f' %rule[1][4]),str('%.3f' %rule[1][5]),str('%.3f' %rule[1][6]))             # add a branch with the text
-            self.wrlist.append([item, startOfRule + restOfRule+"  ->   "+rule[1][0] , restOfRule+"  ->   "+rule[1][0]])
+        self.selConfidence.setText("%3i%% - %3i%%" % (round(100*cmin), round(100*cmax)))
+        self.selSupport.setText("%3i%% - %3i%%" % (round(100*smin), round(100*smax)))
+        self.selRules.setText("%3i" % len(self.selectedRules))
 
+    # This function doesn't send anything to output! (Shouldn't because it's called by the mouse move event)            
+    def updateRuleList(self):
+        self.selectedRules = []
+        for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]:
+            for cell in row[self.sel_colmin : self.sel_colmax+1]:
+                for rule in cell:
+                    self.selectedRules.append(rule)
 
-    def removeSingleGrouping(self):         
-        """Removes a row if it has a "+" and only one child.  """
-        for line in self.wrlist:                    # go through the leaves of the tree
-            parent=line[0].parent()
-            if (parent.childCount())==1:            # if the parent has only one child
-                line[2]=str(parent.text(0))+"  "+line[2]    # add the text to the leaf
-                gparent = parent.parent()                   # find the grand-parent
-                gparent.takeItem(parent)                    # remove the parent
-                gparent.insertItem(line[0])                 # insert a child        
-
-
-    def arules(self,arules):
-        self.rules = arules
         self.displayRules()
+        self.updateConfSupp()
+        self.saveButton.setEnabled(len(self.selectedRules) > 0)
 
+    def displayRules(self):
+        if hasattr(self, "edtRules"):
+            edtRules = self.edtRules
+            edtRules.clear()
+
+            toWrite = [m for m in self.measures if getattr(self, m[2])]
+            if toWrite:
+                edtRules.append("\t".join([m[1] for m in toWrite]))
+            for rule in self.selectedRules:
+                self.edtRules.append("\t".join(["%.3f" % getattr(rule, m[2]) for m in toWrite] + [`rule`.replace(" ", "  ")]))
+
+
+    def saveRules(self):
+        fileName = QFileDialog.getSaveFileName( "myRules.txt", "Textfiles (*.txt)", self );
+        if not fileName.isNull() :
+            f = open(str(fileName), 'w')
+            if self.selectedRules:
+                toWrite = [m for m in self.measures if getattr(self, m[2])]
+                if toWrite:
+                    f.write("\t".join([m[1] for m in toWrite]) + "\n")
+                for rule in self.selectedRules:
+                    f.write("\t".join(["%.3f" % getattr(rule, m[2]) for m in toWrite] + [`rule`.replace(" ", "  ")]) + "\n")
+
+
+    def setIngrid(self):
+        smin, sic, cmin, cic = self.supp_min, self.suppInCell, self.conf_min, self.confInCell
+        self.ingrid = [[[] for x in range(self.numcols)] for y in range(self.numrows)]
+        if self.rules:
+            for r in self.rules:
+                self.ingrid[min(self.numrows-1, int((r.confidence - cmin) / cic))][min(self.numcols-1, int((r.support - smin) / sic))].append(r)
+
+
+    def coordToSuppConf(self, col, row):
+        return self.supp_min + col * self.suppInCell, self.conf_min + row * self.confInCell
+    
+    def zoomButton(self):
+        if self.sel_rowmin >= 0:
+            # have to compute both at ones!
+            self.supp_min, self.conf_min, self.supp_max, self.conf_max = self.coordToSuppConf(self.sel_colmin, self.sel_rowmin) + self.coordToSuppConf(self.sel_colmax+1, self.sel_rowmax+1)
+            self.checkScale()
+
+            smin, sic, cmin, cic = self.supp_min, self.suppInCell, self.conf_min, self.confInCell
+            newingrid = [[[] for x in range(self.numcols)] for y in range(self.numrows)]
+            for row in self.ingrid[self.sel_rowmin : self.sel_rowmax+1]:
+                for cell in row[self.sel_colmin : self.sel_colmax+1]:
+                    for rule in cell:
+                        inrow = (rule.confidence - cmin) / cic
+                        if inrow >= 0 and inrow < self.numrows + 1e-3:
+                            incol = (rule.support - smin) / sic
+                            if incol >= 0 and incol < self.numcols + 1e-3:
+                                newingrid[min(int(inrow), self.numrows-1)][min(int(incol), self.numcols-1)].append(rule)
+            self.ingrid = newingrid
+
+            self.unselect()
+            self.ruleCanvas.draw()
+            self.sendIfAuto()
+
+
+    def rezoom(self, smi, sma, cmi, cma):
+        self.supp_min, self.supp_max, self.conf_min, self.conf_max = smi, sma, cmi, cma
+        self.checkScale() # to set the inCell
+        self.setIngrid()
+        self.unselect()
+        if hasattr(self, "ruleCanvas"):
+            self.ruleCanvas.draw()
+        self.sendIfAuto()
+        
+    def showAllButton(self):
+        self.rezoom(self.supp_allmin, self.supp_allmax, self.conf_allmin, self.conf_allmax)
+
+    def noZoomButton(self):
+        self.rezoom(0., 1., 0., 1.)
+        
+    def sendIfAuto(self):
+        if self.autoSend:
+            self.sendRules()
+        
+    def sendRules(self):
+        self.send("Association Rules", orange.AssociationRules(self.selectedRules))
+    
+    def arules(self,rules):
+        self.rules = rules
+        if self.rules:
+            self.supp_min = self.conf_min = 1
+            self.supp_max = self.conf_max = 0
+            for rule in self.rules:
+                self.conf_min = min(self.conf_min, rule.confidence)
+                self.conf_max = max(self.conf_max, rule.confidence)
+                self.supp_min = min(self.supp_min, rule.support)
+                self.supp_max = max(self.supp_max, rule.support)
+            self.checkScale()
+        else:
+            self.supp_min, self.supp_max = self.conf_min, self.conf_max = 0., 1.
+
+        self.supp_allmin, self.supp_allmax, self.conf_allmin, self.conf_allmax = self.supp_min, self.supp_max, self.conf_min, self.conf_max
+        self.rezoom(self.supp_allmin, self.supp_allmax, self.conf_allmin, self.conf_allmax)
+
+
+       
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWAssociationRulesViewer()
+    ow=OWAssociationRulesFilter()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
+
+    dataset = orange.ExampleTable('../../doc/datasets/car.tab')
     rules=orange.AssociationRulesInducer(dataset, minSupport = 0.3, maxItemSets=15000)
     ow.arules(rules)
-    
+
     ow.show()
     a.exec_loop()
     ow.saveSettings()
