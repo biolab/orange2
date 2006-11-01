@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Association Rules Viewer</title>
+<title>Association Rules Filter</title>
 <link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
 <link rel=stylesheet href="../../../style-print.css" type="text/css" media=print></link>
 </head>
@@ -10,7 +10,7 @@
 <h1>Association Rules Viewer</h1>
 
 <img class="screenshot" src="../icons/AssociationRulesViewer.png">
-<p>A tree-like association rules viewer</p>
+<p>A widget for printing out the rules and for their manual exploration and selection.</p>
 
 <h2>Channels</h2>
 
@@ -22,29 +22,32 @@
 </dl>
 
 <h3>Outputs</h3>
-<DL class="attributes">
-<DT>None</DT>
+<DL class=attributes>
+<DT>Association Rules</DT>
+<DD>Selected rules</DD>
+
 </dl>
 
 <h2>Description</h2>
 
-<p>This widget is a tree-like association rules viewer.</p>
-
-<P>The widget can be used to find all the rules that include a particular condition on the left-hand side. The below snapshot is made on the Titanic data set, using the filter as shown on the page on the <a href="AssociationRulesFilter.htm">Association Rules Filter</a>.</P>
-
-<img class="screenshot" src="AssociationRulesViewer-closed.png" alt="Association Rules Viewer Widget" border=0>
-
-<P>Say that we are interested in rules regarding the survival of adults. By opening the branch "age=adult", we discover four rules that contain this condition as the sole condition on the left-hand side, while the right-hand sides contain different combinations of sex, status and survival.</P>
-
-<img class="screenshot" src="AssociationRulesViewer-semi-open.png" alt="Association Rules Viewer Widget" border=0>
-
-<P>Besides that, there are rules with (at least) two conditions on the left-hand side, "age=adult" and "sex=male"; to explore these rules, we would need to open the corresponding branch.</P>
-
-<P>Each leaf of the tree corresponds to one particular ordering of the left-hand side conditions in a particular rule. Turned around, this means that each rule appears in many places in the tree. As the completely open tree below shows, the rule <code>age=adult & sex=male -> status=crew"</code> appears in two places (the seventh and the eleventh row).</P>
+<p>This widget can be used for three purposes:
+<ul><li>graphically showing the confidence and support of the induced rules</li>
+<li>selecting a subset of rules based on their confidence and support</li>
+<li>listing the induced rules and the corresponding measures of quality</li>
+</ul>
+</p>
 
 <img class="screenshot" src="AssociationRulesViewer.png" alt="Association Rules Viewer Widget" border=0>
 
-<P>On the left-hand side of the widget, we can choose the measures we want to observe. Let L, R and B be the number of examples that fit the left, the right and both sides of the rule, respectively, and N the total number of examples in the data set. The measures are then defined as follows
+<P>The columns of the grid on the left hand side of the widget represent different supports and the rows represents confidences. The scale is given above the grid: for the case in this snapshot, support goes from 28% to 75% and the confidence ranges from 29% to 100%. Each cell is colored according to the number of rules with that particular support and confidence - the darker the cell, the more rules are inside it.</P>
+
+<P>You can select a part of the grid. In the snapshot we selected the rules with supports between 36% and 66% and confidences from 33% to 82%.</P>
+
+<P>When the widget receives certain data, it shows the area containing all the rules. You can <b>Zoom</b> in to enlarge the selected part, push <b>Show All</b> to see the region with the rules again, or <b>No Zoom</b> to see the region with support and confidence from 0 to 1. <b>Unselect</b> removes the selection.</P>
+
+<P>If nothing is selected, the widget outputs all rules.</P>
+
+<P>On the right hand side of the widget there is a list of the selected rules. The checkboxes above can be used to select the measures of rule quality that we are interested in. Let L, R and B be the number of examples that fit the left, the right and both sides of the rule, respectively, and N the total number of examples in the data set. The measures are then defined as follows
 <ul>
 <li>support = B / N</li>
 <li>confidence = B / L</li>
@@ -55,13 +58,11 @@
 </ul>
 </P>
 
-<P><B>Tree depth</B> sets the depth to which the tree is expanded. If, it is set to, for instance, three, then the leaves corresponding to rules with five conditions will, besides the right-hand side, also contain the two conditions which are not shown in the branches.</P>
-
-<P>With <B>Display whole rules</B> we can decide whether we want the entire rule (including the information that is already contained in the branches, that is, in the path from the root to the rule) reprinted again in the leaf.</P>
+<P>With the buttons below you can <b>Save Rules</b> into a tab-delimited file or <b>Send Rules</b> to the widget connected to the output. The latter is only enabled if <b>Send rules automatically</b> is unchecked. When it is checked, the rules are put on the widget's output automatically at every selection change.</P>
 
 <h2>Examples</h2>
 
-<P>This widget is typically used with the <a href="AssociationRules.htm">Association Rules</a> and possibly <a href="AssociationRulesFilter.htm">Association Rules Filter</a>. The typical schema is shown below.</P>
+<P>This widget is used with the <a href="AssociationRules.htm">Association Rules</a> and maybe with a tree-like <a href="AssociationRulesTreeViewer.htm">Association Rules Tree Viewer</a>. The typical schema is shown below.</P>
 
 <img class="screenshot" src="AssociationRules-Schema.png" alt="Association Rules" border=0>
 
