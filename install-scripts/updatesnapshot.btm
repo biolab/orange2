@@ -50,7 +50,7 @@ python %SCRIPTDIR\doc\widgetCatalogs.py html %WEBDOCDIR\widgets\catalog\widgetRe
 cd %SNAPSHOTDIR\orange\doc
 del %DOWNLOADDIR\orange-doc-snap-*.zip
 "c:\program files\winrar\winrar.exe" a %DOWNLOADDIR\orange-doc-snap-%daystr.zip style.css reference/* ofb/* modules/*
-"c:\program files\winrar\winrar.exe" a -r widgets/*
+"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip  widgets/*
 cd ..\..
 
 
@@ -95,6 +95,8 @@ del * /sfqyx
 
 cdd %SCRIPTDIR/doc
 call compileDocumentation.btm
+cdd %WEBDOCDIR
+"c:\program files\winrar\winrar.exe" a ../download/orange-chm.zip *.chm
 
 cdd %SCRIPTDIR
 call updateVersionsPy__.btm

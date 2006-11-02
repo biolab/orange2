@@ -1,5 +1,6 @@
 @echo off
 
+set .py=python
 set DOCDIR=%_cwd\..\..\doc
 set PATH=%PATH;"c:\Program Files\HTML Help Workshop"
 
@@ -24,8 +25,13 @@ mkdir catalog 2> nul
 copy /qs %DOCDIR\widgets\catalog catalog
 copy /q %DOCDIR\style.css catalog
 move /q catalog\default-chm.htm catalog\default.htm
-..\widgetCatalogs.py html ..\..\..\orangeCanvas\widgetRegistry.xml catalog >> catalog/default.htm
-..\widgetCatalogs.py hh ..\..\..\orangeCanvas\widgetRegistry.xml catalog > catalog/hhstructure.txt
+iff exist catalog\widgetRegistry.xml then
+  set WIDGETREG=catalog\widgetRegistry.xml
+else
+  set WIDGETREG=..\..\..\orangeCanvas\widgetRegistry.xml
+endiff
+..\widgetCatalogs.py html %WIDGETREG catalog >> catalog/default.htm
+..\widgetCatalogs.py hh %WIDGETREG catalog > catalog/hhstructure.txt
 compile catalog
 
 cd ..
@@ -38,4 +44,3 @@ del /fsykxq processed
 move /q *.chm %DOCDIR
 
 echo ^s
-pause

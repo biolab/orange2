@@ -29,6 +29,8 @@ UninstallIcon OrangeInstall.ico
 !endif
 !endif
 
+; !define INCLUDEGENOMICS
+
 !ifdef OUTFILENAME
 OutFile ${OUTFILENAME}
 !else

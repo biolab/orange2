@@ -57,7 +57,7 @@ else:
     if os.system('"C:\Program Files\NSIS\makensis.exe"' + args):
     	print "<P>Error generating installation program; system administrator will be notified.</P>"
     else:
-    	print '<P>Your installation file is ready for <a href="//magix.fri.uni-lj.si/orange/download/custom/%s/%s">download</a>.</P><P>(The file will disappear in approximately two hours.)' % (filedir, filename)
+    	print '<P>Your installation file is ready for <a href="//www.ailab.si/orange/download/custom/%s/%s">download</a>.</P><P>(The file will disappear in approximately two hours.)' % (filedir, filename)
 #    print flags, '<P>%s</P>' % args
 
 print '<P><HR></CENTER>'
