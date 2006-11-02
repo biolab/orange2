@@ -27,7 +27,7 @@ cancel
 :changedirok
 
 rem ************************************************
-rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
+rem *** EXPORT MODULES AND SOURCE FROM CVS TO %SNAPSHOTDIR
 
 del /qsyfx orange
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD orange
@@ -39,9 +39,18 @@ cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -kb -r HEAD source
 rem ************************************************
 rem *** PREPARE THE DOCUMENTATION SNAPSHOT
 
+cd %SNAPSHOTDIR\orange\orangeCanvas
+python xmlParse.py
+move widgetRegistry.xml %WEBDOCDIR\widgets\catalog
+rem We put the registry there to be available for the ten-minute doc updates
+
+cd %SNAPSHOTDIR\orange\doc\widgets\catalog
+move default-chm.htm default.htm
+python %SCRIPTDIR\doc\widgetCatalogs.py html %WEBDOCDIR\widgets\catalog\widgetRegistry.xml . >> default.htm
 cd %SNAPSHOTDIR\orange\doc
 del %DOWNLOADDIR\orange-doc-snap-*.zip
 "c:\program files\winrar\winrar.exe" a %DOWNLOADDIR\orange-doc-snap-%daystr.zip style.css reference/* ofb/* modules/*
+"c:\program files\winrar\winrar.exe" a -r widgets/*
 cd ..\..
 
 
@@ -84,7 +93,7 @@ cancel
 :changedirok2
 del * /sfqyx 
 
-cdd %SCRIPTDIR
+cdd %SCRIPTDIR/doc
 call compileDocumentation.btm
 
 cdd %SCRIPTDIR
