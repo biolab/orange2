@@ -3,7 +3,7 @@
 <description>Selection of the top-ranked attributes.</description>
 <icon>icons/FeatureSubsetSelection.png</icon>
 <contact>Gregor Leban (gregor.leban(@at@)fri.uni-lj.si)</contact> 
-<priority>3000</priority>
+<priority>3300</priority>
 """
 
 #
