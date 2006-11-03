@@ -231,7 +231,7 @@ class OWTestLearners(OWWidget):
 
     def learner(self, learner, id=None):
         if learner: # a new or updated learner
-            # print 'Add/Upd', learner.name, ", id:", id
+            # print 'ADD/UPD', learner.name, ", id:", id
             learner.id = id # remember id's of learners
             self.test(learner)
             if self.learners:
@@ -241,20 +241,20 @@ class OWTestLearners(OWWidget):
                 self.learners = [learner]
             self.applyBtn.setDisabled(FALSE)
         else: # remove a learner and corresponding results
-            print 'REMOVE', id, 'FROM', self.learners
+            # print 'REMOVE', id, 'FROM', self.learners
             ids = [l.id for l in self.learners]
             if id not in ids:
                 return                  # happens if a widget with learner empties the signal first
             indx = ids.index(id)
 
             if self.results:
-                for i,r in enumerate(self.results.results):
+                del self.results.classifierNames[indx]
+                self.results.numberOfLearners -= 1
+                for i, r in enumerate(self.results.results):
                     del r.classes[indx]
                     del r.probabilities[indx]
-                    del self.results.classifierNames[indx]
-                    self.results.numberOfLearners -= 1
-                    for (i, stat) in enumerate(self.stat):
-                        del self.scores[i][indx]
+                for (i, stat) in enumerate(self.stat):
+                    del self.scores[i][indx]
                 self.setStatTable()
                 self.send("Evaluation Results", self.results)
 
@@ -341,7 +341,7 @@ if __name__=="__main__":
 
     l4 = orange.MajorityLearner(); l4.name = "4 - Majority"
 
-    testcase = 1
+    testcase = 2
 
     if testcase == 0: # 1(UPD), 3, 4
         ow.cdata(data)
@@ -355,9 +355,13 @@ if __name__=="__main__":
     if testcase == 1: # no data, all learners removed
         ow.learner(l1, 1)
         ow.learner(l2, 2)
-#        ow.learner(None, 2)
+        ow.learner(None, 2)
         ow.learner(None, 1)
         ow.cdata(data)
+    if testcase == 2: # sends data, then learner, then removes the learner
+        ow.cdata(data)
+        ow.learner(l1, 1)
+        ow.learner(None, 1)
         
     ow.show()
     a.exec_loop()
