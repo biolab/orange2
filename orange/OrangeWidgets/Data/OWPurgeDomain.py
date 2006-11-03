@@ -14,7 +14,7 @@ class OWPurgeDomain(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'PurgeDomain')
         self.settingsList=["removeValues", "removeAttributes", "removeClassAttribute", "removeClasses", "autoSend", "sortValues", "sortClasses"]
         
-        self.inputs = [("Data", ExampleTable, self.cdata)]
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
 
         self.data = None
