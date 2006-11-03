@@ -175,7 +175,7 @@ def parseRules(rules):
 BodyColor_Default = QColor(255, 225, 10)
 BodyCasesColor_Default = QColor(0, 0, 128)
 
-class OWClassificationTreeViewer2D(OWTreeViewer2D):
+class OWClassificationTreeGraph(OWTreeViewer2D):
     def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
         self.settingsList=self.settingsList+["ShowPies","TargetClassIndex"]

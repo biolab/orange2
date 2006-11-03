@@ -12,7 +12,7 @@ from exceptions import Exception
 
 class OWClassificationTree(OWWidget):
     settingsList = ["name",
-                    "estim", "relK", "relM", "relAll",
+                    "estim", "relK", "relM",
                     "bin", "subset",
                     "preLeafInst", "preNodeInst", "preNodeMaj",
                     "preLeafInstP", "preNodeInstP", "preNodeMajP",
@@ -24,7 +24,7 @@ class OWClassificationTree(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset)]
-        self.outputs = [("Learner", orange.Learner),("Classification Tree", orange.TreeClassifier)]
+        self.outputs = [("Learner", orange.TreeLearner),("Classification Tree", orange.TreeClassifier)]
 
         self.name = 'Classification Tree'
         self.estim = 0; self.relK = 5; self.relM = 100; self.limitRef = True
@@ -90,7 +90,7 @@ class OWClassificationTree(OWWidget):
             maxMajority = self.preNodeMaj and self.preNodeMajP/100.0 or 1.0,
             sameMajorityPruning = self.postMaj,
             mForPruning = self.postMPruning and self.postM,
-            storeExamples = 1)
+            storeExamples = 1).instance()
                                    
         self.learner.name = self.name
         self.send("Learner", self.learner)

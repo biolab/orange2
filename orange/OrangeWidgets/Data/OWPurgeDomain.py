@@ -203,9 +203,9 @@ class OWPurgeDomain(OWWidget):
         if newclass:
             self.send("Classified Examples", newData)
 
-        for attr in newData.domain.variables:
-            if attr.varType == orange.VarTypes.Discrete:
-                print attr.name, attr.values
+##        for attr in newData.domain.variables:
+##            if attr.varType == orange.VarTypes.Discrete:
+##                print attr.name, attr.values
           
 
 if __name__=="__main__":

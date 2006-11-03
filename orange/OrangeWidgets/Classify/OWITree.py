@@ -134,6 +134,9 @@ class OWITree(OWClassificationTreeViewer):
             return
 
         newtree = (self.treeLearner or orngTree.TreeLearner(storeExamples = 1))(node.examples)
+        if not hasattr(newtree, "tree"):
+            QMessageBox.critical( None, "Invalid Learner", "The learner on the input built a classifier which is not a tree.", QMessageBox.Ok)
+
         for k, v in newtree.tree.__dict__.items():
             node.setattr(k, v)
         self.updateTree()
