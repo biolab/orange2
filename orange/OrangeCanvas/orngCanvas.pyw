@@ -634,7 +634,7 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.verboseCB.setChecked(self.settings["verbose"])
         dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
         dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
-        dlg.autoLoadSchemasOnStartCB.setChecked(self.settings["autoLoadSchemasOnStart"])
+##        dlg.autoLoadSchemasOnStartCB.setChecked(self.settings["autoLoadSchemasOnStart"])
 
         # set current exception settings
         #dlg.catchExceptionCB.setChecked(self.settings["catchException"])
@@ -684,7 +684,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["verbose"] = dlg.verboseCB.isChecked()
             self.settings["dontAskBeforeClose"] = dlg.dontAskBeforeCloseCB.isChecked()
             self.settings["autoSaveSchemasOnClose"] = dlg.autoSaveSchemasOnCloseCB.isChecked()
-            self.settings["autoLoadSchemasOnStart"] = dlg.autoLoadSchemasOnStartCB.isChecked()
+##            self.settings["autoLoadSchemasOnStart"] = dlg.autoLoadSchemasOnStartCB.isChecked()
             
             self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
             self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
@@ -753,7 +753,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("writeLogFile", 1)
         self.settings.setdefault("dontAskBeforeClose", 0)
         self.settings.setdefault("autoSaveSchemasOnClose", 0)
-        self.settings.setdefault("autoLoadSchemasOnStart", 0)
+##        self.settings.setdefault("autoLoadSchemasOnStart", 0)
         
         self.settings.setdefault("widgetSelectedColor", (0, 255, 0))
         self.settings.setdefault("widgetActiveColor", (0,0,255))
@@ -875,6 +875,7 @@ app = QApplication(sys.argv)
 dlg = OrangeCanvasDlg(None, "", Qt.WDestructiveClose)
 app.setMainWidget(dlg)
 dlg.show()
-if dlg.settings.get("autoLoadSchemasOnStart", False):
-    dlg.menuItemOpenLastSchema()
+for arg in sys.argv[1:]:
+    if arg == "-reload":
+        dlg.menuItemOpenLastSchema()
 app.exec_loop() 
