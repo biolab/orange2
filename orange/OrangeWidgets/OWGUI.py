@@ -11,14 +11,14 @@ import sys, traceback
 # constructs a box (frame) if not none, and returns the right master widget
 def widgetBox(widget, box=None, orientation='vertical'):
     if box:
-        if orientation == 'horizontal':
+        if orientation == 'horizontal' or not orientation:
             b = QHGroupBox(widget)
         else:
             b = QVGroupBox(widget)
         if type(box) in (str, unicode): # if you pass 1 for box, there will be a box, but no text
-            b.setTitle(box)
+            b.setTitle(" "+box.strip()+" ")
     else:
-        if orientation == 'horizontal':
+        if orientation == 'horizontal' or not orientation:
             b = QHBox(widget)
         else:
             b = QVBox(widget)
@@ -100,7 +100,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
 
     cfront, cback, cfunc = connectControl(wa, master, value, None, "toggled(bool)", CallFront_checkBox(wa),
                                           cfunc = callback and FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
-    wa.disables = disables
+    wa.disables = disables or [] # need to create a new instance of list (in case someone would want to append...)
     wa.makeConsistent = Disabler(wa, master, value)
     master.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
     wa.makeConsistent.__call__(value)
@@ -393,6 +393,12 @@ def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tool
 
 ##############################################################################
 # callback handlers
+
+def setStopper(master, sendButton, stopCheckbox, changedFlag, callback):
+    stopCheckbox.disables.append((-1, sendButton))
+    sendButton.setDisabled(stopCheckbox.isChecked())
+    master.connect(stopCheckbox, SIGNAL("toggled(bool)"),
+                   lambda x, master=master, changedFlag=changedFlag, callback=callback: x and getattr(master, changedFlag, True) and callback())
 
 
 class ControlledList(list):
