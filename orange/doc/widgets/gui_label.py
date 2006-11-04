@@ -4,7 +4,7 @@ import OWGUI
 class Test(OWWidget):
     settingsList = ["val", "line"]
     def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, 'Labels')
+        OWWidget.__init__(self, parent, title='Labels')
 
         self.val = 5
         self.line = "a parrot"
