@@ -216,6 +216,8 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
 
     connectControl(lb, master, value, callback, "selectionChanged()", CallFront_ListBox(lb), ListBoxCallback(lb, master, value))
     master.controlledAttributes[labels] = CallFront_ListBoxLabels(lb)
+    setattr(master, labels, getattr(master, labels))
+    setattr(master, value, getattr(master, value))
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("listBox", lb, value, callback)]
     return lb
@@ -597,6 +599,9 @@ class ListBoxCallback:
                 if control.isSelected(i):
                     list.append(clist, i)
 
+            self.widget.__setattr__(self.control.ogValue, clist)
+
+
         
 ##############################################################################
 # call fronts (through this a change of the attribute value changes the related control)
@@ -707,7 +712,6 @@ class CallFront_ListBoxLabels(ControlledCallFront):
                 if type(i) == tuple:
                     self.control.insertItem(icons.get(i[1], icons[-1]), i[0])
                 else:
-                    print type(i)
                     self.control.insertItem(i)
             
 
