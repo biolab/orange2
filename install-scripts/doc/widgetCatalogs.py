@@ -4,7 +4,7 @@ def getWidgetsByCategory(xmlfilename):
     for categoryNode in minidom.parse(open(xmlfilename)).getElementsByTagName("category"):
         category = categoryNode.getAttribute("name")
         for widgetNode in categoryNode.getElementsByTagName("widget"):
-            categories.setdefault(category, []).append(dict([(x, widgetNode.getAttribute(x)) for x in ["name", "contact", "icon", "priority"]]))
+            categories.setdefault(category, []).append(dict([(x, widgetNode.getAttribute(x)) for x in ["name", "contact", "icon", "priority", "file", "in", "out"]]))
     for cw in categories.values():
         cw.sort(lambda x,y: cmp(int(x["priority"]), int(y["priority"])) or cmp(x["name"], y["name"]))
     return categories
@@ -15,7 +15,7 @@ def mergeCategories(categoriesOrder, xmlCategories):
     return categoriesOrder + filter(lambda x:x not in dontAdd, xmlCategories.keys())
 
 
-def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Data", "Visualize", "Classify", "Evaluate", "Associate", "Regression"]):
+def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Data", "Visualize", "Classify", "Evaluate", "Associate", "Regression"], verbose=False):
     from os.path import exists
     
     catalogPage = "<table>"
@@ -36,12 +36,17 @@ def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Dat
                 icon = "icons/" + namep + ".png"
                 if not exists(docpath + icon):
                     icon = "icons/Unknown.png"
+            if verbose:
+                contact = widget["contact"]
+                if "(" in contact:
+                    widget["contact"] = contact[:contact.index("(")]
+                verb = '<font color="#bbbbbb"><small><br>%(file)s, %(priority)s<br>%(contact)s<br></small></font>' % widget
             if exists(htmlfile):
                 catalogPage += '<td><a href="%s"><img src="%s"></a></td>\n' % (htmlfile, icon) + \
-                               '<td style="padding-right: 15"><a href="%s">%s</a></td>\n\n' % (htmlfile, name)
+                               '<td style="padding-right: 15"><a href="%s">%s</a>%s</td>\n\n' % (htmlfile, name, verb)
             else:
                 catalogPage += '<td><img style="padding: 2;" src="%s"></td>\n' % icon + \
-                               '<td style="padding-right: 15"><FONT COLOR="#bbbbbb">%s</FONT></a></td>\n\n' % name
+                               '<td style="padding-right: 15"><FONT COLOR="#bbbbbb">%s</FONT></a>%s</td>\n\n' % (name, verb)
         catalogPage += '</tr>'
 
     catalogPage += "</table>"
@@ -76,5 +81,7 @@ if __name__=="__main__":
     
     if argv[1] == "hh":
         print createHHStructure(categories, docpath)
-    else:
+    elif argv[1] == "html":
         print createCanvasCatalogPage(categories, docpath)
+    elif argv[1] == "htmlverb":
+        print createCanvasCatalogPage(categories, docpath, verbose=True)

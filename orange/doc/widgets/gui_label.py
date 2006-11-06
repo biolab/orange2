@@ -10,7 +10,7 @@ class Test(OWWidget):
         self.line = "a parrot"
 
         OWGUI.spin(self.controlArea, self, "val", 1, 10, label="Value")
-        OWGUI.lineEdit(self.controlArea, self, "line", label="Line")
+        OWGUI.lineEdit(self.controlArea, self, "line", label="Line: ", orientation="horizontal")
 
         OWGUI.label(self.controlArea, self, "Value is %(val)i and line edit contains %(line)s")        
 

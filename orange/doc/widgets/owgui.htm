@@ -6,8 +6,13 @@
 </head>
 <body>
 
+<style>
+P.function { font-family: monospace; font-weight: bold; font-size: 8pt; margin-top: 1em }
+.code { font-size: 8pt; }
+</style>
+
 <h1>OWGUI: Library of Common GUI Controls</h1>
- 
+
 <p>Orange Widgets are about wrapping Orange functionality in a easy to
 use interactive graphical interface. As such, much of the code is
 about the interface, event control and maintaining the state of the GUI
@@ -15,83 +20,313 @@ controls such that are set to the same state after the widget is
 closed and then reopened. OWGUI library is provides some most
 frequently used controls where we have tried to address all of the
 issues above. The library is still evolving, but the new functionality
-are added with a special care on backward compatibility.</p>
+are added with a special care on backward compatibility. You should avoid using Qt's controls directly whenever possible.</p>
 
 <hr>
 
-<h2>Common Attributes</h2>
+<h1>Common Attributes</h1>
 
-<DL class=attributes>
-<DT>widget</DT>
+<P>Many functions that construct widgets share one or more common arguments, usually in the same order. These are described here, while descriptions of particular widgets list them only when necessary.</P>
+
+<DL class="attributes">
+<DT>widget (required)</DT>
 <DD>Widget on which control will be drawn.</DD>
 
-<DT>master</DT>
+<DT>master (required)</DT>
 <DD>Object which includes an attribute that are used to store control's
-state, most often the object which called the function to that
+state, most often the object which called the function that
 initialized the control.</DD>
 
-<DT>value</DT>
+<DT>value (required)</DT>
 <DD>String with the name of the master's attribute that stores the
-state of the control and should be included in its
-<code>settingsList</code>.</DD>
+state of the control. This attribute should usually be also included the master's <code>settingsList</code>.</DD>
 
-<DT>box</DT>
+<DT>box (default: None)</DT>
 <DD>A string that indicates if there is a box that is drawn around the
 control. The string is used as a label at the top of the box.
-<code>box</code> is <code>None</code>, that no box is drawn. (default:
-None)</DD>  
+If <code>box</code> is <code>None</code>, that no box is drawn; if it is a string, it is also used as box's name. If <code>box</code> is any other true value, a nameless box is draw.</DD>
 
-<DT>callback</DT>
+<DT>callback (default: None)</DT>
 <DD>A function to be called after the state of the control is
 changed. Can include a single function, or a list of functions that
-will be called in the order provided (default: None)</DD> 
+will be called in the order provided. If callback function changes the value of the controlled attribute (the one given as <code>value</code> argument described above) it may trigger a cycle; a simple trick to avoid this is shown in the description of <a href="#listBox">listBox function</a>.</DD>
 
-<DT>tooltip</DT>
+<DT>tooltip (default: None)</DT>
 <DD>A string that is displayed in a tooltip that appears when mouse is
-over the control (default: None).</DD> 
+over the control.</DD>
 
-<DT>label</DT>
-<DD>A string that is displayed as control's label (default: None).</DD> 
+<DT>label (default: None)</DT>
+<DD>A string that is displayed as control's label (default: None).</DD>
 
-<DT>orientation</DT>
+<DT>orientation (default: "vertical")</DT>
 <DD>When label is used, determines the relative placement of the label
 and the control. Label can be above the control, "vertical", or in the
-same line with control, "horizontal" (default: "vertical").</DD> 
+same line with control, "horizontal". Instead of "vertical" and "horizontal" you can also use <code>True</code> and <code>False</code> or 1 and 0, respectively. (Remember this as "vertical" being the usual order of controls in the widgets, so vertical is "true".)</DD>
 
-<DT>labelWidth</DT>
+<DT>labelWidth (default: None)</DT>
 <DD>With of the label, only makes sense when orientation is
 horizontal. Useful when vertically aligning several controls with
-labels (default: None).</DD> 
+labels.</DD>
 
-<DT>disabled</DT>
-<DD>Should the control be disabled upon the initialization (default: 0).</DD> 
-
+<DT>disabled (default: False)</DT>
+<DD>Should the control be disabled upon the initialization.</DD>
 </DL>
 
-<hr>
 
-<h2>Spin Box</h2>
+<h1>Controls</h1>
 
-<DL class=attributes>
+<P>This section describes the OWGUI wrappers for controls like check boxes, buttons and similar.</P>
 
-<DT>spin(widget, master, value, min, max, step=1, box=None,
-label=None, labelWidth=None, orientation=None, tooltip=None,
-callback=None)</DT> 
-<DD>Spin box control, a wrapper around QSpinBox. <code>label</code>
-can be placed on the top of the control (<code>control=None</code>) or
-in front of the control
-<code>orientation="horizontal"</code>. It may be useful to define
-<code>labelWidth</code> in case of <code>horizontal</code> placement of
-the label and if there is a need to align this widgets with
-others.</p></DD>
+<h2>Check Box</h2>
+
+<P>Check box, a wrapper around QCheckBox, adding a label, box, tooltip, callback and synchronization with a certain widget's attribute.</P>
+
+<p class="function">checkBox(widget, master, value, label, box=None, tooltip=None,
+callback=None, disabled=0, labelWidth=None, disables = [])
+<dl class="attributes">
+<DT>disables</DT>
+<DD>If the check box needs to disable some other controls they can be given in list  <code>disables</code>, e.g. <code>disables=[someOtherCheckBox, someLineEdit]</code>. If the other control should be disabled when the checkbox is checked, do it like this: <code>disables=[someOtherCheckBox, (-1, someLineEdit)]</code> - now <code>someOtherCheckBox</code> will be enabled when this check box is checked, while <code>someLineEdit</code> will be enabled when the check box is unchecked.</DD>
+
+<dt>labelWidth, orientation</dt>
+<dd>If <code>orientation</code> is "horizontal", <code>labelWidth</code> can be used to align this widget with others.</dd>
+</dl>
 
 <h3>Example</h3>
 
-<P>Following is an excerp of the code in the initialization part of
+<p>In the following code we define two check boxes. The second one
+disables (enables) the box with the spin box, depending on the state
+of the checkbox.</p>
+
+<p class="header">part of <a href="gui_check.py">gui_check.py</a></p>
+<table><tr>
+<td width="600px">
+<xmp class=code>self.spinval = 10
+self.chkA = 1
+self.chkB = 0
+self.dx = 15
+
+box = QVGroupBox("Settings", self.controlArea)
+gridbox = QVGroupBox("Grid Opions", self.controlArea)
+gridbox.setEnabled(self.chkB)
+OWGUI.checkBox(box, self, "chkA", "Verbose")
+OWGUI.checkBox(box, self, "chkB", "Display Grid", disables=[gridbox])
+OWGUI.spin(gridbox, self, "dx", 10, 20)
+</xmp>
+</td>
+<td valign="top"><img src="gui_check.png"></td>
+</tr></table>
+
+
+<h2>Line Edit</h2>
+
+<P>Edit box, a wrapper around QLineEdit.</P>
+
+<P class="function">lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = str, validator=None)</P>
+
+<dl class="attributes">
+<dt>valueType</dt>
+<dd>A type into which the value is cast.</dd>
+
+<dt>validator</DT>
+<DD>A standard Qt validator that can be associated with the control.</DD>
+</dl>
+
+<h3>Example</h3>
+
+<p class="header">part of <a href="gui_lineedit.py">gui_lineedit.py</a></p>
+<table><tr>
+<td width="600px">
+<xmp class=code>self.val1 = "Enter text ..."
+self.val2 = "Some more text ..."
+self.valF = 10.2
+
+OWGUI.lineEdit(self.controlArea, self, "val1", box="Text Entry")
+box = QVGroupBox("Options (with lineEdit)", self.controlArea)
+OWGUI.lineEdit(box, self, "val2",
+               label="Name:", orientation="horizontal", labelWidth=40)
+OWGUI.lineEdit(box, self, "valF", label="Float:",
+               orientation="horizontal", labelWidth=40, valueType=float)
+</xmp>
+</td>
+<td valign="top"><img src="gui_lineedit.png"></td></tr></table>
+
+
+<h2>Button</h2>
+
+<P>A wrapper around QPushButton, just to be able to define a button
+and its callback in a single line.</p>
+
+<p class="function">button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1)</p>
+
+
+<h2>Radio Buttons</h2>
+
+<P>OWGUI can create an individual radio button or a box of radio buttons or an individual radio button.</P>
+
+<P>An individual radio button is created by <code>radioButton</code>.
+
+<p class="function">def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None, debuggingEnabled = 1)</p>
+
+<P>The function provides the usual capabilities of OWGUI controls. It is though your responsibility to put it in something like a <code>QVButtonGroup</code>.</P>
+
+<P>A box of radio buttons is created by function <code>radioButtonsInBox</code>.</P>
+
+<p class="function">
+def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1)</p>
+
+<dl class="attributes">
+<dt>value</dt>
+<dd>Synchronized with the index of the selected radio button.</dd>
+
+<dt>btnLabels</dt>
+<dd>A list with labels for radio buttons. Labels can be strings or pixmaps.</dd>
+
+<dt>tooltips</dt>
+<dd>A list of tooltips, one for each button.</dd>
+</dl>
+
+<h3>Example</h3>
+
+<p class="header">part of <a href="gui_lineedit.py">gui_lineedit.py</a></p>
+<table><tr valign="top">
+<td width="600px">
+<xmp class=code>self.method = 0
+
+OWGUI.radioButtonsInBox(self.controlArea, self, "method",
+              box = "Probability estimation",
+              btnLabels = ["Relative", "Laplace", "m-estimate"],
+              tooltips = ["Relative frequency of the event",
+                          "Laplace-corrected estimate",
+                          "M-estimate of probability"])
+</xmp></td>
+<td><img src="gui_radiobuttons.png"></td></tr></table>
+
+
+<a name="listBox"></a>
+<h2>List Box</h2>
+
+<P>This control, which might be the most complicated control in OWGUI, is a sophisticated wrapper around QListBox. It's complexity arises from synchronization.</P>
+
+<p class="function">
+listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single, debuggingEnabled = 1)</p>
+
+<dl class="attributes">
+<dt>value</dt>
+<dd>The name of master's attribute containing indices of all selected values.</dd>
+
+<dt>labels</dt>
+<dd>The name of master's attribute containing the list box's labels. Unlike most OWGUI, list <code>labels</code> have one Orange-specific quirk: its element can be either a string, in which case it is used as a label, or a tuple, where the first element is a label name and the last is the attribute type which is used to create an icon. Most attribute lists in Orange Widgets are constructed this way.</dd>
+
+<dt>selectionMode</dt>
+<dd>Tells whether the user can select a single item (<code>QListBox.Single</code>), multiple items (<code>QListBox.Multi</code>, <code>QListBox.Extended</code>) or nothing (<code>QListBox.NoSelection</code>).</dd>
+</dl>
+
+<P><code>value</code> is automatically cast to <code>OWGUI.ControlledList</code> (this is needed because the list should report any changes to the control, the list box; <code>OWGUI.ControlledList</code> is like an ordinary Python <code>list</code> except that it triggers synchronization with the list box at every change).</P>
+
+<P><code>labels</code> is only partially synchronized with the list box: if a new list is assigning to <code>labels</code> attribute, the list will change. If elements of the existing list are changed or added, the list box won't budge. You should never change the list, but always assign a new list (or reassign the same after it's changed). If the labels are stored in <code>self.listLabels</code> and you write <code>self.listLabels[1]="a new label"</code>, the list box won't change. To trigger the synchronization, you should continue by <code>self.listLabels = self.listLabels</code>. This may seem awkward, but by our experience a list of selected items is seldom changed changed "per-item", so we were too lazy to write the annoyingly complex backward callbacks.</P>
+
+<h3>Example</h3>
+
+<P>In first example, we will set up to list boxes, one with single and one with multiple selection. To see what is going on, we provide two labels that show the values of the corresponding attributes. Besides that, if all items in the second list box are chosen, the value of the first list box will change to red and the user will be prevented to change it from red until she deselects some of the items in the second list.</P>
+
+<p class="header">part of <a href="gui_listbox.py">gui_listbox.py</a></p>
+<table><tr valign="top">
+<td width="600px">
+<xmp class=code>self.colors = ["Red", "Green", "Blue"]
+self.chosenColor = [2]
+self.numbers = ["One", "Two", "Three", "Four"]
+self.chosenNumbers = [0, 2, 3]
+
+OWGUI.listBox(self.controlArea, self, "chosenColor", "colors",
+              box="Color", callback=self.checkAll)
+OWGUI.listBox(self.controlArea, self, "chosenNumbers", "numbers",
+              box="Number", selectionMode=QListBox.Multi, callback=self.checkAll)
+
+box = OWGUI.widgetBox(self.controlArea, "Debug info")
+OWGUI.label(box, self, "Color: %(chosenColor)s")
+OWGUI.label(box, self, "Numbers: %(chosenNumbers)s", labelWidth=100)
+</xmp>
+</td><td valign="top">
+<img src="gui_listbox.png">
+</td></tr></table>
+
+<P>Selecting the red color and not allowing any other color but red when the entire second list is selected is ensured by function <code>checkAll</code> which is used as a callback for both list box. An important point not to be overlooked here is <code>self.chosenColor != [0]</code> in condition here. If omitted, setting <code>self.chosenColor</code> would trigger a change in the list box selection, change in the list box selection causes the callback function <code>self.chosenColor</code> to be called again and ... you see where this leads.</P>
+
+<p class="header">part of <a href="gui_listbox.py">gui_listbox.py</a></p>
+<table><tr>
+<td width="600px"><xmp class="code">def checkAll(self):
+    if len(self.chosenNumbers) == len(self.numbers) and self.chosenColor != [0]:
+        self.chosenColor = [0]
+</xmp>
+</td></tr></table>
+
+
+<P>The second example shows a construction of an attribute list. If a discrete attribute is selected, the second list box will let the user select one or more of its values.</P>
+
+<p class="header">part of <a href="gui_listbox_attr.py">gui_listbox_attr.py</a></p>
+<table><tr valign="top">
+<td width="600px">
+<xmp class=code>self.attributes = []
+self.chosenAttribute = []
+self.values = []
+self.chosenValues = []
+
+OWGUI.listBox(self.controlArea, self, "chosenAttribute", "attributes",
+              box="Attributes", callback=self.setValues)
+OWGUI.separator(self.controlArea)
+OWGUI.listBox(self.controlArea, self, "chosenValues", "values",
+              box="Values", selectionMode=QListBox.Multi)
+
+
+# The following assignments usually don't take place in __init__
+# but later on, when the widget receives some data
+
+self.data = orange.ExampleTable(r"..\datasets\horse-colic.tab")
+self.attributes = [(attr.name, attr.varType) for attr in self.data.domain]
+self.chosenAttribute = [0]
+</xmp>
+</td><td valign="top">
+<img src="gui_listbox_attr.png">
+</td></tr></table>
+
+<P>We avoided the temptation of writing <code>self.attributes = self.chosenAttribute = self.values = self.chosenValues = []</code>. This would assign all attributes the <em>same</em> empty list and would, through <code>self.chosenAttributes</code> and <code>self.chosenValues</code> keep the selection in two lists synchronized (try it, it looks funny).</P>
+
+<P>The second list box is filled every time the selection in the first is changed. This is done through the callback <code>
+assigning all attributes the same empty list, . This would be problematic due to <code>self.chosenAttribute</code> and <code>self.chosenValues</code>
+
+<p class="header">part of <a href="gui_listbox_attr.py">gui_listbox_attr.py</a></p>
+<table><tr valign="top">
+<td width="600px"><xmp class="code">def setValues(self):
+    attrIndex = self.chosenAttribute[0]
+    attr = self.data.domain[attrIndex]
+    if attr.varType == orange.VarTypes.Discrete:
+        self.values = attr.values
+    else:
+        self.values = []
+    self.chosenValues = []
+</xmp>
+</td></tr></table>
+
+<P>How does the list fill when the widget gets the data? In the above code, <code>self.chosenAttribute = [0]</code> changes the selection in the first lists and causes the callback, <code>setValues</code> to be called. That's how.</P>
+
+<h2>Spin Box</h2>
+
+<P>Spin box control, a wrapper around QSpinBox.</P>
+
+<DL class=attributes>
+<dt>min, max, step=1</dt>
+<dd>Minimal and maximal value, and step.</dd>
+</DL>
+
+<h3>Example</h3>
+
+<P>Following is an excerpt of the code in the initialization part of
 the widget. It defines three spin boxes, where the second and third
 invoke the callback which sets the text in the info box.</p>
 
 <p class="header">part of <a href="gui_spin.py">gui_spin.py</a></p>
+<table><tr>
+<td width="600px">
 <xmp class=code>self.spinval = 10
 OWGUI.spin(self.controlArea, self, "spinval", 0, 100, box="Value A")
 box = QVGroupBox("Options", self.controlArea)
@@ -106,103 +341,135 @@ box = QVGroupBox("Info", self.controlArea)
 self.info = QLabel('', box)
 self.setInfo()
 </xmp>
+</td><td valign="top">
+<img src="gui_spin.png">
+</td></tr></table>
 
 <p>The callback for setting the info box is simple. Notice that OWGUI
 associates each control's state with some value, which is updated
 automatically on any change of the control.</p>
 
+<table><tr>
+<td width="600px">
 <xmp class=code>def setInfo(self):
     self.info.setText("Alpha=%d, Beta=%d" % (self.alpha, self.beta))
 </xmp>
+</td></tr></table>
 
-<img src="gui_spin.png">
-
-<h2>Check Box</h2>
-
-<DT>checkBox(widget, master, value, label, box=None, tooltip=None,
-callback=None, disabled=0, labelWidth=None,
-disables = [])</DT> 
-<DD>Check box, a wrapper around QCheckBox. <code>label</code>
-can be placed on the top of the control (<code>control=None</code>) or
-in front of the control
-<code>orientation="horizontal"</code>. It may be useful to define
-<code>labelWidth</code> in case of <code>horizontal</code> placement of
-the label and if there is a need to align this widgets with
-others.</p></DD>
-
-<h3>Example</h3>
-
-<p>In the following code we define two check boxes. The second one
-disables (enabled) the box with the spin box, depending on the state
-of the checkbox.</p>
-
-<p class="header">part of <a href="gui_check.py">gui_check.py</a></p>
-<xmp class=code>self.spinval = 10
-self.chkA = 1
-self.chkB = 0
-self.dx = 15
-
-box = QVGroupBox("Settings", self.controlArea)
-gridbox = QVGroupBox("Grid Opions", self.controlArea)
-gridbox.setEnabled(self.chkB)
-OWGUI.checkBox(box, self, "chkA", "Verbose")
-OWGUI.checkBox(box, self, "chkB", "Display Grid", disables=[gridbox])
-OWGUI.spin(gridbox, self, "dx", 10, 20)
-</xmp>
-
-<img src="gui_check.png">
-
-<h2>Line Edit</h2>
-
-<DT>lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = str, validator=None)</DT> 
-<DD>Edit box, a wrapper around QLineEdit. <code>validator</code> is a standard
-Qt validator that can be associated with the control.</p></DD>
-
-<h3>Example</h3>
-
-<p class="header">part of <a href="gui_lineedit.py">gui_lineedit.py</a></p>
-<xmp class=code>self.val1 = "Enter text ..."
-self.val2 = "Some more text ..."
-self.valF = 10.2
-        
-OWGUI.lineEdit(self.controlArea, self, "val1", box="Text Entry")
-box = QVGroupBox("Options (with lineEdit)", self.controlArea)
-OWGUI.lineEdit(box, self, "val2", 
-               label="Name:", orientation="horizontal", labelWidth=40)
-OWGUI.lineEdit(box, self, "valF", label="Float:",
-               orientation="horizontal", labelWidth=40, valueType=float)
-</xmp>
-
-<img src="gui_lineedit.png">
+<P>By the way, such functions are needed only when updating the label requires more than simply inserting some attributes' values. This code becomes redundant if we use <code>OWGUI.label</code> instead of <code>QLabel</code>.</P>
 
 
 <h2>Check Box with Spin</h2>
 
-<DT>checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, labelWidth=None)</DT> 
-<DD>Check box with spin, or, essentially, a wrapper around
-OWGUI.checkBox and OWGUI.spin.</DD>
+<P>Check box with spin, or, essentially, a wrapper around
+OWGUI.checkBox and OWGUI.spin.</P>
+
+<p class="function">checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, labelWidth=None)</p>
+
+<dl class="attributes">
+<dt>min, max, step</dt>
+<dd>Minimal and maximal value for the spin control, and its step.
+
+<dt>checked</dt>
+<dd>Master's attribute that is synchronized with the state of the check box.</dd>
+
+<dt>value</dt>
+<dd>The attribute that is synchronized with the spin.</dd>
+
+<dt>posttext</dt>
+<dd>Text which appears on the right-hand side of the control.</dd>
+
+<dt>checkCallback, spinCallback</dt>
+<dd>Function that are called when the state of the check box or spin changes.</dd>
+</dd>
+</dl>
 
 <h3>Example</h3>
 
 <p class="header">part of <a href="gui_checkspin.py">gui_checkspin.py</a></p>
+<table><tr>
+<td width="600px">
 <xmp class=code>self.val = 20
 self.chk = 1
-OWGUI.checkWithSpin(self.controlArea, self, "Prunning, m=", 0, 100, "chk", "val", posttext = "%")
+OWGUI.checkWithSpin(self.controlArea, self, "Prunning, m=", 0, 100,
+                    "chk", "val", posttext = "%")
 </xmp>
-
+</td><td valign="top">
 <img src="gui_checkspin.png">
+</td></tr></table>
 
-<h2>Button</h2>
+<h2>Labels</h2>
 
-<DT>button(widget, master, label, callback = None, disabled=0)</dt>
-<DD>A wrapper around QPushButton, just to be able to define a button
-and its callback in a single line.</DD>
+<P>There are two functions for constructing labels. The first is a simple wrapper around QLabel which differs only in allowing to specify a fixed width without needing an extra line. Note that unlike most other OWGUI widgets, this one does not have the argument <code>master</code>.</P>
+
+<p class="function">widgetLabel(widget, label, labelWidth = None)</p>
+
+<P>The second is a label which can synchronize with values of master widget's attributes.</P>
+
+<p class="function">label(widget, master, label, labelWidth = None)</p>
+
+<dl class="attributes">
+<dt>label</dt>
+<dd><code>label</code> is a format string following Python's syntax (see the corresponding Python documentation): the label's content is rendered as <code>label % master.__dict__</code>.</dd>
+
+<h3>Example</h3>
+
+<P>The following code, taken from <code>OWPurgeDomain</code>, construct four labels that change whenever the value of <code>self.removedAttrs</code>, <code>self.reducedAttrs</code>, <code>self.resortedAttrs</code> or <code>self.classAttr</code> changes in the code.</P>
+
+<p class="header">OrangeWidgets/Data/OWPurgeDomain.py</a></p>
+<table><tr>
+<td width="600px">
+<xmp class="code">box3 = OWGUI.widgetBox(self.controlArea, 'Statistics')
+OWGUI.label(box3, self, "Removed attributes: %(removedAttrs)s")
+OWGUI.label(box3, self, "Reduced attributes: %(reducedAttrs)s")
+OWGUI.label(box3, self, "Resorted attributes: %(resortedAttrs)s")
+OWGUI.label(box3, self, "Class attribute: %(classAttr)s")
+</xmp>
+</td>
+</tr></table>
+
+<P>Each label can contain any number of attributes, which can be strings (as in <code>%(name)s</code>) or of any type supported by Python (e.g. <code>%(name)5.3f</code>), like in the toy example below.</P>
+
+<p class="header">part of <a href="gui_label.py">gui_label.py</a></p>
+<table><tr>
+<td width="600px">
+<xmp class=code>self.val = 5
+self.line = "a parrot"
+
+OWGUI.spin(self.controlArea, self, "val", 1, 10, label="Value")
+OWGUI.lineEdit(self.controlArea, self, "line", label="Line: ", orientation=0)
+
+OWGUI.label(self.controlArea, self,
+            "Value is %(val)i and line edit contains %(line)s")
+</xmp>
+</td><td valign="top">
+<img src="gui_label.png">
+</td></tr></table>
+
+<h1>Utilities</h1>
+
+<h2>Widget box</h2>
+
+<dt>widgetBox(widget, box=None, orientation='vertical')</dt>
+<dd>Creates a box in which other widgets can be put. If <code>box</code> is given and not false, the box will be framed. If <code>box</code> is a string, it will be used for the box name (don't capitalize each word; spaces in front or after the string will be trimmed and replaced with a single space). Argument <code>orientation</code> can be <code>"vertical"</code> or <code>"horizontal"</code> (or <code>True</code> and <code>False</code>, or <code>1</code> and <code>0</code>, respectively).</dd>
 
 <h2>Separator</h2>
 
 <DT>separator(widget, width=0, height=8)</dt>
 <DD>Empty space with defined dimensions. Most often used to provide some extra vertical space between
 groups of widgets.</DD>
+
+<h2>Rubber</h2>
+
+<DT>rubber(widget)</dt>
+<DD>Similar to separator, except that the size is (1, 1), but expands it the widget is expanded. Most widgets should have rubber somewhere in their <code>controlArea</code>.</DD>
+
+
+<h2>Attribute Icons</h2>
+
+<dt>getAttributeIcons()</dt>
+<dd>Returns a dictionary with attribute types (<code>orange.VarTypes.Discrete</code>, <code>orange.VarTypes.Continuous</code>, <code>orange.VarTypes.String</code>, -1) as keys and colored pixmaps as values. The dictionary can be used in listboxes showing attributes for easier distinguishing between attributes of different types.</dd>
+
 
 <hr>
 

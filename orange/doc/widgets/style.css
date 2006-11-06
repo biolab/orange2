@@ -16,7 +16,7 @@ DL.attributes P.header { margin-bottom: 0mm; margin-top: 1em}
 P.header + .code { background-color: "#ffffcc"; font-size: 9pt; top-margin: 0mm}
 
 .normalfont { font-family: "Verdana", "Geneva", sans-serif}
-.code { background-color: "#ffffcc"; font-size: 9pt}
+.code { background-color: "#ffffcc"; font-size: 9pt; padding-left: 6px}
 .xcode { background-color: "#ffbb00"; font-size: 9pt}
 .header { margin-bottom: -4mm}
 .links {}
