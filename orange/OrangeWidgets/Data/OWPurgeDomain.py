@@ -24,13 +24,14 @@ class OWPurgeDomain(OWWidget):
         self.removeClassAttribute = 1
         self.preRemoveClasses = self.removeClasses = 1
         self.autoSend = 1
+        self.dataChanged = False
 
         self.sortValues = self.sortClasses = True
 
         self.loadSettings()
-        
-#        self.reducedAttrs = self.removedAttrs = self.resortedAttrs = self.classAttr = ""
 
+        self.removedAttrs = self.reducedAttrs = self.resortedAttrs = self.classAttr = "-"
+        
         boxAt = OWGUI.widgetBox(self.controlArea, "Attributes")
         OWGUI.checkBox(boxAt, self, 'sortValues', 'Sort attribute values', callback = self.optionsChanged)
         rua = OWGUI.checkBox(boxAt, self, "removeAttributes", "Remove attributes with less than two values", callback = self.removeAttributesChanged)
@@ -50,20 +51,19 @@ class OWPurgeDomain(OWWidget):
         rua.disables = [ruv]
 
         OWGUI.separator(self.controlArea)
-
-        OWGUI.separator(self.controlArea)
         box2 = QVGroupBox('', self.controlArea)
         btSend = OWGUI.button(box2, self, "Send data", callback = self.process)
-        cbAutoSend = OWGUI.checkBox(box2, self, "autoSend", "Send automatically", disables = [(-1, btSend)])
+        cbAutoSend = OWGUI.checkBox(box2, self, "autoSend", "Send automatically")
+
+        OWGUI.setStopper(self, btSend, cbAutoSend, "dataChanged", self.process)
         
-##        OWGUI.separator(self.controlArea, height=24)
-##
-##        box3 = QVGroupBox('Statistics', self.controlArea)
-##        #OWGUI.separator(box3)
-##        OWGUI.label(box3, self, "Removed attributes: %(removedAttrs)s")
-##        OWGUI.label(box3, self, "Reduced attributes: %(reducedAttrs)s")
-##        OWGUI.label(box3, self, "Resorted attributes: %(resortedAttrs)s")
-##        OWGUI.label(box3, self, "Class attribute: %(classAttr)s")
+        OWGUI.separator(self.controlArea, height=24)
+
+        box3 = OWGUI.widgetBox(self.controlArea, 'Statistics')
+        OWGUI.label(box3, self, "Removed attributes: %(removedAttrs)s")
+        OWGUI.label(box3, self, "Reduced attributes: %(reducedAttrs)s")
+        OWGUI.label(box3, self, "Resorted attributes: %(resortedAttrs)s")
+        OWGUI.label(box3, self, "Class attribute: %(classAttr)s")
 
         self.adjustSize()        
 
@@ -76,6 +76,7 @@ class OWPurgeDomain(OWWidget):
             self.send("Examples", None)
             self.send("Classified Examples", None)
             self.data = None
+        self.dataChanged = False
 
     def removeAttributesChanged(self):
         if not self.removeAttributes:
@@ -96,6 +97,8 @@ class OWPurgeDomain(OWWidget):
     def optionsChanged(self):
         if self.autoSend:
             self.process()
+        else:
+            self.dataChanged = True
 
     def sortAttrValues(self, attr, interattr=None):
         if not interattr:
@@ -203,10 +206,8 @@ class OWPurgeDomain(OWWidget):
         if newclass:
             self.send("Classified Examples", newData)
 
-##        for attr in newData.domain.variables:
-##            if attr.varType == orange.VarTypes.Discrete:
-##                print attr.name, attr.values
-          
+        self.dataChanged = False            
+
 
 if __name__=="__main__":
     appl = QApplication(sys.argv)
