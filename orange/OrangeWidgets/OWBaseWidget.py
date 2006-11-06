@@ -44,7 +44,9 @@ def unisetattr(self, name, value, grandparent):
     controlledAttributes = getattr(self, "controlledAttributes", None)
     controlCallback = controlledAttributes and controlledAttributes.get(name, None)
     if controlCallback:
-        controlCallback(value)
+        for callback in controlCallback:
+            callback(value)
+#        controlCallback(value)
 
     # controlled things (checkboxes...) never have __attributeControllers
     else:
@@ -196,7 +198,10 @@ class ControlledAttributesDict(dict):
         self.master = master
 
     def __setitem__(self, key, value):
-        dict.__setitem__(self, key, value)
+        if not self.has_key(key):
+            dict.__setitem__(self, key, [value])
+        else:
+            dict.__getitem__(self, key).append(value)
         self.master.setControllers(self.master, key, self.master, "")
         
         
@@ -852,26 +857,24 @@ class OWBaseWidget(QDialog):
             self.eventHandler(type + " from " + self.captionTitle[3:] + ": " + text)
 
     def openWidgetHelp(self):
-        url = "/widgets/catalog/%s/%s.htm" % (self.category, self.name())
-
         if orangedir:
             try:
                 import win32help
-                win32help.HtmlHelp(0, orangedir + "/doc/widgets.chm::" + url, win32help.HH_DISPLAY_TOPIC)
+                win32help.HtmlHelp(0, "%s/doc/catalog.chm::/catalog/%s/%s.htm" % (orangedir, self.category, self.__class__.__name__[2:]), win32help.HH_DISPLAY_TOPIC)
                 return
             except:
                 pass
 
             try:
                 import webbrowser
-                webbrowser.open("file://" + orangedir + "/doc" + url, 0, 1)
+                webbrowser.open("file://%s/doc/widgets/catalog/%s/%s.htm" % (orangedir, self.category, self.__class__.__name__[2:]), 0, 1)
                 return
             except:
                 pass
 
         try:
             import webbrowser
-            webbrowser.open("http://www.ailab.si/orange/doc"+url)
+            webbrowser.open("http://www.ailab.si/orange/doc/widgets/catalog/%s/%s.htm" % (self.category, self.__class__.__name__[2:]))
             return
         except:
             pass
@@ -880,9 +883,9 @@ class OWBaseWidget(QDialog):
     def keyPressEvent(self, e):
         if e.key() != 0x1030:
             QDialog.keyPressEvent(self, e)
-            #e.ignore()
         else:
             self.openWidgetHelp()
+#            e.ignore()
 
     def information(self, text = None):
         self.printEvent("Information", text)
