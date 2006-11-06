@@ -77,6 +77,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <float.h>
 #include <string.h>
 #include <stdarg.h>
+#include <errno.h>
 #include "svm.ppp"
 typedef float Qfloat;
 typedef signed char schar;
@@ -3288,8 +3289,16 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 #ifdef _MSC_VER
 	FILE* tmpstream=freopen("NUL","w", stdout);
 #else
-	int tmpstream=dup(stdout);
-	freopen("/dev/null", "w", stdout);
+	//printf("%i", stdout);
+	int tmpstream=dup(1);
+	if(tmpstream<0)
+		perror("dup");
+	FILE* fdnull=fopen("/dev/null","w");
+	//if(fdnull<0)
+	//	perror("fopen");
+	//freopen("/dev/null", "w", stdout);
+	if(dup2(fileno(fdnull),1)<0)
+		perror("dup2");
 #endif
 
 	model=svm_train(&prob,&param);
@@ -3297,9 +3306,11 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 #ifdef _MSC_VER
 	freopen("CON", "w", stdout);
 #else
-	close(stdout);
-	dup(tmpstream);
+	close(1);
+	if(dup2(tmpstream, 1)<0)
+		perror("dup2 ");
 	close(tmpstream);
+	fclose(fdnull);
 #endif
 
 	//cout<<"end training"<<endl;
