@@ -41,6 +41,8 @@ def createCanvasCatalogPage(xmlCategories, docpath =".", categoriesOrder = ["Dat
                 if "(" in contact:
                     widget["contact"] = contact[:contact.index("(")]
                 verb = '<font color="#bbbbbb"><small><br>%(file)s, %(priority)s<br>%(contact)s<br></small></font>' % widget
+            else:
+                verb = ""
             if exists(htmlfile):
                 catalogPage += '<td><a href="%s"><img src="%s"></a></td>\n' % (htmlfile, icon) + \
                                '<td style="padding-right: 15"><a href="%s">%s</a>%s</td>\n\n' % (htmlfile, name, verb)

@@ -22,6 +22,7 @@ class Test(OWWidget):
 
         # The following assignments usually don't take place in __init__
         # but later on, when the widget receives some data
+        import orange
         self.data = orange.ExampleTable(r"..\datasets\horse-colic.tab")
         self.attributes = [(attr.name, attr.varType) for attr in self.data.domain]
         self.chosenAttribute = [0]

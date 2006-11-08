@@ -62,7 +62,8 @@ def unisetattr(self, name, value, grandparent):
                     
                     controlCallback = controlledAttributes.get(fullName, None)
                     if controlCallback:
-                        controlCallback(value)
+                        for callback in controlCallback:
+                            callback(value)
 
                     else:
                         lname = fullName + "."
