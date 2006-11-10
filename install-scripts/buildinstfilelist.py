@@ -2,6 +2,7 @@ import os, re, sys, md5
 
 basedir = sys.argv[1]
 fileprefix = sys.argv[2]
+mac = len(sys.argv) > 3 and sys.argv[3] == "mac"
 
 if basedir[-1] != "\\":
     basedir += "\\"
@@ -28,9 +29,10 @@ def excluded(fname):
 
 outfs = ""
 hass = ""
+down = ""
 
 def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
-    global outfs, hass
+    global outfs, hass, down
     
     if not os.path.exists(root_dir+here_dir):
         return
@@ -48,9 +50,13 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
         else:
             if not regexp or regexp.match(fle):
                 if not whatsDownEntries:
-                    outfs += '\nSetOutPath "$INSTDIR\\%s"\n' % there_dir
+                    if not mac:
+                        outfs += '\nSetOutPath "$INSTDIR\\%s"\n' % there_dir
                     if there_dir[:14] == "orangeWidgets\\" and there_dir.count("\\")==2 and there_dir[14:-1]!="icons":
-                        hass += 'FileWrite $WhatsDownFile "+%s$\\r$\\n"\n' % there_dir[14:-1]
+                        if mac:
+                            down += there_dir[14:-1] + "\n" 
+                        else:
+                            hass += 'FileWrite $WhatsDownFile "+%s$\\r$\\n"\n' % there_dir[14:-1]
 
                     entriesfile = open(root_dir+here_dir+"CVS\\Entries", "rt")
                     whatsDownEntries = {}
@@ -60,9 +66,14 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
                             fname, version, date = ma.groups()
                             whatsDownEntries[fname] = (there_dir+fname, version, computeMD(root_dir+here_dir+fname))
                     entriesfile.close()
-                                                
-                outfs += 'File "%s"\n' % tfle
-                outfs += 'FileWrite $WhatsDownFile "%s=%s:%s$\\r$\\n"\n' % whatsDownEntries[fle]
+
+                if whatsDownEntries.has_key(fle):
+                    if mac:
+                        outfs += tfle + "\n"
+                        down += '%s=%s:%s\n' % whatsDownEntries[fle]
+                    else:
+                        outfs += 'File "%s"\n' % tfle
+                        outfs += 'FileWrite $WhatsDownFile "%s=%s:%s$\\r$\\n"\n' % whatsDownEntries[fle]
 
     for here_dir, there_dir, fle in directories:
         buildListLow(root_dir, here_dir+fle+"\\", there_dir+fle+"\\", regexp, recursive)
@@ -73,6 +84,8 @@ def buildList(root, here, there, regexp, fname, recursive=1):
     outfs = hass = ""
     buildListLow(root, here, there, regexp and re.compile(regexp, re.IGNORECASE), recursive)
     open(fileprefix+"_"+fname+".inc", "wt").write(hass+outfs)
+    if mac:
+        open(fileprefix+"_"+fname+".down", "wt").write(down)
 
 def buildLists(rhter, fname):
     global outfs, hass
