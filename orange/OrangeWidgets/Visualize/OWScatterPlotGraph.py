@@ -60,6 +60,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         #self.enableLegend(0)
         #self.removeTooltips()
         self.tooltipData = []
+        self.potentialsClassifier = None
         
         # if we have some subset data then we show the examples in the data set with full symbols, others with empty
         haveSubsetData = (self.subsetData and self.rawdata and self.subsetData.domain == self.rawdata.domain)
@@ -138,7 +139,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         while -1 in attrIndices: attrIndices.remove(-1)
         self.shownAttributeIndices = attrIndices
         
-
         xData = self.scaledData[xAttrIndex].copy()
         yData = self.scaledData[yAttrIndex].copy()
         validData = self.getValidList([xAttrIndex, yAttrIndex])
@@ -149,48 +149,19 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         if self.rawdata.domain[yAttrIndex].varType == orange.VarTypes.Discrete: yData = ((yData * 2*len(self.rawdata.domain[yAttrIndex].values)) - 1.0) / 2.0
         else:  yData = yData * (self.attrValues[yAttr][1] - self.attrValues[yAttr][0]) + float(self.attrValues[yAttr][0])
 
-
         # #######################################################
         # show probabilities
-
-        if False and self.showProbabilities and colorIndex >= 0:
-            import orangeom
-            rx = self.transform(QwtPlot.xBottom, xmax) - self.transform(QwtPlot.xBottom, xmin)
-            ox = self.transform(QwtPlot.xBottom, 0) - self.transform(QwtPlot.xBottom, xmin)
-
-            ry = self.transform(QwtPlot.yLeft, ymin) - self.transform(QwtPlot.yLeft, ymax)
-            oy = self.transform(QwtPlot.yLeft, ymin) - self.transform(QwtPlot.yLeft, 0)
-
+        if self.showProbabilities and colorIndex >= 0:
             domain = orange.Domain([self.rawdata.domain[xAttrIndex], self.rawdata.domain[yAttrIndex], self.rawdata.domain.classVar], self.rawdata.domain)
-            scX = [x/(xmax-xmin) for x in xData]
-            scY = [y/(ymax-ymin) for y in yData]
-
-            self.potentialsClassifier = orange.P2NN(domain,
-                                                    Numeric.transpose(Numeric.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawdata]])),
-                                                    None, None, None, None)
-
-            if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
-                imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, 3, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
-                palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
-            else:
-                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, 3, 1) # the last argument is self.trueScaleFactor (in LinProjGraph...)
-                colors = defaultRGBColors
-
-                palette = []
-                sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
-                for cls in self.potentialsClassifier.classVar.values:
-                    color = colors[sortedClasses.index(cls)]
-                    towhite = [255-c for c in color]
-                    for s in range(nShades):
-                        si = 1-float(s)/nShades
-                        palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
-                palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
-
-            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, palette, 256, QImage.LittleEndian)
-            self.potentialsBmp = QPixmap()
-            self.potentialsBmp.convertFromImage(image)
-            self.xmin, self.ymin = xmin, ymax
-
+            xdiff = xmax-xmin
+            ydiff = ymax-ymin
+            scX = [x/xdiff for x in xData]
+            scY = [y/ydiff for y in yData]
+            
+            self.potentialsClassifier = orange.P2NN(domain, Numeric.transpose(Numeric.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawdata]])), None, None, None, None)
+            self.xmin = xmin; self.xmax = xmax
+            self.ymin = ymin; self.ymax = ymax
+            
 
         # #######################################################
         # show clusters
@@ -464,8 +435,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
 
     def drawCanvasItems(self, painter, rect, map, pfilter):
-        if getattr(self, "potentialsBmp", None):
-            painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, self.xmin), self.transform(QwtPlot.yLeft, self.ymin)), self.potentialsBmp)
+        if self.showProbabilities and getattr(self, "potentialsClassifier", None):
+            self.computePotentials()
+            painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, self.xmin), self.transform(QwtPlot.yLeft, self.ymax)), self.potentialsBmp)
         OWGraph.drawCanvasItems(self, painter, rect, map, pfilter)
 
     # ##############################################################
@@ -564,6 +536,36 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
     def onMouseReleased(self, e):
         OWGraph.onMouseReleased(self, e)
         self.updateLayout()
+
+    def computePotentials(self):
+        import orangeom
+        rx = self.transform(QwtPlot.xBottom, self.xmax) - self.transform(QwtPlot.xBottom, self.xmin)
+        ry = self.transform(QwtPlot.yLeft, self.ymin) - self.transform(QwtPlot.yLeft, self.ymax)
+        
+        ox = self.transform(QwtPlot.xBottom, 0) - self.transform(QwtPlot.xBottom, self.xmin)
+        oy = self.transform(QwtPlot.yLeft, self.ymin) - self.transform(QwtPlot.yLeft, 0)
+        #print rx, ry, ox, oy, (self.xmin, self.xmax), (self.ymin, self.ymax)
+
+        if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
+            imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, ox, oy, 3, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
+            palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
+        else:
+            imagebmp, nShades = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, ox, oy, 3, 1.) # the last argument is self.trueScaleFactor (in LinProjGraph...)
+            colors = defaultRGBColors
+
+            palette = []
+            sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
+            for cls in self.potentialsClassifier.classVar.values:
+                color = colors[sortedClasses.index(cls)]
+                towhite = [255-c for c in color]
+                for s in range(nShades):
+                    si = 1-float(s)/nShades
+                    palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+            palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+
+        image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, palette, 256, QImage.LittleEndian)
+        self.potentialsBmp = QPixmap()
+        self.potentialsBmp.convertFromImage(image)
 
 
 class QwtPlotCurvePieChart(QwtPlotCurve):

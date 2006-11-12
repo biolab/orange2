@@ -25,7 +25,7 @@ from OWGraph import OWGraph
 ###########################################################################################
 class OWScatterPlot(OWWidget):
     settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
-                    "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
+                    "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols", "graph.showProbabilities",
                     "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
                     "clusterClassifierName", "learnerIndex", "colorSettings", "VizRankLearnerName"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
@@ -106,6 +106,7 @@ class OWScatterPlot(OWWidget):
         self.clusterDlg.attributeLabel.hide()
         self.graph.clusterOptimization = self.clusterDlg
         
+        
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialogs ", orientation = "horizontal")
         OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
@@ -141,6 +142,7 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.optimizedDrawing', 'Optimize drawing', callback = self.updateGraph, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
         OWGUI.checkBox(box4, self, 'showGridlines', 'Show gridlines', callback = self.setShowGridlines)
         OWGUI.checkBox(box4, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
+        OWGUI.checkBox(box4, self, 'graph.showProbabilities', 'Show probabilities', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
 
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Colors ", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
@@ -463,13 +465,8 @@ if __name__=="__main__":
 #    a=QApplication(sys.argv)
     a=QApplication([])
     ow=OWScatterPlot()
-
-    d = orange.ExampleTable("testXXXX.tab")
-    ow.cdata(d)
-    
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
 
     #save settings 
     ow.saveSettings()
