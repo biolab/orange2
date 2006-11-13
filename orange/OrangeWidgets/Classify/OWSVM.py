@@ -52,7 +52,7 @@ class OWSVM(OWWidget):
         OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
         OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors", callback=lambda:self.nuBox.setDisabled(not self.useNu))
         self.nuBox=OWGUI.doubleSpin(b,self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
-        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram")
+        self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two two values)")
         self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
                                       tooltip="Automaticaly searches for parameters that optimize classifier acuracy") 
         OWGUI.button(self.controlArea, self,"&Apply settings", callback=self.applySettings)
