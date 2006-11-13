@@ -6,7 +6,14 @@
 #  (http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.ps.gz)
 
 
-import orange, orngTest, orngStat, sys, orngSVM_Jakulin
+import orange, orngTest, orngStat, sys
+
+try:
+    import orngSVM_Jakulin
+    BasicSVMLearner=orngSVM_Jakulin.BasicSVMLearner
+    BasicSVMClassifier=orngSVM_Jakulin.BasicSVMClassifier
+except:
+    pass
 
 def SVMLearner(examples=None, weightID=0, **kwds):
     l=apply(SVMLearnerClass, (), kwds)
@@ -56,8 +63,6 @@ class SVMLearnerClass:
             self.learner.__dict__[name]=getattr(self, name)
         return self.learner(examples)
 
-BasicSVMLearner=orngSVM_Jakulin.BasicSVMLearner
-BasicSVMClassifier=orngSVM_Jakulin.BasicSVMClassifier
 
 def parameter_selection(learner, data, folds=4, parameters={}, best={}, callback=None):
     """parameter selection tool: uses cross validation to find the optimal parameters.
