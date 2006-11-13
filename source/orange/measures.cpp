@@ -1021,8 +1021,9 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
   TRandomGenerator rgen(N);
   int referenceIndex = 0;
   const bool useAll = (m==-1) || (!weightID && (m>N));
+  float referenceExamples, referenceWeight;
 
-  for(float referenceExamples = 0, referenceWeight; useAll ? (referenceIndex < N) : (referenceExamples < m); referenceExamples += referenceWeight, referenceIndex++) {
+  for(referenceExamples = 0; useAll ? (referenceIndex < N) : (referenceExamples < m); referenceExamples += referenceWeight, referenceIndex++) {
     if (!useAll)
       referenceIndex = rgen.randlong(N);
     TExample &referenceExample = table[referenceIndex];
@@ -1056,8 +1057,8 @@ void TMeasureAttribute_relief::prepareNeighbours(PExampleGenerator gen, const in
       while(disti != diste && (disti->second <= 0))
         disti++;
 
-      float inWeight;
-      for(float needwei = k; (disti != diste) && (needwei > 1e-6); ) {
+      float inWeight, needwei;
+      for(needwei = k; (disti != diste) && (needwei > 1e-6); ) {
         const float thisDist = disti->second;
         inWeight = 0.0;
         const int inAdded = refNeighbours.size();

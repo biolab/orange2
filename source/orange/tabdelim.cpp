@@ -125,7 +125,7 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
   TExample::iterator ei(exam.begin());
   TVarList::iterator vi(domain->attributes->begin());
   vector<string>::iterator ai(atoms.begin());
-  vector<int>::iterator si(attributeTypes->begin()), se(attributeTypes->end());
+  TIntList::iterator si(attributeTypes->begin()), se(attributeTypes->end());
   vector<vector<string> >::iterator dci(DCs.begin()), dce(DCs.end());
   int pos=0;
   for (; (si!=se); pos++, si++, ai++) {

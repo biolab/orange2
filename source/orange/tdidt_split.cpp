@@ -521,7 +521,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
   int ns0 = 0, ns1 = 0;
   TValue ev;
   attribute->firstValue(ev);
-  PITERATE(vector<int>, mi, bestMapping) {
+  PITERATE(TIntList, mi, bestMapping) {
     string str;
     attribute->val2str(ev, str);
     if (*mi==1) {

@@ -236,7 +236,7 @@ PRandomIndices TMakeRandomIndicesN::operator()(const int &n, PFloatList ap)
   
   float sum = 0;
   bool props = true;
-  for(vector<float>::const_iterator pis(ap->begin()), pie(ap->end()); pis!=pie; pis++) {
+  for(TFloatList::const_iterator pis(ap->begin()), pie(ap->end()); pis!=pie; pis++) {
     sum += *pis;
     if (*pis > 1.0)
       props = false;
@@ -257,7 +257,7 @@ PRandomIndices TMakeRandomIndicesN::operator()(const int &n, PFloatList ap)
   PRandomIndices indices(mlnew TFoldIndices(n, ap->size()));
   TFoldIndices::iterator ii(indices->begin()), ie(indices->end());
   int no, ss=-1;
-  PITERATE(vector<float>, pi, ap)
+  PITERATE(TFloatList, pi, ap)
     for(ss++, no = props ? int(*pi*n+0.5) : int(*pi+0.5); no-- && (ii!=ie); *(ii++)=ss);
 
   rsrgen rg(randomGenerator, randseed);

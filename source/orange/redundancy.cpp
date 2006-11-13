@@ -383,8 +383,8 @@ PVariable TRemoveUnusedValues::operator()(PVariable var, PExampleGenerator gen, 
   TClassifierByLookupTable1 *cblt = mlnew TClassifierByLookupTable1(newVar, var);
   int cnt = 0;
   TStringList::iterator vali = evar->values->begin();
-  vector<TValue>::iterator lvi(cblt->lookupTable->begin());
-  vector<PDistribution>::iterator ldi(cblt->distributions->begin());
+  TValueList::iterator lvi(cblt->lookupTable->begin());
+  TDistributionList::iterator ldi(cblt->distributions->begin());
   for(dvi = dist.begin(), dve = dist.end(); dvi!=dve; dvi++, vali++, lvi++, ldi++)
     if (*dvi > 1e-20) {
       enewVar->values->at(cnt) = *vali;

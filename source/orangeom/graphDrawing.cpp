@@ -16,6 +16,8 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
     if (graph->nVertices < 2)
       PYERROR(PyExc_AttributeError, "graph has less than two nodes", NULL);
 
+
+
     return Py_BuildValue("ii", graph->getEdge(0, 1) ? 1 : 0, (int)(graph->edges));
   PyCATCH
 }

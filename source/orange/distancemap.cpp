@@ -236,19 +236,19 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
       PDistanceMap dm = mlnew TDistanceMap(nLines);
       dm->elementIndices = psqi;
 
-      vector<int>::const_iterator row_squeezei(squeezedIndices.begin()), row_squeezen(row_squeezei+1), squeezee(squeezedIndices.end());
+      TIntList::const_iterator row_squeezei(squeezedIndices.begin()), row_squeezen(row_squeezei+1), squeezee(squeezedIndices.end());
       for(int row = 0; row_squeezen != squeezee; row_squeezei++, row_squeezen++, row++) {
         // this needs to be float (to avoid int division)
         float row_elements = *row_squeezen - *row_squeezei;
 
         // to diagonal, exclusive
-        vector<int>::const_iterator col_squeezei(squeezedIndices.begin()), col_squeezen(col_squeezei+1);
+        TIntList::const_iterator col_squeezei(squeezedIndices.begin()), col_squeezen(col_squeezei+1);
         for(int column = 0; col_squeezei != row_squeezei; col_squeezei++, col_squeezen++, column++) {
 
           float incell = 0.0;
-          vector<int>::const_iterator row_orderi(order->begin()+*row_squeezei), row_ordere(order->begin()+*row_squeezen);
+          TIntList::const_iterator row_orderi(order->begin()+*row_squeezei), row_ordere(order->begin()+*row_squeezen);
           for(; row_orderi != row_ordere; row_orderi++) {
-            vector<int>::const_iterator col_orderi(order->begin()+*col_squeezei), col_ordere(order->begin()+*col_squeezen);
+            TIntList::const_iterator col_orderi(order->begin()+*col_squeezei), col_ordere(order->begin()+*col_squeezen);
             for(; col_orderi != col_ordere; col_orderi++)
               incell += distMat.getitem(*row_orderi, *col_orderi);
           }
@@ -261,9 +261,9 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
         // diagonal
         {
           float incell = 0.0;
-          vector<int>::const_iterator row_orderi(order->begin()+*row_squeezei), row_ordere(order->begin()+*row_squeezen);
+          TIntList::const_iterator row_orderi(order->begin()+*row_squeezei), row_ordere(order->begin()+*row_squeezen);
           for(; row_orderi != row_ordere; row_orderi++) {
-            vector<int>::const_iterator col_orderi(order->begin()+*row_squeezei);
+            TIntList::const_iterator col_orderi(order->begin()+*row_squeezei);
             for(; col_orderi != row_orderi; col_orderi++)
               incell += distMat.getitem(*row_orderi, *col_orderi);
             incell += distMat.getitem(*row_orderi, *row_orderi);
@@ -282,9 +282,9 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
       const int &dim = distMat.dim;
       PDistanceMap dm = mlnew TDistanceMap(dim);
 
-      vector<int>::const_iterator row_orderi(order->begin()), row_ordere(order->end());
+      TIntList::const_iterator row_orderi(order->begin()), row_ordere(order->end());
       for(int row = 0; row_orderi != row_ordere; row_orderi++, row++) {
-        vector<int>::const_iterator col_orderi(order->begin());
+        TIntList::const_iterator col_orderi(order->begin());
         for(int column = 0; col_orderi != row_orderi; col_orderi++, column++) {
           const float &incell = distMat.getref(*row_orderi, *col_orderi);
           dm->cells[row*dim+column] = dm->cells[column*dim+row] = incell;
@@ -314,13 +314,13 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
       PDistanceMap dm = mlnew TDistanceMap(nLines);
       dm->elementIndices = psqi;
 
-      vector<int>::const_iterator row_squeezei(squeezedIndices.begin()), row_squeezen(row_squeezei+1), squeezee(squeezedIndices.end());
+      TIntList::const_iterator row_squeezei(squeezedIndices.begin()), row_squeezen(row_squeezei+1), squeezee(squeezedIndices.end());
       for(int row = 0; row_squeezen != squeezee; row_squeezei++, row_squeezen++, row++) {
         // this needs to be float (to avoid int division)
         float row_elements = *row_squeezen - *row_squeezei;
 
         // to diagonal, exclusive
-        vector<int>::const_iterator col_squeezei(squeezedIndices.begin()), col_squeezen(col_squeezei+1);
+        TIntList::const_iterator col_squeezei(squeezedIndices.begin()), col_squeezen(col_squeezei+1);
         for(int column = 0; col_squeezei != row_squeezei; col_squeezei++, col_squeezen++, column++) {
           int col_elements = *col_squeezen - *col_squeezei;
 

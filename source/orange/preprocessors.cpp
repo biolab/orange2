@@ -552,7 +552,7 @@ PExampleGenerator TPreprocessor_addClassWeight::operator()(PExampleGenerator gen
 
     if (classWeights && classWeights->size()) {
       float tot_w = 0.0;
-      vector<float>::const_iterator cwi(classWeights->begin());
+      TFloatList::const_iterator cwi(classWeights->begin());
       TDiscDistribution::const_iterator di(ddist.begin()), de(ddist.end());
       for(; di!=de; di++, cwi++)
         if (*di > 0.0)
@@ -565,7 +565,7 @@ PExampleGenerator TPreprocessor_addClassWeight::operator()(PExampleGenerator gen
 
       float fact = tot_w * ddist.abs;
       di = ddist.begin();
-      PITERATE(vector<float>, wi, classWeights)
+      PITERATE(TFloatList, wi, classWeights)
         weights.push_back(*wi / *(di++) * fact);
     }
 

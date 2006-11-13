@@ -1595,7 +1595,7 @@ vector<TFiletypeDefinition>::iterator findFiletypeByExtension(const char *name, 
   if (extension) {
     ITERATE(vector<TFiletypeDefinition>, fi, filetypeDefinitions)
       if ((!needLoader || (*fi).loader) && (!needSaver || (*fi).saver))
-        ITERATE(vector<string>, ei, (*fi).extensions)
+        ITERATE(TStringList, ei, (*fi).extensions)
           if (*ei == extension)
             return fi;
   }
@@ -1603,7 +1603,7 @@ vector<TFiletypeDefinition>::iterator findFiletypeByExtension(const char *name, 
   else if (exhaustive) {
     ITERATE(vector<TFiletypeDefinition>, fi, filetypeDefinitions)
       if ((!needLoader || (*fi).loader) && (!needSaver || (*fi).saver))
-        ITERATE(vector<string>, ei, (*fi).extensions)
+        ITERATE(TStringList, ei, (*fi).extensions)
           if (fileExists(name + *ei))
             return fi;
   }

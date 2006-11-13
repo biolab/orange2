@@ -151,10 +151,10 @@ void TClassifierByLookupTable1::replaceDKs(TDiscDistribution &valDistribution)
   PDistribution wclasses = PDistribution(classes);
   if (distributions) {
     if (valDistribution.abs) {
-      vector<TValue>::iterator vi(lookupTable->begin());
+      TValueList::iterator vi(lookupTable->begin());
       valDistribution[distributions->size()-1];
       TDiscDistribution::iterator di(valDistribution.begin());
-      for(vector<PDistribution>::iterator dvi(distributions->begin()), dve(distributions->end());
+      for(TDistributionList::iterator dvi(distributions->begin()), dve(distributions->end());
           dvi!=dve;
           dvi++, vi++, di++)
         if (!(*vi).isSpecial()) {
@@ -167,8 +167,8 @@ void TClassifierByLookupTable1::replaceDKs(TDiscDistribution &valDistribution)
         }
     }
     else {
-      vector<TValue>::iterator vi(lookupTable->begin());
-      for(vector<PDistribution>::iterator dvi(distributions->begin()), dve(distributions->end()); dvi!=dve; dvi++, vi++)
+      TValueList::iterator vi(lookupTable->begin());
+      for(TDistributionList::iterator dvi(distributions->begin()), dve(distributions->end()); dvi!=dve; dvi++, vi++)
         if (!(*vi).isSpecial()) {
           sum += CAST_TO_DISCDISTRIBUTION(*dvi);
           classes->addint((*vi).intV, 1);
@@ -176,8 +176,8 @@ void TClassifierByLookupTable1::replaceDKs(TDiscDistribution &valDistribution)
     }
 
     sum.normalize();
-    vector<TValue>::iterator vi(lookupTable->begin());
-    PITERATE(vector<PDistribution>, dvi, distributions)
+    TValueList::iterator vi(lookupTable->begin());
+    PITERATE(TDistributionList, dvi, distributions)
       if ((*vi).isSpecial()) {
         *dvi = mlnew TDiscDistribution(sum);
         *(vi++) = classes->highestProbValue(); // this does not need to be the same for each call!
@@ -188,17 +188,17 @@ void TClassifierByLookupTable1::replaceDKs(TDiscDistribution &valDistribution)
   else {
     TDiscDistribution::iterator di(valDistribution.begin());
     if (valDistribution.abs) {
-      for(vector<TValue>::iterator vi(lookupTable->begin()), ve(lookupTable->end()); vi!=ve; vi++, di++)
+      for(TValueList::iterator vi(lookupTable->begin()), ve(lookupTable->end()); vi!=ve; vi++, di++)
         if (!(*vi).isSpecial())
           classes->addint((*vi).intV, *di);
     }
     else {
-      for(vector<TValue>::iterator vi(lookupTable->begin()), ve(lookupTable->end()); vi!=ve; vi++, di++)
+      for(TValueList::iterator vi(lookupTable->begin()), ve(lookupTable->end()); vi!=ve; vi++, di++)
         if (!(*vi).isSpecial())
           classes->addint((*vi).intV, 1.0);
     }
 
-    PITERATE(vector<TValue>, vi, lookupTable)
+    PITERATE(TValueList, vi, lookupTable)
       if ((*vi).isSpecial())
         (*vi) = classes->highestProbValue(); // this does not need to be the same for each call!
   }
@@ -317,8 +317,8 @@ void TClassifierByLookupTable2::replaceDKs(PExampleGenerator examples, bool useB
   else
     classDist =  getClassDistribution(examples /*, weightID */);
 
-  vector<TValue>::iterator vi(lookupTable->begin());
-  vector<PDistribution>::iterator di(distributions->begin());
+  TValueList::iterator vi(lookupTable->begin());
+  TDistributionList::iterator di(distributions->begin());
   bool distr = distributions && (distributions->size()>0);
   TExample example(dataDescription->domain);
   variable1->firstValue(example[0]);
@@ -465,8 +465,8 @@ void TClassifierByLookupTable3::replaceDKs(PExampleGenerator examples, bool useB
   else
     classDist = getClassDistribution(examples /*, weight */);
 
-  vector<TValue>::iterator vi(lookupTable->begin());
-  vector<PDistribution>::iterator di(distributions->begin());
+  TValueList::iterator vi(lookupTable->begin());
+  TDistributionList::iterator di(distributions->begin());
   bool distr=distributions && (distributions->size()>0);
   TExample example(dataDescription->domain);
   variable1->firstValue(example[0]);
@@ -546,7 +546,7 @@ int TClassifierByLookupTableN::getIndex(const TExample &ex, TExample *conv)
   TVarList::const_iterator vi(variables->begin());
   int i = 0;
   vector<int>::const_iterator ii(lastVarIndices.begin()), iie(lastVarIndices.end());
-  vector<int>::const_iterator ni(noOfValues->begin());
+  TIntList::const_iterator ni(noOfValues->begin());
   for(; ii != iie; ii++, vi++, i++, ni++) {
 
     const TValue val = getValue(ex, *ii, *vi);

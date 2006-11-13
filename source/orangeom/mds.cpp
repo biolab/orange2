@@ -32,7 +32,8 @@ void TMDS::SMACOFstep(){
     PSymMatrix R = mlnew TSymMatrix(n);
     getDistances();
     double sum=0, s, t;
-    for(int i=0;i<n;i++){
+	int i;
+    for(i=0;i<n;i++){
         sum=0;
         for(int j=0;j<n;j++){
             if(j==i)

@@ -62,7 +62,7 @@ using namespace std;
 
 #ifdef _MSC_VER
   #include <crtdbg.h>
-  #pragma warning (disable : 4231 4660 4661 4786 4114 4018 4267 4244 4702 4710 4290)
+  #pragma warning (disable : 4231 4660 4661 4786 4114 4018 4267 4244 4702 4710 4290 4251 4275)
   #pragma warning (disable : 4786 4114 4018 4267 4127)
   #define TYPENAME(x) (x).name()+7
 

@@ -639,7 +639,7 @@ PTreeNode TTreePruner_SameMajority::operator()(PTreeNode node, vector<bool> &bes
   if (node->branchSelector) {
     newNode->branches = mlnew TTreeNodeList();
     int notfirst = 0;
-    PITERATE(vector<PTreeNode>, bi, node->branches)
+    PITERATE(TTreeNodeList, bi, node->branches)
       if (*bi) {
         if (notfirst++) {
           vector<bool> subBest;
