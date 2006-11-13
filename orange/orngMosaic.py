@@ -641,7 +641,8 @@ class orngMosaic:
             self.weightID = orange.newmetaid()
             domain.addmeta(self.weightID, orange.FloatVariable("ExampleWeight"))
         projData = orange.ExampleTable(domain)
-
+        projData.domain.classVar.distributed = True
+        
         triedIndices = [0]*(len(attrs))
         maxVals = [len(val) for val in valueOrder]
         xpos = 0; ypos = 0
@@ -649,8 +650,11 @@ class orngMosaic:
             vals = [valueOrder[i][triedIndices[i]] for i in range(len(attrs))]
             combVal = reduce(operator.concat, map(operator.concat, [vals[i] for i in revert], ["-"]*len(vals)))[:-1]
             if conditions[combVal][0] > 0:
-                #projData.append([xpos, ypos, self.data.domain.classVar.values[quotients.index(max(quotients))]])
-                projData.append([xpos, ypos, conditions[combVal][1]])
+                #projData.append([xpos, ypos, conditions[combVal][1]])
+                projData.append([xpos, ypos, projData.domain.classVar.values[0]])
+                val = orange.Value(projData.domain.classVar, conditions[combVal][1])
+                val.svalue = conditions[combVal][2]
+                projData[-1][-1] = val
                 projData[-1].setmeta("ExampleWeight", conditions[combVal][0]/max(1,len(self.data))) # set weight of the rectangle
 
             triedIndices[-1] += 1
@@ -663,9 +667,6 @@ class orngMosaic:
             ypos = len(attrs) > 1 and 2 * triedIndices[-2]
             if len(attrs) > 2: xpos += (2 + maxVals[-1]) * triedIndices[-3] # add the space of 3 between each different value of third attribute
             if len(attrs) > 3: ypos += (4 + maxVals[-2]) * triedIndices[-4] # add the space of 4 between each different value of fourth attribute
-            
-
-        #orange.saveTabDelimited(r"E:\\ttt.tab", projData)
             
         learner = orange.kNNLearner(rankWeight = 0, k = len(projData)/2)
         if self.attributeOrderTestingMethod == AO_CROSSVALIDATION:
@@ -686,7 +687,7 @@ class orngMosaic:
             if dist[key] == 0: conditions[key] = (0, 0)
             else:
                 quotients = map(operator.div, cont[key], apriori)
-                conditions[key] = (dist[key], self.data.domain.classVar.values[quotients.index(max(quotients))])
+                conditions[key] = (dist[key], self.data.domain.classVar.values[quotients.index(max(quotients))], cont[key])
         
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
         self.weightID = orange.newmetaid()
@@ -845,11 +846,11 @@ if __name__=="__main__":
     mosaic.evaluateProjections()
     mosaic.findArguments(example[0])
     """
-    """
-    #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
-    data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\datasets\microarray\brown\brown-imputed.tab")
+    data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
+    #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\datasets\microarray\brown\brown-imputed.tab")
     mosaic = orngMosaic()
     mosaic.setData(data)
-    ret = mosaic.findOptimalAttributeOrder(["spo- early", "heat 20"], 1) #optimizeValueOrder = 1
+    #ret = mosaic.findOptimalAttributeOrder(["spo- early", "heat 20"], 1) #optimizeValueOrder = 1
+    ret = mosaic.findOptimalAttributeOrder(["A11", "A13", "A7"], 1) #optimizeValueOrder = 1
     print ret
-    """
+    
