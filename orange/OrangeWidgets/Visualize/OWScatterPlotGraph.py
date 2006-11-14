@@ -37,6 +37,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.showClusters = 0
         self.tooltipKind = 1
         self.showFilledSymbols = 1
+        self.showProbabilities = 1
         
         self.toolRects = []
         self.tooltipData = []
@@ -547,10 +548,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         #print rx, ry, ox, oy, (self.xmin, self.xmax), (self.ymin, self.ymax)
 
         if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
-            imagebmp = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, ox, oy, 3, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
+            imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, 3, 1)  # the last argument is self.trueScaleFactor (in LinProjGraph...)
             palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
         else:
-            imagebmp, nShades = orangeom.potentialsBitmapSquare(self.potentialsClassifier, rx, ry, ox, oy, 3, 1.) # the last argument is self.trueScaleFactor (in LinProjGraph...)
+            imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, 3, 1.) # the last argument is self.trueScaleFactor (in LinProjGraph...)
             colors = defaultRGBColors
 
             palette = []
