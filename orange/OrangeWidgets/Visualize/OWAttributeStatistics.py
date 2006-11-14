@@ -16,7 +16,7 @@ from OWGUI import *
 from OWDlgs import OWChooseImageSizeDlg
 
 class OWAttributeStatistics(OWWidget):
-    contextHandlers = {"": DomainContextHandler("", [], ["HighlightedAttribute"], findImperfect = False)}
+    contextHandlers = {"": DomainContextHandler("", ["HighlightedAttribute"], findImperfect = True)}
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AttributeStatistics", TRUE)
@@ -84,6 +84,7 @@ class OWAttributeStatistics(OWWidget):
 
        
     def data(self, data):
+        print self.HighlightedAttribute
         self.closeContext()
         
         self.attributes.clear()
@@ -93,10 +94,6 @@ class OWAttributeStatistics(OWWidget):
         else:
             self.canvasview.show()
 
-            # as DomainDistributions
-
-#            newdomain = orange.Domain(data.domain.attributes+[data.domain.classVar],0)
-#            self.dataset = orange.ExampleTable(newdomain, data)
             self.dataset = data
             self.dist = orange.DomainDistributions(self.dataset)
 
@@ -105,6 +102,7 @@ class OWAttributeStatistics(OWWidget):
                 
         self.HighlightedAttribute = 0
         self.openContext("", data)
+        print self.HighlightedAttribute
         self.attributes.setCurrentItem(self.HighlightedAttribute)
 
 
