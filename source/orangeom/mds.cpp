@@ -26,6 +26,8 @@ TMDS::TMDS(PSymMatrix matrix, int dim=2){
     projectedDistances=mlnew TSymMatrix(n);
     stress=mlnew TSymMatrix(n);
     resize(points, n, dim);
+	freshD=false;
+	avgStress=numeric_limits<float>::max();
 }
 
 void TMDS::SMACOFstep(){
@@ -156,9 +158,10 @@ PyObject *MDS_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(dissMat
 {
     PyTRY
     int dim=2;
+	float avgStress=-1.0;
     PSymMatrix matrix;
     PFloatListList points;
-    if(!PyArg_ParseTuple(args, "O&|iO&", cc_SymMatrix, &matrix, &dim, cc_FloatListList, &points))
+    if(!PyArg_ParseTuple(args, "O&|iO&f", cc_SymMatrix, &matrix, &dim, cc_FloatListList, &points, &avgStress))
         return NULL;
 
     PMDS mds=mlnew TMDS(matrix, dim);
@@ -170,12 +173,28 @@ PyObject *MDS_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(dissMat
             for(int j=0; j<mds->dim; j++)
                 mds->points->at(i)->at(j)=rg->randfloat();
     }
+	if(avgStress!=-1.0)
+		mds->avgStress=avgStress;
 
     return WrapOrange(mds);
     PyCATCH
 }
 
+PyObject *MDS__reduce__(PyObject *self)
+{
+  PyTRY
+    CAST_TO(TMDS, mds);
 
+    return Py_BuildValue("O(NiNf)N", self->ob_type,
+                                       WrapOrange(mds->distances),
+                                       mds->dim,
+                                       WrapOrange(mds->points),
+                                       mds->avgStress,
+                                       packOrangeDictionary(self));
+  PyCATCH
+}
+
+/*
 PyObject *MDS__reduce__(PyObject *self)
 {
   PyTRY
@@ -193,7 +212,7 @@ PyObject *MDS__reduce__(PyObject *self)
 }
 
 
-PyObject *__pickleLoaderMDS(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, distances, dim, points, freshD, avgStress)")
+PyObject* *__pickle&LoaderMDS(PyObject *, PyObject *args) PY__*&ARGS(METH_VARARGS, "(type, distances, dim, points, freshD, avgStress)")
 {
   PyTRY
     PyTypeObject *type;
@@ -223,6 +242,7 @@ PyObject *__pickleLoaderMDS(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(t
     return pymds;
   PyCATCH;
 }
+*/
 
 
 
