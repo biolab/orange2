@@ -10,7 +10,7 @@ function toggleVisibility(obj)
 {
    var exampleStyle = obj.parentNode.getElementsByTagName('div')[0].style;
    var buttonText = obj.firstChild;
-   
+
    if ((exampleStyle.visibility == "hidden") || (exampleStyle.visibility=="")) {
      exampleStyle.visibility = "visible";
      exampleStyle.height = "auto";
@@ -297,7 +297,7 @@ box = OWGUI.widgetBox(self.controlArea, "Color & Attribute")
 
 OWGUI.comboBox(box, self, "chosenColor", label="Color: ",
                items=["Red", "Green", "Blue"])
-               
+
 self.attrCombo = OWGUI.comboBox(box, self, "chosenAttribute", label="Attribute: ",
                sendSelectedValue = 1, valueType=str)
 </xmp></td>
@@ -337,7 +337,7 @@ listBox(widget, master, value, labels[, box, tooltip, callback, selectionMode])<
 <dd>The name of master's attribute containing indices of all selected values.</dd>
 
 <dt>labels (required)</dt>
-<dd>The name of master's attribute containing the list box's labels. Similar to <code>items</code> in combo box, list <code>labels</code> have one Orange-specific quirk: its element can be either a string, in which case it is used as a label, or a tuple, where the first element is a label name and the last is the attribute type which is used to create an icon. Most attribute lists in Orange Widgets are constructed this way.</dd>
+<dd>The name of master's attribute containing the list box's labels. Similar to <code>items</code> in combo box, list <code>labels</code> have one Orange-specific quirk: its element can be either a string, in which case it is used as a label, or a tuple, where the first element is a label name and the second can be either an icon on an integer, representing the attribute type which is used to create an icon. Most attribute lists in Orange Widgets are constructed this way.</dd>
 
 <dt>selectionMode (default: QListBox.Single)</dt>
 <dd>Tells whether the user can select a single item (<code>QListBox.Single</code>), multiple items (<code>QListBox.Multi</code>, <code>QListBox.Extended</code>) or nothing (<code>QListBox.NoSelection</code>).</dd>

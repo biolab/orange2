@@ -20,4 +20,4 @@ while 100>i:
     if oldStress*1e-3 > math.fabs(oldStress-mds.avgStress):
         break;
 for (p, e) in zip(mds.points, data):
-    print p, e 
+    print "<%4.2f, %4.2f> %s" % (p[0], p[1], e)

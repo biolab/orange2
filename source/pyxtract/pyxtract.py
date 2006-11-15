@@ -501,10 +501,11 @@ def writeAppendix(filename, targetname, classdefs, aliases):
   usedbases.sort()
   #outfile.write("extern TOrangeType PyOrOrangeType_Type;\n")
   for type in usedbases:
-    if classdefs[type].imported:
-      outfile.write("extern IMPORT_DLL TOrangeType PyOr"+type+"_Type;\n")
-    else:
-      outfile.write("extern %s_API TOrangeType PyOr%s_Type;\n" % (modulename.upper(), type))
+    if type:
+      if classdefs[type].imported:
+        outfile.write("extern IMPORT_DLL TOrangeType PyOr"+type+"_Type;\n")
+      else:
+        outfile.write("extern %s_API TOrangeType PyOr%s_Type;\n" % (modulename.upper(), type))
   outfile.write("\n\n")
 
   for (type, fields) in classdefi:

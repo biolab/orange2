@@ -221,9 +221,6 @@ PyObject *LongList__reduce__(TPyOrange *self, PyObject *) { return ListOfUnwrapp
 bool convertFromPython(PyObject *, TAlignment &);
 PyObject *convertToPython(const TAlignment &);
 
-#define TAlignmentList TWarpPath
-#define PAlignmentList PWarpPath
-
 PAlignmentList PAlignmentList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::P_FromArguments(arg); }
 PyObject *AlignmentList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_FromArguments(type, arg); }
 PyObject *AlignmentList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Alignment>)") ALLOWS_EMPTY { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_new(type, arg, kwds); }
