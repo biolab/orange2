@@ -404,10 +404,15 @@ def setStopper(master, sendButton, stopCheckbox, changedFlag, callback):
 
 
 class ControlledList(list):
-    def __init__(self, content, listBox):
+    def __init__(self, content, listBox = None):
         list.__init__(self, content)
         self.listBox = listBox
 
+    def __reduce__(self):
+        # cannot pickle self.listBox, but can't discard it (ControlledList may live on)
+        import copy_reg
+        return copy_reg._reconstructor, (list, list, ()), None, self.__iter__()
+                   
     def item2name(self, item):
         item = self.listBox.labels[item]
         if type(item) == tuple:
@@ -710,7 +715,10 @@ class CallFront_ListBoxLabels(ControlledCallFront):
         if value:
             for i in value:
                 if type(i) == tuple:
-                    self.control.insertItem(icons.get(i[1], icons[-1]), i[0])
+                    if type(i[1]) == int:
+                        self.control.insertItem(icons.get(i[1], icons[-1]), i[0])
+                    else:
+                        self.control.insertItem(i[1], i[0])
                 else:
                     self.control.insertItem(i)
             
