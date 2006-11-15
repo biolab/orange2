@@ -125,7 +125,7 @@ typedef struct {
 } TAttributeAlias;
 
 
-int PyOr_noConversion(PyObject *obj, void *ptr);
+int ORANGE_API PyOr_noConversion(PyObject *obj, void *ptr);
 
 
 typedef POrange (*defaultconstrproc)(PyTypeObject *);
