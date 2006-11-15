@@ -213,11 +213,14 @@ class DomainContextHandler(ContextHandler):
     List = 8
     RequiredList = Required + List
     SelectedRequiredList = SelectedRequired + List
+
+    MatchValuesNo, MatchValuesClass, MatchValuesAttributes = range(3)
     
     def __init__(self, contextName, fields = [],
-                 cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, maxAttributesToPickle = 100, **args):
+                 cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, maxAttributesToPickle = 100, matchValues = 0, **args):
         ContextHandler.__init__(self, contextName, cloneIfImperfect, loadImperfect, findImperfect, syncWithGlobal, **args)
         self.maxAttributesToPickle = maxAttributesToPickle
+        self.matchValues = matchValues
         self.fields = []
         for field in fields:
             if isinstance(field, ContextField):
@@ -233,8 +236,23 @@ class DomainContextHandler(ContextHandler):
                     self.fields.append(ContextField(field[0], flags))
         
     def encodeDomain(self, domain):
-        d = dict([(attr.name, attr.varType) for attr in domain])
-        d.update(dict([(attr.name, attr.varType) for attr in domain.getmetas().values()]))
+        if self.matchValues == 2:
+            d = dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
+                         for attr in domain])
+            d.update(dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
+                         for attr in domain.getmetas().values()]))
+        else:
+            d = dict([(attr.name, attr.varType) for attr in domain.attributes])
+            d.update(dict([(attr.name, attr.varType) for attr in domain.getmetas().values()]))
+            classVar = domain.classVar
+            if classVar:
+                if self.matchValues and classVar.varType == orange.VarTypes.Discrete:
+                    d[classVar.name] = classVar.values
+                else:
+                    d[classVar.name] = classVar.varType
+
+            d.update(dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
+                         for attr in domain.getmetas().values()]))
         return d
     
     def findOrCreateContext(self, widget, domain):
