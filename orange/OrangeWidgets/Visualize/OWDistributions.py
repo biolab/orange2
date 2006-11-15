@@ -369,6 +369,7 @@ class OWDistributionGraph(OWGraph):
         
 class OWDistributions(OWWidget):
     settingsList = ["numberOfBars", "barSize", "showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
+    contextHandlers = {"": DomainContextHandler("", ["attribute", "targetValue", "visibleOutcomes", "mainTitle", "xaxisTitle", "yaxisTitle", "yPaxisTitle"], matchValues=DomainContextHandler.MatchValuesClass)}
 
     def __init__(self,parent=None, signalManager = None):
         "Constructor"
@@ -386,8 +387,10 @@ class OWDistributions(OWWidget):
         self.showYaxisTitle = 1
         self.showYPaxisTitle = 1
 
-        #load settings
-        self.loadSettings()
+        self.attribute = ""
+        self.targetValue = 0
+        self.visibleOutcomes = []
+        self.outcomes = []
 
         # tmp values
         self.mainTitle = ""
@@ -416,8 +419,6 @@ class OWDistributions(OWWidget):
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default)]
         
         self.data = None
-        self.targetValue = 0
-        self.visibleOutcomes = []
         self.outcomenames = []
         self.probGraphValues = []
        
@@ -430,7 +431,7 @@ class OWDistributions(OWWidget):
         self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box=' Bar Size ', minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
 
         box = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
-        box.setMinimumWidth(170)
+        box.setMinimumWidth(180)
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
         OWGUI.checkBox(box2, self, 'showMainTitle', 'Show Main Title', callback = self.setShowMainTitle)
         OWGUI.lineEdit(box2, self, 'mainTitle', callback = self.setMainTitle)
@@ -461,19 +462,11 @@ class OWDistributions(OWWidget):
         self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box=' Line width ', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
         
         #add controls to self.controlArea widget
-        self.selvar = OWGUI.widgetBox(self.GeneralTab, " Variable ")
-        self.target = OWGUI.widgetBox(self.GeneralTab, " Target value ")
-        self.selout = OWGUI.widgetBox(self.GeneralTab, " Outcomes ")
-        self.variablesQCB = QComboBox(self.selvar)
-        self.targetQCB = QComboBox(self.target)
-        self.outcomesQLB = QListBox(self.selout)
-        self.outcomesQLB.setSelectionMode(QListBox.Multi)
-        #connect controls to appropriate functions
-        self.connect(self.variablesQCB, SIGNAL('activated (const QString &)'), self.setVariable)
-        self.connect(self.targetQCB, SIGNAL('activated (const QString &)'), self.setTarget)
-        self.connect(self.outcomesQLB, SIGNAL("selectionChanged()"), self.outcomeSelectionChange)
+        self.variablesQCB = OWGUI.comboBox(self.GeneralTab, self, "attribute", box="Attribute", valueType = str, sendSelectedValue = True, callback=self.setVariable)
+        self.targetQCB = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box="Target value", valueType=int, callback=self.setTarget)
+        self.outcomesQLB = OWGUI.listBox(self.GeneralTab, self, "visibleOutcomes", "outcomes", "Outcomes", selectionMode = QListBox.Multi, callback = self.outcomeSelectionChange)
 
-        self.icons = self.createAttributeIconDict()    
+        self.icons = self.createAttributeIconDict()
         
         self.activateLoadedSettings()
 
@@ -556,8 +549,9 @@ class OWDistributions(OWWidget):
         self.graph.refreshProbGraph()
         #self.graph.replot()
 
-    def setTarget(self, targetVal):
-        self.targetValue = self.data.domain.classVar.values.index(str(targetVal))
+    def setTarget(self, *t):
+        if t:
+            self.targetValue = t[0]
         self.graph.setTargetValue(self.targetValue)
 
     def target(self, targetValue):
@@ -569,10 +563,13 @@ class OWDistributions(OWWidget):
             self.setYPaxisTitle("P( " + self.data.domain.classVar.name + " = " + targetValue + " )")
 
     def cdata(self, data):
+        self.closeContext()
+        
         if data == None:
             self.variablesQCB.clear()
-            self.setOutcomeNames([])
             self.targetQCB.clear()
+            self.outcomes = []
+
             self.graph.setXlabels(None)
             self.graph.setYLlabels(None)
             self.graph.setShowYRaxisTitle(0)
@@ -580,23 +577,18 @@ class OWDistributions(OWWidget):
             self.graph.setData(None, None)
             self.data = None
             return
-        
-        if data.domain.classVar:
-            self.dataHasClass=True
-            if data.domain.classVar.varType==orange.VarTypes.Continuous:
-                self.dataHasDiscreteClass=False
-            else:
-                self.dataHasDiscreteClass=True
-        else:
-            self.dataHasClass=False
-        # if same domain, don't reset variable, target and outcome
+
+        self.dataHasClass = bool(data.domain.classVar)
+        if self.dataHasClass:
+            self.dataHasDiscreteClass = data.domain.classVar.varType != orange.VarTypes.Continuous
+
         sameDomain = data and self.data and data.domain == self.data.domain
 
         self.data = orange.Preprocessor_dropMissingClasses(data)	
+
         if sameDomain:
             self.graph.setData(self.data, self.graph.attributeName)
-        ##self.graph.setTargetValue(self.graph.targetValue)
-        ##self.graph.setVisibleOutcomes(None)
+
         else:
             self.graph.setData(None, None)
             self.graph.setTargetValue(None)
@@ -607,7 +599,7 @@ class OWDistributions(OWWidget):
             if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
                 for val in self.data.domain.classVar.values:
                     self.targetQCB.insertItem(val)
-                self.setTarget(self.data.domain.classVar.values[0])
+                self.setTarget(0)
 
             # set variable combo box
             self.variablesQCB.clear()
@@ -616,42 +608,42 @@ class OWDistributions(OWWidget):
 
             if self.data and len(self.data.domain.attributes) > 0:
                 self.graph.setData(self.data, self.data.domain.attributes[0].name) # pick first variable
-                self.variablesQCB.setCurrentItem(0) # select first variable
-                self.setVariable(self.variablesQCB.text(0)) # select first variable
+                self.attribute = self.data.domain[0].name
+                self.setVariable()
 
-            self.setOutcomeNames([])                
             if self.dataHasClass and self.dataHasDiscreteClass:
                 self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
                 self.graph.setTargetValue(0) #str(self.data.domain.classVar.values[0])) # pick first target
 
                 # set outcomes
-                if self.data.domain.classVar and self.data.domain.classVar.varType==orange.VarTypes.Discrete:
-                    self.setOutcomeNames(self.data.domain.classVar.values.native())
+                self.setOutcomeNames(self.data.domain.classVar.values.native())
+            else:
+               self.setOutcomeNames([])
+
+        self.openContext("", self.data)               
+
+        for f in [self.setMainTitle, self.setXaxisTitle, self.setYaxisTitle, self.setYPaxisTitle, self.outcomeSelectionChange]:
+            f()
+
 
     def setOutcomeNames(self, list):
         "Sets the outcome target names."
-        self.outcomesQLB.clear()
         colors = ColorPaletteGenerator()
-        for i in range(len(list)):
-            self.outcomesQLB.insertItem(ColorPixmap(colors[i]), list[i])
-        self.outcomesQLB.selectAll(TRUE)
+        self.outcomes = [(l, ColorPixmap(c)) for l, c in zip(list, colors)]
+        self.visibleOutcomes = range(len(list))
 
     def outcomeSelectionChange(self):
         "Sets which outcome values are represented in the graph."
         "Reacts to changes in outcome selection."
-        visibleOutcomes = []
-        for i in range(self.outcomesQLB.numRows()):
-            visibleOutcomes.append(self.outcomesQLB.isSelected(i))
-        self.visibleOutcomes = visibleOutcomes
-        self.graph.visibleOutcomes = visibleOutcomes
+        self.graph.visibleOutcomes = [i in self.visibleOutcomes for i in range(self.outcomesQLB.numRows())]
         self.graph.refreshVisibleOutcomes()
         #self.graph.replot()
         #self.repaint()
 
-    def setVariable(self, varName):
-        self.graph.setVariable(str(varName))
+    def setVariable(self):
+        self.graph.setVariable(self.attribute)
         self.graph.refreshVisibleOutcomes()
-        self.xaxisTitle = str(varName)
+        self.xaxisTitle = str(self.attribute)
         self.repaint()
     
 
@@ -660,7 +652,7 @@ if __name__ == "__main__":
     owd = OWDistributions()
     a.setMainWidget(owd)
     owd.show()
-    data=orange.ExampleTable("../../doc/datasets/auto-mpg.tab")
+    data=orange.ExampleTable("../../doc/datasets/iris.tab")
     owd.cdata(data)
     a.exec_loop()
     owd.saveSettings()
