@@ -23,6 +23,10 @@ def widgetBox(widget, box=None, orientation='vertical'):
             b = QVBox(widget)
     return b
 
+def indentedBox(widget, sep=20):
+    r = widgetBox(widget, orientation = False)
+    separator(r, sep, 0)
+    return widgetBox(r)
 
 def widgetLabel(widget, label=None, labelWidth=None):
     if label:
