@@ -43,7 +43,7 @@ class LineEditWFocusOut(QLineEdit):
         
 class OWImpute(OWWidget):
     settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
-    contextHandlers = {"": DomainContextHandler("", ["methods"], False, False, False, False)}
+    contextHandlers = {"": DomainContextHandler("", ["methods"], False, False, False, False, matchValues = DomainContextHandler.MatchValuesAttributes)}
     indiShorts = ["", "leave", "avg", "model", "random", ""]
 
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
@@ -118,7 +118,14 @@ class OWImpute(OWWidget):
         self.btAllToDefault.setDisabled(not self.methods)
 
     def setIndiType(self):
-        self.indiType = self.data and self.methods.get(self.data.domain[self.selectedAttr].name, (0, ""))[0] or 0
+        if self.data:
+            attr = self.data.domain[self.selectedAttr]
+            self.indiType, value = self.methods.get(attr.name, False) or (-1, "")
+            if self.indiType >= 0:
+                if attr.varType == orange.VarTypes.Discrete:
+                    self.indiValueCtrl.setCurrentItem(value)
+                else:
+                    self.indiValueCtrl.setText(value)
         
     def individualSelected(self, i):
         self.indiValueCtrlBox.removeChild(self.indiValueCtrl)
@@ -175,6 +182,7 @@ class OWImpute(OWWidget):
     def valueComboChanged(self, i):
         self.indiType = 5
         self.methods[self.data.domain[self.selectedAttr].name] = 5, i
+        self.attrList.triggerUpdate(True)
         self.setBtAllToDefault()
         self.sendIf()
 
