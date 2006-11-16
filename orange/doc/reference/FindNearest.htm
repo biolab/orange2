@@ -31,10 +31,12 @@
 
 <P class=section>Methods</P>
 <DL class=attributes>
-<DT>__call__(example, k)</DT>
+<DT>__call__(example, k[, needsClass])</DT>
 <DD><P>Returns an ordered list of <CODE>k</CODE> nearest neighbours of <CODE>example</CODE>. If examples are weighted, the length of the list is not necessarily <CODE>k</CODE>, but the total weight of the returned examples will be as close to <CODE>k</CODE> as possible. (If there are enough examples, the total weight will be at least <CODE>k</CODE>.)</P>
 
 <P>If <CODE>k</CODE> is zero, all examples are returned, but sorted by their distances to <CODE>example</CODE>.</P>
+
+<P>If the third argument, <code>needsClass</code> is given and true, <Code>FindNearest</Code> will ignore all examples with missing classes. If the domain is classless, this flag has no effect.</P>
 </DD></DL>
 
 
@@ -113,4 +115,4 @@ for ex in nn(data[0], 5):
 ['presbyopic', 'myope', 'no', 'reduced', 'none'], {-2:1.00}
 </XMP>
 
-<P>As you can see, all returned examples have a new meta-attribute with id -2 that shows the distance from the reference example.</P> 
+<P>All returned examples here have a new meta-attribute with id -2 that shows the distance from the reference example.</P> 

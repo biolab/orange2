@@ -1,0 +1,72 @@
+<html>
+<head>
+<title>Impute</title>
+<link rel=stylesheet href="../../../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print></link>
+</head>
+
+<body>
+
+<h1>Impute</h1>
+
+<img class="screenshot" src="../icons/Impute.png">
+<p>Replaces unknown values in the data.</p>
+
+<h2>Channels</h2>
+
+<h3>Inputs</h3>
+
+<DL class=attributes>
+<DT>Classified Examples (ExampleTableWithClass)</DT>
+<DD>Data set.</DD>
+
+<dt>Learner for Imputation</dt>
+<dd>A learning algorithm to be used when values are imputed using a predictive model. This algorithm, if given, substitutes the default (1-NNLearner).</dd>
+</dl>
+
+<h3>Outputs</h3>
+
+<DL class=attributes>
+<DT>Classified Examples (ExampleTableWithClass)</DT>
+<DD>The same data set as on the input, but with the missing values imputed.</DD>
+</dl>
+
+<h2>Description</h2>
+
+<p>Some Orange's algorithms and visualization cannot handle unknown values in the data. This widget does what statistician call <em>imputation</em>: it substitutes replace them by values computed from the data or set by the user.</p>
+
+<table><tr valign="top">
+<td><img class="schema" src="Impute.png" alt="Impute widget"></td>
+
+<td>
+<P>In the top-most box, <code>Default imputation method</code>, the user can specify a general imputation technique for all attributes.
+<ul>
+<li><code>Average/Most-frequent</code> uses the average value (for continuous attributes) or the most common value (for discrete attributes).</li>
+
+<li><code>Model-based imputer</code> constructs a model for predicting the missing value based on values of other attributes; a separate model is constructed for each attribute. The default model is 1-NN learner, which takes the value from the most similar example (this is sometimes referred to as <em>hot deck imputation</em>). This algorithm can be substituted by one that the user connects to the input signal <code>Learner for Imputation</code>. Note, however, that if there are discrete and continuous attributes in the data, the algorithm needs to be capable of handling them both; at the moment only kNN learner can do that. (In the future, when Orange has more regressors, Impute widget may have separate input signals for discrete and continuous models.)</li>
+
+<li><code>Random values</code> computes the distributions of values for each attribute and then imputes by picking random values from them.</li>
+</ul>
+</P>
+
+<P>It is also possible to specify individual treatment for each attribute. Besides the above options, one can decide not to impute the value at all (<code>Don't impute</code>) of to always impute a specific, manually defined value. These settings can be seen in the list of attributes: in the snapshot on the left, we decided not to impute the values of "normalized-losses" and "make", the missing values of "aspiration" will be replaced by random values, while the missing values of "body-style" and "drive-wheels" are replaced by "hatchback" and "fwd", respectively. Values of all other attributes use the default method set above (model-based imputer, in our case).</P>
+
+<P>Button <code>Set All to Default</code> resets the individual attribute treatments to the default.</P>
+
+<P>Imputing class values is typically not a good practice, so it is off by default. It can be enabled by checking <code>Impute class values</code>.</P>
+
+<P>All changes are committed automatically is <code>Send automatically</code> is checked. Otherwise, <code>Apply</code> needs to be pushed to apply any new settings.
+</td></tr></table>
+
+
+<!-- <h2>Examples</h2>
+
+<p>In the schema below we show Iris data set with continuous
+attributes (as in original data file) and with discretized attributes.</p>
+
+<a href="Discretize-Example.gif"><img src="Discretize-Example-S.gif"
+alt="Schema with Discretize widget" class="screenshot" border=0></a>
+-->
+
+</body>
+</html>
