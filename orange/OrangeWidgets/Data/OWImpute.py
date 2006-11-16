@@ -65,12 +65,12 @@ class OWImpute(OWWidget):
 
         self.loadSettings()
 
-        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Avg./Most frequent", "Model-based imputer", "Random values"], "Default imputation method", callback=self.sendIf)
+        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Average/Most frequent", "Model-based imputer", "Random values"], "Default imputation method", callback=self.sendIf)
 
         OWGUI.separator(self.controlArea)
 
         indibox = OWGUI.widgetBox(self.controlArea, "Individual attribute settings", "horizontal")
-        indibox.setFixedHeight(300)
+#        indibox.setFixedHeight(300)
 
         attrListBox = QVBox(indibox)        
         self.attrList = QListBox(attrListBox)
@@ -113,6 +113,7 @@ class OWImpute(OWWidget):
         self.attrList.triggerUpdate(True)
         self.setBtAllToDefault()
         self.setIndiType()
+        self.sendIf()
 
     def setBtAllToDefault(self):
         self.btAllToDefault.setDisabled(not self.methods)
@@ -120,12 +121,16 @@ class OWImpute(OWWidget):
     def setIndiType(self):
         if self.data:
             attr = self.data.domain[self.selectedAttr]
-            self.indiType, value = self.methods.get(attr.name, False) or (-1, "")
-            if self.indiType >= 0:
-                if attr.varType == orange.VarTypes.Discrete:
-                    self.indiValueCtrl.setCurrentItem(value)
-                else:
-                    self.indiValueCtrl.setText(value)
+            specific = self.methods.get(attr.name, False)
+            if specific:
+                self.indiType = specific[0]
+                if self.indiType == 5:
+                    if attr.varType == orange.VarTypes.Discrete:
+                        self.indiValueCtrl.setCurrentItem(specific[1])
+                    else:
+                        self.indiValueCtrl.setText(specific[1])
+            else:
+                self.indiType = 0
         
     def individualSelected(self, i):
         self.indiValueCtrlBox.removeChild(self.indiValueCtrl)
@@ -233,11 +238,12 @@ class OWImpute(OWWidget):
         self.error("")
         
         if not self.methods:
-            if self.model and self.defaultMethod == 1:
-                self.imputer = orange.ImputerConstructor_model(model = self.model, imputeClass = self.imputeClass)
+            if self.defaultMethod == 1:
+                model = self.model or orange.kNNLearner()
+                self.imputer = orange.ImputerConstructor_model(learnerDiscrete = model, learnerContinuous = model, imputeClass = self.imputeClass)
             elif self.defaultMethod == 2:
                 self.imputer = orange.ImputerConstructor_random(imputeClass = self.imputeClass)
-            else: # also falls here if method==1 but there is no model
+            else:
                 self.imputer = orange.ImputerConstructor_average(imputeClass = self.imputeClass)
             return
 
@@ -266,14 +272,15 @@ class OWImpute(OWWidget):
                 self.model = model
 
             def __call__(self, examples, weight):
-                newdata = orange.ExampleTable(orange.Domain([attr for attr in examples.domain if attr != self.attr] + [self.attr]), examples)
+                newdata = orange.ExampleTable(orange.Domain([attr for attr in examples.domain.attributes if attr != self.attr] + [self.attr]), examples)
+                newdata = orange.Filter_hasClassValue(newdata)
                 return self.model(newdata, weight)
                     
         classVar = self.data.domain.classVar
         imputeClass = self.imputeClass or classVar and self.methods.get(classVar.name, (0, None))[0]
         imputerModels = []
-        missingModels = []
         missingValues = []
+        usedModel = None
         for attr in imputeClass and self.data.domain or self.data.domain.attributes:
             method, value = self.methods.get(attr.name, (0, None))
             if not method:
@@ -284,11 +291,9 @@ class OWImpute(OWWidget):
             elif method==2:
                 imputerModels.append(AttrMajorityLearner(attr))
             elif method == 3:
-                if self.model:
-                    imputerModels.append(AttrModelLearner(attr, self.model))
-                else:
-                    missingModels.append("'"+attr.name+"'")
-                    imputerModels.append(AttrMajorityLearner(attr))
+                if not usedModel:
+                    usedModel = self.model or orange.kNNLearner()
+                imputerModels.append(AttrModelLearner(attr, usedModel))
             elif method == 4:
                 imputerModels.append(AttrRandomLearner(attr))
             elif method == 5:
@@ -299,21 +304,11 @@ class OWImpute(OWWidget):
                     imputerModels.append(AttrMajorityLearner(attr))
 
 
-        if missingModels:
-            if len(missingModels) <= 3:
-                msg = "The model, needed for imputation of some attributes (%s) is not given." % ", ".join(missingModels)
-            else:
-                msg = "The model, needed for imputation of some attributes (%s, ...) is not given." % ", ".join(missingModels[:3])
-            if missingValues:
-                msg += "\n"
-        else:
-            msg = ""
         if missingValues:
             if len(missingValues) <= 3:
-                msg += "The imputed values for some attributes (%s) are not specified." % ", ".join(missingValues)
+                msg = "The imputed values for some attributes (%s) are not specified." % ", ".join(missingValues)
             else:
-                msg += "The imputed values for some attributes (%s, ...) are not specified." % ", ".join(missingValues[:3])
-        if msg:
+                msg = "The imputed values for some attributes (%s, ...) are not specified." % ", ".join(missingValues[:3])
             self.warning(msg + "\nAverages and/or majority values are used instead.")
             
         if classVar and not imputeClass:
@@ -330,13 +325,15 @@ class OWImpute(OWWidget):
 
 
     def sendDataAndImputer(self):
+        self.error()
+        self.warning()
         self.constructImputer()
         self.send("Imputer", self.imputer)
         if self.data and self.imputer:
             constructed = self.imputer(self.data)
             try:
                 data = constructed(self.data)
-                # if the above fails, we dataChanged should be set to False
+                # if the above fails, dataChanged should be set to False
                 self.dataChanged = False
             except:
                 self.error("Imputation failed; this is typically due to unsuitable model.")
