@@ -605,8 +605,46 @@ OWGUI.label(self.controlArea, self,
 
 <h2>Widget box</h2>
 
+<dl>
 <dt>widgetBox(widget, box=None, orientation='vertical')</dt>
 <dd>Creates a box in which other widgets can be put. If <code>box</code> is given and not false, the box will be framed. If <code>box</code> is a string, it will be used for the box name (don't capitalize each word; spaces in front or after the string will be trimmed and replaced with a single space). Argument <code>orientation</code> can be <code>"vertical"</code> or <code>"horizontal"</code> (or <code>True</code> and <code>False</code>, or <code>1</code> and <code>0</code>, respectively).</dd>
+</dl>
+
+<h2>Idented box</h2>
+
+<dl>
+<dt>indentedBox(widget, sep=20)</dt>
+<dd>Creates an indented box. Widgets which are subsequently put into that box will be arranged vertically and aligned with an indentation of <code>sep</code>.</dd>
+</dl>
+
+<span>
+<span onclick="toggleVisibility(this);" class="hideshow">Show Example</span>
+<span class="hideshow"><a href="gui_label.py">Download example (gui_label.py)</a></span>
+<div class="example">
+<P>The first box in this example widget contains three check boxes: the first enables and disables the other two, which are for this reason indented. Note that we are disabling both check boxes at once by disabling the indented box.</P>
+
+<P>The second box contains only two check boxes, the first disabling the second. Note the shortcut we used - the indented check box is created on the fly.</P>
+
+<table><tr>
+<td width="600px">
+<xmp class="code">box = OWGUI.widgetBox(self.controlArea, "Redundant values")
+remRedCB = OWGUI.checkBox(box, self, "removeRedundant", "Remove redundant values")
+
+iBox = OWGUI.indentedBox(box)
+OWGUI.checkBox(iBox, self, "removeContinuous", "Reduce continuous attributes")
+OWGUI.checkBox(iBox, self, "removeClasses", "Reduce class attribute")
+remRedCB.disables.append(iBox)
+
+
+box = OWGUI.widgetBox(self.controlArea, "Noise")
+noiseCB = OWGUI.checkBox(box, self, "addNoise", "Add noise to data")
+OWGUI.checkBox(OWGUI.indentedBox(box), self, "classOnly", "Add noise to class only")
+</xmp>
+</td><td valign="top">
+<img src="gui_indentedBox.png">
+</td></tr></table></div></span>
+
+
 
 <h2>Inserting Space between Widgets</h2>
 
