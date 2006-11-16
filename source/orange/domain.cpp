@@ -521,7 +521,7 @@ void TDomain::domainChangedNoticeHandler(TDomain *dom)
 
 PVariable TDomain::hasOtherAttributes(bool checkClass) const
 {
-  const_PITERATE(TVarList, vi, checkClass ? attributes : variables)
+  const_PITERATE(TVarList, vi, checkClass ? variables : attributes)
     if (((*vi)->varType != TValue::FLOATVAR) && ((*vi)->varType != TValue::INTVAR))
       return *vi;
   return PVariable();
@@ -530,7 +530,7 @@ PVariable TDomain::hasOtherAttributes(bool checkClass) const
 
 PVariable TDomain::hasDiscreteAttributes(bool checkClass) const
 {
-  const_PITERATE(TVarList, vi, checkClass ? attributes : variables)
+  const_PITERATE(TVarList, vi, checkClass ? variables : attributes)
     if ((*vi)->varType == TValue::INTVAR)
       return *vi;
   return PVariable();
@@ -539,7 +539,7 @@ PVariable TDomain::hasDiscreteAttributes(bool checkClass) const
 
 PVariable TDomain::hasContinuousAttributes(bool checkClass) const
 {
-  const_PITERATE(TVarList, vi, checkClass ? attributes : variables)
+  const_PITERATE(TVarList, vi, checkClass ? variables : attributes)
     if ((*vi)->varType == TValue::FLOATVAR)
       return *vi;
   return PVariable();
