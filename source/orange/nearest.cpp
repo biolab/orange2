@@ -74,17 +74,21 @@ TFindNearest_BruteForce::TFindNearest_BruteForce(PExampleGenerator gen, const in
 {}
 
 
-PExampleGenerator TFindNearest_BruteForce::operator()(const TExample &e, const float &k)
+PExampleGenerator TFindNearest_BruteForce::operator()(const TExample &e, const float &k, bool needsClass)
 { checkProperty(examples);
   checkProperty(distance);
 
   TRandomGenerator rgen(e.sumValues());
 
+  needsClass = needsClass && examples->domain->classVar;
+
   set<TNNRec> NN;
   PEITERATE(ei, examples) {
-    const float dist = distance->operator()(e, *ei);
-    if (includeSame || (dist>0.0))
-      NN.insert(TNNRec(*ei, rgen.randlong(), dist));
+    if (!(needsClass && (*ei).getClass().isSpecial())) {
+      const float dist = distance->operator()(e, *ei);
+      if (includeSame || (dist>0.0))
+        NN.insert(TNNRec(*ei, rgen.randlong(), dist));
+    }
   }
 
   PDomain dom = e.domain;

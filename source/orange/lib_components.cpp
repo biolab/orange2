@@ -1511,14 +1511,15 @@ PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) P
 
     float k;
     TExample *example;
+    int needsClass = 0;
     // Both forms are allowed for compatibility with older versions
-    if (!PyArg_ParseTuple(args, "fO&", &k, ptr_Example, &example)) {
+    if (!PyArg_ParseTuple(args, "fO&|i", &k, ptr_Example, &example, &needsClass)) {
       PyErr_Clear();
-      if (!PyArg_ParseTuple(args, "O&f", ptr_Example, &example, &k))
-        PYERROR(PyExc_TypeError, "attribute error (number and example expected)", PYNULL);
+      if (!PyArg_ParseTuple(args, "O&f|i", ptr_Example, &example, &k, &needsClass))
+        PYERROR(PyExc_TypeError, "attribute error (number and example, and an optional flag for class expected)", PYNULL);
     }
 
-    return WrapOrange(SELF_AS(TFindNearest).call(*example, k));
+    return WrapOrange(SELF_AS(TFindNearest).call(*example, k, needsClass != 0));
   PyCATCH
 }
 

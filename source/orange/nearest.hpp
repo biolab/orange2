@@ -41,7 +41,7 @@ public:
   bool includeSame; //P tells whether to include examples that are same as the reference example
 
   TFindNearest(const int anID = 0, const bool is = true);
-  virtual PExampleGenerator operator()(const TExample &, const float &k = 0.0) =0;
+  virtual PExampleGenerator operator()(const TExample &, const float &k = 0.0, bool needsClass = false) =0;
 };
 
 WRAPPER(FindNearest);
@@ -55,7 +55,7 @@ public:
   int weightID; //P weight to use when counting examples
 
   TFindNearest_BruteForce(PExampleGenerator = PExampleGenerator(), const int &aweightID = 0, PExamplesDistance = PExamplesDistance(), const int anID = 0, const bool is = true);
-  virtual PExampleGenerator operator()(const TExample &, const float &k = 0.0);
+  virtual PExampleGenerator operator()(const TExample &, const float &k = 0.0, bool needsClass = false);
 };
 
 

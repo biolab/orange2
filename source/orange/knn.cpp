@@ -71,7 +71,7 @@ PDistribution TkNNClassifier::classDistribution(const TExample &oexam)
 
   TExample exam(domain, oexam);
 
-  PExampleGenerator neighbours = findNearest->call(exam, k);
+  PExampleGenerator neighbours = findNearest->call(exam, k, true);
   PDistribution classDist = TDistribution::create(classVar);
 
   if (neighbours->numberOfExamples()==1)
