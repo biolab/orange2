@@ -17,7 +17,7 @@ class OWSelectData(OWWidget):
     # loadedConditions and loadedVarNames saved the last conditions, but they failed to show
     # in the table when they are reloaded!
     # I removed them; we shall have the context settings doing that some day
-    settingsList = ["updateOnChange", "purgeAttributes"]#, "loadedConditions", "loadedVarNames"]
+    settingsList = ["updateOnChange", "purgeAttributes", "purgeClasses"]#, "loadedConditions", "loadedVarNames"]
 
     def __init__(self, parent = None, signalManager = None, name = "Select data"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
@@ -44,6 +44,8 @@ class OWSelectData(OWWidget):
         self.CaseSensitive = False
         self.updateOnChange = True
         self.purgeAttributes = True
+        self.purgeClasses = True
+        self.oldPurgeClasses = True
 
         # load settings
         self.loadedVarNames = []
@@ -189,6 +191,7 @@ class OWSelectData(OWWidget):
         boxSettings.setTitle('Update')
         gl.addWidget(boxSettings, 3,2)
         OWGUI.checkBox(boxSettings, self, "purgeAttributes", "Remove unused values/attributes", box=None, callback=self.OnPurgeChange)
+        self.purgeClassesCB = OWGUI.checkBox(OWGUI.indentedBox(boxSettings), self, "purgeClasses", "Remove unused classes", callback=self.OnPurgeChange)
         OWGUI.checkBox(boxSettings, self, "updateOnChange", "Update on any change", box=None)
         btnUpdate = OWGUI.button(boxSettings, self, "Update", self.setOutput)
 
@@ -296,14 +299,14 @@ class OWSelectData(OWWidget):
             nonMatchingOutput.name = self.data.name
 ##            print "len(nonMatchingOutput)", len(nonMatchingOutput)
 
-            if self.purgeAttributes:
+            if self.purgeAttributes or self.purgeClasses:
                 remover = orange.RemoveUnusedValues(removeOneValued=True)
 
-                newDomain = remover(matchingOutput)
+                newDomain = remover(matchingOutput, 0, True, self.purgeClasses)
                 if newDomain != matchingOutput.domain:
                     matchingOutput = orange.ExampleTable(newDomain, matchingOutput)
                     
-                newDomain = remover(nonMatchingOutput)
+                newDomain = remover(nonMatchingOutput, 0, True, self.purgeClasses)
                 if newDomain != nonMatchingOutput.domain:
                     nonmatchingOutput = orange.ExampleTable(newDomain, nonMatchingOutput)
 
@@ -403,6 +406,16 @@ class OWSelectData(OWWidget):
 
 
     def OnPurgeChange(self):
+        if self.purgeAttributes:
+            if not self.purgeClassesCB.isEnabled():
+                self.purgeClassesCB.setEnabled(True)
+                self.purgeClasses = self.oldPurgeClasses
+        else:
+            if self.purgeClassesCB.isEnabled():
+                self.purgeClassesCB.setEnabled(False)
+                self.oldPurgeClasses = self.purgeClasses
+                self.purgeClasses = False
+                
         if self.updateOnChange:
             self.setOutput()
             
