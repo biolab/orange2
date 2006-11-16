@@ -49,6 +49,9 @@ typedef vector<TdtwElement> TdtwVector;
 typedef vector<TdtwElement*> PdtwVector;
 typedef vector<TdtwVector> TdtwMatrix;
 
+#define TAlignmentList TWarpPath
+#define PAlignmentList PWarpPath
+
 
 class ORANGE_API TExamplesDistance_DTW : public TExamplesDistance_Normalized
 {
