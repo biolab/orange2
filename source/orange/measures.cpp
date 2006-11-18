@@ -482,7 +482,11 @@ float TMeasureAttributeFromProbabilities::operator()(PContingency cont, PDistrib
     cont = cont_e;
   }
 
-  return operator()(cont, CAST_TO_DISCDISTRIBUTION(classDistribution));
+  TDiscDistribution *dcDist = classDistribution.AS(TDiscDistribution);
+  if (!dcDist)
+    raiseError("discrete class expected");
+
+  return operator()(cont, *dcDist);
 }
 
 
