@@ -703,6 +703,8 @@ class CallFront_lineEdit(ControlledCallFront):
 
 class CallFront_radioButtons(ControlledCallFront):
     def action(self, value):
+        if value < 0 or value >= len(self.control.buttons):
+            value = 0
         self.control.buttons[value].setOn(1)
 
 
