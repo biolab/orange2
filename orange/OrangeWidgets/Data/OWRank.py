@@ -275,7 +275,7 @@ class OWRank(OWWidget):
         for col, meas_idx in enumerate(self.selectedMeasures):
             mdict = self.getMeasure(meas_idx)
             for row, attr in enumerate(self.attributeOrder):
-                self.table.setText(row, col+2, mdict[attr] and prec % mdict[attr] or "NA")
+                self.table.setText(row, col+2, mdict[attr] != None and prec % mdict[attr] or "NA")
                 
         self.reselect()
 
@@ -350,7 +350,9 @@ class OWRank(OWWidget):
                 st.sort(lambda x,y: cmp(x[1], y[1]))
                 self.topheader.setSortIndicator(1, False)
             else:
-                st = self.getMeasure(self.sortBy-3).items()
+                print self.getMeasure(self.sortBy-3).items()
+                st = [(m, a == None and -1e20 or a) for m, a in self.getMeasure(self.sortBy-3).items()]
+                print st
                 st.sort(lambda x,y: -cmp(x[1], y[1]) or cmp(x[0], y[0]))
 
             self.attributeOrder = [attr for attr, meas in st]
