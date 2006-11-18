@@ -8,7 +8,7 @@ import sys, traceback
 
 
 # constructs a box (frame) if not none, and returns the right master widget
-def widgetBox(widget, box=None, orientation='vertical'):
+def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
     if box:
         if orientation == 'horizontal' or not orientation:
             b = QHGroupBox(widget)
@@ -21,6 +21,8 @@ def widgetBox(widget, box=None, orientation='vertical'):
             b = QHBox(widget)
         else:
             b = QVBox(widget)
+    if addSpace:
+        separator(widget)
     return b
 
 def indentedBox(widget, sep=20):
@@ -227,7 +229,7 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
     
 
 # btnLabels is a list of either char strings or pixmaps
-def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1):
+def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1, addSpace = False):
     if box:
         if type(box) in [str, unicode]:
             bg = QVButtonGroup(box, widget)
@@ -235,6 +237,9 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
             bg = QVButtonGroup(widget)
     else:
         bg = widget
+        
+    if addSpace:
+        separator(widget)
 
     bg.setRadioButtonExclusive(1)
     bg.buttons = []
@@ -586,7 +591,7 @@ class FunctionCallback:
                 kwds['id'] = self.id
             if self.getwidget:
                 kwds['widget'] = self.widget
-            if type(self.f)==type([]):
+            if type(self.f)==list:
                 for f in self.f:
                     apply(f, (), kwds)
             else:
