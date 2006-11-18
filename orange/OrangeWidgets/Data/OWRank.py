@@ -62,7 +62,7 @@ class OWRank(OWWidget):
 
         OWGUI.rubber(self.controlArea)        
 
-        selMethBox = OWGUI.radioButtonsInBox(self.controlArea, self, "selectMethod", ["None", "All", "Manual", "Best ranked"], box="Select Attributes", callback=self.selectMethodChanged)
+        selMethBox = OWGUI.radioButtonsInBox(self.controlArea, self, "selectMethod", ["None", "All", "Manual", "Best ranked"], box="Select attributes", callback=self.selectMethodChanged)
         OWGUI.spin(OWGUI.indentedBox(selMethBox), self, "nSelected", 1, 100, label="No. selected"+"  ", orientation=0, callback=self.nSelectedChanged)
         
         OWGUI.separator(selMethBox)
