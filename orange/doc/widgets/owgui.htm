@@ -120,6 +120,9 @@ state of the control (and vice-versa - when this attribute is changed, the contr
 
 <DT>disabled (default: False)</DT>
 <DD>Tells whether the control be disabled upon the initialization.</DD>
+
+<dt>addSpace (default: False)</dt>
+<dd>If true, some space is added after the widget by calling <code>OWGUI.separator</code>.</dd>
 </DL>
 
 
@@ -219,7 +222,7 @@ and its callback in a single line.</p>
 
 <P>An individual radio button is created by <code>radioButton</code>.</P>
 
-<p class="function">radioButton(widget, master, value, label[, box, tooltip, callback])</p>
+<p class="function">radioButton(widget, master, value, label[, box, tooltip, callback, addSpace])</p>
 
 <P>The function provides the usual capabilities of OWGUI controls. It is though your responsibility to put it in something like a <code>QVButtonGroup</code>.</P>
 
@@ -606,7 +609,7 @@ OWGUI.label(self.controlArea, self,
 <h2>Widget box</h2>
 
 <dl>
-<dt>widgetBox(widget, box=None, orientation='vertical')</dt>
+<dt>widgetBox(widget, box=None, orientation='vertical', addSpace=False)</dt>
 <dd>Creates a box in which other widgets can be put. If <code>box</code> is given and not false, the box will be framed. If <code>box</code> is a string, it will be used for the box name (don't capitalize each word; spaces in front or after the string will be trimmed and replaced with a single space). Argument <code>orientation</code> can be <code>"vertical"</code> or <code>"horizontal"</code> (or <code>True</code> and <code>False</code>, or <code>1</code> and <code>0</code>, respectively).</dd>
 </dl>
 
@@ -648,7 +651,7 @@ OWGUI.checkBox(OWGUI.indentedBox(box), self, "classOnly", "Add noise to class on
 
 <h2>Inserting Space between Widgets</h2>
 
-<P>Most widgets look better if we insert some vertical space between the controls or groups of controls.</P>
+<P>Most widgets look better if we insert some vertical space between the controls or groups of controls. A few functions have an optional argument <code>addSpace</code> by which we can request such space to be added. For other occasions, we can use the following two functions.</P>
 
 <p class="function">separator(widget, width=0, height=8)</p>
 
