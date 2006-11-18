@@ -3,7 +3,7 @@
 <description>Ranks and filters attributes by their relevance.</description>
 <icon>icons/Rank.png</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
-<priority>3100</priority>
+<priority>1102</priority>
 """
 
 from OWWidget import *
