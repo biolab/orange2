@@ -423,6 +423,23 @@ SOURCE=.\im_col_assess.cpp
 # Begin Source File
 
 SOURCE=.\imputation.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -435,6 +452,19 @@ SOURCE=.\jit_linker.cpp
 # Begin Source File
 
 SOURCE=.\knn.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# SUBTRACT CPP /Z<none> /O<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 

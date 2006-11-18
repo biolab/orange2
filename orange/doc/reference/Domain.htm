@@ -124,6 +124,17 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 <DD>Finally, this constructor can be used to remove the class attribute. As before, flag tells whether the new domain should have a class attribute or not. However, the flag has effect only if the original domain has a class attribute; if so and if flag is 0, the class attribute is moved to ordinary attributes. In all other cases, the new domain is simply a cloned original domain.</DD>
 </DL>
 
+<H2>Checking attribute types</H2>
+
+<P>There are three convenient functions for checking whether the domain contains any discrete, continuous or other-type attributes.</P>
+
+<dl class="attributes">
+<dt>hasDiscreteAttributes([includeClass])<br/>
+hasContinuousAttributes([includeClass])<br/>
+hasOtherAttributes([includeClass])</dt>
+<dd>The boolean argument tells whether the function should also check the class attribute or not. Default value is True.</dd>
+</dl>
+
 
 <H2>Conversion of examples</H2>
 
