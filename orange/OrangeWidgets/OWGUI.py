@@ -237,7 +237,7 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
             bg = QVButtonGroup(widget)
     else:
         bg = widget
-        
+
     if addSpace:
         separator(widget)
 
@@ -401,6 +401,58 @@ def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tool
     lab = widgetLabel(hbox, label, labelWidth)
     combo = comboBox(hbox, master, value, items = items, tooltip = tooltip, callback = callback, sendSelectedValue = sendSelectedValue, valueType = valueType, debuggingEnabled = debuggingEnabled)
     return combo
+
+class widgetHider(QWidget):
+    def __init__(self, widget, master, value, size = (19,19), widgets = [], tooltip = None):
+        QWidget.__init__(self, widget)
+        self.value = value
+        self.master = master
+
+        if tooltip:
+            QToolTip.add(self, tooltip)
+
+        import os
+        iconDir = os.path.join(os.path.dirname(__file__), "icons")
+        icon1 = os.path.join(iconDir, "arrow_down.png")
+        icon2 = os.path.join(iconDir, "arrow_up.png")
+        self.pixmaps = []
+                
+        if os.path.exists(icon1) and os.path.exists(icon2):
+            self.pixmaps = [QPixmap(icon1), QPixmap(icon2)]
+            w = self.pixmaps[0].width(); h = self.pixmaps[0].height()+1
+            
+        else:
+            self.setBackgroundColor(Qt.black)
+            w,h = size
+        self.setMaximumWidth(w)
+        self.setMaximumHeight(h)
+        self.setMinimumSize(w, h)
+            
+        self.disables = widgets or [] # need to create a new instance of list (in case someone would want to append...)
+        self.makeConsistent = Disabler(self, master, value, type = HIDER)
+        if self.pixmaps != []:
+            self.setBackgroundPixmap(self.pixmaps[mygetattr(self.master, self.value)])
+
+        if widgets != []:
+            self.setWidgets(widgets)
+
+    def mousePressEvent(self, ev):
+        #print "mousePressEvent", mygetattr(self.master, self.value)
+        self.master.__setattr__(self.value, not mygetattr(self.master, self.value))
+        if self.pixmaps != []:
+            self.setBackgroundPixmap(self.pixmaps[mygetattr(self.master, self.value)])
+        self.makeConsistent.__call__()
+        
+
+    def setWidgets(self, widgets):
+        self.disables = widgets or []
+        #print "setWidgets", mygetattr(self.master, self.value)
+        if self.pixmaps != []:
+            self.setBackgroundPixmap(self.pixmaps[mygetattr(self.master, self.value)])
+        self.makeConsistent.__call__()
+
+
+
 
 ##############################################################################
 # callback handlers
@@ -659,6 +711,12 @@ class CallFront_checkBox(ControlledCallFront):
             self.control.setChecked(value)
 
 
+class CallFront_toggleButton(ControlledCallFront):
+    def action(self, value):
+        if value != None:
+            self.control.setOn(value)
+
+
 class CallFront_comboBox(ControlledCallFront):
     def __init__(self, control, valType = None, control2attributeDict = {}):
         ControlledCallFront.__init__(self, control)
@@ -753,16 +811,21 @@ class CallFront_Label:
 ## checked). If self.propagateState is False, the related widgets will be
 ## disabled/enabled if check box is checked/clear, disregarding whether the
 ## check box itself is enabled or not. (If you don't understand, see the code :-)
+DISABLER = 1
+HIDER = 2
 
 class Disabler:
-    def __init__(self, widget, master, valueName, propagateState = 1):
+    def __init__(self, widget, master, valueName, propagateState = 1, type = DISABLER):
         self.widget = widget
         self.master = master
         self.valueName = valueName
         self.propagateState = propagateState
+        self.type = type
         
     def __call__(self, *value):
-        if self.widget.isEnabled() or not self.propagateState:
+        currState = self.widget.isEnabled()
+            
+        if currState or not self.propagateState:
             if len(value):
                 disabled = not value[0]
             else:
@@ -778,11 +841,20 @@ class Disabler:
                         disabled = not disabled
                 else:
                     i = 0
-                w[i].setDisabled(disabled)
+                if self.type == DISABLER:
+                    w[i].setDisabled(disabled)
+                elif self.type == HIDER:
+                    if disabled: w[i].hide()
+                    else:        w[i].show()
+
                 if hasattr(w[i], "makeConsistent"):
                     w[i].makeConsistent()
             else:
-                w.setDisabled(disabled)
+                if self.type == DISABLER:
+                    w.setDisabled(disabled)
+                elif self.type == HIDER:
+                    if disabled: w.hide()
+                    else:        w.show()
         
 ##############################################################################
 # some table related widgets
