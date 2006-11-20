@@ -17,13 +17,24 @@ pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
 
 class OWSmartQuin(OWWidget):
 
-#    settingsList = ["updateOnChange", "loadedConditions", "loadedVarNames"]
+    contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", DomainContextHandler.SelectedRequiredList, selected="dimensions")])}
 
     def __init__(self, parent = None, signalManager = None, name = "Select data"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
         self.inputs = [("Examples", ExampleTableWithClass, self.onDataInput)]
         self.outputs = [("Examples", ExampleTableWithClass)]
+
+        self.attributes = []
+        self.dimensions = []
+        self.loadSettings()
+
+        lb = OWGUI.listBox(self.controlArea, self, "dimensions", "attributes", box="Attributes", selectionMode=QListBox.Multi)
+        lb.setFixedSize(150, 300)
+        OWGUI.separator(self.controlArea)
+        OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
+
         self.adjustSize()
+        self.activateLoadedSettings()
 
     def triangulate(self, points):
         num_points = points[0]
@@ -70,14 +81,13 @@ class OWSmartQuin(OWWidget):
 
     def D(self, x):
         points = self.points
-        dimenzije = range(self.dimension) # indeksi atributov, ki jih zelis prikazati. S tem kontroliras razred Q
         S = star(x, self.tri)
         xp = points[x]
         # dt bi morda se malo popravili, da bi tocka gotovo lezala znotraj trikotnika
         dt = min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x]) for simplex in S])*.1
         odvodi = ''
         deltas = []
-        for d in dimenzije:
+        for d in self.dimensions:
             obrni = False
             xn = xp[:-1]
             O = numpy.array(xp[:-1])
@@ -117,12 +127,29 @@ class OWSmartQuin(OWWidget):
             
 
     def onDataInput(self, data):
+        self.closeContext()
+        self.data = data
+        if data:
+            self.attributes = [(attr.name, attr.varType) for attr in self.data.domain.attributes]
+            self.dimensions = range(len(self.attributes))
+        else:
+            self.attributes = []
+            self.dimensions = []
+        self.openContext("", data)
+            
+
+    def apply(self):
+        data = self.data
+        if not data:
+            self.send("Examples", None)
+            return
+
         self.points = [len(data)] + data.native(0)
-        self.dimension = len(data.domain.attributes)
+        self.dimension = len(self.dimensions)
         self.tri = self.triangulate(self.points)
-   
-#        Ds = [self.D(x) for x in xrange(1, len(self.points))]
-        
+
+        print "D", self.dimensions        
+
         import orngMisc
         dom = orange.Domain(data.domain.attributes, orange.EnumVariable("Q", values = ["".join(["+-X"[x] for x in v]) for v in orngMisc.LimitedCounter([3]*self.dimension)]))
         quined = orange.ExampleTable(dom, data)
@@ -147,3 +174,5 @@ if __name__=="__main__":
 #    ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\test1-t"))
     ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\xyz-t"))
     a.exec_loop()
+    
+    ow.saveSettings()
