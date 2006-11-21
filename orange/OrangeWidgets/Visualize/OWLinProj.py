@@ -26,8 +26,8 @@ class OWLinProj(OWVisWidget):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor",
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "clusterClassifierName",
-                    "valueScalingType", "graph.showProbabilities", "showAllAttributes",
-                    "learnerIndex", "colorSettings", "addProjectedPositions", "VizRankLearnerName"]
+                    "showProbabilitiesDetails", "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells",
+                    "valueScalingType", "showAllAttributes", "learnerIndex", "colorSettings", "addProjectedPositions", "VizRankLearnerName"]
     jitterSizeNums = [0.0, 0.01, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
@@ -55,6 +55,7 @@ class OWLinProj(OWVisWidget):
         self.learnerIndex = 0
         self.colorSettings = None
         self.addProjectedPositions = 0
+        self.showProbabilitiesDetails = 0
         
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -164,7 +165,20 @@ class OWLinProj(OWVisWidget):
         OWGUI.checkBox(box3, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
         OWGUI.checkBox(box3, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
         OWGUI.checkBox(box3, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
-        OWGUI.checkBox(box3, self, 'graph.showProbabilities', 'Show probabilities', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
+
+        box5 = OWGUI.widgetBox(box3, orientation = "horizontal")
+        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
+        hider = OWGUI.widgetHider(box5, self, "showProbabilitiesDetails", tooltip = "Show/hide extra settings")
+        OWGUI.rubber(box5)
+
+        box6 = OWGUI.widgetBox(box3, orientation = "horizontal")
+        OWGUI.label(box6, self, "    Granularity:  ")
+        OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
+
+        box7 = OWGUI.widgetBox(box3, orientation = "horizontal")
+        OWGUI.separator(box7, 17)
+        OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
+        hider.setWidgets([box6, box7])
 
         # ####
         hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")

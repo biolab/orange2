@@ -60,7 +60,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.clusterClosure = None
         self.showClusters = 0
         self.showAttributeNames = 1
-        self.showProbabilities = 0
+
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
@@ -71,6 +71,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         scaleDraw.setTickLength(0, 0, 0)
         self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
+
+        self.showProbabilities = 0
+        self.squareGranularity = 3
+        self.spaceBetweenCells = 1
 
     def setData(self, data):
         OWGraph.setData(self, data)
@@ -761,21 +765,24 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
     def computePotentials(self):
         import orangeom
-        rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
-        ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
+        #rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
+        #ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
 
         rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, -1)
         ry = self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 1)
         ox = self.transform(QwtPlot.xBottom, 0) - self.transform(QwtPlot.xBottom, -1)
         oy = self.transform(QwtPlot.yLeft, -1) - self.transform(QwtPlot.yLeft, 0)
 
+        rx -= rx % self.squareGranularity
+        ry -= ry % self.squareGranularity
+
         if not getattr(self, "potentialsBmp", None) \
-           or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor):
+           or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells):
             if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
-                imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, 3, self.trueScaleFactor, 1, self.normalizeExamples)
+                imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor, 1, self.normalizeExamples)
                 palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
             else:
-                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, 3, self.trueScaleFactor/2, 1, self.normalizeExamples)
+                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells, self.normalizeExamples)
                 colors = defaultRGBColors
 
                 palette = []
@@ -792,7 +799,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, palette, 256, QImage.LittleEndian)
             self.potentialsBmp = QPixmap()
             self.potentialsBmp.convertFromImage(image)
-            self.potentialContext = (rx, ry, self.trueScaleFactor)
+            self.potentialContext = (rx, ry, self.trueScaleFactor, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)
+            
 
 
     def drawCanvasItems(self, painter, rect, map, pfilter):
