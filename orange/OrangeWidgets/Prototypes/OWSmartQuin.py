@@ -13,6 +13,7 @@ import numpy
 
 from orangeom import star, dist
 
+#pathQHULL = r"c:\qhull"
 pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
 
 class OWSmartQuin(OWWidget):
@@ -41,6 +42,7 @@ class OWSmartQuin(OWWidget):
         pts1 = points[1:]
         #print [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)]
         f = file('input4qdelaunay.tab','w')
+        print "SELF", self.dimension
         f.write(reduce(lambda x, y: x+y, [str(self.dimension)+"\n"+str(len(pts1))+"\n"]+ [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)] )) # [str(pts1[i][0])+"\t"+str(pts1[i][1])+"\n" for i in xrange(num_points)]
         f.close()
         os.system(pathQHULL + r"\qdelaunay s i Qt TO 'outputFromQdelaunay.tab' < input4qdelaunay.tab")
@@ -55,8 +57,8 @@ class OWSmartQuin(OWWidget):
         #print "vhod",vhod
         l = string.split(vhod,' \n')
         # indeksom pristejemo 1, da zacnemo steti z 1 in ne z 0
-        tri = [map(lambda x: int(x)+1, string.split(l[i],' ')) for i in xrange(num_of_triangles+1) if l[i]!='']
-        return tri
+        return [map(lambda x: int(x)+1, string.split(l[i],' ')) for i in xrange(num_of_triangles+1) if l[i]!='']
+        #return tri
 
     def change(self, i,j,n):
         if i==j:
@@ -130,11 +132,18 @@ class OWSmartQuin(OWWidget):
         self.closeContext()
         self.data = data
         if data:
-            self.attributes = [(attr.name, attr.varType) for attr in self.data.domain.attributes]
+            contAttributes = [attr for attr in self.data.domain.attributes if attr.varType == orange.VarTypes.Continuous]
+            self.attributes = [(attr.name, attr.varType) for attr in contAttributes]
             self.dimensions = range(len(self.attributes))
+            self.dimension = len(self.dimensions)
+
+            self.points = [len(data)] + orange.ExampleTable(orange.Domain(contAttributes, self.data.domain.classVar), data).native(0)
+            print len(self.points[1])
+            self.tri = self.triangulate(self.points)
         else:
             self.attributes = []
             self.dimensions = []
+
         self.openContext("", data)
             
 
@@ -143,12 +152,6 @@ class OWSmartQuin(OWWidget):
         if not data:
             self.send("Examples", None)
             return
-
-        self.points = [len(data)] + data.native(0)
-        self.dimension = len(self.dimensions)
-        self.tri = self.triangulate(self.points)
-
-        print "D", self.dimensions        
 
         import orngMisc
         dom = orange.Domain(data.domain.attributes, orange.EnumVariable("Q", values = ["".join(["+-X"[x] for x in v]) for v in orngMisc.LimitedCounter([3]*self.dimension)]))
@@ -172,7 +175,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
     ow.show()
 #    ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\test1-t"))
-    ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\xyz-t"))
+    ow.onDataInput(orange.ExampleTable(r"c:\delo\qing\smartquin\x2y2.txt"))
     a.exec_loop()
     
     ow.saveSettings()
