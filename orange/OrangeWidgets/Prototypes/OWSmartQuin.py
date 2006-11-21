@@ -18,6 +18,7 @@ pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
 
 class OWSmartQuin(OWWidget):
 
+    settings = ["output", "otherAsMeta"]
     contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", DomainContextHandler.SelectedRequiredList, selected="dimensions")])}
 
     def __init__(self, parent = None, signalManager = None, name = "Select data"):
@@ -27,15 +28,33 @@ class OWSmartQuin(OWWidget):
 
         self.attributes = []
         self.dimensions = []
+        self.output = 0
+        self.outputAttr = 0
+        self.derivativeAsMeta = 0
+        self.savedDerivativeAsMeta = 0
+        self.differencesAsMeta = 1
         self.loadSettings()
 
-        lb = OWGUI.listBox(self.controlArea, self, "dimensions", "attributes", box="Attributes", selectionMode=QListBox.Multi)
-        lb.setFixedSize(150, 300)
-        OWGUI.separator(self.controlArea)
-        OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
+        box = OWGUI.widgetBox(self.controlArea, "Attributes", addSpace = True)
+        lb = OWGUI.listBox(box, self, "dimensions", "attributes", selectionMode=QListBox.Multi, callback=self.dimensionsChanged)
+        hbox = OWGUI.widgetBox(box, orientation=0)
+        OWGUI.button(hbox, self, "All", callback=self.onAllAttributes)
+        OWGUI.button(hbox, self, "None", callback=self.onNoAttributes)
+        lb.setFixedHeight(200)
+
+        box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", ["Qualitative derivative", "Quantitative differences"], box="Output", addSpace = True, callback=self.dimensionsChanged)
+        self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
+        OWGUI.separator(box)
+        self.metaCB = OWGUI.checkBox(box, self, "derivativeAsMeta", label="Store q-derivative as meta attribute")
+        OWGUI.checkBox(box, self, "differencesAsMeta", label="Store differences as meta attributes")
+        
+        self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
 
         self.adjustSize()
         self.activateLoadedSettings()
+        
+        self.setFixedWidth(self.sizeHint().width())
+#        self.outputCB.setFixedWidth(outputCB.sizeHint().width())
 
     def triangulate(self, points):
         num_points = points[0]
@@ -128,6 +147,38 @@ class OWSmartQuin(OWWidget):
         return (odvodi,deltas)
             
 
+    def onAllAttributes(self):
+        self.dimensions = range(len(self.attributes))
+        self.dimensionsChanged()
+
+    def onNoAttributes(self):
+        if not self.output:
+            self.dimensions = []
+        else:
+            self.dimensions = [self.outputAttr]
+        self.dimensionsChanged()
+
+    def outputDiffChanged(self):
+        if not self.output:
+            self.output = 1
+        self.dimensionsChanged()
+        
+    def dimensionsChanged(self):
+        if self.output:
+            if self.outputAttr not in self.dimensions:
+                self.dimensions.append(self.outputAttr)
+                self.dimensions.sort()
+            if not self.metaCB.isEnabled():
+                self.derivativeAsMeta = self.savedDerivativeAsMeta
+                self.metaCB.setEnabled(True)
+        else:
+            if self.metaCB.isEnabled():
+                self.savedDerivativeAsMeta = self.derivativeAsMeta
+                self.derivativeAsMeta = 0
+                self.metaCB.setEnabled(False)
+
+        self.applyButton.setEnabled(bool(self.dimensions))
+
     def onDataInput(self, data):
         self.closeContext()
         self.data = data
@@ -136,6 +187,11 @@ class OWSmartQuin(OWWidget):
             self.attributes = [(attr.name, attr.varType) for attr in contAttributes]
             self.dimensions = range(len(self.attributes))
             self.dimension = len(self.dimensions)
+
+            icons = OWGUI.getAttributeIcons()
+            self.outputLB.clear()
+            for attr in contAttributes:
+                self.outputLB.insertItem(icons[attr.varType], attr.name)
 
             self.points = [len(data)] + orange.ExampleTable(orange.Domain(contAttributes, self.data.domain.classVar), data).native(0)
             print len(self.points[1])
@@ -146,6 +202,7 @@ class OWSmartQuin(OWWidget):
 
         self.openContext("", data)
             
+        self.dimensionsChanged()
 
     def apply(self):
         data = self.data
@@ -154,13 +211,44 @@ class OWSmartQuin(OWWidget):
             return
 
         import orngMisc
-        dom = orange.Domain(data.domain.attributes, orange.EnumVariable("Q", values = ["".join(["+-X"[x] for x in v]) for v in orngMisc.LimitedCounter([3]*self.dimension)]))
+        self.dimension = len(self.dimensions)
+        if self.output:
+            classVar = orange.FloatVariable("d"+self.attributes[self.outputAttr][0])
+        else:
+            classVar = orange.EnumVariable("Q", values = ["".join(["+-X"[x] for x in v]) for v in orngMisc.LimitedCounter([3]*self.dimension)])
+            
+        dom = orange.Domain(data.domain.attributes, classVar)
+
+        if self.derivativeAsMeta:
+            derivativeID = orange.newmetaid()
+            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["".join(["+-X"[x] for x in v]) for v in orngMisc.LimitedCounter([3]*self.dimension)]))
+            
+        metaIDs = []        
+        if self.differencesAsMeta:
+            for dim in self.dimensions:
+                metaVar = orange.FloatVariable("d"+self.attributes[dim][0])
+                metaID = orange.newmetaid()
+                dom.addmeta(metaID, metaVar)
+                metaIDs.append(metaID)
+                
         quined = orange.ExampleTable(dom, data)
 
         self.progressBarInit()
         nPoints = 100.0/(len(self.points)+1)
         for x in xrange(1, len(self.points)):
-            quined[x-1].setclass(self.D(x)[0])
+            D = self.D(x)
+            if self.output:
+                quined[x-1].setclass(D[1][self.outputAttr])
+            else:
+                quined[x-1].setclass(D[0])
+
+            if self.derivativeAsMeta:
+                quined[x-1].setmeta(derivativeID, D[0])
+
+            if self.differencesAsMeta:
+                for a in zip(metaIDs, D[1]):
+                    quined[x-1].setmeta(*a)
+                    
             self.progressBarSet(x*nPoints)
         self.progressBarFinished()
         self.send("Examples", quined)
@@ -174,8 +262,8 @@ if __name__=="__main__":
     ow=OWSmartQuin()
     a.setMainWidget(ow)
     ow.show()
-#    ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\test1-t"))
-    ow.onDataInput(orange.ExampleTable(r"c:\delo\qing\smartquin\x2y2.txt"))
+    ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\test1-t"))
+#    ow.onDataInput(orange.ExampleTable(r"c:\delo\qing\smartquin\x2y2.txt"))
     a.exec_loop()
     
     ow.saveSettings()
