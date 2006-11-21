@@ -51,6 +51,13 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.squareGranularity = 3
         self.spaceBetweenCells = 1
 
+        self.oldXAttr = ""
+        self.oldYAttr = ""
+        self.oldShowColorLegend = -1
+        self.oldShowXAxisTitle = ""
+        self.oldShowYAxisTitle = ""
+        self.oldLegendKeys = {}
+
     def setData(self, data):
         OWGraph.setData(self, data)
         orngScaleScatterPlotData.setData(self, data)
@@ -58,12 +65,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
     #########################################################
     # update shown data. Set labels, coloring by className ....
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, labelAttr = None, **args):
-        self.removeDrawingCurves()  # my function, that doesn't delete selection curves
+        self.removeDrawingCurves(removeLegendItems = 0)  # my function, that doesn't delete selection curves
         self.removeMarkers()
         self.tips.removeAll()
         if not self.showLegend: self.enableLegend(0)
-        #self.enableLegend(0)
-        #self.removeTooltips()
         self.tooltipData = []
         self.potentialsClassifier = None
         self.shownXAttribute = xAttr
@@ -91,15 +96,18 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         discreteX = (self.rawdata.domain[xAttrIndex].varType == orange.VarTypes.Discrete)
         if discreteX:
             xVarMax -= 1; xVar -= 1
-            attrXIndices = getVariableValueIndices(self.rawdata, xAttrIndex)
-            if self.showAxisScale: self.setXlabels(getVariableValuesSorted(self.rawdata, xAttrIndex))
             xmin = xVarMin - (self.jitterSize + 10.)/100. ; xmax = xVarMax + (self.jitterSize + 10.)/100.
-            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07, 1)
+            attrXIndices = getVariableValueIndices(self.rawdata, xAttrIndex)
+            if self.showAxisScale or xAttr != self.oldXAttr:
+                self.setXlabels(getVariableValuesSorted(self.rawdata, xAttrIndex))
+            if xAttr != self.oldXAttr or self.oldShowColorLegend != showColorLegend:
+                self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07, 1)
         else:
-            self.setXlabels(None)
             off  = (xVarMax - xVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
             xmin = xVarMin - off; xmax = xVarMax + off
-            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07)
+            if xAttr != self.oldXAttr or self.oldShowColorLegend != showColorLegend:
+                #self.setXlabels(None)
+                self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07)
         
         # #######################################################
         
@@ -110,22 +118,33 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         discreteY = (self.rawdata.domain[yAttrIndex].varType == orange.VarTypes.Discrete)
         if discreteY:
             yVarMax -= 1; yVar -= 1
-            attrYIndices = getVariableValueIndices(self.rawdata, yAttrIndex)
-            if self.showAxisScale: self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttrIndex))
             ymin, ymax = yVarMin - (self.jitterSize + 10.)/100., yVarMax + (self.jitterSize + 10.)/100.
-            self.setAxisScale(QwtPlot.yLeft, ymin, ymax, 1)
+            attrYIndices = getVariableValueIndices(self.rawdata, yAttrIndex)
+            if self.showAxisScale or yAttr != self.oldYAttr:
+                self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttrIndex))
+            if yAttr != self.oldYAttr or self.oldShowColorLegend != showColorLegend:
+                self.setAxisScale(QwtPlot.yLeft, ymin, ymax, 1)
         else:
-            self.setYLlabels(None)
             off  = (yVarMax - yVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
             ymin, ymax = yVarMin - off, yVarMax + off
-            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+            if yAttr != self.oldYAttr or self.oldShowColorLegend != showColorLegend:
+                #self.setYLlabels(None)
+                self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
         # #######################################################
 
-        if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
-        else: self.setXaxisTitle(None)
+        if self.oldShowXAxisTitle != self.showXaxisTitle or self.oldXAttr != xAttr:
+            if self.showXaxisTitle: self.setXaxisTitle(xAttr)
+            else: self.setXaxisTitle(None)
 
-        if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
-        else: self.setYLaxisTitle(None)
+        if self.oldShowYAxisTitle != self.showYLaxisTitle or self.oldYAttr != yAttr:
+            if self.showYLaxisTitle: self.setYLaxisTitle(yAttr)
+            else: self.setYLaxisTitle(None)
+
+        self.oldXAttr = xAttr
+        self.oldYAttr = yAttr
+        self.oldShowColorLegend = showColorLegend
+        self.oldShowXAxisTitle = self.showXaxisTitle
+        self.oldShowYAxisTitle = self.showYLaxisTitle
 
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
@@ -414,11 +433,18 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     val[0].append(self.rawdata.domain[sizeShapeIndex].name + "=" + varValues[ind])
                     val[2].append(MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues)))
                 legendKeys[sizeShapeIndex] = val
+        else:
+            legendKeys = {}
 
-            for key in legendKeys.keys()  :
-                val = legendKeys[key]
+        if legendKeys != self.oldLegendKeys:
+            for key in self.legendCurveKeys:    # remove old curve keys
+                self.removeCurve(key)
+            self.legendCurveKeys = []
+            for val in legendKeys.values():       # add new curve keys
                 for i in range(len(val[1])):
-                    self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
+                    k = self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
+                    self.legendCurveKeys.append(k)
+        self.oldLegendKeys = legendKeys
             
         # ##############################################################
         # draw color scale for continuous coloring attribute
