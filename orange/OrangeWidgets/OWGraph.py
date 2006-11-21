@@ -65,6 +65,7 @@ class OWGraph(QwtPlot):
         self.tempSelectionCurve = None
         self.selectionCurveKeyList = []
         self.autoSendSelectionCallback = None   # callback function to call when we add new selection polygon or rectangle
+        self.legendCurveKeys = []
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
@@ -425,9 +426,11 @@ class OWGraph(QwtPlot):
         self.state = SELECT_POLYGON
         if self.tempSelectionCurve: self.removeLastSelection()
 
-    def removeDrawingCurves(self):
+    def removeDrawingCurves(self, removeLegendItems = 1):
         for key in self.curveKeys():
             curve = self.curve(key)
+            if not removeLegendItems and key in self.legendCurveKeys:
+                continue
             if not isinstance(curve, SelectionCurve):
                 self.removeCurve(key)
 
