@@ -1,7 +1,7 @@
 """
 <name>Smart Quin</name>
-<description>SmartQuins a data table.</description>
-<icon>icons/SmartQuin.png</icon>
+<description>Computes local partial derivatives</description>
+<icon>icons/Smart Quin.png</icon>
 <priority>3500</priority>
 """
 
@@ -18,10 +18,10 @@ pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
 
 class OWSmartQuin(OWWidget):
 
-    settings = ["output", "otherAsMeta"]
+    settingsList = ["output", "outputAttr", "derivativeAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
     contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", DomainContextHandler.SelectedRequiredList, selected="dimensions")])}
 
-    def __init__(self, parent = None, signalManager = None, name = "Select data"):
+    def __init__(self, parent = None, signalManager = None, name = "Smart Quin"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
         self.inputs = [("Examples", ExampleTableWithClass, self.onDataInput)]
         self.outputs = [("Examples", ExampleTableWithClass)]
@@ -33,6 +33,9 @@ class OWSmartQuin(OWWidget):
         self.derivativeAsMeta = 0
         self.savedDerivativeAsMeta = 0
         self.differencesAsMeta = 1
+        self.enableThreshold = 0
+        self.threshold = 0.0
+        
         self.loadSettings()
 
         box = OWGUI.widgetBox(self.controlArea, "Attributes", addSpace = True)
@@ -40,8 +43,15 @@ class OWSmartQuin(OWWidget):
         hbox = OWGUI.widgetBox(box, orientation=0)
         OWGUI.button(hbox, self, "All", callback=self.onAllAttributes)
         OWGUI.button(hbox, self, "None", callback=self.onNoAttributes)
-        lb.setFixedHeight(200)
+        lb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+        lb.setMinimumSize(200, 200)
 
+        box = OWGUI.widgetBox(self.controlArea, "Threshold", orientation=0, addSpace = True)
+        threshCB = OWGUI.checkBox(box, self, "enableThreshold", "Ignore differences below ")
+        ledit = OWGUI.lineEdit(box, self, "threshold", valueType=float, validator=QDoubleValidator(0, 1e30, 0, self, ""))
+        threshCB.disables.append(ledit)
+        threshCB.makeConsistent()
+        
         box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", ["Qualitative derivative", "Quantitative differences"], box="Output", addSpace = True, callback=self.dimensionsChanged)
         self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
         OWGUI.separator(box)
@@ -54,14 +64,13 @@ class OWSmartQuin(OWWidget):
         self.activateLoadedSettings()
         
         self.setFixedWidth(self.sizeHint().width())
-#        self.outputCB.setFixedWidth(outputCB.sizeHint().width())
+
 
     def triangulate(self, points):
         num_points = points[0]
         pts1 = points[1:]
         #print [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)]
         f = file('input4qdelaunay.tab','w')
-        print "SELF", self.dimension
         f.write(reduce(lambda x, y: x+y, [str(self.dimension)+"\n"+str(len(pts1))+"\n"]+ [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)] )) # [str(pts1[i][0])+"\t"+str(pts1[i][1])+"\n" for i in xrange(num_points)]
         f.close()
         os.system(pathQHULL + r"\qdelaunay s i Qt TO 'outputFromQdelaunay.tab' < input4qdelaunay.tab")
@@ -132,16 +141,10 @@ class OWSmartQuin(OWWidget):
             xnz = sum(coef*[numpy.array(points[p][-1]-xp[-1])for p in swx if p!=x])+xp[-1]
             delta = xnz-xp[-1]
             deltas.append(delta)
-            if delta > 0:
-                if obrni:
-                    odvodi += '-'
-                else:
-                    odvodi += '+'
-            elif delta < 0:
-                if obrni:
-                    odvodi += '+'
-                else:
-                    odvodi += '-'
+            if delta > self.actThreshold:
+                odvodi += "+-"[obrni]
+            elif delta < -self.actThreshold:
+                odvodi += "-+"[obrni]
             else:
                 odvodi += 'o'
         return (odvodi,deltas)
@@ -194,7 +197,6 @@ class OWSmartQuin(OWWidget):
                 self.outputLB.insertItem(icons[attr.varType], attr.name)
 
             self.points = [len(data)] + orange.ExampleTable(orange.Domain(contAttributes, self.data.domain.classVar), data).native(0)
-            print len(self.points[1])
             self.tri = self.triangulate(self.points)
         else:
             self.attributes = []
@@ -205,23 +207,25 @@ class OWSmartQuin(OWWidget):
         self.dimensionsChanged()
 
     def apply(self):
+        import orngMisc
         data = self.data
         if not data:
             self.send("Examples", None)
             return
 
-        import orngMisc
         self.dimension = len(self.dimensions)
+        self.actThreshold = self.enableThreshold and abs(self.threshold)
+            
         if self.output:
             classVar = orange.FloatVariable("d"+self.attributes[self.outputAttr][0])
         else:
-            classVar = orange.EnumVariable("Q", values = ["".join(["+-X"[x] for x in v]) for v in orngMisc.LimitedCounter([3]*self.dimension)])
+            classVar = orange.EnumVariable("Q", values = ["".join(["+-oX"[x] for x in v]) for v in orngMisc.LimitedCounter([4]*self.dimension)])
             
         dom = orange.Domain(data.domain.attributes, classVar)
 
         if self.derivativeAsMeta:
             derivativeID = orange.newmetaid()
-            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["".join(["+-X"[x] for x in v]) for v in orngMisc.LimitedCounter([3]*self.dimension)]))
+            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["".join(["+-oX"[x] for x in v]) for v in orngMisc.LimitedCounter([4]*self.dimension)]))
             
         metaIDs = []        
         if self.differencesAsMeta:
@@ -252,9 +256,9 @@ class OWSmartQuin(OWWidget):
             self.progressBarSet(x*nPoints)
         self.progressBarFinished()
         self.send("Examples", quined)
-            
+
                             
-        
+       
 if __name__=="__main__":
     import sys
 
