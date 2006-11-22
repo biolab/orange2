@@ -1,7 +1,7 @@
 """
-<name>Smart Quin</name>
+<name>Pade</name>
 <description>Computes local partial derivatives</description>
-<icon>icons/Smart Quin.png</icon>
+<icon>icons/Pade.png</icon>
 <priority>3500</priority>
 """
 
@@ -16,12 +16,12 @@ from orangeom import star, dist
 #pathQHULL = r"c:\qhull"
 pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
 
-class OWSmartQuin(OWWidget):
+class OWPade(OWWidget):
 
     settingsList = ["output", "outputAttr", "derivativeAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
     contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", DomainContextHandler.SelectedRequiredList, selected="dimensions")])}
 
-    def __init__(self, parent = None, signalManager = None, name = "Smart Quin"):
+    def __init__(self, parent = None, signalManager = None, name = "Pade"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
         self.inputs = [("Examples", ExampleTableWithClass, self.onDataInput)]
         self.outputs = [("Examples", ExampleTableWithClass)]
@@ -235,27 +235,27 @@ class OWSmartQuin(OWWidget):
                 dom.addmeta(metaID, metaVar)
                 metaIDs.append(metaID)
                 
-        quined = orange.ExampleTable(dom, data)
+        paded = orange.ExampleTable(dom, data)
 
         self.progressBarInit()
         nPoints = 100.0/(len(self.points)+1)
         for x in xrange(1, len(self.points)):
             D = self.D(x)
             if self.output:
-                quined[x-1].setclass(D[1][self.outputAttr])
+                paded[x-1].setclass(D[1][self.outputAttr])
             else:
-                quined[x-1].setclass(D[0])
+                paded[x-1].setclass(D[0])
 
             if self.derivativeAsMeta:
-                quined[x-1].setmeta(derivativeID, D[0])
+                paded[x-1].setmeta(derivativeID, D[0])
 
             if self.differencesAsMeta:
                 for a in zip(metaIDs, D[1]):
-                    quined[x-1].setmeta(*a)
+                    paded[x-1].setmeta(*a)
                     
             self.progressBarSet(x*nPoints)
         self.progressBarFinished()
-        self.send("Examples", quined)
+        self.send("Examples", paded)
 
                             
        
@@ -263,7 +263,7 @@ if __name__=="__main__":
     import sys
 
     a=QApplication(sys.argv)
-    ow=OWSmartQuin()
+    ow=OWPade()
     a.setMainWidget(ow)
     ow.show()
     ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\test1-t"))
