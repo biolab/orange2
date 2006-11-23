@@ -66,10 +66,11 @@ class OWPade(OWWidget):
         self.setFixedWidth(self.sizeHint().width())
 
 
+    ## Triangulates the data
+
     def triangulate(self, points):
-        num_points = points[0]
-        pts1 = points[1:]
-        #print [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)]
+        num_points = len(points)
+        pts1 = points
         f = file('input4qdelaunay.tab','w')
         f.write(reduce(lambda x, y: x+y, [str(self.dimension)+"\n"+str(len(pts1))+"\n"]+ [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)] )) # [str(pts1[i][0])+"\t"+str(pts1[i][1])+"\n" for i in xrange(num_points)]
         f.close()
@@ -79,80 +80,83 @@ class OWPade(OWWidget):
         f.close()
         k = string.find(vhod,'\n')
         num_of_triangles = int(vhod[0:k])
-        #print "num_of_triangles:",num_of_triangles
         vhod = vhod[k+1:]
-        # sparsamo vhod, da lahko dolocimo robne tocke, ki jih hocemo povezat s tocko X
-        #print "vhod",vhod
         l = string.split(vhod,' \n')
-        # indeksom pristejemo 1, da zacnemo steti z 1 in ne z 0
-        return [map(lambda x: int(x)+1, string.split(l[i],' ')) for i in xrange(num_of_triangles+1) if l[i]!='']
-        #return tri
+        return [map(int, string.split(l[i],' ')) for i in xrange(num_of_triangles+1) if l[i]!='']
 
+
+    ## Support functions
+    
+    # Returns the simplex to which the point xn belongs
+    def simplex_with_xn(self, xn,Star):
+        for simplex in Star:
+            bl = [numpy.linalg.det(a) for a in self.inside(xn,simplex)]
+            if reduce(lambda x,y: x and y, [i<0 for i in bl]) or reduce(lambda x,y: x and y, [i>0 for i in bl]):
+                return simplex
+        return None
+
+    # Replaces one matrix column (used by simplex_with_xn)
     def change(self, i,j,n):
         if i==j:
             return n+[1]
         return self.points[j][:-1]+[1]
 
+    # Prepares matrices for simplex_with_xn
     def inside(self, vertex,simplex):
-        # tole se da se optimizirat: sestavit je treba seznam determinant n x n matrik, v katerih je potrebno vedno
-        # nadomestiti i-to vrstico, i=1..n
         return [numpy.array([self.change(i,j,vertex) for j in simplex]) for i in simplex]
 
-    def simplex_with_xn(self, xn,Star):
-    #    print "->"
-        for simplex in Star:
-            #print inside(xn,simplex)
-            bl = [numpy.linalg.det(a) for a in self.inside(xn,simplex)]
-            #,[points[i] for i in simplex]
-    #        print simplex, "bl = ", bl, reduce(lambda x,y: x and y, [i<0 for i in bl]) or reduce(lambda x,y: x and y, [i>0 for i in bl])
-            if reduce(lambda x,y: x and y, [i<0 for i in bl]) or reduce(lambda x,y: x and y, [i>0 for i in bl]):
-                return simplex
-        return None
 
-    def D(self, x):
+    ## Computes the derivatives in required dimensions (self.dimensions),
+    ##   except for those which have been already computed and cached
+    
+    def D(self):
+        dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
+        if not dimensions:
+            return
+        
         points = self.points
-        S = star(x, self.tri)
-        xp = points[x]
-        # dt bi morda se malo popravili, da bi tocka gotovo lezala znotraj trikotnika
-        dt = min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x]) for simplex in S])*.1
-        odvodi = ''
-        deltas = []
-        for d in self.dimensions:
-            obrni = False
-            xn = xp[:-1]
-            O = numpy.array(xp[:-1])
-            xn[d] += dt
-            swx = self.simplex_with_xn(xn,S)
-            if swx==None:
-                xn[d] = xp[d]-dt
-                swx = self.simplex_with_xn(xn,S) # pazi: obrnit je treba predznake
-                obrni = True
-            # ce v obeh smereh ni simpleksa, ki bi ga poltrak sekal, pogledamo najblizjo tocko v zvezdi in skopiramo njene lastnosti
-            if swx==None: # popravi, da bo kot pise v zgornjem komentarju!
-                deltas.append(0)
-                odvodi += 'X'
-                # MOZNA RESITEV ZA TE PRIMERE: zapomni si jih in jim na koncu priredi vecinski razred sosedov iz zvezde
-                # Tule to se ni mozno, ker se lahko zgodi, da se niso izracunani!
-                continue
-            vecs = numpy.array([numpy.array(points[p][:-1])-O for p in swx if p!=x])
-            vecs = vecs.transpose()
-            XN = numpy.array(xn)-O
-            coef = numpy.linalg.solve(vecs,XN)
-            xnz = sum(coef*[numpy.array(points[p][-1]-xp[-1])for p in swx if p!=x])+xp[-1]
-            delta = xnz-xp[-1]
-            deltas.append(delta)
-            if delta > self.actThreshold:
-                odvodi += "+-"[obrni]
-            elif delta < -self.actThreshold:
-                odvodi += "-+"[obrni]
-            else:
-                odvodi += 'o'
-        return (odvodi,deltas)
+        nPoints = 100.0/len(points)
+
+        self.progressBarInit()
+        for x, (S, xp, dt, deltas) in enumerate(zip(self.stars, points, self.dts, self.deltas)):
+            for d in dimensions:
+
+                # find the simplex in the given direction             
+                xn = xp[:-1]
+                O = numpy.array(xp[:-1])
+
+                xn[d] += dt
+                swx = self.simplex_with_xn(xn, S)
+                if swx:                
+                    obrni = 1
+                else:
+                    xn[d] = xp[d]-dt
+                    swx = self.simplex_with_xn(xn, S)
+                    if swx:
+                        obrni = -1
+                    else:
+                        deltas[d] = "?"
+                        continue
+
+                # Interpolate the function value at the point on the simplex
+                vecs = numpy.array([numpy.array(points[p][:-1])-O for p in swx if p!=x])
+                vecs = vecs.transpose()
+                XN = numpy.array(xn)-O
+                coef = numpy.linalg.solve(vecs,XN)
+                xnz = sum(coef*[numpy.array(points[p][-1]-xp[-1])for p in swx if p!=x])+xp[-1]
+
+                # Store the derivative                
+                deltas[d] = obrni * (xnz-xp[-1])
+
+            self.progressBarSet(x*nPoints)
+            
+        self.progressBarFinished()
             
 
     def onAllAttributes(self):
         self.dimensions = range(len(self.attributes))
         self.dimensionsChanged()
+
 
     def onNoAttributes(self):
         if not self.output:
@@ -161,10 +165,12 @@ class OWPade(OWWidget):
             self.dimensions = [self.outputAttr]
         self.dimensionsChanged()
 
+
     def outputDiffChanged(self):
         if not self.output:
             self.output = 1
         self.dimensionsChanged()
+
         
     def dimensionsChanged(self):
         if self.output:
@@ -182,6 +188,7 @@ class OWPade(OWWidget):
 
         self.applyButton.setEnabled(bool(self.dimensions))
 
+
     def onDataInput(self, data):
         self.closeContext()
         self.data = data
@@ -196,8 +203,13 @@ class OWPade(OWWidget):
             for attr in contAttributes:
                 self.outputLB.insertItem(icons[attr.varType], attr.name)
 
-            self.points = [len(data)] + orange.ExampleTable(orange.Domain(contAttributes, self.data.domain.classVar), data).native(0)
-            self.tri = self.triangulate(self.points)
+            points = self.points = orange.ExampleTable(orange.Domain(contAttributes, self.data.domain.classVar), data).native(0)
+            npoints = len(points)
+            tri = self.tri = self.triangulate(self.points)
+            S = self.stars = [star(x, tri) for x in xrange(npoints)]
+            self.dts = [min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x]) for simplex in S[x]])*.1 for x in xrange(npoints)]
+            
+            self.deltas = [[None] * self.dimension for x in xrange(npoints)]
         else:
             self.attributes = []
             self.dimensions = []
@@ -205,6 +217,7 @@ class OWPade(OWWidget):
         self.openContext("", data)
             
         self.dimensionsChanged()
+
 
     def apply(self):
         import orngMisc
@@ -214,18 +227,26 @@ class OWPade(OWWidget):
             return
 
         self.dimension = len(self.dimensions)
+        self.D()            
+
         self.actThreshold = self.enableThreshold and abs(self.threshold)
-            
+
+        mpart = "(" + ",".join([self.attributes[i][0] for i in self.dimensions]) + ")"
+        
         if self.output:
             classVar = orange.FloatVariable("d"+self.attributes[self.outputAttr][0])
         else:
-            classVar = orange.EnumVariable("Q", values = ["".join(["+-oX"[x] for x in v]) for v in orngMisc.LimitedCounter([4]*self.dimension)])
+#            classVar = orange.EnumVariable("Q", values = [", ".join([self.attributes[i][0]+"+-oX"[x] for i, x in enumerate(v)]) for v in orngMisc.LimitedCounter([4]*self.dimension)])
+            classVar = orange.EnumVariable("Q", values = ["M"+ "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)])
+#            classVar = orange.EnumVariable("Q", values = ["M" + "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)])
             
         dom = orange.Domain(data.domain.attributes, classVar)
 
         if self.derivativeAsMeta:
             derivativeID = orange.newmetaid()
-            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["".join(["+-oX"[x] for x in v]) for v in orngMisc.LimitedCounter([4]*self.dimension)]))
+#            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = [", ".join([self.attributes[i][0]+"+-oX"[x] for i, x in enumerate(v)]) for v in orngMisc.LimitedCounter([4]*self.dimension)]))
+            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["M" + "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)]))
+#            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["M" + "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)]))
             
         metaIDs = []        
         if self.differencesAsMeta:
@@ -237,24 +258,24 @@ class OWPade(OWWidget):
                 
         paded = orange.ExampleTable(dom, data)
 
-        self.progressBarInit()
-        nPoints = 100.0/(len(self.points)+1)
-        for x in xrange(1, len(self.points)):
-            D = self.D(x)
+        for pad, alldeltas in zip(paded, self.deltas):
+            deltas = [alldeltas[d] for d in self.dimensions]
             if self.output:
-                paded[x-1].setclass(D[1][self.outputAttr])
+                pad.setclass(alldeltas[self.outputAttr])
             else:
-                paded[x-1].setclass(D[0])
+#                pad.setclass("M" + "".join([((delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o") for delta in deltas]) + mpart)
+                pad.setclass("M" + "".join([((delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o") for delta in deltas]) + mpart)
+#                pad.setclass(", ".join([self.attributes[i][0]+((delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o") for i, delta in enumerate(deltas)]))
 
             if self.derivativeAsMeta:
-                paded[x-1].setmeta(derivativeID, D[0])
+#                pad.setmeta(derivativeID, "".join([(delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o" for delta in deltas]))
+                pad.setmeta(derivativeID, "M" + "".join([(delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o" for delta in deltas]) + mpart)
+#                pad.setmeta(derivativeID, "M"+ "".join([(delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o" for delta in deltas]) + mpart)
 
             if self.differencesAsMeta:
-                for a in zip(metaIDs, D[1]):
-                    paded[x-1].setmeta(*a)
+                for a in zip(metaIDs, deltas):
+                    pad.setmeta(*a)
                     
-            self.progressBarSet(x*nPoints)
-        self.progressBarFinished()
         self.send("Examples", paded)
 
                             
@@ -266,7 +287,7 @@ if __name__=="__main__":
     ow=OWPade()
     a.setMainWidget(ow)
     ow.show()
-    ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\test1-t"))
+    ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\xyz-t"))
 #    ow.onDataInput(orange.ExampleTable(r"c:\delo\qing\smartquin\x2y2.txt"))
     a.exec_loop()
     
