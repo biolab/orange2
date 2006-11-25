@@ -5,11 +5,11 @@
 <priority>3500</priority>
 """
 
-import orange
+import orange, statc
 from OWWidget import *
 import OWGUI
 import os, string, math, profile
-import numpy
+import numpy, math
 
 from orangeom import star, dist
 
@@ -18,7 +18,7 @@ pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
 
 class OWPade(OWWidget):
 
-    settingsList = ["output", "outputAttr", "derivativeAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
+    settingsList = ["output", "outputAttr", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
     contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", DomainContextHandler.SelectedRequiredList, selected="dimensions")])}
 
     def __init__(self, parent = None, signalManager = None, name = "Pade"):
@@ -33,8 +33,10 @@ class OWPade(OWWidget):
         self.derivativeAsMeta = 0
         self.savedDerivativeAsMeta = 0
         self.differencesAsMeta = 1
+        self.originalAsMeta = 1
         self.enableThreshold = 0
         self.threshold = 0.0
+        self.method = 2
         
         self.loadSettings()
 
@@ -46,6 +48,9 @@ class OWPade(OWWidget):
         lb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         lb.setMinimumSize(200, 200)
 
+        box = OWGUI.widgetBox(self.controlArea, "Method", addSpace = True)
+        OWGUI.comboBox(box, self, "method", callback = self.methodChanged, items = ["First Triangle", "Star Regression", "Tube Regression"])
+                       
         box = OWGUI.widgetBox(self.controlArea, "Threshold", orientation=0, addSpace = True)
         threshCB = OWGUI.checkBox(box, self, "enableThreshold", "Ignore differences below ")
         ledit = OWGUI.lineEdit(box, self, "threshold", valueType=float, validator=QDoubleValidator(0, 1e30, 0, self, ""))
@@ -57,6 +62,7 @@ class OWPade(OWWidget):
         OWGUI.separator(box)
         self.metaCB = OWGUI.checkBox(box, self, "derivativeAsMeta", label="Store q-derivative as meta attribute")
         OWGUI.checkBox(box, self, "differencesAsMeta", label="Store differences as meta attributes")
+        OWGUI.checkBox(box, self, "originalAsMeta", label="Store original class as meta attribute")
         
         self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
 
@@ -72,7 +78,7 @@ class OWPade(OWWidget):
         num_points = len(points)
         pts1 = points
         f = file('input4qdelaunay.tab','w')
-        f.write(reduce(lambda x, y: x+y, [str(self.dimension)+"\n"+str(len(pts1))+"\n"]+ [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)] )) # [str(pts1[i][0])+"\t"+str(pts1[i][1])+"\n" for i in xrange(num_points)]
+        f.write(reduce(lambda x, y: x+y, [str(len(self.contAttributes))+"\n"+str(len(pts1))+"\n"]+ [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)] )) # [str(pts1[i][0])+"\t"+str(pts1[i][1])+"\n" for i in xrange(num_points)]
         f.close()
         os.system(pathQHULL + r"\qdelaunay s i Qt TO 'outputFromQdelaunay.tab' < input4qdelaunay.tab")
         f = file('outputFromQdelaunay.tab','r')
@@ -110,10 +116,30 @@ class OWPade(OWWidget):
     ##   except for those which have been already computed and cached
     
     def D(self):
+        if not self.deltas:
+            self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
+
         dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
         if not dimensions:
             return
-        
+
+        if not self.points:        
+            self.points = orange.ExampleTable(orange.Domain(self.contAttributes, self.data.domain.classVar), self.data).native(0)
+        points = self.points
+        npoints = len(points)
+
+        if not self.tri:
+            print self.dimension
+            self.tri = self.triangulate(points)
+        tri = self.tri
+            
+        if not self.stars:
+            self.stars = [star(x, tri) for x in xrange(npoints)]
+        S = self.stars
+
+        if not self.dts:        
+            self.dts = [min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x]) for simplex in S[x]])*.1 for x in xrange(npoints)]
+
         points = self.points
         nPoints = 100.0/len(points)
 
@@ -153,6 +179,79 @@ class OWPade(OWWidget):
         self.progressBarFinished()
             
 
+    def tubedRegression(self):
+        if not self.deltas:
+            self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
+
+        dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
+        if not dimensions:
+            return
+
+        if not self.findNearest:
+            self.findNearest = orange.FindNearestConstructor_BruteForce(self.data, distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean())
+            
+        if not self.attrStat:
+            self.attrStat = orange.DomainBasicAttrStat(self.data)
+
+        self.progressBarInit()
+        nExamples = len(self.data)
+        nPoints = 100.0/nExamples/self.dimension
+
+        normalizers = self.findNearest.distance.normalizers
+        
+        for di, d in enumerate(dimensions):
+            contIdx = self.contIndices[d]
+
+            minV, maxV = self.attrStat[contIdx].min, self.attrStat[contIdx].max
+            if minV == maxV:
+                continue
+            span = (maxV - minV) /2 / math.log(.001)
+            
+            oldNormalizer = normalizers[self.contIndices[d]]
+            normalizers[self.contIndices[d]] = 0
+
+            for exi, ref_example in enumerate(self.data):
+                if ref_example[contIdx].isSpecial():
+                    self.deltas[exi][d] = "?"
+                    continue
+
+                ref_x = float(ref_example[contIdx])
+
+                Sx = Sy = Sxx = Syy = Sxy = n = 0.0
+                
+                for ex in self.findNearest(ref_example, 0, True):
+                    if ex[contIdx].isSpecial():
+                        continue
+                    ex_x = float(ex[contIdx])
+                    ex_y = float(ex.getclass())
+                    w = math.exp(-((ex_x-ref_x)/span)**2)
+                    Sx += w * ex_x
+                    Sy += w * ex_y
+                    Sxx += w * ex_x**2
+                    Syy += w * ex_y**2
+                    Sxy += w * ex_x * ex_y
+                    n += w
+
+                div = n*Sxx-Sx**2
+                if div and n>=3:# and i<40:
+                    b = (Sxy*n - Sx*Sy) / div
+##                    a = (Sy - b*Sx)/n
+##                    err = (n * a**2 + b**2 * Sxx + Syy + 2*a*b*Sx - 2*a*Sy - 2*b*Sxy)
+##                    tot = Syy - Sy**2/n
+##                    mod = tot - err
+##                    merr = err/(n-2)
+##                    F = mod/merr
+##                    Fprob = statc.fprob(F, 1, int(n-2))
+#                        print "%.4f" % Fprob,
+                    #print ("%.3f\t" + "%.0f\t"*6 + "%f\t%f") % (w, ref_x, ex_x, n, a, b, merr, F, Fprob)
+                    self.deltas[exi][d] = b
+                else:
+                    self.deltas[exi][d] = "?"
+
+                self.progressBarSet((nExamples*di+exi)*nPoints)
+            
+        self.progressBarFinished()
+    
     def onAllAttributes(self):
         self.dimensions = range(len(self.attributes))
         self.dimensionsChanged()
@@ -189,31 +288,37 @@ class OWPade(OWWidget):
         self.applyButton.setEnabled(bool(self.dimensions))
 
 
+    def methodChanged(self):
+        self.deltas = None
+        
     def onDataInput(self, data):
         self.closeContext()
         self.data = data
         if data:
-            contAttributes = [attr for attr in self.data.domain.attributes if attr.varType == orange.VarTypes.Continuous]
-            self.attributes = [(attr.name, attr.varType) for attr in contAttributes]
+            self.npoints = len(data)
+
+            attributes = self.data.domain.attributes            
+            self.contIndices = [i for i, attr in enumerate(attributes) if attr.varType == orange.VarTypes.Continuous]
+            self.contAttributes = [attributes[i] for i in self.contIndices]
+            self.attributes = [(attr.name, attr.varType) for attr in self.contAttributes]
             self.dimensions = range(len(self.attributes))
             self.dimension = len(self.dimensions)
 
             icons = OWGUI.getAttributeIcons()
             self.outputLB.clear()
-            for attr in contAttributes:
+            for attr in self.contAttributes:
                 self.outputLB.insertItem(icons[attr.varType], attr.name)
-
-            points = self.points = orange.ExampleTable(orange.Domain(contAttributes, self.data.domain.classVar), data).native(0)
-            npoints = len(points)
-            tri = self.tri = self.triangulate(self.points)
-            S = self.stars = [star(x, tri) for x in xrange(npoints)]
-            self.dts = [min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x]) for simplex in S[x]])*.1 for x in xrange(npoints)]
-            
-            self.deltas = [[None] * self.dimension for x in xrange(npoints)]
+           
         else:
             self.attributes = []
+            self.contAttributes = []
             self.dimensions = []
+            self.dimension = 0
+            self.npoints = 0
 
+        self.points = self.tri = self.stars = self.dts = self.deltas = None
+        self.findNearest = self.attrStat = None
+        
         self.openContext("", data)
             
         self.dimensionsChanged()
@@ -227,7 +332,7 @@ class OWPade(OWWidget):
             return
 
         self.dimension = len(self.dimensions)
-        self.D()            
+        [self.D, None, self.tubedRegression][self.method]()
 
         self.actThreshold = self.enableThreshold and abs(self.threshold)
 
@@ -255,6 +360,10 @@ class OWPade(OWWidget):
                 metaID = orange.newmetaid()
                 dom.addmeta(metaID, metaVar)
                 metaIDs.append(metaID)
+
+        if self.originalAsMeta:
+            originalID = orange.newmetaid()
+            dom.addmeta(originalID, self.data.domain.classVar)
                 
         paded = orange.ExampleTable(dom, data)
 
