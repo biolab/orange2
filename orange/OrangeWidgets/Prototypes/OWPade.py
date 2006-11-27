@@ -12,14 +12,15 @@ import os, string, math, profile
 import numpy, math
 
 from orangeom import star, dist
+from sets import Set
 
 #pathQHULL = r"c:\qhull"
 pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
 
 class OWPade(OWWidget):
 
-    settingsList = ["output", "outputAttr", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
-    contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", DomainContextHandler.SelectedRequiredList, selected="dimensions")])}
+    settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
+    contextHandlers = {"": DomainContextHandler("", ["outputAttr", ContextField("attributes", DomainContextHandler.SelectedRequiredList, selected="dimensions")])}
 
     def __init__(self, parent = None, signalManager = None, name = "Pade"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
@@ -172,12 +173,59 @@ class OWPade(OWWidget):
                 xnz = sum(coef*[numpy.array(points[p][-1]-xp[-1])for p in swx if p!=x])+xp[-1]
 
                 # Store the derivative                
-                deltas[d] = obrni * (xnz-xp[-1])
+                deltas[d] = obrni * (xnz-xp[-1]) / dt
+            #print deltas
+            self.progressBarSet(x*nPoints)
+            
+        self.progressBarFinished()
 
+
+    # calculates a linear regression on the star
+    def starRegression(self):
+        if not self.deltas:
+            self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
+
+        dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
+        if not dimensions:
+            return
+
+        if not self.points:        
+            self.points = orange.ExampleTable(orange.Domain(self.contAttributes, self.data.domain.classVar), self.data).native(0)
+        points = self.points
+        npoints = len(points)
+
+        if not self.tri:
+            print self.dimension
+            self.tri = self.triangulate(points)
+        tri = self.tri
+            
+        if not self.stars:
+            self.stars = [star(x, tri) for x in xrange(npoints)]
+        S = self.stars
+
+        points = self.points
+        nPoints = 100.0/len(points)
+
+        self.progressBarInit()
+        #print len(S)
+        for x,(S,p) in enumerate(zip(self.stars,points)):
+            #print x, # S
+            if S==[]:
+                self.deltas[x] = ['?' for i in dimensions]
+                continue
+            st  =list(Set(reduce(lambda x,y: x+y, S)))
+            A = [points[i][:-1] for i in st]
+            b = [[points[i][-1]] for i in st]
+            #print "\t", A
+            #print "\t", b
+            self.deltas[x] = [i[0] for i in numpy.linalg.lstsq(A, b)[0]]
+            #print star_lin_reg
+            #if x>3: break
             self.progressBarSet(x*nPoints)
             
         self.progressBarFinished()
             
+
 
     def tubedRegression(self):
         if not self.deltas:
@@ -188,14 +236,14 @@ class OWPade(OWWidget):
             return
 
         if not self.findNearest:
-            self.findNearest = orange.FindNearestConstructor_BruteForce(self.data, distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean())
+            self.findNearest = orange.FindNearestConstructor_BruteForce(self.data, distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean(), includeSame=False)
             
         if not self.attrStat:
             self.attrStat = orange.DomainBasicAttrStat(self.data)
 
         self.progressBarInit()
         nExamples = len(self.data)
-        nPoints = 100.0/nExamples/self.dimension
+        nPoints = 100.0/nExamples/len(dimensions)
 
         normalizers = self.findNearest.distance.normalizers
         
@@ -205,7 +253,6 @@ class OWPade(OWWidget):
             minV, maxV = self.attrStat[contIdx].min, self.attrStat[contIdx].max
             if minV == maxV:
                 continue
-            span = (maxV - minV) /2 / math.log(.001)
             
             oldNormalizer = normalizers[self.contIndices[d]]
             normalizers[self.contIndices[d]] = 0
@@ -218,13 +265,21 @@ class OWPade(OWWidget):
                 ref_x = float(ref_example[contIdx])
 
                 Sx = Sy = Sxx = Syy = Sxy = n = 0.0
-                
-                for ex in self.findNearest(ref_example, 0, True):
+
+                nn = self.findNearest(ref_example, 30, True)
+                mx = max([abs(ex[contIdx] - ref_x) for ex in nn if not ex[contIdx].isSpecial()])
+                # Tole ni prav - samo prevec enakih je...
+                if not mx:
+                    self.deltas[exi][d] = "?"
+                    continue
+
+                kw = math.log(.001) / mx**2
+                for ex in nn:
                     if ex[contIdx].isSpecial():
                         continue
                     ex_x = float(ex[contIdx])
                     ex_y = float(ex.getclass())
-                    w = math.exp(-((ex_x-ref_x)/span)**2)
+                    w = math.exp(kw*(ex_x-ref_x)**2)
                     Sx += w * ex_x
                     Sy += w * ex_y
                     Sxx += w * ex_x**2
@@ -249,6 +304,8 @@ class OWPade(OWWidget):
                     self.deltas[exi][d] = "?"
 
                 self.progressBarSet((nExamples*di+exi)*nPoints)
+
+            normalizers[self.contIndices[d]] = oldNormalizer
             
         self.progressBarFinished()
     
@@ -332,7 +389,7 @@ class OWPade(OWWidget):
             return
 
         self.dimension = len(self.dimensions)
-        [self.D, None, self.tubedRegression][self.method]()
+        [self.D, self.starRegression, self.tubedRegression][self.method]()
 
         self.actThreshold = self.enableThreshold and abs(self.threshold)
 
