@@ -104,8 +104,9 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 	}
 
 	int area = width * height;
-	k = sqrt((double)(area / graph->nVertices));
 	k2 = area / graph->nVertices;
+	k = sqrt(k2);
+	double kk = 2 * k;
 
 	// iterations
 	for (int i = 0; i < steps; i++)
@@ -130,11 +131,14 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 				if (dif == 0)
 					dif = 1;
 
+				if (dif < kk)
+				{
 				disp[v][0] = disp[v][0] + ((difX / dif) * repulsiveForce(dif));
 				disp[v][1] = disp[v][1] + ((difY / dif) * repulsiveForce(dif));
 
 				disp[u][0] = disp[u][0] - ((difX / dif) * repulsiveForce(dif));
 				disp[u][1] = disp[u][1] - ((difY / dif) * repulsiveForce(dif));
+				}
 			}
 		}
 
