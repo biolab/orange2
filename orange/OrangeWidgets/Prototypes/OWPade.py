@@ -38,6 +38,9 @@ class OWPade(OWWidget):
         self.enableThreshold = 0
         self.threshold = 0.0
         self.method = 2
+        self.useMQCNotation = False
+
+        self.nNeighbours = 30        
         
         self.loadSettings()
 
@@ -50,20 +53,24 @@ class OWPade(OWWidget):
         lb.setMinimumSize(200, 200)
 
         box = OWGUI.widgetBox(self.controlArea, "Method", addSpace = True)
-        OWGUI.comboBox(box, self, "method", callback = self.methodChanged, items = ["First Triangle", "Star Regression", "Tube Regression"])
+        OWGUI.comboBox(box, self, "method", callback = self.methodChanged, items = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression"])
+        self.nNeighboursSpin = OWGUI.spin(box, self, "nNeighbours", 10, 200, 10, label = "Number of neighbours" + "  ", callback = self.methodChanged)
                        
         box = OWGUI.widgetBox(self.controlArea, "Threshold", orientation=0, addSpace = True)
         threshCB = OWGUI.checkBox(box, self, "enableThreshold", "Ignore differences below ")
         ledit = OWGUI.lineEdit(box, self, "threshold", valueType=float, validator=QDoubleValidator(0, 1e30, 0, self, ""))
         threshCB.disables.append(ledit)
         threshCB.makeConsistent()
-        
+
         box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", ["Qualitative derivative", "Quantitative differences"], box="Output", addSpace = True, callback=self.dimensionsChanged)
         self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
         OWGUI.separator(box)
         self.metaCB = OWGUI.checkBox(box, self, "derivativeAsMeta", label="Store q-derivative as meta attribute")
         OWGUI.checkBox(box, self, "differencesAsMeta", label="Store differences as meta attributes")
         OWGUI.checkBox(box, self, "originalAsMeta", label="Store original class as meta attribute")
+
+        OWGUI.separator(box)
+        OWGUI.checkBox(box, self, "useMQCNotation", label = "Use MQC notation")
         
         self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
 
@@ -121,6 +128,8 @@ class OWPade(OWWidget):
             self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
 
         dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
+        if self.output and self.outputAttr not in self.dimensions and not self.deltas[0][self.outputAttr]:
+            dimensions.append(self.outputAttr)
         if not dimensions:
             return
 
@@ -186,6 +195,8 @@ class OWPade(OWWidget):
             self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
 
         dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
+        if self.output and self.outputAttr not in self.dimensions and not self.deltas[0][self.outputAttr]:
+            dimensions.append(self.outputAttr)
         if not dimensions:
             return
 
@@ -207,31 +218,73 @@ class OWPade(OWWidget):
         nPoints = 100.0/len(points)
 
         self.progressBarInit()
-        #print len(S)
         for x,(S,p) in enumerate(zip(self.stars,points)):
-            #print x, # S
             if S==[]:
                 self.deltas[x] = ['?' for i in dimensions]
                 continue
             st  =list(Set(reduce(lambda x,y: x+y, S)))
             A = [points[i][:-1] for i in st]
             b = [[points[i][-1]] for i in st]
-            #print "\t", A
-            #print "\t", b
             self.deltas[x] = [i[0] for i in numpy.linalg.lstsq(A, b)[0]]
-            #print star_lin_reg
-            #if x>3: break
             self.progressBarSet(x*nPoints)
             
         self.progressBarFinished()
             
+    # calculates a univariate linear regression on the star
+    def starUnivariateRegression(self):
+        if not self.deltas:
+            self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
 
+        dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
+        if not dimensions:
+            return
 
+        if not self.points:        
+            self.points = orange.ExampleTable(orange.Domain(self.contAttributes, self.data.domain.classVar), self.data).native(0)
+        points = self.points
+        npoints = len(points)
+
+        if not self.tri:
+            print self.dimension
+            self.tri = self.triangulate(points)
+        tri = self.tri
+            
+        if not self.stars:
+            self.stars = [star(x, tri) for x in xrange(npoints)]
+        S = self.stars
+
+        points = self.points
+        nPoints = 100.0/len(points)
+
+        self.progressBarInit()
+        for x,(S,p) in enumerate(zip(self.stars,points)):
+            if S==[]:
+                self.deltas[x] = ['?' for i in dimensions]
+                continue
+            st = list(Set(reduce(lambda x,y: x+y, S)))
+            lenst = len(st)
+            avgy = sum([points[i][-1] for i in st])/lenst
+            for di, d in enumerate(dimensions):
+                avgx = sum([points[i][di] for i in st])/lenst
+                sxx2 = sum([(points[i][di]-avgx)**2 for i in st])
+                if sxx2:
+                    sxx = sum([(points[i][di]-avgx)*(points[i][-1]-avgy) for i in st])
+                    b = sxx/sxx2
+                    self.deltas[x][di] = b
+                else:
+                    self.deltas[x][di] = '?'
+            self.progressBarSet(x*nPoints)
+            
+        self.progressBarFinished()
+
+    # regression in a tube
     def tubedRegression(self):
         if not self.deltas:
             self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
 
         dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
+        if self.output and self.outputAttr not in self.dimensions and not self.deltas[0][self.outputAttr]:
+            dimensions.append(self.outputAttr)
         if not dimensions:
             return
 
@@ -266,14 +319,14 @@ class OWPade(OWWidget):
 
                 Sx = Sy = Sxx = Syy = Sxy = n = 0.0
 
-                nn = self.findNearest(ref_example, 30, True)
-                mx = max([abs(ex[contIdx] - ref_x) for ex in nn if not ex[contIdx].isSpecial()])
+                nn = self.findNearest(ref_example, self.nNeighbours, True)
+                mx = [abs(ex[contIdx] - ref_x) for ex in nn if not ex[contIdx].isSpecial()]
                 # Tole ni prav - samo prevec enakih je...
                 if not mx:
                     self.deltas[exi][d] = "?"
                     continue
-
-                kw = math.log(.001) / mx**2
+                
+                kw = math.log(.001) / max(mx)**2
                 for ex in nn:
                     if ex[contIdx].isSpecial():
                         continue
@@ -315,10 +368,7 @@ class OWPade(OWWidget):
 
 
     def onNoAttributes(self):
-        if not self.output:
-            self.dimensions = []
-        else:
-            self.dimensions = [self.outputAttr]
+        self.dimensions = []
         self.dimensionsChanged()
 
 
@@ -329,10 +379,7 @@ class OWPade(OWWidget):
 
         
     def dimensionsChanged(self):
-        if self.output:
-            if self.outputAttr not in self.dimensions:
-                self.dimensions.append(self.outputAttr)
-                self.dimensions.sort()
+        if self.output and self.dimensions:
             if not self.metaCB.isEnabled():
                 self.derivativeAsMeta = self.savedDerivativeAsMeta
                 self.metaCB.setEnabled(True)
@@ -342,11 +389,12 @@ class OWPade(OWWidget):
                 self.derivativeAsMeta = 0
                 self.metaCB.setEnabled(False)
 
-        self.applyButton.setEnabled(bool(self.dimensions))
+        self.applyButton.setEnabled(bool(self.dimensions) or self.output)
 
 
     def methodChanged(self):
         self.deltas = None
+        self.nNeighboursSpin.setEnabled(bool(self.method==3))
         
     def onDataInput(self, data):
         self.closeContext()
@@ -389,31 +437,33 @@ class OWPade(OWWidget):
             return
 
         self.dimension = len(self.dimensions)
-        [self.D, self.starRegression, self.tubedRegression][self.method]()
+        [self.D, self.starRegression, self.starUnivariateRegression, self.tubedRegression][self.method]()
 
-        self.actThreshold = self.enableThreshold and abs(self.threshold)
+        threshold = self.enableThreshold and abs(self.threshold)
 
         mpart = "(" + ",".join([self.attributes[i][0] for i in self.dimensions]) + ")"
         
         if self.output:
-            classVar = orange.FloatVariable("d"+self.attributes[self.outputAttr][0])
+            classVar = orange.FloatVariable("df/d"+self.attributes[self.outputAttr][0])
         else:
-#            classVar = orange.EnumVariable("Q", values = [", ".join([self.attributes[i][0]+"+-oX"[x] for i, x in enumerate(v)]) for v in orngMisc.LimitedCounter([4]*self.dimension)])
-            classVar = orange.EnumVariable("Q", values = ["M"+ "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)])
-#            classVar = orange.EnumVariable("Q", values = ["M" + "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)])
+            if self.useMQCNotation:
+                classVar = orange.EnumVariable("Q", values = ["M"+ "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)])
+            else:
+                classVar = orange.EnumVariable("Q", values = ["M("+", ".join(["+-oX"[x]+self.attributes[i][0] for i, x in enumerate(v)])+")" for v in orngMisc.LimitedCounter([4]*self.dimension)])
             
         dom = orange.Domain(data.domain.attributes, classVar)
 
         if self.derivativeAsMeta:
             derivativeID = orange.newmetaid()
-#            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = [", ".join([self.attributes[i][0]+"+-oX"[x] for i, x in enumerate(v)]) for v in orngMisc.LimitedCounter([4]*self.dimension)]))
-            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["M" + "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)]))
-#            dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["M" + "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)]))
+            if self.useMQCNotation:
+                dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["M" + "".join(["+-oX"[x] for x in v]) + mpart for v in orngMisc.LimitedCounter([4]*self.dimension)]))
+            else:
+                dom.addmeta(derivativeID, orange.EnumVariable("Q", values = ["M("+", ".join(["+-oX"[x]+self.attributes[i][0] for i, x in enumerate(v)])+")" for v in orngMisc.LimitedCounter([4]*self.dimension)]))
             
         metaIDs = []        
         if self.differencesAsMeta:
             for dim in self.dimensions:
-                metaVar = orange.FloatVariable("d"+self.attributes[dim][0])
+                metaVar = orange.FloatVariable("df/d"+self.attributes[dim][0])
                 metaID = orange.newmetaid()
                 dom.addmeta(metaID, metaVar)
                 metaIDs.append(metaID)
@@ -429,14 +479,16 @@ class OWPade(OWWidget):
             if self.output:
                 pad.setclass(alldeltas[self.outputAttr])
             else:
-#                pad.setclass("M" + "".join([((delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o") for delta in deltas]) + mpart)
-                pad.setclass("M" + "".join([((delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o") for delta in deltas]) + mpart)
-#                pad.setclass(", ".join([self.attributes[i][0]+((delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o") for i, delta in enumerate(deltas)]))
+                if self.useMQCNotation:
+                    pad.setclass("M" + "".join([((delta > threshold and "+") or (delta < -threshold and "-") or (delta == "?" and delta) or "o") for delta in deltas]) + mpart)
+                else:
+                    pad.setclass("M(" + ", ".join([((delta > threshold and "+") or (delta < -threshold and "-") or (delta == "?" and delta) or "o")+self.attributes[i][0] for i, delta in enumerate(deltas)])+")")
 
             if self.derivativeAsMeta:
-#                pad.setmeta(derivativeID, "".join([(delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o" for delta in deltas]))
-                pad.setmeta(derivativeID, "M" + "".join([(delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o" for delta in deltas]) + mpart)
-#                pad.setmeta(derivativeID, "M"+ "".join([(delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o" for delta in deltas]) + mpart)
+                if self.useMQCNotation:
+                    pad.setmeta(derivativeID, "M" + "".join([(delta > self.threshold and "+") or (delta < -self.threshold and "-") or (delta == "?" and delta) or "o" for delta in deltas]) + mpart)
+                else:
+                    pad.setmeta(derivativeID, "M("+", ".join([((delta > threshold and "+") or (delta < -threshold and "-") or (delta == "?" and delta) or "o")+self.attributes[i][0] for i, delta in enumerate(deltas)])+")")
 
             if self.differencesAsMeta:
                 for a in zip(metaIDs, deltas):
