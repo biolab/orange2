@@ -341,10 +341,10 @@ class OWCN2RulesViewer(OWWidget):
         if self.examples:
             examples = orange.ExampleTable(self.examples)
             self.send("Classified Examples", examples)
-            self.send("ExampleTable", examples)
+            self.send("Examples", examples)
         else:
             self.send("Classified Examples", None)
-            self.send("ExampleTable",None)
+            self.send("Examples",None)
 
     def saveRules(self):
         fileName=str(QFileDialog.getSaveFileName("Rules.txt",".txt"))
