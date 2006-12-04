@@ -15,8 +15,9 @@ def clearCache(cache):
     cache.points = cache.tri = cache.stars = cache.dts = cache.deltas = cache.findNearest = cache.attrStat = None
 
 
-def makeEmptyCache():
-    cache = Cache()
+def makeEmptyCache(cache = None):
+    if not cache:
+        cache = Cache()
     cache.data = None
     cache.attributes = []
     cache.contAttributes = []
@@ -25,8 +26,9 @@ def makeEmptyCache():
     return cache
 
 
-def makeBasicCache(data):
-    cache = Cache()
+def makeBasicCache(data, cache = None):
+    if not cache:
+        cache = Cache()
 
     cache.data = data              
     cache.npoints = len(data)

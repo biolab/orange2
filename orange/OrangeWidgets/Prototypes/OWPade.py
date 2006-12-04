@@ -16,7 +16,7 @@ import OWGUI
 class OWPade(OWWidget):
 
     settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
-    contextHandlers = {"": DomainContextHandler("", ["outputAttr", ContextField("attributes", DomainContextHandler.SelectedRequiredList, selected="dimensions")])}
+    contextHandlers = {"": DomainContextHandler("", ["outputAttr", ContextField("attributes", DomainContextHandler.RequiredList, selected="dimensions")], False, False, False, False)}
 
     methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression"]    
     methods = [orngPade.firstTriangle, orngPade.starRegression, orngPade.starUnivariateRegression, orngPade.tubedRegression]
@@ -44,7 +44,7 @@ class OWPade(OWWidget):
         self.loadSettings()
 
         box = OWGUI.widgetBox(self.controlArea, "Attributes", addSpace = True)
-        lb = OWGUI.listBox(box, self, "dimensions", "attributes", selectionMode=QListBox.Multi, callback=self.dimensionsChanged)
+        lb = self.lb = OWGUI.listBox(box, self, "dimensions", "attributes", selectionMode=QListBox.Multi, callback=self.dimensionsChanged)
         hbox = OWGUI.widgetBox(box, orientation=0)
         OWGUI.button(hbox, self, "All", callback=self.onAllAttributes)
         OWGUI.button(hbox, self, "None", callback=self.onNoAttributes)
@@ -106,13 +106,13 @@ class OWPade(OWWidget):
 
     def methodChanged(self):
         self.deltas = None
-        self.nNeighboursSpin.setEnabled(bool(self.method==3))
+        #self.nNeighboursSpin.setEnabled(bool(self.method==3))
 
 
     def onDataInput(self, data):
         self.closeContext()
         if data:
-            self.__dict__.update(orngPade.makeBasicCache(data).__dict__)
+            orngPade.makeBasicCache(data, self)
 
             icons = OWGUI.getAttributeIcons()
             self.outputLB.clear()
@@ -121,7 +121,7 @@ class OWPade(OWWidget):
            
             self.dimensions = range(len(self.attributes))
         else:
-            self.__dict__.update(orngPade.makeEmptyCache().__dict__)
+            orngPade.makeEmptyCache(self)
             self.dimensions = []
 
         self.openContext("", data)
