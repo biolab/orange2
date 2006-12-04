@@ -71,7 +71,7 @@ class OWCN2RulesViewer(OWWidget):
         OWWidget.__init__(self, parent, signalManager,"CN2 Rules Viewer")
         
         self.inputs=[("CN2UnorderedClassifier", orngCN2.CN2UnorderedClassifier, self.data)]
-        self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
+        self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Attribute List", AttributeList)]
         self.RuleLen=1
         self.RuleQ=1
         self.Coverage=1
@@ -79,6 +79,7 @@ class OWCN2RulesViewer(OWWidget):
         self.Dist=1
         self.DistBar=1
         self.Commit=1
+        self.SelectedAttrOnly=0
         self.Rule=1
         self.Sort=0
         self.loadSettings()
@@ -116,6 +117,7 @@ class OWCN2RulesViewer(OWWidget):
         box=OWGUI.widgetBox(self.controlArea,"Output")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
         OWGUI.checkBox(box,self,"Commit", "Commit on change")
+        OWGUI.checkBox(box,self,"SelectedAttrOnly","Selected attributes only")
         OWGUI.button(box,self,"&Commit",callback=self.commit)
 
         QVBox(self.controlArea)
@@ -336,15 +338,37 @@ class OWCN2RulesViewer(OWWidget):
         #print self.text
         if self.Sort>=2 and self.Sort!=4 and self.Sort !=6:
             self.text.reverse()     
-            
+
+    def selectAttributes(self):
+        import sets
+        selected=[]
+        for r in self.selRect:
+            string=orngCN2.ruleToString(r.rule)[2:].strip(" ").split("THEN")[0]
+            list=string.split("AND")
+            for l in list:
+                s=re.split("[=<>]", l.strip(" "))
+                selected.append(s[0])
+        selected=reduce(lambda l,r:(r in l) and l or l+[r], selected, [])
+        return selected          
+
     def commit(self):
         if self.examples:
-            examples = orange.ExampleTable(self.examples)
+            selected=self.selectAttributes()
+            varList=[self.classifier.examples.domain[s] for s in selected]
+            if self.SelectedAttrOnly:
+                domain=orange.Domain(varList+[self.classifier.examples.domain.classVar])
+                domain.addmetas(self.classifier.examples.domain.getmetas())
+                examples=orange.ExampleTable(domain, self.examples)
+            else:
+                examples = orange.ExampleTable(self.examples)
             self.send("Classified Examples", examples)
             self.send("Examples", examples)
+            self.send("Attribute List", orange.VarList(varList))
         else:
             self.send("Classified Examples", None)
             self.send("Examples",None)
+            self.send("Attribute List", None)
+            
 
     def saveRules(self):
         fileName=str(QFileDialog.getSaveFileName("Rules.txt",".txt"))
