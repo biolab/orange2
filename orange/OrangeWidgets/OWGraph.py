@@ -99,6 +99,7 @@ class OWGraph(QwtPlot):
         #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
+        self.currentScale = {}
 
 
     def __setattr__(self, name, value):
@@ -115,6 +116,13 @@ class OWGraph(QwtPlot):
     def saveToFileDirect(self, fileName, size = None):
         sizeDlg = OWChooseImageSizeDlg(self)
         sizeDlg.saveImage(fileName, size)
+
+    def setAxisScale(self, axis, min, max, step = 0):
+        current = self.currentScale.get(axis, None)
+        if current and current == (min, max, step): return
+        QwtPlot.setAxisScale(self, axis, min, max, step)
+        self.currentScale[axis] = (min, max, step)
+        
         
     def setYLlabels(self, labels):
         "Sets the Y-axis labels on the left."
@@ -227,6 +235,9 @@ class OWGraph(QwtPlot):
         Called whenever repaint is needed by the system
         or user explicitly calls repaint()
         """
+        for key in self.selectionCurveKeyList:     # the selection curves must set new point array 
+            self.curve(key).pointArrayValid = 0    # at any change in the graphics otherwise the right examples will not be selected
+            
         QwtPlot.paintEvent(self, qpe) #let the ancestor do its job
         self.replot()
  
@@ -249,6 +260,7 @@ class OWGraph(QwtPlot):
         self.repaint()
 
     def setShowXaxisTitle(self, b):
+        if b == self.showXaxisTitle: return
         self.showXaxisTitle = b
         if (self.showXaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
@@ -258,6 +270,7 @@ class OWGraph(QwtPlot):
         self.repaint()
 
     def setXaxisTitle(self, title):
+        if title == self.XaxisTitle: return
         self.XaxisTitle = title
         if (self.showXaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
@@ -267,6 +280,7 @@ class OWGraph(QwtPlot):
         self.repaint()
 
     def setShowYLaxisTitle(self, b):
+        if b == self.showYLaxisTitle: return
         self.showYLaxisTitle = b
         if (self.showYLaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
@@ -276,6 +290,7 @@ class OWGraph(QwtPlot):
         self.repaint()
 
     def setYLaxisTitle(self, title):
+        if title == self.YLaxisTitle: return
         self.YLaxisTitle = title
         if (self.showYLaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
@@ -285,6 +300,7 @@ class OWGraph(QwtPlot):
         self.repaint()
 
     def setShowYRaxisTitle(self, b):
+        if b == self.showYRaxisTitle: return
         self.showYRaxisTitle = b
         if (self.showYRaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
@@ -294,6 +310,7 @@ class OWGraph(QwtPlot):
         self.repaint()
 
     def setYRaxisTitle(self, title):
+        if title == self.YRaxisTitle: return
         self.YRaxisTitle = title
         if (self.showYRaxisTitle <> 0):
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
@@ -342,6 +359,7 @@ class OWGraph(QwtPlot):
         # clear all curves, markers, tips
         self.removeAllSelections(0)  # clear all selections
         self.removeCurves()
+        self.legendCurveKeys = []
         self.removeMarkers()
         self.tips.removeAll()
         self.zoomStack = []
@@ -597,6 +615,16 @@ class OWGraph(QwtPlot):
         for curveKey in self.selectionCurveKeyList:
             if self.curve(curveKey).isInside(x,y): return 1
         return 0
+
+    # return two lists of 0's and 1's whether each point in (xData, yData) is selected or not
+    def getSelectedPoints(self, xData, yData, validData):
+        import Numeric
+        total = Numeric.zeros(len(xData))
+        for curveKey in self.selectionCurveKeyList:
+            total += self.curve(curveKey).getSelectedPoints(xData, yData, validData)
+        unselected = Numeric.equal(total, 0)
+        selected = 1 - unselected
+        return selected.tolist(), unselected.tolist()
 
     # save graph in matplotlib python file
     def saveToMatplotlib(self, fileName, size = QSize(400,400)):
