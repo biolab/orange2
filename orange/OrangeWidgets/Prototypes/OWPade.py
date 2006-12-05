@@ -145,7 +145,7 @@ class OWPade(OWWidget):
             self.methods[self.method](self, dimensionsToCompute, self.progressBarSet)
             self.progressBarFinished()
 
-        paded, derivativeID, metaIDs = orngPade.createQTable(self, data, self.dimensions,
+        paded, derivativeID, metaIDs, classID = orngPade.createQTable(self, data, self.dimensions,
                                                              not self.output and -1 or self.outputAttr,
                                                              self.enableThreshold and abs(self.threshold),
                                                              self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, self.originalAsMeta)
