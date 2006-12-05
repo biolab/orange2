@@ -357,7 +357,9 @@ class OWDistanceMap(OWWidget):
             maxWidth = 0
             for i in range(0, len(indices)):
 #                text = str(i)
-                text = items[indices[i]].name
+                text = items[indices[i]]
+                if type(text) not in [str, unicode]:
+                    text = text.name
                 if text<>"":
                     tmpText = QCustomCanvasText(text, self.canvas, -90.0)
                     tmpText.show()
@@ -465,8 +467,16 @@ class OWDistanceMap(OWWidget):
                 j = self.getItemFromPos(row)
                 self.bubble.head.setText(str(self.matrix[i, j]))
               
-                if (self.ShowItemsInBalloon == 1) and ((self.matrix.items[i].name<>"") or (self.matrix.items[i].name<>"")):
-                    self.bubble.body.setText(self.matrix.items[i].name + "\n" + self.matrix.items[j].name)
+                if (self.ShowItemsInBalloon == 1):
+                    namei, namej = self.matrix.items[i], self.matrix.items[j]
+                    if type(namei) not in [str, unicode]:
+                        namei = namei.name
+                    if type(namej) not in [str, unicode]:
+                        namej = namej.name
+                    if namei or namej:
+                        self.bubble.body.setText(namei + "\n" + namej)
+                    else:
+                        self.bubble.body.setText("")
                 else:
                     self.bubble.body.setText("")
 
