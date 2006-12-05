@@ -402,6 +402,74 @@ def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tool
     combo = comboBox(hbox, master, value, items = items, tooltip = tooltip, callback = callback, sendSelectedValue = sendSelectedValue, valueType = valueType, debuggingEnabled = debuggingEnabled)
     return combo
 
+# creates a widget box with a button in the top right edge, that allows you to hide all the widgets in the box and collapse the box to its minimum height
+class collapsableWidgetBox(QVGroupBox):
+    def __init__(self, widget, box = "", master = None, value = ""):
+        QVGroupBox.__init__(self, widget)
+        if type(box) in (str, unicode): # if you pass 1 for box, there will be a box, but no text
+            self.setTitle(" " + box.strip() + " ")
+
+        self.pixEdgeOffset = 10        
+        
+        self.master = master
+        self.value = value
+        self.xPixCoord = 0
+        self.shownPixSize = (0,0)
+        self.childWidgetVisibility = {}
+        self.pixmaps = []
+
+        import os
+        iconDir = os.path.join(os.path.dirname(__file__), "icons")
+        icon1 = os.path.join(iconDir, "arrow_down.png")
+        icon2 = os.path.join(iconDir, "arrow_up.png")
+                        
+        if os.path.exists(icon1) and os.path.exists(icon2):
+            self.pixmaps = [QPixmap(icon1), QPixmap(icon2)]
+        else:
+            self.setBackgroundColor(Qt.black)
+        #self.updateControls()      # not needed yet, since no widgets are in it
+            
+
+    def mousePressEvent(self, ev):
+        QVGroupBox.mousePressEvent(self, ev)
+
+        # did we click on the pixmap?
+        if ev.x() > self.xPixCoord and ev.x() < self.xPixCoord + self.shownPixSize[0] and ev.y() < self.shownPixSize[1]:
+            self.master.__setattr__(self.value, not mygetattr(self.master, self.value))
+            self.updateControls()
+            self.repaint()
+
+    # call when all widgets are added into the widget box to update the correct state (shown or hidden)
+    def syncControls(self):
+        for c in self.children():
+            if isinstance(c, QLayout): continue
+            self.childWidgetVisibility[str(c)] = not c.isHidden()
+        self.updateControls()            
+    
+    def updateControls(self):
+        val = mygetattr(self.master, self.value)
+                
+        for c in self.children():
+            if isinstance(c, QLayout): continue
+            if val:
+                if self.childWidgetVisibility.get(str(c), 1): c.show()
+            else:
+                self.childWidgetVisibility[str(c)] = not c.isHidden()      # before hiding, save its visibility so that we'll know to show it or not later
+                c.hide()
+
+    def paintEvent(self, ev):
+        QVGroupBox.paintEvent(self, ev)
+        
+        if self.pixmaps != []:
+            pix = self.pixmaps[mygetattr(self.master, self.value)]
+            painter = QPainter(self)
+            painter.drawPixmap(self.width() - pix.width() - self.pixEdgeOffset, 0, pix)
+            self.xPixCoord = self.width() - pix.width() - self.pixEdgeOffset
+            self.shownPixSize = (pix.width(), pix.height())
+       
+
+
+# creates an icon that allows you to show/hide the widgets in the widgets list
 class widgetHider(QWidget):
     def __init__(self, widget, master, value, size = (19,19), widgets = [], tooltip = None):
         QWidget.__init__(self, widget)
@@ -420,7 +488,6 @@ class widgetHider(QWidget):
         if os.path.exists(icon1) and os.path.exists(icon2):
             self.pixmaps = [QPixmap(icon1), QPixmap(icon2)]
             w = self.pixmaps[0].width(); h = self.pixmaps[0].height()+1
-            
         else:
             self.setBackgroundColor(Qt.black)
             w,h = size
@@ -437,7 +504,6 @@ class widgetHider(QWidget):
             self.setWidgets(widgets)
 
     def mousePressEvent(self, ev):
-        #print "mousePressEvent", mygetattr(self.master, self.value)
         self.master.__setattr__(self.value, not mygetattr(self.master, self.value))
         if self.pixmaps != []:
             self.setBackgroundPixmap(self.pixmaps[mygetattr(self.master, self.value)])
@@ -446,7 +512,6 @@ class widgetHider(QWidget):
 
     def setWidgets(self, widgets):
         self.disables = widgets or []
-        #print "setWidgets", mygetattr(self.master, self.value)
         if self.pixmaps != []:
             self.setBackgroundPixmap(self.pixmaps[mygetattr(self.master, self.value)])
         self.makeConsistent.__call__()
