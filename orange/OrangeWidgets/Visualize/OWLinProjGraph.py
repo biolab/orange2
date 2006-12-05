@@ -56,10 +56,12 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.tooltipKind = 0        # index in ["Show line tooltips", "Show visible attributes", "Show all attributes"]
         self.tooltipValue = 0       # index in ["Tooltips show data values", "Tooltips show spring values"]
         self.scaleFactor = 1.0
-        self.insideColors = None
-        self.clusterClosure = None
         self.showClusters = 0
         self.showAttributeNames = 1
+
+        self.showKNN = 0   # widget sets this to 1 or 2 if you want to see correct or wrong classifications
+        self.insideColors = None
+        self.clusterClosure = None
 
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
@@ -200,11 +202,19 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # ##############################################################
         # show model quality
         # ############################################################## 
-        if self.insideColors != None:
+        if self.insideColors != None or self.showKNN:
+            # if we want to show knn classifications of the examples then turn the projection into example table and run knn
+            if self.insideColors:
+                insideData, stringData = self.insideColors
+            else:
+                shortData = self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in labels], settingsDict = {"useAnchorData": 1})
+                predictions, probabilities = self.widget.vizrank.kNNClassifyData(shortData)
+                if self.showKNN == 2: insideData, stringData = [1.0 - val for val in predictions], "Probability of wrong classification = %.2f%%"
+                else:                 insideData, stringData = predictions, "Probability of correct classification = %.2f%%"
+                
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = self.contPalette
             else:                                                                   classColors = self.discPalette
 
-            (insideData, stringData) = self.insideColors
             if len(insideData) != len(self.rawdata):
                 #print "Warning: The information that was supposed to be used for coloring of points is not of the same size as the original data. Numer of data examples: %d, number of color data: %d" % (len(self.rawdata), len(self.insideColors))
                 j = 0
@@ -448,7 +458,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                         yFloat = rad * sin(phi)
                     self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2]) 
                     self.updateData(self.shownAttributes)
-                    self.replot()
+                    self.repaint()
+                    #self.replot()
                     #self.widget.recomputeEnergy()
             return 
             
@@ -545,18 +556,21 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, useAnchorData, validData)
         
         if addProjectedPositions:
-            selected = orange.ExampleTable(domain, self.rawdata.getitemsref(selIndices))
-            unselected = orange.ExampleTable(domain, self.rawdata.getitemsref(unselIndices))
+            selected = orange.ExampleTable(domain, self.rawdata.selectref(selIndices))
+            unselected = orange.ExampleTable(domain, self.rawdata.selectref(unselIndices))
+            selIndex = 0; unselIndex = 0
             for i in range(len(selIndices)):
-                selected[i][xAttr] = array[selIndices[i]][0]
-                selected[i][yAttr] = array[selIndices[i]][1]
-
-            for i in range(len(unselIndices)):
-                unselected[i][xAttr] = array[unselIndices[i]][0]
-                unselected[i][yAttr] = array[unselIndices[i]][1]
+                if selIndices[i]:
+                    selected[selIndex][xAttr] = array[i][0]
+                    selected[selIndex][yAttr] = array[i][1]
+                    selIndex += 1
+                else:
+                    unselected[unselIndex][xAttr] = array[i][0]
+                    unselected[unselIndex][yAttr] = array[i][1]
+                    unselIndex += 1
         else:
-            selected = self.rawdata.getitemsref(selIndices)
-            unselected = self.rawdata.getitemsref(unselIndices)
+            selected = self.rawdata.selectref(selIndices)
+            unselected = self.rawdata.selectref(unselIndices)
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
@@ -570,15 +584,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if not validData: validData = self.getValidList(attrIndices)
         
         array = self.createProjectionAsNumericArray(attrList, settingsDict = {"scaleFactor": self.scaleFactor, "useAnchorData": useAnchorData, "removeMissingData": 0})
-        selIndices = []
-        unselIndices = []
-                 
-        for i in range(len(validData)):
-            if validData[i] and self.isPointSelected(array[i][0], array[i][1]): selIndices.append(i)
-            else:                                                               unselIndices.append(i)
-
-        return selIndices, unselIndices
-    
+        array = Numeric.transpose(array)
+        return self.getSelectedPoints(array[0], array[1], validData)
+            
         
     def getOptimalClusters(self, attributes, minLength, maxLength, addResultFunct):
         self.triedPossibilities = 0

@@ -55,7 +55,9 @@ class OWLinProj(OWVisWidget):
         self.learnerIndex = 0
         self.colorSettings = None
         self.addProjectedPositions = 0
+
         self.showProbabilitiesDetails = 0
+        self.boxGeneral = 1
         
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -148,7 +150,7 @@ class OWLinProj(OWVisWidget):
         OWGUI.comboBoxWithCaption(box, self, "graph.jitterSize", 'Jittering size (% of size)  ', callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
 
-        box2a = OWGUI.widgetBox(self.SettingsTab, self, " Scaling ")
+        box2a = OWGUI.widgetBox(self.SettingsTab, " Scaling Options ")
         OWGUI.comboBoxWithCaption(box2a, self, "graph.scaleFactor", 'Scale point position by: ', callback = self.updateGraph, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
 
         valueScalingList = ["attribute range", "global range", "attribute variance"]
@@ -156,7 +158,7 @@ class OWLinProj(OWVisWidget):
             valueScalingList.pop(); self.valueScalingType = min(self.valueScalingType, 1)
         OWGUI.comboBoxWithCaption(box2a, self, "valueScalingType", 'Scale values by: ', callback = self.setValueScaling, items = valueScalingList)
 
-        box3 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
+        box3 = OWGUI.collapsableWidgetBox(self.SettingsTab, " General Graph Settings ", self, "boxGeneral")
         
         #OWGUI.checkBox(box3, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
         OWGUI.checkBox(box3, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
@@ -169,7 +171,8 @@ class OWLinProj(OWVisWidget):
         box5 = OWGUI.widgetBox(box3, orientation = "horizontal")
         OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         hider = OWGUI.widgetHider(box5, self, "showProbabilitiesDetails", tooltip = "Show/hide extra settings")
-        OWGUI.rubber(box5)
+        rubb = OWGUI.rubber(box5)
+        rubb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum))
 
         box6 = OWGUI.widgetBox(box3, orientation = "horizontal")
         OWGUI.label(box6, self, "    Granularity:  ")
@@ -204,6 +207,7 @@ class OWLinProj(OWVisWidget):
         self.resize(900, 700)
         self.grid.activate()
         self.SettingsTab.updateGeometry()
+        
 
     def saveToFile(self):
         self.graph.saveToFile([("Save PixTex", self.graph.savePicTeX)])
@@ -352,16 +356,12 @@ class OWLinProj(OWVisWidget):
             attrList = self.getShownAttributeList()
         else:
             self.setShownAttributeList(self.data, attrList)
-        
-        if (self.vizrank.showKNNCorrectButton.isOn() or self.vizrank.showKNNWrongButton.isOn()) and self.hasDiscreteClass(self.data):
-            shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList], settingsDict = {"useAnchorData": 1})
-            kNNExampleAccuracy, probabilities = self.vizrank.kNNClassifyData(shortData)
-            if self.vizrank.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
-            else:   kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")
-        else:
-            kNNExampleAccuracy = None
 
-        self.graph.insideColors = insideColors or self.classificationResults or kNNExampleAccuracy or self.outlierValues
+        self.graph.showKNN = 0
+        if (self.vizrank.showKNNCorrectButton.isOn() or self.vizrank.showKNNWrongButton.isOn()) and self.hasDiscreteClass(self.data):
+            self.graph.showKNN = 1 + self.vizrank.showKNNCorrectButton.isOn() 
+        
+        self.graph.insideColors = insideColors or self.classificationResults or self.outlierValues
         self.graph.clusterClosure = clusterClosure
 
         self.graph.updateData(attrList, setAnchors, **args)
@@ -377,9 +377,7 @@ class OWLinProj(OWVisWidget):
             name = getattr(data, "name", "")
             data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
             data.name = name
-            
-        if self.data and data and self.data.checksum() == data.checksum():
-            return    # check if the new data set is the same as the old one
+        if self.data and data and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
 
         self.closeContext()        
         exData = self.data

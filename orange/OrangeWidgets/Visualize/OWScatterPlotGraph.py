@@ -50,12 +50,8 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.shownYAttribute = ""
         self.squareGranularity = 3
         self.spaceBetweenCells = 1
-
-        self.oldXAttr = ""
-        self.oldYAttr = ""
+        
         self.oldShowColorLegend = -1
-        self.oldShowXAxisTitle = ""
-        self.oldShowYAxisTitle = ""
         self.oldLegendKeys = {}
 
     def setData(self, data):
@@ -89,8 +85,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         xAttrIndex = self.attributeNameIndex[xAttr]
         yAttrIndex = self.attributeNameIndex[yAttr]
     
-
-        # #######################################################
         # set axis for x attribute
         attrXIndices = {}
         discreteX = (self.rawdata.domain[xAttrIndex].varType == orange.VarTypes.Discrete)
@@ -98,21 +92,14 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             xVarMax -= 1; xVar -= 1
             xmin = xVarMin - (self.jitterSize + 10.)/100. ; xmax = xVarMax + (self.jitterSize + 10.)/100.
             attrXIndices = getVariableValueIndices(self.rawdata, xAttrIndex)
-            if self.showAxisScale or xAttr != self.oldXAttr:
+            if self.showAxisScale or xAttr != self.XaxisTitle:
                 self.setXlabels(getVariableValuesSorted(self.rawdata, xAttrIndex))
-            if xAttr != self.oldXAttr or self.oldShowColorLegend != showColorLegend:
-                self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07, 1)
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07, 1)
         else:
             off  = (xVarMax - xVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
             xmin = xVarMin - off; xmax = xVarMax + off
-            if xAttr != self.oldXAttr or self.oldShowColorLegend != showColorLegend:
-                #self.setXlabels(None)
-                self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07)
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07)
         
-        # #######################################################
-        
-   
-        # #######################################################
         # set axis for y attribute
         attrYIndices = {}
         discreteY = (self.rawdata.domain[yAttrIndex].varType == orange.VarTypes.Discrete)
@@ -120,31 +107,21 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             yVarMax -= 1; yVar -= 1
             ymin, ymax = yVarMin - (self.jitterSize + 10.)/100., yVarMax + (self.jitterSize + 10.)/100.
             attrYIndices = getVariableValueIndices(self.rawdata, yAttrIndex)
-            if self.showAxisScale or yAttr != self.oldYAttr:
+            if self.showAxisScale or yAttr != self.YLaxisTitle:
                 self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttrIndex))
-            if yAttr != self.oldYAttr or self.oldShowColorLegend != showColorLegend:
-                self.setAxisScale(QwtPlot.yLeft, ymin, ymax, 1)
+            self.setAxisScale(QwtPlot.yLeft, ymin, ymax, 1)
         else:
             off  = (yVarMax - yVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
             ymin, ymax = yVarMin - off, yVarMax + off
-            if yAttr != self.oldYAttr or self.oldShowColorLegend != showColorLegend:
-                #self.setYLlabels(None)
-                self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
-        # #######################################################
+            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
 
-        if self.oldShowXAxisTitle != self.showXaxisTitle or self.oldXAttr != xAttr:
-            if self.showXaxisTitle: self.setXaxisTitle(xAttr)
-            else: self.setXaxisTitle(None)
+        if self.showXaxisTitle: self.setXaxisTitle(xAttr)
+        else: self.setXaxisTitle(None)
 
-        if self.oldShowYAxisTitle != self.showYLaxisTitle or self.oldYAttr != yAttr:
-            if self.showYLaxisTitle: self.setYLaxisTitle(yAttr)
-            else: self.setYLaxisTitle(None)
+        if self.showYLaxisTitle: self.setYLaxisTitle(yAttr)
+        else: self.setYLaxisTitle(None)
 
-        self.oldXAttr = xAttr
-        self.oldYAttr = yAttr
         self.oldShowColorLegend = showColorLegend
-        self.oldShowXAxisTitle = self.showXaxisTitle
-        self.oldShowYAxisTitle = self.showYLaxisTitle
 
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
@@ -164,16 +141,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         attrIndices = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
         while -1 in attrIndices: attrIndices.remove(-1)
         self.shownAttributeIndices = attrIndices
-        
-        xData = self.scaledData[xAttrIndex].copy()
-        yData = self.scaledData[yAttrIndex].copy()
+
+        # compute x and y positions of the points in the scatterplot        
+        xData, yData = self.getXYPositions(xAttr, yAttr)
         validData = self.getValidList([xAttrIndex, yAttrIndex])
-
-        if self.rawdata.domain[xAttrIndex].varType == orange.VarTypes.Discrete: xData = ((xData * 2*len(self.rawdata.domain[xAttrIndex].values)) - 1.0) / 2.0
-        else:  xData = xData * (self.attrValues[xAttr][1] - self.attrValues[xAttr][0]) + float(self.attrValues[xAttr][0])
-
-        if self.rawdata.domain[yAttrIndex].varType == orange.VarTypes.Discrete: yData = ((yData * 2*len(self.rawdata.domain[yAttrIndex].values)) - 1.0) / 2.0
-        else:  yData = yData * (self.attrValues[yAttr][1] - self.attrValues[yAttr][0]) + float(self.attrValues[yAttr][0])
 
         # #######################################################
         # show probabilities
@@ -518,8 +489,8 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList)
 
-        selected = self.rawdata.getitemsref(selIndices)
-        unselected = self.rawdata.getitemsref(unselIndices)
+        selected = self.rawdata.selectref(selIndices)
+        unselected = self.rawdata.selectref(unselIndices)
         
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
@@ -534,14 +505,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         if not validData: validData = self.getValidList(attrIndices)
         
-        (xArray, yArray) = self.createProjection(xAttr, yAttr)
-                 
-        selIndices = []; unselIndices = []
-        for i in range(len(self.rawdata)):
-            if validData[i] and self.isPointSelected(xArray[i], yArray[i]): selIndices.append(i)
-            else: unselIndices.append(i)
+        (xArray, yArray) = self.getXYPositions(xAttr, yAttr)
 
-        return selIndices, unselIndices
+        return self.getSelectedPoints(xArray, yArray, validData)
     
            
     # add tooltips for pie charts

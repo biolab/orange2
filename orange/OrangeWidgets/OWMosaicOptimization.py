@@ -5,17 +5,17 @@ import OWGUI, orngVisFuncts
 from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
-mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlation With Class)", CRAMERS_PHI),("Information Gain (In Percents Of Class Entropy Removed)", INFORMATION_GAIN), ("Gain Ratio", GAIN_RATIO), ("Interaction Gain (In Percents Of Class Entropy Removed)", INTERACTION_GAIN),("Average Probability Of Correct Classification", AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION), ("Gini index", GINI_INDEX), ("CN2 Rules", CN2_RULES)]
+mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),("Cramer's Phi (Correlation With Class)", CRAMERS_PHI),("Information Gain (In % Of Class Entropy Removed)", INFORMATION_GAIN), ("Gain Ratio", GAIN_RATIO), ("Interaction Gain (In % Of Class Entropy Removed)", INTERACTION_GAIN),("Average Probability Of Correct Classification", AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION), ("Gini index", GINI_INDEX), ("CN2 Rules", CN2_RULES)]
 
 class OWMosaicOptimization(OWBaseWidget, orngMosaic):
-    resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
+    resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000]
     resultsListLenList = [str(x) for x in resultsListLenNums]
     settingsList = ["attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
-                    "evaluationTime", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount",
+                    "timeLimit", "useTimeLimit", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount",
                     "optimizeAttributeOrder", "optimizeAttributeValueOrder", "attributeOrderTestingMethod"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
-    evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
+    #evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
     
     def __init__(self, parentWidget = None, signalManager = None):
         OWBaseWidget.__init__(self, None, signalManager, "Mosaic Optimization Dialog")
@@ -31,12 +31,12 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.optimizeAttributeValueOrder = 0
         self.VizRankClassifierName = "Mosaic Learner"
         self.useOnlyRelevantInteractionsInArgumentation = 0 # unused variable present in old ini files
-        
-        
+                
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
         self.cancelOptimization = 0
         self.cancelArgumentation = 0
+        self.useTimeLimit = 0
         
         self.attrLenDict = {}
        
@@ -55,7 +55,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.tabs.insertTab(self.SettingsTab, "Settings")
         self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         self.tabs.insertTab(self.ClassificationTab, "Classification")
-        self.tabs.insertTab(self.ManageTab, "Manage & Save")        
+        self.tabs.insertTab(self.ManageTab, "Save")        
 
         # ###########################
         # MAIN TAB
@@ -131,15 +131,15 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='              Parameter for m-estimate:   ', orientation='horizontal', valueType = float, validator = mValid)
 
         b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
-        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Maximum time for evaluating projections (minutes):  ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.checkWithSpin(b, self, "Use time limit:    ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
         b2 = OWGUI.widgetBox(b, orientation = "horizontal")
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Class Prediction Settings ")
         #OWGUI.checkBox(projCountBox, self, 'useOnlyRelevantInteractionsInArgumentation', 'Ignore arguments without relevant interactions', tooltip = "Consider only relevant interactions. Use Kononenko's criterion \nto find interacting attribute values (Igor Kononenko: Semi-naive Bayesian Classifier)")
-        OWGUI.checkBox(projCountBox, self, 'automaticallyRemoveWeakerArguments', 'Remove weaker arguments')
+        OWGUI.checkBox(projCountBox, self, 'automaticallyRemoveWeakerArguments', 'Only consider projections with stong dependencies')
         OWGUI.button(self.ClassificationTab, self, "Apply Changes", callback = self.resendLearner)
 
         # ##########################
-        # SAVE & MANAGE TAB
+        # SAVE TAB
         self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, " Number of Concurrently Visualized Attributes ")
         #self.dialogsBox = OWGUI.widgetBox(self.ManageTab, " Dialogs ")        
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
@@ -162,8 +162,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.controlArea.activate()
 
         self.resize(375,550)
-        self.setMinimumWidth(375)
-        self.tabs.setMinimumWidth(375)
+        #self.setMinimumWidth(375)
+        #self.tabs.setMinimumWidth(375)
 
         self.updateMestimateComboState()
         self.updateGUI()
@@ -445,9 +445,9 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def stopOptimizationClick(self):
         self.cancelOptimization = 1
 
-    def isOptimizationCanceled(self):
-        if hasattr(self, "useTimeLimit"): return orngMosaic.isOptimizationCanceled(self)
-        else:                             return self.cancelOptimization
+    def isEvaluationCanceled(self):
+        if self.cancelOptimization: return 1
+        if self.useTimeLimit:       return orngMosaic.isEvaluationCanceled(self)
         
     def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()

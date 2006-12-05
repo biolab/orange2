@@ -51,6 +51,8 @@ class OWScatterPlot(OWWidget):
         self.colorSettings = None
         self.showProbabilitiesDetails = 0
 
+        self.boxGeneral = 1
+
         self.graph = OWScatterPlotGraph(self, self.mainArea, "ScatterPlot")
         self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
         self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
@@ -133,7 +135,7 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
         
         # general graph settings
-        box4 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
+        box4 = OWGUI.collapsableWidgetBox(self.SettingsTab, " General Graph Settings ", self, "boxGeneral")
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
@@ -146,7 +148,8 @@ class OWScatterPlot(OWWidget):
         box5 = OWGUI.widgetBox(box4, orientation = "horizontal")
         OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         hider = OWGUI.widgetHider(box5, self, "showProbabilitiesDetails", tooltip = "Show/hide extra settings")
-        OWGUI.rubber(box5)
+        rubb = OWGUI.rubber(box5)
+        rubb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum))
 
         box6 = OWGUI.widgetBox(box4, orientation = "horizontal")
         OWGUI.label(box6, self, "    Granularity:  ")
@@ -156,6 +159,8 @@ class OWScatterPlot(OWWidget):
         OWGUI.separator(box7, 17)
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
         hider.setWidgets([box6, box7])
+
+        box4.syncControls()
 
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Colors ", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
@@ -219,15 +224,15 @@ class OWScatterPlot(OWWidget):
 
     # receive new data and update all fields
     def cdata(self, data, clearResults = 1):
-        self.closeContext()
-        self.graph.clear()
-
         if self.hasDiscreteClass(data):
             name = getattr(data, "name", "")
             data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
             data.name = name
-
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+
+        self.closeContext()
+        self.graph.clear()
+
         exData = self.data
         self.data = data
         self.graph.insideColors = None

@@ -444,6 +444,7 @@ class OWScatterPlotMatrix(OWWidget):
                 self.shownAttribsLB.setSelected(i+1, TRUE)
                 
     def resizeEvent(self, e):
+        OWWidget.resizeEvent(self,e)
         w = self.mainArea.width()
         h = self.mainArea.height()
         size = QSize(w/(len(self.labels)+1), h/(len(self.labels)+1))

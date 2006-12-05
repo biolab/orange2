@@ -88,6 +88,21 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.showLegend = 1
         self.onlyOnePerSubset = 1
 
+        self.showProbabilities = 0
+        self.squareGranularity = 3
+        self.spaceBetweenCells = 1
+
+        # init axes
+        self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
+        self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
+        scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
+        scaleDraw.setOptions(0) 
+        scaleDraw.setTickLength(0, 0, 0)
+        scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
+        scaleDraw.setOptions(0) 
+        scaleDraw.setTickLength(0, 0, 0)
+        self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
+
     def createAnchors(self, anchorNum):
         anchors = [[],[]]
         for i in range(anchorNum):
@@ -123,24 +138,16 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         polyvizLineCoordsX = []; polyvizLineCoordsY = []    # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
             
         # we must have at least 3 attributes to be able to show anything
-        if self.scaledData == None or len(labels) < 3: self.updateLayout(); return
+        if self.scaledData == None or len(labels) < 3:
+            self.updateLayout()
+            return
+        
         dataSize = len(self.rawdata)
         classIsDiscrete = (self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete)
         classNameIndex = -1
 
-        self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
-        self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-        scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-        scaleDraw.setOptions(0) 
-        scaleDraw.setTickLength(0, 0, 0)
-        scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setOptions(0) 
-        scaleDraw.setTickLength(0, 0, 0)
-
-        if self.showLegend: self.setAxisScale(QwtPlot.xBottom, -1.20, 1.25, 1)
-        else:               self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20, 1)
-        self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
-
+        self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20 + 0.05 * self.showLegend, 1)
+        
         # store indices to shown attributes
         indices = [self.attributeNameIndex[label] for label in labels]
 
@@ -471,18 +478,21 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
                  
         if addProjectedPositions:
-            selected = orange.ExampleTable(domain, self.rawdata.getitemsref(selIndices))
-            unselected = orange.ExampleTable(domain, self.rawdata.getitemsref(unselIndices))
+            selected = orange.ExampleTable(domain, self.rawdata.selectref(selIndices))
+            unselected = orange.ExampleTable(domain, self.rawdata.selectref(unselIndices))
+            selIndex = 0; unselIndex = 0
             for i in range(len(selIndices)):
-                selected[i][xAttr] = array[selIndices[i]][0]
-                selected[i][yAttr] = array[selIndices[i]][1]
-
-            for i in range(len(unselIndices)):
-                unselected[i][xAttr] = array[unselIndices[i]][0]
-                unselected[i][yAttr] = array[unselIndices[i]][1]
+                if selIndices[i]:
+                    selected[selIndex][xAttr] = array[i][0]
+                    selected[selIndex][yAttr] = array[i][1]
+                    selIndex += 1
+                else:
+                    unselected[unselIndex][xAttr] = array[i][0]
+                    unselected[unselIndex][yAttr] = array[i][1]
+                    unselIndex += 1
         else:
-            selected = self.rawdata.getitemsref(selIndices)
-            unselected = self.rawdata.getitemsref(unselIndices)
+            selected = self.rawdata.selectref(selIndices)
+            unselected = self.rawdata.selectref(unselIndices)
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
@@ -496,13 +506,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if not validData: validData = self.getValidList(attrIndices)
         
         array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
-        selIndices = []; unselIndices = []
-                 
-        for i in range(len(validData)):
-            if validData[i] and self.isPointSelected(array[i][0], array[i][1]): selIndices.append(i)
-            else:                                                               unselIndices.append(i)
-
-        return selIndices, unselIndices
+        array = Numeric.transpose(array)
+        return self.getSelectedPoints(array[0], array[1], validData)
+    
 
 
     def createCombinations(self, attrList, count):

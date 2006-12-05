@@ -30,7 +30,6 @@ class OWParallelCoordinates(OWVisWidget):
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Parallel Coordinates", TRUE)
-        self.resize(700,700)
 
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -136,7 +135,7 @@ class OWParallelCoordinates(OWVisWidget):
         # add a settings dialog and initialize its values        
         self.activateLoadedSettings()
         self.resize(900, 700)
-
+        
 
     # #########################
     # OPTIONS
@@ -277,9 +276,8 @@ class OWParallelCoordinates(OWVisWidget):
             name = getattr(data, "name", "")
             data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
             data.name = name
-            
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        
+            
         self.projections = None
         self.correlationDict = {}
         
@@ -348,6 +346,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.updateGraph()
 
     def resizeEvent(self, e):
+        OWWidget.resizeEvent(self,e)
         self.isResizing = 1
         # self.updateGraph()  # had to comment, otherwise python throws an exception
 
