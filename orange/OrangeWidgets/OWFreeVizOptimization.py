@@ -127,8 +127,10 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         # ##########################
         # SUPERVISED PCA TAB
         if parentName.lower() != "radviz":
-            OWGUI.button(self.LinearTransformationTab, self, "Separate Different Classes", callback = self.findSPCAProjection)        
+            OWGUI.button(self.LinearTransformationTab, self, "Find PCA projection", callback = self.findPCAProjection)        
+            OWGUI.button(self.LinearTransformationTab, self, "Find supervised PCA projection", callback = self.findSPCAProjection)        
             OWGUI.checkBox(self.LinearTransformationTab, self, "useGeneralizedEigenvectors", "Try to merge examples with same class value")
+            
 
         # ###########################
         self.statusBar = QStatusBar(self)
@@ -287,9 +289,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.updateData([attr.name for attr in self.rawdata.domain.attributes], 0)
         self.graph.repaint()
 
-    
+    def findPCAProjection(self):
+        self.findProjection(0)
 
     def findSPCAProjection(self):
+        self.findProjection(1)
+
+    def findProjection(self, SPCA):
         import LinearAlgebra
 
         ai = self.graph.attributeNameIndex
@@ -300,7 +306,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
             self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
             return
         
-        FreeViz.findSPCAProjection(self, attrIndices, setGraphAnchors = 1)
+        FreeViz.findSPCAProjection(self, attrIndices, setGraphAnchors = 1, SPCA = SPCA)
         
         self.graph.updateData()
         self.graph.repaint()

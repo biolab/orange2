@@ -306,7 +306,7 @@ class FreeViz:
 ##            self.energyLabel.setText("Energy: %.3f" % newEnergy)
 ##            self.energyLabel.repaint()
 
-    def findSPCAProjection(self, attrIndices = None, setGraphAnchors = 1, percentDataUsed = 100):
+    def findSPCAProjection(self, attrIndices = None, setGraphAnchors = 1, percentDataUsed = 100, SPCA = 1):
         try:
             ai = self.graph.attributeNameIndex
             if not attrIndices:
@@ -348,7 +348,9 @@ class FreeViz:
                 matrix = Numeric.transpose(selectedData)
             
             # compute selectedDataT * L * selectedData
-            matrix = Numeric.matrixmultiply(matrix, L)
+            if SPCA:
+                matrix = Numeric.matrixmultiply(matrix, L)
+                
             matrix = Numeric.matrixmultiply(matrix, selectedData)
 
             vals, vectors = LinearAlgebra.eigenvectors(matrix)
