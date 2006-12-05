@@ -141,17 +141,36 @@ class SelectionCurve(QwtPlotCurve):
         self.setData(xVals, yVals)
         self.pointArrayValid = 0        # invalidate the point array
 
+    def createPointArray(self):
+        xMap = self.parentPlot().canvasMap(self.xAxis())
+        yMap = self.parentPlot().canvasMap(self.yAxis())
+
+        self.pointArray = QPointArray(self.dataSize() + 1)
+        for i in range(self.dataSize()):
+            self.pointArray.setPoint(i, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
+        self.pointArray.setPoint(self.dataSize(), xMap.transform(self.x(0)), yMap.transform(self.y(0)))
+        self.pointArrayValid = 1
+
+    def getSelectedPoints(self, xData, yData, validData):
+        import Numeric
+        self.createPointArray()
+        region = QRegion(self.pointArray)
+        selected = Numeric.zeros(len(xData))
+
+        xMap = self.parentPlot().canvasMap(self.xAxis())
+        yMap = self.parentPlot().canvasMap(self.yAxis())
+        for i in range(len(xData)):
+            if validData[i]:
+                selected[i] = region.contains(QPoint(xMap.transform(xData[i]), yMap.transform(yData[i])))
+        return selected
+
     # is point defined at x,y inside a rectangle defined with this curve
     def isInside(self, x, y):       
-        xMap = self.parentPlot().canvasMap(self.xAxis());
-        yMap = self.parentPlot().canvasMap(self.yAxis());
+        xMap = self.parentPlot().canvasMap(self.xAxis())
+        yMap = self.parentPlot().canvasMap(self.yAxis())
 
         if not self.pointArrayValid:
-            self.pointArray = QPointArray(self.dataSize() + 1)
-            for i in range(self.dataSize()):
-                self.pointArray.setPoint(i, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
-            self.pointArray.setPoint(self.dataSize(), xMap.transform(self.x(0)), yMap.transform(self.y(0)))
-            self.pointArrayValid = 1
+            self.createPointArray()
 
         return QRegion(self.pointArray).contains(QPoint(xMap.transform(x), yMap.transform(y)))
 
