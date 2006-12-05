@@ -14,7 +14,8 @@ class OWVizRank(VizRank, OWBaseWidget):
                     "argumentCount", "optimizeBestProjection", "optimizeBestProjectionTime",
                     "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount", "locOptAllowAddingAttributes",
                     "useExampleWeighting", "useSupervisedPCA", "attrSubsetSelection", "optimizationType", "attributeCount",
-                    "locOptOptimizeProjectionByPermutingAttributes", "timeLimit", "projectionLimit", "storeEachPermutation"]
+                    "locOptOptimizeProjectionByPermutingAttributes", "timeLimit", "projectionLimit", "storeEachPermutation",
+                    "boxLocalOptimization", "boxStopOptimization"]
     resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30,35, 40, 50, 60, 70, 80, 100, 120, 150, 200]
@@ -42,6 +43,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.evaluationTime = 10
         self.optimizeBestProjection = 0                     # do we want to try to locally improve the best projections
         self.optimizeBestProjectionTime = 10                 # how many minutes do we want to try to locally optimize the best projections
+
+        self.boxLocalOptimization = 1
+        self.boxStopOptimization = 1
         
         self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
         #self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
@@ -53,7 +57,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.showRank = 0
         self.showAccuracy = 1
         self.showInstances = 0
-        
+
         self.shownResults = []
         self.attrLenDict = {}
 
@@ -130,12 +134,12 @@ class OWVizRank(VizRank, OWBaseWidget):
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " For continuous attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " For discrete attributes:  ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
-        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, " When to Stop Evaluation? ")
+        self.stopOptimizationBox = OWGUI.collapsableWidgetBox(self.SettingsTab, " When to Stop Evaluation? ", self, "boxStopOptimization")
         OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
         OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
 
-        self.localOptimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Local Optimization Settings ")
-        OWGUI.checkBox(self.localOptimizationSettingsBox, self, 'locOptOptimizeProjectionByPermutingAttributes', 'Try improving projection by permuting attributes in projection')
+        self.localOptimizationSettingsBox = OWGUI.collapsableWidgetBox(self.SettingsTab, " Local Optimization Settings ", self, "boxLocalOptimization")
+        bbb = OWGUI.checkBox(self.localOptimizationSettingsBox, self, 'locOptOptimizeProjectionByPermutingAttributes', 'Try improving projection by permuting attributes in projection')
         self.localOptimizationProjCountCombo = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptProjCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
         self.localOptimizationAttrsCount = OWGUI.lineEdit(self.localOptimizationSettingsBox, self, "locOptAttrsToTry", "Number of best attributes to try:                       ", orientation = "horizontal", tooltip = "How many of the top ranked attributes do you want to try in the projections?", valueType = int, validator = QIntValidator(self))
         locOptBox = OWGUI.widgetBox(self.localOptimizationSettingsBox, orientation = "horizontal")
@@ -228,10 +232,15 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.controlArea.addWidget(self.statusBox)
         self.controlArea.activate()
 
+        self.stopOptimizationBox.syncControls()     # show open or closed
+        self.localOptimizationSettingsBox.syncControls()
+
         self.removeEvaluatedAttributes()
-        self.resize(375,700)
+        
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
+        self.resize(375, 700)
+        
 
     # ##############################################################
     # EVENTS
@@ -472,8 +481,6 @@ class OWVizRank(VizRank, OWBaseWidget):
     # ##############################################################
     # kNNClassifyData - compute classification error for every example in table
     def kNNClassifyData(self, table):
-        qApp.processEvents()        # allow processing of other events
-        
         if self.externalLearner: learner = self.externalLearner
         else:                    learner = self.createkNNLearner()
         results = apply(testingMethods[self.testingMethod], [[learner], table])
@@ -753,6 +760,8 @@ class OWVizRank(VizRank, OWBaseWidget):
         
     def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()
+        OWBaseWidget.destroy(self, dw, dsw)
+        
 
     # ######################################################
     # Argumentation functions
@@ -1424,6 +1433,7 @@ class OWGraphIdentifyOutliers(OWWidget):
             attrIndices = [self.projectionGraph.attributeNameIndex[attr] for attr in attrList]
             validDataIndices = self.projectionGraph.getValidIndices(attrIndices)
             table = self.projectionGraph.createProjectionAsExampleTable(attrIndices, generalDict)    # TO DO: this does not work with polyviz!!!
+            qApp.processEvents()        # allow processing of other events
             acc, probabilities = self.VizRankDialog.kNNClassifyData(table)
 
             #self.matrixOfPredictions[(existing + index)*classCount:(existing + index +1)*classCount] = Numeric.transpose(probabilities)
