@@ -287,6 +287,8 @@ class SchemaDoc(QMainWindow):
             newwidget.setProcessing(1)
             if activateSettings:
                 newwidget.instance.activateLoadedSettings()
+                if self.canvasDlg.settings["saveWidgetsPosition"]:
+                    newwidget.instance.restoreWidgetPosition()
             newwidget.setProcessing(0)
         except:
             type, val, traceback = sys.exc_info()
@@ -479,10 +481,8 @@ class SchemaDoc(QMainWindow):
             settingsDict = eval(str(settings[0].getAttribute("settingsDictionary")))
             self.loadedSettingsDict = settingsDict
 
-            # ##################
             # read widgets
-            widgetList = widgets.getElementsByTagName("widget")
-            for widget in widgetList:
+            for widget in widgets.getElementsByTagName("widget"):
                 name = widget.getAttribute("widgetName")
                 tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"), activateSettings = 0)
                 if not tempWidget:
@@ -493,7 +493,6 @@ class SchemaDoc(QMainWindow):
                         tempWidget.instance.activateLoadedSettings()
                 qApp.processEvents()
 
-            # ##################
             #read lines                        
             lineList = lines.getElementsByTagName("channel")
             for line in lineList:
@@ -521,6 +520,12 @@ class SchemaDoc(QMainWindow):
             self.documentnameValid = True
             if self.widgets:
                 self.signalManager.processNewSignals(self.widgets[0].instance)
+
+            # do we want to restore last position and size of the widget
+            if self.canvasDlg.settings["saveWidgetsPosition"]:  
+                for widget in self.widgets:
+                    widget.instance.restoreWidgetStatus()
+
 
         finally:
             # set cursor

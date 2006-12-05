@@ -336,13 +336,6 @@ class CanvasWidget(QCanvasRectangle):
         self.widgetStateRect = CanvasWidgetState(self, canvas, view, [self.canvasDlg.errorIcon, self.canvasDlg.warningIcon])
         
         # import widget class and create a class instance
-        #code = compile("from " + widget.fileName + " import *", ".", "single")
-        #exec(code)
-        #eval("from "+widget.fileName+" import *")
-        #code = compile(widget.fileName + "()", ".", "eval")
-        #self.instance = eval(code)
-
-        # import widget class and create a class instance
         code = compile("import " + widget.getFileName(), ".", "single")
         exec(code)
         code = compile(widget.getFileName() + "." + widget.getFileName() + "(signalManager = signalManager)", ".", "eval")
@@ -350,10 +343,20 @@ class CanvasWidget(QCanvasRectangle):
         self.instance.setProgressBarHandler(self.view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(self.view.processingHandler)
         self.instance.setWidgetStateHandler(self.refreshWidgetState)
-        if os.path.exists(widget.getFullIconName()):                                            self.instance.setWidgetIcon(widget.getFullIconName())
-        elif os.path.exists(os.path.join(canvasDlg.widgetDir, widget.getIconName())):            self.instance.setWidgetIcon(os.path.join(canvasDlg.widgetDir, widget.getIconName()))
-        elif os.path.exists(os.path.join(canvasDlg.picsDir, widget.getIconName())):                self.instance.setWidgetIcon(os.path.join(canvasDlg.picsDir, widget.getIconName()))
-        else: self.instance.setWidgetIcon(defaultPic)
+
+        # do we want to restore last position and size of the widget
+        if self.canvasDlg.settings["saveWidgetsPosition"]:
+            self.instance.restoreWidgetPosition()
+
+        # set icon
+        if os.path.exists(widget.getFullIconName()):
+            self.instance.setWidgetIcon(widget.getFullIconName())
+        elif os.path.exists(os.path.join(canvasDlg.widgetDir, widget.getIconName())):
+            self.instance.setWidgetIcon(os.path.join(canvasDlg.widgetDir, widget.getIconName()))
+        elif os.path.exists(os.path.join(canvasDlg.picsDir, widget.getIconName())):
+            self.instance.setWidgetIcon(os.path.join(canvasDlg.picsDir, widget.getIconName()))
+        else:
+            self.instance.setWidgetIcon(defaultPic)
 
         self.text = QCanvasText(self.caption, canvas)
         self.text.show()

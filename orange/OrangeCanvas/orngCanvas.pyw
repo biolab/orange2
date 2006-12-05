@@ -634,6 +634,7 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.verboseCB.setChecked(self.settings["verbose"])
         dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
         dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
+        dlg.saveWidgetsPositionCB.setChecked(self.settings["saveWidgetsPosition"])
 ##        dlg.autoLoadSchemasOnStartCB.setChecked(self.settings["autoLoadSchemasOnStart"])
 
         # set current exception settings
@@ -684,6 +685,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["verbose"] = dlg.verboseCB.isChecked()
             self.settings["dontAskBeforeClose"] = dlg.dontAskBeforeCloseCB.isChecked()
             self.settings["autoSaveSchemasOnClose"] = dlg.autoSaveSchemasOnCloseCB.isChecked()
+            self.settings["saveWidgetsPosition"] = dlg.saveWidgetsPositionCB.isChecked()
 ##            self.settings["autoLoadSchemasOnStart"] = dlg.autoLoadSchemasOnStartCB.isChecked()
             
             self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
@@ -696,7 +698,8 @@ class OrangeCanvasDlg(QMainWindow):
             self.widgetActiveColor   = dlg.activeWidgetIcon.color
             self.lineColor           = dlg.lineIcon.color
 
-            for win in self.workspace.getDocumentList(): win.canvasView.repaint()
+            for win in self.workspace.getDocumentList():
+                win.canvasView.repaint()
 
             # update tooltips for lines in all documents
             show = dlg.showSignalNamesCB.isChecked()
@@ -753,6 +756,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("writeLogFile", 1)
         self.settings.setdefault("dontAskBeforeClose", 0)
         self.settings.setdefault("autoSaveSchemasOnClose", 0)
+        self.settings.setdefault("saveWidgetsPosition", 0)
 ##        self.settings.setdefault("autoLoadSchemasOnStart", 0)
         
         self.settings.setdefault("widgetSelectedColor", (0, 255, 0))
@@ -765,7 +769,6 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("focusOnCatchOutput" , 0)
         self.settings.setdefault("printOutputInStatusBar", 1)
         self.settings.setdefault("printExceptionInStatusBar", 1)
-        self.settings.setdefault("showSignalNames", 1)
         self.settings.setdefault("saveSchemaDir", self.outputDir)
         self.settings.setdefault("saveApplicationDir", self.outputDir)
         self.settings.setdefault("verbose", 0)
