@@ -7,7 +7,7 @@
 from OWBaseWidget import *
 
 class OWWidget(OWBaseWidget):
-    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = FALSE, wantStatusBar = FALSE):
+    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = FALSE, wantStatusBar = FALSE, savePosition = True):
         """
         Initialization
         Parameters: 
@@ -15,7 +15,7 @@ class OWWidget(OWBaseWidget):
             wantGraph - displays a save graph button or not
         """
 
-        apply(OWBaseWidget.__init__, (self, parent, signalManager, title))
+        OWBaseWidget.__init__(self, parent, signalManager, title, savePosition = savePosition)
 
         self.mainArea=QWidget(self)
         self.controlArea=QVBox(self)
@@ -32,6 +32,8 @@ class OWWidget(OWBaseWidget):
         self.grid.setColStretch(0,10)
         self.grid.setColStretch(1,50)
         self.grid.addMultiCellWidget(self.mainArea,0,2,1,1)
+
+        self.setSizeGripEnabled(1)
         
         if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
 

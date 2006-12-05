@@ -453,10 +453,15 @@ class ExampleList(list):
     pass
 
 class OWBaseWidget(QDialog):
-    def __init__(self, parent = None, signalManager = None, title="Qt Orange BaseWidget", modal=FALSE):
+    def __init__(self, parent = None, signalManager = None, title="Qt Orange BaseWidget", modal=FALSE, savePosition = False):
         # the "currentContexts" MUST be the first thing assigned to a widget
         self.currentContexts = {}
         self._guiElements = []      # used for automatic widget debugging
+
+        # do we want to save widget position and restore it on next load
+        self.savePosition = savePosition
+        if savePosition:
+            self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]
         
         self.title = title.replace("&","")
 
@@ -499,7 +504,7 @@ class OWBaseWidget(QDialog):
         self.eventHandler = None
         self.callbackDeposit = []
         self.startTime = time.time()    # used in progressbar
-
+        
         self.widgetStateHandler = None
         self.widgetState = None
     
@@ -532,6 +537,50 @@ class OWBaseWidget(QDialog):
     def createAttributeIconDict(self):
         import OWGUI
         return OWGUI.getAttributeIcons()
+
+    # this function is called at the end of the widget's __init__ when the widgets is saving its position and size parameters
+    def restoreWidgetPosition(self):
+        if self.savePosition:
+            if getattr(self, "widgetXPosition", None) != None and getattr(self, "widgetYPosition", None) != None:
+                #print self.title, "restoring position", self.widgetXPosition, self.widgetYPosition
+                self.move(self.widgetXPosition, self.widgetYPosition)
+            if getattr(self,"widgetWidth", None) != None and getattr(self,"widgetHeight", None) != None:
+                self.resize(self.widgetWidth, self.widgetHeight)
+            
+    # this is called in canvas when loading a schema. it opens the widgets that were shown when saving the schema
+    def restoreWidgetStatus(self):
+        if self.savePosition and getattr(self, "widgetShown", None):
+            self.show()
+
+    # when widget is resized, save new width and height into widgetWidth and widgetHeight. some widgets can put this two
+    # variables into settings and last widget shape is restored after restart
+    def resizeEvent(self, ev):
+        QDialog.resizeEvent(self, ev)
+        if self.savePosition:
+            self.widgetWidth = self.width()
+            self.widgetHeight = self.height()
+            
+
+    # when widget is moved, save new x and y position into widgetXPosition and widgetYPosition. some widgets can put this two
+    # variables into settings and last widget position is restored after restart
+    def moveEvent(self, ev):
+        QDialog.moveEvent(self, ev)
+        if self.savePosition:
+            self.widgetXPosition = ev.pos().x()
+            self.widgetYPosition = ev.pos().y()
+            #print self.title, "saving position", self.widgetXPosition, self.widgetYPosition
+
+    # set widget state to hidden
+    def hideEvent(self, ev):
+        QDialog.hideEvent(self, ev)
+        if self.savePosition:
+            self.widgetShown = 0
+
+    # set widget state to shown
+    def showEvent(self, ev):
+        QDialog.showEvent(self, ev)
+        if self.savePosition:
+            self.widgetShown = 1
 
     def setCaption(self, caption):
         if self.parent != None and isinstance(self.parent, QTabWidget): self.parent.changeTab(self, caption)
@@ -573,7 +622,8 @@ class OWBaseWidget(QDialog):
                 try:
                     settings[name] =  mygetattr(self, name)
                 except:
-                    print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.title)
+                    #print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.title)
+                    pass
         return settings
 
 
