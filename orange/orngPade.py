@@ -287,9 +287,9 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
     if needQ:
         import orngMisc
         if MQCNotation:
-            qVar = orange.EnumVariable("Q", values = ["M%s(%s)" % ("".join(["+-"[x] for x in v if x<2]), ", ".join([cache.attributes[i][0] for i,x in enumerate(v) if x<2])) for v in orngMisc.LimitedCounter([3]*nDimensions)])
+            qVar = orange.EnumVariable("Q", values = ["M%s(%s)" % ("".join(["+-"[x] for x in v if x<2]), ", ".join([cache.attributes[i][0] for i,x in zip(dimensions, v) if x<2])) for v in orngMisc.LimitedCounter([3]*nDimensions)])
         else:
-            qVar = orange.EnumVariable("Q", values = ["M(%s)" % ", ".join(["+-"[x]+cache.attributes[i][0] for i, x in enumerate(v) if x<2]) for v in orngMisc.LimitedCounter([3]*nDimensions)])
+            qVar = orange.EnumVariable("Q", values = ["M(%s)" % ", ".join(["+-"[x]+cache.attributes[i][0] for i, x in zip(dimensions, v) if x<2]) for v in orngMisc.LimitedCounter([3]*nDimensions)])
         
     if outputAttr >= 0:
         classVar = orange.FloatVariable("df/d"+cache.attributes[outputAttr][0])
@@ -297,6 +297,7 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
         classVar = qVar
             
     dom = orange.Domain(data.domain.attributes, classVar)
+    setattr(dom, "constraintAttributes", [cache.contAttributes[i] for i in dimensions])
 
     if derivativeAsMeta:
         derivativeID = orange.newmetaid()
@@ -338,7 +339,7 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
             for a in zip(metaIDs, deltas):
                 pad.setmeta(*a)
 
-    return paded, derivativeID, metaIDs
+    return paded, derivativeID, metaIDs, originalID
 
 
 def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, originalAsMeta = False):
@@ -360,6 +361,12 @@ def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, thr
     return createQTable(cache, data, dimensions, outputAttr, threshold, MQCNotation, derivativeAsMeta, differencesAsMeta, originalAsMeta)
 
 
+### Quin-like measurement of quality
+#
+# We consider these measures completely inappropriate for various reasons.
+# We nevertheless implemented them for the sake of comparison.
+
+# puts examples from 'data' into the corresponding leaves of the subtree
 def splitDataOntoNodes(node, data):
     if not node.branches:
         setattr(node, "leafExamples", data)
@@ -368,4 +375,87 @@ def splitDataOntoNodes(node, data):
         for bi, branch in enumerate(node.branches):
             splitDataOntoNodes(branch, [ex for ex, ii in goeswhere if ii == bi])
 
-            
+
+# checks whether 'ex1' and 'ex2' match the given constraint
+# 'reversedAttributes' is a reversed list of the arguments of the QMC
+# 'constraint' is the index of the class
+# 'clsID' is the id of the meta attribute with the original class value
+#
+# Result: -2 classes or all attribute values are unknown or same for both
+#            examples. This not considered a model's fault and doesn't count
+#         -1 Ambiguity: one attribute value goes along the constraint and
+#            another goes the opposite. This is ambiguity due to the model.
+#          0 False prediction
+#          1 Correct prediction
+#
+# Note: Quin does not distinguish between ambiguity due to the data and
+#   due to the model. We understand the ambiguity in the data as
+#   unavoidable and don't count the corresponding example pairs, while
+#   ambiguity due to the model is model's fault and could even be
+#   counted as misclassification
+
+def checkMatch(ex1, ex2, reversedAttributes, constraint, clsID):
+    cls1, cls2 = ex1[clsID], ex2[clsID]
+    if cls1.isSpecial() or cls2.isSpecial():
+        return -2  # unknown classes - useless example
+    clsc = cmp(cls1, cls2)
+    if not clsc:
+        return -2  # ambiguity due to same class
+    
+    cs = 0
+    for attr in reversedAttributes:
+        if not constraint:
+            break
+        constraint, tc = constraint/3, constraint%3
+        if tc==2:
+            continue
+        v1, v2 = ex1[attr], ex2[attr]
+        if v1.isSpecial() or v2.isSpecial():
+            return -2   # unknowns - useless example
+        if tc:
+            c = -cmp(v1, v2)
+        else:
+            c = cmp(v1, v2)
+        if not cs:
+            cs = c
+        elif c != cs:
+            return -1   # ambiguity due to example pair
+    if not cs:
+        return -2       # ambiguity due to same example values
+
+    return cs == clsc
+
+
+def computeAmbiguityAccuracyNode(node, reversedAttributes, clsID):
+    samb = sacc = spairs = 0.0
+    if node.branches:
+        for branch in node.branches:
+            if branch:
+                amb, acc, pairs = computeAmbiguityAccuracyNode(branch, reversedAttributes, clsID)
+                samb += amb
+                sacc += acc
+                spairs += pairs
+    else:
+        constraint = int(node.nodeClassifier.defaultVal)
+        for i, ex1 in enumerate(node.leafExamples):
+            for j in range(i):
+                ma = checkMatch(ex1, node.leafExamples[j], reversedAttributes, constraint, clsID)
+                if ma == -2:
+                    continue
+                if ma == -1:
+                    samb += 1
+                elif ma:
+                    sacc += 1
+                else:
+                    ex2 = node.leafExamples[j]
+#                    print "wrong: %s-%s  %s-%s  %s-%s %i" % (ex1[0], ex2[0], ex1[1], ex2[1], ex1[clsID], ex2[clsID], constraint)
+                spairs += 1
+    return samb, sacc, spairs
+
+
+def computeAmbiguityAccuracy(tree, data, clsID):
+    splitDataOntoNodes(tree.tree, data)
+    l = tree.domain.constraintAttributes[:]
+    l.reverse()
+    amb, acc, pairs = computeAmbiguityAccuracyNode(tree.tree, l, clsID)
+    return amb/pairs, acc/(pairs-amb)
