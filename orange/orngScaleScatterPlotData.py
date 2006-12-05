@@ -3,13 +3,12 @@ from orngScaleData import *
 class orngScaleScatterPlotData(orngScaleData):
 
     # create x-y projection of attributes in attrList
-    def createProjection(self, xAttr, yAttr):
+    def getXYPositions(self, xAttr, yAttr):
         xAttrIndex, yAttrIndex = self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]
 
         xData = self.scaledData[xAttrIndex].copy()
         yData = self.scaledData[yAttrIndex].copy()
-        valid = self.getValidList([xAttrIndex, yAttrIndex])
-
+        
         if self.rawdata.domain[xAttrIndex].varType == orange.VarTypes.Discrete: xData = ((xData * 2*len(self.rawdata.domain[xAttrIndex].values)) - 1.0) / 2.0
         else:  xData = xData * (self.attrValues[xAttr][1] - self.attrValues[xAttr][0]) + float(self.attrValues[xAttr][0])
 
