@@ -316,6 +316,8 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
     if originalAsMeta:
         originalID = orange.newmetaid()
         dom.addmeta(originalID, data.domain.classVar)
+    else:
+        originalID = 0
 
 
     paded = orange.ExampleTable(dom, data)
