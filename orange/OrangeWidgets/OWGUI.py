@@ -21,8 +21,11 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
             b = QHBox(widget)
         else:
             b = QVBox(widget)
-    if addSpace:
+    if type(addSpace) == int:
+        separator(widget, 0, addSpace)
+    elif addSpace:
         separator(widget)
+        
     return b
 
 def indentedBox(widget, sep=20):
@@ -244,21 +247,25 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
     bg.setRadioButtonExclusive(1)
     bg.buttons = []
     for i in range(len(btnLabels)):
-        if type(btnLabels[i]) in (str, unicode):
-            w = QRadioButton(btnLabels[i], bg)
-        else:
-            w = QRadioButton(unicode(i), bg)
-            w.setPixmap(btnLabels[i])
-        w.setOn(mygetattr(master, value) == i)
-        bg.buttons.append(w)
-        if tooltips:
-            QToolTip.add(w, tooltips[i])
+        appendRadioButton(bg, master, value, i, btnLabels[i], tooltips and tooltips[i])
 
     connectControl(bg, master, value, callback, "clicked(int)", CallFront_radioButtons(bg))
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("radioButtonsInBox", bg, value, callback)]
     return bg
 
+
+def appendRadioButton(bg, master, value, i, label, tooltip = None):
+    if type(label) in (str, unicode):
+        w = QRadioButton(label, bg)
+    else:
+        w = QRadioButton(unicode(i), bg)
+        w.setPixmap(label)
+    w.setOn(mygetattr(master, value) == i)
+    bg.buttons.append(w)
+    if tooltip:
+        QToolTip.add(w, tooltip)
+    
 
 def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None, debuggingEnabled = 1):
     if box:
@@ -626,7 +633,10 @@ class ControlledCallback:
         if isinstance(value, QString):
             value = unicode(value)
         if self.f:
-           value = self.f(value)
+            if self.f in [int, float] and (not value or value in "+-"):
+                value = self.f(0)
+            else:
+                value = self.f(value)
 
         opposite = getattr(self, "opposite", None)
         if opposite:
