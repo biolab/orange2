@@ -484,6 +484,25 @@ def confusionMatrices(res, classIndex=-1, **argkw):
 # obsolete (renamed)
 computeConfusionMatrices = confusionMatrices
 
+
+def confusionChiSquare(confusionMatrix):
+    dim = len(confusionMatrix)
+    rowPriors = [sum(r) for r in confusionMatrix]
+    colPriors = [sum([r[i] for r in confusionMatrix]) for i in range(dim)]
+    total = sum(rowPriors)
+    rowPriors = [r/total for r in rowPriors]
+    colPriors = [r/total for r in colPriors]
+    ss = 0
+    for ri, row in enumerate(confusionMatrix):
+        for ci, o in enumerate(row):
+            e = total * rowPriors[ri] * colPriors[ci]
+            if not e:
+                return -1, -1, -1
+            ss += (o-e)**2 / e
+    df = (dim-1)**2
+    return ss, df, statc.chisqprob(ss, df)
+        
+    
 def sens(confm):
     if type(confm) == list:
         return [sens(cm) for cm in confm]
