@@ -130,7 +130,7 @@ class ExperimentResults:
 #### Experimental procedures
 def leaveOneOut(learners, examples, pps=[], indicesrandseed="*", **argkw):
     (examples, weight) = demangleExamples(examples)
-    return apply(testWithIndices, (learners, examples, range(len(examples)), indicesrandseed, pps), argkw)
+    return testWithIndices(learners, examples, range(len(examples)), indicesrandseed, pps, **argkw)
     # return testWithIndices(learners, examples, range(len(examples)), pps=pps, argkw)
 
 # apply(testWithIndices, (learners, (examples, weight), indices, indicesrandseed, pps), argkw)
@@ -148,7 +148,7 @@ def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRan
         indices = pick(examples)
         learnset = examples.selectref(indices, 0)
         testset = examples.selectref(indices, 1)
-        apply(learnAndTestOnTestData, (learners, (learnset, weight), (testset, weight), testResults, time, pps), argkw)
+        learnAndTestOnTestData(learners, (learnset, weight), (testset, weight), testResults, time, pps, **argkw)
         if callback: callback()
     return testResults
 
@@ -160,7 +160,7 @@ def crossValidation(learners, examples, folds=10, strat=orange.MakeRandomIndices
     else:
         randomGenerator = argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
         indices = orange.MakeRandomIndicesCV(examples, folds, stratified = strat, randomGenerator = randomGenerator)
-    return apply(testWithIndices, (learners, (examples, weight), indices, indicesrandseed, pps), argkw)
+    return testWithIndices(learners, (examples, weight), indices, indicesrandseed, pps, **argkw)
 
 
 def learningCurveN(learners, examples, folds=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, proportions=orange.frange(0.1), pps=[], **argkw):
@@ -313,6 +313,9 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
     testResults.results = [TestedExample(indices[i], conv(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                            for i in range(len(examples))]
 
+    if argkw.get("storeExamples", 0):
+        testResults.examples = examples
+        
     ccsum = hex(examples.checksum())[2:]
     ppsp = encodePP(pps)
     fnstr = "{TestWithIndices}_%s_%s%s-%s" % ("%s", indicesrandseed, ppsp, ccsum)
