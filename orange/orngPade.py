@@ -5,7 +5,8 @@ from orangeom import star, dist
 from sets import Set
 
 #pathQHULL = r"c:\qhull"
-pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
+#pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
+pathQHULL = os.path.split(__file__)[0]
 
 class Cache:
     pass
@@ -461,3 +462,23 @@ def computeAmbiguityAccuracy(tree, data, clsID):
     l.reverse()
     amb, acc, pairs = computeAmbiguityAccuracyNode(tree.tree, l, clsID)
     return amb/pairs, acc/(pairs-amb)
+
+
+### Better measures of quality (as in better-than-Quin)
+#
+
+def CVAgainstKnown(data, oracle, dimensions = None, method = None, **dic):
+    cv = orange.MakeRandomIndicesCV(data, 10)
+    for fold in range(10):
+        train = data.select(cv, fold, negate=1)
+        test = data.select(cv, fold)
+        pa, qid, did, cid = orngPade.pade(train, oracle, dimensions, method, originalAsMeta=True, **dic)
+        tree = orngTree.TreeLearner(pa, maxDepth=4)
+
+        mb, cc = orngPade.computeAmbiguityAccuracy(tree, test, -1)
+        amb += mb
+        acc += cc
+        print (mb, cc)
+    print amb/10, acc/10
+
+
