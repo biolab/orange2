@@ -88,7 +88,9 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 	}
 
 	int count = 0;
-	for (int i = 0; i < rows; i++)
+	int i = 0;
+
+	for (i = 0; i < rows; i++)
 	{
 		pos[i] = (double *)malloc(2 * sizeof(double));
 		disp[i] = (double *)malloc(2 * sizeof(double));
@@ -109,17 +111,18 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 	double kk = 2 * k;
 
 	// iterations
-	for (int i = 0; i < steps; i++)
+	for (i = 0; i < steps; i++)
 	{
 		// reset disp
-		for (int i = 0; i < rows; i++)
+		for (int j = 0; i < rows; i++)
 		{
 			disp[i][0] = 0;
 			disp[i][1] = 0;
 		}
 
 		// calculate repulsive force
-		for (int v = 0; v < graph->nVertices - 1; v++)
+		int v = 0;
+		for (v = 0; v < graph->nVertices - 1; v++)
 		{
 			for (int u = v + 1; u < graph->nVertices; u++)
 			{
@@ -143,7 +146,7 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 		}
 
 		// calculate attractive forces
-		for (int v = 0; v < graph->nVertices; v++)
+		for (v = 0; v < graph->nVertices; v++)
 		{
 			TGraphAsList::TEdge *edge = graph->edges[v];
 
@@ -198,7 +201,7 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 
 		// limit the maximum displacement to the temperature t
 		// and then prevent from being displaced outside frame
-		for (int v = 0; v < graph->nVertices; v++)
+		for (v = 0; v < graph->nVertices; v++)
 		{
 			double dif = sqrt(disp[v][0]*disp[v][0] + disp[v][1]*disp[v][1]);
 
@@ -218,14 +221,14 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 	PyArrayObject *arrayX = (PyArrayObject *)(pycoorX);
 	PyArrayObject *arrayY = (PyArrayObject *)(pycoorY);
 
-	for (int i = 0; i < rows; i++)
+	for (i = 0; i < rows; i++)
 	{
 		*(double *)(arrayX->data + i * arrayX->strides[0]) = pos[i][0];
 		*(double *)(arrayY->data + i * arrayY->strides[0]) = pos[i][1];
 	}
 
 	// free space
-	for (int i = 0; i < rows; i++)
+	for (i = 0; i < rows; i++)
 	{
 		free(pos[i]);
 		free(disp[i]);
