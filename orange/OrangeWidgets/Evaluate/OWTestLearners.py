@@ -137,10 +137,10 @@ class OWTestLearners(OWWidget):
         pb = None
         if self.sampleMethod==0:
             pb = ProgressBar(self, iterations=self.nFolds)
-            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds, strat=orange.MakeRandomIndices.StratifiedIfPossible, callback=pb.advance)
+            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds, strat=orange.MakeRandomIndices.StratifiedIfPossible, callback=pb.advance, storeExamples = True)
         elif self.sampleMethod==1:
             pb = ProgressBar(self, iterations=len(self.data))
-            res = orngTest.leaveOneOut(learners, self.data, callback=pb.advance)
+            res = orngTest.leaveOneOut(learners, self.data, callback=pb.advance, storeExamples = True)
         elif self.sampleMethod==2:
             pb = ProgressBar(self, iterations=self.pRepeat)
             res = orngTest.proportionTest(learners, self.data, self.pLearning/100., times=self.pRepeat, callback=pb.advance)
@@ -213,10 +213,10 @@ class OWTestLearners(OWWidget):
             self.setStatTable()
             return
 
-        if self.testdata and data.domain <> self.testdata.domain:
-            self.testdata = None
-            self.results = None
-            # self.setStatTable()
+##        if self.testdata and data.domain <> self.testdata.domain:
+##            self.testdata = None
+##            self.results = None
+##            # self.setStatTable()
         self.data = orange.Filter_hasClassValue(data)
         self.classindex = 0 # data.targetValIndx
         if self.learners:
