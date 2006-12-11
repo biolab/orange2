@@ -6,7 +6,8 @@ from sets import Set
 
 #pathQHULL = r"c:\qhull"
 #pathQHULL = r"c:\D\ai\Orange\test\squin\qhull"
-pathQHULL = os.path.split(__file__)[0]
+if __name__ != "__main__":
+    pathQHULL = os.path.split(__file__)[0]
 
 class Cache:
     pass
@@ -79,6 +80,9 @@ def inside(cache, vertex,simplex):
 
 
 def firstTriangle(cache, dimensions, progressCallback = None):
+    if len(cache.contAttributes) == 1:
+        return triangles1D(cache, False)
+
     if not cache.points:        
         cache.points = orange.ExampleTable(orange.Domain(cache.contAttributes, cache.data.domain.classVar), cache.data).native(0)
     points = cache.points
@@ -132,6 +136,9 @@ def firstTriangle(cache, dimensions, progressCallback = None):
 
 # calculates a linear regression on the star
 def starRegression(cache, dimensions, progressCallback=None):
+    if len(cache.contAttributes) == 1:
+        return triangles1D(cache, True)
+
     if not cache.points:        
         cache.points = orange.ExampleTable(orange.Domain(cache.contAttributes, cache.data.domain.classVar), cache.data).native(0)
     points = cache.points
@@ -165,6 +172,9 @@ def starRegression(cache, dimensions, progressCallback=None):
         
 # calculates a univariate linear regression on the star
 def starUnivariateRegression(cache, dimensions, progressCallback = None):
+    if len(cache.contAttributes) == 1:
+        return triangles1D(cache, True)
+        
     if not cache.points:        
         cache.points = orange.ExampleTable(orange.Domain(cache.contAttributes, cache.data.domain.classVar), cache.data).native(0)
     points = cache.points
@@ -204,11 +214,59 @@ def starUnivariateRegression(cache, dimensions, progressCallback = None):
             progressCallback(x*nPoints)
 
 
+def triangles1D(cache, bothWays):
+    data = cache.data
+    attrIdx = cache.contIndices[0]
+    points = [(ex[attrIdx], float(ex.getclass()), [i]) for i, ex in enumerate(data) if not ex.getclass().isSpecial()]
+    points.sort()
+
+    i, e = 0, len(points)
+    while i < e:
+        ex = points[i]
+        ni = i+1
+        while ni < e and points[ni][0] == ex[0]:
+            ex[2] += points[ni][2]
+            ex[1] += points[ni][1]
+            ni += 1
+        i = ni
+    points = [(a, c/len(i), i) for a, c, i in points]        
+
+    for delta in cache.deltas:
+        delta[0] = "?"
+
+    if len(points) < 2:
+        return
+
+    der = (points[-1][1] - points[-2][1]) / (points[-1][0] - points[-2][0])
+    for pidx in points[-1][2]:
+        cache.deltas[pidx][0] = der
+
+    if bothWays:
+        der = (points[1][1] - points[0][1]) / (points[1][0] - points[0][0])
+        for pidx in points[0][2]:
+            cache.deltas[pidx][0] = der
+
+        for i in range(1, len(cache.deltas)-1):
+            x1, x2, x3 = points[i-1][0], points[i][0], points[i+1][0]
+            sx = x1+x2+x3
+            div = 3*(x1**2+x2**2+x3**2) - sx**2
+            if div > 1e-6:
+                der = (3*(x1*points[i-1][1] + x2*points[i][1] + x3*points[i+1][1]) - sx * (points[i-1][1] + points[i][1] + points[i+1][1])) / div
+            for pidx in points[i][2]:
+                cache.deltas[pidx][0] = der
+
+    else:
+        for i in range(len(cache.deltas)-1):
+            der = (points[i][1] - points[i+1][1]) / (points[i][0] - points[i+1][0])
+            for pidx in points[i][2]:
+                cache.deltas[pidx][0] = der
+        
+    
 
 # regression in a tube
 def tubedRegression(cache, dimensions, progressCallback = None):
     if not cache.findNearest:
-        cache.findNearest = orange.FindNearestConstructor_BruteForce(cache.data, distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean(), includeSame=False)
+        cache.findNearest = orange.FindNearestConstructor_BruteForce(cache.data, distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean(), includeSame=True)
         
     if not cache.attrStat:
         cache.attrStat = orange.DomainBasicAttrStat(cache.data)
@@ -218,6 +276,8 @@ def tubedRegression(cache, dimensions, progressCallback = None):
     if progressCallback:
         nExamples = len(cache.data)
         nPoints = 100.0/nExamples/len(dimensions)
+
+    effNeighbours = len(cache.contAttributes) > 1 and cache.nNeighbours or len(cache.deltas)
     
     for di, d in enumerate(dimensions):
         contIdx = cache.contIndices[d]
@@ -238,15 +298,14 @@ def tubedRegression(cache, dimensions, progressCallback = None):
 
             Sx = Sy = Sxx = Syy = Sxy = n = 0.0
 
-            nn = cache.findNearest(ref_example, cache.nNeighbours, True)
+            nn = cache.findNearest(ref_example, 0, True)
             mx = [abs(ex[contIdx] - ref_x) for ex in nn if not ex[contIdx].isSpecial()]
-            # Tole ni prav - samo prevec enakih je...
             if not mx:
                 cache.deltas[exi][d] = "?"
                 continue
             
             kw = math.log(.001) / max(mx)**2
-            for ex in nn:
+            for ex in nn[:effNeighbours]:
                 if ex[contIdx].isSpecial():
                     continue
                 ex_x = float(ex[contIdx])
@@ -260,7 +319,7 @@ def tubedRegression(cache, dimensions, progressCallback = None):
                 n += w
 
             div = n*Sxx-Sx**2
-            if div and n>=3:# and i<40:
+            if div:# and i<40:
                 b = (Sxy*n - Sx*Sy) / div
 ##                    a = (Sy - b*Sx)/n
 ##                    err = (n * a**2 + b**2 * Sxx + Syy + 2*a*b*Sx - 2*a*Sy - 2*b*Sxy)
@@ -281,16 +340,20 @@ def tubedRegression(cache, dimensions, progressCallback = None):
         normalizers[cache.contIndices[d]] = oldNormalizer
 
 
+def createClassVar(attributes, MQCNotation = False):
+    import orngMisc
+    if MQCNotation:
+        return orange.EnumVariable("Q", values = ["M%s(%s)" % ("".join(["+-"[x] for x in v if x<2]), ", ".join([attr for attr,x in zip(attributes, v) if x<2])) for v in orngMisc.LimitedCounter([3]*len(attributes))])
+    else:
+        return orange.EnumVariable("Q", values = ["M(%s)" % ", ".join(["+-"[x]+attr for attr, x in zip(attributes, v) if x<2]) for v in orngMisc.LimitedCounter([3]*len(attributes))])
+
+    
 def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, originalAsMeta = False):
     nDimensions = len(dimensions)
     
     needQ = outputAttr < 0 or derivativeAsMeta
     if needQ:
-        import orngMisc
-        if MQCNotation:
-            qVar = orange.EnumVariable("Q", values = ["M%s(%s)" % ("".join(["+-"[x] for x in v if x<2]), ", ".join([cache.attributes[i][0] for i,x in zip(dimensions, v) if x<2])) for v in orngMisc.LimitedCounter([3]*nDimensions)])
-        else:
-            qVar = orange.EnumVariable("Q", values = ["M(%s)" % ", ".join(["+-"[x]+cache.attributes[i][0] for i, x in zip(dimensions, v) if x<2]) for v in orngMisc.LimitedCounter([3]*nDimensions)])
+        qVar = createClassVar([cache.attributes[i][0] for i in dimensions], MQCNotation)
         
     if outputAttr >= 0:
         classVar = orange.FloatVariable("df/d"+cache.attributes[outputAttr][0])
@@ -472,7 +535,7 @@ def CVAgainstKnown(data, oracle, dimensions = None, method = None, **dic):
     for fold in range(10):
         train = data.select(cv, fold, negate=1)
         test = data.select(cv, fold)
-        pa, qid, did, cid = orngPade.pade(train, oracle, dimensions, method, originalAsMeta=True, **dic)
+        pa, qid, did, cid = pade(train, oracle, dimensions, method, originalAsMeta=True, **dic)
         tree = orngTree.TreeLearner(pa, maxDepth=4)
 
         mb, cc = orngPade.computeAmbiguityAccuracy(tree, test, -1)
@@ -482,3 +545,43 @@ def CVAgainstKnown(data, oracle, dimensions = None, method = None, **dic):
     print amb/10, acc/10
 
 
+import re
+sidx = {"+": "0", "-": "1", None: "2"}
+numb = r"[+-]?\d*(\.\d*)?(e[+-]\d+)?"
+constraint = r"M(?P<signs>[+-](,[+-])*)\((?P<attrs>[^ ,)]*(,[^ ,)]*)*)\)\s*\(Cov=(?P<cov>(\*\*)|("+numb+r"%="+numb+r"))\(\?(?P<amb>"+numb+r")%\)/(?P<xmpls>"+numb+r")\)"
+re_constraint = re.compile(constraint)
+re_node = re.compile(r"\s*(?P<splitattr>[^ ]*)\s*<=\s*(?P<thresh>[\-0-9.]*)\s*\[\s*"+constraint+r"\]")
+
+def readQuinTreeRec(fle, domain):
+    node = orange.TreeNode()
+    line = fle.readline()
+
+    match = re_node.search(line)
+    if match:
+        splitattr, thresh = match.group("splitattr", "thresh")
+        node.branchSelector = orange.Classifier(lambda ex,rw, attr=domain[splitattr], thr=float(thresh): ex[attr] > thr)
+        node.branchDescriptions = ["<= "+thresh, "> "+thresh]
+        node.branches = [readQuinTreeRec(fle, domain), readQuinTreeRec(fle, domain)]
+        node.branchSizes = [node.branches[0].nExamples, node.branches[1].nExamples]
+    else:
+        match = re_constraint.search(line)
+        if not match:
+            raise "Cannot read line '%s'" % line
+
+    attrs, signs, cov, amb, xmpls = match.group("attrs", "signs", "cov", "amb", "xmpls")
+
+    mqc = dict(zip(attrs.split(","), signs.split(",")))
+    node.nodeClassifier = orange.DefaultClassifier(defaultVal = int("".join([sidx[mqc.get(attr.name, None)] for attr in domain.attributes]), 3))
+    node.setattr("coverage", cov == "**" and -1 or float(cov[:cov.index("%")]))
+    node.setattr("ambiguity", float(amb))
+    node.setattr("nExamples", float(xmpls))
+    return node
+
+def readQuinTree(fname, domain):
+    qVar = createClassVar([attr.name for attr in domain.attributes])
+    domain.setattr("constraintAttributes", domain.attributes)
+    return orange.TreeClassifier(domain = domain, classVar = domain.classVar, tree = readQuinTreeRec(open(fname), domain))
+
+##data = orange.ExampleTable(r"c:\D\ai\Orange\test\squin\testi_sucbook\QuadB\QuadB")
+##tree = readQuinTree(r"c:\D\ai\Orange\test\squin\testi_sucbook\QuadB\QuadB.tre", data.domain)
+##print computeAmbiguityAccuracy(tree, data, -1)
