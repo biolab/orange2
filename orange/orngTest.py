@@ -404,9 +404,10 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
             
     classifiers = [learner(learnset, learnweight) for learner in learners]
     for i in range(len(learners)): classifiers[i].name = getattr(learners[i], 'name', 'noname')
+    testResults = testOnData(classifiers, (testset, testweight), testResults, iterationNumber)
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
-    return testOnData(classifiers, (testset, testweight), testResults, iterationNumber)
+    return testResults
 
 
 def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumber=0, pps=[], **argkw):
@@ -435,9 +436,10 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
 
     classifiers = [learner(learnset, learnweight) for learner in learners]
     for i in range(len(learners)): classifiers[i].name = getattr(learners[i], "name", "noname")
+    testResults = testOnData(classifiers, (testset, learnweight), testResults, iterationNumber)
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
-    return testOnData(classifiers, (testset, learnweight), testResults, iterationNumber)
+    return testResults
 
 
 def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argkw):
