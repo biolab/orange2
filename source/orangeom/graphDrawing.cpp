@@ -4,6 +4,20 @@
 #include "../orange/px/externs.px"
 #include <stdio.h>
 #include <iostream>
+#include "GraphOptimization.h"
+
+void dumpLinks(int **link, int columns, int rows)
+{
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < columns; j++)
+		{
+			cout << link[i][j] << "  ";
+		}
+
+		cout << endl;
+	}
+}
 
 void dumpCoordinates(double **pos, int columns, int rows)
 {
@@ -16,28 +30,6 @@ void dumpCoordinates(double **pos, int columns, int rows)
 
 		cout << endl;
 	}
-}
-
-double k;
-double k2;
-
-double attractiveForce(double x)
-{
-	return x * x / k;
-
-}
-
-double repulsiveForce(double x)
-{
-	if (x == 0)
-		return k2 / 1;
-
-	return   k2 / x; 
-}
-
-double cool(double t)
-{
-	return t * 0.98;
 }
 
 PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(Graph, steps, coorX, coorY, temperature, width|def=100, height|def=100) -> None")
@@ -79,9 +71,9 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
       PYERROR(PyExc_AttributeError, "graph nodes are not equal to coordinates", NULL);
 
 	double **pos = (double**)malloc(rows * sizeof (double));
-	double **disp = (double**)malloc(rows * sizeof (double));
+	//double **disp = (double**)malloc(rows * sizeof (double));
 
-	if ((pos == NULL) && (disp == NULL))
+	if (pos == NULL) // && (disp == NULL))
 	{
 		cerr << "Couldn't allocate memory\n";
 		exit(1);
@@ -93,9 +85,9 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 	for (i = 0; i < rows; i++)
 	{
 		pos[i] = (double *)malloc(2 * sizeof(double));
-		disp[i] = (double *)malloc(2 * sizeof(double));
+		//disp[i] = (double *)malloc(2 * sizeof(double));
 
-		if ((pos[i] == NULL) && (disp[i] == NULL))
+		if (pos[i] == NULL) //&& (disp[i] == NULL))
 		{
 			cerr << "Couldn't allocate memory\n";
 			exit(1);
@@ -105,118 +97,79 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 		pos[i][1] = (double)coorY[i];
 	}
 
-	int area = width * height;
-	k2 = area / graph->nVertices;
-	k = sqrt(k2);
-	double kk = 2 * k;
+	int **links = NULL;
+	int nLinks = 0;
 
-	// iterations
-	for (i = 0; i < steps; i++)
+	int v = 0;
+	for (v = 0; v < graph->nVertices; v++)
 	{
-		// reset disp
-		for (int j = 0; i < rows; i++)
-		{
-			disp[i][0] = 0;
-			disp[i][1] = 0;
-		}
+		TGraphAsList::TEdge *edge = graph->edges[v];
 
-		// calculate repulsive force
-		int v = 0;
-		for (v = 0; v < graph->nVertices - 1; v++)
+		if (edge != NULL)
 		{
-			for (int u = v + 1; u < graph->nVertices; u++)
+			int u = edge->vertex;
+			links = (int**)realloc(links, (nLinks + 1) * sizeof(int));
+
+			if (links == NULL)
 			{
-				double difX = pos[v][0] - pos[u][0];
-				double difY = pos[v][1] - pos[u][1];
-
-				double dif = sqrt(difX * difX + difY * difY);
-
-				if (dif == 0)
-					dif = 1;
-
-				if (dif < kk)
-				{
-				disp[v][0] = disp[v][0] + ((difX / dif) * repulsiveForce(dif));
-				disp[v][1] = disp[v][1] + ((difY / dif) * repulsiveForce(dif));
-
-				disp[u][0] = disp[u][0] - ((difX / dif) * repulsiveForce(dif));
-				disp[u][1] = disp[u][1] - ((difY / dif) * repulsiveForce(dif));
-				}
+				cerr << "Couldn't allocate memory\n";
+				exit(1);
 			}
-		}
 
-		// calculate attractive forces
-		for (v = 0; v < graph->nVertices; v++)
-		{
-			TGraphAsList::TEdge *edge = graph->edges[v];
+			links[nLinks] = (int *)malloc(2 * sizeof(int));
 
-			if (edge != NULL)
+			if (links[nLinks] == NULL)
 			{
-				int u = edge->vertex;
+				cerr << "Couldn't allocate memory\n";
+				exit(1);
+			}
 
-				//cout << "v: " << v << " u: " << u << endl;
+			links[nLinks][0] = v;
+			links[nLinks][1] = u;
+			nLinks++;
 
-				// cout << "     v: " << v << " u: " << u << " w: " << edge->weights << endl;
+			TGraphAsList::TEdge *next = edge->next;
+			while (next != NULL)
+			{
+				int u = next->vertex;
+
+				links = (int**)realloc(links, (nLinks + 1) * sizeof (int));
+
+				if (links == NULL)
+				{
+					cerr << "Couldn't allocate memory\n";
+					exit(1);
+				}
+
+				links[nLinks] = (int *)malloc(2 * sizeof(int));
 				
-				double difX = pos[v][0] - pos[u][0];
-				double difY = pos[v][1] - pos[u][1];
-
-				double dif = sqrt(difX*difX + difY*difY);
-
-				if (dif == 0)
-					dif = 1;
-
-				disp[v][0] = disp[v][0] - ((difX / dif) * attractiveForce(dif));
-				disp[v][1] = disp[v][1] - ((difY / dif) * attractiveForce(dif));
-
-				disp[u][0] = disp[u][0] + ((difX / dif) * attractiveForce(dif));
-				disp[u][1] = disp[u][1] + ((difY / dif) * attractiveForce(dif));
-	
-				TGraphAsList::TEdge *next = edge->next;
-				while (next != NULL)
+				if (links[nLinks] == NULL)
 				{
-					int u = next->vertex;
-
-					//cout << "v: " << v << " u: " << u << endl;
-
-					double difX = pos[v][0] - pos[u][0];
-					double difY = pos[v][1] - pos[u][1];
-
-					double dif = sqrt(difX*difX + difY*difY);
-
-					if (dif == 0)
-						dif = 1;
-
-					disp[v][0] = disp[v][0] - ((difX / dif) * attractiveForce(dif));
-					disp[v][1] = disp[v][1] - ((difY / dif) * attractiveForce(dif));
-
-					disp[u][0] = disp[u][0] + ((difX / dif) * attractiveForce(dif));
-					disp[u][1] = disp[u][1] + ((difY / dif) * attractiveForce(dif));
-
-					//cout << "next v: " << v << " u: " << u << " w: " << next->weights << endl;
-					next = next->next;
+					cerr << "Couldn't allocate memory\n";
+					exit(1);
 				}
+
+				links[nLinks][0] = v;
+				links[nLinks][1] = u;
+				nLinks++;
+
+				next = next->next;
 			}
 		}
-
-		// limit the maximum displacement to the temperature t
-		// and then prevent from being displaced outside frame
-		for (v = 0; v < graph->nVertices; v++)
-		{
-			double dif = sqrt(disp[v][0]*disp[v][0] + disp[v][1]*disp[v][1]);
-
-			if (dif == 0)
-				dif = 1;
-
-			pos[v][0] = pos[v][0] + ((disp[v][0] / dif) * min(fabs(disp[v][0]), temperature));
-			pos[v][1] = pos[v][1] + ((disp[v][1] / dif) * min(fabs(disp[v][1]), temperature));
-
-			//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
-			//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
-		}
-		
-		temperature = cool(temperature);
 	}
+
+	//dumpLinks(links, 2, nLinks);
+
+	//dumpCoordinates(pos, 2, graph->nVertices);
+
+	GraphOptimization optimization;
+	optimization.setTemperature(temperature);
+	optimization.fruchtermanReingold(steps, graph->nVertices, pos, nLinks, links);
+	temperature = optimization.getTemperature();
+	//cout << endl;
+	//dumpCoordinates(pos, 2, graph->nVertices);
+	
+	cout << "temp: " << temperature << endl;
 
 	PyArrayObject *arrayX = (PyArrayObject *)(pycoorX);
 	PyArrayObject *arrayY = (PyArrayObject *)(pycoorY);
@@ -231,11 +184,11 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 	for (i = 0; i < rows; i++)
 	{
 		free(pos[i]);
-		free(disp[i]);
+		//free(disp[i]);
 	}
 
 	free(pos);
-	free(disp);
+	//free(disp);
 		
     //return Py_BuildValue("ii", graph->getEdge(0, 1) ? 1 : 0, (int)(graph->edges));
 	return Py_BuildValue("OOd", arrayX, arrayY, temperature);
