@@ -1,4 +1,4 @@
-#include "GraphOptimization.h"
+#include "graphoptimization.h"
 
 GraphOptimization::GraphOptimization(void)
 {

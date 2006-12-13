@@ -4,7 +4,7 @@
 #include "../orange/px/externs.px"
 #include <stdio.h>
 #include <iostream>
-#include "GraphOptimization.h"
+#include "graphoptimization.h"
 
 void dumpLinks(int **link, int columns, int rows)
 {
