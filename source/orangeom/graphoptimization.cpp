@@ -1,5 +1,4 @@
 #include "graphoptimization.ppp"
-#include "numeric_interface.hpp"
 #include "graph.hpp"
 
 TGraphOptimization::TGraphOptimization(int _nVertices, double **_pos, int _nLinks, int **_links)
@@ -20,17 +19,29 @@ void TGraphOptimization::setData(int _nVertices, double **_pos, int _nLinks, int
 {
 	int i;
 
+	/*
 	for (i = 0; i < nVertices; i++)
 	{
 		free(pos[i]);
 	}
+	*/
 
 	for (i = 0; i < nLinks; i++)
 	{
 		free(links[i]);
 	}
-
+	
+	if (pos != NULL)
+	{
+	cout << "set 1" << endl;
+	if (pos[0] != NULL)
+		free(pos[0]);
+	cout << "set 2" << endl;
+	if (pos[1] != NULL)
+		free(pos[1]);
+	cout << "set 3" << endl;
 	free(pos);
+	}
 	free(links);
 
 	nVertices = _nVertices;
@@ -42,19 +53,23 @@ void TGraphOptimization::setData(int _nVertices, double **_pos, int _nLinks, int
 TGraphOptimization::~TGraphOptimization()
 {
 	int i;
-
-	for (i = 0; i < nVertices; i++)
-	{
-		free(pos[i]);
-	}
-
 	for (i = 0; i < nLinks; i++)
 	{
 		free(links[i]);
 	}
 
-	free(pos);
 	free(links);
+
+	if (pos != NULL)
+	{
+		if (pos[0] != NULL)
+			free(pos[0]);
+
+		if (pos[1] != NULL)
+			free(pos[1]);
+
+		free(pos);
+	}	
 }
 
 double TGraphOptimization::attractiveForce(double x)
@@ -76,8 +91,25 @@ double TGraphOptimization::cool(double t)
 	return t * 0.98;
 }
 
+void dumpCoordinates(double **pos, int columns, int rows)
+{
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < columns; j++)
+		{
+			cout << pos[i][j] << "  ";
+		}
+
+		cout << endl;
+	}
+}
+
 void TGraphOptimization::fruchtermanReingold(int steps)
 {
+	/*
+	cout << "nVertices: " << nVertices << endl << endl;
+	dumpCoordinates(pos, nVertices, 2);
+	/**/
 	int i = 0;
 	int count = 0;
 	double kk = 1;
@@ -116,8 +148,8 @@ void TGraphOptimization::fruchtermanReingold(int steps)
 		{
 			for (int u = v + 1; u < nVertices; u++)
 			{
-				double difX = pos[v][0] - pos[u][0];
-				double difY = pos[v][1] - pos[u][1];
+				double difX = pos[0][v] - pos[0][u];
+				double difY = pos[1][v] - pos[1][u];
 
 				double dif = sqrt(difX * difX + difY * difY);
 
@@ -145,8 +177,8 @@ void TGraphOptimization::fruchtermanReingold(int steps)
 
 			// cout << "     v: " << v << " u: " << u << " w: " << edge->weights << endl;
 			
-			double difX = pos[v][0] - pos[u][0];
-			double difY = pos[v][1] - pos[u][1];
+			double difX = pos[0][v] - pos[0][u];
+			double difY = pos[1][v] - pos[1][u];
 
 			double dif = sqrt(difX * difX + difY * difY);
 
@@ -169,13 +201,13 @@ void TGraphOptimization::fruchtermanReingold(int steps)
 			if (dif == 0)
 				dif = 1;
 
-			pos[v][0] = pos[v][0] + ((disp[v][0] / dif) * min(fabs(disp[v][0]), temperature));
-			pos[v][1] = pos[v][1] + ((disp[v][1] / dif) * min(fabs(disp[v][1]), temperature));
+			pos[0][v] = pos[0][v] + ((disp[v][0] / dif) * min(fabs(disp[v][0]), temperature));
+			pos[1][v] = pos[1][v] + ((disp[v][1] / dif) * min(fabs(disp[v][1]), temperature));
 
 			//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
 			//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
 		}
-		
+
 		temperature = cool(temperature);
 	}
 
@@ -203,7 +235,7 @@ int convert(TGraphAsList *graph, PyObject *pyxcoors, PyObject *pyycoors, double 
 	if (graph->nVertices != nRows)
       return 1;
 
-	pos = (double**)malloc(graph->nVertices * sizeof (double));
+	pos = (double**)malloc(2 * sizeof (double));
 
 	if (pos == NULL)
 	{
@@ -211,24 +243,24 @@ int convert(TGraphAsList *graph, PyObject *pyxcoors, PyObject *pyycoors, double 
 		exit(1);
 	}
 
-	int count = 0;
-	int i = 0;
+	pos[0] = (double *)malloc(graph->nVertices * sizeof(double));
+	pos[1] = (double *)malloc(graph->nVertices * sizeof(double));
 
-	for (i = 0; i < graph->nVertices; i++)
+	if ((pos[0] == NULL) || (pos[1] == NULL))
 	{
-		pos[i] = (double *)malloc(2 * sizeof(double));
-
-		if (pos[i] == NULL)
-		{
-			cerr << "Couldn't allocate memory\n";
-			exit(1);
-		}
-
-		pos[i][0] = (double)xCoor[i];
-		pos[i][1] = (double)yCoor[i];
+		cerr << "Couldn't allocate memory\n";
+		exit(1);
 	}
 
-	**links = NULL;
+	//int count = 0;
+	int i = 0;
+	for (i = 0; i < graph->nVertices; i++)
+	{
+		pos[0][i] = (double)xCoor[i];
+		pos[1][i] = (double)yCoor[i];
+	}
+
+	links = NULL;
 	nLinks = 0;
 
 	int v = 0;
@@ -339,9 +371,11 @@ PyObject *GraphOptimization_newData(PyObject *self, PyObject *args) PYARGS(METH_
 	convert(graph, pyxcoors, pyycoors, pos, nLinks, links);
 
 	CAST_TO(TGraphOptimization, graphOpt);
+	
+	graphOpt->arrayX = (PyArrayObject *)pyxcoors;
+	graphOpt->arrayY = (PyArrayObject *)pyycoors;
 	graphOpt->setData(graph->nVertices, pos, nLinks, links);
-
-
+	
 	RETURN_NONE;
 }
 
@@ -354,21 +388,17 @@ PyObject *GraphOptimization_fruchtermanReingold(PyObject *self, PyObject *args) 
 		return NULL;
 
 	CAST_TO(TGraphOptimization, graph);
-	graph->fruchtermanReingold(steps);
-	
 	graph->temperature = temperature;
+	graph->fruchtermanReingold(steps);
 
-	PyArrayObject *arrayX = new PyArrayObject;
-	PyArrayObject *arrayY = new PyArrayObject;
-		
 	int i;
 	for (i = 0; i < graph->nVertices; i++)
 	{
-		*(double *)(arrayX->data + i * arrayX->strides[0]) = graph->pos[i][0];
-		*(double *)(arrayY->data + i * arrayY->strides[0]) = graph->pos[i][1];
+		*(double *)(graph->arrayX->data + i * graph->arrayX->strides[0]) = graph->pos[0][i];
+		*(double *)(graph->arrayY->data + i * graph->arrayY->strides[0]) = graph->pos[1][i];
 	}
 
-	return Py_BuildValue("OOd", arrayX, arrayY, temperature);
+	return Py_BuildValue("OOd", graph->arrayX, graph->arrayY, graph->temperature);
 }
 
 #include "graphoptimization.px"

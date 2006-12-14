@@ -6,6 +6,7 @@
 #include <iostream>
 #include "px/orangeom_globals.hpp"
 #include "root.hpp"
+#include "numeric_interface.hpp"
 
 using namespace std;
 
@@ -32,6 +33,9 @@ public:
 	int nVertices;
 	int **links;
 	double **pos;
+
+	PyArrayObject *arrayX;
+	PyArrayObject *arrayY;
 
     double attractiveForce(double x);
 	double repulsiveForce(double x);

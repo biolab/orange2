@@ -4,7 +4,6 @@
 #include "../orange/px/externs.px"
 #include <stdio.h>
 #include <iostream>
-#include "graphoptimization.h"
 
 void dumpLinks(int **link, int columns, int rows)
 {
@@ -19,20 +18,7 @@ void dumpLinks(int **link, int columns, int rows)
 	}
 }
 
-void dumpCoordinates(double **pos, int columns, int rows)
-{
-	for (int i = 0; i < rows; i++)
-	{
-		for (int j = 0; j < columns; j++)
-		{
-			cout << pos[i][j] << "  ";
-		}
-
-		cout << endl;
-	}
-}
-
-PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(Graph, steps, coorX, coorY, temperature, width|def=100, height|def=100) -> None")
+PyObject *graphOptimization1(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(Graph, steps, coorX, coorY, temperature, width|def=100, height|def=100) -> None")
 {
   PyTRY
     int steps;
@@ -45,7 +31,7 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 
 	//cout <<"v003" << endl;
 
-	if (!PyArg_ParseTuple(args, "OiOOd|ii:graphOptimization", &pygraph, &steps, &pycoorX, &pycoorY, &temperature, &width, &height))
+	if (!PyArg_ParseTuple(args, "OiOOd|ii:graphOptimization1", &pygraph, &steps, &pycoorX, &pycoorY, &temperature, &width, &height))
 	{
 		//PyErr_Clear
       return NULL;
@@ -161,11 +147,12 @@ PyObject *graphOptimization(PyObject *, PyObject *args, PyObject *) PYARGS(METH_
 	//dumpLinks(links, 2, nLinks);
 
 	//dumpCoordinates(pos, 2, graph->nVertices);
-
+	/*
 	GraphOptimization optimization;
 	optimization.setTemperature(temperature);
 	optimization.fruchtermanReingold(steps, graph->nVertices, pos, nLinks, links);
 	temperature = optimization.getTemperature();
+	/**/
 	//cout << endl;
 	//dumpCoordinates(pos, 2, graph->nVertices);
 	
