@@ -1,7 +1,14 @@
-#include "graphoptimization.h"
+#include "graphoptimization.ppp"
+#include "numeric_interface.hpp"
+#include "graph.hpp"
 
-GraphOptimization::GraphOptimization(void)
+TGraphOptimization::TGraphOptimization(int _nVertices, double **_pos, int _nLinks, int **_links)
 {
+	nVertices = _nVertices;
+	nLinks = _nLinks;
+	pos = _pos;
+	links = _links;
+
 	k = 1;
 	k2 = 1;
 	width = 1000;
@@ -9,17 +16,54 @@ GraphOptimization::GraphOptimization(void)
 	temperature = sqrt((double)(width*width + height*height)) / 10;
 }
 
-GraphOptimization::~GraphOptimization(void)
+void TGraphOptimization::setData(int _nVertices, double **_pos, int _nLinks, int **_links)
 {
+	int i;
+
+	for (i = 0; i < nVertices; i++)
+	{
+		free(pos[i]);
+	}
+
+	for (i = 0; i < nLinks; i++)
+	{
+		free(links[i]);
+	}
+
+	free(pos);
+	free(links);
+
+	nVertices = _nVertices;
+	nLinks = _nLinks;
+	pos = _pos;
+	links = _links;
 }
 
-double GraphOptimization::attractiveForce(double x)
+TGraphOptimization::~TGraphOptimization()
+{
+	int i;
+
+	for (i = 0; i < nVertices; i++)
+	{
+		free(pos[i]);
+	}
+
+	for (i = 0; i < nLinks; i++)
+	{
+		free(links[i]);
+	}
+
+	free(pos);
+	free(links);
+}
+
+double TGraphOptimization::attractiveForce(double x)
 {
 	return x * x / k;
 
 }
 
-double GraphOptimization::repulsiveForce(double x)
+double TGraphOptimization::repulsiveForce(double x)
 {
 	if (x == 0)
 		return k2 / 1;
@@ -27,12 +71,12 @@ double GraphOptimization::repulsiveForce(double x)
 	return   k2 / x; 
 }
 
-double GraphOptimization::cool(double t)
+double TGraphOptimization::cool(double t)
 {
 	return t * 0.98;
 }
 
-void GraphOptimization::fruchtermanReingold(int steps, int nVertices, double **pos, int nLinks, int **links)
+void TGraphOptimization::fruchtermanReingold(int steps)
 {
 	int i = 0;
 	int count = 0;
@@ -143,3 +187,188 @@ void GraphOptimization::fruchtermanReingold(int steps, int nVertices, double **p
 
 	free(disp);
 }
+
+#include "externs.px"
+#include "orange_api.hpp"
+
+int convert(TGraphAsList *graph, PyObject *pyxcoors, PyObject *pyycoors, double **&pos, int &nLinks, int **&links)
+{
+	int nRows;
+	double *xCoor;
+	double *yCoor;
+	
+	numericToDouble(pyxcoors, xCoor, nRows);
+	numericToDouble(pyycoors, yCoor, nRows);
+
+	if (graph->nVertices != nRows)
+      return 1;
+
+	pos = (double**)malloc(graph->nVertices * sizeof (double));
+
+	if (pos == NULL)
+	{
+		cerr << "Couldn't allocate memory\n";
+		exit(1);
+	}
+
+	int count = 0;
+	int i = 0;
+
+	for (i = 0; i < graph->nVertices; i++)
+	{
+		pos[i] = (double *)malloc(2 * sizeof(double));
+
+		if (pos[i] == NULL)
+		{
+			cerr << "Couldn't allocate memory\n";
+			exit(1);
+		}
+
+		pos[i][0] = (double)xCoor[i];
+		pos[i][1] = (double)yCoor[i];
+	}
+
+	**links = NULL;
+	nLinks = 0;
+
+	int v = 0;
+	for (v = 0; v < graph->nVertices; v++)
+	{
+		TGraphAsList::TEdge *edge = graph->edges[v];
+
+		if (edge != NULL)
+		{
+			int u = edge->vertex;
+			links = (int**)realloc(links, (nLinks + 1) * sizeof(int));
+
+			if (links == NULL)
+			{
+				cerr << "Couldn't allocate memory\n";
+				exit(1);
+			}
+
+			links[nLinks] = (int *)malloc(2 * sizeof(int));
+
+			if (links[nLinks] == NULL)
+			{
+				cerr << "Couldn't allocate memory\n";
+				exit(1);
+			}
+
+			links[nLinks][0] = v;
+			links[nLinks][1] = u;
+			nLinks++;
+
+			TGraphAsList::TEdge *next = edge->next;
+			while (next != NULL)
+			{
+				int u = next->vertex;
+
+				links = (int**)realloc(links, (nLinks + 1) * sizeof (int));
+
+				if (links == NULL)
+				{
+					cerr << "Couldn't allocate memory\n";
+					exit(1);
+				}
+
+				links[nLinks] = (int *)malloc(2 * sizeof(int));
+				
+				if (links[nLinks] == NULL)
+				{
+					cerr << "Couldn't allocate memory\n";
+					exit(1);
+				}
+
+				links[nLinks][0] = v;
+				links[nLinks][1] = u;
+				nLinks++;
+
+				next = next->next;
+			}
+		}
+	}
+
+	return 0;
+}
+
+PyObject *GraphOptimization_new(PyTypeObject *type, PyObject *args, PyObject *keyw) BASED_ON (Orange, "(Graph, xCoordinates, yCoordinates) -> None") 
+{
+	PyObject *pygraph;
+	PyObject *pyxcoors;
+	PyObject *pyycoors;
+
+	/*
+	if (PyArg_ParseTuple(args, "OOO:GraphOptimization", &pygraph, &pyxcoors, &pyycoors))
+	{
+		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
+
+		if (graph->nVertices < 2)
+		  PYERROR(PyExc_AttributeError, "graph has less than two nodes", NULL);
+
+		int nLinks;
+		int **links;
+		double **pos; 
+
+		convert(graph, pyxcoors, pyycoors, pos, nLinks, links);
+
+		return WrapNewOrange(new TGraphOptimization(graph->nVertices, pos, nLinks, links), type);
+	}
+	else
+	{
+	/**/
+		return WrapNewOrange(new TGraphOptimization(0, NULL, 0, NULL), type);
+	//}
+}
+
+PyObject *GraphOptimization_newData(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Graph, xCoordinates, yCoordinates) -> None")
+{
+	PyObject *pygraph;
+	PyObject *pyxcoors;
+	PyObject *pyycoors;
+
+	if (!PyArg_ParseTuple(args, "OOO:GraphOptimization.newData", &pygraph, &pyxcoors, &pyycoors))
+		return NULL;
+
+	TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
+
+	int nLinks;
+	int **links;
+	double **pos; 
+
+	convert(graph, pyxcoors, pyycoors, pos, nLinks, links);
+
+	CAST_TO(TGraphOptimization, graphOpt);
+	graphOpt->setData(graph->nVertices, pos, nLinks, links);
+
+
+	RETURN_NONE;
+}
+
+PyObject *GraphOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps) -> None")
+{
+	int steps;
+	double temperature = 0;
+
+	if (!PyArg_ParseTuple(args, "id:GraphOptimization.fruchtermanReingold", &steps, &temperature))
+		return NULL;
+
+	CAST_TO(TGraphOptimization, graph);
+	graph->fruchtermanReingold(steps);
+	
+	graph->temperature = temperature;
+
+	PyArrayObject *arrayX = new PyArrayObject;
+	PyArrayObject *arrayY = new PyArrayObject;
+		
+	int i;
+	for (i = 0; i < graph->nVertices; i++)
+	{
+		*(double *)(arrayX->data + i * arrayX->strides[0]) = graph->pos[i][0];
+		*(double *)(arrayY->data + i * arrayY->strides[0]) = graph->pos[i][1];
+	}
+
+	return Py_BuildValue("OOd", arrayX, arrayY, temperature);
+}
+
+#include "graphoptimization.px"
