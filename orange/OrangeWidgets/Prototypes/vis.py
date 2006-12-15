@@ -32,6 +32,7 @@ def depict(mol):
     OEAddDepictionHydrogens(mol)
     OEDepictCoordinates(mol)
     OEMDLPerceiveBondStereo(mol)
+    OEAssignAromaticFlags(mol)
 
 def subsetSearch(mol, pattern):
     """finds the matches of pattern in mol"""
