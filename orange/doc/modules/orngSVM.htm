@@ -94,7 +94,7 @@ c1=l1(data)
 l1.name="SVM - RBF(Euclidean)"
 
 l2=orngSVM.SVMLearner()
-l2.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamiltonian(data))
+l2.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamming(data))
 l2.kernel_type=orange.SVMLearner.CUSTOM
 l2.kernelFunc.gamma=0.5
 l2.probability=True
