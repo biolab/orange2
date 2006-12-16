@@ -117,11 +117,15 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     return wa
 
 
-def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = unicode, validator=None):
+def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = unicode, validator=None, controlWidth = None):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     wa = QLineEdit(b)
     wa.setText(unicode(mygetattr(master,value)))
+
+    if controlWidth:
+        wa.setFixedWidth(controlWidth)
+        
     if tooltip:
         QToolTip.add(wa, tooltip)
     if validator:
@@ -174,10 +178,13 @@ def separator(widget, width=0, height=8):
     sep.setFixedSize(width, height)
     return sep
 
-def rubber(widget):
+def rubber(widget, orientation="vertical"):
     sep = QWidget(widget)
     sep.setMinimumSize(1, 1)
-    sep.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+    if orientation=="horizontal" or not orientation:
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
+    else:
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding))
     return sep
 
 def createAttributePixmap(char, color = Qt.black):
