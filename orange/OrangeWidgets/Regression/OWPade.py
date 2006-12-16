@@ -6,9 +6,6 @@
 """
 
 
-############
-## Known bugs: worng indices in presence of discrete attributes
-
 import orange, orngPade
 from OWWidget import *
 import OWGUI
@@ -18,8 +15,8 @@ class OWPade(OWWidget):
     settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
     contextHandlers = {"": DomainContextHandler("", ["outputAttr", ContextField("attributes", DomainContextHandler.RequiredList, selected="dimensions")], False, False, False, False)}
 
-    methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression"]    
-    methods = [orngPade.firstTriangle, orngPade.starRegression, orngPade.starUnivariateRegression, orngPade.tubedRegression]
+    methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression", "1D Qing"]    
+    methods = [orngPade.firstTriangle, orngPade.starRegression, orngPade.starUnivariateRegression, orngPade.tubedRegression, orngPade.qing1D]
     
     def __init__(self, parent = None, signalManager = None, name = "Pade"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
@@ -38,6 +35,7 @@ class OWPade(OWWidget):
         self.threshold = 0.0
         self.method = 2
         self.useMQCNotation = False
+        self.persistence = 40
 
         self.nNeighbours = 30        
         
@@ -54,10 +52,13 @@ class OWPade(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Method", addSpace = 24)
         OWGUI.comboBox(box, self, "method", callback = self.methodChanged, items = self.methodNames)
 #        self.nNeighboursSpin = OWGUI.spin(box, self, "nNeighbours", 10, 200, 10, label = "Number of neighbours" + "  ", callback = self.methodChanged)
+        self.persistenceSpin = OWGUI.spin(box, self, "persistence", 0, 100, 5, label = "Persistence (0-100)" + "  ", callback = self.methodChanged, controlWidth=50)
 
+        OWGUI.separator(box)
         hbox = OWGUI.widgetBox(box, orientation=0)
         threshCB = OWGUI.checkBox(hbox, self, "enableThreshold", "Ignore differences below ")
-        ledit = OWGUI.lineEdit(hbox, self, "threshold", valueType=float, validator=QDoubleValidator(0, 1e30, 0, self, ""))
+        OWGUI.rubber(hbox, orientation = 0)
+        ledit = OWGUI.lineEdit(hbox, self, "threshold", valueType=float, validator=QDoubleValidator(0, 1e30, 0, self, ""), controlWidth=50)
         threshCB.disables.append(ledit)
         threshCB.makeConsistent()
         OWGUI.checkBox(box, self, "useMQCNotation", label = "Use MQC notation")
@@ -74,6 +75,8 @@ class OWPade(OWWidget):
 
         self.adjustSize()
         self.activateLoadedSettings()
+
+        self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.qing1D)
         
         self.setFixedWidth(self.sizeHint().width())
 
@@ -106,6 +109,7 @@ class OWPade(OWWidget):
 
     def methodChanged(self):
         self.deltas = None
+        self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.qing1D)
         #self.nNeighboursSpin.setEnabled(bool(self.method==3))
 
 
@@ -142,7 +146,7 @@ class OWPade(OWWidget):
             dimensionsToCompute.append(self.outputAttr)
         if dimensionsToCompute:
             self.progressBarInit()
-            self.methods[self.method](self, dimensionsToCompute, self.progressBarSet)
+            self.methods[self.method](self, dimensionsToCompute, self.progressBarSet, persistence=self.persistence/100.)
             self.progressBarFinished()
 
         paded, derivativeID, metaIDs, classID = orngPade.createQTable(self, data, self.dimensions,
