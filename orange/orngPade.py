@@ -2,6 +2,7 @@ import orange, statc
 import math, numpy, string, os
 
 from orangeom import star, dist
+from copy import deepcopy
 from sets import Set
 
 #pathQHULL = r"c:\qhull"
@@ -79,7 +80,7 @@ def inside(cache, vertex,simplex):
     return [numpy.array([change(cache, i,j,vertex) for j in simplex]) for i in simplex]
 
 
-def firstTriangle(cache, dimensions, progressCallback = None):
+def firstTriangle(cache, dimensions, progressCallback = None, **args):
     if len(cache.contAttributes) == 1:
         return triangles1D(cache, False)
 
@@ -101,7 +102,7 @@ def firstTriangle(cache, dimensions, progressCallback = None):
 
 
     if progressCallback:
-        nPoints = 100.0/len(points)
+        nPoints = 100.0/npoints
         
     for x, (S, xp, dt, deltas) in enumerate(zip(cache.stars, points, cache.dts, cache.deltas)):
         for d in dimensions:
@@ -135,7 +136,7 @@ def firstTriangle(cache, dimensions, progressCallback = None):
 
 
 # calculates a linear regression on the star
-def starRegression(cache, dimensions, progressCallback=None):
+def starRegression(cache, dimensions, progressCallback=None, **args):
     if len(cache.contAttributes) == 1:
         return triangles1D(cache, True)
 
@@ -171,7 +172,7 @@ def starRegression(cache, dimensions, progressCallback=None):
 
         
 # calculates a univariate linear regression on the star
-def starUnivariateRegression(cache, dimensions, progressCallback = None):
+def starUnivariateRegression(cache, dimensions, progressCallback = None, **args):
     if len(cache.contAttributes) == 1:
         return triangles1D(cache, True)
         
@@ -262,9 +263,222 @@ def triangles1D(cache, bothWays):
                 cache.deltas[pidx][0] = der
         
     
+# PCA
+def pca(self,PCAthreshold=.8):
+    if not self.points:        
+        self.points = orange.ExampleTable(orange.Domain(self.contAttributes, self.data.domain.classVar), self.data).native(0)
+    #x = numpy.array(list(self.points))
+    x = numpy.array([[5.6359, 1.8749, 0.2587, 0.9281],[-9.0487, 7.8200, 0.6616, 0.7096],[-7.3699, -3.3882, 0.2115, 0.9430],[-2.1107, 6.4463, 0.6226, 0.1166],[-9.2594, -3.0736, 0.2573, 0.0401],[5.4889, 6.1418, 0.8147, 0.4558],[1.0844, -2.8861, 0.0941, 0.2960],[-8.0125, -7.9141, 0.0397, 0.5051],[-7.2509, -4.6146, 0.2589, 0.3370],[4.3882, 2.4636, 0.9816, 0.9167]])
+    xlen = len(x)
+    #print x
+    #print xlen
+    meanx = numpy.mean(x,0)
+    #print meanx
+    x = numpy.matrix([i-meanx for i in x])
+    #print x
+    Cov = (numpy.transpose(x)*x)/xlen
+    #print "Cov = ",Cov
+    evals,evecs = numpy.linalg.eig(Cov)
+    sum_evals = sum(list(evals))
+    eigv = [(evals[i]/sum_evals,i) for i in xrange(len(evals))]
+    eigv.sort()
+    eigv.reverse()
+    total = 0
+    for i in eigv:
+        total += i[0]
+        if total > PCAthreshold:
+            limit = i[1]
+            break
+    Ev = evecs[:,0:limit+1]
+    print eigv
+    print Ev
+    #pca_data = (Ev' * data')';
+    #pca_example = (Ev' * example')'
+
+
+def Dpca(self):
+    self.pca()
+    return
+    if not self.deltas:
+        self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
+
+    dimensions = [d for d in self.dimensions if not self.deltas[0][d]]
+
+    if not dimensions:
+        return
+
+    if not self.points:        
+        self.points = orange.ExampleTable(orange.Domain(self.contAttributes, self.data.domain.classVar), self.data).native(0)
+    points = self.points
+    npoints = len(points)
+
+    if not self.tri:
+        print self.dimension
+        self.tri = self.triangulate(points)
+    tri = self.tri
+
+    if not self.stars:
+        self.stars = [star(x, tri) for x in xrange(npoints)]
+    S = self.stars
+
+    points = import85
+    nPoints = 100.0/len(points)
+
+    self.progressBarInit()
+    for x,(S,p) in enumerate(zip(self.stars,points)):
+        if S==[]:
+            self.deltas[x] = ['?' for i in dimensions]
+            continue
+        st = list(Set(reduce(lambda x,y: x+y, S)))
+        lenst = len(st)
+        avgy = sum([points[i][-1] for i in st])/lenst
+        for di, d in enumerate(dimensions):
+            avgx = sum([points[i][di] for i in st])/lenst
+            sxx2 = sum([(points[i][di]-avgx)**2 for i in st])
+            if sxx2:
+                sxx = sum([(points[i][di]-avgx)*(points[i][-1]-avgy) for i in st])
+                b = sxx/sxx2
+                self.deltas[x][di] = b
+            else:
+                self.deltas[x][di] = '?'
+        self.progressBarSet(x*nPoints)
+
+    self.progressBarFinished()
+
+def star1D(i,p):
+    lenp = len(p)
+    if lenp==1:
+        return []
+    if i==0:
+        return [p[1]]
+    elif i==lenp-1:
+        return [p[lenp-2]]
+    else:
+        return [p[i-1],p[i+1]]
+
+#def qing1D(cache, dimensions, progressCallback = None, persistence=0.4):
+#    Dim = len(dimensions)
+#    print "dimension = ",Dim
+#    if not cache.points:        
+#        cache.points = orange.ExampleTable(orange.Domain(cache.contAttributes, cache.data.domain.classVar), cache.data).native(0)
+#    p = cache.points
+#    lenp = len(p)
+#    p.sort()
+#    # in > 1D we have to look for the points in the cylinder, project them to 1D and continue as before
+#    for d in dimensions:
+#        for x, (pts,deltas) in enumerate(zip(cache.points,cache.deltas)):
+#            px = pts[0:d]+pts[d+1:]
+#            px = px[:-1]
+#            print x,px
+#            if x>10: break
+#        print
+
+
+def qing1D(cache, dimensions, progressCallback = None, **args):
+    persistence = args.get("persistence", 0.4)
+    Dim = len(dimensions)
+    #print "dimension = ",Dim
+    if not cache.points:        
+        cache.points = orange.ExampleTable(orange.Domain(cache.contAttributes, cache.data.domain.classVar), cache.data).native(0)
+    p = cache.points
+    lenp = len(p)
+    p.sort()
+    
+    # in > 1D we have to look for the points in the cylinder, project them to 1D and continue as before
+    if Dim>1:
+        pass
+        
+    sosedi = [(p[i],star1D(i,p)) for i in xrange(lenp)]
+    mini = []
+    maxi = []
+    for i,s in enumerate(sosedi):
+        if s[0][1] < min([j[1] for j in s[1]]):
+            mini += [i]
+        elif s[0][1] > max([j[1] for j in s[1]]):
+            maxi += [i]
+            
+    #print "vsi minimumi: ",mini
+    #print "vsi maximumi: ",maxi
+    mini1 = deepcopy(mini)
+
+    for i in mini:
+        fv = p[i][1]
+        left = [j for j in maxi if j<i]
+        if left:
+            left = max(left)
+            left = (math.fabs(fv-p[left][1]),left)
+        right = [j for j in maxi if j>i]
+        if right:
+            right = min(right)
+            right = (math.fabs(fv-p[right][1]),right)
+        t = [(i,fv)]
+        ti = []
+        if left:
+            ti += [left]
+        if right:
+            ti += [right]
+        mti = min(ti)
+        if mti[0] <= persistence:
+            maxi.remove(mti[1])
+            mini1.remove(i)
+    #print "min. po krajsanju: ",mini1
+    #print "max. po krajsanju: ",maxi
+    ext = [(p[m],-1) for m in mini1]+[(p[m],1) for m in maxi]
+    ext.sort()
+    elist = zip(mini1,[-1]*len(mini1))+zip(maxi,[1]*len(maxi))
+    elist.sort()
+    ekstremi = []
+    if elist[0][1]==-1: # ce je najprej minimum
+        ekstrem = min([(p[k][-1],k,-1) for k in xrange(maxi[0])]) # poiscemo pravi min med tockami do prvega maxa
+    else:
+        ekstrem = max([(p[k][-1],k,1) for k in xrange(mini1[0])]) # sicer poiscemo prvi max med tockami do prvega mina
+    ekstremi += [ekstrem]
+    for i in xrange(1,len(elist)-1):
+        if elist[i][-1]==1:
+            ekstrem = max([(p[k][-1],k,1) for k in xrange(elist[i-1][0],elist[i+1][0]+1)])
+        else:
+            ekstrem = min([(p[k][-1],k,-1) for k in xrange(elist[i-1][0],elist[i+1][0]+1)])
+        ekstremi += [ekstrem]        
+
+    if elist[-1][1]==-1: # ce je zadnji ekstrem minimum
+        ekstrem = min([(p[k][-1],k,-1) for k in xrange(maxi[-1],lenp)]) # poiscemo pravi min med tockami do prvega maxa
+    else:
+        ekstrem = max([(p[k][-1],k,1) for k in xrange(mini1[-1],lenp)]) # sicer poiscemo prvi max med tockami do prvega mina
+    ekstremi += [ekstrem]
+    lookup = [k[1:] for k in ekstremi]
+    if progressCallback:
+        nPoints = 100.0/lenp
+    for x, deltas in enumerate(cache.deltas):
+        for d in dimensions:
+            #print x,p[x]
+            # ce je x ekstrem, ima odvod 0, oz. gledamo levo/desno limito, ce je na robu
+            if x in [j[0] for j in lookup]:
+                if x == lookup[0][0]:
+                    #deltas[d] = -lookup[0][1]
+                    deltas[d] = (p[lookup[1][0]][1] - p[x][1])/(p[lookup[1][0]][0] - p[x][0])
+                elif x == lookup[-1][0]:
+                    #deltas[d] = lookup[-1][1]
+                    deltas[d] = (p[lookup[-2][0]][1] - p[x][1])/(p[lookup[-2][0]][0] - p[x][0])
+                else:
+                    deltas[d] = 0.
+                continue
+            j=0
+            while lookup[j][0] < x:
+                j+=1
+            if lookup[j][1] == 1:
+                #deltas[d] = 1. #obrni * (xnz-xp[-1]) / dt
+                deltas[d] = (p[x][1] - p[lookup[j][0]][1])/(p[x][0] - p[lookup[j][0]][0])
+            else:
+                #deltas[d] = -1.
+                deltas[d] = (p[x][1] - p[lookup[j][0]][1])/(p[x][0] - p[lookup[j][0]][0])
+        if progressCallback:
+            progressCallback(x*nPoints)
+
+    #print [k[-1] for k in ekstremi]
+
 
 # regression in a tube
-def tubedRegression(cache, dimensions, progressCallback = None):
+def tubedRegression(cache, dimensions, progressCallback = None, **args):
     if not cache.findNearest:
         cache.findNearest = orange.FindNearestConstructor_BruteForce(cache.data, distanceConstructor=orange.ExamplesDistanceConstructor_Euclidean(), includeSame=True)
         
@@ -543,6 +757,7 @@ def CVAgainstKnown(data, oracle, dimensions = None, method = None, **dic):
         acc += cc
         print (mb, cc)
     print amb/10, acc/10
+
 
 
 import re
