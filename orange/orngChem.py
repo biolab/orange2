@@ -25,6 +25,7 @@ ReverseAtomicSymbolCodeDict=dict([(val, key) for key, val in AtomicSymbolCodeDic
 def molGraph(smiles):
     mol=OEGraphMol()
     OEParseSmiles(mol, smiles)
+    OEAssignAromaticFlags(mol)
     return mol
 
 def encodeSmiles(smiles):
@@ -74,8 +75,19 @@ def reverseSmiles(smiles):
         else:
             rev=smiles[0]+rev
             smiles=smiles[1:]
-    #print rev
     return rev
+
+def stripFirstAtom(smiles):
+    if len(smiles)>2:
+        return smiles[2:], smiles[:2]
+    else:
+        return smiles, ""
+    
+def stripLastAtom(smiles):
+    if len(smiles)>2:
+        return smiles[:-2], smiles[-2:]
+    else:
+        return smiles, ""
 
 pat=OESubSearch()
 
@@ -97,7 +109,51 @@ def filterOutUnusedSymbols(symbols, data):
     sym=filter(lambda s: s in tt, sym)
     return [decodeSlims(s) for s in sym]
 
-def extendFragments(fragments, atomSymbols):
+def extendFragments(fragments,sets):
+    extended=Set()
+    for i in range(len(fragments)):
+        for j in range(i,len(fragments)):
+            first=fragments[i]
+            _second=fragments[j]
+            if first in sets and _second in sets:
+                newset=sets[first].intersection(sets[_second])
+            else:
+                newset=None
+            second, end=stripLastAtom(_second)
+            ind=first.find(second)
+            if ind>1:
+                new=first+end
+                sets[new]=newset
+                sets[reverseSmiles(new)]=newset
+                extended.add(new)
+            
+            second, end=stripLastAtom(reverseSmiles(fragments[j]))
+            ind=first.find(second)
+            if ind>1:
+                new=first+end
+                sets[new]=newset
+                sets[reverseSmiles(new)]=newset
+                extended.add(new)
+
+            second, start=stripFirstAtom(fragments[j])
+            ind=first.find(second)
+            if ind==0:
+                new=start+first
+                sets[new]=newset
+                sets[reverseSmiles(new)]=newset
+                extended.add(new)
+            
+            second, start=stripFirstAtom(reverseSmiles(fragments[j]))
+            ind=first.find(second)
+            if ind==0:
+                new=start+first
+                sets[new]=newset
+                sets[reverseSmiles(new)]=newset
+                extended.add(start+first)
+    print [decodeSmiles(s) for s in extended]
+    return extended
+
+def extendFragmentsSimple(fragments, atomSymbols):
     extended=Set()
     for f in fragments:
         for bond in AtomicBondSymbols:
@@ -152,12 +208,33 @@ def filterMaxGeneral(fragments):
             ret.append(a)
     return ret
 
+def filterByFrequency(fragments, freq, data, sets):
+    new=[]
+    pat=OESubSearch()
+    for f in fragments:
+        ss=sets.get(f, None) or sets.get(reverseSmiles(f), None) or range(len(data))
+        set=[]
+        pat.Init(decodeSmiles(f))
+        count=0
+        for i in ss:
+            if pat.SingleMatch(data[i]):
+                count+=1
+                set.append(i)
+        if float(count)/len(data)>freq:
+            s=Set(set)
+            sets[f]=s
+            sets[reverseSmiles(f)]=s
+            new.append(f)
+    return new        
+
 def updateSpecific(G,S,c, cache={}):
+    setsDict={}
     first, f, data=c
     candidateSymbols=filterOutUnusedSymbols(AtomSymbols, data)
     data=[molGraph(d) for d in data]
     filterFunc=lambda g: freq(g, data)>f
-    G=filter(filterFunc, G)
+    #G=filter(filterFunc, G)
+    G=filterByFrequency(G,f,data,setsDict)
     C=Set(candidateSymbols)
     F=[]
     F.append([""])
@@ -165,13 +242,16 @@ def updateSpecific(G,S,c, cache={}):
     while(C):
         #print "Loop updateSpecific"
         #print "extFrag"
-        C=extendFragments(F[-1], candidateSymbols)
+        if len(F)>2:
+            C=extendFragments(F[-1], setsDict)
+        else:
+            C=extendFragmentsSimple(F[-1], candidateSymbols)
         #print "filter general"
         C=filter(lambda c: moreGeneral(c, S), C)
         #print "filter dup"
         C=removeDuplicates(C)
         print "filter freq",len(C)
-        F.append(filter(filterFunc,C))
+        F.append(filterByFrequency(C,f,data,setsDict))
         #print C
         #print F
     """UF=Set()
@@ -190,6 +270,7 @@ def updateSpecific(G,S,c, cache={}):
     return G,S
 
 def updateGeneral(G,S,c):
+    setsDict={}
     first, f, data=c
     candidateSymbols=filterOutUnusedSymbols(AtomSymbols, data)
     data=[molGraph(d) for d in data]
@@ -199,16 +280,19 @@ def updateGeneral(G,S,c):
     F=[]
     I=[]
     F.append([""])
-    F.append(filter(filterFunc, C))
+    F.append(filterByFrequency(C,f,data,setsDict))
     I.append(C.difference(Set(F[-1])))
     while C:
-        C=extendFragments(F[-1], candidateSymbols)
+        if len(F)>2:
+            C=extendFragments(F[-1], setsDict)
+        else:
+            C=extendFragmentsSimple(F[-1], candidateSymbols)
         #print "filter general"
         C=Set(filter(lambda c: moreGeneral(c, S), C))
         #print "filter dup"
         C=Set(removeDuplicates(C))
         print "filter freq",len(C)
-        F.append(filter(filterFunc, C))
+        F.append(filterByFrequency(C,f,data,setsDict))
         I.append(C.difference(Set(F[-1])))
         #print C
         #print F
@@ -227,27 +311,28 @@ def updateGeneral(G,S,c):
     print "G:",[decodeSmiles(g) for g in G]
     return G,S
 
-def extractFragments(genBorder, specBorder):
-    frag=[]
-    for s in specBorder:
-        for i in range(0, len(s),2):
-            for j in range(1,len(s)-i+2,2):
-                frag.append(s[i:i+j])
-    frag=removeDuplicates(frag)
-    frag.sort()
-    frag.reverse()
-    return frag
-    """
-    for s in specBorder:
-        for i in range(0,len(s),2):
-            for j in range(1,len(s)-i+2,2):
-                st=s[i:i+j]
-                rst=reverseString(st)
-                for g in genBorder:
-                    if g in st or g in rst:
-                        frag.append(st)
-                        break
-    return frag"""
+def extractFragments(genBorder, specBorder, ignoreGeneral=True):
+    if ignoreGeneral:
+        frag=[]
+        for s in specBorder:
+            for i in range(0, len(s),2):
+                for j in range(1,len(s)-i+2,2):
+                    frag.append(s[i:i+j])
+        frag=removeDuplicates(frag)
+        frag.sort()
+        frag.reverse()
+        return frag
+    else:
+        for s in specBorder:
+            for i in range(0,len(s),2):
+                for j in range(1,len(s)-i+2,2):
+                    st=s[i:i+j]
+                    rst=reverseString(st)
+                    for g in genBorder:
+                        if g in st or g in rst:
+                            frag.append(st)
+                            break
+        return frag
 
 def fragment_search(query=[]):
     """query is a list of constraints in a form ("<"|">", f, data) meaning freq(fragment, data)<|>f  i.e. that frequency of
@@ -303,10 +388,10 @@ def map_fragments(fragments, smiles, binary=True):
 
 def test():
     import orange
-    d=orange.ExampleTable("mutagen_raw.tab")
+    d=orange.ExampleTable("E:\chem\mutagen_raw.tab")
     active=[str(e["SMILES"]) for e in d if e[-1]==1]
     inactive=[str(e["SMILES"]) for e in d if e[-1]==0]
-    #frag=find_fragments(active, 0.5, inactive, 0.5)
+    #frag=find_fragments(active, 0.2, inactive, 0.2)
     frag=find_fragments(active, 0.01, inactive, 0.01)
     #frag=find_fragments(inactive, 0.1, active, 0.1)
     for f in frag:
