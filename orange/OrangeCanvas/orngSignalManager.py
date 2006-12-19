@@ -201,9 +201,7 @@ class SignalManager:
                     print "connection ", widgetFrom, " to ", widgetTo, " alread exists. Error!!"
                     return 0
 
-        existingLinks = []
-        if self.links.has_key(widgetFrom): existingLinks = self.links[widgetFrom]
-        self.links[widgetFrom] = existingLinks + [(widgetTo, signalNameFrom, signalNameTo, enabled)]
+        self.links[widgetFrom] = self.links.get(widgetFrom, []) + [(widgetTo, signalNameFrom, signalNameTo, enabled)]
 
         widgetTo.addInputConnection(widgetFrom, signalNameTo)
 
@@ -217,18 +215,28 @@ class SignalManager:
                 widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][key], key, signalNameFrom)
             
         # reorder widgets if necessary
-        if self.widgets.index(widgetTo) < self.widgets.index(widgetFrom):
+        if self.widgets.index(widgetFrom) > self.widgets.index(widgetTo):
             self.widgets.remove(widgetTo)
-            self.widgets.insert(self.widgets.index(widgetFrom)+1, widgetTo)
-
+            self.widgets.append(widgetTo)   # appent the widget at the end of the list
+            self.fixPositionOfDescendants(widgetTo)
+##            print "--------"
+##            for widget in self.widgets: print widget.title
+##            print "--------"
         return 1
+
+    # fix position of descendants of widget so that the order of widgets in self.widgets is consistent with the schema
+    def fixPositionOfDescendants(self, widget):
+        for link in self.links.get(widget, []):
+            widgetTo = link[0]
+            self.widgets.remove(widgetTo)
+            self.widgets.append(widgetTo)
+            self.fixPositionOfDescendants(widgetTo)
 
 
     # return list of signals that are connected from widgetFrom to widgetTo
     def findSignals(self, widgetFrom, widgetTo):
         signals = []
-        if not self.links.has_key(widgetFrom): return []
-        for (widget, signalNameFrom, signalNameTo, enabled) in self.links[widgetFrom]:
+        for (widget, signalNameFrom, signalNameTo, enabled) in self.links.get(widgetFrom, []):
             if widget == widgetTo:
                 signals.append((signalNameFrom, signalNameTo))
         return signals
