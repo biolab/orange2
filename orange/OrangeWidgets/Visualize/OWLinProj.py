@@ -375,7 +375,8 @@ class OWLinProj(OWVisWidget):
     def cdata(self, data):
         if data and data.domain.classVar:
             name = getattr(data, "name", "")
-            data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
+            data = orange.Preprocessor_dropMissingClasses(data)
+#            data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
             data.name = name
         if self.data and data and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
 

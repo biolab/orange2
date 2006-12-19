@@ -791,12 +791,13 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
             else:
                 imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells, self.normalizeExamples)
-                colors = defaultRGBColors
+                colors = self.discPalette
 
                 palette = []
                 sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
                 for cls in self.potentialsClassifier.classVar.values:
-                    color = colors[sortedClasses.index(cls)]
+                    color = colors[sortedClasses.index(cls)].light(150).rgb()
+                    color = [f(color) for f in [qRed, qGreen, qBlue]]
                     towhite = [255-c for c in color]
                     for s in range(nShades):
                         si = 1-float(s)/nShades
