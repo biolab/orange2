@@ -159,13 +159,15 @@ class CA(object):
         contribution = self.ContributionOfPointsToAxis(rowColumn = rowColumn, axis = axis[0], percentage = 0) + \
                         self.ContributionOfPointsToAxis(rowColumn = rowColumn, axis = axis[1], percentage = 0)
         tmp = zip(range(len(contribution)), contribution)
+
         tmp.sort(lambda x, y: cmp(x[1], y[1]))
+
         a = [i for (i, v) in tmp]
         a.reverse()
         return a
     def PlotScreeDiagram(self):
         ## todo: legend, axis, etc
-        pylab.plot(range(1, min(self.__dataMatrix.shape) + 1), self.PercentageOfInertia())
+        pylab.plot(range(1, min(self.__dataMatrix.shape) + 1), self.InertiaOfAxis(1))
         pylab.axis([0, min(self.__dataMatrix.shape) + 1, 0, 100])
         pylab.show()
         
@@ -209,6 +211,7 @@ if __name__ == '__main__':
 ##                [24,         73,         48]] 
 
     
-    data = input('doc/datasets/smokers.tab')
+    data = input('doc\\datasets\\smokers.tab')
     c = CA(data, ['Senior Managers', 'Junior Managers', 'Senior Employees', 'Junior Employees', 'Secretaries'], 
         ['None', 'Light', 'Medium', 'Heavy'])
+    c.PlotScreeDiagram()

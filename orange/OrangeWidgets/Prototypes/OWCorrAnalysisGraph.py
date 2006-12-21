@@ -95,7 +95,8 @@ class OWCorrAnalysisGraph(OWGraph):
             for line in self.markLines:
                 self.removeCurve(line)
             self.markLines = []
-            cor = [(x, y, self.tips.texts[i]) for (i,(x,y)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius]
+##            print self.tips.positions
+            cor = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius]
             self.addMarkers(cor, xFloat, yFloat, self.radius)
 ##            for x, y, text in cor:
 ##                self.addMarker(text, x, y)

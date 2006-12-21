@@ -420,8 +420,8 @@ class OWGraph(QwtPlot):
             if size:
                 font.setPixelSize(size)
             self.marker(mkey).setFont(font)
-        if color:
-            self.marker(mkey).setLabelColor(color)
+##        if color:
+##            self.marker(mkey).setLabelColor(color)
         return mkey
 
     # show a tooltip at x,y with text. if the mouse will move for more than 2 pixels it will be removed

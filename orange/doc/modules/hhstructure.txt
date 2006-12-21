@@ -21,3 +21,5 @@ Orange Modules ---> default.htm
 	Support Vector Machines ---> orngSVM.htm
 	Vizualization Ranking ---> orngVizRank.htm
 	Wrappers ---> orngWrap.htm
+	correspondence analysis ---> orngCA.htm
+	text analysis ---> orngTextCorpus.htm

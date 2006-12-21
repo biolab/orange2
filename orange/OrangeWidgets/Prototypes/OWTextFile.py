@@ -4,7 +4,6 @@
 <icon>icons/TextFile.png</icon>
 <priority>3500</priority>
 """
-
 from qt import *
 from OWWidget import *
 import OWGUI, OWToolbars, OWDlgs
@@ -13,7 +12,6 @@ from orngTextCorpus import TextCorpusLoader, loadWordSet
 import os
 import modulTMT as lemmatizer
 from OWTools import *
-
 class XMLEcho(handler.ContentHandler):
     def __init__(self, lv):
         self.lv = lv
@@ -30,7 +28,6 @@ class XMLEcho(handler.ContentHandler):
         self.lv.parent = parent
         self.lv.lastAdded = None
         self.lv.setText(0, "<%s %s>" % (name, " ".join(["%s=\"%s\"" % (k, v) for k, v in attrs.items()])))
-
     def endElement(self, name):
         str =  "".join(self.chars).strip(" \n\t\r")
         if len(str):
@@ -45,7 +42,6 @@ class XMLEcho(handler.ContentHandler):
    
     def characters(self, chrs):                              
         self.chars.append(chrs)     
-
 class OWTextFile(OWWidget):
     settingsList = []                    
     contextHandlers = {}
@@ -69,7 +65,6 @@ class OWTextFile(OWWidget):
         self.fileNameLabel.setMinimumWidth(350)
         button = OWGUI.button(box, self, '...', callback = self.browseFile, disabled=0)
         button.setMaximumWidth(25)
-
         # XML table
         QLabel(col1).setText("XML Document")
         self.listView = QListView(col1)
@@ -81,7 +76,6 @@ class OWTextFile(OWWidget):
         # text edit -- displat text node of XML
         QLabel(col1).setText("Node text")
         self.textEdit = QTextView(col1)
-
         gl.addMultiCellWidget(col1, 0, 4, 0, 0)
         
         self.connect( self.listView, SIGNAL( 'clicked( QListViewItem* )' ),  self.fillText)
@@ -97,7 +91,6 @@ class OWTextFile(OWWidget):
         hboxStop = QHBox(preproc)
         
         startfile = os.path.join(str(orangedir), 'OrangeWidgets', 'TextData','.')
-
         QLabel('Lemmatizer:', hboxLem)
         self.lemmatizer = '(none)'
         items = ['(none)']      
@@ -138,11 +131,9 @@ class OWTextFile(OWWidget):
         self.informativeTags = []
         self.informativeTagsSelected = []
         OWGUI.listBox(hbox5, self, "informativeTagsSelected", "informativeTags")
-
         app = OWGUI.button(ca, self, "Apply", self.apply)
         self.catDoc = False
         chBox  = OWGUI.checkBox(col3, self, 'catDoc', label = 'Output category-word', box = '')
-
         
         gl.addMultiCellWidget(col3, 1, 3,  2, 2)
         gl.addWidget(app, 4, 2)
@@ -186,7 +177,6 @@ class OWTextFile(OWWidget):
         self.contentTag = self.listTags.pop(self.listTagsSelected[0])                
         self.listTagsSelected = []
         self.listTags = self.listTags[:]
-
     def onContentRemove(self):
         if self.contentTag:
             self.listTags.append(self.contentTag)
@@ -199,7 +189,6 @@ class OWTextFile(OWWidget):
         self.categoryTag = self.listTags.pop(self.listTagsSelected[0])                
         self.listTagsSelected = []
         self.listTags = self.listTags[:]
-
     def onCategoryRemove(self):
         if self.contentTag:
             self.listTags.append(self.categoryTag)
@@ -213,7 +202,6 @@ class OWTextFile(OWWidget):
         self.listTagsSelected = []
         self.listTags = self.listTags[:]
         self.informativeTags = self.informativeTags[:]
-
     def onInformativeRemove(self):
         if len(self.informativeTagsSelected):
             self.listTags.append(self.informativeTags.pop(self.informativeTagsSelected[0]))
@@ -232,9 +220,9 @@ class OWTextFile(OWWidget):
         if self.lemmatizer == '(none)':
             lem = lemmatizer.NOPLemmatization()
         else:
-            lem = lemmatizer.FSALemmatization(os.path.join(str(orangedir), 'OrangeWidgets', 'TextData', self.lemmatizer))
+            lem = lemmatizer.FSALemmatization(os.path.join(str(orangedir), 'OrangeWidgets', 'TextData', self.lemmatizer).encode('latin_1'))
         if not self.stopwords == '(none)':
-            for word in loadWordSet(os.path.join(str(orangedir), 'OrangeWidgets', 'TextData', self.stopwords)):
+            for word in loadWordSet(os.path.join(str(orangedir), 'OrangeWidgets', 'TextData', self.stopwords).encode('latin_1')):
                 lem.stopwords.append(word)
         a = TextCorpusLoader(str(self.fileNameLabel.text()), tags, self.informativeTagsSelected, lem)
         if self.catDoc:

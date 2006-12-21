@@ -42,8 +42,7 @@ def getCategories(data):
                     categories.append(cat)
         categories = [(a, categories.count(a)) for a in set(categories)]        
     except:
-        pass           
-  
+        pass
     return dict(categories)
     
 
@@ -392,7 +391,8 @@ if __name__ == "__main__":
     for word in loadWordSet(engstop):
         lem.stopwords.append(word)       
 
-    fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml'
+##    fName = 'OrangeWidgets/Other/reuters-exchanges-small.xml'
+    fName = 'reuters-exchanges.xml'
     #fName = '/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/test.xml'
     #fName = '/home/mkolar/Docs/Diplomski/repository/orange/HR-learn-norm.xml'
 
@@ -400,9 +400,10 @@ if __name__ == "__main__":
             , lem = lem
 ##            , wordsPerDocRange = (50, -1)
 ##            , doNotParse = ['small', 'a']
-            , tags = {"content":"cont"}
+##            , tags = {"content":"cont"}
             )
     df = FeatureSelection(a.data).data
+    print df
             
 ##    import cPickle
 ##    f = open('allDataCW', 'r')
