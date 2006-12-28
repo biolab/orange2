@@ -5,6 +5,7 @@ import modulTMT as lemmatizer
 import orange
 import operator
 from numpy import *
+from sets import Set as set
 
 ################
 ## utility functions
@@ -43,6 +44,7 @@ def getCategories(data):
         categories = [(a, categories.count(a)) for a in set(categories)]        
     except:
         pass
+##    print categories
     return dict(categories)
     
 
@@ -402,8 +404,11 @@ if __name__ == "__main__":
 ##            , doNotParse = ['small', 'a']
 ##            , tags = {"content":"cont"}
             )
-    df = FeatureSelection(a.data).data
-    print df
+##    print "corpus ucitan"
+    c = CategoryDocument(a.data)
+    len(c.dataCD)
+##    df = FeatureSelection(a.data).data
+##    print df
             
 ##    import cPickle
 ##    f = open('allDataCW', 'r')
