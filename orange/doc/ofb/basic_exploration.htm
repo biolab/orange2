@@ -25,7 +25,7 @@ instances, about 4 MBytes), we will first create a smaller sample of
 about 3% of instances and use it in our examples. If you are curious
 how we do this, here is the code:</p>
 
-<p class="header"><a href="../datasets/sample_adult.py">sample_adult.py</a> (uses <a
+<p class="header"><a href="sample_adult.py">sample_adult.py</a> (uses <a
 href="../datasets/adult.zip">adult.tab</a> and generates <a href=
 "../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
 
@@ -33,7 +33,7 @@ href="../datasets/adult.zip">adult.tab</a> and generates <a href=
 data = orange.ExampleTable("adult")
 selection = orange.MakeRandomIndices2(data, 0.03)
 sample = data.select(selection, 0)
-sample.save("adult_sample_sample.tab")
+sample.save("adult_sample.tab")
 </xmp>
 
 <p>Above loads the data, prepares a selection vector of length equal

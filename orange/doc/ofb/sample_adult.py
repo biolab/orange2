@@ -8,4 +8,4 @@ import orange
 data = orange.ExampleTable("../datasets/adult_sample")
 selection = orange.MakeRandomIndices2(data, 0.03)
 sample = data.select(selection, 0)
-sample.save("adult_sample_sample.tab")
+sample.save("adult_sample.tab")

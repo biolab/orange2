@@ -43,7 +43,7 @@ print "%s includes %i attributes and a class variable %s" % \
 print "Attribute names and indices:"
 for i in range(len(data.domain.attributes)):
   print "(%2d) %-17s" % (i, data.domain.attributes[i].name),
-  if i % 5 == 4: print
+  if i % 3 == 2: print
 </xmp>
 
 <p>The script prints out a following report:</p>
@@ -322,9 +322,10 @@ report_prob('data2 (select, conjuction)', data2)
 
 <p>The results are reported as:</p>
 
-<xmp class="code">Size of data1 (conjunction): 38 instances;  p(>50K)=0.632
-Size of data1 (conjunction): 643 instances;  p(>50K)=0.302
-Size of data2 (select, conjunction): 38 instances;  p(>50K)=0.632
+<xmp class="code">Size of data: 977 instances;  p(>50K)=0.242
+Size of data1 (conjunction): 38 instances;  p(>50K)=0.632
+Size of data1 (disjunction): 643 instances;  p(>50K)=0.302
+Size of data2 (select, conjuction): 38 instances;  p(>50K)=0.632
 </xmp>
 
 <p>Notice that with <code>conjunction=1</code> the resulting data set
@@ -340,14 +341,14 @@ disjunction (OR) instead of in conjunction (AND). And there's also
 selection. When constructing the filter, it's essential to set the
 <code>domain</code> before specifying the values.</p>
 
-<p>Do those selection methods handle continuous values? Sure it
-does. For continuous values, the interval is specified in a tuple (low
-limit, high limit). Limits are inclusive: for a limit (30,40) and
-attribute age, an instance will be selected if age is higher or equal
-to 30 and lower or equal to 40. If the limits are reversed, examples
-with values outside the interval are selected. Again, with inclusive
-limits. E.g., for a limit (40,30) and attribute age, an instance is
-selected if age is lower or equal 30 or higher or equal 40. </p>
+<p>Selection methods can also dealwith with continuous attributes and
+values. Constraints with resepct to some attribute values are
+specified as intervals (lower limit, upper limit). Limits are
+inclusive: for a limit (30,40) and attribute age, an instance will be
+selected if the age is higher or equal to 30 and lower or equal to
+40. If the limits are reversed, e.g. (40,30), examples with values
+outside the interval are selected, that is, an instance is selected if
+age is lower or equal 30 or higher or equal 40. </p>
 
 <p class="header">part of <a href="domain6.py">domain6.py</a>  (uses <a href=
 "glass.tab">adult_sample.tab</a>) </p>
@@ -358,7 +359,7 @@ report_prob('data', data)
 data1 = data.select(age=(30,40))
 report_prob('data1, age from 30 to 40', data1)
 
-data2 = data.select(age=(30,40))
+data2 = data.select(age=(40,30))
 report_prob('data2, younger than 30 or older than 40', data2)
 </xmp>
 
@@ -367,7 +368,7 @@ authors of this text, at the time of writing):</p>
 
 <xmp class="code">Size of data: 977 instances;  p(>50K)=0.242
 Size of data1, age from 30 to 40: 301 instances;  p(>50K)=0.312
-Size of data2, younger than 30 or older than 40: 301 instances;  p(>50K)=0.312
+Size of data2, younger than 30 or older than 40: 676 instances;  p(>50K)=0.210
 </xmp>
 
 <h2>Accessing and Changing Attribute Values</h2>

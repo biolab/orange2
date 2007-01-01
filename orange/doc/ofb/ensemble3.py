@@ -15,7 +15,7 @@ knn.name = "k-NN (k=11)"
 bagged_knn = orngEnsemble.BaggedLearner(knn, t=10)
 bagged_knn.name = "bagged k-NN"
 boosted_knn = orngEnsemble.BoostedLearner(knn, t=10)
-bagged_knn.name = "boosted k-NN"
+boosted_knn.name = "boosted k-NN"
 
 learners = [majority, knn, bagged_knn, boosted_knn]
 results = orngTest.crossValidation(learners, data, folds=10)

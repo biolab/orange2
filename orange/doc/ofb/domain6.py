@@ -24,5 +24,5 @@ report_prob('data', data)
 data1 = data.select(age=(30,40))
 report_prob('data1, age from 30 to 40', data1)
 
-data2 = data.select(age=(30,40))
+data2 = data.select(age=(40,30))
 report_prob('data2, younger than 30 or older than 40', data2)
