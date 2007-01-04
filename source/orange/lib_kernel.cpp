@@ -2809,100 +2809,6 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
                          bool &hasClass, bool &classVector, bool &weightVector, bool &classIsDiscrete, int &columns,
                          vector<bool> &include);
 
-#if defined(XXXX) && !defined(NO_GSL) && !defined(NO_NUMERIC)
-/*
-#include "gsl/gsl_matrix.h"
-#include "gsl/gsl_vector.h"
-#include "gslconversions.hpp"
-*/
-#include "numeric_interface.hpp"
-/*
-typedef struct {
-    PyObject_HEAD
-    gsl_matrix* m;
-} matrix_matrixObject;
-
-
-PyObject *gsl2pygsl(gsl_vector *gslv, int dim)
-{
-  prepareNumeric();
-
-  PyArrayObject *out = (PyArrayObject *) PyArray_FromDims(1, &dim, PyArray_DOUBLE);
-  double *di = (double *)(out->data);
-  for(int i=0; i<dim; i++, di++)
-    *di = gsl_vector_get(gslv, i);
-  return (PyObject *)out;
-}
-
-
-PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords) P Y A R G S (METH_VARARGS, "([contents[, weightID[, multinomialTreatment]]]) -> gsl matrix")
-{
-  PyTRY
-    if (!gsl_matrixType && !load_gsl())
-      return PYNULL;
-    
-    char *contents = NULL;
-    int weightID = 0;
-    int multinomialTreatment = 1;
-    if (!PyArg_ParseTuple(args, "|sii:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment))
-      return PYNULL;
-
-    if (!contents)
-      contents = "a/cw";
-
-    void *attrss;
-    void *classes, *weights;
-    int rows, columns;
-    exampleGenerator2gsl(PyOrange_AS_Orange(self), weightID, contents, multinomialTreatment, attrss, classes, weights, rows, columns);
-
-    PyObject *pymatrix, *pyclasses, *pyweights;
-
-    if (attrss) {
-      pymatrix = (*gsl_matrixType->tp_new)(gsl_matrixType, NULL, NULL);
-      matrix_matrixObject *mao = (matrix_matrixObject *)(pymatrix);
-
-      // Should do it like this: mao->m = attrss;
-      // but it crashes -- must have sth to do with the compiler used for compiling gsl
-      // and the corresponding memory allocation.
-      
-      (*gsl_matrixType->tp_init)(pymatrix, Py_BuildValue("ll", rows, columns), PyDict_New());
-
-      if ((mao->m->tda != attrss->tda) || (mao->m->block->size != attrss->block->size))
-        PYERROR(PyExc_SystemError, "cannot convert the data due to different geometry of GSL matrices.\nPlease report this error to the Orange team!", PYNULL)
-
-      memcpy(mao->m->data, attrss->data, attrss->block->size * sizeof(double));
-    }
-    else {
-      pymatrix = Py_None;
-      Py_INCREF(pymatrix);
-    }
-
-    if (classes)
-      pyclasses = gsl2pygsl(classes, rows);
-    else {
-      pyclasses = Py_None;
-      Py_INCREF(pyclasses);
-    }
-      
-    if (weights)
-      pyweights = gsl2pygsl(weights, rows);
-    else {
-      pyweights = Py_None;
-      Py_INCREF(pyweights);
-    }
-
-    return packMatrixTuple(pymatrix, pyclasses, pyweights, contents);
-  PyCATCH
-}
-*/
-#else
-/*
-PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
-{
-  PYERROR(PyExc_SystemError, "This build does not support module 'pygsl'", PYNULL);
-}
-*/
-#endif
 
 #ifndef NO_NUMERIC
 
@@ -4967,12 +4873,13 @@ PyObject *Classifier_call(PyObject *self, PyObject *args, PyObject *keywords) PY
 { PyTRY
     NO_KEYWORDS
 
-    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrClassifier_Type) {
+    CAST_TO(TClassifier, classifier);
+
+    if ((PyOrange_OrangeBaseClass(self->ob_type) == &PyOrClassifier_Type) && !dynamic_cast<TClassifier_Python *>(classifier)) {
       PyErr_Format(PyExc_SystemError, "Classifier.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
 
-    CAST_TO(TClassifier, classifier);
 
     if (!classifier)
       PYERROR(PyExc_SystemError, "attribute error", PYNULL);
