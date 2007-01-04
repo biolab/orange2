@@ -34,7 +34,9 @@ class OWSVM(OWWidget):
         self.selFlag=False
         self.name="SVM Learner/Classifier"
         
-        OWGUI.lineEdit(self.controlArea, self, "name")
+        OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        OWGUI.separator(self.controlArea)
+
         self.kernelBox=b=QVButtonGroup("Kernel", self.controlArea)
         self.kernelradio = OWGUI.radioButtonsInBox(b, self, "kernel_type", btnLabels=["Linear,   x.y", "Polynomial,   (g*x.y+c)^d",
                     "RBF,   exp(-g*(x-y).(x-y))", "Sigmoid,   tanh(g*x.y+c)"], callback=self.changeKernel)
@@ -43,21 +45,30 @@ class OWSVM(OWWidget):
         self.leg = OWGUI.doubleSpin(self.gcd, self, "gamma",0.0,10.0,0.25, label="g: ", orientation="horizontal", callback=self.changeKernel)
         self.led = OWGUI.doubleSpin(self.gcd, self, "coef0", 0.0,10.0,0.5, label="  c: ", orientation="horizontal", callback=self.changeKernel)
         self.lec = OWGUI.doubleSpin(self.gcd, self, "degree", 0.0,10.0,0.5, label="  d: ", orientation="horizontal", callback=self.changeKernel)
-        self.optionsBox=b=OWGUI.widgetBox(self.controlArea,"Options")
-        OWGUI.doubleSpin(b,self, "C", 0.0, 100.0, 0.5, label="Model complexity (C)", orientation="horizontal")
-        OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", orientation="horizontal")
-        OWGUI.doubleSpin(b,self, "eps", 0.0, 0.5, 0.001, label="Numeric precision (eps)", orientation="horizontal")
+
+        OWGUI.separator(self.controlArea)
+        
+        self.optionsBox=b=OWGUI.widgetBox(self.controlArea, "Options", addSpace = True)
+        OWGUI.doubleSpin(b,self, "C", 0.0, 100.0, 0.5, label="Model complexity (C)", labelWidth = 120, orientation="horizontal")
+        OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 120, orientation="horizontal")
+        OWGUI.doubleSpin(b,self, "eps", 0.0, 0.5, 0.001, label="Numeric precision (eps)", labelWidth = 120, orientation="horizontal")
 
         OWGUI.checkBox(b,self, "probability", label="Support probabilities")        
         OWGUI.checkBox(b,self, "shrinking", label="Shrinking")
         OWGUI.checkBox(b,self, "useNu", label="Limit the number of support vectors", callback=lambda:self.nuBox.setDisabled(not self.useNu))
-        self.nuBox=OWGUI.doubleSpin(b,self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
+        self.nuBox=OWGUI.doubleSpin(OWGUI.indentedBox(b), self, "nu", 0.0,1.0,0.1, label="Complexity bound (nu)", labelWidth = 120, orientation="horizontal", tooltip="Upper bound on the ratio of support vectors")
         self.nomogramBox=OWGUI.checkBox(b, self, "nomogram", "For nomogram if posible", tooltip="Builds a model that can be visualized in a nomogram (works only\nfor discrete class values with two values)")
+
+        OWGUI.separator(self.controlArea)
+                
         self.paramButton=OWGUI.button(self.controlArea, self, "Automatic parameter search", callback=self.parameterSearch,
                                       tooltip="Automaticaly searches for parameters that optimize classifier acuracy") 
+
+        OWGUI.separator(self.controlArea)
+
         OWGUI.button(self.controlArea, self,"&Apply settings", callback=self.applySettings)
         self.nuBox.setDisabled(not self.useNu)
-        self.resize(100,100)        
+        self.adjustSize()
         self.loadSettings()
         self.changeKernel()
         self.thread=MyThread(self)
