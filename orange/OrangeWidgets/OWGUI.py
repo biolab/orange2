@@ -117,10 +117,10 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     return wa
 
 
-def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = unicode, validator=None, controlWidth = None):
+def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = unicode, validator=None, controlWidth = None, callbackOnFocusOut=False):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
-    wa = QLineEdit(b)
+    wa = callback and callbackOnFocusOut and LineEditWFocusOut(b, callback) or QLineEdit(b)
     wa.setText(unicode(mygetattr(master,value)))
 
     if controlWidth:
@@ -161,8 +161,10 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
     return wa, wb
 
 
-def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1):
+def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None):
     btn = QPushButton(label, widget)
+    if width:
+        btn.setFixedWidth(width)
     btn.setDisabled(disabled)
     if callback:
         master.connect(btn, SIGNAL("clicked()"), callback)
@@ -254,7 +256,7 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
     bg.setRadioButtonExclusive(1)
     bg.buttons = []
     for i in range(len(btnLabels)):
-        appendRadioButton(bg, master, value, i, btnLabels[i], tooltips and tooltips[i])
+        appendRadioButton(bg, master, value, btnLabels[i], tooltips and tooltips[i])
 
     connectControl(bg, master, value, callback, "clicked(int)", CallFront_radioButtons(bg))
     if debuggingEnabled:
@@ -262,12 +264,15 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
     return bg
 
 
-def appendRadioButton(bg, master, value, i, label, tooltip = None):
+def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = None):
+    i = len(bg.buttons)
     if type(label) in (str, unicode):
-        w = QRadioButton(label, bg)
+        w = QRadioButton(label, insertInto or bg)
     else:
-        w = QRadioButton(unicode(i), bg)
+        w = QRadioButton(unicode(i), insertInto or bg)
         w.setPixmap(label)
+    if insertInto:
+        bg.insert(w)
     w.setOn(mygetattr(master, value) == i)
     bg.buttons.append(w)
     if tooltip:
@@ -1004,3 +1009,16 @@ class DoubleSpinBox(QSpinBox):
         return int(math.floor((val-self.min)/self.stepSize))
 
         
+
+class LineEditWFocusOut(QLineEdit):
+    def __init__(self, parent, callback, focusInCallback=None):
+        QLineEdit.__init__(self, parent)
+        self.callback = callback
+        self.focusInCallback = focusInCallback
+
+    def focusOutEvent(self, *e):
+        self.callback()
+
+    def focusInEvent(self, *e):
+        if self.focusInCallback:
+            self.focusInCallback()
