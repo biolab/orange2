@@ -2486,6 +2486,7 @@ C_CALL(MeasureAttribute_gainRatio, MeasureAttributeFromProbabilities, "(estimate
 C_CALL(MeasureAttribute_gainRatioA, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> float")
 C_CALL(MeasureAttribute_cost, MeasureAttributeFromProbabilities, "(cost=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
 C_CALL(MeasureAttribute_relevance, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
+C_CALL(MeasureAttribute_chiSquare, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
 
 C_CALL(MeasureAttribute_MSE, MeasureAttribute, "(estimate=, m=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> float")
 
@@ -2671,51 +2672,113 @@ PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywor
 }
 
 
-PyObject *MeasureAttribute_thresholdFunction(PyObject *self, PyObject *args, PyObject *kwds) PYARGS(METH_VARARGS, "(attr, examples) -> list")
+PyObject *MeasureAttribute_thresholdFunction(PyObject *self, PyObject *args, PyObject *kwds) PYARGS(METH_VARARGS, "(attr, examples[, weightID]) | (contingency[, distribution]) -> list")
 {
-  PyObject *pyvar;
-  PExampleGenerator gen;
-  int weightID = 0;
-  if (!PyArg_ParseTuple(args, "OO&|i:MeasureAttribute_thresholdFunction", &pyvar, pt_ExampleGenerator, &gen, &weightID))
-    return NULL;
-    
-  PVariable var = varFromArg_byDomain(pyvar, gen->domain);
-  if (!var)
-    return NULL;
+  PyTRY
+    TFloatFloatList thresholds;
 
-  TFloatFloatList thresholds;
-  SELF_AS(TMeasureAttribute).thresholdFunction(thresholds, var, gen, PDistribution(), weightID);
+    PyObject *pyvar;
+    PExampleGenerator gen;
+    int weightID = 0;
+    if (PyArg_ParseTuple(args, "OO&|i:MeasureAttribute_thresholdFunction", &pyvar, pt_ExampleGenerator, &gen, &weightID)) {
+      PVariable var = varFromArg_byDomain(pyvar, gen->domain);
+      if (!var)
+        return NULL;
 
-  PyObject *res = PyList_New(thresholds.size());
-  int li = 0;
-  for(TFloatFloatList::const_iterator ti(thresholds.begin()), te(thresholds.end()); ti != te; ti++)
-    PyList_SetItem(res, li++, Py_BuildValue("ff", ti->first, ti->second));
-  return res;
+      SELF_AS(TMeasureAttribute).thresholdFunction(thresholds, var, gen, PDistribution(), weightID);
+    }
+    else {
+      PyErr_Clear();
+
+      PContingency cont;
+      PDistribution cdist;
+      if (PyArg_ParseTuple(args, "O&|O&", cc_Contingency, &cont, ccn_Distribution, &cdist)) {
+        if (!cdist)
+          cdist = cont->innerDistribution;
+
+        SELF_AS(TMeasureAttribute).thresholdFunction(thresholds, cont, cdist);
+      }
+      else {
+        PyErr_Clear();
+        PYERROR(PyExc_TypeError, "MeasureAttribute.thresholdFunction expects a variable, generator[, weight], or contingency", PYNULL)
+      }
+    }
+
+    PyObject *res = PyList_New(thresholds.size());
+    int li = 0;
+    for(TFloatFloatList::const_iterator ti(thresholds.begin()), te(thresholds.end()); ti != te; ti++)
+      PyList_SetItem(res, li++, Py_BuildValue("ff", ti->first, ti->second));
+    return res;
+  PyCATCH;
 }
 
 
 
+PyObject *MeasureAttribute_relief_pairGains(PyObject *self, PyObject *args, PyObject *kwds) PYARGS(METH_VARARGS, "(attr, examples) -> list")
+{
+  PyTRY
+    PyObject *pyvar;
+    PExampleGenerator gen;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "OO&|i:MeasureAttribute_pairGains", &pyvar, pt_ExampleGenerator, &gen, &weightID))
+      return NULL;
+    
+    PVariable var = varFromArg_byDomain(pyvar, gen->domain);
+    if (!var)
+      return NULL;
+
+    TPairGainAdder pairGains;
+    SELF_AS(TMeasureAttribute_relief).pairGains(pairGains, var, gen, weightID);
+
+    PyObject *res = PyList_New(pairGains.size());
+    int li = 0;
+    for(TPairGainAdder::const_iterator ti(pairGains.begin()), te(pairGains.end()); ti != te; ti++)
+      PyList_SetItem(res, li++, Py_BuildValue("(ff)f", ti->e1, ti->e2, ti->gain));
+    return res;
+  PyCATCH
+}
+
+
+PyObject *MeasureAttribute_relief_gainMatrix(PyObject *self, PyObject *args, PyObject *kwds) PYARGS(METH_VARARGS, "(attr, examples) -> SymMatrix")
+{
+  PyTRY
+    PyObject *pyvar;
+    PExampleGenerator gen;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "OO&|i:MeasureAttribute_gainMatrix", &pyvar, pt_ExampleGenerator, &gen, &weightID))
+      return NULL;
+    
+    PVariable var = varFromArg_byDomain(pyvar, gen->domain);
+    if (!var)
+      return NULL;
+
+    return WrapOrange(SELF_AS(TMeasureAttribute_relief).gainMatrix(var, gen, NULL, weightID, NULL, NULL));
+  PyCATCH
+}
+
 PyObject *MeasureAttribute_bestThreshold(PyObject *self, PyObject *args, PyObject *kwds) PYARGS(METH_VARARGS, "(attr, examples) -> list")
 {
-  PyObject *pyvar;
-  PExampleGenerator gen;
-  int weightID = 0;
-  float minSubset = 0.0;
-  if (!PyArg_ParseTuple(args, "OO&|if:MeasureAttribute_thresholdFunction", &pyvar, pt_ExampleGenerator, &gen, &weightID, &minSubset))
-    return NULL;
+  PyTRY
+    PyObject *pyvar;
+    PExampleGenerator gen;
+    int weightID = 0;
+    float minSubset = 0.0;
+    if (!PyArg_ParseTuple(args, "OO&|if:MeasureAttribute_thresholdFunction", &pyvar, pt_ExampleGenerator, &gen, &weightID, &minSubset))
+      return NULL;
     
-  PVariable var = varFromArg_byDomain(pyvar, gen->domain);
-  if (!var)
-    return NULL;
+    PVariable var = varFromArg_byDomain(pyvar, gen->domain);
+    if (!var)
+      return NULL;
 
-  float threshold, score;
-  PDistribution distribution;
-  threshold = SELF_AS(TMeasureAttribute).bestThreshold(distribution, score, var, gen, PDistribution(), weightID);
+    float threshold, score;
+    PDistribution distribution;
+    threshold = SELF_AS(TMeasureAttribute).bestThreshold(distribution, score, var, gen, PDistribution(), weightID);
 
-  if (threshold == ILLEGAL_FLOAT)
-    PYERROR(PyExc_SystemError, "cannot compute the threshold; check the number of instances etc.", PYNULL);
+    if (threshold == ILLEGAL_FLOAT)
+      PYERROR(PyExc_SystemError, "cannot compute the threshold; check the number of instances etc.", PYNULL);
 
-  return Py_BuildValue("ffO", threshold, score, WrapOrange(distribution));
+    return Py_BuildValue("ffO", threshold, score, WrapOrange(distribution));
+  PyCATCH
 }
 
 /* ************ EXAMPLE CLUSTERING ************ */
