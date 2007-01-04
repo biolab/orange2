@@ -1712,6 +1712,36 @@ PyObject *Filter_count(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)
   PyCATCH
 }
 
+
+PyObject *filterSelectionVectorLow(TFilter &filter, PExampleGenerator egen)
+{
+    TBoolList *selection = new TBoolList();
+    PBoolList pselection = selection;
+    const int nex = egen->numberOfExamples();
+    if (nex > 0)
+      selection->reserve(nex);
+
+    filter.reset();
+    PEITERATE(ei, egen)
+      selection->push_back(filter(*ei));
+
+    return WrapOrange(pselection);
+}
+
+
+PyObject *Filter_selectionVector(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)")
+{ 
+  PyTRY
+    PExampleGenerator egen = exampleGenFromParsedArgs(arg);
+    if (!egen)
+      PYERROR(PyExc_TypeError, "Filter.selectionVector: examples expected", PYNULL);
+
+    CAST_TO(TFilter, filter);
+    return filterSelectionVectorLow(SELF_AS(TFilter), egen);
+  PyCATCH
+}
+
+
 PyObject *AttributedBoolList_new(PyTypeObject *type, PyObject *args, PyObject *keywds);
 
 int Filter_isDefined_set_check(PyObject *self, PyObject *arg)
