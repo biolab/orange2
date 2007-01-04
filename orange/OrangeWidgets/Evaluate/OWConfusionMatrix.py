@@ -12,6 +12,7 @@ from qttable import *
 import OWGUI
 import orngStat, orngTest
 import statc, math
+from operator import add
 
 class ConfusionTable(QTable):
     def paintEmptyArea(self, p, cx, cy, cw, ch):
@@ -23,11 +24,16 @@ class ConfusionTableItem(QTableItem):
         self.isBold = isBold
         
     def alignment(self):
-        return QWidget.AlignRight
+        return QWidget.AlignCenter
 
     def paint(self, painter, cg, cr, selected):
         painter.font().setBold(self.isBold)
         QTableItem.paint(self, painter, cg, cr, selected)
+
+    def sizeHint(self):
+        sze = QTableItem.sizeHint(self)
+        sze.setWidth(sze.width()*1.15)
+        return sze
     
 class OWConfusionMatrix(OWWidget):
     settings = ["shownQuantity", "autoApply"]
@@ -52,9 +58,6 @@ class OWConfusionMatrix(OWWidget):
 
         OWGUI.comboBox(self.controlArea, self, "shownQuantity", items = ["Number of examples", "Observed and expected examples", "Proportions of predicted", "Proportions of true"], box = "Show", callback=self.reprint)
 
-        box = OWGUI.widgetBox(self.controlArea, "Settings", addSpace=True)
-#        OWGUI.checkBox(box, self, "colorCells", "Color 
-
         box = OWGUI.widgetBox(self.controlArea, "Selection", addSpace=True)
         OWGUI.button(box, self, "Correct", callback=self.selectCorrect)
         OWGUI.button(box, self, "Misclassified", callback=self.selectWrong)
@@ -68,21 +71,20 @@ class OWConfusionMatrix(OWWidget):
         self.layout=QGridLayout(self.mainArea, 4, 3)
         self.layout.setAutoAdd(False)
         labpred = OWGUI.widgetLabel(self.mainArea, "Prediction")
-        labpred.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
-        self.layout.addWidget(labpred, 0, 1, QWidget.AlignLeft)
+        self.layout.addWidget(labpred, 0, 1, QWidget.AlignCenter)
         self.layout.addWidget(OWGUI.separator(self.mainArea),1, 0)
         
-        labpred = OWGUI.widgetLabel(self.mainArea, "True Class  ")
-    #    labpred.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
-        self.layout.addWidget(labpred, 2, 0, QWidget.AlignTop)
+        labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class  ")
+        self.layout.addWidget(labpred, 2, 0, QWidget.AlignCenter)
         self.layout.addMultiCellWidget(OWGUI.rubber(self.mainArea), 3, 3, 0, 2)
-      #  self.layout.addWidget(OWGUI.rubber(self.mainArea), 0, 2)
 
         self.table = QTable(0, 0, self.mainArea)
-        self.table.setSelectionMode(QTable.Multi)
+        self.table.setLeftMargin(0)
+        self.table.setTopMargin(0)
+        self.table.verticalHeader().hide()
+        self.table.horizontalHeader().hide()
+        self.table.setSelectionMode(QTable.NoSelection)
         self.layout.addWidget(self.table, 2, 1)
-        self.topHeader = self.table.horizontalHeader()
-        self.leftHeader = self.table.verticalHeader()
         self.table.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         
         self.connect(self.table, SIGNAL("selectionChanged()"), self.sendIf)
@@ -105,18 +107,17 @@ class OWConfusionMatrix(OWWidget):
 
         dim = len(res.classValues)
         
-        self.table.setNumRows(dim+1)
-        self.table.setNumCols(dim+1)
-        for i, v in enumerate(res.classValues):
-            self.topHeader.setLabel(i, v)
-            self.leftHeader.setLabel(i, v)
-        self.topHeader.setLabel(dim, "")
-        self.leftHeader.setLabel(dim, "")
+        self.table.setNumRows(dim+2)
+        self.table.setNumCols(dim+2)
 
-        for ri in range(dim+1):
-            for ci in range(dim+1):
-                self.table.setItem(ri, ci, ConfusionTableItem(ri==dim or ci==dim, self.table, QTableItem.Never, ""))
+        for ri in range(dim+2):
+            for ci in range(dim+2):
+                self.table.setItem(ri, ci, ConfusionTableItem(not ri or not ci or ri==dim+1 or ci==dim+1, self.table, QTableItem.Never, ""))
 
+        for ri, cv in enumerate(res.classValues):
+            self.table.item(0, ri+1).setText(cv)
+            self.table.item(ri+1, 0).setText(cv)
+            
         self.learnerNames = res.classifierNames[:]
 
         # This also triggers a callback (learnerChanged)
@@ -126,6 +127,15 @@ class OWConfusionMatrix(OWWidget):
         # if the above doesn't call sendIf, you should call it here
 
     def learnerChanged(self):
+        cm = self.matrix[self.selectedLearner[0]]
+
+        for r in reduce(add, cm):
+            if int(r) != r:
+                self.isInteger = " %5.3f "
+                break
+        else:
+            self.isInteger = " %i "
+            
         self.reprint()
         self.sendIf()        
             
@@ -142,11 +152,11 @@ class OWConfusionMatrix(OWWidget):
 
         for ri, r in enumerate(cm):
             for ci, c in enumerate(r):
-                item = self.table.item(ri, ci)
+                item = self.table.item(ri+1, ci+1)
                 if self.shownQuantity == 0:
-                    self.table.setText(ri, ci, " %5.3f " % c)
+                    item.setText(self.isInteger % c)
                 elif self.shownQuantity == 1:
-                    item.setText(" %5.3f / %5.3f " % (c, total*rowPriors[ri]*colPriors[ci]))
+                    item.setText((self.isInteger + "/ %5.3f ") % (c, total*rowPriors[ri]*colPriors[ci]))
                 elif self.shownQuantity == 2:
                     if colSums[ci] > 1e-5:
                         item.setText(" %2.1f %%  " % (100 * c / colSums[ci]))
@@ -160,11 +170,12 @@ class OWConfusionMatrix(OWWidget):
                 self.table.updateCell(ri, ci)
 
         for ci in range(len(cm)):
-            self.table.setText(dim, ci, " %5.3f " % colSums[ci])
-            self.table.setText(ci, dim, "   %5.3f " % rowSums[ci])
+            self.table.setText(dim+1, ci+1, self.isInteger % colSums[ci])
+            self.table.setText(ci+1, dim+1, self.isInteger % rowSums[ci])
+        self.table.setText(dim+1, dim+1, self.isInteger % total)
+
+        for ci in range(len(cm)+2):            
             self.table.adjustColumn(ci)
-        self.table.setText(dim, dim, "   %5.3f " % total)
-        self.table.adjustColumn(dim)
 
         self.table.adjustSize()
 
@@ -175,11 +186,12 @@ class OWConfusionMatrix(OWWidget):
             return
         
         self.table.clearSelection()
-        for i in range(len(self.matrix[0])):
+        for i in range(1, 1+len(self.matrix[0])):
             ts = QTableSelection()
             ts.init(i, i)
             ts.expandTo(i, i)
             self.table.addSelection(ts)
+        self.table.setCurrentCell(0, 0)
         self.sendIf()
 
     def selectWrong(self):
@@ -188,17 +200,18 @@ class OWConfusionMatrix(OWWidget):
         
         self.table.clearSelection()
         dim = len(self.matrix[0])
-        for i in range(dim):
-            if i:
+        for i in range(1, 1+dim):
+            if i!=1:
                 ts = QTableSelection()
-                ts.init(i, 0)
+                ts.init(i, 1)
                 ts.expandTo(i, i-1)
                 self.table.addSelection(ts)
-            if i+1 <= dim-1:
+            if i < dim:
                 ts = QTableSelection()
                 ts.init(i, i+1)
-                ts.expandTo(i, dim-1)
+                ts.expandTo(i, dim)
                 self.table.addSelection(ts)
+        self.table.setCurrentCell(0, 0)
         self.sendIf()
 
 
