@@ -32,15 +32,6 @@ class ImputeListboxItem(QListBoxPixmap):
             self.setText(btext)
 
 
-class LineEditWFocusOut(QLineEdit):
-    def __init__(self, parent, callback):
-        QLineEdit.__init__(self, parent)
-        self.callback = callback
-
-    def focusOutEvent(self, *e):
-        self.callback()
-
-        
 class OWImpute(OWWidget):
     settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
     contextHandlers = {"": DomainContextHandler("", ["methods"], False, False, False, False, matchValues = DomainContextHandler.MatchValuesAttributes)}
@@ -82,7 +73,7 @@ class OWImpute(OWWidget):
         self.indiValueCtrlBox = QHBox(self.indiButtons)
         self.indiValueCtrlBox.setFixedWidth(150)
         OWGUI.separator(self.indiValueCtrlBox, 25, 0)
-        self.indiValueCtrl = LineEditWFocusOut(self.indiValueCtrlBox, self.sendIf)
+        self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self.sendIf)
         self.connect(self.indiValueCtrl, SIGNAL("textChanged ( const QString & )"), self.lineEditChanged)
         self.connect(self.indiValueCtrl, SIGNAL("returnPressed ( )"), self.sendIf)
         OWGUI.rubber(indiMethBox)
@@ -149,7 +140,7 @@ class OWImpute(OWWidget):
             self.indiValueCtrl.setCurrentItem(self.methods.get(attrName, (0, 0))[1] or 0)
             self.connect(self.indiValueCtrl, SIGNAL("activated ( int )"), self.valueComboChanged)
         else:
-            self.indiValueCtrl = LineEditWFocusOut(self.indiValueCtrlBox, self.sendIf)
+            self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self.sendIf)
             if attr and self.methods.has_key(attrName):
                 self.indiValueCtrl.setText(self.methods[attrName][1])
             self.connect(self.indiValueCtrl, SIGNAL("returnPressed ( )"), self.sendIf)
