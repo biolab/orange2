@@ -35,8 +35,8 @@ class OWRegressionTree(OWWidget):
 
         self.data=None
 
-        self.inputs=[("ExampleTable",ExampleTable,self.dataset)]
-        self.outputs=[("Learner",orange.Learner),("Classisfier",orange.Classifier),("Classification Tree",orange.TreeClassifier)]
+        self.inputs=[("Example Table",ExampleTable,self.dataset)]
+        self.outputs=[("Learner",orange.Learner),("Classifier",orange.Classifier),("Classification Tree",orange.TreeClassifier)]
         
         ##
         #GUI
