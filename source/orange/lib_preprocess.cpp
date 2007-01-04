@@ -319,6 +319,19 @@ PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) 
 }
 
 
+PyObject *Preprocessor_selectionVector(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(examples[, weightID])")
+{
+  PyTRY
+    int weightID = 0;
+    PExampleGenerator egen = exampleGenFromArgs(args, weightID);
+    if (!egen)
+      PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
+
+    return WrapOrange(SELF_AS(TPreprocessor).selectionVector(egen, weightID));
+  PyCATCH
+}
+
+
 #include "stringvars.hpp"
 
 typedef MapMethods<PVariableFilterMap, TVariableFilterMap, PVariable, PValueFilter> TMM_VariableFilterMap;
