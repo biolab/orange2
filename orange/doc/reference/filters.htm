@@ -24,7 +24,18 @@
 <DD>Domain to which examples are converted prior to checking (except for <CODE>Filter_random</CODE>, which ignores this field).</DD>
 </DL>
 
-<P>Filters can be constructed and called; they provide no other methods. When called they can be given an example and return <CODE>true</CODE> or <CODE>false</CODE>, denoting accept and reject. When given an entire set of examples, they return an <CODE>ExampleTable</CODE> with selected examples.</P>
+<P>Besides the constructor, filters provide the call operator and a method that returns a list denoting which examples match the filter criterion.</P>
+
+<P class="section">Attributes</P>
+<dl class="attributes">
+<dt>__call__(example)</dt>
+<dd>Checks whether the example matches the filter's criterion and returns either <code>True</code> or <code>False</code>.</dd>
+
+<dt>__call__(examples)</dt>
+<dd>When given an entire example table, it returns a list of examples (as an <code>ExampleTable</code>) that matches the criterion.</dd>
+
+<dt>selectionVector(examples)</dt>
+<dd>Returns a list of bools of the same length as <code>examples</code>, denoting which examples are accepted. Equivalent to <code>[filter(ex) for ex in examples]</dd>.
 
 <P>An alternative way to apply a filter to a table of examples is to call <A href="ExampleTable.htm#filter"><CODE>ExampleTable.filter</CODE></A>.</P>
 
@@ -263,4 +274,4 @@ for ex in fya(data):
 
 <P>If you don't find this filter attractive, use <a href="preprocessing.htm"><CODE>Preprocessor_take</CODE></a> instead, which is less flexible but more intelligent and friendly.</P>
 
-</BODY> 
+</BODY>

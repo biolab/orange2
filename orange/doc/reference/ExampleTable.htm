@@ -44,7 +44,7 @@ the more advanced operations such as slicing and sorting.</P>
 <DL class=attributes>
 <DT>ExampleTable([filename])</DT>
 <DD><index name="data input">This constructor reads from files. If filename
-includes extension, 
+includes extension,
 it must be an extension for one of the <A href="fileformats.htm">known
 file formats</A>. If just a stem is given (such as "monk1", without
 ".tab", ".names" or whatever), the current directory is searched for
@@ -347,8 +347,10 @@ Fold 0: train
 <DD>This function is the same as above, except that the new table contains references to examples in the original table instead of copies. This function is especially useful for sampling: the above scripts would be much faster (on large <CODE>ExampleTable</CODE>s, naturally) if they called <CODE>selectref</CODE> instead of <CODE>select</CODE>.</P></DD>
 
 <DT>selectlist(list[, int][, negate=0])</DT>
-<DD>The last form stores references to the selected examples in ordinary Python list. It is thus equivalent to calling <CODE>selectref</CODE> and then <CODE>native</CODE>.</P></DD>
+<DD>This form stores references to the selected examples in ordinary Python list. It is thus equivalent to calling <CODE>selectref</CODE> and then <CODE>native</CODE>.</DD>
 
+<DT>selectbool(list[, int][, negate=0])</DT>
+<DD>Similar to above select function, except that instead of examples (in whichever form) it returns a list of bools of the same length as the number of examples, denoting the accepted examples.</DD>
 
 <DT>getitems(indices) <span class=normalfont>(inherited from <CODE>ExampleGenerator</CODE>)</SPAN></DT>
 <DD>Argument <CODE>indices</CODE> gives a list of indices of examples to be selected. Selected examples are returned in example table. For instance, calling <CODE>data.getitems([0, 1, 9])</CODE> gives the same result as the above <CODE>data.select([1, 1, 0, 0, 0,  0, 0, 0, 0, 1]</CODE>: a (new) <CODE>ExampleTable</CODE> with examples <CODE>data[0]</CODE>, <CODE>data[1]</CODE> and <CODE>data[9]</CODE>. Calling <CODE>data.getitems(range(10))</CODE> has a similar effect than <CODE>data[:10]</CODE>, except that the former returns an example table and the latter returns ordinary list.</p></DD>
@@ -395,6 +397,9 @@ Fold 0: train
 <DT>filterref, filterlist</DT>
 <DD>Both forms of <CODE>filter</CODE> also have variants that return tables and lists of references to examples, analogous to methods <CODE>selectref</CODE> and <CODE>selectlist</CODE>.
 
+<dt>filterbool</dt>
+<dd>Returns a list of bools denoting which examples are accepted and which are not.</dd>
+w
 </DL>
 
 <H2>Other methods</H2>

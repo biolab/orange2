@@ -25,6 +25,8 @@ arguments to the call.</P>
 classes in Orange, as functions. The example for both ways are
 following shortly.</P>
 
+<P>There is also a method <code>selectionVector</code> which instead of examples returns a list of booleans denoting which examples are accepted and which are not. This of course only supported by preprocessors that filter examples, not by those that modify them.</P>
+
 <P>Most of code samples will work with lenses dataset. We thus suppose that Orange is imported, data is loaded and there are variables that correspond to attribute descriptors:</P>
 
 <XMP class="code">import orange
