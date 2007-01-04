@@ -773,6 +773,61 @@ float TMeasureAttribute_relevance::operator()(PContingency probabilities, const 
 }
 
 
+#include "stat.hpp"
+
+TMeasureAttribute_chiSquare::TMeasureAttribute_chiSquare(const int &unk, const bool probs)
+: TMeasureAttributeFromProbabilities(true, false, unk),
+  computeProbabilities(probs)
+{}
+
+
+float TMeasureAttribute_chiSquare::operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)
+{ 
+  checkDiscrete(probabilities, "MeasureAttribute_chiSquare");
+  
+  const TDistribution &outer = probabilities->outerDistribution.getReference();
+  if (   (classProbabilities.size() <= 0)
+      || (probabilities->discrete->size() <= 0)
+      || (unknownsTreatment == ReduceByUnknowns) && (outer.unknowns == outer.cases))
+    return 0.0;
+
+  TDiscDistribution expClass(classProbabilities);
+  expClass.normalize();
+
+  float df_in = -1.0, df_out = -1.0;
+  ITERATE(TDiscDistribution, pi, expClass)
+    if (*pi > 1e-6)
+      df_in += 1.0;
+
+  if (df_in == 0.0)
+    return 0.0;
+
+  float chisq = 0.0;
+  const_ITERATE(TDistributionVector, ci, *probabilities->discrete) {
+    float n0 = 0.0, psum = 0.0;
+    const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
+    for(TDiscDistribution::const_iterator oi(dist.begin()), oe(dist.end()), pi(expClass.begin()), pe(expClass.end());
+        (oi != oe) && (pi != pe); oi++, pi++) {
+      if (*pi > 1e-6) {
+        psum += *oi * *oi / *pi;
+        n0 += *oi;
+      }
+    }
+    if (n0 > 1e-6) {
+      chisq += psum/n0 - n0;
+      df_out += 1.0;
+    }
+  }
+
+  if (df_out == 0.0)
+    return 0.0;
+
+  return computeProbabilities ? chisqprob(chisq, df_in * df_out) : chisq;
+}
+
+
+
+
 TMeasureAttribute_cost::TMeasureAttribute_cost(PCostMatrix costs)
 : TMeasureAttributeFromProbabilities(true, false),
   cost(costs)
@@ -1411,136 +1466,21 @@ float TMeasureAttribute_relief::operator()(PVariable var, PExampleGenerator gen,
 
 
 
-inline void addGain(map<float, float> &res, const float &threshold, const float &gain)
-{
-  map<float, float>::iterator lowerBound = res.lower_bound(threshold);
-  if (lowerBound != res.end() && (lowerBound->first == threshold))
-    lowerBound->second += gain;
-  else
-    res.insert(lowerBound, make_pair(threshold, gain));
-}
-
-
-// If attrVals is non-NULL and the values are indeed computed by the thresholdFunction, the caller is 
-// responsible for deallocating the table!
-void TMeasureAttribute_relief::thresholdFunction(PVariable var, PExampleGenerator gen, map<float, float> &res, int weightID, float **attrVals)
-{
-  if (var->varType != TValue::FLOATVAR)
-    raiseError("thresholdFunction can only be computed for continuous attributes");
-
-  checkNeighbourhood(gen, weightID);
-
-  const int attrIdx = gen->domain->getVarNum(var, false);
-
-  const bool regression = gen->domain->classVar->varType == TValue::FLOATVAR;
-
-  if (attrIdx != ILLEGAL_INT) {
-    if (attrVals)
-      *attrVals = NULL;
-
-    const TExamplesDistance_Relief &rdistance = dynamic_cast<const TExamplesDistance_Relief &>(distance.getReference());
-    const TExampleTable &table = dynamic_cast<const TExampleTable &>(gen.getReference());
-
-    res = map<float, float>();
-    ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
-      const TValue &refVal = table[rei->index][attrIdx];
-      if (refVal.isSpecial())
-        continue;
-      const float &refValF = refVal.floatV;
-
-      ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
-        const TValue &neiVal = table[nei->index][attrIdx];
-        if (neiVal.isSpecial())
-          continue;
-
-        float gain;
-        const float attrDist = rdistance(attrIdx, refVal, neiVal);
-        if (regression) {
-          const float dCdA = nei->weight * attrDist;
-          const float dA = nei->weightEE * attrDist;
-          gain = dCdA / ndC - (dA - dCdA) / m_ndC;
-        }
-        else
-          gain = nei->weight * attrDist;
-        if (neiVal.floatV > refValF)
-          gain = -gain;
-
-        addGain(res, neiVal.floatV, gain);
-        addGain(res, refValF, -gain);
-      }
-    }
-  }
-
-  else {
-    if (!var->getValueFrom)
-      raiseError("attribute is not among the domain attributes and cannot be computed from them");
-
-    float avg, min, max, N;
-    float *precals = tabulateContinuousValues(gen, weightID, var.getReference(), min, max, avg, N);
-    if (attrVals)
-      *attrVals = precals;
-
-    if ((min != max) && (N > 1e-6)) {
-      try {
-        const float nor = 1.0 / (min-max);
-
-        res = map<float, float>();
-
-        ITERATE(vector<TReferenceExample>, rei, neighbourhood) {
-          const float &refValF = precals[rei->index];
-          if (refValF == ILLEGAL_FLOAT)
-            continue;
-
-          ITERATE(vector<TNeighbourExample>, nei, rei->neighbours) {
-            const float &neiValF = precals[nei->index];
-            if (neiValF == ILLEGAL_FLOAT)
-              continue;
-
-            float gain;
-            const float attrDist = fabs(refValF - neiValF) * nor;
-            if (regression) {
-              const float dCdA = nei->weight * attrDist;
-              const float dC = nei->weightEE * attrDist;
-              gain = dCdA / ndC - (dC - dCdA) / m_ndC;
-            }
-            else
-              gain = nei->weight * attrDist;
-            if (neiValF > refValF)
-              gain = -gain;
-
-            addGain(res, neiValF, gain);
-            addGain(res, refValF, -gain);
-          }
-        }
-      }
-      catch (...) {
-        if (!attrVals)
-          delete precals;
-        throw;
-      }
-    }
-
-    if (!attrVals)
-      delete precals;
-  }
-}
-
-
 void TMeasureAttribute_relief::thresholdFunction(TFloatFloatList &res, PVariable var, PExampleGenerator gen, PDistribution, int weightID)
 {
-  map<float, float> divs;
+  TFunctionAdder divs;
   thresholdFunction(var, gen, divs, weightID);
 
   res.clear();
   float score = 0;
-  for(map<float, float>::const_iterator di(divs.begin()), de(divs.end()); di != de; di++)
+  for(TFunctionAdder::const_iterator di(divs.begin()), de(divs.end()); di != de; di++)
     res.push_back(make_pair(di->first, score += di->second));
 }
 
 
 float TMeasureAttribute_relief::bestThreshold(PDistribution &subsetSizes, float &bestScore, PVariable var, PExampleGenerator gen, PDistribution, int weightID, const float &minSubset)
 {
-  map<float, float> divs;
+  TFunctionAdder divs;
   int wins = 0;
   float score = 0.0, bestThreshold;
   TRandomGenerator rgen(gen->numberOfExamples());
@@ -1582,7 +1522,7 @@ float TMeasureAttribute_relief::bestThreshold(PDistribution &subsetSizes, float 
     float bestLeft, bestRight;
 
     map<float, float>::iterator distb(valueDistribution->begin()), diste(valueDistribution->end()), disti = distb, disti2;
-    for(map<float, float>::const_iterator di(divs.begin()), de(divs.end()); di != de; di++) {
+    for(TFunctionAdder::const_iterator di(divs.begin()), de(divs.end()); di != de; di++) {
       score += di->second;
       if (!wins || (score > bestScore) || (score == bestScore) && rgen.randbool(++wins)) {
         for(; (disti != diste) && (disti->first <= di->first); disti++) {
@@ -1621,7 +1561,7 @@ float TMeasureAttribute_relief::bestThreshold(PDistribution &subsetSizes, float 
   else {
     thresholdFunction(var, gen, divs, weightID);
 
-    for(map<float, float>::const_iterator db(divs.begin()), de(divs.end()), di = db, di2; di != de; di++) {
+    for(TFunctionAdder::const_iterator db(divs.begin()), de(divs.end()), di = db, di2; di != de; di++) {
       score += di->second;
       if (   (!wins || (score > bestScore)) && ((wins=1) == 1)
           || (score == bestScore) && rgen.randbool(++wins)) {

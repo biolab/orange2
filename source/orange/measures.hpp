@@ -173,6 +173,18 @@ public:
 };
 
 
+class ORANGE_API TMeasureAttribute_chiSquare : public TMeasureAttributeFromProbabilities {
+public:
+  __REGISTER_CLASS
+
+  bool computeProbabilities; //P
+
+  TMeasureAttribute_chiSquare(const int &unkTreat = ReduceByUnknowns, const bool probs = false);
+
+  virtual float operator()(PContingency probabilities, const TDiscDistribution &classProbabilities);
+};
+
+
 WRAPPER(CostMatrix)
 
 class ORANGE_API TMeasureAttribute_cost: public TMeasureAttributeFromProbabilities {
