@@ -57,6 +57,29 @@ PExampleGenerator TPreprocessor::filterExamples(PFilter filter, PExampleGenerato
 }
 
 
+PBoolList TPreprocessor::filterSelectionVector(PFilter filter, PExampleGenerator generator)
+{
+  TBoolList *selection = new TBoolList;
+  PBoolList pselection = selection;
+
+  const int nex = generator->numberOfExamples();
+  if (nex > 0)
+    selection->reserve(nex);
+
+  TFilter &filt = filter.getReference();
+  PEITERATE(ei, generator)
+    selection->push_back(filt(*ei));
+
+  return pselection;
+}
+
+
+PBoolList TPreprocessor::selectionVector(PExampleGenerator, const int &)
+{ 
+  raiseError("this class doesn't support method 'selectionVector'");
+  return NULL;
+}
+
 
 TPreprocessor_ignore::TPreprocessor_ignore()
 : attributes(mlnew TVarList())
@@ -113,33 +136,21 @@ PExampleGenerator TPreprocessor_select::operator()(PExampleGenerator gen, const 
 
 
 
-TPreprocessor_drop::TPreprocessor_drop()
-: values(mlnew TVariableFilterMap()),
-  conjunction(true)
-{}
-
-
-TPreprocessor_drop::TPreprocessor_drop(PVariableFilterMap avalues, bool aconj)
-: values(avalues),
-  conjunction(aconj)
-{}
-
-
-PExampleGenerator TPreprocessor_drop::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
-{ TValueFilterList *dropvalues = mlnew TValueFilterList();
+PFilter TPreprocessor_take::constructFilter(PVariableFilterMap values, PDomain dom, bool conj, bool negate)
+{ 
+  TValueFilterList *dropvalues = mlnew TValueFilterList();
   PValueFilterList wdropvalues = dropvalues;
-  const TDomain &domain = gen->domain.getReference();
+  const TDomain &domain = dom.getReference();
   PITERATE(TVariableFilterMap, vi, values) {
     TValueFilter *vf = CLONE(TValueFilter, (*vi).second);
     dropvalues->push_back(vf); // this wraps it!
     vf->position = domain.getVarNum((*vi).first);
   }
 
-  newWeight = weightID;
-  return filterExamples(mlnew TFilter_values(wdropvalues, conjunction, true, gen->domain), gen);
+  return mlnew TFilter_values(wdropvalues, conj, negate, dom);
 }
 
-  
+
 
 TPreprocessor_take::TPreprocessor_take()
 : values(mlnew TVariableFilterMap()),
@@ -156,20 +167,41 @@ TPreprocessor_take::TPreprocessor_take(PVariableFilterMap avalues, bool aconj)
 PExampleGenerator TPreprocessor_take::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { 
   newWeight = weightID;
-  return filterExamples(constructFilter(values, gen->domain, conjunction), gen);
+  return filterExamples(constructFilter(values, gen->domain, conjunction, false), gen);
 }
 
 
-PFilter TPreprocessor_take::constructFilter(PVariableFilterMap values, PDomain domain, bool conj)
-{ TValueFilterList *dropvalues = mlnew TValueFilterList();
-  PValueFilterList wdropvalues = dropvalues;
-  PITERATE(TVariableFilterMap, vi, values) {
-    TValueFilter *vf = CLONE(TValueFilter, (*vi).second);
-    dropvalues->push_back(vf); // this wraps it!
-    vf->position = domain->getVarNum((*vi).first);
-  }
-  return mlnew TFilter_values(wdropvalues, conj, false, domain);
+PBoolList TPreprocessor_take::selectionVector(PExampleGenerator gen, const int &)
+{ 
+  return filterSelectionVector(constructFilter(values, gen->domain, conjunction, false), gen);
 }
+
+
+
+TPreprocessor_drop::TPreprocessor_drop()
+: values(mlnew TVariableFilterMap()),
+  conjunction(true)
+{}
+
+
+TPreprocessor_drop::TPreprocessor_drop(PVariableFilterMap avalues, bool aconj)
+: values(avalues),
+  conjunction(aconj)
+{}
+
+
+PExampleGenerator TPreprocessor_drop::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+{ 
+  newWeight = weightID;
+  return filterExamples(TPreprocessor_take::constructFilter(values, gen->domain, conjunction, true), gen);
+}
+
+  
+PBoolList TPreprocessor_drop::selectionVector(PExampleGenerator gen, const int &)
+{ 
+  return filterSelectionVector(TPreprocessor_take::constructFilter(values, gen->domain, conjunction, true), gen);
+}
+
 
 
 
@@ -195,11 +227,22 @@ PExampleGenerator TPreprocessor_dropMissing::operator()(PExampleGenerator gen, c
 }
 
 
+PBoolList TPreprocessor_dropMissing::selectionVector(PExampleGenerator gen, const int &)
+{ 
+  return filterSelectionVector(mlnew TFilter_hasSpecial(true), gen);
+}
+
+
 PExampleGenerator TPreprocessor_takeMissing::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { newWeight = weightID;
   return filterExamples(mlnew TFilter_hasSpecial(false), gen);
 }
 
+
+PBoolList TPreprocessor_takeMissing::selectionVector(PExampleGenerator gen, const int &)
+{ 
+  return filterSelectionVector(mlnew TFilter_hasSpecial(false), gen);
+}
 
 
 PExampleGenerator TPreprocessor_dropMissingClasses::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
@@ -208,10 +251,21 @@ PExampleGenerator TPreprocessor_dropMissingClasses::operator()(PExampleGenerator
 }
 
 
+PBoolList TPreprocessor_dropMissingClasses::selectionVector(PExampleGenerator gen, const int &)
+{ 
+  return filterSelectionVector(mlnew TFilter_hasClassValue(false), gen);
+}
+
 
 PExampleGenerator TPreprocessor_takeMissingClasses::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { newWeight = weightID;
   return filterExamples(mlnew TFilter_hasClassValue(true), gen);
+}
+
+
+PBoolList TPreprocessor_takeMissingClasses::selectionVector(PExampleGenerator gen, const int &)
+{ 
+  return filterSelectionVector(mlnew TFilter_hasClassValue(true), gen);
 }
 
 

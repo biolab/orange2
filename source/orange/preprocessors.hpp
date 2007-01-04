@@ -44,9 +44,11 @@ public:
   __REGISTER_ABSTRACT_CLASS
 
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight)=0;
+  virtual PBoolList selectionVector(PExampleGenerator, const int &weightID);
 
 protected:
   PExampleGenerator filterExamples(PFilter filter, PExampleGenerator generator);
+  PBoolList filterSelectionVector(PFilter filter, PExampleGenerator generator);
 };
 
 WRAPPER(Preprocessor);
@@ -89,6 +91,7 @@ public:
   TPreprocessor_drop();
   TPreprocessor_drop(PVariableFilterMap, bool = true);
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+  virtual PBoolList selectionVector(PExampleGenerator, const int &weightID);
 };
 
 
@@ -102,8 +105,9 @@ public:
   TPreprocessor_take();
   TPreprocessor_take(PVariableFilterMap, bool = true);
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+  virtual PBoolList selectionVector(PExampleGenerator, const int &weightID);
 
-  static PFilter constructFilter(PVariableFilterMap values, PDomain domain, bool conj);
+  static PFilter constructFilter(PVariableFilterMap values, PDomain domain, bool conj, bool negate);
 };
 
 
@@ -118,24 +122,28 @@ class ORANGE_API TPreprocessor_dropMissing : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+  virtual PBoolList selectionVector(PExampleGenerator, const int &weightID);
 };
 
 class ORANGE_API TPreprocessor_takeMissing: public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+  virtual PBoolList selectionVector(PExampleGenerator, const int &weightID);
 };
 
 class ORANGE_API TPreprocessor_dropMissingClasses : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+  virtual PBoolList selectionVector(PExampleGenerator, const int &weightID);
 };
 
 class ORANGE_API TPreprocessor_takeMissingClasses : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+  virtual PBoolList selectionVector(PExampleGenerator, const int &weightID);
 };
 
 
