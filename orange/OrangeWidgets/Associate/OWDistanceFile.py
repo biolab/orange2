@@ -82,10 +82,11 @@ class OWDistanceFile(OWWidget):
             for li, lne in enumerate(fle):
                 spl = lne.split("\t")
                 if labeled:
-                    self.matrix.items[spl[0].strip()]
+                    self.matrix.items[li] = spl[0].strip()
                     spl = spl[1:]
                 for lj, s in enumerate(spl):
-                    self.matrix[li, lj] = float(s)
+                    if s:
+                        self.matrix[li, lj] = float(s)
 
             self.relabel()
 ##        except:

@@ -122,7 +122,7 @@ state of the control (and vice-versa - when this attribute is changed, the contr
 <DD>Tells whether the control be disabled upon the initialization.</DD>
 
 <dt>addSpace (default: False)</dt>
-<dd>If true, some space is added after the widget by calling <code>OWGUI.separator</code>.</dd>
+<dd>If true, a space of 8 pixels is added after the widget by calling <code>OWGUI.separator</code>. <code>addSpace</code> can also be an integer specifying the height of the added space.</dd>
 </DL>
 
 
@@ -178,7 +178,7 @@ OWGUI.spin(gridbox, self, "dx", 10, 20)
 
 <P>Edit box, a wrapper around QLineEdit.</P>
 
-<P class="function">lineEdit(widget, master, value[, label, labelWidth, orientation, box, tooltip, callback, valueType, validator])</P>
+<P class="function">lineEdit(widget, master, value[, label, labelWidth, orientation, box, tooltip, callback, valueType, validator, controlWidth])</P>
 
 <dl class="attributes">
 <dt>valueType (default: str)</dt>
@@ -657,9 +657,9 @@ OWGUI.checkBox(OWGUI.indentedBox(box), self, "classOnly", "Add noise to class on
 
 <P>Function <code>separator</code> inserts a fixed amount of space into <code>widget</code>. Although the caller can specify the amount, leaving the default will help the widgets having uniform look.</p>
 
-<p class="function">rubber(widget)</p>
+<p class="function">rubber(widget[, orientation="vertical"])</p>
 
-<P>Similar to separator, except that the size is (1, 1) and expands if the widget is expanded. Most widgets should have rubber somewhere in their <code>controlArea</code>.</p>
+<P>Similar to separator, except that the size is (1, 1) and that it expands in the specified direction if the widget is expanded. Most widgets should have rubber somewhere in their <code>controlArea</code>.</p>
 
 
 <h2>Attribute Icons</h2>
