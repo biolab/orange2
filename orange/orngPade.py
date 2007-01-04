@@ -513,15 +513,14 @@ def tubedRegression(cache, dimensions, progressCallback = None, **args):
             Sx = Sy = Sxx = Syy = Sxy = n = 0.0
 
             nn = cache.findNearest(ref_example, 0, True)
-            mx = [abs(ex[contIdx] - ref_x) for ex in nn if not ex[contIdx].isSpecial()]
+            nn = [ex for ex in nn if not ex[contIdx].isSpecial()][:effNeighbours]
+            mx = [abs(ex[contIdx] - ref_x) for ex in nn]
             if not mx:
                 cache.deltas[exi][d] = "?"
                 continue
             
             kw = math.log(.001) / max(mx)**2
             for ex in nn[:effNeighbours]:
-                if ex[contIdx].isSpecial():
-                    continue
                 ex_x = float(ex[contIdx])
                 ex_y = float(ex.getclass())
                 w = math.exp(kw*(ex_x-ref_x)**2)
@@ -649,7 +648,7 @@ def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, thr
 # puts examples from 'data' into the corresponding leaves of the subtree
 def splitDataOntoNodes(node, data):
     if not node.branches:
-        setattr(node, "leafExamples", data)
+        node.setattr("leafExamples", data)
     else:
         goeswhere = [(ex, int(node.branchSelector(ex))) for ex in data]
         for bi, branch in enumerate(node.branches):
@@ -684,8 +683,6 @@ def checkMatch(ex1, ex2, reversedAttributes, constraint, clsID):
     
     cs = 0
     for attr in reversedAttributes:
-        if not constraint:
-            break
         constraint, tc = constraint/3, constraint%3
         if tc==2:
             continue
@@ -728,7 +725,6 @@ def computeAmbiguityAccuracyNode(node, reversedAttributes, clsID):
                     sacc += 1
                 else:
                     ex2 = node.leafExamples[j]
-#                    print "wrong: %s-%s  %s-%s  %s-%s %i" % (ex1[0], ex2[0], ex1[1], ex2[1], ex1[clsID], ex2[clsID], constraint)
                 spairs += 1
     return samb, sacc, spairs
 
@@ -741,23 +737,100 @@ def computeAmbiguityAccuracy(tree, data, clsID):
     return amb/pairs, acc/(pairs-amb)
 
 
-### Better measures of quality (as in better-than-Quin)
-#
-
-def CVAgainstKnown(data, oracle, dimensions = None, method = None, **dic):
+def CVByNodes(data, dimensions = None, method = None, **dic):
+    import orngTree
     cv = orange.MakeRandomIndicesCV(data, 10)
     for fold in range(10):
         train = data.select(cv, fold, negate=1)
         test = data.select(cv, fold)
-        pa, qid, did, cid = pade(train, oracle, dimensions, method, originalAsMeta=True, **dic)
+        pa, qid, did, cid = pade(train, dimensions, method, originalAsMeta=True, **dic)
         tree = orngTree.TreeLearner(pa, maxDepth=4)
 
-        mb, cc = orngPade.computeAmbiguityAccuracy(tree, test, -1)
+        mb, cc = computeAmbiguityAccuracy(tree, test, -1)
         amb += mb
         acc += cc
-        print (mb, cc)
-    print amb/10, acc/10
+    return amb/10, acc/10
 
+
+### Better measures of quality (as in better-than-Quin)
+#
+def checkDirectionAccuracyForPair(model, reference, direction, clsID, reversedAttributes):
+    constraint = int(model(reference))
+    prediction = 0
+
+    for attr in reversedAttributes:
+        constraint, tc = constraint/3, constraint%3
+        if tc==2:
+            continue
+
+        v1, v2 = reference[attr], direction[attr]
+        if v1.isSpecial() or v2.isSpecial():
+            continue
+
+        if tc:
+            c = -cmp(v1, v2)
+        else:
+            c = cmp(v1, v2)
+
+        if not prediction:
+            prediction = c
+        elif prediction != c:
+            return -1
+
+    if not prediction:
+        return -3
+    
+    return c == cmp(reference.getclass(), direction.getclass())
+
+
+def computeDirectionAccuracyForPairs(model, data, meter, weightK, clsID, nTests = 0):
+    nTests = nTests or 10*len(data)
+
+    reversedAttrs = model.domain.constraintAttributes[:]
+    reversedAttrs.reverse()
+
+    actTests = acc = amb = unre = 0
+    for i in range(10*len(data)):
+        distance = 0
+        while not distance:
+            ref, dir = data.randomexample(), data.randomexample()
+            distance = meter(ref, dir)
+        weight = math.exp(weightK * distance**2)
+        actTests += weight
+        diracc = checkDirectionAccuracyForPair(model, ref, dir, -1, reversedAttrs)
+        if diracc == -1:
+            amb += weight
+        elif diracc == -3:
+            unre += weight
+        elif diracc:
+            acc += weight
+
+    return acc/actTests, amb/actTests, unre/actTests
+        
+
+def CVByPairs(data, dimensions = None, method = None, **dic):
+    import orngTree
+    cv = orange.MakeRandomIndicesCV(data, 10)
+    meter = orange.ExamplesDistanceConstructor_Euclidean(data)
+
+    maxDist = 0
+    for i in range(100):
+        maxDist = max(maxDist, meter(data.randomexample(), data.randomexample()))
+    weightK = 10.0 / maxDist
+
+    acc = amb = unre = 0
+    for fold in range(10):
+        train = data.select(cv, fold, negate=1)
+        test = data.select(cv, fold)
+        pa, qid, did, cid = pade(train, dimensions, method, originalAsMeta=True, **dic)
+        tree = orngTree.TreeLearner(pa, maxDepth=4)
+
+        tacc, tamb, tunre = computeDirectionAccuracyForPairs(tree, data, meter, weightK, -1)
+        acc += tacc
+        amb += tamb
+        unre += tunre
+        
+    return acc/10, amb/10, unre/10
 
 
 import re
@@ -797,6 +870,3 @@ def readQuinTree(fname, domain):
     domain.setattr("constraintAttributes", domain.attributes)
     return orange.TreeClassifier(domain = domain, classVar = domain.classVar, tree = readQuinTreeRec(open(fname), domain))
 
-##data = orange.ExampleTable(r"c:\D\ai\Orange\test\squin\testi_sucbook\QuadB\QuadB")
-##tree = readQuinTree(r"c:\D\ai\Orange\test\squin\testi_sucbook\QuadB\QuadB.tre", data.domain)
-##print computeAmbiguityAccuracy(tree, data, -1)
