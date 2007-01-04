@@ -10,15 +10,14 @@ from OWWidget import *
 from orngLR import *
 import OWGUI
 
-##############################################################################
-
 class OWLogisticRegression(OWWidget):
-    settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation"]
+    settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation", "limitNumAttr"]
 
     def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):    
-        # tu pridejo vse nastavitve
-        # nastavitve: doloci = TODO
         OWWidget.__init__(self, parent, signalManager, name)
+
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
+        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Attributes", list)]
 
         from orngTree import TreeLearner
         imputeByModel = orange.ImputerConstructor_model()
@@ -27,128 +26,57 @@ class OWLogisticRegression(OWWidget):
         self.imputationMethods = [imputeByModel, orange.ImputerConstructor_average(), orange.ImputerConstructor_minimal(), orange.ImputerConstructor_maximal(), None]
         self.imputationMethodsStr = ["Classification/Regression trees", "Average values", "Minimal value", "Maximal value", "None (skip examples)"]
 
-        # inputs / outputs
-        self.inputs = [("Examples", ExampleTable, self.cdata)]
-        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Attributes", list)]
-        #self.addOutput("learner")
-        #self.addOutput("classifier")
-        #self.addOutput("lrClassifier")
-        #self.addOutput("attributes")
-
-        self.callbackDeposit = []
-        
-        # Settings
         self.name = "Logistic regression"
         self.removeSingular = 1
         self.univariate = 0
         self.stepwiseLR = 0
-        self.addCrit = 0.1
-        self.removeCrit = 0.1
-        self.numAttr = -1
+        self.addCrit = 10
+        self.removeCrit = 10
+        self.numAttr = 10
+        self.limitNumAttr = False
         self.zeroPoint = 0
         self.imputation = 1
 
         self.data = None
         self.preprocessor = None
 
-
         self.loadSettings()
 
+        OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        OWGUI.separator(self.controlArea)
 
-        
-        #name
-        self.nameBox = QVGroupBox(self.controlArea)
-        self.nameBox.setTitle('Learner/Classifier Name')
-        QToolTip.add(self.nameBox,"Name to be used by other widgets to identify your learner/classifier.")
+        box = OWGUI.widgetBox(self.controlArea, "Attribute selection", addSpace=True)        
 
-        self.nameEdt = QLineEdit(self.nameBox)
-        self.nameEdt.setText(self.name)
+        OWGUI.checkBox(box, self, "removeSingular", "Remove singular attributes", tooltip="Remove constant attributes and attributes causing singularities")
 
-        #parameters
-        
-        # remove singularity
-        self.removeSingularCB = QCheckBox("Remove singular attributes", self.controlArea)
-        QToolTip.add(self.removeSingularCB, "Remove attributes that cause singularity and constants")
-        self.connect(self.removeSingularCB, SIGNAL("clicked()"), self.setRemoveSingular)
+        stepwiseCb = OWGUI.checkBox(box, self, "stepwiseLR", "Stepwise attribute selection")
+        ibox = OWGUI.indentedBox(box)
+        addCritSpin = OWGUI.spin(ibox, self, "addCrit", 1, 50, label="Add criteria [%]", labelWidth=155, tooltip="Requested significance of attribute to be added in common model.")
+        remCritSpin = OWGUI.spin(ibox, self, "removeCrit", 1, 50, label="Remove criteria [%]", labelWidth=155, tooltip="Requested significance of attribute to be removed from common model.")
+        limitAttSpin = OWGUI.checkWithSpin(ibox, self, "Limit number of attributes to ", 1, 100, "limitNumAttr", "numAttr", step=1, labelWidth=155, tooltip="Maximum number of selected attributes. Algorithm stops when it selects specified number of attributes.")
+        stepwiseCb.disables += [addCritSpin, remCritSpin, limitAttSpin]
+        stepwiseCb.makeConsistent()
 
-##        # use univariate logistic regression
-##        self.univariateCB = QCheckBox("Univariate logistic regression", self.controlArea)
-##        QToolTip.add(self.univariateCB, "Fit univariate logistic regression.")
-##        self.connect(self.univariateCB, SIGNAL("clicked()"), self.setUnivariate)
-##        self.univariateCB.setDisabled(True)
-##
-##        # get 0-point betas ?
-##        self.zeroCB = QCheckBox("Calculate 0-point for nomograms", self.controlArea)
-##        QToolTip.add(self.zeroCB, "Basic logistic regression does not compute prior contribution of each attribute to class \
-##                                   If nomograms are used to visualize logistic regression model, this could be very helpful.")
-##        self.connect(self.zeroCB, SIGNAL("clicked()"), self.setZeroPoint)
-##        self.zeroCB.setDisabled(True)
+        self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", box="Imputation of unknown values", items=self.imputationMethodsStr)
+        OWGUI.separator(self.controlArea)
 
-        self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", items=self.imputationMethodsStr)
-        
-        # stepwise logistic regression
-        self.swBox = QVGroupBox(self.controlArea)
-        self.swBox.setTitle('Stepwise logistic regression')
+        applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback = self.apply)
 
-        self.use_swlr_CB = QCheckBox("Apply stepwise logistic regression", self.swBox)
-        QToolTip.add(self.use_swlr_CB, "Use only attributes selected by stepwise logistic regression.")
-        self.connect(self.use_swlr_CB, SIGNAL("clicked()"), self.setStepwiseLR)
+        OWGUI.rubber(self.controlArea)
+        self.adjustSize()
 
+        self.apply()
 
-        self.acBox = QHBox(self.swBox)
-        self.labAdd = QLabel('Add criteria:           ', self.acBox)
-        QToolTip.add(self.labAdd, "Requested significance of attribute to be added in common model.")
-        self.addEdt = QLineEdit(self.acBox)
-
-        self.rcBox = QHBox(self.swBox)
-        self.labDel = QLabel('Remove criteria:    ', self.rcBox)
-        QToolTip.add(self.labDel, "Requested significance of attribute to be removed from common model.")
-        self.removeEdt = QLineEdit(self.rcBox)
-
-        self.nBox = QHBox(self.swBox)
-        self.labAttr = QLabel('Num. of attributes: ', self.nBox)
-        QToolTip.add(self.labAttr, "Maximum number of selected attributes. Algorithm stops when it selects specified number of attributes.\n Use -1 for infinity.")
-        self.attrEdt = QLineEdit(self.nBox)
-
-        self.addEdt.setText(str(self.addCrit))
-        self.removeEdt.setText(str(self.removeCrit))
-        self.attrEdt.setText(str(self.numAttr))
-        
-
-        self.refreshControls()
-        QWidget(self.controlArea).setFixedSize(0, 8)
-        # apply button
-        self.applyBtn = QPushButton("&Apply", self.controlArea)
-        self.connect(self.applyBtn, SIGNAL("clicked()"), self.setLearner)        
-        
-        self.resize(150,100)
-
-        #signals
-        self.connect(self.applyBtn, SIGNAL("clicked()"), self.setLearner)
-        self.connect(self.nameEdt, SIGNAL("textChanged(const QString &)"), self.setName)
-        self.connect(self.addEdt, SIGNAL("textChanged(const QString &)"), self.setAddCrit)
-        self.connect(self.removeEdt, SIGNAL("textChanged(const QString &)"), self.setRemoveCrit)
-        self.connect(self.attrEdt, SIGNAL("textChanged(const QString &)"), self.setNumAttr)
-
-        #connect controls to appropriate functions
-        self.activateLoadedSettings()
-
-        self.setLearner()                   # this just sets the learner, no data
-                                            # has come to the input yet
-                                            
-    def setLearner(self):
+    def apply(self):
         imputer = self.imputationMethods[self.imputation]
         removeMissing = not imputer
 
         if self.univariate:
             self.learner = Univariate_LogRegLearner()
         else:            
-            self.learner = LogRegLearner(removeSingular = self.removeSingular, imputer = imputer, removeMissing = removeMissing)
-            if self.stepwiseLR:
-                self.learner.stepwiseLR = 1
-                self.learner.addCrit = float(self.addCrit)
-                self.learner.removeCrit = float(self.removeCrit)
-                self.learner.numAttr = float(self.numAttr)
+            self.learner = LogRegLearner(removeSingular = self.removeSingular, imputer = imputer, removeMissing = removeMissing,
+                                         stepwiseLR = self.stepwiseLR, addCrit = self.addCrit/100., removeCrit = self.removeCrit/100.,
+                                         numAttr = self.limitNumAttr and float(self.numAttr) or -1.0)
 
         self.learner.name = self.name
         self.send("Learner", self.learner)        
@@ -171,59 +99,12 @@ class OWLogisticRegression(OWWidget):
             self.send("Classifier", self.classifier)
         self.error()
 
-    def activateLoadedSettings(self):
-        self.removeSingularCB.setChecked(self.removeSingular)
-##        self.univariateCB.setChecked(self.univariate)
-        self.use_swlr_CB.setChecked(self.stepwiseLR)
-        self.addEdt = str(self.addCrit)
-        self.removeEdt = str(self.removeCrit)
-        self.attrEdt = self.numAttr
-##        self.zeroCB.setChecked(self.zeroPoint)
-        self.refreshControls()
         
-        
-    def cdata(self,data):
-        self.data=data
-        self.setLearner()
-
-    def pp(self):
-        pass
-        # TODO: include preprocessing!!!
-
-    def refreshControls(self):
-        self.acBox.setEnabled(self.use_swlr_CB.isOn())
-        self.rcBox.setEnabled(self.use_swlr_CB.isOn())
-        self.nBox.setEnabled(self.use_swlr_CB.isOn())
-        
-    def setName(self, value):
-        self.name = str(value)
-
-    def setRemoveSingular(self):
-        self.removeSingular = self.removeSingularCB.isOn()
-
-    def setUnivariate(self):
-        self.univariate = self.univariateCB.isOn()
-
-    def setZeroPoint(self):
-        self.zeroPoint = self.zeroCB.isOn()
-        
-    def setStepwiseLR(self):
-        self.stepwiseLR = self.use_swlr_CB.isOn()
-        self.refreshControls()
-
-    def setAddCrit(self, value):
-        self.addCrit = str(value)
-        
-    def setRemoveCrit(self, value):
-        self.removeCrit = str(value)
-
-    def setNumAttr(self, value):
-        self.numAttr = str(value)
+    def cdata(self, data):
+        self.data = data
+        self.apply()
 
         
-    # ostanejo se razne nastavitve posameznih vrednosti v nastavitvah, ki pa jih je s
-    # sploh potrebno se izumtr
-
     # Possible attribute setting :
     #    * stepwise logistic regression (addCrit, deleteCrit, number_of_attributes)
     #    * remove singular attributes
@@ -239,7 +120,7 @@ if __name__=="__main__":
     ow=OWLogisticRegression()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable(r'C:\Documents and Settings\janez\Desktop\crush\crush.tab')
+    dataset = orange.ExampleTable(r'..\..\doc\datasets\heart_disease')
     ow.cdata(dataset)
 
     ow.show()
