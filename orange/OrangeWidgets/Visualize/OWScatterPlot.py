@@ -173,7 +173,8 @@ class OWScatterPlot(OWWidget):
     
         OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = " Data selection ", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
-        
+
+        OWGUI.rubber(self.SettingsTab)        
         self.SettingsTab.setMinimumWidth(max(self.GeneralTab.sizeHint().width(), self.SettingsTab.sizeHint().width())+20)
         self.icons = self.createAttributeIconDict()
         
