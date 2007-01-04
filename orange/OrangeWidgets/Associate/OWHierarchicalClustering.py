@@ -216,9 +216,9 @@ class OWHierarchicalClustering(OWWidget):
                 self.rootCluster.mapping.setattr("objects", [str(e[0]) for e in items])
         elif self.matrixSource=="Data Distance":
             if self.Annotation==2:
-                self.rootCluster.mapping.setattr("objects", [a.name for a in items])
+                self.rootCluster.mapping.setattr("objects", [getattr(a, "name", "") for a in items])
             else:
-                self.rootCluster.mapping.setattr("objects", [a.strain for a in items])
+                self.rootCluster.mapping.setattr("objects", [getattr(a, "strain", "") for a in items])
         #print self.rootCluster.mapping
         self.dendogram.updateLabel()
 
