@@ -1950,10 +1950,8 @@ inline PFilter filter_sameValues(PyObject *dict, PDomain domain, PyObject *kwds 
   if (!svm)
     return PFilter();
 
-  PFilter filter = TPreprocessor_take::constructFilter(svm, domain, true); 
   PyObject *pyneg = kwds ? PyDict_GetItemString(kwds, "negate") : NULL;
-  filter->negate = pyneg && PyObject_IsTrue(pyneg);
-  return filter;
+  return TPreprocessor_take::constructFilter(svm, domain, true, pyneg && PyObject_IsTrue(pyneg)); 
 }
 
 PyObject *applyPreprocessor(PPreprocessor preprocessor, PExampleGenerator gen, bool weightGiven, int weightID)
@@ -3329,11 +3327,19 @@ PyObject *applyFilterP(PFilter filter, PExampleTable gen)
 }
 
 
+PyObject *filterSelectionVectorLow(TFilter &filter, PExampleGenerator egen);
+
+PyObject *applyFilterB(PFilter filter, PExampleTable gen)
+{ 
+  return filter ? filterSelectionVectorLow(filter.getReference(), gen) : PYNULL;
+}
+
+
 PyObject *ExampleTable_getitemsref(TPyOrange *self, PyObject *pylist)   PYARGS(METH_O, "(indices) -> ExampleTable")
 { return multipleSelectLow(self, pylist, true); }
 
 
-PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keywords, bool toList)
+PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keywords, const int toList)
 { 
   PyTRY
     CAST_TO(TExampleTable, eg);
@@ -3343,8 +3349,11 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
     /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS KEYWORDS ***** */
     /* Deprecated: use 'filter' instead */
     if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
-      return toList ? applyFilterL(filter_sameValues(keywords, eg->domain), weg)
-                    : applyFilterP(filter_sameValues(keywords, eg->domain), weg);
+      switch (toList) {
+        case 2: return applyFilterB(filter_sameValues(keywords, eg->domain), weg);
+        case 1: return applyFilterL(filter_sameValues(keywords, eg->domain), weg);
+        default: return applyFilterP(filter_sameValues(keywords, eg->domain), weg);
+      }
     }
 
     PyObject *mplier;
@@ -3360,52 +3369,76 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
           PYERROR(PyExc_IndexError, "example selector of invalid length", PYNULL);
 
         int i = 0;
-        if (toList) {
-          PyObject *list = PyList_New(0);
+        switch (toList) {
 
-          if (indexGiven)
-            EITERATE(ei, *eg) {
-              PyObject *lel = PyList_GetItem(mplier, i++);
-              if (!PyInt_Check(lel))
-                PYERROR(PyExc_IndexError, "example selector must be an integer index", PYNULL)
+          case 1: {
+            PyObject *list = PyList_New(0);
 
-              if (negate != (index==PyInt_AsLong(lel))) {
-                PyObject *pyex = Example_FromExampleRef(*ei, lock);
-                PyList_Append(list, pyex);
-                Py_DECREF(pyex);
+            if (indexGiven)
+              EITERATE(ei, *eg) {
+                PyObject *lel = PyList_GetItem(mplier, i++);
+                if (!PyInt_Check(lel))
+                  PYERROR(PyExc_IndexError, "example selector must be an integer index", PYNULL)
+
+                if (negate != (index==PyInt_AsLong(lel))) {
+                  PyObject *pyex = Example_FromExampleRef(*ei, lock);
+                  PyList_Append(list, pyex);
+                  Py_DECREF(pyex);
+                }
               }
-            }
-          else
-            EITERATE(ei, *eg)
-              if (negate != (PyObject_IsTrue(PyList_GetItem(mplier, i++)) != 0)) {
-                PyObject *pyex = Example_FromExampleRef(*ei, lock);
-                PyList_Append(list, pyex);
-                Py_DECREF(pyex);
+            else
+              EITERATE(ei, *eg)
+                if (negate != (PyObject_IsTrue(PyList_GetItem(mplier, i++)) != 0)) {
+                  PyObject *pyex = Example_FromExampleRef(*ei, lock);
+                  PyList_Append(list, pyex);
+                  Py_DECREF(pyex);
+                }
+
+            return list;
+          }
+
+
+          // this is a pervesion, but let's support it as a kind of syntactic sugar...
+          case 2: {
+            const int lsize = PyList_Size(mplier);
+            TBoolList *selection = new TBoolList(lsize);
+            PBoolList pselection = selection;
+            TBoolList::iterator si(selection->begin());
+            if (indexGiven)
+              for(int i = 0; i < lsize; i++) {
+                PyObject *lel = PyList_GetItem(mplier, i);
+                if (!PyInt_Check(lel))
+                  PYERROR(PyExc_IndexError, "example selector must be an integer index", PYNULL)
+
+                *si++ = negate != (index == PyInt_AsLong(lel));
               }
+            else
+              for(int i = 0; i < lsize; *si++ = negate != (PyObject_IsTrue(PyList_GetItem(mplier, i++)) != 0));
 
-          return list;
-        }
-        
-        else { // !toList
+            return WrapOrange(pselection);
+          }
 
-          TExampleTable *newTable = mlnew TExampleTable(lock, 1); //locks to weg but does not copy
-          PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
 
-          if (indexGiven)
-            EITERATE(ei, *eg) {
-              PyObject *lel = PyList_GetItem(mplier, i++);
-              if (!PyInt_Check(lel))
-                PYERROR(PyExc_IndexError, "example selector must be an integer index", PYNULL)
+          default: {
+            TExampleTable *newTable = mlnew TExampleTable(lock, 1); //locks to weg but does not copy
+            PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
 
-              if (negate != (index==PyInt_AsLong(lel)))
-                newTable->addExample(*ei);
-            }
-          else
-            EITERATE(ei, *eg)
-              if (negate != (PyObject_IsTrue(PyList_GetItem(mplier, i++)) != 0))
-                newTable->addExample(*ei);
+            if (indexGiven)
+              EITERATE(ei, *eg) {
+                PyObject *lel = PyList_GetItem(mplier, i++);
+                if (!PyInt_Check(lel))
+                  PYERROR(PyExc_IndexError, "example selector must be an integer index", PYNULL)
 
-          return WrapOrange(newGen);
+                if (negate != (index==PyInt_AsLong(lel)))
+                  newTable->addExample(*ei);
+              }
+            else
+              EITERATE(ei, *eg)
+                if (negate != (PyObject_IsTrue(PyList_GetItem(mplier, i++)) != 0))
+                  newTable->addExample(*ei);
+
+            return WrapOrange(newGen);
+          }
         }
       }
 
@@ -3418,26 +3451,36 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
         TLongList::iterator lli(llist->begin()), lle(llist->end());
         TExampleIterator ei = eg->begin();
         
-        if (toList) {
-          PyObject *list = PyList_New(0);
-          for(; ei && (lli!=lle); ++ei, lli++)
-            if (negate != (indexGiven ? (*lli==index) : (*lli!=0))) {
-              PyObject *pyex = Example_FromExampleRef(*ei, lock);
-              PyList_Append(list, pyex);
-              Py_DECREF(pyex);
-            }
-          return list;
-        }
+        switch (toList) {
+          case 1: {
+            PyObject *list = PyList_New(0);
+            for(; ei && (lli!=lle); ++ei, lli++)
+              if (negate != (indexGiven ? (*lli==index) : (*lli!=0))) {
+                PyObject *pyex = Example_FromExampleRef(*ei, lock);
+                PyList_Append(list, pyex);
+                Py_DECREF(pyex);
+              }
+            return list;
+          }
 
-        else { // !toList
-          TExampleTable *newTable = mlnew TExampleTable(lock, 1);
-          PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
+          case 2: {
+            TBoolList *selection = new TBoolList(llist->size());
+            PBoolList pselection = selection;
+            for(TBoolList::iterator si(selection->begin()); lli != lle; *si++ = negate != (indexGiven ? (*lli++ == index) : (*lli++ != 0)));
 
-          for(;ei && (lli!=lle); ++ei, lli++)
-            if (negate != (indexGiven ? (*lli==index) : (*lli!=0)))
-              newTable->addExample(*ei);
+            return WrapOrange(pselection);
+          }
 
-          return WrapOrange(newGen);
+          default: {
+            TExampleTable *newTable = mlnew TExampleTable(lock, 1);
+            PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
+
+            for(;ei && (lli!=lle); ++ei, lli++)
+              if (negate != (indexGiven ? (*lli==index) : (*lli!=0)))
+                newTable->addExample(*ei);
+
+            return WrapOrange(newGen);
+          }
         }
       }
 
@@ -3447,12 +3490,18 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
       /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS DICTIONARY ***** */
       /* Deprecated: use method 'filter' instead. */
       if (PyDict_Check(mplier))
-        return toList ? applyFilterL(filter_sameValues(mplier, eg->domain), weg)
-                      : applyFilterP(filter_sameValues(mplier, eg->domain), weg);
+        switch (toList) {
+          case 2: return applyFilterB(filter_sameValues(mplier, eg->domain), weg);
+          case 1: return applyFilterL(filter_sameValues(mplier, eg->domain), weg);
+          default: return applyFilterP(filter_sameValues(mplier, eg->domain), weg);
+        }
 
       else if (PyOrFilter_Check(mplier))
-        return toList ? applyFilterL(PyOrange_AsFilter(mplier), weg)
-                      : applyFilterP(PyOrange_AsFilter(mplier), weg);
+        switch (toList) {
+          case 2: return applyFilterB(PyOrange_AsFilter(mplier), weg);
+          case 1: return applyFilterL(PyOrange_AsFilter(mplier), weg);
+          default: return applyFilterP(PyOrange_AsFilter(mplier), weg);
+        }
     }
 
   PYERROR(PyExc_TypeError, "invalid example selector type", PYNULL);
@@ -3462,14 +3511,21 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
 
 PyObject *ExampleTable_selectlist(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
 { PyTRY
-    return ExampleTable_selectLow(self, args, keywords, true); 
+    return ExampleTable_selectLow(self, args, keywords, 1); 
   PyCATCH
 }
 
 
 PyObject *ExampleTable_selectref(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
 { PyTRY
-    return ExampleTable_selectLow(self, args, keywords, false); 
+    return ExampleTable_selectLow(self, args, keywords, 0); 
+  PyCATCH
+}
+
+
+PyObject *ExampleTable_selectbool(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
+{ PyTRY
+    return ExampleTable_selectLow(self, args, keywords, 2); 
   PyCATCH
 }
 
@@ -3517,6 +3573,31 @@ PyObject *ExampleTable_filterref(TPyOrange *self, PyObject *args, PyObject *keyw
 
       if (PyOrFilter_Check(arg))
           return applyFilterP(PyOrange_AsFilter(arg), weg);
+    }
+
+    PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)
+  PyCATCH
+}
+
+
+PyObject *ExampleTable_filterbool(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
+{
+  PyTRY
+    CAST_TO(TExampleGenerator, eg);
+    PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
+
+    if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
+      return applyFilterB(filter_sameValues(keywords, eg->domain, keywords), weg);
+    }
+
+    if (PyTuple_Size(args)==1) {
+      PyObject *arg = PyTuple_GET_ITEM(args, 0);
+
+      if (PyDict_Check(arg))
+        return applyFilterB(filter_sameValues(arg, eg->domain, keywords), weg);
+
+      if (PyOrFilter_Check(arg))
+          return applyFilterB(PyOrange_AsFilter(arg), weg);
     }
 
     PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)
