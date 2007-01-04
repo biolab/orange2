@@ -52,7 +52,7 @@ class OWMDS(OWWidget):
         self.ReDraw=1
         self.NumIter=1
         self.RefreshMode=0
-        self.inputs=[("Sym Matrix", orange.SymMatrix, self.cmatrix)]
+        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix)]
         self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.stressFunc=[("Kruskal stress", orngMDS.KruskalStress),
@@ -219,17 +219,21 @@ class OWMDS(OWWidget):
         self.colors=[[Qt.black]*3 for i in range(len(data))]
         self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
         self.sizes=[[5] for i in range(len(data))]
-        self.names=[[""]*4 for i in range(len(data))]
-        try:
-            #print dir(data[0][1][0])
-            strains=list(Set([d.strain for d in data]))
-            c=OWGraphTools.ColorPaletteHSV(len(strains))
-            for i, d in enumerate(data):
-                self.colors[i][1]=c[strains.index(d.strain)]
-                self.names[i][1]=" "+d.name
-                self.names[i][2]=" "+d.strain
-        except Exception, val:
-            print val
+
+        if type(data[0]) in [str, unicode]:
+            self.names = [("", di, "", "") for di in data]
+        else:
+            self.names=[[""]*4 for i in range(len(data))]
+            try:
+                #print dir(data[0][1][0])
+                strains=list(Set([d.strain for d in data]))
+                c=OWGraphTools.ColorPaletteHSV(len(strains))
+                for i, d in enumerate(data):
+                    self.colors[i][1]=c[strains.index(d.strain)]
+                    self.names[i][1]=" "+d.name
+                    self.names[i][2]=" "+d.strain
+            except Exception, val:
+                print val
 
     def setVarList(self, data):
         self.colorCombo.clear()
