@@ -110,6 +110,8 @@ class OWKMeans(OWWidget):
         metas = self.data.domain.getmetas()
         for id in metas:
             domain.addmeta(id, metas[id])
+        if self.data.domain.classVar:
+            domain.addmeta(orange.newmetaid(), self.data.domain.classVar)
         self.cdata = orange.ExampleTable(domain, self.data)
         for (i,d) in enumerate(self.cdata):
             d.setclass(self.mc.mapping[i]-1)
@@ -143,10 +145,11 @@ def compute_bic(data, medoids):
     numFreePar = (M+1.) * K * math.log(R, 2.) / 2.
     # sigma**2
     s2 = 0.
+    cidx = [i for i, attr in enumerate(data.domain.attributes) if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
     for x in data:
-        medoid = medoids[int(x.getclass())]
-        s2 += statc.sumdiffsquared(x.native(0)[:-1], data[medoid].native(0)[:-1])
-    s2 = s2 / (R - K)
+        medoid = data[medoids[int(x.getclass())]]
+        s2 += sum( [(float(x[i]) - float(medoid[i]))**2 for i in cidx] )
+    s2 /= (R - K)
     # log-lokehood of clusters: l(Dn)
     # log-likehood of clustering: l(D)
     ld = 0
