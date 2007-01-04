@@ -312,7 +312,7 @@ PyObject *AssociationRules__reduce__(TPyOrange *self, PyObject *) { return ListO
 
 C_CALL(TreeLearner, Learner, "([examples] [, weight=, split=, stop=, nodeLearner=, lookDownOnUnknown=]) -/-> Classifier")
 
-C_NAMED(TreeNode, Orange, "([lookDownOnUnknown=, chooseBranch=, nodeClassifier=, branches=, contingency=])")
+C_NAMED(TreeNode, Orange, "([lookDownOnUnknown=, branchSelector=, nodeClassifier=, branches=, contingency=])")
 C_NAMED(TreeClassifier, ClassifierFD, "([domain=, tree=, descender=])")
 
 C_NAMED(TreeStopCriteria_common, TreeStopCriteria, "([maxMajority=, minExamples=])")
