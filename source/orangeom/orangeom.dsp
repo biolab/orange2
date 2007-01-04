@@ -358,6 +358,10 @@ SOURCE=.\triangulate.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
+SOURCE=.\graphoptimization.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\mds.hpp
 # End Source File
 # Begin Source File
