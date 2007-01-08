@@ -66,11 +66,13 @@ class DiscGraph(OWGraph):
 
             
     def computeBaseScore(self):
-        self.baseCurveX, self.baseCurveY = self.computeAddedScore(list(self.curCutPoints))
+        if self.data:
+            self.baseCurveX, self.baseCurveY = self.computeAddedScore(list(self.curCutPoints))
 
 
     def computeLookaheadScore(self, split):
-        self.lookaheadCurveX, self.lookaheadCurveY = self.computeAddedScore(list(self.curCutPoints) + [split])
+        if self.data:
+            self.lookaheadCurveX, self.lookaheadCurveY = self.computeAddedScore(list(self.curCutPoints) + [split])
 
 
     def setData(self, attr, data):
@@ -101,7 +103,7 @@ class DiscGraph(OWGraph):
             self.removeCurve(rug)
         self.rugKeys = []
 
-        if self.master.showRug:
+        if self.data and self.master.showRug:
             targetClass = self.master.targetClass
 
             freqhigh = [(val, freq[targetClass]) for val, freq in self.contingency.items() if freq[targetClass] > 1e-6]
@@ -129,7 +131,7 @@ class DiscGraph(OWGraph):
         if self.baseCurveKey:
             self.removeCurve(self.baseCurveKey)
             
-        if self.master.showBaseLine:
+        if self.data and self.master.showBaseLine:
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.baseCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.baseCurveX, yData = self.baseCurveY, lineWidth = 2)
             self.setCurveYAxis(self.baseCurveKey, QwtPlot.yLeft)
@@ -144,7 +146,7 @@ class DiscGraph(OWGraph):
         if self.lookaheadCurveKey:
             self.removeCurve(self.lookaheadCurveKey)
             
-        if self.master.showLookaheadLine:
+        if self.data and self.master.showLookaheadLine:
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.lookaheadCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.lookaheadCurveX, yData = self.lookaheadCurveY, lineWidth = 1)
             self.setCurveYAxis(self.lookaheadCurveKey, QwtPlot.yLeft)
@@ -160,7 +162,7 @@ class DiscGraph(OWGraph):
         if self.probCurveKey:
             self.removeCurve(self.probCurveKey)
             
-        if self.master.showTargetClassProb:            
+        if self.data and self.master.showTargetClassProb:            
             xData = self.contingency.keys()[1:-1]
             self.probCurveKey = self.addCurve("", Qt.gray, Qt.gray, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xData, yData = [self.condProb(x)[self.master.targetClass] for x in xData], lineWidth = 2)
             self.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
@@ -513,12 +515,15 @@ class OWInteractiveDiscretization(OWWidget):
 
         for c in self.needsDiscrete:
             c.setEnabled(haveClass)
-        
-        self.classDiscBox.setEnabled(not data or continuousClass)
+
         if self.data:
             domain = self.data.domain
             self.continuousIndices = [i for i, attr in enumerate(domain.attributes) if attr.varType == orange.VarTypes.Continuous]
-
+            if not self.continuousIndices:
+                self.data = None
+            
+        self.classDiscBox.setEnabled(not data or continuousClass)
+        if self.data:
             for i, attr in enumerate(domain.attributes):
                 if attr.varType == orange.VarTypes.Continuous:
                     self.attrList.insertItem(ListItemWithLabel(self.contAttrIcon, attr.name, self.attrList.count(), self))
@@ -535,6 +540,7 @@ class OWInteractiveDiscretization(OWWidget):
             self.computeDiscretizers()
             self.attrList.setCurrentItem(self.selectedAttr)
         else:
+            self.targetCombo.clear()
             self.graph.setData(None, None)
 
         # Prevent entropy discretization with non-discrete class
@@ -553,7 +559,10 @@ class OWInteractiveDiscretization(OWWidget):
         self.makeConsistent()        
 
 
-    def fillClassCombo(self):    
+    def fillClassCombo(self):
+        if not self.data:
+            return
+        
         domain = self.data.domain
         self.targetCombo.clear()
         for v in domain.classVar.values:
@@ -632,6 +641,9 @@ class OWInteractiveDiscretization(OWWidget):
         self.commitIf()            
 
     def classMethodChanged(self):
+        if not self.data:
+            return
+        
         self.discretizeClass()
         self.classChanged()
         attrIndex = self.continuousIndices[self.selectedAttr]
@@ -642,28 +654,29 @@ class OWInteractiveDiscretization(OWWidget):
 
 
     def indiMethodChanged(self, dontSetACustom=False):
-        i, idx = self.selectedAttr, self.continuousIndices[self.selectedAttr]
-        self.indiData[idx][0] = self.indiDiscretization
-        self.indiData[idx][1] = self.indiIntervals
+        if self.data:
+            i, idx = self.selectedAttr, self.continuousIndices[self.selectedAttr]
+            self.indiData[idx][0] = self.indiDiscretization
+            self.indiData[idx][1] = self.indiIntervals
 
-        self.indiInterBox.setEnabled(self.indiDiscretization in [3, 4])
-        if self.indiDiscretization and self.indiDiscretization - 4 != self.resetIndividuals:
-            self.resetIndividuals = 4
+            self.indiInterBox.setEnabled(self.indiDiscretization in [3, 4])
+            if self.indiDiscretization and self.indiDiscretization - 4 != self.resetIndividuals:
+                self.resetIndividuals = 4
 
-        if not self.data:
-            return
+            if not self.data:
+                return
 
-        which = self.indiDiscretization - 5
-        if not dontSetACustom and which >= 0 and not self.customSplits[which]:
-            attr = self.data.domain[idx]
-            splitsTxt = self.indiData[idx][2+which] = [str(attr(x)) for x in self.graph.curCutPoints]
-            self.customSplits[which] = " ".join(splitsTxt)
-            self.customLineEdits[which].setText(" ".join(splitsTxt))
-            self.computeDiscretizer(i, idx)
-        else:
-            self.computeDiscretizer(i, idx)
+            which = self.indiDiscretization - 5
+            if not dontSetACustom and which >= 0 and not self.customSplits[which]:
+                attr = self.data.domain[idx]
+                splitsTxt = self.indiData[idx][2+which] = [str(attr(x)) for x in self.graph.curCutPoints]
+                self.customSplits[which] = " ".join(splitsTxt)
+                self.customLineEdits[which].setText(" ".join(splitsTxt))
+                self.computeDiscretizer(i, idx)
+            else:
+                self.computeDiscretizer(i, idx)
 
-        self.commitIf()            
+            self.commitIf()            
 
 
     def customSelected(self, which):
@@ -675,6 +688,9 @@ class OWInteractiveDiscretization(OWWidget):
 
         
     def setAllIndividuals(self):
+        if not self.data:
+            return
+        
         self.clearLineEditFocus()
         method = self.resetIndividuals
         if method == 4:
@@ -855,6 +871,9 @@ class OWInteractiveDiscretization(OWWidget):
         self.synchronize()
 
     def synchronize(self):
+        if not self.data:
+            return
+        
         slot = self.indiDiscretization - 5
         if slot < 0:
             for slot in range(3):
@@ -909,8 +928,10 @@ class OWInteractiveDiscretization(OWWidget):
 
             self.send("Examples", self.data.select(newattrs))
 
+        elif self.originalData:  # no continuous attributes...
+            self.send("Examples", self.originalData)
         else:
-            self.send("Example", None)
+            self.send("Examples", None)
 
         dataChanged = False            
 
