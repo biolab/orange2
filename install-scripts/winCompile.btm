@@ -1,10 +1,18 @@
 c:
-del /yqfsx c:\compileTemp\*
+del /yqfsx c:\compileTemp
+mkdir \compileTemp
 cd \compileTemp
 
 cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS checkout -A -- source
 
 cd source
-build-24.bat
+call build-24.bat > c:\compileTemp\c.log
+if ERRORLEVEL == 0 goto ok
+sendmail "tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si" "win: error compiling Orange" @c:\compileTemp\c.log
+goto godown
 
+:ok
+sendmail "tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si" "win: compiling ok"
+
+:godown
 rem shutdown -s
