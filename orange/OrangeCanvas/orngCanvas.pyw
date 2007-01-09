@@ -775,6 +775,8 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.settings.setdefault("canvasWidth", 700)
         self.settings.setdefault("canvasHeight", 600)
+
+	self.settings.setdefault("showSignalNames", 1)
         
         orngMisc.verbose = self.settings["verbose"]
                 
