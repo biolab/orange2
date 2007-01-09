@@ -1,19 +1,10 @@
+set PYTHON=c:\python23
 call nmakeall.bat
-cd ..
 
-copy orange.pyd* 23
-copy 24\orange.pyd .
+set PYTHON=c:\python24
+call nmakeall.bat
 
-copy corn.pyd* 23
-copy 24\corn.pyd .
-
-copy orangene.pyd* 23
-copy 24\orangene.pyd .
-
-copy orangeom.pyd* 23
-copy 24\orangeom.pyd .
-
-copy statc.pyd* 23
-copy 24\statc.pyd .
+set PYTHON=c:\python25
+call nmakeall.bat
 
 cd source
