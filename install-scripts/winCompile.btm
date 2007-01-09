@@ -1,0 +1,10 @@
+c:
+del /yqfsx c:\compileTemp\*
+cd \compileTemp
+
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS checkout -A -- source
+
+cd source
+build-24.bat
+
+rem shutdown -s
