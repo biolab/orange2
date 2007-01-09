@@ -41,6 +41,8 @@ ALL : "$(OUTDIR)\orangeom.pyd"
 CLEAN :
 	-@erase "$(INTDIR)\datafile.obj"
 	-@erase "$(INTDIR)\fileio.obj"
+	-@erase "$(INTDIR)\graphDrawing.obj"
+	-@erase "$(INTDIR)\graphoptimization.obj"
 	-@erase "$(INTDIR)\labels.obj"
 	-@erase "$(INTDIR)\lvq_pak.obj"
 	-@erase "$(INTDIR)\mds.obj"
@@ -115,6 +117,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\lvq_pak.obj" \
 	"$(INTDIR)\som_rout.obj" \
 	"$(INTDIR)\version.obj" \
+	"$(INTDIR)\graphDrawing.obj" \
+	"$(INTDIR)\graphoptimization.obj" \
 	"$(INTDIR)\mds.obj" \
 	"$(INTDIR)\optimizeAnchors.obj" \
 	"$(INTDIR)\orangeom.obj" \
@@ -152,6 +156,8 @@ ALL : "..\..\orangeom_d.pyd"
 CLEAN :
 	-@erase "$(INTDIR)\datafile.obj"
 	-@erase "$(INTDIR)\fileio.obj"
+	-@erase "$(INTDIR)\graphDrawing.obj"
+	-@erase "$(INTDIR)\graphoptimization.obj"
 	-@erase "$(INTDIR)\labels.obj"
 	-@erase "$(INTDIR)\lvq_pak.obj"
 	-@erase "$(INTDIR)\mds.obj"
@@ -229,6 +235,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\lvq_pak.obj" \
 	"$(INTDIR)\som_rout.obj" \
 	"$(INTDIR)\version.obj" \
+	"$(INTDIR)\graphDrawing.obj" \
+	"$(INTDIR)\graphoptimization.obj" \
 	"$(INTDIR)\mds.obj" \
 	"$(INTDIR)\optimizeAnchors.obj" \
 	"$(INTDIR)\orangeom.obj" \
@@ -263,6 +271,8 @@ ALL : "$(OUTDIR)\orangeom.pyd"
 CLEAN :
 	-@erase "$(INTDIR)\datafile.obj"
 	-@erase "$(INTDIR)\fileio.obj"
+	-@erase "$(INTDIR)\graphDrawing.obj"
+	-@erase "$(INTDIR)\graphoptimization.obj"
 	-@erase "$(INTDIR)\labels.obj"
 	-@erase "$(INTDIR)\lvq_pak.obj"
 	-@erase "$(INTDIR)\mds.obj"
@@ -338,6 +348,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\lvq_pak.obj" \
 	"$(INTDIR)\som_rout.obj" \
 	"$(INTDIR)\version.obj" \
+	"$(INTDIR)\graphDrawing.obj" \
+	"$(INTDIR)\graphoptimization.obj" \
 	"$(INTDIR)\mds.obj" \
 	"$(INTDIR)\optimizeAnchors.obj" \
 	"$(INTDIR)\orangeom.obj" \
@@ -378,6 +390,8 @@ ALL : "$(OUTDIR)\orangeom.pyd"
 CLEAN :
 	-@erase "$(INTDIR)\datafile.obj"
 	-@erase "$(INTDIR)\fileio.obj"
+	-@erase "$(INTDIR)\graphDrawing.obj"
+	-@erase "$(INTDIR)\graphoptimization.obj"
 	-@erase "$(INTDIR)\labels.obj"
 	-@erase "$(INTDIR)\lvq_pak.obj"
 	-@erase "$(INTDIR)\mds.obj"
@@ -452,6 +466,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\lvq_pak.obj" \
 	"$(INTDIR)\som_rout.obj" \
 	"$(INTDIR)\version.obj" \
+	"$(INTDIR)\graphDrawing.obj" \
+	"$(INTDIR)\graphoptimization.obj" \
 	"$(INTDIR)\mds.obj" \
 	"$(INTDIR)\optimizeAnchors.obj" \
 	"$(INTDIR)\orangeom.obj" \
@@ -549,6 +565,16 @@ SOURCE=.\som\version.c
 
 "$(INTDIR)\version.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+SOURCE=.\graphDrawing.cpp
+
+"$(INTDIR)\graphDrawing.obj" : $(SOURCE) "$(INTDIR)"
+
+
+SOURCE=.\graphoptimization.cpp
+
+"$(INTDIR)\graphoptimization.obj" : $(SOURCE) "$(INTDIR)"
 
 
 SOURCE=.\mds.cpp

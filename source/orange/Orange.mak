@@ -163,7 +163,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
+CPP_PROJ=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -203,7 +203,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\Orange.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(GNUWIN32)\lib" /libpath:"$(PYTHON)\libs" /WARN:0 
+LINK32_FLAGS=oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(PYTHON)\libs" /WARN:0 
 LINK32_OBJS= \
 	"$(INTDIR)\assistant.obj" \
 	"$(INTDIR)\assoc.obj" \
@@ -327,8 +327,8 @@ OutDir=.\obj/Release
 # End Custom Macros
 
 $(DS_POSTBUILD_DEP) : "include - Win32 Release" "$(OUTDIR)\orange.pyd"
-   del "..\..\orange.pyd"
-	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\orange.pyd"
+   del "..\..\..\orange\orange.pyd"
+	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\..\orange\orange.pyd"
 	copy obj\Release\orange.lib ..\..\lib\orange.lib
 	rem copy "obj\Release\orange.pyd" "..\..\orange.pyd"
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
@@ -577,7 +577,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
+CPP_PROJ=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -977,6 +977,7 @@ CLEAN :
 	-@erase "$(INTDIR)\values.obj"
 	-@erase "$(INTDIR)\vars.obj"
 	-@erase "$(INTDIR)\vc60.idb"
+	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\orange.exp"
 	-@erase "$(OUTDIR)\orange.lib"
 	-@erase "..\..\orange.pyd"
@@ -1937,26 +1938,42 @@ SOURCE=.\cls_orange.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\cls_orange.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\cls_orange.obj"	"$(INTDIR)\cls_orange.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\cls_orange.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\cls_orange.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ENDIF 
@@ -2273,7 +2290,7 @@ SOURCE=.\distancemap.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\distancemap.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -2283,7 +2300,7 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\distancemap.obj"	"$(INTDIR)\distancemap.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -2293,7 +2310,7 @@ CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../include" /I "ppp" /I "p
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\distancemap.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -2794,26 +2811,42 @@ SOURCE=.\imputation.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\imputation.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\imputation.obj"	"$(INTDIR)\imputation.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\imputation.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\imputation.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ENDIF 
@@ -2878,26 +2911,42 @@ SOURCE=.\knn.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\knn.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\knn.obj"	"$(INTDIR)\knn.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\knn.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\knn.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ENDIF 
@@ -2934,26 +2983,42 @@ SOURCE=.\lib_components.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\lib_components.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\lib_components.obj"	"$(INTDIR)\lib_components.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_components.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_components.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ENDIF 
@@ -2990,26 +3055,42 @@ SOURCE=.\lib_kernel.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\lib_kernel.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\lib_kernel.obj"	"$(INTDIR)\lib_kernel.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_kernel.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_kernel.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ENDIF 
@@ -3018,26 +3099,42 @@ SOURCE=.\lib_learner.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\lib_learner.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\lib_learner.obj"	"$(INTDIR)\lib_learner.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_learner.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_learner.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ENDIF 
@@ -3074,26 +3171,42 @@ SOURCE=.\lib_vectors.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\lib_vectors.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\lib_vectors.obj"	"$(INTDIR)\lib_vectors.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_vectors.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_vectors.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ENDIF 
@@ -3774,7 +3887,7 @@ SOURCE=.\redundancy.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\redundancy.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -3784,7 +3897,7 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\redundancy.obj"	"$(INTDIR)\redundancy.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -3846,26 +3959,42 @@ SOURCE=.\root.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\root.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\root.obj"	"$(INTDIR)\root.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\root.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\root.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
 
 
 !ENDIF 
@@ -4098,7 +4227,7 @@ SOURCE=.\tabdelim.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
+CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "px" /I "ppp" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /Gs /c 
 
 "$(INTDIR)\tabdelim.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -4108,7 +4237,7 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fr"$(INTDIR)\\" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /Zm700 /c 
 
 "$(INTDIR)\tabdelim.obj"	"$(INTDIR)\tabdelim.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
