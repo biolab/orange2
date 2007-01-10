@@ -4,7 +4,7 @@ CFG=include - Win32 Debug
 !MESSAGE No configuration specified. Defaulting to include - Win32 Debug.
 !ENDIF 
 
-!IF "$(CFG)" != "include - Win32 Release" && "$(CFG)" != "include - Win32 Debug" && "$(CFG)" != "include - Win32 Release_Debug" && "$(CFG)" != "include - Win32 Python 24"
+!IF "$(CFG)" != "include - Win32 Release" && "$(CFG)" != "include - Win32 Debug" && "$(CFG)" != "include - Win32 Release_Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
@@ -16,7 +16,6 @@ CFG=include - Win32 Debug
 !MESSAGE "include - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "include - Win32 Debug" (based on "Win32 (x86) Static Library")
 !MESSAGE "include - Win32 Release_Debug" (based on "Win32 (x86) Static Library")
-!MESSAGE "include - Win32 Python 24" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 !ERROR An invalid configuration is specified.
 !ENDIF 
@@ -262,85 +261,6 @@ LIB32_OBJS= \
   $(LIB32_FLAGS) $(DEF_FLAGS) $(LIB32_OBJS)
 <<
 
-!ELSEIF  "$(CFG)" == "include - Win32 Python 24"
-
-OUTDIR=.\obj/Release24
-INTDIR=.\obj/Release24
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-ALL : "$(OUTDIR)\include.lib"
-
-
-CLEAN :
-	-@erase "$(INTDIR)\c2py.obj"
-	-@erase "$(INTDIR)\common.obj"
-	-@erase "$(INTDIR)\crc32.obj"
-	-@erase "$(INTDIR)\lcomb.obj"
-	-@erase "$(INTDIR)\stat.obj"
-	-@erase "$(INTDIR)\statexceptions.obj"
-	-@erase "$(INTDIR)\strings.obj"
-	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(OUTDIR)\include.lib"
-
-"$(OUTDIR)" :
-    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
-
-CPP=cl.exe
-CPP_PROJ=/nologo /MD /W3 /GR /GX /O2 /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\include.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-RSC=rc.exe
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\include.bsc" 
-BSC32_SBRS= \
-	
-LIB32=link.exe -lib
-LIB32_FLAGS=/nologo /out:"$(OUTDIR)\include.lib" 
-LIB32_OBJS= \
-	"$(INTDIR)\c2py.obj" \
-	"$(INTDIR)\common.obj" \
-	"$(INTDIR)\crc32.obj" \
-	"$(INTDIR)\lcomb.obj" \
-	"$(INTDIR)\stat.obj" \
-	"$(INTDIR)\statexceptions.obj" \
-	"$(INTDIR)\strings.obj"
-
-"$(OUTDIR)\include.lib" : "$(OUTDIR)" $(DEF_FILE) $(LIB32_OBJS)
-    $(LIB32) @<<
-  $(LIB32_FLAGS) $(DEF_FLAGS) $(LIB32_OBJS)
-<<
-
 !ENDIF 
 
 
@@ -353,7 +273,7 @@ LIB32_OBJS= \
 !ENDIF 
 
 
-!IF "$(CFG)" == "include - Win32 Release" || "$(CFG)" == "include - Win32 Debug" || "$(CFG)" == "include - Win32 Release_Debug" || "$(CFG)" == "include - Win32 Python 24"
+!IF "$(CFG)" == "include - Win32 Release" || "$(CFG)" == "include - Win32 Debug" || "$(CFG)" == "include - Win32 Release_Debug"
 SOURCE=.\c2py.cpp
 
 "$(INTDIR)\c2py.obj" : $(SOURCE) "$(INTDIR)"
@@ -399,16 +319,6 @@ CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "$(PYTHON)\include" /D "WIN
 !ELSEIF  "$(CFG)" == "include - Win32 Release_Debug"
 
 CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\include.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\stat.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "include - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\include.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\stat.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<

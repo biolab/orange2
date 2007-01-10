@@ -4,7 +4,7 @@ CFG=orangeom - Win32 Debug
 !MESSAGE No configuration specified. Defaulting to orangeom - Win32 Debug.
 !ENDIF 
 
-!IF "$(CFG)" != "orangeom - Win32 Release" && "$(CFG)" != "orangeom - Win32 Debug" && "$(CFG)" != "orangeom - Win32 Release_Debug" && "$(CFG)" != "orangeom - Win32 Python 24"
+!IF "$(CFG)" != "orangeom - Win32 Release" && "$(CFG)" != "orangeom - Win32 Debug" && "$(CFG)" != "orangeom - Win32 Release_Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
@@ -16,7 +16,6 @@ CFG=orangeom - Win32 Debug
 !MESSAGE "orangeom - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "orangeom - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "orangeom - Win32 Release_Debug" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "orangeom - Win32 Python 24" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 !ERROR An invalid configuration is specified.
 !ENDIF 
@@ -376,124 +375,6 @@ $(DS_POSTBUILD_DEP) : "$(OUTDIR)\orangeom.pyd"
 	copy obj\Release_debug\orangeom.lib ..\..\lib\orangeom.lib
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
-!ELSEIF  "$(CFG)" == "orangeom - Win32 Python 24"
-
-OUTDIR=.\obj/Release24
-INTDIR=.\obj/Release24
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-ALL : "$(OUTDIR)\orangeom.pyd"
-
-
-CLEAN :
-	-@erase "$(INTDIR)\datafile.obj"
-	-@erase "$(INTDIR)\fileio.obj"
-	-@erase "$(INTDIR)\graphDrawing.obj"
-	-@erase "$(INTDIR)\graphoptimization.obj"
-	-@erase "$(INTDIR)\labels.obj"
-	-@erase "$(INTDIR)\lvq_pak.obj"
-	-@erase "$(INTDIR)\mds.obj"
-	-@erase "$(INTDIR)\optimizeAnchors.obj"
-	-@erase "$(INTDIR)\orangeom.obj"
-	-@erase "$(INTDIR)\som.obj"
-	-@erase "$(INTDIR)\som_rout.obj"
-	-@erase "$(INTDIR)\triangulate.obj"
-	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(INTDIR)\version.obj"
-	-@erase "$(INTDIR)\WmlDelaunay2a.obj"
-	-@erase "$(INTDIR)\WmlMath.obj"
-	-@erase "$(INTDIR)\WmlSystem.obj"
-	-@erase "$(INTDIR)\WmlVector2.obj"
-	-@erase "$(OUTDIR)\orangeom.exp"
-	-@erase "$(OUTDIR)\orangeom.lib"
-	-@erase "$(OUTDIR)\orangeom.pyd"
-
-"$(OUTDIR)" :
-    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
-
-CPP=cl.exe
-CPP_PROJ=/nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /Fp"$(INTDIR)\orangeom.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
-MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
-RSC=rc.exe
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\orangeom.bsc" 
-BSC32_SBRS= \
-	
-LINK32=link.exe
-LINK32_FLAGS=orange.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /pdb:"$(OUTDIR)\orangeom.pdb" /machine:I386 /out:"$(OUTDIR)\orangeom.pyd" /implib:"$(OUTDIR)\orangeom.lib" /libpath:"../../24/lib" /libpath:"$(PYTHON24)\libs" 
-LINK32_OBJS= \
-	"$(INTDIR)\WmlDelaunay2a.obj" \
-	"$(INTDIR)\WmlMath.obj" \
-	"$(INTDIR)\WmlSystem.obj" \
-	"$(INTDIR)\WmlVector2.obj" \
-	"$(INTDIR)\datafile.obj" \
-	"$(INTDIR)\fileio.obj" \
-	"$(INTDIR)\labels.obj" \
-	"$(INTDIR)\lvq_pak.obj" \
-	"$(INTDIR)\som_rout.obj" \
-	"$(INTDIR)\version.obj" \
-	"$(INTDIR)\graphDrawing.obj" \
-	"$(INTDIR)\graphoptimization.obj" \
-	"$(INTDIR)\mds.obj" \
-	"$(INTDIR)\optimizeAnchors.obj" \
-	"$(INTDIR)\orangeom.obj" \
-	"$(INTDIR)\som.obj" \
-	"$(INTDIR)\triangulate.obj"
-
-"$(OUTDIR)\orangeom.pyd" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
-    $(LINK32) @<<
-  $(LINK32_FLAGS) $(LINK32_OBJS)
-<<
-
-SOURCE="$(InputPath)"
-DS_POSTBUILD_DEP=$(INTDIR)\postbld.dep
-
-ALL : $(DS_POSTBUILD_DEP)
-
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-$(DS_POSTBUILD_DEP) : "$(OUTDIR)\orangeom.pyd"
-   del ..\..\24\orangeom.pyd*
-	"c:\program files\upx" "obj\release24\orangeom.pyd" -o "..\..\24\orangeom.pyd"
-	copy obj\Release24\orangeom.lib ..\..\24\lib\orangeom.lib
-	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
-
 !ENDIF 
 
 
@@ -506,7 +387,7 @@ $(DS_POSTBUILD_DEP) : "$(OUTDIR)\orangeom.pyd"
 !ENDIF 
 
 
-!IF "$(CFG)" == "orangeom - Win32 Release" || "$(CFG)" == "orangeom - Win32 Debug" || "$(CFG)" == "orangeom - Win32 Release_Debug" || "$(CFG)" == "orangeom - Win32 Python 24"
+!IF "$(CFG)" == "orangeom - Win32 Release" || "$(CFG)" == "orangeom - Win32 Debug" || "$(CFG)" == "orangeom - Win32 Release_Debug"
 SOURCE=.\wml\WmlDelaunay2a.cpp
 
 "$(INTDIR)\WmlDelaunay2a.obj" : $(SOURCE) "$(INTDIR)"
@@ -609,16 +490,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" 
 <<
 
 
-!ELSEIF  "$(CFG)" == "orangeom - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /D "NO_PIPED_COMANDS" /Fp"$(INTDIR)\orangeom.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\mds.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\optimizeAnchors.cpp
@@ -646,16 +517,6 @@ CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../orange" /I "../include"
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"
 
 CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /Fp"$(INTDIR)\orangeom.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\optimizeAnchors.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "orangeom - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /D "NO_PIPED_COMANDS" /Fp"$(INTDIR)\orangeom.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\optimizeAnchors.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -697,16 +558,6 @@ CPP_SWITCHES=/MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PY
 <<
 
 
-!ELSEIF  "$(CFG)" == "orangeom - Win32 Python 24"
-
-CPP_SWITCHES=/MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /D "NO_PIPED_COMANDS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\orangeom.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\som.cpp
@@ -739,16 +590,6 @@ CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../orange" /I "../include"
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"
 
 CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /Fp"$(INTDIR)\orangeom.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\triangulate.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "orangeom - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /D "NO_PIPED_COMMANDS" /D "NO_PIPED_COMANDS" /Fp"$(INTDIR)\orangeom.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\triangulate.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<

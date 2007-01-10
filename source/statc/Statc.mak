@@ -4,7 +4,7 @@ CFG=Statc - Win32 Debug
 !MESSAGE No configuration specified. Defaulting to Statc - Win32 Debug.
 !ENDIF 
 
-!IF "$(CFG)" != "Statc - Win32 Release" && "$(CFG)" != "Statc - Win32 Debug" && "$(CFG)" != "Statc - Win32 Python 24"
+!IF "$(CFG)" != "Statc - Win32 Release" && "$(CFG)" != "Statc - Win32 Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
@@ -15,7 +15,6 @@ CFG=Statc - Win32 Debug
 !MESSAGE 
 !MESSAGE "Statc - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "Statc - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "Statc - Win32 Python 24" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 !ERROR An invalid configuration is specified.
 !ENDIF 
@@ -211,106 +210,6 @@ LINK32_OBJS= \
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
 
-!ELSEIF  "$(CFG)" == "Statc - Win32 Python 24"
-
-OUTDIR=.\obj/Release24
-INTDIR=.\obj/Release24
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-!IF "$(RECURSE)" == "0" 
-
-ALL : "$(OUTDIR)\statc.pyd"
-
-!ELSE 
-
-ALL : "include - Win32 Python 24" "$(OUTDIR)\statc.pyd"
-
-!ENDIF 
-
-!IF "$(RECURSE)" == "1" 
-CLEAN :"include - Win32 Python 24CLEAN" 
-!ELSE 
-CLEAN :
-!ENDIF 
-	-@erase "$(INTDIR)\stat.obj"
-	-@erase "$(INTDIR)\statc.obj"
-	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(OUTDIR)\statc.exp"
-	-@erase "$(OUTDIR)\statc.lib"
-	-@erase "$(OUTDIR)\statc.pyd"
-
-"$(OUTDIR)" :
-    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
-
-CPP=cl.exe
-CPP_PROJ=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "STATC_EXPORTS" /Fp"$(INTDIR)\Statc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
-MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
-RSC=rc.exe
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\Statc.bsc" 
-BSC32_SBRS= \
-	
-LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /pdb:"$(OUTDIR)\statc.pdb" /machine:I386 /out:"$(OUTDIR)\statc.pyd" /implib:"$(OUTDIR)\statc.lib" /libpath:"../../24/lib" /libpath:"$(PYTHON24)\libs" 
-LINK32_OBJS= \
-	"$(INTDIR)\stat.obj" \
-	"$(INTDIR)\statc.obj" \
-	"..\include\obj\Release24\include.lib"
-
-"$(OUTDIR)\statc.pyd" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
-    $(LINK32) @<<
-  $(LINK32_FLAGS) $(LINK32_OBJS)
-<<
-
-SOURCE="$(InputPath)"
-DS_POSTBUILD_DEP=$(INTDIR)\postbld.dep
-
-ALL : $(DS_POSTBUILD_DEP)
-
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-$(DS_POSTBUILD_DEP) : "include - Win32 Python 24" "$(OUTDIR)\statc.pyd"
-   del "..\..\24\statc.pyd*"
-	"c:\program files\upx" "obj\release24\statc.pyd" -o "..\..\24\statc.pyd"
-	copy obj\Release24\statc.lib ..\..\24\lib\statc.lib
-	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
-
 !ENDIF 
 
 
@@ -323,7 +222,7 @@ $(DS_POSTBUILD_DEP) : "include - Win32 Python 24" "$(OUTDIR)\statc.pyd"
 !ENDIF 
 
 
-!IF "$(CFG)" == "Statc - Win32 Release" || "$(CFG)" == "Statc - Win32 Debug" || "$(CFG)" == "Statc - Win32 Python 24"
+!IF "$(CFG)" == "Statc - Win32 Release" || "$(CFG)" == "Statc - Win32 Debug"
 SOURCE=..\include\stat.cpp
 
 "$(INTDIR)\stat.obj" : $(SOURCE) "$(INTDIR)"
@@ -357,18 +256,6 @@ SOURCE=.\statc.cpp
 "include - Win32 DebugCLEAN" : 
    cd "\D\ai\Orange\source\include"
    $(MAKE) /$(MAKEFLAGS) /F .\include.mak CFG="include - Win32 Debug" RECURSE=1 CLEAN 
-   cd "..\statc"
-
-!ELSEIF  "$(CFG)" == "Statc - Win32 Python 24"
-
-"include - Win32 Python 24" : 
-   cd "\D\ai\Orange\source\include"
-   $(MAKE) /$(MAKEFLAGS) /F .\include.mak CFG="include - Win32 Python 24" 
-   cd "..\statc"
-
-"include - Win32 Python 24CLEAN" : 
-   cd "\D\ai\Orange\source\include"
-   $(MAKE) /$(MAKEFLAGS) /F .\include.mak CFG="include - Win32 Python 24" RECURSE=1 CLEAN 
    cd "..\statc"
 
 !ENDIF 

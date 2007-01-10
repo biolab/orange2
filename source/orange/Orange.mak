@@ -4,7 +4,7 @@ CFG=Orange - Win32 Debug
 !MESSAGE No configuration specified. Defaulting to Orange - Win32 Debug.
 !ENDIF 
 
-!IF "$(CFG)" != "Orange - Win32 Release" && "$(CFG)" != "Orange - Win32 Debug" && "$(CFG)" != "Orange - Win32 Release_Debug" && "$(CFG)" != "Orange - Win32 Python 24"
+!IF "$(CFG)" != "Orange - Win32 Release" && "$(CFG)" != "Orange - Win32 Debug" && "$(CFG)" != "Orange - Win32 Release_Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
@@ -16,7 +16,6 @@ CFG=Orange - Win32 Debug
 !MESSAGE "Orange - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "Orange - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "Orange - Win32 Release_Debug" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "Orange - Win32 Python 24" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 !ERROR An invalid configuration is specified.
 !ENDIF 
@@ -203,7 +202,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\Orange.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=/nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(PYTHON)\libs" /WARN:0 
+LINK32_FLAGS=/verbose /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(PYTHON)\libs" /WARN:0 
 LINK32_OBJS= \
 	"$(INTDIR)\assistant.obj" \
 	"$(INTDIR)\assoc.obj" \
@@ -1139,312 +1138,6 @@ LINK32_OBJS= \
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-OUTDIR=.\obj/Release24
-INTDIR=.\obj/Release24
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-!IF "$(RECURSE)" == "0" 
-
-ALL : "$(OUTDIR)\orange.pyd"
-
-!ELSE 
-
-ALL : "include - Win32 Python 24" "$(OUTDIR)\orange.pyd"
-
-!ENDIF 
-
-!IF "$(RECURSE)" == "1" 
-CLEAN :"include - Win32 Python 24CLEAN" 
-!ELSE 
-CLEAN :
-!ENDIF 
-	-@erase "$(INTDIR)\assistant.obj"
-	-@erase "$(INTDIR)\assoc.obj"
-	-@erase "$(INTDIR)\assoc_sparse.obj"
-	-@erase "$(INTDIR)\basket.obj"
-	-@erase "$(INTDIR)\basstat.obj"
-	-@erase "$(INTDIR)\bayes.obj"
-	-@erase "$(INTDIR)\boolcnt.obj"
-	-@erase "$(INTDIR)\c4.5.obj"
-	-@erase "$(INTDIR)\c45inter.obj"
-	-@erase "$(INTDIR)\calibrate.obj"
-	-@erase "$(INTDIR)\callback.obj"
-	-@erase "$(INTDIR)\cartesian.obj"
-	-@erase "$(INTDIR)\clas_gen.obj"
-	-@erase "$(INTDIR)\classfromvar.obj"
-	-@erase "$(INTDIR)\classifier.obj"
-	-@erase "$(INTDIR)\cls_example.obj"
-	-@erase "$(INTDIR)\cls_misc.obj"
-	-@erase "$(INTDIR)\cls_orange.obj"
-	-@erase "$(INTDIR)\cls_value.obj"
-	-@erase "$(INTDIR)\contingency.obj"
-	-@erase "$(INTDIR)\converts.obj"
-	-@erase "$(INTDIR)\cost.obj"
-	-@erase "$(INTDIR)\costwrapper.obj"
-	-@erase "$(INTDIR)\decomposition.obj"
-	-@erase "$(INTDIR)\dictproxy.obj"
-	-@erase "$(INTDIR)\discretize.obj"
-	-@erase "$(INTDIR)\dist_clustering.obj"
-	-@erase "$(INTDIR)\distance.obj"
-	-@erase "$(INTDIR)\distance_dtw.obj"
-	-@erase "$(INTDIR)\distancemap.obj"
-	-@erase "$(INTDIR)\distvars.obj"
-	-@erase "$(INTDIR)\domain.obj"
-	-@erase "$(INTDIR)\domaindepot.obj"
-	-@erase "$(INTDIR)\errors.obj"
-	-@erase "$(INTDIR)\estimateprob.obj"
-	-@erase "$(INTDIR)\exampleclustering.obj"
-	-@erase "$(INTDIR)\examplegen.obj"
-	-@erase "$(INTDIR)\examples.obj"
-	-@erase "$(INTDIR)\excel.obj"
-	-@erase "$(INTDIR)\filegen.obj"
-	-@erase "$(INTDIR)\filter.obj"
-	-@erase "$(INTDIR)\functions.obj"
-	-@erase "$(INTDIR)\garbage.obj"
-	-@erase "$(INTDIR)\getarg.obj"
-	-@erase "$(INTDIR)\graph.obj"
-	-@erase "$(INTDIR)\gslconversions.obj"
-	-@erase "$(INTDIR)\hclust.obj"
-	-@erase "$(INTDIR)\imputation.obj"
-	-@erase "$(INTDIR)\induce.obj"
-	-@erase "$(INTDIR)\jit_linker.obj"
-	-@erase "$(INTDIR)\knn.obj"
-	-@erase "$(INTDIR)\learn.obj"
-	-@erase "$(INTDIR)\lib_components.obj"
-	-@erase "$(INTDIR)\lib_io.obj"
-	-@erase "$(INTDIR)\lib_kernel.obj"
-	-@erase "$(INTDIR)\lib_learner.obj"
-	-@erase "$(INTDIR)\lib_preprocess.obj"
-	-@erase "$(INTDIR)\lib_vectors.obj"
-	-@erase "$(INTDIR)\linreg.obj"
-	-@erase "$(INTDIR)\logfit.obj"
-	-@erase "$(INTDIR)\logistic.obj"
-	-@erase "$(INTDIR)\logreg.obj"
-	-@erase "$(INTDIR)\lookup.obj"
-	-@erase "$(INTDIR)\lsq.obj"
-	-@erase "$(INTDIR)\lwr.obj"
-	-@erase "$(INTDIR)\majority.obj"
-	-@erase "$(INTDIR)\measures.obj"
-	-@erase "$(INTDIR)\meta.obj"
-	-@erase "$(INTDIR)\minimal_complexity.obj"
-	-@erase "$(INTDIR)\minimal_error.obj"
-	-@erase "$(INTDIR)\nearest.obj"
-	-@erase "$(INTDIR)\numeric_interface.obj"
-	-@erase "$(INTDIR)\orange.obj"
-	-@erase "$(INTDIR)\orvector.obj"
-	-@erase "$(INTDIR)\pnn.obj"
-	-@erase "$(INTDIR)\preprocessors.obj"
-	-@erase "$(INTDIR)\progress.obj"
-	-@erase "$(INTDIR)\pythonvars.obj"
-	-@erase "$(INTDIR)\r_imports.obj"
-	-@erase "$(INTDIR)\random.obj"
-	-@erase "$(INTDIR)\rconversions.obj"
-	-@erase "$(INTDIR)\readdata.obj"
-	-@erase "$(INTDIR)\redundancy.obj"
-	-@erase "$(INTDIR)\retisinter.obj"
-	-@erase "$(INTDIR)\root.obj"
-	-@erase "$(INTDIR)\rulelearner.obj"
-	-@erase "$(INTDIR)\spec_contingency.obj"
-	-@erase "$(INTDIR)\spec_gen.obj"
-	-@erase "$(INTDIR)\stringvars.obj"
-	-@erase "$(INTDIR)\subsets.obj"
-	-@erase "$(INTDIR)\survival.obj"
-	-@erase "$(INTDIR)\svm.obj"
-	-@erase "$(INTDIR)\symmatrix.obj"
-	-@erase "$(INTDIR)\tabdelim.obj"
-	-@erase "$(INTDIR)\table.obj"
-	-@erase "$(INTDIR)\tdidt.obj"
-	-@erase "$(INTDIR)\tdidt_split.obj"
-	-@erase "$(INTDIR)\tdidt_stop.obj"
-	-@erase "$(INTDIR)\transdomain.obj"
-	-@erase "$(INTDIR)\transval.obj"
-	-@erase "$(INTDIR)\trindex.obj"
-	-@erase "$(INTDIR)\valuelisttemplate.obj"
-	-@erase "$(INTDIR)\values.obj"
-	-@erase "$(INTDIR)\vars.obj"
-	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(OUTDIR)\orange.exp"
-	-@erase "$(OUTDIR)\orange.lib"
-	-@erase "$(OUTDIR)\orange.pyd"
-
-"$(OUTDIR)" :
-    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
-
-CPP=cl.exe
-CPP_PROJ=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
-MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
-RSC=rc.exe
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\Orange.bsc" 
-BSC32_SBRS= \
-	
-LINK32=link.exe
-LINK32_FLAGS=oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(PYTHON24)\libs" /WARN:0 
-LINK32_OBJS= \
-	"$(INTDIR)\assistant.obj" \
-	"$(INTDIR)\assoc.obj" \
-	"$(INTDIR)\assoc_sparse.obj" \
-	"$(INTDIR)\basket.obj" \
-	"$(INTDIR)\basstat.obj" \
-	"$(INTDIR)\bayes.obj" \
-	"$(INTDIR)\boolcnt.obj" \
-	"$(INTDIR)\c4.5.obj" \
-	"$(INTDIR)\c45inter.obj" \
-	"$(INTDIR)\calibrate.obj" \
-	"$(INTDIR)\callback.obj" \
-	"$(INTDIR)\cartesian.obj" \
-	"$(INTDIR)\clas_gen.obj" \
-	"$(INTDIR)\classfromvar.obj" \
-	"$(INTDIR)\classifier.obj" \
-	"$(INTDIR)\cls_example.obj" \
-	"$(INTDIR)\cls_misc.obj" \
-	"$(INTDIR)\cls_orange.obj" \
-	"$(INTDIR)\cls_value.obj" \
-	"$(INTDIR)\contingency.obj" \
-	"$(INTDIR)\converts.obj" \
-	"$(INTDIR)\cost.obj" \
-	"$(INTDIR)\costwrapper.obj" \
-	"$(INTDIR)\decomposition.obj" \
-	"$(INTDIR)\dictproxy.obj" \
-	"$(INTDIR)\discretize.obj" \
-	"$(INTDIR)\dist_clustering.obj" \
-	"$(INTDIR)\distance.obj" \
-	"$(INTDIR)\distance_dtw.obj" \
-	"$(INTDIR)\distancemap.obj" \
-	"$(INTDIR)\distvars.obj" \
-	"$(INTDIR)\domain.obj" \
-	"$(INTDIR)\domaindepot.obj" \
-	"$(INTDIR)\errors.obj" \
-	"$(INTDIR)\estimateprob.obj" \
-	"$(INTDIR)\exampleclustering.obj" \
-	"$(INTDIR)\examplegen.obj" \
-	"$(INTDIR)\examples.obj" \
-	"$(INTDIR)\excel.obj" \
-	"$(INTDIR)\filegen.obj" \
-	"$(INTDIR)\filter.obj" \
-	"$(INTDIR)\functions.obj" \
-	"$(INTDIR)\garbage.obj" \
-	"$(INTDIR)\getarg.obj" \
-	"$(INTDIR)\graph.obj" \
-	"$(INTDIR)\gslconversions.obj" \
-	"$(INTDIR)\hclust.obj" \
-	"$(INTDIR)\imputation.obj" \
-	"$(INTDIR)\induce.obj" \
-	"$(INTDIR)\jit_linker.obj" \
-	"$(INTDIR)\knn.obj" \
-	"$(INTDIR)\learn.obj" \
-	"$(INTDIR)\lib_components.obj" \
-	"$(INTDIR)\lib_io.obj" \
-	"$(INTDIR)\lib_kernel.obj" \
-	"$(INTDIR)\lib_learner.obj" \
-	"$(INTDIR)\lib_preprocess.obj" \
-	"$(INTDIR)\lib_vectors.obj" \
-	"$(INTDIR)\linreg.obj" \
-	"$(INTDIR)\logfit.obj" \
-	"$(INTDIR)\logistic.obj" \
-	"$(INTDIR)\logreg.obj" \
-	"$(INTDIR)\lookup.obj" \
-	"$(INTDIR)\lsq.obj" \
-	"$(INTDIR)\lwr.obj" \
-	"$(INTDIR)\majority.obj" \
-	"$(INTDIR)\measures.obj" \
-	"$(INTDIR)\meta.obj" \
-	"$(INTDIR)\minimal_complexity.obj" \
-	"$(INTDIR)\minimal_error.obj" \
-	"$(INTDIR)\nearest.obj" \
-	"$(INTDIR)\numeric_interface.obj" \
-	"$(INTDIR)\orange.obj" \
-	"$(INTDIR)\orvector.obj" \
-	"$(INTDIR)\pnn.obj" \
-	"$(INTDIR)\preprocessors.obj" \
-	"$(INTDIR)\progress.obj" \
-	"$(INTDIR)\pythonvars.obj" \
-	"$(INTDIR)\r_imports.obj" \
-	"$(INTDIR)\random.obj" \
-	"$(INTDIR)\rconversions.obj" \
-	"$(INTDIR)\readdata.obj" \
-	"$(INTDIR)\redundancy.obj" \
-	"$(INTDIR)\retisinter.obj" \
-	"$(INTDIR)\root.obj" \
-	"$(INTDIR)\rulelearner.obj" \
-	"$(INTDIR)\spec_contingency.obj" \
-	"$(INTDIR)\spec_gen.obj" \
-	"$(INTDIR)\stringvars.obj" \
-	"$(INTDIR)\subsets.obj" \
-	"$(INTDIR)\survival.obj" \
-	"$(INTDIR)\svm.obj" \
-	"$(INTDIR)\symmatrix.obj" \
-	"$(INTDIR)\tabdelim.obj" \
-	"$(INTDIR)\table.obj" \
-	"$(INTDIR)\tdidt.obj" \
-	"$(INTDIR)\tdidt_split.obj" \
-	"$(INTDIR)\tdidt_stop.obj" \
-	"$(INTDIR)\transdomain.obj" \
-	"$(INTDIR)\transval.obj" \
-	"$(INTDIR)\trindex.obj" \
-	"$(INTDIR)\valuelisttemplate.obj" \
-	"$(INTDIR)\values.obj" \
-	"$(INTDIR)\vars.obj" \
-	"..\include\obj\Release24\include.lib"
-
-"$(OUTDIR)\orange.pyd" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
-    $(LINK32) @<<
-  $(LINK32_FLAGS) $(LINK32_OBJS)
-<<
-
-SOURCE="$(InputPath)"
-PostBuild_Desc=UPXing Orange
-DS_POSTBUILD_DEP=$(INTDIR)\postbld.dep
-
-ALL : $(DS_POSTBUILD_DEP)
-
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-$(DS_POSTBUILD_DEP) : "include - Win32 Python 24" "$(OUTDIR)\orange.pyd"
-   del "..\..\24\orange.pyd*"
-	"c:\program files\upx" "obj\Release24\orange.pyd" -o "..\..\24\orange.pyd"
-	copy obj\Release24\orange.lib ..\..\24\lib\orange.lib
-	rem copy "obj\Release24\orange.pyd" "..\..\24\orange.pyd"
-	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
-
 !ENDIF 
 
 
@@ -1457,7 +1150,7 @@ $(DS_POSTBUILD_DEP) : "include - Win32 Python 24" "$(OUTDIR)\orange.pyd"
 !ENDIF 
 
 
-!IF "$(CFG)" == "Orange - Win32 Release" || "$(CFG)" == "Orange - Win32 Debug" || "$(CFG)" == "Orange - Win32 Release_Debug" || "$(CFG)" == "Orange - Win32 Python 24"
+!IF "$(CFG)" == "Orange - Win32 Release" || "$(CFG)" == "Orange - Win32 Debug" || "$(CFG)" == "Orange - Win32 Release_Debug"
 SOURCE=.\assistant.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
@@ -1473,12 +1166,6 @@ SOURCE=.\assistant.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\assistant.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\assistant.obj" : $(SOURCE) "$(INTDIR)"
@@ -1506,12 +1193,6 @@ SOURCE=.\assoc.cpp
 "$(INTDIR)\assoc.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\assoc.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\assoc_sparse.cpp
@@ -1529,12 +1210,6 @@ SOURCE=.\assoc_sparse.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\assoc_sparse.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\assoc_sparse.obj" : $(SOURCE) "$(INTDIR)"
@@ -1562,12 +1237,6 @@ SOURCE=.\basket.cpp
 "$(INTDIR)\basket.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\basket.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\basstat.cpp
@@ -1585,12 +1254,6 @@ SOURCE=.\basstat.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\basstat.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\basstat.obj" : $(SOURCE) "$(INTDIR)"
@@ -1618,12 +1281,6 @@ SOURCE=.\bayes.cpp
 "$(INTDIR)\bayes.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\bayes.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\boolcnt.cpp
@@ -1641,12 +1298,6 @@ SOURCE=.\boolcnt.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\boolcnt.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\boolcnt.obj" : $(SOURCE) "$(INTDIR)"
@@ -1674,12 +1325,6 @@ SOURCE=.\c4.5.cpp
 "$(INTDIR)\c4.5.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\c4.5.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\c45inter.cpp
@@ -1697,12 +1342,6 @@ SOURCE=.\c45inter.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\c45inter.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\c45inter.obj" : $(SOURCE) "$(INTDIR)"
@@ -1730,12 +1369,6 @@ SOURCE=.\calibrate.cpp
 "$(INTDIR)\calibrate.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\calibrate.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\callback.cpp
@@ -1753,12 +1386,6 @@ SOURCE=.\callback.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\callback.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\callback.obj" : $(SOURCE) "$(INTDIR)"
@@ -1786,12 +1413,6 @@ SOURCE=.\cartesian.cpp
 "$(INTDIR)\cartesian.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\cartesian.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\clas_gen.cpp
@@ -1809,12 +1430,6 @@ SOURCE=.\clas_gen.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\clas_gen.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\clas_gen.obj" : $(SOURCE) "$(INTDIR)"
@@ -1842,12 +1457,6 @@ SOURCE=.\classfromvar.cpp
 "$(INTDIR)\classfromvar.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\classfromvar.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\classifier.cpp
@@ -1865,12 +1474,6 @@ SOURCE=.\classifier.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\classifier.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\classifier.obj" : $(SOURCE) "$(INTDIR)"
@@ -1898,12 +1501,6 @@ SOURCE=.\cls_example.cpp
 "$(INTDIR)\cls_example.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\cls_example.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\cls_misc.cpp
@@ -1921,12 +1518,6 @@ SOURCE=.\cls_misc.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\cls_misc.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\cls_misc.obj" : $(SOURCE) "$(INTDIR)"
@@ -1966,16 +1557,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\cls_orange.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\cls_value.cpp
@@ -1993,12 +1574,6 @@ SOURCE=.\cls_value.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\cls_value.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\cls_value.obj" : $(SOURCE) "$(INTDIR)"
@@ -2026,12 +1601,6 @@ SOURCE=.\contingency.cpp
 "$(INTDIR)\contingency.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\contingency.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\converts.cpp
@@ -2049,12 +1618,6 @@ SOURCE=.\converts.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\converts.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\converts.obj" : $(SOURCE) "$(INTDIR)"
@@ -2082,12 +1645,6 @@ SOURCE=.\cost.cpp
 "$(INTDIR)\cost.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\cost.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\costwrapper.cpp
@@ -2105,12 +1662,6 @@ SOURCE=.\costwrapper.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\costwrapper.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\costwrapper.obj" : $(SOURCE) "$(INTDIR)"
@@ -2138,12 +1689,6 @@ SOURCE=.\decomposition.cpp
 "$(INTDIR)\decomposition.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\decomposition.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\dictproxy.cpp
@@ -2161,12 +1706,6 @@ SOURCE=.\dictproxy.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\dictproxy.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\dictproxy.obj" : $(SOURCE) "$(INTDIR)"
@@ -2194,12 +1733,6 @@ SOURCE=.\discretize.cpp
 "$(INTDIR)\discretize.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\discretize.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\dist_clustering.cpp
@@ -2217,12 +1750,6 @@ SOURCE=.\dist_clustering.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\dist_clustering.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\dist_clustering.obj" : $(SOURCE) "$(INTDIR)"
@@ -2250,12 +1777,6 @@ SOURCE=.\distance.cpp
 "$(INTDIR)\distance.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\distance.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\distance_dtw.cpp
@@ -2273,12 +1794,6 @@ SOURCE=.\distance_dtw.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\distance_dtw.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\distance_dtw.obj" : $(SOURCE) "$(INTDIR)"
@@ -2318,16 +1833,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\distancemap.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\distvars.cpp
@@ -2345,12 +1850,6 @@ SOURCE=.\distvars.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\distvars.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\distvars.obj" : $(SOURCE) "$(INTDIR)"
@@ -2378,12 +1877,6 @@ SOURCE=.\domain.cpp
 "$(INTDIR)\domain.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\domain.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\domaindepot.cpp
@@ -2401,12 +1894,6 @@ SOURCE=.\domaindepot.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\domaindepot.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\domaindepot.obj" : $(SOURCE) "$(INTDIR)"
@@ -2434,12 +1921,6 @@ SOURCE=.\errors.cpp
 "$(INTDIR)\errors.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\errors.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\estimateprob.cpp
@@ -2457,12 +1938,6 @@ SOURCE=.\estimateprob.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\estimateprob.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\estimateprob.obj" : $(SOURCE) "$(INTDIR)"
@@ -2490,12 +1965,6 @@ SOURCE=.\exampleclustering.cpp
 "$(INTDIR)\exampleclustering.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\exampleclustering.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\examplegen.cpp
@@ -2513,12 +1982,6 @@ SOURCE=.\examplegen.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\examplegen.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\examplegen.obj" : $(SOURCE) "$(INTDIR)"
@@ -2546,12 +2009,6 @@ SOURCE=.\examples.cpp
 "$(INTDIR)\examples.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\examples.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\excel.cpp
@@ -2569,12 +2026,6 @@ SOURCE=.\excel.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\excel.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\excel.obj" : $(SOURCE) "$(INTDIR)"
@@ -2602,12 +2053,6 @@ SOURCE=.\filegen.cpp
 "$(INTDIR)\filegen.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\filegen.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\filter.cpp
@@ -2625,12 +2070,6 @@ SOURCE=.\filter.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\filter.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\filter.obj" : $(SOURCE) "$(INTDIR)"
@@ -2658,12 +2097,6 @@ SOURCE=.\functions.cpp
 "$(INTDIR)\functions.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\functions.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\garbage.cpp
@@ -2681,12 +2114,6 @@ SOURCE=.\garbage.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\garbage.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\garbage.obj" : $(SOURCE) "$(INTDIR)"
@@ -2714,12 +2141,6 @@ SOURCE=.\getarg.cpp
 "$(INTDIR)\getarg.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\getarg.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\graph.cpp
@@ -2737,12 +2158,6 @@ SOURCE=.\graph.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\graph.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\graph.obj" : $(SOURCE) "$(INTDIR)"
@@ -2770,12 +2185,6 @@ SOURCE=.\gslconversions.cpp
 "$(INTDIR)\gslconversions.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\gslconversions.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\hclust.cpp
@@ -2793,12 +2202,6 @@ SOURCE=.\hclust.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\hclust.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\hclust.obj" : $(SOURCE) "$(INTDIR)"
@@ -2839,16 +2242,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\imputation.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\induce.cpp
@@ -2871,12 +2264,6 @@ SOURCE=.\induce.cpp
 "$(INTDIR)\induce.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\induce.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\jit_linker.cpp
@@ -2894,12 +2281,6 @@ SOURCE=.\jit_linker.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\jit_linker.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\jit_linker.obj" : $(SOURCE) "$(INTDIR)"
@@ -2939,16 +2320,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /I "../include" /I "ppp" /I "px" /I "$(PYTH
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\knn.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\learn.cpp
@@ -2966,12 +2337,6 @@ SOURCE=.\learn.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\learn.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\learn.obj" : $(SOURCE) "$(INTDIR)"
@@ -3011,16 +2376,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\lib_components.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\lib_io.cpp
@@ -3038,12 +2393,6 @@ SOURCE=.\lib_io.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\lib_io.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\lib_io.obj" : $(SOURCE) "$(INTDIR)"
@@ -3076,16 +2425,6 @@ CPP_SWITCHES=/nologo /MDd /W3 /Gm /GR /GX /Zi /Od /I "../include" /I "ppp" /I "p
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
 CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\lib_kernel.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
 
 "$(INTDIR)\lib_kernel.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -3127,16 +2466,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\lib_learner.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\lib_preprocess.cpp
@@ -3154,12 +2483,6 @@ SOURCE=.\lib_preprocess.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\lib_preprocess.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\lib_preprocess.obj" : $(SOURCE) "$(INTDIR)"
@@ -3199,16 +2522,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\lib_vectors.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\linreg.cpp
@@ -3226,12 +2539,6 @@ SOURCE=.\linreg.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\linreg.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\linreg.obj" : $(SOURCE) "$(INTDIR)"
@@ -3259,12 +2566,6 @@ SOURCE=.\logfit.cpp
 "$(INTDIR)\logfit.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\logfit.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\logistic.cpp
@@ -3282,12 +2583,6 @@ SOURCE=.\logistic.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\logistic.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\logistic.obj" : $(SOURCE) "$(INTDIR)"
@@ -3315,12 +2610,6 @@ SOURCE=.\logreg.cpp
 "$(INTDIR)\logreg.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\logreg.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\lookup.cpp
@@ -3338,12 +2627,6 @@ SOURCE=.\lookup.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\lookup.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\lookup.obj" : $(SOURCE) "$(INTDIR)"
@@ -3371,12 +2654,6 @@ SOURCE=.\lsq.cpp
 "$(INTDIR)\lsq.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\lsq.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\lwr.cpp
@@ -3394,12 +2671,6 @@ SOURCE=.\lwr.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\lwr.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\lwr.obj" : $(SOURCE) "$(INTDIR)"
@@ -3427,12 +2698,6 @@ SOURCE=.\majority.cpp
 "$(INTDIR)\majority.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\majority.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\measures.cpp
@@ -3450,12 +2715,6 @@ SOURCE=.\measures.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\measures.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\measures.obj" : $(SOURCE) "$(INTDIR)"
@@ -3483,12 +2742,6 @@ SOURCE=.\meta.cpp
 "$(INTDIR)\meta.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\meta.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\minimal_complexity.cpp
@@ -3506,12 +2759,6 @@ SOURCE=.\minimal_complexity.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\minimal_complexity.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\minimal_complexity.obj" : $(SOURCE) "$(INTDIR)"
@@ -3539,12 +2786,6 @@ SOURCE=.\minimal_error.cpp
 "$(INTDIR)\minimal_error.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\minimal_error.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\nearest.cpp
@@ -3562,12 +2803,6 @@ SOURCE=.\nearest.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\nearest.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\nearest.obj" : $(SOURCE) "$(INTDIR)"
@@ -3595,12 +2830,6 @@ SOURCE=.\numeric_interface.cpp
 "$(INTDIR)\numeric_interface.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\numeric_interface.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\orange.cpp
@@ -3618,12 +2847,6 @@ SOURCE=.\orange.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\orange.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\orange.obj" : $(SOURCE) "$(INTDIR)"
@@ -3651,12 +2874,6 @@ SOURCE=.\orvector.cpp
 "$(INTDIR)\orvector.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\orvector.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\pnn.cpp
@@ -3674,12 +2891,6 @@ SOURCE=.\pnn.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\pnn.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\pnn.obj" : $(SOURCE) "$(INTDIR)"
@@ -3707,12 +2918,6 @@ SOURCE=.\preprocessors.cpp
 "$(INTDIR)\preprocessors.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\preprocessors.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\progress.cpp
@@ -3730,12 +2935,6 @@ SOURCE=.\progress.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\progress.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\progress.obj" : $(SOURCE) "$(INTDIR)"
@@ -3763,12 +2962,6 @@ SOURCE=.\pythonvars.cpp
 "$(INTDIR)\pythonvars.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\pythonvars.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\r_imports.cpp
@@ -3786,12 +2979,6 @@ SOURCE=.\r_imports.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\r_imports.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\r_imports.obj" : $(SOURCE) "$(INTDIR)"
@@ -3819,12 +3006,6 @@ SOURCE=.\random.cpp
 "$(INTDIR)\random.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\random.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\rconversions.cpp
@@ -3847,12 +3028,6 @@ SOURCE=.\rconversions.cpp
 "$(INTDIR)\rconversions.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\rconversions.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\readdata.cpp
@@ -3870,12 +3045,6 @@ SOURCE=.\readdata.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\readdata.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\readdata.obj" : $(SOURCE) "$(INTDIR)"
@@ -3915,16 +3084,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\redundancy.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\retisinter.cpp
@@ -3942,12 +3101,6 @@ SOURCE=.\retisinter.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\retisinter.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\retisinter.obj" : $(SOURCE) "$(INTDIR)"
@@ -3987,16 +3140,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\root.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\rulelearner.cpp
@@ -4014,12 +3157,6 @@ SOURCE=.\rulelearner.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\rulelearner.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\rulelearner.obj" : $(SOURCE) "$(INTDIR)"
@@ -4047,12 +3184,6 @@ SOURCE=.\spec_contingency.cpp
 "$(INTDIR)\spec_contingency.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\spec_contingency.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\spec_gen.cpp
@@ -4070,12 +3201,6 @@ SOURCE=.\spec_gen.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\spec_gen.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\spec_gen.obj" : $(SOURCE) "$(INTDIR)"
@@ -4103,12 +3228,6 @@ SOURCE=.\stringvars.cpp
 "$(INTDIR)\stringvars.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\stringvars.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\subsets.cpp
@@ -4126,12 +3245,6 @@ SOURCE=.\subsets.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\subsets.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\subsets.obj" : $(SOURCE) "$(INTDIR)"
@@ -4159,12 +3272,6 @@ SOURCE=.\survival.cpp
 "$(INTDIR)\survival.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\survival.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\svm.cpp
@@ -4187,12 +3294,6 @@ SOURCE=.\svm.cpp
 "$(INTDIR)\svm.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\svm.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\symmatrix.cpp
@@ -4210,12 +3311,6 @@ SOURCE=.\symmatrix.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\symmatrix.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\symmatrix.obj" : $(SOURCE) "$(INTDIR)"
@@ -4255,16 +3350,6 @@ CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(
 <<
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-CPP_SWITCHES=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "px" /I "ppp" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /Fp"$(INTDIR)\Orange.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /Zm700 /c 
-
-"$(INTDIR)\tabdelim.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
 !ENDIF 
 
 SOURCE=.\table.cpp
@@ -4282,12 +3367,6 @@ SOURCE=.\table.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\table.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\table.obj" : $(SOURCE) "$(INTDIR)"
@@ -4315,12 +3394,6 @@ SOURCE=.\tdidt.cpp
 "$(INTDIR)\tdidt.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\tdidt.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\tdidt_split.cpp
@@ -4338,12 +3411,6 @@ SOURCE=.\tdidt_split.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\tdidt_split.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\tdidt_split.obj" : $(SOURCE) "$(INTDIR)"
@@ -4371,12 +3438,6 @@ SOURCE=.\tdidt_stop.cpp
 "$(INTDIR)\tdidt_stop.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\tdidt_stop.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\transdomain.cpp
@@ -4394,12 +3455,6 @@ SOURCE=.\transdomain.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\transdomain.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\transdomain.obj" : $(SOURCE) "$(INTDIR)"
@@ -4427,12 +3482,6 @@ SOURCE=.\transval.cpp
 "$(INTDIR)\transval.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\transval.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\trindex.cpp
@@ -4450,12 +3499,6 @@ SOURCE=.\trindex.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\trindex.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\trindex.obj" : $(SOURCE) "$(INTDIR)"
@@ -4483,12 +3526,6 @@ SOURCE=.\valuelisttemplate.cpp
 "$(INTDIR)\valuelisttemplate.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\valuelisttemplate.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\values.cpp
@@ -4511,12 +3548,6 @@ SOURCE=.\values.cpp
 "$(INTDIR)\values.obj" : $(SOURCE) "$(INTDIR)"
 
 
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-
-"$(INTDIR)\values.obj" : $(SOURCE) "$(INTDIR)"
-
-
 !ENDIF 
 
 SOURCE=.\vars.cpp
@@ -4534,12 +3565,6 @@ SOURCE=.\vars.cpp
 
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-
-"$(INTDIR)\vars.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
 
 
 "$(INTDIR)\vars.obj" : $(SOURCE) "$(INTDIR)"
@@ -4581,18 +3606,6 @@ SOURCE=.\vars.cpp
 "include - Win32 Release_DebugCLEAN" : 
    cd "\D\ai\Orange\source\include"
    $(MAKE) /$(MAKEFLAGS) /F .\include.mak CFG="include - Win32 Release_Debug" RECURSE=1 CLEAN 
-   cd "..\orange"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Python 24"
-
-"include - Win32 Python 24" : 
-   cd "\D\ai\Orange\source\include"
-   $(MAKE) /$(MAKEFLAGS) /F .\include.mak CFG="include - Win32 Python 24" 
-   cd "..\orange"
-
-"include - Win32 Python 24CLEAN" : 
-   cd "\D\ai\Orange\source\include"
-   $(MAKE) /$(MAKEFLAGS) /F .\include.mak CFG="include - Win32 Python 24" RECURSE=1 CLEAN 
    cd "..\orange"
 
 !ENDIF 

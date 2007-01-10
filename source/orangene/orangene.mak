@@ -4,7 +4,7 @@ CFG=orangene - Win32 Release
 !MESSAGE No configuration specified. Defaulting to orangene - Win32 Release.
 !ENDIF 
 
-!IF "$(CFG)" != "orangene - Win32 Release" && "$(CFG)" != "orangene - Win32 Debug" && "$(CFG)" != "orangene - Win32 Release_Debug" && "$(CFG)" != "orangene - Win32 Python 24"
+!IF "$(CFG)" != "orangene - Win32 Release" && "$(CFG)" != "orangene - Win32 Debug" && "$(CFG)" != "orangene - Win32 Release_Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
@@ -16,7 +16,6 @@ CFG=orangene - Win32 Release
 !MESSAGE "orangene - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "orangene - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "orangene - Win32 Release_Debug" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "orangene - Win32 Python 24" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 !ERROR An invalid configuration is specified.
 !ENDIF 
@@ -279,94 +278,6 @@ $(DS_POSTBUILD_DEP) : "..\..\orangene.pyd"
    copy obj\Release\orangene.lib ..\..\lib\orangene.lib
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
-!ELSEIF  "$(CFG)" == "orangene - Win32 Python 24"
-
-OUTDIR=.\obj/Release24
-INTDIR=.\obj/Release24
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-ALL : "$(OUTDIR)\orangene.pyd"
-
-
-CLEAN :
-	-@erase "$(INTDIR)\heatmap.obj"
-	-@erase "$(INTDIR)\orangene.obj"
-	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(OUTDIR)\orangene.exp"
-	-@erase "$(OUTDIR)\orangene.lib"
-	-@erase "$(OUTDIR)\orangene.pyd"
-
-"$(OUTDIR)" :
-    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
-
-CPP=cl.exe
-CPP_PROJ=/nologo /MD /W3 /GR /GX /O2 /I "../include" /I "../orange" /I "../orange/px" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGENE_EXPORTS" /Fp"$(INTDIR)\orangene.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
-MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
-RSC=rc.exe
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\orangene.bsc" 
-BSC32_SBRS= \
-	
-LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /pdb:"$(OUTDIR)\orangene.pdb" /machine:I386 /out:"$(OUTDIR)\orangene.pyd" /implib:"$(OUTDIR)\orangene.lib" /libpath:"../../24/lib" /libpath:"$(PYTHON24)\libs" 
-LINK32_OBJS= \
-	"$(INTDIR)\heatmap.obj" \
-	"$(INTDIR)\orangene.obj"
-
-"$(OUTDIR)\orangene.pyd" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
-    $(LINK32) @<<
-  $(LINK32_FLAGS) $(LINK32_OBJS)
-<<
-
-SOURCE="$(InputPath)"
-DS_POSTBUILD_DEP=$(INTDIR)\postbld.dep
-
-ALL : $(DS_POSTBUILD_DEP)
-
-# Begin Custom Macros
-OutDir=.\obj/Release24
-# End Custom Macros
-
-$(DS_POSTBUILD_DEP) : "$(OUTDIR)\orangene.pyd"
-   del "..\..\24\orangene.pyd*"
-	"c:\program files\upx" "obj\release24\orangene.pyd" -o "..\..\24\orangene.pyd"
-	copy obj\Release24\orangene.lib ..\..\24\lib\orangene.lib
-	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
-
 !ENDIF 
 
 
@@ -379,7 +290,7 @@ $(DS_POSTBUILD_DEP) : "$(OUTDIR)\orangene.pyd"
 !ENDIF 
 
 
-!IF "$(CFG)" == "orangene - Win32 Release" || "$(CFG)" == "orangene - Win32 Debug" || "$(CFG)" == "orangene - Win32 Release_Debug" || "$(CFG)" == "orangene - Win32 Python 24"
+!IF "$(CFG)" == "orangene - Win32 Release" || "$(CFG)" == "orangene - Win32 Debug" || "$(CFG)" == "orangene - Win32 Release_Debug"
 SOURCE=.\heatmap.cpp
 
 "$(INTDIR)\heatmap.obj" : $(SOURCE) "$(INTDIR)"
