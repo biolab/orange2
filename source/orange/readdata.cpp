@@ -45,7 +45,7 @@
 #include <string.h>
 
 
-#ifdef _MSC_VER
+#ifdef INCLUDE_EXCEL
   TExampleTable *readExcelFile(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 #endif
 
@@ -122,7 +122,7 @@ TExampleGenerator *readGenerator(char *filename, PVarList knownVars, TMetaVector
                                                                knownVars, knownDomain, dontCheckStored, dontStore);
     }
 
-    #ifdef _MSC_VER
+    #ifdef INCLUDE_EXCEL
     if ((hash-ext==4) && !strncmp(ext, ".xls", 4))
       return readExcelFile(filename, hash, knownVars, knownDomain, dontCheckStored, dontStore);
     #endif
@@ -169,7 +169,7 @@ TExampleGenerator *readGenerator(char *filename, PVarList knownVars, TMetaVector
   CHECKFF(".names", C45);
   CHECKFF(".rdo", RETIS);
 
-  #ifdef _MSC_VER
+  #ifdef INCLUDE_EXCEL
     if (*hash) {
       *hash = 0;
       CHECKFF(".xls", EXCEL);
@@ -239,7 +239,7 @@ TExampleGenerator *readGenerator(char *filename, PVarList knownVars, TMetaVector
                                                                knownVars, knownDomain, dontCheckStored, dontStore);
     }
 
-    #ifdef _MSC_VER
+    #ifdef INCLUDE_EXCEL
     case EXCEL:
       return readExcelFile(filename, hash, knownVars, knownDomain, dontCheckStored, dontStore);
     #endif

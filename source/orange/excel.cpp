@@ -20,7 +20,7 @@
 */
 
 
-#ifdef _MSC_VER
+#ifdef INCLUDE_EXCEL
 
 #include "table.hpp"
 #include "stringvars.hpp"
