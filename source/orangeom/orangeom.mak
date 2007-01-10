@@ -139,7 +139,7 @@ OutDir=.\obj/Release
 # End Custom Macros
 
 $(DS_POSTBUILD_DEP) : "$(OUTDIR)\orangeom.pyd"
-   upx.bat orangeom
+   ..\upx.bat orangeom
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
