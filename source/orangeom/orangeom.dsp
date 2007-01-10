@@ -262,6 +262,10 @@ SOURCE=.\graphDrawing.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\graphoptimization.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\mds.cpp
 
 !IF  "$(CFG)" == "orangeom - Win32 Release"
