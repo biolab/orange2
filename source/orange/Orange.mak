@@ -202,7 +202,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\Orange.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=/verbose /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(PYTHON)\libs" /WARN:0 
+LINK32_FLAGS=/nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\orange.pyd" /implib:"$(OUTDIR)\orange.lib" /libpath:"$(PYTHON)\libs" /WARN:0 
 LINK32_OBJS= \
 	"$(INTDIR)\assistant.obj" \
 	"$(INTDIR)\assoc.obj" \
@@ -326,7 +326,7 @@ OutDir=.\obj/Release
 # End Custom Macros
 
 $(DS_POSTBUILD_DEP) : "include - Win32 Release" "$(OUTDIR)\orange.pyd"
-   upx.bat orange
+   ..\upx.bat orange
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
