@@ -1,4 +1,4 @@
-#include "graphoptimization.ppp"
+#include "ppp/graphoptimization.ppp"
 #include "graph.hpp"
 
 TGraphOptimization::TGraphOptimization(int _nVertices, double **_pos, int _nLinks, int **_links)
@@ -14,6 +14,12 @@ TGraphOptimization::TGraphOptimization(int _nVertices, double **_pos, int _nLink
 	height = 1000;
 	temperature = sqrt((double)(width*width + height*height)) / 10;
 }
+
+#if _MSC_VER < 1300
+template<class T>
+inline T &min(const T&x, const T&y)
+{ return x<y ? x : y; }
+#endif
 
 void TGraphOptimization::setData(int _nVertices, double **_pos, int _nLinks, int **_links)
 {
