@@ -120,9 +120,7 @@ OutDir=.\obj/Release
 # End Custom Macros
 
 $(DS_POSTBUILD_DEP) : "include - Win32 Release" "$(OUTDIR)\statc.pyd"
-   del "..\..\statc.pyd"
-	"c:\program files\upx" "obj\release\statc.pyd" -o "..\..\statc.pyd"
-	copy obj\Release\statc.lib ..\..\lib\statc.lib
+   upx.bat statc
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
 !ELSEIF  "$(CFG)" == "Statc - Win32 Debug"

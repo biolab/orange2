@@ -109,9 +109,7 @@ OutDir=.\obj\release
 # End Custom Macros
 
 $(DS_POSTBUILD_DEP) : "$(OUTDIR)\orangene.pyd"
-   del "..\..\orangene.pyd"
-	"c:\program files\upx" "obj\release\orangene.pyd" -o "..\..\orangene.pyd"
-	copy obj\Release\orangene.lib ..\..\lib\orangene.lib
+   upx.bat orangene
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
 !ELSEIF  "$(CFG)" == "orangene - Win32 Debug"

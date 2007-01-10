@@ -20,7 +20,6 @@ CFG=orangene - Win32 Release
 !MESSAGE "orangene - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "orangene - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "orangene - Win32 Release_Debug" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "orangene - Win32 Python 24" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -55,7 +54,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"obj\release\orangene.pyd" /libpath:"../../lib" /libpath:"$(PYTHON)\libs"
+# ADD LINK32 /nologo /dll /pdb:none /machine:I386 /out:"obj\release\orangene.pyd" /libpath:"../../lib" /libpath:"$(PYTHON)\libs"
 # SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
@@ -123,39 +122,6 @@ SOURCE="$(InputPath)"
 PostBuild_Cmds=copy obj\Release\orangene.lib ..\..\lib\orangene.lib
 # End Special Build Tool
 
-!ELSEIF  "$(CFG)" == "orangene - Win32 Python 24"
-
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 0
-# PROP BASE Output_Dir "orangene___Win32_Python_24"
-# PROP BASE Intermediate_Dir "orangene___Win32_Python_24"
-# PROP BASE Ignore_Export_Lib 0
-# PROP BASE Target_Dir ""
-# PROP Use_MFC 0
-# PROP Use_Debug_Libraries 0
-# PROP Output_Dir "obj/Release24"
-# PROP Intermediate_Dir "obj/Release24"
-# PROP Ignore_Export_Lib 0
-# PROP Target_Dir ""
-# ADD BASE CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "$(PYTHON)\include" /I "../orange" /I "../orange/px" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGENE_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "../orange" /I "../orange/px" /I "$(PYTHON24)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGENE_EXPORTS" /YX /FD /c
-# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
-# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
-# ADD BASE RSC /l 0x409 /d "NDEBUG"
-# ADD RSC /l 0x409 /d "NDEBUG"
-BSC32=bscmake.exe
-# ADD BASE BSC32 /nologo
-# ADD BSC32 /nologo
-LINK32=link.exe
-# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"obj\release\orangene.pyd" /libpath:"../../lib" /libpath:"$(PYTHON)\libs"
-# SUBTRACT BASE LINK32 /debug
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"obj\release24\orangene.pyd" /libpath:"../../24/lib" /libpath:"$(PYTHON24)\libs"
-# SUBTRACT LINK32 /debug
-# Begin Special Build Tool
-SOURCE="$(InputPath)"
-PostBuild_Cmds=del "..\..\24\orangene.pyd*"	"c:\program files\upx" "obj\release24\orangene.pyd" -o "..\..\24\orangene.pyd"	copy obj\Release24\orangene.lib ..\..\24\lib\orangene.lib
-# End Special Build Tool
-
 !ENDIF 
 
 # Begin Target
@@ -163,7 +129,6 @@ PostBuild_Cmds=del "..\..\24\orangene.pyd*"	"c:\program files\upx" "obj\release2
 # Name "orangene - Win32 Release"
 # Name "orangene - Win32 Debug"
 # Name "orangene - Win32 Release_Debug"
-# Name "orangene - Win32 Python 24"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"

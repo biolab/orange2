@@ -139,9 +139,7 @@ OutDir=.\obj/Release
 # End Custom Macros
 
 $(DS_POSTBUILD_DEP) : "$(OUTDIR)\orangeom.pyd"
-   del ..\..\orangeom.pyd
-	"c:\program files\upx" "obj\release\orangeom.pyd" -o "..\..\orangeom.pyd"
-	copy obj\Release\orangeom.lib ..\..\lib\orangeom.lib
+   upx.bat orangeom
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"

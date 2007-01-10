@@ -120,9 +120,7 @@ OutDir=.\obj/Release
 # End Custom Macros
 
 $(DS_POSTBUILD_DEP) : "include - Win32 Release" "$(OUTDIR)\corn.pyd"
-   del "..\..\corn.pyd"
-	"c:\program files\upx" "obj\Release\corn.pyd" -o "..\..\corn.pyd"
-	copy obj\Release\corn.lib ..\..\lib\corn.lib
+   ..\upx.bat corn
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
 !ELSEIF  "$(CFG)" == "Corn - Win32 Debug"
