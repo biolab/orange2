@@ -96,7 +96,6 @@ CLEAN :
 	-@erase "$(INTDIR)\graph.obj"
 	-@erase "$(INTDIR)\gslconversions.obj"
 	-@erase "$(INTDIR)\hclust.obj"
-	-@erase "$(INTDIR)\im_col_assess.obj"
 	-@erase "$(INTDIR)\imputation.obj"
 	-@erase "$(INTDIR)\induce.obj"
 	-@erase "$(INTDIR)\jit_linker.obj"
@@ -309,7 +308,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\valuelisttemplate.obj" \
 	"$(INTDIR)\values.obj" \
 	"$(INTDIR)\vars.obj" \
-	"$(INTDIR)\im_col_assess.obj" \
 	"..\include\obj\Release\include.lib"
 
 "$(OUTDIR)\orange.pyd" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -448,8 +446,6 @@ CLEAN :
 	-@erase "$(INTDIR)\gslconversions.sbr"
 	-@erase "$(INTDIR)\hclust.obj"
 	-@erase "$(INTDIR)\hclust.sbr"
-	-@erase "$(INTDIR)\im_col_assess.obj"
-	-@erase "$(INTDIR)\im_col_assess.sbr"
 	-@erase "$(INTDIR)\imputation.obj"
 	-@erase "$(INTDIR)\imputation.sbr"
 	-@erase "$(INTDIR)\induce.obj"
@@ -718,8 +714,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\trindex.sbr" \
 	"$(INTDIR)\valuelisttemplate.sbr" \
 	"$(INTDIR)\values.sbr" \
-	"$(INTDIR)\vars.sbr" \
-	"$(INTDIR)\im_col_assess.sbr"
+	"$(INTDIR)\vars.sbr"
 
 "$(OUTDIR)\Orange.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -833,7 +828,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\valuelisttemplate.obj" \
 	"$(INTDIR)\values.obj" \
 	"$(INTDIR)\vars.obj" \
-	"$(INTDIR)\im_col_assess.obj" \
 	"..\include\obj\Debug\include.lib"
 
 "..\..\orange_d.pyd" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -2196,24 +2190,6 @@ SOURCE=.\hclust.cpp
 
 "$(INTDIR)\hclust.obj" : $(SOURCE) "$(INTDIR)"
 
-
-!ENDIF 
-
-SOURCE=.\im_col_assess.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-
-"$(INTDIR)\im_col_assess.obj" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-
-"$(INTDIR)\im_col_assess.obj"	"$(INTDIR)\im_col_assess.sbr" : $(SOURCE) "$(INTDIR)"
-
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
 !ENDIF 
 
