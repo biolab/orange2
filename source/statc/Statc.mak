@@ -100,7 +100,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\Statc.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\statc.pyd" /implib:"$(OUTDIR)\statc.lib" /libpath:"../../lib" /libpath:"$(PYTHON)\libs" 
+LINK32_FLAGS=/nologo /dll /pdb:none /machine:I386 /out:"$(OUTDIR)\statc.pyd" /implib:"$(OUTDIR)\statc.lib" /libpath:"../../lib" /libpath:"$(PYTHON)\libs" 
 LINK32_OBJS= \
 	"$(INTDIR)\stat.obj" \
 	"$(INTDIR)\statc.obj" \
