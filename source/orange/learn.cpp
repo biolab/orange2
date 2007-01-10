@@ -20,6 +20,9 @@
 */
 
 
+// to include Python.h before STL defines a template set (doesn't work with VC 6.0)
+#include "garbage.hpp" 
+
 #include "domain.hpp"
 #include "distvars.hpp"
 #include "contingency.hpp"
