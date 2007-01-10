@@ -1,17 +1,11 @@
 pushd
-c:
-mkdir \compileTemp
-rem del /yqfsx c:\compileTemp
-mkdir \compileTemp
-cd \compileTemp
+if not exist c:\compileTemp mkdir c:\compileTemp
 
-rem cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS checkout -A -- source
+for %ver in (23 24 25) call nmakeall.bat %ver
 
-cd source
-call build-24.bat 
 rem > c:\compileTemp\c.log
 if ERRORLEVEL == 0 goto ok
-sendmail "tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si" "win: error compiling Orange" @c:\compileTemp\c.log
+rem sendmail "tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si" "win: error compiling Orange" @c:\compileTemp\c.log
 goto godown
 
 :ok
