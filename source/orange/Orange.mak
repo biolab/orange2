@@ -326,10 +326,7 @@ OutDir=.\obj/Release
 # End Custom Macros
 
 $(DS_POSTBUILD_DEP) : "include - Win32 Release" "$(OUTDIR)\orange.pyd"
-   del "..\..\..\orange\orange.pyd"
-	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\..\orange\orange.pyd"
-	copy obj\Release\orange.lib ..\..\lib\orange.lib
-	rem copy "obj\Release\orange.pyd" "..\..\orange.pyd"
+   upx.bat orange
 	echo Helper for Post-build step > "$(DS_POSTBUILD_DEP)"
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
