@@ -160,4 +160,7 @@ import pickle
 classes["TAttributedFloatList"] = ClassDefinition("TAttributedFloatList", "TFloatList")
 classes["TAttributedBoolList"] = ClassDefinition("TAttributedBoolList", "TBoolList")
 
+import os
+if not os.path.exists("../orange/ppp"):
+  os.mkdir("../orange/ppp")
 pickle.dump(classes, file("../orange/ppp/lists", "wt"))
