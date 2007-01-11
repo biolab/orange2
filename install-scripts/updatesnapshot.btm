@@ -1,8 +1,8 @@
 call updateSetConstants__.btm
 
 set DOCUMENTATION=orange-doc-snap-%daystr.zip
-set WIN_SNAPSHOT=orange-win-snap-%daystr.exe
-set WIN_GENOMICS_SNAPSHOT=orange-win-genomics-snap-%daystr.exe
+set WIN_SNAPSHOT=orange-win-snap-%daystr
+set WIN_GENOMICS_SNAPSHOT=orange-win-genomics-snap-%daystr
 set PLINK_SOURCE_SNAPSHOT=orange-source-snap-%daystr.tgz
 set PLINK_SOURCE_GENOMICS_SNAPSHOT=orange-source-genomics-snap-%daystr.tgz
 
@@ -35,6 +35,10 @@ cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD genomics
 cd orange
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -kb -r HEAD source
 
+for %pyver in (%PYTHONVERSIONS) (
+  if not exist %pyver mkdir %pyver
+  copy c:\compiled\%pyver %pyver
+)
 
 rem ************************************************
 rem *** PREPARE THE DOCUMENTATION SNAPSHOT
@@ -64,10 +68,14 @@ python removeCVS.py %SNAPSHOTDIR
 del %DOWNLOADDIR\orange-win-snap-*.exe
 del %DOWNLOADDIR\orange-win-genomics-snap-*.exe
 
-nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
-nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
-copy %DOWNLOADDIR\%WIN_SNAPSHOT %DOWNLOADDIR\orange-snapshot.exe
-rem del snapshotfiles_*.inc
+for %pyver in (%PYTHONVERSIONS) do (
+  set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
+  set COMMON_NSI_OPTIONS=/DORANGEDIR=%SNAPSHOTDIR\orange  /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles /DPYVER=%pyver /DNPYVER=%npver install3.nsi
+  nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
+  nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
+  copy %DOWNLOADDIR\%WIN_SNAPSHOT-py%npver.exe %DOWNLOADDIR\orange-snapshot-py%npver.exe
+  rem del snapshotfiles_*.inc
+)
 
 rem del %DOWNLOADDIR\orange-source-snap-*.zip
 rem cdd %SNAPSHOTDIR

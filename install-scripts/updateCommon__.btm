@@ -28,8 +28,8 @@ rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f
 rem cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS update -r stable -f
 
-for %pyver in %PYTHONVERSIONS (
-  if not exist %pyver mkdir %pyver %+
+for %pyver in (%PYTHONVERSIONS) (
+  if not exist %pyver mkdir %pyver
   copy c:\compiled\%pyver %pyver
 )
 
@@ -40,11 +40,12 @@ rem *** COMPILE NEW INSTALLATIONS
 cdd %SCRIPTDIR
 python buildInstFileList.py %STABLEDIR files
 
-set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files install3.nsi
 
-for %pyver in %PYTHONVERSIONS (
-nsis /Onsis_standard.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN-py%pyver.exe" /DPYVER=%pyver %COMMON_NSI_OPTIONS %+
-nsis /Onsis_complete.log /DCOMPLETE /DOUTFILENAME="%DOWNLOADDIR"\%WIN_PYTHON-py%pyver.exe /DPYVER=%pyver %COMMON_NSI_OPTIONS
+for %pyver in (%PYTHONVERSIONS) do (
+set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
+set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files /DPYVER=%pyver /DNPYVER=%npver install3.nsi
+nsis /Onsis_standard-py%npver.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
+nsis /Onsis_complete-py%npver.log /DCOMPLETE /DOUTFILENAME="%DOWNLOADDIR"\%WIN_PYTHON-py%npver.exe %COMMON_NSI_OPTIONS
 ) 
 
 pushd

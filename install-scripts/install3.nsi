@@ -29,6 +29,9 @@ UninstallIcon OrangeInstall.ico
 !endif
 !endif
 
+!define PYFILENAME python-${NPYVER}.msi
+!define PYWINFILENAME pywin32-210.win32-py${NPYVER}.exe
+
 ; !define INCLUDEGENOMICS
 
 !ifdef OUTFILENAME
@@ -43,7 +46,7 @@ OutFile "orange-temp.exe"
 licensedata license.txt
 licensetext "Acknowledgments and License Agreement"
 
-; InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" ""
+; InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange" ""
 
 AutoCloseWindow true
 ShowInstDetails nevershow
@@ -69,21 +72,21 @@ Page instfiles
 	!ifdef INCLUDEPYQT
 		Section "PyQt" SECPYQT
 			SetOutPath $PythonDir\lib\site-packages
-			File /r pyqt\*.*
+			File /r 3rdparty-${PYVER}\pyqt\*.*
 		SectionEnd
 	!endif
 
 	!ifdef INCLUDEPYQWT
 		Section "PyQwt" SECPYQWT
 			SetOutPath $PythonDir\lib\site-packages
-			File /r qwt
+			File /r 3rdparty-${PYVER}\qwt
 		SectionEnd
 	!endif
 
 	!ifdef INCLUDENUMERIC
 		Section "Numeric Python" SECNUMERIC
 			SetOutPath $PythonDir\lib\site-packages
-			File /r numeric
+			File /r 3rdparty-${PYVER}\numeric
 			File various\Numeric.pth
 		SectionEnd
 	!endif
@@ -228,11 +231,11 @@ Section ""
 ;	SetShellVarContext current
 
 	${If} $SingleUser = 0
-		WriteRegStr HKLM "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
+		WriteRegStr HKLM "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
 		WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
 		WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
 	${Else}
-		WriteRegStr HKCU "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
+		WriteRegStr HKCU "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
 		WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
 		WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
 	${Endif}
@@ -256,12 +259,12 @@ Section Uninstall
 	RmDir /R "$SMPROGRAMS\Orange"
 ;	SetShellVarContext current
 	
-	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
+	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\${NPYVER}\InstallPath ""
 	${If} $PythonDir != ""
-		DeleteRegKey HKLM "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"
+		DeleteRegKey HKLM "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange"
 		DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Orange"
 	${Else}
-		DeleteRegKey HKCU "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"
+		DeleteRegKey HKCU "SOFTWARE\Python\PythonCore\${NPYVER}\PythonPath\Orange"
 		DeleteRegKey HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Orange"
 	${Endif}
 	
@@ -305,9 +308,9 @@ SectionEnd
 Function .onGUIInit
 	StrCpy $PythonOnDesktop 0
 
-	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
+	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\${NPYVER}\InstallPath ""
 	${If} $PythonDir == ""
-		ReadRegStr $PythonDir HKCU Software\Python\PythonCore\2.3\InstallPath ""
+		ReadRegStr $PythonDir HKCU Software\Python\PythonCore\${NPYVER}\InstallPath ""
         StrCpy $SingleUser 1
 	${Else}
 		StrCpy $SingleUser 0
@@ -316,19 +319,27 @@ Function .onGUIInit
 	${If} $PythonDir == ""
 		!ifdef INCLUDEPYTHON
 		  askpython:
-			MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python (ver 2.3.5)$\r$\nOrange installation will continue after you finish installing Python." IDOK installpython
+			MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python ${NPYVER}$\r$\nOrange installation will continue after you finish installing Python." IDOK installpython
 			MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython
 			Quit
 		
 		  installpython:
 			SetOutPath $DESKTOP
-			File various\Python-2.3.5.exe
 			StrCpy $PythonOnDesktop 1
-			ExecWait "$DESKTOP\Python-2.3.5.exe"
+			!if ${PYVER} == 23
+                File 3rdparty-23\Python-2.3.5.exe
+				ExecWait "$DESKTOP\Python-2.3.5.exe"
+			!else
+				File 3rdparty-${PYVER}\${PYFILENAME}
+				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" /ADDLOCAL=Extensions,Documentation ALLUSERS=1 /Qb-' $0
+				${If} $0 > 0
+					ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" /ADDLOCAL=Extensions,Documentation /Qb-' $0
+                ${EndIf}
+            !endif
 
-			ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
+			ReadRegStr $PythonDir HKLM Software\Python\PythonCore\${NPYVER}\InstallPath ""
 			${If} $PythonDir == ""
-			    ReadRegStr $PythonDir HKCU Software\Python\PythonCore\2.3\InstallPath ""
+			    ReadRegStr $PythonDir HKCU Software\Python\PythonCore\${NPYVER}\InstallPath ""
 			    ${If} $PythonDir == ""
 				    MessageBox MB_OK "Python installation failed.$\r$\nOrange installation cannot continue."
 				    Quit
@@ -338,7 +349,7 @@ Function .onGUIInit
 			    StrCpy $SingleUser 0
 			${EndIf}
 		!else
-			MessageBox MB_OK "Cannot find Python 2.3.$\r$\nDownload it from www.python.org and install, or$\r$\nget an Orange distribution that includes Python"
+			MessageBox MB_OK "Cannot find Python ${NPYVER}.$\r$\nDownload it from www.python.org and install, or$\r$\nget an Orange distribution that includes Python"
 			Quit
 		!endif
 
@@ -380,40 +391,50 @@ Function .onGUIInit
 ;	${Else}
 ;	    MessageBox MB_OK "Single user"
 ;	${Endif}
+    
+	StrCpy $0 $PythonDir "" -1
+    ${If} $0 == "\"
+        StrLen $0 $PythonDir
+        IntOp $0 $0 - 1
+        StrCpy $PythonDir $PythonDir $0 0
+    ${EndIf}
 
 	!ifdef INCLUDEPYTHONWIN
-		ReadRegStr $8 HKLM Software\Python\PythonCore\2.3\PythonPath\PythonWin ""
+		IfFileExists $PythonDir\lib\site-packages\PythonWin dontinstallpythonwin
+
+		MessageBox MB_YESNO "Do you want to install PythonWin?$\r$\n(recommended if you plan programming scripts)" IDNO dontinstallpythonwin
+		SetOutPath $DESKTOP
+		File 3rdparty-${PYVER}\${PYWINFILENAME}
+		StrCpy $PythonOnDesktop 1
+		ExecWait "$DESKTOP\${PYWINFILENAME}"
+
+		ReadRegStr $8 HKLM Software\Python\PythonCore\${NPYVER}\PythonPath\PythonWin ""
 		${If} $8 == ""
-			MessageBox MB_YESNO "Do you want to install PythonWin?$\r$\n(recommended if you plan programming scripts)" IDNO dontinstallpythonwin
-			SetOutPath $DESKTOP
-			File various\win32all-163.exe
-			StrCpy $PythonOnDesktop 1
-			ExecWait "$DESKTOP\win32all-163.exe"
-
-			ReadRegStr $8 HKLM Software\Python\PythonCore\2.3\PythonPath\PythonWin ""
-			${If} $8 == ""
-				MessageBox MB_OK "PythonWin installation failed.$\r$\nOrange installation will now resume."
-			${EndIf}
-
+			MessageBox MB_OK "PythonWin installation failed.$\r$\nOrange installation will now resume."
 		${EndIf}
+
 	    dontinstallpythonwin:
 	!endif
 
 	
 	!ifdef INCLUDEQT
-		${If} ${FileExists} "$PythonDir\lib\site-packages\qt-mt230nc.dll"
+		${If} ${FileExists} "$PythonDir\lib\site-packages\qt-mt230nc.dll" ${OrIf} ${FileExists} "$SYSDIR\qt-mt230nc.dll"
 			!insertMacro HideSection ${SECQT}
 		${EndIf}
 	!else
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt-mt230nc.dll" "Qt"
+        ${Unless} ${FileExists} "$SYSDIR\qt-mt230nc.dll"
+		  !insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt-mt230nc.dll" "Qt"
+        ${EndUnless}
 	!endif
 
 	!ifdef INCLUDEMSVCDLL
-		${If} ${FileExists} $INSTDIR\MSVCP60.DLL
+		${If} ${FileExists} $INSTDIR\MSVCP60.DLL ${OrIf} ${FileExists} "$SYSDIR\MSVCP60.DLL"
 			!insertMacro HideSection ${SECMSVCP60DLL}
 		${EndIf}
 	!else
-		!insertMacro WarnMissingModule "$INSTDIR\MSVCP60.DLL" "MSVCP60.DLL"
+        ${Unless} ${FileExists} "$SYSDIR\MSVCP60.DLL"
+			!insertMacro WarnMissingModule "$INSTDIR\MSVCP60.DLL" "MSVCP60.DLL"
+        ${EndUnless}
 	!endif
 
 

@@ -96,15 +96,15 @@ def buildLists(rhter, fname):
 
 def buildPydList(root, here, there, fname, lookinver="25\\"):
     here = root + here
-    outf = open(fileprexif+"_"+fname+".inc", "wt")
+    outf = open(fileprefix+"_"+fname+".inc", "wt")
     outf.write('\nSetOutPath "$INSTDIR\\%s"\n' % there)
-	for fle in os.list_dir(here+lookinver):
+    for fle in os.listdir(here+lookinver):
         if fle[-4:] == ".pyd":
-            outf.write('File "%s\\$PYVER\\%s"\n' % (here, fle))
-            outf.write('FileWrite $WhatsDownFile "%s=1.0:%s$\\r$\\n"' % (there+fname, computeMD(here+lookinver+fname)
+            outf.write('File "%s$PYVER\\%s"\n' % (here, fle))
+            outf.write('FileWrite $WhatsDownFile "%s=1.0:%s$\\r$\\n"\n' % (there+fname, computeMD(here+lookinver+fle)))
 
-buildList(basedir, "orange\\", "", "((.*[.]py)|(ensemble.c)|(COPYING))|(c45.dll)\Z", "base", 0)
-buildPydList(basedir, "orange\\", "", "binaries")
+buildList(basedir, "orange\\", "", "((.*[.]py)|(ensemble.c)|(COPYING)|(c45.dll))\\Z", "base", 0)
+buildPydList(basedir, "", "", "binaries")
 
 buildList(basedir, "orange\\OrangeWidgets\\", "OrangeWidgets\\", ".*[.]((py)|(png))\\Z", "widgets")
 buildList(basedir, "orange\\OrangeCanvas\\", "OrangeCanvas\\", ".*[.]((py)|(pyw)|(png))\\Z", "canvas")
