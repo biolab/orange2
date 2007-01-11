@@ -1,5 +1,6 @@
 set WEBDIR=c:\inetpub\wwwusers\orange
-set DOWNLOADDIR=%WEBDIR\download
+rem set DOWNLOADDIR=%WEBDIR\download
+set DOWNLOADDIR=O:
 set SCRIPTDIR=%WEBDIR\scripts
 set WEBDOCDIR=%WEBDIR\doc
 
@@ -19,5 +20,5 @@ set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctN
 
 set PYTHONVERSIONS=23 24 25
 
-set /r %SCRIPTDIR\versions.set
+set /r %DOWNLOADDIR\versions.set
 set /r %DOWNLOADDIR\filenames.set

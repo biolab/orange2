@@ -1,5 +1,7 @@
 call updateSetConstants__.btm
 
+call winCompile.btm
+
 set DOCUMENTATION=orange-doc-snap-%daystr.zip
 set WIN_SNAPSHOT=orange-win-snap-%daystr
 set WIN_GENOMICS_SNAPSHOT=orange-win-genomics-snap-%daystr
@@ -114,5 +116,4 @@ popd
 start plink -i "C:\Documents and Settings\Administrator\george.ppk" orange@george.fri.uni-lj.si bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_SNAPSHOT normal %daystr SOURCE_SNAPSHOT 0;bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_GENOMICS_SNAPSHOT genomics %daystr SOURCE_GENOMICS_SNAPSHOT 0; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_SNAPSHOT normal %daystr LINUX_SNAPSHOT 1; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_GENOMICS_SNAPSHOT genomics %daystr LINUX_GENOMICS_SNAPSHOT 1
 
 rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
-
 
