@@ -41,7 +41,6 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
     directories = []
     for fle in os.listdir(root_dir+here_dir):
         tfle = root_dir+here_dir+fle
-#        print "XXX orange\\"+there_dir+fle
         if fle == "CVS" or excluded("orange\\"+there_dir+fle):
             continue
         if os.path.isdir(tfle):
@@ -93,8 +92,20 @@ def buildLists(rhter, fname):
     for root, here, there, regexp, recursive in rhter:
         buildListLow(root, here, there, regexp and re.compile(regexp, re.IGNORECASE), recursive)
     open(fileprefix+"_"+fname+".inc", "wt").write(hass+outfs)
-        
-buildList(basedir, "orange\\", "", "((.*[.]pyd?)|(ensemble.c)|(COPYING))|(c45.dll)\Z", "base", 0)
+
+
+def buildPydList(root, here, there, fname, lookinver="25\\"):
+    here = root + here
+    outf = open(fileprexif+"_"+fname+".inc", "wt")
+    outf.write('\nSetOutPath "$INSTDIR\\%s"\n' % there)
+	for fle in os.list_dir(here+lookinver):
+        if fle[-4:] == ".pyd":
+            outf.write('File "%s\\$PYVER\\%s"\n' % (here, fle))
+            outf.write('FileWrite $WhatsDownFile "%s=1.0:%s$\\r$\\n"' % (there+fname, computeMD(here+lookinver+fname)
+
+buildList(basedir, "orange\\", "", "((.*[.]py)|(ensemble.c)|(COPYING))|(c45.dll)\Z", "base", 0)
+buildPydList(basedir, "orange\\", "", "binaries")
+
 buildList(basedir, "orange\\OrangeWidgets\\", "OrangeWidgets\\", ".*[.]((py)|(png))\\Z", "widgets")
 buildList(basedir, "orange\\OrangeCanvas\\", "OrangeCanvas\\", ".*[.]((py)|(pyw)|(png))\\Z", "canvas")
 
@@ -109,3 +120,4 @@ buildLists([(basedir, "orange\\doc\\", "doc\\", "", 0),
             (basedir, "orange\\doc\\modules\\", "doc\\modules\\", "", 0),
             (basedir, "orange\\doc\\widgets\\", "doc\\widgets\\", "", 0),
             (basedir, "orange\\doc\\ofb\\", "doc\\ofb\\", "", 0)], "doc")
+
