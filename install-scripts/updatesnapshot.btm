@@ -54,9 +54,9 @@ cd %SNAPSHOTDIR\orange\doc\widgets\catalog
 move default-chm.htm default.htm
 python %SCRIPTDIR\doc\widgetCatalogs.py html %WEBDOCDIR\widgets\catalog\widgetRegistry.xml . >> default.htm
 cd %SNAPSHOTDIR\orange\doc
-del %DOWNLOADDIR\orange-doc-snap-*.zip
-"c:\program files\winrar\winrar.exe" a %DOWNLOADDIR\orange-doc-snap-%daystr.zip style.css reference/* ofb/* modules/*
-"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip  widgets/*
+del %WEBDOWNLOAD\orange-doc-snap-*.zip
+"c:\program files\winrar\winrar.exe" a %WEBDOWNLOAD\orange-doc-snap-%daystr.zip style.css reference/* ofb/* modules/*
+"c:\program files\winrar\winrar.exe" a -r %WEBDOWNLOAD\orange-doc-snap-%daystr.zip  widgets/*
 cd ..\..
 
 
@@ -67,32 +67,18 @@ cdd %SCRIPTDIR
 python buildInstFileList.py %SNAPSHOTDIR snapshotfiles
 python removeCVS.py %SNAPSHOTDIR
 
-del %DOWNLOADDIR\orange-win-snap-*.exe
-del %DOWNLOADDIR\orange-win-genomics-snap-*.exe
+del %WEBDOWNLOAD\orange-win-snap-*.exe
+del %WEBDOWNLOAD\orange-win-genomics-snap-*.exe
 
 for %pyver in (%PYTHONVERSIONS) do (
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
   set COMMON_NSI_OPTIONS=/DORANGEDIR=%SNAPSHOTDIR\orange  /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles /DPYVER=%pyver /DNPYVER=%npver install3.nsi
   nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
   nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
-  copy %DOWNLOADDIR\%WIN_SNAPSHOT-py%npver.exe %DOWNLOADDIR\orange-snapshot-py%npver.exe
+  copy %DOWNLOADDIR\%WIN_SNAPSHOT-py%npver.exe %WEBDOWNLOAD\orange-snapshot-py%npver.exe
+  copy %DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT-py%npver.exe %WEBDOWNLOAD\orange-genomics-snapshot-py%npver.exe
   rem del snapshotfiles_*.inc
 )
-
-rem del %DOWNLOADDIR\orange-source-snap-*.zip
-rem cdd %SNAPSHOTDIR
-rem winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/OrangeCanvas orange/OrangeWidgets orange/doc
-rem winrar d "%DOWNLOADDIR\%SOURCE_SNAPSHOT" @orange\exclude.lst
-rem winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/source
-rem winrar a "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/*.py orange/COPYING orange/ensemble.c
-
-rem *** copy sources file and add genomics part
-rem del %DOWNLOADDIR\orange-source-genomics-snap-*.zip
-rem copy "%DOWNLOADDIR\%SOURCE_SNAPSHOT" "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT"
-rem md orange\OrangeWidgets\Genomics
-rem xcopy /S Genomics orange\OrangeWidgets\Genomics
-rem winrar a -r "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT" orange/OrangeWidgets/Genomics
-rem winrar d "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT" @orange\exclude.lst
 
 cdd %SNAPSHOTDIR
 if errorlevel == 0 goto changedirok2
