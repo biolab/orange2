@@ -2,7 +2,7 @@
 
 call updateSetConstants__.btm
 
-rem call winCompile.btm
+call winCompile.btm
 
 set WIN_SNAPSHOT=orange-snapshot
 set WIN_GENOMICS_SNAPSHOT=orange-snapshot-genomics

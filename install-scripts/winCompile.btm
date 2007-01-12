@@ -30,7 +30,7 @@ for %lll in (include Orange Corn orangeom orangene Statc) (
 
 cd \
 if not exist compiled\%ver mkdir compiled\%ver
-copy compileTemp\*.pyd compiled\%ver
+move compileTemp\*.pyd compiled\%ver
 
 )
 
