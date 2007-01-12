@@ -100,8 +100,8 @@ def buildPydList(root, here, there, fname, lookinver="25\\"):
     outf.write('\nSetOutPath "$INSTDIR\\%s"\n' % there)
     for fle in os.listdir(here+lookinver):
         if fle[-4:] == ".pyd":
-            outf.write('File "%s$PYVER\\%s"\n' % (here, fle))
-            outf.write('FileWrite $WhatsDownFile "%s=1.0:%s$\\r$\\n"\n' % (there+fname, computeMD(here+lookinver+fle)))
+            outf.write('File "%s${PYVER}\\%s"\n' % (here, fle))
+            outf.write('FileWrite $WhatsDownFile "%s=1.0:%s$\\r$\\n"\n' % (there+fle, computeMD(here+lookinver+fle)))
 
 buildList(basedir, "orange\\", "", "((.*[.]py)|(ensemble.c)|(COPYING)|(c45.dll))\\Z", "base", 0)
 buildPydList(basedir, "", "", "binaries")

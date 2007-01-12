@@ -1,9 +1,10 @@
-import os, re
+import os, re, sys
+srcdir, destdir = sys.argv[1:]
 
 file_re = re.compile(r'[^/D]*/(?P<fname>.*)/(?P<version>.*)/(?P<date>.*)/.*/')
 dir_re = re.compile(r'[^/]*D/(?P<dname>.*)////')
 
-os.chdir("c:/inetpub/wwwusers/orange/download/update")
+os.chdir(srcdir)
 exclude = [x.lower().replace("\\", "/")[:-1] for x in open("exclude.lst", "rt").readlines()]
 #exclude.append("doc/datasets")
 
@@ -37,7 +38,7 @@ def listfiles(baseurl, basedir, subdir):
                             print "EXC " + basedir+subdir+dname
                 f.close()
 
-outf = open(r"../whatsup.txt", "wt")
+outf = open(destdir+r"whatsup.txt", "wt")
 
 listfiles("./", "orange/", "")
 listfiles("./OrangeWidgets/Genomics/", "orange/OrangeWidgets/Genomics/", "")

@@ -11,22 +11,10 @@ set PLINK_LINUX=orange-linux-%verstr.tgz
 set PLINK_MACINTOSH=orange-mac-%verstr.dmg
 set PLINK_MACINTOSH_GENOMICS=orange-mac-genomics-%verstr.dmg
 
-rem ************************************************
-rem *** CHANGE THE DIRECTORY, TERMINATE IF CAN'T
-
 cdd %STABLEDIR
-if errorlevel == 0 goto changedirok
-popd
-@pause "Cannot change directory to %STABLEDIR, terminating"
-cancel
-
-:changedirok
-
-rem ************************************************
-rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f
-rem cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS update -r stable -f
+break_on_error
 
 for %pyver in (%PYTHONVERSIONS) (
   if not exist %pyver mkdir %pyver
@@ -34,30 +22,18 @@ for %pyver in (%PYTHONVERSIONS) (
 )
 
 
-rem ************************************************
-rem *** COMPILE NEW INSTALLATIONS
-
 cdd %SCRIPTDIR
 python buildInstFileList.py %STABLEDIR files
 
 
 for %pyver in (%PYTHONVERSIONS) do (
-set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
-set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files /DPYVER=%pyver /DNPYVER=%npver install3.nsi
-nsis /Onsis_standard-py%npver.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
-nsis /Onsis_complete-py%npver.log /DCOMPLETE /DOUTFILENAME="%DOWNLOADDIR"\%WIN_PYTHON-py%npver.exe %COMMON_NSI_OPTIONS
+  set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
+  set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files /DPYVER=%pyver /DNPYVER=%npver install3.nsi
+  nsis /Onsis_standard-py%npver.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
+  break_on_error
+  nsis /Onsis_complete-py%npver.log /DCOMPLETE /DOUTFILENAME="%DOWNLOADDIR"\%WIN_PYTHON-py%npver.exe %COMMON_NSI_OPTIONS
+  break_on_error
 ) 
-
-pushd
-del %DOWNLOADDIR\orange-source-*.zip
-cdd %STABLEDIR
-winrar a -r "%DOWNLOADDIR\%SOURCE" orange/OrangeCanvas orange/OrangeWidgets orange/doc
-winrar d "%DOWNLOADDIR\%SOURCE" @orange\exclude.lst
-winrar d -inul "%DOWNLOADDIR\%SOURCE" Root
-winrar a -r "%DOWNLOADDIR\%SOURCE" -aporange source
-winrar a "%DOWNLOADDIR\%SOURCE" orange/*.py orange/COPYING orange/ensemble.c
-
-popd
 
 cdd %SCRIPTDIR
 call updateVersionsPy__.btm
@@ -71,5 +47,6 @@ rem set | grep  orange.*Version > %SCRIPTDIR\versions.set
 rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh %TAG %PLINK_MACINTOSH MACINTOSH 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh %TAG %PLINK_MACINTOSH_GENOMICS MACINTOSH_GENOMICS 1 0
 
 cdd %SCRIPTDIR
-python whatsup.py
-updateSnapshot.btm
+python whatsup.py %DOWNLOADDIR\update %WEBDOWNLOAD
+break_on_error
+rem updateSnapshot.btm

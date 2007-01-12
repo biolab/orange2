@@ -1,0 +1,14 @@
+@echo off
+call updateSnapshot.btm >& updateSnapshot.log
+cancel
+set whom="tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si"
+
+iff %ERRORS != 0 then
+  set subj="Error compiling Orange for Windows"
+else
+  set subj="Orange for Windows compiled successfully"
+endiff
+
+sendmail %whom %subj @updateSnapshot.log
+
+rem shutdown -s

@@ -1,7 +1,8 @@
-set WEBDIR=c:\inetpub\wwwusers\orange
+set WEBDIR=c:\orange
 set DOWNLOADDIR=%WEBDIR\download
 set SCRIPTDIR=%WEBDIR\scripts
-set WEBDOCDIR=%WEBDIR\doc
+rem set WEBDOCDIR=%WEBDIR\doc
+set WEBDOCDIR=%DOWNLOADDIR\snapshot\orange\doc
 
 set WEBDOWNLOAD=O:
 
@@ -12,8 +13,20 @@ set UPDATEDIR=%DOWNLOADDIR\update
 set MNT_DOWNLOAD=/wwwUsers/orange/download
 
 alias nsis="c:\program files\nsis\makensis.exe"
-alias cvs="C:\Program Files\WinCvs 1.3\CVSNT\cvs.exe"
+alias cvs="C:\Program Files\CVSNT\cvs.exe"
 alias winrar="c:\program files\winrar\winrar.exe"
+set .py=python
+
+on error (
+  set ERRORS=%errorlevel
+  cancel %errorlevel
+)
+
+set ERRORS=0
+
+alias flag_on_error=`if %errorlevel != 0 set ERRORS=%errorlevel`
+alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ cancel %errorlevel)`
+rem alias break_on_error=echo xx"
 
 set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
 

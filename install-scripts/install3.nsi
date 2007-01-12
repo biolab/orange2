@@ -120,6 +120,7 @@ Section ""
 	FileOpen $WhatsDownFile $INSTDIR\whatsdown.txt w
     
 	!include ${INCLUDEPREFIX}_base.inc
+	!include ${INCLUDEPREFIX}_binaries.inc
 SectionEnd
 
 Section "Orange Widgets and Canvas" SECCANVAS
@@ -428,8 +429,12 @@ Function .onGUIInit
 	!endif
 
 	!ifdef INCLUDEMSVCDLL
-		${If} ${FileExists} $INSTDIR\MSVCP60.DLL ${OrIf} ${FileExists} "$SYSDIR\MSVCP60.DLL"
+		${If} ${FileExists} $INSTDIR\MSVCP60.DLL
 			!insertMacro HideSection ${SECMSVCP60DLL}
+                ${Else}
+                     ${If} ${FileExists} "$SYSDIR\MSVCP60.DLL"
+			!insertMacro HideSection ${SECMSVCP60DLL}
+                     ${EndIf}
 		${EndIf}
 	!else
         ${Unless} ${FileExists} "$SYSDIR\MSVCP60.DLL"
