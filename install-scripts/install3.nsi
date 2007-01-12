@@ -419,8 +419,12 @@ Function .onGUIInit
 
 	
 	!ifdef INCLUDEQT
-		${If} ${FileExists} "$PythonDir\lib\site-packages\qt-mt230nc.dll" ${OrIf} ${FileExists} "$SYSDIR\qt-mt230nc.dll"
+		${If} ${FileExists} "$PythonDir\lib\site-packages\qt-mt230nc.dll"
 			!insertMacro HideSection ${SECQT}
+                ${Else} 
+                     ${If} ${FileExists} "$SYSDIR\qt-mt230nc.dll"
+			!insertMacro HideSection ${SECQT}
+                     ${EndIf}
 		${EndIf}
 	!else
         ${Unless} ${FileExists} "$SYSDIR\qt-mt230nc.dll"
