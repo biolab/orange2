@@ -18,7 +18,6 @@ licensetext "Acknowledgments and License Agreement"
 
 AutoCloseWindow true
 ShowInstDetails nevershow
-SilentUninstall silent
 
 Var PythonDir
 Var WhatsDownFile
@@ -26,9 +25,10 @@ Var AdminInstall
 Var MissingModules
 
 Page license
+Page instfiles
 
 Section Uninstall
-	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n$\r$\nThis won't remove any 3rd party software possibly installed with Orange, such as Python or Qt,$\r$\n$\r$\nbut make sure you have not left any of your files in Orange's directories!" IDNO abort
+	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n$\r$\nThis won't remove any 3rd party software possibly installed with Orange, such as Python or Qt,$\r$\n$\r$\nbut make sure you have not left any of your files in Orange's directories!" /SD IDYES IDNO abort
 	RmDir /R "$INSTDIR"
 	${If} $AdminInstall = 0
 	    SetShellVarContext all
@@ -51,7 +51,7 @@ Section Uninstall
 	DeleteRegKey HKEY_CLASSES_ROOT ".ows"
 	DeleteRegKey HKEY_CLASSES_ROOT "OrangeCanvas"
 
-	MessageBox MB_OK "Orange has been succesfully removed from your system.$\r$\nPython and other applications need to be removed separately.$\r$\n$\r$\nYou may now continue without rebooting your machine."
+	MessageBox MB_OK "Orange has been succesfully removed from your system.$\r$\nPython and other applications need to be removed separately.$\r$\n$\r$\nYou may now continue without rebooting your machine." /SD IDOK
   abort:
 SectionEnd
 
@@ -72,7 +72,7 @@ SectionEnd
 		StrCmp $PythonDir "" 0 trim_backslash
 		ReadRegStr $PythonDir HKLM Software\Python\PythonCore\${NPYVER}\InstallPath ""
 		StrCmp $PythonDir "" return
-		MessageBox MB_OK "Please ask administrator to install Orange$\r$\n(this is because Python was installed by him, too)."
+		MessageBox MB_OK "Please ask the administrator to install Orange$\r$\n(this is because Python was installed by him, too)."
 		Quit
 	${Else}
 	    ReadRegStr $PythonDir HKLM Software\Python\PythonCore\${NPYVER}\InstallPath ""
@@ -80,6 +80,7 @@ SectionEnd
 		ReadRegStr $PythonDir HKCU Software\Python\PythonCore\${NPYVER}\InstallPath ""
 		StrCmp $PythonDir "" return
 		StrCpy $AdminInstall 0
+	${EndIf}
 
 	trim_backslash:
 	StrCpy $0 $PythonDir "" -1
@@ -93,27 +94,8 @@ SectionEnd
 !macroend
 		
 
-	
-Function .onGUIInit
-	StrCpy $PythonOnDesktop 0
-
-	SetOutPath $INSTDIR ; just to make sure it exists
-	StrCpy $AdminInstall 1
-
-	UserInfo::GetAccountType
-	Pop $1
-	SetShellVarContext all
-	${If} $1 != "Admin"
-		SetShellVarContext all
-		StrCpy $AdminInstall 1
-	${Else}
-		SetShellVarContext current
-		StrCpy $AdminInstall 0
-	${EndIf}
-
-	!insertMacro GetPythonDir
-
-    !ifdef COMPLETE
+!ifdef COMPLETE
+Section ""
 		StrCmp $PythonDir "" 0 have_python
 		MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python ${NPYVER}$\r$\nOrange installation will continue after you finish installing Python." /SD IDOK IDOK installpython
 			MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO installpython
@@ -182,32 +164,14 @@ Function .onGUIInit
 			File various\MSVCP60.DLL
 		have_msvcp60:
 
-	!else
-		StrCmp $PythonDir "" 0 have_python
-			MessageBox MB_OK "Please install Python first (www.python.org)$\r$\nor download Orange which includes Python."
-		have_python:
-
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\PythonWin" "PythonWin"
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt.py" "PyQt"
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qwt\*.*" "PyQwt"
-		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\Numeric\*.*" "Numeric"
-
-		IfFileExists "$SYSDIR\qt-mt230nc.dll" have_qt
-			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt-mt230nc.dll" "Qt"
-        have_qt:
-
-		IfFileExists "$SYSDIR\MSVCP60.dll" have_msvcp60
-			!insertMacro WarnMissingModule "$INSTDIR\MSVCP60.DLL" "MSVCP60.DLL"
-        have_msvcp60:
-
-		StrCmp $MissingModules "" continueinst
-		MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nThese module(s) are not needed for running scripts in Orange, but Orange Canvas will not work without them.$\r$\nYou can download and install them later or obtain an Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" /SD IDYES IDYES continueinst
-		Quit
-		continueinst:
-	!endif
+SectionEnd
+!endif
 
 
+Section ""
+	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\orange"
 	SetOutPath $INSTDIR
+
 	FileOpen $WhatsDownFile $INSTDIR\whatsdown.txt w
     
 	!include ${INCLUDEPREFIX}_base.inc
@@ -269,9 +233,51 @@ Function .onGUIInit
 	WriteUninstaller "$INSTDIR\uninst.exe"
 
 	FileClose $WhatsDownFile
+SectionEnd	
+
+Function .onInit
+	StrCpy $AdminInstall 1
+
+	UserInfo::GetAccountType
+	Pop $1
+	SetShellVarContext all
+	${If} $1 != "Admin"
+		SetShellVarContext current
+		StrCpy $AdminInstall 0
+	${Else}
+		SetShellVarContext all
+		StrCpy $AdminInstall 1
+	${EndIf}
+
+	!insertMacro GetPythonDir
+
+
+	!ifndef COMPLETE
+		StrCmp $PythonDir "" 0 have_python
+			MessageBox MB_OK "Please install Python first (www.python.org)$\r$\nor download Orange which includes Python."
+		have_python:
+
+		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\PythonWin" "PythonWin"
+		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt.py" "PyQt"
+		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qwt\*.*" "PyQwt"
+		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\Numeric\*.*" "Numeric"
+
+		IfFileExists "$SYSDIR\qt-mt230nc.dll" have_qt
+			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt-mt230nc.dll" "Qt"
+        have_qt:
+
+		IfFileExists "$SYSDIR\MSVCP60.dll" have_msvcp60
+			!insertMacro WarnMissingModule "$INSTDIR\MSVCP60.DLL" "MSVCP60.DLL"
+        have_msvcp60:
+
+		StrCmp $MissingModules "" continueinst
+		MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nThese module(s) are not needed for running scripts in Orange, but Orange Canvas will not work without them.$\r$\nYou can download and install them later or obtain an Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" /SD IDYES IDYES continueinst
+		Quit
+		continueinst:
+	!endif
 FunctionEnd
 
 
 Function .onInstSuccess
-	MessageBox MB_OK "Orange has been successfully installed." /SD ID_OK
+	MessageBox MB_OK "Orange has been successfully installed." /SD IDOK
 FunctionEnd

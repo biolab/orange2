@@ -38,9 +38,9 @@ if exist %WEBDOWNLOAD\orange-win-genomics-snap-*.exe del %WEBDOWNLOAD\orange-win
 for %pyver in (%PYTHONVERSIONS) do (
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
   set COMMON_NSI_OPTIONS=/DORANGEDIR=%SNAPSHOTDIR\orange  /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles /DPYVER=%pyver /DNPYVER=%npver install3.nsi
-  nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%WEBDOWNLOAD\%WIN_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
+  nsis /Onsis_snapshot.log /DOUTFILENAME="%WEBDOWNLOAD\%WIN_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
   flag_on_error
-  nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
+  nsis /Onsis_snapshot.log /DINCLUDEGENOMICS /DOUTFILENAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
   flag_on_error
 )
 del /e snapshotfiles_*.inc
@@ -54,10 +54,3 @@ flag_on_error
 
 cdd %SCRIPTDIR
 call updateVersionsPy__.btm
-
-
-plink -i "C:\Documents and Settings\cvso\george.ppk" orange@george.fri.uni-lj.si bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_SNAPSHOT normal %daystr SOURCE_SNAPSHOT 0;bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_GENOMICS_SNAPSHOT genomics %daystr SOURCE_GENOMICS_SNAPSHOT 0; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_SNAPSHOT normal %daystr LINUX_SNAPSHOT 1; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_GENOMICS_SNAPSHOT genomics %daystr LINUX_GENOMICS_SNAPSHOT 1
-flag_on_error
-
-rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
-flag_on_error

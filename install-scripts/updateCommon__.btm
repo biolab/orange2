@@ -33,7 +33,7 @@ for %pyver in (%PYTHONVERSIONS) do (
   echo ************ %pyver
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
   set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files /DPYVER=%pyver /DNPYVER=%npver install3.nsi
-  nsis /Onsis_standard-py%npver.log /DSTANDARD /DOUTFILENAME="%WEBDOWNLOAD\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
+  nsis /Onsis_standard-py%npver.log /DOUTFILENAME="%WEBDOWNLOAD\%WIN-py%npver.exe" %COMMON_NSI_OPTIONS %+
   break_on_error
   nsis /Onsis_complete-py%npver.log /DCOMPLETE /DOUTFILENAME="%WEBDOWNLOAD"\%WIN_PYTHON-py%npver.exe %COMMON_NSI_OPTIONS
   break_on_error
