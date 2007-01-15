@@ -1,0 +1,10 @@
+updateSetConstants__.btm
+
+cvs -d :sspi;username=cvsX;password=traltral;hostname=estelle.fri.uni-lj.si:/cvs checkout -P -- regressionTests
+cvs -d :sspi;username=cvsX;password=traltral;hostname=estelle.fri.uni-lj.si:/cvs checkout -P -d doc -- orange/doc
+
+for %pyver in (23 24 25) do (
+  echo Python &pyver
+  call regressionTests.btm >> log.txt
+
+echo %ERRORS

@@ -1,0 +1,10 @@
+copy o:\orange-snapshot-*-py2.3.exe orange-snap.exe
+break_on_error
+
+orange-snap.exe /S
+break_on_error
+
+pushd
+cd ..\regressionTests
+c:\python%pyver\python xtest.py test
+flag_on_error
