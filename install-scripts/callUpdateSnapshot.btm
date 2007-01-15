@@ -11,4 +11,4 @@ endiff
 
 sendmail %whom %subj @updateSnapshot.log
 
-rem shutdown -s
+shutdown -s

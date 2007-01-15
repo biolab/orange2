@@ -4,8 +4,8 @@ call updateSetConstants__.btm
 
 call winCompile.btm
 
-set WIN_SNAPSHOT=orange-snapshot
-set WIN_GENOMICS_SNAPSHOT=orange-snapshot-genomics
+set WIN_SNAPSHOT=orange-snapshot-%daystr
+set WIN_GENOMICS_SNAPSHOT=orange-snapshot-genomics-%daystr
 set PLINK_SOURCE_SNAPSHOT=orange-source-snap-%daystr.tgz
 set PLINK_SOURCE_GENOMICS_SNAPSHOT=orange-source-genomics-snap-%daystr.tgz
 
@@ -56,7 +56,7 @@ cdd %SCRIPTDIR
 call updateVersionsPy__.btm
 
 
-rem start plink -i "C:\Documents and Settings\Administrator\george.ppk" orange@george.fri.uni-lj.si bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_SNAPSHOT normal %daystr SOURCE_SNAPSHOT 0;bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_GENOMICS_SNAPSHOT genomics %daystr SOURCE_GENOMICS_SNAPSHOT 0; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_SNAPSHOT normal %daystr LINUX_SNAPSHOT 1; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_GENOMICS_SNAPSHOT genomics %daystr LINUX_GENOMICS_SNAPSHOT 1
+plink -i "C:\Documents and Settings\cvso\george.ppk" orange@george.fri.uni-lj.si bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_SNAPSHOT normal %daystr SOURCE_SNAPSHOT 0;bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_GENOMICS_SNAPSHOT genomics %daystr SOURCE_GENOMICS_SNAPSHOT 0; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_SNAPSHOT normal %daystr LINUX_SNAPSHOT 1; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_GENOMICS_SNAPSHOT genomics %daystr LINUX_GENOMICS_SNAPSHOT 1
 flag_on_error
 
 rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
