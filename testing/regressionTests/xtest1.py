@@ -71,8 +71,7 @@ t__iterations = int(t__sys.argv[2])
 t__runNo = int(t__sys.argv[3])
 t__outputsdir = t__sys.argv[5]
 
-t__crashname, t__errorname, t__newname, t__changedname, t__random1name, t__random2name = ["%s/%s.%s.txt" % (t__outputsdir, t__name, t) for t in ["crash", "error", "new", "changed", "random1", "random2"]]
-
+t__crashname, t__errorname, t__newname, t__changedname, t__random1name, t__random2name = ["%s/%s.%s.%s.txt" % (t__outputsdir, t__name, t, t__sys.version[:3]) for t in ["crash", "error", "new", "changed", "random1", "random2"]]
 t__officialname = "%s/%s.%s.txt" % (t__outputsdir, t__name, t__sys.platform)
 if not t__os.path.exists(t__officialname):
     t__officialname = "%s/%s.txt" % (t__outputsdir, t__name)
