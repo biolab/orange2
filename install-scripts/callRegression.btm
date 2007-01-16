@@ -14,7 +14,7 @@ for %pyver in (%PYTHONVERSIONS) do (
   flag_on_error
 )
 
-set REGRESDIR=%WEBDOWNLOADDIR\regressionResults
+set REGRESDIR=%WEBDOWNLOAD\regressionResults
 if not exist %REGRESDIR mkdir %REGRESDIR
 
 for %res in (crash error new changed random1 random2) do
