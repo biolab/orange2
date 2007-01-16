@@ -2,8 +2,8 @@ call updateSetConstants__.btm
 
 pushd
 cd ..
-rem cvs -d :sspi;username=cvsX;password=traltral;hostname=estelle.fri.uni-lj.si:/cvs checkout -P -- regressionTests
-rem cvs -d :sspi;username=cvsX;password=traltral;hostname=estelle.fri.uni-lj.si:/cvs checkout -P -d doc -- orange/doc
+cvs -d :sspi;username=cvsX;password=traltral;hostname=estelle.fri.uni-lj.si:/cvs checkout -P -- regressionTests
+cvs -d :sspi;username=cvsX;password=traltral;hostname=estelle.fri.uni-lj.si:/cvs checkout -P -d doc -- orange/doc
 popd
 
 if exist regressionTests.log del regressionTests.log
