@@ -4,18 +4,6 @@ call updateSetConstants__.btm
 
 call winCompile.btm
 
-set WIN_SNAPSHOT=orange-snapshot-%daystr
-set WIN_GENOMICS_SNAPSHOT=orange-snapshot-genomics-%daystr
-set PLINK_SOURCE_SNAPSHOT=orange-source-snap-%daystr.tgz
-set PLINK_SOURCE_GENOMICS_SNAPSHOT=orange-source-genomics-snap-%daystr.tgz
-
-set PLINK_LINUX_SNAPSHOT=orange-linux-snap-%daystr.tgz
-set PLINK_LINUX_GENOMICS_SNAPSHOT=orange-linux-genomics-snap-%daystr.tgz
-
-set PLINK_MACINTOSH_SNAPSHOT=orange-mac-snap-%daystr.dmg
-set PLINK_MACINTOSH_GENOMICS_SNAPSHOT=orange-mac-genomics-snap-%daystr.dmg
-
-
 cdd %SNAPSHOTDIR
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r HEAD orange
 break_on_error
@@ -38,13 +26,26 @@ if exist %WEBDOWNLOAD\orange-win-genomics-snap-*.exe del %WEBDOWNLOAD\orange-win
 for %pyver in (%PYTHONVERSIONS) do (
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
   set COMMON_NSI_OPTIONS=/DORANGEDIR=%SNAPSHOTDIR\orange  /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles /DPYVER=%pyver /DNPYVER=%npver install3.nsi
-  nsis /Onsis_snapshot.log /DOUTFILENAME="%WEBDOWNLOAD\%WIN_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
-  flag_on_error
-  nsis /Onsis_snapshot.log /DINCLUDEGENOMICS /DOUTFILENAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe" %COMMON_NSI_OPTIONS
-  flag_on_error
+
+  set OUTNAME="%WEBDOWNLOAD\%WIN_SNAPSHOT-py%npver.exe"
+  nsis /Onsis_snapshot.log /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
+  if %errorlevel != 0 (
+    set ERRORS=%errorlevel
+    ren %WEBDOWNLOAD\%orange-snapshot-????-??-??-py%npver.exe %OUTNAME
+  ) else (
+    except (%OUTNAME) del %WEBDOWNLOAD\%orange-snapshot-????-??-??-py%npver.exe
+  )
+
+  set OUTNAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe"
+  nsis /Onsis_snapshot.log /DINCLUDEGENOMICS /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
+  if %errorlevel != 0 (
+    set ERRORS=%errorlevel
+    ren %WEBDOWNLOAD\%orange-snapshot-????-??-??-py%npver.exe %OUTNAME
+  ) else (
+    except (%OUTNAME) del %WEBDOWNLOAD\%orange-snapshot-????-??-??-py%npver.exe
+  )
 )
 del /e snapshotfiles_*.inc
-
 
 cdd %SCRIPTDIR/doc
 call compileDocumentation.btm
