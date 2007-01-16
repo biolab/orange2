@@ -1,23 +1,25 @@
+/home/orange/umount_estelleDownload
+/home/orange/mount_estelleDownload
+
 # remove old logs
-rm /var/www/html/orange/*.log
+W=/home/orange/estelleDownload/regressionResults/linux
+rm $W/*.log
 
 # copy new ones
 cd /home/orange/daily/orange
-cp -p *.log ../*.log /var/www/html/orange
-chmod o+r /var/www/html/orange/*.log
+cp -p *.log ../*.log $W
 
 cd /home/orange/daily/test_install/orange
-rm -Rf /var/www/html/orange/tests
-mkdir /var/www/html/orange/tests
+rm -Rf $W/tests
+mkdir $W/tests
 
 for f in *-output; do
 	echo copying $f
-	mkdir /var/www/html/orange/tests/$f
-	cp -p $f/*.txt /var/www/html/orange/tests/$f
-	chmod o+r /var/www/html/orange/tests/$f
-	chmod o+r /var/www/html/orange/tests/$f/*.txt
+	mkdir $W/tests/$f
+	cp -p $f/*.txt $W/tests/$f
 done
 
-cp testresults.xml /var/www/html/orange/tests
-chmod o+r /var/www/html/orange/tests/testresults.xml
+cp testresults.xml $W/tests
+
+/home/orange/umount_estelleDownload
 
