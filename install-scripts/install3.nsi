@@ -110,9 +110,9 @@ Section ""
 		!else
 			File 3rdparty-${PYVER}\${PYFILENAME}
 			${If} $AdminInstall == 1
-				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" /ADDLOCAL=Extensions,Documentation ALLUSERS=1 /Qb-' $0
+				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation ALLUSERS=1 /Qb-' $0
 			${Else}
-				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" /ADDLOCAL=Extensions,Documentation /Qb-' $0
+				ExecWait 'msiexec.exe /i "$DESKTOP\${PYFILENAME}" ADDLOCAL=Extensions,Documentation /Qb-' $0
 			${EndIf}
 			Delete "$DESKTOP\${PYFILENAME}"
 		!endif
