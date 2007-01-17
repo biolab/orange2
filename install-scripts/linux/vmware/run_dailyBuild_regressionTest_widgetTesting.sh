@@ -1,4 +1,4 @@
-DISPLAY=george:1
+DISPLAY=:1
 export DISPLAY
 cd /home/vmware
 L=( winXP.dailyBuild winXP.regressionTests winXP.widgetTesting )
@@ -7,7 +7,7 @@ for f in "${L[@]}"; do
 	echo "running VM $f" 
 	# copy original VM image into a temporary location
 	rm -Rf cron.$f
-	cp -R /vmware/orangeBuildTest.VMWAREimage/$f cron.$f
+	cp -vR /vmware/orangeBuildTest.VMWAREimage/$f cron.$f
 
 	# run it
 	echo "\"cron.$f/Windows\ XP\ Professional.vmx\"" > runThis.lst
