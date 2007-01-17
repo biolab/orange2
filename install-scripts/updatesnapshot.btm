@@ -13,8 +13,13 @@ break_on_error
 for %pyver in (%PYTHONVERSIONS) (
   if not exist %pyver mkdir %pyver
   copy c:\compiled\%pyver %pyver
-  if not exist %WEBDOWNLOAD\binaries\%pyver mkdir %WEBDOWNLOAD\binaries\%pyver
-  copy c:\compiled\%pyver %WEBDOWNLOAD\binaries\%pyver
+
+  set BINDIR=%WEBDOWNLOAD\binaries\%pyver
+  if not exist %BINDIR mkdir %BINDIR
+  pushd %BINDIR
+  copy c:\compiled\%pyver .
+  if exist stamps_pyd.txt del stamps_pyd.txt
+  for %fle in (*.pyd) echo %fle %@MD5[%fle] >> stamps_pyd.txt
 )
 
 

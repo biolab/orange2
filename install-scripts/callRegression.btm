@@ -18,7 +18,8 @@ set REGRESDIR=%WEBDOWNLOAD\regressionResults
 if not exist %REGRESDIR mkdir %REGRESDIR
 
 for %res in (crash error new changed random1 random2) do
-  copy /s ..\regressionTests\*%res* %REGRESDIR
+  del /s ..\regressionTests\*.py.*.?.?.%res.txt
+  copy /s ..\regressionTests\*.py.*.?.?.%res.txt %REGRESDIR
 
 
 iff %ERRORS != 0 then

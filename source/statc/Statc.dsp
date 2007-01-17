@@ -58,7 +58,7 @@ LINK32=link.exe
 # SUBTRACT LINK32 /nodefaultlib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=del "..\..\statc.pyd"	"c:\program files\upx" "obj\release\statc.pyd" -o "..\..\statc.pyd"	copy obj\Release\statc.lib ..\..\lib\statc.lib
+PostBuild_Cmds=..\upx.bat statc
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Statc - Win32 Debug"

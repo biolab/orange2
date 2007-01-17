@@ -58,7 +58,7 @@ LINK32=link.exe
 # SUBTRACT LINK32 /nodefaultlib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=del "..\..\corn.pyd"	"c:\program files\upx" "obj\Release\corn.pyd" -o "..\..\corn.pyd"	copy obj\Release\corn.lib ..\..\lib\corn.lib
+PostBuild_Cmds=..\upx.bat corn
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Corn - Win32 Debug"

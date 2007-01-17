@@ -1,4 +1,4 @@
-import urllib, sys, os, sys
+import urllib, sys, os, md5
 
 files = "orange", "corn", "statc", "orangeom", "orangene"
 baseurl = "http://www.ailab.si/orange/download/binaries/%i%i/" % sys.version_info[:2]
@@ -14,24 +14,14 @@ os.chdir(op[0])
 def rep(blk_cnt, blk_size, tot_size):
 	print "\rDownloading %s: %i of %i" % (fle, min(tot_size, blk_cnt*blk_size), tot_size),
 
-if 1:
-	local_stamps = dict([tuple(x.split()) for x in file("stamps_pyd.txt")])
-else:
-	local_stamps = None
-
-try:
-    repository_stamps = dict([tuple(x.split()) for x in urllib.urlopen(baseurl + "stamps_pyd.txt") if x.strip()])
-except:
-	local_stamps = repository_stamps = None
+repository_stamps = dict([tuple(x.split()) for x in urllib.urlopen(baseurl + "stamps_pyd.txt") if x.strip()])
 
 for fle in files:
-    if local_stamps and local_stamps[fle+".pyd"] == repository_stamps[fle+".pyd"]:
+    if os.path.exists(fle+".pyd") and repository_stamps[fle+".pyd"] == md5.md5(file(fle+".pyd", "rb").read()).hexdigest().upper():
 		print "\nSkipping %s" % fle,
     else:
 	    print "\nDownloading %s" % fle,
 	    urllib.urlretrieve(fleurl % fle, fle+".temp", rep)
-	    os.remove(fle+".pyd")
+	    if os.path.exists(fle+".pyd"):
+	        os.remove(fle+".pyd")
 	    os.rename(fle+".temp", fle+".pyd")
-
-if repository_stamps:
-	file("stamps_pyd.txt", "wt").write("\n".join(["%s\t%s" % x for x in repository_stamps.items()]))

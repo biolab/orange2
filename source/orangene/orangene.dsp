@@ -58,7 +58,7 @@ LINK32=link.exe
 # SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=del "..\..\orangene.pyd"	"c:\program files\upx" "obj\release\orangene.pyd" -o "..\..\orangene.pyd"	copy obj\Release\orangene.lib ..\..\lib\orangene.lib
+PostBuild_Cmds=..\upx.bat orangene
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "orangene - Win32 Debug"

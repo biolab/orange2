@@ -57,7 +57,7 @@ LINK32=link.exe
 # ADD LINK32 orange.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/release/orangeom.pyd" /libpath:"../../lib" /libpath:"$(PYTHON)\libs"
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=del ..\..\orangeom.pyd	"c:\program files\upx" "obj\release\orangeom.pyd" -o "..\..\orangeom.pyd"	copy obj\Release\orangeom.lib ..\..\lib\orangeom.lib
+PostBuild_Cmds=..\upx.bat orangeom
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"

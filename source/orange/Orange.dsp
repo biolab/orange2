@@ -55,12 +55,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 /verbose /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(PYTHON)\libs" /WARN:0
-# SUBTRACT LINK32 /nologo /debug
+# ADD LINK32 /nologo /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(PYTHON)\libs" /WARN:0
+# SUBTRACT LINK32 /verbose /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
-PostBuild_Cmds=del "..\..\..\orange\orange.pyd"	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\..\orange\orange.pyd"	copy obj\Release\orange.lib ..\..\lib\orange.lib	rem copy "obj\Release\orange.pyd" "..\..\orange.pyd"
+PostBuild_Cmds=..\upx.bat orange
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
@@ -206,17 +206,6 @@ SOURCE=.\cls_misc.cpp
 # Begin Source File
 
 SOURCE=.\cls_orange.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -268,16 +257,14 @@ SOURCE=.\distancemap.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
-
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
 # ADD BASE CPP /O2
 # SUBTRACT BASE CPP /Z<none>
-# ADD CPP /Zi /Od
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
 
 !ENDIF 
 
@@ -352,42 +339,7 @@ SOURCE=.\hclust.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\im_col_assess.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-# PROP Exclude_From_Build 1
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-# PROP Exclude_From_Build 1
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# PROP BASE Exclude_From_Build 1
-# PROP Exclude_From_Build 1
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\imputation.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -400,17 +352,6 @@ SOURCE=.\jit_linker.cpp
 # Begin Source File
 
 SOURCE=.\knn.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# SUBTRACT CPP /Z<none> /O<none>
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -419,18 +360,6 @@ SOURCE=.\learn.cpp
 # Begin Source File
 
 SOURCE=.\lib_components.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -439,33 +368,10 @@ SOURCE=.\lib_io.cpp
 # Begin Source File
 
 SOURCE=.\lib_kernel.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
 SOURCE=.\lib_learner.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -474,17 +380,6 @@ SOURCE=.\lib_preprocess.cpp
 # Begin Source File
 
 SOURCE=.\lib_vectors.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -588,9 +483,6 @@ SOURCE=.\redundancy.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
-
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
@@ -610,17 +502,6 @@ SOURCE=.\retisinter.cpp
 # Begin Source File
 
 SOURCE=.\root.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
-
-# ADD CPP /Zi /Od
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
@@ -659,9 +540,6 @@ SOURCE=.\symmatrix.cpp
 SOURCE=.\tabdelim.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
