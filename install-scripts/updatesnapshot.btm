@@ -13,6 +13,8 @@ break_on_error
 for %pyver in (%PYTHONVERSIONS) (
   if not exist %pyver mkdir %pyver
   copy c:\compiled\%pyver %pyver
+  if not exist %WEBDOWNLOAD\binaries\%pyver mkdir %WEBDOWNLOAD\binaries\%pyver
+  copy c:\compiled\%pyver %WEBDOWNLOAD\binaries\%pyver
 )
 
 
