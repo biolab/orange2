@@ -14,6 +14,8 @@ set MNT_DOWNLOAD=/wwwUsers/orange/download
 
 set /r %WEBDOWNLOAD\filenames.set
 
+set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
+
 set WIN_SNAPSHOT=orange-snapshot-%daystr
 set WIN_GENOMICS_SNAPSHOT=orange-snapshot-genomics-%daystr
 set PLINK_SOURCE_SNAPSHOT=orange-source-snap-%daystr.tgz
@@ -41,8 +43,6 @@ set ERRORS=0
 alias flag_on_error=`if %errorlevel != 0 set ERRORS=%errorlevel`
 alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ cancel %errorlevel)`
 rem alias break_on_error=echo xx"
-
-set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
 
 set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
 
