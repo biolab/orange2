@@ -556,9 +556,9 @@ def tubedRegression(cache, dimensions, progressCallback = None, **args):
 def createClassVar(attributes, MQCNotation = False):
     import orngMisc
     if MQCNotation:
-        return orange.EnumVariable("Q", values = ["M%s(%s)" % ("".join(["+-"[x] for x in v if x<2]), ", ".join([attr for attr,x in zip(attributes, v) if x<2])) for v in orngMisc.LimitedCounter([3]*len(attributes))])
+        return orange.EnumVariable("Q", values = ["%s(%s)" % ("".join(["+-"[x] for x in v if x<2]), ", ".join([attr for attr,x in zip(attributes, v) if x<2])) for v in orngMisc.LimitedCounter([3]*len(attributes))])
     else:
-        return orange.EnumVariable("Q", values = ["M(%s)" % ", ".join(["+-"[x]+attr for attr, x in zip(attributes, v) if x<2]) for v in orngMisc.LimitedCounter([3]*len(attributes))])
+        return orange.EnumVariable("Q", values = ["Q(%s)" % ", ".join(["+-"[x]+attr for attr, x in zip(attributes, v) if x<2]) for v in orngMisc.LimitedCounter([3]*len(attributes))])
 
     
 def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, originalAsMeta = False):
