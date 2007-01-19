@@ -30,9 +30,8 @@ def includeOrNotFound(fname):
 <tr><td valign=top><b>Windows&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></td>
 <td>
  <p><a href="windows.output.log">Full log for Orange daily build</a> (<%=timeOrNotFound("windows.output.log")%>)</p>
- <p><a href="windows.compiling.log">compile log</a> (<%=timeOrNotFound("windows.compiling.log")%>)<br>
- <a href="windows.install.log">local install log</a> (<%=timeOrNotFound("windows.install.log")%>)<br>
- <a href="windows.regress.log">regression tests log</a> (<%=timeOrNotFound("windows.regress.log")%>)</P>
+ <p><a href="windows.compiling.log">compile log (daily snapshots)</a> (<%=timeOrNotFound("windows.compiling.log")%>)<br>
+ <a href="windows.regress.log">install and regression tests log</a> (<%=timeOrNotFound("windows.regress.log")%>)</P>
 <P>
 <a href="index.asp#windowsLog">(Jump to Windows log file)</a></P>
 </td></tr>
