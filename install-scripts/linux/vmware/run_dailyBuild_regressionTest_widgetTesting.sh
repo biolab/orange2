@@ -4,6 +4,7 @@ cd /home/vmware
 L=( winXP.dailyBuild winXP.regressionTests winXP.widgetTesting )
 
 for f in "${L[@]}"; do
+	echo "########################################################"
 	echo "running VM $f" 
 	# copy original VM image into a temporary location
 	rm -Rf cron.$f
@@ -16,7 +17,7 @@ for f in "${L[@]}"; do
 	echo "started at"
 	date
 	/usr/local/bin/vmware -geometry 1200x1000+0+0 -x -q -k runThis.lst
-	echo done
+	echo done at
 	date
 	echo
 
