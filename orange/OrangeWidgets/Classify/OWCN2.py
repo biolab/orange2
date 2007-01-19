@@ -184,7 +184,7 @@ class OWCN2(OWWidget):
         else:
             self.error("")
         self.send("Classifier", self.classifier)
-        self.send("CN2UnorderedClassifier", self.classifier)
+        self.send("Unordered CN2 Classifier", self.classifier)
         self.progressBarFinished()
 
     def dataset(self, data):
