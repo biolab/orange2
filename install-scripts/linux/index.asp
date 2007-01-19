@@ -2,8 +2,8 @@
 <%
 import os, time
 
-def timeOrNotFound(fname):
-	return os.path.exists(fname) and time.ctime(os.path.getmtime(fname)) or "not found!"
+def timeLinkOrNotFound(fname, desc):
+	return os.path.exists(fname) and "<a href=%s>%s</a> (%s)" % (fname, desc, time.ctime(os.path.getmtime(fname))) or "%s (not found)" % (desc)
 
 def includeOrNotFound(fname):
 	return os.path.exists(fname) and file(fname, "rt").read() or "not found!"
@@ -20,20 +20,18 @@ def includeOrNotFound(fname):
 <tr>
 <td valign=top><b>Linux</b></td>
 <td>
- <P><a href="linux.output.log">Full log for Orange daily build</a> (<%=timeOrNotFound("linux.output.log")%>)</p>
- <p><a href="linux.compiling.log">compile log</a> (<%=timeOrNotFound("linux.compiling.log")%>)<br>
- <a href="linux.install.log">local install log</a> (<%=timeOrNotFound("linux.install.log")%>)<br>
- <a href="linux.regress.log">regression tests log</a> (<%=timeOrNotFound("linux.regress.log")%>)
+ <P><%=timeLinkOrNotFound("linux.output.log", "Full log for Orange daily build")%></p>
+ <p><%=timeLinkOrNotFound("linux.compiling.log", "compile log")%><br>
+ <%=timeLinkOrNotFound("linux.install.log", "local install log")%><br>
+ <%=timeLinkOrNotFound("linux.regress.log", "regression tests log")%></p>
 </td>
 </tr>
 <tr><td>&nbsp;</td></tr>
 <tr><td valign=top><b>Windows&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b></td>
 <td>
- <p><a href="windows.output.log">Full log for Orange daily build</a> (<%=timeOrNotFound("windows.output.log")%>)</p>
- <p><a href="windows.compiling.log">compile log (daily snapshots)</a> (<%=timeOrNotFound("windows.compiling.log")%>)<br>
- <a href="windows.regress.log">install and regression tests log</a> (<%=timeOrNotFound("windows.regress.log")%>)</P>
-<P>
-<a href="index.asp#windowsLog">(Jump to Windows log file)</a></P>
+ <p><a href="index.asp#windowsLog">Full log for Orange daily build</a></p>
+ <p><%=timeLinkOrNotFound("windows.compiling.log", "compile log (daily snapshots)")%><br>
+ <%=timeLinkOrNotFound("windows.regress.log", "install and regression tests log")%></P>
 </td></tr>
 </table>
 
@@ -49,7 +47,11 @@ def includeOrNotFound(fname):
 <a name="windowsLog"></a>
 <h3>Full Log on Windows</h3>
 <pre>
-<%=includeOrNotFound("windows.output.log")%>
+<%=includeOrNotFound("windows.compiling.log")%>
+</pre>
+
+<pre>
+<%=includeOrNotFound("windows.regress.log")%>
 </pre>
 
 </BODY>
