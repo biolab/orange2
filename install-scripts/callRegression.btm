@@ -25,6 +25,8 @@ for %d in (modules-output ofb-output reference-output) do (
   )
 )
 
+copy regressionTests.log %REGRESDIR\windows.regress.log
+
 iff %ERRORS != 0 then
   set subj="Error in regression tests on Windows"
 else
