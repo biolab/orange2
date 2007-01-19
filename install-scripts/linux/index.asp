@@ -3,7 +3,7 @@
 import os, time
 
 def timeOrNotFound(fname):
-	return os.path.exists(fname) and time.ctime(os.path.getctime(fname)) or "not found!"
+	return os.path.exists(fname) and time.ctime(os.path.getmtime(fname)) or "not found!"
 
 def includeOrNotFound(fname):
 	return os.path.exists(fname) and file(fname, "rt").read() or "not found!"
