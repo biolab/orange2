@@ -17,10 +17,13 @@ for %pyver in (%PYTHONVERSIONS) do (
 set REGRESDIR=%WEBDOWNLOAD\regressionResults
 if not exist %REGRESDIR mkdir %REGRESDIR
 
-for %res in (crash error new changed random1 random2) do
-  del /s ..\regressionTests\*.py.*.?.?.%res.txt
-  copy /s ..\regressionTests\*.py.*.?.?.%res.txt %REGRESDIR
-
+for %d in (modules-output ofb-output reference-output) do (
+  for %res in (crash error new changed random1 random2) do (
+    rem remove old regression reports from web and copy new
+    del /s %REGRESDIR\%d\*.py.win32.?.?.%res.txt
+    copy /s ..\regressionTests\%d\*.py.*.?.?.%res.txt %REGRESDIR
+  )
+)
 
 iff %ERRORS != 0 then
   set subj="Error in regression tests on Windows"
