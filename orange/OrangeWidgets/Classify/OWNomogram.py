@@ -460,6 +460,60 @@ class OWNomogram(OWWidget):
         self.bnomogram.show()
         self.error()
 
+    # Input channel: the rule classifier (from ABCN2 only)
+    def ruleClassifier(self, cl):
+        def selectSign(oper):
+            if oper == orange.ValueFilter_continuous.Less:
+                return "<"
+            elif oper == orange.ValueFilter_continuous.LessEqual:
+                return "<="
+            elif oper == orange.ValueFilter_continuous.Greater:
+                return ">"
+            elif oper == orange.ValueFilter_continuous.GreaterEqual:
+                return ">="
+            else: return "="
+        
+        def getConditions(rule):
+            conds = rule.filter.conditions
+            domain = rule.filter.domain
+            ret = ""
+            if len(conds)==0:
+                ret = ret + "TRUE"
+            for i,c in enumerate(conds):
+                if i > 0:
+                    ret += " & "
+                if type(c) == orange.ValueFilter_discrete:
+                    ret += domain[c.position].name[:2] + "=" + str(domain[c.position].values[int(c.values[0])])
+                elif type(c) == orange.ValueFilter_continuous:
+                    ret += domain[c.position].name[:2] + selectSign(c.oper) + "%.1f"%c.ref
+            return ret
+            
+        if not len(self.data.domain.classVar.values) == 2:
+            self.error("OWNomogram:"+"Only two class domains for rules!")
+        classVal = cl.domain.classVar
+        att = cl.domain.attributes
+
+        if self.TargetClassIndex == 0 or self.TargetClassIndex == cl.domain.classVar[0]:
+            mult = 1.
+        else:
+            mult = -1.
+            
+        # calculate prior probability (from self.TargetClassIndex)
+        self.bnomogram = BasicNomogram(self, AttValue("Constant", mult*cl.priorProbBetas[0]))
+        for r_i,r in enumerate(cl.rules):
+            a = AttrLine(getConditions(r), self.bnomogram)
+            if r.classifier.defaultVal == 0:
+                sign = mult
+            else: sign = -mult
+            a.addAttValue(AttValue("yes", sign*cl.ruleBetas[r_i], lineWidth=0, error = 0.0))
+            a.addAttValue(AttValue("no", 0.0, lineWidth=0, error = 0.0))
+            self.bnomogram.addAttribute(a)
+
+        self.graph.setCanvas(self.bnomogram)
+        self.bnomogram.show()
+        self.error()
+
+
     def initClassValues(self, classValue):
         self.targetCombo.clear()
         for v in classValue:
@@ -535,6 +589,8 @@ class OWNomogram(OWWidget):
                 self.lrClassifier(self.cl)
             else:
                 setNone()
+        elif type(self.cl) == orange.RuleClassifier_logit or type(self.cl) == orange.RuleClassifier_logit_bestRule:
+            self.ruleClassifier(self.cl)
         else:
             setNone()
         if self.sort_type>0:
