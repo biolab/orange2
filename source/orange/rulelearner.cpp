@@ -908,10 +908,12 @@ PRuleClassifier TRuleClassifierConstructor_firstRule::operator ()(PRuleList rule
 TRuleClassifier::TRuleClassifier(PRuleList arules, PExampleTable anexamples, const int &aweightID)
 : rules(arules),
   examples(anexamples),
-  weightID(aweightID)
+  weightID(aweightID),
+  TClassifier(anexamples->domain->classVar,true)
 {}
 
 TRuleClassifier::TRuleClassifier()
+: TClassifier(true)
 {}
 
 
@@ -936,3 +938,582 @@ PDistribution TRuleClassifier_firstRule::classDistribution(const TExample &ex)
   }
   return prior;
 }
+
+void copyTable(float **dest, float **source, int nx, int ny) {
+  for (int i=0; i<nx; i++)
+    memcpy(dest[i],source[i],ny*sizeof(float));
+}
+
+// Rule classifier based on logit (beta) coefficients
+TRuleClassifier_logit::TRuleClassifier_logit(PRuleList arules, PExampleTable anexamples, const int &aweightID, const bool &anuseBestRuleOnly)
+: TRuleClassifier(arules, anexamples, aweightID),
+  useBestRuleOnly(anuseBestRuleOnly)
+{
+  // compute prior distribution of learning examples
+  prior = getClassDistribution(examples, weightID);
+  domain = examples->domain;
+
+  // initialize variables f, p, tempF, tempP, wavgCov, wavgCovPrior, wsd, wsdPrior,
+  // ruleIndices, betas, priorBetas, wpriorProb, wavgProb
+  initialize();
+  float step = 2.0;
+
+  // compute initial goodness-of-fit evaluation
+  eval = compPotEval(0,getClassIndex(*(rules->begin())),betas[0],tempF,tempP,wavgProb,wpriorProb);
+
+  // set up prior Betas
+  while (step > 0.004) {
+    step /= 2.0;
+    correctPriorBetas(step);
+  }
+  eval = compPotEval(0,getClassIndex(*(rules->begin())),betas[0],tempF,tempP,wavgProb,wpriorProb);
+
+  // evaluation loop
+  float **oldF, **oldP, *oldBetas, *oldPriorBetas; 
+  oldF = new float*[examples->domain->classVar->noOfValues()-1];
+  oldP = new float*[examples->domain->classVar->noOfValues()];
+  oldBetas = new float[rules->size()];
+  oldPriorBetas = new float[examples->domain->classVar->noOfValues()];
+  for(int i=0; i<examples->domain->classVar->noOfValues(); i++) {
+    if (i<examples->domain->classVar->noOfValues()-1)
+      oldF[i] = new float[examples->numberOfExamples()];
+    oldP[i] = new float[examples->numberOfExamples()];
+  }
+
+  float priorb = priorBetas[0];
+  step = 2.0;
+  while (step > 0.004) {
+    step /= 2.0;
+    bool improvedOverAll = true;
+    bool beenInCorrectPrior = false;
+    float oldEval = eval - 1;
+  	while (improvedOverAll) {
+	  	updateRuleBetas(step);
+		  // optimize prior betas
+		  if (eval<=oldEval && beenInCorrectPrior) {
+		    eval = oldEval;
+        copyTable(f, oldF, examples->domain->classVar->noOfValues()-1, examples->numberOfExamples());
+        copyTable(p, oldP, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+        copyTable(tempF, oldF, examples->domain->classVar->noOfValues()-1, examples->numberOfExamples());
+        copyTable(tempP, oldP, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+        memcpy(betas,oldBetas,sizeof(float)*rules->size());
+		    memcpy(priorBetas,oldPriorBetas,sizeof(float)*(examples->domain->classVar->noOfValues()-1));
+		    improvedOverAll = false;
+		  }
+		  else {
+        beenInCorrectPrior = true;
+		    // store old Values
+        copyTable(oldF, f, examples->domain->classVar->noOfValues()-1, examples->numberOfExamples());
+        copyTable(oldP, p, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+		    oldEval = eval;
+		    memcpy(oldBetas,betas,sizeof(float)*rules->size());
+		    memcpy(oldPriorBetas,priorBetas,sizeof(float)*(examples->domain->classVar->noOfValues()-1));
+		    // first correct prior prob deviations
+		    correctPriorBetas(step);
+		    if (oldEval != eval) // prior probs changed
+			    continue;
+		    // if no change in prior betas - try to distort them
+		    distortPriorBetas(step);
+      }
+    }
+  }
+
+  TFloatList *aruleBetas = mlnew TFloatList();
+  ruleBetas = aruleBetas;
+  TFloatList *apriorProbBetas = mlnew TFloatList();
+  priorProbBetas = apriorProbBetas;
+  for (i=0; i<rules->size(); i++)
+    ruleBetas->push_back(betas[i]);
+  for (i=0; i<examples->domain->classVar->noOfValues()-1; i++)
+    priorProbBetas->push_back(priorBetas[i]);
+
+  delete [] oldBetas;
+  delete [] oldPriorBetas;
+  for(i=0; i<examples->domain->classVar->noOfValues(); i++) {
+    if (i<examples->domain->classVar->noOfValues()-1)
+      delete [] oldF[i];
+    delete [] oldP[i];
+  }
+  delete [] oldF; delete [] oldP;
+}
+
+TRuleClassifier_logit::TRuleClassifier_logit()
+: TRuleClassifier()
+{}
+
+// function sums; f = a0 + a1*r1.quality + ... AND example probabilities 
+// set all to zero
+// Compute average example coverage and set index of examples covered by rule
+// set all remaining variables
+void TRuleClassifier_logit::initialize()
+{
+  psize = examples->domain->classVar->noOfValues()*examples->numberOfExamples();
+  fsize = (examples->domain->classVar->noOfValues()-1)*examples->numberOfExamples();
+
+  // initialize f, p, tempF, tempP
+  f = new float *[examples->domain->classVar->noOfValues()-1];
+  p = new float *[examples->domain->classVar->noOfValues()];
+  tempF = new float *[examples->domain->classVar->noOfValues()-1];
+  tempP = new float *[examples->domain->classVar->noOfValues()];
+  for (int i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
+	  f[i] = new float[examples->numberOfExamples()];
+	  p[i] = new float[examples->numberOfExamples()];
+	  tempF[i] = new float[examples->numberOfExamples()];
+	  tempP[i] = new float[examples->numberOfExamples()];
+	  for (int j=0; j<examples->numberOfExamples(); j++) {
+		  f[i][j] = 0.0;
+		  p[i][j] = 1.0/examples->domain->classVar->noOfValues();
+		  tempF[i][j] = 0.0;
+		  tempP[i][j] = 1.0/examples->domain->classVar->noOfValues();
+	  }
+  }
+  {
+	  p[examples->domain->classVar->noOfValues()-1] = new float[examples->numberOfExamples()];
+	  tempP[examples->domain->classVar->noOfValues()-1] = new float[examples->numberOfExamples()];
+	  for (int j=0; j<examples->numberOfExamples(); j++) {
+		  p[examples->domain->classVar->noOfValues()-1][j] = 1.0/examples->domain->classVar->noOfValues();
+		  tempP[examples->domain->classVar->noOfValues()-1][j] = 1.0/examples->domain->classVar->noOfValues();
+	  }
+  }
+
+  // Compute average example coverage and set index of examples covered by rule
+  float *coverages = new float[examples->numberOfExamples()];
+  for (int j=0; j<examples->numberOfExamples(); j++) {
+    coverages[j] = 1.0;
+  }
+  i=0;
+  ruleIndices = mlnew PIntList[rules->size()];
+  {
+    PITERATE(TRuleList, ri, rules) {
+      TIntList *ruleIndicesnw = mlnew TIntList();
+      ruleIndices[i] = ruleIndicesnw;
+      j=0;
+      PEITERATE(ei, examples) {
+        if ((*ri)->call(*ei)) {
+	        ruleIndices[i]->push_back(j);
+          //int vv = (*ei).getClass().intV;
+		      if ((*ei).getClass().intV == getClassIndex(*ri))
+			      coverages[j] += 1.0;
+        }
+	      j++;
+      }
+      i++;
+    }
+  }
+
+  TFloatList *avgCov = new TFloatList();
+  wavgCov = avgCov;
+  TFloatList *avgCovPrior = new TFloatList();
+  wavgCovPrior = avgCovPrior;
+  for (i=0; i<rules->size(); i++) {
+    float newCov = 0.0;
+    float counter = 0.0;
+    PITERATE(TIntList, ind, ruleIndices[i]) 
+      if (getClassIndex(rules->at(i)) == examples->at(*ind).getClass().intV) {
+        newCov += coverages[*ind];
+        counter++;
+      }
+    if (counter) {
+      wavgCov->push_back(newCov/counter);
+    }
+    else
+      wavgCov->push_back(0.0);
+  }
+  for (i=0; i<examples->domain->classVar->noOfValues(); i++) {
+    float newCov = 0.0;
+    float counter = 0.0;
+    for (j=0; j<examples->numberOfExamples(); j++)
+      if (examples->at(j).getClass().intV == i) {
+        newCov += coverages[j];
+        counter++;
+      }
+    if (counter)
+      wavgCovPrior->push_back(newCov/counter);
+    else
+      wavgCovPrior->push_back(0.0);
+  }
+
+  // compute standard deviations
+  TFloatList *sd = new TFloatList(); 
+  wsd = sd;
+  PITERATE(TRuleList, ri, rules) {
+    float n = (*ri)->examples->numberOfExamples();
+    float a = n*(*ri)->quality;
+    float b = n*(1.0-(*ri)->quality);
+    float expab = log(a)+log(b)-2*log(a+b)-log(a+b+1);
+    wsd->push_back(exp(0.5*expab));
+  }
+  TFloatList *sdPrior = new TFloatList(); 
+  wsdPrior = sdPrior;
+  for (i=0; i<examples->domain->classVar->noOfValues(); i++) {
+    float n = examples->numberOfExamples();
+    float a = n*prior->atint(i)/prior->abs;
+    float b = n*(1.0-prior->atint(i)/prior->abs);
+    float expab = log(a)+log(b)-2*log(a+b)-log(a+b+1);
+    wsdPrior->push_back(exp(0.5*expab));
+  }
+
+  // set initial values of betas (as minbetas)
+  minbetas = new float[rules->size()];
+  for (i=0; i<rules->size(); i++) {
+    PRule r = rules->at(i);
+    float p0 = prior->atint(getClassIndex(r))/prior->abs;
+    p0 = p0>1e-6 ? p0 : 1e-6; p0 = p0<1.0-1e-6 ? p0 : 1.0-1e-6;
+    float p = r->quality;
+    p = p>1e-6 ? p : 1e-6; p = p<1.0-1e-6 ? p : 1.0-1e-6;
+    minbetas[i] = log((1-p0)/(1-p)*p/p0)/(wavgCov->at(i));
+  }
+  betas = new float[rules->size()];
+  for (i=0; i<rules->size(); i++)
+	  betas[i] = 0.0;//minbetas[i];
+
+  // Add default rules
+  priorBetas = new float[examples->domain->classVar->noOfValues()];
+  for (i=0; i<examples->domain->classVar->noOfValues(); i++)
+	  priorBetas[i] = 0.0;
+
+  // priorProb and avgProb
+  TFloatList *priorProb = mlnew TFloatList();
+  wpriorProb = priorProb;
+  TFloatList *avgProb = mlnew TFloatList();
+  wavgProb = avgProb;
+
+  // set coveredRules to examples
+  coveredRules = new PIntList *[examples->numberOfExamples()];
+  for (i=0; i<examples->numberOfExamples(); i++) {
+    coveredRules[i] = new PIntList [examples->domain->classVar->noOfValues()];
+    for (int j=0; j<examples->domain->classVar->noOfValues(); j++) {
+      TIntList *tmpList = new TIntList();
+      coveredRules[i][j] = tmpList;
+      for (int k=0; k<rules->size(); k++) {
+        if (rules->at(k)->call(examples->at(i)) && getClassIndex(rules->at(k))==j)
+          coveredRules[i][j]->push_back(k);
+      }
+    }
+  }
+}
+
+float TRuleClassifier_logit::cutOptimisticBetas(float step, float curr_eval)
+{
+ float newEval = curr_eval;
+ bool changedOptimistic = true;
+  while (changedOptimistic) {
+    changedOptimistic = false;
+  	for (int i=0; i<rules->size(); i++)
+      if ((wavgProb->at(i) > rules->at(i)->quality) && (betas[i]-step)>=0.0) {
+        newEval = compPotEval(i, getClassIndex(rules->at(i)), betas[i]-step,tempF,tempP,wavgProb,wpriorProb);
+				betas[i] = betas[i]-step;
+        changedOptimistic = true;
+      }
+  }
+  return newEval;
+}
+
+// Iterates through rules and tries to change betas to improve goodness-of-fit
+void TRuleClassifier_logit::updateRuleBetas(float step)
+{
+  // cut betas of optimistic rules (also copy from tempF to f - cutOptimisticBetas does not)
+  eval = cutOptimisticBetas(step, eval);
+  copyTable(f, tempF, examples->domain->classVar->noOfValues()-1, examples->numberOfExamples());
+  copyTable(p, tempP, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+
+  float *oldBetasU = new float[rules->size()];
+ 	bool changed = true;
+	while (changed) {
+		changed = false;
+    for (int i=0; i<rules->size(); i++) {
+			// positive update of beta
+			bool improve = false;
+			float newEval = compPotEval(i, getClassIndex(rules->at(i)), betas[i]+step,tempF,tempP,wavgProb,wpriorProb);
+      if (newEval>eval && wavgProb->at(i) <= rules->at(i)->quality) { //  
+		    memcpy(oldBetasU,betas,sizeof(float)*rules->size());
+				betas[i] = betas[i]+step;
+        newEval = cutOptimisticBetas(step, newEval);
+        if (newEval>eval) {
+				  eval = newEval;
+				  // tempP and tempF are set in compPotEval
+          copyTable(f, tempF, examples->domain->classVar->noOfValues()-1, examples->numberOfExamples());
+          copyTable(p, tempP, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+				  improve = true;
+				  changed = true;
+        }
+        else {
+          memcpy(betas,oldBetasU,sizeof(float)*rules->size());
+          copyTable(tempF, f, examples->domain->classVar->noOfValues()-1, examples->numberOfExamples());
+          copyTable(tempP, p, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+        }
+			}
+      else {
+        copyTable(tempF, f, examples->domain->classVar->noOfValues()-1, examples->numberOfExamples());
+        copyTable(tempP, p, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+      }
+		}
+	}
+  delete [] oldBetasU;
+}
+
+// Correct prior probabilities by setting prior betas.
+void TRuleClassifier_logit::correctPriorBetas(float step)
+{
+	bool changed = true;
+	while (changed) {
+		changed = false;
+		for (int i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
+		// positive update of prior
+			bool improve = false;
+			priorBetas[i]+=step;
+			float newEval = compPotEval(0, getClassIndex(rules->at(0)), betas[0],tempF,tempP,wavgProb,wpriorProb);
+			if (wpriorProb->at(i) <= prior->atint(i)/prior->abs) {
+				eval = newEval;
+        copyTable(p, tempP, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+				improve = true;
+				changed = true;
+			}
+			else 
+				priorBetas[i]-=step;
+			if (!improve) {
+				priorBetas[i]-=step;
+				newEval = compPotEval(0, getClassIndex(rules->at(0)), betas[0],tempF,tempP,wavgProb,wpriorProb);
+				if (wpriorProb->at(i) >= prior->atint(i)/prior->abs) {
+					eval = newEval;
+          copyTable(p, tempP, examples->domain->classVar->noOfValues(), examples->numberOfExamples());
+					changed = true;
+          improve = true;
+				}
+				else 
+					priorBetas[i]+=step;
+			}
+    }
+	}
+}
+
+// Distort probabilities a bit and hope to get out of local maximum
+void TRuleClassifier_logit::distortPriorBetas(float step)
+{
+	// compute prior probabilities
+	float *priors = new float[examples->domain->classVar->noOfValues()];
+  float sum = 1.0;
+	for (int i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
+    priors[i] = exp(priorBetas[i]);
+    sum += priors[i];
+  }
+  priors[examples->domain->classVar->noOfValues()-1] = 1.0;
+	for (i=0; i<examples->domain->classVar->noOfValues(); i++)
+    priors[i]/=sum;
+
+	// get worse class
+	int worstClassInd=0;
+	float worstClassDiff, currDiff;
+	
+	for (i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
+		if (i==0)
+			worstClassDiff=abs(prior->atint(0)/prior->abs-priors[0]);
+		currDiff=abs(prior->atint(i)/prior->abs-priors[i]);
+		if (currDiff>worstClassDiff) {
+			worstClassDiff = currDiff;
+			worstClassInd = i;
+		}
+	}
+
+  if (prior->atint(worstClassInd)/prior->abs-priors[worstClassInd]>0.0)
+  	priorBetas[worstClassInd] += step;
+  else
+  	priorBetas[worstClassInd] -= step;
+	eval = compPotEval(0, getClassIndex(rules->at(0)), betas[0], tempF,tempP,wavgProb,wpriorProb);
+	delete [] priors;
+}
+
+float TRuleClassifier_logit::findMax(int clIndex, int exIndex) {
+  float maxB = 0.0;
+  PITERATE(TIntList, ri, coveredRules[exIndex][clIndex]) {
+    if (betas[*ri] > maxB)
+      maxB = betas[*ri];
+  }
+  return maxB;
+}
+
+// Computes new probabilities of examples if rule would have beta set as newBeta.
+float TRuleClassifier_logit::compPotEval(int ruleIndex, int classIndex, float newBeta, float **tempF, float **tempP, PFloatList &wavgProb, PFloatList &wpriorProb)
+{
+  float dif = newBeta - betas[ruleIndex];
+  // prepare new probabilities
+  if (abs(dif)>1e-10)
+    PITERATE(TIntList, ind, ruleIndices[ruleIndex]) {
+      if (useBestRuleOnly) {
+        betas[ruleIndex] = newBeta;
+        for (int fi=0; fi<examples->domain->classVar->noOfValues()-1; fi++) {
+          tempF[fi][*ind] = 0.0;
+          for (int ci=0; ci<examples->domain->classVar->noOfValues(); ci++) {
+	          if (ci == fi)
+	            tempF[fi][*ind] += findMax(ci,*ind);
+	          else
+		          tempF[fi][*ind] -= findMax(ci,*ind);
+          }
+        }
+        betas[ruleIndex] -= dif;
+      }
+      else
+        for (int fi=0; fi<examples->domain->classVar->noOfValues()-1; fi++)
+	        if (fi == classIndex)
+	          tempF[fi][*ind] += dif;
+	        else
+		        tempF[fi][*ind] -= dif;
+      float sum = 1.0;
+      for (int pi=0; pi<examples->domain->classVar->noOfValues()-1; pi++) {
+        tempP[pi][*ind] = exp(tempF[pi][*ind]+priorBetas[pi]);
+        sum += exp(tempF[pi][*ind]+priorBetas[pi]);
+      }
+      tempP[examples->domain->classVar->noOfValues()-1][*ind] = 1.0;
+      for (pi=0; pi<examples->domain->classVar->noOfValues(); pi+=1)
+        tempP[pi][*ind] /= sum;
+    }
+  else {
+    for (int ei=0; ei<examples->numberOfExamples(); ei++) {
+      float sum = 1.0;
+      for (int pi=0; pi<examples->domain->classVar->noOfValues()-1; pi++) {
+        tempP[pi][ei] = exp(tempF[pi][ei]+priorBetas[pi]);
+        sum += exp(tempF[pi][ei]+priorBetas[pi]);
+      }
+      tempP[examples->domain->classVar->noOfValues()-1][ei] = 1.0;
+      for (pi=0; pi<examples->domain->classVar->noOfValues(); pi+=1)
+        tempP[pi][ei] /= sum;
+    }
+  }
+  
+  // compute new rule avgProbs
+  wavgProb->clear();
+  int classInd = 0;
+  float newAvgProb = 0.0;
+  for (int ri = 0; ri<rules->size(); ri++) {
+    newAvgProb = 0.0;
+    classInd = getClassIndex(rules->at(ri));
+    PITERATE(TIntList, ind, ruleIndices[ri]) {
+      newAvgProb += tempP[classInd][*ind];
+    }
+    wavgProb->push_back(newAvgProb/ruleIndices[ri]->size());
+  }
+
+  // compute new prior probs
+  wpriorProb->clear();
+  for (int pi=0; pi<examples->domain->classVar->noOfValues(); pi++) {
+    float newPriorProb = 0.0;
+    for (int ei=0; ei<examples->numberOfExamples(); ei++) {
+      newPriorProb += tempP[pi][ei];
+    }
+    wpriorProb->push_back(newPriorProb/examples->numberOfExamples());
+  }
+
+  // new evaluation
+  float newEval = 0.0;
+  TFloatList::iterator sdi(wsd->begin()), sde(wsd->end());
+  TFloatList::iterator aci(wavgCov->begin()), ace(wavgCov->end());
+  TFloatList::iterator api(wavgProb->begin()), ape(wavgProb->end());
+  TRuleList::iterator rit(rules->begin()), re(rules->end());
+  int bi = 0;
+  for (; rit!=re; rit++,sdi++,aci++,api++) {
+    if (!((*api)>(*rit)->quality && (ruleIndex==bi && newBeta>0.0 || betas[bi]>0.0))) {
+      int nExamples = (*rit)->examples->numberOfExamples();
+      float quality = (*rit)->quality;
+      newEval += (nExamples*quality*log((*api)/quality)+nExamples*(1-quality)*log((1-(*api))/(1-quality)))/(*aci);
+    }
+    bi++;
+  }
+
+  // new evaluation from prior
+  sdi = wsdPrior->begin(); sde = wsdPrior->end();
+  aci = wavgCovPrior->begin(); ace = wavgCovPrior->end();
+  api = wpriorProb->begin(); ape = wpriorProb->end();
+  for (int i=0; api!=ape; i++, api++,sdi++,aci++) {
+    int nExamples = examples->numberOfExamples();
+    float quality = prior->atint(i)/prior->abs;
+    newEval += (nExamples*quality*log((*api)/quality)+nExamples*(1-quality)*log((1-(*api))/(1-quality)))/(*aci);
+  }
+  return newEval;
+}
+
+PDistribution TRuleClassifier_logit::classDistribution(const TExample &ex)
+{
+  checkProperty(rules);
+  checkProperty(prior);
+  checkProperty(domain);
+  TExample cexample(domain, ex);
+
+  TDiscDistribution *dist = mlnew TDiscDistribution(domain->classVar);
+  PDistribution res = dist;
+
+  float *bestBeta = mlnew float [domain->classVar->noOfValues()];
+  if (useBestRuleOnly) {
+    for (int i=0; i<domain->classVar->noOfValues(); i++)
+      bestBeta[i]=0.0;
+    TFloatList::const_iterator b(ruleBetas->begin()), be(ruleBetas->end());
+    TRuleList::iterator r(rules->begin()), re(rules->end());
+	  for (; r!=re; r++, b++)
+      if ((*r)->call(cexample) && (*b)>bestBeta[getClassIndex(*r)])
+        bestBeta[getClassIndex(*r)] = *b;
+  }
+  for (int i=0; i<res->noOfElements()-1; i++) {
+    float f = priorProbBetas->at(i);
+    TFloatList::const_iterator b(ruleBetas->begin()), be(ruleBetas->end());
+    TRuleList::iterator r(rules->begin()), re(rules->end());
+    if (useBestRuleOnly)
+      for (int j=0; j<domain->classVar->noOfValues(); j++)
+        if (j == i)
+    		    f += bestBeta[j]; 
+          else
+            f -= bestBeta[j];
+    else
+	    for (; r!=re; r++, b++)
+        if ((*r)->call(cexample))
+          if (getClassIndex(*r) == i)
+    		    f += (*b); 
+          else
+            f -= (*b);
+    dist->addint(i,exp(f));
+  }
+  dist->addint(res->noOfElements()-1,1.0);
+  dist->normalize();
+  delete [] bestBeta;
+  return res;
+}
+
+int TRuleClassifier_logit::getClassIndex(PRule r) {
+  const TDefaultClassifier &cl = dynamic_cast<const TDefaultClassifier &>(r->classifier.getReference());
+  return cl.defaultVal.intV;
+}
+
+// Clear allocated vectors
+TRuleClassifier_logit::~TRuleClassifier_logit()
+{
+  for (int i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
+  	delete [] f[i];
+    delete [] tempF[i];
+  }
+  delete [] f;
+  delete [] tempF;
+
+  for (i=0; i<examples->domain->classVar->noOfValues(); i++) {
+  	delete [] p[i];
+    delete [] tempP[i];
+  }
+  delete [] p;
+  delete [] tempP;
+
+  delete [] betas;
+  delete [] priorBetas;
+  delete [] minbetas;
+  delete [] ruleIndices;
+  for (i=0; i<examples->numberOfExamples(); i++) {
+  	delete [] coveredRules[i];
+  }
+  delete [] coveredRules;
+}
+
+TRuleClassifier_logit_bestRule::TRuleClassifier_logit_bestRule()
+: TRuleClassifier_logit()
+{}
+
+TRuleClassifier_logit_bestRule::TRuleClassifier_logit_bestRule(PRuleList arules, PExampleTable anexamples, const int &aweightID)
+: TRuleClassifier_logit(arules, anexamples, aweightID, true)
+{}
+
+

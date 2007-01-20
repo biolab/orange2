@@ -1162,6 +1162,8 @@ C_CALL(RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
 
 ABSTRACT(RuleClassifier, Classifier)
 C_NAMED(RuleClassifier_firstRule, RuleClassifier, "([rules,examples[,weightID]])")
+C_NAMED(RuleClassifier_logit, RuleClassifier, "([rules,examples[,weightID]])")
+C_NAMED(RuleClassifier_logit_bestRule, RuleClassifier_logit, "([rules,examples[,weightID]])")
 
 PyObject *Rule_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
@@ -1567,6 +1569,53 @@ PyObject *RuleClassifierConstructor_call(PyObject *self, PyObject *args, PyObjec
   PyCATCH
 }
 
+PyObject *RuleClassifier_logit_new(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, examples[, weight])")
+{ 
+  PyTRY
+    NO_KEYWORDS
+
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrRuleClassifier_Type) {
+      PyErr_Format(PyExc_SystemError, "RuleClassifier.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
+    PExampleGenerator gen;
+    int weightID = 0;
+    PRuleList rules;
+
+    if (!PyArg_ParseTuple(args, "O&O&|O&:RuleClassifier.call", cc_RuleList, &rules, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+      return PYNULL;
+
+    TRuleClassifier *rc = new TRuleClassifier_logit(rules, gen, weightID);
+    PRuleClassifier ruleClassifier = rc;
+//    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
+    return WrapOrange(ruleClassifier);
+  PyCATCH
+}
+
+PyObject *RuleClassifier_logit_bestRule_new(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, examples[, weight])")
+{ 
+  PyTRY
+    NO_KEYWORDS
+
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrRuleClassifier_Type) {
+      PyErr_Format(PyExc_SystemError, "RuleClassifier.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
+    PExampleGenerator gen;
+    int weightID = 0;
+    PRuleList rules;
+
+    if (!PyArg_ParseTuple(args, "O&O&|O&:RuleClassifier.call", cc_RuleList, &rules, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+      return PYNULL;
+
+    TRuleClassifier *rc = new TRuleClassifier_logit_bestRule(rules, gen, weightID);
+    PRuleClassifier ruleClassifier = rc;
+//    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
+    return WrapOrange(ruleClassifier);
+  PyCATCH
+}
 
 PRuleList PRuleList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::P_FromArguments(arg); }
 PyObject *RuleList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_FromArguments(type, arg); }
