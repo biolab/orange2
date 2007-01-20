@@ -965,18 +965,27 @@ class BasicNomogramFooter(QCanvas):
         for obj in self.cilist:
             obj.setPen(QPen(Qt.blue, 3))
             obj.setZ(100)
-        
+
+        self.linkFunc = self.logit
+        self.invLinkFunc = self.invLogit
+
+    def logit(self, val):
+        return math.exp(val)/(1+math.exp(val))
+    
+    def invLogit(self, p):    
+        return math.log(p/max(1-p,aproxZero))
+    
     def convertToPercent(self, atLine):
-        minPercent = math.exp(atLine.minValue)/(1+math.exp(atLine.minValue))
-        maxPercent = math.exp(atLine.maxValue)/(1+math.exp(atLine.maxValue))
+        minPercent = self.linkFunc(atLine.minValue)#math.exp(atLine.minValue)/(1+math.exp(atLine.minValue))
+        maxPercent = self.linkFunc(atLine.maxValue)#math.exp(atLine.maxValue)/(1+math.exp(atLine.maxValue))
 
         percentLine = AttrLine(atLine.name, self)
         percentList = filter(lambda x:x>minPercent and x<maxPercent,Numeric.arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
             if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
-                percentLine.addAttValue(AttValue(" "+str(p)+" ", math.log(p/max(1-p,aproxZero)), markerWidth = 1, enable = False))
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", self.invLinkFunc(p), markerWidth = 1, enable = False))
             else:
-                percentLine.addAttValue(AttValue(" "+str(p)+" ", math.log(p/max(1-p,aproxZero)), markerWidth = 1))
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", self.invLinkFunc(p), markerWidth = 1))
         return percentLine  
         
        
