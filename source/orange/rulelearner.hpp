@@ -355,4 +355,43 @@ public:
   virtual PDistribution classDistribution(const TExample &ex);
 };
 
+// Logit rule based classifier;
+class ORANGE_API TRuleClassifier_logit : public TRuleClassifier {
+public:
+  __REGISTER_CLASS
+
+  PDistribution prior; //P prior distribution
+  PDomain domain; //P Domain
+  PFloatList ruleBetas; //P Rule betas
+  PFloatList priorProbBetas; //P Prior probabilitiy betas
+
+  float eval, **f, **p, **tempP, **tempF, *betas, *priorBetas, *minbetas;
+  PFloatList wavgCov, wavgCovPrior, wsd, wsdPrior, wpriorProb, wavgProb;
+  PIntList *ruleIndices, **coveredRules;
+  int psize,fsize;
+  bool useBestRuleOnly;
+
+  TRuleClassifier_logit();
+  TRuleClassifier_logit(PRuleList rules, PExampleTable examples, const int &weightID = 0, const bool &useBestRuleOnly = false);
+  ~TRuleClassifier_logit();
+
+  void initialize();
+  void updateRuleBetas(float step);
+  float cutOptimisticBetas(float step, float curr_eval);
+  void correctPriorBetas(float step);
+  void distortPriorBetas(float step);
+  float findMax(int clIndex, int exIndex);
+  float compPotEval(int ruleIndex, int classIndex, float newBeta, float **tempF, float **tempP, PFloatList &wavgProb, PFloatList &wpriorProb);
+  int getClassIndex(PRule r);
+  virtual PDistribution classDistribution(const TExample &ex);
+};
+
+class ORANGE_API TRuleClassifier_logit_bestRule : public TRuleClassifier_logit {
+public:
+  __REGISTER_CLASS
+
+  TRuleClassifier_logit_bestRule();
+  TRuleClassifier_logit_bestRule(PRuleList rules, PExampleTable examples, const int &weightID = 0);
+};
+
 #endif
