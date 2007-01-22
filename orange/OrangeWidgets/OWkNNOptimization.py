@@ -682,23 +682,23 @@ class OWVizRank(VizRank, OWBaseWidget):
     # create different dialogs
     def interactionAnalysis(self):
         dialog = OWInteractionAnalysis(self, signalManager = self.signalManager)
-        dialog.setResults(self.shownResults, VIZRANK)
+        dialog.setResults(self.shownResults, VIZRANK_POINT)
         dialog.show()
 
 
     def attributeAnalysis(self):
         dialog = OWGraphAttributeHistogram(self, signalManager = self.signalManager)
-        dialog.setResults(self.shownResults)
+        dialog.setResults(self.shownResults, VIZRANK_POINT)
         dialog.show()
 
     def graphProjectionQuality(self):
         dialog = OWGraphProjectionQuality(self, signalManager = self.signalManager)
-        dialog.setResults(self.results, VIZRANK)
+        dialog.setResults(self.results, VIZRANK_POINT)
         dialog.show()
 
     def identifyOutliers(self):
         dialog = OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.parentWidget, graph = self.graph)
-        dialog.setData(self.results, self.data, VIZRANK)
+        dialog.setData(self.results, self.data, VIZRANK_POINT)
         dialog.show()
 
     # ######################################################
@@ -716,9 +716,7 @@ class OWVizRank(VizRank, OWBaseWidget):
                 strList += ", "
             strList = strList[:-2]
         else:
-            strList = attrList[0]
-            for attr in attrList[1:]:
-                strList += ", " + attr
+            strList = reduce(lambda x,y: x+', '+y, attrList)
         return strList
 
     def getOptimizationType(self):
@@ -793,7 +791,6 @@ class OWVizRank(VizRank, OWBaseWidget):
             self.argumentationClassChanged()
             self.argumentList.setCurrentItem(0)
             self.argumentSelected()
-        print prob, dist, attrList, index, type(dist)
 
         if showClassification or (example.getclass() and example.getclass().value != classValue):
             s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
@@ -823,8 +820,9 @@ class OWVizRank(VizRank, OWBaseWidget):
         qApp.processEvents()
 
 
-VIZRANK = 0
-CLUSTER = 1
+VIZRANK_POINT = 0
+CLUSTER_POINT = 1
+VIZRANK_MOSAIC = 2
 
 # #############################################################################
 # analyse the attributes that appear in the top projections. show how often do they appear also in other top projections
@@ -871,11 +869,6 @@ class OWInteractionAnalysis(OWWidget):
         b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
-        if self.parent.attrCont == CONT_MEAS_S2NMIX:
-            self.attributes, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.parent.data, orngVisFuncts.S2NMeasureMix())
-        else:
-            self.attributes = orngVisFuncts.evaluateAttributes(self.parent.data, contMeasures[self.parent.attrCont][1], discMeasures[self.parent.attrDisc][1])
-                
         self.updateGraph()
 
     def setResults(self, results, dialogType):
@@ -883,6 +876,19 @@ class OWInteractionAnalysis(OWWidget):
         self.dialogType = dialogType
         if results:
             self.projectionCountSlider.setScale(0, (len(results)/50) * 50, 0) # the third parameter for logaritmic scale
+        if dialogType in [VIZRANK_POINT, CLUSTER_POINT]:
+            if self.parent.attrCont == CONT_MEAS_S2NMIX:
+                self.attributes, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.parent.data, orngVisFuncts.S2NMeasureMix())
+            else:
+                self.attributes = orngVisFuncts.evaluateAttributes(self.parent.data, contMeasures[self.parent.attrCont][1], discMeasures[self.parent.attrDisc][1])
+            self.ATTR_LIST = ATTR_LIST
+            self.ACCURACY = ACCURACY
+        elif dialogType == VIZRANK_MOSAIC:
+            relieff = orange.MeasureAttribute_relief(k=10, m=50)
+            self.attributes = orngVisFuncts.evaluateAttributes(self.parent.data, relieff, relieff)
+            import orngMosaic
+            self.ATTR_LIST = orngMosaic.ATTR_LIST
+            self.ACCURACY = orngMosaic.SCORE
         self.updateGraph()
 
     def updateGraph(self):
@@ -891,8 +897,8 @@ class OWInteractionAnalysis(OWWidget):
         self.graph.clear()
         self.graph.removeMarkers()
         self.graph.tips.removeAll()
-        
-        if not self.results or self.dialogType not in [VIZRANK, CLUSTER]: return
+
+        if not self.results or self.dialogType not in [VIZRANK_POINT, CLUSTER_POINT, VIZRANK_MOSAIC]: return
 
         self.projectionCount = int(self.projectionCount)
         self.attributeCount = int(self.attributeCount)
@@ -905,7 +911,7 @@ class OWInteractionAnalysis(OWWidget):
         else:
             attrCountDict = {}
             for index in range(min(self.projectionCount, len(self.results))):
-                for attr in self.results[index][3]:
+                for attr in self.results[index][self.ATTR_LIST]:
                     attrCountDict[attr] = attrCountDict.get(attr, 0) + 1
             attrCounts = [(attrCountDict[attr], attr) for attr in attrCountDict.keys()]
             attrCounts.sort()
@@ -913,7 +919,7 @@ class OWInteractionAnalysis(OWWidget):
             attributes = [attr[1] for attr in attrCounts[:self.attributeCount]]
         
         for index in range(min(len(self.results), self.projectionCount)):
-            attrs = self.results[index][ATTR_LIST]
+            attrs = self.results[index][self.ATTR_LIST]
 
             for i in range(len(attrs)):
                 for j in range(i+1, len(attrs)):
@@ -927,7 +933,7 @@ class OWInteractionAnalysis(OWWidget):
                         attrDict[(Min, Max)] = attrDict.get((Min, Max), 0) + 1
                     # projection quality
                     elif not attrDict.has_key((Min, Max)):
-                        attrDict[(Min, Max)] = self.results[index][ACCURACY]
+                        attrDict[(Min, Max)] = self.results[index][self.ACCURACY]
             index += 1
 
         if self.rectColoring == 2:
@@ -935,8 +941,8 @@ class OWInteractionAnalysis(OWWidget):
             else: best = 1
             worst = -1  # we could use 0 but those with 1 would be barely visible
         else:
-            best = self.results[0][ACCURACY]
-            worst= self.results[min(len(self.results)-1, self.projectionCount)][ACCURACY]
+            best = self.results[0][self.ACCURACY]
+            worst= self.results[min(len(self.results)-1, self.projectionCount)][self.ACCURACY]
    
         eps = 0.05
         num = len(attributes)
@@ -1051,6 +1057,7 @@ class OWGraphAttributeHistogram(OWWidget):
         self.rotateXAttributes = 1
         self.colorAttributes = 1
         self.progressLines = 1
+        self.dialogType = -1
 
         b1 = OWGUI.widgetBox(self.controlArea, box = 1)
         b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Attributes')
@@ -1071,14 +1078,21 @@ class OWGraphAttributeHistogram(OWWidget):
         #b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
 
-        self.kNNOptimizationDlg = parent
+        self.parent = parent
         self.results = None
 
         self.evaluatedAttributes = None
         self.evaluatedAttributesByClass = None
 
-    def setResults(self, results):
+    def setResults(self, results, dialogType):
         self.results = results
+        self.dialogType = dialogType
+        if dialogType in [VIZRANK_POINT, CLUSTER_POINT]:
+            self.ATTR_LIST = ATTR_LIST
+        elif dialogType == VIZRANK_MOSAIC:
+            import orngMosaic
+            self.ATTR_LIST = orngMosaic.ATTR_LIST
+            
         self.evaluatedAttributes = None
         self.evaluatedAttributesByClass = None
         self.updateGraph()
@@ -1100,7 +1114,7 @@ class OWGraphAttributeHistogram(OWWidget):
         for index in range(count):
             if index > (part+1) * diff+1:
                 part += 1
-            attrs = self.results[index][3]
+            attrs = self.results[index][self.ATTR_LIST]
             for attr in attrs:
                 if not attrCountDict.has_key(attr):
                     attrCountDict[attr] = [0, {}]
@@ -1113,26 +1127,26 @@ class OWGraphAttributeHistogram(OWWidget):
         attrs = attrs[:self.attributeCount]
         if not attrs: return
 
-        if self.colorAttributes and self.evaluatedAttributes == None:
-            evalAttrs, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.kNNOptimizationDlg.data, orngVisFuncts.S2NMeasureMix())
+        if self.colorAttributes and self.evaluatedAttributes == None and self.dialogType in [VIZRANK_POINT, CLUSTER_POINT]:
+            evalAttrs, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.parent.data, orngVisFuncts.S2NMeasureMix())
 
-            classVariableValues = getVariableValuesSorted(self.kNNOptimizationDlg.data, self.kNNOptimizationDlg.data.domain.classVar.name)
+            classVariableValues = getVariableValuesSorted(self.parent.data, self.parent.data.domain.classVar.name)
             classColors = ColorPaletteHSV(len(classVariableValues))
             self.evaluatedAttributes = evalAttrs
             self.evaluatedAttributesByClass = attrsByClass
         else:
             (evalAttrs, attrsByClass) = (self.evaluatedAttributes, self.evaluatedAttributesByClass)
-            classVariableValues = getVariableValuesSorted(self.kNNOptimizationDlg.data, self.kNNOptimizationDlg.data.domain.classVar.name)
+            classVariableValues = getVariableValuesSorted(self.parent.data, self.parent.data.domain.classVar.name)
             classColors = ColorPaletteHSV(len(classVariableValues))
             
 
         attrNames = []
         maxProjCount = attrs[0][0]      # the number of appearances of the most frequent attribute. used to determine when to stop drawing the progress lines
         for (ind, (count, progressCountDict, attr)) in enumerate(attrs):
-            if self.colorAttributes:
+            if self.colorAttributes and self.dialogType in [VIZRANK_POINT, CLUSTER_POINT]:
                 if attr in evalAttrs:
                     classIndex = evalAttrs.index(attr) % len(classVariableValues)
-                    color = classColors[classVariableValues.index(self.kNNOptimizationDlg.data.domain.classVar.values[classIndex])]
+                    color = classColors[classVariableValues.index(self.parent.data.domain.classVar.values[classIndex])]
                 else:
                     color = black
             else:
@@ -1187,9 +1201,9 @@ class OWGraphAttributeHistogram(OWWidget):
         """
         
         if self.colorAttributes:
-            classVariableValues = getVariableValuesSorted(self.kNNOptimizationDlg.data, self.kNNOptimizationDlg.data.domain.classVar.name)
+            classVariableValues = getVariableValuesSorted(self.parent.data, self.parent.data.domain.classVar.name)
             classColors = ColorPaletteHSV(len(classVariableValues))
-            self.graph.addCurve("<b>" + self.kNNOptimizationDlg.data.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
+            self.graph.addCurve("<b>" + self.parent.data.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
             for i,val in enumerate(classVariableValues):
                 self.graph.addCurve(val, classColors[i], classColors[i], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
         
@@ -1237,6 +1251,11 @@ class OWGraphProjectionQuality(OWWidget):
     def setResults(self, results, dialogType):
         self.results = results
         self.dialogType = dialogType
+        if dialogType in [VIZRANK_POINT, CLUSTER_POINT]:
+            self.ACCURACY = ACCURACY
+        elif dialogType == VIZRANK_MOSAIC:
+            import orngMosaic
+            self.ACCURACY = orngMosaic.SCORE
         self.updateGraph()
 
     def updateGraph(self):
@@ -1244,9 +1263,9 @@ class OWGraphProjectionQuality(OWWidget):
         #c = colors.getColor(0)
         c = QColor(0,0,0)
         self.graph.clear()
-        if self.results == None or self.dialogType not in [VIZRANK, CLUSTER]: return
+        if self.results == None or self.dialogType not in [VIZRANK_POINT, CLUSTER_POINT, VIZRANK_MOSAIC]: return
 
-        yVals = [result[0] for result in self.results]
+        yVals = [result[self.ACCURACY] for result in self.results]
         if not yVals: return
         
         if self.showDistributions:
@@ -1315,7 +1334,7 @@ class OWGraphIdentifyOutliers(OWWidget):
         self.projectionIndices = []
         self.matrixOfPredictions = None
         self.projectionGraph = graph
-        self.VizRankDialog = parent
+        self.parent = parent
         self.widget = widget
         self.graphMatrix = None
         self.results = None
@@ -1367,8 +1386,9 @@ class OWGraphIdentifyOutliers(OWWidget):
 
     # on escape
     def hideEvent (self, e):
-        if self.widget: self.widget.outlierValues = None
-        self.widget.updateGraph()
+        if self.widget:
+            self.widget.outlierValues = None
+            self.widget.updateGraph()
         self.saveSettings()
         QDialog.hideEvent(self, e)
         
@@ -1377,6 +1397,14 @@ class OWGraphIdentifyOutliers(OWWidget):
         self.data = data
         self.dialogType = dialogType
         self.matrixOfPredictions = None
+
+        if dialogType == VIZRANK_POINT:
+            self.ATTR_LIST = ATTR_LIST
+            self.ACCURACY = ACCURACY
+        elif dialogType == VIZRANK_MOSAIC:
+            import orngMosaic
+            self.ATTR_LIST = orngMosaic.ATTR_LIST
+            self.ACCURACY = orngMosaic.SCORE
 
         # example index combo
         self.selectedExampleCombo.clear()
@@ -1429,12 +1457,33 @@ class OWGraphIdentifyOutliers(OWWidget):
         # compute the matrix of predictions
         results = self.results[existing:min(len(self.results),projCount)]
         index = 0
-        for (acc, other, tableLen, attrList, tryIndex, generalDict) in results:
-            attrIndices = [self.projectionGraph.attributeNameIndex[attr] for attr in attrList]
-            validDataIndices = self.projectionGraph.getValidIndices(attrIndices)
-            table = self.projectionGraph.createProjectionAsExampleTable(attrIndices, generalDict)    # TO DO: this does not work with polyviz!!!
-            qApp.processEvents()        # allow processing of other events
-            acc, probabilities = self.VizRankDialog.kNNClassifyData(table)
+        
+        for result in results:
+            if self.dialogType == VIZRANK_POINT:
+                acc, other, tableLen, attrList, tryIndex, generalDict = result
+                attrIndices = [self.projectionGraph.attributeNameIndex[attr] for attr in attrList]
+                validDataIndices = self.projectionGraph.getValidIndices(attrIndices)
+                table = self.projectionGraph.createProjectionAsExampleTable(attrIndices, generalDict)    # TO DO: this does not work with polyviz!!!
+                qApp.processEvents()        # allow processing of other events
+                acc, probabilities = self.parent.kNNClassifyData(table)
+            
+            elif self.dialogType == VIZRANK_MOSAIC:
+                from orngCI import FeatureByCartesianProduct
+                acc, attrList, tryIndex, other = result
+                probabilities = Numeric.zeros((len(self.data), len(self.data.domain.classVar.values)), Numeric.Float)
+                newFeature, quality = FeatureByCartesianProduct(self.data, attrList)
+                dist = orange.ContingencyAttrClass(newFeature, self.data)
+                data = self.data.select([newFeature, self.data.domain.classVar])     # create a dataset that has only this new feature and class info
+                clsVals = len(self.data.domain.classVar.values)
+                validDataIndices = range(len(data))
+                for i, ex in enumerate(data):
+                    try:
+                        prob = dist[ex[0]]
+                        for j in range(clsVals):
+                            probabilities[i][j] = prob[j] / float(sum(prob.values()))
+                    except:
+                        validDataIndices.remove(i)
+                
 
             #self.matrixOfPredictions[(existing + index)*classCount:(existing + index +1)*classCount] = Numeric.transpose(probabilities)
             probabilities = Numeric.transpose(probabilities)
@@ -1485,16 +1534,19 @@ class OWGraphIdentifyOutliers(OWWidget):
         self.graphMatrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, self.selectedExampleIndex], (projCount, classCount)))
         self.updateGraph()
         
-        valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in self.widget.getShownAttributeList()])
-        insideColors = Numeric.zeros(len(self.data))
-        insideColors[self.selectedExampleIndex] = 1
-        
-        self.widget.updateGraph(insideColors = (Numeric.compress(valid, insideColors), "Focused example: %d"))
+        if self.dialogType == VIZRANK_POINT:
+            valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in self.widget.getShownAttributeList()])
+            insideColors = Numeric.zeros(len(self.data))
+            insideColors[self.selectedExampleIndex] = 1
+            self.widget.updateGraph(insideColors = (Numeric.compress(valid, insideColors), "Focused example: %d"))
         
 
     # find which examples is selected in the graph and draw its predictions
     def updateIndexFromGraph(self):
-        if self.VizRankDialog.parentName == "Polyviz":
+        if self.dialogType != VIZRANK_POINT:
+            return
+        
+        if self.parent.parentName == "Polyviz":
             selected, unselected = self.projectionGraph.getSelectionsAsIndices(self.widget.getShownAttributeList(), self.widget.attributeReverse)
         else:            
             selected, unselected = self.projectionGraph.getSelectionsAsIndices(self.widget.getShownAttributeList())
@@ -1585,9 +1637,9 @@ class OWGraphIdentifyOutliers(OWWidget):
                 x += xDiff
         
         if self.showLegend:
-            classVariableValues = getVariableValuesSorted(self.VizRankDialog.data, self.VizRankDialog.data.domain.classVar.name)
+            classVariableValues = getVariableValuesSorted(self.parent.data, self.parent.data.domain.classVar.name)
             classColors = ColorPaletteHSV(len(classVariableValues))
-            self.graph.addCurve("<b>" + self.VizRankDialog.data.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
+            self.graph.addCurve("<b>" + self.parent.data.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
             for i,val in enumerate(classVariableValues):
                 self.graph.addCurve(val, classColors[i], classColors[i], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
         else:
@@ -1615,12 +1667,14 @@ class OWGraphIdentifyOutliers(OWWidget):
             y = int(math.floor(self.graph.invTransform(QwtPlot.yLeft, e.y())))
             if y >= len(self.projectionIndices): return
             projIndex = self.projectionIndices[y]
-            self.VizRankDialog.resultList.setSelected(projIndex, 1)
-            attrs = self.VizRankDialog.shownResults[projIndex][ATTR_LIST]
-            valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in attrs])
-            insideColors = Numeric.zeros(len(self.data))
-            insideColors[self.selectedExampleIndex] = 1
-            self.widget.updateGraph(attrs, setAnchors = 1, insideColors = (Numeric.compress(valid, insideColors), "Focused example: %d"))
+            self.parent.resultList.setSelected(projIndex, 1)
+
+            if self.dialogType == VIZRANK_POINT:
+                attrs = self.parent.shownResults[projIndex][self.ATTR_LIST]
+                valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in attrs])
+                insideColors = Numeric.zeros(len(self.data))
+                insideColors[self.selectedExampleIndex] = 1
+                self.widget.updateGraph(attrs, setAnchors = 1, insideColors = (Numeric.compress(valid, insideColors), "Focused example: %d"))
 
 #test widget appearance
 if __name__=="__main__":
