@@ -70,8 +70,7 @@ class OWCN2RulesViewer(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager,"CN2 Rules Viewer")
         
-        self.inputs=[("RuleClassifier", orange.RuleClassifier, self.data)]
-        self.inputs=[("Unordered CN2 Classifier", orngCN2.CN2UnorderedClassifier, self.data)]
+        self.inputs=[("Rule Classifier", orange.RuleClassifier, self.data)]
         self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Attribute List", AttributeList)]
         self.RuleLen=1
         self.RuleQ=1
