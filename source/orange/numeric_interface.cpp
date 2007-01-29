@@ -4,24 +4,46 @@
 #include "errors.hpp"
 
 bool importarray_called = false;
-PyTypeObject *PyNumericArrayType = NULL;
 
-PyTypeObject *doGetNumericArrayType()
+PyObject *moduleNumeric = NULL, *moduleNumarray = NULL, *moduleNumpy = NULL;
+PyTypeObject *PyNumericArrayType = NULL, *PyNumarrayArrayType = NULL, *PyNumpyArrayType = NULL;
+
+void initializeNumTypes()
 {
-  PyObject *numericModule = PyImport_ImportModule("Numeric");
-  if (!numericModule)
-    return NULL;
-
-  PyNumericArrayType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(numericModule), "ArrayType");
-  return PyNumericArrayType;
+  moduleNumeric = PyImport_ImportModule("Numeric");
+  if (moduleNumeric)
+    PyNumericArrayType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(moduleNumeric), "ArrayType");
+  
+  moduleNumarray = PyImport_ImportModule("numarray");
+  if (moduleNumarray)
+    PyNumarrayArrayType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(moduleNumarray), "ArrayType");
+  
+  moduleNumpy = PyImport_ImportModule("numpy");
+  if (moduleNumpy)
+    PyNumpyArrayType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(moduleNumpy), "ndarray");
+    
+  importarray_called = true;
+//  import_array();
 }
+
+bool isSomeNumeric(PyObject *obj)
+{
+  if (!importarray_called)
+    initializeNumTypes();
+    
+  return     PyNumericArrayType && PyType_IsSubtype(obj->ob_type, PyNumericArrayType)
+          || PyNumarrayArrayType && PyType_IsSubtype(obj->ob_type, PyNumarrayArrayType)
+          || PyNumpyArrayType && PyType_IsSubtype(obj->ob_type, PyNumpyArrayType);
+}
+  
+
 
 
 void numericToDouble(PyObject *args, double *&matrix, int &columns, int &rows)
 {
   prepareNumeric();
 
-  if (PyArray_Check(args))
+  if (!isSomeNumeric(args))
     raiseErrorWho("numericToDouble", "invalid type (got '%s', expected 'ArrayType')", args->ob_type->tp_name);
 
   PyArrayObject *array = (PyArrayObject *)(args);
@@ -50,7 +72,7 @@ void numericToDouble(PyObject *args, double *&matrix, int &columns, int &rows)
     switch (arrayType) {
       case PyArray_CHAR: READLINE(char)
       case PyArray_UBYTE: READLINE(unsigned char)
-      case PyArray_SBYTE: READLINE(signed char)
+//      case PyArray_SBYTE: READLINE(signed char)
       case PyArray_SHORT: READLINE(short)
       case PyArray_INT: READLINE(int)
       case PyArray_LONG: READLINE(long)
@@ -67,7 +89,7 @@ void numericToDouble(PyObject *args, double *&matrix, int &rows)
 {
   prepareNumeric();
 
-  if (PyArray_Check(args))
+  if (!isSomeNumeric(args))
     raiseErrorWho("numericToDouble", "invalid type (got '%s', expected 'ArrayType')", args->ob_type->tp_name);
 
   PyArrayObject *array = (PyArrayObject *)(args);
@@ -93,7 +115,7 @@ void numericToDouble(PyObject *args, double *&matrix, int &rows)
   switch (arrayType) {
     case PyArray_CHAR: READLINE(char)
     case PyArray_UBYTE: READLINE(unsigned char)
-    case PyArray_SBYTE: READLINE(signed char)
+//    case PyArray_SBYTE: READLINE(signed char)
     case PyArray_SHORT: READLINE(short)
     case PyArray_INT: READLINE(int)
     case PyArray_LONG: READLINE(long)

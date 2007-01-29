@@ -26,23 +26,26 @@
 #ifndef NO_NUMERIC
 
   #include "Python.h"
-  #include "Numeric/arrayobject.h"
 
-  extern PyTypeObject *PyNumericArrayType;
+extern PyObject *moduleNumeric, *moduleNumarray, *moduleNumpy;
+extern PyTypeObject *PyNumericArrayType, *PyNumarrayArrayType, *PyNumpyArrayType;
+
+#ifdef NUMPY
+  #include "../lib/site-packages/numpy/core/include/numpy/arrayobject.h"
+#else
+  #include "Numeric/arrayobject.h"
+#endif
+
   extern bool importarray_called;
 
-  PyTypeObject *doGetNumericArrayType();
+  bool isSomeNumeric(PyObject *);
 
+  void initializeNumTypes();
+  
   inline void prepareNumeric()
-  { if (!importarray_called) {
-      import_array();
-      importarray_called = true;
-    }
+  { if (!importarray_called)
+      initializeNumTypes();
   }
-
-  inline PyTypeObject *getNumericArrayType()
-  { return PyNumericArrayType ? PyNumericArrayType : doGetNumericArrayType(); }
-
 
   void numericToDouble(PyObject *num, double *&table, int &columns, int &rows);
   void numericToDouble(PyObject *num, double *&table, int &rows);
@@ -52,7 +55,7 @@
   inline void prepareNumeric()
   { raiseErrorWho("import_array()", "this build does not support Numeric"); }
 
-  inline PyTypeObject *getNumericArrayType()
+  bool isSomeNumeric(PyObject *);
   { raiseErrorWho("import_array()", "this build does not support Numeric"); }
 
   inline void numericToDouble(PyObject *num, double *&table, int &columns, int &rows)

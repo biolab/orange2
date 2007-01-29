@@ -2366,7 +2366,6 @@ PyObject *ExampleGeneratorList__reduce__(TPyOrange *self, PyObject *) { return L
 #include "table.hpp"
 
 #ifndef NO_NUMERIC
-#include "Numeric/arrayobject.h"
 #include "numeric_interface.hpp"
 #endif
 
@@ -2374,9 +2373,8 @@ PyObject *ExampleGeneratorList__reduce__(TPyOrange *self, PyObject *) { return L
 TExampleTable *readListOfExamples(PyObject *args)
 { 
   #ifndef NO_NUMERIC
-  if (!strcmp(args->ob_type->tp_name, "array")) {
-    prepareNumeric();
-    if (PyArray_Check(args))
+  if (!strcmp(args->ob_type->tp_name, "array") || !strcmp(args->ob_type->tp_name, "numpy.ndarray") || !strcmp(args->ob_type->tp_name, "numarray.numarraycore.NumArray")) {
+    if (isSomeNumeric(args))
       return readListOfExamples(args, PDomain(), false);
   }
   #endif
@@ -2421,10 +2419,8 @@ TExampleTable *readListOfExamples(PyObject *args)
 TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMetas)
 { 
   #ifndef NO_NUMERIC
-  if (!strcmp(args->ob_type->tp_name, "array")) {
-    prepareNumeric();
-
-    if (PyArray_Check(args)) {
+  if (!strcmp(args->ob_type->tp_name, "array") || !strcmp(args->ob_type->tp_name, "numpy.ndarray") || !strcmp(args->ob_type->tp_name, "numarray.numarraycore.NumArray")) {
+    if (isSomeNumeric(args)) {
       PyArrayObject *array = (PyArrayObject *)(args);
       if (array->nd != 2)
         PYERROR(PyExc_AttributeError, "two-dimensional array expected for an ExampleTable", NULL);
@@ -2481,7 +2477,7 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
           switch (arrayType) {
             case PyArray_CHAR: ARRAYTYPE(char)
             case PyArray_UBYTE: ARRAYTYPE(unsigned char)
-            case PyArray_SBYTE: ARRAYTYPE(signed char)
+//            case PyArray_SBYTE: ARRAYTYPE(signed char)
             case PyArray_SHORT: ARRAYTYPE(short)
             case PyArray_INT: ARRAYTYPE(int)
             case PyArray_LONG: ARRAYTYPE(long)
@@ -2811,11 +2807,30 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
 #ifndef NO_NUMERIC
 
 
-PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, bool masked)
+PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, PyObject **module, bool masked)
 {
   PyTRY
     prepareNumeric();
+    if (!*module)
+      PYERROR(PyExc_ImportError, "cannot import the necessary numeric module for conversion", PYNULL);
 
+    // These references are all borrowed
+	PyObject *moduleDict = PyModule_GetDict(*module);
+	PyObject *mzeros = PyDict_GetItemString(moduleDict, "zeros");
+	
+	PyObject *mFloat = PyDict_GetItemString(moduleDict, "Float");
+	if (!mFloat)
+	  mFloat = PyDict_GetItemString(moduleDict, "float");
+	
+	PyObject *mCharacter = PyDict_GetItemString(moduleDict, "Character");
+	if (!mCharacter)
+	  mCharacter = PyDict_GetItemString(moduleDict, "character");
+	if (!mCharacter)
+	  mCharacter = PyDict_GetItemString(moduleDict, "Byte");
+	
+	if (!mzeros || !mFloat || !mCharacter)
+	  PYERROR(PyExc_ImportError, "incompatible numeric module (missing one of the required objects)", PYNULL);
+	  
     char *contents = NULL;
     int weightID = 0;
     int multinomialTreatment = 1;
@@ -2839,15 +2854,14 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     double *Xp, *yp, *wp;
     signed char *mp = NULL, *mpy = NULL;
     if (columns) {
-      int dims[2];
-      dims[0] = rows;
-      dims[1] = columns;
-
-      X = PyArray_FromDims(2, dims, PyArray_DOUBLE);
+      X = PyObject_CallFunction(mzeros, "(ii)O", rows, columns, mFloat);
+      if (!X)
+        PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
+        
       Xp = (double *)((PyArrayObject *)X)->data;
 
       if (masked) {
-        mask = PyArray_FromDims(2, dims, PyArray_SBYTE);
+        mask = PyObject_CallFunction(mzeros, "(ii)O", rows, columns, mCharacter);
         mp = (signed char *)((PyArrayObject *)mask)->data;
       }
     }
@@ -2858,11 +2872,13 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     }
 
     if (classVector) {
-      y = PyArray_FromDims(1, &rows, PyArray_DOUBLE);
+      y = PyObject_CallFunction(mzeros, "(ii)O", 1, rows, mFloat);
+      if (!y)
+        PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
       yp = (double *)((PyArrayObject *)y)->data;
 
       if (masked) {
-        masky = PyArray_FromDims(1, &rows, PyArray_SBYTE);
+        masky = PyObject_CallFunction(mzeros, "(ii)O", 1, rows, mCharacter);
         mpy = (signed char *)((PyArrayObject *)masky)->data;
       }
     }
@@ -2874,7 +2890,9 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
 
 
     if (weightVector) {
-      w = PyArray_FromDims(1, &rows, PyArray_DOUBLE);
+      w = PyObject_CallFunction(mzeros, "(ii)O", 1, rows, mFloat);
+      if (!w)
+        PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
       wp = (double *)((PyArrayObject *)w)->data;
     }
     else {
@@ -2907,8 +2925,10 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
                       *Xp++ = 0;
                       *mp++ = 1;
                     }
-                    else
-                      raiseErrorWho("exampleGenerator2numeric", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
+                    else {
+                      PyErr_Format(PyExc_TypeError, "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
+                      return PYNULL;
+                    }
                   }
                   else {
                     *Xp++ = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
@@ -2928,8 +2948,10 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
                     *Xp++ = 0;
                     *mp++ = 1;
                   }
-                  else
-                    raiseErrorWho("exampleGenerator2Numeric", "example %i has undefined class", row);
+                  else {
+                    PyErr_Format(PyExc_TypeError, "example '%i' has undefined class", row);
+                    return PYNULL;
+                  }
                 }
                 else {
                   *Xp++ = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
@@ -2968,8 +2990,10 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
               *yp++ = 0;
               *mpy++ = 1;
             }
-            else
-              raiseErrorWho("exampleGenerator2numeric", "example %i has undefined class", row);
+            else {
+              PyErr_Format(PyExc_TypeError, "example '%i' has undefined class", row);
+              return PYNULL;
+            }
           }
           else
             *yp++ = classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV);
@@ -3047,14 +3071,43 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
 
 PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
 {
-  return ExampleTable_toNumericOrMA(self, args, keywords, false);
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumeric, false);
 }
 
 
+PyObject *ExampleTable_toNumericMA(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
+{
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumeric, true);
+}
+
+// this is for compatibility
 PyObject *ExampleTable_toMA(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
 {
-  return ExampleTable_toNumericOrMA(self, args, keywords, true);
+  return ExampleTable_toNumericMA(self, args, keywords);
 }
+
+PyObject *ExampleTable_toNumarray(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
+{
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumarray, false);
+}
+
+
+PyObject *ExampleTable_toNumarrayMA(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
+{
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumarray, true);
+}
+
+PyObject *ExampleTable_toNumpy(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
+{
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumpy, false);
+}
+
+
+PyObject *ExampleTable_toNumpyMA(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
+{
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumpy, true);
+}
+
 
 
 int ExampleTable_nonzero(PyObject *self)
