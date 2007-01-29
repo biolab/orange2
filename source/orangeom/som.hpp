@@ -33,6 +33,7 @@
 #include "root.hpp"
 
 #ifdef _MSC_VER
+#undef NO_PIPED_COMMANDS
 #define NO_PIPED_COMMANDS
 #define popen(a, b) NULL
 #define pclose(a, b) NULL
