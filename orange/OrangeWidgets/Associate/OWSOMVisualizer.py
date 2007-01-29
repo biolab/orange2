@@ -573,15 +573,16 @@ class OWSOMVisualizer(OWWidget):
         
         self.loadSettings()
         call=lambda:self.canvas.redrawSom()
-        tabW=QTabWidget(self.controlArea)
-        mainTab=OWGUI.widgetBox(self.controlArea)
-        histTab=OWGUI.widgetBox(self.controlArea)
-        mainTab.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        histTab.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+#        tabW=QTabWidget(self.controlArea)
+#        mainTab=OWGUI.widgetBox(self.controlArea)
+#        histTab=OWGUI.widgetBox(self.controlArea)
+        histTab = mainTab = self.controlArea
+#        mainTab.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+#        histTab.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         self.mainTab=mainTab
         self.histTab=histTab
-        tabW.addTab(mainTab, "Options")
-        tabW.addTab(histTab, "Histogram Coloring")
+#        tabW.addTab(mainTab, "Options")
+#        tabW.addTab(histTab, "Histogram Coloring")
         self.backgroundBox=QVButtonGroup("Background", mainTab)
         #OWGUI.checkBox(self.backgroundBox, self, "backgroundCheck","Show background", callback=self.setBackground)
         b=OWGUI.radioButtonsInBox(self.backgroundBox, self, "canvas.drawMode", ["None", "U-Matrix", "Component Planes"], callback=self.setBackground)
@@ -590,44 +591,58 @@ class OWSOMVisualizer(OWWidget):
         self.componentCombo.setEnabled(self.canvas.drawMode==2)
         OWGUI.checkBox(self.backgroundBox, self, "canvas.showGrid", "Show Grid", callback=self.canvas.updateAll)
         #b=OWGUI.widgetBox(mainTab, "Histogram")
+        OWGUI.separator(mainTab)
+        
         b=QVButtonGroup("Histogram", mainTab)
-        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+#        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         OWGUI.checkBox(b, self, "histogram", "Show histogram", callback=self.setHistogram)
         OWGUI.radioButtonsInBox(b, self, "inputSet", ["Use training set", "Use input subset"], callback=self.setHistogram)
+        OWGUI.separator(mainTab)
         
         b1=QVBox(mainTab)
-        b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+#        b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         b=OWGUI.hSlider(b1, self, "canvas.objSize","Plot size", 10,100,step=10,ticks=10, callback=call)
-        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+#        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         #OWGUI.checkBox(b1, self, "labelNodes", "Node Labeling", callback=self.canvas.updateLabels)
+
+        OWGUI.separator(b1)
+
         b1=OWGUI.widgetBox(b1, "Bubble Info")
         OWGUI.checkBox(b1, self, "canvasView.showBubbleInfo","Show")
         OWGUI.checkBox(b1, self, "canvasView.includeCodebook", "Include codebook vector")
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        OWGUI.separator(mainTab)
         
         #OWGUI.checkBox(mainTab, self, "commitOnChange", "Commit on change")
         QVBox(mainTab)
         self.histogramBox=OWGUI.widgetBox(histTab, "Coloring")
-        self.attributeCombo=OWGUI.comboBox(self.histogramBox, self, "attribute", "Attribute", callback=self.setHistogram)
-        self.tabWidget=QTabWidget(self.histogramBox)
-        self.discTab=discTab=OWGUI.widgetBox(self.histogramBox)
-        self.contTab=contTab=OWGUI.widgetBox(self.histogramBox)
-        self.tabWidget.addTab(discTab, "Discrete")
-        self.tabWidget.addTab(contTab, "Continous")
-        b=QVButtonGroup(discTab)
-        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        OWGUI.radioButtonsInBox(b, self, "discHistMode", ["Pie chart", "Majority value", "Majority value prob."], callback=self.setHistogram)
+        self.attributeCombo=OWGUI.comboBox(self.histogramBox, self, "attribute", callback=self.setHistogram)
+#        self.tabWidget=QTabWidget(self.histogramBox)
+##        self.discTab=discTab=OWGUI.widgetBox(self.histogramBox, "Discrete")
+##        self.contTab=contTab=OWGUI.widgetBox(self.histogramBox, "Continuous")
+##        self.tabWidget.addTab(discTab, "Discrete")
+##        self.tabWidget.addTab(contTab, "Continous")
+##        b=QVButtonGroup(discTab)
+##        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        self.discTab = OWGUI.radioButtonsInBox(self.histogramBox, self, "discHistMode", ["Pie chart", "Majority value", "Majority value prob."], box=1, callback=self.setHistogram)
+        self.discTab.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         #self.targetValueCombo=OWGUI.comboBox(b, self, "targetValue", callback=self.setHistogram)
-        QVBox(discTab)
-        b=QVButtonGroup(contTab)
-        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        OWGUI.radioButtonsInBox(b, self, "contHistMode", ["Default", "Avg. value"],callback=self.setHistogram)
-        QVBox(contTab)
+##        QVBox(discTab)
+##        b=QVButtonGroup(contTab)
+##        b.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        self.contTab = OWGUI.radioButtonsInBox(self.histogramBox, self, "contHistMode", ["Default", "Average value"], box=1, callback=self.setHistogram)
+        self.contTab.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+##        QVBox(contTab)
+
+        OWGUI.rubber(mainTab)
  
         b=OWGUI.widgetBox(self.controlArea, "Selection")
         OWGUI.button(b, self, "&Invert selection", callback=self.canvasView.invertSelection)
         OWGUI.button(b, self, "&Commit", callback=self.commit)
         OWGUI.checkBox(b, self, "commitOnChange", "Commit on change")
+
+        OWGUI.separator(self.controlArea)
+        \
         OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph, debuggingEnabled = 0)
         
         self.selectionList=[]
@@ -642,16 +657,28 @@ class OWSOMVisualizer(OWWidget):
     def setBackground(self):
         self.setMode()
 
+    def setDiscCont(self):
+        if self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete:
+            self.discTab.show()
+            self.contTab.hide()
+        else:
+            self.discTab.hide()
+            self.contTab.show()
+
+##        isDiscrete = self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete
+##        self.discTab.setDisabled(not isDiscrete)
+##        self.contTab.setDisabled(isDiscrete)
+        
     def setHistogram(self):
         if not self.somMap: return
-        if self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete:
-            self.tabWidget.setTabEnabled(self.discTab,True)
-            self.tabWidget.setTabEnabled(self.contTab,False)
-            self.tabWidget.showPage(self.discTab)
-        else:
-            self.tabWidget.setTabEnabled(self.discTab,False)
-            self.tabWidget.setTabEnabled(self.contTab,True)
-            self.tabWidget.showPage(self.contTab)
+        self.setDiscCont()
+##            self.tabWidget.setTabEnabled(self.discTab,True)
+##            self.tabWidget.setTabEnabled(self.contTab,False)
+#            self.tabWidget.showPage(self.discTab)
+##        else:
+##            self.tabWidget.setTabEnabled(self.discTab,False)
+##            self.tabWidget.setTabEnabled(self.contTab,True)
+#            self.tabWidget.showPage(self.contTab)
         self.canvas.redrawSom()
 
     def drawPies(self):
@@ -684,14 +711,15 @@ class OWSOMVisualizer(OWWidget):
         #for v in somMap.examples.domain.attributes[self.attribute].values:
         #    self.targetValueCombo.insertItem(str(v))
 
-        if self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete:
-            self.tabWidget.setTabEnabled(self.discTab,True)
-            self.tabWidget.setTabEnabled(self.contTab,False)
-            self.tabWidget.showPage(self.discTab)
-        else:
-            self.tabWidget.setTabEnabled(self.discTab,False)
-            self.tabWidget.setTabEnabled(self.contTab,True)
-            self.tabWidget.showPage(self.contTab)        
+        self.setDiscCont()
+##        if self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete:
+##            self.tabWidget.setTabEnabled(self.discTab,True)
+##            self.tabWidget.setTabEnabled(self.contTab,False)
+###            self.tabWidget.showPage(self.discTab)
+##        else:
+##            self.tabWidget.setTabEnabled(self.discTab,False)
+##            self.tabWidget.setTabEnabled(self.contTab,True)
+###            self.tabWidget.showPage(self.contTab)        
         self.openContext("", somMap.examples)
         self.canvas.setSom(somMap)
        
