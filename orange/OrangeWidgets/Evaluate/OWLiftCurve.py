@@ -170,6 +170,8 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
 class OWLiftCurve(OWROC):
     settingsList = ["PointWidth", "CurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor", "ShowConvexHull", "ShowConvexCurves", "EnablePerformance"]
+    contextHandlers = {"": ClassValuesContextHandler("", "targetClass")}
+
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Lift Curve Analysis", 1)
 
@@ -293,11 +295,14 @@ class OWLiftCurve(OWROC):
         self.FNcostList = []
         self.pvalueList = []
 
+        self.closeContext()
+        
         if not dres:
             self.targetClass = None
             self.classCombo.clear()
             self.removeGraphs()
             self.testSetsQLB.clear()
+            self.openContext("", [])
             return
         self.dres = dres
 
@@ -358,6 +363,7 @@ class OWLiftCurve(OWROC):
                 self.pvalueList.append( v)
 
             self.targetClass = 0 ## select first target
+            self.openContext("", self.dres.classValues)
             self.target()
         else:
             self.classifierColor = None

@@ -16,6 +16,7 @@ import OWGUI
 
 class OWContinuize(OWWidget):
     settingsList = ["multinomialTreatment", "classTreatment", "zeroBased", "continuousTreatment", "autosend"]
+    contextHandlers = {"": DomainContextHandler("", ["targetValue"], matchValues=1)}
     
     multinomialTreats = (("Target or First value as base", orange.DomainContinuizer.LowestIsBase),
                          ("Most frequent value as base", orange.DomainContinuizer.FrequentIsBase),
@@ -82,9 +83,12 @@ class OWContinuize(OWWidget):
         self.sendDataIf()
 
     def examples(self,data):
+        self.closeContext()
+        
         if not data:
             self.data = None
             self.cbTargetValue.clear()
+            self.openContext("", self.data)
             self.send("Classified Examples", None)
         else:
             if not self.data or data.domain.classVar != self.data.domain.classVar:
@@ -93,9 +97,11 @@ class OWContinuize(OWWidget):
                     for v in data.domain.classVar.values:
                         self.cbTargetValue.insertItem(" "+v)
                     self.ctreat.setDisabled(False)
+                    self.targetValue = 0
                 else:
                     self.ctreat.setDisabled(True)
             self.data = data
+            self.openContext("", self.data)            
             self.sendData()
 
     def sendDataIf(self):
@@ -119,9 +125,6 @@ class OWContinuize(OWWidget):
                 conzer.classTreatment = self.classTreats[self.classTreatment][1]
                 domain = conzer(self.data)
             data = orange.ExampleTable(domain, self.data)
-            for i in data.domain:
-                print i.name, i.varType
-            print data[0].getclass()
             self.send("Classified Examples", data)
         self.dataChanged = False
     

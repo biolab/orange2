@@ -618,6 +618,9 @@ class OWROC(OWWidget):
     settingsList = ["PointWidth", "CurveWidth", "ConvexCurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor", "AveragingMethodIndex",
                     "ShowConvexHull", "ShowConvexCurves", "EnablePerformance", "DefaultThresholdPoint"]
+
+    contextHandlers = {"": ClassValuesContextHandler("", "targetClass")}
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ROC Analysis", 1)
 
@@ -936,6 +939,8 @@ class OWROC(OWWidget):
         self.FNcostList = []
         self.pvalueList = []
 
+        self.closeContext()
+        
         if not dres:
             self.targetClass = None
             self.classCombo.clear()
@@ -1001,6 +1006,7 @@ class OWROC(OWWidget):
                 self.pvalueList.append( v)
 
             self.targetClass = 0 ## select first target
+            self.openContext("", self.dres.classValues)
             self.target()
         else:
             self.classifierColor = None
