@@ -19,14 +19,21 @@ class OrangeCanvasDlg(QMainWindow):
         #self.setFocusPolicy(QWidget.StrongFocus)
         self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
         self.widgetDir = os.path.join(self.orangeDir, "OrangeWidgets")
-        if not os.path.exists(self.widgetDir): 
-            print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
+        if not os.path.exists(self.widgetDir):
+            try:
+                import OWBaseWidget
+                self.widgetDir = os.path.split(os.path.abspath(OWBaseWidget.__file__))[0]
+            except:
+                print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
         
         self.picsDir = os.path.join(self.widgetDir, "icons")
         if not os.path.exists(self.picsDir):
             print "Error. Directory %s not found. Unable to locate widget icons." % (self.picsDir)
         
         self.canvasDir = os.path.join(self.orangeDir, "OrangeCanvas")
+        if not os.path.exists(self.canvasDir):
+            self.canvasDir = os.path.split(os.path.abspath(orngDoc.__file__))[0]
+            
         if os.name == "nt": self.outputDir = self.canvasDir
         else:
             self.outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
