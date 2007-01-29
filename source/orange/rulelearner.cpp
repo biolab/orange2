@@ -974,7 +974,8 @@ TRuleClassifier_logit::TRuleClassifier_logit(PRuleList arules, PExampleTable ane
   oldP = new float*[examples->domain->classVar->noOfValues()];
   oldBetas = new float[rules->size()];
   oldPriorBetas = new float[examples->domain->classVar->noOfValues()];
-  for(int i=0; i<examples->domain->classVar->noOfValues(); i++) {
+  int i;
+  for(i=0; i<examples->domain->classVar->noOfValues(); i++) {
     if (i<examples->domain->classVar->noOfValues()-1)
       oldF[i] = new float[examples->numberOfExamples()];
     oldP[i] = new float[examples->numberOfExamples()];
@@ -1055,7 +1056,8 @@ void TRuleClassifier_logit::initialize()
   p = new float *[examples->domain->classVar->noOfValues()];
   tempF = new float *[examples->domain->classVar->noOfValues()-1];
   tempP = new float *[examples->domain->classVar->noOfValues()];
-  for (int i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
+  int i, j;
+  for (i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
 	  f[i] = new float[examples->numberOfExamples()];
 	  p[i] = new float[examples->numberOfExamples()];
 	  tempF[i] = new float[examples->numberOfExamples()];
@@ -1078,7 +1080,7 @@ void TRuleClassifier_logit::initialize()
 
   // Compute average example coverage and set index of examples covered by rule
   float *coverages = new float[examples->numberOfExamples()];
-  for (int j=0; j<examples->numberOfExamples(); j++) {
+  for (j=0; j<examples->numberOfExamples(); j++) {
     coverages[j] = 1.0;
   }
   i=0;
@@ -1293,7 +1295,8 @@ void TRuleClassifier_logit::distortPriorBetas(float step)
 	// compute prior probabilities
 	float *priors = new float[examples->domain->classVar->noOfValues()];
   float sum = 1.0;
-	for (int i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
+  int i;
+	for (i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
     priors[i] = exp(priorBetas[i]);
     sum += priors[i];
   }
@@ -1359,7 +1362,8 @@ float TRuleClassifier_logit::compPotEval(int ruleIndex, int classIndex, float ne
 	        else
 		        tempF[fi][*ind] -= dif;
       float sum = 1.0;
-      for (int pi=0; pi<examples->domain->classVar->noOfValues()-1; pi++) {
+      int pi;
+      for (pi=0; pi<examples->domain->classVar->noOfValues()-1; pi++) {
         tempP[pi][*ind] = exp(tempF[pi][*ind]+priorBetas[pi]);
         sum += exp(tempF[pi][*ind]+priorBetas[pi]);
       }
@@ -1370,7 +1374,8 @@ float TRuleClassifier_logit::compPotEval(int ruleIndex, int classIndex, float ne
   else {
     for (int ei=0; ei<examples->numberOfExamples(); ei++) {
       float sum = 1.0;
-      for (int pi=0; pi<examples->domain->classVar->noOfValues()-1; pi++) {
+      int pi;
+      for (pi=0; pi<examples->domain->classVar->noOfValues()-1; pi++) {
         tempP[pi][ei] = exp(tempF[pi][ei]+priorBetas[pi]);
         sum += exp(tempF[pi][ei]+priorBetas[pi]);
       }
@@ -1484,7 +1489,8 @@ int TRuleClassifier_logit::getClassIndex(PRule r) {
 // Clear allocated vectors
 TRuleClassifier_logit::~TRuleClassifier_logit()
 {
-  for (int i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
+  int i;
+  for (i=0; i<examples->domain->classVar->noOfValues()-1; i++) {
   	delete [] f[i];
     delete [] tempF[i];
   }
