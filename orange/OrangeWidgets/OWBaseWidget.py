@@ -438,6 +438,48 @@ class DomainContextHandler(ContextHandler):
         self.globalContexts = self.globalContexts[:self.maxSavedContexts]
 
     
+class ClassValuesContextHandler(ContextHandler):
+    def __init__(self, contextName, fields = [], syncWithGlobal = True, **args):
+        ContextHandler.__init__(self, contextName, False, False, False, syncWithGlobal, **args)
+        if isinstance(fields, list):
+            self.fields = fields
+        else:
+            self.fields = [fields]
+        
+    def findOrCreateContext(self, widget, classes):
+        if isinstance(classes, orange.Variable):
+            classes = classes.varType == orange.VarTypes.Discrete and classes.values
+        if not classes:
+            return None, False
+        context, isNew = ContextHandler.findOrCreateContext(self, widget, classes)
+        if not context:
+            return None, False
+        context.classes = classes
+        if isNew:
+            context.values = {}
+        return context, isNew
+
+    def settingsToWidget(self, widget, context):
+        ContextHandler.settingsToWidget(self, widget, context)
+        for field in self.fields:
+            setattr(widget, field, context.values[field])
+            
+    def settingsFromWidget(self, widget, context):
+        ContextHandler.settingsFromWidget(self, widget, context)
+        context.values = dict([(field, mygetattr(widget, field)) for field in self.fields])
+
+    def fastSave(self, context, widget, name, value):
+        if context and name in self.fields:
+            context.values[name] = value
+
+    def match(self, context, imperfect, classes):
+        return context.classes == classes and 2
+
+    def cloneContext(self, context, domain, encodedDomain):
+        import copy
+        return copy.deepcopy(context)
+        
+
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
 class ExampleTable(orange.ExampleTable):
