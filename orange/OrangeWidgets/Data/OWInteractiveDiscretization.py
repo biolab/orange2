@@ -419,7 +419,7 @@ class OWInteractiveDiscretization(OWWidget):
         OWGUI.separator(box)
         self.classIntervalsLabel = OWGUI.widgetLabel(box, "Current splits: ")
         OWGUI.separator(box)
-        OWGUI.checkBox(box, self, "outputOriginalClass", "Output original class")
+        OWGUI.checkBox(box, self, "outputOriginalClass", "Output original class", callback = self.commitIf)
         OWGUI.widgetLabel(box, "(Widget always uses discretized class internally.)")
 
         OWGUI.separator(vbox)
@@ -927,7 +927,7 @@ class OWInteractiveDiscretization(OWWidget):
                 else:
                     newattrs.append(self.data.domain.classVar)
 
-            self.send("Examples", self.data.select(newattrs))
+            self.send("Examples", self.originalData.select(newattrs))
 
         elif self.originalData:  # no continuous attributes...
             self.send("Examples", self.originalData)
