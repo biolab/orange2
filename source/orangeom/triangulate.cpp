@@ -88,7 +88,8 @@ PyObject *star(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(t, tri)")
   PyObject *res = PyList_New(0);
   for(int i = 0, e = PyList_GET_SIZE(tri); i != e; i++) {
     const PyObject *lel = PyList_GET_ITEM(tri, i);
-    for (int j = 0, je = PyList_GET_SIZE(lel);
+    int j, je;
+    for (j = 0, je = PyList_GET_SIZE(lel);
          (j != je) && (PyInt_AS_LONG(PyList_GET_ITEM(lel, j)) != t);
          j++);
     if (j != je)
