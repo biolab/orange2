@@ -611,23 +611,19 @@ class OWDistributions(OWWidget):
                 self.attribute = self.data.domain[0].name
                 self.setVariable()
 
-            self.targetValue = 0
+            self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
+            if self.dataHasClass and self.dataHasDiscreteClass:
+                self.graph.setTargetValue(self.targetValue) #str(self.data.domain.classVar.values[0])) # pick first target
+                self.setOutcomeNames(self.data.domain.classVar.values.native())
+            else:
+               self.setOutcomeNames([])
             
             self.openContext("", self.data)               
 
             if self.data and len(self.data.domain.attributes) > 0:
                 self.setVariable()
 
-            if self.dataHasClass and self.dataHasDiscreteClass:
-                self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
-                self.graph.setTargetValue(self.targetValue) #str(self.data.domain.classVar.values[0])) # pick first target
-
-                # set outcomes
-                self.setOutcomeNames(self.data.domain.classVar.values.native())
-            else:
-               self.setOutcomeNames([])
-
-        for f in [self.setMainTitle, self.setXaxisTitle, self.setYaxisTitle, self.setYPaxisTitle, self.outcomeSelectionChange]:
+        for f in [self.setMainTitle, self.setTarget, self.setXaxisTitle, self.setYaxisTitle, self.setYPaxisTitle, self.outcomeSelectionChange]:
             f()
 
 
