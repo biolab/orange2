@@ -1040,7 +1040,6 @@ class OWBaseWidget(QDialog):
                     handler.settingsFromWidget(self, context)
 
     def openContext(self, contextName="", *arg):
-        #self.closeContext(contextName)
         handler = self.contextHandlers[contextName]
         context = handler.openContext(self, *arg)
         if context:
