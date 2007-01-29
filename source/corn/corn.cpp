@@ -56,7 +56,7 @@ catch (exception err) { PYERROR(PyExc_CornKernel, err.what(), r); }
 PyObject *PyExc_CornKernel;
 PyObject *PyExc_CornWarning;
 
-CORN_API void initcorn()
+void initcorn()
 { if (   ((PyExc_CornKernel = makeExceptionClass("corn.KernelException", "An error occurred in corn's C++ code")) == NULL)
       || ((PyExc_CornWarning = makeExceptionClass("corn.Warning", "corn warning", PyExc_Warning)) == NULL))
     return;
