@@ -220,7 +220,7 @@ class DisplayStatistics (QCanvas):
 		min_line.setZ(1.0)
 
 		# draw a rectangle from the 3rd quartile to max; add line and text
-		quartile3 =  int(self.bar_height_pixels*(self.maxi-self.q3)/bar_height)
+		quartile3 =  int(self.bar_height_pixels*(self.maxi-self.q3)/(bar_height or 1))
 		crq3 = QCanvasRectangle (self.hbias, self.vbias, self.bar_width_pixels, quartile3, self)
 		crq3.setPen (QPen(Qt.NoPen))
 		crq3.setBrush (QBrush(QColor(0,175,0)))
@@ -240,7 +240,7 @@ class DisplayStatistics (QCanvas):
 		crq3tL.show()
 
 		# draw a rectangle from the median to the 3rd quartile; add line and text
-		med = int(self.bar_height_pixels*(self.maxi-self.median)/bar_height)
+		med = int(self.bar_height_pixels*(self.maxi-self.median)/(bar_height or 1))
 		crm = QCanvasRectangle (self.hbias, self.vbias+quartile3, self.bar_width_pixels, med-quartile3, self)
 		crm.setPen (QPen(Qt.NoPen))
 		crm.setBrush (QBrush(QColor(0,134,0)))
@@ -260,7 +260,7 @@ class DisplayStatistics (QCanvas):
 		crmtL.show()
 
 		# draw a rectangle from the 1st quartile to the median; add line and text
-		quartile1 = int(self.bar_height_pixels*(self.maxi-self.q1)/bar_height)
+		quartile1 = int(self.bar_height_pixels*(self.maxi-self.q1)/(bar_height or 1))
 		crq1 = QCanvasRectangle (self.hbias, self.vbias+med, self.bar_width_pixels, quartile1-med, self)
 		crq1.setPen (QPen(Qt.NoPen))
 		crq1.setBrush (QBrush(QColor(0,92,0)))
@@ -286,8 +286,8 @@ class DisplayStatistics (QCanvas):
 		cr.show()
 
 		# draw a horizontal mean line; add text
-		self.meanpos = int(self.bar_height_pixels*(self.maxi-self.mean)/bar_height)
-		self.stddev1 = int(self.bar_height_pixels*self.stddev/bar_height)
+		self.meanpos = int(self.bar_height_pixels*(self.maxi-self.mean)/(bar_height or 1))
+		self.stddev1 = int(self.bar_height_pixels*self.stddev/(bar_height or 1))
 		#print "stddev ",self.stddev1, self.bar_height_pixels, bar_height
 		mvbias = self.meanpos+self.vbias
 		line = QCanvasLine(self)
