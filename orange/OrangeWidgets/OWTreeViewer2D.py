@@ -557,10 +557,10 @@ class OWTreeViewer2D(OWWidget):
                     "TruncateText"]
 
     def __init__(self, parent=None, signalManager = None, name='TreeViewer2D'):
+        OWWidget.__init__(self, parent, signalManager, name) 
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         self.root = None
         self.selectedNode = None
-        OWWidget.__init__(self, parent, signalManager, name) 
         
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("Examples", ExampleTable)]
