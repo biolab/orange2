@@ -20,6 +20,7 @@ for %pyver in (%PYTHONVERSIONS) (
   copy c:\compiled\%pyver .
   if exist stamps_pyd.txt del stamps_pyd.txt
   for %fle in (*.pyd) echo %fle %@MD5[%fle] >> stamps_pyd.txt
+  popd
 )
 
 
