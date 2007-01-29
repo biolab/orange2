@@ -83,7 +83,7 @@ class DiscGraph(OWGraph):
         if not data:
             return
 
-        self.classColors = OWGraphTools.ColorPaletteHSV(len(data.domain.classVar.values))
+#        self.classColors = classVar.varType == orange.VarTypes.Discrete and OWGraphTools.ColorPaletteHSV(len(data.domain.classVar.values))
 
         if not attr:
             return
@@ -534,7 +534,7 @@ class OWInteractiveDiscretization(OWWidget):
             self.fillClassCombo()
             self.indiLabels = [""] * self.attrList.count()
 
-            self.graph.setData(None, data)           
+            self.graph.setData(None, self.data)           
             self.openContext("", data)
 
             self.computeDiscretizers()
@@ -833,11 +833,12 @@ class OWInteractiveDiscretization(OWWidget):
                 if not customs:
                     discType = 0
 
-                print customs                
             if discType == 0:
                 discretizer = orange.EquiNDiscretization(classVar, self.originalData, numberOfIntervals = self.classIntervals)
+
             elif discType == 1:
                 discretizer = orange.EquiDistDiscretization(classVar, self.originalData, numberOfIntervals = self.classIntervals)
+
             else:
                 discretizer = orange.IntervalDiscretizer(points = customs).constructVariable(classVar)
 
