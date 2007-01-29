@@ -19,14 +19,13 @@ class FixedTreeLearner(orange.Learner):
         return self.classifier
 
 class OWITree(OWClassificationTreeViewer):
-    settingsList = OWClassificationTreeViewer.settingsList + ["discretizationMethod"]
+    settingsList = OWClassificationTreeViewer.settingsList
     
     def __init__(self,parent = None, signalManager = None):
         OWClassificationTreeViewer.__init__(self, parent, signalManager, 'I&nteractive Tree Builder')
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Tree Learner", orange.Learner, self.learner)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("Classifier", orange.TreeClassifier), ("Tree Learner", orange.Learner)]
 
-        self.discretizationMethod = 0
         self.attridx = 0
         self.cutoffPoint = 0.0
         self.loadSettings()
