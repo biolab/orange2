@@ -68,7 +68,7 @@ class OWDistanceFile(OWWidget):
         self.filecombo.updateGeometry()
 
         self.error()
-        if 1:
+        try:
             fle = open(fn)
             while 1:
                 lne = fle.readline().strip()
@@ -89,8 +89,8 @@ class OWDistanceFile(OWWidget):
                         self.matrix[li, lj] = float(s)
 
             self.relabel()
-##        except:
-##            self.error("cannot read the file")
+        except:
+            self.error("cannot read the file")
 
     def relabel(self):
         self.error()
