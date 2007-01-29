@@ -48,6 +48,10 @@ using namespace std;
 
 /* *********** AUXILIARY FUNCTIONS ************/
 
+#ifdef _MSC_VER
+  #pragma warning (disable : 4251 4996)
+#endif
+
 #ifndef _MSC_VER_70
 inline double abs(double x)
 { return fabs(x); }

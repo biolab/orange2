@@ -24,7 +24,7 @@
 #define __STLADDON_HPP
 
 #ifdef _MSC_VER
-  #pragma warning (disable : 4786 4114 4018 4267 4244)
+  #pragma warning (disable : 4786 4114 4018 4267 4244 4996 4251)
   #if _MSC_VER < 1300
     #define _MSC_VER_60
   #else
