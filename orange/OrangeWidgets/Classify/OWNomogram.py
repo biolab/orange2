@@ -52,6 +52,7 @@ def avg(l):
 
 class OWNomogram(OWWidget):
     settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size", "confidence_percent", "sort_type"]
+    contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Nomogram", 1)
@@ -110,8 +111,7 @@ class OWNomogram(OWWidget):
 
         #target combo box
         self.TargetClassIndex = 0
-        self.target = ""
-        self.targetCombo = OWGUI.comboBox(GeneralTab, self, "target", " Target Class ", tooltip='Select target (prediction) class in the model.', callback = self.setTarget, sendSelectedValue = 1, valueType = str)
+        self.targetCombo = OWGUI.comboBox(GeneralTab, self, "TargetClassIndex", " Target Class ", tooltip='Select target (prediction) class in the model.', callback = self.setTarget)
         
         #self.yAxisRadio.setDisabled(True)
         self.probabilityCheck = OWGUI.checkBox(GeneralTab, self, 'probability','Show prediction',  tooltip='', callback = self.setProbability)
@@ -520,9 +520,11 @@ class OWNomogram(OWWidget):
             self.targetCombo.insertItem(str(v))
             
     def classifier(self, cl):
+        self.closeContext()
         if not self.cl or not cl or not self.cl.domain == cl.domain:
             if cl:
                 self.initClassValues(cl.domain.classVar)
+            self.TargetClassIndex = 0
         self.cl = cl
         if hasattr(self.cl, "data"):
             self.data = self.cl.data
@@ -531,6 +533,7 @@ class OWNomogram(OWWidget):
         if self.data and self.data.domain and not self.data.domain.classVar:
             self.error("OWNomogram:"+" This domain has no class attribute!")
             return
+        self.openContext("", self.data)
         if not self.data:
             self.histogramCheck.setChecked(False)
             self.histogramCheck.setDisabled(True)
@@ -546,10 +549,6 @@ class OWNomogram(OWWidget):
         self.updateNomogram()
         
     def setTarget(self):
-        # find index
-        for c_i in range(len(self.cl.domain.classVar.values)):
-            if str(self.cl.domain.classVar[c_i]) == self.target:
-                self.TargetClassIndex = c_i
         self.updateNomogram()
         
     def updateNomogram(self):
