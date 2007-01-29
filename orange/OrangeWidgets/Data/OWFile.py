@@ -129,7 +129,7 @@ class OWSubFile(OWWidget):
                 if oldDomain == data.domain and not self.attributesOverlap(data.domain):
                     argdict["dontCheckStored"] = 1
                     data = loader(fn, **argdict)
-                elif not type(data) >= orange.ExampleTable:
+                elif not isinstance(data, orange.ExampleTable):
                     data = loader(fn, **argdict)
 
             self.dataDomain = data.domain
