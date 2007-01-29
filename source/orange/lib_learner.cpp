@@ -60,13 +60,18 @@ This file includes constructors and specialized methods for ML* object, defined 
 
 /* ************ MAJORITY AND COST ************ */
 
-#include "majority.hpp"
+#include "majority.hpp" 
 C_CALL(MajorityLearner, Learner, "([examples] [, weight=, estimate=]) -/-> Classifier")
 C_CALL(CostLearner, Learner, "([examples] [, weight=, estimate=, costs=]) -/-> Classifier")
 
 //#include "linreg.hpp"
 PYXTRACT_IGNORE C_CALL(LinRegLearner, Learner, "([examples] [, weight=]) -/-> Classifier")
 PYXTRACT_IGNORE C_NAMED(LinRegClassifier, ClassifierFD, "([classifier=, costs=])")
+
+PYCLASSCONSTANT_INT(LinRegLearner, All, 0)
+PYCLASSCONSTANT_INT(LinRegLearner, Forward, 1)
+PYCLASSCONSTANT_INT(LinRegLearner, Backward, 2)
+PYCLASSCONSTANT_INT(LinRegLearner, Stepwise, 3)
 
 #include "costwrapper.hpp"
 C_CALL(CostWrapperLearner, Learner, "([examples] [, weight=, costs=]) -/-> Classifier")
