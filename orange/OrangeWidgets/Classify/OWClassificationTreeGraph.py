@@ -176,9 +176,11 @@ BodyColor_Default = QColor(255, 225, 10)
 BodyCasesColor_Default = QColor(0, 0, 128)
 
 class OWClassificationTreeGraph(OWTreeViewer2D):
+    contextHandlers = {"": DomainContextHandler("", ["TargetClassIndex"], matchValues=1)}
+
     def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
-        self.settingsList=self.settingsList+["ShowPies","TargetClassIndex"]
+        self.settingsList=OWTreeViewer2D.settingsList+["ShowPies"]
         
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
@@ -279,12 +281,16 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.canvas.update()
 
     def ctree(self, tree=None):
+        self.closeContext()
         self.targetCombo.clear()
         if tree:
             for name in tree.tree.examples.domain.classVar.values:
                 self.targetCombo.insertItem(name)
-        if tree and len(tree.tree.distribution)>self.TargetClassIndex:
+#        if tree and len(tree.tree.distribution)>self.TargetClassIndex:
             self.TargetClassIndex=0
+            self.openContext("", tree.domain)
+        else:
+            self.openContext("", None)
         OWTreeViewer2D.ctree(self, tree)
 
     def walkcreate(self, tree, parent=None, level=0, attrVal=""):
@@ -343,7 +349,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
     
 if __name__=="__main__":
     a = QApplication(sys.argv)
-    ow = OWClassificationTreeViewer2D()
+    ow = OWClassificationTreeGraph()
     a.setMainWidget(ow)
 
     data = orange.ExampleTable('../../doc/datasets/voting.tab')
