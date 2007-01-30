@@ -29,6 +29,7 @@
 
 extern PyObject *moduleNumeric, *moduleNumarray, *moduleNumpy;
 extern PyTypeObject *PyNumericArrayType, *PyNumarrayArrayType, *PyNumpyArrayType;
+extern PyObject *numericMaskedArray, *numarrayMaskedArray, *numpyMaskedArray;
 
 #ifdef NUMPY
   #include "../lib/site-packages/numpy/core/include/numpy/arrayobject.h"

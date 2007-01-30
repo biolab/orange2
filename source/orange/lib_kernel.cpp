@@ -2748,27 +2748,6 @@ PYCLASSCONSTANT_INT(ExampleTable, Multinomial_AsOrdinal, 1)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Error, 2)
 
 
-PyObject *MA_module = NULL;
-PyObject *MaskedArray_class = NULL;
-
-inline bool load_MA()
-{
-  if (MaskedArray_class)
-    return true;
-
-  if (!MA_module) {
-    MA_module = PyImport_ImportModule("MA");
-    if (!MA_module)
-      return false;
-  }
-
-  MaskedArray_class = PyDict_GetItemString(PyModule_GetDict(MA_module), "MaskedArray");
-  if (!MaskedArray_class)
-    PYERROR(PyExc_AttributeError, "MA modules has not class MaskedArray (compatibility error?)", false);
-
-  return true;
-}
-
 
 PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *w, char *contents)
 {
@@ -2812,30 +2791,19 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
 #ifndef NO_NUMERIC
 
 
-PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, PyObject **module, bool masked)
+PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, PyObject **module, PyObject **maskedArray = NULL)
 {
   PyTRY
     prepareNumeric();
-    if (!*module)
+    if (!*module || maskedArray && !*maskedArray)
       PYERROR(PyExc_ImportError, "cannot import the necessary numeric module for conversion", PYNULL);
 
     // These references are all borrowed
-	PyObject *moduleDict = PyModule_GetDict(*module);
-	PyObject *mzeros = PyDict_GetItemString(moduleDict, "zeros");
-	
-	PyObject *mFloat = PyDict_GetItemString(moduleDict, "Float");
-	if (!mFloat)
-	  mFloat = PyDict_GetItemString(moduleDict, "float");
-	
-	PyObject *mCharacter = PyDict_GetItemString(moduleDict, "Character");
-	if (!mCharacter)
-	  mCharacter = PyDict_GetItemString(moduleDict, "character");
-	if (!mCharacter)
-	  mCharacter = PyDict_GetItemString(moduleDict, "Byte");
-	
-	if (!mzeros || !mFloat || !mCharacter)
-	  PYERROR(PyExc_ImportError, "incompatible numeric module (missing one of the required objects)", PYNULL);
-	  
+    PyObject *moduleDict = PyModule_GetDict(*module);
+	  PyObject *mzeros = PyDict_GetItemString(moduleDict, "zeros");
+	  if (!mzeros)
+	    PYERROR(PyExc_AttributeError, "numeric module has no function 'zeros'", PYNULL);
+
     char *contents = NULL;
     int weightID = 0;
     int multinomialTreatment = 1;
@@ -2859,14 +2827,14 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     double *Xp, *yp, *wp;
     signed char *mp = NULL, *mpy = NULL;
     if (columns) {
-      X = PyObject_CallFunction(mzeros, "(ii)O", rows, columns, mFloat);
+      X = PyObject_CallFunction(mzeros, "(ii)s", rows, columns, "d");
       if (!X)
         PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
         
       Xp = (double *)((PyArrayObject *)X)->data;
 
-      if (masked) {
-        mask = PyObject_CallFunction(mzeros, "(ii)O", rows, columns, mCharacter);
+      if (maskedArray) {
+        mask = PyObject_CallFunction(mzeros, "(ii)s", rows, columns, "b");
         mp = (signed char *)((PyArrayObject *)mask)->data;
       }
     }
@@ -2877,13 +2845,13 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     }
 
     if (classVector) {
-      y = PyObject_CallFunction(mzeros, "(i)O", rows, mFloat);
+      y = PyObject_CallFunction(mzeros, "(i)s", rows, "d");
       if (!y)
         PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
       yp = (double *)((PyArrayObject *)y)->data;
 
-      if (masked) {
-        masky = PyObject_CallFunction(mzeros, "(i)O", rows, mCharacter);
+      if (maskedArray) {
+        masky = PyObject_CallFunction(mzeros, "(i)s", rows, "b");
         mpy = (signed char *)((PyArrayObject *)masky)->data;
       }
     }
@@ -2895,7 +2863,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
 
 
     if (weightVector) {
-      w = PyObject_CallFunction(mzeros, "(i)O", rows, mFloat);
+      w = PyObject_CallFunction(mzeros, "(i)s", rows, "d");
       if (!w)
         PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
       wp = (double *)((PyArrayObject *)w)->data;
@@ -2926,7 +2894,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
               for(; vi != ve; eei++, vi++, bi++)
                 if (*bi) {
                   if ((*eei).isSpecial()) {
-                    if (masked) {
+                    if (maskedArray) {
                       *Xp++ = 0;
                       *mp++ = 1;
                     }
@@ -2937,7 +2905,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
                   }
                   else {
                     *Xp++ = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
-                    if (masked)
+                    if (maskedArray)
                      *mp++ = 0;
                   }
                 }
@@ -2949,7 +2917,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
               if (hasClass) {
                 const TValue &classVal = (*ei).getClass();
                 if (classVal.isSpecial()) {
-                  if (masked) {
+                  if (maskedArray) {
                     *Xp++ = 0;
                     *mp++ = 1;
                   }
@@ -2960,7 +2928,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
                 }
                 else {
                   *Xp++ = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
-                  if (masked)
+                  if (maskedArray)
                     *mp++ = 0;
                 }
               }
@@ -2970,19 +2938,19 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
             case 'w': 
               if (weightID)
                 *Xp++ = WEIGHT(*ei);
-                if (masked)
+                if (maskedArray)
                   *mp++ = 0;
               break;
 
             case '0':
               *Xp++ = 0.0;
-              if (masked)
+              if (maskedArray)
                 *mp++ = 0;
               break;
 
             case '1':
               *Xp++ = 1.0;
-              if (masked)
+              if (maskedArray)
                 *mp++ = 0;
               break;
           }
@@ -2991,7 +2959,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
         if (yp) {
           const TValue &classVal = (*ei).getClass();
           if (classVal.isSpecial()) {
-            if (masked) {
+            if (maskedArray) {
               *yp++ = 0;
               *mpy++ = 1;
             }
@@ -3002,7 +2970,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
           }
           else
             *yp++ = classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV);
-            if (masked)
+            if (maskedArray)
               *mpy++ = 0;
         }
 
@@ -3010,21 +2978,21 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
           *wp++ = WEIGHT(*ei);
       }
 
-      if (masked) {
+      if (maskedArray) {
         PyObject *args, *maskedX = NULL, *maskedy = NULL;
 
-        bool err = !load_MA();
-
-        if (!err && mask) {
+        bool err = false;
+        
+        if (mask) {
           args = Py_BuildValue("OOiOO", X, Py_None, 1, Py_None, mask);
-          maskedX = PyObject_CallObject(MaskedArray_class, args);
+          maskedX = PyObject_CallObject(*maskedArray, args);
           Py_DECREF(args);
           err = !maskedX;
         }
 
         if (!err && masky) {
           args = Py_BuildValue("OOiOO", y, Py_None, 1, Py_None, masky);
-          maskedy = PyObject_CallObject(MaskedArray_class, args);
+          maskedy = PyObject_CallObject(*maskedArray, args);
           Py_DECREF(args);
           err = !maskedy;
         }
@@ -3076,13 +3044,13 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
 
 PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
 {
-  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumeric, false);
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumeric);
 }
 
 
 PyObject *ExampleTable_toNumericMA(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
 {
-  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumeric, true);
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumeric, &numericMaskedArray);
 }
 
 // this is for compatibility
@@ -3093,24 +3061,24 @@ PyObject *ExampleTable_toMA(PyObject *self, PyObject *args, PyObject *keywords) 
 
 PyObject *ExampleTable_toNumarray(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
 {
-  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumarray, false);
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumarray);
 }
 
 
 PyObject *ExampleTable_toNumarrayMA(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
 {
-  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumarray, true);
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumarray, &numarrayMaskedArray);
 }
 
 PyObject *ExampleTable_toNumpy(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
 {
-  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumpy, false);
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumpy);
 }
 
 
 PyObject *ExampleTable_toNumpyMA(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
 {
-  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumpy, true);
+  return ExampleTable_toNumericOrMA(self, args, keywords, &moduleNumpy, &numpyMaskedArray);
 }
 
 

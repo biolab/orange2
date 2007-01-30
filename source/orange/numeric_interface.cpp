@@ -6,21 +6,40 @@
 bool importarray_called = false;
 
 PyObject *moduleNumeric = NULL, *moduleNumarray = NULL, *moduleNumpy = NULL;
+PyObject *numericMaskedArray = NULL, *numarrayMaskedArray = NULL, *numpyMaskedArray = NULL;
 PyTypeObject *PyNumericArrayType = NULL, *PyNumarrayArrayType = NULL, *PyNumpyArrayType = NULL;
 
 void initializeNumTypes()
 {
+  PyObject *ma;
+  
   moduleNumeric = PyImport_ImportModule("Numeric");
-  if (moduleNumeric)
+  if (moduleNumeric) {
     PyNumericArrayType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(moduleNumeric), "ArrayType");
+    
+    ma = PyImport_ImportModule("MA");
+    if (ma)
+      numericMaskedArray = PyDict_GetItemString(PyModule_GetDict(ma), "MaskedArray");
+  }
   
   moduleNumarray = PyImport_ImportModule("numarray");
-  if (moduleNumarray)
+  if (moduleNumarray) {
     PyNumarrayArrayType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(moduleNumarray), "ArrayType");
-  
+
+    ma = PyImport_ImportModule("numarray.ma");
+    if (ma)
+      numarrayMaskedArray = PyDict_GetItemString(PyModule_GetDict(ma), "MaskedArray");
+  }
+
   moduleNumpy = PyImport_ImportModule("numpy");
-  if (moduleNumpy)
-    PyNumpyArrayType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(moduleNumpy), "ndarray");
+  if (moduleNumpy) {
+    PyObject *mdict = PyModule_GetDict(moduleNumpy);
+    PyNumpyArrayType = (PyTypeObject *)PyDict_GetItemString(mdict, "ndarray");
+    
+    ma = PyDict_GetItemString(mdict, "ma");
+    if (ma)
+      numpyMaskedArray = PyDict_GetItemString(PyModule_GetDict(ma), "MaskedArray");
+  }
     
   importarray_called = true;
 //  import_array();
