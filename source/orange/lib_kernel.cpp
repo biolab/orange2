@@ -2373,10 +2373,8 @@ PyObject *ExampleGeneratorList__reduce__(TPyOrange *self, PyObject *) { return L
 TExampleTable *readListOfExamples(PyObject *args)
 { 
   #ifndef NO_NUMERIC
-  if (!strcmp(args->ob_type->tp_name, "array") || !strcmp(args->ob_type->tp_name, "numpy.ndarray") || !strcmp(args->ob_type->tp_name, "numarray.numarraycore.NumArray")) {
-    if (isSomeNumeric(args))
-      return readListOfExamples(args, PDomain(), false);
-  }
+  if (isSomeNumeric_wPrecheck(args))
+    return readListOfExamples(args, PDomain(), false);
   #endif
 
   if (PySequence_Check(args)) {
@@ -2419,37 +2417,42 @@ TExampleTable *readListOfExamples(PyObject *args)
 TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMetas)
 { 
   #ifndef NO_NUMERIC
-  if (!strcmp(args->ob_type->tp_name, "array") || !strcmp(args->ob_type->tp_name, "numpy.ndarray") || !strcmp(args->ob_type->tp_name, "numarray.numarraycore.NumArray")) {
-    if (isSomeNumeric(args)) {
+  if (isSomeNumeric_wPrecheck(args)) {
       PyArrayObject *array = (PyArrayObject *)(args);
       if (array->nd != 2)
         PYERROR(PyExc_AttributeError, "two-dimensional array expected for an ExampleTable", NULL);
 
+     PVarList variables;
+     TVarList::const_iterator vi, ve;
+
       if (!domain) {
-        TVarList variables;
+        TVarList lvariables;
         char vbuf[20];
         for(int i = 0, e = array->dimensions[1]; i < e; i++) {
           sprintf(vbuf, "a%i", i+1);
-          variables.push_back(mlnew TFloatVariable(vbuf));
+          lvariables.push_back(mlnew TFloatVariable(vbuf));
         }
-        domain = mlnew TDomain(PVariable(), variables);
+        domain = mlnew TDomain(PVariable(), lvariables);
+        variables = domain->variables;
+        ve = variables->end();
       }
 
-      else
+      else {
         if (array->dimensions[1] != domain->variables->size())
           PYERROR(PyExc_AttributeError, "the number of columns in the array doesn't match the number of attributes", NULL);
 
+       variables = domain->variables;
+       ve = variables->end();
+       for(vi = variables->begin(); vi!=ve; vi++)
+				  if (((*vi)->varType != TValue::INTVAR) && ((*vi)->varType != TValue::FLOATVAR))
+					  PYERROR(PyExc_TypeError, "cannot read the value of attribute '%s' from an array (unsupported attribute type)", NULL);
+			}
 
-      const int arrayType = array->descr->type_num;
-      const TVarList &variables = domain->variables.getReference();
-
-      TVarList::const_iterator vi(variables.begin()), ve(variables.end());
-      for(; vi!=ve; vi++)
-        if (((*vi)->varType != TValue::INTVAR) && ((*vi)->varType != TValue::FLOATVAR))
-          PYERROR(PyExc_TypeError, "cannot read the value of attribute '%s' from an array (unsupported attribute type)", NULL);
-
-      if ((arrayType == PyArray_CFLOAT) || (arrayType == PyArray_CDOUBLE) || (arrayType == PyArray_OBJECT))
-        PYERROR(PyExc_AttributeError, "ExampleTable cannot use arrays of complex numbers or Python objects", NULL);
+      const char arrayType = getArrayType(array);
+      if (!strchr(supportedNumericTypes, arrayType)) {
+        PyErr_Format(PyExc_AttributeError, "Converting arrays of type '%c' is not supported (use one of '%s')", arrayType, supportedNumericTypes);
+        return NULL;
+      }
     
       TExampleTable *table = mlnew TExampleTable(domain);
       TExample *nex = NULL;
@@ -2467,7 +2470,7 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
           TExample *nex = mlnew TExample(domain);
 
           #define ARRAYTYPE(TYPE) \
-            for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol) \
+            for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol) \
               if ((*vi)->varType == TValue::INTVAR) \
                 intValInit(*ei, *(TYPE *)elPtr); \
               else \
@@ -2475,23 +2478,26 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
             break;
 
           switch (arrayType) {
-            case PyArray_CHAR: ARRAYTYPE(char)
-            case PyArray_UBYTE: ARRAYTYPE(unsigned char)
-//            case PyArray_SBYTE: ARRAYTYPE(signed char)
-            case PyArray_SHORT: ARRAYTYPE(short)
-            case PyArray_INT: ARRAYTYPE(int)
-            case PyArray_LONG: ARRAYTYPE(long)
+            case 'c':
+            case 'b': ARRAYTYPE(char)
+            case 'B': ARRAYTYPE(unsigned char)
+            case 'h': ARRAYTYPE(short)
+            case 'H': ARRAYTYPE(unsigned short)
+            case 'i': ARRAYTYPE(int)
+            case 'I': ARRAYTYPE(unsigned int)
+            case 'l': ARRAYTYPE(long)
+            case 'L': ARRAYTYPE(unsigned long)
 
-            case PyArray_FLOAT:
-              for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
+            case 'f':
+              for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
                 if ((*vi)->varType == TValue::INTVAR)
                   intValInit(*ei, int(floor(0.5 + *(float *)elPtr)));
                 else
                   floatValInit(*ei, *(float *)elPtr);
               break;
 
-            case PyArray_DOUBLE:
-              for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
+            case 'd':
+              for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
                 if ((*vi)->varType == TValue::INTVAR)
                   intValInit(*ei, int(floor(0.5 + *(double *)elPtr)));
                 else
@@ -2513,7 +2519,6 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
       }
 
       return table;
-    }
   }
   #endif
 
@@ -2872,13 +2877,13 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     }
 
     if (classVector) {
-      y = PyObject_CallFunction(mzeros, "(ii)O", 1, rows, mFloat);
+      y = PyObject_CallFunction(mzeros, "(i)O", rows, mFloat);
       if (!y)
         PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
       yp = (double *)((PyArrayObject *)y)->data;
 
       if (masked) {
-        masky = PyObject_CallFunction(mzeros, "(ii)O", 1, rows, mCharacter);
+        masky = PyObject_CallFunction(mzeros, "(i)O", rows, mCharacter);
         mpy = (signed char *)((PyArrayObject *)masky)->data;
       }
     }
@@ -2890,7 +2895,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
 
 
     if (weightVector) {
-      w = PyObject_CallFunction(mzeros, "(ii)O", 1, rows, mFloat);
+      w = PyObject_CallFunction(mzeros, "(i)O", rows, mFloat);
       if (!w)
         PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
       wp = (double *)((PyArrayObject *)w)->data;

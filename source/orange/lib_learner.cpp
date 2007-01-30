@@ -794,7 +794,9 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
           PYERROR(PyExc_AttributeError, "two-dimensional array expected for matrix of projections", PYNULL);
         if (array->dimensions[1] != 3)
           PYERROR(PyExc_AttributeError, "the matrix of projections must have three columns", PYNULL);
-        if ((array->descr->type_num != PyArray_FLOAT) && (array->descr->type_num != PyArray_DOUBLE))
+          
+        const char arrayType = getArrayType(array);
+        if ((arrayType != 'f') && (arrayType != 'd'))
           PYERROR(PyExc_AttributeError, "elements of matrix of projections must be doubles or floats", PYNULL);
 
         const int nExamples = array->dimensions[0];
@@ -806,7 +808,7 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
         const int &strideRow = array->strides[0];
         const int &strideCol = array->strides[1];
 
-        if (array->descr->type_num == PyArray_FLOAT) {
+        if (arrayType == 'f') {
           for(int row = 0, rowe = nExamples; row < rowe; row++, rowPtr += strideRow) {
             *pi++ = double(*(float *)(rowPtr));
             *pi++ = double(*(float *)(rowPtr+strideCol));

@@ -40,7 +40,16 @@ extern PyTypeObject *PyNumericArrayType, *PyNumarrayArrayType, *PyNumpyArrayType
 
   bool isSomeNumeric(PyObject *);
 
+  // avoids unnecessarily importing the numeric modules
+  bool isSomeNumeric_wPrecheck(PyObject *args);
+
+
   void initializeNumTypes();
+  
+  char getArrayType(PyObject *);
+  
+  inline char getArrayType(PyArrayObject *args)
+  { return getArrayType((PyObject *)(args)); }
   
   inline void prepareNumeric()
   { if (!importarray_called)
@@ -50,12 +59,17 @@ extern PyTypeObject *PyNumericArrayType, *PyNumarrayArrayType, *PyNumpyArrayType
   void numericToDouble(PyObject *num, double *&table, int &columns, int &rows);
   void numericToDouble(PyObject *num, double *&table, int &rows);
 
+static char supportedNumericTypes[] = "bBhHiIlLfdc";
+
 #else
 
   inline void prepareNumeric()
   { raiseErrorWho("import_array()", "this build does not support Numeric"); }
 
   bool isSomeNumeric(PyObject *);
+  { raiseErrorWho("import_array()", "this build does not support Numeric"); }
+
+  bool isSomeNumeric_wPrecheck(PyObject *);
   { raiseErrorWho("import_array()", "this build does not support Numeric"); }
 
   inline void numericToDouble(PyObject *num, double *&table, int &columns, int &rows)

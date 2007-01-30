@@ -26,6 +26,17 @@ void initializeNumTypes()
 //  import_array();
 }
 
+
+// avoids unnecessarily importing the numeric modules
+bool isSomeNumeric_wPrecheck(PyObject *args) {
+  static char *numericNames[] = {"array", "numpy.ndarray", "ndarray", "numarray.numarraycore.NumArray", "NumArray", 0};
+  for(char **nni = numericNames; *nni; nni++)
+    if (!strcmp(args->ob_type->tp_name, *nni))
+      return isSomeNumeric(args);
+  return false;
+}
+
+
 bool isSomeNumeric(PyObject *obj)
 {
   if (!importarray_called)
@@ -37,6 +48,15 @@ bool isSomeNumeric(PyObject *obj)
 }
   
 
+char getArrayType(PyObject *args)
+{
+  PyObject *res = PyObject_CallMethod(args, "typecode", NULL);
+  if (!res)
+    return -1;
+  char cres = PyString_AsString(res)[0];
+  Py_DECREF(res);
+  return cres;
+}
 
 
 void numericToDouble(PyObject *args, double *&matrix, int &columns, int &rows)
@@ -50,8 +70,8 @@ void numericToDouble(PyObject *args, double *&matrix, int &columns, int &rows)
   if (array->nd != 2)
     raiseErrorWho("numericToDouble", "two-dimensional array expected");
 
-  const int arrayType = array->descr->type_num;
-  if ((arrayType == PyArray_CFLOAT) || (arrayType == PyArray_CDOUBLE) || (arrayType == PyArray_OBJECT))
+  const char arrayType = getArrayType(array);
+  if (!strchr(supportedNumericTypes, arrayType))
     raiseErrorWho("numericToDouble", "ExampleTable cannot use arrays of complex numbers or Python objects", NULL);
 
   columns = array->dimensions[1];
@@ -70,14 +90,17 @@ void numericToDouble(PyObject *args, double *&matrix, int &columns, int &rows)
       break;
 
     switch (arrayType) {
-      case PyArray_CHAR: READLINE(char)
-      case PyArray_UBYTE: READLINE(unsigned char)
-//      case PyArray_SBYTE: READLINE(signed char)
-      case PyArray_SHORT: READLINE(short)
-      case PyArray_INT: READLINE(int)
-      case PyArray_LONG: READLINE(long)
-      case PyArray_FLOAT: READLINE(float)
-      case PyArray_DOUBLE: READLINE(double)
+      case 'c':
+      case 'b': READLINE(char)
+      case 'B': READLINE(unsigned char)
+      case 'h': READLINE(short)
+      case 'H': READLINE(unsigned short)
+      case 'i': READLINE(int)
+      case 'I': READLINE(unsigned int)
+      case 'l': READLINE(long)
+      case 'L': READLINE(unsigned long)
+      case 'f': READLINE(float)
+      case 'd': READLINE(double)
     }
 
     #undef READLINE
@@ -96,8 +119,8 @@ void numericToDouble(PyObject *args, double *&matrix, int &rows)
   if (array->nd != 1)
     raiseErrorWho("numericToDouble", "one-dimensional array expected");
 
-  const int arrayType = array->descr->type_num;
-  if ((arrayType == PyArray_CFLOAT) || (arrayType == PyArray_CDOUBLE) || (arrayType == PyArray_OBJECT))
+  const char arrayType = getArrayType(array);
+  if (!strchr(supportedNumericTypes, arrayType))
     raiseError("numericToDouble", "ExampleTable cannot use arrays of complex numbers or Python objects", NULL);
 
   rows = array->dimensions[0];
@@ -113,14 +136,17 @@ void numericToDouble(PyObject *args, double *&matrix, int &rows)
     break;
 
   switch (arrayType) {
-    case PyArray_CHAR: READLINE(char)
-    case PyArray_UBYTE: READLINE(unsigned char)
-//    case PyArray_SBYTE: READLINE(signed char)
-    case PyArray_SHORT: READLINE(short)
-    case PyArray_INT: READLINE(int)
-    case PyArray_LONG: READLINE(long)
-    case PyArray_FLOAT: READLINE(float)
-    case PyArray_DOUBLE: READLINE(double)
+      case 'c':
+      case 'b': READLINE(char)
+      case 'B': READLINE(unsigned char)
+      case 'h': READLINE(short)
+      case 'H': READLINE(unsigned short)
+      case 'i': READLINE(int)
+      case 'I': READLINE(unsigned int)
+      case 'l': READLINE(long)
+      case 'L': READLINE(unsigned long)
+      case 'f': READLINE(float)
+      case 'd': READLINE(double)
   }
 
   #undef READLINE
