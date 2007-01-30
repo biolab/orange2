@@ -12,7 +12,7 @@ del /efkqsxyz \compileTemp
 mkdir compileTemp
 cd compileTemp
 
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS checkout -A -- source
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -A -- source
 
 cd source
 cmd /c _pyxtract.bat
