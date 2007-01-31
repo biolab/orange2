@@ -1,0 +1,4 @@
+cd \orange\scripts
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update
+call callUpdateSnapshot.btm
+shutdown -s
