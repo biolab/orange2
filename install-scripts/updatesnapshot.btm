@@ -39,18 +39,18 @@ for %pyver in (%PYTHONVERSIONS) do (
   nsis /Onsis_snapshot.log /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
   if %errorlevel != 0 (
     set ERRORS=%errorlevel
-    ren %WEBDOWNLOAD\%orange-snapshot-????-??-??-py%npver.exe %OUTNAME
+    ren %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe %OUTNAME
   ) else (
-    except (%OUTNAME) del %WEBDOWNLOAD\%orange-snapshot-????-??-??-py%npver.exe
+    except (%OUTNAME) del %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe
   )
 
   set OUTNAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe"
   nsis /Onsis_snapshot.log /DINCLUDEGENOMICS /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
   if %errorlevel != 0 (
     set ERRORS=%errorlevel
-    ren %WEBDOWNLOAD\%orange-snapshot-????-??-??-py%npver.exe %OUTNAME
+    ren %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe %OUTNAME
   ) else (
-    except (%OUTNAME) del %WEBDOWNLOAD\%orange-snapshot-????-??-??-py%npver.exe
+    except (%OUTNAME) del %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe
   )
 )
 del /e snapshotfiles_*.inc
