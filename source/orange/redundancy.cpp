@@ -417,7 +417,7 @@ PDomain TRemoveUnusedValues::operator ()(PExampleGenerator gen, const int &weigh
   
   PVariable &classVar = gen->domain->classVar;
   PVariable newClass;
-  if (checkClass && classVar->varType == TValue::INTVAR) {
+  if (checkClass && classVar && classVar->varType == TValue::INTVAR) {
     newClass = call(classVar, gen, weightID);
     if (newClass != classVar)
       changed = true;
