@@ -31,7 +31,21 @@ def includeOrNotFound(fname):
 <td>
  <p><a href="index.asp#windowsLog">Full log for Orange daily build</a></p>
  <p><%=timeLinkOrNotFound("windows.compiling.log", "compile log (daily snapshots)")%><br>
- <%=timeLinkOrNotFound("windows.regress.log", "install and regression tests log")%></P>
+ <table><tr><td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>
+<%
+for ver in range(23, 26):
+    fn = "win-compile-%s.log" % ver
+    if os.path.exists(fn):
+        l1 = None
+        for l in file(fn):
+            l2 = l1
+            l1 = l
+        Response.Write('<a href="index.asp#win-compile-py%i">Build for Python %2.1f</a> (%s; %s)<br/>\n' % (ver, ver/10., time.ctime(os.path.getmtime(fn)), l2.replace("=","").replace("Build: ", "").strip()))
+    else:
+        Response.Write('Build for Python %2.1f: log file not found<br/>\n' % (ver/10., ))
+%>
+  </td></tr></table>
+<%=timeLinkOrNotFound("windows.regress.log", "install and regression tests log")%></P>
 </td></tr>
 </table>
 
@@ -49,6 +63,16 @@ def includeOrNotFound(fname):
 <pre>
 <%=includeOrNotFound("windows.compiling.log")%>
 </pre>
+
+<%
+for ver in range(23, 26):
+    fname = "win-compile-%s.log" % ver
+    if os.path.exists(fn):
+        Response.Write('<a name="win-compile-py%i"></a><h3>Compiling for Python %2.1f</h3><pre>%s</pre>' % (ver, ver/10., file(fname, "rt").read()))
+        
+
+%>
+<h3>Regression tests</h3>
 
 <pre>
 <%=includeOrNotFound("windows.regress.log")%>
