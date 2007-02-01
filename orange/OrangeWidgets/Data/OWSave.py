@@ -33,7 +33,7 @@ class OWSave(OWWidget):
         
         vb = OWGUI.widgetBox(self.space, orientation="horizontal")
         
-        rfbox = OWGUI.widgetBox(vb, "Filename", orientation="horizontal")
+        rfbox = OWGUI.widgetBox(vb, "Save", orientation="horizontal")
         self.filecombo = QComboBox(rfbox)
         self.filecombo.setFixedWidth(140)
         browse = QPushButton("&Browse...", rfbox)
@@ -47,6 +47,7 @@ class OWSave(OWWidget):
         self.setFilelist()
         self.filecombo.setCurrentItem(0)
         
+        self.connect(self.filecombo, SIGNAL('activated ( int ) '),self.saveFile)        
         self.connect(browse, SIGNAL('clicked()'),self.browseFile)        
         self.connect(self.save, SIGNAL('clicked()'),self.saveFile)
 
@@ -88,7 +89,7 @@ class OWSave(OWWidget):
         self.addFileToList(str(filename))
         self.saveFile()
 
-    def saveFile(self):
+    def saveFile(self, *index):
         if self.data:
             filename = self.recentFiles[self.filecombo.currentItem()]
             fileExt = lower(os.path.splitext(filename)[1])
