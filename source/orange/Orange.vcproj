@@ -274,7 +274,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/WARN:0"
-				AdditionalDependencies="odbc32.lib odbccp32.lib"
 				OutputFile="$(PYTHON)/lib/site-packages/orange/orange.pyd"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
