@@ -1,10 +1,12 @@
-set WEBDIR=c:\orange
+set WEBDIR=e:\orange
 set DOWNLOADDIR=%WEBDIR\download
 set SCRIPTDIR=%WEBDIR\scripts
 rem set WEBDOCDIR=%WEBDIR\doc
 set WEBDOCDIR=%DOWNLOADDIR\snapshot\orange\doc
 
 set WEBDOWNLOAD=O:
+
+set LOGFILE=%SCRIPTDIR\updateSnapshot.log
 
 set STABLEDIR=%DOWNLOADDIR\lastStable
 set SNAPSHOTDIR=%DOWNLOADDIR\snapshot
@@ -31,7 +33,9 @@ set PLINK_MACINTOSH_GENOMICS_SNAPSHOT=orange-mac-genomics-snap-%daystr.dmg
 alias nsis="c:\program files\nsis\makensis.exe"
 alias cvs="C:\Program Files\CVSNT\cvs.exe"
 alias winrar="c:\program files\winrar\winrar.exe"
-set .py=python
+alias upx="c:\program files\upx.exe"
+alias python="e:\python25\python.exe"
+set .py="e:\python25\python.exe"
 
 on error (
   set ERRORS=%errorlevel

@@ -1,37 +1,17 @@
-on error cancel 1
-
 pushd
-if not exist c:\compiled mkdir c:\compiled
-
-for %ver in (23 24 25) (
-
-set PYTHON=c:\python%ver
-
-cdd c:\
-del /efkqsxyz \compileTemp
-mkdir compileTemp
-cd compileTemp
-
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -A -- source
+cdd %WEBDIR
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -A -- source
 
 cd source
 cmd /c _pyxtract.bat
 
-call "C:\Program Files\Microsoft Visual Studio\VC98\Bin\vcvars32.bat" 
+call "c:\Program Files\Microsoft Visual Studio 8\vc\vcvarsall.bat"
 
-for %lll in (include Orange Corn orangeom orangene Statc) (
-  cd %lll %+
-  ..\pyxtract\fixmak.py %lll.mak %+
-  if not exist obj mkdir obj %+
-  nmake /f  temp.mak CFG="%lll - Win32 Release" %+
+for %ver in (23 24 25) (
+  set PYTHON=%pythonbase%%ver
+  echo *** Compiling for Python %ver
+  start /wait vcexpress orange.sln /build Release /out %WEBDOWNLOAD\regressionResults\win-compile-%ver.log
   flag_on_error
-  cd ..
-)
-
-cd \
-if not exist compiled\%ver mkdir compiled\%ver
-move compileTemp\*.pyd compiled\%ver
-
 )
 
 popd

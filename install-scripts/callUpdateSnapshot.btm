@@ -7,7 +7,7 @@ else
   set subj="Orange for Windows compiled successfully"
 endiff
 
-sendmail %MAIL_TO %subj @updateSnapshot.log
+rem sendmail %MAIL_TO %subj @%LOGFILE
 
 set REGRESDIR=%WEBDOWNLOAD\regressionResults
 if not exist %REGRESDIR mkdir %REGRESDIR

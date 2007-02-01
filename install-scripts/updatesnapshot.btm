@@ -10,50 +10,54 @@ break_on_error
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r HEAD genomics
 break_on_error
 
-for %pyver in (%PYTHONVERSIONS) (
-  if not exist %pyver mkdir %pyver
-  copy c:\compiled\%pyver %pyver
-
-  set BINDIR=%WEBDOWNLOAD\binaries\%pyver
-  if not exist %BINDIR mkdir %BINDIR
-  pushd %BINDIR
-  copy c:\compiled\%pyver .
-  if exist stamps_pyd.txt del stamps_pyd.txt
-  for %fle in (*.pyd) echo %fle %@MD5[%fle] >> stamps_pyd.txt
-  popd
-)
-
 
 cdd %SCRIPTDIR
-python buildInstFileList.py %SNAPSHOTDIR snapshotfiles
+buildInstFileList.py %SNAPSHOTDIR snapshotfiles
 break_on_error
 
-if exist %WEBDOWNLOAD\orange-win-snap-*.exe del %WEBDOWNLOAD\orange-win-snap-*.exe
-if exist %WEBDOWNLOAD\orange-win-genomics-snap-*.exe del %WEBDOWNLOAD\orange-win-genomics-snap-*.exe
 
 for %pyver in (%PYTHONVERSIONS) do (
+  set BINDIR=%WEBDOWNLOAD\binaries\%pyver
+  if not exist %BINDIR mkdir %BINDIR
+
+  cdd %PYTHONBASE%%pyver\lib\site-packages\orange
+  for %pydf in (*.pyd) do (
+    if exist %BINDIR\%pydf del %BINDIR\%pydf
+    upx %pydf -o %BINDIR\%pydf
+  )
+
+  cdd %BINDIR
+  if exist stamps_pyd.txt del stamps_pyd.txt
+  echo SetOutPath "$INSTDIR" > %SCRIPTDIR\snapshotfiles_binaries.inc
+  for %fle in (*.pyd) do (
+    set MD5=%@MD5[%fle]
+    echo %fle %MD5 >> stamps_pyd.txt
+    echo File %BINDIR\%fle >> %SCRIPTDIR\snapshotfiles_binaries.inc
+    echo FileWrite $WhatsDownFile "%fle=1.0:%MD5%$\r$\n" >> %SCRIPTDIR\snapshotfiles_binaries.inc
+  )
+
+  cdd %SCRIPTDIR
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
   set COMMON_NSI_OPTIONS=/DORANGEDIR=%SNAPSHOTDIR\orange  /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles /DPYVER=%pyver /DNPYVER=%npver install3.nsi
-
   set OUTNAME="%WEBDOWNLOAD\%WIN_SNAPSHOT-py%npver.exe"
   nsis /Onsis_snapshot.log /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
   if %errorlevel != 0 (
     set ERRORS=%errorlevel
     ren %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe %OUTNAME
   ) else (
-    except (%OUTNAME) del %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe
   )
 
   set OUTNAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe"
   nsis /Onsis_snapshot.log /DINCLUDEGENOMICS /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
   if %errorlevel != 0 (
     set ERRORS=%errorlevel
-    ren %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe %OUTNAME
+    ren %WEBDOWNLOAD\orange-snapshot-genomics-????-??-??-py%npver.exe %OUTNAME
   ) else (
-    except (%OUTNAME) del %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-genomics-????-??-??-py%npver.exe
   )
 )
-del /e snapshotfiles_*.inc
+del /qke snapshotfiles_*.inc
 
 cdd %SCRIPTDIR/doc
 call compileDocumentation.btm
