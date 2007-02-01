@@ -159,9 +159,8 @@ class OWSubFile(OWWidget):
             else:
                 data.name = fName
             self.send("Examples", data)
-            if data.domain.classVar:
-                self.send("Classified Examples", data)
-                self.send("Attribute Definitions", data.domain)
+            self.send("Attribute Definitions", data.domain)
+            self.send("Classified Examples", data.domain.classVar and data or None)
         else:
             self.send("Classified Examples", None)
             self.send("Examples", None)
