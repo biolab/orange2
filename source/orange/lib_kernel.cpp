@@ -2364,18 +2364,12 @@ PyObject *ExampleGeneratorList__reduce__(TPyOrange *self, PyObject *) { return L
 /* ************ EXAMPLE TABLE ************ */
 
 #include "table.hpp"
-
-#ifndef NO_NUMERIC
 #include "numeric_interface.hpp"
-#endif
-
 
 TExampleTable *readListOfExamples(PyObject *args)
 { 
-  #ifndef NO_NUMERIC
   if (isSomeNumeric_wPrecheck(args))
     return readListOfExamples(args, PDomain(), false);
-  #endif
 
   if (PySequence_Check(args)) {
     int size=PySequence_Size(args);
@@ -2416,7 +2410,6 @@ TExampleTable *readListOfExamples(PyObject *args)
 
 TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMetas)
 { 
-  #ifndef NO_NUMERIC
   if (isSomeNumeric_wPrecheck(args)) {
       PyArrayObject *array = (PyArrayObject *)(args);
       if (array->nd != 2)
@@ -2520,8 +2513,6 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
 
       return table;
   }
-  #endif
-
 
   if (PyList_Check(args)) {
     int size=PyList_Size(args);
@@ -2788,8 +2779,6 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
                          vector<bool> &include);
 
 
-#ifndef NO_NUMERIC
-
 
 PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, PyObject **module, PyObject **maskedArray = NULL)
 {
@@ -3032,14 +3021,6 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     }
   PyCATCH
 }
-#else
-
-PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, bool)
-{
-  PYERROR(PyExc_SystemError, "ExampleTable.Numeric: this build does not support module 'Numeric'", PYNULL);
-}
-
-#endif
 
 
 PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")

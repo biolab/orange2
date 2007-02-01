@@ -1,5 +1,3 @@
-#ifndef NO_NUMERIC
-
 #include "numeric_interface.hpp"
 #include "errors.hpp"
 
@@ -170,4 +168,3 @@ void numericToDouble(PyObject *args, double *&matrix, int &rows)
 
   #undef READLINE
 }
-#endif

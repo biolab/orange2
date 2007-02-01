@@ -23,19 +23,13 @@
 #ifndef __NUMERIC_INTERFACE
 #define __NUMERIC_INTERFACE
 
-#ifndef NO_NUMERIC
-
   #include "Python.h"
 
 extern PyObject *moduleNumeric, *moduleNumarray, *moduleNumpy;
 extern PyTypeObject *PyNumericArrayType, *PyNumarrayArrayType, *PyNumpyArrayType;
 extern PyObject *numericMaskedArray, *numarrayMaskedArray, *numpyMaskedArray;
 
-#ifdef NUMPY
-  #include "../lib/site-packages/numpy/core/include/numpy/arrayobject.h"
-#else
-  #include "Numeric/arrayobject.h"
-#endif
+#include "../lib/site-packages/numpy/core/include/numpy/arrayobject.h"
 
   extern bool importarray_called;
 
@@ -62,19 +56,4 @@ extern PyObject *numericMaskedArray, *numarrayMaskedArray, *numpyMaskedArray;
 
 static char supportedNumericTypes[] = "bBhHiIlLfdc";
 
-#else
-
-  inline void prepareNumeric()
-  { raiseErrorWho("import_array()", "this build does not support Numeric"); }
-
-  bool isSomeNumeric(PyObject *);
-  { raiseErrorWho("import_array()", "this build does not support Numeric"); }
-
-  bool isSomeNumeric_wPrecheck(PyObject *);
-  { raiseErrorWho("import_array()", "this build does not support Numeric"); }
-
-  inline void numericToDouble(PyObject *num, double *&table, int &columns, int &rows)
-  { raiseErrorWho("numericToDouble()", "this build does not support Numeric"); }
-
-#endif // NO_NUMERIC
 #endif // __NUMERIC_INTERFACE

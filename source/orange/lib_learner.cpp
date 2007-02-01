@@ -735,10 +735,7 @@ C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
 
 /************* PNN ************/
 
-#ifndef NO_NUMERIC
-#include "Numeric/arrayobject.h"
 #include "numeric_interface.hpp"
-#endif
 
 #include "pnn.hpp"
 
@@ -776,8 +773,6 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
 
       return WrapNewOrange(mlnew TP2NN(domain, examples, wbasesX, wbasesY, -1.0, normalizeExamples != 0), type);
     }
-
-    #ifndef NO_NUMERIC
 
       PyErr_Clear();
       PyObject *matrix;
@@ -862,10 +857,8 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
         return WrapNewOrange(mlnew TP2NN(domain, projections, nExamples, bases, offsets, normalizers, averages, TP2NN::InverseSquare, normalizeExamples != 0), type);
       }
 
-    #endif
-
     PyErr_Clear();
-    PYERROR(PyExc_TypeError, "P2NN.invalid argumenst", PYNULL);
+    PYERROR(PyExc_TypeError, "P2NN.invalid arguments", PYNULL);
 
   PyCATCH;
 }
