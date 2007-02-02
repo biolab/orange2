@@ -157,13 +157,6 @@ Section ""
 			File various\QT-LICENSE.txt
 		have_qt:
 
-
-		IfFileExists $INSTDIR\MSVCP60.DLL have_msvcp60
-		IfFileExists $SYSDIR\MSVCP60.DLL have_msvcp60
-			SetOutPath $INSTDIR
-			File various\MSVCP60.DLL
-		have_msvcp60:
-
 SectionEnd
 !endif
 
@@ -265,10 +258,6 @@ Function .onInit
 		IfFileExists "$SYSDIR\qt-mt230nc.dll" have_qt
 			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt-mt230nc.dll" "Qt"
         have_qt:
-
-		IfFileExists "$SYSDIR\MSVCP60.dll" have_msvcp60
-			!insertMacro WarnMissingModule "$INSTDIR\MSVCP60.DLL" "MSVCP60.DLL"
-        have_msvcp60:
 
 		StrCmp $MissingModules "" continueinst
 		MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nThese module(s) are not needed for running scripts in Orange, but Orange Canvas will not work without them.$\r$\nYou can download and install them later or obtain an Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" /SD IDYES IDYES continueinst
