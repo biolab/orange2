@@ -51,7 +51,7 @@
 				AdditionalIncludeDirectories="../include,$(PYTHON)\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CORN_EXPORTS;NUMPY"
 				StringPooling="true"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				FloatingPointModel="2"
 				RuntimeTypeInfo="true"

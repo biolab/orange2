@@ -246,12 +246,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm700 /Gs "
-				Optimization="2"
+				Optimization="3"
 				InlineFunctionExpansion="1"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="../include,$(PYTHON)\include,px,ppp"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ORANGE_EXPORTS;NUMPY"
 				StringPooling="true"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				FloatingPointModel="2"
 				RuntimeTypeInfo="true"
@@ -2019,10 +2020,9 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"
+						Optimization="3"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						DebugInformationFormat="3"
 					/>
 				</FileConfiguration>
 			</File>
@@ -2548,10 +2548,9 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"
+						Optimization="3"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						DebugInformationFormat="3"
 					/>
 				</FileConfiguration>
 			</File>

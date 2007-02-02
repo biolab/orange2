@@ -152,7 +152,7 @@
 				AdditionalIncludeDirectories="../orange,../include,px,$(PYTHON)\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ORANGEOM_EXPORTS;NO_PIPED_COMMANDS;NUMPY"
 				StringPooling="true"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				FloatingPointModel="2"
 				RuntimeTypeInfo="true"
