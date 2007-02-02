@@ -30,8 +30,6 @@ This file includes constructors and specialized methods for ML* object, defined 
   #pragma warning (disable : 4786 4114 4018 4267 4244)
 #endif
 
-#include <string>
-
 #include "vars.hpp"
 #include "domain.hpp"
 #include "examples.hpp"
