@@ -6,6 +6,8 @@ Orange is distributed in the hope that it will be useful, but WITHOUT ANY WARRAN
 
 Orange Widgets and Canvas are based on Qt. If you intend to use them, you should also read and agree with Trolltech's Q Public License (see http://www.trolltech.com/licenses/qpl.html).
 
+Orange contains orngCRS module written by Aleks Jakulin (http://www.stat.columbia.edu/~jakulin/).
+
 Orange also contains SOM_PAK (SOM Programming Team of the Helsinki University of Technology, Laboratory of Computer and Information Science, Rakentajanaukio 2 C, SF-02150 Espoo, FINLAND)
 
 Orange contains libsvm, which is distributed under the following copyright notice:
