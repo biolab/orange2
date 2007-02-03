@@ -2,10 +2,11 @@ from qt import *
 from qttable import *
 import math
 import OWBaseWidget
-from OWBaseWidget import mygetattr
 import orange
 import sys, traceback
 
+
+YesNo = NoYes = ("No", "Yes")
 
 # constructs a box (frame) if not none, and returns the right master widget
 def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
@@ -64,7 +65,7 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
     widgetLabel(b, label, labelWidth)
     
     wa = b.control = QSpinBox(min, max, step, b)
-    wa.setValue(mygetattr(master, value))
+    wa.setValue(master.getdeepattr(value))
 
     if controlWidth:
         wa.setFixedWidth(controlWidth)
@@ -83,7 +84,7 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     widgetLabel(b, label, labelWidth)
     
     wa = b.control = DoubleSpinBox(min, max, step, value, master, b)
-    wa.setValue(mygetattr(master, value))
+    wa.setValue(master.getdeepattr(value))
 
     if controlWidth:
         wa.setFixedWidth(controlWidth)
@@ -100,7 +101,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     wa = QCheckBox(label, b)
     if labelWidth:
         wa.setFixedSize(labelWidth, wa.sizeHint().height())
-    wa.setChecked(mygetattr(master, value))
+    wa.setChecked(master.getdeepattr(value))
     if disabled:
         wa.setDisabled(1)
     if tooltip:
@@ -121,7 +122,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     wa = callback and callbackOnFocusOut and LineEditWFocusOut(b, callback) or QLineEdit(b)
-    wa.setText(unicode(mygetattr(master,value)))
+    wa.setText(unicode(master.getdeepattr(value)))
 
     if controlWidth:
         wa.setFixedWidth(controlWidth)
@@ -141,7 +142,7 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
     wa = checkBox(hb, master, checked, label, callback = checkCallback, labelWidth = labelWidth)
 
     wb = QSpinBox(min, max, step, hb)
-    wb.setValue(mygetattr(master, value))
+    wb.setValue(master.getdeepattr(value))
 
     if controlWidth:
         wb.setFixedWidth(controlWidth)
@@ -220,7 +221,7 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
     lb = QListBox(bg)
     lb.setSelectionMode(selectionMode)
 
-    clist = mygetattr(master, value)
+    clist = master.getdeepattr(value)
     if type(clist) >= ControlledList:
         clist = ControlledList(clist, lb)
         master.__setattr__(value, clist)
@@ -273,7 +274,7 @@ def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = Non
         w.setPixmap(label)
     if insertInto:
         bg.insert(w)
-    w.setOn(mygetattr(master, value) == i)
+    w.setOn(master.getdeepattr(value) == i)
     bg.buttons.append(w)
     if tooltip:
         QToolTip.add(w, tooltip)
@@ -290,7 +291,7 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
     else:
         w = QRadioButton("X")
         w.setPixmap(label)
-    w.setOn(mygetattr(master, value))
+    w.setOn(master.getdeepattr(value))
     if tooltip:
         QToolTip.add(w, tooltip)
 
@@ -306,7 +307,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     else:
         sliderBox = QHBox(widget)
         
-    slider = QSlider(minValue, maxValue, step, mygetattr(master, value), QSlider.Horizontal, sliderBox)
+    slider = QSlider(minValue, maxValue, step, master.getdeepattr(value), QSlider.Horizontal, sliderBox)
     if ticks:
         slider.setTickmarks(QSlider.Below)
         slider.setTickInterval(ticks)
@@ -317,7 +318,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     label.setText(labelFormat % maxValue)
     width2 = label.sizeHint().width()
     label.setFixedSize(max(width1, width2), label.sizeHint().height())
-    txt = labelFormat % (mygetattr(master, value)/divideFactor)
+    txt = labelFormat % (master.getdeepattr(value)/divideFactor)
     label.setText(txt)
     label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
 
@@ -330,7 +331,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
 
 def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, debuggingEnabled = 1):
     import qwt
-    init = mygetattr(master, value)
+    init = master.getdeepattr(value)
     if box:
         sliderBox = QHButtonGroup(box, widget)
     else:
@@ -396,8 +397,8 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
         for i in items:
             combo.insertItem(unicode(i))
         if len(items)>0:
-                if sendSelectedValue and mygetattr(master, value) in items: combo.setCurrentItem(items.index(mygetattr(master, value)))
-                elif not sendSelectedValue: combo.setCurrentItem(mygetattr(master, value))
+                if sendSelectedValue and master.getdeepattr(value) in items: combo.setCurrentItem(items.index(master.getdeepattr(value)))
+                elif not sendSelectedValue: combo.setCurrentItem(master.getdeepattr(value))
         else:
             combo.setDisabled(True)
 
@@ -454,7 +455,7 @@ class collapsableWidgetBox(QVGroupBox):
 
         # did we click on the pixmap?
         if ev.x() > self.xPixCoord and ev.x() < self.xPixCoord + self.shownPixSize[0] and ev.y() < self.shownPixSize[1]:
-            self.master.__setattr__(self.value, not mygetattr(self.master, self.value))
+            self.master.__setattr__(self.value, not self.master.getdeepattr(self.value))
             self.updateControls()
             self.repaint()
 
@@ -466,7 +467,7 @@ class collapsableWidgetBox(QVGroupBox):
         self.updateControls()            
     
     def updateControls(self):
-        val = mygetattr(self.master, self.value)
+        val = self.master.getdeepattr(self.value)
                 
         for c in self.children():
             if isinstance(c, QLayout): continue
@@ -480,7 +481,7 @@ class collapsableWidgetBox(QVGroupBox):
         QVGroupBox.paintEvent(self, ev)
         
         if self.pixmaps != []:
-            pix = self.pixmaps[mygetattr(self.master, self.value)]
+            pix = self.pixmaps[self.master.getdeepattr(self.value)]
             painter = QPainter(self)
             painter.drawPixmap(self.width() - pix.width() - self.pixEdgeOffset, 0, pix)
             self.xPixCoord = self.width() - pix.width() - self.pixEdgeOffset
@@ -517,22 +518,22 @@ class widgetHider(QWidget):
         self.disables = widgets or [] # need to create a new instance of list (in case someone would want to append...)
         self.makeConsistent = Disabler(self, master, value, type = HIDER)
         if self.pixmaps != []:
-            self.setBackgroundPixmap(self.pixmaps[mygetattr(self.master, self.value)])
+            self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
 
         if widgets != []:
             self.setWidgets(widgets)
 
     def mousePressEvent(self, ev):
-        self.master.__setattr__(self.value, not mygetattr(self.master, self.value))
+        self.master.__setattr__(self.value, not self.master.getdeepattr(self.value))
         if self.pixmaps != []:
-            self.setBackgroundPixmap(self.pixmaps[mygetattr(self.master, self.value)])
+            self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
         self.makeConsistent.__call__()
         
 
     def setWidgets(self, widgets):
         self.disables = widgets or []
         if self.pixmaps != []:
-            self.setBackgroundPixmap(self.pixmaps[mygetattr(self.master, self.value)])
+            self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
         self.makeConsistent.__call__()
 
 
@@ -745,7 +746,7 @@ class ListBoxCallback:
 
     def __call__(self): # triggered by selectionChange()
         if not self.disabled:
-            clist = mygetattr(self.widget, self.control.ogValue)
+            clist = self.widget.getdeepattr(self.control.ogValue)
             list.__delslice__(clist, 0, len(clist))
             control = self.control
             for i in range(control.count()):
@@ -916,7 +917,7 @@ class Disabler:
             if len(value):
                 disabled = not value[0]
             else:
-                disabled = not mygetattr(self.master, self.valueName)
+                disabled = not self.master.getdeepattr(self.valueName)
         else:
             disabled = 1
             
