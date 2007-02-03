@@ -7,7 +7,7 @@
 from OWBaseWidget import *
 
 class OWWidget(OWBaseWidget):
-    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = FALSE, wantStatusBar = FALSE, savePosition = True):
+    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = FALSE, wantStatusBar = FALSE, savePosition = True, noReport = False):
         """
         Initialization
         Parameters: 
@@ -37,6 +37,12 @@ class OWWidget(OWBaseWidget):
         
         if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
 
+        self.reportData = None
+        if hasattr(self, "sendReport") and not noReport:
+            self.reportButton = QPushButton("&Report", self.buttonBackground)
+            self.connect(self.reportButton, SIGNAL("clicked()"), self.sendReport)
+
+
         if wantStatusBar:
             self.widgetStatusArea = QHBox(self)
             self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
@@ -47,8 +53,57 @@ class OWWidget(OWBaseWidget):
         
         self.resize(640,480)
 
-
-    
+    def startReport(self, name, needDirectory = False):
+        if self.reportData:
+            print "Cannot open a new report when an old report is still active"
+            return False
+        self.reportData = "<H1>%s</H1>\n" % name
+        if needDirectory:
+            import OWReport
+            return OWReport.createDirectory()
+        else:
+            return True
+        
+    def reportSection(self, title):
+        self.reportData += "<H2>%s</H2>\n" % title
+        
+    def reportSubsection(self, title):
+        self.reportData += "<H3>%s</H3>\n" % title
+        
+    def reportList(self, items):
+        self.startReportList()
+        for item in items:
+            self.addToReportList(item)
+        self.finishReportList()
+        
+    def reportImage(self, filename):
+        self.reportData += '<IMG src="%s"/>' % filename
+        
+    def startReportList(self):
+        self.reportData += "<UL>\n"
+        
+    def addToReportList(self, item):
+        self.reportData += "    <LI>%s</LI>\n" % item
+        
+    def finishReportList(self):
+        self.reportData += "</UL>\n"
+        
+    def reportSettings(self, settingsList, closeList = True):
+        self.startReportList()
+        for item in settingsList:
+            if item:
+                self.addToReportList("<B>%s:</B> %s" % item)
+        if closeList:
+            self.finishReportList()
+        
+    def reportRaw(self, text):
+        self.reportData += text
+        
+    def finishReport(self):
+        import OWReport
+        OWReport.feed(self.reportData or "")
+        self.reportData = None
+        
 if __name__ == "__main__":  
     a=QApplication(sys.argv)
     oww=OWWidget()
