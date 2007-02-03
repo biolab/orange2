@@ -75,7 +75,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/WARN:0"
 				OutputFile="$(PYTHON)/lib/site-packages/orange/orange.pyd"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -274,7 +273,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/WARN:0"
 				OutputFile="$(PYTHON)/lib/site-packages/orange/orange.pyd"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
