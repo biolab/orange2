@@ -19,6 +19,8 @@ void initializeNumTypes()
     if (ma)
       numericMaskedArray = PyDict_GetItemString(PyModule_GetDict(ma), "MaskedArray");
   }
+  else
+    PyErr_Clear();
   
   moduleNumarray = PyImport_ImportModule("numarray");
   if (moduleNumarray) {
@@ -28,6 +30,8 @@ void initializeNumTypes()
     if (ma)
       numarrayMaskedArray = PyDict_GetItemString(PyModule_GetDict(ma), "MaskedArray");
   }
+  else
+    PyErr_Clear();
 
   moduleNumpy = PyImport_ImportModule("numpy");
   if (moduleNumpy) {
@@ -38,6 +42,8 @@ void initializeNumTypes()
     if (ma)
       numpyMaskedArray = PyDict_GetItemString(PyModule_GetDict(ma), "MaskedArray");
   }
+  else
+    PyErr_Clear();
     
   importarray_called = true;
 //  import_array();
@@ -68,8 +74,20 @@ bool isSomeNumeric(PyObject *obj)
 char getArrayType(PyObject *args)
 {
   PyObject *res = PyObject_CallMethod(args, "typecode", NULL);
-  if (!res)
+  if (!res) {
+    PyErr_Clear();
+    PyObject *ress = PyObject_GetAttrString(args, "dtype");
+    if (ress) {
+      res = PyObject_GetAttrString(ress, "char");
+      Py_DECREF(ress);
+    }
+  }
+  
+  if (!res) {
+    PyErr_Clear();
     return -1;
+  }
+  
   char cres = PyString_AsString(res)[0];
   Py_DECREF(res);
   return cres;

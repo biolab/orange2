@@ -2818,7 +2818,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     if (columns) {
       X = PyObject_CallFunction(mzeros, "(ii)s", rows, columns, "d");
       if (!X)
-        PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
+        return PYNULL;
         
       Xp = (double *)((PyArrayObject *)X)->data;
 
@@ -2836,7 +2836,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     if (classVector) {
       y = PyObject_CallFunction(mzeros, "(i)s", rows, "d");
       if (!y)
-        PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
+        return PYNULL;
       yp = (double *)((PyArrayObject *)y)->data;
 
       if (maskedArray) {
@@ -2854,7 +2854,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     if (weightVector) {
       w = PyObject_CallFunction(mzeros, "(i)s", rows, "d");
       if (!w)
-        PYERROR(PyExc_SystemError, "cannot allocate the array", PYNULL);
+        return PYNULL;
       wp = (double *)((PyArrayObject *)w)->data;
     }
     else {
