@@ -5,9 +5,9 @@ call updateSetConstants__.btm
 call winCompile.btm
 
 cdd %SNAPSHOTDIR
-cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r HEAD orange
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -r HEAD orange
 break_on_error
-cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r HEAD genomics
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -r HEAD genomics
 break_on_error
 
 

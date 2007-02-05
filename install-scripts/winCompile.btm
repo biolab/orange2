@@ -1,6 +1,6 @@
 pushd
 cdd %WEBDIR
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -A -- source
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -A -- source
 
 cd source
 cmd /c _pyxtract.bat
