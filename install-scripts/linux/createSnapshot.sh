@@ -15,7 +15,7 @@ NEWFILE=$2
 COMPILE=$6
 /home/orange/mount_estelleDownload
 if ! sh /home/orange/install-scripts/linux/createOrangeDist.sh $1 $2 $3 $4 $6 ; then
-        mail -s "Linux: ERROR compiling Orange" tomaz.curk@fri.uni-lj.si < ../output.log
+        mail -s "Linux: ERROR compiling Orange" tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si < ../output.log
         cat ../output.log
         echo -e "\n\nERROR compiling when creating distribution, see log above"
         exit 1;
