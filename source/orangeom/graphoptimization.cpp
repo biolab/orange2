@@ -15,10 +15,12 @@ TGraphOptimization::TGraphOptimization(int _nVertices, double **_pos, int _nLink
 	temperature = sqrt((double)(width*width + height*height)) / 10;
 }
 
+#ifdef _MSC_VER
 #if _MSC_VER < 1300
 template<class T>
 inline T &min(const T&x, const T&y)
 { return x<y ? x : y; }
+#endif
 #endif
 
 void TGraphOptimization::setData(int _nVertices, double **_pos, int _nLinks, int **_links)
