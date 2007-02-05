@@ -52,7 +52,7 @@ obj/%.o :
 	$(COMPILER) $(COMPILEOPTIONS) -c $< -o $@
 
 
-export CPATH=ppp:px:../include:../orange:$(PYTHONINCLUDE):/usr/local/include:/usr/include
+export CPATH=ppp:px:../include:../orange:$(PYTHONINCLUDE):/usr/local/include:/usr/include:$(PYTHONSITEPKGS)/numpy/core/include
 
 makefile.deps:
 	python ../pyxtract/makedep.py -n $(MODULENAME)

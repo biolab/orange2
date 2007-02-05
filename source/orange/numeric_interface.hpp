@@ -29,7 +29,7 @@ extern PyObject *moduleNumeric, *moduleNumarray, *moduleNumpy;
 extern PyTypeObject *PyNumericArrayType, *PyNumarrayArrayType, *PyNumpyArrayType;
 extern PyObject *numericMaskedArray, *numarrayMaskedArray, *numpyMaskedArray;
 
-#include "../lib/site-packages/numpy/core/include/numpy/arrayobject.h"
+#include<numpy/arrayobject.h>
 
   extern bool importarray_called;
 
