@@ -11,7 +11,7 @@ OrangeVer="ADDVERSION"
 gotPython = '';
 gotQt = '';
 gotPyQt = '';
-gotNumeric = '';
+gotNumPy = '';
 gotGcc = '';
 gotQwt = '';
 
@@ -59,19 +59,19 @@ except:
     # depends on version of PyQt
 
 try:
-    import Numeric
+    import numpy
 except:
-    print "Numeric Python should be installed!"
-    print "You can get it at: http://numeric.scipy.org/"
+    print "NumPy should be installed!"
+    print "You can get it at: http://numpy.scipy.org/"
     sys.exit(1)
     # use latest, from 23.0 on
 
 try:
-    import numeric_version
-    gotNumeric = numeric_version.version
+    import numpy
+    gotNumPy = numpy.__version__
 except:
-    print "Can not determine Numeric version!"
-    gotNumeric = "n/a"
+    print "Can not determine NumPy version!"
+    gotNumPy = "n/a"
 
 try:
     import qwt
@@ -378,7 +378,7 @@ class install_wrap(install):
         print "Python version: "+gotPython
         print "PyQt version: "+gotPyQt
         print "Qt version: "+gotPy
-        print "Numeric version: "+gotNumeric
+        print "Numeric version: "+gotNumPy
         print "Qwt version: "+gotQwt
         print "GCC version: "+gotGcc
 
