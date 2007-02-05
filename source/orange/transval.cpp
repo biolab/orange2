@@ -317,7 +317,8 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
   vector<float> avgs, spans;
   vector<int> mostFrequent;
 
-  if ((multinomialTreatment == FrequentIsBase) && domain.hasDiscreteAttributes(convertClass)) {
+  bool hasMostFrequent = (multinomialTreatment == FrequentIsBase) && domain.hasDiscreteAttributes(convertClass);
+  if (hasMostFrequent) {
     TDomainDistributions ddist(egen, weightID, false, true);
     ITERATE(TDomainDistributions, ddi, ddist) {
       if (*ddi) {
@@ -375,7 +376,7 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
   TVarList::const_iterator vi(domain.attributes->begin()), ve(domain.attributes->end());
   for(int i = 0; vi!=ve; vi++, i++)
     if ((*vi)->varType == TValue::INTVAR)
-      discrete2continuous(*vi, newvars, mostFrequent[i]);
+      discrete2continuous(*vi, newvars, hasMostFrequent ? mostFrequent[i] : 0);
     else
       if (continuousTreatment)
         newvars.push_back(continuous2normalized(*vi, avgs[i], spans[i]));
