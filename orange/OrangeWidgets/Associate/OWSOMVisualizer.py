@@ -769,13 +769,13 @@ class OWSOMVisualizer(OWWidget):
         if event.key()==Qt.Key_Control:
             self.ctrlPressed=True
         else:
-            event.ignore()
+            OWWidget.keyPressEvent(self, event)
       
     def keyReleaseEvent(self, event):
         if event.key()==Qt.Key_Control:
             self.ctrlPressed=False
         else:
-            event.ignore()
+            OWWidget.keyReleaseEvent(self, event)
         
         
 if __name__=="__main__":

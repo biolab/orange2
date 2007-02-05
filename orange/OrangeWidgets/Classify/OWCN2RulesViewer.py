@@ -383,13 +383,13 @@ class OWCN2RulesViewer(OWWidget):
         if key.key()==Qt.Key_Control:
             self.ctrlPressed=True
         else:
-            key.ignore()
+            OWWidget.keyPressEvent(self, key)
 
     def keyReleaseEvent(self, key):
         if key.key()==Qt.Key_Control:
             self.ctrlPressed=False
         else:
-            key.ignore()
+            OWWidget.keyReleaseEvent(self, key)
 
 barWidth=80
 barHeight=10

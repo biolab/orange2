@@ -244,13 +244,13 @@ class OWHierarchicalClustering(OWWidget):
         if key.key()==Qt.Key_Control:
             self.ctrlPressed=TRUE
         else:
-            key.ignore()
+            OWWidget.keyPressEvent(self, key)
 
     def keyReleaseEvent(self, key):
         if key.key()==Qt.Key_Control:
             self.ctrlPressed=FALSE
         else:
-            key.ignore()
+            OWWidget.keyReleaseEvent(self, key)
 
     def updateCutOffLine(self):
         if self.SelectionMode:
