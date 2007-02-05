@@ -157,7 +157,7 @@
 				FloatingPointModel="2"
 				RuntimeTypeInfo="true"
 				PrecompiledHeaderFile=".\obj/Release/orangeom.pch"
-				ProgramDataBaseFileName="$(PYTHON)/lib/site-packages/orange/obj/$(ConfigurationName)/$(ProjectName)"
+				ProgramDataBaseFileName="$(IntDir)\vc80.pdb"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DisableSpecificWarnings="4251;4996;4275"
@@ -180,6 +180,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(PYTHON)/libs,$(PYTHON)/lib/site-packages/orange/libs"
+				GenerateDebugInformation="true"
 				ImportLibrary="$(TargetDir)libs/$(TargetName).lib"
 				TargetMachine="1"
 			/>
@@ -250,7 +251,8 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ORANGEOM_EXPORTS;NO_PIPED_COMMANDS;NUMPY"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
+				FloatingPointModel="2"
 				RuntimeTypeInfo="true"
 				PrecompiledHeaderFile=".\obj/Debug/orangeom.pch"
 				ProgramDataBaseFileName="$(PYTHON)/lib/site-packages/orange/obj/$(ConfigurationName)/$(ProjectName)"
@@ -307,7 +309,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy obj\Debug\orangeom_d.lib ..\..\lib\orangeom_d.lib"
+				CommandLine="rem copy obj\Debug\orangeom_d.lib ..\..\lib\orangeom_d.lib"
 			/>
 		</Configuration>
 	</Configurations>
@@ -526,8 +528,10 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
+						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions="NO_PIPED_COMANDS"
+						DebugInformationFormat="3"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -906,6 +910,202 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+			</Filter>
+			<Filter
+				Name="qhull"
+				>
+				<File
+					RelativePath=".\qhull\geom.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\geom.h"
+					>
+				</File>
+				<File
+					RelativePath=".\qhull\geom2.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\global.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\io.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\io.h"
+					>
+				</File>
+				<File
+					RelativePath=".\qhull\mem.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\mem.h"
+					>
+				</File>
+				<File
+					RelativePath=".\qhull\merge.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\merge.h"
+					>
+				</File>
+				<File
+					RelativePath=".\qhull\poly.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\poly.h"
+					>
+				</File>
+				<File
+					RelativePath=".\qhull\poly2.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\qhull.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\qhull.h"
+					>
+				</File>
+				<File
+					RelativePath=".\qhull\qset.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\qset.h"
+					>
+				</File>
+				<File
+					RelativePath=".\qhull\stat.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\stat.h"
+					>
+				</File>
+				<File
+					RelativePath=".\qhull\user.c"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"
+							DebugInformationFormat="3"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\qhull\user.h"
+					>
 				</File>
 			</Filter>
 		</Filter>

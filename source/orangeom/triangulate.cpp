@@ -100,6 +100,86 @@ PyObject *star(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(t, tri)")
 }
 
 
+/* This code originates from Delny (http://flub.stuffwillmade.org/delny/)
+   but was essentially rewritten afterwards. */
+#include "numeric_interface.hpp"
+extern "C" {
+#include "../qhull/qhull.h"
+#include "../qhull/qset.h"		/* for FOREACHneighbor_() */
+#include "../qhull/poly.h"		/* for qh_vertexneighbors() */
+}
+
+PyObject *qhull(PyObject *, PyObject *arg) PYARGS(METH_O, "(array) -> ?")
+{
+  if (!isSomeNumeric_wPrecheck(arg))
+    PYERROR(PyExc_AttributeError, "numeric array expected", PYNULL);
+
+  PyArrayObject *array = (PyArrayObject *)(arg);
+  if (array->nd != 2)
+    PYERROR(PyExc_AttributeError, "two-dimensional array expected", NULL);
+
+  char a = getArrayType(array);
+  if (getArrayType(array) != 'd')
+    PYERROR(PyExc_AttributeError, "an array of doubles expected", NULL);
+
+  if (!moduleNumpy)
+    PYERROR(PyExc_SystemError, "this function need module Numeric", NULL);
+    
+  PyObject *moduleDict = PyModule_GetDict(moduleNumpy);
+  PyObject *mzeros = PyDict_GetItemString(moduleDict, "zeros");
+  if (!mzeros)
+    PYERROR(PyExc_AttributeError, "numeric module has no function 'zeros'", PYNULL);
+
+  const int &npoints = array->dimensions[0];
+  const int &dimension = array->dimensions[1];
+  const int &strideRow = array->strides[0];
+  const int &strideCol = array->strides[1];
+    
+	coordT *points = new coordT[npoints*dimension];
+	coordT *pointsi = points;
+	char *rowPtr = (char *)array->data;
+	for(int pi = npoints; pi--; rowPtr += strideRow) {
+	  char *elPtr = rowPtr;
+	  for(int di = dimension; di--; pointsi++, elPtr += strideCol)
+	    *pointsi = *(double *)elPtr;
+	}
+	
+	boolT ismalloc = False;	/* True if qhull should free points in qh_freeqhull() or reallocation */
+	int exitcode = qh_new_qhull(dimension, npoints, points, ismalloc, "qhull d Qbb Qt", NULL, NULL);
+
+	delete points;
+	
+	if (exitcode)
+	  switch(exitcode) {
+	    case qh_ERRinput: PyErr_BadInternalCall (); return NULL;
+      case qh_ERRsingular: PYERROR(PyExc_ArithmeticError, "qhull singular input data", PYNULL);
+      case qh_ERRprec: PYERROR(PyExc_ArithmeticError, "qhull precision error", PYNULL);
+      case qh_ERRmem: PyErr_NoMemory(); return NULL;
+      case qh_ERRqhull: PYERROR(PyExc_StandardError, "qhull internal error", PYNULL);
+      default: PYERROR(PyExc_StandardError, "unidentified error in qhull", PYNULL);
+    }
+  
+ 	facetT *facet;
+  vertexT *vertex, **vertexp;
+  int nFacets = 0;
+  FORALLfacets
+    nFacets++;
+  
+  PyObject *facets = PyObject_CallFunction(mzeros, "(ii)s", nFacets, dimension+1, "i");
+  if (!facets)
+    return NULL;
+
+  int *facetsdi = (int *)((PyArrayObject *)facets)->data;
+  FORALLfacets
+  	FOREACHvertex_(facet->vertices)
+		  *facetsdi++ = qh_pointid(vertex->point);
+
+	qh_freeqhull(qh_ALL);
+	
+	return facets;
+}
+
+
 
 
 #include "px/triangulate.px"
