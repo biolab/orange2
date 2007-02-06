@@ -42,12 +42,12 @@ fi
 rm -rf orange
 
 echo -n "Checkouting Orange from CVS to orange..."
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f orange > cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange > cvs.log 2>&1
 cd orange
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f source >> cvs.log 2>&1
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f install-scripts/linux/setup.py >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d source >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d install-scripts/linux/setup.py >> cvs.log 2>&1
 mv install-scripts/linux/setup.py .
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f install-scripts/linux/INSTALL.txt >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d install-scripts/linux/INSTALL.txt >> cvs.log 2>&1
 mv install-scripts/linux/INSTALL.txt .
 rm -Rf install-scripts
 cd ..
