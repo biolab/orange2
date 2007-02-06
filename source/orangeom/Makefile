@@ -16,6 +16,20 @@ obj/som_pak_FILE.o : som/fileio.c
 obj/som_pak_VERSION.o : som/version.c
 obj/som_pak_LABELS.o : som/labels.c
 
+obj/geom.o : geom.c
+obj/geom2.o : geom2.c
+obj/global.o : global.o
+obj/io.o : io.o
+obj/mem.o : mem.o
+obj/merge.o : merge.o
+obj/poly.o : poly.o
+obj/poly2.o : poly2.o
+obj/qhull.o : qhull.o
+obj/qset.o : qset.o
+obj/stat.o : stat.o
+obj/user.o : user.o
+
+
 WML_OBJECTS=obj/WmlDelaunay2a.o obj/WmlMath.o obj/WmlSystem.o obj/WmlVector2.o
 SOM_OBJECTS=obj/som_pak_DATA.o obj/som_pak_LVQ.o obj/som_pak_SOM.o obj/som_pak_FILE.o obj/som_pak_VERSION.o obj/som_pak_LABELS.o
 
