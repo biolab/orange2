@@ -123,13 +123,13 @@ class OWPurgeDomain(OWWidget):
         if self.data == None:
             return
 
-        newattrs = []
         self.reducedAttrs = 0
         self.removedAttrs = 0
         self.resortedAttrs = 0
         self.classAttribute = 0
 
         if self.removeAttributes or self.sortValues:
+            newattrs = []
             for attr in self.data.domain.attributes:
                 if attr.varType != orange.VarTypes.Discrete:
                     newattrs.append(attr)
@@ -157,6 +157,8 @@ class OWPurgeDomain(OWWidget):
                         newattr = newnewattr
                     
                 newattrs.append(newattr)
+        else:
+            newattrs = self.data.domain.attributes
 
 
         klass = self.data.domain.classVar
