@@ -148,7 +148,8 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CORN_EXPORTS;NUMPY"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
+				FloatingPointModel="2"
 				RuntimeTypeInfo="true"
 				PrecompiledHeaderFile=".\obj/Debug/Corn.pch"
 				ProgramDataBaseFileName="$(PYTHON)/lib/site-packages/orange/obj/$(ConfigurationName)/$(ProjectName)"
@@ -204,7 +205,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy obj\Debug\corn_d.lib ..\..\lib\corn_d.lib"
+				CommandLine="rem copy obj\Debug\corn_d.lib ..\..\lib\corn_d.lib"
 			/>
 		</Configuration>
 	</Configurations>
@@ -223,8 +224,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -232,8 +231,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -245,8 +242,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -254,8 +249,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>

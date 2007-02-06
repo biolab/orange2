@@ -38,7 +38,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;NO_PIPED_COMANDS"
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;NO_PIPED_COMANDS"
 				Culture="1033"
 			/>
 			<Tool
@@ -137,7 +137,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;NO_PIPED_COMANDS"
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
@@ -167,7 +167,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;NO_PIPED_COMANDS"
 				Culture="1033"
 			/>
 			<Tool
@@ -236,7 +236,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;NO_PIPED_COMANDS"
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
@@ -259,14 +259,14 @@
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
-				DisableSpecificWarnings="4251;4996;4275"
+				DisableSpecificWarnings="4251;4996;4275;4244;4101"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
+				PreprocessorDefinitions="_DEBUG;NO_PIPED_COMANDS"
 				Culture="1033"
 			/>
 			<Tool
@@ -328,8 +328,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -337,8 +335,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -346,8 +342,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -359,8 +353,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -368,8 +360,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 						DisableSpecificWarnings="4101"
 					/>
 				</FileConfiguration>
@@ -378,8 +368,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -391,8 +379,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -400,8 +386,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="NO_PIPED_COMANDS"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -409,8 +393,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -422,10 +404,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						DebugInformationFormat="3"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -433,8 +411,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="NO_PIPED_COMANDS"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -442,8 +418,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -455,8 +429,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 						SuppressStartupBanner="false"
 					/>
 				</FileConfiguration>
@@ -465,7 +437,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions="NO_PIPED_COMANDS"
 						SuppressStartupBanner="false"
 					/>
@@ -475,8 +446,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -488,8 +457,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -497,8 +464,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -506,8 +471,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -519,8 +482,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -528,10 +489,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="NO_PIPED_COMANDS"
-						DebugInformationFormat="3"
+						PreprocessorDefinitions="NO_PIPED_COMANDS;NO_PIPED_COMANDS"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -539,8 +497,6 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
@@ -555,8 +511,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -564,8 +518,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -573,8 +525,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -590,8 +540,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -599,8 +547,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -608,8 +554,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -629,8 +573,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -638,8 +580,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -647,8 +587,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -676,8 +614,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -685,8 +621,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -694,8 +628,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -727,8 +659,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -736,9 +666,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							DisableSpecificWarnings="4244;4101"
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -746,8 +673,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -759,8 +684,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -768,9 +691,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							DisableSpecificWarnings="4244;4101"
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -778,8 +698,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -791,8 +709,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -800,9 +716,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							DisableSpecificWarnings="4244;4101"
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -810,8 +723,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -823,8 +734,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -832,9 +741,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							DisableSpecificWarnings="4244;4101"
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -842,8 +748,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -855,8 +759,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -864,9 +766,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							DisableSpecificWarnings="4244;4101"
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -874,8 +773,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -887,8 +784,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -896,9 +791,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							DisableSpecificWarnings="4244;4101"
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -906,8 +798,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -923,8 +813,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -940,8 +828,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -953,8 +839,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -966,8 +850,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -983,8 +865,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1000,8 +880,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1017,8 +895,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1034,8 +910,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1047,8 +921,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1064,8 +936,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1081,8 +951,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>
@@ -1098,8 +966,6 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="0"
-							DebugInformationFormat="3"
 						/>
 					</FileConfiguration>
 				</File>

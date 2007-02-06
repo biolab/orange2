@@ -26,7 +26,7 @@
 #include "Python.h"
 
 #ifdef _MSC_VER
-  /* nicer to do some ifdefing here than needing to define a special
+  /* easier to do some ifdefing here than needing to define a special
      include in every project that includes this header */
   #include "../lib/site-packages/numpy/core/include/numpy/arrayobject.h"
 #else
