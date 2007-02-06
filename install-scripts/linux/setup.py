@@ -378,7 +378,7 @@ class install_wrap(install):
         print "Python version: "+gotPython
         print "PyQt version: "+gotPyQt
         print "Qt version: "+gotPy
-        print "Numeric version: "+gotNumPy
+        print "NumPy version: "+gotNumPy
         print "Qwt version: "+gotQwt
         print "GCC version: "+gotGcc
 
