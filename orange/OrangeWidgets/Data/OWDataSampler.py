@@ -225,15 +225,16 @@ class OWDataSampler(OWWidget):
         if self.SelectType == 0:
             # apply selected options
             if self.useCases == 1 and self.Repeat != 1:
-                #print int(self.nCases)
                 if self.nCases > len(self.data):
                     self.error("Sample size (w/o repetitions) larger than dataset.")
                     return                    
                 self.indices = orange.MakeRandomIndices2(p0=int(self.nCases))
                 self.infob.setText('Random sampling, using exactly %d instances.' % self.nCases)
             else:
-                #print float(self.selPercentage/100.0)
-                self.indices = orange.MakeRandomIndices2(p0=float(self.selPercentage/100.0))
+                if self.selPercentage > 1-1e-7:
+                    self.indices = orange.MakeRandomIndices2(p0=int(len(self.data)))
+                else:
+                    self.indices = orange.MakeRandomIndices2(p0=float(self.selPercentage/100.0))
                 self.infob.setText('Random sampling, %d%% of input instances.' % self.selPercentage)
             if self.Stratified == 1: self.indices.stratified = self.indices.StratifiedIfPossible
             else:                    self.indices.stratified = self.indices.NotStratified

@@ -294,10 +294,8 @@ class OWSelectData(OWWidget):
                 filter = orange.Filter_conjunction([]) # a filter that does nothing
             matchingOutput = filter(self.data)
             matchingOutput.name = self.data.name
-##            print "len(matchingOutput)", len(matchingOutput)
             nonMatchingOutput = filter(self.data, negate=1)
             nonMatchingOutput.name = self.data.name
-##            print "len(nonMatchingOutput)", len(nonMatchingOutput)
 
             if self.purgeAttributes or self.purgeClasses:
                 remover = orange.RemoveUnusedValues(removeOneValued=True)

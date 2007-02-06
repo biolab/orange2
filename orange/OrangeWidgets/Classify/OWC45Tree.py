@@ -87,7 +87,6 @@ class OWC45Tree(OWWidget):
 
 
     def setLearner(self):
-        #print 'MinEx', self.preNodeInst, self.preNodeInstP, '|', self.preLeafInst, self.preLeafInstP
         try:
             self.learner = orange.C45Learner(gainRatio=not self.infoGain, subset=self.subset, probThresh=self.probThresh,
                                              minObjs=self.useMinObjs and self.minObjs or 0, prune=self.prune, cf=self.cf/100., 

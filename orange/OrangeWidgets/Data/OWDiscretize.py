@@ -90,7 +90,6 @@ class OWDiscretize(OWWidget):
             if not self.dataset.domain.classVar and self.Discretization==0:
                 self.Discretization=1
 
-        print 'xx'
         self.discretize()
 
     def setTable(self):

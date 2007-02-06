@@ -25,8 +25,6 @@ class OWAssociationRulesTreeViewer(OWWidget):
     # only the last name can be taken for settings - the first two can be translated
     settingsList = ["treeDepth", "showWholeRules"] + ["show%s" % m[2] for m in measures]
 
-    print settingsList
-    
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Association rules viewer")
 

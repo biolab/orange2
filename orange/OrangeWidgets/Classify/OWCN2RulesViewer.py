@@ -209,13 +209,11 @@ class OWCN2RulesViewer(OWWidget):
             l.append(QCanvasText(self.canvas))
             self.obj.extend(l)
             items.append(l)
-        #print len(items)
                 
         textMapV=[10]+map(lambda s:max([t.boundingRect().height()+10 for t in s]), items[1:])
         textMapH=[[s[i].boundingRect().width()+10 for s in items] for i in range(len(items[0]))]
         textMapH=[10]+map(lambda s:max(s), textMapH)
 
-        #print len(textMapV)
         for i in range(1,len(textMapV)):
             textMapV[i]+=textMapV[i-1]
 
@@ -253,7 +251,6 @@ class OWCN2RulesViewer(OWWidget):
     def ruleText(self, r):
         str=orngCN2.ruleToString(r)
         list=re.split("([0-9.]*)",str)
-        #print list
         for i in range(len(list)):
             try:
                 f=float(list[i])
@@ -292,7 +289,6 @@ class OWCN2RulesViewer(OWWidget):
             self.commit()
             
     def data(self, classifier):
-        #print classifier
         if classifier:
             self.clear()
             self.classifier=classifier
@@ -335,7 +331,6 @@ class OWCN2RulesViewer(OWWidget):
             else:
                 self.sortBy=self.Sort
             self.text.sort(self.compare)
-        #print self.text
         if self.Sort>=2 and self.Sort!=4 and self.Sort !=6:
             self.text.reverse()     
 

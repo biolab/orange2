@@ -13,7 +13,7 @@ import OWGUI
 class OWPade(OWWidget):
 
     settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
-    contextHandlers = {"": PerfectDomainContextHandler("", ["outputAttr", ContextField("attributes", DomainContextHandler.RequiredList, selected="dimensions")])}
+    contextHandlers = {"": PerfectDomainContextHandler("", ["outputAttr", ContextField("attributes", selected="dimensions")])}
 
     methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression", "1D Qing"]    
     methods = [orngPade.firstTriangle, orngPade.starRegression, orngPade.starUnivariateRegression, orngPade.tubedRegression, orngPade.qing1D]

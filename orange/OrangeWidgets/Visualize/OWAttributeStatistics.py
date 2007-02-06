@@ -84,7 +84,6 @@ class OWAttributeStatistics(OWWidget):
 
        
     def data(self, data):
-        print self.HighlightedAttribute
         self.closeContext()
         
         self.attributes.clear()
@@ -102,7 +101,6 @@ class OWAttributeStatistics(OWWidget):
                 
         self.HighlightedAttribute = 0
         self.openContext("", data)
-        print self.HighlightedAttribute
         self.attributes.setCurrentItem(self.HighlightedAttribute)
 
 
@@ -356,12 +354,8 @@ class DisplayStatistics (QCanvas):
 		above.sort()
 		above.reverse()
 		below.sort()
-		#print above
-		#print below
-		#print positions
 		above_space = above[0][0] - above[-1][0] - (len(above)-2)*vspace
 		below_space = below[-1][0] - below[0][0] - (len(below)-2)*vspace
-		#print above_space, below_space
 		for i in range(1,len(above)):
 			dif = above[i-1][0] - above[i][0]
 			if dif < vspace:
@@ -371,17 +365,10 @@ class DisplayStatistics (QCanvas):
 				#	print
 				#else:
 				above[i] = (above[i][0] - vspace + dif, above[i][1])
-		#print above
 		for i in range(1,len(below)):
 			dif = below[i][0] - below[i-1][0]
 			if dif < vspace:
-				#if i==len(below)-1:
-				#	below[i-1] = (below[i-1][0] - vspace +dif, below[i-1][1])
-				#	print "BELOW 1", i
-				#	print "dif ", dif
-				#else:
 				below[i] = (below[i][0] + vspace - dif, below[i][1])
-		#print below
 		# move the text to the new coordinates
 		for i in range(1,len(above)):
 			val, lab = above[i][0], above[i][1]
@@ -390,7 +377,6 @@ class DisplayStatistics (QCanvas):
 					maxi_txt.move (self.hbias+self.bar_width_pixels+textoffset, val)
 					maxi_txtL.move (self.hbias-textoffset, val)
 					l = QCanvasLine(self)
-					#print max_line
 					l.setPoints (self.hbias+self.bar_width_pixels+5, self.vbias, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
 					l.show()
 					l = QCanvasLine(self)

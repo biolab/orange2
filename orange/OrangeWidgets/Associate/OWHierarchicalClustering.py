@@ -169,8 +169,6 @@ class OWHierarchicalClustering(OWWidget):
             self.labelInd=range(len(self.labels)-2)
             self.labels.extend([m.name for m in items.domain.getmetas().values()])
             self.labelInd.extend(items.domain.getmetas().keys())
-            #print self.labelInd
-            #print self.labels
             self.numMeta=len(items.domain.getmetas())
             self.metaLabels=items.domain.getmetas().values()
             self.matrixSource="Example Distance"
@@ -208,7 +206,6 @@ class OWHierarchicalClustering(OWWidget):
                 self.rootCluster.mapping.setattr("objects", [a.name for a in items])
         elif self.matrixSource=="Example Distance":
             try:
-                print self.labelInd[self.Annotation-2]
                 self.rootCluster.mapping.setattr("objects",
                                 [str(e[self.labelInd[self.Annotation-2]]) for e in items])
             except IndexError:
@@ -219,7 +216,6 @@ class OWHierarchicalClustering(OWWidget):
                 self.rootCluster.mapping.setattr("objects", [getattr(a, "name", "") for a in items])
             else:
                 self.rootCluster.mapping.setattr("objects", [getattr(a, "strain", "") for a in items])
-        #print self.rootCluster.mapping
         self.dendogram.updateLabel()
 
     def constructTree(self):
@@ -475,7 +471,6 @@ class Dendogram(QCanvas):
         self.oldSelection=[a.rootCluster for a in self.selectionList]
         self.clearSelection()
         self.update()
-        #print self.oldSelection
 
     def updateLabel(self):
         if not self.rootCluster:

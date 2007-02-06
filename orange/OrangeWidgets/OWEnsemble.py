@@ -70,10 +70,8 @@ class OWEnsemble(OWWidget):
 
     def setEnsembleMethod(self, idx):
         self.em = idx
-        #print "current method is ", self.emlist[idx]
     
     def setLearner(self):
-        print "setLearner called", self.trials, self.emlist[self.em], self.data
         if self.em==0:
             self.elearner = orngEnsemble.BaggedLearner(self.inlearner, t=self.trials, name=self.name)
         if self.em==1:
@@ -82,12 +80,10 @@ class OWEnsemble(OWWidget):
         self.send("learner", self.elearner)
         if self.data <> None:
             self.classifier = self.elearner(self.data)
-            print self.classifier.tree
             self.classifier.name = self.name
             self.send("classifier", self.classifier)
 
     def learner(self, l):
-        print "TUKAJ",l
         self.inlearner = l
         
     def cdata(self,data):

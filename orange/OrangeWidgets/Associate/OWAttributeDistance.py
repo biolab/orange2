@@ -68,7 +68,6 @@ class OWAttributeDistance(OWWidget):
     def dataset(self, data):
         if data and len(data.domain.attributes):
             self.data = orange.Preprocessor_discretize(data, method=orange.EquiNDiscretization(numberOfIntervals=5))
-##            print self.data.domain
 ##            self.classIntCB.setDisabled(self.data.domain.classVar == None)
         else:
             self.data = None
