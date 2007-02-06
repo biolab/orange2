@@ -109,7 +109,7 @@ class ContextHandler:
 
 
 class ContextField:
-    def __init__(self, name, flags, **argkw):
+    def __init__(self, name, flags = 0, **argkw):
         self.name = name
         self.flags = flags
         self.__dict__.update(argkw)
@@ -164,7 +164,6 @@ class DomainContextHandler(ContextHandler):
                          for attr in domain.getmetas().values()]))
         else:
             d = dict([(attr.name, attr.varType) for attr in domain.attributes])
-            d.update(dict([(attr.name, attr.varType) for attr in domain.getmetas().values()]))
             classVar = domain.classVar
             if classVar:
                 if self.matchValues and classVar.varType == orange.VarTypes.Discrete:
@@ -172,8 +171,8 @@ class DomainContextHandler(ContextHandler):
                 else:
                     d[classVar.name] = classVar.varType
 
-            d.update(dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
-                         for attr in domain.getmetas().values()]))
+            d.update(dict([(attr.name, attr.varType) for attr in domain.getmetas().values()]))
+
         return d
     
     def findOrCreateContext(self, widget, domain):
@@ -399,4 +398,52 @@ class ClassValuesContextHandler(ContextHandler):
     def cloneContext(self, context, domain, encodedDomain):
         import copy
         return copy.deepcopy(context)
+        
+
+
+### Requires the same the same attributes in the same order
+### The class overloads domain encoding and matching.
+### Due to different encoding, it also needs to overload saveLow and cloneContext
+### (the latter gets really simple now).
+### We could simplify some other methods, but prefer not to replicate the code
+class PerfectDomainContextHandler(DomainContextHandler):
+    def __init__(self, contextName, fields = [],
+                 syncWithGlobal = True, maxAttributesToPickle = 100, matchValues = 0, **args):
+        DomainContextHandler.__init__(self, contextName, fields, False, False, False, syncWithGlobal, **args)
+
+        
+    def encodeDomain(self, domain):
+        if self.matchValues == 2:
+            attributes = tuple([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
+                         for attr in domain])
+            classVar = domain.classVar
+            if classVar:
+                classVar = classVar.name, classVar.varType != orange.VarType.Discrete and classVar.varType or classVar.values
+            metas = dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
+                         for attr in domain.getmetas().values()])
+        else:
+            attributes = tuple([(attr.name, attr.varType) for attr in domain.attributes])
+            classVar = domain.classVar
+            if classVar:
+                classVar = classVar.name, classVar.varType
+            metas = dict([(attr.name, attr.varType) for attr in domain.getmetas().values()])
+        return attributes, classVar, metas
+    
+
+
+    def match(self, context, imperfect, domain, encodedDomain):
+        return encodedDomain == context.encodedDomain and 2
+
+
+    def saveLow(self, context, widget, field, value):
+        if type(value) == str:
+            atts = [x for x in context.encodedDomain if x[0] == value]
+            context.values[field] = value, (atts and atts[1] or -1) # -1 means it's not an attribute
+        else:
+            context.values[field] = value, -2
+
+
+    def cloneContext(self, context, domain, encodedDomain):
+        import copy
+        context = copy.deepcopy(context)
         
