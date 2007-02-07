@@ -1,7 +1,10 @@
 import orange
 import sys
 from openeye.oechem import *
-from sets import Set
+import sets
+
+class Set(sets.Set):
+    pass
 
 class MostSpecific:
     def __contains__(self, anything):
@@ -150,7 +153,7 @@ def extendFragments(fragments,sets):
                 sets[new]=newset
                 sets[reverseSmiles(new)]=newset
                 extended.add(start+first)
-    print [decodeSmiles(s) for s in extended]
+    #print [decodeSmiles(s) for s in extended]
     return extended
 
 def extendFragmentsSimple(fragments, atomSymbols):
@@ -210,6 +213,7 @@ def filterMaxGeneral(fragments):
 
 def filterByFrequency(fragments, freq, data, sets):
     new=[]
+    unmatched=[]
     pat=OESubSearch()
     for f in fragments:
         ss=sets.get(f, None) or sets.get(reverseSmiles(f), None) or range(len(data))
@@ -220,12 +224,17 @@ def filterByFrequency(fragments, freq, data, sets):
             if pat.SingleMatch(data[i]):
                 count+=1
                 set.append(i)
+        s=Set(set)
+        sets[f]=s
+        sets[reverseSmiles(f)]=s
         if float(count)/len(data)>freq:
-            s=Set(set)
-            sets[f]=s
-            sets[reverseSmiles(f)]=s
             new.append(f)
-    return new        
+        else:
+            unmatched.append(f)
+    return new, unmatched
+
+def filterByOccurence(fragments, data, sets):
+    return filterByFrequency(fragments, 0, data, sets)
 
 def updateSpecific(G,S,c, cache={}):
     setsDict={}
@@ -254,10 +263,6 @@ def updateSpecific(G,S,c, cache={}):
         F.append(filterByFrequency(C,f,data,setsDict))
         #print C
         #print F
-    """UF=Set()
-    for f in F:
-        UF.union_update(f)
-    """
     UF=[]
     for f in F:
         UF.extend(f)
@@ -296,10 +301,6 @@ def updateGeneral(G,S,c):
         I.append(C.difference(Set(F[-1])))
         #print C
         #print F
-    """UI=Set()
-    for i in I:
-        UI.union_update(i)
-    """
     UI=[]
     for i in I:
         UI.extend(i)
@@ -311,7 +312,7 @@ def updateGeneral(G,S,c):
     print "G:",[decodeSmiles(g) for g in G]
     return G,S
 
-def extractFragments(genBorder, specBorder, ignoreGeneral=True):
+def extractFragments(genBorder, specBorder, ignoreGeneral=False):
     if ignoreGeneral:
         frag=[]
         for s in specBorder:
@@ -323,6 +324,7 @@ def extractFragments(genBorder, specBorder, ignoreGeneral=True):
         frag.reverse()
         return frag
     else:
+        frag=[]
         for s in specBorder:
             for i in range(0,len(s),2):
                 for j in range(1,len(s)-i+2,2):
@@ -386,19 +388,120 @@ def map_fragments(fragments, smiles, binary=True):
         ret[s]=d
     return ret
 
+def p_chisq(value):
+    lookup=[(0.0000393, 0.005),(0.000157,0.01),(0.00982, 0.25),(0.0158,0.1),(0.0642,0.2),(0.45, 0.5),(1.642,0.8),(2.71,0.9),(3.84,0.95),(5.02,0.975),(6.65,0.99),(7.88,0.995)]
+    cur=0.0
+    for v,p in lookup:
+        if v<value:
+            cur=p
+    return cur
+def __lazar_learn__(trainingSet, testStruct=""):
+    setsDict={}
+    testSetsDict={}
+    candidateSymbols=filterOutUnusedSymbols(AtomSymbols, [t[0] for t in trainingSet]+[testStruct])
+    data=[molGraph(d[0]) for d in trainingSet]
+    testData=[molGraph(testStruct)]
+    G=[]
+    unknown=[]
+    C=Set(candidateSymbols)
+    F=[]
+    s1,s2=filterByOccurence(C, testData, testSetsDict)
+    s1,s2=filterByOccurence(s1,data, setsDict)
+    unknown.extend(s2)
+    F.append(s1)
+    while(C):
+        if len(F)>1:
+            C=extendFragments(F[-1], setsDict)
+        else:
+            C=extendFragmentsSimple(F[-1], candidateSymbols)
+        C=removeDuplicates(C)
+        s1,s2=filterByOccurence(C,testData,testSetsDict)
+        s1,s2=filterByOccurence(s1,data, setsDict)
+        unknown.extend(s2)
+        F.append(s1)
+    UF=[]
+    for f in F:
+        UF.extend(f)
+    UF=removeDuplicates(UF)
+    nActive=float(len(filter(lambda c:c[1], trainingSet)))
+    nAll=float(len(trainingSet))
+    for f in UF:
+        s=setsDict[f]
+        s.fAll=float(len(s))
+        s.fActive=float(len(filter(lambda c:trainingSet[c][1], list(s))))
+        s.fInactive=float(len(s)-s.fActive)
+        s.pActive=s.fActive/s.fAll-nActive/nAll
+        s.pChisq=p_chisq(nAll*(abs(s.fActive*(nAll-nActive)-(s.fAll-s.fActive)*nActive)-nAll/2)**2/(nAll*s.fAll*(nAll+s.fAll)*(nAll-nActive+s.fAll-s.fActive)))
+        s.pFinal=s.pActive*s.pChisq
+    #print all fragments
+    print "\npredicting: ",testStruct
+    """print "all fragments"
+    for f in UF:
+        s=setsDict[f]
+        print decodeSmiles(f),  s.fActive, s.fInactive, s.pActive, s.pChisq, s.pFinal"""
+    #filter redundant fragments
+    l=[]
+    for f in UF:
+        s=setsDict[f]
+        for ff in UF:
+            redundant=False
+            ss=setsDict[ff]
+            if f!=ff and (s.issubset(ss) or s.issuperset(ss)) and (abs(s.pFinal)<abs(ss.pFinal) or (s.pFinal==ss.pFinal and f<ff)):
+                redundant=True
+                break
+        if not redundant:
+            l.append(f)
+    print "non-redundant fragments"
+    for f in l:
+        s=setsDict[f]
+        print decodeSmiles(f),  s.fActive, s.fInactive, s.pActive, s.pChisq, s.pFinal
+    print "Unknown fragments: ", [decodeSmiles(d) for d in unknown]
+    s=sum([setsDict[f].pFinal for f in l])
+    sa=sum([setsDict[f].pFinal for f in l if setsDict[f].pFinal>0])
+    si=sum([setsDict[f].pFinal for f in l if setsDict[f].pFinal<0])
+    sall=sum([abs(setsDict[f].pFinal) for f in l ]) or 1e-6
+    print "prediction: ",s, "(",sa/sall,",",abs(si/sall),")"
+    #print setsDict[encodeSmiles("N-c:c:c:c:c-C=O")], setsDict[encodeSmiles("N-c:c:c:c:c-C")]
+    return s>0 and 1 or 0
+
+def testAcc(data):
+    c=0
+    num=len(data)
+    for d in data[:num]:
+        train=list(data)
+        train.remove(d)
+        if __lazar_learn__(train, d[0])==d[1]:
+            c+=1
+    print float(c)/num
+        
+        
+        
+def testLazar():
+    import orange
+    d=orange.ExampleTable("E:\chem\mutagen_raw.tab")
+    data=[(str(e["SMILES"]), int(e[-1])) for e in d]
+    #print data
+    testAcc(data)
+    """__lazar_learn__(data[1:],data[0][0])
+    __lazar_learn__(data[2:],data[1][0])
+    __lazar_learn__(data[3:],data[2][0])
+    __lazar_learn__(data[4:],data[3][0])"""
+    #__lazar_learn__(data[5:],"Oc1ccc2ccccc2c1N=Nc3ccccc3")
+    #__lazar_learn__(data[5:],"Cc1ccc2C(=O)c3ccccc3C(=O)c2c1N(=O)O")
+
 def test():
     import orange
     d=orange.ExampleTable("E:\chem\mutagen_raw.tab")
     active=[str(e["SMILES"]) for e in d if e[-1]==1]
     inactive=[str(e["SMILES"]) for e in d if e[-1]==0]
     #frag=find_fragments(active, 0.2, inactive, 0.2)
-    frag=find_fragments(active, 0.01, inactive, 0.01)
+    frag=find_fragments(active, 0.05, inactive, 0.05)
     #frag=find_fragments(inactive, 0.1, active, 0.1)
-    for f in frag:
-        print f, freq(encodeSmiles(f), [molGraph(g) for g in active]),freq(encodeSmiles(f), [molGraph(g) for g in inactive])
+    #for f in frag:
+    #    print f, freq(encodeSmiles(f), [molGraph(g) for g in active]),freq(encodeSmiles(f), [molGraph(g) for g in inactive])
     file=open("fragments.txt", "w")
     file.writelines([f+"\n" for f in frag])
     file.close()
     
 if __name__=="__main__":
-    test()
+    testLazar()
