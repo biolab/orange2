@@ -8,7 +8,6 @@ import string
 from time import localtime
 import traceback
 import os.path, os
-import orngResources
 
 class OutputWindow(QMainWindow):
     def __init__(self, canvasDlg, *args):
@@ -19,7 +18,7 @@ class OutputWindow(QMainWindow):
         self.textOutput.setFont(QFont('Courier New',10, QFont.Normal))
         self.setCentralWidget(self.textOutput)
         self.setCaption("Output Window")
-        self.setIcon(QPixmap(orngResources.output))
+        self.setIcon(QPixmap(canvasDlg.output))
 
         self.defaultExceptionHandler = sys.excepthook
         self.defaultSysOutHandler = sys.stdout

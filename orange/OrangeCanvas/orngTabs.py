@@ -5,7 +5,7 @@
 from qt import *
 import os.path, sys
 from string import strip
-import orngDoc, orngOutput, orngResources
+import orngDoc, orngOutput
 from orngSignalManager import InputSignal, OutputSignal
 from xml.dom.minidom import Document, parse
 
@@ -18,8 +18,8 @@ class DirectionButton(QToolButton):
         self.connect( self, SIGNAL( 'clicked()' ), self.clicked)
         self.setAutoRepeat(1)
 
-        if self.leftDirection:     self.setIconSet(QIconSet(QPixmap(orngResources.move_left)))
-        else:                    self.setIconSet(QIconSet(QPixmap(orngResources.move_right)))
+        if self.leftDirection:     self.setIconSet(QIconSet(QPixmap(self.parent.parent().canvasDlg.move_left)))
+        else:                    self.setIconSet(QIconSet(QPixmap(self.parent.parent().canvasDlg.move_right)))
         
         if useLargeIcons == 1:
             self.setUsesBigPixmap(True)

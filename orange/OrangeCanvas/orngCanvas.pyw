@@ -4,7 +4,7 @@
 
 from qt import *
 import sys, os, cPickle
-import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
+import orngTabs, orngDoc, orngDlgs, orngOutput, xmlParse
 import orange, user, orngMisc
 
 class OrangeCanvasDlg(QMainWindow):
@@ -17,23 +17,18 @@ class OrangeCanvasDlg(QMainWindow):
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
 
         #self.setFocusPolicy(QWidget.StrongFocus)
-        self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
+#        self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
+        self.canvasDir = os.path.split(os.path.abspath(__file__))[0]
+        self.orangeDir = self.canvasDir[:-13]
         self.widgetDir = os.path.join(self.orangeDir, "OrangeWidgets")
         if not os.path.exists(self.widgetDir):
-            try:
-                import OWBaseWidget
-                self.widgetDir = os.path.split(os.path.abspath(OWBaseWidget.__file__))[0]
-            except:
-                print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
+            print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
         
         self.picsDir = os.path.join(self.widgetDir, "icons")
         if not os.path.exists(self.picsDir):
             print "Error. Directory %s not found. Unable to locate widget icons." % (self.picsDir)
         
-        self.canvasDir = os.path.join(self.orangeDir, "OrangeCanvas")
-        if not os.path.exists(self.canvasDir):
-            self.canvasDir = os.path.split(os.path.abspath(orngDoc.__file__))[0]
-            
+#        self.canvasDir = os.path.join(self.orangeDir, "OrangeCanvas")
         if os.name == "nt": self.outputDir = self.canvasDir
         else:
             self.outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
@@ -98,14 +93,26 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolbar = QToolBar(self, 'Toolbar')
         self.widgetsToolBar = QToolBar( self, 'Widgets')
         
+        self.iDocIndex = 1 
+
+        canvasPicsDir = os.path.join(self.canvasDir, "icons")
+        self.file_new  = os.path.join(canvasPicsDir, "doc.png")
+        self.output    = os.path.join(canvasPicsDir, "output.png")
+        self.file_open = os.path.join(canvasPicsDir, "open.png")
+        self.file_save = os.path.join(canvasPicsDir, "save.png")
+        self.file_print= os.path.join(canvasPicsDir, "print.png")
+        self.file_exit = os.path.join(canvasPicsDir, "exit.png")
+        self.move_left = os.path.join(canvasPicsDir, "moveleft.png")
+        self.move_right= os.path.join(canvasPicsDir, "moveright.png")
+
         self.initMenu()
-        
-        self.toolNew  = QToolButton(QIconSet(QPixmap(orngResources.file_new)), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema')
+
+        self.toolNew  = QToolButton(QIconSet(QPixmap(self.file_new)), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema')
         #self.toolNew.setUsesTextLabel (True)
-        self.toolOpen = QToolButton(QIconSet(QPixmap(orngResources.file_open)), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema') 
-        self.toolSave = QToolButton(QIconSet(QPixmap(orngResources.file_save)), "Save schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
+        self.toolOpen = QToolButton(QIconSet(QPixmap(self.file_open)), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema') 
+        self.toolSave = QToolButton(QIconSet(QPixmap(self.file_save)), "Save schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
         self.toolbar.addSeparator()
-        toolPrint = QToolButton(QIconSet(QPixmap(orngResources.file_print)), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
+        toolPrint = QToolButton(QIconSet(QPixmap(self.file_print)), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
         
         # qt version compatibility
         if hasattr(self, "addDockWindow"): self.addDockWindow(self.toolbar, "Toolbar", Qt.DockTop, True)
@@ -209,20 +216,20 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuRecent = QPopupMenu(self)
         
         self.menuFile = QPopupMenu( self )
-        self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_new)), "&New",  self.menuItemNewSchema, Qt.CTRL+Qt.Key_N )
+        self.menuFile.insertItem(QIconSet(QPixmap(self.file_new)), "&New",  self.menuItemNewSchema, Qt.CTRL+Qt.Key_N )
         #self.menuFile.insertItem( "New from template",  self.menuItemNewFromTemplate)
         #self.menuFile.insertItem( "New from wizard",  self.menuItemNewWizard)
-        self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_open)), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
+        self.menuFile.insertItem(QIconSet(QPixmap(self.file_open)), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
         if os.path.exists(os.path.join(self.canvasDir, "_lastSchema.ows")):
             self.menuFile.insertItem("Open Last Schema", self.menuItemOpenLastSchema)
         self.menuFile.insertItem( "&Close", self.menuItemClose )
         self.menuFile.insertSeparator()
-        self.menuSaveID = self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
+        self.menuSaveID = self.menuFile.insertItem(QIconSet(QPixmap(self.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
         self.menuSaveAsID = self.menuFile.insertItem( "Save &As...", self.menuItemSaveAs)
         self.menuFile.insertItem( "&Save as Application (Tabs)...", self.menuItemSaveAsAppTabs)
         self.menuFile.insertItem( "&Save as Application (Buttons)...", self.menuItemSaveAsAppButtons)
         self.menuFile.insertSeparator()
-        self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_print)), "&Print Schema / Save image", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
+        self.menuFile.insertItem(QIconSet(QPixmap(self.file_print)), "&Print Schema / Save image", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
         self.menuFile.insertSeparator()
         self.menuFile.insertItem( "&Recent Files", self.menuRecent)
         self.menuFile.insertSeparator()

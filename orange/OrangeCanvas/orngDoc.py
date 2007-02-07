@@ -8,7 +8,6 @@ from qtcanvas import *
 from xml.dom.minidom import Document, parse
 import orngView
 import orngCanvasItems
-import orngResources
 import orngTabs
 from orngDlgs import *
 from orngSignalManager import SignalManager
@@ -21,11 +20,11 @@ class SchemaDoc(QMainWindow):
         self.canSave = 0
         self.resize(700,500)
         self.showNormal()
-        self.setCaption("Schema " + str(orngResources.iDocIndex))
-        orngResources.iDocIndex = orngResources.iDocIndex + 1
+        self.setCaption("Schema " + str(self.canvasDlg.iDocIndex))
+        self.canvasDlg.iDocIndex = self.canvasDlg.iDocIndex + 1
         
         self.enableSave(False)
-        self.setIcon(QPixmap(orngResources.file_new))
+        self.setIcon(QPixmap(canvasDlg.file_new))
         self.lines = []                         # list of orngCanvasItems.CanvasLine items
         self.widgets = []                       # list of orngCanvasItems.CanvasWidget items
         self.signalManager = SignalManager()    # signal manager to correctly process signals
