@@ -3,7 +3,7 @@ cdd %WEBDIR
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -A -- source
 
 cd source
-cmd /c _pyxtract.bat
+call _pyxtract.bat
 
 call "c:\Program Files\Microsoft Visual Studio 8\vc\vcvarsall.bat"
 
