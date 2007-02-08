@@ -115,9 +115,19 @@ PyObject *qhull(PyObject *, PyObject *arg) PYARGS(METH_O, "(array) -> ?")
 
 
 
-
-void qing_f(int ndimension, int npoints, double *points, double *values, int nsimplices, int *simplices,
-            int &npairs, int *&pairs, int &ncritical, int *&critical, double *corrected)
+void qing_f(int ndimension, // dimension of the space
+            int npoints,    // number of points
+            double *points, // points in which the function is sampled, flat array of size npoints*ndimension
+            double *values, // function values in the above points
+            int nsimplices, // number of simplices (is this the correct plural? :)
+            int *simplices, // list of simplices, flat array of size nsimplices*(ndimension+1)
+            
+            int &npairs,    // number of simplex pairs
+            int *&pairs,    // list of indices of pairs, array of size 2*npairs; MUST BE ALLOCATED in the function
+            int &ncritical, // number of critical simplices
+            int *&critical, // list of critical simplices of size ncritical; MUST BE ALLOCATED in the function
+            double *corrected // corrected function values, size npoints; ALREADY ALLOCATED BY THE CALLER
+           )
 {
   npairs = ncritical = 2;
 
