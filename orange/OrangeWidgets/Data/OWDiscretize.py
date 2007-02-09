@@ -441,6 +441,10 @@ class OWDiscretize(OWWidget):
         hbox = OWGUI.widgetBox(box, orientation = 0)
         OWGUI.appendRadioButton(box, self, "discretization", "Custom" + "  ", insertInto = hbox)
         self.classCustomLineEdit = OWGUI.LineEditWFocusOut(hbox, self.classCustomChanged, focusInCallback = self.classCustomSelected)
+#        Can't validate - need to allow spaces
+#        valid = QDoubleValidator(self)
+#        valid.setRange(-1e30, 1e30, 10)
+#        self.classCustomLineEdit.setValidator(valid)
         self.connect(self.classCustomLineEdit, SIGNAL("returnPressed ()"), self.classCustomChanged)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         OWGUI.separator(box)
