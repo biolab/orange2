@@ -195,7 +195,7 @@ class DiscGraph(OWGraph):
 
     def getCutCurve(self, cut):
         ccc = self.transform(QwtPlot.xBottom, cut)
-        for i,c in enumerate(self.curCutPoints):
+        for i, c in enumerate(self.curCutPoints):
             cc = self.transform(QwtPlot.xBottom, c)
             if abs(cc-ccc)<3:
                 curve = self.curve(self.cutLineKeys[i])
@@ -341,9 +341,9 @@ class ListItemWithLabel(QListBoxPixmap):
 
 class OWInteractiveDiscretization(OWWidget):
     settingsList=["autoApply", "measure", "showBaseLine", "showLookaheadLine", "showTargetClassProb", "showRug", "snap", "autoSynchronize"]
-    contextHandlers = {"": DomainContextHandler("", ["targetClass", "discretization", "classDiscretization",
-                                                     "indiDiscretization", "intervals", "classIntervals", "indiIntervals",
-                                                     "outputOriginalClass", "indiData", "indiLabels", "resetIndividuals",
+    contextHandlers = {"": DomainContextHandler("", ["targetClass", "discretization", "classDiscretization", 
+                                                     "indiDiscretization", "intervals", "classIntervals", "indiIntervals", 
+                                                     "outputOriginalClass", "indiData", "indiLabels", "resetIndividuals", 
                                                      "selectedAttr", "customSplits"], False, False, False, False)}
 
     callbackDeposit=[]
@@ -383,18 +383,18 @@ class OWInteractiveDiscretization(OWWidget):
         self.loadSettings()
         self.inputs=[("Examples", ExampleTable, self.cdata)]
         self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
-        self.measures=[("Information gain", orange.MeasureAttribute_info()),
+        self.measures=[("Information gain", orange.MeasureAttribute_info()), 
                        #("Gain ratio", orange.MeasureAttribute_gainRatio),
-                       ("Gini", orange.MeasureAttribute_gini()),
-                       ("chi-square", orange.MeasureAttribute_chiSquare()),
-                       ("chi-square prob.", orange.MeasureAttribute_chiSquare(computeProbabilities=1)),
-                       ("Relevance", orange.MeasureAttribute_relevance()),
+                       ("Gini", orange.MeasureAttribute_gini()), 
+                       ("chi-square", orange.MeasureAttribute_chiSquare()), 
+                       ("chi-square prob.", orange.MeasureAttribute_chiSquare(computeProbabilities=1)), 
+                       ("Relevance", orange.MeasureAttribute_relevance()), 
                        ("ReliefF", orange.MeasureAttribute_relief())]
         self.discretizationMethods=["Leave continuous", "Entropy-MDL discretization", "Equal-frequency discretization", "Equal-width discretization", "Remove continuous attributes"]
         self.classDiscretizationMethods=["Equal-frequency discretization", "Equal-width discretization"]
         self.indiDiscretizationMethods=["Default", "Leave continuous", "Entropy-MDL discretization", "Equal-frequency discretization", "Equal-width discretization", "Remove attribute"]
 
-        self.layout = QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
+        self.layout = QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom, 0)
         self.mainVBox =  OWGUI.widgetBox(self.mainArea)
         self.mainHBox =  OWGUI.widgetBox(self.mainVBox, orientation=0)
 
@@ -730,7 +730,7 @@ class OWInteractiveDiscretization(OWWidget):
         content = str(le.text()).replace(":", " ").replace(",", " ").replace("-", " ").split()
         content = dict.fromkeys(content).keys()  # remove duplicates (except 8.0, 8.000 ...)
         try:
-            content.sort(lambda x,y:cmp(float(x), float(y)))
+            content.sort(lambda x, y:cmp(float(x), float(y)))
         except:
             content = str(le.text())
 
