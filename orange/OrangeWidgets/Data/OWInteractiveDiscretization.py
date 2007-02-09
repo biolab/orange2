@@ -806,8 +806,12 @@ class OWInteractiveDiscretization(OWWidget):
 
 
         self.discretizers[idx] = discretizer
-        
-        discInts = discType!=1 and (": " + ", ".join([str(attr(x)) for x in discretizer.getValueFrom.transformer.points])) or ""
+
+        if discType == 1:
+            discInts = ""
+        else:
+            points = discretizer.getValueFrom.transformer.points
+            discInts = points and (": " + ", ".join([str(attr(x)) for x in points])) or ": <removed>"
         self.indiLabels[i] = discInts + discName
                         
         self.attrList.triggerUpdate(0)
