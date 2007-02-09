@@ -40,8 +40,8 @@ class OWImpute(OWWidget):
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
         OWWidget.__init__(self, parent, signalManager, name)
         
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Learner for Imputation", orange.Learner, self.setModel)]
-        self.outputs = [("Classified Examples", ExampleTableWithClass, Default), ("Imputer", orange.ImputerConstructor)]
+        self.inputs = [("Examples", ExampleTable, self.cdata, Default), ("Learner for Imputation", orange.Learner, self.setModel)]
+        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Imputer", orange.ImputerConstructor)]
 
         self.attrIcons = self.createAttributeIconDict()
         
@@ -56,19 +56,18 @@ class OWImpute(OWWidget):
 
         self.loadSettings()
 
-        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Average/Most frequent", "Model-based imputer", "Random values"], "Default imputation method", callback=self.sendIf)
+        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Don't Impute", "Average/Most frequent", "Model-based imputer", "Random values"], "Default imputation method", callback=self.sendIf)
 
         OWGUI.separator(self.controlArea)
 
-        indibox = OWGUI.widgetBox(self.controlArea, "Individual attribute settings", "horizontal")
-#        indibox.setFixedHeight(300)
+        self.indibox = OWGUI.widgetBox(self.controlArea, "Individual attribute settings", "horizontal")
 
-        attrListBox = QVBox(indibox)        
+        attrListBox = QVBox(self.indibox)        
         self.attrList = QListBox(attrListBox)
         self.attrList.setFixedWidth(220)
         self.connect(self.attrList, SIGNAL("highlighted ( int )"), self.individualSelected)
 
-        indiMethBox = QVBox(indibox)       
+        indiMethBox = QVBox(self.indibox)       
         self.indiButtons = OWGUI.radioButtonsInBox(indiMethBox, self, "indiType", ["Default (above)", "Don't impute", "Avg/Most frequent", "Model-based", "Random", "Value"], 1, callback=self.indiMethodChanged)
         self.indiValueCtrlBox = QHBox(self.indiButtons)
         self.indiValueCtrlBox.setFixedWidth(150)
@@ -140,10 +139,13 @@ class OWImpute(OWWidget):
             self.indiValueCtrl.setCurrentItem(self.methods.get(attrName, (0, 0))[1] or 0)
             self.connect(self.indiValueCtrl, SIGNAL("activated ( int )"), self.valueComboChanged)
         else:
+            valid = QDoubleValidator(self)
+            valid.setRange(-1e30, 1e30, 10)
             self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self.sendIf)
+            self.indiValueCtrl.setValidator(valid)
             if attr and self.methods.has_key(attrName):
                 self.indiValueCtrl.setText(self.methods[attrName][1])
-            self.connect(self.indiValueCtrl, SIGNAL("returnPressed ( )"), self.sendIf)
+            self.connect(self.indiValueCtrl, SIGNAL("returnPressed ( )"), self.indiMethodChanged)
             self.connect(self.indiValueCtrl, SIGNAL("textChanged ( const QString & )"), self.lineEditChanged)
             
         self.indiValueCtrl.show()
@@ -193,9 +195,13 @@ class OWImpute(OWWidget):
         
         self.methods = {}
         if not data:
+            self.indibox.setDisabled(True)
+            self.attrList.clear()                
             self.data = None
             self.send("Classified Examples", None)
+            self.send("Examples", None)
         else:
+            self.indibox.setDisabled(False)
             if not self.data or data.domain != self.data.domain:
                 self.data = data
                 if not data.domain.classVar:
@@ -230,9 +236,11 @@ class OWImpute(OWWidget):
         
         if not self.methods:
             if self.defaultMethod == 1:
+                self.imputer = None
+            if self.defaultMethod == 2:
                 model = self.model or orange.kNNLearner()
                 self.imputer = orange.ImputerConstructor_model(learnerDiscrete = model, learnerContinuous = model, imputeClass = self.imputeClass)
-            elif self.defaultMethod == 2:
+            elif self.defaultMethod == 3:
                 self.imputer = orange.ImputerConstructor_random(imputeClass = self.imputeClass)
             else:
                 self.imputer = orange.ImputerConstructor_average(imputeClass = self.imputeClass)
@@ -275,7 +283,7 @@ class OWImpute(OWWidget):
         for attr in imputeClass and self.data.domain or self.data.domain.attributes:
             method, value = self.methods.get(attr.name, (0, None))
             if not method:
-                method = self.defaultMethod + 2
+                method = self.defaultMethod + 1
 
             if method == 1:
                 imputerModels.append(lambda e, wei=0: None)
@@ -320,16 +328,21 @@ class OWImpute(OWWidget):
         self.warning()
         self.constructImputer()
         self.send("Imputer", self.imputer)
-        if self.data and self.imputer:
-            constructed = self.imputer(self.data)
-            try:
-                data = constructed(self.data)
-                # if the above fails, dataChanged should be set to False
-                self.dataChanged = False
-            except:
-                self.error("Imputation failed; this is typically due to unsuitable model.")
+        if self.data:
+            if self.imputer:
+                constructed = self.imputer(self.data)
+                try:
+                    data = constructed(self.data)
+                    ## meta-comment: is there a missing 'not' in the below comment?
+                    # if the above fails, dataChanged should be set to False
+                    self.dataChanged = False
+                except:
+                    self.error("Imputation failed; this is typically due to unsuitable model.")
+                    data = None
+            else:
                 data = None
-            self.send("Classified Examples", data)
+            self.send("Examples", data)
+            self.send("Classified Examples", self.data.domain.classVar and data or None)
         else:
             self.dataChanged = False
 
