@@ -66,13 +66,17 @@ class DiscGraph(OWGraph):
 
             
     def computeBaseScore(self):
-        if self.data:
+        if self.data and self.data.domain.classVar:
             self.baseCurveX, self.baseCurveY = self.computeAddedScore(list(self.curCutPoints))
+        else:
+            self.baseCurveX = self.baseCurveY = None
 
 
     def computeLookaheadScore(self, split):
-        if self.data:
+        if self.data and self.data.domain.classVar:
             self.lookaheadCurveX, self.lookaheadCurveY = self.computeAddedScore(list(self.curCutPoints) + [split])
+        else:
+            self.lookaheadCurveX = self.lookaheadCurveY = None
 
 
     def setData(self, attr, data):
@@ -80,20 +84,25 @@ class DiscGraph(OWGraph):
         self.attr, self.data = attr, data
         self.curCutPoints = []
 
-        if not data:
+        if not data or not attr:
             return
 
-#        self.classColors = classVar.varType == orange.VarTypes.Discrete and OWGraphTools.ColorPaletteHSV(len(data.domain.classVar.values))
+        if data.domain.classVar:
+            self.contingency = orange.ContingencyAttrClass(attr, data)
+            self.condProb = orange.ConditionalProbabilityEstimatorConstructor_loess(self.contingency)
+            self.probDist = None
+            attrValues = self.contingency.keys()        
+        else:
+            self.condProb = self.contingency = None
+            self.probDist = orange.Distribution(attr, data)
+            attrValues = self.probDist.keys()
 
-        if not attr:
-            return
-        
-        self.contingency = orange.ContingencyAttrClass(attr, data)
-        self.condProb = orange.ConditionalProbabilityEstimatorConstructor_loess(self.contingency)
-
-        attrValues = self.contingency.keys()        
         self.minVal, self.maxVal = min(attrValues), max(attrValues)
-        self.snapDecimals = -int(math.ceil(math.log(self.maxVal-self.minVal, 10)) -2)
+        mdist = self.maxVal - self.minVal
+        if mdist > 1e-30:
+            self.snapDecimals = -int(math.ceil(math.log(mdist, 10)) -2)
+        else:
+            self.snapDecimals = 1
         
         self.replotAll()
 
@@ -103,15 +112,29 @@ class DiscGraph(OWGraph):
             self.removeCurve(rug)
         self.rugKeys = []
 
-        if self.data and self.master.showRug:
+        if self.master.showRug:
             targetClass = self.master.targetClass
 
-            freqhigh = [(val, freq[targetClass]) for val, freq in self.contingency.items() if freq[targetClass] > 1e-6]
-            freqlow = [(val, freq.abs - freq[targetClass]) for val, freq in self.contingency.items()]
-            freqlow = [f for f in freqlow if f[1] > 1e-6]
-            if not freqhigh or not freqlow:
+            if self.contingency:
+                freqhigh = [(val, freq[targetClass]) for val, freq in self.contingency.items() if freq[targetClass] > 1e-6]
+                freqlow = [(val, freq.abs - freq[targetClass]) for val, freq in self.contingency.items()]
+                freqlow = [f for f in freqlow if f[1] > 1e-6]
+            elif self.probDist:
+                freqhigh = []
+                freqlow = self.probDist.items()
+            else:
                 return
-            freqfac = .1 / max(max([f[1] for f in freqhigh]), max([f[1] for f in freqlow]))
+            
+            if freqhigh:
+                maxf = max([f[1] for f in freqhigh])
+                if freqlow:
+                    maxf = max(maxf, max([f[1] for f in freqlow]))
+            elif freqlow:
+                maxf = max([f[1] for f in freqlow])
+            else:
+                return
+            
+            freqfac = maxf > 1e-6 and .1 / maxf or 1
 
             for val, freq in freqhigh:        
                 c = self.addCurve("", Qt.gray, Qt.gray, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [val, val], yData = [1.0, 1.0 - max(.02, freqfac * freq)])
@@ -131,7 +154,7 @@ class DiscGraph(OWGraph):
         if self.baseCurveKey:
             self.removeCurve(self.baseCurveKey)
             
-        if self.data and self.master.showBaseLine:
+        if self.baseCurveX and self.master.showBaseLine:
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.baseCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.baseCurveX, yData = self.baseCurveY, lineWidth = 2)
             self.setCurveYAxis(self.baseCurveKey, QwtPlot.yLeft)
@@ -146,7 +169,7 @@ class DiscGraph(OWGraph):
         if self.lookaheadCurveKey:
             self.removeCurve(self.lookaheadCurveKey)
             
-        if self.data and self.master.showLookaheadLine:
+        if self.lookaheadCurveX and self.master.showLookaheadLine:
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.lookaheadCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.lookaheadCurveX, yData = self.lookaheadCurveY, lineWidth = 1)
             self.setCurveYAxis(self.lookaheadCurveKey, QwtPlot.yLeft)
@@ -162,7 +185,7 @@ class DiscGraph(OWGraph):
         if self.probCurveKey:
             self.removeCurve(self.probCurveKey)
             
-        if self.data and self.master.showTargetClassProb:            
+        if self.contingency and self.master.showTargetClassProb:            
             xData = self.contingency.keys()[1:-1]
             self.probCurveKey = self.addCurve("", Qt.gray, Qt.gray, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xData, yData = [self.condProb(x)[self.master.targetClass] for x in xData], lineWidth = 2)
             self.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
@@ -177,12 +200,12 @@ class DiscGraph(OWGraph):
         attr = self.data.domain[self.master.continuousIndices[self.master.selectedAttr]]
         for c in self.cutLineKeys:
             self.removeCurve(c)
+        self.cutLineKeys = []
         
         for m in self.cutMarkerKeys:
             self.removeMarker(m)
-        
-        self.cutLineKeys = []
         self.cutMarkerKeys = []
+
         for cut in self.curCutPoints:
             c = self.addCurve("", Qt.blue, Qt.blue, 1, style = QwtCurve.Steps, symbol = QwtSymbol.None, xData = [cut, cut], yData = [.9, 0.1])
             self.setCurveYAxis(c, QwtPlot.yRight)
@@ -310,8 +333,6 @@ class DiscGraph(OWGraph):
 
     def replotAll(self):
         self.clear()
-        if not self.contingency:
-            return
 
         self.computeBaseScore()
 
@@ -442,7 +463,7 @@ class OWDiscretize(OWWidget):
         self.mainBox = OWGUI.widgetBox(self.mainIABox, orientation=0)
         OWGUI.separator(self.mainIABox)#, height=30)
         graphBox = OWGUI.widgetBox(self.mainIABox, "", orientation=0)
-        self.needsDiscrete.append(graphBox)
+#        self.needsDiscrete.append(graphBox)
         graphOptBox = OWGUI.widgetBox(graphBox)
         OWGUI.separator(graphBox, width=10)
         self.graph = DiscGraph(self, graphBox)
@@ -452,11 +473,13 @@ class OWDiscretize(OWWidget):
         self.measureCombo=OWGUI.comboBox(box, self, "measure", orientation=0, items=[e[0] for e in self.measures], callback=[self.clearLineEditFocus, self.graph.computeBaseScore, self.graph.plotBaseCurve])
         OWGUI.checkBox(box, self, "showBaseLine", "Show discretization gain", callback=[self.clearLineEditFocus, self.graph.plotBaseCurve])
         OWGUI.checkBox(box, self, "showLookaheadLine", "Show lookahead gain", callback=self.clearLineEditFocus)
+        self.needsDiscrete.append(box)
 
         box = OWGUI.widgetBox(graphOptBox, "Target class", addSpace=True)
         self.targetCombo=OWGUI.comboBox(box, self, "targetClass", orientation=0, callback=[self.clearLineEditFocus, self.graph.targetClassChanged])
-        OWGUI.checkBox(box, self, "showTargetClassProb", "Show target class probability", callback=[self.clearLineEditFocus, self.graph.plotProbCurve])
+        stc = OWGUI.checkBox(box, self, "showTargetClassProb", "Show target class probability", callback=[self.clearLineEditFocus, self.graph.plotProbCurve])
         OWGUI.checkBox(box, self, "showRug", "Show rug", callback=[self.clearLineEditFocus, self.graph.plotRug])
+        self.needsDiscrete.extend([self.targetCombo, stc])
 
         box = OWGUI.widgetBox(graphOptBox, "Editing", addSpace=True)
         OWGUI.checkBox(box, self, "snap", "Snap to grid", callback=[self.clearLineEditFocus])
@@ -544,22 +567,24 @@ class OWDiscretize(OWWidget):
             self.graph.setData(None, self.data)           
             self.openContext("", data)
 
+            # Prevent entropy discretization with non-discrete class
+            if not haveClass:
+                if self.discretization == self.D_ENTROPY:
+                    self.discretization = self.D_FREQUENCY
+                # Say I'm overcautious if you will, but you haven't seen as much as I did :)
+                if not haveClass:
+                    if self.indiDiscretization-1 == self.D_ENTROPY:
+                        self.indiDiscretization = 0
+                    for indiData in self.indiData:
+                        if indiData and indiData[0] == self.D_ENTROPY:
+                            indiData[0] = 0
+
             self.computeDiscretizers()
             self.attrList.setCurrentItem(self.selectedAttr)
         else:
             self.targetCombo.clear()
             self.graph.setData(None, None)
 
-        # Prevent entropy discretization with non-discrete class
-        if not haveClass:
-            if self.discretization == self.D_ENTROPY:
-                self.discretization = self.D_FREQUENCY
-            if self.indiDiscretization-1 == self.D_ENTROPY:
-                self.indiDiscretization = 0
-            for indiData in self.indiData:
-                if indiData and indiData[0] == self.D_ENTROPY:
-                    indiData[0] = 0
-                    
 #        self.graph.setData(self.data)
         
         self.makeConsistent()        
@@ -568,11 +593,12 @@ class OWDiscretize(OWWidget):
 
 
     def fillClassCombo(self):
-        if not self.data:
+        self.targetCombo.clear()
+
+        if not self.data or not self.data.domain.classVar:
             return
         
         domain = self.data.domain
-        self.targetCombo.clear()
         for v in domain.classVar.values:
             self.targetCombo.insertItem(str(v))
         if self.targetClass<len(domain.classVar.values):
@@ -613,10 +639,9 @@ class OWDiscretize(OWWidget):
 
         self.indiDiscretization, self.indiIntervals = indiData[:2]
 
-        if self.data.domain.classVar:
-            self.graph.setData(attr, self.data)
-            if hasattr(self, "discretizers"):
-                self.graph.setSplits(self.discretizers[attrIndex] and self.discretizers[attrIndex].getValueFrom.transformer.points or [])
+        self.graph.setData(attr, self.data)
+        if hasattr(self, "discretizers"):
+            self.graph.setSplits(self.discretizers[attrIndex] and self.discretizers[attrIndex].getValueFrom.transformer.points or [])
 
     
     def computeDiscretizers(self):
@@ -893,7 +918,6 @@ class OWDiscretize(OWWidget):
             return
         
         slot = self.indiDiscretization - self.D_N_METHODS - 1
-        print "S", slot
         if slot < 0:
             for slot in range(3):
                 if not self.customLineEdits[slot].text():
@@ -901,7 +925,6 @@ class OWDiscretize(OWWidget):
             else:
                 slot = 0
             self.indiDiscretization = slot + self.D_N_METHODS + 1
-        print "T", slot, self.indiDiscretization
 
         idx = self.continuousIndices[self.selectedAttr]
         attr = self.data.domain[idx]
