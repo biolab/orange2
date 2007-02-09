@@ -80,6 +80,8 @@ class OWLinProj(OWVisWidget):
         self.graph.tooltipKind = 0
         self.graph.tooltipValue = 0
         self.graph.scaleFactor = 1.0
+        self.graph.squareGranularity = 3
+        self.graph.spaceBetweenCells = 1
 
         self.graph.showAxisScale = 0
 
