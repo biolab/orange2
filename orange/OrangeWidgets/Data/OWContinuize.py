@@ -16,12 +16,13 @@ import OWGUI
 
 class OWContinuize(OWWidget):
     settingsList = ["multinomialTreatment", "classTreatment", "zeroBased", "continuousTreatment", "autosend"]
-    contextHandlers = {"": DomainContextHandler("", ["targetValue"], matchValues=1)}
+    contextHandlers = {"": ClassValuesContextHandler("", ["targetValue"])}
     
     multinomialTreats = (("Target or First value as base", orange.DomainContinuizer.LowestIsBase),
                          ("Most frequent value as base", orange.DomainContinuizer.FrequentIsBase),
                          ("One attribute per value", orange.DomainContinuizer.NValues),
                          ("Ignore multinomial attributes", orange.DomainContinuizer.Ignore),
+                         ("Ignore all discrete attributes", orange.DomainContinuizer.IgnoreAllDiscrete),
                          ("Treat as ordinal", orange.DomainContinuizer.AsOrdinal),
                          ("Divide by number of values", orange.DomainContinuizer.AsNormalizedOrdinal))
 
@@ -37,8 +38,8 @@ class OWContinuize(OWWidget):
     def __init__(self,parent=None, signalManager = None, name = "Continuizer"):
         OWWidget.__init__(self, parent, signalManager, name)
         
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.examples)]
-        self.outputs = [("Classified Examples", ExampleTableWithClass)]
+        self.inputs = [("Examples", ExampleTable, self.examples)]
+        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
 
         self.multinomialTreatment = 0
         self.targetValue = 0
@@ -89,6 +90,7 @@ class OWContinuize(OWWidget):
             self.data = None
             self.cbTargetValue.clear()
             self.openContext("", self.data)
+            self.send("Examples", None)
             self.send("Classified Examples", None)
         else:
             if not self.data or data.domain.classVar != self.data.domain.classVar:
@@ -119,13 +121,14 @@ class OWContinuize(OWWidget):
             conzer.zeroBased = self.zeroBased
             conzer.continuousTreatment = self.continuousTreatment
             conzer.multinomialTreatment = self.multinomialTreats[self.multinomialTreatment][1]
-            if self.classTreatment == 3:
+            if self.classTreatment == 3 and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
                 domain = conzer(self.data, 0, self.targetValue)
             else:
                 conzer.classTreatment = self.classTreats[self.classTreatment][1]
                 domain = conzer(self.data)
             data = orange.ExampleTable(domain, self.data)
-            self.send("Classified Examples", data)
+            self.send("Examples", data)
+            self.send("Classified Examples", data.domain.classVar and data or None)
         self.dataChanged = False
     
 if __name__ == "__main__":
