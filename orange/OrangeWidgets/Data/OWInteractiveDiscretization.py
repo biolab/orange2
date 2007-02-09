@@ -347,6 +347,11 @@ class OWInteractiveDiscretization(OWWidget):
                                                      "selectedAttr", "customSplits"], False, False, False, False)}
 
     callbackDeposit=[]
+    
+    D_N_METHODS = 5
+    D_LEAVE, D_ENTROPY, D_FREQUENCY, D_WIDTH, D_REMOVE = range(5)
+    D_NEED_N_INTERVALS = [2, 3]
+    
     def __init__(self, parent=None, signalManager=None, name="Interactive Discretization"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.showBaseLine=1
@@ -376,8 +381,8 @@ class OWInteractiveDiscretization(OWWidget):
         self.data = self.originalData = None
 
         self.loadSettings()
-        self.inputs=[("Examples", ExampleTableWithClass, self.cdata)]
-        self.outputs=[("Examples", ExampleTableWithClass)]
+        self.inputs=[("Examples", ExampleTable, self.cdata)]
+        self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
         self.measures=[("Information gain", orange.MeasureAttribute_info()),
                        #("Gain ratio", orange.MeasureAttribute_gainRatio),
                        ("Gini", orange.MeasureAttribute_gini()),
@@ -385,22 +390,23 @@ class OWInteractiveDiscretization(OWWidget):
                        ("chi-square prob.", orange.MeasureAttribute_chiSquare(computeProbabilities=1)),
                        ("Relevance", orange.MeasureAttribute_relevance()),
                        ("ReliefF", orange.MeasureAttribute_relief())]
-        self.discretizationMethods=["Leave continuous", "Entropy-MDL discretization", "Equal-frequency discretization", "Equal-width discretization"]
+        self.discretizationMethods=["Leave continuous", "Entropy-MDL discretization", "Equal-frequency discretization", "Equal-width discretization", "Remove continuous attributes"]
         self.classDiscretizationMethods=["Equal-frequency discretization", "Equal-width discretization"]
-        self.indiDiscretizationMethods=["Default", "Leave continuous", "Entropy-MDL discretization", "Equal-frequency discretization", "Equal-width discretization"]
+        self.indiDiscretizationMethods=["Default", "Leave continuous", "Entropy-MDL discretization", "Equal-frequency discretization", "Equal-width discretization", "Remove attribute"]
 
         self.layout = QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
         self.mainVBox =  OWGUI.widgetBox(self.mainArea)
         self.mainHBox =  OWGUI.widgetBox(self.mainVBox, orientation=0)
 
         vbox = OWGUI.widgetBox(self.mainHBox)
-        box = OWGUI.radioButtonsInBox(vbox, self, "discretization", self.discretizationMethods, "Default discretization", callback=[self.clearLineEditFocus, self.defaultMethodChanged])
+        box = OWGUI.radioButtonsInBox(vbox, self, "discretization", self.discretizationMethods[:-1], "Default discretization", callback=[self.clearLineEditFocus, self.defaultMethodChanged])
         self.needsDiscrete.append(box.buttons[1])
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        self.interBox = OWGUI.widgetBox(box)
-        OWGUI.widgetLabel(self.interBox, "Number of intervals")
+        self.interBox = OWGUI.widgetBox(OWGUI.indentedBox(box))
+        OWGUI.widgetLabel(self.interBox, "Number of intervals (for equal width/frequency)")
         OWGUI.separator(self.interBox, height=4)
         self.intervalSlider=OWGUI.hSlider(OWGUI.indentedBox(self.interBox), self, "intervals", None, 2, 10, callback=[self.clearLineEditFocus, self.defaultMethodChanged])
+        OWGUI.appendRadioButton(box, self, "discretization", self.discretizationMethods[-1])
         OWGUI.separator(vbox)
 
         OWGUI.radioButtonsInBox(vbox, self, "resetIndividuals", ["Default discretization", "Custom 1", "Custom 2", "Custom 3", "Individual settings"], "Reset individual attribute settings", callback = self.setAllIndividuals)
@@ -470,14 +476,15 @@ class OWInteractiveDiscretization(OWWidget):
         box = OWGUI.radioButtonsInBox(QHButtonGroup(self.mainBox), self, "indiDiscretization", [], callback=[self.clearLineEditFocus, self.indiMethodChanged])
         hbbox = OWGUI.widgetBox(box)
         hbbox.setSpacing(4)
-        for meth in self.indiDiscretizationMethods:
+        for meth in self.indiDiscretizationMethods[:-1]:
             OWGUI.appendRadioButton(box, self, "discretization", meth, insertInto = hbbox)
         self.needsDiscrete.append(box.buttons[2])
-        self.indiInterBox = OWGUI.widgetBox(hbbox)
+        self.indiInterBox = OWGUI.widgetBox(OWGUI.indentedBox(hbbox))
         OWGUI.widgetLabel(self.indiInterBox, "Number of intervals")
         OWGUI.separator(self.indiInterBox, height=4)
         self.indiIntervalSlider=OWGUI.hSlider(OWGUI.indentedBox(self.indiInterBox), self, "indiIntervals", None, 2, 10, callback=[self.clearLineEditFocus, self.indiMethodChanged])
-        OWGUI.rubber(self.indiInterBox)
+        OWGUI.appendRadioButton(box, self, "discretization", self.indiDiscretizationMethods[-1], insertInto = hbbox)
+        OWGUI.rubber(hbbox)
         OWGUI.separator(box)
         hbbox = OWGUI.widgetBox(box)
         for i in range(3):
@@ -545,18 +552,19 @@ class OWInteractiveDiscretization(OWWidget):
 
         # Prevent entropy discretization with non-discrete class
         if not haveClass:
-            if self.discretization == 1:
-                self.discretization = 2
-            if self.indiDiscretization == 2:
+            if self.discretization == self.D_ENTROPY:
+                self.discretization = self.D_FREQUENCY
+            if self.indiDiscretization-1 == self.D_ENTROPY:
                 self.indiDiscretization = 0
             for indiData in self.indiData:
-                if indiData and indiData[0] == 2:
+                if indiData and indiData[0] == self.D_ENTROPY:
                     indiData[0] = 0
                     
 #        self.graph.setData(self.data)
-        self.send("Examples", self.data)
-
+        
         self.makeConsistent()        
+
+        self.commit()
 
 
     def fillClassCombo(self):
@@ -625,12 +633,12 @@ class OWInteractiveDiscretization(OWWidget):
 
 
     def makeConsistent(self):
-        self.interBox.setEnabled(self.discretization>=2)
-        self.indiInterBox.setEnabled(self.indiDiscretization in [3, 4])
+        self.interBox.setEnabled(self.discretization in self.D_NEED_N_INTERVALS)
+        self.indiInterBox.setEnabled(self.indiDiscretization-1 in self.D_NEED_N_INTERVALS)
 
     
     def defaultMethodChanged(self):
-        self.interBox.setEnabled(self.discretization>=2)
+        self.interBox.setEnabled(self.discretization in self.D_NEED_N_INTERVALS)
 
         if not self.data:
             return
@@ -659,14 +667,14 @@ class OWInteractiveDiscretization(OWWidget):
             self.indiData[idx][0] = self.indiDiscretization
             self.indiData[idx][1] = self.indiIntervals
 
-            self.indiInterBox.setEnabled(self.indiDiscretization in [3, 4])
-            if self.indiDiscretization and self.indiDiscretization - 4 != self.resetIndividuals:
+            self.indiInterBox.setEnabled(self.indiDiscretization-1 in self.D_NEED_N_INTERVALS)
+            if self.indiDiscretization and self.indiDiscretization - self.D_N_METHODS != self.resetIndividuals:
                 self.resetIndividuals = 4
 
             if not self.data:
                 return
 
-            which = self.indiDiscretization - 5
+            which = self.indiDiscretization - self.D_N_METHODS - 1
             if not dontSetACustom and which >= 0 and not self.customSplits[which]:
                 attr = self.data.domain[idx]
                 splitsTxt = self.indiData[idx][2+which] = [str(attr(x)) for x in self.graph.curCutPoints]
@@ -680,8 +688,8 @@ class OWInteractiveDiscretization(OWWidget):
 
 
     def customSelected(self, which):
-        if self.data and self.indiDiscretization != 5+which:
-            self.indiDiscretization = 5 + which
+        if self.data and self.indiDiscretization != self.D_N_METHODS + which + 1: # added 1 - we need it, right?
+            self.indiDiscretization = self.D_N_METHODS + which + 1
             idx = self.continuousIndices[self.selectedAttr]
             attr = self.data.domain[idx]
             self.indiMethodChanged()
@@ -696,7 +704,7 @@ class OWInteractiveDiscretization(OWWidget):
         if method == 4:
             return
         if method:
-            method += 4
+            method += self.D_N_METHODS
         for i, idx in enumerate(self.continuousIndices):
             if self.indiData[idx][0] != method:
                 self.indiData[idx][0] = method
@@ -730,7 +738,7 @@ class OWInteractiveDiscretization(OWWidget):
         self.customSplits[which] = content
         self.indiData[idx][which+2] = content
 
-        self.indiData[idx][0] = self.indiDiscretization = 5 + which
+        self.indiData[idx][0] = self.indiDiscretization = which + self.D_N_METHODS + 1
 
         self.computeDiscretizer(self.selectedAttr, self.continuousIndices[self.selectedAttr])
         self.commitIf()
@@ -743,8 +751,8 @@ class OWInteractiveDiscretization(OWWidget):
 
         idx = self.continuousIndices[self.selectedAttr]
 
-        if self.indiDiscretization >= 5:
-            splits = str(self.customSplits[self.indiDiscretization-5])
+        if self.indiDiscretization >= self.D_N_METHODS + 1:
+            splits = str(self.customSplits[self.indiDiscretization - self.D_N_METHODS - 1])
             try:
                 valid = bool([float(i) for i in self.customSplits[which]])
             except:
@@ -762,7 +770,7 @@ class OWInteractiveDiscretization(OWWidget):
 #        self.customSelected(which)
 
     
-    shortDiscNames = ("", " (leave continuous)", " (entropy)", " (equal frequency)", " (equal width)", " (custom 1)", " (custom 2)", " (custom 3)")
+    shortDiscNames = ("", " (leave continuous)", " (entropy)", " (equal frequency)", " (equal width)", " (removed)", " (custom 1)", " (custom 2)", " (custom 3)")
 
     def computeDiscretizer(self, i, idx, onlyDefaults=False):
         attr = self.data.domain[idx]
@@ -777,10 +785,10 @@ class OWInteractiveDiscretization(OWWidget):
             discType = self.discretization+1
             intervals = self.intervals
 
-        if discType >= 5:
+        if discType >= self.D_N_METHODS + 1:
 
             try:
-                customs = [float(r) for r in indiData[discType-5+2]]
+                customs = [float(r) for r in indiData[discType-self.D_N_METHODS+1]]
             except:
                 customs = []
                 
@@ -793,21 +801,26 @@ class OWInteractiveDiscretization(OWWidget):
         if onlyDefaults and not defaultUsed:
             return
         
-        if discType == 1: # leave continuous
+        discType -= 1
+        if discType == self.D_LEAVE: # leave continuous
             discretizer = None
-        elif discType == 2:
+        elif discType == self.D_ENTROPY:
             discretizer = orange.EntropyDiscretization(attr, self.data)
-        elif discType == 3:
+        elif discType == self.D_FREQUENCY:
             discretizer = orange.EquiNDiscretization(attr, self.data, numberOfIntervals = intervals)
-        elif discType == 4:
+        elif discType == self.D_WIDTH:
             discretizer = orange.EquiDistDiscretization(attr, self.data, numberOfIntervals = intervals)
+        elif discType == self.D_REMOVE:
+            discretizer = False
         else:
             discretizer = orange.IntervalDiscretizer(points = customs).constructVariable(attr)
 
 
         self.discretizers[idx] = discretizer
 
-        if discType == 1:
+        if discType == self.D_LEAVE:
+            discInts = ""
+        elif discType == self.D_REMOVE:
             discInts = ""
         else:
             points = discretizer.getValueFrom.transformer.points
@@ -879,14 +892,16 @@ class OWInteractiveDiscretization(OWWidget):
         if not self.data:
             return
         
-        slot = self.indiDiscretization - 5
+        slot = self.indiDiscretization - self.D_N_METHODS - 1
+        print "S", slot
         if slot < 0:
             for slot in range(3):
-                if not self.customLineEdits[slot]:
+                if not self.customLineEdits[slot].text():
                     break
             else:
                 slot = 0
-            self.indiDiscretization = slot + 5
+            self.indiDiscretization = slot + self.D_N_METHODS + 1
+        print "T", slot, self.indiDiscretization
 
         idx = self.continuousIndices[self.selectedAttr]
         attr = self.data.domain[idx]
@@ -901,10 +916,11 @@ class OWInteractiveDiscretization(OWWidget):
         discretizer = orange.IntervalDiscretizer(points = cp).constructVariable(attr)
         self.discretizers[idx] = discretizer
 
-        self.indiLabels[self.selectedAttr] = ": " + splitsTxt + self.shortDiscNames[-1]
+        self.indiLabels[self.selectedAttr] = ": " + splitsTxt + self.shortDiscNames[self.indiDiscretization]
         self.attrList.triggerUpdate(0)
 
         self.pointsChanged = False
+        self.commitIf()
 
 
     def commitIf(self):
@@ -922,7 +938,7 @@ class OWInteractiveDiscretization(OWWidget):
                 if disc:
                     if disc.getValueFrom.transformer.points:
                         newattrs.append(disc)
-                else:
+                elif disc == None:  # can also be False -> remove
                     newattrs.append(attr)
 
             if self.data.domain.classVar:
@@ -931,12 +947,22 @@ class OWInteractiveDiscretization(OWWidget):
                 else:
                     newattrs.append(self.data.domain.classVar)
 
-            self.send("Examples", self.originalData.select(newattrs))
+            newdata = self.originalData.select(newattrs)
+            self.send("Examples", newdata)
+            if self.data.domain.classVar:
+                self.send("Classified Examples", newdata)
+            else:
+                self.send("Classified Examples", None)
 
         elif self.originalData:  # no continuous attributes...
             self.send("Examples", self.originalData)
+            if self.originalData.domain.classVar:
+                self.send("Classified Examples", self.originalData)
+            else:
+                self.send("Classified Examples", None)
         else:
             self.send("Examples", None)
+            self.send("Classified Examples", None)
 
         dataChanged = False            
 
