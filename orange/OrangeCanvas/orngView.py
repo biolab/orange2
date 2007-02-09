@@ -244,12 +244,17 @@ class SchemaView(QCanvasView):
                     self.unselecteAllWidgets()
 
             # if we right clicked on a line we show a popup menu
-            elif line != None and ev.button() == QMouseEvent.RightButton:
-                self.bMultipleSelection = False
-                self.unselecteAllWidgets()
-                self.selectedLine = line
-                self.linePopup.setItemChecked(self.menupopupLinkEnabledID, self.selectedLine.getEnabled()) 
-                self.linePopup.popup(ev.globalPos())
+            elif line != None:
+                if ev.button() == QMouseEvent.RightButton:
+                    self.bMultipleSelection = False
+                    self.unselecteAllWidgets()
+                    self.selectedLine = line
+                    self.linePopup.setItemChecked(self.menupopupLinkEnabledID, self.selectedLine.getEnabled()) 
+                    self.linePopup.popup(ev.globalPos())
+                elif ev.button() == QMouseEvent.LeftButton:
+                    outWidget, inWidget = line.outWidget.instance, line.inWidget.instance
+                    if not self.doc.signalManager.getLinkEnabled(outWidget, inWidget):
+                        self.doc.signalManager.setLinkEnabled(outWidget, inWidget, True, True)
 
             else:
                 self.unselecteAllWidgets()
