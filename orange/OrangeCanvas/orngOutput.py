@@ -18,7 +18,7 @@ class OutputWindow(QMainWindow):
         self.textOutput.setFont(QFont('Courier New',10, QFont.Normal))
         self.setCentralWidget(self.textOutput)
         self.setCaption("Output Window")
-        self.setIcon(QPixmap(canvasDlg.output))
+        self.setIcon(QPixmap(canvasDlg.outputPix))
 
         self.defaultExceptionHandler = sys.excepthook
         self.defaultSysOutHandler = sys.stdout
@@ -30,6 +30,7 @@ class OutputWindow(QMainWindow):
 
         self.logFile = open(os.path.join(canvasDlg.outputDir, "outputLog.htm"), "w") # create the log file
         #self.printExtraOutput = 0
+        self.unfinishedText = ""
         
         #sys.excepthook = self.exceptionHandler
         #sys.stdout = self
@@ -39,8 +40,14 @@ class OutputWindow(QMainWindow):
         self.resize(700,500)
         self.showNormal()
 
+    def stopCatching(self):
+        self.catchException(0)
+        self.catchOutput(0)
+
     def closeEvent(self,ce):
         #QMessageBox.information(self,'Orange Canvas','Output window is used to print output from canvas and widgets and therefore can not be closed.','Ok')
+        self.catchException(0)
+        self.catchOutput(0)
         wins = self.canvasDlg.workspace.getDocumentList()
         if wins != []:
             wins[0].setFocus()
@@ -82,10 +89,6 @@ class OutputWindow(QMainWindow):
 
     # simple printing of text called by print calls
     def write(self, text):
-        # is this some extra info for debuging
-        #if len(text) > 7 and text[0:7] == "<extra>":
-        #    if not self.printExtraOutput: return
-        #    text = text[7:]
         text = str(text)
         text = text.replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
         text = text.replace("(br)", "<br>")
@@ -101,14 +104,17 @@ class OutputWindow(QMainWindow):
             self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         if self.writeLogFile:
-            #self.logFile.write(str(text) + "<br>\n")
             self.logFile.write(text)
             
-        #self.textOutput.append(text)
         self.textOutput.setText(str(self.textOutput.text()) + text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
-        if self.printOutput and text != "<br>\n":
-            self.canvasDlg.setStatusBarEvent(text)
+        
+        if text[-1:] == "\n":
+            if self.printOutput:
+                self.canvasDlg.setStatusBarEvent(self.unfinishedText + text)
+            self.unfinishedText = ""
+        else:
+            self.unfinishedText += text
         
     def writelines(self, lines):
         for line in lines:

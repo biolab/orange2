@@ -425,7 +425,6 @@ class CanvasWidget(QCanvasRectangle):
             try:    self.instance.saveSettings()
             except: print "Unable to successfully save settings for %s widget" % (self.instance.title)
             self.instance.hide()
-            self.instance.destroy()
             del self.instance
         self.removeTooltip()
         self.text.hide()
