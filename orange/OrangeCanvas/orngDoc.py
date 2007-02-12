@@ -48,7 +48,7 @@ class SchemaDoc(QMainWindow):
         self.canSave = self.canSave or newSettings
 
         self.synchronizeContexts()
-        if self.canvasDlg.settings["autoSaveSchemasOnClose"]:
+        if self.canvasDlg.settings["autoSaveSchemasOnClose"] and self.widgets != []:
             self.save(os.path.join(self.canvasDlg.canvasDir, "_lastSchema.ows"))
 
         if not self.canSave or self.canvasDlg.settings["dontAskBeforeClose"]:
@@ -524,8 +524,6 @@ class SchemaDoc(QMainWindow):
             if self.canvasDlg.settings["saveWidgetsPosition"]:  
                 for widget in self.widgets:
                     widget.instance.restoreWidgetStatus()
-
-
         finally:
             # set cursor
             qApp.setOverrideCursor(QWidget.arrowCursor)
