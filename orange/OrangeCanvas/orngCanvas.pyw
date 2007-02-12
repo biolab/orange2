@@ -55,16 +55,12 @@ class OrangeCanvasDlg(QMainWindow):
 
         # create error and warning icons
         errorIconName = os.path.join(self.canvasDir, "icons/triangle-red.png")
-        if os.path.exists(canvasIconName):
-            self.errorIcon = QPixmap(errorIconName)
-        else:
-            self.errorIcon = None
-            print "Unable to load all necessary icons. Please reinstall Orange."
-
         warningIconName = os.path.join(self.canvasDir, "icons/triangle-blue.png")
-        if os.path.exists(canvasIconName):
+        if os.path.exists(errorIconName) and os.path.exists(warningIconName):
+            self.errorIcon = QPixmap(errorIconName)
             self.warningIcon = QPixmap(warningIconName)
         else:
+            self.errorIcon = None
             self.warningIcon = None
             print "Unable to load all necessary icons. Please reinstall Orange."
         
@@ -95,9 +91,9 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.iDocIndex = 1 
 
-        canvasPicsDir = os.path.join(self.canvasDir, "icons")
+        canvasPicsDir  = os.path.join(self.canvasDir, "icons")
         self.file_new  = os.path.join(canvasPicsDir, "doc.png")
-        self.output    = os.path.join(canvasPicsDir, "output.png")
+        self.outputPix = os.path.join(canvasPicsDir, "output.png")
         self.file_open = os.path.join(canvasPicsDir, "open.png")
         self.file_save = os.path.join(canvasPicsDir, "save.png")
         self.file_print= os.path.join(canvasPicsDir, "print.png")
@@ -160,6 +156,16 @@ class OrangeCanvasDlg(QMainWindow):
         if len(sys.argv) > 1 and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
             win.loadDocument(sys.argv[-1])
         self.workspace.cascade()
+
+        # show message box if no numpy
+        qApp.processEvents()
+        try:
+            import numpy
+        except:
+            if QMessageBox.warning(self,'Orange Canvas','Several widgets now use numpy module, \nthat is not yet installed on this computer. \nTo download it for free click Ok.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+                import webbrowser
+                webbrowser.open("http://sourceforge.net/project/showfiles.php?group_id=1369&package_id=175103&release_id=468153")
+
 
     def createWidgetsToolbar(self, rebuildRegistry):
         self.widgetsToolBar.clear()
