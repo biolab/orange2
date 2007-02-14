@@ -6,7 +6,7 @@ from OWWidget import *
 from qt import *
 import OWGUI
 import sys, os
-import vis
+#import vis
 from openeye.oechem import *
 
 class DrawContext:
@@ -29,9 +29,9 @@ class BigImage(QDialog):
 
     def renderImage(self):
         if self.context.fragment:
-            vis.moleculeFragment2BMP(self.context.molecule, self.context.fragment, self.imagename, self.imageSize, self.context.title)
+            orngChem.moleculeFragment2BMP(self.context.molecule, self.context.fragment, self.imagename, self.imageSize, self.context.title)
         else:
-            vis.molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title)
+            orngChem.molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title)
         pix=QPixmap()
         pix.load(self.imagename)
         self.label.setPixmap(pix)
@@ -51,9 +51,9 @@ class MolImage(QLabel):
         self.master=master
         imagename=context.imagename or context.imageprefix+".bmp"
         if context.fragment:
-            vis.moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, context.title)
+            orngChem.moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, context.title)
         else:
-            vis.molecule2BMP(context.molecule, imagename, context.size, context.title)
+            orngChem.molecule2BMP(context.molecule, imagename, context.size, context.title)
         self.load(imagename)
         self.selected=False
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)
