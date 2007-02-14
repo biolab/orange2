@@ -28,13 +28,13 @@ class SVMLearnerClass:
         self.kernel_type=2
         self.kernelFunc=None
         self.C=1.0
-        self.nu=0.4
+        self.nu=0.5
         self.p=0.1
-        self.gamma=0.2
+        self.gamma=0.0
         self.degree=3
         self.coef0=0
         self.shrinking=1
-        self.probability=0
+        self.probability=1
         self.cache_size=100
         self.eps=0.001
         self.__dict__.update(kwds)
