@@ -31,6 +31,8 @@ for f in "${L[@]}"; do
 
 	# remove temp VM image
 	rm -Rf cron.$f
+   else
+        echo "$f"  | mail -s "write locks on VM" tomaz.curk@fri.uni-lj.si
    fi
 done
 
@@ -57,6 +59,8 @@ for f in "${L[@]}"; do
 
 	# remove temp VM image
 	rm -Rf cron.$f
+   else
+        echo "$f"  | mail -s "write locks on VM" tomaz.curk@fri.uni-lj.si
    fi
 done
 
