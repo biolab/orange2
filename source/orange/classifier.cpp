@@ -225,8 +225,8 @@ void TExampleForMissing::resetExample()
 
   TVarList::const_iterator vi(domain->attributes->begin()), vie(domain->attributes->end());
   TExample::iterator ei(begin()), bei(ei);
-  vector<float>::const_iterator ai(dataDescription->averages.begin());
-  for(; vi!=vie; ei++, vi++, ai++)
+  vector<float>::const_iterator ai(dataDescription->averages.begin()), aei(dataDescription->averages.end());
+  for(; vi!=vie; ei++, vi++) {
     if ((*ei).isSpecial()) {
       if ((*vi)->varType==TValue::FLOATVAR)
         *ei=TValue(*ai);
@@ -239,6 +239,9 @@ void TExampleForMissing::resetExample()
 
       (*vi)->firstValue(*ei);
     }
+    if (ai!=aei)
+      ai++;
+  }
 
   if (dataDescription->missingWeight) {
     float weight = dataDescription->originalWeight ? getMeta(dataDescription->originalWeight).floatV : 1;
