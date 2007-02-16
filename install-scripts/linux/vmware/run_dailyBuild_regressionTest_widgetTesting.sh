@@ -13,7 +13,8 @@ touch /home/vmware/daily_run
 # build orange
 L=( noreset.winXP.dailyBuild )
 for f in "${L[@]}"; do
-   if [ ! -a $f/*LOCK* ]; then
+   ls $f/*LOCK*
+   if [ $? -eq 1 ]; then
 	echo "########################################################"
 	echo "running VM $f" 
 
@@ -35,6 +36,8 @@ done
 
 L=( winXP.regressionTests winXP.widgetTesting )
 for f in "${L[@]}"; do
+   ls $f/*LOCK*
+   if [ $? -eq 1 ]; then
 	echo "########################################################"
 	echo "running VM $f" 
 	# copy original VM image into a temporary location
@@ -54,6 +57,7 @@ for f in "${L[@]}"; do
 
 	# remove temp VM image
 	rm -Rf cron.$f
+   fi
 done
 
 rm /home/vmware/daily_run
