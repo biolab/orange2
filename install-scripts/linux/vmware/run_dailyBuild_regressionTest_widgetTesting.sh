@@ -1,11 +1,19 @@
 DISPLAY=:1
 export DISPLAY
 cd /home/vmware
+
+if [ -a /home/vmware/daily_run ]; then
+   echo already running
+   exit
+fi
+touch /home/vmware/daily_run
+
 #L=( winXP.dailyBuild winXP.regressionTests winXP.widgetTesting )
 
 # build orange
 L=( noreset.winXP.dailyBuild )
 for f in "${L[@]}"; do
+   if [ ! -a $f/*LOCK* ]; then
 	echo "########################################################"
 	echo "running VM $f" 
 
@@ -22,6 +30,7 @@ for f in "${L[@]}"; do
 
 	# remove temp VM image
 	rm -Rf cron.$f
+   fi
 done
 
 L=( winXP.regressionTests winXP.widgetTesting )
@@ -46,4 +55,6 @@ for f in "${L[@]}"; do
 	# remove temp VM image
 	rm -Rf cron.$f
 done
+
+rm /home/vmware/daily_run
 
