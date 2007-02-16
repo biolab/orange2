@@ -90,7 +90,7 @@ class OWClassificationTree(OWWidget):
             maxMajority = self.preNodeMaj and self.preNodeMajP/100.0 or 1.0,
             sameMajorityPruning = self.postMaj,
             mForPruning = self.postMPruning and self.postM,
-            storeExamples = 1).instance()
+            storeExamples = 1)
                                    
         self.learner.name = self.name
         self.send("Learner", self.learner)
