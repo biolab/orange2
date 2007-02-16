@@ -67,18 +67,12 @@ class TreeLearner(orange.Learner):
 
             measureIsRelief = type(measure) == orange.MeasureAttribute_relief
             relM = getattr(self, "reliefM", None)
-            if relM:
-                if not measureIsRelief:
-                    warn("reliefM is set, but the measure is not reliefF; ignoring")
-                else:
-                    measure.m = relM
+            if relM and measureIsRelief:
+                measure.m = relM
             
             relK = getattr(self, "reliefK", None)
-            if relK:
-                if not measureIsRelief:
-                    warn("reliefK is set, but the measure is not reliefF; ignoring")
-                else:
-                    measure.k = relK
+            if relK and measureIsRelief:
+                measure.k = relK
 
             learner.split.continuousSplitConstructor.measure = measure
             learner.split.discreteSplitConstructor.measure = measure
