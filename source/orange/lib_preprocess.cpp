@@ -132,6 +132,7 @@ PYCLASSCONSTANT_INT(DomainContinuizer, LowestIsBase, int(TDomainContinuizer::Low
 PYCLASSCONSTANT_INT(DomainContinuizer, FrequentIsBase, int(TDomainContinuizer::FrequentIsBase))
 PYCLASSCONSTANT_INT(DomainContinuizer, NValues, int(TDomainContinuizer::NValues))
 PYCLASSCONSTANT_INT(DomainContinuizer, Ignore, int(TDomainContinuizer::Ignore))
+PYCLASSCONSTANT_INT(DomainContinuizer, IgnoreAllDiscrete, int(TDomainContinuizer::IgnoreAllDiscrete))
 PYCLASSCONSTANT_INT(DomainContinuizer, ReportError, int(TDomainContinuizer::ReportError))
 PYCLASSCONSTANT_INT(DomainContinuizer, AsOrdinal, int(TDomainContinuizer::AsOrdinal))
 PYCLASSCONSTANT_INT(DomainContinuizer, AsNormalizedOrdinal, int(TDomainContinuizer::AsNormalizedOrdinal))
