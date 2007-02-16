@@ -3996,26 +3996,13 @@ int Distribution_setitem(PyObject *self, PyObject *index, PyObject *item)
       return 0;
     }
 
-    TDiscDistribution *disc = PyOrange_AS_Orange(self).AS(TDiscDistribution);
-    if (disc) {
-      if (!PyInt_Check(index))
-        PYERROR(PyExc_IndexError, "invalid index type", 0);
-      disc->setint((int)PyInt_AsLong(index), val);
-      return 0;
-    }
-
-    TContDistribution *cont = PyOrange_AS_Orange(self).AS(TContDistribution);
-    if (cont) {
-      PyObject *flt = PyNumber_Float(index);
-      if (!flt)
-        PYERROR(PyExc_TypeError, "float expected", -1);
-      cont->setfloat((float)PyFloat_AsDouble(flt), val);
-      Py_DECREF(flt);
-      return 0;
-    }
+    float *prob = Distribution_getItemRef(self, index);
+    if (!prob)
+      return -1;
+      
+    *prob = val;
+    return 0;
   PyCATCH_1
-
-  PYERROR(PyExc_TypeError, "invalid distribution type for 'setitem'", -1);
 }
 
 
