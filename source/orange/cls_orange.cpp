@@ -916,6 +916,12 @@ PyObject *Orange_str(TPyOrange *self)
 
 int Orange_nonzero(PyObject *self)
 { PyTRY
+    if (self->ob_type->tp_as_sequence && self->ob_type->tp_as_sequence->sq_length)
+      return self->ob_type->tp_as_sequence->sq_length(self) ? 1 : 0;
+      
+    if (self->ob_type->tp_as_mapping && self->ob_type->tp_as_mapping->mp_length)
+      return self->ob_type->tp_as_mapping->mp_length(self) ? 1 : 0;
+      
     return PyOrange_AS_Orange(self) ? 1 : 0;
   PyCATCH_1
 }
