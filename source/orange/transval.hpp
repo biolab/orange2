@@ -104,7 +104,7 @@ class ORANGE_API TDomainContinuizer : public TOrange {
 public:
   __REGISTER_CLASS
 
-  enum { LowestIsBase, FrequentIsBase, NValues, Ignore, ReportError, AsOrdinal, AsNormalizedOrdinal};
+  enum { LowestIsBase, FrequentIsBase, NValues, Ignore, IgnoreAllDiscrete, ReportError, AsOrdinal, AsNormalizedOrdinal};
   enum { Leave, NormalizeBySpan, NormalizeByVariance };
 
   bool zeroBased; //P if true (default) it gives values 0.0 and 1.0; else -1.0 and 1.0, 0.0 for undefined

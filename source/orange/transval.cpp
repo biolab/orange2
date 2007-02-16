@@ -188,6 +188,9 @@ void TDomainContinuizer::discrete2continuous(PVariable var, TVarList &vars, cons
         vars.push_back(discrete2continuous(evar, var, 1));
       return;
 
+    case IgnoreAllDiscrete:
+      return;
+      
     case ReportError:
       if (evar->values->size() == 2) {
         vars.push_back(discrete2continuous(evar, var, 1));
