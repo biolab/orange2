@@ -522,10 +522,12 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
       if (readTabAtom(fei, atoms, true, csv) <= 0)
         continue;
     
-      for(list<TSearchWarranty>::iterator wi(searchWarranties.begin()), we(searchWarranties.end()); wi!=we; wi++) {
-        if ((*wi).posInFile >= atoms.size())
+      for(list<TSearchWarranty>::iterator wi(searchWarranties.begin()); wi != searchWarranties.end(); ) {
+        if ((*wi).posInFile >= atoms.size()) {
+          wi++;
           continue;
 //          raiseError("line %i too short", fei.line);
+        }
 
         const string &atom = atoms[(*wi).posInFile];
 
@@ -536,23 +538,26 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
           else
             attributeDescriptions[(*wi).posInDomain].varType = TValue::INTVAR;
           wi = searchWarranties.erase(wi);
-          wi--;
           continue;
         }
 
         const char *ceni = atom.c_str();
         if (   !*ceni
             || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*') || (*ceni=='-'))
-            || (atom == "NA") || (DC && (atom == DC)) || (DK && (atom == DK)))
+            || (atom == "NA") || (DC && (atom == DC)) || (DK && (atom == DK))) {
+          wi++;
           continue;
+        }
 
         // we have encountered some value
         if ((*wi).suspectedType == 3) 
           (*wi).suspectedType = 2;
 
         // If the attribute is a digit, it can be anything
-        if ((!ceni[1]) && (*ceni>='0') && (*ceni<='9'))
+        if ((!ceni[1]) && (*ceni>='0') && (*ceni<='9')) {
+          wi++;
           continue;
+        }
 
         // If it is longer than one character, it cannot be a coded discrete
         if (ceni[1])
@@ -575,9 +580,10 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
           else
             attributeDescriptions[(*wi).posInDomain].varType = TValue::INTVAR;
           wi = searchWarranties.erase(wi);
-          wi--;
           continue;
         }
+        
+        wi++;
       }
     }
 
