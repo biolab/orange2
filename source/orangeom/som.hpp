@@ -15,7 +15,7 @@
     along with Orange; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    Authors: Janez Demsar, Blaz Zupan, 1996--2005
+    Authors: Ales Erjavec, Janez Demsar, Blaz Zupan, 1996--2005
     Contact: ales.erjavec324@email.si
 */
 

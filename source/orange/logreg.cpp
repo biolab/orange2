@@ -1,3 +1,9 @@
+/*
+
+This file contains code from various sources.
+Its origins are described at each function separately.
+
+*/
 
 
 #include "logreg.hpp"

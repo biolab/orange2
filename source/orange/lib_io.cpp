@@ -20,12 +20,6 @@
 */
 
 
-/********************************
-
-This file includes constructors and specialized methods for ML* object, defined in project Io
-
-*********************************/
-
 #ifdef _MSC_VER
   #pragma warning (disable : 4786 4114 4018 4267 4244)
 #endif
@@ -248,8 +242,13 @@ PyObject *tabDelimBasedWrite(PyObject *args, PyObject *keyws, const char *defaul
     PExampleGenerator gen;
 
     if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
-      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
+      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL);
 
+    if (skipAttrTypes && !gen->domain->classVar) {
+      PyErr_Format(PyExc_TypeError, "Format .%s cannot save classless data sets", defaultExtension);
+      return PYNULL;
+    }
+    
     char *DK = NULL, *DC = NULL;
     if (!readUndefinedSpecs(keyws, DK, DC))
       return PYNULL;

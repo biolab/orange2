@@ -20,12 +20,6 @@
 */
 
 
-/********************************
-
-This file includes constructors and specialized methods for ML* object, defined in project Components
-
-*********************************/
-
 #ifdef _MSC_VER
   #pragma warning (disable : 4786 4114 4018 4267 4244)
 #endif

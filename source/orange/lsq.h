@@ -1,4 +1,22 @@
-// TODO: CopyRight ...????
+/* 
+The module LSQ is for unconstrained linear least-squares fitting.   It is
+based upon Applied Statistics algorithm AS 274 (see comments at the start
+of the module).    A planar-rotation algorithm is used to update the QR-
+factorization.   This makes it suitable for updating regressions as more
+data become available.   The module contains a test for singularities which
+is simpler and quicker than calculating the singular-value decomposition.
+
+
+This package is being made available freely, and may be freely distributed.
+The author is:
+     Author: Alan Miller
+             CSIRO Division of Mathematics & Statistics
+             Private Bag 10, Rosebank MDC
+             Clayton 3169, Victoria, Australia
+     Phone: (+61) 3 9545-8036      Fax: (+61) 3 9545-8080
+     e-mail: Alan.Miller @ mel.dms.csiro.au
+     
+*/
 
 #include <math.h>
 #include <stdlib.h>
