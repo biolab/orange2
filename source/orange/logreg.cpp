@@ -218,6 +218,20 @@ void disaster() {
 }
 
 
+/*
+The below function is from Alan Miller's package which has been made available
+freely, and may be freely distributed.
+
+The author is:
+     Author: Alan Miller
+             CSIRO Division of Mathematics & Statistics
+             Private Bag 10, Rosebank MDC
+             Clayton 3169, Victoria, Australia
+     Phone: (+61) 3 9545-8036      Fax: (+61) 3 9545-8080
+     e-mail: Alan.Miller @ mel.dms.csiro.au
+
+The original code was translated from Fortran by Aleks Jakulin.     
+*/
 void logistic(// input
  			   int& ier,
 			   int ngroups,			// # of examples
