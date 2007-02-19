@@ -18,10 +18,10 @@ repository_stamps = dict([tuple(x.split()) for x in urllib.urlopen(baseurl + "st
 
 for fle in files:
     if os.path.exists(fle+".pyd") and repository_stamps[fle+".pyd"] == md5.md5(file(fle+".pyd", "rb").read()).hexdigest().upper():
-		print "\nSkipping %s" % fle,
+        print "\nSkipping %s" % fle,
     else:
-	    print "\nDownloading %s" % fle,
-	    urllib.urlretrieve(fleurl % fle, fle+".temp", rep)
-	    if os.path.exists(fle+".pyd"):
-	        os.remove(fle+".pyd")
-	    os.rename(fle+".temp", fle+".pyd")
+        print "\nDownloading %s" % fle,
+        urllib.urlretrieve(fleurl % fle, fle+".temp", rep)
+        if os.path.exists(fle+".pyd"):
+            os.remove(fle+".pyd")
+        os.rename(fle+".temp", fle+".pyd")
