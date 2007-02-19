@@ -61,10 +61,22 @@ class OWSubFile(OWWidget):
                 t = win32api.RegQueryValueEx(t, "")[0]
                 startfile = t[:t.find("orange")] + "orange\\doc\\datasets"
             except:
+                startfile = ""
+                
+            if not startfile or not os.path.exists(startfile):
+                d = OWGUI.__file__
+                if d[-8:] == "OWGUI.py":
+                    startfile = d[:-22] + "doc/datasets"
+                elif d[-9:] == "OWGUI.pyc":
+                    startfile = d[:-23] + "doc/datasets"
+
+            if not startfile or not os.path.exists(startfile):
                 d = os.getcwd()
                 if d[-12:] == "OrangeCanvas":
                     startfile = d[:-12]+"doc/datasets"
                 else:
+                    if d[-1] not in ["/", "\\"]:
+                        d+= "/"
                     startfile = d+"doc/datasets"
 
             if not os.path.exists(startfile):                    
