@@ -164,6 +164,7 @@ SectionEnd
 Section ""
 	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\orange"
 	SetOutPath $INSTDIR
+	File "license.txt"
 
 	FileOpen $WhatsDownFile $INSTDIR\whatsdown.txt w
     

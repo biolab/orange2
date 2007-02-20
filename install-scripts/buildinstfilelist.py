@@ -103,7 +103,7 @@ def buildLists(rhter, fname):
 #            outf.write('File "%s${PYVER}\\%s"\n' % (here, fle))
 #            outf.write('FileWrite $WhatsDownFile "%s=1.0:%s$\\r$\\n"\n' % (there+fle, computeMD(here+lookinver+fle)))
 
-buildList(basedir, "orange\\", "", "((.*[.]py)|(ensemble.c)|(COPYING)|(license.txt)|(c45.dll))\\Z", "base", 0)
+buildList(basedir, "orange\\", "", "((.*[.]py)|(ensemble.c)|(COPYING)|(c45.dll))\\Z", "base", 0)
 #buildPydList(basedir, "", "", "binaries")
 
 buildList(basedir, "orange\\OrangeWidgets\\", "OrangeWidgets\\", ".*[.]((py)|(png))\\Z", "widgets")
