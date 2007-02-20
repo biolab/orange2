@@ -424,7 +424,7 @@ OrangeInstallDoc = os.path.join(sys.prefix, "share", "doc",
                                 "orange")
 OrangeInstallLib = os.path.join(sys.prefix, "lib")
 
-OrangeLibList = ['orange.so', 'orangene.so','orangeom.so','statc.so','corn.so','c45.so']
+OrangeLibList = ['orange.so', 'orangene.so','orangeom.so','statc.so','corn.so']
         
 BaseDir = os.getcwd()
 OrangeDirs = ["orange", "orange.OrangeCanvas", "orange.OrangeWidgets"]
