@@ -26,9 +26,10 @@ obj/user.o : user.o
 
 
 SOM_OBJECTS=obj/som_pak_DATA.o obj/som_pak_LVQ.o obj/som_pak_SOM.o obj/som_pak_FILE.o obj/som_pak_VERSION.o obj/som_pak_LABELS.o
+QHULL_OBJECTS=obj/geom.o obj/geom2.o obj/global.o obj/io.o obj/mem.o obj/merge.o obj/poly.o obj/poly2.o obj/qhull.o obj/qset.o obj/stat.o obj/user.o
 
-$(OLD)/orangeom.so:	px/stamp ppp/stamp $(ORANGEOM_OBJECTS) $(SOM_OBJECTS)
-	$(LINKER) $(ORANGEOM_OBJECTS) $(SOM_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orangeom.so
+$(OLD)/orangeom.so:	px/stamp ppp/stamp $(ORANGEOM_OBJECTS) $(SOM_OBJECTS) $(QHULL_OBJECTS)
+	$(LINKER) $(ORANGEOM_OBJECTS) $(SOM_OBJECTS) $(QHULL_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orangeom.so
 
 clean:	cleantemp
 	rm -f $(OLD)/orangeom.so
