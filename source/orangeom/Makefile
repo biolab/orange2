@@ -11,18 +11,18 @@ obj/som_pak_FILE.o : som/fileio.c
 obj/som_pak_VERSION.o : som/version.c
 obj/som_pak_LABELS.o : som/labels.c
 
-obj/geom.o : geom.c
-obj/geom2.o : geom2.c
-obj/global.o : global.o
-obj/io.o : io.o
-obj/mem.o : mem.o
-obj/merge.o : merge.o
-obj/poly.o : poly.o
-obj/poly2.o : poly2.o
-obj/qhull.o : qhull.o
-obj/qset.o : qset.o
-obj/stat.o : stat.o
-obj/user.o : user.o
+obj/geom.o : qhull/geom.c
+obj/geom2.o : qhull/geom2.c
+obj/global.o : global.c
+obj/io.o : qhull/io.c
+obj/mem.o : qhull/mem.c
+obj/merge.o : qhull/merge.c
+obj/poly.o : qhull/poly.c
+obj/poly2.o : qhull/poly2.c
+obj/qhull.o : qhull/qhull.c
+obj/qset.o : qhull/qset.c
+obj/stat.o : qhull/stat.c
+obj/user.o : qhull/user.c
 
 
 SOM_OBJECTS=obj/som_pak_DATA.o obj/som_pak_LVQ.o obj/som_pak_SOM.o obj/som_pak_FILE.o obj/som_pak_VERSION.o obj/som_pak_LABELS.o
