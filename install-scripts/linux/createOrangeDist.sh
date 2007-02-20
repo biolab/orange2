@@ -49,6 +49,8 @@ cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d install-scripts/
 mv install-scripts/linux/setup.py .
 cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d install-scripts/linux/INSTALL.txt >> cvs.log 2>&1
 mv install-scripts/linux/INSTALL.txt .
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d install-scripts/license.txt >> cvs.log 2>&1
+mv install-scripts/license.txt .
 rm -Rf install-scripts
 cd ..
 
