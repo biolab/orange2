@@ -67,9 +67,9 @@ if [ ! $REL -eq 0 ]; then
         mkdir orange/OrangeWidgets/Genomics
     fi
 
-    cd orange/OrangeWidgets
+#    cd orange/OrangeWidgets
     cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange/OrangeWidgets/Genomics Genomics >> cvs.log 2>&1
-    cd ../..
+#    cd ../..
 fi
 
 echo "done"
