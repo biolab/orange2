@@ -6,7 +6,7 @@
 <priority>5020</priority>
 """
 import orange, orngSOM, orangeom
-import math, Numeric, sets
+import math, numpy, sets
 import OWGUI, OWGraphTools
 from OWWidget import *
 from qt import *
@@ -474,8 +474,8 @@ class SOMCanvas(QCanvas):
         #size=2*(int(self.objSize*1.15)/2)-1
         size=2*int(self.somMap.xDim*self.objSize/(2*self.somMap.xDim-1))-1
         x,y=size, size
-        maxDist=max(reduce(Numeric.maximum, [a for a in self.uMat]))
-        minDist=max(reduce(Numeric.minimum, [a for a in self.uMat]))
+        maxDist=max(reduce(numpy.maximum, [a for a in self.uMat]))
+        minDist=max(reduce(numpy.minimum, [a for a in self.uMat]))
         for i in range(len(self.uMat)):
             offset=2-abs(i%4-2)
             for j in range(len(self.uMat[i])):
@@ -497,8 +497,8 @@ class SOMCanvas(QCanvas):
         size=2*int(self.somMap.xDim*self.objSize/(2*self.somMap.xDim-1))-1
         x,y=size, size
         
-        maxDist=max(reduce(Numeric.maximum, [a for a in self.uMat]))
-        minDist=max(reduce(Numeric.minimum, [a for a in self.uMat]))
+        maxDist=max(reduce(numpy.maximum, [a for a in self.uMat]))
+        minDist=max(reduce(numpy.minimum, [a for a in self.uMat]))
         for i in range(len(self.uMat)):
             for j in range(len(self.uMat[i])):
                 r=CanvasRectangle(self)

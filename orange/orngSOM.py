@@ -18,12 +18,14 @@ def SOMLearner(examples=None, weightID=0, parameters=None, **argkw):
         return learner(examples, weightID)
     return learner
 
-import Numeric        
+#import Numeric
+import numpy
 def getUMat(som):
     dim1=som.xDim*2-1
     dim2=som.yDim*2-1
     
-    a=Numeric.resize(Numeric.array(.0), [dim1, dim2])
+    #a=Numeric.resize(Numeric.array(.0), [dim1, dim2])
+    a=numpy.zeros((dim1, dim2))
     if som.topology==orangeom.SOMLearner.HexagonalTopology:
         return __fillHex(a, som)
     else:
