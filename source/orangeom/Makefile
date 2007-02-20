@@ -13,7 +13,7 @@ obj/som_pak_LABELS.o : som/labels.c
 
 obj/geom.o : qhull/geom.c
 obj/geom2.o : qhull/geom2.c
-obj/global.o : global.c
+obj/global.o : qhull/global.c
 obj/io.o : qhull/io.c
 obj/mem.o : qhull/mem.c
 obj/merge.o : qhull/merge.c
