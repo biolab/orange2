@@ -165,22 +165,26 @@ class OWCN2(OWWidget):
 
         self.classifier=None
         if self.data:
-            try:
-                self.classifier=self.learner(self.data)
-                self.classifier.name=self.LearnerName
-                self.classifier.setattr("data",self.data)
-                self.error("")
-            except orange.KernelException, (errValue):
-                self.classifier=None
-                self.error(errValue)
-            except Exception:
-                self.classifier=None
-                if not self.data.domain.classVar:
-                    self.error("Classless domain!")
-                elif self.data.domain.classVar.varType == orange.VarTypes.Continuous:
-                    self.error("CN2 can learn only from discrete class!")
-                else:
-                    self.error("Unknown error")
+##            try:
+            oldDomain = orange.Domain(self.data.domain)
+            self.classifier=self.learner(self.data)
+            self.classifier.name=self.LearnerName
+            self.classifier.setattr("data",self.data)
+            for r in self.classifier.rules:
+                r.examples = orange.ExampleTable(oldDomain, r.examples)
+            self.classifier.examples = orange.ExampleTable(oldDomain, self.classifier.examples)
+            self.error("")
+##            except orange.KernelException, (errValue):
+##                self.classifier=None
+##                self.error(errValue)
+##            except Exception:
+##                self.classifier=None
+##                if not self.data.domain.classVar:
+##                    self.error("Classless domain!")
+##                elif self.data.domain.classVar.varType == orange.VarTypes.Continuous:
+##                    self.error("CN2 can learn only from discrete class!")
+##                else:
+##                    self.error("Unknown error")
         else:
             self.error("")
         self.send("Classifier", self.classifier)

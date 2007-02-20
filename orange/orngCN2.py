@@ -204,6 +204,7 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
             progress(1.0,None)
         return CN2UnorderedClassifier(rules, examples, weight)
 
+
 class CN2UnorderedClassifier(orange.RuleClassifier):
     def __init__(self, rules, examples, weightID = 0, **argkw):
         self.rules = rules
@@ -389,3 +390,13 @@ class CN2SDUnorderedLearnerClass(CN2UnorderedLearnerClass):
         CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
                                           beamWidth = beamWidth, alpha = alpha, **kwds)
         self.coverAndRemove = CovererAndRemover_multWeights(mult=mult)
+
+    def __call__(self, examples, weight=0):        
+        if examples.domain.classVar.varType == orange.VarTypes.Continuous:
+            print "CN2 can learn only on discrete class!"
+            return
+        oldExamples = orange.ExampleTable(examples)
+        classifier = CN2UnorderedLearnerClass.__call__(self,examples,weight)
+        for r in classifier.rules:
+            r.filterAndStore(oldExamples,weight,r.classifier.defaultVal)
+        return classifier
