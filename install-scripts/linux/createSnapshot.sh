@@ -31,7 +31,7 @@ grep -v $VARNAME\= /home/orange/estelleDownload/filenames.set > filenames.new.se
 echo $VARNAME=$NEWFILE >> filenames.new.set
 
 rm /home/orange/estelleDownload/$OLDFILE
-cp $NEWFILE /home/orange/estelleDownload/
+cp $NEWFILE /home/orange/estelleDownload/.
 cp filenames.new.set /home/orange/estelleDownload/filenames.set
 
 /home/orange/umount_estelleDownload
