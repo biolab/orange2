@@ -646,7 +646,7 @@ PTreeNode TTreePruner_SameMajority::operator()(PTreeNode node, vector<bool> &bes
           newNode->branches->push_back(operator()(*bi, subBest));
 
           if (subBest.size() < bestValues.size())
-            bestValues.erase(bestValues.begin() + (bestValues.size() - subBest.size()), bestValues.end());
+            bestValues.erase(bestValues.begin() + subBest.size(), bestValues.end());
           for(vector<bool>::iterator bvi(bestValues.begin()), bve(bestValues.end()), sbi(subBest.begin());
               bvi!=bve; bvi++, sbi++)
             *bvi = *bvi && *sbi;
