@@ -1,9 +1,9 @@
 """
-<name>GraphFile</name>
-<description>Reads data from a graf file (supports .net files).</description>
+<name>Graph File</name>
+<description>Reads data from a graf file (Pajek networks (.net) files).</description>
 <icon>icons/File.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>5010</priority>
+<priority>2010</priority>
 """
 
 #
@@ -25,7 +25,7 @@ class OWGraphFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "GraphFile")
 
         self.inputs = []
-        self.outputs = [("Graph", Graph)]
+        self.outputs = [("Graph with ExampleTable", Graph)]
     
         #set default settings
         self.recentFiles=["(none)"]
@@ -132,9 +132,9 @@ class OWGraphFile(OWWidget):
             else:
                 data.name = fName
             self.send("Graph", data)
-            drawer = OWGraphDrawer()
-            drawer.setGraph(data)
-            drawer.show()
+#            drawer = OWGraphDrawer()
+#            drawer.setGraph(data)
+#            drawer.show()
         else:
             self.send("Graph", None)
 

@@ -3,7 +3,7 @@
 <description>The Graph Canvas Widget enables users to visualize graph schemas.</description>
 <icon>icons/Outlier.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>5020</priority>
+<priority>2030</priority>
 """
 import OWGUI
 
@@ -11,13 +11,13 @@ from OWWidget import *
 from qwt import *
 from qt import *
 from OWGraphDrawerCanvas import *
-from OWGraphVisualizer import *
+from OWGraphVisualizer import * 
 
 class OWGraphDrawer(OWWidget):
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'GraphCanvas')
+        OWWidget.__init__(self, parent, signalManager, 'GraphDrawer')
 
-        self.inputs = [("Graph", orange.Graph, self.setGraph)]
+        self.inputs = [("Graph with ExampleTable", orange.Graph, self.setGraph)]
         self.outputs = []
         
         self.graphShowGrid = 1  # show gridlines in the graph
@@ -108,14 +108,13 @@ class OWGraphDrawer(OWWidget):
     
     def setGraph(self, graph):
         self.visualize = GraphVisualizer(graph, self)
-            
         
         self.colorCombo.clear()
         self.attListBox.clear()
         self.colorCombo.insertItem("(one color)")
         
         if isinstance(graph.items, orange.ExampleTable):
-            for var in graph.items.domain:
+            for var in graph.items.domain.variables:
                 self.colorCombo.insertItem(unicode(var.name))
                 self.attListBox.insertItem(unicode(var.name))
             
