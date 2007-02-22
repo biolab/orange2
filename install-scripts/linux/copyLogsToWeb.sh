@@ -8,7 +8,7 @@ rm $W/linux.*.log
 # copy new ones
 if cd /home/orange/daily/orange ; then
 	cp compiling.log $W/linux.compiling.log
-	cp install.log $W/linux.regress.log
+	cp install.log $W/linux.install.log
 	cp regress.log $W/linux.regress.log
 	cp ../output.log $W/linux.output.log
 else
