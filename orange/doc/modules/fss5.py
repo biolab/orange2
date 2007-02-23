@@ -7,7 +7,6 @@
 # Uses:        voting.tab
 # Referenced:  orngFSS.htm
 
-# todo: change orngEval such that it stores 
 import orange, orngFSS
 
 def report_relevance(data):
