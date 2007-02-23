@@ -39,8 +39,6 @@ public:
 
   TPythonValue();
   TPythonValue(const TPythonValue &other);
-
-  // steals a reference!
   TPythonValue(PyObject *value);
 
   TPythonValue &TPythonValue::operator =(const TPythonValue &other);
@@ -88,7 +86,7 @@ public:
   // Returns the number of different values, -1 if it cannot be done (for example, if variable is continuous)
   virtual int  noOfValues() const;
 
-  // steals a reference!
+// steals a reference!
   TValue toValue(PyObject *pyvalue) const;
 
   TValue toNoneValue(const signed char &valueType) const;

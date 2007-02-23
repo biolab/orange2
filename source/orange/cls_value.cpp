@@ -204,7 +204,6 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
   }
 
   if (var && var->varType == PYTHONVAR) {
-    Py_INCREF(args);
     value = TValue(mlnew TPythonValue(args), PYTHONVAR);
     return true;
   }
@@ -845,7 +844,6 @@ int Value_set_svalue(TPyValue *self, PyObject *arg)
       return 0;
     }
 
-    Py_INCREF(arg);
     self->value.svalV = mlnew TPythonValue(arg);
     return 0;
 

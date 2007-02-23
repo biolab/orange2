@@ -48,8 +48,6 @@ void registerVariableType(PyObject *variable)
   if (!pyclassname)
     raiseErrorWho("registerVariableType", "variable type misses the '__name__'");
   varname = PyString_AsString(pyclassname);
-  // it won't go away
-  Py_DECREF(pyclassname);
 
   TPythonVariablesRegistry::iterator bi(pythonVariables.begin()), be(pythonVariables.end());
   for(; (bi != be) && ((*bi).first != varname); bi++);
@@ -61,6 +59,8 @@ void registerVariableType(PyObject *variable)
     Py_DECREF((*bi).second);
     (*bi).second = variable;
   }
+
+  Py_DECREF(pyclassname);
 }
 
 void pythonVariables_unsafeInitializion()
@@ -325,8 +325,10 @@ PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, con
       throw pyexception();
   }
 
-  if (!PyObject_TypeCheck(var, (PyTypeObject *)&PyOrVariable_Type))
+  if (!PyObject_TypeCheck(var, (PyTypeObject *)&PyOrVariable_Type)) {
+    Py_DECREF(var);
     ::raiseErrorWho("makeVariable", "PythonVariable's constructor is expected to return a 'PythonVariable', not '%s'", var->ob_type->tp_name);
+  }
 
   PVariable pvar = GCPtr<TOrange>((TPyOrange *)var, true);
   Py_DECREF(var);

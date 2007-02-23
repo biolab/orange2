@@ -233,10 +233,8 @@ PyObject *PythonValue_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
   if (!PyTuple_Size(args))
     return WrapNewOrange(mlnew TPythonValue(), type);
 
-  if (PyTuple_Size(args)==1) {
-    Py_INCREF(PyTuple_GET_ITEM(args, 0));
+  if (PyTuple_Size(args)==1)
     return WrapNewOrange(mlnew TPythonValue(PyTuple_GET_ITEM(args, 0)), type);
-  }
 
   else
     PYERROR(PyExc_TypeError, "PythonValue.__init__ expects up to one Python object", PYNULL);

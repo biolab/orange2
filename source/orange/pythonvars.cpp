@@ -58,10 +58,9 @@ TPythonValue::TPythonValue()
 { Py_INCREF(Py_None); }
 
 
-// steals a reference
 TPythonValue::TPythonValue(PyObject *pyvalue)
 : value(pyvalue)
-{}
+{ Py_INCREF(pyvalue); }
 
 
 TPythonValue::TPythonValue(const TPythonValue &other)
@@ -184,7 +183,6 @@ TValue TPythonVariable::toValue(PyObject *pyvalue) const
     if (!vtype)
       raiseError("invalid value type for special value");
 
-    Py_INCREF(Py_None);
     return TValue(PSomeValue(mlnew TPythonValue(Py_None)), PYTHONVAR, vtype);
   }
 
@@ -203,10 +201,8 @@ TValue TPythonVariable::toNoneValue(const signed char &valueType) const
   if (valueType == valueDC)
     return DC();
 
-  if (useSomeValue) {
-    Py_INCREF(Py_None);
+  if (useSomeValue)
     return TValue(PSomeValue(mlnew TPythonValue(Py_None)), PYTHONVAR, valueType);
-  }
   else
     return TValue(PYTHONVAR, valueType);
 }
@@ -260,27 +256,35 @@ TValue TPythonVariable::specialValue(int stype) const
 
 void TPythonVariable::val2str(const TValue &val, string &str) const
 {
+  static char const *val2strS[3] = {"val2str", "Value", "__str__"};
+  
   if (special2str(val, str))
     return;
 
   PyObject *pyvalue = toPyObject(val);
   PyObject *reprs = NULL;
+  char const *cls, *meth;
 
   if (isOverloaded("val2str")) {
-    reprs = PyObject_CallMethod(MYSELF, "val2str", "N", pyvalue);
-    if (!PyString_Check(reprs))
-      raiseError("%s.val2str should return a 'string', not '%s'", MYSELF->ob_type->tp_name, reprs->ob_type->tp_name);
+    reprs = PyObject_CallMethod(MYSELF, "val2str", "O", pyvalue);
+    cls = MYSELF->ob_type->tp_name;
+    meth = val2strS[0];
   }
-
   else {
     reprs = PyObject_Str(pyvalue);
-    Py_DECREF(pyvalue);
-    if (!PyString_Check(reprs))
-      raiseError("Value.__str__ shoud return a string, not '%s'", reprs->ob_type->tp_name);
+    cls = val2strS[1];
+    meth = val2strS[2];
   }
-
+  
+  Py_DECREF(pyvalue);
+  
   if (!reprs)
     throw pyexception();
+    
+  if (!PyString_Check(reprs)) {
+    Py_DECREF(reprs);
+    raiseError("%s.%s should return a 'string', not '%s'", cls, meth, reprs->ob_type->tp_name);
+  }
 
   str = PyString_AsString(reprs);
   Py_DECREF(reprs);
