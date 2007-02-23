@@ -258,6 +258,7 @@ PDistribution TClassifier_Python::classDistribution(const TExample &ex)
     return dist;
   }
 
+  Py_XDECREF(result);
   raiseError("invalid result from __call__");
   return PDistribution();
 }
@@ -285,7 +286,7 @@ void TClassifier_Python::predictionAndDistribution(const TExample &ex, TValue &v
   PyObject *obj1;
   if (   !PyArg_ParseTuple(result, "OO&", &obj1, cc_Distribution, &dist)
       || !convertFromPython(obj1, val, classVar)) {
-    Py_DECREF(result);
+    Py_XDECREF(result);
     raiseError("invalid result from __call__");
   }
 
