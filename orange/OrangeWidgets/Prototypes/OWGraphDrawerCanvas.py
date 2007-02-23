@@ -203,9 +203,7 @@ class OWGraphDrawerCanvas(OWGraph):
 
             key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
             self.edges[e] = (key,i,j)
-            
-        
-        
+
         for v in range(self.nVertices):
             x1 = self.visualizer.xCoors[v]
             y1 = self.visualizer.yCoors[v]
@@ -232,7 +230,8 @@ class OWGraphDrawerCanvas(OWGraph):
                 lbl = ""
                 
                 for ndx in self.labelText:
-                    lbl = lbl + str(self.visualizer.graph.items[v][ndx]) + " "
+                    values = self.visualizer.graph.items[v]
+                    lbl = lbl + str(values[ndx]) + " "
         
                 if lbl != '':
                     mkey = self.insertMarker(lbl)
@@ -260,7 +259,10 @@ class OWGraphDrawerCanvas(OWGraph):
             for att in attributes:
                 for i in range(len(data.domain)):
                     if data.domain[i].name == att:
-                        self.labelText[:0] = [i]
+                        self.labelText.append(i)
+                        
+                if self.visualizer.graph.items.domain.hasmeta(att):
+                        self.labelText.append(self.visualizer.graph.items.domain.metaid(att))
                         
     def edgesContainsEdge(self, i, j):
         for e in range(self.nEdges):

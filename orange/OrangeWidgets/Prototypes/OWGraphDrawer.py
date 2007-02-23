@@ -100,9 +100,9 @@ class OWGraphDrawer(OWWidget):
         i = self.attListBox.firstItem()
         while i:
             if self.attListBox.isSelected(i):
-                attributes[:0] = [i.text()]
+                attributes.append(str(i.text()))
             i = i.next()
-            
+       
         self.graph.setLabelText(attributes)
         self.updateCanvas()
     
@@ -113,11 +113,10 @@ class OWGraphDrawer(OWWidget):
         self.attListBox.clear()
         self.colorCombo.insertItem("(one color)")
         
-        if isinstance(graph.items, orange.ExampleTable):
-            for var in graph.items.domain.variables:
-                self.colorCombo.insertItem(unicode(var.name))
-                self.attListBox.insertItem(unicode(var.name))
-            
+        for var in self.visualize.getVars():
+            self.colorCombo.insertItem(unicode(var.name))
+            self.attListBox.insertItem(unicode(var.name))
+
         self.graph.addVisualizer(self.visualize)
         self.displayRandom(firstTime = True)
         
@@ -156,8 +155,7 @@ class OWGraphDrawer(OWWidget):
 #                    self.visualize.xCoors[i] = self.verticesDescriptions[i].inFileDefinedCoors[0]
 #                    
 #                if self.verticesDescriptions[i].inFileDefinedCoors[1] != None:
-#                    self.visualize.yCoors[i] = self.verticesDescriptions[i].inFileDefinedCoors[1]       
-                    
+#                    self.visualize.yCoors[i] = self.verticesDescriptions[i].inFileDefinedCoors[1]        
         self.updateCanvas(); 
                     
     def updateCanvas(self):

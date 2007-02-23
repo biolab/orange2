@@ -25,8 +25,19 @@ class GraphVisualizer:
         self.graphOptimization = orangeom.GraphOptimization()
         self.graphOptimization.newData(self.graph, self.xCoors, self.yCoors)
     
+    def getVars(self):
+        vars = []
+        if (self.graph != None):
+            if isinstance(self.graph.items, orange.ExampleTable):
+                vars[:0] = self.graph.items.domain.variables
+            
+                metas = self.graph.items.domain.getmetas()
+                for i, var in metas.iteritems():
+                    vars.append(var)
+        return vars
+    
     def getData(self, i, j):
-        if self.graph.data is orange.ExampleTable:
+        if self.graph.items is orange.ExampleTable:
             return self.data[i][j]
         elif self.graph.data is List:
             return self.data[i][j]
