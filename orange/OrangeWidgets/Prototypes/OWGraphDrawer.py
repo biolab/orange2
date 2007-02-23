@@ -33,11 +33,16 @@ class OWGraphDrawer(OWWidget):
         self.colorCombo = OWGUI.comboBox(self.styleBox, self, "color", callback=self.setVertexColor)
         self.colorCombo.insertItem("(none)")
         
-        QLabel("Select attributes", self.styleBox)
-        self.attListBox = QListBox(self.styleBox, "selectAttributes")
+        QLabel("Select Marker Attributes", self.styleBox)
+        self.attListBox = QListBox(self.styleBox, "markerAttributes")
         self.attListBox.setMultiSelection(True)
         self.styleBox.connect(self.attListBox, SIGNAL("clicked( QListBoxItem * )"), self.clickedAttLstBox)
         
+        QLabel("Select ToolTip Attributes", self.styleBox)
+        self.tooltipListBox = QListBox(self.styleBox, "tooltipAttributes")
+        self.tooltipListBox.setMultiSelection(True)
+        self.styleBox.connect(self.tooltipListBox, SIGNAL("clicked( QListBoxItem * )"), self.clickedTooltipLstBox)
+ 
         pics=pixmaps()
         
         self.cgb = QHGroupBox(self.controlArea)
@@ -105,17 +110,30 @@ class OWGraphDrawer(OWWidget):
        
         self.graph.setLabelText(attributes)
         self.updateCanvas()
+        
+    def clickedTooltipLstBox(self, item):
+        attributes = []
+        i = self.tooltipListBox.firstItem()
+        while i:
+            if self.tooltipListBox.isSelected(i):
+                attributes.append(str(i.text()))
+            i = i.next()
+       
+        self.graph.setTooltipText(attributes)
+        self.updateCanvas()
     
     def setGraph(self, graph):
         self.visualize = GraphVisualizer(graph, self)
         
         self.colorCombo.clear()
         self.attListBox.clear()
+        self.tooltipListBox.clear()
         self.colorCombo.insertItem("(one color)")
         
         for var in self.visualize.getVars():
             self.colorCombo.insertItem(unicode(var.name))
             self.attListBox.insertItem(unicode(var.name))
+            self.tooltipListBox.insertItem(unicode(var.name))
 
         self.graph.addVisualizer(self.visualize)
         self.displayRandom(firstTime = True)

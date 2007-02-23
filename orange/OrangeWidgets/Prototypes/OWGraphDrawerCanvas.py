@@ -18,6 +18,7 @@ class OWGraphDrawerCanvas(OWGraph):
         OWGraph.__init__(self, parent, name)
         self.parent = parent
         self.labelText = []
+        self.tooltipText = []
         self.vertices = {}         # slovar vozlisc oblike  orngIndex: vertex_objekt
         self.edges = {}            # slovar povezav oblike  curveKey: edge_objekt
         self.indexPairs = {}       # slovar oblike CurveKey: orngIndex   (za vozlisca)
@@ -188,7 +189,8 @@ class OWGraphDrawerCanvas(OWGraph):
     def updateData(self):
         self.removeDrawingCurves(removeLegendItems = 0)
         self.removeMarkers()
-
+        self.tips.removeAll()
+        
         # draw edges
         for e in range(self.nEdges):
             (key,i,j) = self.edges[e]
@@ -203,7 +205,8 @@ class OWGraphDrawerCanvas(OWGraph):
 
             key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
             self.edges[e] = (key,i,j)
-
+        
+        # draw vertices
         for v in range(self.nVertices):
             x1 = self.visualizer.xCoors[v]
             y1 = self.visualizer.yCoors[v]
@@ -222,13 +225,13 @@ class OWGraphDrawerCanvas(OWGraph):
             key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1])
             self.vertices[v] = key
             self.indexPairs[key] = v
-            
+        
+        # drew markers
         if len(self.labelText) > 0:
             for v in range(self.nVertices):
                 x1 = self.visualizer.xCoors[v]
                 y1 = self.visualizer.yCoors[v]
                 lbl = ""
-                
                 for ndx in self.labelText:
                     values = self.visualizer.graph.items[v]
                     lbl = lbl + str(values[ndx]) + " "
@@ -238,7 +241,22 @@ class OWGraphDrawerCanvas(OWGraph):
                     self.marker(mkey).setXValue(float(x1))
                     self.marker(mkey).setYValue(float(y1))
                     self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)            
-    
+        
+        # add ToolTips
+        self.tooltipData = []
+        if len(self.tooltipText) > 0:
+            for v in range(self.nVertices):
+                x1 = self.visualizer.xCoors[v]
+                y1 = self.visualizer.yCoors[v]
+                lbl = ""
+                for ndx in self.tooltipText:
+                    values = self.visualizer.graph.items[v]
+                    lbl = lbl + str(values[ndx]) + "\n"
+        
+                if lbl != '':
+                    lbl = lbl[:-1]
+                    self.tips.addToolTip(x1, y1, lbl)
+            
     def setVertexColor(self, attribute):
         if attribute == "(one color)":
             self.colorIndex = -1
@@ -263,7 +281,20 @@ class OWGraphDrawerCanvas(OWGraph):
                         
                 if self.visualizer.graph.items.domain.hasmeta(att):
                         self.labelText.append(self.visualizer.graph.items.domain.metaid(att))
+    
+    def setTooltipText(self, attributes):
+        self.tooltipText = []
+        if isinstance(self.visualizer.graph.items, orange.ExampleTable):
+            data = self.visualizer.graph.items
+            for att in attributes:
+                for i in range(len(data.domain)):
+                    if data.domain[i].name == att:
+                        self.tooltipText.append(i)
                         
+                if self.visualizer.graph.items.domain.hasmeta(att):
+                        self.tooltipText.append(self.visualizer.graph.items.domain.metaid(att))
+        
+                            
     def edgesContainsEdge(self, i, j):
         for e in range(self.nEdges):
             (key,iTmp,jTmp) = self.edges[e]
