@@ -39,17 +39,11 @@
 #define pclose(a, b) NULL
 #endif
 
-#ifdef _MSC_VER
 extern "C"{
 #include "som/lvq_pak.h"
 #include "som/som_rout.h"
 #include "som/datafile.h"
 }
-#else
-#include "som/lvq_pak.h"
-#include "som/som_rout.h"
-#include "som/datafile.h"
-#endif
 
 WRAPPER(ExampleTable)
 WRAPPER(Classifier)
