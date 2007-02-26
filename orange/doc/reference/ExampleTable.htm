@@ -405,6 +405,15 @@ w
 <H2>Other methods</H2>
 
 <DL class=attributes>
+<dt>checksum()</dt>
+<DD>Computes a CRC32 of the example table. The sum is computed only over discrete and continuous attributes, not over strings and other types of attributes. Meta attributes are also ignored. Besides that, if two tables have the same CRC, you can be pretty sure that they are same.</DD>
+
+<dt>hasMissingValues()</dt>
+<dd>Returns true if the table contains any undefined values, either in attributes or the class. Meta-attributes are not checked.</dd>
+
+<dt>hasMissingClasses()</dt>
+<dd>Returns true if any examples' class is undefined. The function throws an exception if the data is class less.</dd>
+
 <DT>randomexample()</DT>
 <DD>Returns a random example from the table.
 
