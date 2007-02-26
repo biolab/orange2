@@ -18,6 +18,7 @@ INSTALL_DIR = $(INSTALL) -d -m 755
 OS = $(shell uname)
 MAKE = make
 COMPILER = g++
+CCOMPILER = gcc
 LINKER = gcc
 LIBRARY_FILE = liborange.so
 
@@ -48,7 +49,7 @@ vpath %.px px
 vpath %.ppp ppp
 vpath %.h orange:include:$(PYTHONINCLUDE):/usr/local/include/gsl:/usr/include/gsl
 
-obj/%.o :
+obj/%.o : %.cpp
 	$(COMPILER) $(COMPILEOPTIONS) -c $< -o $@
 
 
