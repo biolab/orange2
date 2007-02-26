@@ -3742,6 +3742,20 @@ PyObject *ExampleTable_changeDomain(TPyOrange *self, PyObject *args) PYARGS(METH
 }
 
 
+PyObject *ExampleTable_hasMissingValues(TPyOrange *self) PYARGS(0, "() -> bool")
+{
+  PyTRY
+    return PyInt_FromLong(SELF_AS(TExampleTable).hasMissing()); 
+  PyCATCH
+}
+
+
+PyObject *ExampleTable_hasMissingClasses(TPyOrange *self) PYARGS(0, "() -> bool")
+{
+  PyTRY
+    return PyInt_FromLong(SELF_AS(TExampleTable).hasMissingClass()); 
+  PyCATCH
+}
 /* ************ TRANSFORMVALUE ************ */
 
 #include "transval.hpp"

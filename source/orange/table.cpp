@@ -799,6 +799,26 @@ int TExampleTable::checkSum() const
   return int(crc & 0x7fffffff);
 }
 
+bool TExampleTable::hasMissing() const
+{
+  for(TExample **ei = examples, **ee = _Last; ei != ee; ei++)
+    if ((*ei)->hasMissing())
+      return true;
+  return false;
+}
+
+
+bool TExampleTable::hasMissingClass() const
+{
+  if (!domain->classVar)
+    raiseError("data has no class");
+    
+  for(TExample **ei = examples, **ee = _Last; ei != ee; ei++)
+    if ((*ei)->missingClass())
+      return true;
+  return false;
+}
+
 void TExampleTable::sortByPointers()
 {
   std::sort((int *)examples, (int *)_Last);

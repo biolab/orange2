@@ -154,6 +154,17 @@ public:
 
   void addToCRC(unsigned long &crc) const;
   int sumValues() const;
+  
+  bool hasMissing() const
+  {
+    for(TValue const *vi = values, *ve = values_end; vi!=ve; vi++)
+      if (vi->isSpecial())
+        return true;
+    return false;
+  }
+  
+  bool missingClass() const
+  { return values_end[-1].isSpecial(); }
 };
 
 

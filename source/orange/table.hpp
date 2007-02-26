@@ -118,6 +118,8 @@ public:
   virtual void removeMetaAttribute(const int &id);
 
   virtual int checkSum() const;
+  virtual bool hasMissing() const;
+  virtual bool hasMissingClass() const;
 };
 
 
