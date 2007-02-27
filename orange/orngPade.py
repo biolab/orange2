@@ -40,27 +40,16 @@ def makeBasicCache(data, cache = None):
     cache.contIndices = [i for i, attr in enumerate(attributes) if attr.varType == orange.VarTypes.Continuous]
     cache.contAttributes = [attributes[i] for i in cache.contIndices]
     cache.attributes = [(attr.name, attr.varType) for attr in cache.contAttributes]
-
+    
     clearCache(cache)
     return cache
 
 
 
 def triangulate(cache, points):
-    num_points = len(points)
-    pts1 = points
-    f = file('input4qdelaunay.tab','w')
-    f.write(reduce(lambda x, y: x+y, [str(len(cache.contAttributes))+"\n"+str(len(pts1))+"\n"]+ [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)] )) # [str(pts1[i][0])+"\t"+str(pts1[i][1])+"\n" for i in xrange(num_points)]
-    f.close()
-    os.system(pathQHULL + r"\qdelaunay s i Qt TO 'outputFromQdelaunay.tab' < input4qdelaunay.tab")
-    f = file('outputFromQdelaunay.tab','r')
-    vhod = f.read()
-    f.close()
-    k = string.find(vhod,'\n')
-    num_of_triangles = int(vhod[0:k])
-    vhod = vhod[k+1:]
-    l = string.split(vhod,' \n')
-    return [map(int, string.split(l[i],' ')) for i in xrange(num_of_triangles+1) if l[i]!='']
+    import orangeom
+    return orangeom.qhull(cache.data.toNumpy("a")[0][:, cache.contIndices]).tolist()
+#    return [map(int, string.split(l[i],' ')) for i in xrange(num_of_triangles+1) if l[i]!='']
 
 
 
@@ -97,8 +86,8 @@ def firstTriangle(cache, dimensions, progressCallback = None, **args):
         cache.stars = [star(x, tri) for x in xrange(npoints)]
     S = cache.stars
 
-    if not cache.dts:        
-        cache.dts = [min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x]) for simplex in S[x]])*.1 for x in xrange(npoints)]
+    if not cache.dts:
+        cache.dts = [min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x], 0) for simplex in S[x]], 0)*.1 for x in xrange(npoints)]
 
 
     if progressCallback:
