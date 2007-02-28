@@ -28,12 +28,14 @@ class OWWidget(OWBaseWidget):
         self.grid.addWidget(self.controlArea,0,0)
         #self.grid.addWidget(self.space,1,0)
         self.grid.addWidget(self.buttonBackground,1,0)
-        self.grid.setRowStretch(0,10)
+        self.grid.setRowStretch(0,20)
         self.grid.setColStretch(0,10)
         self.grid.setColStretch(1,50)
         self.grid.addMultiCellWidget(self.mainArea,0,2,1,1)
+        self.space.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+        #self.controlArea.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
-        self.setSizeGripEnabled(1)
+        #self.setSizeGripEnabled(1)
         
         if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
 

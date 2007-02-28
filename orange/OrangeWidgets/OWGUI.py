@@ -418,7 +418,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
 
 def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tooltip=None, callback = None, sendSelectedValue=0, valueType = int, labelWidth = None, debuggingEnabled = 1):
     hbox = widgetBox(widget, box = box, orientation="horizontal")
-    lab = widgetLabel(hbox, label, labelWidth)
+    lab = widgetLabel(hbox, label + "  ", labelWidth)
     combo = comboBox(hbox, master, value, items = items, tooltip = tooltip, callback = callback, sendSelectedValue = sendSelectedValue, valueType = valueType, debuggingEnabled = debuggingEnabled)
     return combo
 

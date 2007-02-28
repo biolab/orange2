@@ -20,24 +20,26 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
         self.loadSettings()
         
-        self.space = QVBox(self)
-        self.layout = QVBoxLayout(self, 4)
+        self.space = OWGUI.widgetBox(self)
+        self.layout = QVBoxLayout(self, 8)
         self.layout.addWidget(self.space)
         
-        box = QVButtonGroup(" Image Size ", self.space)
+        box = QVButtonGroup("Image Size", self.space)
         if isinstance(graph, QwtPlot):
             size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"], callback = self.updateGUI)
             
-            self.customXEdit = OWGUI.lineEdit(box, self, "customX", "       Width:  ", orientation = "horizontal", valueType = int)
-            self.customYEdit = OWGUI.lineEdit(box, self, "customY", "       Height:   ", orientation = "horizontal", valueType = int)
+            ind1 = OWGUI.indentedBox(box)
+            ind2 = OWGUI.indentedBox(box)
+            self.customXEdit = OWGUI.lineEdit(ind1, self, "customX", "Width:", orientation = "horizontal", valueType = int)
+            self.customYEdit = OWGUI.lineEdit(ind2, self, "customY", "Height:", orientation = "horizontal", valueType = int)
 
-            OWGUI.comboBoxWithCaption(self.space, self, "penWidthFactor", label = 'Factor:   ', box = " Pen width multiplication factor ",  tooltip = "Set the pen width factor for all curves in the plot\n(Useful for example when the lines in the plot look to thin)\nDefault: 1", sendSelectedValue = 1, valueType = int, items = range(1,20))
+            OWGUI.comboBoxWithCaption(self.space, self, "penWidthFactor", label = 'Factor:', box = "Pen width multiplication factor",  tooltip = "Set the pen width factor for all curves in the plot\n(Useful for example when the lines in the plot look to thin)\nDefault: 1", sendSelectedValue = 1, valueType = int, items = range(1,20))
 
         elif isinstance(graph, QCanvas):
             OWGUI.widgetLabel(box, "Image size will be set automatically.")
             
-        self.printButton =     OWGUI.button(self.space, self, "Print", callback = self.printPic)
-        self.saveImageButton = OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
+        self.printButton =          OWGUI.button(self.space, self, "Print", callback = self.printPic)
+        self.saveImageButton =      OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
         self.saveMatplotlibButton = OWGUI.button(self.space, self, "Save Graph As matplotlib Script", callback = self.saveToMatplotlib)
         for (text, funct) in extraButtons:
             butt = OWGUI.button(self.space, self, text, callback = funct)
@@ -46,6 +48,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                                        
         self.resize(200,270)
         self.updateGUI()
+
 
     def saveImage(self, filename = None, size = None, closeDialog = 1):
         if not filename:
@@ -553,23 +556,24 @@ class ContinuousPaletteGenerator:
 if __name__== "__main__":
     a = QApplication(sys.argv)
     
-    c = ColorPalette(None, modal = FALSE)
-    c.createContinuousPalette("continuousPalette", "Continuous Palette")
-    c.createDiscretePalette("Discrete Palette")
-    box = c.createBox("otherColors", "Colors")
-    c.createColorButton(box, "Canvas", "Canvas")
-    box.addSpace(5)
-    c.createColorButton(box, "Grid", "Grid")
-    box.addSpace(5)
-    c.createColorButton(box, "test", "ttest")
-    box.addSpace(5)
-    box.adjustSize()
-    c.setColorSchemas()
+##    c = ColorPalette(None, modal = FALSE)
+##    c.createContinuousPalette("continuousPalette", "Continuous Palette")
+##    c.createDiscretePalette("Discrete Palette")
+##    box = c.createBox("otherColors", "Colors")
+##    c.createColorButton(box, "Canvas", "Canvas")
+##    box.addSpace(5)
+##    c.createColorButton(box, "Grid", "Grid")
+##    box.addSpace(5)
+##    c.createColorButton(box, "test", "ttest")
+##    box.addSpace(5)
+##    box.adjustSize()
+##    c.setColorSchemas()
+##    a.setMainWidget(c)
+##    c.show()
+##    a.exec_loop()
+    
+    c = OWChooseImageSizeDlg(None)
     a.setMainWidget(c)
     c.show()
     a.exec_loop()
-    """
-    c = OWChooseImageSizeDlg(None)
-    c.show()
-    a.exec_loop()
-    """
+    

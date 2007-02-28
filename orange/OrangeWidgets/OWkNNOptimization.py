@@ -16,7 +16,7 @@ class OWVizRank(VizRank, OWBaseWidget):
                     "useExampleWeighting", "useSupervisedPCA", "attrSubsetSelection", "optimizationType", "attributeCount",
                     "locOptOptimizeProjectionByPermutingAttributes", "timeLimit", "projectionLimit", "storeEachPermutation",
                     "boxLocalOptimization", "boxStopOptimization"]
-    resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
+    resultsListLenNums = [ 10, 100 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30,35, 40, 50, 60, 70, 80, 100, 120, 150, 200]
     argumentCounts = [1, 3, 5, 10, 15, 20, 30, 50, 100, 200]
@@ -81,9 +81,9 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         # ###########################
         # MAIN TAB
-        self.optimizationBox = OWGUI.widgetBox(self.MainTab, " Evaluate ")
-        self.resultsBox = OWGUI.widgetBox(self.MainTab, " Projection List, Most Interesting Projections First ")
-        self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, " Shown Details in Projections List " , orientation = "horizontal")
+        self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")
+        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection List, Most Interesting Projections First")
+        self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, "Shown Details in Projections List" , orientation = "horizontal")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
 
         if visualizationMethod != SCATTERPLOT:
@@ -92,12 +92,12 @@ class OWVizRank(VizRank, OWBaseWidget):
             self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCount", items = range(3, 20), tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes", sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
             self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
-        self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "      Start Evaluating Projections      ", callback = self.evaluateProjections)
+        self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "    Start Evaluating Projections    ", callback = self.evaluateProjections)
         f = self.startOptimizationButton.font(); f.setBold(1);   self.startOptimizationButton.setFont(f)
-        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopEvaluationClick, debuggingEnabled = 0 )
+        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "    Stop Evaluation    ", callback = self.stopEvaluationClick, debuggingEnabled = 0 )
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
-        self.optimizeGivenProjectionButton = OWGUI.button(self.optimizationBox, self, "Locally Optimize Best Projections", callback = self.optimizeBestProjections)
+        self.optimizeGivenProjectionButton = OWGUI.button(self.optimizationBox, self, "    Locally Optimize Best Projections    ", callback = self.optimizeBestProjections)
 
         self.resultList = QListBox(self.resultsBox)
         #self.resultList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
@@ -112,7 +112,7 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         # ##########################
         # SETTINGS TAB
-        self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
+        self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, "VizRank Evaluation Settings")
         self.methodTypeCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "evaluationAlgorithm", "Projection evaluation method: ", tooltip = "Which learning method to use to use to evaluate given projections.", items = ["k-Nearest Neighbor", "Heuristic (very fast)"])
         self.attrKNeighboursEdit = OWGUI.lineEdit(self.optimizationSettingsBox, self, "kValue", "Number of neighbors (k):                 ", orientation = "horizontal", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", valueType = int, validator = QIntValidator(self))
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
@@ -127,18 +127,18 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score", "Area under curve (AUC)"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
 
-        self.attributeSelectionBox = OWGUI.widgetBox(self.SettingsTab, " Attribute Subset Selection ")        
+        self.attributeSelectionBox = OWGUI.widgetBox(self.SettingsTab, "Attribute Subset Selection")
         OWGUI.comboBox(self.attributeSelectionBox, self, "attrSubsetSelection", items = ["Deterministically using the selected attribute ranking measures", "Use gamma distribution and test all possible placements", "Use gamma distribution and test only one possible placement"])
             
-        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Measures for Attribute Ranking ")
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " For continuous attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " For discrete attributes:  ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
+        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Measures for Attribute Ranking")
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", "For continuous attributes:", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", "For discrete attributes:", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
-        self.stopOptimizationBox = OWGUI.collapsableWidgetBox(self.SettingsTab, " When to Stop Evaluation? ", self, "boxStopOptimization")
+        self.stopOptimizationBox = OWGUI.collapsableWidgetBox(self.SettingsTab, "When to Stop Evaluation?", self, "boxStopOptimization")
         OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
         OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
 
-        self.localOptimizationSettingsBox = OWGUI.collapsableWidgetBox(self.SettingsTab, " Local Optimization Settings ", self, "boxLocalOptimization")
+        self.localOptimizationSettingsBox = OWGUI.collapsableWidgetBox(self.SettingsTab, "Local Optimization Settings", self, "boxLocalOptimization")
         bbb = OWGUI.checkBox(self.localOptimizationSettingsBox, self, 'locOptOptimizeProjectionByPermutingAttributes', 'Try improving projection by permuting attributes in projection')
         self.localOptimizationProjCountCombo = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "locOptProjCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
         self.localOptimizationAttrsCount = OWGUI.lineEdit(self.localOptimizationSettingsBox, self, "locOptAttrsToTry", "Number of best attributes to try:                       ", orientation = "horizontal", tooltip = "How many of the top ranked attributes do you want to try in the projections?", valueType = int, validator = QIntValidator(self))
@@ -146,16 +146,16 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.localOptimizationAddAttrsCheck  = OWGUI.checkBox(locOptBox, self, 'locOptAllowAddingAttributes', 'Allow adding attributes. Max attrs in proj:', tooltip = "Should local optimization only try to replace some attributes in a projection or is it also allowed to add new attributes?")
         self.localOptimizationProjMaxAttr    = OWGUI.comboBox(locOptBox, self, "locOptMaxAttrsInProj", items = range(3,50), tooltip = "What is the maximum number of attributes in a projection?", sendSelectedValue = 1, valueType = int)
 
-        self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Length of the Projection List ")
+        self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Length of the Projection List")
         self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
 
         # ##########################
         # ARGUMENTATION TAB
-        self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
+        self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments")
         self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments, debuggingEnabled = 0)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
-        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for Class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged, debuggingEnabled = 0)
-        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for the Selected Class Value ")
+        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = "Arguments for Class:", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged, debuggingEnabled = 0)
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments for the Selected Class Value")
         self.argumentList = QListBox(self.argumentBox)
         self.argumentList.setMinimumSize(200,200)
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
@@ -163,24 +163,25 @@ class OWVizRank(VizRank, OWBaseWidget):
         # ##########################
         # CLASSIFICATION TAB
         if self.parentWidget: 
-            self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.VizRankLearnerName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+            self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.VizRankLearnerName', box = 'Learner / Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
         #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
 
-        b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
-        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Time for evaluating projections (minutes):                ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float, debuggingEnabled = 0)
+        b = OWGUI.widgetBox(self.ClassificationTab, "Evaluating Time")
+        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTime", "Time for evaluating projections (minutes):", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float, debuggingEnabled = 0)
         b2 = OWGUI.widgetBox(b, orientation = "horizontal")
-        self.optimizeBestProjectionCheck = OWGUI.checkBox(b2, self, "optimizeBestProjection", "Afterwards use local optimization for (minutes): ", tooltip = "Do you want to try to locally optimize the best projection when the time for evaluating projections runs out?", debuggingEnabled = 0)
+        self.optimizeBestProjectionCheck = OWGUI.checkBox(b2, self, "optimizeBestProjection", "Afterwards use local optimization for (minutes):", tooltip = "Do you want to try to locally optimize the best projection when the time for evaluating projections runs out?", debuggingEnabled = 0)
         self.optimizeBestProjectionCombo = OWGUI.comboBox(b2, self, "optimizeBestProjectionTime", items = self.evaluationTimeNums, sendSelectedValue = 1, valueType = float, debuggingEnabled = 0)
-        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts, sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
+        projCountBox = OWGUI.widgetBox(self.ClassificationTab, "Projection Count")
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCount", "Number of projections used when classifying:", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = self.argumentCounts, sendSelectedValue = 1, valueType = int, debuggingEnabled = 0)
 
         # ##########################
         # SAVE & MANAGE TAB
-        self.classesBox = OWGUI.widgetBox(self.ManageTab, " Select Class Values You Wish to Separate ")
-        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, " Number of Concurrently Visualized Attributes ")
-        self.dialogsBox = OWGUI.widgetBox(self.ManageTab, " Dialogs ")        
-        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
+        self.classesBox = OWGUI.widgetBox(self.ManageTab, "Select Class Values You Wish to Separate")
+        self.classesBox.setFixedHeight(130)
+        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of Concurrently Visualized Attributes")
+        self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
+        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Manage Projections")
         
         self.classesList = QListBox(self.classesBox)
         self.classesList.setSelectionMode(QListBox.Multi)
@@ -488,7 +489,7 @@ class OWVizRank(VizRank, OWBaseWidget):
         returnTable = []
         
         if table.domain.classVar.varType == orange.VarTypes.Discrete:
-            probabilities = Numeric.zeros((len(table), len(table.domain.classVar.values)), Numeric.Float)
+            probabilities = numpy.zeros((len(table), len(table.domain.classVar.values)), numpy.float)
             lenClassValues = len(list(table.domain.classVar.values))
             if self.qualityMeasure in [AVERAGE_CORRECT, AUC]:       # for AUC we have no way of computing the prediction accuracy for each example
                 for i in range(len(results.results)):
@@ -827,7 +828,7 @@ VIZRANK_MOSAIC = 2
 # #############################################################################
 # analyse the attributes that appear in the top projections. show how often do they appear also in other top projections
 class OWInteractionAnalysis(OWWidget):
-    settingsList = ["onlyLower", "rectColoring", "sortAttributesByQuality"]
+    settingsList = ["onlyLower", "rectColoring", "sortAttributesByQuality", "useGeneSets", "recentGeneSets"]
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "VizRank's Interaction Analysis", wantGraph = 1)
 
@@ -841,6 +842,10 @@ class OWInteractionAnalysis(OWWidget):
         self.sortAttributesByQuality = 0
         self.rectColoring = 1
 
+        self.recentGeneSets = []
+        self.geneToSet, self.setToGenes = None, None
+        self.useGeneSets = 0
+
         self.graph = OWGraph(self.mainArea)
         self.box = QVBoxLayout(self.mainArea)
         self.box.addWidget(self.graph)
@@ -852,6 +857,7 @@ class OWInteractionAnalysis(OWWidget):
         b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Projections')
         b3 = OWGUI.widgetBox(self.controlArea, "Settings")
         b4 = OWGUI.widgetBox(self.controlArea, "Use color to represent ...")
+        b5 = OWGUI.widgetBox(self.controlArea, "Gene Sets")
 
         OWGUI.qwtHSlider(b1, self, 'attributeCount', minValue = 5, maxValue = 100, step=0, callback = self.updateGraph, precision = 0, maxWidth = 170)
         self.projectionCountSlider = OWGUI.qwtHSlider(b2, self, 'projectionCount', minValue = 5, maxValue = 1000, step = 5, callback = self.updateGraph, precision = 0, maxWidth = 170)
@@ -860,16 +866,59 @@ class OWInteractionAnalysis(OWWidget):
         OWGUI.checkBox(b3, self, 'sortAttributesByQuality', 'Sort attributes according to quality', callback = self.updateGraph, tooltip = "Do you want to show the attributes as they are ranked according to some quality measure\nor as they appear in the top ranked projections?")
 
         OWGUI.comboBox(b4, self, "rectColoring", tooltip = "What should darkness of color of rectangles represent?", items = ["(don't use color)", "projection quality", "frequency of occurence in projections"], callback = self.updateGraph)
-        
-        box = OWGUI.widgetBox(self.controlArea, "")
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
 
+        OWGUI.checkBox(b5, self, "useGeneSets", label = "Use gene sets", callback = self.updateGraph)
+        bb5 = OWGUI.widgetBox(b5, orientation  = "horizontal")
+        self.fileCombo = OWGUI.comboBox(bb5, self, "geneSets")
+        OWGUI.button(bb5, self, '...', callback = self.browseGeneFile, disabled=0, width=25)
+        self.connect(self.fileCombo, SIGNAL('activated(int)'), self.selectGeneFile)
+        
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
+        box = OWGUI.widgetBox(self.controlArea, "")
+        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
+
+        qApp.processEvents()
         self.updateGraph()
+        self.updateGeneCombo()
+        self.loadGeneSet()
+
+    # ------- gene set functions ------------- #
+    def selectGeneFile(self,n):
+        name = self.recentGeneSets[n]
+        self.recentGeneSets.remove(name)
+        self.recentGeneSets.insert(0, name)
+        if len(self.recentGeneSets) > 0:
+            self.updateGeneCombo()
+            self.loadGeneSet()
+
+    def browseGeneFile(self):
+        d = os.getcwd()
+        if len(self.recentGeneSets) == 0 or self.recentGeneSets[0] == "(none)":
+            startfile = "."
+        else:
+            startfile = self.recentGeneSets[0]
+        filename = str(QFileDialog.getOpenFileName(startfile, 'Gene set files (*.gmt)\nAll files(*.*)', None,'Open Gene Set File'))
+        if filename == "": return
+        if filename in self.recentGeneSets: self.recentGeneSets.remove(filename)
+        self.recentGeneSets.insert(0, filename)
+        self.updateGeneCombo()
+        self.loadGeneSet()
+
+    def updateGeneCombo(self):
+        self.fileCombo.clear()
+        for file in self.recentGeneSets:
+            self.fileCombo.insertItem(os.path.split(file)[1])
+
+    def loadGeneSet(self):
+        if len(self.recentGeneSets) == 0: return
+        self.geneToSet, self.setToGenes = loadGeneSetFile(self.recentGeneSets[0])
+        self.updateGraph()
+    # ----------------------------------- #
 
     def setResults(self, results, dialogType):
         self.results = results
@@ -905,7 +954,7 @@ class OWInteractionAnalysis(OWWidget):
 
         attributes = []
         attrDict = {}
-        
+
         if self.sortAttributesByQuality:
             attributes = self.attributes[:self.attributeCount]
         else:
@@ -917,7 +966,7 @@ class OWInteractionAnalysis(OWWidget):
             attrCounts.sort()
             attrCounts.reverse()
             attributes = [attr[1] for attr in attrCounts[:self.attributeCount]]
-        
+    
         for index in range(min(len(self.results), self.projectionCount)):
             attrs = self.results[index][self.ATTR_LIST]
 
@@ -943,8 +992,9 @@ class OWInteractionAnalysis(OWWidget):
         else:
             best = self.results[0][self.ACCURACY]
             worst= self.results[min(len(self.results)-1, self.projectionCount)][self.ACCURACY]
-   
-        eps = 0.05
+    
+        eps = 0.05 + 0.15 * self.useGeneSets
+        eps2 = 0.05
         num = len(attributes)
 
         for x in range(num):
@@ -970,25 +1020,41 @@ class OWInteractionAnalysis(OWWidget):
                 elif self.rectColoring == 2:
                     s = "Pair: <b>%s</b> and <b>%s</b><br>Number of appearances: <b>%d</b>" % (attributes[x], attributes[yy], val)
 
+                sharedGeneSets = []
+                if self.useGeneSets and self.geneToSet:
+                    set1 = getGeneSet(self.geneToSet, attributes[x])
+                    set2 = getGeneSet(self.geneToSet, attributes[yy])
+                    for s1 in set2:
+                        if s1 in set1: sharedGeneSets.append(s1)
+
+                if self.useGeneSets and self.geneToSet:
+                    if sharedGeneSets != []:
+                        s += "<hr>Shared gene sets: %s<br>" % (sharedGeneSets)
+                    s += "<hr>Gene sets for individual genes:<br>&nbsp; &nbsp; <b>%s</b>: %s<br>&nbsp; &nbsp; <b>%s</b>: %s" % (attributes[x], getGeneSet(self.geneToSet, attributes[x]), attributes[yy], getGeneSet(self.geneToSet, attributes[yy]))
+
+                curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color), [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps])
+                key = self.graph.insertCurve(curve)
+                                
+                if self.useGeneSets and self.geneToSet and sharedGeneSets != []:
+                    curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [x-0.5+eps2, x+0.5-eps2, x+0.5-eps2, x-0.5+eps2], [y+1-0.5+eps2, y+1-0.5+eps2, y+1+0.5-eps2, y+1+0.5-eps2])
+                    key = self.graph.insertCurve(curve)
                 if s != "":
                     self.graph.tips.addToolTip(x, y+1, s, 0.5, 0.5)
                     
-                curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
-                key = self.graph.insertCurve(curve)
-                self.graph.setCurveData(key, [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps])
-
                 if not self.onlyLower:
-                    curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
+                    curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color), [num-1-0.5-y+eps, num-1-0.5-y+eps, num-1+0.5-y-eps, num-1+0.5-y-eps], [num-0.5-x+eps, num+0.5-x-eps, num+0.5-x-eps, num-0.5-x+eps])
                     key = self.graph.insertCurve(curve)
-                    self.graph.setCurveData(key, [num-1-0.5-y+eps, num-1-0.5-y+eps, num-1+0.5-y-eps, num-1+0.5-y-eps], [num-0.5-x+eps, num+0.5-x-eps, num+0.5-x-eps, num-0.5-x+eps] )
+
+                    if self.useGeneSets and self.geneToSet and sharedGeneSets != []:
+                        curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [num-1-0.5-y+eps2, num-1-0.5-y+eps2, num-1+0.5-y-eps2, num-1+0.5-y-eps2], [num-0.5-x+eps2, num+0.5-x-eps2, num+0.5-x-eps2, num-0.5-x+eps2])
+                        key = self.graph.insertCurve(curve)
                     if s != "":
                         self.graph.tips.addToolTip(num-1-y, num-x, s, 0.5, 0.5)
 
         # draw empty boxes at the diagonal
         for x in range(num):
-            curve = PolygonCurve(self.graph, QPen(black, 1), QBrush(white))
+            curve = PolygonCurve(self.graph, QPen(black, 1), QBrush(white), [x-0.5+2*eps2, x+0.5-2*eps2, x+0.5-2*eps2, x-0.5+2*eps2], [num-x-0.5+2*eps2, num-x-0.5+2*eps2, num-x+0.5-2*eps2, num-x+0.5-2*eps2])
             key = self.graph.insertCurve(curve)
-            self.graph.setCurveData(key, [x-0.5+2*eps, x+0.5-2*eps, x+0.5-2*eps, x-0.5+2*eps], [num-x-0.5+2*eps, num-x-0.5+2*eps, num-x+0.5-2*eps, num-x+0.5-2*eps])
 
         """
         # draw x markers
@@ -1035,9 +1101,14 @@ class OWInteractionAnalysis(OWWidget):
         
         self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
+
+    def hideEvent(self, ev):
+        self.saveSettings()
+        OWWidget.hideEvent(self, ev)
             
 
 class OWGraphAttributeHistogram(OWWidget):
+    settingsList = ["attributeCount", "projectionCount", "rotateXAttributes", "colorAttributes", "progressLines", "useGeneSets", "recentGeneSets"]
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Attribute Histogram", wantGraph = 1)
         
@@ -1047,7 +1118,7 @@ class OWGraphAttributeHistogram(OWWidget):
         self.graph = OWGraph(self.mainArea)
         self.box = QVBoxLayout(self.mainArea)
         self.box.addWidget(self.graph)
-        self.box.activate()
+##        self.box.activate()
         self.graph.showYLaxisTitle = 1
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
@@ -1057,25 +1128,32 @@ class OWGraphAttributeHistogram(OWWidget):
         self.rotateXAttributes = 1
         self.colorAttributes = 1
         self.progressLines = 1
-        self.dialogType = -1
+        self.useGeneSets = 0
+        self.recentGeneSets = []
+        self.useProjectionWeighting = 1
 
         b1 = OWGUI.widgetBox(self.controlArea, box = 1)
         b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Attributes')
         b3 = OWGUI.widgetBox(self.controlArea, 'Number Of Projections')
-        #b4 = OWGUI.widgetBox(self.controlArea, box = 1)
+        b4 = OWGUI.widgetBox(self.controlArea, "Gene Sets")
         box = OWGUI.widgetBox(self.controlArea)
 
+        OWGUI.checkBox(b1, self, 'useProjectionWeighting', label = "Weight projections according to rank", callback = self.updateGraph, tooltip = "Projections contribute to attribute ranking according to their rank in the list of projections.")
         OWGUI.checkBox(b1, self, 'colorAttributes', label = "Color attributes according to class vote", callback = self.updateGraph)
         OWGUI.checkBox(b1, self, 'progressLines', label = "Show intermediate lines", callback = self.updateGraph)
         OWGUI.checkBox(b1, self, 'rotateXAttributes', label = "Show attribute names vertically", callback = self.updateGraph)
-        OWGUI.qwtHSlider(b2, self, 'attributeCount', minValue=0, maxValue = 100, step = 1, callback = self.updateGraph, precision = 0, maxWidth = 170)
-        OWGUI.qwtHSlider(b3, self, 'projectionCount', minValue = 5, maxValue = 1000, step=5, callback = self.updateGraph, precision = 0, maxWidth = 170)
+        OWGUI.qwtHSlider(b2, self, 'attributeCount', minValue = 5, maxValue = 100, step = 1, callback = self.updateGraph, precision = 0, maxWidth = 170)
+        OWGUI.qwtHSlider(b3, self, 'projectionCount', minValue = 10, maxValue = 5000, step=10, callback = self.updateGraph, precision = 0, maxWidth = 170)
+        OWGUI.checkBox(b4, self, "useGeneSets", label = "Use gene sets", callback = self.updateGraph)
+        bb4 = OWGUI.widgetBox(b4, orientation  = "horizontal")
+        self.fileCombo = OWGUI.comboBox(bb4, self, "geneSets")
+        OWGUI.button(bb4, self, '...', callback = self.browseGeneFile, disabled=0, width=25)
+        self.connect(self.fileCombo, SIGNAL('activated(int)'), self.selectGeneFile)
         
-
         b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        #b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
 
         self.parent = parent
@@ -1083,7 +1161,43 @@ class OWGraphAttributeHistogram(OWWidget):
 
         self.evaluatedAttributes = None
         self.evaluatedAttributesByClass = None
+        qApp.processEvents()        
+        self.updateGeneCombo()
+        self.loadGeneSet()
 
+    # ------- gene set functions ------------- #
+    def selectGeneFile(self,n):
+        name = self.recentGeneSets[n]
+        self.recentGeneSets.remove(name)
+        self.recentGeneSets.insert(0, name)
+        if len(self.recentGeneSets) > 0:
+            self.updateGeneCombo()
+            self.loadGeneSet()
+
+    def browseGeneFile(self):
+        d = os.getcwd()
+        if len(self.recentGeneSets) == 0 or self.recentGeneSets[0] == "(none)":
+            startfile = "."
+        else:
+            startfile = self.recentGeneSets[0]
+        filename = str(QFileDialog.getOpenFileName(startfile, 'Gene set files (*.gmt)\nAll files(*.*)', None,'Open Gene Set File'))
+        if filename == "": return
+        if filename in self.recentGeneSets: self.recentGeneSets.remove(filename)
+        self.recentGeneSets.insert(0, filename)
+        self.updateGeneCombo()
+        self.loadGeneSet()
+
+    def updateGeneCombo(self):
+        self.fileCombo.clear()
+        for file in self.recentGeneSets:
+            self.fileCombo.insertItem(os.path.split(file)[1])
+
+    def loadGeneSet(self):
+        if len(self.recentGeneSets) == 0: return
+        self.geneToSet, self.setToGenes = loadGeneSetFile(self.recentGeneSets[0])
+        self.updateGraph()
+    # ----------------------------------- #
+    
     def setResults(self, results, dialogType):
         self.results = results
         self.dialogType = dialogType
@@ -1111,15 +1225,26 @@ class OWGraphAttributeHistogram(OWWidget):
         count = min(self.projectionCount, len(self.results))
         part = 0
         diff = count / 5
+        import math
+        s = math.sqrt(-count**2 / math.log(0.001))      # normalizing factor
+        
         for index in range(count):
             if index > (part+1) * diff+1:
                 part += 1
             attrs = self.results[index][self.ATTR_LIST]
+            if self.useGeneSets and self.geneToSet:    # replace genes with the sets in which the genes appear
+                newAttrs = []
+                for attr in attrs:
+                    newAttrs += getGeneSet(self.geneToSet, attr)
+                attrs = newAttrs
+
+            if self.useProjectionWeighting: val = math.e ** (-index*index/(s*s))    # top ranked projections have greater val than lower ranked
+            else:                           val = 1         # all projections have the same influence
             for attr in attrs:
                 if not attrCountDict.has_key(attr):
                     attrCountDict[attr] = [0, {}]
-                attrCountDict[attr][0] += 1
-                attrCountDict[attr][1][part] = attrCountDict[attr][1].get(part, 0) + 1
+                attrCountDict[attr][0] += val
+                attrCountDict[attr][1][part] = attrCountDict[attr][1].get(part, 0) + val
 
         attrs = [(attrCountDict[key][0], attrCountDict[key][1], key) for key in attrCountDict.keys()]
         attrs.sort()
@@ -1210,7 +1335,9 @@ class OWGraphAttributeHistogram(OWWidget):
         self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
             
-       
+    def hideEvent(self, ev):
+        self.saveSettings()
+        OWWidget.hideEvent(self, ev)
 
 # #############################################################################
 # draw a graph for all the evaluated projections that shows how is the classification accuracy falling when we are moving from the best to the worst evaluated projections
@@ -1390,7 +1517,7 @@ class OWGraphIdentifyOutliers(OWWidget):
             self.widget.outlierValues = None
             self.widget.updateGraph()
         self.saveSettings()
-        QDialog.hideEvent(self, e)
+        OWWidget.hideEvent(self, e)
         
     def setData(self, results, data, dialogType):
         self.results = results
@@ -1444,14 +1571,14 @@ class OWGraphIdentifyOutliers(OWWidget):
         projCount = min(int(self.projectionCount), len(self.results))
         classCount = len(self.data.domain.classVar.values)
         existing = 0
-        if self.matrixOfPredictions:
-            existing = Numeric.shape(self.matrixOfPredictions)[0]/classCount
+        if self.matrixOfPredictions != None:
+            existing = numpy.shape(self.matrixOfPredictions)[0]/classCount
             if existing < projCount:
-                self.matrixOfPredictions = Numeric.resize(self.matrixOfPredictions, (projCount*classCount, len(self.data)))
+                self.matrixOfPredictions = numpy.resize(self.matrixOfPredictions, (projCount*classCount, len(self.data)))
             elif existing > projCount:
                 self.matrixOfPredictions = self.matrixOfPredictions[0:classCount*projCount,:]
         else:
-            self.matrixOfPredictions = -1 * Numeric.ones((projCount*classCount, len(self.data)), Numeric.Float)
+            self.matrixOfPredictions = -1 * numpy.ones((projCount*classCount, len(self.data)), numpy.float)
 
 
         # compute the matrix of predictions
@@ -1470,7 +1597,7 @@ class OWGraphIdentifyOutliers(OWWidget):
             elif self.dialogType == VIZRANK_MOSAIC:
                 from orngCI import FeatureByCartesianProduct
                 acc, attrList, tryIndex, other = result
-                probabilities = Numeric.zeros((len(self.data), len(self.data.domain.classVar.values)), Numeric.Float)
+                probabilities = numpy.zeros((len(self.data), len(self.data.domain.classVar.values)), numpy.float)
                 newFeature, quality = FeatureByCartesianProduct(self.data, attrList)
                 dist = orange.ContingencyAttrClass(newFeature, self.data)
                 data = self.data.select([newFeature, self.data.domain.classVar])     # create a dataset that has only this new feature and class info
@@ -1485,10 +1612,10 @@ class OWGraphIdentifyOutliers(OWWidget):
                         validDataIndices.remove(i)
                 
 
-            #self.matrixOfPredictions[(existing + index)*classCount:(existing + index +1)*classCount] = Numeric.transpose(probabilities)
-            probabilities = Numeric.transpose(probabilities)
+            #self.matrixOfPredictions[(existing + index)*classCount:(existing + index +1)*classCount] = numpy.transpose(probabilities)
+            probabilities = numpy.transpose(probabilities)
             for i in range(classCount):
-                Numeric.put(self.matrixOfPredictions[(existing + index)*classCount + i], validDataIndices, probabilities[i])            
+                numpy.put(self.matrixOfPredictions[(existing + index)*classCount + i], validDataIndices, probabilities[i])            
 
             index += 1
             self.statusBar.message("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(existing + index), orngVisFuncts.createStringFromNumber(projCount)))
@@ -1512,9 +1639,10 @@ class OWGraphIdentifyOutliers(OWWidget):
             for i in range(len(self.data)):
                 corrClass = int(self.data[i].getclass())
                 predictions = self.matrixOfPredictions[corrClass::classCount,i]
-                predictions = Numeric.compress(predictions != -1, predictions)
+                predictions = numpy.compress(predictions != -1, predictions)
+                predictions = predictions**3
                 if len(predictions):    # prevent division by zero!
-                    values[i] = Numeric.sum(predictions) / float(len(predictions))
+                    values[i] = numpy.sum(predictions) / float(len(predictions))
 
             self.widget.outlierValues = (values, "Probability of correct class value = %.2f%%")
         else:
@@ -1531,14 +1659,14 @@ class OWGraphIdentifyOutliers(OWWidget):
 
         projCount = min(int(self.projectionCount), len(self.results))
         classCount = len(self.data.domain.classVar.values)
-        self.graphMatrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, self.selectedExampleIndex], (projCount, classCount)))
+        self.graphMatrix = numpy.transpose(numpy.reshape(self.matrixOfPredictions[:, self.selectedExampleIndex], (projCount, classCount)))
         self.updateGraph()
         
         if self.dialogType == VIZRANK_POINT:
             valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in self.widget.getShownAttributeList()])
-            insideColors = Numeric.zeros(len(self.data))
+            insideColors = numpy.zeros(len(self.data))
             insideColors[self.selectedExampleIndex] = 1
-            self.widget.updateGraph(insideColors = (Numeric.compress(valid, insideColors), "Focused example: %d"))
+            self.widget.updateGraph(insideColors = (numpy.compress(valid, insideColors), "Focused example: %d"))
         
 
     # find which examples is selected in the graph and draw its predictions
@@ -1567,11 +1695,11 @@ class OWGraphIdentifyOutliers(OWWidget):
         classCount = len(self.data.domain.classVar.values)
 
         for i in range(len(self.data)):
-            matrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, i], (projCount, classCount)))
-            valid = Numeric.where(matrix[int(self.data[i].getclass())] != -1, 1, 0)
-            data = Numeric.compress(valid, matrix[int(self.data[i].getclass())])
-            if len(data): ave_acc = Numeric.sum(data) / float(len(data))
-            else: ave_acc = 0
+            matrix = numpy.transpose(numpy.reshape(self.matrixOfPredictions[:, i], (projCount, classCount)))
+            valid = numpy.where(matrix[int(self.data[i].getclass())] != -1, 1, 0)
+            data = numpy.compress(valid, matrix[int(self.data[i].getclass())])
+            if len(data): ave_acc = numpy.sum(data) / float(len(data))
+            else:         ave_acc = 0
             self.insertItemToExampleList(ave_acc, i)
             
             
@@ -1603,7 +1731,7 @@ class OWGraphIdentifyOutliers(OWWidget):
     # draw the graph of predictions for the selected example
     def updateGraph(self):
         self.graph.clear()
-        if not self.data or not self.graphMatrix: return
+        if not self.data or self.graphMatrix == None: return
         
         classColors = ColorPaletteHSV(len(self.data.domain.classVar.values))
         
@@ -1612,8 +1740,8 @@ class OWGraphIdentifyOutliers(OWWidget):
         self.graph.setAxisScale(QwtPlot.yLeft, 0, len(self.graphMatrix[0]), len(self.graphMatrix[0])/5)
         self.graph.setAxisScale(QwtPlot.xBottom, 0, 1, 0.2)
         
-        valid = Numeric.where(self.graphMatrix[0] != -1, 1, 0)
-        allValid = Numeric.sum(valid) == len(valid)
+        valid = numpy.where(self.graphMatrix[0] != -1, 1, 0)
+        allValid = numpy.sum(valid) == len(valid)
         nrOfClasses = len(self.data.domain.classVar.values)
 
         if self.sortProjections:
@@ -1672,17 +1800,44 @@ class OWGraphIdentifyOutliers(OWWidget):
             if self.dialogType == VIZRANK_POINT:
                 attrs = self.parent.shownResults[projIndex][self.ATTR_LIST]
                 valid = self.projectionGraph.getValidList([self.projectionGraph.attributeNameIndex[attr] for attr in attrs])
-                insideColors = Numeric.zeros(len(self.data))
+                insideColors = numpy.zeros(len(self.data))
                 insideColors[self.selectedExampleIndex] = 1
-                self.widget.updateGraph(attrs, setAnchors = 1, insideColors = (Numeric.compress(valid, insideColors), "Focused example: %d"))
+                self.widget.updateGraph(attrs, setAnchors = 1, insideColors = (numpy.compress(valid, insideColors), "Focused example: %d"))
+
+def getGeneSet(geneset, gene):
+    if len(gene) > 2 and gene[-2] == "_":
+        gene = gene[:-2]        # remove the "_X" suffix
+    return geneset.get(gene, [])
+
+
+# load a .gmt file with gene groups
+def loadGeneSetFile(fname):
+    f = open(fname, "rt")
+    geneToSet = {}
+    setToGenes = {}
+
+    for i, line in enumerate(f.xreadlines()):
+        items = line[:-1].split("\t")
+        setName = items[0]
+        genes = []
+        for item in items[2:]:
+            sub = item.split("///")
+            itm = []
+            for s in sub:
+                gene = s.strip()
+                geneToSet[gene] = geneToSet.get(gene, []) + [setName]
+                genes.append(gene)
+        setToGenes[setName] = (genes, len(items[2:]))
+    return geneToSet, setToGenes
+
 
 #test widget appearance
 if __name__=="__main__":
     import sys
     a=QApplication(sys.argv)
     ow=OWVizRank()
-    #ow = OWInteractionAnalysis()
-    #ow = OWGraphAttributeHistogram()
+##    ow = OWInteractionAnalysis()
+##    ow = OWGraphAttributeHistogram()
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()
