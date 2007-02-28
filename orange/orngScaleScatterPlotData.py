@@ -38,21 +38,22 @@ class orngScaleScatterPlotData(orngScaleData):
         classList = settingsDict.get("classList")
         jitterSize = settingsDict.get("jitterSize", 0.0)
         
-        if not validData: validData = self.getValidList(attrIndices)
+        if validData == None:
+            validData = self.getValidList(attrIndices)
 
-        if not classList:
+        if classList == None:
             #classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
             #if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: classList = (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0  # remove data with missing values and convert floats back to ints
             #else:                                                                classList = self.noJitteringScaledData[classIndex]  # for continuous attribute just add the values
-            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+            classList = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
 
         xArray = self.noJitteringScaledData[attrIndices[0]]
         yArray = self.noJitteringScaledData[attrIndices[1]]
         if jitterSize > 0.0:
-            xArray += (RandomArray.random(len(xArray))-0.5)*jitterSize
-            yArray += (RandomArray.random(len(yArray))-0.5)*jitterSize
-        data = Numeric.compress(validData, Numeric.array((xArray, yArray, classList)))
-        data = Numeric.transpose(data)
+            xArray += (numpy.random.random(len(xArray))-0.5)*jitterSize
+            yArray += (numpy.random.random(len(yArray))-0.5)*jitterSize
+        data = numpy.compress(validData, numpy.array((xArray, yArray, classList)), axis = 1)
+        data = numpy.transpose(data)
         return data
 
 

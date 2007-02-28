@@ -1,5 +1,6 @@
 import orangeom, orange
-import math, random, Numeric, LinearAlgebra
+import math, random, numpy
+from numpy.linalg import inv, eig      # matrix inverse and eigenvectors
 from orngScaleLinProjData import orngScaleLinProjData
 import orngVisFuncts
 
@@ -125,10 +126,10 @@ class FreeViz:
         if self.__class__ != FreeViz: from qt import qApp
        
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
-        positions = [Numeric.array([x[:2] for x in self.graph.anchorData])]
+        positions = [numpy.array([x[:2] for x in self.graph.anchorData])]
         neededSteps = 0
         while 1:
-            self.graph.anchorData = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices,
+            self.graph.anchorData = optimizer(numpy.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices,
                                               attractG = self.attractG, repelG = self.repelG, law = self.law,
                                               sigma2 = self.forceSigma, dynamicBalancing = self.forceBalancing, steps = steps,
                                               normalizeExamples = self.graph.normalizeExamples,
@@ -141,9 +142,9 @@ class FreeViz:
                 self.graph.potentialsBmp = None
                 self.graph.updateData()
                 
-            positions = positions[-49:]+[Numeric.array([x[:2] for x in self.graph.anchorData])]
+            positions = positions[-49:]+[numpy.array([x[:2] for x in self.graph.anchorData])]
             if len(positions)==50:
-                m = max(Numeric.sum((positions[0]-positions[49])**2, 1))
+                m = max(numpy.sum((positions[0]-positions[49])**2, 1))
                 if m < 1e-3: break
             if singleStep or (self.__class__ != FreeViz and self.cancelOptimization):
                 break
@@ -153,25 +154,25 @@ class FreeViz:
         dataSize = len(self.graph.rawdata)
         classCount = len(self.graph.rawdata.domain.classVar.values)
         validData = self.graph.getValidList(attrIndices)
-        selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
+        selectedData = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
 
-        if not XAnchors: XAnchors = Numeric.array([a[0] for a in anchorData], Numeric.Float)
-        if not YAnchors: YAnchors = Numeric.array([a[1] for a in anchorData], Numeric.Float)
+        if not XAnchors: XAnchors = numpy.array([a[0] for a in anchorData], numpy.Float)
+        if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
         
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "XAnchors": XAnchors, "YAnchors": YAnchors, "scaleFactor": self.graph.scaleFactor, "normalize": self.graph.normalizeExamples, "useAnchorData": 1})
-        projData = Numeric.transpose(transProjData)
+        projData = numpy.transpose(transProjData)
         x_positions = projData[0]; y_positions = projData[1]; classData = projData[2]
 
         averages = []
         for i in range(classCount):
             ind = classData == i
-            xpos = Numeric.compress(ind, x_positions);  ypos = Numeric.compress(ind, y_positions)
-            xave = Numeric.sum(xpos)/len(xpos);         yave = Numeric.sum(ypos)/len(ypos)
+            xpos = numpy.compress(ind, x_positions);  ypos = numpy.compress(ind, y_positions)
+            xave = numpy.sum(xpos)/len(xpos);         yave = numpy.sum(ypos)/len(ypos)
             averages.append((xave, yave))
 
         # compute the positions of all the points. we will try to move all points so that the center will be in the (0,0)
-        xCenterVector = -Numeric.sum(x_positions) / len(x_positions)   
-        yCenterVector = -Numeric.sum(y_positions) / len(y_positions)
+        xCenterVector = -numpy.sum(x_positions) / len(x_positions)   
+        yCenterVector = -numpy.sum(y_positions) / len(y_positions)
         centerVectorLength = math.sqrt(xCenterVector*xCenterVector + yCenterVector*yCenterVector)
 
         meanDestinationVectors = []
@@ -202,17 +203,17 @@ class FreeViz:
         #meanDestinationVectors = [(x + xCenterVector/5, y + yCenterVector/5) for (x,y) in meanDestinationVectors]   # center mean values
         meanDestinationVectors = [(x + xCenterVector, y + yCenterVector) for (x,y) in meanDestinationVectors]   # center mean values
 
-        FXs = Numeric.zeros(len(x_positions), Numeric.Float)        # forces
-        FYs = Numeric.zeros(len(x_positions), Numeric.Float)
+        FXs = numpy.zeros(len(x_positions), numpy.Float)        # forces
+        FYs = numpy.zeros(len(x_positions), numpy.Float)
         
         for c in range(classCount):
             ind = (classData == c)
-            Numeric.putmask(FXs, ind, meanDestinationVectors[c][0] - x_positions)
-            Numeric.putmask(FYs, ind, meanDestinationVectors[c][1] - y_positions)
+            numpy.putmask(FXs, ind, meanDestinationVectors[c][0] - x_positions)
+            numpy.putmask(FYs, ind, meanDestinationVectors[c][1] - y_positions)
             
         # compute gradient for all anchors
-        GXs = Numeric.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
-        GYs = Numeric.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
+        GXs = numpy.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
+        GYs = numpy.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
 
         m = max(max(abs(GXs)), max(abs(GYs)))
         GXs /= (20*m); GYs /= (20*m)
@@ -245,43 +246,43 @@ class FreeViz:
     def optimize_SLOW_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
         dataSize = len(self.graph.rawdata)
         validData = self.graph.getValidList(attrIndices)
-        selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
+        selectedData = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
 
-        if not XAnchors: XAnchors = Numeric.array([a[0] for a in anchorData], Numeric.Float)
-        if not YAnchors: YAnchors = Numeric.array([a[1] for a in anchorData], Numeric.Float)
+        if not XAnchors: XAnchors = numpy.array([a[0] for a in anchorData], numpy.Float)
+        if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
         
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "XAnchors": XAnchors, "YAnchors": YAnchors, "scaleFactor": self.graph.scaleFactor, "normalize": self.graph.normalizeExamples, "useAnchorData": 1})
-        projData = Numeric.transpose(transProjData)
-        x_positions = projData[0]; x_positions2 = Numeric.array(x_positions)
-        y_positions = projData[1]; y_positions2 = Numeric.array(y_positions)
-        classData = projData[2]  ; classData2 = Numeric.array(classData)
+        projData = numpy.transpose(transProjData)
+        x_positions = projData[0]; x_positions2 = numpy.array(x_positions)
+        y_positions = projData[1]; y_positions2 = numpy.array(y_positions)
+        classData = projData[2]  ; classData2 = numpy.array(classData)
 
-        FXs = Numeric.zeros(len(x_positions), Numeric.Float)        # forces
-        FYs = Numeric.zeros(len(x_positions), Numeric.Float)
-        GXs = Numeric.zeros(len(anchorData), Numeric.Float)        # gradients
-        GYs = Numeric.zeros(len(anchorData), Numeric.Float)
+        FXs = numpy.zeros(len(x_positions), numpy.Float)        # forces
+        FYs = numpy.zeros(len(x_positions), numpy.Float)
+        GXs = numpy.zeros(len(anchorData), numpy.Float)        # gradients
+        GYs = numpy.zeros(len(anchorData), numpy.Float)
         
         rotateArray = range(len(x_positions)); rotateArray = rotateArray[1:] + [0]
         for i in range(len(x_positions)-1):
-            x_positions2 = Numeric.take(x_positions2, rotateArray)
-            y_positions2 = Numeric.take(y_positions2, rotateArray)
-            classData2 = Numeric.take(classData2, rotateArray)
+            x_positions2 = numpy.take(x_positions2, rotateArray)
+            y_positions2 = numpy.take(y_positions2, rotateArray)
+            classData2 = numpy.take(classData2, rotateArray)
             dx = x_positions2 - x_positions
             dy = y_positions2 - y_positions
             rs2 = dx**2 + dy**2
-            rs2 += Numeric.where(rs2 == 0.0, 0.0001, 0.0)    # replace zeros to avoid divisions by zero
-            rs = Numeric.sqrt(rs2)
+            rs2 += numpy.where(rs2 == 0.0, 0.0001, 0.0)    # replace zeros to avoid divisions by zero
+            rs = numpy.sqrt(rs2)
             
-            F = Numeric.zeros(len(x_positions), Numeric.Float)
-            classDiff = Numeric.where(classData == classData2, 1, 0)
-            Numeric.putmask(F, classDiff, 150*self.attractG*rs2)
-            Numeric.putmask(F, 1-classDiff, -self.repelG/rs2)
+            F = numpy.zeros(len(x_positions), numpy.Float)
+            classDiff = numpy.where(classData == classData2, 1, 0)
+            numpy.putmask(F, classDiff, 150*self.attractG*rs2)
+            numpy.putmask(F, 1-classDiff, -self.repelG/rs2)
             FXs += F * dx / rs
             FYs += F * dy / rs
 
         # compute gradient for all anchors
-        GXs = Numeric.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
-        GYs = Numeric.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
+        GXs = numpy.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
+        GYs = numpy.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
 
         m = max(max(abs(GXs)), max(abs(GYs)))
         GXs /= (20*m); GYs /= (20*m)
@@ -301,7 +302,7 @@ class FreeViz:
 ##            classes = [int(x.getclass()) for x in self.graph.rawdata]
 ##            ai = self.graph.attributeNameIndex
 ##            attrIndices = [ai[label] for label in self.parentWidget.getShownAttributeList()]
-##            newEnergy = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
+##            newEnergy = orangeom.computeEnergy(numpy.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
 ##        if self.__class__ != FreeViz:
 ##            self.energyLabel.setText("Energy: %.3f" % newEnergy)
 ##            self.energyLabel.repaint()
@@ -316,57 +317,50 @@ class FreeViz:
             validData = self.graph.getValidList(attrIndices)
             self.graph.normalizeExamples = 0
             
-            selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
-            classData = Numeric.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
+            selectedData = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
+            classData = numpy.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
 
             if percentDataUsed != 100:
                 indices = orange.MakeRandomIndices2(self.graph.rawdata, 1.0-(float(percentDataUsed)/100.0))
-                selectedData = Numeric.compress(indices, selectedData)
-                classData = Numeric.compress(indices, classData)
+                selectedData = numpy.compress(indices, selectedData, axis = 1)
+                classData = numpy.compress(indices, classData)
             
-            selectedData = Numeric.transpose(selectedData)
+            selectedData = numpy.transpose(selectedData)
             
-            s = Numeric.sum(selectedData)/float(len(selectedData))  
+            s = numpy.sum(selectedData, axis=0)/float(len(selectedData))  
             selectedData -= s       # substract average value to get zero mean
 
             # define the Laplacian matrix
-            L = Numeric.zeros((len(selectedData), len(selectedData)))
+            L = numpy.zeros((len(selectedData), len(selectedData)))
             for i in range(len(selectedData)):
                 for j in range(i+1, len(selectedData)):
-                    L[i,j] = -(classData[i] != classData[j])
-                    L[j,i] = -(classData[i] != classData[j])
+                    L[i,j] = -int(classData[i] != classData[j])
+                    L[j,i] = -int(classData[i] != classData[j])
             
-            s = Numeric.sum(L)
+            s = numpy.sum(L, axis=0)      # doesn't matter which axis since the matrix L is symmetrical
             for i in range(len(selectedData)):
                 L[i,i] = -s[i]
 
             if self.useGeneralizedEigenvectors:
-                covarMatrix = Numeric.matrixmultiply(Numeric.transpose(selectedData), selectedData)
-                matrix = LinearAlgebra.inverse(covarMatrix)
-                matrix = Numeric.matrixmultiply(matrix, Numeric.transpose(selectedData))
+                covarMatrix = numpy.dot(numpy.transpose(selectedData), selectedData)
+                matrix = inv(covarMatrix)
+                matrix = numpy.dot(matrix, numpy.transpose(selectedData))
             else:
-                matrix = Numeric.transpose(selectedData)
+                matrix = numpy.transpose(selectedData)
             
             # compute selectedDataT * L * selectedData
             if SPCA:
-                matrix = Numeric.matrixmultiply(matrix, L)
+                matrix = numpy.dot(matrix, L)
                 
-            matrix = Numeric.matrixmultiply(matrix, selectedData)
+            matrix = numpy.dot(matrix, selectedData)
 
-            vals, vectors = LinearAlgebra.eigenvectors(matrix)
-            """
-            if vals.typecode() in Numeric.typecodes["Complex"]:     # the eigenvalues are complex numbers -> singluar covariance matrix
-                names = self.graph.attributeNames
-                attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
-                anchors = self.graph.createAnchors(len(attributes), attributes)
-                if setGraphAnchors: self.graph.anchorData = self.graph.createAnchors(len(attributes), attributes)
-                return [anchors[i][0] for i in range(len(attributes))], [anchors[i][1] for i in range(len(attributes))], (attributes, attrIndices)
-            """ 
-            firstInd  = list(vals).index(max(vals)); vals[firstInd] = -1   # save the index of the largest eigenvector
-            secondInd = list(vals).index(max(vals));                       # save the index of the second largest eigenvector
+            vals, vectors = eig(matrix)
+            firstInd  = list(vals).index(max(vals))     # save the index of the largest eigenvector
+            vals[firstInd] = -1   
+            secondInd = list(vals).index(max(vals));    # save the index of the second largest eigenvector
 
-            xAnchors = vectors[firstInd]
-            yAnchors = vectors[secondInd]
+            xAnchors = vectors[:, firstInd]
+            yAnchors = vectors[:, secondInd]
 
             lengthArr = xAnchors**2 + yAnchors**2
             m = math.sqrt(max(lengthArr))
@@ -375,28 +369,15 @@ class FreeViz:
             names = self.graph.attributeNames
             attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
 
-            """
-            temp = [(lengthArr[i], i) for i in range(len(lengthArr))]
-            temp.sort()
-
-            newXAnchors = []; newYAnchors = []; newAttributes = []; newIndices = []
-            for i in range(len(temp))[::-1]:        # move from the longest attribute to the shortest
-                newXAnchors.append(xAnchors[temp[i][1]])
-                newYAnchors.append(yAnchors[temp[i][1]])
-                newAttributes.append(attributes[temp[i][1]])
-                newIndices.append(attrIndices[temp[i][1]])
-
             if setGraphAnchors:
-                self.graph.setAnchors(newXAnchors, newYAnchors, newAttributes)
-            #print attrIndices, newXAnchors, newYAnchors
-
-            return newXAnchors, newYAnchors, (newAttributes, newIndices)
-            """
-            if setGraphAnchors:
-                self.graph.setAnchors(xAnchors, yAnchors, attributes)
-            return xAnchors, yAnchors, (attributes, attrIndices)
+                self.graph.setAnchors(list(xAnchors), list(yAnchors), attributes)
+            return list(xAnchors), list(yAnchors), (attributes, attrIndices)
         except:
             #print "unable to compute the inverse of a singular matrix."
+##            import sys
+##            type, val, traceback = sys.exc_info()
+##            sys.excepthook(type, val, traceback)
+            
             names = self.graph.attributeNames
             attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
             anchors = self.graph.createAnchors(len(attributes), attributes)
@@ -546,7 +527,7 @@ class FreeVizClassifier(orange.Classifier):
 
         self.FreeViz.graph.createProjectionAsNumericArray(indices, settingsDict = {"useAnchorData": 1})
         self.classifier = orange.P2NN(domain,
-                                      Numeric.transpose(Numeric.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawdata]])),
+                                      numpy.transpose(numpy.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawdata]])),
                                       graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=self.FreeViz.law)
 
     # for a given example run argumentation and find out to which class it most often fall        

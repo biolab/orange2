@@ -46,25 +46,28 @@ class orngScalePolyvizData(orngScaleLinProjData):
         jitterSize = settingsDict.get("jitterSize", 0.0)
         removeMissingData = settingsDict.get("removeMissingData", 1)
         
-        if not validData: validData = self.getValidList(attrIndices)
+        if validData == None:
+            validData = self.getValidList(attrIndices)
 
-        if not classList:
-            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]    
+        if classList == None:
+            classList = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]    
 
         if removeMissingData:
-            selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
-            if len(classList) != Numeric.shape(selectedData)[1]:
-                classList = Numeric.compress(validData, classList)
+            selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
+            if len(classList) != numpy.shape(selectedData)[1]:
+                classList = numpy.compress(validData, classList)
         else:
-            selectedData = Numeric.take(self.noJitteringScaledData, attrIndices)
+            selectedData = numpy.take(self.noJitteringScaledData, attrIndices, axis = 0)
         
-        if not sum_i: sum_i = self._getSum_i(selectedData)
-        if not (XAnchors and YAnchors):
+        if sum_i == None:
+            sum_i = self._getSum_i(selectedData)
+
+        if XAnchors == None or YAnchors == None:
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
 
-        xanchors = Numeric.zeros(Numeric.shape(selectedData), Numeric.Float)
-        yanchors = Numeric.zeros(Numeric.shape(selectedData), Numeric.Float)
+        xanchors = numpy.zeros(numpy.shape(selectedData), numpy.float)
+        yanchors = numpy.zeros(numpy.shape(selectedData), numpy.float)
         length = len(attrIndices)
 
         for i in range(length):
@@ -75,17 +78,17 @@ class orngScalePolyvizData(orngScaleLinProjData):
                 xanchors[i] = (1-selectedData[i]) * XAnchors[i] + selectedData[i] * XAnchors[(i+1)%length]
                 yanchors[i] = (1-selectedData[i]) * YAnchors[i] + selectedData[i] * YAnchors[(i+1)%length]
 
-        x_positions = Numeric.sum(Numeric.multiply(xanchors, selectedData)) / sum_i
-        y_positions = Numeric.sum(Numeric.multiply(yanchors, selectedData)) / sum_i
+        x_positions = numpy.sum(numpy.dot(xanchors, selectedData), axis=0) / sum_i
+        y_positions = numpy.sum(numpy.dot(yanchors, selectedData), axis=0) / sum_i
 
         if scaleFactor != 1.0:
             x_positions = x_positions * scaleFactor
             y_positions = y_positions * scaleFactor
         if jitterSize > 0.0:
-            x_positions += (RandomArray.random(len(x_positions))-0.5)*jitterSize
-            y_positions += (RandomArray.random(len(y_positions))-0.5)*jitterSize
+            x_positions += (numpy.random.random(len(x_positions))-0.5)*jitterSize
+            y_positions += (numpy.random.random(len(y_positions))-0.5)*jitterSize
 
-        return Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
+        return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
 
 
     def getProjectedPointPosition(self, attrIndices, values, settingsDict = {}):
@@ -95,12 +98,12 @@ class orngScalePolyvizData(orngScaleLinProjData):
         XAnchors = settingsDict.get("XAnchors")
         YAnchors = settingsDict.get("YAnchors")
     
-        if XAnchors and YAnchors:
-            XAnchors = Numeric.array(XAnchors)
-            YAnchors = Numeric.array(YAnchors)
+        if XAnchors != None and YAnchors != None:
+            XAnchors = numpy.array(XAnchors)
+            YAnchors = numpy.array(YAnchors)
         elif useAnchorData:
-            XAnchors = Numeric.array([val[0] for val in self.anchorData])
-            YAnchors = Numeric.array([val[1] for val in self.anchorData])
+            XAnchors = numpy.array([val[0] for val in self.anchorData])
+            YAnchors = numpy.array([val[1] for val in self.anchorData])
         else:
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
@@ -111,12 +114,12 @@ class orngScalePolyvizData(orngScaleLinProjData):
             #m = min(m, 0.0); M = max(M, 1.0); diff = max(M-m, 1e-10)
             #values = [(val-m) / float(diff) for val in values]
         
-        s = sum(Numeric.array(values))
+        s = sum(numpy.array(values))
         if s == 0: return [0.0, 0.0]
 
         length = len(values)
-        xanchors = Numeric.zeros(length, Numeric.Float)
-        yanchors = Numeric.zeros(length, Numeric.Float)
+        xanchors = numpy.zeros(length, numpy.float)
+        yanchors = numpy.zeros(length, numpy.float)
         for i in range(length):
             if attributeReverse[i]:
                 xanchors[i] = values[i] * XAnchors[i] + (1-values[i]) * XAnchors[(i+1)%length]
@@ -125,6 +128,6 @@ class orngScalePolyvizData(orngScaleLinProjData):
                 xanchors[i] = (1-values[i]) * XAnchors[i] + values[i] * XAnchors[(i+1)%length]
                 yanchors[i] = (1-values[i]) * YAnchors[i] + values[i] * YAnchors[(i+1)%length]
 
-        x_positions = Numeric.sum(Numeric.multiply(xanchors, values)) / float(s)
-        y_positions = Numeric.sum(Numeric.multiply(yanchors, values)) / float(s)
+        x_positions = numpy.sum(numpy.dot(xanchors, values), axis=0) / float(s)
+        y_positions = numpy.sum(numpy.dot(yanchors, values), axis=0) / float(s)
         return [x, y]

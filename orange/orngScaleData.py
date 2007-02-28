@@ -1,11 +1,10 @@
 # OWGraph.py
 # extension for the base graph class that is used in all visualization widgets
 #from OWGraph import *
-import sys, math, os.path, time
+import sys, math, time
 import orange
-
-import Numeric, RandomArray, MA
-from MA import transpose
+import numpy
+import numpy.core.ma as MA
 from OWTools import *
 import orngVisFuncts
 
@@ -51,7 +50,7 @@ def getVariableValueIndices(data, index, sortValuesForDiscreteAttrs = 1):
 class orngScaleData:
     def __init__(self):
         self.rawdata = None                     # input data
-        self.originalData = None                # input data in a Numeric array
+        self.originalData = None                # input data in a numpy array
         self.scaledData = None                  # scaled data to the interval 0-1
         self.noJitteringScaledData = None
         self.attributeNames = []                # list of attribute names from self.rawdata
@@ -67,15 +66,15 @@ class orngScaleData:
         
        
     
-    # Converts orange.ExampleTable to Numeric.array based on the attribute values.
+    # Converts orange.ExampleTable to numpy.array based on the attribute values.
     # rows correspond to examples, columns correspond to attributes, class values are left out
     # missing values and attributes of types other than orange.FloatVariable are masked
     def orng2Numeric(exampleTable):
         vals = exampleTable.native(0, substituteDK = "?", substituteDC = "?", substituteOther = "?")
-        array = Numeric.array(vals, Numeric.PyObject)
-        mask = Numeric.where(Numeric.equal(array, "?"), 1, 0)
-        Numeric.putmask(array, mask, 1e20)
-        return array.astype(Numeric.Float), mask
+        array = numpy.array(vals, numpy.object)
+        mask = numpy.where(numpy.equal(array, "?"), 1, 0)
+        numpy.putmask(array, mask, 1e20)
+        return array.astype(numpy.float), mask
 
     # ####################################################################
     # ####################################################################
@@ -86,7 +85,7 @@ class orngScaleData:
         sortValuesForDiscreteAttrs = args.get("sortValuesForDiscreteAttrs", 1)
 
         self.rawdata = data
-        RandomArray.seed(1,1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
+        numpy.random.seed(1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
                 
         if data == None or len(data) == 0:
             self.originalData = self.scaledData = self.noJitteringScaledData = self.validDataArray = None
@@ -104,15 +103,19 @@ class orngScaleData:
         if self.globalValueScaling == 1:
             (Min, Max) = self.getMinMaxValDomain(data, self.attributeNames)
 
-        arr = transpose(data.toMA("ac")[0])
+        arr = MA.transpose(data.toNumpyMA("ac")[0])
         averages = MA.average(arr, 1)
         averages = MA.filled(averages, 1)   # replace missing values with 1
-        self.validDataArray = Numeric.array(1-arr.mask(), Numeric.Int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
+        self.validDataArray = numpy.array(1-arr.mask, numpy.int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
         self.averages = averages.tolist()
-        arr = Numeric.array(MA.filled(arr, averages))
-        self.originalData = arr
-        self.scaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
-        self.noJitteringScaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
+##        arr = numpy.array(MA.filled(arr, averages))
+        arr2 = numpy.zeros(arr.shape)
+        for i in range(arr.shape[0]):
+            arr2[i] = MA.filled(arr[i], averages[i])
+        self.originalData = arr2
+        arr = arr2
+        self.scaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
+        self.noJitteringScaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
 
         # see if the values for discrete attributes have to be resorted 
         for index in range(len(data.domain)):
@@ -123,9 +126,9 @@ class orngScaleData:
                 for i in range(len(attr.values)):
                     if i != variableValueIndices[attr.values[i]]:
                         line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
-                        indices = [Numeric.where(line == val, 1, 0) for val in range(len(attr.values))]
+                        indices = [numpy.where(line == val, 1, 0) for val in range(len(attr.values))]
                         for i in range(len(attr.values)):
-                            Numeric.putmask(line, indices[i], variableValueIndices[attr.values[i]])
+                            numpy.putmask(line, indices[i], variableValueIndices[attr.values[i]])
                         arr[index] = line   # save the changed array
                         break
 
@@ -134,7 +137,7 @@ class orngScaleData:
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
                 self.offsets.append(0.0)
                 self.normalizers.append(count-1)
-                self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
+                self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(numpy.random.random(len(data)) - 0.5)
             else:
                 if self.scalingByVariance:
                     self.offsets.append(self.domainDataStat[index].avg)
@@ -152,12 +155,12 @@ class orngScaleData:
                     arr[index] = (arr[index] - float(Min)) / diff
 
                 if self.jitterContinuous:
-                    line = arr[index] + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))
-                    line = Numeric.absolute(line)       # fix values below zero
+                    line = arr[index] + self.jitterSize/50.0 * (0.5 - numpy.random.random(len(data)))
+                    line = numpy.absolute(line)       # fix values below zero
 
                     # fix values above 1
-                    ind = Numeric.where(line > 1.0, 1, 0)
-                    Numeric.putmask(line, ind, 2.0 - Numeric.compress(ind, line))
+                    ind = numpy.where(line > 1.0, 1, 0)
+                    numpy.putmask(line, ind, 2.0 - numpy.compress(ind, line))
                     self.scaledData[index] = line
                 else:
                     self.scaledData[index] = arr[index]
@@ -224,7 +227,7 @@ class orngScaleData:
         attr = data.domain[index]
         values = []
 
-        arr = Numeric.zeros([len(data)], Numeric.Float)
+        arr = numpy.zeros([len(data)], numpy.float)
         
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
@@ -239,7 +242,7 @@ class orngScaleData:
                 arr[i] = variableValueIndices[data[i][index].value]
                 arr = (arr*2 + 1) / float(2*count)
             if jitteringEnabled:
-                arr = arr + 0.5 - (self.jitterSize/(50.0*count))*RandomArray.random(len(data))
+                arr = arr + 0.5 - (self.jitterSize/(50.0*count))*numpy.random.random(len(data))
             
         # is the attribute continuous
         else:
@@ -310,14 +313,14 @@ class orngScaleData:
 
     # get array of 0 and 1 of len = len(self.rawdata). if there is a missing value at any attribute in indices return 0 for that example
     def getValidList(self, indices):
-        selectedArray = Numeric.take(self.validDataArray, indices)
-        arr = Numeric.add.reduce(selectedArray)
-        return Numeric.equal(arr, len(indices))
+        selectedArray = numpy.take(self.validDataArray, indices, axis = 0)
+        arr = numpy.add.reduce(selectedArray)
+        return numpy.equal(arr, len(indices))
 
     # get array with numbers that represent the example indices that have a valid data value
     def getValidIndices(self, indices):
         validList = self.getValidList(indices)
-        return Numeric.nonzero(validList)
+        return numpy.nonzero(validList)
         
     # returns a number from -max to max
     def rndCorrection(self, max):

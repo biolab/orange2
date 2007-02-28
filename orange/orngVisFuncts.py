@@ -1,8 +1,8 @@
-import orange, orngFSS, statc, time, random
+import orange, orngFSS, statc, random
 import copy
 from math import ceil
-from Numeric import *
-from LinearAlgebra import *
+##import numpy
+##from LinearAlgebra import *
 
 _differentClassPermutationsDict = {}
 _projectionListDict = {}
@@ -855,7 +855,7 @@ if __name__=="__main__":
     print "array with two randomly switched elements of [1,2,3,4,5] is", switchTwoElements([1,2,3,4,5])
 
     data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\microarray\cancer diagnostics\leukemia_tran.tab")
-    a = data.toNumeric("ac")[0]
+    a = data.toNumpy("ac")[0]
     c = S2NMeasure()
     c(data.domain.attributes[0].name, data)
     """

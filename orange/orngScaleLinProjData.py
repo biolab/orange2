@@ -28,12 +28,12 @@ class orngScaleLinProjData(orngScaleData):
         
     def createXAnchors(self, numOfAttrs):
         if not self.anchorDict.has_key(numOfAttrs):
-            self.anchorDict[numOfAttrs] = (Numeric.cos(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)), Numeric.sin(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)))
+            self.anchorDict[numOfAttrs] = (numpy.cos(numpy.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)), numpy.sin(numpy.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)))
         return self.anchorDict[numOfAttrs][0]
 
     def createYAnchors(self, numOfAttrs):
         if not self.anchorDict.has_key(numOfAttrs):
-            self.anchorDict[numOfAttrs] = (Numeric.cos(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)), Numeric.sin(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)))
+            self.anchorDict[numOfAttrs] = (numpy.cos(numpy.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)), numpy.sin(numpy.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs)))
         return self.anchorDict[numOfAttrs][1]
 
 
@@ -54,18 +54,18 @@ class orngScaleLinProjData(orngScaleData):
         if attrIndices != self.lastAttrIndices:
             print "getProjectedPointPosition. Warning: Possible bug. The set of attributes is not the same as when computing the whole projection"
         
-        if XAnchors and YAnchors:
-            XAnchors = Numeric.array(XAnchors)
-            YAnchors = Numeric.array(YAnchors)
-            if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
+        if XAnchors != None and YAnchors != None:
+            XAnchors = numpy.array(XAnchors)
+            YAnchors = numpy.array(YAnchors)
+            if anchorRadius == None: anchorRadius = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
         elif useAnchorData and self.anchorData:
-            XAnchors = Numeric.array([val[0] for val in self.anchorData])
-            YAnchors = Numeric.array([val[1] for val in self.anchorData])
-            if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
+            XAnchors = numpy.array([val[0] for val in self.anchorData])
+            YAnchors = numpy.array([val[1] for val in self.anchorData])
+            if anchorRadius == None: anchorRadius = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
         else:
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
-            anchorRadius = Numeric.ones(len(attrIndices), Numeric.Float)
+            anchorRadius = numpy.ones(len(attrIndices), numpy.float)
 
         if normalizeExample == 1 or (normalizeExample == None and self.normalizeExamples):
             m = min(values); M = max(values)
@@ -74,13 +74,13 @@ class orngScaleLinProjData(orngScaleData):
                 #m = min(m, 0.0); M = max(M, 1.0); diff = max(M-m, 1e-10)
                 #values = [(val-m) / float(diff) for val in values]
             
-            s = sum(Numeric.array(values)*anchorRadius)
+            s = sum(numpy.array(values)*anchorRadius)
             if s == 0: return [0.0, 0.0]
-            x = self.trueScaleFactor * Numeric.matrixmultiply(XAnchors*anchorRadius, values) / float(s)
-            y = self.trueScaleFactor * Numeric.matrixmultiply(YAnchors*anchorRadius, values) / float(s)
+            x = self.trueScaleFactor * numpy.dot(XAnchors*anchorRadius, values) / float(s)
+            y = self.trueScaleFactor * numpy.dot(YAnchors*anchorRadius, values) / float(s)
         else:
-            x = self.trueScaleFactor * Numeric.matrixmultiply(XAnchors, values)
-            y = self.trueScaleFactor * Numeric.matrixmultiply(YAnchors, values)
+            x = self.trueScaleFactor * numpy.dot(XAnchors, values)
+            y = self.trueScaleFactor * numpy.dot(YAnchors, values)
 
         return [x, y]
 
@@ -110,21 +110,21 @@ class orngScaleLinProjData(orngScaleData):
         if useAnchorData and self.anchorData:
             attrIndices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
 
-        if not validData:
+        if validData == None:
             validData = self.getValidList(attrIndices)
 
-        if not classList:
-            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+        if classList == None:
+            classList = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
 
         # if jitterSize is set below zero we use scaledData that has already jittered data
         if jitterSize < 0.0: data = self.scaledData
         else:                data = self.noJitteringScaledData
 
-        selectedData = Numeric.take(data, attrIndices)
+        selectedData = numpy.take(data, attrIndices, axis = 0)
         if removeMissingData:
-            selectedData = Numeric.compress(validData, selectedData)
-            if len(classList) != Numeric.shape(selectedData)[1]:
-                classList = Numeric.compress(validData, classList)    
+            selectedData = numpy.compress(validData, selectedData, axis = 1)
+            if len(classList) != numpy.shape(selectedData)[1]:
+                classList = numpy.compress(validData, classList)    
 
         """
         if minmaxVals:
@@ -141,56 +141,62 @@ class orngScaleLinProjData(orngScaleData):
                 selectedData[i] = (selectedData[i] - m) / float(M-m)
 
         if useAnchorData and self.anchorData:
-            XAnchors = Numeric.array([val[0] for val in self.anchorData])
-            YAnchors = Numeric.array([val[1] for val in self.anchorData])
-            r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
+            XAnchors = numpy.array([val[0] for val in self.anchorData])
+            YAnchors = numpy.array([val[1] for val in self.anchorData])
+            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
             if normalize == 1 or (normalize == None and self.normalizeExamples):
                 XAnchors *= r                                               
                 YAnchors *= r
-        elif (XAnchors and YAnchors):
-            XAnchors = Numeric.array(XAnchors); YAnchors = Numeric.array(YAnchors)
-            r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
+        elif (XAnchors != None and YAnchors != None):
+            XAnchors = numpy.array(XAnchors); YAnchors = numpy.array(YAnchors)
+            r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
         else:
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
-            r = Numeric.ones(len(XAnchors), Numeric.Float)
+            r = numpy.ones(len(XAnchors), numpy.float)
 
-        x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
-        y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
+        x_positions = numpy.dot(XAnchors, selectedData)
+        y_positions = numpy.dot(YAnchors, selectedData)
 
         if normalize == 1 or (normalize == None and self.normalizeExamples):
-            if not sum_i: sum_i = self._getSum_i(selectedData, useAnchorData, r)
+            if sum_i == None:
+                sum_i = self._getSum_i(selectedData, useAnchorData, r)
             x_positions /= sum_i
             y_positions /= sum_i
             self.trueScaleFactor = scaleFactor
         else:
-            if not removeMissingData: x_validData = Numeric.compress(validData, x_positions); y_validData = Numeric.compress(validData, y_positions)
-            else:                     x_validData = x_positions; y_validData = y_positions
+            if not removeMissingData:
+                x_validData = numpy.compress(validData, x_positions)
+                y_validData = numpy.compress(validData, y_positions)
+            else:
+                x_validData = x_positions
+                y_validData = y_positions
             self.trueScaleFactor = scaleFactor / math.sqrt(max(x_validData*x_validData + y_validData*y_validData))
 
-        self.unscaled_x_positions, self.unscaled_y_positions = Numeric.array(x_positions), Numeric.array(y_positions)
+        self.unscaled_x_positions = numpy.array(x_positions)
+        self.unscaled_y_positions = numpy.array(y_positions)
 
         if self.trueScaleFactor != 1.0:
             x_positions *= self.trueScaleFactor
             y_positions *= self.trueScaleFactor
     
         if jitterSize > 0.0:
-            x_positions += (RandomArray.random(len(x_positions))-0.5)*jitterSize
-            y_positions += (RandomArray.random(len(y_positions))-0.5)*jitterSize
+            x_positions += numpy.random.uniform(-jitterSize, jitterSize, len(x_positions))
+            y_positions += numpy.random.uniform(-jitterSize, jitterSize, len(y_positions))
 
         self.lastAttrIndices = attrIndices
-        return Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
+        return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
 
     
     # ##############################################################
     # function to compute the sum of all values for each element in the data. used to normalize.
     def _getSum_i(self, data, useAnchorData = 0, anchorRadius = None):
         if useAnchorData:
-            if not anchorRadius:
-                anchorRadius = Numeric.sqrt([a[0]**2+a[1]**2 for a in self.anchorData])
-            sum_i = Numeric.add.reduce(Numeric.transpose(Numeric.transpose(data)*anchorRadius))
+            if anchorRadius == None:
+                anchorRadius = numpy.sqrt([a[0]**2+a[1]**2 for a in self.anchorData])
+            sum_i = numpy.add.reduce(numpy.transpose(numpy.transpose(data)*anchorRadius))
         else:
-            sum_i = Numeric.add.reduce(data)
-        if len(Numeric.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
-            sum_i += Numeric.where(sum_i == 0, 1.0, 0.0)
+            sum_i = numpy.add.reduce(data)
+        if len(numpy.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
+            sum_i += numpy.where(sum_i == 0, 1.0, 0.0)
         return sum_i      

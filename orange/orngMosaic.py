@@ -1,9 +1,9 @@
 from orngCI import FeatureByCartesianProduct
 import orange, orngVisFuncts, orngCN2
 import time, operator
-import Numeric, orngContingency
+import numpy, orngContingency
 from math import sqrt, log, e
-import orngTest, orngStat
+import orngTest, orngStat, statc
 from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 from copy import copy
 
@@ -44,32 +44,56 @@ PROPORTION_TEST = 1
 AO_CROSSVALIDATION = 0
 AO_TESTONTRAIN = 1
 
+# classification method
+MOS_TOPPROJ = 0
+MOS_SEMINAIVE = 1
+MOS_COMBINING = 2
+
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
+
+def norm_factor(p):
+    max = 10.
+    min = -10.
+    z = 0.
+    eps = 0.001
+    while ((max-min)>eps):
+        pval = statc.zprob(z)
+        if pval>p:
+            max = z
+        if pval<p:
+            min = z
+        z = (max + min)/2.
+    return z
+
 
 class orngMosaic:
     def __init__(self):
         self.attributeCount = 2
         self.optimizationType = MAXIMUM_NUMBER_OF_ATTRS
-        self.qualityMeasure = INFORMATION_GAIN
+        self.qualityMeasure = GINI_INDEX
         self.attrDisc = MEAS_RELIEFF
         self.percentDataUsed = 100
 
         self.ignoreTooSmallCells = 1    # when computing chi-square and kramer's phi, ignore cells with less than 5 elements
 
-        self.testingMethod = 0
-        self.attributeOrderTestingMethod = 1
+        self.classificationMethod = MOS_SEMINAIVE
+        self.testingMethod = CROSSVALIDATION
+        self.attributeOrderTestingMethod = AO_TESTONTRAIN
         self.mValue = 2.0
         self.probabilityEstimation = M_ESTIMATE
         self.learnerName = "Mosaic Classifier"
         self.resultListIndices = []
-        #self.useOnlyRelevantInteractionsInArgumentation = 0
-        self.automaticallyRemoveWeakerArguments = 1
+
+        # classification
+        self.clsTau = 0.8               # semi naive bayes parameter
+        self.clsTopProjCount = 10       # number of top projections considered in classification
+        self.classConfidence = 90       # parameter in the combining way of classification
 
         self.timeLimit = 10
-        self.data = None
         self.evaluatedAttributes = None   # save last evaluated attributes
         self.stopOptimization = 0           # used to stop attribute and value order
 
+        self.data = None
         self.results = []
 
     def clearResults(self):
@@ -84,6 +108,7 @@ class orngMosaic:
         self.arguments = {}
         self.classVals = []
         self.cvIndices = None
+        self.contingencies = {}
 
         self.clearResults()
 
@@ -104,6 +129,8 @@ class orngMosaic:
         self.attributeNameIndex = dict([(self.data.domain[i].name, i) for i in range(len(self.data.domain))])
 
         if self.data.domain.classVar:
+            self.data = self.data.filterref(orange.Filter_hasClassValue())  # remove examples with missing classes
+
             self.classVals = [val for val in self.data.domain.classVar.values]
             self.aprioriDistribution  = orange.Distribution(self.data.domain.classVar.name, self.data)
             self.aprioriProbabilities = [nrOfCases / float(len(self.data)) for nrOfCases in self.aprioriDistribution]
@@ -153,12 +180,12 @@ class orngMosaic:
                     dict[val+"-"+classV] = cont[val][classV]
         return dict
 
-    def getContingencys(self, attrs, data = None):
-        if not data: data = self.data
-
+    def getContingencys(self, attrs):
         conts = {}
         for attr in attrs:
-            conts[attr] = orange.ContingencyAttrClass(attr, data)
+            conts[attr] = self.contingencies.get(attr, orange.ContingencyAttrClass(attr, self.data))
+
+        self.contingencies.update(conts)
         return conts
             
 
@@ -304,7 +331,7 @@ class orngMosaic:
 
         elif self.qualityMeasure == INFORMATION_GAIN:
             retVal = orange.MeasureAttribute_info(newFeature, self.data)
-            classEntropy = orngContingency.Entropy(Numeric.array([val for val in self.aprioriDistribution]))
+            classEntropy = orngContingency.Entropy(numpy.array([val for val in self.aprioriDistribution]))
             if classEntropy:
                 retVal = retVal * 100.0 / classEntropy
 
@@ -313,7 +340,7 @@ class orngMosaic:
             gains = [orange.MeasureAttribute_info(attr, self.data) for attr in attrs]
             retVal = new - sum(gains)
 
-            classEntropy = orngContingency.Entropy(Numeric.array([val for val in self.aprioriDistribution]))
+            classEntropy = orngContingency.Entropy(numpy.array([val for val in self.aprioriDistribution]))
             if classEntropy:
                 retVal = retVal * 100.0 / classEntropy
 
@@ -354,51 +381,53 @@ class orngMosaic:
     # 
     def findArguments(self, example = None):
         self.arguments = dict([(val, []) for val in self.classVals])
-
+        
         if not example or len(self.results) == 0: return None, None
         if not (self.data and self.data.domain.classVar and self.logits and self.classVals): return None, None
-
-##        if self.useOnlyRelevantInteractionsInArgumentation:
-##            self.classDistributionsForExample = {}
-##            for attr in self.data.domain.attributes:
-##                temp = self.data.filter({attr:example[attr]})
-##                self.classDistributionsForExample[attr.name] = orange.Distribution(self.data.domain.classVar, temp)
 
         if self.__class__.__name__ == "OWMosaicOptimization":
             from qt import qApp
 
+        usedArguments = 0
         for index in range(len(self.results)):
             (score, attrList, tryIndex, extraInfo) = self.results[index]
             args = self.evaluateArgument(example, attrList, score)      # call evaluation of a specific projection
             if not args: continue
-            
+
+            if self.classificationMethod == MOS_TOPPROJ and usedArguments >= self.clsTopProjCount:
+                break
+
             for val in self.classVals:
                 pos = self.getArgumentIndex(args[val][0], val)
                 self.arguments[val].insert(pos, (args[val][0], score, attrList, index, args[val][1]))
                 if self.__class__.__name__ == "OWMosaicOptimization" and val == str(self.classValueList.currentText()):
                     self.insertArgument(args[val][0], args[val][1], attrList, pos)
                     qApp.processEvents()
+            usedArguments += 1 
 
-        if self.automaticallyRemoveWeakerArguments:
-            self.removeWeakerArguments()
+        predictions = []
+        if self.classificationMethod == MOS_TOPPROJ:
+            for val in self.classVals:
+                predictions.append(sum([v[0] for v in self.arguments[val]]))
 
-        nrOfArguments = len(self.arguments.values()[0])
+        elif self.classificationMethod == MOS_SEMINAIVE:
+            self.argumentation_SemiNaive()      # remove combinations of attributes that are not dependent
+            for val in self.classVals:
+                v = self.aprioriDistribution[val]/float(len(self.data))
+                for arg in self.arguments[val]:
+                    v *= arg[0]
+                predictions.append(v)
 
-        predictions = [self.logits[val] + sum([v[0] for v in self.arguments[val]]) for val in self.classVals]
-        #predictions = []
-        #for val in self.classVals:
-        #    predictions.append(self.logits[val] + sum([v[0] for v in self.arguments[val]]))
+        elif self.classificationMethod == MOS_COMBINING:
+            self.argumentation_Combining()
+            for val in self.classVals:
+                value = self.logits[val] + sum([v[0] for v in self.arguments[val]])
+                predictions.append(e**value / (1 + e**value))       # use predictions from all arguments to classify an example
             
-        # use predictions from all arguments to classify an example
-        probabilities = [e**val / (1 + e**val) for val in predictions]
-        #probabilities = []
-        #for val in predictions:
-            #if val < -50:  p = 0
-            #else:          p = e**val / (1 + e**val)
-            #probabilities.append(p)
-
-        classValue = self.data.domain.classVar[probabilities.index(max(probabilities))]
-        dist = orange.DiscDistribution([val/float(sum(probabilities)) for val in probabilities])
+        classValue = self.data.domain.classVar[predictions.index(max(predictions))]
+        if sum(predictions) == 0:
+            predictions = [1]*len(predictions)
+        dist = orange.DiscDistribution([val/float(sum(predictions)) for val in predictions])
         dist.variable = self.data.domain.classVar
         return classValue, dist
 
@@ -417,32 +446,47 @@ class orngMosaic:
         lenData = len(self.data)
         lenSubData = len(subData)
 
-##        if self.useOnlyRelevantInteractionsInArgumentation and len(attrList) > 1:
-##            P = self.getInteractionImportanceProbability(attrList, [example[attr] for attr in attrList], subData)
-##            if P > 0.5: return None
-
         arguments = {}
 
         actualProbabilities = self.estimateClassProbabilities(self.data, example, attrList, subData)    # estimate probabilities for the example and given attribute list
-                
-        for i in range(len(self.aprioriDistribution)):
-            # compute log odds of P(c|ai)/P(c)
-            val = 0
-            if (1-actualProbabilities[i]) * self.aprioriProbabilities[i] > 0.0:
-                val = (actualProbabilities[i] * (1-self.aprioriProbabilities[i])) / ((1-actualProbabilities[i]) * self.aprioriProbabilities[i])
-                if val > 0: val = log(val)
-                else: val = -999.99
-            else: val = 999.99
 
-            # compute confidence interval
-            approxZero = 0.0001
-            aprioriPc0 = max(approxZero, self.aprioriProbabilities[i]); aprioriPc1 = max(approxZero, 1-self.aprioriProbabilities[i])
-            actualPc0  = max(approxZero, actualProbabilities[i]);  actualPc1  = max(approxZero, 1-actualProbabilities[i])
-            part1 = 1 / (len(self.data) * aprioriPc0 * aprioriPc1)
-            part2 = 1 / max(approxZero, lenSubData  * actualPc0  * actualPc1)
-            error = sqrt(max(0, part2 - part1)) * 1.64
+        if self.classificationMethod in [MOS_TOPPROJ, MOS_SEMINAIVE]:
+            d = {}
+            eps = 0.0
+            for i in range(len(self.aprioriDistribution)):
+                conts = self.getContingencys(attrList)
+                P_Ci = self.aprioriDistribution[i]/float(lenData)
+                prob = 1.0
+                for attr in attrList:
+                    prob *= self.contingencies[attr][example[attr]][i] / float(max(1,sum(self.contingencies[attr][example[attr]].values())))
+                eps += P_Ci * abs( actualProbabilities[i]/float(lenSubData) - (prob / P_Ci) )
+                                                                              
+            for i in range(len(self.aprioriDistribution)):
+                arguments[self.classVals[i]] = (actualProbabilities[i], (eps, lenSubData))
 
-            arguments[self.classVals[i]] = (val, error)
+        elif self.classificationMethod == MOS_COMBINING:
+            for i in range(len(self.aprioriDistribution)):
+                # compute log odds of P(c|ai)/P(c)
+                val = 0
+                if (1-actualProbabilities[i]) * self.aprioriProbabilities[i] > 0.0:
+                    val = (actualProbabilities[i] * (1-self.aprioriProbabilities[i])) / ((1-actualProbabilities[i]) * self.aprioriProbabilities[i])
+                    if val > 0: val = log(val)
+                    else: val = -999.99
+                else: val = 999.99
+
+                # compute confidence interval
+                approxZero = 0.0001
+                aprioriPc0 = max(approxZero, self.aprioriProbabilities[i]);
+                aprioriPc1 = max(approxZero, 1-self.aprioriProbabilities[i])
+                actualPc0  = max(approxZero, actualProbabilities[i]);
+                actualPc1  = max(approxZero, 1-actualProbabilities[i])
+                part1 = 1 / (len(self.data) * aprioriPc0 * aprioriPc1)
+                part2 = 1 / max(approxZero, lenSubData  * actualPc0  * actualPc1)
+                #error = sqrt(max(0, part2 - part1)) * 1.64
+                if self.classConfidence == 0: error = 0.
+                else:                         error = sqrt(max(0, part2 - part1)) * norm_factor(1-((1-float(self.classConfidence)/100.)/2.))
+
+                arguments[self.classVals[i]] = (val, error)
 
         return arguments
 
@@ -491,7 +535,7 @@ class orngMosaic:
         return actualProbabilities
 
 
-    def removeWeakerArguments(self):
+    def argumentation_Combining(self):
         if not self.arguments or not self.arguments.values(): return
 
         for classValue in self.arguments.keys():
@@ -501,7 +545,7 @@ class orngMosaic:
             for i in range(len(arguments)):
                 attrs = arguments[i][2]
                 attrs.sort()
-                argList[len(attrs)][tuple(attrs)] = (arguments[i][0], i)
+                argList[len(attrs)][tuple(attrs)] = (arguments[i][0], arguments[i][4], i)       # save arg val, error and arg index
 
             if len(argList[1]) == 0: return     # in case that we only evaluated projections with EXACTLY X attributes we cannot remove weak arguments
 
@@ -512,9 +556,16 @@ class orngMosaic:
                 for key in args.keys():
                     splits = orngVisFuncts.getPossibleSplits(list(key))
                     for split in splits:
-                        vals = [argList[len(v)].get(tuple(v), [None, None])[0] for v in split]
+                        vals = [argList[len(v)].get(tuple(v), [None, None, None])[0] for v in split]
+                        errors = [argList[len(v)].get(tuple(v), [None, None, None])[1] for v in split]
                         # if None in vals or abs(sum(vals)) >= abs(args[key][0]):       # this condition is not enough, because some elements in vals have + and some - signs which makes a combination better than individual attributes
-                        if None in vals or abs(sum(vals)) >= abs(args[key][0]) or not sum([abs(val) == val for val in vals]) in [0, len(vals)]:   # do all values in vals have the same sign
+                        if None in vals:        # some attrs have already been used
+                            args.pop(key)
+                            break
+                        sameSign = (sum([abs(val) == val for val in vals]) in [0, len(vals)])   # do all values in vals have the same sign
+                        partialVals = sum([abs(val) for val in vals] + errors)        # vals may have all - or all + values. errors are all +. to sum, we must make all vals +.
+                        complexVal = abs(args[key][0]) - args[key][1]       # value and error of the combination of attributes
+                        if not sameSign or partialVals >= complexVal:   
                             args.pop(key)   # remove the combination of attributes because a split exists, that produces a more important argument
                             break
                     if args.has_key(key):
@@ -539,20 +590,44 @@ class orngMosaic:
 
             #print [len(argList[1]), len(argList[2]), len(argList[3])]
             #assert False not in [a[a.keys()[i]] == a.values()[i] for i in range(len(a.keys()))]
-            indicesToKeep = []
-            for val, index in argList[1].values() + argList[2].values() + argList[3].values() + argList[4].values():
-                indicesToKeep.append(index)
+            indicesToKeep = [val[2] for val in argList[1].values() + argList[2].values() + argList[3].values() + argList[4].values()]
 
             # we remove all arguments that are not in indicesToKeep
-            indicesToKeep.sort()
-            arguments = self.arguments[classValue]
-            for j in range(len(arguments))[::-1]:
-                if len(indicesToKeep) == 0 or j != indicesToKeep[-1]:
-                    arguments.pop(j)
-                else: indicesToKeep.pop()
+            for i in range(len(arguments))[::-1]:       # we remove all arguments that are not in indicesToKeep
+                if i not in indicesToKeep:
+                    arguments.pop(i)
+
             
     # compute probability that the combination of attribute values in attrValues is significantly different from being independent
     # see Kononenko: Semi-naive Bayes
+    def argumentation_SemiNaive(self):
+        if not self.arguments or not self.arguments.values(): return
+
+        for classValue in self.arguments.keys():
+            # create a dict for arguments of different lengths. each dict has arguments of this length and corresponding scores
+            argList = {1: {}, 2: {}, 3:{}, 4:{}}
+            arguments = self.arguments[classValue]
+            for i in range(len(arguments)):
+                attrs = arguments[i][2]
+                argList[len(attrs)][tuple(attrs)] = (arguments[i][4], i)
+
+            if len(argList[1]) == 0: return     # in case that we only evaluated projections with EXACTLY X attributes we cannot remove weak arguments
+
+            for count in [4,3,2]:
+                for key in argList[count].keys():
+                    eps, Nab = argList[count][key][0]
+                    v = float(4*eps*eps*Nab)
+                    if v == 0 or 1/v > 1 - self.clsTau:
+                        argList[count].pop(key)
+
+            indicesToKeep = [val[1] for val in argList[1].values() + argList[2].values() + argList[3].values() + argList[4].values()]
+            
+            for i in range(len(arguments))[::-1]:       # we remove all arguments that are not in indicesToKeep
+                if i not in indicesToKeep:
+                    arguments.pop(i)
+                
+
+            
     def getInteractionImportanceProbability(self, attrList, attrValues, subData = None, contingencies = None, aprioriDistribution = None, subDataDistribution = None):
         assert len(attrList) == len(attrValues)
 
@@ -855,25 +930,13 @@ class MosaicVizRankLearner(orange.Learner):
 
 #test widget appearance
 if __name__=="__main__":
-    """
-    data = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\breastcancer2004.tab")
-    example = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\breastcancer2004-1 example 2.tab")
-    data = orange.ExampleTable(r"C:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\zoo.tab")
-    example = data
-    mosaic = orngMosaic()
-    mosaic.attributeCount= 3
-    mosaic.setData(data)
-    mosaic.probabilityEstimation = RELATIVE
-    #mosaic.useOnlyRelevantInteractionsInArgumentation = 0
-    mosaic.automaticallyRemoveWeakerArguments = 1
-    mosaic.evaluateProjections()
-    mosaic.findArguments(example[0])
-    """
     data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
     #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\datasets\microarray\brown\brown-imputed.tab")
     mosaic = orngMosaic()
     mosaic.setData(data)
     #ret = mosaic.findOptimalAttributeOrder(["spo- early", "heat 20"], 1) #optimizeValueOrder = 1
-    ret = mosaic.findOptimalAttributeOrder(["A11", "A13", "A7"], 1) #optimizeValueOrder = 1
-    print ret
+    #ret = mosaic.findOptimalAttributeOrder(["A11", "A13", "A7"], 1) #optimizeValueOrder = 1
+    mosaic.classificationMethod = MOS_COMBINING
+    mosaic.evaluateProjections()
+    classVal, prob = mosaic.findArguments(mosaic.data[25])
     
