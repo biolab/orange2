@@ -153,6 +153,7 @@ PVariable TEquiDistDiscretizer::constructVar(PVariable var)
   }
   
   TClassifierFromVar *tcfv = mlnew TClassifierFromVar(revar, var);
+  tcfv->transformUnknowns = true;
   tcfv->transformer = this; // rewrapping
   revar->getValueFrom = tcfv;
   return revar;
@@ -193,6 +194,7 @@ PVariable TThresholdDiscretizer::constructVar(PVariable var)
   evar->values->push_back(s);
 
   TClassifierFromVar *tcfv = mlnew TClassifierFromVar(revar, var);
+  tcfv->transformUnknowns = true;
   tcfv->transformer = this; // rewrapping
   revar->getValueFrom = tcfv;
   return revar;
@@ -255,6 +257,7 @@ PVariable TBiModalDiscretizer::constructVar(PVariable var)
   evar->values->push_back("between "+lstr+" and "+hstr);
 
   TClassifierFromVar *tcfv = mlnew TClassifierFromVar(revar, var);
+  tcfv->transformUnknowns = true;
   tcfv->transformer = this; // rewrapping
   revar->getValueFrom = tcfv;
   return revar;
@@ -354,6 +357,7 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var)
   } 
 
   TClassifierFromVar *tcfv = mlnew TClassifierFromVar(cl_revar, var);
+  tcfv->transformUnknowns = true;
   tcfv->transformer = this; // rewrapping
   revar->getValueFrom = tcfv; 
   return revar;
