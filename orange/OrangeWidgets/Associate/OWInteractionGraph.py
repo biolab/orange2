@@ -234,6 +234,14 @@ class OWInteractionGraph(OWWidget):
         if not data:
             return
         self.originalData = orange.Preprocessor_dropMissing(data)
+
+        self.information(0)
+        self.information(1)
+        if len(self.originalData) != len(data):
+            self.information("Examples with missing values were removed. Keeping %d of %d examples." % (len(data), len(self.originalData)), 0)
+        if self.originalData.domain.hasContinuousAttributes():
+            self.information("Continuous attributes were discretized using entropy discretization.", 1)
+
         self.dataSize = len(self.originalData)
 
         self.updateNewData(self.originalData)
@@ -243,7 +251,6 @@ class OWInteractionGraph(OWWidget):
         self.interactionMatrix = orngInteract.InteractionMatrix(data, dependencies_too=1)
 
         # save discretized data and repair invalid names
-        
         for attr in self.interactionMatrix.discData.domain.attributes:
             attr.name = attr.name.replace("ED_","")
             attr.name = attr.name.replace("D_","")
