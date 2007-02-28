@@ -618,11 +618,11 @@ class OWGraph(QwtPlot):
 
     # return two lists of 0's and 1's whether each point in (xData, yData) is selected or not
     def getSelectedPoints(self, xData, yData, validData):
-        import Numeric
-        total = Numeric.zeros(len(xData))
+        import numpy
+        total = numpy.zeros(len(xData))
         for curveKey in self.selectionCurveKeyList:
             total += self.curve(curveKey).getSelectedPoints(xData, yData, validData)
-        unselected = Numeric.equal(total, 0)
+        unselected = numpy.equal(total, 0)
         selected = 1 - unselected
         return selected.tolist(), unselected.tolist()
 

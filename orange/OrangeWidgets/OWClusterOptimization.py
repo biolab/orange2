@@ -5,7 +5,7 @@ from copy import copy
 from math import sqrt
 import OWGUI, OWDlgs
 import orngVisFuncts
-import Numeric, RandomArray
+import numpy
 
 VALUE = 0
 CLOSURE = 1
@@ -129,9 +129,9 @@ class ClusterOptimization(OWBaseWidget):
         
         # ###########################
         # MAIN TAB
-        self.optimizationBox = OWGUI.widgetBox(self.MainTab, " Evaluate ")
-        self.resultsBox = OWGUI.widgetBox(self.MainTab, " Projection List, Most Interesting First ")
-        self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, " Shown Details in Projections List " , orientation = "horizontal")
+        self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")
+        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection List, Most Interesting First")
+        self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, "Shown Details in Projections List" , orientation = "horizontal")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
         self.label1 = QLabel('Projections with ', self.buttonBox)
         self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
@@ -156,8 +156,8 @@ class ClusterOptimization(OWBaseWidget):
 
         # ##########################
         # SETTINGS TAB
-        self.jitteringBox = OWGUI.checkBox(self.SettingsTab, self, 'jitterDataBeforeTriangulation', 'Use data jittering', box = " Jittering options ", tooltip = "Use jittering if you get an exception when evaluating clusters. \nIt adds a small random noise to poins which fixes the triangluation problems.")
-        self.clusterEvaluationBox = OWGUI.widgetBox(self.SettingsTab, " Cluster detection settings ")
+        self.jitteringBox = OWGUI.checkBox(self.SettingsTab, self, 'jitterDataBeforeTriangulation', 'Use data jittering', box = "Jittering options", tooltip = "Use jittering if you get an exception when evaluating clusters. \nIt adds a small random noise to poins which fixes the triangluation problems.")
+        self.clusterEvaluationBox = OWGUI.widgetBox(self.SettingsTab, "Cluster detection settings")
         alphaBox = OWGUI.widgetBox(self.clusterEvaluationBox, orientation = "horizontal")
         OWGUI.checkBox(alphaBox, self, "useAlphaShapes", "Use alpha shapes. Alpha value is :  ", tooltip = "Break separated clusters with same class value into subclusters", callback = self.updateGraph)
         OWGUI.hSlider(alphaBox, self, "alphaShapesValue", minValue = 0.0, maxValue = 30, step = 1, callback = self.updateGraph, labelFormat="%.1f", ticks = 5, divideFactor = 10.0)
@@ -167,25 +167,25 @@ class ClusterOptimization(OWBaseWidget):
         self.distributionScaleCheck = OWGUI.checkBox(valueBox, self, "distributionScale", "Scale cluster values according to class distribution", tooltip = "Cluster value is (among other things) determined by the number of points inside the cluster. \nThis criteria is unfair in data sets with uneven class distributions.\nThis option takes this into an account by transforming the number of covered points into percentage of all points with the cluster class value.")
         self.considerDistanceCheck = OWGUI.checkBox(valueBox, self, "considerDistance", "Consider distance between clusters", tooltip = "If checked, cluster value is defined also by the distance between the cluster points and nearest points that belong to a different class")
 
-        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ordering ")
-        self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Miscellaneous Settings ")
+        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Heuristics for Attribute Ordering")
+        self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Miscellaneous Settings")
 
-        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrCont", box = " Ordering of Continuous Attributes", items = [val for (val, m) in contMeasures])
-        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrDisc", box = " Ordering of Discrete Attributes", items = [val for (val, m) in discMeasures])
+        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrCont", box = "Ordering of Continuous Attributes", items = [val for (val, m) in contMeasures])
+        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrDisc", box = "Ordering of Discrete Attributes", items = [val for (val, m) in discMeasures])
         
         self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
         self.minTableLenEdit = OWGUI.lineEdit(self.miscSettingsBox, self, "minExamples", "Minimum examples in data set:        ", orientation = "horizontal", tooltip = "Due to missing values, different subsets of attributes can have different number of examples. Projections with less than this number of examples will be ignored.", valueType = int)
 
         # ##########################
         # ARGUMENTATION tab        
-        self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
+        self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments")
         self.findArgumentsButton = OWGUI.button(self.argumentationStartBox, self, "Find arguments", callback = self.findArguments)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
         self.stopArgumentationButton = OWGUI.button(self.argumentationStartBox, self, "Stop searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
-        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
-        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for the selected class value ")
+        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = "Arguments for class:", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments for the selected class value")
         self.argumentList = QListBox(self.argumentBox)
         self.argumentList.setMinimumSize(200,200)
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
@@ -195,9 +195,9 @@ class ClusterOptimization(OWBaseWidget):
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.clusterClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
         OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ... ", items = ["... best evaluated groups", "... best groups for each class value"], tooltip = "When you wish to find arguments or classify an example, do you wish to search groups from the begining of the list\nor do you want to consider best groups for each class value. \nExplanation: For some class value evaluated groups might have significantly lower values than for other classes. \nIf you select 'best evaluated groups' you therefore won't even give a chance to this class value, \nsince its groups will be much lower in the list of evaluated groups.")
-        self.conditionCombo = OWGUI.comboBox(self.ClassificationTab, self, "conditionForArgument", box = "Condition for a cluster to be an argument for an example is that...", items = ["... the example lies inside the cluster", "... the example lies inside or near the cluster"], tooltip = "When searching for arguments or classifying an example we have to define when can a detected cluster be an argument for a class.\nDoes the point being classified have to lie inside that cluster or is it enough that it lies near it.\nIf nearness is enough than the point can be away from the cluster for the distance that is defined as an average distance between points inside the cluster." )
+        self.conditionCombo = OWGUI.comboBox(self.ClassificationTab, self, "conditionForArgument", box = "Condition for a cluster to be an argument for an example is that...", items = ["... the example lies inside the cluster", "... the example lies inside or near the cluster"], tooltip = "When searching for arguments or classifying an example we have to define when can a detected cluster be an argument for a class.\nDoes the point being classified have to lie inside that cluster or is it enough that it lies near it.\nIf nearness is enough than the point can be away from the cluster for the distance that is defined as an average distance between points inside the cluster.")
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
-        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Argument count ")
+        projCountBox = OWGUI.widgetBox(self.ClassificationTab, "Argument count")
         self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = ["1", "5", "10", "20", "40", "100", "All"])
         projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
         self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
@@ -205,9 +205,9 @@ class ClusterOptimization(OWBaseWidget):
 
         # ##########################
         # SAVE & MANAGE TAB
-        self.classesBox = OWGUI.widgetBox(self.ManageTab, " Select class values you wish to separate ")   
-        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Number of concurrently visualized attributes ")        
-        self.manageBox = OWGUI.widgetBox(self.ManageTab, " Manage projections")
+        self.classesBox = OWGUI.widgetBox(self.ManageTab, "Select class values you wish to separate")
+        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Number of concurrently visualized attributes")
+        self.manageBox = OWGUI.widgetBox(self.ManageTab, "Manage projections")
         
         self.classesList = QListBox(self.classesBox)
         self.classesList.setSelectionMode(QListBox.Multi)
@@ -414,7 +414,7 @@ class ClusterOptimization(OWBaseWidget):
     # for each point then return a float between 0 and 1
     def evaluatePointsInClusters(self):
         if self.clusterStabilityButton.isOn():
-            self.pointStability = Numeric.zeros(len(self.rawdata), Numeric.Float)
+            self.pointStability = numpy.zeros(len(self.rawdata), numpy.float)
             self.pointStabilityCount = [0 for i in range(len(self.rawdata.domain.classVar.values))]       # for each class value create a counter that will count the number of clusters for it
             
             (text, ok) = QInputDialog.getText('Qt Projection count', 'How many of the best projections do you want to consider?')
@@ -431,10 +431,10 @@ class ClusterOptimization(OWBaseWidget):
                     clusterClasses[self.allResults[i][CLASS][key]] = 1
                     vertices = self.allResults[i][VERTICES][key]
                     validData = self.graph.getValidList([self.graph.attributeNameIndex[self.allResults[i][ATTR_LIST][0]], self.graph.attributeNameIndex[self.allResults[i][ATTR_LIST][1]]])
-                    indices = Numeric.compress(validData, Numeric.array(range(len(self.rawdata))))
-                    indicesToOriginalTable = Numeric.take(indices, vertices)
-                    tempArray = Numeric.zeros(len(self.rawdata))
-                    Numeric.put(tempArray, indicesToOriginalTable, Numeric.ones(len(indicesToOriginalTable)))
+                    indices = numpy.compress(validData, numpy.array(range(len(self.rawdata))), axis = 1)
+                    indicesToOriginalTable = numpy.take(indices, vertices)
+                    tempArray = numpy.zeros(len(self.rawdata))
+                    numpy.put(tempArray, indicesToOriginalTable, numpy.ones(len(indicesToOriginalTable)))
                     self.pointStability += tempArray
                 for j in range(len(clusterClasses)):        # some projections may contain more clusters of the same class. we make sure we don't process this wrong
                     self.pointStabilityCount[j] += clusterClasses[j]
@@ -716,15 +716,15 @@ class ClusterOptimization(OWBaseWidget):
 
     """
     def interactionAnalysis(self):
-        from OWkNNOptimization import OWInteractionAnalysis, CLUSTER
+        from OWkNNOptimization import OWInteractionAnalysis, CLUSTER_POINT
         dialog = OWInteractionAnalysis(self, signalManager = self.signalManager)
-        dialog.setResults(self.shownResults, CLUSTER)
+        dialog.setResults(self.shownResults, CLUSTER_POINT)
         dialog.show()
 
     def graphProjectionQuality(self):
-        from OWkNNOptimization import OWGraphProjectionQuality, CLUSTER
+        from OWkNNOptimization import OWGraphProjectionQuality, CLUSTER_POINT
         dialog = OWGraphProjectionQuality(self, signalManager = self.signalManager)
-        dialog.setResults(self.allResults, CLUSTER)
+        dialog.setResults(self.allResults, CLUSTER_POINT)
         dialog.show()
     """
 
@@ -882,7 +882,7 @@ class ClusterOptimization(OWBaseWidget):
         if min(testExampleAttrVals) < 0.0 or max(testExampleAttrVals) > 1.0: return 0
 
         array = self.graph.createProjectionAsNumericArray([self.graph.attributeNameIndex[attr] for attr in attrList])
-        short = Numeric.transpose(Numeric.take(array, vertices))
+        short = numpy.transpose(numpy.take(array, vertices))
         
         [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, testExampleAttrVals)
 

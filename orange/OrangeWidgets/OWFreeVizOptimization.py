@@ -2,7 +2,7 @@ from OWBaseWidget import *
 from OWWidget import OWWidget
 from OWkNNOptimization import *
 import orange, math, random
-import OWGUI, orngVisFuncts, DESolver, Numeric
+import OWGUI, orngVisFuncts, DESolver, numpy
 from math import sqrt
 
 from orngScaleLinProjData import *
@@ -190,15 +190,15 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
     def setRestraints(self):
         if self.restrain:
-            positions = Numeric.array([x[:2] for x in self.graph.anchorData])
+            positions = numpy.array([x[:2] for x in self.graph.anchorData])
             attrList = self.getShownAttributeList()
 
             if self.restrain == 1:
-                positions = Numeric.transpose(positions) * Numeric.sum(positions**2,1)**-0.5
+                positions = numpy.transpose(positions) * numpy.sum(positions**2,1)**-0.5
                 self.graph.setAnchors(positions[0], positions[1], attrList)
                 #self.graph.anchorData = [(positions[0][i], positions[1][i], a) for i, a in enumerate(attrList)]
             else:
-                r = Numeric.sqrt(Numeric.sum(positions**2, 1))
+                r = numpy.sqrt(numpy.sum(positions**2, 1))
                 phi = 2*math.pi/len(r)
                 self.graph.anchorData = [(r[i] * math.cos(i*phi), r[i] * math.sin(i*phi), a) for i, a in enumerate(attrList)]
 
@@ -328,7 +328,7 @@ class RadvizSolver(DESolver.DESolver):
 
         ai = self.radviz.graph.attributeNameIndex
         self.attrIndices = [ai[attr] for attr in self.radviz.getShownAttributeList()]
-        self.data = Numeric.transpose(self.radviz.graph.scaledData).tolist()
+        self.data = numpy.transpose(self.radviz.graph.scaledData).tolist()
 
     def EnergyFunction(self, trial, bAtSolution):
         import orangeom

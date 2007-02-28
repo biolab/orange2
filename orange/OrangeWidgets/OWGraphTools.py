@@ -152,10 +152,10 @@ class SelectionCurve(QwtPlotCurve):
         self.pointArrayValid = 1
 
     def getSelectedPoints(self, xData, yData, validData):
-        import Numeric
+        import numpy
         self.createPointArray()
         region = QRegion(self.pointArray)
-        selected = Numeric.zeros(len(xData))
+        selected = numpy.zeros(len(xData))
 
         xMap = self.parentPlot().canvasMap(self.xAxis())
         yMap = self.parentPlot().canvasMap(self.yAxis())
@@ -242,7 +242,6 @@ class PolygonCurve(QwtPlotCurve):
         self.Pen = pen
         self.Brush = brush
         self.setStyle(QwtCurve.UserCurve)
-
         if xData != None and yData != None:
             self.setData(xData, yData)
 
