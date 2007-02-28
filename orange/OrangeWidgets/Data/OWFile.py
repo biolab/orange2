@@ -23,8 +23,9 @@ class OWSubFile(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name)
         OWSubFile.allFileWidgets.append(self)
 
-    def destroy(self):
+    def destroy(self, destroyWindow, destroySubWindows):
         OWSubFile.allFileWidgets.remove(self)
+        OWWidget.destroy(self, destroyWindow, destroySubWindows)
                  
     def activateLoadedSettings(self):
         # remove missing data set names
