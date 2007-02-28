@@ -265,40 +265,56 @@ class CanvasLine(QCanvasLine):
 
 
 class CanvasWidgetState(QCanvasRectangle):
-    def __init__(self, parent, canvas, view, pixmapArray):
-        apply(QCanvasRectangle.__init__, (self,canvas))
-        self.pixmapArray = pixmapArray
-        self.activePixmap = -1
-        self.text = ""
-        self.lastStateRect = QRect(0,0,0,0)
+    def __init__(self, parent, canvas, view, widgetIcons):
+        QCanvasRectangle.__init__(self, canvas)
+        self.widgetIcons = widgetIcons
         self.view = view
         self.parent = parent
+        self.setSize(100, 30)
+        
+        self.infoTexts = []
+        self.warningTexts = []
+        self.errorTexts = []
+        self.activeItems = []
 
-    def activatePixmap(self, index, text = ""):
-        self.activePixmap = index
-        self.text = text
-        self.updateTooltip()
-        if self.activePixmap >= 0: self.show()
-        else:                      self.hide()
-        self.view.repaintContents(QRect(self.x(), self.y(), self.pixmapArray[0].width(), self.pixmapArray[0].height()))
-        self.updatePosition()
+    def updateState(self, widgetState):
+        self.infoTexts = widgetState["Info"].values() 
+        self.warningTexts = widgetState["Warning"].values() 
+        self.errorTexts = widgetState["Error"].values() 
+        self.updateWidgetState()
 
     def drawShape(self, painter):
-        if self.activePixmap == -1: return
-        painter.drawPixmap(self.x(), self.y(), self.pixmapArray[self.activePixmap])
+        for (x,y,rect, pixmap, text) in self.activeItems:
+            painter.drawPixmap(x, y, pixmap)
+       
+    def addWidgetIcon(self, x, y, texts, iconName):
+        if not texts:
+            return 0
+        pixmap = self.widgetIcons[iconName]
+        rect = QRect(x, y, pixmap.width(), pixmap.height())
+        text = reduce(lambda x,y: x+'<br>'+y, texts)
+        QToolTip.add(self.view, rect, text)
+        self.activeItems.append((x, y, rect, pixmap, text))
+        return pixmap.width()
 
-    def removeTooltip(self):
-        QToolTip.remove(self.view, self.lastStateRect)
+    def removeTooltips(self):
+        for (x,y,rect, pixmap, text) in self.activeItems:
+            QToolTip.remove(self.view, rect)
 
-    def updateTooltip(self):
-        self.removeTooltip()
-        if self.activePixmap >= 0:
-            self.lastStateRect = QRect(self.x(), self.y(), self.pixmapArray[self.activePixmap].width(), self.pixmapArray[self.activePixmap].height())
-            QToolTip.add(self.view, self.lastStateRect, self.text)
-
-    def updatePosition(self):
-        self.updateTooltip()
-        self.move(self.parent.x() + 15, self.parent.y() - 25)
+    def updateWidgetState(self):
+        self.removeTooltips()
+        self.activeItems = []
+        count = int(self.infoTexts != []) + int(self.warningTexts != []) + int(self.errorTexts != [])
+        if not self.widgetIcons or count == 0: return
+        
+        startX = self.parent.x() + (self.parent.width()/2) - (count*self.widgetIcons["Info"].width()/2)
+        y = self.parent.y() - 25
+        self.move(startX, y)
+        off  = self.addWidgetIcon(startX, y, self.infoTexts, "Info")
+        off += self.addWidgetIcon(startX+off, y, self.warningTexts, "Warning")
+        off += self.addWidgetIcon(startX+off, y, self.errorTexts, "Error")
+        self.view.repaintContents(QRect(startX, y, 100, 30))
+        
         
 
 # #######################################
@@ -333,7 +349,8 @@ class CanvasWidget(QCanvasRectangle):
         self.viewYPos = 0 # tooltip placement inside canvasView
         self.lastRect = QRect(0,0,0,0)
         self.isProcessing = 0   # is this widget currently processing signals
-        self.widgetStateRect = CanvasWidgetState(self, canvas, view, [self.canvasDlg.errorIcon, self.canvasDlg.warningIcon])
+        self.widgetStateRect = CanvasWidgetState(self, canvas, view, self.canvasDlg.widgetIcons)
+        self.widgetStateRect.show()
         
         # import widget class and create a class instance
         code = compile("import " + widget.getFileName(), ".", "single")
@@ -376,20 +393,8 @@ class CanvasWidget(QCanvasRectangle):
 
         
     def refreshWidgetState(self):
-        widgetState = self.instance.widgetState
-        self.widgetStateRect.text = None
-
-        if widgetState:
-            currText = ""
-            for ind, arr in enumerate(widgetState):
-                if arr == []: continue
-                for (type, text) in arr:
-                    currText = currText + text + "<br><hr>"
-                self.widgetStateRect.activatePixmap(ind, currText[:-8])
-                return
-        else:
-            self.widgetStateRect.activatePixmap(-1)
-            self.widgetStateRect.updateTooltip()
+        self.widgetStateRect.updateState(self.instance.widgetState)
+        
 
     # get the list of connected signal names
     def getInConnectedSignalNames(self):
@@ -468,7 +473,7 @@ class CanvasWidget(QCanvasRectangle):
 
     def move(self, x, y):
         QCanvasRectangle.move(self, x, y)
-        self.widgetStateRect.updatePosition()
+        self.widgetStateRect.updateWidgetState()
 
 
     # move existing coorinates by dx, dy
