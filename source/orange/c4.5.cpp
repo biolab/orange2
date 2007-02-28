@@ -104,7 +104,7 @@ void dynloadC45(const char *pathname)
 {
   HINSTANCE c45Dll = LoadLibrary(pathname);
   if (!c45Dll)
-    raiseErrorWho("C45Loader", "cannot load %s", C45NAME);
+    raiseErrorWho("C45Loader", "cannot load %s (%s)", C45NAME, pathname);
 
   pc45data = getsym(c45Dll, "c45Data");
   c45learn = (learnFunc *)(getsym(c45Dll, "learn"));
