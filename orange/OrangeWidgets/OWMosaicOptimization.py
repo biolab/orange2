@@ -12,7 +12,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenList = [str(x) for x in resultsListLenNums]
     settingsList = ["attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
                     "timeLimit", "useTimeLimit", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount",
-                    "optimizeAttributeOrder", "optimizeAttributeValueOrder", "attributeOrderTestingMethod"]
+                    "optimizeAttributeOrder", "optimizeAttributeValueOrder", "attributeOrderTestingMethod",
+                    "classificationMethod", "classConfidence"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     #evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
@@ -20,6 +21,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def __init__(self, parentWidget = None, signalManager = None):
         OWBaseWidget.__init__(self, None, signalManager, "Mosaic Optimization Dialog")
         orngMosaic.__init__(self)
+
+        self.resize(375,550)
 
         self.setCaption("Qt Mosaic Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
@@ -30,7 +33,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.optimizeAttributeOrder = 0
         self.optimizeAttributeValueOrder = 0
         self.VizRankClassifierName = "Mosaic Learner"
-        self.useOnlyRelevantInteractionsInArgumentation = 0 # unused variable present in old ini files
+        self.wholeDataSet = None        # this is the full dataset. The self.data may contain only a fraction of this if we are drilling
                 
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
@@ -39,6 +42,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.useTimeLimit = 0
         
         self.attrLenDict = {}
+        self.shownResults = []
        
         self.loadSettings()
 
@@ -49,19 +53,21 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.SettingsTab = QVGroupBox(self)
         self.ManageTab = QVGroupBox(self)
         self.ArgumentationTab = QVGroupBox(self)
+        self.DrillingTab = QVGroupBox(self)
         self.ClassificationTab = QVGroupBox(self)
         
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
         self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         self.tabs.insertTab(self.ClassificationTab, "Classification")
-        self.tabs.insertTab(self.ManageTab, "Save")        
+        self.tabs.insertTab(self.DrillingTab, "Drilling")
+        self.tabs.insertTab(self.ManageTab, "Manage & Save")        
 
         # ###########################
         # MAIN TAB
-        self.optimizationBox = OWGUI.widgetBox(self.MainTab, " Evaluate ")
-        self.resultsBox = OWGUI.widgetBox(self.MainTab, " Projection List, Most Interesting Projections First ")
-        self.optimizeOrderBox = OWGUI.widgetBox(self.MainTab, " Attribute and Value Order ")
+        self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")
+        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection List, Most Interesting Projections First")
+        self.optimizeOrderBox = OWGUI.widgetBox(self.MainTab, "Attribute and Value Order")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
 
         self.label1 = QLabel('Projections with ', self.buttonBox)
@@ -85,37 +91,37 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure Projection Interestingness ", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure Projection Interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
 
-        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, " " )
+        self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore Small Cells" )
         self.ignoreSmallCellsCombo = OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
         
-        self.testingBox = OWGUI.widgetBox(self.SettingsTab, " Testing Method ")
+        self.testingBox = OWGUI.widgetBox(self.SettingsTab, "Testing Method")
         self.testingCombo = OWGUI.comboBox(self.testingBox, self, "testingMethod", items = ["10 fold cross validation", "70/30 separation 10 times "], tooltip = "Method for evaluating the class separation in the projection.")
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.testingBox, self, "percentDataUsed", "Percent of data used: ", items = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], sendSelectedValue = 1, valueType = int, tooltip = "In case that we have a large dataset the evaluation of each projection can take a lot of time.\nWe can therefore use only a subset of randomly selected examples, evaluate projection on them and thus make evaluation faster.")
         
-        OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = " Measure for Ranking Attributes ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = "Measure for Ranking Attributes", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
         self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing Method Used for Optimizing Attribute Orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
 
         # ##########################
         # ARGUMENTATION TAB
-        self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
+        self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments")
         self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments, tooltip = "Evaluate arguments for each possible class value using settings in the Classification tab.")
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
         self.stopArgumentationButton = OWGUI.button(self.argumentationBox, self, "Stop Searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
 
-        self.argumentsClassBox = OWGUI.widgetBox(self.ArgumentationTab, " Show Arguments For Class: ", orientation = "horizontal")
+        self.argumentsClassBox = OWGUI.widgetBox(self.ArgumentationTab, "Show Arguments For Class:", orientation = "horizontal")
         self.classValueList = OWGUI.comboBox(self.argumentsClassBox, self, "argumentationClassValue", tooltip = "Select the class value that you wish to see arguments for", callback = self.updateShownArguments)
         self.logitLabel = OWGUI.widgetLabel(self.argumentsClassBox, " ", labelWidth = 100)
 
-        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments/Odds Ratios For The Selected Class Value ")
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments/Odds Ratios For The Selected Class Value")
         self.argumentList = QListBox(self.argumentBox)
         self.argumentList.setMinimumSize(200,200)
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
-        self.resultsDetailsBox = OWGUI.widgetBox(self.ArgumentationTab, " Shown Details in Arguments List " , orientation = "horizontal")
+        self.resultsDetailsBox = OWGUI.widgetBox(self.ArgumentationTab, "Shown Details in Arguments List" , orientation = "horizontal")
         self.showConfidenceCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showConfidence', '95% Confidence Interval', callback = self.updateShownArguments, tooltip = "Show confidence interval of the argument.")
 
         # ##########################
@@ -123,31 +129,72 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'VizRankClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
         #self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
-        probBox = OWGUI.widgetBox(self.ClassificationTab, box = " Probability Estimation ")
+        probBox = OWGUI.widgetBox(self.ClassificationTab, box = "Probability Estimation")
         self.probCombo = OWGUI.comboBox(probBox, self, "probabilityEstimation", items = ["Relative Frequency", "Laplace", "m-Estimate"], callback = self.updateMestimateComboState)
 
         mValid = QDoubleValidator(self)
         mValid.setRange(0,10000,1)
         self.mEditBox = OWGUI.lineEdit(probBox, self, 'mValue', label='              Parameter for m-estimate:   ', orientation='horizontal', valueType = float, validator = mValid)
 
-        b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
-        OWGUI.checkWithSpin(b, self, "Use time limit:    ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
-        b2 = OWGUI.widgetBox(b, orientation = "horizontal")
-        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Class Prediction Settings ")
-        #OWGUI.checkBox(projCountBox, self, 'useOnlyRelevantInteractionsInArgumentation', 'Ignore arguments without relevant interactions', tooltip = "Consider only relevant interactions. Use Kononenko's criterion \nto find interacting attribute values (Igor Kononenko: Semi-naive Bayesian Classifier)")
-        OWGUI.checkBox(projCountBox, self, 'automaticallyRemoveWeakerArguments', 'Only consider projections with stong dependencies')
-        OWGUI.button(self.ClassificationTab, self, "Apply Changes", callback = self.resendLearner)
+        b = OWGUI.widgetBox(self.ClassificationTab, "Evaluating Time")
+        OWGUI.checkWithSpin(b, self, "Use time limit:    ", 1, 1000, "useTimeLimit", "timeLimit", "(minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
+        classBox = OWGUI.widgetBox(self.ClassificationTab, "For Classification Use...")
+        classMethodsCombo = OWGUI.comboBox(classBox, self, "classificationMethod", items = ["Top-ranked projections", "Semi-naive Bayes", "Naive Bayes with combining attribute values"], callback = self.updateClassMethodsCombo)
+
+        # top projection settings
+        self.classTopProjCount = OWGUI.widgetBox(classBox, orientation="horizontal")
+        OWGUI.comboBoxWithCaption(self.classTopProjCount, self, "clsTopProjCount", "Number of top projections used:", tooltip = "How many of the top projections do you want to consider in class prediction?", items = [1, 2, 3, 5, 10, 15, 20, 30, 50, 100], sendSelectedValue = 1, valueType = int)
+
+        # semi naive bayes parameters
+        self.classTau = OWGUI.widgetBox(classBox, orientation="horizontal")
+        OWGUI.comboBoxWithCaption(self.classTau, self, "clsTau", "Treshold value (tau):", tooltip = "Value above which we join attribute values.", items = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0], sendSelectedValue = 1, valueType = float)
+
+        # combining attribute values
+        self.classConfidenceBox = OWGUI.widgetBox(classBox, orientation="horizontal")
+        OWGUI.separator(self.classConfidenceBox, 20, 0)
+        OWGUI.spin(self.classConfidenceBox, self, "classConfidence", 0, 99, 1, label = 'Confidence Interval (%):    ', tooltip = 'Confidence interval used in deciding whether to use a set of attributes independently or dependently')
+        
+        OWGUI.button(self.ClassificationTab, self, "Resend Learner", callback = self.resendLearner, tooltip = "Resend learner with new settings. You need to press this \nonly when you are sending mosaic learner signal to other widgets.")
 
         # ##########################
+        # DRILLING TAB
+        drillingBox = OWGUI.widgetBox(self.DrillingTab, "Drilling Tree")
+        self.drillingTree = QListView(drillingBox)
+        self.drillingTree.setRootIsDecorated(1)
+        self.drillingTree.setAllColumnsShowFocus(1)
+        self.drillingTree.addColumn('Visualized Attributes')
+        self.drillingTree.addColumn('# inst.')        
+        self.drillingTree.setColumnWidth(0, 300)
+        self.drillingTree.setColumnWidthMode(0, QListView.Manual)
+        self.drillingTree.setColumnAlignment(0, QListView.AlignLeft)
+        self.drillingTree.setColumnWidth(1, 50)
+        self.drillingTree.setColumnWidthMode(1, QListView.Manual)
+        self.drillingTree.setColumnAlignment(1, QListView.AlignRight)
+        self.connect(self.drillingTree, SIGNAL("selectionChanged(QListViewItem *)"), self.drillSelectedItemChanged)
+        self.drillingItems = {}
+        self.drillUpdateInProgress = 0
+
+        drillingButt = OWGUI.widgetBox(self.DrillingTab, "")
+        OWGUI.button(drillingButt, self, "Explore Current Selection", callback = self.drillEploreCurrentSelection, tooltip = "Visualize only examples in the selected boxes and find interesting projections of them.")
+        
+        # ##########################
         # SAVE TAB
-        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, " Number of Concurrently Visualized Attributes ")
-        #self.dialogsBox = OWGUI.widgetBox(self.ManageTab, " Dialogs ")        
-        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
+        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of Concurrently Visualized Attributes")
+        self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
+        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, "Manage Projections")
         
         self.attrLenList = QListBox(self.visualizedAttributesBox)
         self.attrLenList.setSelectionMode(QListBox.Multi)
         self.attrLenList.setMinimumSize(60,60)
         self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
+
+        self.buttonBox7 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
+        OWGUI.button(self.buttonBox7, self, "Attribute Ranking", self.attributeAnalysis, debuggingEnabled = 0)
+        OWGUI.button(self.buttonBox7, self, "Attribute Interactions", self.interactionAnalysis, debuggingEnabled = 0)
+
+        self.buttonBox8 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")    
+        OWGUI.button(self.buttonBox8, self, "Graph Projection Scores", self.graphProjectionQuality, debuggingEnabled = 0)
+        OWGUI.button(self.buttonBox8, self, "Outlier Identification", self.identifyOutliers, debuggingEnabled = 0)
 
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
@@ -155,17 +202,15 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.clearButton = OWGUI.button(self.buttonBox5, self, "Clear results", self.clearResults)
+
             
         # ###########################
         self.statusBar = QStatusBar(self)
         self.controlArea.addWidget(self.statusBar)
         self.controlArea.activate()
-
-        self.resize(375,550)
-        #self.setMinimumWidth(375)
-        #self.tabs.setMinimumWidth(375)
-
+        
         self.updateMestimateComboState()
+        self.updateClassMethodsCombo()
         self.updateGUI()
 
     # ##############################################################    
@@ -221,7 +266,22 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def updateMestimateComboState(self):
         self.mEditBox.setEnabled(self.probabilityEstimation == M_ESTIMATE)
+
+    # based on selected classification method show or hide specific controls
+    def updateClassMethodsCombo(self):
+        self.classTopProjCount.hide()
+        self.classTau.hide()
+        self.classConfidenceBox.hide()
         
+        if self.classificationMethod == MOS_TOPPROJ:
+            self.classTopProjCount.show()
+        elif self.classificationMethod == MOS_SEMINAIVE:
+            self.classTau.show()
+        elif self.classificationMethod == MOS_COMBINING:
+            self.classConfidenceBox.show()
+        
+
+    # selected measure for attribute ranking has changed. recompute attribute importances        
     def removeEvaluatedAttributes(self):
         self.evaluatedAttributes = None
 
@@ -249,36 +309,51 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     def updateShownProjections(self, *args):
         self.resultList.clear()
         self.resultListIndices = []
+        self.shownResults = []
 
         for i in range(len(self.results)):
             if self.attrLenDict.has_key(len(self.results[i][ATTR_LIST])) and self.attrLenDict[len(self.results[i][ATTR_LIST])] == 1:
                 self.resultList.insertItem("%.3f : %s" % (self.results[i][SCORE], self.buildAttrString(self.results[i][ATTR_LIST])))
                 self.resultListIndices.append(i)
+                self.shownResults.append(self.results[i])
         qApp.processEvents()
         
         if self.resultList.count() > 0: self.resultList.setCurrentItem(0)
 
 
-    def setData(self, data):
+    def setData(self, data, onlyDrilling = 0):
         orngMosaic.setData(self, data)
+        if not onlyDrilling:
+            self.wholeDataSet = self.data
+            self.drillingTree.clear()
+            self.drillingItems = {}
+            self.drillingTree.setColumnWidth(0, self.drillingTree.width()-self.drillingTree.columnWidth(1)-4)
+
+            if self.wholeDataSet:
+                root = QListViewItem(self.drillingTree, "<root>", str(len(self.wholeDataSet)))
+                root.setOpen(1)
+                self.drillingTree.insertItem(root)
+                self.drillingItems[str(root)] = {"data": self.wholeDataSet}
+                self.drillingTree.setSelected(root, 1)            
+            
         self.setStatusBarText("")
         self.classValueList.clear()
         self.argumentList.clear()
         self.selectedClasses = []
                 
-        if not data: return
+        if not self.data: return
         
-        if hasattr(data, "name"): self.datasetName = data.name
+        if hasattr(self.data, "name"): self.datasetName = data.name
         else: self.datasetName = ""
 
-        if not data or not (data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete): return
+        if not (self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete): return
 
         # add class values
-        for val in getVariableValuesSorted(data, data.domain.classVar.name):
+        for val in getVariableValuesSorted(data, self.data.domain.classVar.name):
             self.classValueList.insertItem(val)
         self.updateShownArguments()
         
-        if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
+        if len(self.data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
 
 
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
@@ -458,7 +533,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def insertArgument(self, argScore, error, attrList, index):
         s = "%.3f " % argScore
-        if self.showConfidence: s += "+-%.2f " % error
+        if self.showConfidence and type(error) != tuple: s += "+-%.2f " % error
         s += "- " + self.buildAttrString(attrList)
         self.argumentList.insertItem(s, index)
            
@@ -466,9 +541,12 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.argumentList.clear()
         if len(self.arguments) == 0: return
         classVal = str(self.classValueList.currentText())
-        
         self.logitLabel.setText("log odds = %.2f" % self.logits.get(classVal, -1))
-        self.logitLabel.show()
+        
+        if self.classificationMethod == MOS_COMBINING:
+            self.logitLabel.show()
+        else:
+            self.logitLabel.hide()
 
         if not self.arguments.has_key(classVal): return
         for i in range(len(self.arguments[classVal])):
@@ -487,6 +565,149 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def stopArgumentationClick(self):
         self.cancelArgumentation = 1
+
+    # ##############################################################
+    # create different dialogs
+    def interactionAnalysis(self):
+        import OWkNNOptimization
+        dialog = OWkNNOptimization.OWInteractionAnalysis(self, signalManager = self.signalManager)
+        dialog.setResults(self.shownResults, OWkNNOptimization.VIZRANK_MOSAIC)
+        dialog.show()
+
+
+    def attributeAnalysis(self):
+        import OWkNNOptimization
+        dialog = OWkNNOptimization.OWGraphAttributeHistogram(self, signalManager = self.signalManager)
+        dialog.setResults(self.shownResults, OWkNNOptimization.VIZRANK_MOSAIC)
+        dialog.show()
+
+    def graphProjectionQuality(self):
+        import OWkNNOptimization
+        dialog = OWkNNOptimization.OWGraphProjectionQuality(self, signalManager = self.signalManager)
+        dialog.setResults(self.results, OWkNNOptimization.VIZRANK_MOSAIC)
+        dialog.show()
+
+    def identifyOutliers(self):
+        import OWkNNOptimization
+        dialog = OWkNNOptimization.OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.parentWidget, graph = None)
+        dialog.setData(self.results, self.data, OWkNNOptimization.VIZRANK_MOSAIC)
+        dialog.show()
+
+    def resizeEvent(self, ev):
+        OWBaseWidget.resizeEvent(self, ev)        
+        self.drillingTree.setColumnWidth(0, self.drillingTree.width()-self.drillingTree.columnWidth(1)-4)
+        
+
+    # ##############################################################
+    # drilling functions
+
+    # new element is added into the drillingTree
+    def drillEploreCurrentSelection(self):
+        if not self.wholeDataSet:
+            return
+        
+        if self.parentWidget.selectionConditionsHistorically == []:
+            QMessageBox.information(self, "Select some cells first", "To drill deeper you first have to select cells that are of interest to you\nby clicking them or selecting them by drawing a rectangle.", QMessageBox.Ok)
+            return
+
+        selectedIndices = self.parentWidget.getSelectedExamples(asExampleTable = 0)
+        selectedData = self.data.selectref(selectedIndices)
+        unselectedData = self.data.selectref(selectedIndices, negate = 1)
+        #self.parentWidget.cdata(selectedData, onlyDrilling = 1)
+        attrList = self.parentWidget.getShownAttributes()
+        
+        selectedItem = self.drillingTree.selectedItem()     # current selection
+        
+        shownAttrs = reduce(lambda x,y: x+', '+y, attrList)
+        newListItem = QListViewItem(selectedItem, shownAttrs)
+                
+        # if newListItem was the first child bellow the root we have to add another child that will actually show only selected examples in newListItem
+        if str(selectedItem.text(0)) == "<root>":
+            self.drillingItems[str(newListItem)] = {"selectedIndices": selectedIndices, "attrs": attrList, "selectionConditions": self.parentWidget.selectionConditions, "selectionConditionsHistorically": self.parentWidget.selectionConditionsHistorically}
+            newListItem.setText(1, str(len(self.data)))
+            newListItem.setOpen(1)
+            
+            newnewListItem = QListViewItem(newListItem, shownAttrs)
+            self.drillingItems[str(newnewListItem)] = {"attrs": attrList}
+            newnewListItem.setText(1, str(len(selectedData)))
+            newnewListItem.setOpen(1)
+            self.drillingTree.setSelected(newnewListItem, 1)
+        else:
+            self.drillingItems[str(selectedItem)] = {"selectedIndices": selectedIndices, "attrs": attrList, "selectionConditions": self.parentWidget.selectionConditions, "selectionConditionsHistorically": self.parentWidget.selectionConditionsHistorically}
+            self.drillingItems[str(newListItem)] = {"attrs": attrList}
+            newListItem.setText(1, str(len(selectedData)))
+            newListItem.setOpen(1)
+            self.drillingTree.setSelected(newListItem, 1)
+            
+    def drillUpdateSelection(self):
+        if self.drillUpdateInProgress: return
+        if not self.wholeDataSet: return
+        selectedItem = self.drillingTree.selectedItem()
+        if not selectedItem:
+            print "why is there no selection??"
+            return
+        if str(selectedItem.text(0)) == "<root>":
+            return
+
+        print "drillUpdateSelection"
+
+        #print self.drillingItems[str(selectedItem)]
+        attrList = self.parentWidget.getShownAttributes()
+
+        # if this is the last element in the tree, then update the element's values
+        if not selectedItem.firstChild():   
+            selectedItem.setText(0, reduce(lambda x,y: x+', '+y, attrList))
+            self.drillingItems[str(selectedItem)]["attrs"] = attrList
+            self.drillingItems[str(selectedItem)]["selectionConditions"] = self.parentWidget.selectionConditions
+            self.drillingItems[str(selectedItem)]["selectionConditionsHistorically"] = self.parentWidget.selectionConditionsHistorically
+
+        # add a sibling if we changed any value
+        else:       
+            if attrList != self.drillingItems[str(selectedItem)].get("attrs", []) or \
+                    self.parentWidget.selectionConditions != self.drillingItems[str(selectedItem)].get("selectionConditions", []) or \
+                    self.parentWidget.selectionConditionsHistorically != self.drillingItems[str(selectedItem)].get("selectionConditionsHistorically", []):
+                parent = selectedItem.parent()
+                newListItem = QListViewItem(parent, reduce(lambda x,y: x+', '+y, attrList))
+                self.drillingItems[str(newListItem)] = {"attrs": attrList}
+                self.drillingTree.setSelected(newListItem, 1)
+                
+
+    def drillSelectedItemChanged(self, newSelection):
+        print "drillSelectedItemChanged"
+        if not newSelection or str(newSelection.text(0)) == "<root>":
+            self.parentWidget.cdata(self.wholeDataSet, onlyDrilling = 1)
+            self.parentWidget.subsetdataHander(None)
+            return
+        
+        indices = []
+        parent = newSelection.parent()
+        while parent:
+            parentIndices = self.drillingItems[str(parent)].get("selectedIndices", None)
+            if parentIndices:
+                indices.insert(0, parentIndices)        # insert indices in reverse order
+            parent = parent.parent()
+                
+        selectedData = self.wholeDataSet
+        unselectedData = orange.ExampleTable(self.wholeDataSet.domain)
+        for ind in indices:
+            unselectedData.extend(selectedData.selectref(ind, negate = 1))
+            selectedData = selectedData.selectref(ind) 
+
+        self.drillUpdateInProgress = 1
+        
+        # set data
+        self.parentWidget.cdata(selectedData, onlyDrilling = 1)
+        self.parentWidget.subsetData = unselectedData        #self.parentWidget.subsetdataHander(unselectedData)
+        # set shown attributes
+        self.parentWidget.setShownAttributes(self.drillingItems[str(newSelection)].get("attrs", None))
+        # set selections
+        self.parentWidget.selectionConditions = self.drillingItems[str(newSelection)].get("selectionConditions", [])
+        self.parentWidget.selectionConditionsHistorically = self.drillingItems[str(newSelection)].get("selectionConditionsHistorically", [])
+        self.parentWidget.updateGraph()
+
+        self.drillUpdateInProgress = 0
+       
+
 
 #test widget appearance
 if __name__=="__main__":
