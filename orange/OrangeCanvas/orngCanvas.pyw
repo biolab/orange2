@@ -5,7 +5,7 @@
 from qt import *
 import sys, os, cPickle
 import orngTabs, orngDoc, orngDlgs, orngOutput, xmlParse
-import orange, user, orngMisc
+import user, orngMisc
 
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self,*args):
@@ -17,9 +17,14 @@ class OrangeCanvasDlg(QMainWindow):
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
 
         #self.setFocusPolicy(QWidget.StrongFocus)
-#        self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
-        self.canvasDir = os.path.split(os.path.abspath(__file__))[0]
-        self.orangeDir = self.canvasDir[:-13]
+        try:
+            self.canvasDir = os.path.split(os.path.abspath(__file__))[0]
+            self.orangeDir = self.canvasDir[:-13]
+        except:
+            import orange
+            self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
+            self.canvasDir = os.path.join(self.orangeDir, "OrangeCanvas")
+        
         self.widgetDir = os.path.join(self.orangeDir, "OrangeWidgets")
         if not os.path.exists(self.widgetDir):
             print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
@@ -54,14 +59,19 @@ class OrangeCanvasDlg(QMainWindow):
             sys.path.append(self.widgetDir)
 
         # create error and warning icons
+        informationIconName = os.path.join(self.canvasDir, "icons/triangle-blue.png")
+        warningIconName = os.path.join(self.canvasDir, "icons/triangle-orange.png")
         errorIconName = os.path.join(self.canvasDir, "icons/triangle-red.png")
-        warningIconName = os.path.join(self.canvasDir, "icons/triangle-blue.png")
-        if os.path.exists(errorIconName) and os.path.exists(warningIconName):
+        if os.path.exists(errorIconName) and os.path.exists(warningIconName) and os.path.exists(informationIconName):
             self.errorIcon = QPixmap(errorIconName)
             self.warningIcon = QPixmap(warningIconName)
+            self.informationIcon = QPixmap(informationIconName)
+            self.widgetIcons = {"Info": self.informationIcon, "Warning": self.warningIcon, "Error": self.errorIcon}
         else:
             self.errorIcon = None
             self.warningIcon = None
+            self.informationIcon = None
+            self.widgetIcons = None
             print "Unable to load all necessary icons. Please reinstall Orange."
         
         self.workspace = WidgetWorkspace(self)
@@ -162,7 +172,7 @@ class OrangeCanvasDlg(QMainWindow):
         try:
             import numpy
         except:
-            if QMessageBox.warning(self,'Orange Canvas','Several widgets now use numpy module, \nthat is not yet installed on this computer. \nTo download it for free click Ok.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+            if QMessageBox.warning(self,'Orange Canvas','Several widgets now use numpy module, \nthat is not yet installed on this computer. \nDo you wish to download it?',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
                 import webbrowser
                 webbrowser.open("http://sourceforge.net/project/showfiles.php?group_id=1369&package_id=175103&release_id=468153")
 
