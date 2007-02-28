@@ -10,9 +10,6 @@ import orange
 from string import *
 from orngSignalManager import *
 
-ERROR = 0
-WARNING = 1
-
 def unisetattr(self, name, value, grandparent):
     if "." in name:
         names = name.split(".")
@@ -137,7 +134,7 @@ class OWBaseWidget(QDialog):
         self.startTime = time.time()    # used in progressbar
         
         self.widgetStateHandler = None
-        self.widgetState = None
+        self.widgetState = {"Info":{}, "Warning":{}, "Error":{}}
     
         #the title
         self.setCaption(self.captionTitle)
@@ -173,7 +170,7 @@ class OWBaseWidget(QDialog):
     def restoreWidgetPosition(self):
         if self.savePosition:
             if getattr(self, "widgetXPosition", None) != None and getattr(self, "widgetYPosition", None) != None:
-                #print self.title, "restoring position", self.widgetXPosition, self.widgetYPosition
+##                print self.title, "restoring position", self.widgetXPosition, self.widgetYPosition
                 self.move(self.widgetXPosition, self.widgetYPosition)
             if getattr(self,"widgetWidth", None) != None and getattr(self,"widgetHeight", None) != None:
                 self.resize(self.widgetWidth, self.widgetHeight)
@@ -190,6 +187,7 @@ class OWBaseWidget(QDialog):
         if self.savePosition:
             self.widgetWidth = self.width()
             self.widgetHeight = self.height()
+##            print self.title, "saving resize", self.widgetWidth, self.widgetHeight
             
 
     # when widget is moved, save new x and y position into widgetXPosition and widgetYPosition. some widgets can put this two
@@ -199,7 +197,7 @@ class OWBaseWidget(QDialog):
         if self.savePosition:
             self.widgetXPosition = ev.pos().x()
             self.widgetYPosition = ev.pos().y()
-            #print self.title, "saving position", self.widgetXPosition, self.widgetYPosition
+##            print self.title, "saving position", self.widgetXPosition, self.widgetYPosition
 
     # set widget state to hidden
     def hideEvent(self, ev):
@@ -483,7 +481,8 @@ class OWBaseWidget(QDialog):
                 qApp.restoreOverrideCursor()
                 self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
-        if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
+        if self.processingHandler:
+            self.processingHandler(self, 0)    # remove focus from this widget
         self.needProcessing = 0
 
     # set new data from widget widgetFrom for a signal with name signalName
@@ -595,42 +594,37 @@ class OWBaseWidget(QDialog):
 
         
     def keyPressEvent(self, e):
-        if e.key() != 0x1030:
-            QDialog.keyPressEvent(self, e)
-        else:
+        if e.key() == 0x1030:
             self.openWidgetHelp()
-#            e.ignore()
+#            e.ignore()            
+        else:
+            QDialog.keyPressEvent(self, e)
 
-    def information(self, text = None):
-        self.printEvent("Information", text)
+    def information(self, text = None, id = 0):
+        self.setState("Info", text, id)
+        if text and type(text) == str and not self.widgetStateHandler:
+            self.printEvent("Info", text)
 
-    def warning(self, text = "", code = 0):
-        self.setState(WARNING, text, code)
-        
+    def warning(self, text = "", id = 0):
+        self.setState("Warning", text, id)
         if text and type(text) == str and not self.widgetStateHandler:
             self.printEvent("Warning", text)
 
-    def error(self, text = "", code = 0):
-        self.setState(ERROR, text, code)
-
+    def error(self, text = "", id = 0):
+        self.setState("Error", text, id)
         if text and type(text) == str and not self.widgetStateHandler:
             self.printEvent("Error", text)
 
-    def setState(self, stateType, text, code):
-        if not self.widgetState: self.widgetState = [[], []]
-
+    def setState(self, stateType, text, id):
         if type(text) == int:
-            code = text; text = ""        # when we want to remove an error we can call simply error(int_val). in this case text will actually be an integer
+            id = text; text = ""        # when we want to remove an error we can call simply error(int_val). in this case text will actually be an integer
 
-        if not text and code == 0: self.widgetState[stateType] = []
+        if not text:
+            if self.widgetState[stateType].has_key(id):
+                self.widgetState[stateType].pop(id)
         else:
-            for (c, t) in self.widgetState[stateType]:
-                if c == code: self.widgetState[stateType].remove((c,t))
-            if text:
-                self.widgetState[stateType].append((code, text))
-
-        if self.widgetState == [[],[]]: self.widgetState = None
-
+            self.widgetState[stateType][id] = text
+        
         if self.widgetStateHandler:
             self.widgetStateHandler()
         qApp.processEvents()
