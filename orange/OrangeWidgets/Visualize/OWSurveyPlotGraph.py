@@ -34,7 +34,7 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         #if self.tooltipKind == DONT_SHOW_TOOLTIPS: MyQToolTip.tip(self.tooltip, QRect(0,0,0,0), "")
 
 
-        if not self.noJitteringScaledData or len(self.noJitteringScaledData) == 0 or len(labels) == 0:
+        if self.noJitteringScaledData == None or len(self.noJitteringScaledData) == 0 or len(labels) == 0:
             self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
             return

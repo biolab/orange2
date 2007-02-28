@@ -193,8 +193,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
 
-        XAnchorPositions = Numeric.zeros([length, dataSize], Numeric.Float)
-        YAnchorPositions = Numeric.zeros([length, dataSize], Numeric.Float)
+        XAnchorPositions = numpy.zeros([length, dataSize], numpy.float)
+        YAnchorPositions = numpy.zeros([length, dataSize], numpy.float)
         XAnchor = self.createXAnchors(length)
         YAnchor = self.createYAnchors(length)
 
@@ -204,19 +204,19 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             XAnchorPositions[i] = Xdata
             YAnchorPositions[i] = Ydata
 
-        XAnchorPositions = Numeric.swapaxes(XAnchorPositions, 0,1)
-        YAnchorPositions = Numeric.swapaxes(YAnchorPositions, 0,1)
+        XAnchorPositions = numpy.swapaxes(XAnchorPositions, 0,1)
+        YAnchorPositions = numpy.swapaxes(YAnchorPositions, 0,1)
             
-        selectedData = Numeric.take(self.scaledData, indices)
-        sum_i = Numeric.add.reduce(selectedData)
+        selectedData = numpy.take(self.scaledData, indices, axis = 0)
+        sum_i = numpy.add.reduce(selectedData)
 
         # test if there are zeros in sum_i
-        if len(Numeric.nonzero(sum_i)) < len(sum_i):
-            add = Numeric.where(sum_i == 0, 1.0, 0.0)
+        if len(numpy.nonzero(sum_i)) < len(sum_i):
+            add = numpy.where(sum_i == 0, 1.0, 0.0)
             sum_i += add
 
-        x_positions = Numeric.sum(Numeric.swapaxes(XAnchorPositions * Numeric.swapaxes(selectedData, 0,1), 0,1)) * self.scaleFactor / sum_i
-        y_positions = Numeric.sum(Numeric.swapaxes(YAnchorPositions * Numeric.swapaxes(selectedData, 0,1), 0,1)) * self.scaleFactor / sum_i
+        x_positions = numpy.sum(numpy.swapaxes(XAnchorPositions * numpy.swapaxes(selectedData, 0,1), 0,1), axis=0) * self.scaleFactor / sum_i
+        y_positions = numpy.sum(numpy.swapaxes(YAnchorPositions * numpy.swapaxes(selectedData, 0,1), 0,1), axis=0) * self.scaleFactor / sum_i
         validData = self.getValidList(indices)      
 
         for i in range(dataSize):
@@ -506,7 +506,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if not validData: validData = self.getValidList(attrIndices)
         
         array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
-        array = Numeric.transpose(array)
+        array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)
     
 
@@ -556,7 +556,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.polyvizWidget.progressBarInit()
 
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+        classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
         allAttrReverse = {}    # dictionary where keys are the number of attributes and the values are dictionaries with all reverse orders for this number of attributes
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
 
@@ -588,8 +588,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     totalPermutations = len(indPermutations.values())*len(attrReverse)
 
                     validData = self.getValidList(indices)
-                    classList = Numeric.compress(validData, classListFull)
-                    selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, indices))
+                    classList = numpy.compress(validData, classListFull)
+                    selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, indices, axis = 0))
                     sum_i = self._getSum_i(selectedData)
 
                     tempList = []
@@ -644,7 +644,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         numClasses = len(self.rawdata.domain.classVar.values)
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
-        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+        classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
         allAttrReverse = {}    # dictionary where keys are the number of attributes and the values are dictionaries with all reverse orders for this number of attributes
         startTime = time.time()
 
@@ -685,8 +685,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     totalPermutations = len(indPermutations.values())*len(attrReverse)
 
                     validData = self.getValidList(attrs)
-                    classList = Numeric.compress(validData, classListFull)
-                    selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
+                    classList = numpy.compress(validData, classListFull)
+                    selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, attrs, axis = 0))
                     sum_i = self._getSum_i(selectedData)
 
                     tempList = []
@@ -739,7 +739,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         # variables and domain for the table
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
-        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+        classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
         allAttrReverse = {}
         
         optimizedProjection = 1
@@ -790,7 +790,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     XAnchors = anchorList[count-3][0]
                     YAnchors = anchorList[count-3][1]
                     validData = self.getValidList(projections[0][0])
-                    classList = Numeric.compress(validData, classListFull)
+                    classList = numpy.compress(validData, classListFull)
                     
                     tempList = []
                     for (testProj, reverse) in projections:

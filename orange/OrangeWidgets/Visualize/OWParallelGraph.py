@@ -6,7 +6,6 @@ from OWGraph import *
 from OWDistributions import *
 from orngScaleData import *
 from statc import pearsonr
-from MLab import mean, std
 
 NO_STATISTICS = 0
 MEANS  = 1
@@ -275,31 +274,31 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Continuous:
                     data.append([()])
                     continue  # only for continuous attributes
-                array = Numeric.compress(Numeric.equal(self.validDataArray[indices[i]], 1), self.scaledData[indices[i]])  # remove missing values
+                array = numpy.compress(numpy.equal(self.validDataArray[indices[i]], 1), self.scaledData[indices[i]])  # remove missing values
                 
                 if classNameIndex == -1 or continuousClass:    # no class
                     if self.showStatistics == MEANS:
-                        m = mean(array)
-                        dev = std(array)
+                        m = array.mean()
+                        dev = array.std()
                         data.append([(m-dev, m, m+dev)])
                     elif self.showStatistics == MEDIAN:
-                        sorted = Numeric.sort(array)
+                        sorted = numpy.sort(array)
                         data.append([(sorted[int(len(sorted)/4.0)], sorted[int(len(sorted)/2.0)], sorted[int(len(sorted)*0.75)])])
                 else:
                     curr = []
                     classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                     for c in range(len(classValues)):
                         scaledVal = ((classValueIndices[classValues[c]] * 2) + 1) / float(2*len(classValueIndices))
-                        nonMissingValues = Numeric.compress(Numeric.equal(self.validDataArray[indices[i]], 1), self.noJitteringScaledData[classNameIndex])  # remove missing values
-                        arr_c = Numeric.compress(Numeric.equal(nonMissingValues, scaledVal), array)
+                        nonMissingValues = numpy.compress(numpy.equal(self.validDataArray[indices[i]], 1), self.noJitteringScaledData[classNameIndex])  # remove missing values
+                        arr_c = numpy.compress(numpy.equal(nonMissingValues, scaledVal), array)
                         if len(arr_c) == 0:
                             curr.append(()); continue
                         if self.showStatistics == MEANS:
-                            m = mean(arr_c)
-                            dev = std(arr_c)
+                            m = arr_c.mean()
+                            dev = arr_c.std()
                             curr.append((m-dev, m, m+dev))
                         elif self.showStatistics == MEDIAN:
-                            sorted = Numeric.sort(arr_c)
+                            sorted = numpy.sort(arr_c)
                             curr.append((sorted[int(len(arr_c)/4.0)], sorted[int(len(arr_c)/2.0)], sorted[int(len(arr_c)*0.75)]))
                     data.append(curr)
 

@@ -7,7 +7,7 @@ from copy import copy
 import time
 from operator import add
 from math import *
-from OWClusterOptimization import *
+##from OWClusterOptimization import *
 from orngScaleLinProjData import *
 import orngVisFuncts
 
@@ -39,7 +39,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
-        self.clusterOptimization = None
+##        self.clusterOptimization = None
         self.widget = widget
 
         # moving anchors manually
@@ -56,12 +56,12 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.tooltipKind = 0        # index in ["Show line tooltips", "Show visible attributes", "Show all attributes"]
         self.tooltipValue = 0       # index in ["Tooltips show data values", "Tooltips show spring values"]
         self.scaleFactor = 1.0
-        self.showClusters = 0
+##        self.showClusters = 0
         self.showAttributeNames = 1
 
         self.showKNN = 0   # widget sets this to 1 or 2 if you want to see correct or wrong classifications
         self.insideColors = None
-        self.clusterClosure = None
+##        self.clusterClosure = None
 
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
@@ -122,7 +122,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             # draw dots at anchors
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
             self.anchorsAsVectors = not self.normalizeExamples # min([x[0]**2+x[1]**2 for x in self.anchorData]) < 0.99
-            self.shownLabels = [a[2] for a in shownAnchorData]
 
             if self.anchorsAsVectors:
                 r=self.hideRadius**2/100
@@ -163,7 +162,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         dataSize = len(self.rawdata)
         validData = self.getValidList(indices)
         transProjData = self.createProjectionAsNumericArray(indices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "normalize": self.normalizeExamples, "jitterSize": -1, "useAnchorData": 1, "removeMissingData": 0})
-        projData = Numeric.transpose(transProjData)
+        projData = numpy.transpose(transProjData)
         x_positions = projData[0]
         y_positions = projData[1]
 
@@ -173,32 +172,32 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             offsets = [self.offsets[i] for i in indices]
             normalizers = [self.normalizers[i] for i in indices]
             averages = [self.averages[i] for i in indices]
-            self.potentialsClassifier = orange.P2NN(domain, Numeric.transpose(Numeric.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawdata]])),
+            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawdata]])),
                                                     self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
 
            
-        # do we have cluster closure information
-        if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            data = self.createProjectionAsExampleTable(indices, settingsDict = {"validData": validData, "normalize": self.normalizeExamples, "scaleFactor": self.trueScaleFactor, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation, "useAnchorData": 1})
-            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
-            for key in valueDict.keys():
-                if not polygonVerticesDict.has_key(key): continue
-                for (i,j) in closureDict[key]:
-                    color = classValueIndices[graph.objects[i].getclass().value]
-                    self.addCurve("", self.discPalette[color], self.discPalette[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
-
-            """
-            self.removeMarkers()
-            for i in range(graph.nVertices):
-                if not validData[i]: continue
-                mkey = self.insertMarker(str(i+1))
-                self.marker(mkey).setXValue(float(data[i][0]))
-                self.marker(mkey).setYValue(float(data[i][1]))
-                self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
-            """
-
-        elif self.clusterClosure: self.showClusterLines(indices, validData)        
-
+##        # do we have cluster closure information
+##        if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+##            data = self.createProjectionAsExampleTable(indices, settingsDict = {"validData": validData, "normalize": self.normalizeExamples, "scaleFactor": self.trueScaleFactor, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation, "useAnchorData": 1})
+##            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+##            for key in valueDict.keys():
+##                if not polygonVerticesDict.has_key(key): continue
+##                for (i,j) in closureDict[key]:
+##                    color = classValueIndices[graph.objects[i].getclass().value]
+##                    self.addCurve("", self.discPalette[color], self.discPalette[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
+##
+##            """
+##            self.removeMarkers()
+##            for i in range(graph.nVertices):
+##                if not validData[i]: continue
+##                mkey = self.insertMarker(str(i+1))
+##                self.marker(mkey).setXValue(float(data[i][0]))
+##                self.marker(mkey).setYValue(float(data[i][1]))
+##                self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+##            """
+##
+##        elif self.clusterClosure: self.showClusterLines(indices, validData)        
+##
         # ##############################################################
         # show model quality
         # ############################################################## 
@@ -261,9 +260,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
             # if we have a data subset that contains examples that don't exist in the original dataset we show them here
             if shownSubsetCount < len(self.subsetData):
-                XAnchors = Numeric.array([val[0] for val in self.anchorData])
-                YAnchors = Numeric.array([val[1] for val in self.anchorData])
-                anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
+                XAnchors = numpy.array([val[0] for val in self.anchorData])
+                YAnchors = numpy.array([val[1] for val in self.anchorData])
+                anchorRadius = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
                 
                 for i in range(len(self.subsetData)):
                     if not self.subsetData[i].reference() in subsetReferencesToDraw: continue
@@ -341,7 +340,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if self.showLegend:
             # show legend for discrete class
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-                self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
+                self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.05, Qt.AlignLeft + Qt.AlignVCenter)
                     
                 classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 for index in range(len(classVariableValues)):
@@ -383,38 +382,37 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if not self.dataMap.has_key(dictValue): self.dataMap[dictValue] = []
         self.dataMap[dictValue].append((x, y, color, index, extraString))
 
-    def showClusterLines(self, attributeIndices, validData, width = 1):
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous: return
-        shortData = self.createProjectionAsExampleTable(attributeIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor})
-        classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])
-
-        (closure, enlargedClosure, classValue) = self.clusterClosure
-
-        if type(closure) == dict:
-            for key in closure.keys():
-                clusterLines = closure[key]
-                colorIndex = classIndices[self.rawdata.domain.classVar[classValue[key]].value]
-                for (p1, p2) in clusterLines:
-                    self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
-        else:
-            colorIndex = classIndices[self.rawdata.domain.classVar[classValue].value]
-            for (p1, p2) in closure:
-                self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
+##    def showClusterLines(self, attributeIndices, validData, width = 1):
+##        if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous: return
+##        shortData = self.createProjectionAsExampleTable(attributeIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor})
+##        classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])
+##
+##        (closure, enlargedClosure, classValue) = self.clusterClosure
+##
+##        if type(closure) == dict:
+##            for key in closure.keys():
+##                clusterLines = closure[key]
+##                colorIndex = classIndices[self.rawdata.domain.classVar[classValue[key]].value]
+##                for (p1, p2) in clusterLines:
+##                    self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
+##        else:
+##            colorIndex = classIndices[self.rawdata.domain.classVar[classValue].value]
+##            for (p1, p2) in closure:
+##                self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
 
 
     def onMousePressed(self, e):
         if self.manualPositioning:
             self.mouseCurrentlyPressed = 1
+            self.selectedAnchorIndex = None
             if self.anchorsAsVectors:
                 key, dist = self.closestMarker(e.x(), e.y())
                 if dist < 15:
-                    self.selectedAnchorIndex = self.shownLabels.index(self.marker(key).label())
+                    self.selectedAnchorIndex = self.shownAttributes.index(self.marker(key).label())
             else:
                 (key, dist, foo1, foo2, index) = self.closestCurve(e.x(), e.y())
                 if dist < 5 and str(self.curve(key).title()) == "dots":
                     self.selectedAnchorIndex = index
-                else:
-                    self.selectedAnchorIndex = None
         else:
             OWGraph.onMousePressed(self, e)
 
@@ -581,103 +579,104 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if not self.rawdata: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
-        if not validData: validData = self.getValidList(attrIndices)
+        if validData == None:
+            validData = self.getValidList(attrIndices)
         
         array = self.createProjectionAsNumericArray(attrList, settingsDict = {"scaleFactor": self.scaleFactor, "useAnchorData": useAnchorData, "removeMissingData": 0})
-        array = Numeric.transpose(array)
+        array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)
             
         
-    def getOptimalClusters(self, attributes, minLength, maxLength, addResultFunct):
-        self.triedPossibilities = 0
-
-        # replace attribute names with indices in domain - faster searching
-        attributes = [self.attributeNameIndex[name] for name in attributes]
-        classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-
-        # variables and domain for the table
-        xVar = orange.FloatVariable("xVar")
-        yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
-        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
-
-        self.widget.progressBarInit()
-        startTime = time.time()
-
-        # build list of indices for permutations of different number of attributes
-        permutationIndices = {}
-        for i in range(3, maxLength+1):
-            permutationIndices[i] = orngVisFuncts.generateDifferentPermutations(range(i))
-
-        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-        for z in range(minLength-1, len(attributes)):
-            for u in range(minLength-1, maxLength):
-                combinations = orngVisFuncts.combinations(attributes[:z], u)
-
-                XAnchors = anchorList[u+1-minLength][0]
-                YAnchors = anchorList[u+1-minLength][1]
-                
-                for attrList in combinations:
-                    attrs = attrList + [attributes[z]] # remove the value of this attribute subset
-                    permutations = permutationIndices[len(attrs)]
-                    
-                    validData = self.getValidList(attrs)
-                    classList = Numeric.compress(validData, classListFull)
-                    selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
-                    sum_i = self._getSum_i(selectedData)
-
-                    tempList = []
-
-                    # for every permutation compute how good it separates different classes            
-                    for ind in permutations:
-                        permutation = [attrs[val] for val in ind]
-                        permutationAttributes = [self.attributeNames[i] for i in permutation]                        
-                        if self.clusterOptimization.isOptimizationCanceled():
-                            secs = time.time() - startTime
-                            self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-                            self.widget.progressBarFinished()
-                            return
-
-                        data = self.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
-                        graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
-
-                        classesDict = {}
-                        if not self.onlyOnePerSubset:
-                            allValue = 0.0
-                            for key in valueDict.keys():
-                                addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
-                                classesDict[key] = otherDict[key][OTHER_CLASS]
-                                allValue += valueDict[key]
-                            addResultFunct(allValue, closureDict, polygonVerticesDict, permutationAttributes, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
-                            
-                        else:
-                            value = 0.0
-                            for val in valueDict.values(): value += val
-                            tempList.append((value, valueDict, closureDict, polygonVerticesDict, permutationAttributes, enlargedClosureDict, otherDict))
-                            
-                        self.triedPossibilities += 1
-                        qApp.processEvents()        # allow processing of other events
-                        del permutation, data, graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict, classesDict,
-                        
-                    self.widget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                    self.clusterOptimization.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities)))
-
-                    if self.onlyOnePerSubset:
-                        (value, valueDict, closureDict, polygonVerticesDict, attrs, enlargedClosureDict, otherDict) = max(tempList)
-                        allValue = 0.0
-                        classesDict = {}
-                        for key in valueDict.keys():
-                            addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], attrs, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
-                            classesDict[key] = otherDict[key][OTHER_CLASS]
-                            allValue += valueDict[key]
-                        addResultFunct(allValue, closureDict, polygonVerticesDict, attrs, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
-
-                    del validData, classList, selectedData, sum_i, tempList
-                del combinations
-
-        secs = time.time() - startTime
-        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-        self.widget.progressBarFinished()
+##    def getOptimalClusters(self, attributes, minLength, maxLength, addResultFunct):
+##        self.triedPossibilities = 0
+##
+##        # replace attribute names with indices in domain - faster searching
+##        attributes = [self.attributeNameIndex[name] for name in attributes]
+##        classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
+##
+##        # variables and domain for the table
+##        xVar = orange.FloatVariable("xVar")
+##        yVar = orange.FloatVariable("yVar")
+##        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
+##        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
+##
+##        self.widget.progressBarInit()
+##        startTime = time.time()
+##
+##        # build list of indices for permutations of different number of attributes
+##        permutationIndices = {}
+##        for i in range(3, maxLength+1):
+##            permutationIndices[i] = orngVisFuncts.generateDifferentPermutations(range(i))
+##
+##        classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
+##        for z in range(minLength-1, len(attributes)):
+##            for u in range(minLength-1, maxLength):
+##                combinations = orngVisFuncts.combinations(attributes[:z], u)
+##
+##                XAnchors = anchorList[u+1-minLength][0]
+##                YAnchors = anchorList[u+1-minLength][1]
+##                
+##                for attrList in combinations:
+##                    attrs = attrList + [attributes[z]] # remove the value of this attribute subset
+##                    permutations = permutationIndices[len(attrs)]
+##                    
+##                    validData = self.getValidList(attrs)
+##                    classList = numpy.compress(validData, classListFull)
+##                    selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, attrs, axis = 0), axis = 1)
+##                    sum_i = self._getSum_i(selectedData)
+##
+##                    tempList = []
+##
+##                    # for every permutation compute how good it separates different classes            
+##                    for ind in permutations:
+##                        permutation = [attrs[val] for val in ind]
+##                        permutationAttributes = [self.attributeNames[i] for i in permutation]                        
+##                        if self.clusterOptimization.isOptimizationCanceled():
+##                            secs = time.time() - startTime
+##                            self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+##                            self.widget.progressBarFinished()
+##                            return
+##
+##                        data = self.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+##                        graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+##
+##                        classesDict = {}
+##                        if not self.onlyOnePerSubset:
+##                            allValue = 0.0
+##                            for key in valueDict.keys():
+##                                addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
+##                                classesDict[key] = otherDict[key][OTHER_CLASS]
+##                                allValue += valueDict[key]
+##                            addResultFunct(allValue, closureDict, polygonVerticesDict, permutationAttributes, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
+##                            
+##                        else:
+##                            value = 0.0
+##                            for val in valueDict.values(): value += val
+##                            tempList.append((value, valueDict, closureDict, polygonVerticesDict, permutationAttributes, enlargedClosureDict, otherDict))
+##                            
+##                        self.triedPossibilities += 1
+##                        qApp.processEvents()        # allow processing of other events
+##                        del permutation, data, graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict, classesDict,
+##                        
+##                    self.widget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+##                    self.clusterOptimization.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities)))
+##
+##                    if self.onlyOnePerSubset:
+##                        (value, valueDict, closureDict, polygonVerticesDict, attrs, enlargedClosureDict, otherDict) = max(tempList)
+##                        allValue = 0.0
+##                        classesDict = {}
+##                        for key in valueDict.keys():
+##                            addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], attrs, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
+##                            classesDict[key] = otherDict[key][OTHER_CLASS]
+##                            allValue += valueDict[key]
+##                        addResultFunct(allValue, closureDict, polygonVerticesDict, attrs, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
+##
+##                    del validData, classList, selectedData, sum_i, tempList
+##                del combinations
+##
+##        secs = time.time() - startTime
+##        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+##        self.widget.progressBarFinished()
 
 
     # update shown data. Set labels, coloring by className ....
@@ -725,16 +724,16 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         labels = self.widget.getShownAttributeList()
         classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
         indices = [self.attributeNameIndex[label] for label in labels]
-        selectedData = Numeric.take(self.scaledData, indices)
-        XAnchors = Numeric.array([a[0] for a in self.anchorData])
-        YAnchors = Numeric.array([a[1] for a in self.anchorData])
+        selectedData = numpy.take(self.scaledData, indices, axis = 0)
+        XAnchors = numpy.array([a[0] for a in self.anchorData])
+        YAnchors = numpy.array([a[1] for a in self.anchorData])
 
-        r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
+        r = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
         XAnchors *= r                                               # we need to normalize the anchors by r, otherwise the anchors won't attract points less if they are placed at the center of the circle
         YAnchors *= r
         
-        x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
-        y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
+        x_positions = numpy.dot(XAnchors, selectedData)
+        y_positions = numpy.dot(YAnchors, selectedData)
 
         if self.normalizeExamples:
             sum_i = self._getSum_i(selectedData, useAnchorData = 1, anchorRadius = r)
@@ -745,7 +744,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             self.trueScaleFactor = self.scaleFactor
         else:
             abss = x_positions*x_positions + y_positions*y_positions
-            self.trueScaleFactor =  1 / sqrt(abss[Numeric.argmax(abss)])
+            self.trueScaleFactor =  1 / sqrt(abss[numpy.argmax(abss)])
 
         x_positions *= self.trueScaleFactor
         y_positions *= self.trueScaleFactor

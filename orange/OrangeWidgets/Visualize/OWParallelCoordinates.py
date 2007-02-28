@@ -82,7 +82,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #add controls to self.controlArea widget
-        self.targetValueCombo = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box = " Target Class Value ", sendSelectedValue = 1, valueType = str, callback = self.updateGraph)
+        self.targetValueCombo = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box = "Target Class Value", sendSelectedValue = 1, valueType = str, callback = self.updateGraph)
 
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraph)
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.flipAttribute)
@@ -100,12 +100,12 @@ class OWParallelCoordinates(OWVisWidget):
         # ####################################
         # SETTINGS functionality
 
-        boxX = OWGUI.widgetBox(self.SettingsTab, " Graph settings ")
+        boxX = OWGUI.widgetBox(self.SettingsTab, "Graph settings")
         OWGUI.comboBox(boxX, self, "graph.jitterSize", label = 'Jittering size (% of size):  ', orientation='horizontal', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.comboBox(boxX, self, "linesDistance", label = 'Minimum axis distance:  ', orientation='horizontal', callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "What is the minimum distance between two adjecent attribute axis", sendSelectedValue = 1, valueType = int)
         
         # visual settings
-        box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
+        box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
         OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateValues)
         OWGUI.checkBox(box, self, 'graph.hidePureExamples', 'Hide pure examples', callback = self.updateValues, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
         OWGUI.checkBox(box, self, 'graph.useSplines', 'Show splines', callback = self.updateValues, tooltip  = "Show lines using splines")
@@ -113,21 +113,21 @@ class OWParallelCoordinates(OWVisWidget):
         OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateValues)
         OWGUI.checkBox(box, self, 'graph.globalValueScaling', 'Global Value Scaling', callback = self.setGlobalValueScaling)
 
-        box3 = OWGUI.widgetBox(self.SettingsTab, " Statistics ")
+        box3 = OWGUI.widgetBox(self.SettingsTab, "Statistics")
         OWGUI.comboBox(box3, self, "graph.showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateValues, sendSelectedValue = 0, valueType = int)
         OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
 
-        OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = " Middle labels ", items = ["Off", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "What information do you wish to view on top in the middle of coordinate axes?", sendSelectedValue = 1, valueType = str)
+        OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = "Middle labels", items = ["Off", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "What information do you wish to view on top in the middle of coordinate axes?", sendSelectedValue = 1, valueType = str)
         
         hbox4 = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(hbox4, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
-        box2 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
+        box2 = OWGUI.widgetBox(self.SettingsTab, "Sending selection")
         OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
 
         # continuous attribute ordering
-        OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
-        OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = " Discrete attribute ordering ", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+        OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = "Continuous attribute ordering", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+        OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = "Discrete attribute ordering", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
 
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         self.icons = self.createAttributeIconDict()
@@ -274,9 +274,10 @@ class OWParallelCoordinates(OWVisWidget):
     def cdata(self, data):
         if data and data.domain.classVar:
             name = getattr(data, "name", "")
-            data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
+            data = data.filterref(orange.Filter_hasClassValue())
             data.name = name
-        if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+        if self.data != None and data != None and self.data.checksum() == data.checksum():
+            return    # check if the new data set is the same as the old one
             
         self.projections = None
         self.correlationDict = {}
@@ -317,7 +318,7 @@ class OWParallelCoordinates(OWVisWidget):
                     return
             self.setShownAttributeList(self.data, self.attributeSelectionList)
             self.updateGraph()
-            self.sendSelections()
+        self.sendSelections()
 
 
     # send signals with selected and unselected examples as two datasets
@@ -335,9 +336,6 @@ class OWParallelCoordinates(OWVisWidget):
         
         self.send("Selected Examples", selected)
         self.send("Unselected Examples", unselected)
-
-    def sendAttributeSelection(self, attrs):
-        self.send("Attribute selection", attrs)
 
     #################################################
 
@@ -388,9 +386,9 @@ class OWParallelCoordinates(OWVisWidget):
 
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ")
-        c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other Colors ")
+        c.createDiscretePalette("Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous palette")
+        box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         box.adjustSize()
@@ -438,11 +436,11 @@ class ParallelOptimization(OWBaseWidget):
 
         self.loadSettings()
 
-        self.measureBox = OWGUI.radioButtonsInBox(self, self, "optimizationMeasure", ["Correlation", "VizRank"], box = " Select optimization measure ", callback = self.updateGUI)
-        self.vizrankSettingsBox = OWGUI.widgetBox(self, " VizRank settings ")
-        self.optimizeBox = OWGUI.widgetBox(self, " Optimize ")
-        self.manageBox = OWGUI.widgetBox(self, " Manage results ")
-        self.resultsBox = OWGUI.widgetBox(self, " Results ")
+        self.measureBox = OWGUI.radioButtonsInBox(self, self, "optimizationMeasure", ["Correlation", "VizRank"], box = "Select optimization measure", callback = self.updateGUI)
+        self.vizrankSettingsBox = OWGUI.widgetBox(self, "VizRank settings")
+        self.optimizeBox = OWGUI.widgetBox(self, "Optimize")
+        self.manageBox = OWGUI.widgetBox(self, "Manage results")
+        self.resultsBox = OWGUI.widgetBox(self, "Results")
 
         self.grid.addWidget(self.measureBox,0,0)
         self.grid.addWidget(self.vizrankSettingsBox,1,0)
@@ -472,12 +470,12 @@ class ParallelOptimization(OWBaseWidget):
         names.append("(None)")
         self.fileName = "(None)"
                 
-        self.hbox1 = OWGUI.widgetBox(self.vizrankSettingsBox, " VizRank projections file ", orientation = "horizontal")
+        self.hbox1 = OWGUI.widgetBox(self.vizrankSettingsBox, "VizRank projections file", orientation = "horizontal")
         self.vizrankFileCombo = OWGUI.comboBox(self.hbox1, self, "fileName", items = names, tooltip = "File that contains information about interestingness of scatterplots \ngenerated by VizRank method in scatterplot widget", callback = self.changeProjectionFile, sendSelectedValue = 1, valueType = str)
         self.browseButton = OWGUI.button(self.hbox1, self, "...", callback = self.loadProjections)
         self.browseButton.setMaximumWidth(20)
 
-        self.resultsInfoBox = OWGUI.widgetBox(self.vizrankSettingsBox, " VizRank parameters ")
+        self.resultsInfoBox = OWGUI.widgetBox(self.vizrankSettingsBox, "VizRank parameters")
         self.kNeighborsLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Number of neighbors (k):")
         self.percentDataUsedLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Percent of data used:")
         self.testingMethodLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Testing method used:")
@@ -492,7 +490,7 @@ class ParallelOptimization(OWBaseWidget):
         self.subsetAttributeEdit = OWGUI.lineEdit(box, self, "numberOfAttributes", valueType = int)
         label  = OWGUI.widgetLabel(box, "   attributes")
         
-        self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, " Start optimization ", callback = self.startOptimization)
+        self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, "Start optimization", callback = self.startOptimization)
         f = self.startOptimizationButton.font()
         f.setBold(1)
         self.startOptimizationButton.setFont(f)

@@ -69,15 +69,15 @@ class OWSurveyPlot(OWVisWidget):
 
         # ##################################
         # survey plot settings
-        box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
+        box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
         OWGUI.checkBox(box, self, "graph.globalValueScaling", "Global Value Scaling", callback = self.setGlobalValueScaling)
         OWGUI.checkBox(box, self, "graph.exampleTracking", "Enable example tracking", callback = self.updateGraph)
         OWGUI.checkBox(box, self, "graph.enabledLegend", "Show legend", callback = self.updateGraph)
 
-        OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
-        OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = " Discrete attribute ordering ", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+        OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = "Continuous attribute ordering", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+        OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = "Discrete attribute ordering", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
 
-        box = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
+        box = OWGUI.widgetBox(self.SettingsTab, "Tooltips settings")
         OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
 
         OWGUI.button(self.SettingsTab, self, "Canvas Color", callback = self.setGraphCanvasColor, tooltip = "Set color for canvas background", debuggingEnabled = 0)
@@ -87,6 +87,10 @@ class OWSurveyPlot(OWVisWidget):
         # add a settings dialog and initialize its values        
         self.activateLoadedSettings()
         self.resize(700,700)
+
+        # this is needed so that the tabs are wide enough! 
+        qApp.processEvents()
+        self.tabs.updateGeometry()
 
     # #########################
     # OPTIONS
@@ -161,17 +165,16 @@ class OWSurveyPlot(OWVisWidget):
         self.resetAttrManipulation()
         self.sendShownAttributes()
         
-    def sendShownAttributes(self):
-        self.send("Attribute Selection List", self.getShownAttributeList())
-    
+   
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
         if data:
             name = getattr(data, "name", "")
-            data = orange.Preprocessor_dropMissingClasses(data)
+            data = data.filterref(orange.Filter_hasClassValue())
             data.name = name
-        if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+        if self.data != None and data != None and self.data.checksum() == data.checksum():
+            return    # check if the new data set is the same as the old one
 
         exData = self.data
         self.data = data
@@ -200,6 +203,9 @@ class OWSurveyPlot(OWVisWidget):
     def updateShownAttributeList(self):
         self.setShownAttributeList(self.data)
         self.updateGraph()
+
+    def sendShownAttributes(self):
+        self.send("Attribute Selection List", [a[0] for a in self.shownAttributes])
 
     # just tell the graph to hide the selected rectangle
     def enterEvent(self, e):

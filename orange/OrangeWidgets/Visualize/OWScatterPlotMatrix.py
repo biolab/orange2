@@ -39,8 +39,8 @@ class OWScatterPlotMatrix(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Scatterplot matrix", TRUE)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
-        self.outputs = [("Attribute selection", list)] 
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.selection)]
+        self.outputs = [("Attribute Selection List", list)] 
 
         #set default settings
         self.data = None
@@ -69,11 +69,11 @@ class OWScatterPlotMatrix(OWWidget):
         self.tabs.insertTab(self.SettingsTab, "Settings")
         
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Shown Attributes " )
+        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Shown Attributes")
         self.shownAttribsGroup.setMinimumWidth(200)
         hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
         self.addRemoveGroup = OWGUI.widgetBox(self.GeneralTab, 1, orientation = "horizontal" )
-        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Hidden Attributes ")
+        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Hidden Attributes")
 
         self.shownAttribsLB = QListBox(hbox)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
@@ -103,13 +103,13 @@ class OWScatterPlotMatrix(OWWidget):
         # settings tab
         OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.setPointWidth)
 
-        box2 = OWGUI.widgetBox(self.SettingsTab, " Jittering Options ")
+        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
         box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
         self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
         self.jitterSizeCombo = OWGUI.comboBox(box3, self, "jitterSize", callback = self.updateJitteringSettings, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box2, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.updateJitteringSettings, tooltip = "Does jittering apply also on continuous attributes?")
 
-        box4 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
+        box4 = OWGUI.widgetBox(self.SettingsTab, "General Graph Settings")
         OWGUI.checkBox(box4, self, 'showAxisScale', 'Show axis scale', callback = self.updateSettings)
         OWGUI.checkBox(box4, self, 'showXaxisTitle', 'X axis title', callback = self.updateSettings)
         OWGUI.checkBox(box4, self, 'showYLaxisTitle', 'Y axis title', callback = self.updateSettings)
@@ -143,9 +143,9 @@ class OWScatterPlotMatrix(OWWidget):
         
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ")
-        c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other Colors ")
+        c.createDiscretePalette("Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous palette")
+        box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         box.adjustSize()
@@ -347,12 +347,12 @@ class OWScatterPlotMatrix(OWWidget):
         fullBuffer.save(fileName, ext)
 
 
-    # we catch mouse release event so that we can send the "Attribute selection" signal
+    # we catch mouse release event so that we can send the "Attribute Selection List" signal
     def onMouseReleased(self, e):
         for i in range(len(self.graphs)):
             if self.graphs[i].blankClick == 1:
                 (attr1, attr2, className, string) = self.graphParameters[i]
-                self.send("Attribute selection", [attr1, attr2])
+                self.send("Attribute Selection List", [attr1, attr2])
                 self.graphs[i].blankClick = 0
 
     ####### CDATA ################################
@@ -368,7 +368,7 @@ class OWScatterPlotMatrix(OWWidget):
         
         if data and data.domain.classVar:
             name = getattr(data, "name", "")
-            data = data.filterref({data.domain.classVar: [val for val in data.domain.classVar.values]})
+            data = data.filterref(orange.Filter_hasClassValue())
             data.name = name
         self.data = data
 

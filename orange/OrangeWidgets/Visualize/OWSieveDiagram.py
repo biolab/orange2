@@ -58,23 +58,23 @@ class OWSieveDiagram(OWWidget):
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
         
         #GUI
-        self.attrSelGroup = OWGUI.widgetBox(self.controlArea, box = " Shown Attributes ")
+        self.attrSelGroup = OWGUI.widgetBox(self.controlArea, box = "Shown Attributes")
 
         self.attrXCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrX", "X Attribute:", tooltip = "Select an attribute to be shown on the X axis", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
         self.attrYCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrY", "Y Attribute:", tooltip = "Select an attribute to be shown on the Y axis", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
 
-        self.conditionGroup = OWGUI.widgetBox(self.controlArea, box = " Condition ")
+        self.conditionGroup = OWGUI.widgetBox(self.controlArea, box = "Condition")
         self.attrConditionCombo      = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrCondition", "Attribute:", callback = self.updateConditionAttr, sendSelectedValue = 1, valueType = str, labelWidth = 70)
         self.attrConditionValueCombo = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrConditionValue", "Value:", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
 
 
-        box2 = OWGUI.widgetBox(self.controlArea, box = " Visual Settings ")
+        box2 = OWGUI.widgetBox(self.controlArea, box = "Visual Settings")
         OWGUI.checkBox(box2, self, "showLines", "Show Lines", callback = self.updateData)
         hbox = OWGUI.widgetBox(box2, orientation = "horizontal")
         OWGUI.checkBox(hbox, self, "showCases", "Show Data Examples...", callback = self.updateData)
         OWGUI.checkBox(hbox, self, "showInColor", "...In Color", callback = self.updateData)
         
-        self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = " Interesting Attribute Pairs ")
+        self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = "Interesting Attribute Pairs")
         
         self.calculateButton = OWGUI.button(self.interestingGroupBox, self, "Calculate Chi Squares", callback = self.calculatePairs)
         self.stopCalculateButton = OWGUI.button(self.interestingGroupBox, self, "Stop Evaluation", callback = self.stopCalculateClick)
@@ -243,8 +243,6 @@ class OWSieveDiagram(OWWidget):
     def cdata(self, data):
         self.interestingList.clear()
         exData = self.data
-        #self.data = None
-        #if data: self.data = orange.Preprocessor_dropMissing(data)
         if data: self.data = data
 
         if not (self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes)):  # preserve attribute choice if the domain is the same

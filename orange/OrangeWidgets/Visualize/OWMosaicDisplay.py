@@ -121,14 +121,12 @@ class OWMosaicDisplay(OWWidget):
         self.manualAttributeValuesDict = {}
         self.conditionalDict = None
         self.conditionalSubsetDict = None
-        self.updateSelectedData = 0     # do we need to update selected data?
         self.activeRule = None
 
         self.selectionRectangle = None
-        self.selectionConditionsArray = []
-        self.selectionConditionsDict = {}
-        self.selectedData = None
-
+        self.selectionConditionsHistorically = []
+        self.selectionConditions = []
+        
         #self.blueColors = [QColor(255, 255, 255), QColor(117, 149, 255), QColor(38, 43, 232), QColor(1,5,173)]
         self.blueColors = [QColor(255, 255, 255), QColor(210, 210, 255), QColor(110, 110, 255), QColor(0,0,255)]
         self.redColors = [QColor(255, 255, 255), QColor(255, 200, 200), QColor(255, 100, 100), QColor(255, 0, 0)]
@@ -152,7 +150,7 @@ class OWMosaicDisplay(OWWidget):
         #add controls to self.controlArea widget
         self.controlArea.setMinimumWidth(235)
         
-        texts = [" 1st Attribute ", " 2nd Attribute ", " 3rd Attribute ", " 4th Attribute "]
+        texts = ["1st Attribute", "2nd Attribute", "3rd Attribute", "4th Attribute"]
         for i in range(1,5):
             box = OWGUI.widgetBox(self.GeneralTab, texts[i-1], orientation = "horizontal")
             box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
@@ -167,15 +165,15 @@ class OWMosaicDisplay(OWWidget):
             setattr(self, "attr" + str(i)+ "Combo", combo)
 
         self.optimizationDlg = OWMosaicOptimization(self, self.signalManager)
-        optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialog ", orientation = "horizontal")
+        optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialog", orientation = "horizontal")
         optimizationButtons.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, debuggingEnabled = 0)
 
-        box5 = OWGUI.widgetBox(self.GeneralTab, " Colors in Cells Represent... ")
+        box5 = OWGUI.widgetBox(self.GeneralTab, "Colors in Cells Represent...")
         OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.changedInteriorColoring)
         box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
-        self.box7 = OWGUI.widgetBox(self.GeneralTab, " Possible permutations ")
+        self.box7 = OWGUI.widgetBox(self.GeneralTab, "Possible permutations")
 
         self.permButton = OWGUI.button(self.box7, self, "Explore Attribute Permutations", callback = self.permutationListToggle)
         self.permButton.setToggleButton(1)
@@ -187,9 +185,9 @@ class OWMosaicDisplay(OWWidget):
         # ######################
         # SETTINGS TAB
         # ######################        
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "cellspace", "Minimum cell distance: ", box = " Cell Distance ", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "cellspace", "Minimum cell distance: ", box = "Cell Distance", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
                 
-        self.box6 = OWGUI.widgetBox(self.SettingsTab, " Cell Distribution Settings ")
+        self.box6 = OWGUI.widgetBox(self.SettingsTab, "Cell Distribution Settings")
         OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateGraph)
         OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show Apriori Distribution with Lines', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
 
@@ -222,6 +220,10 @@ class OWMosaicDisplay(OWWidget):
 
         self.VizRankLearner = MosaicVizRankLearner(self.optimizationDlg)
         self.send("Learner", self.VizRankLearner)
+
+        # this is needed so that the tabs are wide enough! 
+        qApp.processEvents()
+        self.tabs.updateGeometry()
         
     def permutationListToggle(self):
         if self.permButton.isOn():
@@ -285,22 +287,27 @@ class OWMosaicDisplay(OWWidget):
         self.updateGraph()
 
     # # DATA signal - receive new data and update all fields
-    def cdata(self, data):
+    def cdata(self, data, onlyDrilling = 0):
         self.closeContext()
         self.data = None
         self.bestPlacements = None
         self.manualAttributeValuesDict = {}
-        self.optimizationDlg.setData(data)
-        
-        if data:
-            self.data = self.optimizationDlg.data
-            if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
+        self.information(0)
+
+        self.optimizationDlg.setData(data, onlyDrilling)
+        self.data = self.optimizationDlg.data
+
+        if self.data:
+            if self.data.domain.hasContinuousAttributes():
+                self.information("Continuous attributes were discretized using entropy discretization.", 0)
+            
+            if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.interiorColoring = CLASS_DISTRIBUTION
             else:
                 self.interiorColoring = PEARSON
             
         self.initCombos(self.data)
-        self.openContext("", data)
+        self.openContext("", self.data)
 
         self.updateGraphAndPermList()
 
@@ -432,8 +439,9 @@ class OWMosaicDisplay(OWWidget):
 
         # draw rectangles
         self.DrawData(attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 0, "", len(attrList))
-        
         self.DrawLegend(data, (xOff, xOff+squareSize), (yOff, yOff+squareSize)) # draw class legend
+
+        self.optimizationDlg.drillUpdateSelection()
 
         self.canvas.update()
 
@@ -489,8 +497,8 @@ class OWMosaicDisplay(OWWidget):
         #if side == RIGHT and lastValueForFirstAttribute != 2: return
         if side == RIGHT:
             if lastValueForFirstAttribute != 2: return
-            elif not self.conditionalDict[attrVals]:
-                self.conditionalDict[attrVals] = [1 for i in range(len(getVariableValuesSorted(self.data, attr)))]
+##            elif not self.conditionalDict[attrVals]:
+##                self.conditionalDict[attrVals] = [1 for i in range(len(getVariableValuesSorted(self.data, attr)))]
         
         if not self.conditionalDict[attrVals]:
             if not self.drawPositions.has_key(side): self.drawPositions[side] = (x0, x1, y0, y1)
@@ -513,6 +521,7 @@ class OWMosaicDisplay(OWWidget):
         else:            OWCanvasText(self.canvas, attr, x1 + self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignLeft + Qt.AlignVCenter, bold = 1)
                 
         currPos = 0
+                
         if attrVals == "":  counts = [self.conditionalDict.get(val, 1) for val in values]
         else:               counts = [self.conditionalDict.get(attrVals + "-" + val, 1) for val in values]
         total = sum(counts)
@@ -578,22 +587,13 @@ class OWMosaicDisplay(OWWidget):
         rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 30)
 
         # we have to remember which conditions were new in this update so that when we right click we can only remove the last added selections
-        if self.selectionRectangle != None and rect in self.canvas.collisions(self.selectionRectangle) and not self.selectionConditionsDict.has_key((tuple(usedAttrs), tuple(usedVals))):
-            self.recentlyAdded = getattr(self, "recentlyAdded", []) + [(tuple(usedAttrs), tuple(usedVals))]
-            self.selectionConditionsDict[(tuple(usedAttrs), tuple(usedVals))] = 1
+        if self.selectionRectangle != None and rect in self.canvas.collisions(self.selectionRectangle) and tuple(usedVals) not in self.selectionConditions:
+            self.recentlyAdded = getattr(self, "recentlyAdded", []) + [tuple(usedVals)]
+            self.selectionConditions.append(tuple(usedVals))
 
         # show rectangle selected or not
-        if self.selectionConditionsDict.has_key((tuple(usedAttrs), tuple(usedVals))):
+        if tuple(usedVals) in self.selectionConditions:
             rect.setPen(QPen(Qt.black, 3, Qt.DotLine))
-
-            if self.updateSelectedData: 
-                pp = orange.Preprocessor_take()
-                for i in range(len(usedAttrs)):
-                    pp.values[self.data.domain[usedAttrs[i]]] = usedVals[i]
-                tempData = pp(self.data)
-                
-                if not self.selectedData: self.selectedData = tempData
-                else:                     self.selectedData.extend(tempData)
 
         # if we have selected a rule that contains this combination of attr values then show a kind of selection of this rectangle
         if self.activeRule and len(usedAttrs) == len(self.activeRule[0]) and sum([v in usedAttrs for v in self.activeRule[0]]) == len(self.activeRule[0]):
@@ -628,6 +628,7 @@ class OWMosaicDisplay(OWWidget):
             rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, color, color, z = -20)
 
         # draw class distribution - actual and apriori
+        # we do have a discrete class
         else:
             clsValues = self.attributeValuesDict.get(self.data.domain.classVar.name, None) or getVariableValuesSorted(self.data, self.data.domain.classVar.name)
             aprioriDist = orange.Distribution(self.data.domain.classVar.name, self.data)
@@ -647,7 +648,7 @@ class OWMosaicDisplay(OWWidget):
             # show apriori boxes and lines
             if (self.showAprioriDistributionLines or self.useBoxes) and abs(x1 - x0) > self.boxSize and abs(y1 - y0) > self.boxSize:
                 apriori = [aprioriDist[val]/float(len(self.data)) for val in clsValues]
-                if self.showAprioriDistributionBoxes:   # we want to show expected class distribution under independence hypothesis
+                if self.showAprioriDistributionBoxes or self.data.domain.classVar.name in usedAttrs:   # we want to show expected class distribution under independence hypothesis
                     boxCounts = apriori
                 else:
                     contingencies = self.optimizationDlg.getContingencys(usedAttrs)
@@ -656,8 +657,10 @@ class OWMosaicDisplay(OWWidget):
                         # compute: P(c_i) * prod (P(c_i|attr_k) / P(c_i))  for each class value
                         Pci = aprioriDist[clsVal]/float(sum(aprioriDist.values()))
                         tempVal = Pci
-                        for i in range(len(usedAttrs)):
-                            tempVal *= contingencies[usedAttrs[i]][usedVals[i]][clsVal] / Pci
+                        if Pci > 0:
+                            #tempVal = 1.0 / Pci
+                            for i in range(len(usedAttrs)):
+                                tempVal *= contingencies[usedAttrs[i]][usedVals[i]][clsVal] / Pci
                         boxCounts.append(tempVal)
                         #boxCounts.append(aprioriDist[val]/float(sum(aprioriDist.values())) * reduce(operator.mul, [contingencies[usedAttrs[i]][usedVals[i]][clsVal]/float(sum(contingencies[usedAttrs[i]][usedVals[i]].values())) for i in range(len(usedAttrs))]))
                         
@@ -764,44 +767,66 @@ class OWMosaicDisplay(OWWidget):
         c.setColorSchemas(self.colorSettings)
         return c
 
+    # ########################################
+    # cell/example selection
     def sendSelectedData(self):
         # send the selected examples
-        self.send("Selected Examples", self.selectedData)
+        self.send("Selected Examples", self.getSelectedExamples())
 
     # add a new rectangle. update the graph and see which mosaics does it intersect. add this mosaics to the recentlyAdded list
     def addSelection(self, rect):
         self.selectionRectangle = rect
-        self.selectedData = None        # clear previous data so that we will generate a new dataset in the updateGraph()
-        self.updateSelectedData = 1 
         self.updateGraph()
-        self.updateSelectedData = 0
         self.sendSelectedData()
         
         if getattr(self, "recentlyAdded", []):
-            self.selectionConditionsArray.append(self.recentlyAdded)
+            self.selectionConditionsHistorically.append(self.recentlyAdded)
             self.recentlyAdded = []
-            
+
+        self.optimizationDlg.drillUpdateSelection()            
         self.selectionRectangle = None
 
     # remove the mosaics that were added with the last selection rectangle
     def removeLastSelection(self):
-        if  self.selectionConditionsArray:
-            vals = self.selectionConditionsArray.pop()
+        if self.selectionConditionsHistorically:
+            vals = self.selectionConditionsHistorically.pop()
             for val in vals:
-                if self.selectionConditionsDict.has_key(tuple(val)):
-                    self.selectionConditionsDict.pop(tuple(val))
+                if tuple(val) in self.selectionConditions:
+                    self.selectionConditions.remove(tuple(val))
 
-        self.updateSelectedData = 1
-        self.selectedData = None        # clear previous data so that we will generate a new dataset in the updateGraph()
         self.updateGraph()
-        self.updateSelectedData = 0
+        self.optimizationDlg.drillUpdateSelection()
         self.sendSelectedData()
 
     def removeAllSelections(self):
-        self.selectionConditionsDict = {}
-        self.selectionConditionsArray = []
-        self.selectedData = None
+        self.selectionConditions = []
+        self.selectionConditionsHistorically = []
+        self.optimizationDlg.drillUpdateSelection()
         self.sendSelectedData()
+
+    # return examples in currently selected boxes as example table or array of 0/1 values
+    def getSelectedExamples(self, asExampleTable = 1, negate = 0):
+        attrs = self.getShownAttributes()
+        if attrs == []: return None
+
+        pp = orange.Preprocessor_take()
+
+        sumIndices = numpy.zeros(len(self.data))      
+        for val in self.selectionConditions:
+            for i, attr in enumerate(attrs):
+                pp.values[self.data.domain[attr]] = val[i]
+            indices = numpy.array(pp.selectionVector(self.data))
+            sumIndices += indices
+
+        selectedIndices = list(numpy.where(sumIndices > 0, 1 - negate, 0 + negate))
+        
+        if asExampleTable:
+            return self.data.selectref(selectedIndices)
+        else:
+            return selectedIndices
+        
+
+
 
 class SortAttributeValuesDlg(OWBaseWidget):
     def __init__(self, parentWidget = None, attrList = []):
@@ -851,11 +876,13 @@ class SortAttributeValuesDlg(OWBaseWidget):
                 self.attributeList.removeItem(i)
                 self.attributeList.setSelected(i+1, TRUE)
 
-
+    
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow = OWMosaicDisplay()
     a.setMainWidget(ow)
     ow.show()
+    data = orange.ExampleTable(r"e:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\iris.tab")
+    ow.cdata(data)
     a.exec_loop()

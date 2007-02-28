@@ -8,9 +8,10 @@
 # Polyviz.py
 #
 # Show data using Polyviz visualization method
-# 
-from OWPolyvizGraph import *
+#
 from OWLinProj import *
+from OWPolyvizGraph import *
+
 
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
