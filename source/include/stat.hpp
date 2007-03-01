@@ -1534,7 +1534,7 @@ void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, in
 
 
     case DISTRIBUTE_FIXED: {
-      float step = points.size()/(nPoints-2);
+      float step = points.size()/float(nPoints-2);
       float up = 1.5;
 
       T x1 = T(0.0);
