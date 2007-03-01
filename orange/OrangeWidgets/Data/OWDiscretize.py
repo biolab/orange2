@@ -49,6 +49,7 @@ class DiscGraph(OWGraph):
         self.minVal = self.maxVal = 0
         self.curCutPoints=[]
         
+       
     
     def computeAddedScore(self, spoints):
         candidateSplits = [x for x in frange(self.minVal, self.maxVal, self.resolution) if x not in spoints]
@@ -64,13 +65,10 @@ class DiscGraph(OWGraph):
 
         return candidateSplits, score
 
-            
-    def computeBaseScore(self):
-        if self.data and self.data.domain.classVar:
-            self.baseCurveX, self.baseCurveY = self.computeAddedScore(list(self.curCutPoints))
-        else:
-            self.baseCurveX = self.baseCurveY = None
-
+        
+    def invalidateBaseScore(self):
+        self.baseCurveX = self.baseCurveY = None
+        
 
     def computeLookaheadScore(self, split):
         if self.data and self.data.domain.classVar:
@@ -153,8 +151,11 @@ class DiscGraph(OWGraph):
     def plotBaseCurve(self, noUpdate = False):
         if self.baseCurveKey:
             self.removeCurve(self.baseCurveKey)
-            
-        if self.baseCurveX and self.master.showBaseLine:
+
+        if self.master.showBaseLine and self.data and self.data.domain.classVar:
+            if not self.baseCurveX:
+                self.baseCurveX, self.baseCurveY = self.computeAddedScore(list(self.curCutPoints))
+                
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.baseCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.baseCurveX, yData = self.baseCurveY, lineWidth = 2)
             self.setCurveYAxis(self.baseCurveKey, QwtPlot.yLeft)
@@ -231,7 +232,7 @@ class DiscGraph(OWGraph):
         if self.data:
             self.curCutPoints = splits
 
-            self.computeBaseScore()
+            self.baseCurveX = None
             self.plotBaseCurve()
             self.plotCutLines()
             self.customLink = -1
@@ -271,7 +272,7 @@ class DiscGraph(OWGraph):
             self.plotCutLines()
             self.update()
 
-        self.computeBaseScore()
+        self.baseCurveX = None
         self.plotBaseCurve()
         self.master.synchronizeIf()
 
@@ -290,7 +291,7 @@ class DiscGraph(OWGraph):
                     return
                 if pos > self.maxVal or pos < self.minVal:
                     self.curCutPoints.pop(self.selectedCutPoint.curveInd)
-                    self.computeBaseScore()
+                    self.baseCurveX = None
                     self.plotCutLines()
                     self.mouseCurrentlyPressed = 0
                     return
@@ -317,7 +318,7 @@ class DiscGraph(OWGraph):
         
         self.mouseCurrentlyPressed = 0
         self.selectedCutPoint = None
-        self.computeBaseScore()
+        self.baseCurveX = None
         self.plotBaseCurve()
         self.plotCutLines()
         self.master.synchronizeIf()
@@ -334,7 +335,7 @@ class DiscGraph(OWGraph):
     def replotAll(self):
         self.clear()
 
-        self.computeBaseScore()
+        self.baseCurveX = None
 
         self.plotRug(True)
         self.plotProbCurve(True)
@@ -474,7 +475,7 @@ class OWDiscretize(OWWidget):
 
         graphOptBox.setSpacing(4)
         box = OWGUI.widgetBox(graphOptBox, "Split gain measure", addSpace=True)
-        self.measureCombo=OWGUI.comboBox(box, self, "measure", orientation=0, items=[e[0] for e in self.measures], callback=[self.clearLineEditFocus, self.graph.computeBaseScore, self.graph.plotBaseCurve])
+        self.measureCombo=OWGUI.comboBox(box, self, "measure", orientation=0, items=[e[0] for e in self.measures], callback=[self.clearLineEditFocus, self.graph.invalidateBaseScore, self.graph.plotBaseCurve])
         OWGUI.checkBox(box, self, "showBaseLine", "Show discretization gain", callback=[self.clearLineEditFocus, self.graph.plotBaseCurve])
         OWGUI.checkBox(box, self, "showLookaheadLine", "Show lookahead gain", callback=self.clearLineEditFocus)
         self.needsDiscrete.append(box)
