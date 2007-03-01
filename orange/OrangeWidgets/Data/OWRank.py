@@ -12,7 +12,7 @@ import OWGUI
 
 class OWRank(OWWidget):
     settingsList =  ["nDecimals", "reliefK", "reliefN", "nIntervals", "sortBy", "nSelected", "selectMethod", "autoApply"]
-    measures          = ["ReliefF", "Information Gain", "Gain Ratio", "Gini Index"]
+    measures          = ["ReliefF", "Information Gain", "Gain Ratio", "Gini Gain"]
     measuresShort     = ["ReliefF", "Inf. gain", "Gain ratio", "Gini"]
     measuresAttrs     = ["computeReliefF", "computeInfoGain", "computeGainRatio", "computeGini"]
     estimators        = [orange.MeasureAttribute_relief, orange.MeasureAttribute_info, orange.MeasureAttribute_gainRatio, orange.MeasureAttribute_gini]
