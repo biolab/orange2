@@ -22,7 +22,7 @@ another_disc_data = orngDisc.EntropyDiscretization(data)
 </xmp>
 </dd>
 
-<dt>DiscretizedLearner([basedLearner[, examples[, discretizer[, name]]]])</dt>
+<dt>DiscretizedLearner([baseLearner[, examples[, discretizer[, name]]]])</dt>
 <index name="classes/DiscretizedLearner (in orngDisc)"><index name="classifiers/with discretization">
 <dd>This class allows to set an learner object, such that before learning a data passed to a learner is discretized. In this way we can prepare an object that lears without giving it the data, and, for instance, use it in some standard testing procedure that repeats learning/testing on several data samples. Default procedure for discretization (<em>discretizer</em>) is <code>orngDisc.EntropyDiscretization</code>.
 An example on how such learner is set and used in ten-fold cross validation is given below:</p>
