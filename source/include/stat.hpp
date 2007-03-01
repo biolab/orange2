@@ -1478,7 +1478,7 @@ template<class T, class U>
 void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, int method = DISTRIBUTE_MINIMAL)
 { typedef typename map<T, U>::const_iterator mapiterator;
 
-  if ((method == DISTRIBUTE_MINIMAL) && (nPoints<0)) {
+  if (nPoints<0) {
     nPoints = -nPoints;
     method = DISTRIBUTE_FACTOR;
   }
