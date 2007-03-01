@@ -450,7 +450,14 @@ class OWDiscretize(OWWidget):
         OWGUI.appendRadioButton(box, self, "discretization", self.discretizationMethods[-1])
         OWGUI.separator(vbox)
 
-        OWGUI.radioButtonsInBox(vbox, self, "resetIndividuals", ["Use default discretization for all attributes", "Custom 1", "Custom 2", "Custom 3", "Individual settings"], "Individual attribute treatment", callback = self.setAllIndividuals)
+        ribg = OWGUI.radioButtonsInBox(vbox, self, "resetIndividuals", ["Use default discretization for all attributes", "Explore and set individual discretizations"], "Individual attribute treatment", callback = self.setAllIndividuals)
+        ll = QWidget(ribg)
+        ll.setFixedHeight(1)
+        OWGUI.widgetLabel(ribg, "Set discretization of all attributes to")
+        hcustbox = OWGUI.widgetBox(OWGUI.indentedBox(ribg), 0, 0)
+        for c in range(1, 4):
+            OWGUI.appendRadioButton(ribg, self, "resetIndividuals", "Custom %i" % c, insertInto = hcustbox)
+        
         OWGUI.separator(vbox)
         
         box = self.classDiscBox = OWGUI.radioButtonsInBox(vbox, self, "classDiscretization", self.classDiscretizationMethods, "Class discretization", callback=[self.clearLineEditFocus, self.classMethodChanged])
@@ -567,8 +574,10 @@ class OWDiscretize(OWWidget):
 
         if continuousClass:
             self.discretizeClass()
+            self.discClassData = self.data
         else:
             self.data = self.originalData
+            self.discClassData = None
 
         for c in self.needsDiscrete:
             c.setEnabled(haveClass)
@@ -725,8 +734,8 @@ class OWDiscretize(OWWidget):
             self.indiData[idx][1] = self.indiIntervals
 
             self.indiInterBox.setEnabled(self.indiDiscretization-1 in self.D_NEED_N_INTERVALS)
-            if self.indiDiscretization and self.indiDiscretization - self.D_N_METHODS != self.resetIndividuals:
-                self.resetIndividuals = 4
+            if self.indiDiscretization and self.indiDiscretization - self.D_N_METHODS != self.resetIndividuals - 1:
+                self.resetIndividuals = 1
 
             if not self.data:
                 return
@@ -771,10 +780,10 @@ class OWDiscretize(OWWidget):
         
         self.clearLineEditFocus()
         method = self.resetIndividuals
-        if method == 4:
+        if method == 1:
             return
         if method:
-            method += self.D_N_METHODS
+            method += self.D_N_METHODS - 1
         for i, idx in enumerate(self.continuousIndices):
             if self.indiData[idx][0] != method:
                 self.indiData[idx][0] = method
@@ -1011,23 +1020,30 @@ class OWDiscretize(OWWidget):
 
             if self.data.domain.classVar:
                 if self.outputOriginalClass:
-                    newattrs.append(self.originalData.domain.classVar)
+                    newdomain = orange.Domain(newattrs, self.originalData.domain.classVar)
                 else:
-                    newattrs.append(self.data.domain.classVar)
+                    newdomain = orange.Domain(newattrs, self.data.domain.classVar)
+            else:
+                newdomain = orange.Domain(attrs, None)
 
-            newdata = self.originalData.select(newattrs)
+            newdata = orange.ExampleTable(newdomain, self.originalData)
             self.send("Examples", newdata)
             if self.data.domain.classVar:
                 self.send("Classified Examples", newdata)
             else:
                 self.send("Classified Examples", None)
 
+        elif self.discClassData:
+            self.send("Examples", self.discClassData)
+            self.send("Classified Examples", self.discClassData)
+            
         elif self.originalData:  # no continuous attributes...
             self.send("Examples", self.originalData)
             if self.originalData.domain.classVar:
                 self.send("Classified Examples", self.originalData)
             else:
                 self.send("Classified Examples", None)
+                
         else:
             self.send("Examples", None)
             self.send("Classified Examples", None)
