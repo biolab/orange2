@@ -101,7 +101,7 @@ class OWClassificationTree(OWWidget):
                 self.error("This data set has no class.")
                 self.classifier = None
             elif self.data.domain.classVar.varType != orange.VarTypes.Discrete:
-                self.error("This algorithm only works with discrete classes.\nThere is another algorithm for regression classes.")
+                self.error("This widget only works with discrete classes.\nThere is another one for regression classes.")
                 self.classifier = None
             else:
                 try:
