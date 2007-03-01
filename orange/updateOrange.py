@@ -324,51 +324,52 @@ class updateOrangeDlg(QMainWindow):
 
 
     def executeUpdate(self):
-        self.addText("Reading file status from web server")
-
-        self.updateGroups = [];  self.dontUpdateGroups = []; self.newGroups = []
-        self.downstuff = {}
-        
-        upstuff, upUpdateGroups, upDontUpdateGroups = self.readInternetVersionFile(updateGroups = 0)
-        if upstuff == {}: return
-        try:
-            vf = open(self.downfile)
-            self.addText("Reading local file status")
-            self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
-            vf.close()
-        except:
-            res = QMessageBox.information(self, 'Update Orange', "The 'whatsdown.txt' file if missing (most likely because you downloaded Orange from CVS).\nThis file contains information about versions of your local Orange files.\n\nIf you press 'Replace Local Files' you will not replace only updated files, but will \noverwrite all your local Orange files with the latest versions from the web.\n", 'Replace Local Files', "Cancel", None, 0, 1)
-            if res != 0: return
-
-        itms = upstuff.items()
-        itms.sort(lambda x,y:cmp(x[0], y[0]))
-
-        for category in upUpdateGroups: #+ upDontUpdateGroups:
-            if category not in self.updateGroups + self.dontUpdateGroups:
-                self.newGroups.append(category)
-
-        # show dialog with new groups
-        if self.newGroups != []:
-            dlg = FoldersDlg("Select new categories you wish to download", None, "", 1)
-            dlg.setIcon(QPixmap(self.foldersIcon))
-            for group in self.newGroups: dlg.addCategory(group)
-            dlg.finishedAdding(cancel = 0)
-
-            res = dlg.exec_loop()
-            for i in range(len(dlg.checkBoxes)):
-                if dlg.checkBoxes[i].isChecked():
-                    self.updateGroups.append(dlg.folders[i])
-                else:
-                    self.dontUpdateGroups.append(dlg.folders[i])
-            self.newGroups = []
-
-        # update new files
         updatedFiles = 0
         newFiles = 0
-        self.addText("<hr>Updating files...")
-        self.statusBar.message("Updating files")
-
+        
         if self.settings["scripts"]:
+            self.addText("Reading file status from web server")
+
+            self.updateGroups = [];  self.dontUpdateGroups = []; self.newGroups = []
+            self.downstuff = {}
+            
+            upstuff, upUpdateGroups, upDontUpdateGroups = self.readInternetVersionFile(updateGroups = 0)
+            if upstuff == {}: return
+            try:
+                vf = open(self.downfile)
+                self.addText("Reading local file status")
+                self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
+                vf.close()
+            except:
+                res = QMessageBox.information(self, 'Update Orange', "The 'whatsdown.txt' file if missing (most likely because you downloaded Orange from CVS).\nThis file contains information about versions of your local Orange files.\n\nIf you press 'Replace Local Files' you will not replace only updated files, but will \noverwrite all your local Orange files with the latest versions from the web.\n", 'Replace Local Files', "Cancel", None, 0, 1)
+                if res != 0: return
+
+            itms = upstuff.items()
+            itms.sort(lambda x,y:cmp(x[0], y[0]))
+
+            for category in upUpdateGroups: #+ upDontUpdateGroups:
+                if category not in self.updateGroups + self.dontUpdateGroups:
+                    self.newGroups.append(category)
+
+            # show dialog with new groups
+            if self.newGroups != []:
+                dlg = FoldersDlg("Select new categories you wish to download", None, "", 1)
+                dlg.setIcon(QPixmap(self.foldersIcon))
+                for group in self.newGroups: dlg.addCategory(group)
+                dlg.finishedAdding(cancel = 0)
+
+                res = dlg.exec_loop()
+                for i in range(len(dlg.checkBoxes)):
+                    if dlg.checkBoxes[i].isChecked():
+                        self.updateGroups.append(dlg.folders[i])
+                    else:
+                        self.dontUpdateGroups.append(dlg.folders[i])
+                self.newGroups = []
+
+            # update new files
+            self.addText("Updating scripts...")
+            self.statusBar.message("Updating scripts")
+
             for fname, (version, location) in itms:
                 qApp.processEvents()
                 
@@ -387,11 +388,16 @@ class updateOrangeDlg(QMainWindow):
                     else:
                         self.addText("Skipping new file %s" % (fname))
             self.writeVersionFile()
+        else:
+            self.addText("Skipping updating scripts...")
 
-        if self.settings["binary"]:        
-            self.updatePyd()
+        if self.settings["binary"]:
+            self.addText("Updating binaries...")
+            updatedFiles += self.updatePyd()
+        else:
+            self.addText("Skipping updateing binaries...")
             
-        self.addText("Finished updating new files. New files: <b>%d</b>. Updated files: <b>%d</b>\n<hr>" %(newFiles, updatedFiles), addBreak = 0)
+        self.addText("Update finished. New files: <b>%d</b>. Updated files: <b>%d</b>\n" %(newFiles, updatedFiles))
 
         # remove widgetregistry.xml in orangeCanvas directory
         if os.path.exists(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml")) and newFiles + updatedFiles > 0:
@@ -404,10 +410,12 @@ class updateOrangeDlg(QMainWindow):
         files = "orange", "corn", "statc", "orangeom", "orangene"
         baseurl = "http://www.ailab.si/orange/download/binaries/%i%i/" % sys.version_info[:2]
         repository_stamps = dict([tuple(x.split()) for x in urllib.urlopen(baseurl + "stamps_pyd.txt") if x.strip()])
+        updated = 0
 
         for fle in files:
             if not os.path.exists(fle+".pyd") or repository_stamps[fle+".pyd"] != md5.md5(file(fle+".pyd", "rb").read()).hexdigest().upper():
-                self.updatefile(baseurl + fle + ".pyd", fle + ".pyd", "", "", "Updating")
+                updated += self.updatefile(baseurl + fle + ".pyd", fle + ".pyd", "", "", "Updating")
+        return updated
     
     # #########################################################
     # get new file from the internet and overwrite the old file
