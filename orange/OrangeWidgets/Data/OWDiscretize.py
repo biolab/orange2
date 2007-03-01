@@ -49,7 +49,6 @@ class DiscGraph(OWGraph):
         self.minVal = self.maxVal = 0
         self.curCutPoints=[]
         
-       
     
     def computeAddedScore(self, spoints):
         candidateSplits = [x for x in frange(self.minVal, self.maxVal, self.resolution) if x not in spoints]
@@ -431,7 +430,7 @@ class OWDiscretize(OWWidget):
         OWGUI.appendRadioButton(box, self, "discretization", self.discretizationMethods[-1])
         OWGUI.separator(vbox)
 
-        OWGUI.radioButtonsInBox(vbox, self, "resetIndividuals", ["Default discretization", "Custom 1", "Custom 2", "Custom 3", "Individual settings"], "Reset individual attribute settings", callback = self.setAllIndividuals)
+        OWGUI.radioButtonsInBox(vbox, self, "resetIndividuals", ["Use default discretization for all attributes", "Custom 1", "Custom 2", "Custom 3", "Individual settings"], "Reset individual attribute settings", callback = self.setAllIndividuals)
         OWGUI.separator(vbox)
         
         box = self.classDiscBox = OWGUI.radioButtonsInBox(vbox, self, "classDiscretization", self.classDiscretizationMethods, "Class discretization", callback=[self.clearLineEditFocus, self.classMethodChanged])
@@ -467,6 +466,8 @@ class OWDiscretize(OWWidget):
         self.layout.addWidget(self.mainVBox)
         self.mainBox = OWGUI.widgetBox(self.mainIABox, orientation=0)
         OWGUI.separator(self.mainIABox)#, height=30)
+        
+        
         graphBox = OWGUI.widgetBox(self.mainIABox, "", orientation=0)
 #        self.needsDiscrete.append(graphBox)
         graphOptBox = OWGUI.widgetBox(graphBox)
@@ -729,6 +730,15 @@ class OWDiscretize(OWWidget):
         if not self.data:
             return
         
+#        if not self.resetIndividuals:
+#            self.mainIABox.hide()
+#            self.controlArea.adjustSize()
+#            self.adjustSize()
+#        else:
+#            self.mainIABox.show()
+#            self.controlArea.adjustSize()
+#            self.adjustSize()
+            
         self.clearLineEditFocus()
         method = self.resetIndividuals
         if method == 4:
