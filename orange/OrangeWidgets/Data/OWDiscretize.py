@@ -30,8 +30,6 @@ class DiscGraph(OWGraph):
         self.baseCurveKey = None
         self.lookaheadCurveKey = None
 
-        self.customLink = -1
-
         self.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.0)
         self.setYLaxisTitle("Split gain")
         self.setXaxisTitle("Attribute value")
@@ -76,17 +74,48 @@ class DiscGraph(OWGraph):
             self.lookaheadCurveX = self.lookaheadCurveY = None
 
 
+    def clearAll(self):
+        for rug in self.rugKeys:
+            self.removeCurve(rug)
+        self.rugKeys = []
+
+        if self.baseCurveKey:
+            self.removeCurve(self.baseCurveKey)
+            self.baseCurveKey = None
+        
+        if self.lookaheadCurveKey:
+            self.removeCurve(self.lookaheadCurveKey)
+            self.lookaheadCurveKey = None
+
+        if self.probCurveKey:
+            self.removeCurve(self.probCurveKey)
+            self.probCurveKey = None
+
+        for c in self.cutLineKeys:
+            self.removeCurve(c)
+        self.cutLineKeys = []
+        
+        for m in self.cutMarkerKeys:
+            self.removeMarker(m)
+        self.cutMarkerKeys = []
+        
+        self.update()
+        
+        
     def setData(self, attr, data):
-        self.clear()
+        self.clearAll()
         self.attr, self.data = attr, data
         self.curCutPoints = []
 
         if not data or not attr:
+            self.clearAll()
             return
 
         if data.domain.classVar:
             self.contingency = orange.ContingencyAttrClass(attr, data)
-            self.condProb = orange.ConditionalProbabilityEstimatorConstructor_loess(self.contingency)
+            self.condProb = orange.ConditionalProbabilityEstimatorConstructor_loess(
+               self.contingency, 
+               nPoints=50)
             self.probDist = None
             attrValues = self.contingency.keys()        
         else:
@@ -101,7 +130,14 @@ class DiscGraph(OWGraph):
         else:
             self.snapDecimals = 1
         
-        self.replotAll()
+        self.baseCurveX = None
+
+        self.plotRug(True)
+        self.plotProbCurve(True)
+        self.plotCutLines()
+
+        self.updateLayout()
+        self.update()
 
 
     def plotRug(self, noUpdate = False):
@@ -150,16 +186,15 @@ class DiscGraph(OWGraph):
     def plotBaseCurve(self, noUpdate = False):
         if self.baseCurveKey:
             self.removeCurve(self.baseCurveKey)
+            self.baseCurveKey = None
 
-        if self.master.showBaseLine and self.data and self.data.domain.classVar:
+        if self.master.showBaseLine and self.master.resetIndividuals and self.data and self.data.domain.classVar and self.attr:
             if not self.baseCurveX:
                 self.baseCurveX, self.baseCurveY = self.computeAddedScore(list(self.curCutPoints))
                 
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.baseCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.baseCurveX, yData = self.baseCurveY, lineWidth = 2)
             self.setCurveYAxis(self.baseCurveKey, QwtPlot.yLeft)
-        else:
-            self.baseCurveKey = None
 
         if not noUpdate:                
             self.update()
@@ -168,14 +203,13 @@ class DiscGraph(OWGraph):
     def plotLookaheadCurve(self, noUpdate = False):
         if self.lookaheadCurveKey:
             self.removeCurve(self.lookaheadCurveKey)
-            
+            self.lookaheadCurveKey = None
+                        
         if self.lookaheadCurveX and self.master.showLookaheadLine:
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.lookaheadCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.lookaheadCurveX, yData = self.lookaheadCurveY, lineWidth = 1)
             self.setCurveYAxis(self.lookaheadCurveKey, QwtPlot.yLeft)
             self.curve(self.lookaheadCurveKey).setEnabled(1)
-        else:
-            self.lookaheadCurveKey = None
 
         if not noUpdate:            
             self.update()
@@ -184,13 +218,12 @@ class DiscGraph(OWGraph):
     def plotProbCurve(self, noUpdate = False):
         if self.probCurveKey:
             self.removeCurve(self.probCurveKey)
+            self.probCurveKey = None
             
         if self.contingency and self.master.showTargetClassProb:            
             xData = self.contingency.keys()[1:-1]
             self.probCurveKey = self.addCurve("", Qt.gray, Qt.gray, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xData, yData = [self.condProb(x)[self.master.targetClass] for x in xData], lineWidth = 2)
             self.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
-        else:
-            self.probCurveKey = None
 
         if not noUpdate:
             self.update()
@@ -234,7 +267,6 @@ class DiscGraph(OWGraph):
             self.baseCurveX = None
             self.plotBaseCurve()
             self.plotCutLines()
-            self.customLink = -1
             
 
     def addCutPoint(self, cut):
@@ -321,7 +353,7 @@ class DiscGraph(OWGraph):
         self.plotBaseCurve()
         self.plotCutLines()
         self.master.synchronizeIf()
-        if self.lookaheadCurveKey:
+        if self.lookaheadCurveKey and self.curve(self.lookaheadCurveKey):
             self.curve(self.lookaheadCurveKey).setEnabled(0)
         self.update()
 
@@ -331,19 +363,6 @@ class DiscGraph(OWGraph):
         self.plotProbCurve()
 
 
-    def replotAll(self):
-        self.clear()
-
-        self.baseCurveX = None
-
-        self.plotRug(True)
-        self.plotProbCurve(True)
-        self.plotBaseCurve(True)
-        self.plotCutLines()
-
-        self.updateLayout()
-        self.update()
-        
 
 
 class ListItemWithLabel(QListBoxPixmap):
@@ -378,7 +397,7 @@ class OWDiscretize(OWWidget):
         self.showBaseLine=1
         self.showLookaheadLine=1
         self.showTargetClassProb=1
-        self.showRug=1
+        self.showRug=0
         self.snap=1
         self.measure=0
         self.targetClass=0
@@ -402,6 +421,7 @@ class OWDiscretize(OWWidget):
         self.data = self.originalData = None
 
         self.loadSettings()
+        
         self.inputs=[("Examples", ExampleTable, self.cdata)]
         self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
         self.measures=[("Information gain", orange.MeasureAttribute_info()), 
@@ -430,7 +450,7 @@ class OWDiscretize(OWWidget):
         OWGUI.appendRadioButton(box, self, "discretization", self.discretizationMethods[-1])
         OWGUI.separator(vbox)
 
-        OWGUI.radioButtonsInBox(vbox, self, "resetIndividuals", ["Use default discretization for all attributes", "Custom 1", "Custom 2", "Custom 3", "Individual settings"], "Reset individual attribute settings", callback = self.setAllIndividuals)
+        OWGUI.radioButtonsInBox(vbox, self, "resetIndividuals", ["Use default discretization for all attributes", "Custom 1", "Custom 2", "Custom 3", "Individual settings"], "Individual attribute treatment", callback = self.setAllIndividuals)
         OWGUI.separator(vbox)
         
         box = self.classDiscBox = OWGUI.radioButtonsInBox(vbox, self, "classDiscretization", self.classDiscretizationMethods, "Class discretization", callback=[self.clearLineEditFocus, self.classMethodChanged])
@@ -461,7 +481,7 @@ class OWDiscretize(OWWidget):
         autoApplyCB = OWGUI.checkBox(box, self, "autoApply", "Commit automatically", callback=[self.clearLineEditFocus])
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.commit)
 
-        OWGUI.separator(self.mainHBox, width=25)
+        self.mainSeparator = OWGUI.separator(self.mainHBox, width=25)
         self.mainIABox =  OWGUI.widgetBox(self.mainHBox, "Individual attribute settings")
         self.layout.addWidget(self.mainVBox)
         self.mainBox = OWGUI.widgetBox(self.mainIABox, orientation=0)
@@ -484,7 +504,7 @@ class OWDiscretize(OWWidget):
         box = OWGUI.widgetBox(graphOptBox, "Target class", addSpace=True)
         self.targetCombo=OWGUI.comboBox(box, self, "targetClass", orientation=0, callback=[self.clearLineEditFocus, self.graph.targetClassChanged])
         stc = OWGUI.checkBox(box, self, "showTargetClassProb", "Show target class probability", callback=[self.clearLineEditFocus, self.graph.plotProbCurve])
-        OWGUI.checkBox(box, self, "showRug", "Show rug", callback=[self.clearLineEditFocus, self.graph.plotRug])
+        OWGUI.checkBox(box, self, "showRug", "Show rug (may be slow)", callback=[self.clearLineEditFocus, self.graph.plotRug])
         self.needsDiscrete.extend([self.targetCombo, stc])
 
         box = OWGUI.widgetBox(graphOptBox, "Editing", addSpace=True)
@@ -531,6 +551,7 @@ class OWDiscretize(OWWidget):
         self.contAttrIcon =  self.createAttributeIconDict()[orange.VarTypes.Continuous]
 
 
+
     def cdata(self, data=None):
         self.closeContext()
         
@@ -570,7 +591,7 @@ class OWDiscretize(OWWidget):
             self.fillClassCombo()
             self.indiLabels = [""] * self.attrList.count()
 
-            self.graph.setData(None, self.data)           
+            self.graph.setData(None, self.data)
             self.openContext("", data)
 
             # Prevent entropy discretization with non-discrete class
@@ -594,6 +615,9 @@ class OWDiscretize(OWWidget):
 #        self.graph.setData(self.data)
         
         self.makeConsistent()        
+        
+        # this should be here because 'resetIndividuals' is a context setting
+        self.showHideIndividual()
 
         self.commit()
 
@@ -648,6 +672,8 @@ class OWDiscretize(OWWidget):
         self.graph.setData(attr, self.data)
         if hasattr(self, "discretizers"):
             self.graph.setSplits(self.discretizers[attrIndex] and self.discretizers[attrIndex].getValueFrom.transformer.points or [])
+        else:
+            self.graph.plotBaseCurve(False)
 
     
     def computeDiscretizers(self):
@@ -725,20 +751,24 @@ class OWDiscretize(OWWidget):
             attr = self.data.domain[idx]
             self.indiMethodChanged()
 
-        
+    
+    def showHideIndividual(self):
+        if not self.resetIndividuals:
+                self.mainIABox.hide()
+                self.mainSeparator.hide()
+        elif self.mainIABox.isHidden():
+            self.graph.plotBaseCurve()
+            self.mainIABox.show()
+            self.mainSeparator.show()
+        qApp.processEvents()
+        self.adjustSize()
+
     def setAllIndividuals(self):
+        self.showHideIndividual()    
+
         if not self.data:
             return
         
-#        if not self.resetIndividuals:
-#            self.mainIABox.hide()
-#            self.controlArea.adjustSize()
-#            self.adjustSize()
-#        else:
-#            self.mainIABox.show()
-#            self.controlArea.adjustSize()
-#            self.adjustSize()
-            
         self.clearLineEditFocus()
         method = self.resetIndividuals
         if method == 4:
