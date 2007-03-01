@@ -38,7 +38,7 @@ def listfiles(baseurl, basedir, subdir):
                             print "EXC " + basedir+subdir+dname
                 f.close()
 
-outf = open(destdir+r"whatsup.txt", "wt")
+outf = open(destdir+r"\whatsup.txt", "wt")
 
 listfiles("./", "orange/", "")
 listfiles("./OrangeWidgets/Genomics/", "orange/OrangeWidgets/Genomics/", "")
