@@ -9,18 +9,18 @@ cancel
 
 :changedirok2
 cd ..
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r snapshot -f -d update orange
+cvs -d :sspi:cvso@localhost:/CVS checkout -r snapshot -f -d update orange
 cd update
 mkdir OrangeWidgets
 cd OrangeWidgets
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r snapshot -f Genomics
-rem cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -kb -r snapshot source -d orange\source
+cvs -d :sspi:cvso@localhost:/CVS -Q checkout -r snapshot -f Genomics
+rem cvs -d :sspi:cvso@localhost:/CVS -Q checkout -kb -r snapshot source -d orange\source
 cdd %UPDATEDIR
 cp ..\orange.chm doc
 
 rem ************************************************
 REM *** build whatsup.txt list
 cdd %SCRIPTDIR
-python whatsUp.py
+python whatsUp.py %UPDATEDIR %DOWNLOADDIR
 
 exit
