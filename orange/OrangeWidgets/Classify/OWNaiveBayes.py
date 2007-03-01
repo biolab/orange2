@@ -5,19 +5,10 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
 <priority>10</priority>
 """
-#
-# OWDataTable.py
-#
-# wishes:
-# ignore attributes, filter examples by attribute values, do
-# all sorts of preprocessing (including discretization) on the table,
-# output a new table and export it in variety of formats.
 
 from OWWidget import *
 import OWGUI, orange
 from exceptions import Exception
-
-##############################################################################
 
 class OWNaiveBayes(OWWidget):
     settingsList = ["m", "name", "probEstimation", "condProbEstimation", "condProbContEstimation", "adjustThreshold", "windowProportion"]
@@ -36,6 +27,7 @@ class OWNaiveBayes(OWWidget):
         self.condProbContEstimation = 4     # relative frequency
         self.adjustThreshold = 0            # adjust threshold (for binary classes)
         self.windowProportion = 0.5         # Percentage of instances taken in loess learning
+        self.loessPoints = 100              # Number of points in computation of LOESS
 
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
@@ -55,17 +47,14 @@ class OWNaiveBayes(OWWidget):
                              ("m-Estimate", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=self.m_estimator)),
                              ("LOESS", orange.ConditionalProbabilityEstimatorConstructor_loess())]
 
-        # GUI
-        # name
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        # parameters
         box = QVGroupBox(self.controlArea)
         box.setTitle('Probability Estimation')
 
-        width = 123
+        width = 150
         itms = [e[0] for e in self.estMethods]
         OWGUI.comboBox(box, self, 'probEstimation', items=itms, label='Unconditional:', labelWidth=width, orientation='horizontal',
                        tooltip='Method to estimate unconditional probability.', callback=self.refreshControls)
@@ -84,16 +73,17 @@ class OWNaiveBayes(OWWidget):
         mValid.setRange(0,10000,1)
         self.mwidget = OWGUI.lineEdit(box, self, 'm', label='Parameter for m-estimate:', labelWidth=width, orientation='horizontal', box=None, tooltip=None, callback=None, valueType = str, validator = mValid)
 
-        self.refreshControls()
-
-#        contBox = QVGroupBox(self.controlArea)
-#        contBox.setTitle("Continuous variables")
-
         kernelSizeValid = QDoubleValidator(self.controlArea)
         kernelSizeValid.setRange(0,1,3)
-        OWGUI.lineEdit(box, self, 'windowProportion', label = 'Size of LOESS window:',
+        self.loessWindow = OWGUI.lineEdit(box, self, 'windowProportion', label = 'Size of LOESS window:',
                        labelWidth=width, orientation='horizontal', box=None, tooltip='Proportion of examples used for local learning in loess. Use 0 to learn from few local instances (3) and 1 to learn from all in the data set (this kind of learning is not local anymore).',
                        callback=None, valueType = str, validator = kernelSizeValid)
+
+        pointsValid = QIntValidator(20, 1000, self.controlArea)
+#        pointsValid.setRange(0,1,3)
+        self.loessPointsEdit = OWGUI.lineEdit(box, self, 'loessPoints', label = 'Number of points in LOESS:',
+                       labelWidth=width, orientation='horizontal', box=None, tooltip='Number of points in computation of LOESS (20-1000).',
+                       callback=None, valueType = str, validator = pointsValid)
         
         OWGUI.separator(self.controlArea)
 
@@ -102,18 +92,17 @@ class OWNaiveBayes(OWWidget):
         OWGUI.separator(self.controlArea)
         self.applyBtn = OWGUI.button(self.controlArea, self, "&Apply", callback=self.setLearner)
         
+        self.refreshControls()
+
         self.resize(150,100)
         self.setLearner()                   # this just sets the learner, no data yet
 
     def activateLoadedSettings(self):
         self.setLearner()
 
-    # setup the bayesian learner
     def setLearner(self):
         if float(self.m) < 0:
             self.error("Parameter m Out of Bounds: Parameter m should be positive!")
-#            QMessageBox.information(self.controlArea, "Parameter m Out of Bounds",
-#                                    "Parameter m should be positive!", QMessageBox.Ok)
             return
         if float(self.windowProportion) < 0 or float(self.windowProportion) > 1:
             self.error("Parameter windowProportion (for LOESS) Out of Bounds: Parameter should be between 0.0 and 1.0!")
@@ -129,6 +118,8 @@ class OWNaiveBayes(OWWidget):
             self.learner.conditionalEstimatorConstructorContinuous = self.condEstContMethods[self.condProbContEstimation][1]
             if hasattr(self.learner.conditionalEstimatorConstructorContinuous, "windowProportion"):
                 setattr(self.learner.conditionalEstimatorConstructorContinuous, "windowProportion", float(self.windowProportion))
+            if hasattr(self.learner.conditionalEstimatorConstructorContinuous, "nPoints"):
+                setattr(self.learner.conditionalEstimatorConstructorContinuous, "nPoints", int(self.loessPoints))
             
                 
         for attr, cons in ( ("estimatorConstructor", self.estMethods[self.probEstimation][1]),
@@ -155,7 +146,18 @@ class OWNaiveBayes(OWWidget):
             self.send("Naive Bayesian Classifier", self.classifier)
         self.error()
 
-    # handles input signal
+    def sendReport(self):
+        self.startReport(self.name)
+        self.reportSection("Learning parameters")
+        self.reportSettings([("Probability estimation", self.estMethods[self.probEstimation][0]),
+                             ("Conditional probability", self.condEstMethods[self.condProbEstimation][0]),
+                             ("Continuous probabilities", self.condEstContMethods[self.condProbContEstimation][0]),
+                             self.mwidget.box.isEnabled and ("m for m-estimate", "%.1f" % self.m),
+                             self.loessWindow.box.isEnabled and ("LOESS window size", "%.1f" % self.windowProportion),
+                             ("Adjust classification threshold", OWGUI.YesNo[self.adjustThreshold])
+                            ])
+        self.finishReport()
+            
     def cdata(self,data):
         if data and not data.domain.classVar:
             self.error("This data set has no class.")
@@ -174,18 +176,15 @@ class OWNaiveBayes(OWWidget):
             self.classifier = None
             self.send("Naive Bayesian Classifier", self.classifier)
 
-    # signal processing
     def refreshControls(self):
         self.mwidget.box.setEnabled(self.probEstimation==2 or self.condProbEstimation==3 or self.condProbContEstimation==3)
+        self.loessWindow.box.setEnabled(self.condProbEstimation==4)
 
         self.est2.changeItem(QString("same (%s)" % self.estMethods[self.probEstimation][0]), 0)
         if self.est2.currentItem(): # is est3 set to same?
           self.est3.changeItem(QString("same (%s)" % self.condEstMethods[self.condProbEstimation][0]), 0)
         else:
           self.est3.changeItem(QString("same (%s)" % self.estMethods[self.probEstimation][0]), 0)
-
-##############################################################################
-# Test the widget, run from DOS prompt
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
