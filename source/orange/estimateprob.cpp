@@ -465,12 +465,13 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     raiseError("empty distribution");
 
   PContingency cont = CLONE(TContingency, frequencies);
+  cont->continuous->clear();
 
   const TDistributionMap &points = *frequencies->continuous;
   vector<float> xpoints;
   distributePoints(points, nPoints, xpoints, distributionMethod);
 
-  if (!points.size())
+  if (!xpoints.size())
     raiseError("no points for the curve (check 'nPoints')");
 
   TDistributionMap::const_iterator lowedge = points.begin();
