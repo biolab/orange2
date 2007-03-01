@@ -254,7 +254,7 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_kernel::operator()(PDistr
 TProbabilityEstimatorConstructor_loess::TProbabilityEstimatorConstructor_loess(const float &windowProp, const int &ak)
 : windowProportion(windowProp),
   nPoints(ak),
-  distributionMethod(DISTRIBUTE_MINIMAL)
+  distributionMethod(DISTRIBUTE_FIXED)
 {}
 
 
@@ -451,7 +451,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_ByR
 TConditionalProbabilityEstimatorConstructor_loess::TConditionalProbabilityEstimatorConstructor_loess(const float &windowProp, const int &ak)
 : windowProportion(windowProp),
   nPoints(ak),
-  distributionMethod(DISTRIBUTE_MINIMAL)
+  distributionMethod(DISTRIBUTE_FIXED)
 {}
 
 
