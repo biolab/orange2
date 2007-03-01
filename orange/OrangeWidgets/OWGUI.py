@@ -242,12 +242,13 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
     
 
 # btnLabels is a list of either char strings or pixmaps
-def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1, addSpace = False):
+def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1, addSpace = False, orientation = 'vertical'):
     if box:
+        bb = (orientation == 'horizontal' or not orientation) and QHButtonGroup or QVButtonGroup
         if type(box) in [str, unicode]:
-            bg = QVButtonGroup(box, widget)
+            bg = bb(box, widget)
         else:
-            bg = QVButtonGroup(widget)
+            bg = bb(widget)
     else:
         bg = widget
 
