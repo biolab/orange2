@@ -46,7 +46,6 @@ set ERRORS=0
 
 alias flag_on_error=`if %errorlevel != 0 set ERRORS=%errorlevel`
 alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ cancel %errorlevel)`
-rem alias break_on_error=echo xx"
 
 set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
 
