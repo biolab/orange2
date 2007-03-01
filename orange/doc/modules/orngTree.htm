@@ -8,18 +8,28 @@
 <index name="classifiers/classification trees">
 <index name="modules/classification trees">
 
-<P>Module orngTree implements a class
-<code>TreeLearner</code> for building both decision and regression
-trees. <code>orngTree.TreeLearner</code> is essentially a wrapper around <a href="../reference/TreeLearner.htm"><code>orange.TreeLearner</code></a>, provided for easier use of the latter.</p>
+<P>Module orngTree implements a class <code>TreeLearner</code> for
+building both decision and regression
+trees. <code>orngTree.TreeLearner</code> is essentially a wrapper
+around <a
+href="../reference/TreeLearner.htm"><code>orange.TreeLearner</code></a>,
+provided for easier use of the latter.</p>
 
-<P>The module also contains functions for counting the number of nodes and leaves in the tree.</P>
+<P>The module also contains functions for counting the number of nodes
+and leaves in the tree.</P>
 
-<P>The most striking functionality of the module is the function for printing out the tree which is extremely versatile and can print out practically anything you'd like to know, from the number of examples, proportion of majority class and similar, to more complex statistics like the proportion a particular class divided by the proportion of this class in a parent node. And even more, you can define your own callback functions to be used for printing.</P>
-
+<P>The module includes functions for printing out the tree, which are
+rather versatile and can print out practically anything you'd like to
+know, from the number of examples, proportion of examples of majority
+class in nodes and similar, to more complex statistics like the
+proportion of examples in a particular class divided by the proportion
+of examples of this class in a parent node. And even more, you can
+define your own callback functions to be used for printing.</P>
 
 <h2>TreeLearner</h2>
 
-<p><code><INDEX name="classes/TreeLearner (in orngTree)">TreeLearner</code> is a class that assembles the generic
+<p><code><INDEX name="classes/TreeLearner (in
+orngTree)">TreeLearner</code> is a class that assembles the generic
 classification tree learner (from Orange's objects for induction of
 decision trees). It sets a number of parameters used in induction that
 can also be set after the creation of the object, most often through
@@ -87,7 +97,7 @@ of <code>TreeClassifier</code> object is returned instead.</p>
 
   <dt>stop</dt>
   <dd>Used for passing a function which is used in place of
-  <code><code>TreeStopCriteria</code>. Useful when prototyping new
+  <code>TreeStopCriteria</code>. Useful when prototyping new
   tree induction algorithms. See a documentation on <a
   href="../reference/TreeLearner.htm">TreeStopCriteria</a> for more
   info on this function. When used, parameters

@@ -7,9 +7,23 @@
 <index name="modules/performance of classifiers">
 <index name="classifiers/accuracy of">
 
-<P>This module contains various measures of quality, such as classification accuracy, ROC statistics and similar. Most functions require an argument named <code>res</code>, an instance of <code><INDEX name="classes/ExperimentResults (in orngTest)">ExperimentResults</code> as computed by functions from <a href="orngTest.htm">orngTest</a> and which contains classifications and probabilities obtained through cross-validation, leave one-out, testing on training or new examples...</P>
+<P>This module contains various measures of quality, such as
+classification accuracy, ROC statistics and similar. Most functions
+require an argument named <code>res</code>, an instance of
+<code><INDEX name="classes/ExperimentResults (in
+orngTest)">ExperimentResults</code> as computed by functions from <a
+href="orngTest.htm">orngTest</a> and which contains classifications
+and probabilities obtained through cross-validation, leave one-out,
+testing on training or new examples...</P>
 
-<P>To prepare some data for examples on this page, we shall load the voting data set (problem of predicting the congressman's party (republican, democrat) based on a selection of votes) and evaluate naive bayesian learner, classification trees and majority classifier using cross-validation. For examples requiring a multivalued class problem, we shall do the same with the vehicle data set (telling whether a vehicle described by the features extracted from a picture is a van, bus, or Opel or Saab car).</P>
+<P>To prepare some data for examples on this page, we shall load the
+voting data set (problem of predicting the congressman's party
+(republican, democrat) based on a selection of votes) and evaluate
+naive bayesian learner, classification trees and majority classifier
+using cross-validation. For examples requiring a multivalued class
+problem, we shall do the same with the vehicle data set (telling
+whether a vehicle described by the features extracted from a picture
+is a van, bus, or Opel or Saab car).</P>
 
 <p class="header">part of <a href="statExamples.py">statExamples.py</a></p>
 <xmp class="code">import orange, orngTest, orngTree
@@ -26,7 +40,10 @@ resVeh = orngTest.crossValidation(learners, vehicle)
 
 </xmp>
 
-<P>If examples are weighted, weights are taken into account. This can be disabled by giving <code>unweighted=1</code> as a keyword argument. Another way of disabling weights is to clear the <code>ExperimentResults</code>' flag <code>weights</code>.</P>
+<P>If examples are weighted, weights are taken into account. This can
+be disabled by giving <code>unweighted=1</code> as a keyword
+argument. Another way of disabling weights is to clear the
+<code>ExperimentResults</code>' flag <code>weights</code>.</P>
 
 
 <H2>General Measures of Quality</H2>
@@ -36,9 +53,13 @@ resVeh = orngTest.crossValidation(learners, vehicle)
 <DT>CA(res, reportSE=False)</DT>
 <index name="performance scores+classification accuracy">
 
-<DD><P>Computes classification accuracy, i.e. percentage of matches
+<DD>
+
+<P>Computes classification accuracy, i.e. percentage of matches
 between predicted and actual class. The function returns a list of
-classification accuracies of all classifiers tested. If <code>reportSE</code> is set to true, the list will contain tuples with accuracies and standard errors.</P>
+classification accuracies of all classifiers tested. If
+<code>reportSE</code> is set to true, the list will contain tuples
+with accuracies and standard errors.</P>
 
 <P>If results are from multiple repetitions of experiments (like those
 returned by orngTest.crossValidation or orngTest.proportionTest) the
@@ -52,7 +73,10 @@ according to binomial distribution. This can be approximated by normal
 distribution, so we report the SE of sqrt(CA*(1-CA)/N), where CA is
 classification accuracy and N is number of test examples.</P>
 
-<P>Instead of <code>ExperimentResults</code>, this function can be given a list of confusion matrices (see below). Standard errors are in this case estimated using the latter method.</P>
+<P>Instead of <code>ExperimentResults</code>, this function can be
+given a list of confusion matrices (see below). Standard errors are in
+this case estimated using the latter method.</P>
+
 </DD>
 
 <DT>AP(res, reportSE=False)</DT>
@@ -108,14 +132,36 @@ majrty  0.614   0.526   0.474   -0.000
 
 <DT>confusionMatrices(res, classIndex=-1, {cutoff})</DT>
 
-<DD><P>This function can compute two different forms of confusion matrix: one in which a certain class is marked as positive and the other(s) negative, and another in which no class is singled out. The way to specify what we want is somewhat confusing due to backward compatibility issues.</P>
+<DD><P>This function can compute two different forms of confusion
+matrix: one in which a certain class is marked as positive and the
+other(s) negative, and another in which no class is singled out. The
+way to specify what we want is somewhat confusing due to backward
+compatibility issues.</P>
 
 <br>
-<p><b>A positive-negative confusion matrix</b> is computed (a) if the class is binary unless <code>classIndex</code> argument is -2, (b) if the class is multivalued and the <code>classIndex</code> is non-negative. Argument <code>classIndex</code> then tells which class is positive. In case (a), <code>classIndex</code> may be omited; the first class is then negative and the second is positive.</P>
 
-<P>The result of a function is a list of instances of class <code>ConfusionMatrix</code>, containing the (weighted) number of true positives (<code>TP</code>), false negatives (<code>FN</code>), false positives (<code>FP</code>) and true negatives (<code>TN</code>).</P>
+<p><b>A positive-negative confusion matrix</b> is computed (a) if the
+class is binary unless <code>classIndex</code> argument is -2, (b) if
+the class is multivalued and the <code>classIndex</code> is
+non-negative. Argument <code>classIndex</code> then tells which class
+is positive. In case (a), <code>classIndex</code> may be omited; the
+first class is then negative and the second is positive, unless the
+<code>baseClass</code> attribute in the object with results has
+non-negative value. In that case, <code>baseClass</code> is an index
+of the traget class. <code>baseClass</code> attribute of results
+object should be set manually.</P>
 
-<P>We can also add the keyword argument <code>cutoff</code> (e.g. <code>confusionMatrices(results, cutoff=0.3)</code>; if we do, <code>confusionMatrices</code> will disregard the classifiers' class predictions and observe the predicted probabilities, and consider the prediction "positive" if the predicted probability of the positive class is higher than the cutoff.</P>
+<P>The result of a function is a list of instances of class
+<code>ConfusionMatrix</code>, containing the (weighted) number of true
+positives (<code>TP</code>), false negatives (<code>FN</code>), false
+positives (<code>FP</code>) and true negatives (<code>TN</code>).</P>
+
+<P>We can also add the keyword argument <code>cutoff</code>
+(e.g. <code>confusionMatrices(results, cutoff=0.3)</code>; if we do,
+<code>confusionMatrices</code> will disregard the classifiers' class
+predictions and observe the predicted probabilities, and consider the
+prediction "positive" if the predicted probability of the positive
+class is higher than the cutoff.</P>
 
 <P>The example below shows how setting the cut off threshold from the default 0.5 to 0.2 affects the confusion matrics for naive Bayesian classifier.</P>
 
