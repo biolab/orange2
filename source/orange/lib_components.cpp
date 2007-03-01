@@ -2494,7 +2494,17 @@ PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args, P
   PyCATCH
 }
 
+#include "stat.hpp"
 
+PYCLASSCONSTANT_INT(ProbabilityEstimatorConstructor_loess, Minimal, DISTRIBUTE_MINIMAL)
+PYCLASSCONSTANT_INT(ProbabilityEstimatorConstructor_loess, Factor, DISTRIBUTE_FACTOR)
+PYCLASSCONSTANT_INT(ProbabilityEstimatorConstructor_loess, Fixed, DISTRIBUTE_FIXED)
+PYCLASSCONSTANT_INT(ProbabilityEstimatorConstructor_loess, Uniform, DISTRIBUTE_UNIFORM)
+
+PYCLASSCONSTANT_INT(ConditionalProbabilityEstimatorConstructor_loess, Minimal, DISTRIBUTE_MINIMAL)
+PYCLASSCONSTANT_INT(ConditionalProbabilityEstimatorConstructor_loess, Factor, DISTRIBUTE_FACTOR)
+PYCLASSCONSTANT_INT(ConditionalProbabilityEstimatorConstructor_loess, Fixed, DISTRIBUTE_FIXED)
+PYCLASSCONSTANT_INT(ConditionalProbabilityEstimatorConstructor_loess, Uniform, DISTRIBUTE_UNIFORM)
 
 /* ************ MEASURES ************ */
 
