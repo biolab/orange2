@@ -72,7 +72,7 @@ class OWImpute(OWWidget):
         self.indiValueCtrlBox = QHBox(self.indiButtons)
         self.indiValueCtrlBox.setFixedWidth(150)
         OWGUI.separator(self.indiValueCtrlBox, 25, 0)
-        self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self.sendIf)
+        self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self, self.sendIf)
         self.connect(self.indiValueCtrl, SIGNAL("textChanged ( const QString & )"), self.lineEditChanged)
         self.connect(self.indiValueCtrl, SIGNAL("returnPressed ( )"), self.sendIf)
         OWGUI.rubber(indiMethBox)
@@ -141,7 +141,7 @@ class OWImpute(OWWidget):
         else:
             valid = QDoubleValidator(self)
             valid.setRange(-1e30, 1e30, 10)
-            self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self.sendIf)
+            self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self, self.sendIf)
             self.indiValueCtrl.setValidator(valid)
             if attr and self.methods.has_key(attrName):
                 self.indiValueCtrl.setText(self.methods[attrName][1])
