@@ -119,10 +119,14 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
 
 
 def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = unicode, validator=None, controlWidth = None, callbackOnFocusOut=False):
-    b = widgetBox(widget, box, orientation)
-    widgetLabel(b, label, labelWidth)
-    wa = callback and callbackOnFocusOut and LineEditWFocusOut(b, callback) or QLineEdit(b)
+    if box or label:
+        b = widgetBox(widget, box, orientation)
+        widgetLabel(b, label, labelWidth)
+    else:
+        b = widget
+    wa = callback and callbackOnFocusOut and LineEditWFocusOut(b, master, callback) or QLineEdit(b)
     wa.setText(unicode(master.getdeepattr(value)))
+    wa.isChanged = False
 
     if controlWidth:
         wa.setFixedWidth(controlWidth)
@@ -132,7 +136,8 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     if validator:
         wa.setValidator(validator)
 
-    connectControl(wa, master, value, callback, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = valueType)
+    connectControl(wa, master, value, callback and not callbackOnFocusOut, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = valueType)
+        
     wa.box = b
     return wa
 
@@ -388,9 +393,15 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
 
 
 def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = unicode, control2attributeDict = {}, emptyString = None, debuggingEnabled = 1):
-    hb = widgetBox(widget, box, orientation)
-    widgetLabel(hb, label, labelWidth)
-    if tooltip: QToolTip.add(hb, tooltip)
+    if box or label:
+        hb = widgetBox(widget, box, orientation)
+        widgetLabel(hb, label, labelWidth)
+    else:
+        hb = widget
+        
+    if tooltip:
+        QToolTip.add(hb, tooltip)
+        
     combo = QComboBox(hb)
     combo.box = hb
 
@@ -734,9 +745,9 @@ class FunctionCallback:
                 kwds['widget'] = self.widget
             if type(self.f)==list:
                 for f in self.f:
-                    apply(f, (), kwds)
+                    f(**kwds)
             else:
-                apply(self.f, (), kwds)
+                self.f(**kwds)
 
 
 class ListBoxCallback:
@@ -846,6 +857,7 @@ class CallFront_logSlider(ControlledCallFront):
 class CallFront_lineEdit(ControlledCallFront):
     def action(self, value):
         self.control.setText(unicode(value))
+        self.control.isChanged = False
 
 
 class CallFront_radioButtons(ControlledCallFront):
@@ -1013,14 +1025,27 @@ class DoubleSpinBox(QSpinBox):
         
 
 class LineEditWFocusOut(QLineEdit):
-    def __init__(self, parent, callback, focusInCallback=None):
+    def __init__(self, parent, master, callback, focusInCallback=None):
         QLineEdit.__init__(self, parent)
         self.callback = callback
         self.focusInCallback = focusInCallback
+        self.isChanged = False
+        master.connect(self, SIGNAL("textChanged(const QString &)"), self.markChanged)
+        master.connect(self, SIGNAL("returnPressed()"), self.returnPressed)
 
+    def markChanged(self, *e):
+        self.isChanged = True
+        
+    def returnPressed(self):
+        if self.isChanged:
+            self.callback()
+            self.isChanged = False
+        
     def focusOutEvent(self, *e):
-        self.callback()
+        QLineEdit.focusOutEvent(self, *e)
+        self.returnPressed()
 
     def focusInEvent(self, *e):
         if self.focusInCallback:
             self.focusInCallback()
+        return QLineEdit.focusInEvent(self, *e)
