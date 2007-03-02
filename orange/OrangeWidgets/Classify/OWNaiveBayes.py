@@ -104,11 +104,11 @@ class OWNaiveBayes(OWWidget):
 
     def applyLearner(self):
         if float(self.m_estimator.m) < 0:
-            self.error("Parameter m should be positive!")
+            self.error("Parameter m should be positive")
             self.learner = None
         
         elif float(self.windowProportion) < 0 or float(self.windowProportion) > 1:
-            self.error("Window proportion for LOESS should be between 0.0 and 1.0!")
+            self.error("Window proportion for LOESS should be between 0.0 and 1.0")
             self.learner = None
 
         else:
