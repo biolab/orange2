@@ -467,7 +467,7 @@ class OWDiscretize(OWWidget):
         self.intervalSlider=OWGUI.hSlider(OWGUI.indentedBox(cinterBox), self, "classIntervals", None, 2, 10, callback=[self.clearLineEditFocus, self.classMethodChanged])
         hbox = OWGUI.widgetBox(box, orientation = 0)
         OWGUI.appendRadioButton(box, self, "discretization", "Custom" + "  ", insertInto = hbox)
-        self.classCustomLineEdit = OWGUI.LineEditWFocusOut(hbox, self.classCustomChanged, focusInCallback = self.classCustomSelected)
+        self.classCustomLineEdit = OWGUI.LineEditWFocusOut(hbox, self, self.classCustomChanged, focusInCallback = self.classCustomSelected)
 #        Can't validate - need to allow spaces
 #        valid = QDoubleValidator(self)
 #        valid.setRange(-1e30, 1e30, 10)
@@ -546,7 +546,7 @@ class OWDiscretize(OWWidget):
         for i in range(3):
             hbox = OWGUI.widgetBox(hbbox, orientation = 0)
             OWGUI.appendRadioButton(box, self, "discretization", "Custom %i" % (i+1) + " ", insertInto = hbox)
-            le = OWGUI.LineEditWFocusOut(hbox, lambda w=i: self.customChanged(w), focusInCallback = lambda w=i: self.customSelected(w))
+            le = OWGUI.LineEditWFocusOut(hbox, self, lambda w=i: self.customChanged(w), focusInCallback = lambda w=i: self.customSelected(w))
             self.connect(le, SIGNAL("returnPressed ()"), lambda w=i: self.customChanged(w))
             le.setFixedWidth(110)
             self.customLineEdits.append(le)
@@ -1024,7 +1024,7 @@ class OWDiscretize(OWWidget):
                 else:
                     newdomain = orange.Domain(newattrs, self.data.domain.classVar)
             else:
-                newdomain = orange.Domain(attrs, None)
+                newdomain = orange.Domain(newattrs, None)
 
             newdata = orange.ExampleTable(newdomain, self.originalData)
             self.send("Examples", newdata)
