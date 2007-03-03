@@ -238,14 +238,25 @@ class OWRank(OWWidget):
                 if not self.discretizedData:
                     discretizer = orange.EquiNDiscretization(numberOfIntervals=self.nIntervals)
                     contAttrs = filter(lambda attr: attr.varType == orange.VarTypes.Continuous, self.data.domain.attributes)
-                    at = [discretizer(attri, self.data) for attri in contAttrs]
+                    at = []
+                    attrDict = {}
+                    for attri in contAttrs:
+                        try:
+                            nattr = discretizer(attri, self.data)
+                            at.append(nattr)
+                            attrDict[attri] = nattr
+                        except:
+                            pass
                     self.discretizedData = self.data.select(orange.Domain(at, self.data.domain.classVar))
-                    self.discretizedData.setattr("attrDict", dict(zip(contAttrs, at)))
+                    self.discretizedData.setattr("attrDict", attrDict)
 
-                act_attr, act_data = self.discretizedData.attrDict[attr], self.discretizedData
+                act_attr, act_data = self.discretizedData.attrDict.get(attr, None), self.discretizedData
 
             try:
-                mdict[attr] = estimator(act_attr, act_data)
+                if act_attr:
+                    mdict[attr] = act_attr and estimator(act_attr, act_data)
+                else:
+                    mdict[attr] = None
             except:
                 mdict[attr] = None
 
