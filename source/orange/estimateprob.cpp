@@ -631,7 +631,8 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     TDistribution *sigma_tmp = CLONE(TDistribution, sigma_xy);
     PDistribution wsigma_tmp = sigma_tmp;
     //*sigma_tmp *= wsigma_tmp;
-    *sigma_tmp *= 1/sigma_x2;
+    if (sigma_x2 > 1e-10)
+      *sigma_tmp *= 1/sigma_x2;
 
     const float difx = refx - Sx/n;
 
@@ -665,14 +666,16 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
  
     // now for the variance
     // restore sigma_tmp and compute the conditional sigma
-    *sigma_tmp *= (1/difx);
-    *sigma_tmp *= wsigma_xy;
-    *sigma_tmp *= -1; 
-    *sigma_tmp += wsigma_y2;
-    // fct corresponds to part of (10) in the brackets (see URL above)
- //   float fct = Sww + difx*difx/sigma_x2/sigma_x2 * (Swwxx   - 2/n * Sx*Swwx   +  2/n/n * Sx*Sx*Sww);
-    float fct = 1 + difx*difx/sigma_x2; //n + difx*difx/sigma_x2+n*n --- add this product to the overall fct sum if you are estimating error for a single user and not for the line.  
-    *sigma_tmp *= fct/n; // fct/n/n;
+    if ((difx > 1e-10) && (sigma_x2 > 1e-10)) {
+      *sigma_tmp *= (1/difx);
+      *sigma_tmp *= wsigma_xy;
+      *sigma_tmp *= -1; 
+      *sigma_tmp += wsigma_y2;
+      // fct corresponds to part of (10) in the brackets (see URL above)
+   //   float fct = Sww + difx*difx/sigma_x2/sigma_x2 * (Swwxx   - 2/n * Sx*Swwx   +  2/n/n * Sx*Sx*Sww);
+      float fct = 1 + difx*difx/sigma_x2; //n + difx*difx/sigma_x2+n*n --- add this product to the overall fct sum if you are estimating error for a single user and not for the line.  
+      *sigma_tmp *= fct/n; // fct/n/n;
+    }
     ((TDiscDistribution *)(Sy)) ->variances = mlnew TFloatList(((TDiscDistribution *)(sigma_tmp))->distribution);
     
 
