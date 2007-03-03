@@ -568,7 +568,7 @@ PVariable TEquiNDiscretization::operator()(PExampleGenerator gen, PVariable var,
     ++first;
 
   if (!first)
-    raiseError("attribute has '%s' no known values.", var->name.c_str());
+    raiseError("attribute '%s' has no known values.", var->name.c_str());
 
   TContDistribution distr(var);
   do {
