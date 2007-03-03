@@ -109,13 +109,17 @@ class DiscGraph(OWGraph):
 
         if not data or not attr:
             self.clearAll()
+            self.snapDecimals = 1
             return
 
         if data.domain.classVar:
             self.contingency = orange.ContingencyAttrClass(attr, data)
-            self.condProb = orange.ConditionalProbabilityEstimatorConstructor_loess(
-               self.contingency, 
-               nPoints=50)
+            try:
+                self.condProb = orange.ConditionalProbabilityEstimatorConstructor_loess(
+                   self.contingency, 
+                   nPoints=50)
+            except:
+                self.condProb = None
             self.probDist = None
             attrValues = self.contingency.keys()        
         else:
@@ -123,7 +127,10 @@ class DiscGraph(OWGraph):
             self.probDist = orange.Distribution(attr, data)
             attrValues = self.probDist.keys()
 
-        self.minVal, self.maxVal = min(attrValues), max(attrValues)
+        if attrValues:
+            self.minVal, self.maxVal = min(attrValues), max(attrValues)
+        else:
+            self.minVal, self.maxVal = 0, 1
         mdist = self.maxVal - self.minVal
         if mdist > 1e-30:
             self.snapDecimals = -int(math.ceil(math.log(mdist, 10)) -2)
@@ -220,7 +227,7 @@ class DiscGraph(OWGraph):
             self.removeCurve(self.probCurveKey)
             self.probCurveKey = None
             
-        if self.contingency and self.master.showTargetClassProb:            
+        if self.contingency and self.condProb and self.master.showTargetClassProb:            
             xData = self.contingency.keys()[1:-1]
             self.probCurveKey = self.addCurve("", Qt.gray, Qt.gray, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xData, yData = [self.condProb(x)[self.master.targetClass] for x in xData], lineWidth = 2)
             self.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
@@ -881,18 +888,22 @@ class OWDiscretize(OWWidget):
             return
         
         discType -= 1
-        if discType == self.D_LEAVE: # leave continuous
-            discretizer = None
-        elif discType == self.D_ENTROPY:
-            discretizer = orange.EntropyDiscretization(attr, self.data)
-        elif discType == self.D_FREQUENCY:
-            discretizer = orange.EquiNDiscretization(attr, self.data, numberOfIntervals = intervals)
-        elif discType == self.D_WIDTH:
-            discretizer = orange.EquiDistDiscretization(attr, self.data, numberOfIntervals = intervals)
-        elif discType == self.D_REMOVE:
+        self.warning(1000+idx)
+        try:
+            if discType == self.D_LEAVE: # leave continuous
+                discretizer = None
+            elif discType == self.D_ENTROPY:
+                discretizer = orange.EntropyDiscretization(attr, self.data)
+            elif discType == self.D_FREQUENCY:
+                discretizer = orange.EquiNDiscretization(attr, self.data, numberOfIntervals = intervals)
+            elif discType == self.D_WIDTH:
+                discretizer = orange.EquiDistDiscretization(attr, self.data, numberOfIntervals = intervals)
+            elif discType == self.D_REMOVE:
+                discretizer = False
+            else:
+                discretizer = orange.IntervalDiscretizer(points = customs).constructVariable(attr)
+        except:
             discretizer = False
-        else:
-            discretizer = orange.IntervalDiscretizer(points = customs).constructVariable(attr)
 
 
         self.discretizers[idx] = discretizer
@@ -901,6 +912,8 @@ class OWDiscretize(OWWidget):
             discInts = ""
         elif discType == self.D_REMOVE:
             discInts = ""
+        elif not discretizer:
+            discInts = ": <can't discretize>"
         else:
             points = discretizer.getValueFrom.transformer.points
             discInts = points and (": " + ", ".join([str(attr(x)) for x in points])) or ": <removed>"
