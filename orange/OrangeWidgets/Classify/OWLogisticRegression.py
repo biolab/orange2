@@ -60,14 +60,14 @@ class OWLogisticRegression(OWWidget):
         self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", box="Imputation of unknown values", items=self.imputationMethodsStr)
         OWGUI.separator(self.controlArea)
 
-        applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback = self.apply)
+        applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback = self.applyLearner)
 
         OWGUI.rubber(self.controlArea)
         self.adjustSize()
 
-        self.apply()
+        self.applyLearner()
 
-    def apply(self):
+    def applyLearner(self):
         imputer = self.imputationMethods[self.imputation]
         removeMissing = not imputer
 
@@ -80,41 +80,36 @@ class OWLogisticRegression(OWWidget):
 
         self.learner.name = self.name
         self.send("Learner", self.learner)        
-
+        self.applyData()
+        
+    def applyData(self):
+        classifier = None
+        
         if self.data:
             if self.zeroPoint:
-                self.classifier, betas_ap = LogRegLearner_getPriors(self.data)
-                self.classifier.setattr("betas_ap", betas_ap)
+                classifier, betas_ap = LogRegLearner_getPriors(self.data)
+                self.error()
+                classifier.setattr("betas_ap", betas_ap)
             else:
                 try:
-                    self.classifier = self.learner(self.data)
-                    self.classifier.setattr("data", self.data)
+                    classifier = self.learner(self.data)
+                    self.error()
                 except orange.KernelException, (errValue):
-                    self.classifier = None
                     self.error("LogRegFitter error:"+ str(errValue))
-                    return
-            self.classifier.setattr("betas_ap", None)
-                    
-            self.classifier.name = self.name
-            self.send("Classifier", self.classifier)
-        self.error()
+
+            if classifier:
+                classifier.setattr("data", self.data)
+                classifier.setattr("betas_ap", None)
+                classifier.name = self.name
+
+        self.send("Classifier", classifier)
 
         
     def cdata(self, data):
         self.data = data
-        self.apply()
+        self.applyData()
 
         
-    # Possible attribute setting :
-    #    * stepwise logistic regression (addCrit, deleteCrit, number_of_attributes)
-    #    * remove singular attributes
-
-    # adding a trace windows would work perhaps --> better option
-    # processing and a "slide" window at the bottom ? --> this couldn't work
-
-##############################################################################
-# Test the widget, run from DOS prompt
-
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWLogisticRegression()
