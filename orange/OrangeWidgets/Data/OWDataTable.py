@@ -69,7 +69,7 @@ class OWDataTable(OWWidget):
         or hides the table and removes a tab when data==None;
         or replaces the table when new data arrives together with already existing id.
         """
-        if data:
+        if data != None:  # can be an empty table!
             if self.data.has_key(id):
                 # remove existing table
                 self.data.pop(id)
@@ -161,7 +161,7 @@ class OWDataTable(OWWidget):
             else:
                 return str(n), 's'
         
-        if not data:
+        if data == None:
             self.infoEx.setText('No data on input.')
             self.infoMiss.setText('')
             self.infoAttr.setText('')
@@ -170,7 +170,7 @@ class OWDataTable(OWWidget):
         else:
             self.infoEx.setText("%s example%s," % sp(data))
             missData = orange.Preprocessor_takeMissing(data)
-            self.infoMiss.setText('%s (%.1f%s) with missing values.' % (len(missData), 100.*len(missData)/len(data), "%"))
+            self.infoMiss.setText('%s (%.1f%s) with missing values.' % (len(missData), len(data) and 100.*len(missData)/len(data), "%"))
             self.infoAttr.setText("%s attribute%s," % sp(data.domain.attributes,True))
             self.infoMeta.setText("%s meta attribute%s." % sp(data.domain.getmetas()))
             if data.domain.classVar:
@@ -201,7 +201,7 @@ class OWDataTable(OWWidget):
         numMetas = len(metas)
         numVarsMetas = numVars + numMetas
         numEx = len(data)
-        numSpaces = int(math.log(numEx, 10))+1
+        numSpaces = int(math.log(max(numEx,1), 10))+1
 
         table.setNumCols(numVarsMetas+1)
         table.setNumRows(numEx)
