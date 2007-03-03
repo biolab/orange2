@@ -133,10 +133,12 @@ class WidgetButton(QToolButton):
     def getCategory(self):
         return self.nameKey[:self.nameKey.index("-")].strip()
     
-    def clicked(self):
+    def clicked(self, rightClick = False):
         win = self.canvasDlg.workspace.activeWindow()
         if (win and isinstance(win, orngDoc.SchemaDoc)):
             win.addWidget(self)
+            if (rightClick or self.shiftPressed) and len(win.widgets) > 1:
+                win.addLine(win.widgets[-2], win.widgets[-1])
         elif (isinstance(win, orngOutput.OutputWindow)):
             QMessageBox.information(self,'Orange Canvas','Unable to add widget instance to Output window. Please select a document window first.',QMessageBox.Ok)
         else:
@@ -189,11 +191,18 @@ class WidgetButton(QToolButton):
 
     def mouseReleaseEvent(self, e):
         dinwin, widget = getattr(self, "widgetDragging", (None, None))
+        self.shiftPressed = e.state() & e.ShiftButton
         if widget:
             if widget.invalidPosition:
                 dinwin.removeWidget(widget)
                 dinwin.canvasView.canvas().update()
+            elif self.shiftPressed and len(dinwin.widgets) > 1:
+                dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
             delattr(self, "widgetDragging")
+        else:  # not dragging, just a click
+            if e.button() == QMouseEvent.RightButton:
+                self.clicked(True)
+
         QToolButton.mouseReleaseEvent(self, e)
             
 class WidgetTab(QWidget):
