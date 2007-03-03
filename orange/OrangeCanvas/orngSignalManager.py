@@ -57,7 +57,7 @@ class SignalWrapper:
 
         manager.signalProcessingInProgress += 1
         try:
-            apply(self.method, k)
+            self.method(*k)
         finally:
             manager.signalProcessingInProgress -= 1
             if not manager.signalProcessingInProgress:
