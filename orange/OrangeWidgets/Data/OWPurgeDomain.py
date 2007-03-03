@@ -207,6 +207,8 @@ class OWPurgeDomain(OWWidget):
         self.send("Examples", newData)
         if newclass:
             self.send("Classified Examples", newData)
+        else:
+            self.send("Classified Examples", None)
 
         self.dataChanged = False            
 
