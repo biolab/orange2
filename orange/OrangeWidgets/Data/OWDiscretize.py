@@ -110,6 +110,7 @@ class DiscGraph(OWGraph):
         if not data or not attr:
             self.clearAll()
             self.snapDecimals = 1
+            self.probDist = None
             return
 
         if data.domain.classVar:
@@ -942,18 +943,25 @@ class OWDiscretize(OWWidget):
                 if not customs:
                     discType = 0
 
-            if discType == 0:
-                discretizer = orange.EquiNDiscretization(classVar, self.originalData, numberOfIntervals = self.classIntervals)
+            try:
+                if discType == 0:
+                    discretizer = orange.EquiNDiscretization(classVar, self.originalData, numberOfIntervals = self.classIntervals)
+                elif discType == 1:
+                    discretizer = orange.EquiDistDiscretization(classVar, self.originalData, numberOfIntervals = self.classIntervals)
+                else:
+                    discretizer = orange.IntervalDiscretizer(points = customs).constructVariable(classVar)
 
-            elif discType == 1:
-                discretizer = orange.EquiDistDiscretization(classVar, self.originalData, numberOfIntervals = self.classIntervals)
-
-            else:
-                discretizer = orange.IntervalDiscretizer(points = customs).constructVariable(classVar)
-
-            self.data = orange.ExampleTable(orange.Domain(self.originalData.domain.attributes, discretizer), self.originalData)
+                self.data = orange.ExampleTable(orange.Domain(self.originalData.domain.attributes, discretizer), self.originalData)
             
-            self.classIntervalsLabel.setText("Current splits: " + ", ".join([str(classVar(x)) for x in discretizer.getValueFrom.transformer.points]))
+                self.classIntervalsLabel.setText("Current splits: " + ", ".join([str(classVar(x)) for x in discretizer.getValueFrom.transformer.points]))
+                self.error()
+                self.warning()
+            except:
+                if self.data:
+                    self.warning("Cannot discretize the class; using previous class")
+                else:
+                    self.error("Cannot discretize the class")
+                self.classIntervalsLabel.setText("")
         
 
     def classCustomChanged(self):
