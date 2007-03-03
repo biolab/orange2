@@ -166,9 +166,9 @@ class OWTestLearners(OWWidget):
                         self.scores[i].append(eval('orngStat.' + stat[2])[0])
                     except:
                         self.scores[i].append(-1) # handle the exception
-                        type, val, traceback = sys.exc_info()
-                        sys.excepthook(type, val, traceback)  # print the exception
-                        self.error("Caught an exception while evaluating classifiers")
+#                        type, val, traceback = sys.exc_info()
+#                        sys.excepthook(type, val, traceback)  # print the exception
+                        self.error("Caught an exception while evaluating classifier %s " % learner.name)
             else:
                 # this is an old but updated learner
                 indx = [l.id for l in self.learners].index(learner.id)
@@ -181,9 +181,9 @@ class OWTestLearners(OWWidget):
                         self.scores[i][indx] = eval('orngStat.' + stat[2])[0]
                     except:
                         self.scores[i][indx] = -1
-                        type, val, traceback = sys.exc_info()
-                        sys.excepthook(type, val, traceback)  # print the exception
-                        self.error("Caught an exception while evaluating classifiers")
+#                        type, val, traceback = sys.exc_info()
+#                        sys.excepthook(type, val, traceback)  # print the exception
+                        self.error("Caught an exception while evaluating classifier %s" % learner.name)
                     
         else: # test on all learners, or on the new learner with no other learners in the memory
             self.results = res
@@ -192,9 +192,9 @@ class OWTestLearners(OWWidget):
                 try:
                     self.scores.append(eval('orngStat.' + self.stat[i][2]))
                 except:
-                    self.scores.append([-1 for c in range(len(self.results.learners))]) # handle the exception
-                    type, val, traceback = sys.exc_info()
-                    sys.excepthook(type, val, traceback)  # print the exception
+                    self.scores.append([-1 for c in range(len(self.learners))]) # handle the exception
+#                    type, val, traceback = sys.exc_info()
+#                    sys.excepthook(type, val, traceback)  # print the exception
                     self.error("Caught an exception while evaluating classifiers")
 
         # update the tables that show the results
