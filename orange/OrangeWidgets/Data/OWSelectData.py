@@ -390,6 +390,8 @@ class OWSelectData(OWWidget):
         if row == self.criteriaTable.numRows():
             row -= 1
         cond = self.getCondtionFromSelection()
+        if not cond:
+            return
         self.Conditions.insert(row+1, cond)
         # update self.criteriaTable
         self.insertCriteriaTableRow(cond, row+1)
@@ -426,6 +428,8 @@ class OWSelectData(OWWidget):
         if row < 0:
             return
         cond = self.getCondtionFromSelection()
+        if not cond:
+            return
         self.Conditions[row] = cond
         # update self.criteriaTable
         self.criteriaTable.clearCellWidget(row, 0)
@@ -663,8 +667,11 @@ class OWSelectData(OWWidget):
                         isSelected = True
                         if not currentOper.isInterval:
                             break
-                if not isSelected and self.lbVals.count() > 0:
-                    self.lbVals.setSelected(0, True)
+                if not isSelected:
+                    if self.lbVals.count() > 0:
+                        self.lbVals.setSelected(0, True)
+                    else:
+                        self.currentVals = []
             elif currentOper.varType==orange.VarTypes.Continuous:
                 # show / hide "and" label and 2nd line edit box
                 if currentOper.isInterval:
@@ -727,6 +734,8 @@ class OWSelectData(OWWidget):
             val2 = self.Str2
         elif self.currentVar.varType == orange.VarTypes.Discrete:
             val1 = self.currentVals
+            if not val1:
+                return
             val2 = None
         if not self.currentOperatorDict[self.currentVar.varType].isInterval:
             val2 = None
