@@ -217,7 +217,7 @@ class OWBaseWidget(QDialog):
 
     def setCaptionTitle(self, caption):
         self.captionTitle = caption     # we have to save caption title in case progressbar will change it
-        QDialog.setCaption(self, caption)
+        self.setCaption(caption)
         
     # put this widget on top of all windows
     def reshow(self):
@@ -237,11 +237,8 @@ class OWBaseWidget(QDialog):
 
 
     def getdeepattr(self, attr, **argkw):
-        robj = self
         try:
-            for name in attr.split("."):
-                robj = getattr(robj, name)
-            return robj
+            return reduce(lambda o, n: getattr(o, n, None),  attr.split("."), self)
         except:
             if argkw.has_key("default"):
                 return argkw[default]
@@ -677,57 +674,85 @@ class OWBaseWidget(QDialog):
     def randomlyChangeSettings(self):
         if len(self._guiElements) == 0: return
         
-        index = random.randint(0, len(self._guiElements)-1)
-        type, widget = self._guiElements[index][0], self._guiElements[index][1]
-        if not widget.isEnabled(): return
-        if type == "checkBox":
-            type, widget, value, callback = self._guiElements[index]
-            setattr(self, value, not self.getdeepattr(value))
-            if callback:
-                callback()
-        elif type == "button":
-            type, widget, callback = self._guiElements[index]
-            if widget.isToggleButton():
-                widget.setOn(not widget.isOn())
-            if callback:
-                callback()
-        elif type == "listBox":
-            type, widget, value, callback = self._guiElements[index]
-            if widget.count():
-                itemIndex = random.randint(0, widget.count()-1)
-                widget.setSelected(itemIndex, not widget.isSelected(itemIndex))
+        try:
+            index = random.randint(0, len(self._guiElements)-1)
+            type, widget = self._guiElements[index][0], self._guiElements[index][1]
+
+            if type == "qwtPlot":
+                widget.randomChange()
+                return
+            
+            if not widget.isEnabled(): return
+            newValue = ""
+            if type == "checkBox":
+                type, widget, value, callback = self._guiElements[index]
+                newValue = "Changing checkbox %s to %s" % (value, not self.getdeepattr(value))
+                setattr(self, value, not self.getdeepattr(value))
                 if callback:
                     callback()
-        elif type == "radioButtonsInBox":
-            type, widget, value, callback = self._guiElements[index]
-            radioIndex = random.randint(0, len(widget.buttons)-1)
-            if widget.buttons[radioIndex].isEnabled():
-                setattr(self, value, radioIndex)
+            elif type == "button":
+                type, widget, callback = self._guiElements[index]
+                if widget.isToggleButton():
+                    newValue = "Clicking button %s. State is %d" % (str(widget.text()).strip(), not widget.isOn())
+                    widget.setOn(not widget.isOn())
                 if callback:
                     callback()
-        elif type == "radioButton":
-            type, widget, value, callback = self._guiElements[index]
-            setattr(self, value, not self.getdeepattr(value))
-            if callback:
-                callback()
-        elif type in ["hSlider", "qwtHSlider", "spin"]:
-            type, widget, value, min, max, step, callback = self._guiElements[index]
-            currentValue = self.getdeepattr(value)
-            if currentValue == min:   setattr(self, value, currentValue+step)
-            elif currentValue == max: setattr(self, value, currentValue-step)
-            else:                     setattr(self, value, currentValue + [-step,step][random.randint(0,1)])
-            if callback:
-                callback()
-        elif type == "comboBox":
-            type, widget, value, sendSelectedValue, valueType, callback = self._guiElements[index]
-            if widget.count():
-                pos = random.randint(0, widget.count()-1)
-                if sendSelectedValue:
-                    setattr(self, value, valueType(str(widget.text(pos))))
-                else:
-                    setattr(self, value, pos)
+            elif type == "listBox":
+                type, widget, value, callback = self._guiElements[index]
+                if widget.count():
+                    itemIndex = random.randint(0, widget.count()-1)
+                    newValue = "Listbox %s. Changed selection of item %d to %s" % (value, itemIndex, not widget.isSelected(itemIndex))
+                    widget.setSelected(itemIndex, not widget.isSelected(itemIndex))
+                    if callback:
+                        callback()
+            elif type == "radioButtonsInBox":
+                type, widget, value, callback = self._guiElements[index]
+                radioIndex = random.randint(0, len(widget.buttons)-1)
+                if widget.buttons[radioIndex].isEnabled():
+                    newValue = "Set radio button %s to index %d" % (value, radioIndex)
+                    setattr(self, value, radioIndex)
+                    if callback:
+                        callback()
+            elif type == "radioButton":
+                type, widget, value, callback = self._guiElements[index]
+                setattr(self, value, not self.getdeepattr(value))
+                newValue = "Set radio button %s to %d" % (value, self.getdeepattr(value))
                 if callback:
-                    callback()  
+                    callback()
+            elif type in ["hSlider", "qwtHSlider", "spin"]:
+                type, widget, value, min, max, step, callback = self._guiElements[index]
+                currentValue = self.getdeepattr(value)
+                if currentValue == min:   setattr(self, value, currentValue+step)
+                elif currentValue == max: setattr(self, value, currentValue-step)
+                else:                     setattr(self, value, currentValue + [-step,step][random.randint(0,1)])
+                newValue = "Changed value of %s to %f" % (value, self.getdeepattr(value))
+                if callback:
+                    callback()
+            elif type == "comboBox":
+                type, widget, value, sendSelectedValue, valueType, callback = self._guiElements[index]
+                if widget.count():
+                    pos = random.randint(0, widget.count()-1)
+                    if sendSelectedValue:
+                        setattr(self, value, valueType(str(widget.text(pos))))
+                    else:
+                        setattr(self, value, pos)
+                    newValue = "Changed value of combo %s to %s" % (value, str(widget.text(pos)))
+                    if callback:
+                        callback()
+            if newValue != "":
+                sys.stderr.write("Widget %s. %s\n" % (str(self.caption()), newValue))
+        except:
+            if newValue != "":
+                sys.stderr.write("Widget %s. %s\n" % (str(self.caption()), newValue))
+            sys.stderr.write("------------------\n")
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
+            sys.stderr.write("Widget settings are:\n")
+            for i, setting in enumerate(getattr(self, "settingsList", [])):
+                sys.stderr.write("%20s: %7s    " % (setting, str(self.getdeepattr(setting))))
+                if i%2 == 1:
+                    sys.stderr.write("\n")
+            sys.stderr.write("%s------------------\n" % (len(getattr(self, "settingsList", [])) % 2 == 1 and "\n" or ""))
 
 if __name__ == "__main__":  
     a=QApplication(sys.argv)
