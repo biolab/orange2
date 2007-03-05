@@ -367,10 +367,10 @@ class S2NHeuristicClassifier(orange.Classifier):
         attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
         attrVals = [scaleFunction(example, index) for index in attrListIndices]
                 
-        table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, settingsDict = {"scaleFactor": self.radvizWidget.graph.trueScaleFactor, "useAnchorData": 1})
+        table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, scaleFactor = self.radvizWidget.graph.trueScaleFactor, useAnchorData = 1)
         knn = self.radvizWidget.optimizationDlg.createkNNLearner(kValueFormula = 0)(table)
 
-        [xTest, yTest] = self.radvizWidget.graph.getProjectedPointPosition(attrListIndices, attrVals, settingsDict = {"useAnchorData":1})
+        [xTest, yTest] = self.radvizWidget.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
         (classVal, prob) = knn(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
 
         if returnType == orange.GetBoth: return classVal, prob

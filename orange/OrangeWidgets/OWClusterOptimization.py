@@ -995,7 +995,7 @@ class clusterClassifier(orange.Classifier):
 
                         qApp.processEvents()
                         attrIndices = [self.visualizationWidget.graph.attributeNameIndex[attr] for attr in attrList]
-                        data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"jitterSize": 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation})
+                        data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, jitterSize = 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation)
                         graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimizationDlg.evaluateClusters(data)
                         for key in valueDict.keys():
                             if classValue != otherDict[key][OTHER_CLASS]: continue
@@ -1036,7 +1036,7 @@ class clusterClassifier(orange.Classifier):
                 qApp.processEvents()
 
                 attrIndices = [self.visualizationWidget.graph.attributeNameIndex[attr] for attr in attrList]
-                data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"jitterSize": 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation})
+                data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, jitterSize = 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation)
                 graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimizationDlg.evaluateClusters(data)
                 evaluation = []
                 for key in valueDict.keys():

@@ -146,18 +146,21 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         # compute x and y positions of the points in the scatterplot        
         xData, yData = self.getXYPositions(xAttr, yAttr)
-        validData = self.getValidList([xAttrIndex, yAttrIndex])
+        validData = self.getValidList(attrIndices)      # get examples that have valid data for each used attribute
 
         # #######################################################
         # show probabilities
         if self.showProbabilities and colorIndex >= 0:
             domain = orange.Domain([self.rawdata.domain[xAttrIndex], self.rawdata.domain[yAttrIndex], self.rawdata.domain.classVar], self.rawdata.domain)
-            xdiff = xmax-xmin
-            ydiff = ymax-ymin
+            xdiff = xmax-xmin; ydiff = ymax-ymin
             scX = [x/xdiff for x in xData]
             scY = [y/ydiff for y in yData]
+            clsData = list(numpy.transpose(numpy.take(self.originalData, [colorIndex], axis = 0)))
             
-            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawdata]])), None, None, None, None)
+            data = numpy.transpose(numpy.array([scX, scY, clsData]))
+            data = numpy.compress(validData, data, axis = 0)
+            self.potentialsClassifier = orange.P2NN(domain, data, None, None, None, None)
+            #self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawdata]])), None, None, None, None)
             self.xmin = xmin; self.xmax = xmax
             self.ymin = ymin; self.ymax = ymax
             
@@ -165,7 +168,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 ##        # #######################################################
 ##        # show clusters
 ##        if self.showClusters and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-##            data = self.createProjectionAsExampleTable([xAttrIndex, yAttrIndex], settingsDict = {"validData": validData, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation})
+##            data = self.createProjectionAsExampleTable([xAttrIndex, yAttrIndex], validData = validData, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
 ##            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 ##            
 ##            classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])

@@ -161,7 +161,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
         dataSize = len(self.rawdata)
         validData = self.getValidList(indices)
-        transProjData = self.createProjectionAsNumericArray(indices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "normalize": self.normalizeExamples, "jitterSize": -1, "useAnchorData": 1, "removeMissingData": 0})
+        transProjData = self.createProjectionAsNumericArray(indices, validData = validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0)
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]
         y_positions = projData[1]
@@ -178,7 +178,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
            
 ##        # do we have cluster closure information
 ##        if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-##            data = self.createProjectionAsExampleTable(indices, settingsDict = {"validData": validData, "normalize": self.normalizeExamples, "scaleFactor": self.trueScaleFactor, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation, "useAnchorData": 1})
+##            data = self.createProjectionAsExampleTable(indices, validData = validData, normalize = self.normalizeExamples, scaleFactor = self.trueScaleFactor, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation, useAnchorData = 1)
 ##            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 ##            for key in valueDict.keys():
 ##                if not polygonVerticesDict.has_key(key): continue
@@ -206,7 +206,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             if self.insideColors:
                 insideData, stringData = self.insideColors
             else:
-                shortData = self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in labels], settingsDict = {"useAnchorData": 1})
+                shortData = self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in labels], useAnchorData = 1)
                 predictions, probabilities = self.widget.vizrank.kNNClassifyData(shortData)
                 if self.showKNN == 2: insideData, stringData = [1.0 - val for val in predictions], "Probability of wrong classification = %.2f%%"
                 else:                 insideData, stringData = predictions, "Probability of correct classification = %.2f%%"
@@ -274,7 +274,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     # scale data values for example i
                     dataVals = [self.scaleExampleValue(self.subsetData[i], ind) for ind in indices]
 
-                    [x,y] = self.getProjectedPointPosition(indices, dataVals, settingsDict = {"useAnchorData": 1, "anchorRadius" : anchorRadius})  # compute position of the point
+                    [x,y] = self.getProjectedPointPosition(indices, dataVals, useAnchorData = 1, anchorRadius = anchorRadius)  # compute position of the point
             
                     if not self.subsetData[i].getclass().isSpecial():
                         if self.subsetData.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -384,7 +384,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
 ##    def showClusterLines(self, attributeIndices, validData, width = 1):
 ##        if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous: return
-##        shortData = self.createProjectionAsExampleTable(attributeIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor})
+##        shortData = self.createProjectionAsExampleTable(attributeIndices, validData = validData, scaleFactor = self.scaleFactor)
 ##        classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])
 ##
 ##        (closure, enlargedClosure, classValue) = self.clusterClosure
@@ -550,7 +550,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         validData = self.getValidList(indices)
         if len(validData) == 0: return (None, None)
         
-        array = self.createProjectionAsNumericArray(attrList, settingsDict = {"scaleFactor": self.scaleFactor, "useAnchorData": useAnchorData, "removeMissingData": 0})
+        array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, useAnchorData, validData)
         
         if addProjectedPositions:
@@ -582,7 +582,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if validData == None:
             validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrList, settingsDict = {"scaleFactor": self.scaleFactor, "useAnchorData": useAnchorData, "removeMissingData": 0})
+        array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
         array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)
             
@@ -637,7 +637,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 ##                            self.widget.progressBarFinished()
 ##                            return
 ##
-##                        data = self.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+##                        data = self.createProjectionAsExampleTable(permutation, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
 ##                        graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 ##
 ##                        classesDict = {}

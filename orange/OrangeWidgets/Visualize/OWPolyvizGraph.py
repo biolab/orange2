@@ -449,7 +449,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
    
     # save projection (xAttr, yAttr, classVal) into a filename fileName
     def saveProjectionAsTabData(self, fileName, attrList):
-        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], settingsDict = {}))
+        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList]))
 
 
     # ####################################
@@ -474,7 +474,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
+        array = self.createProjectionAsNumericArray(attrIndices, validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
                  
         if addProjectedPositions:
@@ -503,9 +503,10 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if not self.rawdata: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
-        if not validData: validData = self.getValidList(attrIndices)
+        if validData == None:
+            validData = self.getValidList(attrIndices)
         
-        array = self.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "scaleFactor": self.scaleFactor, "removeMissingData": 0})
+        array = self.createProjectionAsNumericArray(attrIndices, validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
         array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)
     
@@ -604,7 +605,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                                 return
                             permutationIndex += 1
 
-                            table = self.createProjectionAsExampleTable(permutation, settingsDict = {"reverse": attrOrder, "validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+                            table = self.createProjectionAsExampleTable(permutation, reverse = attrOrder, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                             accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                         
                             # save the permutation
@@ -703,7 +704,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                                     return
                                 permutationIndex += 1
 
-                                table = self.createProjectionAsExampleTable(permutation, settingsDict = {"reverse": attrOrder, "validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+                                table = self.createProjectionAsExampleTable(permutation, reverse = attrOrder, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors,  YAnchors = YAnchors, domain = domain)
                                 accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                             
                                 # save the permutation
@@ -796,7 +797,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     for (testProj, reverse) in projections:
                         if self.kNNOptimization.isOptimizationCanceled(): return
 
-                        table = self.createProjectionAsExampleTable(testProj, settingsDict = {"reverse": reverse, "validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+                        table = self.createProjectionAsExampleTable(testProj, reverse = reverse, validData = validData, classList = classList, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                         acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                         
                         # save the permutation
