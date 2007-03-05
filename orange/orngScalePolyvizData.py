@@ -27,23 +27,22 @@ class orngScalePolyvizData(orngScaleLinProjData):
 
 
         # attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0
-    def createProjectionAsExampleTable(self, attrList, settingsDict = {}):
-        domain = settingsDict.get("domain")
-        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrList, settingsDict)
+    def createProjectionAsExampleTable(self, attrList, **settingsDict):
+        domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        data = self.createProjectionAsNumericArray(attrList, **settingsDict)
         return orange.ExampleTable(domain, data)
 
     #def createProjectionAsNumericArray(self, attrIndices, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, removeMissingData = 1):
-    def createProjectionAsNumericArray(self, attrIndices, settingsDict = {}):
+    def createProjectionAsNumericArray(self, attrIndices, **settingsDict):
         # load the elements from the settings dict
         attributeReverse = settingsDict.get("reverse", [0]*len(attrIndices))
         validData = settingsDict.get("validData")
         classList = settingsDict.get("classList")
         sum_i     = settingsDict.get("sum_i")
-        XAnchors = settingsDict.get("XAnchors")
-        YAnchors = settingsDict.get("YAnchors")
+        XAnchors  = settingsDict.get("XAnchors")
+        YAnchors  = settingsDict.get("YAnchors")
         scaleFactor = settingsDict.get("scaleFactor", 1.0)
-        jitterSize = settingsDict.get("jitterSize", 0.0)
+        jitterSize  = settingsDict.get("jitterSize", 0.0)
         removeMissingData = settingsDict.get("removeMissingData", 1)
         
         if validData == None:
@@ -78,8 +77,10 @@ class orngScalePolyvizData(orngScaleLinProjData):
                 xanchors[i] = (1-selectedData[i]) * XAnchors[i] + selectedData[i] * XAnchors[(i+1)%length]
                 yanchors[i] = (1-selectedData[i]) * YAnchors[i] + selectedData[i] * YAnchors[(i+1)%length]
 
-        x_positions = numpy.sum(numpy.dot(xanchors, selectedData), axis=0) / sum_i
-        y_positions = numpy.sum(numpy.dot(yanchors, selectedData), axis=0) / sum_i
+        x_positions = numpy.sum(numpy.multiply(xanchors, selectedData), axis=0)/sum_i
+        y_positions = numpy.sum(numpy.multiply(yanchors, selectedData), axis=0)/sum_i
+        #x_positions = numpy.sum(numpy.transpose(xanchors* numpy.transpose(selectedData)), axis=0) / sum_i
+        #y_positions = numpy.sum(numpy.transpose(yanchors* numpy.transpose(selectedData)), axis=0) / sum_i
 
         if scaleFactor != 1.0:
             x_positions = x_positions * scaleFactor
@@ -91,7 +92,7 @@ class orngScalePolyvizData(orngScaleLinProjData):
         return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
 
 
-    def getProjectedPointPosition(self, attrIndices, values, settingsDict = {}):
+    def getProjectedPointPosition(self, attrIndices, values, **settingsDict):
         # load the elements from the settings dict
         attributeReverse = settingsDict.get("reverse", [0]*len(attrIndices))
         useAnchorData = settingsDict.get("useAnchorData")

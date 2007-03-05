@@ -112,7 +112,7 @@ class orngScaleData:
         arr2 = numpy.zeros(arr.shape)
         for i in range(arr.shape[0]):
             arr2[i] = MA.filled(arr[i], averages[i])
-        self.originalData = arr2
+        self.originalData = arr2.copy()
         arr = arr2
         self.scaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
         self.noJitteringScaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)

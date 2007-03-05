@@ -798,7 +798,7 @@ class VizRank:
                        
                     if self.useSupervisedPCA:
                         xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0, percentDataUsed = self.percentDataUsed)
-                        table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
+                        table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                         if len(table) < self.minNumOfExamples: continue
                         self.evaluatedProjectionsCount += 1
                         accuracy, other_results = self.kNNComputeAccuracy(table)
@@ -821,7 +821,7 @@ class VizRank:
                                 if self.evaluatedProjectionsCount % 10 == 0 and self.isEvaluationCanceled():
                                     continue
 
-                                table = self.graph.createProjectionAsExampleTable(permutation, settingsDict = {"validData": validData, "classList": classList, "sum_i": sum_i, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+                                table = self.graph.createProjectionAsExampleTable(permutation, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                                 accuracy, other_results = self.kNNComputeAccuracy(table)
                                 
                                 # save the permutation
@@ -863,7 +863,7 @@ class VizRank:
 
     def getProjectionQuality(self, attrList, useAnchorData = 0):
         if not self.data: return 0.0, None
-        table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], settingsDict = {"useAnchorData": useAnchorData})
+        table = self.graph.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], useAnchorData = useAnchorData)
         return self.kNNComputeAccuracy(table)
 
 
@@ -928,7 +928,7 @@ class VizRank:
                     if not tempDict.has_key((projection[1], attr)) and not tempDict.has_key((attr, projection[1])): testProjections.append([attr, projection[1]])
                                         
                     for testProj in testProjections:
-                        table = self.graph.createProjectionAsExampleTable(testProj, settingsDict = {"domain": domain})
+                        table = self.graph.createProjectionAsExampleTable(testProj, domain = domain)
                         if len(table) < self.minNumOfExamples: continue
                         acc, other_results = self.kNNComputeAccuracy(table)
                         if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0:
@@ -979,7 +979,7 @@ class VizRank:
                             failedConsecutiveTries = 0
                             triedPermutationsDict[str(newProj)] = 1
                             
-                            table = self.graph.createProjectionAsExampleTable(newProj, settingsDict = {"validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+                            table = self.graph.createProjectionAsExampleTable(newProj, validData = validData, classList = classList, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                             if len(table) < self.minNumOfExamples: continue
                             acc, other_results = self.kNNComputeAccuracy(table)
                             self.optimizedProjectionsCount += 1
@@ -1023,7 +1023,7 @@ class VizRank:
                                 if newProjDict.has_key(str(proj)): continue
                                 newProjDict[str(proj)] = 1
                                 xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(proj, setGraphAnchors = 0)
-                                table = self.graph.createProjectionAsExampleTable(newIndices, settingsDict = {"domain": domain, "XAnchors": xanchors, "YAnchors": yanchors})
+                                table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                                 if len(table) < self.minNumOfExamples: continue
                                 self.optimizedProjectionsCount += 1
                                 acc, other_results = self.kNNComputeAccuracy(table)
@@ -1054,7 +1054,7 @@ class VizRank:
                                 if newProjDict.has_key(str(testProj)): continue
                                 newProjDict[str(testProj)] = 1
                                 
-                                table = self.graph.createProjectionAsExampleTable(testProj, settingsDict = {"validData": validData, "classList": classList, "XAnchors": XAnchors, "YAnchors": YAnchors, "domain": domain})
+                                table = self.graph.createProjectionAsExampleTable(testProj, validData = validData, classList = classList, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                                 if len(table) < self.minNumOfExamples: continue
                                 acc, other_results = self.kNNComputeAccuracy(table)
                                 if hasattr(self, "setStatusBarText") and self.optimizedProjectionsCount % 10 == 0: self.setStatusBarText("Evaluated %s projections. Last accuracy was: %2.2f%%" % (orngVisFuncts.createStringFromNumber(self.optimizedProjectionsCount), acc))

@@ -39,11 +39,11 @@ class orngScaleLinProjData(orngScaleData):
 
      # save projection (xAttr, yAttr, classVal) into a filename fileName
     def saveProjectionAsTabData(self, fileName, attrList, useAnchorData = 0):
-        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], settingsDict = {"useAnchorData":useAnchorData}))
+        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], useAnchorData = useAnchorData))
 
     # for attributes in attrIndices and values of these attributes in values compute point positions
     # this function has more sense in radviz and polyviz methods
-    def getProjectedPointPosition(self, attrIndices, values, settingsDict = {}):
+    def getProjectedPointPosition(self, attrIndices, values, **settingsDict):
         # load the elements from the settings dict
         useAnchorData = settingsDict.get("useAnchorData")
         XAnchors = settingsDict.get("XAnchors")
@@ -85,14 +85,13 @@ class orngScaleLinProjData(orngScaleData):
         return [x, y]
 
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, attrIndices, settingsDict = {}):
-        domain = settingsDict.get("domain")
-        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrIndices, settingsDict)
+    def createProjectionAsExampleTable(self, attrIndices, **settingsDict):
+        domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        data = self.createProjectionAsNumericArray(attrIndices, **settingsDict)
         return orange.ExampleTable(domain, data)
         
 
-    def createProjectionAsNumericArray(self, attrIndices, settingsDict = {}):
+    def createProjectionAsNumericArray(self, attrIndices, **settingsDict):
         # load the elements from the settings dict
         validData = settingsDict.get("validData")
         classList = settingsDict.get("classList")

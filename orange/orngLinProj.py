@@ -159,7 +159,7 @@ class FreeViz:
         if not XAnchors: XAnchors = numpy.array([a[0] for a in anchorData], numpy.Float)
         if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
         
-        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "XAnchors": XAnchors, "YAnchors": YAnchors, "scaleFactor": self.graph.scaleFactor, "normalize": self.graph.normalizeExamples, "useAnchorData": 1})
+        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]; y_positions = projData[1]; classData = projData[2]
 
@@ -251,7 +251,7 @@ class FreeViz:
         if not XAnchors: XAnchors = numpy.array([a[0] for a in anchorData], numpy.Float)
         if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
         
-        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, settingsDict = {"validData": validData, "XAnchors": XAnchors, "YAnchors": YAnchors, "scaleFactor": self.graph.scaleFactor, "normalize": self.graph.normalizeExamples, "useAnchorData": 1})
+        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]; x_positions2 = numpy.array(x_positions)
         y_positions = projData[1]; y_positions2 = numpy.array(y_positions)
@@ -419,7 +419,7 @@ class FreeViz:
                     if self.__class__ != FreeViz:
                         qt.qApp.processEvents()
                         
-                    acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, settingsDict = {"useAnchorData": 1}))
+                    acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
                     if hasattr(self, "setStatusBarText"):
                         if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
                         else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
@@ -438,7 +438,7 @@ class FreeViz:
             for val in range(10):
                 self.s2nSpread = val
                 self.s2nMixAnchors(0)
-                acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, settingsDict = {"useAnchorData": 1}))
+                acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = 1))
                 results.append(acc)
                 if hasattr(self, "setStatusBarText"):
                     if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
@@ -525,7 +525,7 @@ class FreeVizClassifier(orange.Classifier):
         normalizers = [graph.normalizers[i] for i in indices]
         averages = [graph.averages[i] for i in indices]
 
-        self.FreeViz.graph.createProjectionAsNumericArray(indices, settingsDict = {"useAnchorData": 1})
+        self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)
         self.classifier = orange.P2NN(domain,
                                       numpy.transpose(numpy.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawdata]])),
                                       graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=self.FreeViz.law)
@@ -579,11 +579,11 @@ class S2NHeuristicClassifier(orange.Classifier):
         attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
         attrVals = [scaleFunction(example, index) for index in attrListIndices]
                 
-        table = self.FreeViz.graph.createProjectionAsExampleTable(attrListIndices, settingsDict = {"scaleFactor": self.FreeViz.graph.trueScaleFactor, "useAnchorData": 1})
+        table = self.FreeViz.graph.createProjectionAsExampleTable(attrListIndices, scaleFactor = self.FreeViz.graph.trueScaleFactor, useAnchorData = 1)
         kValue = int(math.sqrt(len(self.data)))
         knn = orange.kNNLearner(k = kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
 
-        [xTest, yTest] = self.FreeViz.graph.getProjectedPointPosition(attrListIndices, attrVals, settingsDict = {"useAnchorData":1})
+        [xTest, yTest] = self.FreeViz.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
         classifier = knn(table, 0)
         (classVal, dist) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
         
