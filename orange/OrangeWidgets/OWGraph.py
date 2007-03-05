@@ -6,10 +6,10 @@
 from qt import *
 from OWTools import *
 from qwt import *
+import qtcanvas, orange, math
 from OWGraphTools import *      # color palletes, user defined curves, ...
 from OWDlgs import OWChooseImageSizeDlg
-import qtcanvas, orange, math
-from OWBaseWidget import unisetattr
+from OWBaseWidget import unisetattr, OWBaseWidget
 
 NOTHING = 0
 ZOOMING = 1
@@ -100,6 +100,12 @@ class OWGraph(QwtPlot):
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
         self.currentScale = {}
+        
+        if parent:
+            if type(parent) > OWBaseWidget:
+                parent._guiElements = getattr(parent, "_guiElements", []) + [("qwtPlot", self)]
+            elif type(parent.parent()) >= OWBaseWidget:
+                parent.parent()._guiElements = getattr(parent.parent(), "_guiElements", []) + [("qwtPlot", self)]
 
 
     def __setattr__(self, name, value):
@@ -447,27 +453,28 @@ class OWGraph(QwtPlot):
     def removeDrawingCurves(self, removeLegendItems = 1):
         for key in self.curveKeys():
             curve = self.curve(key)
-            if not removeLegendItems and key in self.legendCurveKeys:
-                continue
-            if not isinstance(curve, SelectionCurve):
+            if (removeLegendItems and key in self.legendCurveKeys) or not isinstance(curve, SelectionCurve):
                 self.removeCurve(key)
 
     def removeLastSelection(self):
-        removed = 0
         if self.selectionCurveKeyList != []:
             lastCurve = self.selectionCurveKeyList.pop()
             self.removeCurve(lastCurve)
             self.tempSelectionCurve = None
-            removed = 1
-        self.replot()
-        if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
-        return removed
+            self.replot()
+            if self.autoSendSelectionCallback:
+                self.autoSendSelectionCallback() # do we want to send new selection
+            return 1
+        else:
+            return 0
         
     def removeAllSelections(self, send = 1):
-        for key in self.selectionCurveKeyList: self.removeCurve(key)
+        for key in self.selectionCurveKeyList:
+            self.removeCurve(key)
         self.selectionCurveKeyList = []
         self.replot()
-        if send and self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+        if send and self.autoSendSelectionCallback:
+            self.autoSendSelectionCallback() # do we want to send new selection
 
     def zoomOut(self):
         if len(self.zoomStack):
@@ -530,8 +537,10 @@ class OWGraph(QwtPlot):
             (text, x, y) = self.tips.maybeTip(xFloat, yFloat)
             if type(text) == int: text = self.buildTooltip(text)
         
-        if self.statusBar != None:  self.statusBar.message(text)
-        if text != "": self.showTip(self.transform(QwtPlot.xBottom, x), self.transform(QwtPlot.yLeft, y), text)
+        if self.statusBar != None:
+            self.statusBar.message(text)
+        if text != "":
+            self.showTip(self.transform(QwtPlot.xBottom, x), self.transform(QwtPlot.yLeft, y), text)
 
         if self.tempSelectionCurve != None and (self.state == ZOOMING or self.state == SELECT_RECTANGLE):
             x1 = self.invTransform(QwtPlot.xBottom, self.xpos)
@@ -566,7 +575,8 @@ class OWGraph(QwtPlot):
                 self.zoomKey = None
                 self.tempSelectionCurve = None
 
-                if staticClick or (xmax-xmin)+(ymax-ymin) < 4: return
+                if staticClick or (xmax-xmin)+(ymax-ymin) < 4:
+                    return
 
                 xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
                 ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
@@ -625,6 +635,23 @@ class OWGraph(QwtPlot):
         unselected = numpy.equal(total, 0)
         selected = 1 - unselected
         return selected.tolist(), unselected.tolist()
+
+    def randomChange(self):
+        import random
+        if random.randint(0,1) and self.selectionCurveKeyList != []:
+            self.removeLastSelection()
+        else:
+            curve = SelectionCurve(self)
+            key = self.insertCurve(curve)
+            self.selectionCurveKeyList.append(key)
+
+            xMin = self.axisScale(QwtPlot.xBottom).lBound(); xMax = self.axisScale(QwtPlot.xBottom).hBound()
+            yMin = self.axisScale(QwtPlot.yLeft).lBound();   yMax = self.axisScale(QwtPlot.yLeft).hBound()
+            x1 = xMin + random.random()* (xMax-xMin); x2 = xMin + random.random()* (xMax-xMin)
+            y1 = yMin + random.random()* (yMax-yMin); y2 = yMin + random.random()* (yMax-yMin)
+
+            curve.setData([x1, x1, x2, x2, x1], [y1, y2, y2, y1, y1])
+                    
 
     # save graph in matplotlib python file
     def saveToMatplotlib(self, fileName, size = QSize(400,400)):
