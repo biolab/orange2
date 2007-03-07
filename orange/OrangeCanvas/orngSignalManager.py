@@ -74,18 +74,21 @@ class SignalManager:
     def __init__(self, debugMode = 0, debugFileName = "signalManagerOutput.txt", verbosity = 1):
         self.debugFile = None
         self.verbosity = verbosity
+        self.stderr = sys.stderr
         if debugMode:
             self.debugFile = open(debugFileName, "wt")
             sys.excepthook = self.exceptionHandler
+            sys.stderr = self.debugFile
 
     def setDebugMode(self, debugMode = 0, debugFileName = "signalManagerOutput.txt", verbosity = 1):
         self.verbosity = verbosity
         if self.debugFile:
+            sys.stderr = self.stderr
             self.debugFile.close()
         if debugMode:
             self.debugFile = open(debugFileName, "wt", 0)
             sys.excepthook = self.exceptionHandler
-
+            sys.stderr = self.debugFile
 
     # ----------------------------------------------------------
     # ----------------------------------------------------------
@@ -94,6 +97,7 @@ class SignalManager:
     def __del__(self):
         if self.debugFile:
             self.debugFile.close()
+            sys.stderr = self.stderr
 
     def addEvent(self, strValue, object = None):
         if self.debugFile:
