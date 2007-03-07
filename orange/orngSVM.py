@@ -61,8 +61,11 @@ class SVMLearnerClass:
         for name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
                 "coef0", "shrinking", "probability", "cache_size", "eps"]:
             self.learner.__dict__[name]=getattr(self, name)
-        return self.learner(examples)
+        return self.learnClassifier(examples)
 
+    def learnClassifier(self, examples):
+        return self.learner(examples)
+        
 
 def parameter_selection(learner, data, folds=4, parameters={}, best={}, callback=None):
     """parameter selection tool: uses cross validation to find the optimal parameters.
@@ -114,6 +117,51 @@ def parameter_selection(learner, data, folds=4, parameters={}, best={}, callback
         current[key]=parameters[key][0]
     search(learner, data, folds, keys, ranges, current, best, callback)
     return best
+
+def SVMLearnerEasy(examples=None, weightID=0, **kwds):
+    l=apply(SVMLearnerClassEasy, (), kwds)
+    if examples:
+        l=l(examples)
+    return l
+
+    
+class SVMLearnerClassEasy(SVMLearnerClass):
+    folds=5
+    def __init__(self, **kwds):
+        SVMLearnerClass.__init__(self, **kwds)
+        
+    def learnClassifier(self, examples):
+        transformer=orange.DomainContinuizer()
+        transformer.multinominalTreatment=orange.DomainContinuizer.NValues
+        transformer.continuousTreatment=orange.DomainContinuizer.NormalizeBySpan
+        transformer.classTreatment=orange.DomainContinuizer.Ignore
+        newdomain=transformer(examples)
+        newexamples=examples.translate(newdomain)
+        #print newexamples[0]
+        params={}
+        if self.svm_type in [1,4]:
+            numOfNuValues=9
+            params["nu"]=map(lambda a: float(a)/numOfNuValues, range(1,1+numOfNuValues))
+        else:
+            params["C"]=map(lambda a: 2**a, range(-5,15,2))
+        if self.kernel_type==2:
+            params["gamma"]=map(lambda a: 2**a, range(-3,15,2))
+        best=parameter_selection(self.learner, newexamples, self.folds, params)
+        #print best["error"]
+        del best["error"]
+        for name, val in best.items():
+            setattr(self.learner, name, val)
+        return SVMClassifierClassEasyWrapper(self.learner(newexamples), newdomain)
+
+class SVMClassifierClassEasyWrapper:
+    def __init__(self, classifier, domain=None):
+        self.classifier=classifier
+        self.domain=domain
+    def __call__(self,example, getBoth=orange.GetBoth):
+        example=orange.Example(self.domain, example)
+        return self.classifier(example, getBoth)
+    def __getattr__(self, name):
+        return getattr(self.classifier,name)
 
 import math
 class KernelWrapper:
