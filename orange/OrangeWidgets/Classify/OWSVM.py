@@ -19,7 +19,7 @@ class OWSVM(OWWidget):
         self.outputs=[("Learner", orange.Learner),("Classifier", orange.Classifier),("Support Vectors", ExampleTable)]
 
         self.kernel_type = 2
-        self.gamma = 0.5
+        self.gamma = 0.0
         self.coef0 = 0.0
         self.degree = 3
         self.C = 1.0
@@ -42,8 +42,8 @@ class OWSVM(OWWidget):
                     "RBF,   exp(-g*(x-y).(x-y))", "Sigmoid,   tanh(g*x.y+c)"], callback=self.changeKernel)
 
         self.gcd = OWGUI.widgetBox(b, orientation="horizontal")
-        self.leg = OWGUI.doubleSpin(self.gcd, self, "gamma",0.0,10.0,0.25, label="g: ", orientation="horizontal", callback=self.changeKernel)
-        self.led = OWGUI.doubleSpin(self.gcd, self, "coef0", 0.0,10.0,0.5, label="  c: ", orientation="horizontal", callback=self.changeKernel)
+        self.leg = OWGUI.doubleSpin(self.gcd, self, "gamma",0.0,10.0,0.0001, label="g: ", orientation="horizontal", callback=self.changeKernel)
+        self.led = OWGUI.doubleSpin(self.gcd, self, "coef0", 0.0,10.0,0.0001, label="  c: ", orientation="horizontal", callback=self.changeKernel)
         self.lec = OWGUI.doubleSpin(self.gcd, self, "degree", 0.0,10.0,0.5, label="  d: ", orientation="horizontal", callback=self.changeKernel)
 
         OWGUI.separator(self.controlArea)
@@ -188,9 +188,9 @@ class MyThread(Thread):
         if self.widget.useNu:
             params["nu"]=[0.25, 0.5, 0.75]
         else:
-            params["C"]=[1.0, 2.0, 3.0]
+            params["C"]=map(lambda g:2**g, range(-5,10,2))
         if self.widget.kernel_type in [1,2]:
-            params["gamma"]=[0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+            params["gamma"]=map(lambda g:2**g, range(-3,10,2))
         if self.widget.kernel_type==1:
             params["degree"]=[1,2,3]
         best={}
