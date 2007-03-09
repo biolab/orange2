@@ -99,7 +99,7 @@ PyObject *qhull(PyObject *, PyObject *arg) PYARGS(METH_O, "(array) -> ?")
 	}
 	
 	boolT ismalloc = False;	/* True if qhull should free points in qh_freeqhull() or reallocation */
-	int exitcode = qh_new_qhull(dimension, npoints, points, ismalloc, "qhull d Qbb Qt", NULL, NULL);
+	int exitcode = qh_new_qhull(dimension, npoints, points, ismalloc, "qhull d Qbb QJ", stdout, stdout);
 
 	delete points;
 	
