@@ -51,7 +51,26 @@ def triangulate(cache, points):
     return orangeom.qhull(cache.data.toNumpy("a")[0][:, cache.contIndices]).tolist()
 #    return [map(int, string.split(l[i],' ')) for i in xrange(num_of_triangles+1) if l[i]!='']
 
-
+# 
+def simplex_with_xnDBG(cache, xp, Star, d):
+    zm=0.0001 # zm ... zelo malo
+    r=[]
+    xnd = [xp[i] for i in xrange(len(xp)-1) if i!=d] # vse koordinate, razen d-te
+    xndz = xp[-1]
+    for s in Star:
+        for (p,j) in [(cache.points[i],i) for i in s]:
+            pd = [p[i] for i in xrange(len(p)-1) if i!=d] # vse koordinate, razen d-te
+            if reduce(lambda x,y: x+y,[math.fabs(i) for i in list(numpy.array(xnd)-numpy.array(pd))])<=zm and math.fabs(xp[d]-p[d])>zm:
+                r += [(math.fabs(xp[d]-p[d]),j)]
+    if len(r)>0:
+        r.sort()
+        xdt = cache.points[r[0][1]]
+        dt = xdt[d]-xp[d]
+        D = (xdt[-1]-xndz)/r[0][0]
+        if dt<0:
+            D = -D
+        return D 
+    return None
 
 def simplex_with_xn(cache, xn,Star):
     for simplex in Star:
@@ -97,20 +116,56 @@ def firstTriangle(cache, dimensions, progressCallback = None, **args):
         for d in dimensions:
 
             xn = xp[:-1]
+            
+            DBG=0
+            if xn[0]>16 and xn[1]<44.5 and xn[1]>43:
+            #if xn[0]>4.7 and xn[0]<4.9 and xn[1]<24.5 and xn[1]>23.5:
+                DBG=1
+                print "DBG"
+            
             O = numpy.array(xp[:-1])
 
             xn[d] += dt
             swx = simplex_with_xn(cache, xn, S)
             if swx:                
+                if DBG:
+                    print "iskanje cudnih trikotnikov"
+                    print swx
+                    print [points[k] for k in swx]
                 obrni = 1
+#                if DBG:
+#                    print xp
+#                    print swx
+#                    print [points[k][-1] for k in swx]
+#                    vecs = numpy.array([numpy.array(points[p][:-1])-O for p in swx if p!=x])
+#                    vecs = vecs.transpose()
+#                    XN = numpy.array(xn)-O
+#                    coef = numpy.linalg.solve(vecs,XN)
+#                    xnz = sum(coef*[numpy.array(points[p][-1]-xp[-1])for p in swx if p!=x])+xp[-1]
+#                    dd = obrni * (xnz-xp[-1]) / dt
+#                    print "xnz= ",xnz,"\tdd=",dd,"\trazlika (xnz-xp[-1])=",(xnz-xp[-1])
+#                    print "-----------------"
             else:
                 xn[d] = xp[d]-dt
                 swx = simplex_with_xn(cache, xn, S)
                 if swx:
                     obrni = -1
+#                    if DBG:
+#                        print xp
+#                        print swx
+#                        print "v levo\t",[points[k] for k in swx]
+#                        print "----------------"
                 else:
-                    deltas[d] = "?"
-                    continue
+#                    if DBG:
+#                        print xp
+#                        do = simplex_with_xnDBG(cache, xp, S, d)
+#                        print do
+                    do = simplex_with_xnDBG(cache, xp, S, d)
+                    if do:
+                        deltas[d] = do
+                    else:
+                        deltas[d] = "?"
+                        continue
 
             vecs = numpy.array([numpy.array(points[p][:-1])-O for p in swx if p!=x])
             vecs = vecs.transpose()
@@ -507,8 +562,10 @@ def tubedRegression(cache, dimensions, progressCallback = None, **args):
             if not mx:
                 cache.deltas[exi][d] = "?"
                 continue
-            
-            kw = math.log(.001) / max(mx)**2
+            if max(mx) < 1e-10:
+                kw = math.log(.001)
+            else:
+                kw = math.log(.001) / max(mx)**2
             for ex in nn[:effNeighbours]:
                 ex_x = float(ex[contIdx])
                 ex_y = float(ex.getclass())
@@ -563,6 +620,7 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
         classVar = qVar
             
     dom = orange.Domain(data.domain.attributes, classVar)
+    dom.addmetas(data.domain.getmetas())
     setattr(dom, "constraintAttributes", [cache.contAttributes[i] for i in dimensions])
 
     if derivativeAsMeta:
