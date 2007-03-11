@@ -924,6 +924,23 @@ def writeGlobals():
         %(MODULENAME)s_EXTERN template class %(MODULENAME)s_API GCPtr< T##x >; \
         typedef GCPtr< T##x > P##x;
 
+#else
+#ifdef DARWIN
+    #define %(MODULENAME)s_API
+    
+    #ifdef %(MODULENAME)s_EXPORTS
+        #define %(MODULENAME)s_EXTERN
+    #else
+        #define %(MODULENAME)s_EXTERN extern
+    #endif
+
+    #define %(MODULENAME)s_VWRAPPER(x) \
+        typedef GCPtr< T##x > P##x;
+ 
+    #define %(MODULENAME)s_WRAPPER(x) \
+        class %(MODULENAME)s_API T##x; \
+        typedef GCPtr< T##x > P##x;
+
 #else // not _MSC_VER
     #define %(MODULENAME)s_API
 
@@ -942,6 +959,7 @@ def writeGlobals():
         class %(MODULENAME)s_API T##x; \
         typedef GCPtr< T##x > P##x;
 
+#endif
 #endif
 """
  % {"modulename": modulename, "MODULENAME": modulename.upper()})

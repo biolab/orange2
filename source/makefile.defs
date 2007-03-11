@@ -22,9 +22,13 @@ CCOMPILER = gcc
 LINKER = gcc
 LIBRARY_FILE = liborange.so
 
+# Paths to Mac bundle header and framework files
+BUNDLE_INCLUDE = $(OLD)/../orange-temp/Orange.app/Contents/Resources/include/
+BUNDLE_FRAMEWORK = $(OLD)/../orange-temp/Orange.app/Contents/Frameworks/
+
 ifeq ($(OS), Darwin)
-  COMPILEOPTIONS = -fPIC -fpermissive -w -DDARWIN -O3
-  LINKOPTIONS = -dynamiclib -framework Python -lstdc++ -L$(OLD) -lorange_include
+  COMPILEOPTIONS = -arch i386 -arch ppc -fPIC -fpermissive -fno-common -w -DDARWIN -D$(MODULENAME)_EXPORTS -D_POSIX_C_SOURCE -O3 -I$(BUNDLE_INCLUDE)
+  LINKOPTIONS = -arch i386 -arch ppc -dynamiclib -F$(BUNDLE_FRAMEWORK) -framework Python -lstdc++ -L$(OLD) -lorange_include
   LINKER = g++
   LIBRARY_FILE = liborange.dylib
 else
