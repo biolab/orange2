@@ -8,6 +8,10 @@ import sys, traceback
 
 YesNo = NoYes = ("No", "Yes")
 
+import os.path
+
+enter_icon = QPixmap(os.path.dirname(__file__) + "/icons/Dlg_enter.png")
+
 # constructs a box (frame) if not none, and returns the right master widget
 def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
     if box:
@@ -29,8 +33,8 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
         
     return b
 
-def indentedBox(widget, sep=20):
-    r = widgetBox(widget, orientation = False)
+def indentedBox(widget, sep=20, orientation = False):
+    r = widgetBox(widget, orientation = orientation)
     separator(r, sep, 0)
     return widgetBox(r)
 
@@ -60,23 +64,103 @@ def label(widget, master, label, labelWidth = None):
 
     return lbl
     
-def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, debuggingEnabled = 1, controlWidth = None):
-    b = widgetBox(widget, box, orientation)
-    widgetLabel(b, label, labelWidth)
     
-    wa = b.control = QSpinBox(min, max, step, b)
-    wa.setValue(master.getdeepattr(value))
+class SpinBoxWFocusOut(QSpinBox):
+    def __init__(self, min, max, step, bi):
+        QSpinBox.__init__(self, min, max, step, bi)
+        self.inSetValue = False
+        self.enterButton = None
+        
+    def onChange(self, value):
+        if not self.inSetValue:
+            self.placeHolder.hide()
+            self.enterButton.show()
+        
+    def onEnter(self):
+        if self.enterButton.isVisible():
+            self.enterButton.hide()
+            self.placeHolder.show()
+            if self.cback:
+                self.cback(int(str(self.text())))
+            if self.cfunc:
+                self.cfunc()
+            
+    # doesn't work: it's probably LineEdit's focusOut that we should (and can't) catch
+    def focusOutEvent(self, *e):
+        QSpinBox.focusOutEvent(self, *e)
+        if self.enterButton and self.enterButton.isVisible():
+            self.onEnter()
 
+    def setValue(self, value):
+        self.inSetValue = True
+        QSpinBox.setValue(self, value)
+        self.inSetValue = False
+            
+
+def checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None,
+                  checkCallback=None, spinCallback=None, getwidget=None,
+                  labelWidth=None, debuggingEnabled = 1, controlWidth=55,
+                  callbackOnReturn = False):
+    return spin(widget, master, value, min, max, step, None, label, labelWidth, 0, tooltip,
+                spinCallback, debuggingEnabled, controlWidth, callbackOnReturn, checked, checkCallback, posttext)
+
+    
+
+def spin(widget, master, value, min, max, step=1,
+         box=None, label=None, labelWidth=None, orientation=None, tooltip=None,
+         callback=None, debuggingEnabled = 1, controlWidth = None, callbackOnReturn = False,
+         checked = "", checkCallback = None, posttext = None):
+    if box or label and not checked:
+        b = widgetBox(widget, box, orientation)
+        hasHBox = orientation == 'horizontal' or not orientation
+    else:
+        b = widget
+        hasHBox = False
+        
+    if not hasHBox and (checked or callback and callbackOnReturn or posttext):
+        bi = widgetBox(b, "", 0)
+    else:
+        bi = b
+        
+    if checked:
+        wb = checkBox(bi, master, checked, label, labelWidth = labelWidth, callback=checkCallback)
+    elif label:
+        widgetLabel(b, label, labelWidth)
+        
+        
+    wa = bi.control = SpinBoxWFocusOut(min, max, step, bi)
+    # must be defined because of the setText below
     if controlWidth:
         wa.setFixedWidth(controlWidth)
-        
     if tooltip:
         QToolTip.add(wa, tooltip)
+    if value:
+        wa.setValue(master.getdeepattr(value))
 
-    connectControl(wa, master, value, callback, "valueChanged(int)", CallFront_spin(wa))
+    cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and "valueChanged(int)", CallFront_spin(wa))
+    
+    if checked:
+        wb.disables = [wa]
+        wb.makeConsistent()
+    
+    if callback and callbackOnReturn:
+        wa.enterButton, wa.placeHolder = enterButton(bi, wa.sizeHint().height())
+        master.connect(wa.editor(), SIGNAL("textChanged(const QString &)"), wa.onChange)
+        master.connect(wa.editor(), SIGNAL("returnPressed()"), wa.onEnter)
+        master.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
+
+    if posttext:
+        QLabel(posttext, bi)
+
     if debuggingEnabled:
-        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, step, callback )]
-    return b
+        if checked:
+            master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wb, checked, checkCallback)]
+        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, step, callback)]
+        
+    if checked:
+        return wb, wa
+    else:
+        return b
 
 
 def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
@@ -97,37 +181,114 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
 
 
 def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = [], debuggingEnabled = 1):
-    b = widgetBox(widget, box, orientation=None)
-    wa = QCheckBox(label, b)
+    if box or label:
+        b = widgetBox(widget, box, orientation=None)
+        wa = QCheckBox(label, b)
+        wa.box = b
+    else:
+        wa = QCheckBox(widget)
+        wa.box = None
+        
     if labelWidth:
         wa.setFixedSize(labelWidth, wa.sizeHint().height())
+        
     wa.setChecked(master.getdeepattr(value))
     if disabled:
         wa.setDisabled(1)
     if tooltip:
         QToolTip.add(wa, tooltip)
 
-    cfront, cback, cfunc = connectControl(wa, master, value, None, "toggled(bool)", CallFront_checkBox(wa),
+    cfront, cback, cfunc = connectControl(wa, master, value, None, "toggled(bool)", CallFront_checkBox(wa), 
                                           cfunc = callback and FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
-    wa.disables = disables or [] # need to create a new instance of list (in case someone would want to append...)
+
+    wa.disables = disables or []
     wa.makeConsistent = Disabler(wa, master, value)
     master.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
     wa.makeConsistent.__call__(value)
+
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, value, callback)]
+    
     return wa
 
 
-def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = unicode, validator=None, controlWidth = None, callbackOnFocusOut=False):
+def enterButton(parent, height, placeholder = True):
+        button = QPushButton(parent)
+        button.setFixedSize(height, height)
+        button.setPixmap(enter_icon)
+        if not placeholder:
+            return button
+
+        button.hide()
+        holder = QWidget(parent)
+        holder.setFixedSize(height, height)
+        return button, holder
+    
+    
+class LineEditWFocusOut(QLineEdit):
+    def __init__(self, parent, master, callback, focusInCallback=None):
+        QLineEdit.__init__(self, parent)
+        self.callback = callback
+        self.focusInCallback = focusInCallback
+        self.enterButton, self.placeHolder = enterButton(parent, self.sizeHint().height())
+        master.connect(self, SIGNAL("textChanged(const QString &)"), self.markChanged)
+        master.connect(self, SIGNAL("returnPressed()"), self.returnPressed)
+
+    def markChanged(self, *e):
+        self.placeHolder.hide()
+        self.enterButton.show()
+        
+    def markUnchanged(self, *e):
+        self.enterButton.hide()
+        self.placeHolder.show()
+        
+    def returnPressed(self):
+        if self.enterButton.isVisible():
+            self.markUnchanged()
+            if hasattr(self, "cback") and self.cback:
+                self.cback(self.text())
+            if self.callback:
+                self.callback()
+        
+    def setText(self, t):
+        QLineEdit.setText(self, t)
+        if self.enterButton:
+            self.markUnchanged()
+        
+    def focusOutEvent(self, *e):
+        QLineEdit.focusOutEvent(self, *e)
+        self.returnPressed()
+
+    def focusInEvent(self, *e):
+        if self.focusInCallback:
+            self.focusInCallback()
+        return QLineEdit.focusInEvent(self, *e)
+
+
+def lineEdit(widget, master, value, 
+             label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, 
+             callback=None, valueType = unicode, validator=None, controlWidth = None, callbackOnType = False, focusInCallback = None):
     if box or label:
         b = widgetBox(widget, box, orientation)
         widgetLabel(b, label, labelWidth)
+        hasHBox = orientation == 'horizontal' or not orientation
     else:
         b = widget
-    wa = callback and callbackOnFocusOut and LineEditWFocusOut(b, master, callback) or QLineEdit(b)
-    wa.setText(unicode(master.getdeepattr(value)))
-    wa.isChanged = False
+        hasHBox = False
+        
+    if focusInCallback or callback and not callbackOnType:
+        if not hasHBox:
+            bi = widgetBox(b, "", 0)
+        else:
+            bi = box
+        wa = LineEditWFocusOut(bi, master, callback, focusInCallback)
+    else:
+        wa = QLineEdit(b)
+        wa.enterButton = None
 
+    if value:
+        wa.setText(unicode(master.getdeepattr(value)))
+    
     if controlWidth:
         wa.setFixedWidth(controlWidth)
         
@@ -136,35 +297,10 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     if validator:
         wa.setValidator(validator)
 
-    connectControl(wa, master, value, callback and not callbackOnFocusOut, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = valueType)
+    wa.cback = connectControl(wa, master, value, callback and callbackOnType, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = value and valueType)[1]
         
     wa.box = b
     return wa
-
-
-def checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None, debuggingEnabled = 1, controlWidth=55):
-    hb = QHBox(widget)
-    wa = checkBox(hb, master, checked, label, callback = checkCallback, labelWidth = labelWidth)
-
-    wb = QSpinBox(min, max, step, hb)
-    wb.setValue(master.getdeepattr(value))
-
-    if controlWidth:
-        wb.setFixedWidth(controlWidth)
-
-    if posttext <> None:
-        QLabel(posttext, hb)
-    # HANDLE TOOLTIP XXX
-
-    wa.disables = [wb]
-    wa.makeConsistent()
-
-    connectControl(wb, master, value, None, "valueChanged(int)", CallFront_spin(wb),
-                   cfunc = spinCallback and FunctionCallback(master, spinCallback, widget=wb, getwidget=getwidget))
-    if debuggingEnabled:
-        master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wa, checked, checkCallback)]
-        master._guiElements = getattr(master, "_guiElements", []) + [("spin", wb, value, min, max, step, spinCallback )]
-    return wa, wb
 
 
 def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None):
@@ -197,13 +333,13 @@ def rubber(widget, orientation="vertical"):
 
 def createAttributePixmap(char, color = Qt.black):
     pixmap = QPixmap()
-    pixmap.resize(13,13)
+    pixmap.resize(13, 13)
     painter = QPainter()
     painter.begin(pixmap)
-    painter.setPen( color );
-    painter.setBrush( color );
-    painter.drawRect( 0, 0, 13, 13 );
-    painter.setPen( Qt.white)
+    painter.setPen(color);
+    painter.setBrush(color);
+    painter.drawRect(0, 0, 13, 13);
+    painter.setPen(Qt.white)
     painter.drawText(3, 11, char)
     painter.end()
     return pixmap
@@ -214,9 +350,9 @@ attributeIconDict = None
 def getAttributeIcons():
     global attributeIconDict
     if not attributeIconDict:
-        attributeIconDict = {orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202,0,32)),
-                     orange.VarTypes.Discrete: createAttributePixmap("D", QColor(26,150,65)),
-                     orange.VarTypes.String: createAttributePixmap("S", Qt.black),
+        attributeIconDict = {orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202, 0, 32)), 
+                     orange.VarTypes.Discrete: createAttributePixmap("D", QColor(26, 150, 65)), 
+                     orange.VarTypes.String: createAttributePixmap("S", Qt.black), 
                      -1: createAttributePixmap("?", QColor(128, 128, 128))}
     return attributeIconDict
 
@@ -357,7 +493,7 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     slider.setThumbWidth(20)
     slider.setThumbLength(12)
     if maxWidth:
-        slider.setMaximumSize(maxWidth,40)
+        slider.setMaximumSize(maxWidth, 40)
     if logarithmic:
         slider.setRange(math.log10(minValue), math.log10(maxValue), step)
         slider.setValue(math.log10(init))
@@ -418,8 +554,8 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
         control2attributeDict = dict(control2attributeDict)
         if emptyString:
             control2attributeDict[emptyString] = ""
-        connectControl(combo, master, value, callback, "activated( const QString & )",
-                       CallFront_comboBox(combo, valueType, control2attributeDict),
+        connectControl(combo, master, value, callback, "activated( const QString & )", 
+                       CallFront_comboBox(combo, valueType, control2attributeDict), 
                        ValueCallbackCombo(master, value, valueType, control2attributeDict))
     else:
         connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo, None, control2attributeDict))
@@ -446,7 +582,7 @@ class collapsableWidgetBox(QVGroupBox):
         self.master = master
         self.value = value
         self.xPixCoord = 0
-        self.shownPixSize = (0,0)
+        self.shownPixSize = (0, 0)
         self.childWidgetVisibility = {}
         self.pixmaps = []
 
@@ -503,7 +639,7 @@ class collapsableWidgetBox(QVGroupBox):
 
 # creates an icon that allows you to show/hide the widgets in the widgets list
 class widgetHider(QWidget):
-    def __init__(self, widget, master, value, size = (19,19), widgets = [], tooltip = None):
+    def __init__(self, widget, master, value, size = (19, 19), widgets = [], tooltip = None):
         QWidget.__init__(self, widget)
         self.value = value
         self.master = master
@@ -522,7 +658,7 @@ class widgetHider(QWidget):
             w = self.pixmaps[0].width(); h = self.pixmaps[0].height()+1
         else:
             self.setBackgroundColor(Qt.black)
-            w,h = size
+            w, h = size
         self.setMaximumWidth(w)
         self.setMaximumHeight(h)
         self.setMinimumSize(w, h)
@@ -557,7 +693,7 @@ class widgetHider(QWidget):
 def setStopper(master, sendButton, stopCheckbox, changedFlag, callback):
     stopCheckbox.disables.append((-1, sendButton))
     sendButton.setDisabled(stopCheckbox.isChecked())
-    master.connect(stopCheckbox, SIGNAL("toggled(bool)"),
+    master.connect(stopCheckbox, SIGNAL("toggled(bool)"), 
                    lambda x, master=master, changedFlag=changedFlag, callback=callback: x and getattr(master, changedFlag, True) and callback())
 
 
@@ -626,16 +762,23 @@ class ControlledList(list):
 
 
 
+def connectValueControl(control, master, value, signal, cfront, cback = None, fvcb = None):
+    cback = cback or value and ValueCallback(master, value, fvcb)
+    if cback:
+        if signal:
+            master.connect(control, SIGNAL(signal), cback)
+        cback.opposite = cfront
+        if value and cfront:
+            master.controlledAttributes[value] = cfront    
+    return cback
+    
 def connectControl(control, master, value, f, signal, cfront, cback = None, cfunc = None, fvcb = None):
-    master.controlledAttributes[value] = cfront    
-
-    cback = cback or ValueCallback(master, value, fvcb)
-    master.connect(control, SIGNAL(signal), cback)
-    cback.opposite = cfront
-
+    cback = connectValueControl(control, master, value, signal, cfront, cback, fvcb)
+    
     cfunc = cfunc or f and FunctionCallback(master, f)
     if cfunc:
-        master.connect(control, SIGNAL(signal), cfunc)
+        if signal:
+            master.connect(control, SIGNAL(signal), cfunc)
         cfront.opposite = cback, cfunc
     else:
         cfront.opposite = (cback,)
@@ -857,7 +1000,6 @@ class CallFront_logSlider(ControlledCallFront):
 class CallFront_lineEdit(ControlledCallFront):
     def action(self, value):
         self.control.setText(unicode(value))
-        self.control.isChanged = False
 
 
 class CallFront_radioButtons(ControlledCallFront):
@@ -1001,17 +1143,17 @@ class ProgressBar:
 ##############################################################################
 # float 
 class DoubleSpinBox(QSpinBox):
-    def __init__(self,min,max,step,value,master, *args):
+    def __init__(self, min, max, step, value, master, *args):
         self.min=min
         self.max=max
         self.stepSize=step
         self.steps=(max-min)/step
         self.master=master
         self.value=value
-        apply(QSpinBox.__init__,(self,0,self.steps,1)+args)
+        apply(QSpinBox.__init__, (self, 0, self.steps, 1)+args)
         self.setValidator(QDoubleValidator(self))
 
-    def mapValueToText(self,i):
+    def mapValueToText(self, i):
         return str(self.min+i*self.stepSize)
 
     def interpretText(self):
@@ -1023,29 +1165,3 @@ class DoubleSpinBox(QSpinBox):
         return int(math.floor((val-self.min)/self.stepSize))
 
         
-
-class LineEditWFocusOut(QLineEdit):
-    def __init__(self, parent, master, callback, focusInCallback=None):
-        QLineEdit.__init__(self, parent)
-        self.callback = callback
-        self.focusInCallback = focusInCallback
-        self.isChanged = False
-        master.connect(self, SIGNAL("textChanged(const QString &)"), self.markChanged)
-        master.connect(self, SIGNAL("returnPressed()"), self.returnPressed)
-
-    def markChanged(self, *e):
-        self.isChanged = True
-        
-    def returnPressed(self):
-        if self.isChanged:
-            self.callback()
-            self.isChanged = False
-        
-    def focusOutEvent(self, *e):
-        QLineEdit.focusOutEvent(self, *e)
-        self.returnPressed()
-
-    def focusInEvent(self, *e):
-        if self.focusInCallback:
-            self.focusInCallback()
-        return QLineEdit.focusInEvent(self, *e)
