@@ -47,15 +47,15 @@ class OWRank(OWWidget):
             OWGUI.checkBox(box, self, valueName, meas, callback=self.measuresChanged)
             if valueName == "computeReliefF":
                 ibox = OWGUI.indentedBox(box)
-                OWGUI.spin(ibox, self, "reliefK", 1, 20, label="Neighbours", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged)
-                OWGUI.spin(ibox, self, "reliefN", 20, 100, label="Examples", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged)
+                OWGUI.spin(ibox, self, "reliefK", 1, 20, label="Neighbours", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged, callbackOnReturn = True)
+                OWGUI.spin(ibox, self, "reliefN", 20, 100, label="Examples", labelWidth=labelWidth, orientation=0, callback=self.reliefChanged, callbackOnReturn = True)
         OWGUI.separator(box)
 
         OWGUI.comboBox(box, self, "sortBy", label = "Sort by"+"  ", items = ["No Sorting", "Attribute Name", "Number of Values"] + self.measures, orientation=0, valueType = int, callback=self.sortingChanged)
 
 
         box = OWGUI.widgetBox(self.controlArea, "Discretization", addSpace=True)
-        OWGUI.spin(box, self, "nIntervals", 2, 20, label="Intervals", labelWidth=labelWidth, orientation=0, callback=self.discretizationChanged)
+        OWGUI.spin(box, self, "nIntervals", 2, 20, label="Intervals", labelWidth=labelWidth, orientation=0, callback=self.discretizationChanged, callbackOnReturn = True)
         
         box = OWGUI.widgetBox(self.controlArea, "Precision", addSpace=True)
         OWGUI.spin(box, self, "nDecimals", 1, 6, label="No. of decimals", labelWidth=labelWidth, orientation=0, callback=self.decimalsChanged)
