@@ -67,6 +67,10 @@ float TThresholdCA::operator()(PClassifier classifier, PExampleGenerator data, c
     }
 
   optCA = 0;
+
+  if (dists.size() < 2)
+    return 0.5;
+    
   float optthresh;
   for(tmfpff::const_iterator ni(dists.begin()), ie(dists.end()), ii(ni++); ni != ie; ii = ni++) {
     corr += (*ii).second;
