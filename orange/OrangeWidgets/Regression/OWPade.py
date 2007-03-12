@@ -52,7 +52,7 @@ class OWPade(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Method", addSpace = 24)
         OWGUI.comboBox(box, self, "method", callback = self.methodChanged, items = self.methodNames)
 #        self.nNeighboursSpin = OWGUI.spin(box, self, "nNeighbours", 10, 200, 10, label = "Number of neighbours" + "  ", callback = self.methodChanged)
-        self.persistenceSpin = OWGUI.spin(box, self, "persistence", 0, 100, 5, label = "Persistence (0-100)" + "  ", callback = self.methodChanged, controlWidth=50)
+        self.persistenceSpin = OWGUI.spin(box, self, "persistence", 0, 100, 5, label = "Persistence (0-100)" + "  ", callback = self.methodChanged, controlWidth=50, callbackOnReturn = True)
 
         OWGUI.separator(box)
         hbox = OWGUI.widgetBox(box, orientation=0)
