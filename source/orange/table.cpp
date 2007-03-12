@@ -758,7 +758,11 @@ void TExampleTable::sort(vector<int> &sortOrder)
           valf[intV]++;
         }
 
-        for(vector<int>::iterator ni = valf.begin(); ni!=valf.end(); *(ni++)=(id+=*ni)-*ni);
+        for(vector<int>::iterator ni = valf.begin(); ni!=valf.end(); ni++) {
+          const int ini = *ni;
+          *ni = id;
+          id += ini;
+        }
 
         for(t = examples; t!= _Last; t++) {
           const TValue &val = (**t)[*bi];
