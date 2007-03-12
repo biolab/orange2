@@ -1534,17 +1534,23 @@ void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, in
 
 
     case DISTRIBUTE_FIXED: {
-      float step = points.size()/float(nPoints-2);
+      set<float> ppos;
+      {
+        for(mapiterator pi(points.begin()), pe(points.end()); pi != pe; pi++)
+          ppos.insert((*pi).first);
+      }
+
+      float step = ppos.size()/float(nPoints-2);
       float up = 1.5;
 
       T x1 = T(0.0);
       T dx = T(0.0);
-      for(mapiterator pi(points.begin()), pe(points.end());;) {
+      for(set<float>::const_iterator pi(ppos.begin()), pe(ppos.end());;) {
         do {
-          x1 = (*pi).first;
+          x1 = *pi;
           if (++pi==pe)
             break;
-          T dx = (*pi).first - x1;
+          T dx = *pi - x1;
           up -= 1.0;
         } while (up>1.0);
         if (pi==pe)
