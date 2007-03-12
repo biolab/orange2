@@ -54,6 +54,9 @@ class OWImpute(OWWidget):
         
         self.model = self.data = None
 
+        self.indiValue = ""
+        self.indiValCom = 0
+
         self.loadSettings()
 
         bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Don't Impute", "Average/Most frequent", "Model-based imputer", "Random values"], "Default imputation method", callback=self.sendIf)
@@ -69,12 +72,16 @@ class OWImpute(OWWidget):
 
         indiMethBox = QVBox(self.indibox)       
         self.indiButtons = OWGUI.radioButtonsInBox(indiMethBox, self, "indiType", ["Default (above)", "Don't impute", "Avg/Most frequent", "Model-based", "Random", "Value"], 1, callback=self.indiMethodChanged)
-        self.indiValueCtrlBox = QHBox(self.indiButtons)
-        self.indiValueCtrlBox.setFixedWidth(150)
-        OWGUI.separator(self.indiValueCtrlBox, 25, 0)
-        self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self, self.sendIf)
-        self.connect(self.indiValueCtrl, SIGNAL("textChanged ( const QString & )"), self.lineEditChanged)
-        self.connect(self.indiValueCtrl, SIGNAL("returnPressed ( )"), self.sendIf)
+        self.indiValueCtrlBox = OWGUI.indentedBox(self.indiButtons)
+
+        self.indiValueLineEdit = OWGUI.lineEdit(self.indiValueCtrlBox, self, "indiValue", callback = self.lineEditChanged)
+        self.indiValueLineEdit.hide()
+        valid = QDoubleValidator(self)
+        valid.setRange(-1e30, 1e30, 10)
+        self.indiValueLineEdit.setValidator(valid)
+
+        self.indiValueComboBox = OWGUI.comboBox(self.indiValueCtrlBox, self, "indiValCom", callback = self.valueComboChanged)
+        self.indiValueComboBox.hide()
         OWGUI.rubber(indiMethBox)
         self.btAllToDefault = OWGUI.button(indiMethBox, self, "Set All to Default", callback = self.allToDefault)
 
@@ -116,14 +123,13 @@ class OWImpute(OWWidget):
                 self.indiType = specific[0]
                 if self.indiType == 5:
                     if attr.varType == orange.VarTypes.Discrete:
-                        self.indiValueCtrl.setCurrentItem(specific[1])
+                        self.indiValCom = specific[1]
                     else:
-                        self.indiValueCtrl.setText(specific[1])
+                        self.indiValue = specific[1]
             else:
                 self.indiType = 0
         
     def individualSelected(self, i):
-        self.indiValueCtrlBox.removeChild(self.indiValueCtrl)
         if self.data:
             self.selectedAttr = i
             attr = self.data.domain[i]
@@ -133,22 +139,18 @@ class OWImpute(OWWidget):
             attr = None
 
         if attr and attr.varType == orange.VarTypes.Discrete:
-            self.indiValueCtrl = QComboBox(self.indiValueCtrlBox)
+            self.indiValueComboBox.clear()
             for value in attr.values:
-                self.indiValueCtrl.insertItem(value)
-            self.indiValueCtrl.setCurrentItem(self.methods.get(attrName, (0, 0))[1] or 0)
-            self.connect(self.indiValueCtrl, SIGNAL("activated ( int )"), self.valueComboChanged)
+                self.indiValueComboBox.insertItem(value)
+            self.indiValCom = self.methods.get(attrName, (0, 0))[1] or 0
+            self.indiValueLineEdit.hide()
+            self.indiValueComboBox.show()
         else:
-            valid = QDoubleValidator(self)
-            valid.setRange(-1e30, 1e30, 10)
-            self.indiValueCtrl = OWGUI.LineEditWFocusOut(self.indiValueCtrlBox, self, self.sendIf)
-            self.indiValueCtrl.setValidator(valid)
             if attr and self.methods.has_key(attrName):
-                self.indiValueCtrl.setText(self.methods[attrName][1])
-            self.connect(self.indiValueCtrl, SIGNAL("returnPressed ( )"), self.indiMethodChanged)
-            self.connect(self.indiValueCtrl, SIGNAL("textChanged ( const QString & )"), self.lineEditChanged)
+                self.indiValue = self.methods[attrName][1]
+            self.indiValueLineEdit.show()
+            self.indiValueComboBox.hide()
             
-        self.indiValueCtrl.show()
         self.indiValueCtrlBox.update()
 
 
@@ -158,9 +160,9 @@ class OWImpute(OWWidget):
         if self.indiType:
             if self.indiType == 5:
                 if attr.varType == orange.VarTypes.Discrete:
-                    self.methods[attrName] = 5, self.indiValueCtrl.currentItem()
+                    self.methods[attrName] = 5, self.indiValCom
                 else:
-                    self.methods[attrName] = 5, str(self.indiValueCtrl.text())
+                    self.methods[attrName] = 5, str(self.indiValue)
             else:
                 self.methods[attrName] = self.indiType, None
         else:
@@ -171,17 +173,22 @@ class OWImpute(OWWidget):
         self.sendIf()
 
 
-    def lineEditChanged(self, s):
-        self.indiType = 5
-        self.methods[self.data.domain[self.selectedAttr].name] = 5, str(s)
-        self.setBtAllToDefault()
+    def lineEditChanged(self):
+        if self.data:
+            self.indiType = 5
+            self.methods[self.data.domain[self.selectedAttr].name] = 5, str(self.indiValue)
+            self.attrList.triggerUpdate(True)
+            self.setBtAllToDefault()
+            self.adjustSize()
+            self.sendIf()
 
 
-    def valueComboChanged(self, i):
+    def valueComboChanged(self):
         self.indiType = 5
-        self.methods[self.data.domain[self.selectedAttr].name] = 5, i
+        self.methods[self.data.domain[self.selectedAttr].name] = 5, self.indiValCom
         self.attrList.triggerUpdate(True)
         self.setBtAllToDefault()
+        self.adjustSize()
         self.sendIf()
 
 
