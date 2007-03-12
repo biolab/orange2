@@ -72,7 +72,7 @@ class OWC45Tree(OWWidget):
         
         OWGUI.button(self.controlArea, self, "&Apply Setting", callback = self.setLearner, disabled=0)
 
-        self.resize(100,350)
+        self.adjustSize()
 
     def activateLoadedSettings(self):
         self.setLearner()    
