@@ -193,33 +193,33 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 newCurveKey = self.insertCurve(curve)
                 self.setCurveData(newCurveKey, xD, yD)
             
-#        if self.showBoundaries:
-#            col = QColor(224, 224, 224)
-#            for c in triangulation:
-#                c = list(c)
-#                if self.rawdata[c[0]].getclass() != self.rawdata[c[1]].getclass() or self.rawdata[c[0]].getclass() != self.rawdata[c[2]].getclass():
-#                    xD, yD = [xData[i] for i in c+[c[0]]], [yData[i] for i in c+[c[0]]]
-#                    curve = PolygonCurve(self, QPen(col), QBrush(col))
-#                    newCurveKey = self.insertCurve(curve)
-#                    self.setCurveData(newCurveKey, xD, yD)
-
-        from sets import Set
         if self.showBoundaries:
             col = QColor(224, 224, 224)
-            boundPo = Set()
             for c in triangulation:
                 c = list(c)
                 if self.rawdata[c[0]].getclass() != self.rawdata[c[1]].getclass() or self.rawdata[c[0]].getclass() != self.rawdata[c[2]].getclass():
-                    boundPo.add(c[0])
-                    boundPo.add(c[1])
-                    boundPo.add(c[2])
-            for c in triangulation:
-                c = list(c)
-                if c[0] in boundPo or c[1] in boundPo or c[2] in boundPo:
                     xD, yD = [xData[i] for i in c+[c[0]]], [yData[i] for i in c+[c[0]]]
                     curve = PolygonCurve(self, QPen(col), QBrush(col))
                     newCurveKey = self.insertCurve(curve)
                     self.setCurveData(newCurveKey, xD, yD)
+
+#        from sets import Set
+#        if self.showBoundaries:
+#            col = QColor(224, 224, 224)
+#            boundPo = Set()
+#            for c in triangulation:
+#                c = list(c)
+#                if self.rawdata[c[0]].getclass() != self.rawdata[c[1]].getclass() or self.rawdata[c[0]].getclass() != self.rawdata[c[2]].getclass():
+#                    boundPo.add(c[0])
+#                    boundPo.add(c[1])
+#                    boundPo.add(c[2])
+#            for c in triangulation:
+#                c = list(c)
+#                if c[0] in boundPo or c[1] in boundPo or c[2] in boundPo:
+#                    xD, yD = [xData[i] for i in c+[c[0]]], [yData[i] for i in c+[c[0]]]
+#                    curve = PolygonCurve(self, QPen(col), QBrush(col))
+#                    newCurveKey = self.insertCurve(curve)
+#                    self.setCurveData(newCurveKey, xD, yD)
                     
             
             
