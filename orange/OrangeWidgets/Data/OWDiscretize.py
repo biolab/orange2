@@ -392,7 +392,7 @@ class OWDiscretize(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["targetClass", "discretization", "classDiscretization", 
                                                      "indiDiscretization", "intervals", "classIntervals", "indiIntervals", 
                                                      "outputOriginalClass", "indiData", "indiLabels", "resetIndividuals", 
-                                                     "selectedAttr", "customSplits"], False, False, False, False)}
+                                                     "selectedAttr", "customSplits", "customClassSplits"], False, False, False, False)}
 
     callbackDeposit=[]
     
@@ -415,6 +415,7 @@ class OWDiscretize(OWWidget):
         self.indiData = []
         self.indiLabels = []
         self.resetIndividuals = 0
+        self.customClassSplits = ""
         
         self.selectedAttr = 0
         self.customSplits = ["", "", ""]
@@ -475,12 +476,8 @@ class OWDiscretize(OWWidget):
         self.intervalSlider=OWGUI.hSlider(OWGUI.indentedBox(cinterBox), self, "classIntervals", None, 2, 10, callback=[self.clearLineEditFocus, self.classMethodChanged])
         hbox = OWGUI.widgetBox(box, orientation = 0)
         OWGUI.appendRadioButton(box, self, "discretization", "Custom" + "  ", insertInto = hbox)
-        self.classCustomLineEdit = OWGUI.LineEditWFocusOut(hbox, self, self.classCustomChanged, focusInCallback = self.classCustomSelected)
+        self.classCustomLineEdit = OWGUI.lineEdit(hbox, self, "customClassSplits", callback = self.classCustomChanged, focusInCallback = self.classCustomSelected)
 #        Can't validate - need to allow spaces
-#        valid = QDoubleValidator(self)
-#        valid.setRange(-1e30, 1e30, 10)
-#        self.classCustomLineEdit.setValidator(valid)
-        self.connect(self.classCustomLineEdit, SIGNAL("returnPressed ()"), self.classCustomChanged)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
         OWGUI.separator(box)
         self.classIntervalsLabel = OWGUI.widgetLabel(box, "Current splits: ")
@@ -554,8 +551,7 @@ class OWDiscretize(OWWidget):
         for i in range(3):
             hbox = OWGUI.widgetBox(hbbox, orientation = 0)
             OWGUI.appendRadioButton(box, self, "discretization", "Custom %i" % (i+1) + " ", insertInto = hbox)
-            le = OWGUI.LineEditWFocusOut(hbox, self, lambda w=i: self.customChanged(w), focusInCallback = lambda w=i: self.customSelected(w))
-            self.connect(le, SIGNAL("returnPressed ()"), lambda w=i: self.customChanged(w))
+            le = OWGUI.lineEdit(hbox, self, "", callback = lambda w=i: self.customChanged(w), focusInCallback = lambda w=i: self.customSelected(w))
             le.setFixedWidth(110)
             self.customLineEdits.append(le)
             OWGUI.button(hbox, self, "CC", width=30, callback = lambda w=i: self.copyToCustom(w))
@@ -580,9 +576,9 @@ class OWDiscretize(OWWidget):
         haveClass = bool(data and data.domain.classVar)
         continuousClass = haveClass and data.domain.classVar.varType == orange.VarTypes.Continuous
 
+        self.data = self.originalData
         if continuousClass:
             self.discretizeClass()
-            self.discClassData = self.data
         else:
             self.data = self.originalData
             self.discClassData = None
@@ -610,6 +606,8 @@ class OWDiscretize(OWWidget):
 
             self.graph.setData(None, self.data)
             self.openContext("", data)
+            if self.classDiscretization == 2:
+                self.discretizeClass()
 
             # Prevent entropy discretization with non-discrete class
             if not haveClass:
@@ -934,7 +932,7 @@ class OWDiscretize(OWWidget):
             
             if discType == 2:
                 try:
-                    content = str(self.classCustomLineEdit.text()).replace(":", " ").replace(",", " ").replace("-", " ").split()
+                    content = self.customClassSplits.replace(":", " ").replace(",", " ").replace("-", " ").split()
                     customs = dict.fromkeys([float(x) for x in content]).keys()  # remove duplicates (except 8.0, 8.000 ...)
                     customs.sort()
                 except:
@@ -951,7 +949,10 @@ class OWDiscretize(OWWidget):
                 else:
                     discretizer = orange.IntervalDiscretizer(points = customs).constructVariable(classVar)
 
-                self.data = orange.ExampleTable(orange.Domain(self.originalData.domain.attributes, discretizer), self.originalData)
+                self.discClassData = orange.ExampleTable(orange.Domain(self.originalData.domain.attributes, discretizer), self.originalData)
+                if self.data:
+                    self.data = self.discClassData
+                # else, the data has no continuous attributes other then the class
             
                 self.classIntervalsLabel.setText("Current splits: " + ", ".join([str(classVar(x)) for x in discretizer.getValueFrom.transformer.points]))
                 self.error()
