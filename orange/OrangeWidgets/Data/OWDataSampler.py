@@ -90,7 +90,7 @@ class OWDataSampler(OWWidget):
         self.s[3] = QRadioButton('Multiple subsets', self.sBox)        
         gbox = QHBox(self.sBox)
         QWidget(gbox).setFixedSize(19, 8)
-        OWGUI.lineEdit(gbox, self, 'GroupText', label='Subset sizes (e.g. "0.1, 0.2, 0.5"):', callback=self.changeCombo)
+        OWGUI.lineEdit(gbox, self, 'GroupText', label='Subset sizes (e.g. "0.1, 0.2, 0.5"):', callback=self.multipleChanged)
 
         # Output Group Box
         OWGUI.separator(self.controlArea)
@@ -127,15 +127,27 @@ class OWDataSampler(OWWidget):
         self.SelectType = id
         self.process()
 
+    def multipleChanged(self):
+        try:
+            self.pGroups = [float(x) for x in self.GroupText.split(',')]
+            self.nGroups = len(self.pGroups)
+            self.error(1)
+        except:
+            self.error("Invalid specification for sizes of subsets.", 1)
+        self.changeCombo()
+
     # reflect user's actions that change combobox contents
     def changeCombo(self):
         # refill combobox
         self.Folds = 1
         if self.SelectType == 1: self.Folds = self.CVFolds
         if self.SelectType == 2:
-            if self.data: self.Folds = len(self.data)
-            else:         self.Folds = 1
-        if self.SelectType == 3: self.Folds = self.nGroups
+            if self.data:
+                self.Folds = len(self.data)
+            else:
+                self.Folds = 1
+        if self.SelectType == 3:
+            self.Folds = self.nGroups
         self.foldcombo.clear()
         for x in range(self.Folds):
             self.foldcombo.insertItem(str(x+1))
@@ -272,14 +284,6 @@ class OWDataSampler(OWWidget):
         elif self.SelectType == 3:
             self.infob.setText('Multiple subsets.')
             #parse group specification string
-            try:
-                self.pGroups = []
-                for x in self.GroupText.split(','):
-                    self.pGroups.append(float(x))
-                self.nGroups = len(self.pGroups)
-            except:
-                self.error("Invalid specification for sizes of subsets.")
-                return
 
             #prepare indices generator
             self.indices = orange.MakeRandomIndices2()
