@@ -14,7 +14,13 @@ import OWGUI, OWToolbars, OWDlgs
 import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
-from orngTextCorpus import CategoryDocument, checkFromText
+
+textCorpusModul = 1
+
+try:
+  from orngTextCorpus import CategoryDocument, checkFromText
+except ImportError:
+  textCorpusModul = 0
 
 import os
 
@@ -63,7 +69,8 @@ class OWCorrAnalysis(OWWidget):
         self.icons = self.createAttributeIconDict()
         
         self.textData = False
-        OWGUI.checkBox(self.GeneralTab, self, 'textData', 'Textual data', callback = self.initAttrValues)
+        if textCorpusModul:
+          OWGUI.checkBox(self.GeneralTab, self, 'textData', 'Textual data', callback = self.initAttrValues)
         
         #col attribute
         self.attrCol = ""
@@ -141,8 +148,11 @@ class OWCorrAnalysis(OWWidget):
     def dataset(self, dataset):
         self.closeContext()
         if dataset:
-            self.data = dataset          
-            self.textData = checkFromText(self.data)
+            self.data = dataset       
+            if textCorpusModul:
+              self.textData = checkFromText(self.data)
+            else:
+              self.textData = False
             self.initAttrValues()            
         else:
             self.data = None
@@ -176,7 +186,10 @@ class OWCorrAnalysis(OWWidget):
         
     def updateTables(self):
         if self.textData:
-            data = (self.attrRow == 'document' and [self.data] or [CategoryDocument(self.data).dataCD])[0]
+            if textCorpusModul:
+              data = (self.attrRow == 'document' and [self.data] or [CategoryDocument(self.data).dataCD])[0]
+            else:
+              data = self.data
             metas = data.domain.getmetas()
             lenMetas = len(metas)
             caList = []
