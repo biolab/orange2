@@ -370,9 +370,10 @@ public:
   PIntList *ruleIndices, **coveredRules;
   int psize,fsize;
   bool useBestRuleOnly;
+  float minBeta; //P minimum beta value of a rule, if lower, rule is set to have beta 0. 
 
   TRuleClassifier_logit();
-  TRuleClassifier_logit(PRuleList rules, PExampleTable examples, const int &weightID = 0, const bool &useBestRuleOnly = false);
+  TRuleClassifier_logit(PRuleList rules, const float &minBeta, PExampleTable examples, const int &weightID = 0, const bool &useBestRuleOnly = false);
   ~TRuleClassifier_logit();
 
   void initialize();
@@ -391,7 +392,7 @@ public:
   __REGISTER_CLASS
 
   TRuleClassifier_logit_bestRule();
-  TRuleClassifier_logit_bestRule(PRuleList rules, PExampleTable examples, const int &weightID = 0);
+  TRuleClassifier_logit_bestRule(PRuleList rules, const float &minBeta, PExampleTable examples, const int &weightID = 0);
 };
 
 #endif

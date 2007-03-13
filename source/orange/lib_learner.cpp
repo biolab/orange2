@@ -1573,12 +1573,13 @@ PyObject *RuleClassifier_logit_new(PyObject *self, PyObject *args, PyObject *key
 
     PExampleGenerator gen;
     int weightID = 0;
+    float minBeta = 0.0;
     PRuleList rules;
 
-    if (!PyArg_ParseTuple(args, "O&O&|O&:RuleClassifier.call", cc_RuleList, &rules, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+    if (!PyArg_ParseTuple(args, "O&fO&|O&:RuleClassifier.call", cc_RuleList, &rules, &minBeta, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
       return PYNULL;
 
-    TRuleClassifier *rc = new TRuleClassifier_logit(rules, gen, weightID);
+    TRuleClassifier *rc = new TRuleClassifier_logit(rules, minBeta, gen, weightID);
     PRuleClassifier ruleClassifier = rc;
 //    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
     return WrapOrange(ruleClassifier);
@@ -1597,12 +1598,13 @@ PyObject *RuleClassifier_logit_bestRule_new(PyObject *self, PyObject *args, PyOb
 
     PExampleGenerator gen;
     int weightID = 0;
+    float minBeta = 0.0;
     PRuleList rules;
 
-    if (!PyArg_ParseTuple(args, "O&O&|O&:RuleClassifier.call", cc_RuleList, &rules, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+    if (!PyArg_ParseTuple(args, "O&fO&|O&:RuleClassifier.call", cc_RuleList, &rules, &minBeta, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
       return PYNULL;
 
-    TRuleClassifier *rc = new TRuleClassifier_logit_bestRule(rules, gen, weightID);
+    TRuleClassifier *rc = new TRuleClassifier_logit_bestRule(rules, minBeta, gen, weightID);
     PRuleClassifier ruleClassifier = rc;
 //    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
     return WrapOrange(ruleClassifier);
