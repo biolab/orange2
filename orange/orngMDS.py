@@ -15,8 +15,11 @@
 import orange
 import orangeom as orangemds
 from math import *
-from Numeric import *
-from LinearAlgebra import *
+#from Numeric import *
+#from LinearAlgebra import *
+from numpy import *
+from numpy.linalg import svd
+
 
 KruskalStress=orangemds.KruskalStress()
 SammonStress=orangemds.SammonStress()
@@ -81,20 +84,22 @@ class MDS:
     def Torgerson(self):
         # Torgerson's initial approximation
         O=array([m for m in self.distances])
-        B = matrixmultiply(O,O)
+        #B = matrixmultiply(O,O)
+        B = dot(O,O)
         
         # double-center B
-        cavg = sum(B)/(self.n+0.0)      # column sum
-        ravg = sum(B,1)/(self.n+0.0)    # row sum
+        cavg = sum(B, axis=0)/(self.n+0.0)      # column sum
+        ravg = sum(B, axis=1)/(self.n+0.0)    # row sum
         tavg = sum(cavg)/(self.n+0.0)   # total sum
         # B[row][column]
         for i in xrange(self.n):
             for j in xrange(self.n):
-                B[i][j] += -cavg[j]-ravg[i]
+                B[i,j] += -cavg[j]-ravg[i]
         B = -0.5*(B+tavg)
 
         # SVD-solve B = ULU'
-        (U,L,V) = singular_value_decomposition(B)
+        #(U,L,V) = singular_value_decomposition(B)
+        (U,L,V)=svd(B)
         # X = U(L^0.5)
         # # self.X = matrixmultiply(U,identity(self.n)*sqrt(L))
         # X is n-dimensional, we take the two dimensions with the largest singular values
@@ -102,9 +107,9 @@ class MDS:
         idx.reverse()
         
         Lt = take(L,idx)   # take those singular values
-        Ut = take(U,idx,1) # take those columns that are enabled
+        Ut = take(U,idx,axis=1) # take those columns that are enabled
         Dt = identity(self.dim)*sqrt(Lt)  # make a diagonal matrix, with squarooted values
-        self.points = orange.FloatListList(matrixmultiply(Ut,Dt))
+        self.points = orange.FloatListList(dot(Ut,Dt))
         self.freshD = 0
         
 #        D = identity(self.n)*sqrt(L)  # make a diagonal matrix, with squarooted values
@@ -306,4 +311,13 @@ class WMDS(MDS):
         self.freshD = 0
         return effect
 """
-        
+if __name__=="__main__":
+    data=orange.ExampleTable("doc//datasets//iris.tab")
+    dist = orange.ExamplesDistanceConstructor_Euclidean(data)
+    matrix = orange.SymMatrix(len(data))
+    matrix.setattr('items', data)
+    for i in range(len(data)):
+        for j in range(i+1):
+            matrix[i, j] = dist(data[i], data[j])
+    mds=MDS(matrix)
+    mds.Torgerson()
