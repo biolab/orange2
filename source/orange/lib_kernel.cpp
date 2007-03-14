@@ -1443,6 +1443,8 @@ int Domain_set_classVar(PyObject *self, PyObject *arg) PYDOC("Domain's class att
   PyCATCH_1
 }
 
+PyObject *Domain_checksum(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "() -> crc")
+{ return PyInt_FromLong(SELF_AS(TDomain).sumValues()); }
 
 
 /* ************ RANDOM GENERATORS ************** */

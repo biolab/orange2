@@ -544,3 +544,26 @@ PVariable TDomain::hasContinuousAttributes(bool checkClass) const
       return *vi;
   return PVariable();
 }
+
+
+#include "crc.h"
+
+void TDomain::addToCRC(unsigned long &crc) const
+{
+  const_PITERATE(TVarList, vi, variables) {
+    add_CRC((*vi)->name.c_str(), crc);
+    add_CRC((*vi)->varType, crc);
+    if ((*vi)->varType == TValue::INTVAR)
+      PITERATE(TStringList, vli, dynamic_cast<TEnumVariable &>(vi->getReference()).values)
+        add_CRC(vli->c_str(), crc);
+  }
+}
+
+
+int TDomain::sumValues() const
+{ unsigned long crc;
+  INIT_CRC(crc);
+  addToCRC(crc);
+  FINISH_CRC(crc);
+  return int(crc & 0x7fffffff);
+}

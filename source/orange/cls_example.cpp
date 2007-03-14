@@ -778,6 +778,10 @@ PyObject *Example_native(TPyExample *pex, PyObject *args, PyObject *keyws) PYARG
 }
 
 
+PyObject *Example_checksum(TPyExample *pex, PyObject *) PYARGS(METH_NOARGS, "() -> crc")
+{ return PyInt_FromLong(PyExample_AS_ExampleReference(pex).sumValues()); }
+
+
 #include "slist.hpp"
 
 void Example_pack(const TExample &example, TCharBuffer &buf, PyObject *&otherValues)
