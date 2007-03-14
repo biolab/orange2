@@ -16,3 +16,9 @@ inline void add_CRC(float &data, unsigned long &crc)
 
 inline void add_CRC(unsigned char c, unsigned long &crc)
 { crc = (crc >> 8) ^ crc_table[(crc & 0xFF) ^ c]; }
+
+inline void add_CRC(const char *c, unsigned long &crc)
+{
+  for(; *c; add_CRC((unsigned char)*c++, crc)); 
+  add_CRC((unsigned char)0, crc);
+}
