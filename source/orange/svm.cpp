@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2000-2005 Chih-Chung Chang and Chih-Jen Lin
+Copyright (c) 2000-2007 Chih-Chung Chang and Chih-Jen Lin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -77,7 +77,7 @@ template <class S, class T> inline void clone(T*& dst, S* src, int n)
 #define INF HUGE_VAL
 #define TAU 1e-12
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
-#if 1
+#if 0
 void info(char *fmt,...)
 {
 	va_list ap;
@@ -3265,32 +3265,7 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	}
 	//cout<<"training"<<endl;
 
-#ifdef _MSC_VER
-	FILE* tmpstream=freopen("NUL","w", stdout);
-#else
-	//printf("%i", stdout);
-	int tmpstream=dup(1);
-	if(tmpstream<0)
-		perror("dup");
-	FILE* fdnull=fopen("/dev/null","w");
-	//if(fdnull<0)
-	//	perror("fopen");
-	//freopen("/dev/null", "w", stdout);
-	if(dup2(fileno(fdnull),1)<0)
-		perror("dup2");
-#endif
-
 	model=svm_train(&prob,&param);
-
-#ifdef _MSC_VER
-	freopen("CON", "w", stdout);
-#else
-	close(1);
-	if(dup2(tmpstream, 1)<0)
-		perror("dup2 ");
-	close(tmpstream);
-	fclose(fdnull);
-#endif
 
 	//cout<<"end training"<<endl;
 	svm_destroy_param(&param);
