@@ -35,8 +35,8 @@ class OWScatterPlot(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
 
-        self.inputs =  [("Examples", ExampleTable, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdata), ("Attribute selection", list, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Learner", orange.Learner)]
+        self.inputs =  [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute selection", list, self.setAttributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
+        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Learner", orange.Learner)]
 
         # local variables    
         self.showGridlines = 0
@@ -67,7 +67,7 @@ class OWScatterPlot(OWWidget):
         self.tabs = QTabWidget(self.controlArea, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "General")
+        self.tabs.insertTab(self.GeneralTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #add a graph widget
@@ -136,8 +136,8 @@ class OWScatterPlot(OWWidget):
         
         # general graph settings
         box4 = OWGUI.collapsableWidgetBox(self.SettingsTab, "General Graph Settings", self, "boxGeneral")
-        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
-        OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.graph.setShowXaxisTitle)
+        OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
@@ -226,7 +226,7 @@ class OWScatterPlot(OWWidget):
         self.majorUpdateGraph()
 
     # receive new data and update all fields
-    def cdata(self, data, clearResults = 1):
+    def setData(self, data, clearResults = 1):
         if data:
             name = getattr(data, "name", "")
             data = data.filterref(orange.Filter_hasClassValue())
@@ -247,7 +247,8 @@ class OWScatterPlot(OWWidget):
         self.vizrank.setData(data)
 ##        self.clusterDlg.setData(data, clearResults)
         
-        if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
+        sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
+        if not sameDomain:
             self.initAttrValues()
 
         self.openContext("", data)
@@ -256,7 +257,7 @@ class OWScatterPlot(OWWidget):
         self.sendSelections()
 
     # set an example table with a data subset subset of the data. if called by a visual classifier, the update parameter will be 0
-    def subsetdata(self, data, update = 1):
+    def setSubsetData(self, data, update = 1):
         if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.graph.subsetData = data
         qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawdata - as in cluster argumentation
@@ -266,7 +267,7 @@ class OWScatterPlot(OWWidget):
        
 
     # receive information about which attributes we want to show on x and y axis
-    def attributeSelection(self, list):
+    def setAttributeSelection(self, list):
         if not self.data or not list or len(list) < 2: return
         self.attrX = list[0]
         self.attrY = list[1]
@@ -274,7 +275,7 @@ class OWScatterPlot(OWWidget):
 
 
     # visualize the results of the classification
-    def test_results(self, results):        
+    def setTestResults(self, results):        
         self.classificationResults = None
         if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
             self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
@@ -284,7 +285,7 @@ class OWScatterPlot(OWWidget):
 
 
     # set the learning method to be used in VizRank
-    def vizRankLearner(self, learner):
+    def setVizRankLearner(self, learner):
         self.vizrank.externalLearner = learner
 
     # send signals with selected and unselected examples as two datasets
@@ -404,11 +405,12 @@ class OWScatterPlot(OWWidget):
         if not self.data:
             return
     
-        if attrList:
+        if attrList and len(attrList) == 2:
             self.attrX = attrList[0]
             self.attrY = attrList[1]
 
-        if self.vizrank.showKNNCorrectButton.isOn() or self.vizrank.showKNNWrongButton.isOn():
+        hasDiscreteClass = self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete
+        if hasDiscreteClass and (self.vizrank.showKNNCorrectButton.isOn() or self.vizrank.showKNNWrongButton.isOn()):
             kNNExampleAccuracy, probabilities = self.vizrank.kNNClassifyData(self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[self.attrX], self.graph.attributeNameIndex[self.attrY]]))
             if self.vizrank.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
             else: kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")
@@ -489,6 +491,6 @@ if __name__=="__main__":
     ow=OWScatterPlot()
     a.setMainWidget(ow)
     ow.show()
-
+    a.exec_loop()
     #save settings 
     ow.saveSettings()

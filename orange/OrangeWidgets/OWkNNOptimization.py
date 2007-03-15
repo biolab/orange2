@@ -5,6 +5,7 @@ from OWGraph import *
 from orngVizRank import *
 from orngScaleData import getVariableValuesSorted
 import OWGraphTools
+import numpy
 
 
 class OWVizRank(VizRank, OWBaseWidget):
@@ -199,12 +200,12 @@ class OWVizRank(VizRank, OWBaseWidget):
         #self.filterButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
 
         self.buttonBox7 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
-        OWGUI.button(self.buttonBox7, self, "Attribute Ranking", self.attributeAnalysis, debuggingEnabled = 0)
-        OWGUI.button(self.buttonBox7, self, "Attribute Interactions", self.interactionAnalysis, debuggingEnabled = 0)
+        self.attributeRankingButton = OWGUI.button(self.buttonBox7, self, "Attribute Ranking", self.attributeAnalysis, debuggingEnabled = 0)
+        self.attributeInteractionsButton = OWGUI.button(self.buttonBox7, self, "Attribute Interactions", self.interactionAnalysis, debuggingEnabled = 0)
 
         self.buttonBox8 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")    
-        OWGUI.button(self.buttonBox8, self, "Graph Projection Scores", self.graphProjectionQuality, debuggingEnabled = 0)
-        OWGUI.button(self.buttonBox8, self, "Outlier Identification", self.identifyOutliers, debuggingEnabled = 0)
+        self.projectionScoresButton = OWGUI.button(self.buttonBox8, self, "Graph Projection Scores", self.graphProjectionQuality, debuggingEnabled = 0)
+        self.outlierIdentificationButton = OWGUI.button(self.buttonBox8, self, "Outlier Identification", self.identifyOutliers, debuggingEnabled = 0)
 
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.loadProjections, debuggingEnabled = 0)
@@ -281,7 +282,7 @@ class OWVizRank(VizRank, OWBaseWidget):
                 for index in self.selectedClasses:
                     acc += result[OTHER_RESULTS][OTHER_PREDICTIONS][index] * result[OTHER_RESULTS][OTHER_DISTRIBUTION][index]
                     sum += result[OTHER_RESULTS][OTHER_DISTRIBUTION][index]
-                VizRank.insertItem(self, self.findTargetIndex(acc/sum, funct), acc/sum, result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[GENERAL_DICT])
+                VizRank.insertItem(self, self.findTargetIndex(acc/max(sum,1.), funct), acc/max(sum,1.), result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[GENERAL_DICT])
                 
         self.finishedAddingResults()
 
@@ -369,27 +370,31 @@ class OWVizRank(VizRank, OWBaseWidget):
 
         VizRank.setData(self, data)   # set the k value, remove results, arguments, ...
         self.removeEvaluatedAttributes()
-
-        if not (data and data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete):
-            self.classesList.clear()
-            self.classValueList.clear()
-            self.selectedClasses = []
-            return
-
-        if hasattr(data, "name"): self.datasetName = data.name
-        else: self.datasetName = ""
-
         self.classesList.clear()
         self.classValueList.clear()
         self.selectedClasses = []
 
-        if not (data and data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete): return
+        hasDiscreteClass = self.data != None and len(self.data) > 0 and self.data.domain.classVar != None and self.data.domain.classVar.varType == orange.VarTypes.Discrete
+        self.startOptimizationButton.setEnabled(hasDiscreteClass)
+        self.optimizeGivenProjectionButton.setEnabled(hasDiscreteClass)
+        self.evaluateProjectionButton.setEnabled(hasDiscreteClass)
+        self.showKNNCorrectButton.setEnabled(hasDiscreteClass)
+        self.showKNNWrongButton.setEnabled(hasDiscreteClass)
+        self.attributeRankingButton.setEnabled(hasDiscreteClass)
+        self.attributeInteractionsButton.setEnabled(hasDiscreteClass)
+        self.projectionScoresButton.setEnabled(hasDiscreteClass)
+        self.outlierIdentificationButton.setEnabled(hasDiscreteClass)
+        self.findArgumentsButton.setEnabled(hasDiscreteClass)
 
+        if not hasDiscreteClass:
+            return
+        
         # add class values
         for i in range(len(data.domain.classVar.values)):
             self.classesList.insertItem(data.domain.classVar.values[i])
             self.classValueList.insertItem(data.domain.classVar.values[i])
         self.classesList.selectAll(1)
+        self.datasetName = getattr(data, "name", "")
 
                 
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
@@ -482,6 +487,13 @@ class OWVizRank(VizRank, OWBaseWidget):
     # ##############################################################
     # kNNClassifyData - compute classification error for every example in table
     def kNNClassifyData(self, table):
+        if len(table) == 0:
+            return [], []
+
+        # check if we have a discrete class
+        if not table.domain.classVar or not table.domain.classVar.varType == orange.VarTypes.Discrete:
+            return [], []
+        
         if self.externalLearner: learner = self.externalLearner
         else:                    learner = self.createkNNLearner()
         results = apply(testingMethods[self.testingMethod], [[learner], table])

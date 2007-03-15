@@ -39,8 +39,8 @@ class OWScatterPlotMatrix(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Scatterplot matrix", TRUE)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.selection)]
-        self.outputs = [("Attribute Selection List", list)] 
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
+        self.outputs = [("Attribute Selection List", AttributeList)] 
 
         #set default settings
         self.data = None
@@ -355,9 +355,9 @@ class OWScatterPlotMatrix(OWWidget):
                 self.send("Attribute Selection List", [attr1, attr2])
                 self.graphs[i].blankClick = 0
 
-    ####### CDATA ################################
+
     # receive new data and update all fields
-    def cdata(self, data):
+    def setData(self, data):
         exData = self.data
         
         if data == None:
@@ -372,11 +372,13 @@ class OWScatterPlotMatrix(OWWidget):
             data.name = name
         self.data = data
 
-        if self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes): # preserve attribute choice if the domain is the same
-            if self.graphs != []: self.createGraphs()   # if we had already created graphs, redraw them with new data
+        sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
+        if sameDomain:
+            if self.graphs != []:
+                self.createGraphs()   # if we had already created graphs, redraw them with new data
             return  
 
-        if not self.selection(self.attributeSelection):
+        if not self.setAttributeSelection(self.attributeSelection):
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
         
@@ -387,7 +389,7 @@ class OWScatterPlotMatrix(OWWidget):
 
     #################################################
 
-    def selection(self, attrList):
+    def setAttributeSelection(self, attrList):
         self.attributeSelection = attrList
 
         if not self.data or not attrList: return 0

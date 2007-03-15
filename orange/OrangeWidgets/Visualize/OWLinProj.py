@@ -37,8 +37,8 @@ class OWLinProj(OWVisWidget):
     def __init__(self,parent=None, signalManager = None, name = "Linear Projection", graphClass = None):
         OWVisWidget.__init__(self, parent, signalManager, name, TRUE)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdata), ("Attribute Selection List", AttributeList, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("Learner", orange.Learner)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setAttributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
+        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList), ("Learner", orange.Learner)]
 
         # local variables
         self.learnersArray = [None, None, None, None]   # VizRank, Cluster, FreeViz, S2N Heuristic Learner
@@ -120,7 +120,7 @@ class OWLinProj(OWVisWidget):
         self.GeneralTab = QVGroupBox(self)
         #self.GeneralTab.setFrameShape(QFrame.NoFrame)
         self.SettingsTab = QVGroupBox(self)
-        self.tabs.insertTab(self.GeneralTab, "General")
+        self.tabs.insertTab(self.GeneralTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
  
         #add controls to self.controlArea widget
@@ -128,12 +128,11 @@ class OWLinProj(OWVisWidget):
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialogs", orientation = "horizontal")
         self.vizrankButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
-##        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
         self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
-        self.vizrankButton.setMaximumWidth(63)
+##        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
+##        self.vizrankButton.setMaximumWidth(63)
 ##        self.clusterDetectionDlgButton.setMaximumWidth(63)
-        self.freeVizDlgButton.setMaximumWidth(63)
-        
+##        self.freeVizDlgButton.setMaximumWidth(63)
 ##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
 ##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
 
@@ -149,18 +148,34 @@ class OWLinProj(OWVisWidget):
         OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=15, step=1, callback = self.updateGraph)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
+        box2 = OWGUI.widgetBox(self.SettingsTab, "Scaling Options")
+        box3 = OWGUI.collapsableWidgetBox(self.SettingsTab, "General Graph Settings", self, "boxGeneral")
+        box8 = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        box9 = OWGUI.widgetBox(self.SettingsTab, "Tooltips Settings")
+        box10 = OWGUI.widgetBox(self.SettingsTab, "Sending Selection")
+
+        OWGUI.comboBox(box9, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
+        OWGUI.comboBox(box9, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
+        
+        OWGUI.checkBox(box10, self, 'autoSendSelection', 'Auto send selected/unselected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
+        OWGUI.comboBox(box10, self, "addProjectedPositions", items = ["Do not modify the domain", "Append projection as attributes", "Append projection as meta attributes"], callback = self.sendSelections)
+        self.selectionChanged()
+
+        self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = "Set Active Learner", items = ["VizRank Learner", "Cluster Learner", "FreeViz Learner", "S2N Feature Selection Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.", callback = self.setActiveLearner)
+
+        # this is needed so that the tabs are wide enough! 
+        self.safeProcessEvents()
+        self.tabs.updateGeometry()        
+        
         OWGUI.comboBoxWithCaption(box, self, "graph.jitterSize", 'Jittering size (% of size)  ', callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
-
-        box2a = OWGUI.widgetBox(self.SettingsTab, "Scaling Options")
-        OWGUI.comboBoxWithCaption(box2a, self, "graph.scaleFactor", 'Scale point position by: ', callback = self.updateGraph, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
+        
+        OWGUI.comboBoxWithCaption(box2, self, "graph.scaleFactor", 'Scale point position by: ', callback = self.updateGraph, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
 
         valueScalingList = ["attribute range", "global range", "attribute variance"]
         if name.lower() in ["radviz", "polyviz"]:
             valueScalingList.pop(); self.valueScalingType = min(self.valueScalingType, 1)
-        OWGUI.comboBoxWithCaption(box2a, self, "valueScalingType", 'Scale values by: ', callback = self.setValueScaling, items = valueScalingList)
-
-        box3 = OWGUI.collapsableWidgetBox(self.SettingsTab, "General Graph Settings", self, "boxGeneral")
+        OWGUI.comboBoxWithCaption(box2, self, "valueScalingType", 'Scale values by: ', callback = self.setValueScaling, items = valueScalingList)
         
         #OWGUI.checkBox(box3, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
         OWGUI.checkBox(box3, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
@@ -170,40 +185,24 @@ class OWLinProj(OWVisWidget):
         OWGUI.checkBox(box3, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
 ##        OWGUI.checkBox(box3, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
 
-##        # this is needed so that the tabs are wide enough! 
-##        qApp.processEvents()
-##        self.tabs.updateGeometry()
-
         box5 = OWGUI.widgetBox(box3, orientation = "horizontal")
+        box6 = OWGUI.widgetBox(box3, orientation = "horizontal")
+        box7 = OWGUI.widgetBox(box3, orientation = "horizontal")
+        
         OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         hider = OWGUI.widgetHider(box5, self, "showProbabilitiesDetails", tooltip = "Show/hide extra settings")
         rubb = OWGUI.rubber(box5)
         rubb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum))
-
-        box6 = OWGUI.widgetBox(box3, orientation = "horizontal")
+        
         OWGUI.separator(box6, width=20)
         OWGUI.label(box6, self, "Granularity:  ")
         OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
 
-        box7 = OWGUI.widgetBox(box3, orientation = "horizontal")
         OWGUI.separator(box7, width=20)
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
         hider.setWidgets([box6, box7])
 
-        # ####
-        hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
-        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
-        
-        box2 = OWGUI.widgetBox(self.SettingsTab, "Tooltips Settings")
-        OWGUI.comboBox(box2, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
-        OWGUI.comboBox(box2, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
-
-        box4 = OWGUI.widgetBox(self.SettingsTab, "Sending Selection")
-        OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected/unselected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
-        OWGUI.comboBox(box4, self, "addProjectedPositions", items = ["Do not modify the domain", "Append projection as attributes", "Append projection as meta attributes"], callback = self.sendSelections)
-        self.selectionChanged()
-
-        self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = "Set Active Learner", items = ["VizRank Learner", "Cluster Learner", "FreeViz Learner", "S2N Feature Selection Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.", callback = self.setActiveLearner)
+        OWGUI.button(box8, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
         self.icons = self.createAttributeIconDict()
         self.debugSettings = ["hiddenAttributes", "shownAttributes"]
@@ -276,7 +275,7 @@ class OWLinProj(OWVisWidget):
 ##                l = len(proj)
 ##                for i in range(len(proj)-2, 0, -1):
 ##                    if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-##                self.printVerbose("OWLinProj: Warning: There are %s possible projections using currently visualized attributes"% (proj))
+##                self.printEvent("OWLinProj: Warning: There are %s possible projections using currently visualized attributes"% (proj), eventVerbosity = 1)
 ##            
 ##            self.clusterDlg.disableControls()
 ##            
@@ -324,34 +323,6 @@ class OWLinProj(OWVisWidget):
 ##        self.updateGraph(attrList, 1, insideColors, clusterClosure = (closure, enlargedClosure, classValue))
 ##        self.graph.removeAllSelections()
 
-    def setShownAttributeList(self, data, shownAttributes = None):
-        shown = []
-        hidden = []
-
-        if data:
-            if shownAttributes:
-                if type(shownAttributes[0]) == tuple:
-                    shown = shownAttributes
-                else:
-                    domain = self.data.domain
-                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
-                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
-            else:
-                shown = [(a.name, a.varType) for a in data.domain.attributes]
-                if not self.showAllAttributes:
-                    hidden = shown[10:]
-                    shown = shown[:10]
-
-            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown:
-                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
-
-        self.shownAttributes = shown
-        self.hiddenAttributes = hidden
-        self.selectedHidden = []
-        self.selectedShown = []
-        self.resetAttrManipulation()
-
-        self.sendShownAttributes()
 
     def updateGraphAndAnchors(self):
         self.updateGraph(setAnchors = 1)
@@ -363,8 +334,8 @@ class OWLinProj(OWVisWidget):
             self.setShownAttributeList(self.data, attrList)
 
         self.graph.showKNN = 0
-        if (self.vizrank.showKNNCorrectButton.isOn() or self.vizrank.showKNNWrongButton.isOn()) and self.hasDiscreteClass(self.data):
-            self.graph.showKNN = 1 + self.vizrank.showKNNCorrectButton.isOn() 
+        if self.hasDiscreteClass(self.data):
+            self.graph.showKNN = self.vizrank.showKNNCorrectButton.isOn() and 1 or  self.vizrank.showKNNCorrectButton.isOn() and 2 
         
         self.graph.insideColors = insideColors or self.classificationResults or self.outlierValues
 ##        self.graph.clusterClosure = clusterClosure
@@ -377,7 +348,7 @@ class OWLinProj(OWVisWidget):
     # INPUT SIGNALS
     
     # receive new data and update all fields
-    def cdata(self, data):
+    def setData(self, data):
         if data and data.domain.classVar:
             name = getattr(data, "name", "")
             data = data.filterref(orange.Filter_hasClassValue())
@@ -394,16 +365,16 @@ class OWLinProj(OWVisWidget):
         self.classificationResults = None
         self.outlierValues = None
         
-        reset = not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)) # preserve attribute choice if the domain is the same
-        if reset:
+        sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
+        if not sameDomain:
             self.setShownAttributeList(self.data, self.attributeSelectionList)
             
         self.openContext("", data)
         self.resetAttrManipulation()
-        self.updateGraph(setAnchors = reset)            
+        self.updateGraph(setAnchors = not sameDomain)            
         self.sendSelections()
 
-    def subsetdata(self, data, update = 1):
+    def setSubsetData(self, data, update = 1):
         if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.graph.subsetData = data
         if update: self.updateGraph()
@@ -413,7 +384,7 @@ class OWLinProj(OWVisWidget):
        
 
     # attribute selection signal - info about which attributes to show
-    def attributeSelection(self, attributeSelectionList):
+    def setAttributeSelection(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
         if self.data and self.attributeSelectionList:
             for attr in self.attributeSelectionList:
@@ -426,21 +397,18 @@ class OWLinProj(OWVisWidget):
         self.updateGraph(setAnchors = 1)
 
     # visualize the results of the classification
-    def test_results(self, results):
+    def setTestResults(self, results):
         self.classificationResults = None
         if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
-            self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
-            self.classificationResults = (self.classificationResults, "Probability of correct classificatioin = %.2f%%")
-                
+            self.classificationResults = ([results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))], "Probability of correct classificatioin = %.2f%%")
         self.updateGraph(setAnchors = 1)
 
     
     # set the learning method to be used in VizRank
-    def vizRankLearner(self, learner):
+    def setVizRankLearner(self, learner):
         self.vizrank.externalLearner = learner        
         
 
-    # ###############################################################################################################
     # EVENTS
     def resetBmpUpdateValues(self):
         self.graph.potentialsBmp = None
@@ -508,7 +476,7 @@ if __name__=="__main__":
     ow=OWLinProj()
     a.setMainWidget(ow)
     ow.show()
-    ow.cdata(orange.ExampleTable("..\\..\\doc\\datasets\\zoo"))
+    ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\zoo"))
     a.exec_loop()
 
     #save settings 

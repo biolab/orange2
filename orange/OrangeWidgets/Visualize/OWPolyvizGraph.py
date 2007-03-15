@@ -143,27 +143,32 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             return
         
         dataSize = len(self.rawdata)
-        classIsDiscrete = (self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete)
-        classNameIndex = -1
+        hasClass = self.rawdata and self.rawdata.domain.classVar != None
+        hasDiscreteClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete
+        hasContinuousClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous
+
+        if hasClass: useDifferentColors = self.useDifferentColors   # don't use colors if we don't have a class
+        else:        useDifferentColors = 0
 
         self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20 + 0.05 * self.showLegend, 1)
         
         # store indices to shown attributes
         indices = [self.attributeNameIndex[label] for label in labels]
 
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+        classNameIndex = -1
+        if hasClass:
+            classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
 
-        classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:        # if we have a discrete class
+        if hasDiscreteClass:        # if we have a discrete class
             valLen = len(self.rawdata.domain.classVar.values)
             classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices            
-        else:    # if we have a continuous class
-            valLen = 0
+        else:    
+            valLen = 1
 
         # will we show different symbols?        
         useDifferentSymbols = 0
-        if self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(self.curveSymbols): useDifferentSymbols = 1
+        if self.useDifferentSymbols and hasDiscreteClass and valLen < len(self.curveSymbols):
+            useDifferentSymbols = 1
         
         dataSize = len(self.rawdata)
         blackColor = QColor(0,0,0)
@@ -225,7 +230,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             curveData[i][YANCHORS] = YAnchorPositions[i]
 
 
-        if self.showKNNModel == 1:
+        if self.showKNNModel == 1 and hasClass:
             # variables and domain for the table
             domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
             table = orange.ExampleTable(domain)
@@ -246,11 +251,12 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
             # fill and edge color palettes 
             bwColors = ColorPaletteBW(-1, 55, 255)
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = self.contPalette
-            else:                                                                   classColors = self.discPalette
-            
-            if table.domain.classVar.varType == orange.VarTypes.Continuous: preText = 'Mean square error : '
+
+            if hasContinuousClass:
+                preText = 'Mean square error : '
+                classColors = self.contPalette
             else:
+                classColors = self.discPalette
                 if measure == CLASS_ACCURACY:    preText = "Classification accuracy : "
                 elif measure == AVERAGE_CORRECT: preText = "Average correct classification : "
                 else:                            preText = "Brier score : "
@@ -262,11 +268,11 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], fillColor, i, length)
 
         # CONTINUOUS class 
-        elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
+        elif hasContinuousClass:
             for i in range(dataSize):
                 if not validData[i]: continue
-                if self.useDifferentColors:  newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
-                else:                        newColor = QColor(0,0,0)
+                if useDifferentColors:  newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
+                else:                   newColor = QColor(0,0,0)
                 curveData[i][PENCOLOR] = newColor
                 curveData[i][BRUSHCOLOR] = newColor
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
@@ -274,22 +280,24 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
 
         # DISCRETE class + optimize drawing
-        elif self.optimizedDrawing:
+        elif self.optimizedDrawing or not hasClass:
             pos = [[ [] , [], [],  [], [] ] for i in range(valLen)]
-            
+            posIndex = 0
             for i in range(dataSize):
                 if not validData[i]: continue
-                pos[classValueIndices[self.rawdata[i].getclass().value]][0].append(x_positions[i])
-                pos[classValueIndices[self.rawdata[i].getclass().value]][1].append(y_positions[i])
-                pos[classValueIndices[self.rawdata[i].getclass().value]][2].append(i)
-                pos[classValueIndices[self.rawdata[i].getclass().value]][3].append(curveData[i][XANCHORS])
-                pos[classValueIndices[self.rawdata[i].getclass().value]][4].append(curveData[i][YANCHORS])
-                if self.useDifferentColors: self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], self.discPalette[classValueIndices[self.rawdata[i].getclass().value]], i, length)
-                else:                       self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], QColor(0,0,0), i, length)
+                if hasClass:
+                    posIndex = classValueIndices[self.rawdata[i].getclass().value]
+                pos[posIndex][0].append(x_positions[i])
+                pos[posIndex][1].append(y_positions[i])
+                pos[posIndex][2].append(i)
+                pos[posIndex][3].append(curveData[i][XANCHORS])
+                pos[posIndex][4].append(curveData[i][YANCHORS])
+                if useDifferentColors: self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], self.discPalette[classValueIndices[self.rawdata[i].getclass().value]], i, length)
+                else:                  self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], QColor(0,0,0), i, length)
 
             for i in range(valLen):
-                if self.useDifferentColors: newColor = self.discPalette[i]
-                else:                       newColor = QColor(0,0,0)
+                if useDifferentColors: newColor = self.discPalette[i]
+                else:                  newColor = QColor(0,0,0)
                 
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[i]
                 else: curveSymbol = self.curveSymbols[0]
@@ -298,36 +306,31 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 for k in range(len(pos[i][0])):
                     self.addTooltipKey(pos[i][0][k], pos[i][1][k], pos[i][3][k], pos[i][4][k], newColor, pos[i][2][k])
 
-        elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+        # unoptimized drawing in case of discrete class
+        elif hasDiscreteClass:
             for i in range(dataSize):
                 if not validData[i]: continue
-                if self.useDifferentColors: newColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
-                else:                       newColor = QColor(0,0,0)
+                if useDifferentColors: newColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
+                else:                  newColor = QColor(0,0,0)
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
                 else:                        curveSymbol = self.curveSymbols[0]
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
                 self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
 
-        # ##########
         # draw polygon
-        xdata = [x for x in self.XAnchor]; xdata.append(xdata[0])
-        ydata = [y for y in self.YAnchor]; ydata.append(ydata[0])
-
-        newCurveKey = self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata, yData = ydata)
-        pen = self.curve(newCurveKey).pen(); pen.setWidth(2); self.curve(newCurveKey).setPen(pen)
-
+        self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = list(self.XAnchor) + [self.XAnchor[0]], yData = list(self.YAnchor) + [self.YAnchor[0]], lineWidth = 2)
 
         #################
         # draw the legend
-        if self.showLegend:
+        if self.showLegend and hasClass:
             # show legend for discrete class
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            if hasDiscreteClass:
                 self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
                     
                 classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 for index in range(len(classVariableValues)):
-                    if self.useDifferentColors: color = self.discPalette[index]
+                    if useDifferentColors: color = self.discPalette[index]
                     else:                       color = QColor(0,0,0)
                     y = 1.0 - index * 0.05
 
@@ -336,8 +339,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
                     self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignVCenter)
+
             # show legend for continuous class
-            else:
+            elif hasContinuousClass:
                 xs = [1.15, 1.20, 1.20, 1.15]
                 count = 200
                 height = 2 / float(count)
@@ -475,6 +479,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         validData = self.getValidList(attrIndices)
         
         array = self.createProjectionAsNumericArray(attrIndices, validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
+        if array == None:       # if all examples have missing values
+            return (None, None)
+        
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
                  
         if addProjectedPositions:
@@ -507,6 +514,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             validData = self.getValidList(attrIndices)
         
         array = self.createProjectionAsNumericArray(attrIndices, validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
+        if array == None:
+            return [], []
         array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)
     

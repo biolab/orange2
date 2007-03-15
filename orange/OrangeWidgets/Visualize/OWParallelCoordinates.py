@@ -44,8 +44,8 @@ class OWParallelCoordinates(OWVisWidget):
         self.box.addWidget(self.graph)
         self.box.addWidget(self.slider)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
+        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
     
         #set default settings
         self.data = None
@@ -78,7 +78,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "General")
+        self.tabs.insertTab(self.GeneralTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #add controls to self.controlArea widget
@@ -129,6 +129,9 @@ class OWParallelCoordinates(OWVisWidget):
         OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = "Continuous attribute ordering", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
         OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = "Discrete attribute ordering", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
 
+        self.safeProcessEvents()
+        self.tabs.updateGeometry()
+
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         self.icons = self.createAttributeIconDict()
         
@@ -151,8 +154,9 @@ class OWParallelCoordinates(OWVisWidget):
     def flipAttribute(self, item):
         if self.graph.flipAttribute(str(item.text())):
             self.updateGraph()
+            self.information(0)
         else:
-            self.information("Didn't flip the attribute. To flip a continuous attribute uncheck 'Global value scaling' checkbox.")
+            self.information(0, "Didn't flip the attribute. To flip a continuous attribute uncheck 'Global value scaling' checkbox.")
         
     def updateGraph(self, *args):
         attrs = self.getShownAttributeList()
@@ -215,43 +219,7 @@ class OWParallelCoordinates(OWVisWidget):
                 else: labels.append("")
         return labels
                 
-
-    # ###### SHOWN ATTRIBUTE LIST ##############
-    # set attribute list
-    def setShownAttributeList(self, data, shownAttributes = None):
-        shown = []
-        hidden = []
-        if not data: return
-
-        if shownAttributes:
-            if type(shownAttributes[0]) == tuple:
-                shown = shownAttributes
-            else:
-                domain = data.domain
-                shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
-            hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
-        else:
-            shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
-            shown = [(attr, data.domain[attr].varType) for attr in shown]
-            hidden = [(attr, data.domain[attr].varType) for attr in hidden]
-            if self.showAllAttributes:
-                shown += hidden
-                hidden = []
-            else:
-                hidden = shown[10:] + hidden
-                shown = shown[:10]
-                
-        if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown + hidden:
-            hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
-
-        self.shownAttributes = shown
-        self.hiddenAttributes = hidden
-        self.selectedHidden = []
-        self.selectedShown = []
-        self.resetAttrManipulation()
-        self.sendShownAttributes()
-                       
-       
+      
     def sendShownAttributes(self):
         self.send("Attribute Selection List", self.getShownAttributeList())
 
@@ -262,16 +230,17 @@ class OWParallelCoordinates(OWVisWidget):
         OWWidget.show(self)
         self.updateGraph()
 
-    def subsetdata(self, data, update = 1):
+    def setSubsetData(self, data, update = 1):
         if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.graph.setSubsetData(data)
         qApp.processEvents()
-        if update: self.updateGraph()
-        qApp.processEvents()
+        if update:
+            self.updateGraph()
+            qApp.processEvents()
     
     # ###### DATA ################################
     # receive new data and update all fields
-    def cdata(self, data):
+    def setData(self, data):
         if data and data.domain.classVar:
             name = getattr(data, "name", "")
             data = data.filterref(orange.Filter_hasClassValue())
@@ -288,7 +257,12 @@ class OWParallelCoordinates(OWVisWidget):
         self.graph.setData(self.data)
         self.optimizationDlg.setData(self.data)
 
-        if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
+        # preserve attribute choice if the domain is the same
+        sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
+        if sameDomain:
+            self.updateGraph()
+            self.sendSelections()
+        else:
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
 
@@ -300,23 +274,35 @@ class OWParallelCoordinates(OWVisWidget):
                 for val in self.data.domain.classVar.values:
                     self.targetValueCombo.insertItem(val)
                 self.targetValueCombo.setCurrentItem(0)
+            self.setAttributeSelection()       # this will show first 10 attributes or attributes that were received in attributeSelection signal
             
-            attrs = self.attributeSelectionList
-            if not attrs and data and data.domain.attributes: attrs = [attr.name for attr in data.domain.attributes[:10]]
-            self.setShownAttributeList(self.data, attrs)
 
-        self.resetAttrManipulation()
-        self.updateGraph()
-        self.sendSelections()
+        self.resetAttrManipulation()    # update up down buttons
+            
     # ################################################
     
-    def attributeSelection(self, attributeSelectionList):
-        self.attributeSelectionList = attributeSelectionList
-        if self.data and self.attributeSelectionList:
-            for attr in self.attributeSelectionList:
-                if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
-                    return
-            self.setShownAttributeList(self.data, self.attributeSelectionList)
+    def setAttributeSelection(self, attributeSelectionList = None):
+        if not attributeSelectionList:
+            attributeSelectionList = self.attributeSelectionList
+        else:
+            self.attributeSelectionList = attributeSelectionList
+
+        if not self.data:       # if we don't have data we have nothing to do
+            return
+        
+        if attributeSelectionList:  # check if we have attributes that actually exist in the current domain. we might get this signal before the actual data
+            exist = [self.graph.attributeNameIndex.has_key(attr) for attr in attributeSelectionList]
+            if 0 in exist:      # current attributeSelectionList is not valid
+                attributeSelectionList = None
+            else:
+                self.attributeSelectionList = None
+                print "this must be valid:", attributeSelectionList
+
+        if not attributeSelectionList:
+            attributeSelectionList = [attr.name for attr in self.data.domain.attributes[:10]]
+
+        if attributeSelectionList:      # here we have a valid list of attributes that can be visualized
+            self.setShownAttributeList(self.data, attributeSelectionList)
             self.updateGraph()
         self.sendSelections()
 

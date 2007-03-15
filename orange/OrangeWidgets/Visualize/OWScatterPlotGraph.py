@@ -28,7 +28,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.jitterContinuous = 0
         self.jitterSize = 5
         self.showAxisScale = 1
-        self.showXaxisTitle= 1
+        self.showXaxisTitle = 1
         self.showYLaxisTitle = 1
         self.showLegend = 1
         self.showDistributions = 0        
@@ -98,10 +98,13 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         showColorLegend = showColorLegend and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous
 
-        (xVarMin, xVarMax) = self.attrValues[xAttr]; xVar = xVarMax - xVarMin
-        (yVarMin, yVarMax) = self.attrValues[yAttr]; yVar = yVarMax - yVarMin
+        (xVarMin, xVarMax) = self.attrValues[xAttr]
+        (yVarMin, yVarMax) = self.attrValues[yAttr]
+        xVar = xVarMax - xVarMin
+        yVar = yVarMax - yVarMin
         xAttrIndex = self.attributeNameIndex[xAttr]
         yAttrIndex = self.attributeNameIndex[yAttr]
+
         attrIndices = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
         while -1 in attrIndices: attrIndices.remove(-1)
         self.shownAttributeIndices = attrIndices
@@ -111,37 +114,37 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         discreteX = (self.rawdata.domain[xAttrIndex].varType == orange.VarTypes.Discrete)
         if discreteX:
             xVarMax -= 1; xVar -= 1
-            xmin = xVarMin - (self.jitterSize + 10.)/100. ; xmax = xVarMax + (self.jitterSize + 10.)/100.
+            xmin = xVarMin - (self.jitterSize + 10.)/100.
+            xmax = xVarMax + (self.jitterSize + 10.)/100.
             attrXIndices = getVariableValueIndices(self.rawdata, xAttrIndex)
-            if self.showAxisScale or xAttr != self.XaxisTitle:
-                self.setXlabels(getVariableValuesSorted(self.rawdata, xAttrIndex))
-            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07, 1)
+            labels = getVariableValuesSorted(self.rawdata, xAttrIndex)
         else:
             off  = (xVarMax - xVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
-            xmin = xVarMin - off; xmax = xVarMax + off
-            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07)
+            xmin = xVarMin - off
+            xmax = xVarMax + off
+            labels = None
+        self.setXlabels(labels)
+        self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07, discreteX)
         
         # set axis for y attribute
         attrYIndices = {}
         discreteY = (self.rawdata.domain[yAttrIndex].varType == orange.VarTypes.Discrete)
         if discreteY:
             yVarMax -= 1; yVar -= 1
-            ymin, ymax = yVarMin - (self.jitterSize + 10.)/100., yVarMax + (self.jitterSize + 10.)/100.
+            ymin = yVarMin - (self.jitterSize + 10.)/100. 
+            ymax = yVarMax + (self.jitterSize + 10.)/100.
             attrYIndices = getVariableValueIndices(self.rawdata, yAttrIndex)
-            if self.showAxisScale or yAttr != self.YLaxisTitle:
-                self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttrIndex))
-            self.setAxisScale(QwtPlot.yLeft, ymin, ymax, 1)
+            labels = getVariableValuesSorted(self.rawdata, yAttrIndex)
         else:
             off  = (yVarMax - yVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
-            ymin, ymax = yVarMin - off, yVarMax + off
-            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+            ymin = yVarMin - off 
+            ymax = yVarMax + off
+            labels = None
+        self.setYLlabels(labels)
+        self.setAxisScale(QwtPlot.yLeft, ymin, ymax, discreteY)
 
-        if self.showXaxisTitle: self.setXaxisTitle(xAttr)
-        else: self.setXaxisTitle(None)
-
-        if self.showYLaxisTitle: self.setYLaxisTitle(yAttr)
-        else: self.setYLaxisTitle(None)
-
+        self.setXaxisTitle(xAttr)
+        self.setYLaxisTitle(yAttr)
         self.oldShowColorLegend = showColorLegend
 
         # compute x and y positions of the points in the scatterplot        
@@ -364,17 +367,17 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                         if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.subsetData[i][shapeIndex].value]]
 
                         size = self.pointWidth
-                        if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * self.pointWidth)
+                        #if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * self.pointWidth)
                         self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y], showFilledSymbols = 1)
 
                         # Show a label by each marker
                         if labelAttr:
-                            if labelAttr in [self.rawdata.domain.getmeta(mykey).name for mykey in self.rawdata.domain.getmetas().keys()] + [var.name for var in self.rawdata.domain]:
-                                if self.rawdata[i][labelAttr].isSpecial(): continue
-                                if self.rawdata[i][labelAttr].varType==orange.VarTypes.Continuous:
-                                    lbl = "%4.1f" % orange.Value(self.rawdata[i][labelAttr])
+                            if labelAttr in [self.subsetData.domain.getmeta(mykey).name for mykey in self.subsetData.domain.getmetas().keys()] + [var.name for var in self.subsetData.domain]:
+                                if self.subsetData[i][labelAttr].isSpecial(): continue
+                                if self.subsetData[i][labelAttr].varType==orange.VarTypes.Continuous:
+                                    lbl = "%4.1f" % orange.Value(self.subsetData[i][labelAttr])
                                 else:
-                                    lbl = str(self.rawdata[i][labelAttr].value)
+                                    lbl = str(self.subsetData[i][labelAttr].value)
                                 mkey = self.insertMarker(lbl)
                                 self.marker(mkey).setXValue(float(x))
                                 self.marker(mkey).setYValue(float(y))

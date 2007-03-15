@@ -416,7 +416,7 @@ class OWDistributions(OWWidget):
 
         # inputs
         # data and graph temp variables
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, Default)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default)]
         
         self.data = None
         self.outcomenames = []
@@ -562,7 +562,7 @@ class OWDistributions(OWWidget):
         if self.data and self.data.domain.classVar:
             self.setYPaxisTitle("P( " + self.data.domain.classVar.name + " = " + targetValue + " )")
 
-    def cdata(self, data):
+    def setData(self, data):
         self.closeContext()
         
         if data == None:
@@ -654,7 +654,7 @@ if __name__ == "__main__":
     a.setMainWidget(owd)
     owd.show()
     data=orange.ExampleTable("../../doc/datasets/iris.tab")
-    owd.cdata(data)
+    owd.setData(data)
     a.exec_loop()
     owd.saveSettings()
     orange.VarTypes.Continuous

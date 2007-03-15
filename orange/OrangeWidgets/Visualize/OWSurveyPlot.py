@@ -26,7 +26,7 @@ class OWSurveyPlot(OWVisWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata, Default), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
         self.outputs = [("Attribute Selection List", AttributeList)]
 
         #add a graph widget
@@ -57,7 +57,7 @@ class OWSurveyPlot(OWVisWidget):
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "General")
+        self.tabs.insertTab(self.GeneralTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #add controls to self.controlArea widget
@@ -130,45 +130,9 @@ class OWSurveyPlot(OWVisWidget):
         self.graph.setData(self.data, sortValuesForDiscreteAttrs = 0)
         self.updateGraph()        
         
-    # ###### SHOWN ATTRIBUTE LIST ##############
-    # set attribute list
-    def setShownAttributeList(self, data, shownAttributes = None):
-        shown = []
-        hidden = []
-
-        if data:
-            if shownAttributes:
-                if type(shownAttributes[0]) == tuple:
-                    shown = shownAttributes
-                else:
-                    domain = self.data.domain
-                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
-                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
-            else:
-                shown, hidden, maxIndex = orngVisFuncts.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
-                shown = [(attr, data.domain[attr].varType) for attr in shown]
-                hidden = [(attr, data.domain[attr].varType) for attr in hidden]
-                if self.showAllAttributes:
-                    shown += hidden
-                    hidden = []
-                else:
-                    hidden = shown[10:] + hidden
-                    shown = shown[:10]
-                    
-            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown + hidden:
-                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
-
-        self.shownAttributes = shown
-        self.hiddenAttributes = hidden
-        self.selectedHidden = []
-        self.selectedShown = []
-        self.resetAttrManipulation()
-        self.sendShownAttributes()
-        
    
-    ####### CDATA ################################
     # receive new data and update all fields
-    def cdata(self, data):
+    def setData(self, data):
         if data:
             name = getattr(data, "name", "")
             data = data.filterref(orange.Filter_hasClassValue())
@@ -179,18 +143,17 @@ class OWSurveyPlot(OWVisWidget):
         exData = self.data
         self.data = data
         
-        if self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes): # preserve attribute choice if the domain is the same
-            self.sortingClick()
-            return  
-
-        self.resetAttrManipulation()
-        self.setSortCombo()
-        self.setShownAttributeList(self.data)
+        sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
+        if not sameDomain:
+            self.resetAttrManipulation()
+            self.setSortCombo()
+            self.setShownAttributeList(self.data)
         self.sortingClick()
+
 
     ####### SELECTION signal ################################
     # receive info about which attributes to show
-    def attributeSelection(self, attributeSelectionList):
+    def setAttributeSelection(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
         if self.data and self.attributeSelectionList:
             for attr in self.attributeSelectionList:

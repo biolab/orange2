@@ -3,8 +3,9 @@ from OWWidget import *
 
 class OWVisWidget(OWWidget):
     def hasDiscreteClass(self, data = -1):
-        if data == -1: data = self.data
-        return data and data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete
+        if data == -1:
+            data = getattr(self, "data", None)
+        return data != None and data.domain.classVar != None and data.domain.classVar.varType == orange.VarTypes.Discrete
 
     def createShowHiddenLists(self, placementTab, callback = None):
         self.updateCallbackFunction = callback
@@ -47,7 +48,7 @@ class OWVisWidget(OWWidget):
         self.buttonDOWNAttr.setEnabled(self.selectedShown != [] and tightSelection and maxi < len(self.shownAttributes)-1)
         self.attrAddButton.setDisabled(not self.selectedHidden or self.showAllAttributes)
         self.attrRemoveButton.setDisabled(not self.selectedShown or self.showAllAttributes)
-        if self.data and self.hiddenAttributes and self.hiddenAttributes[0][0]!=self.data.domain.classVar.name:
+        if self.data and self.hiddenAttributes and self.data.domain.classVar and self.hiddenAttributes[0][0] != self.data.domain.classVar.name:
             self.showAllCB.setChecked(0)
         
     def moveAttrSelection(self, labels, selection, dir):
@@ -122,4 +123,34 @@ class OWVisWidget(OWWidget):
 
     def getShownAttributeList(self):
         return [a[0] for a in self.shownAttributes]
+
+
+    def setShownAttributeList(self, data, shownAttributes = None):
+        shown = []
+        hidden = []
+
+        if data:
+            if shownAttributes:
+                if type(shownAttributes[0]) == tuple:
+                    shown = shownAttributes
+                else:
+                    domain = self.data.domain
+                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
+                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
+            else:
+                shown = [(a.name, a.varType) for a in data.domain.attributes]
+                if not self.showAllAttributes:
+                    hidden = shown[10:]
+                    shown = shown[:10]
+
+            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown:
+                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
+
+        self.shownAttributes = shown
+        self.hiddenAttributes = hidden
+        self.selectedHidden = []
+        self.selectedShown = []
+        self.resetAttrManipulation()
+
+        self.sendShownAttributes()
 

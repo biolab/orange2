@@ -23,7 +23,7 @@ class OWSieveMultigram(OWVisWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.data), ("Selection", list, self.selection)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
         self.outputs = [] 
 
         #set default settings
@@ -82,42 +82,8 @@ class OWSieveMultigram(OWVisWidget):
         self.cbShowAllAttributes()
 
         
-    # ####################
-    # LIST BOX FUNCTIONS
-    # ####################
-
-    # ###### SHOWN ATTRIBUTE LIST ##############
-    # set attribute list
-    def setShownAttributeList(self, data, shownAttributes = None):
-        shown = []
-        hidden = []
-
-        if data:
-            if shownAttributes:
-                if type(shownAttributes[0]) == tuple:
-                    shown = shownAttributes
-                else:
-                    domain = self.data.domain
-                    shown = [(domain[a].name, domain[a].varType) for a in shownAttributes]
-                hidden = filter(lambda x:x not in shown, [(a.name, a.varType) for a in data.domain.attributes])
-            else:
-                shown = [(a.name, a.varType) for a in data.domain.attributes]
-                if not self.showAllAttributes:
-                    hidden = shown[10:]
-                    shown = shown[:10]
-
-            if data.domain.classVar and (data.domain.classVar.name, data.domain.classVar.varType) not in shown:
-                hidden += [(data.domain.classVar.name, data.domain.classVar.varType)]
-
-        self.shownAttributes = shown
-        self.hiddenAttributes = hidden
-        self.selectedHidden = []
-        self.selectedShown = []
-        self.resetAttrManipulation()
-        
-    ####### DATA ################################
     # receive new data and update all fields
-    def data(self, data):
+    def setData(self, data):
         self.closeContext()
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissing(data)
@@ -128,7 +94,6 @@ class OWSieveMultigram(OWVisWidget):
         self.resetAttrManipulation()
         self.updateGraph()
         
-    #################################################
 
     def sendShownAttributes(self):
         pass
@@ -229,9 +194,8 @@ class OWSieveMultigram(OWVisWidget):
                         self.probabilities['%s+%s:%s+%s' %(self.data.domain[attrY].name, contY.keys()[j], self.data.domain[attrX].name, contX.keys()[i])] = ((contY.keys()[j], valy), (contX.keys()[i], valx), actualCount, total)
         self.statusBar.message("")
 
-    ####### SELECTION signal ################################
     # receive info about which attributes to show
-    def selection(self, list):
+    def setAttributeSelection(self, list):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 

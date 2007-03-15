@@ -139,7 +139,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         # draw the data
         # ############################################
         if not haveSubsetData: subsetReferencesToDraw = []
-        else:                  subsetReferencesToDraw = [example.reference() for example in self.subsetData]
+        else:                  subsetReferencesToDraw = [self.subsetData[i].reference() for i in self.getValidSubIndices(indices)]
         validData = self.getValidList(indices)
         for i in range(dataSize):
             if not validData[i]:
@@ -183,8 +183,12 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 curve.setStyle(QwtCurve.Spline)
 
         # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-        
         if subsetReferencesToDraw != []:
+            subData = numpy.zeros([len(indices), len(self.subsetData)])
+            for i in range(len(indices)):
+                subData[i] = self.scaleData(self.subsetData, indices[i])[0]
+            subData = subData.transpose()
+            
             for i in range(len(self.subsetData)):
                 if not self.subsetData[i].reference() in subsetReferencesToDraw: continue
                 subsetReferencesToDraw.remove(self.subsetData[i].reference())
@@ -210,9 +214,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     curves[1].append(curve)
                     
                 curve.setPen(QPen(newColor, 1))
-                ys = [self.scaledData[index][i] for index in indices]
-                
-                curve.setData(xs, ys)
+                curve.setData(xs, subData[i].tolist())
                 if self.useSplines:
                     curve.setStyle(QwtCurve.Spline)
                 
@@ -292,7 +294,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                         nonMissingValues = numpy.compress(numpy.equal(self.validDataArray[indices[i]], 1), self.noJitteringScaledData[classNameIndex])  # remove missing values
                         arr_c = numpy.compress(numpy.equal(nonMissingValues, scaledVal), array)
                         if len(arr_c) == 0:
-                            curr.append(()); continue
+                            curr.append((0,0,0)); continue
                         if self.showStatistics == MEANS:
                             m = arr_c.mean()
                             dev = arr_c.std()
@@ -348,7 +350,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             else:
                 l = len(attributes)-1
                 xs = [l*1.15, l*1.20, l*1.20, l*1.15]
-                count = 200
+                count = 200; height = 1/200.
                 for i in range(count):
                     y = i/float(count)
                     col = self.contPalette[y]
@@ -534,13 +536,15 @@ class OWParallelGraph(OWGraph, orngScaleData):
         selIndices = []
         unselIndices = range(len(self.rawdata))
 
-        for i in range(len(self.curvePoints)):
+        for i in range(len(self.curvePoints))[::-1]:
             for j in range(len(self.curvePoints[i])):
                 if self.isPointSelected(j, self.curvePoints[i][j]):
                     if targetValue and targetValue != int(self.rawdata[i].getclass()): continue
                     selIndices.append(i)
                     unselIndices.pop(i)
-            
+                    break
+
+        selIndices.reverse()
         selected = self.rawdata.getitemsref(selIndices)
         unselected = self.rawdata.getitemsref(unselIndices)
         

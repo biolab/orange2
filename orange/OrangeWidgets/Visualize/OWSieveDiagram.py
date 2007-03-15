@@ -18,6 +18,7 @@ from orngCI import FeatureByCartesianProduct
 import random
 from OWTools import getHtmlCompatibleString
 from OWDlgs import OWChooseImageSizeDlg
+from orngScaleData import discretizeDomain
 
 ###########################################################################################
 ##### WIDGET : 
@@ -30,7 +31,7 @@ class OWSieveDiagram(OWWidget):
 
         self.controlArea.setMinimumWidth(250)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata, Default), ("Attribute selection", list, self.attributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
         self.outputs = []
 
         #set default settings
@@ -87,6 +88,38 @@ class OWSieveDiagram(OWWidget):
         self.icons = self.createAttributeIconDict()
         self.resize(800, 550)
         random.seed()
+
+
+    # receive new data and update all fields
+    def setData(self, data):
+        self.information(0)
+        self.information(1)
+        self.interestingList.clear()
+        exData = self.data
+        self.data = discretizeDomain(data)
+
+        if data:        
+            if data.domain.hasContinuousAttributes():
+                self.information(0, "Continuous attributes were discretized using entropy discretization.")
+            if not self.data or len(data) != len(self.data):
+                self.information(1, "Unused attribute values were removed.")
+
+        sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
+        if not sameDomain:
+            self.initCombos()
+
+        self.setAttributeSelection(self.attributeSelectionList)
+
+    ## Attribute selection signal
+    def setAttributeSelection(self, attrList):
+        self.attributeSelectionList = attrList
+        if self.data and self.attributeSelectionList and len(attrList) >= 2:
+            attrs = [attr.name for attr in self.data.domain]
+            if attrList[0] in attrs and attrList[1] in attrs:
+                self.attrX = attrList[0]
+                self.attrY = attrList[1]
+        self.updateData()
+
 
     ###############################################################
     # when clicked on a list box item, show selected attribute pair
@@ -170,7 +203,6 @@ class OWSieveDiagram(OWWidget):
 
                 self.progressBarSet(100.0*current/float(total))
                 qApp.processEvents()
-                
 
         self.progressBarFinished()
         self.calculateButton.show()
@@ -180,13 +212,13 @@ class OWSieveDiagram(OWWidget):
     def stopCalculateClick(self):
         self.stopCalculating = 1
 
-    ######################################
     # create data subset depending on conditional attribute and value
     def getConditionalData(self, xAttr = None, yAttr = None, dropMissingData = 1):
         if not self.data: return None
 
         if not xAttr: xAttr = self.attrX
         if not yAttr: yAttr = self.attrY
+        if not (xAttr and yAttr): return        
         
         if self.attrCondition == "[None]":
             data = self.data.select([xAttr, yAttr])
@@ -197,7 +229,6 @@ class OWSieveDiagram(OWWidget):
         if dropMissingData: return orange.Preprocessor_dropMissing(data)
         else: return data
 
-    ######################################
     # new conditional attribute was set - update graph
     def updateConditionAttr(self):
         self.attrConditionValueCombo.clear()
@@ -211,7 +242,6 @@ class OWSieveDiagram(OWWidget):
         self.attrConditionValue = str(self.attrConditionValueCombo.text(0))
         self.updateData()
 
-    ##################################################
     # initialize lists for shown and hidden attributes
     def initCombos(self):
         self.attrXCombo.clear()
@@ -237,39 +267,11 @@ class OWSieveDiagram(OWWidget):
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
         self.updateData()
 
-    ######################################################################
-    ## DATA signal
-    # receive new data and update all fields
-    def cdata(self, data):
-        self.interestingList.clear()
-        exData = self.data
-        if data: self.data = data
-
-        if not (self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes)):  # preserve attribute choice if the domain is the same
-            self.initCombos()
-        self.attributeSelection(self.attributeSelectionList)
-
-
-    ######################################################################
-    ## Attribute selection signal
-    def attributeSelection(self, attrList):
-        self.attributeSelectionList = attrList
-        if self.data and self.attributeSelectionList and len(attrList) >= 2: 
-            try:        # maybe not all attributes in attrList are in current data domain
-                self.attrX = attrList[0]
-                self.attrY = attrList[1]
-            except:
-                pass
-        
-        self.updateData()
-
-
     def clearGraph(self):
         for item in self.canvas.allItems(): item.setCanvas(None)    # remove all canvas items
         for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
 
 
-    ######################################################################
     ## UPDATEDATA - gets called every time the graph has to be updated
     def updateData(self, *args):
         self.clearGraph()
@@ -277,6 +279,7 @@ class OWSieveDiagram(OWWidget):
 
         if not self.attrX or not self.attrY: return
         data = self.getConditionalData()
+        if not data or len(data) == 0: return
 
         valsX = []
         valsY = []
@@ -452,10 +455,6 @@ class OWSieveDiagram(OWWidget):
             OWCanvasLine(self.canvas, x+1, y+temp, x+w-2, y+temp, 1, pen.color())
             temp += dist
 
-
-    ##################################################
-    ## SAVING GRAPHS
-    ##################################################
     def saveToFileCanvas(self):
         sizeDlg = OWChooseImageSizeDlg(self.canvas)
         sizeDlg.exec_loop()
@@ -467,6 +466,6 @@ if __name__=="__main__":
     ow=OWSieveDiagram()
     a.setMainWidget(ow)
     ow.show()
-    ow.cdata(orange.ExampleTable(r"c:\Development\Python23\Lib\site-packages\Orange\datasets\crush injury - cont.tab"))
+    ow.setData(orange.ExampleTable(r"c:\Development\Python23\Lib\site-packages\Orange\datasets\crush injury - cont.tab"))
     a.exec_loop()
     ow.saveSettings()
