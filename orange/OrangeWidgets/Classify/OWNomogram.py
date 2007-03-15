@@ -288,7 +288,6 @@ class OWNomogram(OWWidget):
 
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
-        self.error()
 
     # Input channel: the logistic regression classifier    
     def lrClassifier(self, cl):
@@ -375,12 +374,12 @@ class OWNomogram(OWWidget):
         self.alignType = 0
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
-        self.error()
 
     def svmClassifier(self, cl):
         import Numeric
         import orngLinVis
-        
+
+        self.error(0)
         if self.TargetClassIndex == 0 or self.TargetClassIndex == cl.domain.classVar[0]:
             mult = -1
         else:
@@ -391,7 +390,7 @@ class OWNomogram(OWWidget):
             beta_from_cl = self.cl.estimator.classifier.classifier.beta[0] - self.cl.estimator.translator.trans[0].disp*self.cl.estimator.translator.trans[0].mult*self.cl.estimator.classifier.classifier.beta[1]
             beta_from_cl = mult*beta_from_cl
         except:
-            self.error("orngLinVis.Visualizer error"+ str(sys.exc_info()[0])+":"+str(sys.exc_info()[1]))
+            self.error(0, "orngLinVis.Visualizer error"+ str(sys.exc_info()[0])+":"+str(sys.exc_info()[1]))
 #            QMessageBox("orngLinVis.Visualizer error", str(sys.exc_info()[0])+":"+str(sys.exc_info()[1]), QMessageBox.Warning,
 #                        QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
             return
@@ -458,7 +457,6 @@ class OWNomogram(OWWidget):
         self.cl.domain = orange.Domain(self.data.domain.classVar)
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
-        self.error()
 
     # Input channel: the rule classifier (from ABCN2 only)
     def ruleClassifier(self, cl):
@@ -487,9 +485,10 @@ class OWNomogram(OWWidget):
                 elif type(c) == orange.ValueFilter_continuous:
                     ret += domain[c.position].name[:2] + selectSign(c.oper) + "%.1f"%c.ref
             return ret
-            
+
+        self.error(1)            
         if not len(self.data.domain.classVar.values) == 2:
-            self.error("OWNomogram:"+"Only two class domains for rules!")
+            self.error(1, "Only two class domains can be used for rules!")
         classVal = cl.domain.classVar
         att = cl.domain.attributes
 
@@ -511,7 +510,6 @@ class OWNomogram(OWWidget):
 
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
-        self.error()
 
 
     def initClassValues(self, classValue):
@@ -530,9 +528,12 @@ class OWNomogram(OWWidget):
             self.data = self.cl.data
         else:
             self.data = None
+
+        self.error(2)
         if self.data and self.data.domain and not self.data.domain.classVar:
-            self.error("OWNomogram:"+" This domain has no class attribute!")
+            self.error(2, "This domain has no class attribute!")
             return
+
         self.openContext("", self.data)
         if not self.data:
             self.histogramCheck.setChecked(False)

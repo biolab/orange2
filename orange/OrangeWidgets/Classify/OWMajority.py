@@ -39,11 +39,11 @@ class OWMajority(OWWidget):
         self.send("Learner", self.learner)
 
     def cdata(self,data):
+        self.error(0)
+        self.error(1)
         if data and not data.domain.classVar:
-            self.error("This data set has no class")
+            self.error(0, "This data set has no class")
             data = None
-        else:
-            self.error("")
 
         self.data = data
         if data:
@@ -52,7 +52,7 @@ class OWMajority(OWWidget):
                 self.classifier.name = self.name
             except Exception, (errValue):
                 self.classifier = None
-                self.error(str(errValue))
+                self.error(1, str(errValue))
         else:
             self.classifier = None
         self.send("Classifier", self.classifier)

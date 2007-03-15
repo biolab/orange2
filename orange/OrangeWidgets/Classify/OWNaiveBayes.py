@@ -103,12 +103,13 @@ class OWNaiveBayes(OWWidget):
         self.mwidget.setEnabled(self.condProbEstimation==3)
 
     def applyLearner(self):
+        self.warning(0)
         if float(self.m_estimator.m) < 0:
-            self.error("Parameter m should be positive")
+            self.warning(0, "Parameter m should be positive")
             self.learner = None
         
         elif float(self.windowProportion) < 0 or float(self.windowProportion) > 1:
-            self.error("Window proportion for LOESS should be between 0.0 and 1.0")
+            self.warning(0, "Window proportion for LOESS should be between 0.0 and 1.0")
             self.learner = None
 
         else:
@@ -126,14 +127,14 @@ class OWNaiveBayes(OWWidget):
         
     def applyData(self):
         if self.data and self.learner:
+            self.error(1)
             try:
                 classifier = self.learner(self.data)
                 classifier.setattr("data", self.data)
                 classifier.name = self.name
-                self.error()
             except Exception, (errValue):
                 classifier = None
-                self.error("Naive Bayes error:"+str(errValue))
+                self.error(1, "Naive Bayes error: " + str(errValue))
         else:
             classifier = None
 
@@ -142,11 +143,11 @@ class OWNaiveBayes(OWWidget):
 
     def cdata(self,data):
         if data and data.domain.classVar.varType != orange.VarTypes.Discrete:
-            self.error("This widget only works with discrete classes.")
+            self.error(0, "This widget only works with discrete classes.")
             self.data = None
         else:
             self.data = data
-            self.error()
+            self.error(0)
 
         self.applyData()
         

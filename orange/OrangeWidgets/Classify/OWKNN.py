@@ -67,7 +67,7 @@ class OWKNN(OWWidget):
             self.error("This data set has no class")
             self.data = None
         else:
-            self.error("")
+            self.error()
             self.data = data
         self.setLearner()
 

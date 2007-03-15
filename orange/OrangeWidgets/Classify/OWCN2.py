@@ -164,6 +164,7 @@ class OWCN2(OWWidget):
             self.learner.coverAndRemove=orngCN2.CovererAndRemover_multWeights(mult=self.Weight)
 
         self.classifier=None
+        self.error()
         if self.data:
 ##            try:
             oldDomain = orange.Domain(self.data.domain)
@@ -173,7 +174,6 @@ class OWCN2(OWWidget):
             for r in self.classifier.rules:
                 r.examples = orange.ExampleTable(oldDomain, r.examples)
             self.classifier.examples = orange.ExampleTable(oldDomain, self.classifier.examples)
-            self.error("")
 ##            except orange.KernelException, (errValue):
 ##                self.classifier=None
 ##                self.error(errValue)
@@ -185,8 +185,6 @@ class OWCN2(OWWidget):
 ##                    self.error("CN2 can learn only from discrete class!")
 ##                else:
 ##                    self.error("Unknown error")
-        else:
-            self.error("")
         self.send("Classifier", self.classifier)
         self.send("Unordered CN2 Classifier", self.classifier)
         self.progressBarFinished()
