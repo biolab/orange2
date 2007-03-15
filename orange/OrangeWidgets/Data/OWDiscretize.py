@@ -887,7 +887,6 @@ class OWDiscretize(OWWidget):
             return
         
         discType -= 1
-        self.warning(1000+idx)
         try:
             if discType == self.D_LEAVE: # leave continuous
                 discretizer = None
@@ -955,13 +954,13 @@ class OWDiscretize(OWWidget):
                 # else, the data has no continuous attributes other then the class
             
                 self.classIntervalsLabel.setText("Current splits: " + ", ".join([str(classVar(x)) for x in discretizer.getValueFrom.transformer.points]))
-                self.error()
-                self.warning()
+                self.error(0)
+                self.warning(0)
             except:
                 if self.data:
-                    self.warning("Cannot discretize the class; using previous class")
+                    self.warning(0, "Cannot discretize the class; using previous class")
                 else:
-                    self.error("Cannot discretize the class")
+                    self.error(0, "Cannot discretize the class")
                 self.classIntervalsLabel.setText("")
         
 

@@ -223,7 +223,7 @@ class OWDataSampler(OWWidget):
     # processes data after the user requests it
     def process(self):
         # reset errors, fold selected
-        self.error()
+        self.error(0)
         self.outFold = 1
         
         # check for data
@@ -238,7 +238,7 @@ class OWDataSampler(OWWidget):
             # apply selected options
             if self.useCases == 1 and self.Repeat != 1:
                 if self.nCases > len(self.data):
-                    self.error("Sample size (w/o repetitions) larger than dataset.")
+                    self.error(0, "Sample size (w/o repetitions) larger than dataset.")
                     return                    
                 self.indices = orange.MakeRandomIndices2(p0=int(self.nCases))
                 self.infob.setText('Random sampling, using exactly %d instances.' % self.nCases)

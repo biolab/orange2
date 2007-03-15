@@ -239,8 +239,6 @@ class OWImpute(OWWidget):
         
 
     def constructImputer(self, *a):
-        self.error("")
-        
         if not self.methods:
             if self.defaultMethod == 1:
                 self.imputer = None
@@ -309,13 +307,13 @@ class OWImpute(OWWidget):
                     missingValues.append("'"+attr.name+"'")
                     imputerModels.append(AttrMajorityLearner(attr))
 
-
+        self.warning(0)
         if missingValues:
             if len(missingValues) <= 3:
                 msg = "The imputed values for some attributes (%s) are not specified." % ", ".join(missingValues)
             else:
                 msg = "The imputed values for some attributes (%s, ...) are not specified." % ", ".join(missingValues[:3])
-            self.warning(msg + "\nAverages and/or majority values are used instead.")
+            self.warning(0, msg + "\nAverages and/or majority values are used instead.")
             
         if classVar and not imputeClass:
             imputerModels.append(lambda e, wei=0: None)
@@ -331,8 +329,7 @@ class OWImpute(OWWidget):
 
 
     def sendDataAndImputer(self):
-        self.error()
-        self.warning()
+        self.error(0)
         self.constructImputer()
         self.send("Imputer", self.imputer)
         if self.data:
@@ -344,7 +341,7 @@ class OWImpute(OWWidget):
                     # if the above fails, dataChanged should be set to False
                     self.dataChanged = False
                 except:
-                    self.error("Imputation failed; this is typically due to unsuitable model.")
+                    self.error(0, "Imputation failed; this is typically due to unsuitable model.")
                     data = None
             else:
                 data = None

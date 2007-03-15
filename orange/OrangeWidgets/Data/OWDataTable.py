@@ -26,7 +26,7 @@ class OWDataTable(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Table")
 
-        self.inputs = [("Examples", ExampleTable, self.dataset, Multiple)]
+        self.inputs = [("Examples", ExampleTable, self.dataset, Multiple + Default)]
         self.outputs = []
         
         self.data = {}          # key: id, value: ExampleTable

@@ -90,6 +90,7 @@ class OWSave(OWWidget):
         self.saveFile()
 
     def saveFile(self, *index):
+        self.error()
         if self.data:
             filename = self.recentFiles[self.filecombo.currentItem()]
             fileExt = lower(os.path.splitext(filename)[1])
@@ -99,8 +100,7 @@ class OWSave(OWWidget):
                 self.savers[fileExt](filename, self.data)
             except Exception, (errValue):
                 self.error(str(errValue))
-                return
-            self.error()
+            
             
 
 

@@ -22,7 +22,7 @@ class OWRank(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Rank")
         
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
-        self.outputs = [("Reduced Example Table", ExampleTableWithClass, 8), ("ExampleTable Attributes", ExampleTable, 16)]
+        self.outputs = [("Reduced Example Table", ExampleTableWithClass, Default + Single), ("ExampleTable Attributes", ExampleTable, NonDefault)]
 
         self.settingsList += self.measuresAttrs
         

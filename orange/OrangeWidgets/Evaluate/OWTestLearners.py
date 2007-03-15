@@ -151,6 +151,7 @@ class OWTestLearners(OWWidget):
 
         cm = orngStat.computeConfusionMatrices(res, classIndex = self.classindex)
         cdt = orngStat.computeCDT(res, classIndex = self.classindex)
+        self.error()
 
         # merging of results and scores (if necessary)
         if self.results and learner:

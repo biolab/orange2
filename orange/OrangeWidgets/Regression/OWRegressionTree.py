@@ -71,6 +71,8 @@ class OWRegressionTree(OWWidget):
                          storeExamples=1)
         learner.name=self.Name
         self.send("Learner",learner)
+        self.error()
+
         if not self.data:
             return
         
@@ -80,7 +82,7 @@ class OWRegressionTree(OWWidget):
             self.send("Classifier",classifier)
             self.send("Classification Tree",classifier)
         except orange.KernelException, (errValue):
-            self.error(str(errValue),2)
+            self.error(str(errValue))
             print errValue
             self.send("Classifier",None)
             self.send("Classification Tree", None)
