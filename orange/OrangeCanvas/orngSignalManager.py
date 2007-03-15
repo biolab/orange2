@@ -99,18 +99,22 @@ class SignalManager:
             self.debugFile.close()
             sys.stderr = self.stderr
 
-    def addEvent(self, strValue, object = None):
-        if self.debugFile:
-            self.debugFile.write(strValue)
-            if type(object) == orange.ExampleTable:
-                name = " " + getattr(object, "name", "")
-                self.debugFile.write(". Token type = ExampleTable" + name + ". len = " + str(len(object)))
-            elif type(object) == list:
-                self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object[:10])))
-            elif object != None:
-                self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object)[:100]))
-            self.debugFile.write("\n")
-            self.debugFile.flush()
+    # 
+    def addEvent(self, strValue, object = None, eventVerbosity = 1):
+        if not self.debugFile: return
+        if self.verbosity < eventVerbosity: return
+                       
+        self.debugFile.write(strValue)
+        if type(object) == orange.ExampleTable:
+            name = " " + getattr(object, "name", "")
+            self.debugFile.write(". Token type = ExampleTable" + name + ". len = " + str(len(object)))
+        elif type(object) == list:
+            self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object[:10])))
+        elif object != None:
+            self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object)[:100]))
+        self.debugFile.write("\n")
+        self.debugFile.flush()
+
 
     def exceptionHandler(self, type, value, tracebackInfo):
         import traceback, os
@@ -143,7 +147,8 @@ class SignalManager:
 
     # add widget to list
     def addWidget(self, widget):
-        self.addEvent("added widget " + widget.title)
+        if self.verbosity >= 2:
+            self.addEvent("added widget " + widget.title, eventVerbosity = 2)
             
         if widget not in self.widgets:
             #self.widgets.insert(0, widget)
@@ -151,7 +156,8 @@ class SignalManager:
 
     # remove widget from list
     def removeWidget(self, widget):
-        self.addEvent("remove widget " + widget.title)
+        if self.verbosity >= 2:
+            self.addEvent("remove widget " + widget.title, eventVerbosity = 2)
         self.widgets.remove(widget)
         
 
@@ -178,7 +184,8 @@ class SignalManager:
         return not self.existsPath(widgetTo, widgetFrom)        
 
     def addLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo, enabled):
-        self.addEvent("add link from " + widgetFrom.title + " to " + widgetTo.title)
+        if self.verbosity >= 2:
+            self.addEvent("add link from " + widgetFrom.title + " to " + widgetTo.title, eventVerbosity = 2)
         
         if not self.canConnect(widgetFrom, widgetTo): return 0
         # check if signal names still exist
@@ -253,7 +260,8 @@ class SignalManager:
         return 0
     
     def removeLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo):
-        self.addEvent("remove link from " + widgetFrom.title + " to " + widgetTo.title)
+        if self.verbosity >= 2:
+            self.addEvent("remove link from " + widgetFrom.title + " to " + widgetTo.title, eventVerbosity = 2)
         
         # no need to update topology, just remove the link
         for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
@@ -292,8 +300,8 @@ class SignalManager:
     def send(self, widgetFrom, signalNameFrom, value, id):
         # add all target widgets new value and mark them as dirty
         # if not freezed -> process dirty widgets
-        if self.verbosity >= 1:
-            self.addEvent("send data from " + widgetFrom.title + ". Signal = " + signalNameFrom, value)
+        if self.verbosity >= 2:
+            self.addEvent("send data from " + widgetFrom.title + ". Signal = " + signalNameFrom, value, eventVerbosity = 2)
 
         if not self.links.has_key(widgetFrom): return
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
@@ -317,7 +325,8 @@ class SignalManager:
         if len(self.widgets) == 0: return
         if self.signalProcessingInProgress: return
         
-        #self.addEvent("process new signals from " + firstWidget.title)
+        if self.verbosity >= 2:
+            self.addEvent("process new signals from " + firstWidget.title, eventVerbosity = 2)  
         
         if firstWidget not in self.widgets:
             firstWidget = self.widgets[0]   # if some window that is not a widget started some processing we have to process new signals from the first widget

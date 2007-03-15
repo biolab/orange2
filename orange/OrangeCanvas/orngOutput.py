@@ -31,6 +31,7 @@ class OutputWindow(QMainWindow):
         self.logFile = open(os.path.join(canvasDlg.outputDir, "outputLog.htm"), "w") # create the log file
         #self.printExtraOutput = 0
         self.unfinishedText = ""
+        self.verbosity = 0
         
         #sys.excepthook = self.exceptionHandler
         #sys.stdout = self
@@ -54,6 +55,9 @@ class OutputWindow(QMainWindow):
 
     def focusInEvent(self, ev):
         self.canvasDlg.enableSave(1)
+
+    def setVerbosity(self, verbosity):
+        self.verbosity = verbosity
 
     def catchException(self, catch):
         if catch: sys.excepthook = self.exceptionHandler
@@ -82,10 +86,11 @@ class OutputWindow(QMainWindow):
         self.textOutput.setText("")
     
     # print text produced by warning and error widget calls
-    def widgetEvents(self, text):
-        if text != None:
-            self.write(str(text))
-        self.canvasDlg.setStatusBarEvent(QString(text))
+    def widgetEvents(self, text, eventVerbosity = 1):
+        if self.verbosity >= eventVerbosity: 
+            if text != None:
+                self.write(str(text))
+            self.canvasDlg.setStatusBarEvent(QString(text))
 
     # simple printing of text called by print calls
     def write(self, text):
