@@ -1,4 +1,5 @@
 # Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
+# Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
 # Description:
 #    document class - main operations (save, load, ...)
 #
@@ -28,6 +29,7 @@ class SchemaDoc(QMainWindow):
         self.lines = []                         # list of orngCanvasItems.CanvasLine items
         self.widgets = []                       # list of orngCanvasItems.CanvasWidget items
         self.signalManager = SignalManager()    # signal manager to correctly process signals
+        self.ctrlPressed = 0
 
         self.documentpath = canvasDlg.settings["saveSchemaDir"]
         self.documentname = str(self.caption())
@@ -117,7 +119,7 @@ class SchemaDoc(QMainWindow):
         
 
         # if there are multiple choices, how to connect this two widget, then show the dialog
-        if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
+        if self.ctrlPressed or len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
             res = dialog.exec_loop()
             if dialog.result() == QDialog.Rejected:
                 return
@@ -251,6 +253,11 @@ class SchemaDoc(QMainWindow):
             newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
             newwidget.instance.category = widget.getCategory()
             newwidget.instance.setEventHandler(self.canvasDlg.output.widgetEvents)
+            newwidget.instance._owInfo = self.canvasDlg.settings["owInfo"]
+            newwidget.instance._owWarning = self.canvasDlg.settings["owWarning"]
+            newwidget.instance._owError = self.canvasDlg.settings["owError"]
+            newwidget.instance.setStatusBarVisible(self.canvasDlg.settings["owShow"])
+            newwidget.instance._useContexts = self.canvasDlg.settings["useContexts"]
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
@@ -665,7 +672,8 @@ if os.path.exists(widgetDir):
     def __init__(self,parent=None, debugMode = DEBUG_MODE, debugFileName = "signalManagerOutput.txt", verbosity = 1):
         QVBox.__init__(self,parent)
         self.setCaption("Qt %s")
-        self.signalManager = orngSignalManager.SignalManager(debugMode, debugFileName, verbosity)""" % (fileName)
+        self.signalManager = orngSignalManager.SignalManager(debugMode, debugFileName, verbosity)
+        self.verbosity = verbosity""" % (fileName)
 
         if asTabs == 1:
             classinit += """
@@ -674,27 +682,25 @@ if os.path.exists(widgetDir):
 
         progress = """
         statusBar = QStatusBar(self)
-        self.caption = QLabel('', statusBar)
-        self.caption.setMaximumWidth(230)
         self.progress = QProgressBar(100, statusBar)
         self.progress.setMaximumWidth(100)
         self.progress.setCenterIndicator(1)
         self.status = QLabel("", statusBar)
         self.status.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
-        statusBar.addWidget(self.caption, 1)
         statusBar.addWidget(self.progress, 1)
         statusBar.addWidget(self.status, 1)"""
 
         handlerFunct = """
-    def eventHandler(self, text):
-        self.status.setText(text)
+    def eventHandler(self, text, eventVerbosity = 1):
+        if self.verbosity >= eventVerbosity:
+            self.status.setText(text)
         
     def progressHandler(self, widget, val):
         if val < 0:
-            self.caption.setText("<nobr>Processing: <b>" + str(widget.captionTitle) + "</b></nobr>")
+            self.status.setText("<nobr>Processing: <b>" + str(widget.captionTitle) + "</b></nobr>")
             self.progress.setProgress(0)
         elif val >100:
-            self.caption.setText("")
+            self.status.setText("")
             self.progress.reset()
         else:
             self.progress.setProgress(val)
@@ -762,10 +768,13 @@ if __name__ == "__main__":
             for val in v:
                 self.canvasDlg.output.write("%s = %s" % (val, getattr(widget.instance, val)))
 
+    def keyReleaseEvent(self, e):
+        self.ctrlPressed = e.state() & e.ControlButton
 
     def keyPressEvent(self, e):
+        self.ctrlPressed = e.state() & e.ControlButton
         if e.key() > 127:
-            e.ignore()
+            QMainWindow.keyPressEvent(self, e)
             return
 
         # the list could include (e.ShiftButton, "Shift") if the shift key didn't have the special meaning
@@ -776,7 +785,7 @@ if __name__ == "__main__":
             if e.state() & e.ShiftButton and len(self.widgets) > 1:
                 self.addLine(self.widgets[-2], self.widgets[-1])
         else:
-            e.ignore()
+            QMainWindow.keyPressEvent(self, e)
         
 
 if __name__=='__main__': 
