@@ -276,6 +276,10 @@ class CanvasWidgetState(QCanvasRectangle):
         self.warningTexts = []
         self.errorTexts = []
         self.activeItems = []
+        self.showIcons = 1
+        self.showInfo = 1
+        self.showWarning = 1
+        self.showError = 1
 
     def updateState(self, widgetState):
         self.infoTexts = widgetState["Info"].values() 
@@ -304,15 +308,20 @@ class CanvasWidgetState(QCanvasRectangle):
     def updateWidgetState(self):
         self.removeTooltips()
         self.activeItems = []
+        if not self.showIcons: return
         count = int(self.infoTexts != []) + int(self.warningTexts != []) + int(self.errorTexts != [])
         if not self.widgetIcons or count == 0: return
         
         startX = self.parent.x() + (self.parent.width()/2) - (count*self.widgetIcons["Info"].width()/2)
         y = self.parent.y() - 25
         self.move(startX, y)
-        off  = self.addWidgetIcon(startX, y, self.infoTexts, "Info")
-        off += self.addWidgetIcon(startX+off, y, self.warningTexts, "Warning")
-        off += self.addWidgetIcon(startX+off, y, self.errorTexts, "Error")
+        off  = 0
+        if self.showInfo:
+            off  = self.addWidgetIcon(startX, y, self.infoTexts, "Info")
+        if self.showWarning:
+            off += self.addWidgetIcon(startX+off, y, self.warningTexts, "Warning")
+        if self.showError:
+            off += self.addWidgetIcon(startX+off, y, self.errorTexts, "Error")
         self.view.repaintContents(QRect(startX, y, 100, 30))
         
         
@@ -391,6 +400,15 @@ class CanvasWidget(QCanvasRectangle):
         self.progressRect.setZ(-50)
         self.progressText.setZ(-10)
 
+        self.updateSettings()
+
+    # read the settings if we want to show icons for info, warning, error
+    def updateSettings(self):
+        self.widgetStateRect.showIcons = self.canvasDlg.settings["ocShow"]
+        self.widgetStateRect.showInfo = self.canvasDlg.settings["ocInfo"]
+        self.widgetStateRect.showWarning = self.canvasDlg.settings["ocWarning"]
+        self.widgetStateRect.showError = self.canvasDlg.settings["ocError"]
+        self.refreshWidgetState()
         
     def refreshWidgetState(self):
         self.widgetStateRect.updateState(self.instance.widgetState)
