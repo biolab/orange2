@@ -38,6 +38,7 @@ class WidgetButton(QToolButton):
     def __init__(self, *args):
         apply(QToolButton.__init__,(self,)+ args)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.shiftPressed = 0
 
     def setValue(self, name, nameKey, tabs, canvasDlg, useLargeIcons):
         self.widgetTabs = tabs

@@ -123,7 +123,7 @@ def spin(widget, master, value, min, max, step=1,
         bi = b
         
     if checked:
-        wb = checkBox(bi, master, checked, label, labelWidth = labelWidth, callback=checkCallback)
+        wb = checkBox(bi, master, checked, label, labelWidth = labelWidth, callback=checkCallback, debuggingEnabled = debuggingEnabled)
     elif label:
         widgetLabel(b, label, labelWidth)
         
@@ -153,8 +153,6 @@ def spin(widget, master, value, min, max, step=1,
         QLabel(posttext, bi)
 
     if debuggingEnabled:
-        if checked:
-            master._guiElements = getattr(master, "_guiElements", []) + [("checkBox", wb, checked, checkCallback)]
         master._guiElements = getattr(master, "_guiElements", []) + [("spin", wa, value, min, max, step, callback)]
         
     if checked:
@@ -572,7 +570,7 @@ def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tool
 
 # creates a widget box with a button in the top right edge, that allows you to hide all the widgets in the box and collapse the box to its minimum height
 class collapsableWidgetBox(QVGroupBox):
-    def __init__(self, widget, box = "", master = None, value = ""):
+    def __init__(self, widget, box = "", master = None, value = "", callback = None):
         QVGroupBox.__init__(self, widget)
         if type(box) in (str, unicode): # if you pass 1 for box, there will be a box, but no text
             self.setTitle(" " + box.strip() + " ")
@@ -581,6 +579,7 @@ class collapsableWidgetBox(QVGroupBox):
         
         self.master = master
         self.value = value
+        self.callback = callback
         self.xPixCoord = 0
         self.shownPixSize = (0, 0)
         self.childWidgetVisibility = {}
@@ -603,9 +602,12 @@ class collapsableWidgetBox(QVGroupBox):
 
         # did we click on the pixmap?
         if ev.x() > self.xPixCoord and ev.x() < self.xPixCoord + self.shownPixSize[0] and ev.y() < self.shownPixSize[1]:
-            self.master.__setattr__(self.value, not self.master.getdeepattr(self.value))
+            if self.value:
+                self.master.__setattr__(self.value, not self.master.getdeepattr(self.value))
             self.updateControls()
             self.repaint()
+        if self.callback != None:
+            self.callback()
 
     # call when all widgets are added into the widget box to update the correct state (shown or hidden)
     def syncControls(self):
