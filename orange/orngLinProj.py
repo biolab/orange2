@@ -160,6 +160,9 @@ class FreeViz:
         if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
         
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
+        if not transProjData:
+            return anchorData
+        
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]; y_positions = projData[1]; classData = projData[2]
 
@@ -252,6 +255,9 @@ class FreeViz:
         if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
         
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
+        if not transProjData:
+            return anchorData
+        
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]; x_positions2 = numpy.array(x_positions)
         y_positions = projData[1]; y_positions2 = numpy.array(y_positions)
@@ -525,7 +531,7 @@ class FreeVizClassifier(orange.Classifier):
         normalizers = [graph.normalizers[i] for i in indices]
         averages = [graph.averages[i] for i in indices]
 
-        self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)
+        #self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)  # Janez: why would you call this function if you don't want its result???
         self.classifier = orange.P2NN(domain,
                                       numpy.transpose(numpy.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawdata]])),
                                       graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=self.FreeViz.law)

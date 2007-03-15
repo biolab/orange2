@@ -4,7 +4,7 @@ import time, operator
 import numpy, orngContingency
 from math import sqrt, log, e
 import orngTest, orngStat, statc
-from orngScaleData import getVariableValuesSorted, getVariableValueIndices
+from orngScaleData import getVariableValuesSorted, getVariableValueIndices, discretizeDomain
 from copy import copy
 
 # quality measures
@@ -99,41 +99,28 @@ class orngMosaic:
     def clearResults(self):
         self.results = []
 
-    def setData(self, data):
-        self.data = None
+    def setData(self, data, removeUnusedValues = 0):
         self.evaluatedAttributes = None
         self.aprioriDistribution = None
         self.aprioriProbabilities = None
+        self.attributeNameIndex = {}
         self.logits = {}
         self.arguments = {}
         self.classVals = []
         self.cvIndices = None
         self.contingencies = {}
-
         self.clearResults()
 
-        if not data: return
-
-        # discretize attributes
-        entroDisc = orange.EntropyDiscretization()
-        discAttrs = []
-        for attr in data.domain:
-            if attr.varType == orange.VarTypes.Discrete:
-                discAttrs.append(attr)
-            elif data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
-                newAttr = entroDisc(attr, data)
-                newAttr.name = attr.name
-                if len(newAttr.values) > 1:
-                    discAttrs.append(newAttr)
-        self.data = data.select(discAttrs)
+        self.data = discretizeDomain(data, removeUnusedValues)
+        if not self.data:
+            return
+        
         self.attributeNameIndex = dict([(self.data.domain[i].name, i) for i in range(len(self.data.domain))])
 
         if self.data.domain.classVar:
-            self.data = self.data.filterref(orange.Filter_hasClassValue())  # remove examples with missing classes
-
             self.classVals = [val for val in self.data.domain.classVar.values]
             self.aprioriDistribution  = orange.Distribution(self.data.domain.classVar.name, self.data)
-            self.aprioriProbabilities = [nrOfCases / float(len(self.data)) for nrOfCases in self.aprioriDistribution]
+            self.aprioriProbabilities = [nrOfCases / float(max(1, len(self.data))) for nrOfCases in self.aprioriDistribution]
 
             s = sum(self.aprioriDistribution)
             for i in range(len(self.aprioriDistribution)):
@@ -148,16 +135,33 @@ class orngMosaic:
     
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
     def getEvaluatedAttributes(self, data):
-        if not data.domain.classVar or data.domain.classVar.varType != orange.VarTypes.Discrete: return []
-        if self.evaluatedAttributes: return self.evaluatedAttributes
+        if not data.domain.classVar or data.domain.classVar.varType != orange.VarTypes.Discrete:
+            if self.__class__.__name__ == "OWMosaicOptimization":
+                QMessageBox.information( None, "Mosaic Dialog", 'In order to be able to find interesing projections the data set has to have a discrete class.', QMessageBox.Ok + QMessageBox.Default)
+            return []
+        if self.evaluatedAttributes:
+            return self.evaluatedAttributes
+
+        if self.__class__.__name__ == "OWMosaicOptimization":
+            from qt import qApp, QWidget
+            self.setStatusBarText("Evaluating attributes...")
+            qApp.setOverrideCursor(QWidget.waitCursor)
         
         try:
             # evaluate attributes using the selected attribute measure
             self.evaluatedAttributes = orngVisFuncts.evaluateAttributes(data, None, discMeasures[self.attrDisc][1])
+            # remove attributes with only one value
+            for attr in self.evaluatedAttributes[::-1]:
+                if data.domain[attr].varType == orange.VarTypes.Discrete and len(data.domain[attr].values) < 2:
+                    self.evaluatedAttributes.remove(attr)
         except:
             import sys
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # print the exception
+
+        if self.__class__.__name__ == "OWMosaicOptimization":
+            self.setStatusBarText("")
+            qApp.restoreOverrideCursor()
             
         if not self.evaluatedAttributes: return []
         else:                            return self.evaluatedAttributes
@@ -214,8 +218,9 @@ class orngMosaic:
             
         self.startTime = time.time()
 
-        if self.optimizationType == 0: maxLength = self.attributeCount; minLength = self.attributeCount
-        else:                          maxLength = self.attributeCount; minLength = 1
+        maxLength = self.attributeCount
+        if self.optimizationType == 0: minLength = self.attributeCount
+        else:                          minLength = 1
 
         # generate cn2 rules and show projections that have 
         if self.qualityMeasure == CN2_RULES:
@@ -530,7 +535,7 @@ class orngMosaic:
         # just to check if the math is ok
         s = sum(actualProbabilities)
         if "%.3f" % s != "1.000":
-            print "probabilities don't sum to 1, but to", s, actualProbabilities
+            print "Strange, huh. Probabilities don't sum to 1, but to", s, actualProbabilities
 
         return actualProbabilities
 
@@ -715,7 +720,9 @@ class orngMosaic:
             if len(attrs) > 2: xpos += (2 + maxVals[-1]) * triedIndices[-3] # add the space of 3 between each different value of third attribute
             if len(attrs) > 3: ypos += (4 + maxVals[-2]) * triedIndices[-4] # add the space of 4 between each different value of fourth attribute
             
-        learner = orange.kNNLearner(rankWeight = 0, k = len(projData)/2)
+        distance = orange.ExamplesDistanceConstructor_Manhattan()
+        distance.normalize = 0
+        learner = orange.kNNLearner(rankWeight = 0, k = len(projData)/2, distanceConstructor = distance)
         if self.attributeOrderTestingMethod == AO_CROSSVALIDATION:
             results = orngTest.leaveOneOut([learner], (projData, self.weightID))
         else:
@@ -724,7 +731,8 @@ class orngMosaic:
 
     # for a given subset of attributes (max 4) find which permutation is most visual friendly. optimizeValueOrder
     def findOptimalAttributeOrder(self, attrs, optimizeValueOrder = 0):
-        if not self.data or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete: return None
+        if not self.data or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete:
+            return None
         apriori = [max(1, self.aprioriDistribution[val]) for val in self.data.domain.classVar.values]
         conditions = {}
         newFeature, quality = FeatureByCartesianProduct(self.data, attrs)
@@ -932,11 +940,12 @@ class MosaicVizRankLearner(orange.Learner):
 if __name__=="__main__":
     data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\wine.tab")
     #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\datasets\microarray\brown\brown-imputed.tab")
+    data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange Datasets\UCI\zoo.tab")
     mosaic = orngMosaic()
     mosaic.setData(data)
     #ret = mosaic.findOptimalAttributeOrder(["spo- early", "heat 20"], 1) #optimizeValueOrder = 1
     #ret = mosaic.findOptimalAttributeOrder(["A11", "A13", "A7"], 1) #optimizeValueOrder = 1
-    mosaic.classificationMethod = MOS_COMBINING
-    mosaic.evaluateProjections()
-    classVal, prob = mosaic.findArguments(mosaic.data[25])
-    
+##    mosaic.classificationMethod = MOS_COMBINING
+##    mosaic.evaluateProjections()
+##    classVal, prob = mosaic.findArguments(mosaic.data[25])
+    mosaic.findOptimalAttributeOrder(["milk", "legs"])
