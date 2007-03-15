@@ -20,18 +20,26 @@ class orngScalePolyvizData(orngScaleLinProjData):
             for index in range(len(data.domain)):
                 if data.domain[index].varType == orange.VarTypes.Discrete:
                     self.attrLocalValues[data.domain[index].name] = [0, len(data.domain[index].values)-1]
-                else:
+                elif self.domainDataStat[index]:
                     self.attrLocalValues[data.domain[index].name] = [self.domainDataStat[index].min, self.domainDataStat[index].max]
+                else:
+                    self.attrLocalValues[data.domain[index].name] = [0, 1]
         else:
             self.attrLocalValues = self.attrValues
 
 
         # attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0
     def createProjectionAsExampleTable(self, attrList, **settingsDict):
-        domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        if self.rawdata.domain.classVar:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        else:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar")])
         data = self.createProjectionAsNumericArray(attrList, **settingsDict)
-        return orange.ExampleTable(domain, data)
-
+        if data != None:
+            return orange.ExampleTable(domain, data)
+        else:
+            return orange.ExampleTable(domain)
+        
     #def createProjectionAsNumericArray(self, attrIndices, attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, removeMissingData = 1):
     def createProjectionAsNumericArray(self, attrIndices, **settingsDict):
         # load the elements from the settings dict
@@ -47,13 +55,15 @@ class orngScalePolyvizData(orngScaleLinProjData):
         
         if validData == None:
             validData = self.getValidList(attrIndices)
+        if sum(validData) == 0:
+            return None
 
-        if classList == None:
+        if classList == None and self.rawdata.domain.classVar:
             classList = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]    
 
         if removeMissingData:
             selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
-            if len(classList) != numpy.shape(selectedData)[1]:
+            if classList != None and len(classList) != numpy.shape(selectedData)[1]:
                 classList = numpy.compress(validData, classList)
         else:
             selectedData = numpy.take(self.noJitteringScaledData, attrIndices, axis = 0)
@@ -89,7 +99,10 @@ class orngScalePolyvizData(orngScaleLinProjData):
             x_positions += (numpy.random.random(len(x_positions))-0.5)*jitterSize
             y_positions += (numpy.random.random(len(y_positions))-0.5)*jitterSize
 
-        return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
+        if classList != None:
+            return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
+        else:
+            return numpy.transpose(numpy.array((x_positions, y_positions)))
 
 
     def getProjectedPointPosition(self, attrIndices, values, **settingsDict):

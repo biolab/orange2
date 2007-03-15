@@ -27,10 +27,17 @@ class orngScaleScatterPlotData(orngScaleData):
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
     #def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
     def createProjectionAsExampleTable(self, attrIndices, **settingsDict):
-        domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable(self.rawdata.domain[attrIndices[0]].name), orange.FloatVariable(self.rawdata.domain[attrIndices[1]].name), self.rawdata.domain.classVar])
+        if self.rawdata.domain.classVar:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable(self.rawdata.domain[attrIndices[0]].name), orange.FloatVariable(self.rawdata.domain[attrIndices[1]].name), self.rawdata.domain.classVar])
+        else:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable(self.rawdata.domain[attrIndices[0]].name), orange.FloatVariable(self.rawdata.domain[attrIndices[1]].name)])
+
         data = self.createProjectionAsNumericArray(attrIndices, **settingsDict)
-        return orange.ExampleTable(domain, data)
-    
+        if data != None:
+            return orange.ExampleTable(domain, data)
+        else:
+            return orange.ExampleTable(domain)
+            
 
     def createProjectionAsNumericArray(self, attrIndices, **settingsDict):
         validData = settingsDict.get("validData")
@@ -39,8 +46,10 @@ class orngScaleScatterPlotData(orngScaleData):
         
         if validData == None:
             validData = self.getValidList(attrIndices)
+        if sum(validData) == 0:
+            return None
 
-        if classList == None:
+        if classList == None and self.rawdata.domain.classVar:
             #classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
             #if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: classList = (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0  # remove data with missing values and convert floats back to ints
             #else:                                                                classList = self.noJitteringScaledData[classIndex]  # for continuous attribute just add the values
@@ -51,15 +60,21 @@ class orngScaleScatterPlotData(orngScaleData):
         if jitterSize > 0.0:
             xArray += (numpy.random.random(len(xArray))-0.5)*jitterSize
             yArray += (numpy.random.random(len(yArray))-0.5)*jitterSize
-        data = numpy.compress(validData, numpy.array((xArray, yArray, classList)), axis = 1)
+        if classList != None:
+            data = numpy.compress(validData, numpy.array((xArray, yArray, classList)), axis = 1)
+        else:
+            data = numpy.compress(validData, numpy.array((xArray, yArray)), axis = 1)
         data = numpy.transpose(data)
         return data
 
 
     def getOptimalClusters(self, attributeNameOrder, addResultFunct):
+        if not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
+            return
+        
         jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        
+
         self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
         startTime = time.time()
         count = len(attributeNameOrder)*(len(attributeNameOrder)-1)/2

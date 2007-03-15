@@ -99,7 +99,7 @@ class OWGraph(QwtPlot):
         #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
-        self.currentScale = {}
+##        self.currentScale = {}
         
         if parent:
             if type(parent) > OWBaseWidget:
@@ -123,83 +123,46 @@ class OWGraph(QwtPlot):
         sizeDlg = OWChooseImageSizeDlg(self)
         sizeDlg.saveImage(fileName, size)
 
-    def setAxisScale(self, axis, min, max, step = 0):
-        current = self.currentScale.get(axis, None)
-        if current and current == (min, max, step): return
-        QwtPlot.setAxisScale(self, axis, min, max, step)
-        self.currentScale[axis] = (min, max, step)
-        
+##    def setAxisScale(self, axis, min, max, step = 0):
+##        current = self.currentScale.get(axis, None)
+##        if current and current == (min, max, step): return
+##        QwtPlot.setAxisScale(self, axis, min, max, step)
+##        self.currentScale[axis] = (min, max, step)
+
+    def setLabels(self, labels, axis):
+        if not self.showAxisScale:
+            self.setAxisScaleDraw(axis, HiddenScaleDraw())
+            self.axisScaleDraw(axis).setTickLength(0, 0, 0)
+            self.axisScaleDraw(axis).setOptions(0) 
+        else:
+            self.axisScaleDraw(axis).setTickLength(1, 1, 3)
+            self.axisScaleDraw(axis).setOptions(1)
+            
+            if (labels <> None):
+                self.setAxisScaleDraw(axis, DiscreteAxisScaleDraw(labels))
+                self.setAxisScale(axis, 0, len(labels) - 1, 1)
+                self.setAxisMaxMinor(axis, 0)
+                self.setAxisMaxMajor(axis, len(labels))
+            else:
+                self.setAxisScaleDraw(axis, QwtScaleDraw())
+                self.setAxisAutoScale(axis)
+                self.setAxisMaxMinor(axis, 10)
+                self.setAxisMaxMajor(axis, 10)
+            self.updateToolTips()
         
     def setYLlabels(self, labels):
         "Sets the Y-axis labels on the left."
-        if not self.showAxisScale:
-            self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-            self.axisScaleDraw(QwtPlot.yLeft).setTickLength(0, 0, 0)
-            self.axisScaleDraw(QwtPlot.yLeft).setOptions(0) 
-            return
-
-        self.axisScaleDraw(QwtPlot.yLeft).setTickLength(1, 1, 3)
-        self.axisScaleDraw(QwtPlot.yLeft).setOptions(1)
+        self.setLabels(labels, QwtPlot.yLeft)
         
-        if (labels <> None):
-            self.setAxisScaleDraw(QwtPlot.yLeft, DiscreteAxisScaleDraw(labels))
-            self.setAxisScale(QwtPlot.yLeft, 0, len(labels) - 1, 1)
-            self.setAxisMaxMinor(QwtPlot.yLeft, 0)
-            self.setAxisMaxMajor(QwtPlot.yLeft, len(labels))
-        else:
-            self.setAxisScaleDraw(QwtPlot.yLeft, QwtScaleDraw())
-            self.setAxisAutoScale(QwtPlot.yLeft)
-            self.setAxisMaxMinor(QwtPlot.yLeft, 10)
-            self.setAxisMaxMajor(QwtPlot.yLeft, 10)
-        self.updateToolTips()
-
     def setYRlabels(self, labels):
         "Sets the Y-axis labels on the right."
-        if not self.showAxisScale:
-            self.setAxisScaleDraw(QwtPlot.yRight, HiddenScaleDraw())
-            self.axisScaleDraw(QwtPlot.yRight).setTickLength(0, 0, 0)
-            self.axisScaleDraw(QwtPlot.yRight).setOptions(0) 
-            return
-
-        self.axisScaleDraw(QwtPlot.yRight).setTickLength(1, 1, 3)
-        self.axisScaleDraw(QwtPlot.yRight).setOptions(1)
+        self.setLabels(labels, QwtPlot.yRight)
         
-        if (labels <> None):
-            self.setAxisScaleDraw(QwtPlot.yRight, DiscreteAxisScaleDraw(labels))
-            self.setAxisScale(QwtPlot.yRight, 0, len(labels) - 1, 1)
-            self.setAxisMaxMinor(QwtPlot.yRight, 0)
-            self.setAxisMaxMajor(QwtPlot.yRight, len(labels))
-        else:
-            self.setAxisScaleDraw(QwtPlot.yRight, QwtScaleDraw())
-            self.setAxisAutoScale(QwtPlot.yRight)
-            self.setAxisMaxMinor(QwtPlot.yRight, 10)
-            self.setAxisMaxMajor(QwtPlot.yRight, 10)
-        self.updateToolTips
-
     def setXlabels(self, labels):
         "Sets the x-axis labels if x-axis discrete."
         "Or leave up to QwtPlot (MaxMajor, MaxMinor) if x-axis continuous."
-        if not self.showAxisScale:
-            self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
-            self.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)
-            self.axisScaleDraw(QwtPlot.xBottom).setOptions(0) 
-            return
-
-        self.axisScaleDraw(QwtPlot.xBottom).setTickLength(1, 1, 3)
-        self.axisScaleDraw(QwtPlot.xBottom).setOptions(1)
+        self.setLabels(labels, QwtPlot.xBottom)
         
-        if (labels <> None):
-            self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
-            self.setAxisScale(QwtPlot.xBottom, 0, len(labels) - 1, 1)
-            self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-            self.setAxisMaxMajor(QwtPlot.xBottom, len(labels))
-        else:
-            self.setAxisScaleDraw(QwtPlot.xBottom, QwtScaleDraw())
-            self.setAxisAutoScale(QwtPlot.xBottom)
-            self.setAxisMaxMinor(QwtPlot.xBottom, 10)
-            self.setAxisMaxMajor(QwtPlot.xBottom, 10)
-        self.updateToolTips()
-
     def enableXaxis(self, enable):
         self.enableAxis(QwtPlot.xBottom, enable)
         self.repaint()
@@ -265,10 +228,12 @@ class OWGraph(QwtPlot):
         self.updateLayout()
         self.repaint()
 
-    def setShowXaxisTitle(self, b):
+    # show or hide axis title. if b = -1 then only update currently set status of the title
+    def setShowXaxisTitle(self, b = -1):
         if b == self.showXaxisTitle: return
-        self.showXaxisTitle = b
-        if (self.showXaxisTitle <> 0):
+        if b != -1:
+            self.showXaxisTitle = b
+        if self.showXaxisTitle:
             self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.xBottom, None)
@@ -278,17 +243,17 @@ class OWGraph(QwtPlot):
     def setXaxisTitle(self, title):
         if title == self.XaxisTitle: return
         self.XaxisTitle = title
-        if (self.showXaxisTitle <> 0):
-            self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
-        else:
-            self.setAxisTitle(QwtPlot.xBottom, None)
+        if self.showXaxisTitle == 0: return
+        self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
         self.updateLayout()
         self.repaint()
 
-    def setShowYLaxisTitle(self, b):
+    # show or hide axis title. if b = -1 then only update currently set status of the title
+    def setShowYLaxisTitle(self, b = -1):
         if b == self.showYLaxisTitle: return
-        self.showYLaxisTitle = b
-        if (self.showYLaxisTitle <> 0):
+        if b != -1:
+            self.showYLaxisTitle = b
+        if self.showYLaxisTitle:
             self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.yLeft, "")
@@ -298,17 +263,17 @@ class OWGraph(QwtPlot):
     def setYLaxisTitle(self, title):
         if title == self.YLaxisTitle: return
         self.YLaxisTitle = title
-        if (self.showYLaxisTitle <> 0):
-            self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
-        else:
-            self.setAxisTitle(QwtPlot.yLeft, "")
+        if self.showYLaxisTitle == 0: return
+        self.setAxisTitle(QwtPlot.yLeft, self.YLaxisTitle)
         self.updateLayout()
         self.repaint()
 
-    def setShowYRaxisTitle(self, b):
+    # show or hide axis title. if b = -1 then only update currently set status of the title
+    def setShowYRaxisTitle(self, b = -1):
         if b == self.showYRaxisTitle: return
-        self.showYRaxisTitle = b
-        if (self.showYRaxisTitle <> 0):
+        if b != -1:
+            self.showYRaxisTitle = b
+        if self.showYRaxisTitle:
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.yRight, "")
@@ -318,10 +283,8 @@ class OWGraph(QwtPlot):
     def setYRaxisTitle(self, title):
         if title == self.YRaxisTitle: return
         self.YRaxisTitle = title
-        if (self.showYRaxisTitle <> 0):
-            self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
-        else:
-            self.setAxisTitle(QwtPlot.yRight, "")
+        if self.showYRaxisTitle == 0: return
+        self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
         self.updateLayout()
         self.repaint()
 
@@ -452,10 +415,12 @@ class OWGraph(QwtPlot):
 
     def removeDrawingCurves(self, removeLegendItems = 1):
         for key in self.curveKeys():
-            curve = self.curve(key)
-            if (removeLegendItems and key in self.legendCurveKeys) or not isinstance(curve, SelectionCurve):
-                self.removeCurve(key)
-
+            if isinstance(self.curve(key), SelectionCurve):
+                continue
+            if removeLegendItems == 0 and key in self.legendCurveKeys:
+                continue
+            self.removeCurve(key)
+            
     def removeLastSelection(self):
         if self.selectionCurveKeyList != []:
             lastCurve = self.selectionCurveKeyList.pop()

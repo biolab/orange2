@@ -183,7 +183,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
             self.cbforcerel.setDisabled(False)
             self.cbforcebal.setDisabled(False)
             
-        self.printVerbose("Updated: %i, %i" % (self.attractG, self.repelG))
+        self.printEvent("Updated: %i, %i" % (self.attractG, self.repelG), eventVerbosity = 1)
 
     def forceLawChanged(self):
         self.spinSigma.setDisabled(self.cbLaw.currentItem() not in [2, 3])
@@ -348,7 +348,7 @@ class S2NHeuristicClassifier(orange.Classifier):
         self.optimizationDlg = optimizationDlg
         self.radvizWidget = radvizWidget
 
-        self.radvizWidget.cdata(data)
+        self.radvizWidget.setData(data)
         self.optimizationDlg.s2nMixAnchorsAutoSet()
 
         if nrOfFreeVizSteps > 0:
@@ -358,7 +358,7 @@ class S2NHeuristicClassifier(orange.Classifier):
     def __call__(self, example, returnType):
         table = orange.ExampleTable(example.domain)
         table.append(example)
-        self.radvizWidget.subsetdata(table)       # show the example is we use the widget
+        self.radvizWidget.setSubsetData(table)       # show the example is we use the widget
             
         anchorData = self.radvizWidget.graph.anchorData
         attributeNameIndex = self.radvizWidget.graph.attributeNameIndex

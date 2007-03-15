@@ -211,7 +211,8 @@ class MeasureFisherDiscriminant:
 
             # normalize values in arr so that the largest value will be 1 and others will be proportionally smaller
             largest = max(arr)
-            arr = [val/largest for val in arr]
+            if largest != 0:
+                arr = [val/largest for val in arr]
 
             for i in range(len(data.domain.attributes)):
                 self.attrInfo[data.domain.attributes[i].name] = arr[i]

@@ -86,9 +86,15 @@ class orngScaleLinProjData(orngScaleData):
 
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
     def createProjectionAsExampleTable(self, attrIndices, **settingsDict):
-        domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        if self.rawdata.domain.classVar:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        else:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar")])
         data = self.createProjectionAsNumericArray(attrIndices, **settingsDict)
-        return orange.ExampleTable(domain, data)
+        if data != None:
+            return orange.ExampleTable(domain, data)
+        else:
+            return orange.ExampleTable(domain)
         
 
     def createProjectionAsNumericArray(self, attrIndices, **settingsDict):
@@ -111,8 +117,10 @@ class orngScaleLinProjData(orngScaleData):
 
         if validData == None:
             validData = self.getValidList(attrIndices)
+        if sum(validData) == 0:
+            return None
 
-        if classList == None:
+        if classList == None and self.rawdata.domain.classVar:
             classList = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
 
         # if jitterSize is set below zero we use scaledData that has already jittered data
@@ -122,7 +130,7 @@ class orngScaleLinProjData(orngScaleData):
         selectedData = numpy.take(data, attrIndices, axis = 0)
         if removeMissingData:
             selectedData = numpy.compress(validData, selectedData, axis = 1)
-            if len(classList) != numpy.shape(selectedData)[1]:
+            if classList != None and len(classList) != numpy.shape(selectedData)[1]:
                 classList = numpy.compress(validData, classList)    
 
         """
@@ -184,7 +192,10 @@ class orngScaleLinProjData(orngScaleData):
             y_positions += numpy.random.uniform(-jitterSize, jitterSize, len(y_positions))
 
         self.lastAttrIndices = attrIndices
-        return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
+        if classList != None:
+            return numpy.transpose(numpy.array((x_positions, y_positions, classList)))
+        else:
+            return numpy.transpose(numpy.array((x_positions, y_positions)))
 
     
     # ##############################################################

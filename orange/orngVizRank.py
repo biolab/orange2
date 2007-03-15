@@ -220,13 +220,13 @@ class VizRank:
         self.clearResults()
         self.clearArguments()
         self.graph.setData(data)
+
+        hasDiscreteClass = self.data != None and len(self.data) > 0 and self.data.domain.classVar != None and self.data.domain.classVar.varType == orange.VarTypes.Discrete
+        if not hasDiscreteClass:
+            return
         
-        self.selectedClasses = []
-        if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
-            self.selectedClasses = range(len(self.data.domain.classVar.values))
-
-        if not data: return
-
+        self.selectedClasses = range(len(self.data.domain.classVar.values))
+        
         if self.autoSetTheKValue:
             if self.kValueFormula == 0 or not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous:
                 self.kValue = int(sqrt(len(data)))                                 # k = sqrt(N)
@@ -400,12 +400,14 @@ class VizRank:
                 prediction[dist.index(m)] += m * m / float(sum(dist))
 
             prediction = [val*100.0 for val in prediction]             # turn prediction array into percents
-            acc = sum(prediction) / float(len(testTable))               # compute accuracy for all classes
+            acc = sum(prediction) / float(max(1, len(testTable)))               # compute accuracy for all classes
             val = 0.0; s = 0.0
             for index in self.selectedClasses:                          # compute accuracy for selected classes
-                val += prediction[index]; s += currentClassDistribution[index]
-            for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
-            return val/float(s), (acc, prediction, currentClassDistribution)
+                val += prediction[index]
+                s += currentClassDistribution[index]
+            for i in range(len(prediction)):
+                prediction[i] /= float(max(1, currentClassDistribution[i]))    # turn to probabilities
+            return val/float(max(1,s)), (acc, prediction, currentClassDistribution)
         else:
             return 0, 0     # in case of an invalid value
 
@@ -439,7 +441,7 @@ class VizRank:
             return orngStat.AUC(results)[0], None
             
         # compute accuracy only for classes that are selected as interesting. other class values do not participate in projection evaluation
-        acc = sum(prediction) / float(len(results.results))                 # accuracy over all class values
+        acc = sum(prediction) / float(max(1, len(results.results)))                 # accuracy over all class values
         val = sum([prediction[index] for index in self.selectedClasses])    # accuracy over all selected classes
 
         currentClassDistribution = [int(v) for v in orange.Distribution(table.domain.classVar, table)]
@@ -593,30 +595,34 @@ class VizRank:
                 # build list of indices for permutations of different number of attributes
                 permutationIndices = {}
                 for i in range(minLength, maxLength+1):
+                    if i > len(attributes): continue        # if we don't have enough attributes
                     if self.useSupervisedPCA:
                         permutationIndices[i] = [range(i)]
                     else:
                         permutationIndices[i] = orngVisFuncts.generateDifferentPermutations(range(i))
                     self.totalPossibilities += orngVisFuncts.combinationsCount(i, len(attributes)) * len(permutationIndices[i])
+##                sys.stderr.write("selectNextAttributeSubset " + str(permutationIndices.keys()) + "\n")
                 self.evaluationData["permutationIndices"] = permutationIndices
             else:
                 attributes = self.evaluationData["attrs"]
 
-            
-
-            # if we don't want to use any heuristic
-            if self.attrCont == CONT_MEAS_NONE and self.attrDisc == DISC_MEAS_NONE:
-                combination = []
-                while len(combination) < u+1:
-                    v = random.randint(0, len(self.data.domain.attributes)-1)
-                    if v not in combination: combination.append(v)
-                combinations = [combination]
-            elif self.attrSubsetSelection == DETERMINISTIC_ALL:
-                if z >= len(attributes): return None      # did we already try all the attributes
-                combinations = orngVisFuncts.combinations(attributes[:z], u)
-                map(list.append, combinations, [attributes[z]] * len(combinations))     # append the z-th attribute to all combinations in the list
-            elif self.attrSubsetSelection in [GAMMA_ALL, GAMMA_SINGLE]:
-                combinations = self.getAttributeSubsetUsingGammaDistribution(u+1)
+            # do we have enough attributes at all?
+            if len(attributes) < u+1:
+                combinations = []
+            else:
+                # if we don't want to use any heuristic
+                if self.attrCont == CONT_MEAS_NONE and self.attrDisc == DISC_MEAS_NONE:
+                    combination = []
+                    while len(combination) < u+1:
+                        v = random.randint(0, len(self.data.domain.attributes)-1)
+                        if v not in combination: combination.append(v)
+                    combinations = [combination]
+                elif self.attrSubsetSelection == DETERMINISTIC_ALL:
+                    if z >= len(attributes): return None      # did we already try all the attributes
+                    combinations = orngVisFuncts.combinations(attributes[:z], u)
+                    map(list.append, combinations, [attributes[z]] * len(combinations))     # append the z-th attribute to all combinations in the list
+                elif self.attrSubsetSelection in [GAMMA_ALL, GAMMA_SINGLE]:
+                    combinations = self.getAttributeSubsetUsingGammaDistribution(u+1)
 
         # update values for the number of attributes
         u += 1
@@ -672,9 +678,11 @@ class VizRank:
 
     # generate possible permutations of the current attribute subset. use evaluationData dict to find which attribute subset to use. 
     def getNextPermutations(self):
-        combinations, index = self.evaluationData["combinations"], self.evaluationData["index"]
+        combinations = self.evaluationData["combinations"]
+        index  = self.evaluationData["index"]
         if not combinations or index >= len(combinations):
             return None     # did we test all the projections
+
         combination = combinations[index]
         permutations = []
 
@@ -710,6 +718,7 @@ class VizRank:
                 """
         else:
             permutationIndices = self.evaluationData["permutationIndices"]
+##            sys.stderr.write("getNextPermutations " + str(permutationIndices.keys()) + "\n")
             permutations = [[combination[val] for val in ind] for ind in permutationIndices[len(combination)]]
 
         self.evaluationData["index"] = index + 1
@@ -735,12 +744,16 @@ class VizRank:
         maxFunct = self.getMaxFunct()
         self.clearResults()
         self.clearArguments()
+
         if self.__class__.__name__ == "OWVizRank":
             from qt import qApp, QMessageBox
             if self.attributeCount >= 10 and not (self.useSupervisedPCA) and self.visualizationMethod != SCATTERPLOT and self.attrSubsetSelection != GAMMA_SINGLE and QMessageBox.critical(self, 'VizRank', 'You chose to evaluate projections with a high number of attributes. Since VizRank has to evaluate different placements\nof these attributes there will be a high number of projections to evaluate. Do you still want to proceed?','Continue','Cancel', '', 0,1):
                 return
             self.disableControls()
             self.parentWidget.progressBarInit()
+        elif not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+            print "Projections can be evaluated only for data with a discrete class."
+            return
         
         if self.visualizationMethod == SCATTERPLOT:
             evaluatedAttributes = orngVisFuncts.evaluateAttributes(self.data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])

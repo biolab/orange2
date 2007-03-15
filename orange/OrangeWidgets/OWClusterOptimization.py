@@ -882,6 +882,8 @@ class ClusterOptimization(OWBaseWidget):
         if min(testExampleAttrVals) < 0.0 or max(testExampleAttrVals) > 1.0: return 0
 
         array = self.graph.createProjectionAsNumericArray([self.graph.attributeNameIndex[attr] for attr in attrList])
+        if array == None:
+            return 0
         short = numpy.transpose(numpy.take(array, vertices))
         
         [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, testExampleAttrVals)
@@ -902,8 +904,7 @@ class ClusterOptimization(OWBaseWidget):
             if sqrt(xdiff*xdiff + ydiff*ydiff) < averageEdgeDistance:
                 val = 1
                 break
-            
-        del array, short
+           
         return val
 
 
@@ -955,7 +956,7 @@ class clusterClassifier(orange.Classifier):
             computeProjections = 0
         else: computeProjections = 1
 
-        self.visualizationWidget.cdata(data, clearResults = computeProjections)        
+        self.visualizationWidget.setData(data, clearResults = computeProjections)        
         if computeProjections == 1:     # run cluster detection
             self.evaluating = 1
             t = QTimer(self.visualizationWidget)

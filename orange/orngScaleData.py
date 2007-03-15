@@ -15,7 +15,7 @@ import orngVisFuncts
 # in the data. With this function we get a sorted list of values
 def getVariableValuesSorted(data, index):
     if data.domain[index].varType == orange.VarTypes.Continuous:
-        print "Invalid index for getVariableValuesSorted"
+        print "getVariableValuesSorted - attribute %s is a continuous variable" % (str(index))
         return []
     
     values = list(data.domain[index].values)
@@ -36,7 +36,7 @@ def getVariableValuesSorted(data, index):
 # in case all values are integers, we also sort them
 def getVariableValueIndices(data, index, sortValuesForDiscreteAttrs = 1):
     if data.domain[index].varType == orange.VarTypes.Continuous:
-        print "Invalid index for getVariableValueIndices"
+        print "getVariableValueIndices - attribute %s is a continuous variable" % (str(index))
         return {}
 
     if sortValuesForDiscreteAttrs:
@@ -44,6 +44,48 @@ def getVariableValueIndices(data, index, sortValuesForDiscreteAttrs = 1):
     else:
         values = list(data.domain[index].values)
     return dict([(values[i], i) for i in range(len(values))])
+
+
+# discretize the domain
+# if we have a class remove the examples with missing class value
+# discretize the continuous class into discrete class with two values
+# discretize continuous attributes using entropy discretization (or equiN if we don't have a class or class is continuous)
+def discretizeDomain(data, removeUnusedValues = 1):
+    entroDisc = orange.EntropyDiscretization()
+    equiDisc  = orange.EquiNDiscretization(numberOfIntervals = 2)
+    discAttrs = []
+
+    className = data and len(data) > 0 and data.domain.classVar and data.domain.classVar.name or None
+    if className:
+        data = data.filterref(orange.Filter_hasClassValue())  # remove examples with missing classes
+
+    if not data or len(data) == 0:
+        return None
+
+    # if we have a continuous class we have to discretize it before we can discretize the attributes
+    if className and data.domain.classVar.varType == orange.VarTypes.Continuous:
+        newClass = equiDisc(data.domain.classVar.name, data)
+        newClass.name = className
+        newDomain = orange.Domain(data.domain.attributes, newClass)
+        data = orange.ExampleTable(newDomain, data)
+    
+    for attr in data.domain.attributes:
+        try:
+            name = attr.name
+            if attr.varType == orange.VarTypes.Continuous:  # if continuous attribute then use entropy discretization
+                if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
+                    attr = entroDisc(attr, data)
+                else:
+                    attr = equiDisc(attr, data)
+            if removeUnusedValues:
+                attr = orange.RemoveUnusedValues(attr, data)
+            attr.name = name
+            discAttrs.append(attr)
+        except:     # if all values are missing, entropy discretization will throw an exception. in such cases ignore the attribute
+            pass
+
+    if className: discAttrs.append(data.domain.classVar)
+    return data.select(discAttrs)
 
 
     
@@ -63,6 +105,8 @@ class orngScaleData:
         self.jitterSize = 10
         self.jitterContinuous = 0
         self.subDataMinMaxDict = {}             # dictionary of tuples. keys are attribute names. values are (min, max) vals for examples in subsetData
+        self.validDataArray = None
+        self.validSubDataArray = None
         
        
     
@@ -106,14 +150,16 @@ class orngScaleData:
         arr = MA.transpose(data.toNumpyMA("ac")[0])
         averages = MA.average(arr, 1)
         averages = MA.filled(averages, 1)   # replace missing values with 1
-        self.validDataArray = numpy.array(1-arr.mask, numpy.int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
         self.averages = averages.tolist()
+        self.validDataArray = numpy.array(1-arr.mask, numpy.int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
+        arr = numpy.array(MA.filled(arr, -99999999))
 ##        arr = numpy.array(MA.filled(arr, averages))
-        arr2 = numpy.zeros(arr.shape)
-        for i in range(arr.shape[0]):
-            arr2[i] = MA.filled(arr[i], averages[i])
-        self.originalData = arr2.copy()
-        arr = arr2
+##        arr2 = numpy.zeros(arr.shape)
+##        for i in range(arr.shape[0]):
+##            arr2[i] = MA.filled(arr[i], averages[i])
+##        self.originalData = arr2.copy()
+##        arr = arr2
+        self.originalData = arr.copy()
         self.scaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
         self.noJitteringScaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
 
@@ -137,7 +183,7 @@ class orngScaleData:
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
                 self.offsets.append(0.0)
                 self.normalizers.append(count-1)
-                self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(numpy.random.random(len(data)) - 0.5)
+                self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*max(1,count)))*(numpy.random.random(len(data)) - 0.5)
             else:
                 if self.scalingByVariance:
                     self.offsets.append(self.domainDataStat[index].avg)
@@ -172,6 +218,12 @@ class orngScaleData:
         
     def setSubsetData(self, subData):
         self.subsetData = subData
+        self.validSubDataArray = []
+
+        # create a  valid data array
+        arr = MA.transpose(subData.toNumpyMA("ac")[0])
+        self.validSubDataArray = numpy.array(1-arr.mask, numpy.int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
+
         self.subDataMinMaxDict = {}
         if not subData or not self.rawdata or subData.domain != self.rawdata.domain:
             return
@@ -317,10 +369,21 @@ class orngScaleData:
         arr = numpy.add.reduce(selectedArray)
         return numpy.equal(arr, len(indices))
 
+    # get array of 0 and 1 of len = len(self.subsetData). if there is a missing value at any attribute in indices return 0 for that example
+    def getValidSubList(self, indices):
+        selectedArray = numpy.take(self.validSubDataArray, indices, axis = 0)
+        arr = numpy.add.reduce(selectedArray)
+        return numpy.equal(arr, len(indices))
+
     # get array with numbers that represent the example indices that have a valid data value
     def getValidIndices(self, indices):
         validList = self.getValidList(indices)
-        return numpy.nonzero(validList)
+        return numpy.nonzero(validList)[0]
+
+    # get array with numbers that represent the example indices that have a valid data value
+    def getValidSubIndices(self, indices):
+        validList = self.getValidSubList(indices)
+        return numpy.nonzero(validList)[0]
         
     # returns a number from -max to max
     def rndCorrection(self, max):
