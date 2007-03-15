@@ -7,7 +7,9 @@
 <index name="classifiers+support vector machines">
 <index name="modules/support vector machines">
 
-<p>orngSVM provides accsess to orange Support Vector Machine functionality</p>
+<p>orngSVM provides accsess to orange Support Vector Machine functionality.</p>
+<p>Important!!! On some datasets this learner can perform very badly. It is a known fact that SVM's can be very sensitive to the proper choice of the parameters. If you are having problems with
+learner's accuracy try scaling the data and using the <code>parameter_selection</code> function or choose an easier approach and use the <code>SVMLearnerEasy</code> function whitch does this automatically.</p>
 <h2>SVMLearner</h2>
 <p><INDEX name="classes/SVMLearner (in orngSVM)">SVMLearner is a function that constructs a SVMLearner class and optionaly trains it on provided examples</p>
 <p class=section >Arguments</p>
@@ -41,7 +43,7 @@
 </dl>
 
 <h2>SVMLearnerEasy</h2>
-<p>Same as above except that it will automaticaly scale the data and perform parameter optimization using the <code>parameter_selection</code> (see bellow) similar to the easy.py script 
+<p><INDEX name="classes/SVMLearner (in orngSVM)">Same as above except that it will automaticaly scale the data and perform parameter optimization using the <code>parameter_selection</code> similar to the easy.py script 
 in libSVM package. Use this if the <code>SVMLearner</code> performs badly. </p> 
 
 <h2>parameterSelection</h2>
