@@ -44,16 +44,75 @@ class OWWidget(OWBaseWidget):
             self.reportButton = QPushButton("&Report", self.buttonBackground)
             self.connect(self.reportButton, SIGNAL("clicked()"), self.sendReport)
 
+        self.widgetStatusArea = QHBox(self)
+        self.widgetStatusArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
+        self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
+        self.statusBar = QStatusBar(self.widgetStatusArea)
+        self.statusBar.setSizeGripEnabled(0)
+        self.statusBarIconArea = QHBox(self.statusBar)
+        self.statusBarTextArea = QLabel("", self.statusBar)
+        self.statusBarTextArea.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+##        self.statusBarIconArea.setMinimumSize(16*3,16)
+##        self.statusBarIconArea.setMaximumSize(16*3,16)
+        self.statusBar.addWidget(self.statusBarIconArea, 0)
+        self.statusBar.addWidget(self.statusBarTextArea, 1)
+        self.statusBarIconArea.setMinimumSize(16*3,16)
+        self.statusBarIconArea.setMaximumSize(16*3,16)
+        
+        # create pixmaps used in statusbar to show info, warning and error messages
+        self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-blue.png")
+        self._warningWidget, self._warningPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
+        self._errorWidget, self._errorPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-red.png")
+##        spacer = QWidget(self.statusBarIconArea)
+##        spacer.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
 
-        if wantStatusBar:
-            self.widgetStatusArea = QHBox(self)
-            self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
-            self.statusBar = QStatusBar(self.widgetStatusArea, )
-            self.statusBar.setSizeGripEnabled(0)
-            self.widgetStatusArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
-            #self.statusBar.hide()
+        if wantStatusBar == 0:
+            self.widgetStatusArea.hide()
         
         self.resize(640,480)
+
+    def createPixmapWidget(self, parent, iconName):
+        w = QWidget(parent)
+        w.setMinimumSize(16,16)
+        w.setMaximumSize(16,16)
+        if os.path.exists(iconName):
+            pix = QPixmap(iconName)
+        else:
+            pix = None
+            
+        return w, pix
+
+    def setState(self, stateType, id, text):
+        if type(id) == str:
+            text = id; id = 0
+        exState = self.widgetState[stateType].has_key(id)
+        OWBaseWidget.setState(self, stateType, id, text)
+
+        for state, widget, icon, use in [("Info", self._infoWidget, self._infoPixmap, self._owInfo), ("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
+            if use and self.widgetState[state] != {}:
+                widget.setBackgroundPixmap(icon)
+                tooltip = reduce(lambda x,y: x+'\n'+y, self.widgetState[state].values())
+                QToolTip.add(widget, tooltip)
+            else:
+                widget.setBackgroundPixmap(QPixmap())
+                QToolTip.remove(widget)
+        
+        if (stateType == "Info" and self._owInfo) or (stateType == "Warning" and self._owWarning) or (stateType == "Error" and self._owError):
+            if text:
+                self.setStatusBarText(stateType + ": " + text)
+            elif exState:
+                self.setStatusBarText("")
+
+    def setStatusBarVisible(self, visible):
+        if visible:
+            self.widgetStatusArea.show()
+        else:
+            self.widgetStatusArea.hide()
+        self.setState("Info", -9999, "")
+
+    def setStatusBarText(self, text):
+        self.statusBarTextArea.setText("  " + text)
+        qApp.processEvents()        
 
     def startReport(self, name, needDirectory = False):
         if self.reportData:
