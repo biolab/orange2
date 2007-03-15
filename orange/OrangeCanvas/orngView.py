@@ -42,6 +42,7 @@ class SchemaView(QCanvasView):
 
         self.linePopup = QPopupMenu(self, "Link")
         self.menupopupLinkEnabledID = self.linePopup.insertItem( "Enabled",  self.toggleEnabledLink)
+        self.linePopup.insertItem( "Resend Signals",  self.resendSignals)
         self.linePopup.insertSeparator()
         self.linePopup.insertItem( "Reset Signals",  self.resetLineSignals)
         self.linePopup.insertItem( "Remove",  self.deleteSelectedLine)
@@ -99,9 +100,9 @@ class SchemaView(QCanvasView):
     # popMenuAction - enable/disable link between two widgets
     def toggleEnabledLink(self):
         if self.selectedLine != None:
-            oldEnabled = self.doc.signalManager.getLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance)
-            self.doc.signalManager.setLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance, not oldEnabled)
-            self.selectedLine.setEnabled(not oldEnabled)
+            newState = not self.doc.signalManager.getLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance)
+            self.doc.signalManager.setLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance, newState)
+            self.selectedLine.setEnabled(newState)
             self.selectedLine.repaintLine(self)
             self.selectedLine.inWidget.updateTooltip()
             self.selectedLine.outWidget.updateTooltip()
@@ -120,7 +121,11 @@ class SchemaView(QCanvasView):
     def deleteLine(self, line):
         if line != None:
             self.doc.removeLine1(line)
-      
+
+    # resend signals between two widgets. receiving widget will process the received data
+    def resendSignals(self):
+        if self.selectedLine != None:
+            self.doc.signalManager.setLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance, newState)
 
     def resetLineSignals(self):
         if self.selectedLine:
