@@ -12,6 +12,13 @@ from qttable import *
 #from orngSignalManager import ExampleTable, ExampleTableWithClass
 #from orngSignalManager import *
 
+def indentedCheckBox(text, parent):
+    b = QHBox(parent)
+    sep = QWidget(b)
+    sep.setFixedSize(10, 10)
+    return QCheckBox(text, b)
+    
+
 class QCanvasIcon(QCanvasRectangle):
     def __init__(self, canvas, fileName):
         QCanvasRectangle.__init__(self,canvas)
@@ -257,14 +264,15 @@ class SignalDialog(QDialog):
         Layout1.setSpacing(6)
         Layout1.setMargin(0)
 
-        self.buttonHelp = QPushButton("&Help", LayoutWidget)
-        self.buttonHelp.setAutoDefault(1)
-        Layout1.addWidget(self.buttonHelp)
-        spacer = QSpacerItem(20,20,QSizePolicy.Expanding,QSizePolicy.Minimum)
-        Layout1.addItem(spacer)
-
+        #self.buttonHelp = QPushButton("&Help", LayoutWidget)
+        #self.buttonHelp.setAutoDefault(1)
+        #Layout1.addWidget(self.buttonHelp)
+        
         self.buttonClearAll = QPushButton("Clear &All", LayoutWidget)
         Layout1.addWidget(self.buttonClearAll)
+
+        spacer = QSpacerItem(20,20,QSizePolicy.Expanding,QSizePolicy.Minimum)
+        Layout1.addItem(spacer)
 
         self.buttonOk = QPushButton("&OK", LayoutWidget)
         self.buttonOk.setAutoDefault(1)
@@ -457,15 +465,15 @@ class CanvasOptionsDlg(QDialog):
         self.setCaption("Qt Canvas Options")
         #self.controlArea = QVBoxLayout (self)
         self.topLayout = QVBoxLayout( self, 10 )
-        self.resize(500,500)
+        self.resize(500,450)
 
         self.tabs = QTabWidget(self, 'tabWidget')
         GeneralTab = QVGroupBox(self.tabs)
         ExceptionsTab = QVGroupBox(self.tabs)
         TabOrderTab = QVGroupBox(self.tabs)
         self.tabs.insertTab(GeneralTab, "General")
-        self.tabs.insertTab(ExceptionsTab, "Exception handling")
-        self.tabs.insertTab(TabOrderTab, "Widget tab order")
+        self.tabs.insertTab(ExceptionsTab, "Output Handling")
+        self.tabs.insertTab(TabOrderTab, "Widget Tab Order")
 
         # #################################################################
         # GENERAL TAB
@@ -475,10 +483,10 @@ class CanvasOptionsDlg(QDialog):
         self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", generalBox)
         self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", generalBox)
         self.showSignalNamesCB = QCheckBox("Show signal names between widgets", generalBox)
-        self.verboseCB = QCheckBox("Print extra messages to output (Verbose mode)", generalBox)
         self.dontAskBeforeCloseCB= QCheckBox("Don't ask to save schema before closing", generalBox)
         self.autoSaveSchemasOnCloseCB = QCheckBox("Automatically save temporary schemas on close", generalBox)
         self.saveWidgetsPositionCB = QCheckBox("Save size and position of widgets", generalBox)
+        self.useContextsCB = QCheckBox("Use context settings", generalBox)
 ##        hb = QHBox(generalBox)
 ##        sep = QWidget(hb)
 ##        sep.setFixedWidth(30)
@@ -527,18 +535,54 @@ class CanvasOptionsDlg(QDialog):
         self.focusOnCatchOutputCB = QCheckBox('Focus output window on system output', output)
         self.printOutputInStatusBarCB = QCheckBox('Print last system output in status bar', output)
 
-        # tab order options
+        hbox = QHBox(ExceptionsTab)
+        hbox.layout().setSpacing(5)
+        outputCanvas = QVGroupBox("Canvas Info Handling", hbox)
+        outputWidgets = QVGroupBox("Widget Info Handling", hbox)
+        self.ocShow = QCheckBox('Show icon above widget for...', outputCanvas)
+        self.ocInfo = indentedCheckBox('Information', outputCanvas)
+        self.ocWarning = indentedCheckBox('Warnings', outputCanvas)
+        self.ocError = indentedCheckBox('Errors', outputCanvas)
+
+        self.owShow = QCheckBox('Show statusbar info for...', outputWidgets)
+        self.owInfo = indentedCheckBox('Information', outputWidgets)
+        self.owWarning = indentedCheckBox('Warnings', outputWidgets)
+        self.owError = indentedCheckBox('Errors', outputWidgets)
+
+        verbosity = QHGroupBox("Verbosity", ExceptionsTab)
+        QLabel("Set level of widget output: ", verbosity)
+        self.verbosityCombo = QComboBox(verbosity)
+        self.verbosityCombo.insertItem("Small")
+        self.verbosityCombo.insertItem("Medium")
+        self.verbosityCombo.insertItem("High")
+
+        # #################################################################
+        # WIDGET TAB ORDER 
         caption = QLabel("Set order of widget categories", TabOrderTab)
-        self.tabOrderList = QListBox(TabOrderTab)
+        hbox1 = QHBox(TabOrderTab)
+        hbox1.layout().setSpacing(5)
+        self.tabOrderList = QListBox(hbox1)
         self.tabOrderList.setSelectionMode(QListBox.Single)
-        hbox2 = QHBox(TabOrderTab)
+        hbox2 = QVBox(hbox1)
+        hbox2.layout().setSpacing(5)
         self.upButton = QPushButton("Up", hbox2)
         self.downButton = QPushButton("Down", hbox2)
+        self.upButton.setMaximumWidth(60)
+        self.downButton.setMaximumWidth(60)
+        sep = QWidget(hbox2)
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred))
         self.connect(self.upButton, SIGNAL("clicked()"), self.moveUp)
         self.connect(self.downButton, SIGNAL("clicked()"), self.moveDown)
 
         # OK, Cancel buttons
+        
         hbox = QHBox(self)
+        if hbox.layout():
+            hbox.layout().setSpacing(6)
+            hbox.layout().setMargin(0)
+        sep = QWidget(hbox)
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
+        
         self.okButton = QPushButton("OK", hbox)
         self.cancelButton = QPushButton("Cancel", hbox)
 
@@ -670,6 +714,10 @@ class WidgetRegistryDlg(QDialog):
 
         # OK, Cancel buttons
         hbox = QHBox(self)
+        if hbox.layout():
+            hbox.layout().setSpacing(6)
+            hbox.layout().setMargin(0)
+            
         sep = QWidget(hbox)
         sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
         

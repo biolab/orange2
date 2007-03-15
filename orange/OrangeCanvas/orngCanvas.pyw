@@ -5,7 +5,7 @@
 from qt import *
 import sys, os, cPickle
 import orngTabs, orngDoc, orngDlgs, orngOutput, xmlParse
-import user, orngMisc
+import user
 
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self,*args):
@@ -158,6 +158,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
         self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
         self.output.setWriteLogFile(self.settings["writeLogFile"])
+        self.output.setVerbosity(self.settings["outputVerbosity"])
         
         self.show()
         
@@ -201,7 +202,8 @@ class OrangeCanvasDlg(QMainWindow):
         else:
             widgetTabList = ["Data", "Classify", "Evaluate", "Visualize", "Associate", "Genomics", "Other"]
             
-        for tab in widgetTabList: self.tabs.insertWidgetTab(tab)
+        for tab in widgetTabList:
+            self.tabs.insertWidgetTab(tab)
                 
         # read widget registry file and create tab with buttons
         self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
@@ -237,35 +239,35 @@ class OrangeCanvasDlg(QMainWindow):
         #self.menuFile.insertItem( "New from wizard",  self.menuItemNewWizard)
         self.menuFile.insertItem(QIconSet(QPixmap(self.file_open)), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
         if os.path.exists(os.path.join(self.canvasDir, "_lastSchema.ows")):
-            self.menuFile.insertItem("Open Last Schema", self.menuItemOpenLastSchema)
-        self.menuFile.insertItem( "&Close", self.menuItemClose )
+            self.menuFile.insertItem("&Reload Last Schema", self.menuItemOpenLastSchema, Qt.CTRL + Qt.Key_R)
+        self.menuFile.insertItem( "Close", self.menuItemClose )
         self.menuFile.insertSeparator()
         self.menuSaveID = self.menuFile.insertItem(QIconSet(QPixmap(self.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
-        self.menuSaveAsID = self.menuFile.insertItem( "Save &As...", self.menuItemSaveAs)
-        self.menuFile.insertItem( "&Save as Application (Tabs)...", self.menuItemSaveAsAppTabs)
-        self.menuFile.insertItem( "&Save as Application (Buttons)...", self.menuItemSaveAsAppButtons)
+        self.menuSaveAsID = self.menuFile.insertItem( "Save As...", self.menuItemSaveAs)
+        self.menuFile.insertItem( "Save as Application (Tabs)...", self.menuItemSaveAsAppTabs)
+        self.menuFile.insertItem( "Save as Application (Buttons)...", self.menuItemSaveAsAppButtons)
         self.menuFile.insertSeparator()
-        self.menuFile.insertItem(QIconSet(QPixmap(self.file_print)), "&Print Schema / Save image", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
+        self.menuFile.insertItem(QIconSet(QPixmap(self.file_print)), "Print Schema / Save image", self.menuItemPrinter)
         self.menuFile.insertSeparator()
         self.menuFile.insertItem( "&Recent Files", self.menuRecent)
         self.menuFile.insertSeparator()
         #self.menuFile.insertItem( "E&xit",  qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
-        self.menuFile.insertItem( "E&xit",  self.close, Qt.CTRL+Qt.Key_Q )
+        self.menuFile.insertItem( "Exit",  self.close, Qt.CTRL+Qt.Key_Q )
 
-        self.menuEdit = QPopupMenu( self )
-        self.menuEdit.insertItem( "Cu&t",  self.menuItemCut, Qt.CTRL+Qt.Key_X )
-        self.menuEdit.insertItem( "&Copy",  self.menuItemCopy, Qt.CTRL+Qt.Key_C )
-        self.menuEdit.insertItem( "&Paste",  self.menuItemPaste, Qt.CTRL+Qt.Key_V )
-        self.menuFile.insertSeparator()
-        self.menuEdit.insertItem( "Select &All",  self.menuItemSelectAll, Qt.CTRL+Qt.Key_A )
+##        self.menuEdit = QPopupMenu( self )
+##        self.menuEdit.insertItem( "Cu&t",  self.menuItemCut, Qt.CTRL+Qt.Key_X )
+##        self.menuEdit.insertItem( "&Copy",  self.menuItemCopy, Qt.CTRL+Qt.Key_C )
+##        self.menuEdit.insertItem( "&Paste",  self.menuItemPaste, Qt.CTRL+Qt.Key_V )
+##        self.menuFile.insertSeparator()
+##        self.menuEdit.insertItem( "Select &All",  self.menuItemSelectAll, Qt.CTRL+Qt.Key_A )
 
         self.menuOptions = QPopupMenu( self )
         #self.menuOptions.insertItem( "Grid",  self.menuItemGrid )
         #self.menuOptions.insertSeparator()
         #self.menuOptions.insertItem( "Show Grid",  self.menuItemShowGrid)
 
-        self.menuOptions.insertItem( "Enable All Links",  self.menuItemEnableAll, Qt.CTRL+Qt.Key_E)
-        self.menuOptions.insertItem( "Disable All Links",  self.menuItemDisableAll, Qt.CTRL+Qt.Key_D)
+        self.menuOptions.insertItem( "&Enable All Links",  self.menuItemEnableAll, Qt.CTRL+Qt.Key_E)
+        self.menuOptions.insertItem( "&Disable All Links",  self.menuItemDisableAll, Qt.CTRL+Qt.Key_D)
         self.menuOptions.insertItem( "Clear Scheme",  self.menuItemClearWidgets)
 
         # uncomment this only for debugging
@@ -328,7 +330,6 @@ class OrangeCanvasDlg(QMainWindow):
         #self.menuHelp.insertSeparator()
         #self.menuHelp.insertItem("About Orange Canvas", self.menuHelpAbout)
         
-
         self.menuBar = QMenuBar( self ) 
         self.menuBar.insertItem( "&File", self.menuFile )
         #self.menuBar.insertItem( "&Edit", self.menuEdit )
@@ -661,23 +662,30 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.snapToGridCB.setChecked(self.snapToGrid)
         dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
-        dlg.verboseCB.setChecked(self.settings["verbose"])
         dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
         dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
         dlg.saveWidgetsPositionCB.setChecked(self.settings["saveWidgetsPosition"])
+        dlg.useContextsCB.setChecked(self.settings["useContexts"])
 ##        dlg.autoLoadSchemasOnStartCB.setChecked(self.settings["autoLoadSchemasOnStart"])
-
-        # set current exception settings
-        #dlg.catchExceptionCB.setChecked(self.settings["catchException"])
-        dlg.focusOnCatchExceptionCB.setChecked(self.settings["focusOnCatchException"])
-        dlg.printExceptionInStatusBarCB.setChecked(self.settings["printExceptionInStatusBar"])
         dlg.showSignalNamesCB.setChecked(self.settings["showSignalNames"])
-        #dlg.catchOutputCB.setChecked(self.settings["catchOutput"])
-        dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
-        dlg.printOutputInStatusBarCB.setChecked(self.settings["printOutputInStatusBar"])
-
+        
         dlg.heightEdit.setText(str(self.settings.get("canvasHeight", 600)))
         dlg.widthEdit.setText(str(self.settings.get("canvasWidth", 700)))
+
+        # exception tab
+        dlg.focusOnCatchExceptionCB.setChecked(self.settings["focusOnCatchException"])
+        dlg.printExceptionInStatusBarCB.setChecked(self.settings["printExceptionInStatusBar"])
+        dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
+        dlg.printOutputInStatusBarCB.setChecked(self.settings["printOutputInStatusBar"])
+        dlg.verbosityCombo.setCurrentItem(self.settings["outputVerbosity"])
+        dlg.ocShow.setChecked(self.settings["ocShow"])
+        dlg.ocInfo.setChecked(self.settings["ocInfo"])
+        dlg.ocWarning.setChecked(self.settings["ocWarning"])
+        dlg.ocError.setChecked(self.settings["ocError"])
+        dlg.owShow.setChecked(self.settings["owShow"])
+        dlg.owInfo.setChecked(self.settings["owInfo"])
+        dlg.owWarning.setChecked(self.settings["owWarning"])
+        dlg.owError.setChecked(self.settings["owError"])
 
         # fill categories tab list
         oldTabList = []
@@ -708,25 +716,43 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["focusOnCatchException"] = dlg.focusOnCatchExceptionCB.isChecked()
             self.settings["focusOnCatchOutput"] = dlg.focusOnCatchOutputCB.isChecked()
             self.settings["printOutputInStatusBar"] = dlg.printOutputInStatusBarCB.isChecked()
+            self.settings["outputVerbosity"] = dlg.verbosityCombo.currentItem()
+            self.settings["ocShow"] = dlg.ocShow.isChecked()
+            self.settings["ocInfo"] = dlg.ocInfo.isChecked()
+            self.settings["ocWarning"] = dlg.ocWarning.isChecked()
+            self.settings["ocError"] = dlg.ocError.isChecked()
+            self.settings["owShow"] = dlg.owShow.isChecked()
+            self.settings["owInfo"] = dlg.owInfo.isChecked()
+            self.settings["owWarning"] = dlg.owWarning.isChecked()
+            self.settings["owError"] = dlg.owError.isChecked()
+                        
             self.settings["writeLogFile"] = dlg.writeLogFileCB.isChecked()
             self.settings["canvasHeight"] = int(str(dlg.heightEdit.text()))
             self.settings["canvasWidth"] =  int(str(dlg.widthEdit.text()))
             self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
-            self.settings["verbose"] = dlg.verboseCB.isChecked()
             self.settings["dontAskBeforeClose"] = dlg.dontAskBeforeCloseCB.isChecked()
             self.settings["autoSaveSchemasOnClose"] = dlg.autoSaveSchemasOnCloseCB.isChecked()
             self.settings["saveWidgetsPosition"] = dlg.saveWidgetsPositionCB.isChecked()
+            self.settings["useContexts"] = dlg.useContextsCB.isChecked()
 ##            self.settings["autoLoadSchemasOnStart"] = dlg.autoLoadSchemasOnStartCB.isChecked()
             
             self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
             self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
             self.settings["lineColor"]           = (dlg.lineIcon.color.red(), dlg.lineIcon.color.green(), dlg.lineIcon.color.blue())
 
-            orngMisc.verbose = int(self.settings["verbose"])
-
             self.widgetSelectedColor = dlg.selectedWidgetIcon.color
             self.widgetActiveColor   = dlg.activeWidgetIcon.color
             self.lineColor           = dlg.lineIcon.color
+
+            # update settings in widgets in current documents
+            for win in self.workspace.getDocumentList():
+                for widget in win.widgets:
+                    widget.updateSettings()
+                    widget.instance._useContexts = self.settings["useContexts"]
+                    widget.instance._owInfo      = self.settings["owInfo"]
+                    widget.instance._owWarning   = self.settings["owWarning"]
+                    widget.instance._owError     = self.settings["owError"] 
+                    widget.instance.setStatusBarVisible(self.settings["owShow"])
 
             for win in self.workspace.getDocumentList():
                 win.canvasView.repaint()
@@ -745,6 +771,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.output.setFocusOnException(self.settings["focusOnCatchException"])
             self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
             self.output.setWriteLogFile(self.settings["writeLogFile"])
+            self.output.setVerbosity(self.settings["outputVerbosity"])
 
             # save tab order settings
             newTabList = []
@@ -795,22 +822,30 @@ class OrangeCanvasDlg(QMainWindow):
 
         #if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
         #if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
+        
+        self.settings.setdefault("saveSchemaDir", self.outputDir)
+        self.settings.setdefault("saveApplicationDir", self.outputDir)
+        self.settings.setdefault("showSignalNames", 1)
+        self.settings.setdefault("useContexts", 1)
+
+        self.settings.setdefault("canvasWidth", 700)
+        self.settings.setdefault("canvasHeight", 600)
+        
         self.settings.setdefault("focusOnCatchException", 1)
         self.settings.setdefault("focusOnCatchOutput" , 0)
         self.settings.setdefault("printOutputInStatusBar", 1)
         self.settings.setdefault("printExceptionInStatusBar", 1)
-        self.settings.setdefault("saveSchemaDir", self.outputDir)
-        self.settings.setdefault("saveApplicationDir", self.outputDir)
-        self.settings.setdefault("verbose", 0)
+        self.settings.setdefault("outputVerbosity", 0)
+        self.settings.setdefault("ocShow", 1)
+        self.settings.setdefault("owShow", 0)
+        self.settings.setdefault("ocInfo", 1)
+        self.settings.setdefault("owInfo", 1)
+        self.settings.setdefault("ocWarning", 1)
+        self.settings.setdefault("owWarning", 1)
+        self.settings.setdefault("ocError", 1)
+        self.settings.setdefault("owError", 1)
 
-        self.settings.setdefault("canvasWidth", 700)
-        self.settings.setdefault("canvasHeight", 600)
-
-	self.settings.setdefault("showSignalNames", 1)
-        
-        orngMisc.verbose = self.settings["verbose"]
                 
-
     # Saves settings to this widget's .ini file
     def saveSettings(self):
         filename = os.path.join(self.outputDir, "orngCanvas.ini")
