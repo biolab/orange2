@@ -238,9 +238,9 @@ class OWInteractionGraph(OWWidget):
         self.information(0)
         self.information(1)
         if len(self.originalData) != len(data):
-            self.information("Examples with missing values were removed. Keeping %d of %d examples." % (len(data), len(self.originalData)), 0)
+            self.information(0, "Examples with missing values were removed. Keeping %d of %d examples." % (len(data), len(self.originalData)))
         if self.originalData.domain.hasContinuousAttributes():
-            self.information("Continuous attributes were discretized using entropy discretization.", 1)
+            self.information(1, "Continuous attributes were discretized using entropy discretization.")
 
         self.dataSize = len(self.originalData)
 
