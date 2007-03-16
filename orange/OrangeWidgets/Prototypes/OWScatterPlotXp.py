@@ -28,10 +28,10 @@ class OWScatterPlotXp(OWWidget):
                     "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols", "graph.showProbabilities",
                     "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
                     "clusterClassifierName", "learnerIndex", "colorSettings", "VizRankLearnerName", "showProbabilitiesDetails",
-                    "graph.showBoundaries", "graph.showUnexplored", "graph.showUnevenlySampled", "graph.showTriangulation"]
+                    "graph.showBoundaries", "graph.boundaryNeighbours", "graph.showUnexplored", "graph.showUnevenlySampled", "graph.showTriangulation"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
-    contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY", (["attrLabel", "attrShape", "attrSize"], DomainContextHandler.Optional)])}
+    contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY", (["attrLabel", "attrShape", "attrSize", "attrBrighten"], DomainContextHandler.Optional)])}
     
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
@@ -92,6 +92,8 @@ class OWScatterPlotXp(OWWidget):
         box = OWGUI.widgetBox(self.GeneralTab, " Color Attribute")
         OWGUI.checkBox(box, self, 'showColorLegend', 'Show color legend', callback = self.updateGraph)
         self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One color)")
+        self.attrBrighten = ""
+        self.attrBrightenCombo = OWGUI.comboBox(OWGUI.indentedBox(box), self, "attrBrighten", label="Brighten by", orientation = 1, callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(No brightening)")
         
         # labelling
         self.attrLabel = ""
@@ -187,6 +189,7 @@ class OWScatterPlotXp(OWWidget):
         
         box = OWGUI.widgetBox(self.XPeroTab, "Critical areas")
         OWGUI.checkBox(box, self, "graph.showBoundaries", "Show boundary regions", callback = self.updateGraph)
+        OWGUI.checkBox(OWGUI.indentedBox(box), self, "graph.boundaryNeighbours", "Extend to neighbours", callback = self.updateGraph)
         OWGUI.checkBox(box, self, "graph.showUnexplored", "Show undersampled regions", callback = self.updateGraph)
         OWGUI.checkBox(box, self, "graph.showUnevenlySampled", "Show unevenly sampled regions", callback = self.updateGraph)
         
@@ -368,6 +371,7 @@ class OWScatterPlotXp(OWWidget):
         self.attrXCombo.clear()
         self.attrYCombo.clear()
         self.attrColorCombo.clear()
+        self.attrBrightenCombo.clear()
         self.attrLabelCombo.clear()
         self.attrShapeCombo.clear()
         self.attrSizeCombo.clear()
@@ -375,6 +379,7 @@ class OWScatterPlotXp(OWWidget):
         if self.data == None: return
 
         self.attrColorCombo.insertItem("(One color)")
+        self.attrBrightenCombo.insertItem("(No brightening)")
         self.attrLabelCombo.insertItem("(No labels)")
         self.attrShapeCombo.insertItem("(One shape)")
         self.attrSizeCombo.insertItem("(One size)")
@@ -390,7 +395,10 @@ class OWScatterPlotXp(OWWidget):
             self.attrYCombo.insertItem(self.icons[attr.varType], attr.name)
             self.attrColorCombo.insertItem(self.icons[attr.varType], attr.name)
             self.attrSizeCombo.insertItem(self.icons[attr.varType], attr.name)
-            if attr.varType == orange.VarTypes.Discrete: self.attrShapeCombo.insertItem(self.icons[attr.varType], attr.name)
+            if attr.varType == orange.VarTypes.Discrete:
+                self.attrShapeCombo.insertItem(self.icons[attr.varType], attr.name)
+            elif attr.varType == orange.VarTypes.Continuous:
+                self.attrBrightenCombo.insertItem(self.icons[attr.varType], attr.name)
             self.attrLabelCombo.insertItem(self.icons[attr.varType], attr.name)
 
         self.attrX = str(self.attrXCombo.text(0))
@@ -401,6 +409,7 @@ class OWScatterPlotXp(OWWidget):
             self.attrColor = self.data.domain.classVar.name
         else:
             self.attrColor = ""
+        self.attrBrighten = ""
         self.attrShape = ""
         self.attrSize= ""
         self.attrLabel = ""
@@ -428,7 +437,7 @@ class OWScatterPlotXp(OWWidget):
         self.graph.insideColors = insideColors or self.classificationResults or kNNExampleAccuracy or self.outlierValues
         self.graph.clusterClosure = clusterClosure
 
-        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.attrLabel)
+        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrBrighten, self.attrShape, self.attrSize, self.showColorLegend, self.attrLabel)
         self.graph.repaint()
 
     

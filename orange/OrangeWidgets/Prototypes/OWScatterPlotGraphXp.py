@@ -55,6 +55,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.showBoundaries = False
         self.showUnexplored = False
         self.showUnevenlySampled = False
+        self.boundaryNeighbours = 1
 
         self.oldShowColorLegend = -1
         self.oldLegendKeys = {}
@@ -65,7 +66,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
     #########################################################
     # update shown data. Set labels, coloring by className ....
-    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, labelAttr = None, **args):
+    def updateData(self, xAttr, yAttr, colorAttr, brightenAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, labelAttr = None, **args):
         self.removeDrawingCurves(removeLegendItems = 0)  # my function, that doesn't delete selection curves
         self.removeMarkers()
         self.tips.removeAll()
@@ -133,6 +134,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             colorIndex = self.attributeNameIndex[colorAttr]
             if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete: colorIndices = getVariableValueIndices(self.rawdata, colorIndex)
             
+        brightenIndex = -1
+        if brightenAttr != "" and brightenAttr != "(One color)":
+            brightenIndex = self.attributeNameIndex[brightenAttr]
+        
         shapeIndex = -1
         shapeIndices = {}
         if shapeAttr != "" and shapeAttr != "(One shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
@@ -178,7 +183,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             triangulation = [triangulation[f] for f in range(facets) if max(vertices[f]) < maxdist]
             vertices = [vert for vert in vertices if max(vert) < maxdist]
             facets = len(triangulation)
-            print "F", facets
 
         if self.showUnexplored:
             surfaces = [(a+b+c) * (a+b-c) * (a-b+c) * (-a+b+c) for a, b, c in vertices]
@@ -194,32 +198,33 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 self.setCurveData(newCurveKey, xD, yD)
             
         if self.showBoundaries:
-            col = QColor(224, 224, 224)
-            for c in triangulation:
-                c = list(c)
-                if self.rawdata[c[0]].getclass() != self.rawdata[c[1]].getclass() or self.rawdata[c[0]].getclass() != self.rawdata[c[2]].getclass():
-                    xD, yD = [xData[i] for i in c+[c[0]]], [yData[i] for i in c+[c[0]]]
-                    curve = PolygonCurve(self, QPen(col), QBrush(col))
-                    newCurveKey = self.insertCurve(curve)
-                    self.setCurveData(newCurveKey, xD, yD)
+            if not self.boundaryNeighbours:
+                col = QColor(192, 192, 192)
+                for c in triangulation:
+                    c = list(c)
+                    if self.rawdata[c[0]].getclass() != self.rawdata[c[1]].getclass() or self.rawdata[c[0]].getclass() != self.rawdata[c[2]].getclass():
+                        xD, yD = [xData[i] for i in c+[c[0]]], [yData[i] for i in c+[c[0]]]
+                        curve = PolygonCurve(self, QPen(col), QBrush(col))
+                        newCurveKey = self.insertCurve(curve)
+                        self.setCurveData(newCurveKey, xD, yD)
 
-#        from sets import Set
-#        if self.showBoundaries:
-#            col = QColor(224, 224, 224)
-#            boundPo = Set()
-#            for c in triangulation:
-#                c = list(c)
-#                if self.rawdata[c[0]].getclass() != self.rawdata[c[1]].getclass() or self.rawdata[c[0]].getclass() != self.rawdata[c[2]].getclass():
-#                    boundPo.add(c[0])
-#                    boundPo.add(c[1])
-#                    boundPo.add(c[2])
-#            for c in triangulation:
-#                c = list(c)
-#                if c[0] in boundPo or c[1] in boundPo or c[2] in boundPo:
-#                    xD, yD = [xData[i] for i in c+[c[0]]], [yData[i] for i in c+[c[0]]]
-#                    curve = PolygonCurve(self, QPen(col), QBrush(col))
-#                    newCurveKey = self.insertCurve(curve)
-#                    self.setCurveData(newCurveKey, xD, yD)
+            else:
+                from sets import Set
+                col = QColor(192, 192, 192)
+                boundPo = Set()
+                for c in triangulation:
+                    c = list(c)
+                    if self.rawdata[c[0]].getclass() != self.rawdata[c[1]].getclass() or self.rawdata[c[0]].getclass() != self.rawdata[c[2]].getclass():
+                        boundPo.add(c[0])
+                        boundPo.add(c[1])
+                        boundPo.add(c[2])
+                for c in triangulation:
+                    c = list(c)
+                    if c[0] in boundPo or c[1] in boundPo or c[2] in boundPo:
+                        xD, yD = [xData[i] for i in c+[c[0]]], [yData[i] for i in c+[c[0]]]
+                        curve = PolygonCurve(self, QPen(col), QBrush(col))
+                        newCurveKey = self.insertCurve(curve)
+                        self.setCurveData(newCurveKey, xD, yD)
                     
             
             
@@ -317,7 +322,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             # ##############################################################
             # create a small number of curves which will make drawing much faster
             # ##############################################################
-            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not haveSubsetData:
+            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not haveSubsetData and brightenIndex == -1:
                 if colorIndex != -1:
                     classCount = len(colorIndices)
                 else: classCount = 1
@@ -371,7 +376,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             # ##############################################################
             else:
                 shownSubsetCount = 0
-                attrs = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
+                attrs = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex, brightenIndex]
                 while -1 in attrs: attrs.remove(-1)
                 validData = self.getValidList(attrs)
                 if self.subsetData:
@@ -388,6 +393,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                             newColor = self.contPalette[self.noJitteringScaledData[colorIndex][i]]
                         else:
                             newColor = self.discPalette[colorIndices[self.rawdata[i][colorIndex].value]]
+                        if brightenIndex != -1:
+                            h, s, v = newColor.hsv()
+                            newColor.setHsv(h, 32 + 221 * self.noJitteringScaledData[brightenIndex][i], v)
                     else: newColor = QColor(0,0,0)
                             
                     Symbol = self.curveSymbols[0]
