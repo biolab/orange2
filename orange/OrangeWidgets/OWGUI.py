@@ -10,7 +10,14 @@ YesNo = NoYes = ("No", "Yes")
 
 import os.path
 
-enter_icon = QPixmap(os.path.dirname(__file__) + "/icons/Dlg_enter.png")
+enter_icon = None
+
+def getEnterIcon():
+    global enter_icon
+    if not enter_icon:
+        enter_icon = QPixmap(os.path.dirname(__file__) + "/icons/Dlg_enter.png")
+    return enter_icon
+
 
 # constructs a box (frame) if not none, and returns the right master widget
 def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
@@ -213,7 +220,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
 def enterButton(parent, height, placeholder = True):
         button = QPushButton(parent)
         button.setFixedSize(height, height)
-        button.setPixmap(enter_icon)
+        button.setPixmap(getEnterIcon())
         if not placeholder:
             return button
 
@@ -301,15 +308,20 @@ def lineEdit(widget, master, value,
     return wa
 
 
-def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None):
+def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None, toggleButton = False, value = ""):
     btn = QPushButton(label, widget)
     if width:
         btn.setFixedWidth(width)
     btn.setDisabled(disabled)
-    if callback:
-        master.connect(btn, SIGNAL("clicked()"), callback)
     if tooltip:
         QToolTip.add(btn, tooltip)
+    
+    if toggleButton:
+        btn.setToggleButton(True)
+
+    if callback:
+        master.connect(btn, SIGNAL("clicked()"), callback)
+        
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
     return btn
@@ -441,13 +453,18 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
     return w
 
 
-def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1):
+def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False):
     if box:
         sliderBox = QHButtonGroup(box, widget)
     else:
         sliderBox = QHBox(widget)
+
+    if vertical:
+        sliderOrient = QSlider.Vertical
+    else:
+        sliderOrient = QSlider.Horizontal
         
-    slider = QSlider(minValue, maxValue, step, master.getdeepattr(value), QSlider.Horizontal, sliderBox)
+    slider = QSlider(minValue, maxValue, step, master.getdeepattr(value), sliderOrient, sliderBox)
     if ticks:
         slider.setTickmarks(QSlider.Below)
         slider.setTickInterval(ticks)
@@ -912,7 +929,6 @@ class ListBoxCallback:
 
             self.widget.__setattr__(self.control.ogValue, clist)
 
-
         
 ##############################################################################
 # call fronts (through this a change of the attribute value changes the related control)
@@ -956,10 +972,10 @@ class CallFront_checkBox(ControlledCallFront):
             self.control.setChecked(value)
 
 
-class CallFront_toggleButton(ControlledCallFront):
+class CallFront_checkBox(ControlledCallFront):
     def action(self, value):
         if value != None:
-            self.control.setOn(value)
+            self.control.setChecked(value)
 
 
 class CallFront_comboBox(ControlledCallFront):
