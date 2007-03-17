@@ -170,7 +170,7 @@ class OWSimon(OWWidget):
         self.yTrace.append(robot.y)
         self.log.append([len(self.log),
                          robot.speed_left, robot.speed_right,
-                         ((robot.speed_left + robot.speed_right) / 2), (robot.speed_left - robot.speed_right),
+                         ((robot.speed_left + robot.speed_right) / 2.), (robot.speed_left - robot.speed_right),
                          robot.x, robot.y, robot.orientation/pi*180,
                          robot.ball_distance, robot.ball_angle/pi*180, robot.ball_area])
                       
