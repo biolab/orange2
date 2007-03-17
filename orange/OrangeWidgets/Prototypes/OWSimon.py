@@ -88,13 +88,13 @@ class Robot(object):
 
         
 class OWSimon(OWWidget):
-    settingsList=[]
+    settingsList=["logFrequency"]
     callbackDeposit=[]
     
     def __init__(self, parent=None, signalManager=None, name="Simon"):
         OWWidget.__init__(self, parent, signalManager, name)
 
-        #self . inputs=[("Examples", ExampleTable, self.cdata)]
+        self.inputs=[("Examples", ExampleTable, self.cdata)]
         self.outputs=[("Trace", ExampleTable)]
         
         self.loadSettings()
@@ -104,6 +104,7 @@ class OWSimon(OWWidget):
         self.robot = Robot()
         self.robot.ball = ball = Ball()
         self.clearLog()
+        self.data = None
 
         box = OWGUI.widgetBox(self.controlArea, "Settings")
         OWGUI.spin(box, self, "logFrequency", 10, 100, 5, label="Sampling interval ", controlWidth = 40)
@@ -122,16 +123,20 @@ class OWSimon(OWWidget):
         for i, lab in enumerate(tableRows):
             vhead.setLabel(i, lab)
         vhead.setFixedWidth(90)
-
+        
         OWGUI.separator(vbox)
         OWGUI.button(vbox, self, "Clear log", callback=self.clearLog)
         self.startButton = OWGUI.button(vbox, self, "Start", toggleButton = True, callback = self.startStop)
         OWGUI.button(vbox, self, "Send data", callback=self.sendData)
-        self.simulationData.adjustSize()
+#        self.simulationData.adjustSize()
         
+        OWGUI.separator(self.controlArea)
+        self.playbackButton = OWGUI.button(vbox, self, "Playback", toggleButton = True, callback=self.playback)
+        self.playbackButton.setEnabled(False)
+
         self.timer = QTimer(self)
         self.connect(self.timer, SIGNAL("timeout()"), self.moveRobot)
-        
+
         self.circleX = [cos(2*pi*x/360.) for x in range(0, 361, 30)]
         self.circleY = [sin(2*pi*x/360.) for x in range(0, 361, 30)]
         
@@ -161,16 +166,41 @@ class OWSimon(OWWidget):
         if self.startButton.isOn():
             self.logCountdown = self.logFrequency
             self.timer.start(10)
+            self.playbackButton.setEnabled(False)
         else:
             self.timer.stop()
+            self.playbackButton.setEnabled(True)
+            self.sendData()
+
+    def playback(self):
+        if self.playbackButton.isOn():
+            if self.startButton.isOn():
+                self.startButton.setDown(False)
+                self.startStop()
+            self.startButton.setEnabled(False)
+            self.clearLog()
+            self.logCountdown = self.logFrequency
+            self.playPoint = 0
+            ex = self.data[0]
+            self.robot.x, self.robot.y, self.robot.orientation = ex["x"], ex["y"], ex["orientation"]
+            self.robot.speed_left, self.robot.speed_right = ex["speed left"], ex["speed right"]
+            self.timer.start(10)
+        else:
+            self.timer.stop()
+            self.startButton.setEnabled(True)
+            self.sendData()
+        
+    def stopPlayback(self):
+        self.timer.stop()
+        self.startButton.setEnabled(True)
+        self.playbackButton.setDown(False)
+        self.sendData()
+        
 
     def logPoint(self):
         robot = self.robot
-        self.xTrace.append(robot.x)
-        self.yTrace.append(robot.y)
         self.log.append([len(self.log),
                          robot.speed_left, robot.speed_right,
-                         ((robot.speed_left + robot.speed_right) / 2.), (robot.speed_left - robot.speed_right),
                          robot.x, robot.y, robot.orientation/pi*180,
                          robot.ball_distance, robot.ball_angle/pi*180, robot.ball_area])
                       
@@ -180,8 +210,11 @@ class OWSimon(OWWidget):
         self.logPoint()
         
     def sendData(self):
-        domain = orange.Domain([orange.FloatVariable(n) for n in ["time", "speed left", "speed right", "overall speed", "rotation", "x", "y", "orientation", "ball distance", "ball angle", "ball area"]])
-        self.send("Trace", orange.ExampleTable(domain, self.log))
+        domain = orange.Domain([orange.FloatVariable(n) for n in ["time", "speed left", "speed right", "overall speed", "rotation", "x", "y", "orientation", "ball distance", "ball angle", "ball area", "ball distance t+1", "ball angle t+1", "delta ball distance", "delta ball angle"]], None)
+        table = orange.ExampleTable(domain)
+        for i, (time, left, right, x, y, orientation, ball_dist, ball_angle, ball_area) in enumerate(self.log[:-1]):
+            table.append([time, left, right, (left+right)/2., left-right, x, y, orientation, ball_dist, ball_angle, ball_area, self.log[i+1][-3], self.log[i+1][-2], self.log[i+1][-3]-ball_dist, self.log[i+1][-2]-ball_angle])
+        self.send("Trace", table)
         
     def updateBall(self):
         ball = self.robot.ball
@@ -207,7 +240,9 @@ class OWSimon(OWWidget):
         self.simulationData.adjustSize()
         
     def moveRobot(self):
-        self.robot.tick()
+        robot = self.robot
+        
+        robot.tick()
 
         self.updateGraph()
         self.updateData()
@@ -215,8 +250,33 @@ class OWSimon(OWWidget):
         self.logCountdown -= 1
         if not self.logCountdown:
             self.logCountdown = self.logFrequency
-            self.logPoint()
+            self.xTrace.append(robot.x)
+            self.yTrace.append(robot.y)
+            if self.playbackButton.isOn():
+                self.playPoint += 1
+                if self.playPoint < len(self.data):
+                    self.robot.speed_left, self.robot.speed_right = self.data[self.playPoint]["speed left"], self.data[self.playPoint]["speed right"]
+                else:
+                    self.stopPlayback()
+            else:
+                self.logPoint()
 
+
+    def cdata(self, data):
+        self.stopPlayback()
+        self.data = data
+        if self.data:
+            if "speed left" in data.domain and "speed right" in data.domain:
+                self.data = data
+                self.error()
+            else:
+                self.data = None
+                self.error("data does not contain the attributes with wheel speeds")
+        else:
+            self.data = None
+            self.error()
+            
+        self.playbackButton.setEnabled(bool(self.data))
         
     def keyPressEvent(self, e):
         robot = self.robot
