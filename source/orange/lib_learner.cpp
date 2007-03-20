@@ -1037,7 +1037,7 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 
 #include "svm.hpp"
 C_CALL(SVMLearner, Learner, "([examples] -/-> Classifier)")
-BASED_ON(SVMClassifier, Classifier)
+C_NAMED(SVMClassifier, Classifier," ")
 NO_PICKLE(SVMClassifier)
 
 PYCLASSCONSTANT_INT(SVMLearner, C_SVC, 0)
@@ -1084,6 +1084,16 @@ PyObject *KernelFunc_call(PyObject *self, PyObject *args, PyObject *keywords) PY
 	f=SELF_AS(TKernelFunc)(e1.getReference(),e2.getReference());
 	return Py_BuildValue("f", f);
   PyCATCH
+}
+
+PyObject *SVMClassifier_getDecisionValues(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "(Example) -> list of floats")
+{PyTRY
+	PExample example;
+	if (!PyArg_ParseTuple(args, "O&", cc_Example, &example))
+		return NULL;
+	PFloatList f=SELF_AS(TSVMClassifier).getDecisionValues(example.getReference());
+	return WrapOrange(f);
+PyCATCH
 }
 
 
