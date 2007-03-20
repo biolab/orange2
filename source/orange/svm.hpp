@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2000-2005 Chih-Chung Chang and Chih-Jen Lin
+Copyright (c) 2000-2007 Chih-Chung Chang and Chih-Jen Lin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,7 @@ struct svm_problem
 };
 
 enum { C_SVC, NU_SVC, ONE_CLASS, EPSILON_SVR, NU_SVR };	/* svm_type */
-enum { LINEAR, POLY, RBF, SIGMOID, CUSTOM };	/* kernel_type */
+enum { LINEAR, POLY, RBF, SIGMOID, CUSTOM, PRECOMPUTED};	/* kernel_type */
 
 struct svm_parameter
 {
@@ -186,6 +186,7 @@ public:
 
 	PFloatList getDecisionValues(const TExample &);
 
+	PFloatList nSV; //PR nSV
 	PFloatList rho;	//PR rho
 	PFloatListList coef; //PR coef
 	PExampleTable supportVectors; //PR support vectors

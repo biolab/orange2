@@ -3296,16 +3296,21 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 			node++;
 		supportVectors->addExample(mlnew TExample(examples->at(int(node->value))));
 	}
-	/*rho=mlnew TFloatList(nr_class);
+	nSV=mlnew TFloatList(nr_class); // num of SVs for each class (sum = model->l)
 	for(i=0;i<nr_class;i++)
-		rho->at(i)=model->rho[i];
-	coef=mlnew TFloatListList();
-	for(i=0;i<nr_class;i++){
-		TFloatList *l=mlnew TFloatList(model->l);
+		nSV->at(i)=model->nSV[i];
+	//printf("nSV");
+
+	coef=mlnew TFloatListList(nr_class-1);
+	for(i=0;i<nr_class-1;i++){
+		TFloatList *coefs=mlnew TFloatList(model->l);
 		for(int j=0;j<model->l;j++)
-			l->at(j)=model->sv_coef[i][j];
-		coef->push_back(l);
-	}*/
+			coefs->at(j)=model->sv_coef[i][j];
+		coef->at(i)=coefs;
+	}
+	rho=mlnew TFloatList(nr_class*(nr_class-1)/2);
+	for(i=0;i<nr_class*(nr_class-1)/2;i++)
+		rho->at(i)=model->rho[i];
 }
 
 TSVMClassifier::~TSVMClassifier(){
@@ -3372,17 +3377,20 @@ TValue TSVMClassifier::operator()(const TExample & example){
 PFloatList TSVMClassifier::getDecisionValues(const TExample &example){
 	if(!model)
 		raiseError("No Model");
+	//printf("enter getDecisionValues");
 	currentExample=&example;
 	int exlen=example.domain->attributes->size();
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
 	svm_node *x=Malloc(svm_node, exlen+1);
 	example_to_svm(example, x, -1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
-	double *dec= (double*) malloc(sizeof(double)*nr_class*(nr_class-1)/2);
+	int nDecValues=nr_class*(nr_class-1)/2;
+	double *dec= (double*) malloc(sizeof(double)*nDecValues);
 	svm_predict_values(model, x, dec);
-	PFloatList res=mlnew TFloatList(nr_class*(nr_class-1)/2);
-	for(int i=0;i<nr_class*(nr_class-1)/2;i++)
+	PFloatList res=mlnew TFloatList(nDecValues);
+	for(int i=0;i<nDecValues;i++){
 		res->at(i)=dec[i];
+	}
 	free(x);
 	free(dec);
 	return res;
