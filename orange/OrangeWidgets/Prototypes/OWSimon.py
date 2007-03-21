@@ -44,35 +44,49 @@ class Robot(object):
             value = normalizeAngle(value)
         object.__setattr__(self, name, value)#self.__dict__[name] = value
 
+    def outerArea(self, rc, l_in):
+        alpha = acos(l_in/rc)
+        return rc**2 * (alpha - sin(2*alpha)/2)
+    
+    def innerArea(self, rc, l_in):
+        alpha = acos(l_in/rc)
+        return rc**2 * (1/2 * sin(2*alpha) - pi/2 - alpha)
+    
     def computeBallArea(self):
-        r = self.ball.r
-        balldist, ballangle = self.ball_distance, abs(self.ball_angle)
-        half_phi = asin(r / balldist)
-        # half_phi is the perceived angle between the center of the ball and its surface
-        # ballangle is the (unoriented, positive) angle between the ball center and the robot's orientation
-        # self.cameraHalfAngle is a half of the angle of the robots camera
-        
-        totarea = pi * r**2  *  balldist**-2
-        # we see all of it
-        if self.cameraHalfAngle > ballangle + half_phi:
-            return totarea
-        # we don't see it at all
-        if self.cameraHalfAngle < ballangle - half_phi:
+        r, d = self.ball.r, self.ball_distance
+        rc = r * sqrt(1 - r**2/d**2)
+        theta, phi, alpha = self.ball_angle, self.cameraHalfAngle, acos(rc / r)
+        # theta is the robot orientation (if the ball orientation 0);
+        # alpha is the perceived angle between the center of the ball and its surface
+        # phi is half of the angle of the robots camera
+
+        # we don't see the ball
+        if abs(theta) > alpha + phi:
             return 0
-        # we don't see the center
-        elif self.cameraHalfAngle < ballangle:
-            import random
-            return random.random()
-        # we see the center
+
+        dc = rc / tan(alpha)
+        
+        l_cut = -dc * tan(theta + phi)
+        r_cut = -dc * tan(theta - phi)
+        
+        if 0 < l_cut < rc:
+            area = self.outerArea(rc, l_cut)
+        elif -rc < r_cut < 0:
+            area = self.outerArea(rc, -r_cut)
         else:
-            import random
-            return random.random()
+            area = pi * rc**2
+            if -rc < l_cut < 0:
+                area -= self.outerArea(rc, -l_cut)
+            if 0 < r_cut < rc:
+                area -= self.outerArea(rc, r_cut)
+        return 1000 * area / dc**2
+    
         
     def __getattr__(self, name):
         if name == "ball_distance":
             return hypot(self.y - self.ball.y, self.x - self.ball.x)
         elif name == "ball_angle":
-            return normalizeAngle(atan2(self.ball.y - self.y, self.ball.x - self.x) - self.orientation)
+            return normalizeAngle(self.orientation - atan2(self.ball.y - self.y, self.ball.x - self.x))
         elif name == "ball_area":
             return self.computeBallArea()
             
