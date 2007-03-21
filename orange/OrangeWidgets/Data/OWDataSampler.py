@@ -10,12 +10,11 @@ import OWGUI
 import random
 
 class OWDataSampler(OWWidget):
-    
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'SampleData')
         
-        self.inputs = [("Data", ExampleTable, self.cdata)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Remaining Examples", ExampleTable), ("Remaining Classified Examples", ExampleTableWithClass)]
+        self.inputs = [("Data", ExampleTable, self.setData)]
+        self.outputs = [("Examples", ExampleTable), ("Remaining Examples", ExampleTable)]
 
         # initialization of variables
         self.data = None                        # dataset (incoming stream)
@@ -168,7 +167,7 @@ class OWDataSampler(OWWidget):
 
     # I/O STREAM ROUTINES
     # handles changes of input stream
-    def cdata(self, dataset):
+    def setData(self, dataset):
         if dataset:
             self.infoa.setText('%d instances in input data set.' % len(dataset))
             self.data = dataset
@@ -179,8 +178,6 @@ class OWDataSampler(OWWidget):
             self.infoc.setText('')
             self.send("Examples", None)
             self.send("Remaining Examples", None)
-            self.send("Classified Examples", None)
-            self.send("Remaining Classified Examples", None)
             self.data = None
 
     # feeds the output stream
@@ -214,10 +211,6 @@ class OWDataSampler(OWWidget):
         # send data
         self.send("Examples", sample)
         self.send("Remaining Examples", remainder)
-        # send classified data (if class exists)
-        if self.data.domain.classVar:
-            self.send("Classified Examples", sample)
-            self.send("Remaining Classified Examples", remainder)
 
     # MAIN SWITCH
     # processes data after the user requests it
@@ -243,7 +236,7 @@ class OWDataSampler(OWWidget):
                 self.indices = orange.MakeRandomIndices2(p0=int(self.nCases))
                 self.infob.setText('Random sampling, using exactly %d instances.' % self.nCases)
             else:
-                if self.selPercentage > 1-1e-7:
+                if self.selPercentage == 100:
                     self.indices = orange.MakeRandomIndices2(p0=int(len(self.data)))
                 else:
                     self.indices = orange.MakeRandomIndices2(p0=float(self.selPercentage/100.0))
@@ -311,7 +304,7 @@ if __name__=="__main__":
     appl.setMainWidget(ow)
 
     data = orange.ExampleTable('iris.tab')
-    ow.cdata(data)
+    ow.setData(data)
     ow.show()
     appl.exec_loop()
     ow.saveSettings()
