@@ -49,21 +49,24 @@ for meth in [data_h.toNumericMA, data_h.toNumarrayMA, data_h.toNumpyMA]:
 
 
 for meth in [data.toNumeric, data.toNumarray, data.toNumpy]:
-    a = data.toNumarray("ac")[0]
-    t2 = orange.ExampleTable(a)
-    print t2.domain.attributes, t2.domain.classVar
-    print t2[0]
+    try:
+        a = meth("ac")[0]
+        t2 = orange.ExampleTable(a)
+        print t2.domain.attributes, t2.domain.classVar
+        print t2[0]
 
-    t3 = orange.ExampleTable(data.domain, a)
-    print t3.domain.attributes, t3.domain.classVar
-    print t3[0]
+        t3 = orange.ExampleTable(data.domain, a)
+        print t3.domain.attributes, t3.domain.classVar
+        print t3[0]
 
-    columns = "sep length", "sep width", "pet length", "pet width"
-    classValues = "setosa", "versicolor", "virginica"
-    d4 = orange.Domain(map(orange.FloatVariable, columns),
-                       orange.EnumVariable("type", values=classValues))
-    t4 = orange.ExampleTable(d4, a)
-    print t4.domain.attributes, t4.domain.classVar
-    print t4[0]
-    
-    print 
+        columns = "sep length", "sep width", "pet length", "pet width"
+        classValues = "setosa", "versicolor", "virginica"
+        d4 = orange.Domain(map(orange.FloatVariable, columns),
+                           orange.EnumVariable("type", values=classValues))
+        t4 = orange.ExampleTable(d4, a)
+        print t4.domain.attributes, t4.domain.classVar
+        print t4[0]
+        
+        print
+    except:
+        print "Exception thrown for '%s'\n" % meth.__name__
