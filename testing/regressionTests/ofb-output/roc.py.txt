@@ -1,4 +1,4 @@
 Area under ROC:
-bayes 0.972859058153
-tree 0.959410088822
+bayes 0.975276520865
+tree 0.956465246355
 majority 0.5

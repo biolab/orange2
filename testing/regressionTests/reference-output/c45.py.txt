@@ -37,5 +37,5 @@ petal width > 0.6:
 |   |   |   petal width <= 1.5: Iris-virginica (3.0) 
 |   |   |   petal width > 1.5: Iris-versicolor (3.0)
 
-Classification accuracy: 0.933 (converted to tree: 0.933)
-Brier score: 0.128 (converted to tree: 0.128)
+Classification accuracy: 0.953 (converted to tree: 0.953)
+Brier score: 0.093 (converted to tree: 0.093)

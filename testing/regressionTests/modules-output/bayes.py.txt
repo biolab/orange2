@@ -1,6 +1,6 @@
 
-Without m: 0.533
-With m=2: 0.458
+Without m: 0.617
+With m=2: 0.517
                      republican   democrat
 class probabilities       0.386      0.614
 
