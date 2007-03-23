@@ -9,8 +9,7 @@
 import orange
 import orngMDS
 import OWGUI
-import Numeric
-import RandomArray
+import numpy
 import qt
 import sys
 import math
@@ -140,7 +139,7 @@ class OWMDS(OWWidget):
                 
         if matrix:
             self.mds=orngMDS.MDS(matrix)
-            self.mds.points=RandomArray.random([self.mds.n, self.mds.dim])
+            self.mds.points=numpy.random.random(size=[self.mds.n, self.mds.dim])
             self.mds.getStress()
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
             if data and type(data) == orange.ExampleTable:
@@ -291,7 +290,7 @@ class OWMDS(OWWidget):
     def randomize(self):
         if not getattr(self, "mds", None):
             return
-        self.mds.points = RandomArray.random(shape=[self.mds.n,2])
+        self.mds.points = numpy.random.random(size=[self.mds.n,2])
         if self.computeStress:
             self.mds.getStress(self.stressFunc[self.StressFunc][1])
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
@@ -300,8 +299,8 @@ class OWMDS(OWWidget):
     def jitter(self):
         if not getattr(self, "mds", None):
             return
-        mi = Numeric.argmin(self.mds.points,0)
-        ma = Numeric.argmax(self.mds.points,0)
+        mi = numpy.argmin(self.mds.points,0)
+        ma = numpy.argmax(self.mds.points,0)
         st = 0.01*(ma-mi)
         for i in range(self.mds.n):
             for j in range(2):
