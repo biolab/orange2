@@ -24,6 +24,16 @@ class WidgetsToXML:
             if os.path.isdir(full_filename):
                 self.ParseDirectory(doc, categories, full_filename, filename)
 
+        additionalFile = os.path.join(canvasDir, "additionalCategories")
+        if os.path.exists(additionalFile):
+            for lne in open(additionalFile, "rt"):
+                try:
+                    catName, dirName = [x.strip() for x in lne.split("\t")]
+                    self.ParseDirectory(doc, categories, dirName, catName, True)
+                except:
+                    pass
+                
+
         # we put widgets that are in the root dir of widget directory to category "Other"
         self.ParseDirectory(doc, categories, widgetDirName, "Other")
         
@@ -35,7 +45,7 @@ class WidgetsToXML:
         doc.unlink()
 
     # parse all widgets in directory widgetDirName\categoryName into new category named categoryName
-    def ParseDirectory(self, doc, categories, full_dirname, categoryName):
+    def ParseDirectory(self, doc, categories, full_dirname, categoryName, plugin = False):
         if sys.path.count(full_dirname) == 0:       # add directory to orange path
             sys.path.append(full_dirname)          # this doesn't save the path when you close the canvas, so we have to save also to widgets.pth
         
@@ -73,6 +83,8 @@ class WidgetsToXML:
             if (child == None):
                 child = doc.createElement("category")
                 child.setAttribute("name", categoryName)
+                if plugin:
+                    child.setAttribute("directory", full_dirname)
                 categories.appendChild(child)
     
             widget = doc.createElement("widget")
@@ -152,8 +164,26 @@ class WidgetsToXML:
         return tuple(vals)
 
 
-if __name__=="__main__":
+canvasDir = os.path.dirname(__file__)
+
+def rebuildRegistry():
     parse = WidgetsToXML()
-    canvasDir = "."
-    widgetDir = "../OrangeWidgets"
-    parse.ParseWidgetRoot(widgetDir, canvasDir)
+    widgetDir = os.path.join(canvasDir, "../OrangeWidgets")
+    parse.ParseWidgetRoot(widgetDir, canvasDir)    
+    
+def readAdditionalCategories():
+    return [tuple(x.strip() for x in lne.split("\t")) for lne in open(os.path.join(canvasDir, "additionalCategories"), "r")]
+
+def writeAdditionalCategories(categories):
+    open(os.path.join(canvasDir, "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
+
+def addWidgetCategory(category, directory, add = True):
+    if os.path.isfile(directory):
+        directory = os.path.dirname(directory)
+    writeAdditionalCategories([x for x in readAdditionalCategories() if x[0] != category and x[1] != directory] + (add and [(category, directory)] or []))
+    rebuildRegistry()
+
+#addWidgetCategory
+
+if __name__=="__main__":
+    rebuildRegistry()
