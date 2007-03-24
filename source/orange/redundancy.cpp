@@ -435,8 +435,14 @@ PDomain TRemoveUnusedValues::operator ()(PExampleGenerator gen, const int &weigh
     else {
       PVariable newattr = call(mi->variable, gen, weightID);
       if (newattr)
-        attributes.push_back(newattr);
-      if (newattr != mi->variable)
+        if (newattr == mi->variable)
+          metas.push_back(*mi);
+        else {
+          TMetaDescriptor md(mi->id, newattr, mi->optional);
+          metas.push_back(md);
+          changed = true;
+        }
+      else
         changed = true;
     }
   }
