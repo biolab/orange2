@@ -94,6 +94,8 @@ class WidgetButton(QToolButton):
             return os.path.join(self.canvasDlg.picsDir, name)
         elif os.path.exists(os.path.join(self.canvasDlg.widgetDir, name)):
             return os.path.join(self.canvasDlg.widgetDir, name)
+        elif os.path.exists(name):
+            return name
         else:
             return self.canvasDlg.defaultPic
         
@@ -331,6 +333,8 @@ class WidgetTabs(QTabWidget):
         if self.tabDict.has_key(strCategory): tab = self.tabDict[strCategory]
         else:    tab = self.insertWidgetTab(strCategory)
 
+        tab.builtIn = not category.hasAttribute("directory")
+        
         priorityList = []
         nameList = []
         authorList = []
