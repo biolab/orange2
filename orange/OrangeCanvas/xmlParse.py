@@ -172,7 +172,7 @@ def rebuildRegistry():
     parse.ParseWidgetRoot(widgetDir, canvasDir)    
     
 def readAdditionalCategories():
-    return [tuple(x.strip() for x in lne.split("\t")) for lne in open(os.path.join(canvasDir, "additionalCategories"), "r")]
+    return [tuple([x.strip() for x in lne.split("\t")]) for lne in open(os.path.join(canvasDir, "additionalCategories"), "r")]
 
 def writeAdditionalCategories(categories):
     open(os.path.join(canvasDir, "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
