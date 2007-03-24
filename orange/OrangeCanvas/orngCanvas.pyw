@@ -4,8 +4,7 @@
 
 from qt import *
 import sys, os, cPickle
-import orngTabs, orngDoc, orngDlgs, orngOutput, xmlParse
-import user
+import orngTabs, orngDoc, orngDlgs, orngOutput, orngRegistry
 
 class OrangeCanvasDlg(QMainWindow):
     def __init__(self,*args):
@@ -16,46 +15,21 @@ class OrangeCanvasDlg(QMainWindow):
         self.windows = []    # list of id for windows in Window menu
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
 
-        #self.setFocusPolicy(QWidget.StrongFocus)
-        try:
-            self.canvasDir = os.path.split(os.path.abspath(__file__))[0]
-            self.orangeDir = self.canvasDir[:-13]
-        except:
-            import orange
-            self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
-            self.canvasDir = os.path.join(self.orangeDir, "OrangeCanvas")
-        
-        self.widgetDir = os.path.join(self.orangeDir, "OrangeWidgets")
-        if not os.path.exists(self.widgetDir):
-            print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
-        
-        self.picsDir = os.path.join(self.widgetDir, "icons")
-        if not os.path.exists(self.picsDir):
-            print "Error. Directory %s not found. Unable to locate widget icons." % (self.picsDir)
-        
-#        self.canvasDir = os.path.join(self.orangeDir, "OrangeCanvas")
-        if os.name == "nt": self.outputDir = self.canvasDir
-        else:
-            self.outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
-            if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
-            self.outputDir = os.path.join(self.outputDir, "OrangeCanvas")
-            if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
-        
-        # add all directories with widgets to the path
-        if os.path.exists(self.widgetDir):
-            for name in os.listdir(self.widgetDir):
-                fullName = os.path.join(self.widgetDir, name)
-                if os.path.isdir(fullName): 
-                    sys.path.append(fullName)
+        self.__dict__.update(orngRegistry.directoryNames)
+        orngRegistry.addWidgetDirectories()
 
-        self.registryFileName = os.path.join(self.outputDir, "widgetregistry.xml")
+        #self.setFocusPolicy(QWidget.StrongFocus)
+        
+        import OWReport
+        OWReport.IEFeeder(self.reportsDir)
+		
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
 
         canvasIconName = os.path.join(self.canvasDir, "icons/CanvasIcon.png")
         if os.path.exists(canvasIconName):
             self.setIcon(QPixmap(canvasIconName))
         
-        if sys.path.count(self.widgetDir) == 0:
+        if not self.widgetDir in sys.path:
             sys.path.append(self.widgetDir)
 
         # create error and warning icons
@@ -189,7 +163,7 @@ class OrangeCanvasDlg(QMainWindow):
         
         # if registry doesn't exist yet, we create it
         if rebuildRegistry == 1:
-            parse = xmlParse.WidgetsToXML()
+            parse = orngRegistry.WidgetsToXML()
             parse.ParseWidgetRoot(self.widgetDir, self.outputDir)
             
         # if registry still doesn't exist then something is very wrong...
@@ -690,8 +664,10 @@ class OrangeCanvasDlg(QMainWindow):
         # fill categories tab list
         oldTabList = []
         for tab in self.tabs.tabs:
+            dlg.tabs = self.tabs
             dlg.tabOrderList.insertItem(self.tabs.tabLabel(tab))
             oldTabList.append(str(self.tabs.tabLabel(tab)))
+        dlg.removeTabs = []
 
         dlg.exec_loop()
         if dlg.result() == QDialog.Accepted:
@@ -772,6 +748,10 @@ class OrangeCanvasDlg(QMainWindow):
             self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
             self.output.setWriteLogFile(self.settings["writeLogFile"])
             self.output.setVerbosity(self.settings["outputVerbosity"])
+
+
+            for toRemove in dlg.removeTabs:
+                orngRegistry.addWidgetCategory(toRemove, "", False)
 
             # save tab order settings
             newTabList = []
