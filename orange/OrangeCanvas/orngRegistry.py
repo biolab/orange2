@@ -2,8 +2,8 @@
 # Description:
 #    parse widget information to a registry file (.xml) - info is then used inside orngTabs.py
 #
-import os, sys, string, re
-from xml.dom.minidom import Document
+import os, sys, string, re, user
+import xml.dom.minidom
 
 class WidgetsToXML:
 
@@ -13,7 +13,7 @@ class WidgetsToXML:
         canvasDir = os.path.realpath(canvasDir)
         
         # create xml document
-        doc = Document()
+        doc = xml.dom.minidom.Document()
         canvas = doc.createElement("orangecanvas")
         categories = doc.createElement("widget-categories")
         doc.appendChild(canvas)
@@ -184,6 +184,61 @@ def addWidgetCategory(category, directory, add = True):
     rebuildRegistry()
 
 #addWidgetCategory
+
+
+def __getDirectoryNames():
+    try:
+        canvasDir = os.path.split(os.path.abspath(__file__))[0]
+        orangeDir = canvasDir[:-13]
+    except:
+        import orange
+        orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
+        canvasDir = os.path.join(orangeDir, "OrangeCanvas")
+    
+    widgetDir = os.path.join(orangeDir, "OrangeWidgets")
+    if not os.path.exists(widgetDir):
+        print "Error. Directory %s not found. Unable to locate widgets." % widgetDir
+    
+    reportsDir = os.path.join(orangeDir, "report")
+    if not os.path.exists(reportsDir):
+        os.mkdir(reportsDir)
+
+    picsDir = os.path.join(widgetDir, "icons")
+    if not os.path.exists(picsDir):
+        print "Error. Directory %s not found. Unable to locate widget icons." % picsDir
+
+    if os.name == "nt":
+        outputDir = canvasDir
+    else:
+        outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
+        if not os.path.exists(outputDir):
+                os.mkdir(outputDir)
+        outputDir = os.path.join(outputDir, "OrangeCanvas")
+        if not os.path.exists(outputDir):
+            os.mkdir(outputDir)
+    
+    registryFileName = os.path.join(outputDir, "widgetregistry.xml")
+  
+    return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "outputDir", "registryFileName"]])
+  
+
+def addWidgetDirectories():
+    if os.path.exists(widgetDir):
+        for name in os.listdir(widgetDir):
+            fullName = os.path.join(widgetDir, name)
+            if os.path.isdir(fullName): 
+                print "A", fullName
+                sys.path.append(fullName)
+
+    doc = xml.dom.minidom.parse(registryFileName)
+    for category in doc.getElementsByTagName("category"):
+        directory = category.getAttribute("directory")
+        if directory:
+            sys.path.append(directory)
+
+
+directoryNames = __getDirectoryNames()
+vars().update(directoryNames)
 
 if __name__=="__main__":
     rebuildRegistry()
