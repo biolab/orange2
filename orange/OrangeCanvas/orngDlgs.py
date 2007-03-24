@@ -567,12 +567,16 @@ class CanvasOptionsDlg(QDialog):
         hbox2.layout().setSpacing(5)
         self.upButton = QPushButton("Up", hbox2)
         self.downButton = QPushButton("Down", hbox2)
+        self.removeButton = QPushButton("Remove", hbox2)
         self.upButton.setMaximumWidth(60)
         self.downButton.setMaximumWidth(60)
+        self.removeButton.setMaximumWidth(60)
         sep = QWidget(hbox2)
         sep.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred))
         self.connect(self.upButton, SIGNAL("clicked()"), self.moveUp)
         self.connect(self.downButton, SIGNAL("clicked()"), self.moveDown)
+        self.connect(self.removeButton, SIGNAL("clicked()"), self.removeCategory)
+        self.connect(self.tabOrderList, SIGNAL("highlighted(int)"), self.enableDisableButtons)
 
         # OK, Cancel buttons
         
@@ -610,6 +614,17 @@ class CanvasOptionsDlg(QDialog):
                 self.tabOrderList.insertItem(text, i+1)
                 self.tabOrderList.setSelected(i+1, True)
 
+    def enableDisableButtons(self, *i):
+        itemIndex = self.tabOrderList.currentItem()
+        self.upButton.setEnabled(itemIndex > 0)
+        self.downButton.setEnabled(itemIndex < self.tabOrderList.count()-1)
+        self.removeButton.setEnabled(not self.tabs.tabDict[str(self.tabOrderList.currentText())].builtIn)
+        
+    def removeCategory(self):
+        curCat = str(self.tabOrderList.currentText())
+        if QMessageBox.warning(self,'Orange Canvas', "Unregister widget category '%s' from Orange canvas?\nThis will not remove any files." % curCat, QMessageBox.Yes, QMessageBox.No | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Yes:
+            self.removeTabs.append(curCat)
+            self.tabOrderList.removeItem(self.tabOrderList.currentItem())
 
 
 ##########
