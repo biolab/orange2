@@ -568,13 +568,9 @@ class SchemaDoc(QMainWindow):
         #format string with file content
         t = "    "  # instead of tab
         n = "\n"
-        imports = "import sys, os, cPickle, orange\nimport orngSignalManager\n\n#set value in next line to 1 if want to output debugging info to file 'signalManagerOutput.txt'\nDEBUG_MODE = 0\n"
-        imports += """
-widgetDir = os.path.join(os.path.split(orange.__file__)[0], "OrangeWidgets")
-if os.path.exists(widgetDir):
-        for name in os.listdir(widgetDir):
-            fullName = os.path.join(widgetDir, name)
-            if os.path.isdir(fullName): sys.path.append(fullName)\n\n"""
+        imports = """import sys, os, cPickle, orange, orngSignalManager, orngRegistry
+DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput.txt'
+orngRegistry.addWidgetDirectories()\n"""
         
         captions = "# set widget captions\n" +t+t
         instancesT = "# create widget instances\n" +t+t
