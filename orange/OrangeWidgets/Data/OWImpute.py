@@ -6,8 +6,8 @@
 <contact>Janez Demsar</contact>
 """
  
-from OWWidget import *
 import OWGUI
+from OWWidget import *
 
 class ImputeListboxItem(QListBoxPixmap):
     def __init__(self, icon, name, master):
@@ -51,6 +51,7 @@ class OWImpute(OWWidget):
         self.imputeClass = 0
         self.autosend = 1
         self.methods = {}
+        self.dataChanged = False
         
         self.model = self.data = None
 
