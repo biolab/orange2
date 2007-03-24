@@ -20,7 +20,7 @@ class Ball:
     def __init__(self):
         self.x = 800
         self.y = 500
-        self.r = 15
+        self.r = 25
         
 def normalizeAngle(x):
     x = x % (2*pi)
@@ -97,8 +97,13 @@ class Robot(object):
         delta_angle = (self.speed_left - self.speed_right) / (self.maxSpeed*6.)
 
         self.orientation = (self.orientation + delta_angle) % (2*pi)
-        self.x += delta_dist * cos(self.orientation)
-        self.y += delta_dist * sin(self.orientation)
+        newx = self.x + delta_dist * cos(self.orientation)
+        newy = self.y + delta_dist * sin(self.orientation)
+        if hypot(newx - self.ball.x, newy - self.ball.y) > self.ball.r:
+            if 0 <= newx <= 1000:
+                self.x = newx
+            if 0 <= newy <= 1000:
+                self.y = newy
 
         
 class OWSimon(OWWidget):
@@ -121,7 +126,7 @@ class OWSimon(OWWidget):
         self.data = None
 
         box = OWGUI.widgetBox(self.controlArea, "Settings")
-        OWGUI.spin(box, self, "logFrequency", 10, 100, 5, label="Sampling interval ", controlWidth = 40)
+        OWGUI.spin(box, self, "logFrequency", 5, 100, 5, label="Sampling interval ", controlWidth = 40)
         OWGUI.spin(box, self, "robot.ball.r", 10, 100, 5, label="Ball size", controlWidth = 40, callback = self.updateBall)
         
         maxSpeed = self.robot.maxSpeed
@@ -222,6 +227,8 @@ class OWSimon(OWWidget):
         self.xTrace, self.yTrace = [], []
         self.log = []
         self.logPoint()
+        if hasattr(self, "graph"):
+            self.updateGraph()
         
     def sendData(self):
         domain = orange.Domain([orange.FloatVariable(n) for n in ["time", "speed left", "speed right", "overall speed", "rotation", "x", "y", "orientation", "ball distance", "ball angle", "ball area", "ball distance t+1", "ball angle t+1", "delta ball distance", "delta ball angle"]], None)
