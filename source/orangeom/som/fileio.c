@@ -349,7 +349,7 @@ char *getline(struct file_info *fi)
 	}
 
       /* end of file / error? */
-      if (c == EOF)
+      if (c == (char)EOF)
 	{
 	  tstr[len] = '\0';
 

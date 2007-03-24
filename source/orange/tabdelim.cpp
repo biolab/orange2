@@ -849,10 +849,10 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
   for(;;) {
     c = fgetc(fei.file);
 
-    if (c==EOF)
+    if (c==(char)EOF)
       break;
     if (!col && (c=='|')) {
-      for (c=fgetc(fei.file); (c!='\r') && (c!='\n') && (c!=EOF); c=fgetc(fei.file));
+      for (c=fgetc(fei.file); (c!='\r') && (c!='\n') && (c!=(char)EOF); c=fgetc(fei.file));
       return -1;
     }
 

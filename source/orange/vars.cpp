@@ -585,7 +585,7 @@ int TFloatVariable::str2val_low(const string &valname, TValue &valu)
 
   int res;
 
-  if (!ssr || (ssr==EOF)) {
+  if (!ssr || (ssr==(char)EOF)) {
     res = -1;
   }
   else {

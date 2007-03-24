@@ -143,7 +143,7 @@ bool TBasketExampleGenerator::readExample(TFileExampleIteratorData &fei, TExampl
   if (feof(fei.file))
     return false;
 
-  static const char atomends[] = {EOF, '|', '\n', '\r', ',', 0};
+  static const char atomends[] = {(char)EOF, '|', '\n', '\r', ',', 0};
 
   example.meta.clear();
 
@@ -176,7 +176,7 @@ bool TBasketExampleGenerator::readExample(TFileExampleIteratorData &fei, TExampl
         while ((c!='\r') && (c!='\n'));
 
       // we don't exit the loop if there's more to read and we haven't read anything yet
-      if (example.meta.empty() && (c != EOF))
+      if (example.meta.empty() && (c != (char)EOF))
         c = fgetc(fei.file);
       else
         break;

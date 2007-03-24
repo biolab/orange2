@@ -2904,7 +2904,7 @@ svm_model *svm_load_model(const char *model_file_name)
 			while(1)
 			{
 				int c = getc(fp);
-				if(c==EOF || c=='\n') break;	
+				if(c==(char)EOF || c=='\n') break;	
 			}
 			break;
 		}
@@ -2934,7 +2934,7 @@ svm_model *svm_load_model(const char *model_file_name)
 			case ':':
 				++elements;
 				break;
-			case EOF:
+			case (char)EOF:
 				goto out;
 			default:
 				;

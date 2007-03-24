@@ -327,7 +327,7 @@ int TExcelReader::cellType(const int &row, const int &col) // 0 cannot be contin
 
   float f;
   int ssr = sscanf(cellvalue, "%f", &f);
-  return (ssr && (ssr!=EOF)) ? 1 : 0;
+  return (ssr && (ssr!=(char)EOF)) ? 1 : 0;
 }
 
 
