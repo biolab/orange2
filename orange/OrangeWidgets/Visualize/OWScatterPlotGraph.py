@@ -154,7 +154,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         # #######################################################
         # show probabilities
         if self.showProbabilities and colorIndex >= 0:
-            domain = orange.Domain([self.rawdata.domain[xAttrIndex], self.rawdata.domain[yAttrIndex], self.rawdata.domain.classVar], self.rawdata.domain)
+            domain = orange.Domain([self.rawdata.domain[xAttrIndex], self.rawdata.domain[yAttrIndex], self.rawdata.domain[colorIndex]], self.rawdata.domain)
             xdiff = xmax-xmin; ydiff = ymax-ymin
             scX = [x/xdiff for x in xData]
             scY = [y/ydiff for y in yData]
