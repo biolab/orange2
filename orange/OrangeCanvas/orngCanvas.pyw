@@ -162,6 +162,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.tabs.setCanvasDlg(self)
         
         # if registry doesn't exist yet, we create it
+        ## the registry is now build already in the orngRegistry when setting up the directory names
         if rebuildRegistry == 1:
             parse = orngRegistry.WidgetsToXML()
             parse.ParseWidgetRoot(self.widgetDir, self.outputDir)

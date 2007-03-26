@@ -218,6 +218,8 @@ def __getDirectoryNames():
             os.mkdir(outputDir)
     
     registryFileName = os.path.join(outputDir, "widgetregistry.xml")
+    if not os.path.exists(registryFileName):
+        WidgetsToXML().ParseWidgetRoot(widgetDir, canvasDir)
   
     return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "outputDir", "registryFileName"]])
   
