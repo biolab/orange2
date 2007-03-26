@@ -1,6 +1,6 @@
 import urllib, sys, os, md5
 
-files = "orange", "corn", "statc", "orangeom", "orangene"
+files = "orange", "corn", "statc", "orangeom", "orangene", "_orngCRS"
 baseurl = "http://www.ailab.si/orange/download/binaries/%i%i/" % sys.version_info[:2]
 fleurl = baseurl + "%s.pyd"
 
