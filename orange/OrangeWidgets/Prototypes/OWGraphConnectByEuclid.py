@@ -1,7 +1,7 @@
 """
 <name>Connect Nodes by Euclid Distance</name>
-<description>Costructs Graph object by connecting nodes from ExampleTable where distance between them is less than given threshold.</description>
-<icon>icons/File.png</icon>
+<description>Costructs Graph object by connecting nodes from DistanceMatrix where distance between them is less than given threshold.</description>
+<icon></icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>2020</priority>
 """
