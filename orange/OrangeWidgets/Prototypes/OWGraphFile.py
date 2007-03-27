@@ -15,7 +15,7 @@
 from OWWidget import *
 import OWGUI, string, os.path
 from orange import Graph
-from OWGraphDrawer import *
+#from OWGraphDrawer import *
 
 class OWGraphFile(OWWidget):
     
@@ -131,11 +131,15 @@ class OWGraphFile(OWWidget):
                 data.name = string.join(string.split(fName, '.')[:-1], '.')
             else:
                 data.name = fName
+                
+            print "nVertices graph: " + str(data.nVertices)
+            self.graph = data
             self.send("Graph", data)
 #            drawer = OWGraphDrawer()
 #            drawer.setGraph(data)
 #            drawer.show()
         else:
+            print "None"
             self.send("Graph", None)
 
     #vrstica je ali '' ali pa nek niz, ki se zakljuci z \n (newline)
@@ -204,7 +208,7 @@ class OWGraphFile(OWWidget):
             words = self.getwords(line)
 
             if words == '':
-                #raise InputSyntaxError
+                #raise InputSyntaxErrors
                 raise
             elif words == []:
                 continue
@@ -220,7 +224,8 @@ class OWGraphFile(OWWidget):
                     #raise InputSyntaxError
                     raise
                 break
-        
+            
+        print "nVertices: " + str(nVertices)
         graph = orange.GraphAsList(nVertices, 0)
         graph.name = graphName
         
