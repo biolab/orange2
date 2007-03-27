@@ -8,8 +8,9 @@ from Numeric import *
 class GraphVisualizer:
     def __init__(self, graph, parent = None, name = "None"):
         
-        self.graph = graph;
-        
+        self.graph = graph
+        #self.graph.nVertices = len(graph.items)
+        #self.graph.nVertices = 4
         self.parent = parent
         self.maxWidth  = 1000
         self.maxHeight = 1000

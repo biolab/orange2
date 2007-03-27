@@ -3,7 +3,7 @@
 <description>The Graph Canvas Widget enables users to visualize graph schemas.</description>
 <icon>icons/Outlier.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>2030</priority>
+<priority>2040</priority>
 """
 import OWGUI
 
@@ -18,7 +18,7 @@ class OWGraphDrawer(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'GraphDrawer')
 
         self.inputs = [("Graph with ExampleTable", orange.Graph, self.setGraph)]
-        self.outputs = []
+        self.outputs=[("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
         
         self.graphShowGrid = 1  # show gridlines in the graph
 
@@ -62,12 +62,29 @@ class OWGraphDrawer(OWWidget):
         self.btnPolySel.setToggleButton(1)
         self.btnPolySel.setPixmap(QPixmap(pics.POLYG))
         
+        OWGUI.button(self.controlArea, self, "Send", callback=self.sendData)
+        
         self.graph = OWGraphDrawerCanvas(self, self.mainArea, "ScatterPlot")
         #self.optimize = OWGraphDrawingOptimize(parent=self);
         #start of content (right) area
         self.box = QVBoxLayout(self.mainArea)
         self.box.addWidget(self.graph)
     
+    def sendData(self):
+        graph = self.graph.getSelectedGraph()
+        
+        if graph != None:
+            if graph.items != None:
+                self.send("Selected Examples", graph.items)
+            else:
+                self.send("Selected Examples", self.graph.getSelectedExamples())
+                
+            self.send("Selected Graph", graph)
+        else:
+            items = self.graph.getSelectedExamples()
+            if items != None:
+                self.send("Selected Examples", items)
+   
     def btnZommClicked(self):
         self.btnZomm.setOn(1)
         self.btnMpos.setOn(0)
