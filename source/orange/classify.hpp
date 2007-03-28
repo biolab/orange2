@@ -169,7 +169,7 @@ public:
   __REGISTER_CLASS
 
   PDomain domain; //PR domain
-  PDomainDistributions domainDistributions; // distributions of values for attributes
+  PDomainDistributions domainDistributions; //C distributions of values for attributes
   std::vector<float> averages;
   vector<float> matchProbabilities; // if you intend to really export this class, you'll need to define 'afterSet' for domain distributions
   int originalWeight, missingWeight;
