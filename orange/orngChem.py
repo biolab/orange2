@@ -125,21 +125,21 @@ def extendFragments(fragments,sets):
                 newset=None
             second, end=stripLastAtom(_second)
             ind=first.find(second)
-            if ind>1:
+            if ind>0:
                 new=first+end
                 sets[new]=newset
                 sets[reverseSmiles(new)]=newset
                 extended.add(new)
             
-            second, end=stripLastAtom(reverseSmiles(fragments[j]))
+            second, end=stripLastAtom(reverseSmiles(_second))
             ind=first.find(second)
-            if ind>1:
+            if ind>0:
                 new=first+end
                 sets[new]=newset
                 sets[reverseSmiles(new)]=newset
                 extended.add(new)
 
-            second, start=stripFirstAtom(fragments[j])
+            second, start=stripFirstAtom(_second)
             ind=first.find(second)
             if ind==0:
                 new=start+first
@@ -147,13 +147,13 @@ def extendFragments(fragments,sets):
                 sets[reverseSmiles(new)]=newset
                 extended.add(new)
             
-            second, start=stripFirstAtom(reverseSmiles(fragments[j]))
+            second, start=stripFirstAtom(reverseSmiles(_second))
             ind=first.find(second)
             if ind==0:
                 new=start+first
                 sets[new]=newset
                 sets[reverseSmiles(new)]=newset
-                extended.add(start+first)
+                extended.add(new)
     #print [decodeSmiles(s) for s in extended]
     return extended
 
@@ -244,7 +244,7 @@ def updateSpecific(G,S,c, cache={}):
     data=[molGraph(d) for d in data]
     filterFunc=lambda g: freq(g, data)>f
     #G=filter(filterFunc, G)
-    G=filterByFrequency(G,f,data,setsDict)
+    G, unmatched=filterByFrequency(G,f,data,setsDict)
     C=Set(candidateSymbols)
     F=[]
     F.append([""])
@@ -261,7 +261,9 @@ def updateSpecific(G,S,c, cache={}):
         #print "filter dup"
         C=removeDuplicates(C)
         print "filter freq",len(C)
-        F.append(filterByFrequency(C,f,data,setsDict))
+        print C
+        new, unmatched=filterByFrequency(C,f,data,setsDict)
+        F.append(new)
         #print C
         #print F
     UF=[]
@@ -286,7 +288,8 @@ def updateGeneral(G,S,c):
     F=[]
     I=[]
     F.append([""])
-    F.append(filterByFrequency(C,f,data,setsDict))
+    new, unmatched=filterByFrequency(C,f,data,setsDict)
+    F.append(new)
     I.append(C.difference(Set(F[-1])))
     while C:
         if len(F)>2:
@@ -298,7 +301,8 @@ def updateGeneral(G,S,c):
         #print "filter dup"
         C=Set(removeDuplicates(C))
         print "filter freq",len(C)
-        F.append(filterByFrequency(C,f,data,setsDict))
+        new, unmatched=filterByFrequency(C,f,data,setsDict)
+        F.append(new)
         I.append(C.difference(Set(F[-1])))
         #print C
         #print F
@@ -467,6 +471,7 @@ def __lazar_learn__(trainingSet, testStruct=""):
     return s>0 and 1 or 0
 
 def testAcc(data):
+    import random
     c=0
     num=len(data)
     for d in data[:num]:
@@ -570,7 +575,7 @@ def testLazar():
     __lazar_learn__(data[3:],data[2][0])
     __lazar_learn__(data[4:],data[3][0])"""
     #__lazar_learn__(data[5:],"Oc1ccc2ccccc2c1N=Nc3ccccc3")
-    #__lazar_learn__(data[5:],"Cc1ccc2C(=O)c3ccccc3C(=O)c2c1N(=O)O")
+    #__lazar_learn__(data[5:],"Cc1ccc2C(=O)c3ccc([U])cc3C(=O)c2c1N(=O)O")
 
 def test():
     import orange
