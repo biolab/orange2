@@ -162,6 +162,7 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
      the conditional class distribution will be 1/#classes for each class,
      so P(C|A)/P(C) would be (1/#classes) / 0... Now, it's (1/#classes) / 1. */
   TDiscDistribution *classDistDiv = CLONE(TDiscDistribution, distribution);
+  PDistribution wclassDistDiv = classDistDiv;
   PITERATE(TDiscDistribution, ci, classDistDiv)
     if (*ci < 1e-20)
       *ci = 1.0;

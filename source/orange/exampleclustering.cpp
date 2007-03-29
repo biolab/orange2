@@ -274,7 +274,7 @@ PVariable TGeneralExampleClustering::feature(const float &cut, const int &comple
 { 
   PClassifier cl = classifier(cut, completion);
   if (!cl || !cl->classVar)
-	return PVariable();
+        return PVariable();
 	  
   cl->classVar->getValueFrom = cl;
   return cl->classVar;

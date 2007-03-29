@@ -327,13 +327,16 @@ void TClassifierByLookupTable2::replaceDKs(PExampleGenerator examples, bool useB
     do {
       if ((*vi).isSpecial()) 
         if (useBayes) {
-          *vi = bayes->operator()(example);
-          if (distr)
+          if (distr) {
             *di = bayes->classDistribution(example);
+            *vi = (*di)->highestProbValue(example);
+          }
+          else
+            *vi = bayes->operator()(example);
         }
         else {
           *vi = classDist->highestProbValue(example);
-          if (distr) 
+          if (distr)
             *di = CLONE(TDistribution, classDist);
         }
       vi++;
