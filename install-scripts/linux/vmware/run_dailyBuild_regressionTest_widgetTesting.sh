@@ -4,6 +4,7 @@ cd /home/vmware
 
 if [ -a /home/vmware/daily_run ]; then
    echo already running
+   echo "please check..." | mail -s "already running?" tomaz.curk@fri.uni-lj.si
    exit
 fi
 touch /home/vmware/daily_run
