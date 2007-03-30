@@ -515,6 +515,9 @@ def sens(confm):
 
         return confm.TP/tot
 
+def recall(confm):
+    return sens(confm)
+
 
 def spec(confm):
     if type(confm) == list:
@@ -532,12 +535,15 @@ def PPV(confm):
     if type(confm) == list:
         return [PPV(cm) for cm in confm]
     else:
-        tot = confm.TP+confm.TN
+        tot = confm.TP+confm.FP
         if tot < 1e-6:
             import warnings
             warnings.warn("Can't compute PPV: one or both classes have no instances")
             return -1
         return confm.TP/tot
+
+def precision(confm):
+    return PPV(confm)
 
 
 def NPV(confm):
@@ -550,6 +556,14 @@ def NPV(confm):
             warnings.warn("Can't compute NPV: one or both classes have no instances")
             return -1
         return confm.TP/tot
+
+def fmeasure(confm):
+    if type(confm) == list:
+        return [fmeasure(cm) for cm in confm]
+    else:
+        p = precision(confm)
+        r = recall(confm)
+        return 2. * p * r / (p + r)
 
 def AUCWilcoxon(res, classIndex=-1, **argkw):
     import corn
