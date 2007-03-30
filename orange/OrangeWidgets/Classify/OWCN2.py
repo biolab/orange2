@@ -14,7 +14,7 @@ import qt
 import sys
 
 class CN2ProgressBar(orange.ProgressCallback):
-    def __init__(self,widget,start=0.0,end=0.0):
+    def __init__(self, widget, start=0.0, end=0.0):
         self.start = start
         self.end = end
         self.widget = widget
@@ -23,42 +23,49 @@ class CN2ProgressBar(orange.ProgressCallback):
         self.widget.progressBarSet(100*(self.start+(self.end-self.start)*value))
 
 class OWCN2(OWWidget):
-    settingsList=["QualityButton","CoveringButton","m", "MaxRuleLength", "useMaxRuleLength",
+    settingsList=["name", "QualityButton", "CoveringButton", "m",
+                  "MaxRuleLength", "useMaxRuleLength",
                   "MinCoverage", "BeamWidth", "Alpha", "Weight", "stepAlpha"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"CN2")
         #OWWidget.__init__(self,parent,"Rules")
-        self.inputs=[("Example Table", ExampleTable, self.dataset)]
-        self.outputs=[("Learner", orange.Learner),("Classifier",orange.Classifier),("Unordered CN2 Classifier", orngCN2.CN2UnorderedClassifier)]
-        self.QualityButton=0
-        self.CoveringButton=0
-        self.Alpha=0.05
-        self.stepAlpha=0.2
-        self.BeamWidth=5
-        self.MinCoverage=0
-        self.MaxRuleLength=0
-        self.useMaxRuleLength=False
-        self.Weight=0.9
-        self.m=2
-        self.LearnerName=""
+        self.inputs = [("Example Table", ExampleTable, self.dataset)]
+        self.outputs = [("Learner", orange.Learner),("Classifier",orange.Classifier),("Unordered CN2 Classifier", orngCN2.CN2UnorderedClassifier)]
+        self.QualityButton = 0
+        self.CoveringButton = 0
+        self.Alpha = 0.05
+        self.stepAlpha = 0.2
+        self.BeamWidth = 5
+        self.MinCoverage = 0
+        self.MaxRuleLength = 0
+        self.useMaxRuleLength = False
+        self.Weight = 0.9
+        self.m = 2
+        self.name = "CN2 rules"
         self.loadSettings()
 
         self.data=None
 
         ##GUI
-        labelWidth=150
-        self.learnerName=OWGUI.lineEdit(self.controlArea, self, "LearnerName", box="Learner/Classifier Name",tooltip="Name to be used by other widgets to identify yor Learner/Classifier")
-        self.learnerName.setText("Rule classifier")
+        labelWidth = 150
+        self.learnerName = OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/classifier name",tooltip="Name to be used by other widgets to identify yor learner/classifier")
+        self.learnerName.setText(self.name)
+        OWGUI.separator(self.controlArea)
+
         self.ruleQualityBG=QVButtonGroup(self.controlArea)
-        self.ruleQualityBG.setTitle("Rule Quality Estimation")
+        self.ruleQualityBG.setTitle("Rule quality estimation")
+
+        OWGUI.separator(self.controlArea)
         self.ruleValidationGroup=OWGUI.widgetBox(self.controlArea, self)
-        self.ruleValidationGroup.setTitle("Pre-Prunning(LRS)")
+        self.ruleValidationGroup.setTitle("Pre-prunning (LRS)")
 
-        OWGUI.spin(self.controlArea, self, "BeamWidth", 1, 100, box="Beam Width", tooltip=" Specify the width of the search beam")
+        OWGUI.separator(self.controlArea)
+        OWGUI.spin(self.controlArea, self, "BeamWidth", 1, 100, box="Beam width", tooltip="The width of the search beam\n(number of rules to be specialized)")
 
+        OWGUI.separator(self.controlArea)
         self.coveringAlgBG=QVButtonGroup(self.controlArea)
-        self.coveringAlgBG.setTitle("Covering algorithm settings")
+        self.coveringAlgBG.setTitle("Covering algorithm")
         """
         self.ruleQualityBG=OWGUI.radioButtonsInBox(self.ruleQualityGroup, self, "QualityButton",
                             btnLabels=["Laplace","m-estimate","WRACC"],
@@ -70,25 +77,25 @@ class OWCN2(OWWidget):
         """
         
         QRadioButton("Laplace",self.ruleQualityBG)
-        g=QHBox(self.ruleQualityBG)
-        b=QRadioButton("m-estimate",g)
+        g = QHBox(self.ruleQualityBG)
+        b = QRadioButton("m-estimate",g)
         self.ruleQualityBG.insert(b)
-        self.mSpin=OWGUI.spin(g,self,"m",0,100)
+        self.mSpin = OWGUI.spin(g,self,"m",0,100)
         self.mSpin.setDisabled(1)
         QRadioButton("WRACC",self.ruleQualityBG)
         self.connect(self.ruleQualityBG,SIGNAL("released(int)"),self.qualityButtonPressed)
         
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha (vs. default rule)",
                 orientation="horizontal", labelWidth=labelWidth,
-                tooltip="Significance of rules compared to original data.")
+                tooltip="How different (significance) is prior class distribution\nto that of examples covered by a rule")
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "stepAlpha", 0, 1,0.001, label="Stopping Alpha (vs. parent rule)",
                 orientation="horizontal", labelWidth=labelWidth,
-                tooltip="Significance of each specialization of a rule.")
-        OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum Coverage",
+                tooltip="How different (significance) is class distribution from examples\ncovered by a rule and covered by a parent rule")
+        OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum coverage",
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
                 "Minimum number of examples a rule must\ncover (use 0 for dont care)")
-        OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Limit Max. Rule Length:", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
-                            tooltip="Maximum number of conditions in the left\npart of the rule (use 0 for dont care)")        
+        OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Maximum rule length", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
+                            tooltip="Maximum number of conditions in the left\npart of the rule (use 0 for don't care)")        
         
         """
         self.coveringAlgBG=OWGUI.radioButtonsInBox(self.coveringAlgGroup, self, "CoveringButton",
@@ -102,8 +109,8 @@ class OWCN2(OWWidget):
         """
 
         QRadioButton("Exclusive covering",self.coveringAlgBG)
-        g=QHBox(self.coveringAlgBG)
-        b=QRadioButton("Weighted covering",g)
+        g = QHBox(self.coveringAlgBG)
+        b = QRadioButton("Weighted covering",g)
         self.coveringAlgBG.insert(b)
         self.weightSpin=OWGUI.doubleSpin(g,self,"Weight",0,0.95,0.05)
         self.weightSpin.setDisabled(1)
@@ -113,6 +120,7 @@ class OWCN2(OWWidget):
         #layout.add(self.ruleValidationGroup)
         #layout.add(self.coveringAlgGroup)
 
+        OWGUI.separator(self.controlArea)
         self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Settings", callback=self.applySettings)
 
         self.Alpha=float(self.Alpha)
@@ -135,7 +143,7 @@ class OWCN2(OWWidget):
 
         #learner        
         self.learner=orngCN2.CN2UnorderedLearner()
-        self.learner.name=self.LearnerName
+        self.learner.name = self.name
         self.learner.progressCallback=CN2ProgressBar(self)
         self.send("Learner",self.learner)
 
@@ -168,8 +176,8 @@ class OWCN2(OWWidget):
         if self.data:
 ##            try:
             oldDomain = orange.Domain(self.data.domain)
-            self.classifier=self.learner(self.data)
-            self.classifier.name=self.LearnerName
+            self.classifier = self.learner(self.data)
+            self.classifier.name = self.name
             self.classifier.setattr("data",self.data)
             for r in self.classifier.rules:
                 r.examples = orange.ExampleTable(oldDomain, r.examples)
