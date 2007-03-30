@@ -97,7 +97,6 @@ class OWCN2RulesViewer(OWWidget):
         layout.addWidget(self.canvasView)
         
         box=OWGUI.widgetBox(self.controlArea,"Show info")
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
 
         OWGUI.checkBox(box,self,"RuleLen","Rule length",callback=self.drawRules)
         OWGUI.checkBox(box,self,"RuleQ","Rule quality",callback=self.drawRules)
@@ -108,14 +107,12 @@ class OWCN2RulesViewer(OWWidget):
 
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Sorting")
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
         self.sortBox=OWGUI.comboBox(box, self, "Sort", 
                                     items=["No sorting", "Rule length", "Rule quality", "Coverage", "Predicted class",
                                            "Distribution","Rule"]
                                     ,callback=self.drawRules)
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Output")
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
         OWGUI.checkBox(box,self,"Commit", "Commit on change")
         OWGUI.checkBox(box,self,"SelectedAttrOnly","Selected attributes only")
         OWGUI.button(box,self,"&Commit",callback=self.commit)
