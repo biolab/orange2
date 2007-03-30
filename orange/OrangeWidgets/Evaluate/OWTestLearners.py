@@ -21,12 +21,12 @@ class OWTestLearners(OWWidget):
     settingsList = ["sampleMethod", "nFolds", "pLearning", "useStat", "pRepeat", "precision"]
     callbackDeposit = []
 
-    stat = ( ('Classification Accuracy', 'CA', 'CA(res)'),
+    stat = ( ('Classification accuracy', 'CA', 'CA(res)'),
              ('Sensitivity', 'Sens', 'sens(cm)'),
              ('Specificity', 'Spec', 'spec(cm)'),
-             ('Area Under ROC Curve', 'AUC', 'AUC(res)'),
-             ('Information Score', 'IS', 'IS(res)'),
-             ('Brier Score', 'Brier', 'BrierScore(res)')
+             ('Area under ROC', 'AUC', 'AUC(res)'),
+             ('Information score', 'IS', 'IS(res)'),
+             ('Brier score', 'Brier', 'BrierScore(res)')
            )
     
     def __init__(self,parent=None, signalManager = None):
@@ -53,28 +53,28 @@ class OWTestLearners(OWWidget):
         # GUI
         self.s = [None] * 5
         self.sBox = QVButtonGroup("Sampling", self.controlArea)        
-        self.s[0] = QRadioButton('Cross Validation', self.sBox)
+        self.s[0] = QRadioButton('Cross validation', self.sBox)
 
         box = QHBox(self.sBox)
         QWidget(box).setFixedSize(19, 8)
-        OWGUI.spin(box, self, 'nFolds', 2, 100, step=1, label='Number of Folds:  ')
+        OWGUI.spin(box, self, 'nFolds', 2, 100, step=1, label='Number of folds:  ')
 
-        self.s[1] = QRadioButton('Leave-One-Out', self.sBox)
-        self.s[2] = QRadioButton('Random Sampling', self.sBox)
+        self.s[1] = QRadioButton('Leave one out', self.sBox)
+        self.s[2] = QRadioButton('Random sampling', self.sBox)
 
         box = QHBox(self.sBox)
         QWidget(box).setFixedSize(19, 8)
-        OWGUI.spin(box, self, 'pRepeat', 1, 100, step=1, label='Repeat Train/Test:  ')
+        OWGUI.spin(box, self, 'pRepeat', 1, 100, step=1, label='Repeat train/test:  ')
 
         self.h2Box = QHBox(self.sBox)
         QWidget(self.h2Box).setFixedSize(19, 8)
-        QLabel("Relative Training Set Size:", self.h2Box)
+        QLabel("Relative training set size:", self.h2Box)
         box = QHBox(self.sBox)
         QWidget(box).setFixedSize(19, 8)
         OWGUI.hSlider(box, self, 'pLearning', minValue=10, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")        
 
-        self.s[3] = QRadioButton('Test on Train Data', self.sBox)        
-        self.s[4] = self.testDataBtn = QRadioButton('Test on Test Data', self.sBox)
+        self.s[3] = QRadioButton('Test on train data', self.sBox)        
+        self.s[4] = self.testDataBtn = QRadioButton('Test on test data', self.sBox)
 
         QWidget(self.sBox).setFixedSize(0, 8)
         self.applyBtn = QPushButton("&Apply", self.sBox)
@@ -122,12 +122,12 @@ class OWTestLearners(OWWidget):
     # be tested. the list in results should either be recomputed or added
     # else, if learner=None, all results are recomputed (user pressed apply button)
     def test(self, learner=None):
-        if not self.data:
-            return
         if learner:
             learners = [learner]
         else:
             learners = self.learners
+        if not self.data:
+            return
 
         if self.sampleMethod==4 and not self.testdata:
             self.results = None
@@ -214,10 +214,6 @@ class OWTestLearners(OWWidget):
             self.setStatTable()
             return
 
-##        if self.testdata and data.domain <> self.testdata.domain:
-##            self.testdata = None
-##            self.results = None
-##            # self.setStatTable()
         self.data = orange.Filter_hasClassValue(data)
         self.classindex = 0 # data.targetValIndx
         if self.learners:
@@ -232,17 +228,18 @@ class OWTestLearners(OWWidget):
 
     def learner(self, learner, id=None):
         if learner: # a new or updated learner
-            # print 'ADD/UPD', learner.name, ", id:", id
             learner.id = id # remember id's of learners
             self.test(learner)
             if self.learners:
-                if id not in [l.id for l in self.learners]:
+                ids = [l.id for l in self.learners]
+                if id in ids: # updated learner
+                    self.learners[ids.index(id)] = learner
+                else: # new learner
                     self.learners.append(learner)
-            else:
+            else: # new and the only learner thus far
                 self.learners = [learner]
             self.applyBtn.setDisabled(FALSE)
         else: # remove a learner and corresponding results
-            # print 'REMOVE', id, 'FROM', self.learners
             ids = [l.id for l in self.learners]
             if id not in ids:
                 return                  # happens if a widget with learner empties the signal first
@@ -330,6 +327,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
     data = orange.ExampleTable('voting')
+    data1 = orange.ExampleTable('golf')
 
     l1 = orange.MajorityLearner(); l1.name = '1 - Majority'
 
@@ -342,7 +340,7 @@ if __name__=="__main__":
 
     l4 = orange.MajorityLearner(); l4.name = "4 - Majority"
 
-    testcase = 2
+    testcase = 3
 
     if testcase == 0: # 1(UPD), 3, 4
         ow.cdata(data)
@@ -363,6 +361,8 @@ if __name__=="__main__":
         ow.cdata(data)
         ow.learner(l1, 1)
         ow.learner(None, 1)
+    if testcase == 3: # sends data, then learner, then changes the name of the learner, then new data
+        pass
         
     ow.show()
     a.exec_loop()
