@@ -29,6 +29,7 @@ class OWGraphDrawerCanvas(OWGraph):
         self.visualizer = None
         self.selectedCurve = None
         self.selectedVertex = None
+        self.vertexDegree = []     # seznam vozlisc oblike (vozlisce, stevilo povezav), sortiran po stevilu povezav
         
         self.vertexSize = 6
         self.nVertices = 0
@@ -39,11 +40,15 @@ class OWGraphDrawerCanvas(OWGraph):
         
     def addSelection(self, ndx):
         #print("add selection")
-        self.selectionStyles[ndx] = self.curve(self.vertices[ndx]).symbol().brush().color().name()
-        newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(Qt.green), QPen(Qt.green), QSize(6, 6))
-        self.setCurveSymbol(self.vertices[ndx], newSymbol)
-        self.selection.append(ndx);
-        self.replot()
+        if not ndx in self.selection:
+            self.selectionStyles[ndx] = self.curve(self.vertices[ndx]).symbol().brush().color().name()
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(Qt.green), QPen(Qt.green), QSize(6, 6))
+            self.setCurveSymbol(self.vertices[ndx], newSymbol)
+            self.selection.append(ndx);
+            self.replot()
+            return True
+        
+        return False
 
             
     def removeSelection(self):
@@ -55,6 +60,72 @@ class OWGraphDrawerCanvas(OWGraph):
         self.selection = []
         self.selectionStyles = {}
         self.replot()
+        
+    def generateVertexPower(self):
+        # init vertexPower
+        for i in range(self.nVertices):
+            self.vertexDegree.append((i,0))
+            
+        # calculate vertex power
+        for e in range(self.nEdges):
+            (key,i,j) = self.edges[e]
+            (v_i,power_i) = self.vertexDegree[i]
+            (v_j,power_j) = self.vertexDegree[j]
+            
+            self.vertexDegree[i] = (v_i, power_i + 1)
+            self.vertexDegree[j] = (v_j, power_j + 1)
+                    
+        # sort ascending by power
+        for i in range(self.nVertices - 1):
+            for j in range(i, self.nVertices):
+                (v_i,power_i) = self.vertexDegree[i]
+                (v_j,power_j) = self.vertexDegree[j]
+                
+                if power_j > power_i:
+                    self.vertexDegree[i] = (v_j,power_j)
+                    self.vertexDegree[j] = (v_i,power_i)
+        
+    def selectHubs(self, no):
+        if self.vertexDegree == []:
+            self.generateVertexPower()
+            
+        count = 0
+        old_power = -1
+        next_power = -1     
+        #print "no: " + str(no)
+        while count < no or old_power == next_power:
+            (v,old_power) = self.vertexDegree[count]
+            
+            next_power = -1
+            if count < (len(self.vertexDegree) - 1):
+                (next_v, next_power) = self.vertexDegree[count + 1]
+                
+            self.addSelection(v)
+            #print "old_power: " + str(old_power) + " new_power: " + str(next_power)
+            count += 1
+            
+    def selectConnectedNodes(self, distance):
+        i = 0
+        newSelections = -1
+        while i < distance and newSelections <> 0:
+            newSelections = 0
+            selectedVertexes = []
+        
+            for v in self.selection:
+                selectedVertexes.append(v)
+            
+            for v in selectedVertexes:
+                for e in range(self.nEdges):
+                    (key,i,j) = self.edges[e]
+                    
+                    if i == v:
+                        if self.addSelection(j):
+                            newSelections += 1
+                    elif j == v:
+                        if self.addSelection(i):
+                            newSelections += 1
+            
+            i += 1
         
     def getSelectedExamples(self):
         if len(self.selection) == 0:
@@ -217,8 +288,7 @@ class OWGraphDrawerCanvas(OWGraph):
 
         if key >= 0 and dist < 15:
             if key in self.indexPairs.keys():   #to se zgodi samo, ce vozlisce ni povezano
-                if not self.indexPairs[key] in self.selection:
-                    self.addSelection(self.indexPairs[key])
+                self.addSelection(self.indexPairs[key])
                 return
 
             curve = self.curve(key)  #to je povezava, ker so bile te z insertCurve() dodane prej,
@@ -237,11 +307,9 @@ class OWGraphDrawerCanvas(OWGraph):
             py = self.invTransform(curve.yAxis(), pos.y())
 
             if self.dist([px, py], [vOb1.x(0), vOb1.y(0)]) <= self.dist([px, py], [vOb2.x(0), vOb2.y(0)]):
-                if not ndx1 in self.selection:
-                    self.addSelection(ndx1)
+                self.addSelection(ndx1)
             else:
-                if not ndx2 in self.selection:
-                    self.addSelection(ndx2)
+                self.addSelection(ndx2)
         else:
             self.removeSelection()
             
@@ -375,6 +443,7 @@ class OWGraphDrawerCanvas(OWGraph):
         
         self.nVertices = visualizer.graph.nVertices
         self.nEdges = 0
+        self.vertexDegree = []
         
         #dodajanje vozlisc
         for v in range(0, self.nVertices):

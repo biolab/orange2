@@ -42,7 +42,20 @@ class OWGraphDrawer(OWWidget):
         self.tooltipListBox = QListBox(self.styleBox, "tooltipAttributes")
         self.tooltipListBox.setMultiSelection(True)
         self.styleBox.connect(self.tooltipListBox, SIGNAL("clicked( QListBoxItem * )"), self.clickedTooltipLstBox)
+        
+        self.selectBox = QVGroupBox("Select", self.controlArea)
+        QLabel("Select Hubs", self.selectBox)
+        self.spinExplicit = 0
+        self.spinPercentage = 0
+        OWGUI.spin(self.selectBox, self, "spinPercentage", 0, 100, 1, label="Percentage:", callback=self.selectHubsPercentage)
+        OWGUI.spin(self.selectBox, self, "spinExplicit", 0, 1000000, 1, label="Explicit value:", callback=self.selectHubsExplicit)
+
+        QLabel("Select Connected Nodes", self.selectBox)
+        self.connectDistance = 0
+        OWGUI.spin(self.selectBox, self, "connectDistance", 0, 100, 1, label="Distance:", callback=self.selectConnectedNodes)
  
+        OWGUI.button(self.selectBox, self, "Select all Connected Nodes", callback=self.selectAllConnectedNodes)
+        
         pics=pixmaps()
         
         self.cgb = QHGroupBox(self.controlArea)
@@ -69,6 +82,23 @@ class OWGraphDrawer(OWWidget):
         #start of content (right) area
         self.box = QVBoxLayout(self.mainArea)
         self.box.addWidget(self.graph)
+        
+    def selectConnectedNodes(self):
+        self.graph.selectConnectedNodes(self.connectDistance)
+        
+    def selectAllConnectedNodes(self):
+        self.graph.selectConnectedNodes(1000000)
+            
+    def selectHubsExplicit(self):
+        if self.spinExplicit > self.visualize.nVertices():
+            self.spinExplicit = self.visualize.nVertices()
+            
+        self.spinPercentage = 100 * self.spinExplicit / self.visualize.nVertices()
+        self.graph.selectHubs(self.spinExplicit)
+    
+    def selectHubsPercentage(self):
+        self.spinExplicit = self.spinPercentage * self.visualize.nVertices() / 100
+        self.graph.selectHubs(self.spinExplicit)
     
     def sendData(self):
         graph = self.graph.getSelectedGraph()
