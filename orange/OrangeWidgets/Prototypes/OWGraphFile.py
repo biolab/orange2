@@ -132,15 +132,15 @@ class OWGraphFile(OWWidget):
             else:
                 data.name = fName
                 
-            print "nVertices graph: " + str(data.nVertices)
+            #print "nVertices graph: " + str(data.nVertices)
             self.graph = data
-            self.send("Graph", data)
+            self.send("Graph with ExampleTable", data)
 #            drawer = OWGraphDrawer()
 #            drawer.setGraph(data)
 #            drawer.show()
         else:
             print "None"
-            self.send("Graph", None)
+            self.send("Graph with ExampleTable", None)
 
     #vrstica je ali '' ali pa nek niz, ki se zakljuci z \n (newline)
     def getwords(self, line):
@@ -225,7 +225,7 @@ class OWGraphFile(OWWidget):
                     raise
                 break
             
-        print "nVertices: " + str(nVertices)
+        #print "nVertices: " + str(nVertices)
         graph = orange.GraphAsList(nVertices, 0)
         graph.name = graphName
         
