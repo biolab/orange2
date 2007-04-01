@@ -174,14 +174,15 @@ class OWCN2(OWWidget):
         self.classifier=None
         self.error()
         if self.data:
-##            try:
             oldDomain = orange.Domain(self.data.domain)
-            self.classifier = self.learner(self.data)
-            self.classifier.name = self.name
-            self.classifier.setattr("data",self.data)
+            learnData = orange.ExampleTable(oldDomain, self.data)
+            self.classifier=self.learner(learnData)
+            self.classifier.name=self.LearnerName
             for r in self.classifier.rules:
                 r.examples = orange.ExampleTable(oldDomain, r.examples)
             self.classifier.examples = orange.ExampleTable(oldDomain, self.classifier.examples)
+            self.classifier.setattr("data",self.classifier.examples)
+            self.error("")
 ##            except orange.KernelException, (errValue):
 ##                self.classifier=None
 ##                self.error(errValue)
