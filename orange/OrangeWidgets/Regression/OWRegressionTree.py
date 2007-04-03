@@ -36,16 +36,18 @@ class OWRegressionTree(OWWidget):
         self.data=None
 
         self.inputs=[("Example Table",ExampleTable,self.dataset)]
-        self.outputs=[("Learner",orange.Learner),("Classifier",orange.Classifier),("Classification Tree",orange.TreeClassifier)]
+        self.outputs=[("Learner",orange.Learner),("Regressor",orange.Classifier),("Regression Tree",orange.TreeClassifier)]
         
         ##
         #GUI
         ##
         OWGUI.lineEdit(self.controlArea, self, "Name", box="Learner/Classifier name")
+
+        OWGUI.separator(self.controlArea)
         OWGUI.checkBox(self.controlArea, self, "Bin", label="Binarization", box ="Tree structure")
         
+        OWGUI.separator(self.controlArea)
         self.prePBox=OWGUI.widgetBox(self.controlArea, "Pre-Pruning")
-        self.postPBox=OWGUI.widgetBox(self.controlArea, "Post-Pruning")
 
         #OWGUI.checkWithSpin(self.prePBox, self, "Min. instances in leaves: ", 1, 1000,
         #                    "MinInstCheck", "MinInstVal")
@@ -57,7 +59,10 @@ class OWRegressionTree(OWWidget):
         #                    "MaxMajCheck", "MaxMajVal", "% of majority class")
 
         #OWGUI.checkBox(self.postPBox, self, 'PostMaj', 'Recursively merge leaves with same majority class')
-        OWGUI.checkWithSpin(self.postPBox, self, "m for m-error pruning ", 0, 1000, 'PostMPCheck', 'PostMPVal')
+
+        OWGUI.separator(self.controlArea)
+        self.postPBox=OWGUI.widgetBox(self.controlArea, "Post-Pruning")
+        OWGUI.checkWithSpin(self.postPBox, self, "Prunning with m-estimate, m:", 0, 1000, 'PostMPCheck', 'PostMPVal')
 
         OWGUI.button(self.controlArea, self, "&Apply settings",callback=self.setLearner)
         self.setLearner()
@@ -79,13 +84,13 @@ class OWRegressionTree(OWWidget):
         try:
             classifier=learner(self.data)
             classifier.name=self.Name
-            self.send("Classifier",classifier)
-            self.send("Classification Tree",classifier)
+            self.send("Regressor",classifier)
+            self.send("Regression Tree", classifier)
         except orange.KernelException, (errValue):
             self.error(str(errValue))
             print errValue
-            self.send("Classifier",None)
-            self.send("Classification Tree", None)
+            self.send("Regressor",None)
+            self.send("Regression Tree", None)
         #orngTree.printTxt(classifier)
     
     def dataset(self, data):
@@ -94,8 +99,8 @@ class OWRegressionTree(OWWidget):
             self.setLearner()
         else:
             self.send("Learner",None)
-            self.send("Classifier",None)
-
+            self.send("Regressor",None)
+            self.send("Regression Tree", None)
 
 if __name__=="__main__":
     app=QApplication(sys.argv)

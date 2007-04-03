@@ -183,7 +183,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.settingsList=OWTreeViewer2D.settingsList+["ShowPies"]
         
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
+        self.outputs = [("Examples", ExampleTable)]
         
         self.ShowPies=1
         self.TargetClassIndex=0

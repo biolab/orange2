@@ -1,9 +1,9 @@
 """
-<name> Regression Tree Viewer 2D</name>
+<name> Regression Tree Graph</name>
 <description>Regression tree viewer (graph view).</description>
-<icon>icons/RegressionTreeViewer2D.png</icon>
+<icon>icons/RegressionTreeGraph.png</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
-<priority>2120</priority>
+<priority>2110</priority>
 """
 from OWTreeViewer2D import *
 
@@ -25,7 +25,8 @@ class RegressionNode(CanvasNode):
         self.addTextLine(None, None, None)
         self.addTextLine(self.name, None, False)
         self.textind=[]
-        self.rule=(isinstance(self.parent, QCanvasRectangle) and self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
+        self.rule=(isinstance(self.parent, QCanvasRectangle) and \
+                   self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
         self.textAdvance=15
 
     def setSize(self,w,h):
@@ -149,11 +150,10 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.canvasView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
         self.navWidget.setCaption("Qt Navigator")
-        OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
         self.setMouseTracking(True)
 
         nodeInfoBox = QVButtonGroup("Show Info On", self.NodeTab)
-        nodeInfoButtons = ['Predicted Value', 'Variance', 'Deviance', ' Error', 'Number of Instances']
+        nodeInfoButtons = ['Predicted value', 'Variance', 'Deviance', 'Error', 'Number of instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'error', 'inst']
         self.NodeInfoW = []; self.dummy = 0
         for i in range(len(nodeInfoButtons)):
@@ -162,7 +162,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
                                nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
 
-        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in Node', 'Variance', 'Deviance', 'Error'], box='Node Color',                            
+        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Variance', 'Deviance', 'Error'], box='Node Color',                            
                                 callback=self.toggleNodeColor)
         
         OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
