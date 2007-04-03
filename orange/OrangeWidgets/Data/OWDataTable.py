@@ -80,7 +80,7 @@ class OWDataTable(OWWidget):
             self.data[id] = data
             self.showMetas[id] = (True, [])
             self.progressBarInit()
-            table=QTable(None)
+            table=MyTable(None)
             table.setSelectionMode(QTable.NoSelection)
             self.id2table[id] = table
             self.table2id[table] = id
@@ -212,10 +212,17 @@ class OWDataTable(OWWidget):
         for i,var in enumerate(varsMetas):
             hheader.setLabel(i, var.name)
         hheader.setLabel(numVarsMetas, "")
-
+        
         # set the contents of the table (values of attributes)
         # iterate variables
+        table.disableUpdate=True
+        table.hide()
+        table.ranks={}
+        table.values={}
+        table.setDelayColumnAdjust(numVarsMetas>200)
         for j,(key,attr) in enumerate(zip(range(numVars) + metaKeys, varsMetas)):
+            #table.setNumCols(j+1)
+            #hheader.setLabel(j, attr.name)
             self.progressBarSet(j*100.0/numVarsMetas)
             if attr == data.domain.classVar:
                 bgColor = QColor(160,160,160)
@@ -226,19 +233,33 @@ class OWDataTable(OWWidget):
                 bgColor = Qt.white
             # generate list of tuples (attribute value, instance index) and sort by attrVal
             valIdx = [(ex[key].native(),idx) for idx,ex in enumerate(data)]
+            table.values[j]=[str(v[0])+" " for v in valIdx]
             valIdx.sort()
             # generate a dictionary where key: instance index, value: rank
             idx2rankDict = dict(zip([x[1] for x in valIdx], range(numEx)))
+            table.ranks[j]=dict(zip(range(numEx), [x[1] for x in valIdx]))
+            table.columnColor[j]=bgColor
             for i in range(numEx):
                 # set sorting key to ranks
-                OWGUI.tableItem(table, i, j, str(data[i][key]), editType=QTableItem.Never, background=bgColor, sortingKey=self.sortingKey(idx2rankDict[i], numSpaces))
+                pass
+                #OWGUI.tableItem(table, i, j, str(data[i][key]), editType=QTableItem.Never, background=bgColor, sortingKey=self.sortingKey(idx2rankDict[i], numSpaces))
             # adjust the width of the table
-            table.adjustColumn(j)
-            table.setColumnWidth(j, table.columnWidth(j)+22)
-
+            #table.showColumn(j)
+            if numVarsMetas<=200:
+                table.adjustColumn(j)
+            #table.setColumnWidth(j, table.columnWidth(j)+22)
+        #for j in range(numVarsMetas):
+        #    table.adjustColumn(j)
         # add hidden column with consecutive numbers for restoring the original order of examples
-        for i in range(numEx):
-            OWGUI.tableItem(table, i, numVarsMetas, "", editType=QTableItem.Never, sortingKey=self.sortingKey(i, numSpaces))
+        #hheader.setLabel(numVarsMetas, "")
+        #table.setNumCols(numVarsMetas+1)
+        table.show()
+        #for i in range(numEx):
+        #    OWGUI.tableItem(table, i, numVarsMetas, "", editType=QTableItem.Never, sortingKey=self.sortingKey(i, numSpaces))
+        table.ranks[table.numCols()-1]=dict([(i,i) for i in range(numEx)])
+        table.values[table.numCols()-1]=["" for i in range(numEx)]
+        table.columnColor[table.numCols()-1]=QColor(0,0,0)
+        table.disableUpdate=False
         table.hideColumn(numVarsMetas)
 
         # adjust vertical header
@@ -252,6 +273,7 @@ class OWDataTable(OWWidget):
         #table.setColumnMovingEnabled(1)
         qApp.restoreOverrideCursor()
         table.setCurrentCell(-1,-1)
+        table.clearCache()
         table.show()
 
 
@@ -281,7 +303,174 @@ class OWDataTable(OWWidget):
 # Test the widget, run from DOS prompt
 # > python OWDataTable.py)
 # Make sure that a sample data set (adult_sample.tab) is in the directory
+from sets import Set
+class MyTable(QTable):    
+    def __init__(self,*args):
+        QTable.__init__(self, *args)
+        self.disableUpdate=False
+        self.disableColumnAdjust=False
+        self.adjustedColumnCache=Set()
+        self.sortingColumn=-1
+        self.sortingAscending=True
+        self.delayColumnAdjust=False
+        self.columnColor={}
+        #self.setWFlags(Qt.WRepaintNoErase | Qt.WNorthWestGravity)
+        self.connect(self, SIGNAL("contentsMoving(int, int)"),self.update1)
+        self.connect(self.horizontalScrollBar(), SIGNAL("sliderPressed()"), self.sliderPressed)
+        self.connect(self.horizontalScrollBar(), SIGNAL("sliderReleased()"), self.sliderReleased)
+        self.connect(self, SIGNAL("currentChanged(int, int)"), self.currentSelection)
+        self.rectPen=QPen(Qt.black,1)
+        self.selectedRectPen=QPen(Qt.black,2)
+        self.currentSelected=(-1,-1)
+        p=QPainter(self)
+        self.setPainterFont(p)
+        tm=p.fontMetrics()
+        self.charWidth=tm.width("a")
+        
 
+    def setDelayColumnAdjust(self, bool):
+        self.delayColumnAdjust=bool
+        
+    def clearCache(self):
+        self.adjustedColumnCache=Set()
+        
+    def eventFilter(self, obj, event):
+        if obj==self or obj==self.horizontalHeader:
+            if event.type()==QEvent.Paint and self.delayColumnAdjust:
+                self.adjustColumns()
+                return True        
+        return QTable.eventFilter(self, obj, event)
+    
+    def adjustColumns(self):
+        if self.disableColumnAdjust:
+            return
+        #print "adjusting"
+        cStart=self.columnAt(self.contentsX())+1
+        cEnd=self.columnAt(self.contentsX()+self.visibleWidth())
+        while cStart<min([self.columnAt(self.contentsX()+self.visibleWidth())+1, self.numCols()-1]):
+            #for i in range(cStart, cEnd):
+            if cStart not in self.adjustedColumnCache:
+                self.adjustColumn(cStart)
+                #self.setColumnWidth(cStart, self.columnWidth(cStart)+22)
+                self.adjustedColumnCache.add(cStart)
+            cStart+=1
+    
+    def setColumnWidth(self, i, w):
+        #print i
+        QTable.setColumnWidth(self, i, w+22)
+
+    def adjustColumn(self, col):
+        p=QPainter(self)
+        self.setPainterFont(p)
+        tm=p.fontMetrics()
+        try:
+            maxlen=max([len(t) for t in self.values[col]+[str(self.horizontalHeader().label(col))]])
+            w=self.charWidth*maxlen
+            self.setColumnWidth(col,w)
+        except KeyError, err:
+            pass
+            #print "Exception in adjustColumn ", col
+                
+    def sliderPressed(self):
+        self.disableColumnAdjust=True
+
+    def sliderReleased(self):
+        self.disableColumnAdjust=False
+        #self.update()
+    
+    def update1(self, i, j):
+        self.update()
+
+    def paintCell(self, painter, row, col, cr, selected):
+        #print "Paint cell: ", row, col
+        #from pywin import debugger
+        #debugger.set_trace()
+        if selected:
+            painter.setPen(self.selectedRectPen)
+            painter.drawRect(cr)
+            painter.setPen(self.rectPen)
+        else:
+            p=QPoint(1,1)
+            cr=QRect(cr.topLeft()-p, cr.bottomRight())
+            painter.setPen(self.rectPen)
+            painter.drawRect(cr)
+        #try:
+        if self.sortingAscending:
+            text=self.values[col][self.ranks[self.sortingColumn][row]]
+        else:
+            numAll=self.numRows()
+            text=self.values[col][self.ranks[self.sortingColumn][numAll-1-row]]
+        painter.drawText(cr, Qt.AlignRight|Qt.AlignVCenter, text)
+        #except:
+        #    pass
+
+    def clearCell(self, row, col):
+        #print "Clear cell: ", row, col
+        p=QPainter(self)
+        p.fillRect(self.cellGeometry(row, col), QBrush(Qt.white))
+        
+    def updateCell(self, row, col):
+        #print "Update cell: ",row, col
+        if row!=-1 and col!=-1:
+            pass
+            #self.clearCell(row, col)
+        QTable.updateCell(self, row, col)
+        
+    def drawContents(self, painter, cx=0, cy=0, cw=0, ch=0):
+        #print "Draw contnents: ",cx,cy,cw,ch
+        if self.sortingColumn not in self.ranks:
+            self.sortingColumn=self.numCols()-1
+        #self.paintEmptyArea(painter, cx, cy, cw, ch)
+        self.setPainterFont(painter)
+        xStart=self.columnAt(cx)
+        xEnd=min([self.columnAt(cx+cw)+1, self.numCols()])
+        yStart=self.rowAt(cy)
+        yEnd=min([self.rowAt(cy+ch)+1, self.numRows()])
+        for i in range(xStart, xEnd):
+            painter.setBrush(QBrush(self.columnColor[i]))
+            for j in range(yStart, yEnd):
+                self.paintCell(painter, j, i, self.cellGeometry(j, i), self.isSelected(j, i))
+                
+    def paintEvent(self, paintEvent):
+        QTable.paintEvent(self, paintEvent)
+        painter=QPainter(self) #upper left corner gets painted like the 0,0 cell (why??) 
+        painter.setBrush(QBrush(Qt.gray))
+        painter.drawRect(1, 1, 32, 20)
+
+    def paintEmptyArea(self, painter, cx, cy, cw, ch):
+        painter.fillRect(cx, cy, cw, ch, QBrush(Qt.white))
+
+    def sortColumn(self, col, ascending=True, wholeRows=False):
+        self.sortingColumn=col
+        self.sortingAscending=ascending
+        self.repaintContents(self.contentsX(), self.contentsY(), self.visibleWidth(), self.visibleHeight())
+        #print "sort by: ", col, ascending
+
+    def currentSelection(self, row, col):
+        if self.currentSelected!=(-1,-1):
+            r,c=self.currentSelected
+            self.currentSelected=(-1,-1)
+            self.updateCell(r,c)
+        self.currentSelected=(row,col)
+        self.updateCell(row,col)
+
+    def isSelected(self, row, col):
+        return self.currentSelected==(row, col)
+    
+    def resizeData(self, i):
+        return
+
+    def setPainterFont(self, painter):
+        font=QFont()
+        font.setStyleHint(QFont.Courier)
+        painter.setFont(font)
+
+    """    
+    def columnWidthChanged(self, col):
+        pass
+        #print col
+        #QTable.columnWidthChanged(self, col)"""
+        
 if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWDataTable()
