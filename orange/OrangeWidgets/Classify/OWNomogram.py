@@ -20,8 +20,6 @@ from OWWidget import *
 from OWNomogramGraph import *
 
 import orngLR
-import orngLR_Jakulin
-
 
 
 aproxZero = 0.0001
@@ -376,6 +374,8 @@ class OWNomogram(OWWidget):
         self.bnomogram.show()
 
     def svmClassifier(self, cl):
+        import orngLR_Jakulin
+
         import Numeric
         import orngLinVis
 
@@ -499,8 +499,10 @@ class OWNomogram(OWWidget):
             
         # calculate prior probability (from self.TargetClassIndex)
         self.bnomogram = BasicNomogram(self, AttValue("Constant", mult*cl.priorProbBetas[0]))
+        self.cl.setattr("rulesOrdering", [])
         for r_i,r in enumerate(cl.rules):
             a = AttrLine(getConditions(r), self.bnomogram)
+            self.cl.rulesOrdering.append(getConditions(r))
             if r.classifier.defaultVal == 0:
                 sign = mult
             else: sign = -mult
@@ -553,7 +555,7 @@ class OWNomogram(OWWidget):
         self.updateNomogram()
         
     def updateNomogram(self):
-        import orngSVM
+##        import orngSVM
 
         def setNone():
             self.footer.setCanvas(None)
@@ -576,8 +578,8 @@ class OWNomogram(OWWidget):
 #                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
 #            else:
                 self.nbClassifier(self.cl)
-        elif type(self.cl) == orngLR_Jakulin.MarginMetaClassifier and self.data:
-            self.svmClassifier(self.cl)
+##        elif type(self.cl) == orngLR_Jakulin.MarginMetaClassifier and self.data:
+##            self.svmClassifier(self.cl)
 
         elif type(self.cl) == orange.LogRegClassifier:
             # get if there are any continuous attributes in data -> then we need data to compute margins
@@ -601,6 +603,8 @@ class OWNomogram(OWWidget):
             if x<0:
                 return -1;
             return 1;
+        def compare_to_ordering_in_rules(x,y):
+            return self.cl.rulesOrdering.index(x.name) - self.cl.rulesOrdering.index(y.name)          
         def compare_to_ordering_in_data(x,y):
             return self.data.domain.attributes.index(self.data.domain[x.name]) - self.data.domain.attributes.index(self.data.domain[y.name])   
         def compare_to_ordering_in_domain(x,y):
@@ -614,8 +618,9 @@ class OWNomogram(OWWidget):
 
         if not self.bnomogram:
             return
-
-        if self.sort_type == 0 and self.data:
+        if self.sort_type == 0 and hasattr(self.cl, "rulesOrdering"):
+            self.bnomogram.attributes.sort(compare_to_ordering_in_rules)
+        elif self.sort_type == 0 and self.data:
             self.bnomogram.attributes.sort(compare_to_ordering_in_data)
         elif self.sort_type == 0 and self.cl.domain:
             self.bnomogram.attributes.sort(compare_to_ordering_in_domain)
@@ -795,7 +800,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("titanic.tab")
+    data = orange.ExampleTable("heart_disease.tab")
 
     bayes = orange.BayesLearner(data)
     bayes.setattr("data",data)
