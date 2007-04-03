@@ -24,13 +24,14 @@ class colorItem(QTableItem):
 ##############################################################################
 
 class OWPredictions(OWWidget):
-    settingsList = ["ShowProb", "ShowClass", "ShowTrueClass", "ShowAttributeMethod", "sendDataType", "commitOnChange"]
+    settingsList = ["ShowProb", "ShowClass", "ShowTrueClass",
+                    "ShowAttributeMethod", "sendDataType", "commitOnChange"]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Classifications")
 
         self.callbackDeposit = []
-        self.inputs = [("Examples", ExampleTable, self.dataset),("Classifiers", orange.Classifier, self.classifier, Multiple)]
+        self.inputs = [("Examples", ExampleTable, self.dataset), ("Classifiers", orange.Classifier, self.classifier, Multiple)]
         self.outputs = [("Selected Examples", ExampleTableWithClass)]
         self.classifiers = {}
 
@@ -46,24 +47,32 @@ class OWPredictions(OWWidget):
         # GUI - Options
         self.options = QVButtonGroup("Options", self.controlArea)
         self.options.setDisabled(1)
-        OWGUI.checkBox(self.options, self, 'ShowProb', "Show predicted probabilities", callback=self.updateTableOutcomes)
+        OWGUI.checkBox(self.options, self, 'ShowProb', "Show predicted probabilities",
+                       callback=self.updateTableOutcomes)
 
         self.lbClasses = QListBox(self.options)
         self.lbClasses.setSelectionMode(QListBox.Multi)
         self.connect(self.lbClasses, SIGNAL("selectionChanged()"), self.updateTableOutcomes)
         
-        OWGUI.checkBox(self.options, self, 'ShowClass', "Show predicted class", callback=[self.updateTableOutcomes, self.checkenable])
-        self.trueClassCheckBox = OWGUI.checkBox(self.options, self, 'ShowTrueClass', "Show true class", callback=self.updateTrueClass, disabled=1)
+        OWGUI.checkBox(self.options, self, 'ShowClass', "Show predicted class",
+                       callback=[self.updateTableOutcomes, self.checkenable])
+        self.trueClassCheckBox = OWGUI.checkBox(self.options, self, 'ShowTrueClass',
+                                                "Show true class", callback=self.updateTrueClass, disabled=1)
 
         OWGUI.separator(self.controlArea)
         self.att = QVButtonGroup("Data Attributes", self.controlArea)
-        OWGUI.radioButtonsInBox(self.att, self, 'ShowAttributeMethod', ['Show all', 'Hide all'], callback=self.updateAttributes)
+        OWGUI.radioButtonsInBox(self.att, self, 'ShowAttributeMethod', ['Show all', 'Hide all'],
+                                callback=self.updateAttributes)
         self.att.setDisabled(1)
 
         OWGUI.separator(self.controlArea)
         self.outBox = QVButtonGroup("Output", self.controlArea)
-        OWGUI.radioButtonsInBox(self.outBox, self, 'sendDataType', ['None', 'Data with class conflict', 'Data with class agreement'], box='Data Selection',
-                                tooltips=['No data will be sent to the output channel', 'Send data for which the predicted (and true class, if shown) are different.', 'Send data for which the predicted (and true class, if shown) match.'],
+        OWGUI.radioButtonsInBox(self.outBox, self, 'sendDataType',
+                                ['None', 'Data with class conflict', 'Data with class agreement'],
+                                box='Data Selection',
+                                tooltips=['No data will be sent to the output channel',
+                                          'Send data for which the predicted (and true class, if shown) are different.',
+                                          'Send data for which the predicted (and true class, if shown) match.'],
                                 callback=self.checksenddata)
         OWGUI.checkBox(self.outBox, self, 'commitOnChange', 'Commit data on any change')
         self.commitBtn = OWGUI.button(self.outBox, self, "Commit", callback=self.senddata)
@@ -110,7 +119,8 @@ class OWPredictions(OWWidget):
                         self.classifications[i].append(cl)
                         s = ''
                         if self.ShowProb and showatt:
-                            s += reduce(lambda x,y: x+' : '+y, map(lambda x: "%5.3f"%x[1], filter(lambda x,s=attsel: s[x[0]], enumerate(p))))
+                            s += reduce(lambda x,y: x+' : '+y,
+                                        map(lambda x: "%5.3f"%x[1], filter(lambda x,s=attsel: s[x[0]], enumerate(p))))
                             if self.ShowClass:
                                 s += ' -> '
                         if self.ShowClass:
@@ -290,7 +300,6 @@ class OWPredictions(OWWidget):
         for (i, classifier) in enumerate(self.classifiers):
             selclass.append(i+1)
         
-##        s = [reduce(lambda x,y: [x, None][x==None or x<>y],  map(lambda x: cls[x], selclass)) <> None for cls in self.classifications]
         s = [cmpclasses(map(lambda x: cls[x], selclass)) for cls in self.classifications]
         if self.sendDataType == 1:
             s = [not x for x in s]
