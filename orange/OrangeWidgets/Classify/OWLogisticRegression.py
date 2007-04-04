@@ -2,7 +2,7 @@
 <name>Logistic Regression</name>
 <description>Logistic regression learner/classifier.</description>
 <icon>icons/LogisticRegression.png</icon>
-<contact>Martin Mozina (martin.mozina(@at@)fri.uni-lj.si)</contact> 
+<contact>Martin Mozina (martin.mozina(@at@)fri.uni-lj.si)</contact>
 <priority>15</priority>
 """
 
@@ -13,10 +13,10 @@ import OWGUI
 class OWLogisticRegression(OWWidget):
     settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation", "limitNumAttr"]
 
-    def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):    
+    def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):
         OWWidget.__init__(self, parent, signalManager, name)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata)]
+        self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Attributes", list)]
 
         from orngTree import TreeLearner
@@ -45,7 +45,7 @@ class OWLogisticRegression(OWWidget):
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        box = OWGUI.widgetBox(self.controlArea, "Attribute selection", addSpace=True)        
+        box = OWGUI.widgetBox(self.controlArea, "Attribute selection", addSpace=True)
 
         OWGUI.checkBox(box, self, "removeSingular", "Remove singular attributes", tooltip="Remove constant attributes and attributes causing singularities")
 
@@ -73,18 +73,18 @@ class OWLogisticRegression(OWWidget):
 
         if self.univariate:
             self.learner = Univariate_LogRegLearner()
-        else:            
+        else:
             self.learner = LogRegLearner(removeSingular = self.removeSingular, imputer = imputer, removeMissing = removeMissing,
                                          stepwiseLR = self.stepwiseLR, addCrit = self.addCrit/100., removeCrit = self.removeCrit/100.,
                                          numAttr = self.limitNumAttr and float(self.numAttr) or -1.0)
 
         self.learner.name = self.name
-        self.send("Learner", self.learner)        
+        self.send("Learner", self.learner)
         self.applyData()
-        
+
     def applyData(self):
         classifier = None
-        
+
         if self.data:
             if self.zeroPoint:
                 classifier, betas_ap = LogRegLearner_getPriors(self.data)
@@ -104,20 +104,20 @@ class OWLogisticRegression(OWWidget):
 
         self.send("Classifier", classifier)
 
-        
-    def cdata(self, data):
+
+    def setData(self, data):
         self.data = data
         self.applyData()
 
-        
+
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWLogisticRegression()
     a.setMainWidget(ow)
 
     dataset = orange.ExampleTable(r'..\..\doc\datasets\heart_disease')
-    ow.cdata(dataset)
+    ow.setData(dataset)
 
     ow.show()
     a.exec_loop()
-    ow.saveSettings() 
+    ow.saveSettings()

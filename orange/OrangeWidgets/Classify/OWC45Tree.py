@@ -2,7 +2,7 @@
 <name>C4.5</name>
 <description>C45 (classification tree) learner/classifier.</description>
 <icon>icons/C45.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>35</priority>
 """
 
@@ -19,10 +19,10 @@ class OWC45Tree(OWWidget):
 
     def __init__(self, parent=None, signalManager = None, name='C4.5'):
         OWWidget.__init__(self, parent, signalManager, name)
-        
+
         self.callbackDeposit = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
+        self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier), ("C45 Tree", orange.C45Classifier)]
 
         # Settings
@@ -32,12 +32,12 @@ class OWC45Tree(OWWidget):
         self.iterative = 0; self.manualWindow = 0; self.window = 50;     self.manualIncrement = 0;  self.increment = 10;   self.trials = 10
 
         self.convertToOrange = 1
-        
+
         self.loadSettings()
-        
+
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
-        
+
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
@@ -65,29 +65,29 @@ class OWC45Tree(OWWidget):
         self.cbIterative.makeConsistent()
 
         OWGUI.separator(self.controlArea)
-        
+
         OWGUI.checkBox(self.controlArea, self, 'convertToOrange', 'Convert to orange tree structure', box = 1)
 
         OWGUI.separator(self.controlArea)
-        
+
         OWGUI.button(self.controlArea, self, "&Apply Setting", callback = self.setLearner, disabled=0)
 
         self.adjustSize()
 
     def activateLoadedSettings(self):
-        self.setLearner()    
+        self.setLearner()
 
-    # main part:         
+    # main part:
 
-    def cdata(self,data):
-        self.data = data
+    def setData(self,data):
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         self.setLearner()
 
 
     def setLearner(self):
         try:
             self.learner = orange.C45Learner(gainRatio=not self.infoGain, subset=self.subset, probThresh=self.probThresh,
-                                             minObjs=self.useMinObjs and self.minObjs or 0, prune=self.prune, cf=self.cf/100., 
+                                             minObjs=self.useMinObjs and self.minObjs or 0, prune=self.prune, cf=self.cf/100.,
                                              batch = not self.iterative, window=self.manualWindow and self.window or 0, increment=self.manualIncrement and self.increment or 0, trials=self.trials,
                                              convertToOrange = self.convertToOrange, storeExamples = 1)
         except:
@@ -96,10 +96,10 @@ class OWC45Tree(OWWidget):
 
         self.learner.name = self.name
         self.send("Learner", self.learner)
-        
+
         self.learn()
 
-        
+
     def learn(self):
         self.error()
         if self.data and self.learner:
@@ -136,7 +136,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
 ##    dataset = orange.ExampleTable('adult_sample')
-##    ow.cdata(dataset)
+##    ow.setData(dataset)
 
     ow.show()
     a.exec_loop()

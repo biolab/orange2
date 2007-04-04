@@ -2,7 +2,7 @@
 <name>CN2 Rules Viewer</name>
 <description>Viewer of classification rules.</description>
 <icon>CN2RulesViewer.png</icon>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2120</priority>
 """
 
@@ -33,7 +33,7 @@ class MyCanvasView(QCanvasView):
                 self.addSelection(obj[-1])
                 self.parent.select()
                 self.lastIndex=obj[-1].index
-    
+
     def contentsMousePressEvent(self,e):
         self.buttonPressed=True
         self.lastIndex=-1
@@ -41,7 +41,7 @@ class MyCanvasView(QCanvasView):
             self.parent.selRect=[]
             for r in self.parent.rectObj:
                 r.setBrush(QBrush(Qt.NoBrush))
-               
+
     def contentsMouseReleaseEvent(self,e):
         self.flag=False
         obj=self.canvas().collisions(e.pos())
@@ -62,16 +62,16 @@ class MyCanvasView(QCanvasView):
         else:
             self.parent.selRect.append(rect)
             rect.setBrush(self.brush)
-        self.parent.canvas.update()         
+        self.parent.canvas.update()
 
 class OWCN2RulesViewer(OWWidget):
     settingsList=["RuleLen","RuleQ","Coverage","Commit","Rule","Sort","Dist","DistBar","Class"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager,"CN2 Rules Viewer")
-        
-        self.inputs=[("Rule Classifier", orange.RuleClassifier, self.data)]
-        self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Attribute List", AttributeList)]
+
+        self.inputs=[("Rule Classifier", orange.RuleClassifier, self.setRuleClassifier)]
+        self.outputs=[("Examples", ExampleTable), ("Attribute List", AttributeList)]
         self.RuleLen=1
         self.RuleQ=1
         self.Coverage=1
@@ -95,7 +95,7 @@ class OWCN2RulesViewer(OWWidget):
         self.headerView.setVScrollBarMode(QScrollView.AlwaysOff)
         layout.addWidget(self.headerView)
         layout.addWidget(self.canvasView)
-        
+
         box=OWGUI.widgetBox(self.controlArea,"Show info")
 
         OWGUI.checkBox(box,self,"RuleLen","Rule length",callback=self.drawRules)
@@ -107,6 +107,7 @@ class OWCN2RulesViewer(OWWidget):
 
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Sorting")
+        box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
         self.sortBox=OWGUI.comboBox(box, self, "Sort", 
                                     items=["No sorting", "Rule length", "Rule quality", "Coverage", "Predicted class",
                                            "Distribution","Rule"]
@@ -118,14 +119,14 @@ class OWCN2RulesViewer(OWWidget):
         OWGUI.button(box,self,"&Commit",callback=self.commit)
 
         QVBox(self.controlArea)
-        
-        OWGUI.button(self.controlArea,self,"&Save rules to file",callback=self.saveRules)
+
+        OWGUI.button(self.controlArea,self,"&Save rules to file",callback=self.saveRules, debuggingEnabled = 0)
 
         self.examples=None
         self.obj=[]
         self.selRect=[]
         self.rectObj=[]
-        
+
         self.ctrlPressed=False
         self.setFocusPolicy(QWidget.StrongFocus)
 
@@ -150,7 +151,7 @@ class OWCN2RulesViewer(OWWidget):
         self.text=text
         #self.items=items
         self.drawRules()
-        
+
 
     def drawRules(self):
         self.oldSelection=[r.rule for r in self.selRect]
@@ -173,7 +174,7 @@ class OWCN2RulesViewer(OWWidget):
         items=[]
         items.append(l)
         self.obj.extend(l)
-        
+
         for text in self.text:
             l=[]
             if self.RuleLen:
@@ -198,7 +199,7 @@ class OWCN2RulesViewer(OWWidget):
                 l.append(t)
             if self.DistBar:
                 t=DistBar(text[5],self.Dist,self.canvas)
-                l.append(t)                    
+                l.append(t)
             if self.Rule:
                 t=QCanvasText(self.canvas)
                 t.setText(text[6])#self.ruleText(text[-1]))
@@ -206,7 +207,7 @@ class OWCN2RulesViewer(OWWidget):
             l.append(QCanvasText(self.canvas))
             self.obj.extend(l)
             items.append(l)
-                
+
         textMapV=[10]+map(lambda s:max([t.boundingRect().height()+10 for t in s]), items[1:])
         textMapH=[[s[i].boundingRect().width()+10 for s in items] for i in range(len(items[0]))]
         textMapH=[10]+map(lambda s:max(s), textMapH)
@@ -216,7 +217,7 @@ class OWCN2RulesViewer(OWWidget):
 
         for i in range(1,len(textMapH)):
             textMapH[i]+=textMapH[i-1]
-            
+
         self.ctrlPressed=True
         for i in range(1,len(textMapV)):
             for j in range(len(textMapH)-2):
@@ -236,7 +237,7 @@ class OWCN2RulesViewer(OWWidget):
             self.obj.append(r)
             self.rectObj.append(r)
         self.ctrlPressed=False
-            
+
         self.canvas.resize(textMapH[-1], textMapV[-1])
         for i,t in enumerate(items[0][:-1]):
             t.move(textMapH[i],0)
@@ -244,7 +245,7 @@ class OWCN2RulesViewer(OWWidget):
         self.headerCanvas.update()
         self.headerCanvas.resize(textMapH[-1]+20,20)
         self.canvas.update()
-        
+
     def ruleText(self, r):
         str=orngCN2.ruleToString(r)
         list=re.split("([0-9.]*)",str)
@@ -284,8 +285,8 @@ class OWCN2RulesViewer(OWWidget):
         self.examples=examples
         if self.Commit:
             self.commit()
-            
-    def data(self, classifier):
+
+    def setRuleClassifier(self, classifier):
         if classifier:
             self.clear()
             self.classifier=classifier
@@ -303,7 +304,7 @@ class OWCN2RulesViewer(OWWidget):
         elif str(a[self.sortBy])>str(b[self.sortBy]):
             return 1
         else:
-            return -1    
+            return -1
     def compareDist(self,a,b):
 ##        if max(a[-1].classDistribution)/a[-1].classDistribution.abs \
 ##                < max(b[-1].classDistribution)/b[-1].classDistribution.abs:
@@ -313,7 +314,7 @@ class OWCN2RulesViewer(OWWidget):
             return 1
         else:
             return -1
-        
+
     def sort(self):
         text=[]
         if self.Sort==5:
@@ -329,7 +330,7 @@ class OWCN2RulesViewer(OWWidget):
                 self.sortBy=self.Sort
             self.text.sort(self.compare)
         if self.Sort>=2 and self.Sort!=4 and self.Sort !=6:
-            self.text.reverse()     
+            self.text.reverse()
 
     def selectAttributes(self):
         import sets
@@ -341,7 +342,7 @@ class OWCN2RulesViewer(OWWidget):
                 s=re.split("[=<>]", l.strip(" "))
                 selected.append(s[0])
         selected=reduce(lambda l,r:(r in l) and l or l+[r], selected, [])
-        return selected          
+        return selected
 
     def commit(self):
         if self.examples:
@@ -353,14 +354,12 @@ class OWCN2RulesViewer(OWWidget):
                 examples=orange.ExampleTable(domain, self.examples)
             else:
                 examples = orange.ExampleTable(self.examples)
-            self.send("Classified Examples", examples)
             self.send("Examples", examples)
             self.send("Attribute List", orange.VarList(varList))
         else:
-            self.send("Classified Examples", None)
             self.send("Examples",None)
             self.send("Attribute List", None)
-            
+
 
     def saveRules(self):
         fileName=str(QFileDialog.getSaveFileName("Rules.txt",".txt"))
@@ -370,7 +369,7 @@ class OWCN2RulesViewer(OWWidget):
             return
         for r in self.rules:
             f.write(orngCN2.ruleToString(r)+"\n")
-            
+
     def keyPressEvent(self, key):
         if key.key()==Qt.Key_Control:
             self.ctrlPressed=True
@@ -395,7 +394,7 @@ class DistBar(QCanvasRectangle):
         self.text=QCanvasText(distText,canvas)
         self.barWidth=max([barWidth, showText and self.text.boundingRect().width()])
         self.setSize(self.barWidth, barHeight)
-        
+
     def fixGeom(self, width):
         distText=self.distText.strip("<>")
         dist=[float(f) for f in distText.split(",")]
@@ -409,7 +408,7 @@ class DistBar(QCanvasRectangle):
             if dist[i]==m:
                 r.setBrush(QBrush(classColor[i]))
             self.rect.append(r)
-            
+
     def move(self, x,y):
         if self.showText:
             ty, ry=y, y+18
@@ -420,7 +419,7 @@ class DistBar(QCanvasRectangle):
             r.move(x+pos,ry)
             pos+=r.width()
         self.text.move(x,ty)
-            
+
     def show(self):
         for r in self.rect:
             r.show()
@@ -430,8 +429,8 @@ class DistBar(QCanvasRectangle):
         for r in self.rect:
             r.setCanvas(canvas)
         self.text.setCanvas(canvas)
-    
-    
+
+
 if __name__=="__main__":
     ap=QApplication(sys.argv)
     w=OWCN2RulesViewer()
@@ -439,8 +438,8 @@ if __name__=="__main__":
     data=orange.ExampleTable("../../doc/datasets/car.tab")
     l=orngCN2.CN2UnorderedLearner()
     l.ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS()
-    w.data(l(data))
-    w.data(l(data))
+    w.setRuleClassifier(l(data))
+    w.setRuleClassifier(l(data))
     w.show()
     ap.exec_loop()
-    
+

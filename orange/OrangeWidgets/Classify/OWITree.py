@@ -2,7 +2,7 @@
 <name>Interactive Tree Builder</name>
 <description>Interactive Tree Builder</description>
 <icon>icons/ITree.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>50</priority>
 """
 from OWWidget import *
@@ -20,11 +20,11 @@ class FixedTreeLearner(orange.Learner):
 
 class OWITree(OWClassificationTreeViewer):
     settingsList = OWClassificationTreeViewer.settingsList
-    
+
     def __init__(self,parent = None, signalManager = None):
         OWClassificationTreeViewer.__init__(self, parent, signalManager, 'I&nteractive Tree Builder')
-        self.inputs = [("Examples", ExampleTable, self.cdata), ("Tree Learner", orange.Learner, self.learner)]
-        self.outputs = [("Classified Examples", ExampleTableWithClass), ("Classifier", orange.TreeClassifier), ("Tree Learner", orange.Learner)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Tree Learner", orange.Learner, self.setLearner)]
+        self.outputs = [("Examples", ExampleTable), ("Classifier", orange.TreeClassifier), ("Tree Learner", orange.Learner)]
 
         self.attridx = 0
         self.cutoffPoint = 0.0
@@ -67,7 +67,7 @@ class OWITree(OWClassificationTreeViewer):
     def updateTree(self):
         self.setTreeView()
         self.learner = FixedTreeLearner(self.tree, self.title)
-#        self.send("Classified Examples", self.tree)
+#        self.send("Examples", self.tree)
         self.send("Classifier", self.tree)
         self.send("Tree Learner", self.learner)
 
@@ -97,7 +97,7 @@ class OWITree(OWClassificationTreeViewer):
         node = self.findCurrentNode(1)
         if not node:
             return
-        
+
         attr = self.data.domain[self.attridx]
         if attr.varType == orange.VarTypes.Continuous:
             cutstr = str(self.cutoffEdit.text())
@@ -140,21 +140,14 @@ class OWITree(OWClassificationTreeViewer):
             node.setattr(k, v)
         self.updateTree()
 
-    def cdata(self, data):
-        if self.data and data and data.domain == self.data.domain and data.version == self.data.version:
+    def setData(self, data):
+        if self.data and data and data.domain.checksum() == self.data.domain.checksum():
             return
 
         self.attrsCombo.clear()
 
-        if data and not data.domain.classVar:
-            self.error("This data set has no class.")
-            self.data = None
-        elif data and data.domain.classVar.varType != orange.VarTypes.Discrete:
-            self.error("This widget only works with discrete classes.")
-            self.data = None
-        else:
-            self.error()
-            self.data = data
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
+
         if self.data:
             for attr in data.domain.attributes:
                 self.attrsCombo.insertItem(attr.name)
@@ -169,12 +162,12 @@ class OWITree(OWClassificationTreeViewer):
             self.tree = None
             self.send("Classifier", self.tree)
             self.send("Tree Learner", self.learner)
-        
-        self.send("Classified Examples", None)
+
+        self.send("Examples", None)
         self.updateTree()
         self.v.setSelected(self.v.firstChild(), TRUE)
 
-    def learner(self, learner):
+    def setLearner(self, learner):
         self.treeLearner = learner
 
 
@@ -184,7 +177,7 @@ if __name__ == "__main__":
 
 #    d = orange.ExampleTable('d:\\ai\\orange\\test\\iris')
     d = orange.ExampleTable('d:\\ai\\orange\\test\\crush')
-    owi.cdata(d)
+    owi.setData(d)
 
     a.setMainWidget(owi)
     owi.show()

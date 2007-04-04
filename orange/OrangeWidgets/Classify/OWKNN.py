@@ -2,7 +2,7 @@
 <name>k Nearest Neighbours</name>
 <description>K-nearest neighbours learner/classifier.</description>
 <icon>icons/kNearestNeighbours.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>25</priority>
 """
 
@@ -15,10 +15,10 @@ class OWKNN(OWWidget):
 
     def __init__(self, parent=None, signalManager = None, name='kNN'):
         OWWidget.__init__(self, parent, signalManager, name)
-        
+
         self.callbackDeposit = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
+        self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner),("KNN Classifier", orange.kNNClassifier)]
 
         self.metricsList = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
@@ -27,18 +27,18 @@ class OWKNN(OWWidget):
                        ("Maximal", orange.ExamplesDistanceConstructor_Maximal),
 #                       ("Dynamic time warp", orange.ExamplesDistanceConstructor_DTW)
                             ]
-        
+
         # Settings
         self.name = 'kNN'
         self.k = 5;  self.metrics = 0; self.ranks = 0
         self.ignoreUnknowns = 0; self.normalize = 1
         self.loadSettings()
-        
+
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
         self.setLearner()                   # this just sets the learner, no data
                                             # has come to the input yet
-        
+
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
@@ -62,13 +62,8 @@ class OWKNN(OWWidget):
         self.resize(100,250)
 
 
-    def cdata(self,data):
-        if data and not data.domain.classVar:
-            self.error("This data set has no class")
-            self.data = None
-        else:
-            self.error()
-            self.data = data
+    def setData(self,data):
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         self.setLearner()
 
 
@@ -105,7 +100,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
 ##    dataset = orange.ExampleTable('adult_sample')
-##    ow.cdata(dataset)
+##    ow.setData(dataset)
 
     ow.show()
     a.exec_loop()

@@ -2,7 +2,7 @@
 <name>Naive Bayes</name>
 <description>Naive Bayesian learner/classifier.</description>
 <icon>icons/NaiveBayes.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>10</priority>
 """
 
@@ -12,13 +12,13 @@ from exceptions import Exception
 
 class OWNaiveBayes(OWWidget):
     settingsList = ["m_estimator.m", "name", "probEstimation", "condProbEstimation", "adjustThreshold", "windowProportion"]
-    
+
     def __init__(self, parent=None, signalManager = None, name='NaiveBayes'):
         OWWidget.__init__(self, parent, signalManager, name)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
+        self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner),("Naive Bayesian Classifier", orange.BayesClassifier)]
-            
+
         self.m_estimator = orange.ProbabilityEstimatorConstructor_m()
         self.estMethods=[("Relative Frequency", orange.ProbabilityEstimatorConstructor_relative()),
                          ("Laplace", orange.ProbabilityEstimatorConstructor_Laplace()),
@@ -36,11 +36,11 @@ class OWNaiveBayes(OWWidget):
         self.adjustThreshold = 0
         self.windowProportion = 0.5
         self.loessPoints = 100
-        
+
         self.data = None
         self.loadSettings()
 
-        
+
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
@@ -49,12 +49,12 @@ class OWNaiveBayes(OWWidget):
         glay = QGridLayout(box, 7, 3, 10, 5)
 
         glay.addWidget(OWGUI.separator(box, height=5), 0, 0)
-        
+
         glay.addWidget(OWGUI.widgetLabel(box, "Unconditional"), 1, 0)
-       
+
         glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method to estimate unconditional probability.'),
                         1, 2)
-        
+
         glay.addWidget(OWGUI.widgetLabel(box, "Conditional (for discrete)"), 2, 0)
         glay.addWidget(OWGUI.comboBox(box, self, 'condProbEstimation', items=[e[0] for e in self.condEstMethods], tooltip='Conditional probability estimation method used for discrete attributes.', callback=self.refreshControls),
                        2, 2)
@@ -77,15 +77,15 @@ class OWNaiveBayes(OWWidget):
 
         glay.addWidget(OWGUI.widgetLabel(box, 'LOESS sample points'), 6, 0)
         pointsValid = QIntValidator(20, 1000, self.controlArea)
-        glay.addWidget(OWGUI.lineEdit(box, self, 'loessPoints', 
+        glay.addWidget(OWGUI.lineEdit(box, self, 'loessPoints',
                        tooltip='Number of points in computation of LOESS (20-1000).',
                        valueType = int, validator = pointsValid),
                        6, 2)
-        
+
         OWGUI.separator(self.controlArea)
 
         OWGUI.checkBox(self.controlArea, self, "adjustThreshold", "Adjust threshold (for binary classes)", box = "Threshold")
-        
+
         OWGUI.separator(self.controlArea)
         box = OWGUI.widgetBox(self.controlArea, "Apply", orientation=1)
         applyButton = OWGUI.button(box, self, "&Apply", callback=self.applyLearner)
@@ -107,7 +107,7 @@ class OWNaiveBayes(OWWidget):
         if float(self.m_estimator.m) < 0:
             self.warning(0, "Parameter m should be positive")
             self.learner = None
-        
+
         elif float(self.windowProportion) < 0 or float(self.windowProportion) > 1:
             self.warning(0, "Window proportion for LOESS should be between 0.0 and 1.0")
             self.learner = None
@@ -124,14 +124,14 @@ class OWNaiveBayes(OWWidget):
         self.applyData()
         self.changed = False
 
-        
+
     def applyData(self):
         if self.data and self.learner:
-            self.error(1)
             try:
                 classifier = self.learner(self.data)
                 classifier.setattr("data", self.data)
                 classifier.name = self.name
+                self.error(1)
             except Exception, (errValue):
                 classifier = None
                 self.error(1, "Naive Bayes error: " + str(errValue))
@@ -141,16 +141,10 @@ class OWNaiveBayes(OWWidget):
         self.send("Naive Bayesian Classifier", classifier)
 
 
-    def cdata(self,data):
-        if data and data.domain.classVar.varType != orange.VarTypes.Discrete:
-            self.error(0, "This widget only works with discrete classes.")
-            self.data = None
-        else:
-            self.data = data
-            self.error(0)
-
+    def setData(self,data):
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         self.applyData()
-        
+
 
     def sendReport(self):
         self.startReport(self.name)
@@ -163,8 +157,8 @@ class OWNaiveBayes(OWWidget):
                              ("Adjust classification threshold", OWGUI.YesNo[self.adjustThreshold])
                             ])
         self.finishReport()
-            
-            
+
+
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNaiveBayes()

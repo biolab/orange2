@@ -2,7 +2,7 @@
 <name>Test Learners</name>
 <description>Estimates the predictive performance of learners on a data set.</description>
 <icon>icons/TestLearners.png</icon>
-<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>200</priority>
 """
 #
@@ -28,11 +28,11 @@ class OWTestLearners(OWWidget):
              ('Information score', 'IS', 'IS(res)'),
              ('Brier score', 'Brier', 'BrierScore(res)')
            )
-    
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "TestLearners")
-        
-        self.inputs = [("Data", ExampleTableWithClass, self.cdata, Default), ("Separate Test Data", ExampleTableWithClass, self.testdata), ("Learner", orange.Learner, self.learner, Multiple)]
+
+        self.inputs = [("Data", ExampleTable, self.setData, Default), ("Separate Test Data", ExampleTable, self.setTestData), ("Learner", orange.Learner, self.setLearner, Multiple)]
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 
         # Settings
@@ -43,7 +43,7 @@ class OWTestLearners(OWWidget):
         self.pRepeat = 10
         self.precision = 4
         self.loadSettings()
-        
+
         self.data = None                # input data set
         self.testdata = None            # separate test data set
         self.learners = None            # set of learners (input)
@@ -52,7 +52,7 @@ class OWTestLearners(OWWidget):
 
         # GUI
         self.s = [None] * 5
-        self.sBox = QVButtonGroup("Sampling", self.controlArea)        
+        self.sBox = QVButtonGroup("Sampling", self.controlArea)
         self.s[0] = QRadioButton('Cross validation', self.sBox)
 
         box = QHBox(self.sBox)
@@ -71,9 +71,9 @@ class OWTestLearners(OWWidget):
         QLabel("Relative training set size:", self.h2Box)
         box = QHBox(self.sBox)
         QWidget(box).setFixedSize(19, 8)
-        OWGUI.hSlider(box, self, 'pLearning', minValue=10, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")        
+        OWGUI.hSlider(box, self, 'pLearning', minValue=10, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")
 
-        self.s[3] = QRadioButton('Test on train data', self.sBox)        
+        self.s[3] = QRadioButton('Test on train data', self.sBox)
         self.s[4] = self.testDataBtn = QRadioButton('Test on test data', self.sBox)
 
         QWidget(self.sBox).setFixedSize(0, 8)
@@ -82,9 +82,9 @@ class OWTestLearners(OWWidget):
 
         if self.sampleMethod == 4:
             self.sampleMethod = 0
-        self.s[self.sampleMethod].setChecked(TRUE)        
+        self.s[self.sampleMethod].setChecked(TRUE)
         OWGUI.separator(self.controlArea)
-        
+
         # statistics
         self.statBox = QVGroupBox(self.controlArea)
         self.statBox.setTitle('Statistics')
@@ -103,7 +103,7 @@ class OWTestLearners(OWWidget):
         self.layout.add(self.g)
 
         self.lab = QLabel(self.g)
-            
+
         # signals
         self.connect(self.applyBtn, SIGNAL("clicked()"), self.test)
         self.dummy1 = [None]*len(self.s)
@@ -146,7 +146,7 @@ class OWTestLearners(OWWidget):
             res = orngTest.proportionTest(learners, self.data, self.pLearning/100., times=self.pRepeat, callback=pb.advance)
         elif self.sampleMethod==3:
             res = orngTest.learnAndTestOnLearnData(learners, self.data)
-        elif self.sampleMethod==4:                
+        elif self.sampleMethod==4:
             res = orngTest.learnAndTestOnTestData(learners, self.data, self.testdata)
 
         cm = orngStat.computeConfusionMatrices(res, classIndex = self.classindex)
@@ -185,7 +185,7 @@ class OWTestLearners(OWWidget):
 #                        type, val, traceback = sys.exc_info()
 #                        sys.excepthook(type, val, traceback)  # print the exception
                         self.error("Caught an exception while evaluating classifier %s" % learner.name)
-                    
+
         else: # test on all learners, or on the new learner with no other learners in the memory
             self.results = res
             self.scores = []
@@ -207,26 +207,26 @@ class OWTestLearners(OWWidget):
 #            QMessageBox.critical(self, self.title + ": Execution error", "Error while testing: '%s'" % msg)
 
     # slots: handle input signals
-    def cdata(self, data):
-        if not data:
-            self.data = None
+    def setData(self, data):
+        self.data = self.isDataWithClass(data) and data or None
+        if not self.data:
             self.results = None
             self.setStatTable()
-            return
+        else:
+            self.data = orange.Filter_hasClassValue(self.data)
+            self.classindex = 0 # data.targetValIndx
+            if self.learners:
+                self.applyBtn.setDisabled(FALSE)
+                self.results = None
+                self.scores = None
+                self.test()
 
-        self.data = orange.Filter_hasClassValue(data)
-        self.classindex = 0 # data.targetValIndx
-        if self.learners:
-            self.applyBtn.setDisabled(FALSE)
-            self.results = None; self.scores = None
-            self.test()
-
-    def testdata(self, data):
+    def setTestData(self, data):
         self.testdata = data
         if self.sampleMethod == 4:
             self.test()
 
-    def learner(self, learner, id=None):
+    def setLearner(self, learner, id=None):
         if learner: # a new or updated learner
             learner.id = id # remember id's of learners
             self.test(learner)
@@ -257,7 +257,7 @@ class OWTestLearners(OWWidget):
                 self.send("Evaluation Results", self.results)
 
             del self.learners[indx]
-            
+
     # signal processing
     def statChanged(self, value, id):
         self.useStat[id] = value
@@ -343,7 +343,7 @@ if __name__=="__main__":
     testcase = 3
 
     if testcase == 0: # 1(UPD), 3, 4
-        ow.cdata(data)
+        ow.setData(data)
         ow.learner(l1, 1)
         ow.learner(l2, 2)
         ow.learner(l3, 3)
@@ -356,14 +356,14 @@ if __name__=="__main__":
         ow.learner(l2, 2)
         ow.learner(None, 2)
         ow.learner(None, 1)
-        ow.cdata(data)
+        ow.setData(data)
     if testcase == 2: # sends data, then learner, then removes the learner
-        ow.cdata(data)
+        ow.setData(data)
         ow.learner(l1, 1)
         ow.learner(None, 1)
     if testcase == 3: # sends data, then learner, then changes the name of the learner, then new data
         pass
-        
+
     ow.show()
     a.exec_loop()
     ow.saveSettings()

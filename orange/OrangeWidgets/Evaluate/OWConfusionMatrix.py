@@ -22,7 +22,7 @@ class ConfusionTableItem(QTableItem):
     def __init__(self, isBold, *args):
         QTableItem.__init__(self, *args)
         self.isBold = isBold
-        
+
     def alignment(self):
         return QWidget.AlignCenter
 
@@ -34,16 +34,16 @@ class ConfusionTableItem(QTableItem):
         sze = QTableItem.sizeHint(self)
         sze.setWidth(sze.width()*1.15)
         return sze
-    
+
 class OWConfusionMatrix(OWWidget):
     settings = ["shownQuantity", "autoApply"]
-    
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Confusion Matrix", 1)
 
         # inputs
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.test_results, Default)]
-        self.outputs=[("Selected Examples", ExampleTableWithClass, 8)]
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.setTestResults, Default)]
+        self.outputs=[("Selected Examples", ExampleTable, 8)]
 
         self.selectedLearner = [0]
         self.learnerNames = []
@@ -73,7 +73,7 @@ class OWConfusionMatrix(OWWidget):
         labpred = OWGUI.widgetLabel(self.mainArea, "Prediction")
         self.layout.addWidget(labpred, 0, 1, QWidget.AlignCenter)
         self.layout.addWidget(OWGUI.separator(self.mainArea),1, 0)
-        
+
         labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class  ")
         self.layout.addWidget(labpred, 2, 0, QWidget.AlignCenter)
         self.layout.addMultiCellWidget(OWGUI.rubber(self.mainArea), 3, 3, 0, 2)
@@ -86,27 +86,27 @@ class OWConfusionMatrix(OWWidget):
         self.table.setSelectionMode(QTable.NoSelection)
         self.layout.addWidget(self.table, 2, 1)
         self.table.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-        
+
         self.connect(self.table, SIGNAL("selectionChanged()"), self.sendIf)
-        
+
         self.resize(750,450)
 
     def resizeEvent(self, *args):
         if hasattr(self, "table"):
             self.table.adjustSize()
         OWWidget.resizeEvent(self, *args)
-        
-    def test_results(self, res):
+
+    def setTestResults(self, res):
         self.res = res
         if not res:
             self.table.setNumRows(0)
             self.table.setNumCols(0)
             return
-        
+
         self.matrix = orngStat.confusionMatrices(res)
 
         dim = len(res.classValues)
-        
+
         self.table.setNumRows(dim+2)
         self.table.setNumCols(dim+2)
 
@@ -117,7 +117,7 @@ class OWConfusionMatrix(OWWidget):
         for ri, cv in enumerate(res.classValues):
             self.table.item(0, ri+1).setText(cv)
             self.table.item(ri+1, 0).setText(cv)
-            
+
         self.learnerNames = res.classifierNames[:]
 
         # This also triggers a callback (learnerChanged)
@@ -135,10 +135,10 @@ class OWConfusionMatrix(OWWidget):
                 break
         else:
             self.isInteger = " %i "
-            
+
         self.reprint()
-        self.sendIf()        
-            
+        self.sendIf()
+
 
     def reprint(self):
         cm = self.matrix[self.selectedLearner[0]]
@@ -174,17 +174,17 @@ class OWConfusionMatrix(OWWidget):
             self.table.setText(ci+1, dim+1, self.isInteger % rowSums[ci])
         self.table.setText(dim+1, dim+1, self.isInteger % total)
 
-        for ci in range(len(cm)+2):            
+        for ci in range(len(cm)+2):
             self.table.adjustColumn(ci)
 
         self.table.adjustSize()
 
-            
+
 
     def selectCorrect(self):
         if not self.res:
             return
-        
+
         self.table.clearSelection()
         for i in range(1, 1+len(self.matrix[0])):
             ts = QTableSelection()
@@ -197,7 +197,7 @@ class OWConfusionMatrix(OWWidget):
     def selectWrong(self):
         if not self.res:
             return
-        
+
         self.table.clearSelection()
         dim = len(self.matrix[0])
         for i in range(1, 1+dim):
@@ -229,12 +229,12 @@ class OWConfusionMatrix(OWWidget):
 
     def sendData(self):
         self.selectionDirty = False
-        
+
         res = self.res
         if not res or not self.table.numSelections():
             self.send("Selected Examples", None)
             return
-        
+
         from sets import Set
         selected = Set()
         for seli in range(self.table.numSelections()):
@@ -248,7 +248,7 @@ class OWConfusionMatrix(OWWidget):
 
         self.send("Selected Examples", data)
 
-        
+
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     owdm = OWConfusionMatrix()

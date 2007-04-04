@@ -2,7 +2,7 @@
 <name>Classification Tree</name>
 <description>Classification tree learner/classifier.</description>
 <icon>icons/ClassificationTree.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>30</priority>
 """
 
@@ -19,11 +19,11 @@ class OWClassificationTree(OWWidget):
                     "postMaj", "postMPruning", "postM"]
 
     measures = (("Information Gain", "infoGain"), ("Gain Ratio", "gainRatio"), ("Gini Index", "gini"), ("ReliefF", "relief"))
-    
+
     def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
         OWWidget.__init__(self, parent, signalManager, name)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset)]
+        self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.TreeLearner),("Classification Tree", orange.TreeClassifier)]
 
         self.name = 'Classification Tree'
@@ -32,21 +32,21 @@ class OWClassificationTree(OWWidget):
         self.preLeafInstP = 2; self.preNodeInstP = 5; self.preNodeMajP = 95
         self.preLeafInst = 1; self.preNodeInst = 0; self.preNodeMaj = 0
         self.postMaj = 1; self.postMPruning = 1; self.postM = 2.0
-        
+
         self.loadSettings()
-        
+
         self.data = None
         self.preprocessor = None
         self.setLearner()
-        
+
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
-        
+
         qBox = QVGroupBox(self.controlArea)
         qBox.setTitle('Attribute selection criterion')
 
         self.qMea = OWGUI.comboBox(qBox, self, "estim", items = [m[0] for m in self.measures], callback = self.measureChanged)
-        
+
         b1 = QHBox(qBox)
         OWGUI.separator(b1, 16, 0)
         b2 = QVBox(b1)
@@ -54,7 +54,7 @@ class OWClassificationTree(OWWidget):
         OWGUI.separator(b2)
         self.hbxRel2 = OWGUI.spin(b2, self, "relK", 1, 50, orientation="horizontal", label="Number of neighbours in ReliefF  ")
         OWGUI.separator(self.controlArea)
-        
+
         OWGUI.checkBox(self.controlArea, self, 'bin', 'Binarization', box='Tree Structure')
         OWGUI.separator(self.controlArea)
 
@@ -66,7 +66,7 @@ class OWClassificationTree(OWWidget):
         self.preLeafInstBox, self.preLeafInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Min. instances in leaves: ", 1, 1000, "preLeafInst", "preLeafInstP")
         self.preNodeInstBox, self.preNodeInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 1000, "preNodeInst", "preNodeInstP", " or fewer instances")
         self.preNodeMajBox, self.preNodeMajPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 100, "preNodeMaj", "preNodeMajP", "% of majority class")
-        
+
         OWGUI.separator(self.controlArea)
         self.mBox = QVGroupBox(self.controlArea)
 
@@ -91,25 +91,18 @@ class OWClassificationTree(OWWidget):
             sameMajorityPruning = self.postMaj,
             mForPruning = self.postMPruning and self.postM,
             storeExamples = 1)
-                                   
+
         self.learner.name = self.name
         self.send("Learner", self.learner)
 
         self.error()
         if self.data:
-            if not self.data.domain.classVar:
-                self.error("This data set has no class.")
+            try:
+                self.classifier = self.learner(self.data)
+                self.classifier.name = self.name
+            except Exception, (errValue):
+                self.error(str(errValue))
                 self.classifier = None
-            elif self.data.domain.classVar.varType != orange.VarTypes.Discrete:
-                self.error("This widget only works with discrete classes.\nThere is another one for regression classes.")
-                self.classifier = None
-            else:
-                try:
-                    self.classifier = self.learner(self.data)
-                    self.classifier.name = self.name
-                except Exception, (errValue):
-                    self.error(str(errValue))
-                    self.classifier = None
         else:
             self.classifier = None
 
@@ -121,13 +114,11 @@ class OWClassificationTree(OWWidget):
         self.hbxRel1.setEnabled(relief and self.limitRef)
         self.hbxRel2.setEnabled(relief)
         self.cbLimitRef.setEnabled(relief)
-        
-    def dataset(self,data):
-        self.data = data
-        if self.data:
-            self.setLearner()
-        else:
-            self.send("Classification Tree", None)
+
+    def setData(self,data):
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
+        self.setLearner()
+
 
 ##############################################################################
 # Test the widget, run from DOS prompt
@@ -140,7 +131,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
     d = orange.ExampleTable('adult_sample')
-    ow.dataset(d)
+    ow.setData(d)
 
     ow.show()
     a.exec_loop()

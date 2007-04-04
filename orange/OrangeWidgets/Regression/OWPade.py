@@ -15,13 +15,13 @@ class OWPade(OWWidget):
     settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
     contextHandlers = {"": PerfectDomainContextHandler("", ["outputAttr", ContextField("attributes", selected="dimensions")])}
 
-    methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression", "1D Qing"]    
+    methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression", "1D Qing"]
     methods = [orngPade.firstTriangle, orngPade.starRegression, orngPade.starUnivariateRegression, orngPade.tubedRegression, orngPade.qing1D]
-    
+
     def __init__(self, parent = None, signalManager = None, name = "Pade"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
-        self.inputs = [("Examples", ExampleTableWithClass, self.onDataInput)]
-        self.outputs = [("Examples", ExampleTableWithClass)]
+        self.inputs = [("Examples", ExampleTable, self.onDataInput)]
+        self.outputs = [("Examples", ExampleTable)]
 
         self.attributes = []
         self.dimensions = []
@@ -37,8 +37,8 @@ class OWPade(OWWidget):
         self.useMQCNotation = False
         self.persistence = 40
 
-        self.nNeighbours = 30        
-        
+        self.nNeighbours = 30
+
         self.loadSettings()
 
         box = OWGUI.widgetBox(self.controlArea, "Attributes", addSpace = True)
@@ -66,7 +66,7 @@ class OWPade(OWWidget):
         box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", ["Qualitative constraint", "Quantitative differences"], box="Output class", addSpace = True, callback=self.dimensionsChanged)
         self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
 
-        box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)      
+        box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)
         self.metaCB = OWGUI.checkBox(box, self, "derivativeAsMeta", label="Qualitative constraint")
         OWGUI.checkBox(box, self, "differencesAsMeta", label="Derivatives of selected attributes")
         OWGUI.checkBox(box, self, "originalAsMeta", label="Original class attribute")
@@ -77,7 +77,7 @@ class OWPade(OWWidget):
         self.activateLoadedSettings()
 
         self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.qing1D)
-        
+
         self.setFixedWidth(self.sizeHint().width())
 
 
@@ -115,14 +115,14 @@ class OWPade(OWWidget):
 
     def onDataInput(self, data):
         self.closeContext()
-        if data:
+        if data and self.isDataWithClass(data, orange.VarTypes.Discrete):
             orngPade.makeBasicCache(data, self)
 
             icons = OWGUI.getAttributeIcons()
             self.outputLB.clear()
             for attr in self.contAttributes:
                 self.outputLB.insertItem(icons[attr.varType], attr.name)
-           
+
             self.dimensions = range(len(self.attributes))
         else:
             orngPade.makeEmptyCache(self)
@@ -155,8 +155,8 @@ class OWPade(OWWidget):
                                                              self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, self.originalAsMeta)
         self.send("Examples", paded)
 
-                            
-       
+
+
 if __name__=="__main__":
     import sys
 
@@ -167,5 +167,5 @@ if __name__=="__main__":
     ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\xyz-t"))
 #    ow.onDataInput(orange.ExampleTable(r"c:\delo\qing\smartquin\x2y2.txt"))
     a.exec_loop()
-    
+
     ow.saveSettings()

@@ -8,7 +8,7 @@
 # ScatterPlot.py
 #
 # Show data using scatterplot
-# 
+#
 
 from OWWidget import *
 from OWScatterPlotGraphXp import *
@@ -19,7 +19,7 @@ import OWGUI, OWToolbars, OWDlgs
 from orngScaleData import *
 from OWGraph import OWGraph
 
-       
+
 ###########################################################################################
 ##### WIDGET : Scatterplot visualization
 ###########################################################################################
@@ -32,14 +32,14 @@ class OWScatterPlotXp(OWWidget):
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
     contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY", (["attrLabel", "attrShape", "attrSize", "attrBrighten"], DomainContextHandler.Optional)])}
-    
+
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
 
         self.inputs =  [("Examples", ExampleTable, self.cdata, Default), ("Example Subset", ExampleTable, self.subsetdata), ("Attribute selection", list, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results), ("VizRank Learner", orange.Learner, self.vizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Learner", orange.Learner)]
+        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Learner", orange.Learner)]
 
-        # local variables    
+        # local variables
         self.showGridlines = 0
         self.autoSendSelection = 1
         self.toolbarSelection = 0
@@ -58,7 +58,7 @@ class OWScatterPlotXp(OWWidget):
         self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
         self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
         self.optimizationDlg = self.vizrank
-       
+
         self.data = None
 
         #load settings
@@ -94,7 +94,7 @@ class OWScatterPlotXp(OWWidget):
         self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One color)")
         self.attrBrighten = ""
         self.attrBrightenCombo = OWGUI.comboBox(OWGUI.indentedBox(box), self, "attrBrighten", label="Brighten by", orientation = 1, callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(No brightening)")
-        
+
         # labelling
         self.attrLabel = ""
         self.attrLabelCombo = OWGUI.comboBox(self.GeneralTab, self, "attrLabel", " Point labelling ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str, emptyString = "(No labels)")
@@ -102,19 +102,19 @@ class OWScatterPlotXp(OWWidget):
         # shaping
         self.attrShape = ""
         self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", " Shape Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One shape)")
-                
+
         # sizing
         self.attrSize = ""
         self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One size)")
-        
+
         # cluster dialog
         self.clusterDlg.label1.hide()
         self.clusterDlg.optimizationTypeCombo.hide()
         self.clusterDlg.attributeCountCombo.hide()
         self.clusterDlg.attributeLabel.hide()
         self.graph.clusterOptimization = self.clusterDlg
-        
-        
+
+
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialogs ", orientation = "horizontal")
         OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
@@ -138,7 +138,7 @@ class OWScatterPlotXp(OWWidget):
         self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
         self.jitterSizeCombo = OWGUI.comboBox(box3, self, "graph.jitterSize", callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
-        
+
         # general graph settings
         box4 = OWGUI.collapsableWidgetBox(self.SettingsTab, " General Graph Settings ", self, "boxGeneral")
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
@@ -169,43 +169,43 @@ class OWScatterPlotXp(OWWidget):
 
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Colors ", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
-        
+
         box5 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
         OWGUI.comboBox(box5, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
 
         self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = " Set Active Learner ", items = ["VizRank Learner", "Cluster Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.")
         self.connect(self.activeLearnerCombo, SIGNAL("activated(int)"), self.setActiveLearner)
-    
+
         OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = " Data selection ", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
 
-        OWGUI.rubber(self.SettingsTab)        
+        OWGUI.rubber(self.SettingsTab)
         self.SettingsTab.setMinimumWidth(max(self.GeneralTab.sizeHint().width(), self.SettingsTab.sizeHint().width())+20)
         self.icons = self.createAttributeIconDict()
-        
-        
+
+
         box = OWGUI.widgetBox(self.XPeroTab, "Triangulation")
         OWGUI.checkBox(box, self, "graph.showTriangulation", "Show triangulation", callback = self.updateGraph)
-        
+
         box = OWGUI.widgetBox(self.XPeroTab, "Critical areas")
         OWGUI.checkBox(box, self, "graph.showBoundaries", "Show boundary regions", callback = self.updateGraph)
         OWGUI.checkBox(OWGUI.indentedBox(box), self, "graph.boundaryNeighbours", "Extend to neighbours", callback = self.updateGraph)
         OWGUI.checkBox(box, self, "graph.showUnexplored", "Show undersampled regions", callback = self.updateGraph)
         OWGUI.checkBox(box, self, "graph.showUnevenlySampled", "Show unevenly sampled regions", callback = self.updateGraph)
-        
+
         cabox = OWGUI.indentedBox(box)
         self.debugSettings = ["attrX", "attrY", "attrColor", "attrLabel", "attrShape", "attrSize"]
         self.activateLoadedSettings()
         self.resize(700, 550)
 
-    
+
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette()
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         self.graph.setGridPen(QPen(dlg.getColor("Grid")))
-                
+
         self.graph.enableGridXB(self.showGridlines)
         self.graph.enableGridYL(self.showGridlines)
 
@@ -256,10 +256,10 @@ class OWScatterPlotXp(OWWidget):
         self.graph.clusterClosure = None
         self.classificationResults = None
         self.outlierValues = None
-        
+
         self.vizrank.setData(data)
         self.clusterDlg.setData(data, clearResults)
-        
+
         if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
             self.initAttrValues()
 
@@ -276,7 +276,7 @@ class OWScatterPlotXp(OWWidget):
         if update: self.updateGraph()
         self.vizrank.setSubsetData(data)
         self.clusterDlg.setSubsetData(data)
-       
+
 
     # receive information about which attributes we want to show on x and y axis
     def attributeSelection(self, list):
@@ -287,7 +287,7 @@ class OWScatterPlotXp(OWWidget):
 
 
     # visualize the results of the classification
-    def test_results(self, results):        
+    def test_results(self, results):
         self.classificationResults = None
         if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
             self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
@@ -313,13 +313,13 @@ class OWScatterPlotXp(OWWidget):
 
     def setActiveLearner(self, idx):
         self.send("Learner", self.learnersArray[self.learnerIndex])
-   
-    
+
+
     # ################################################################################################
     # find projections that have tight clusters of points that belong to the same class value
     def optimizeClusters(self):
         if self.data == None: return
-        
+
         self.clusterDlg.clearResults()
         self.clusterDlg.clusterStabilityButton.setOn(0)
         self.clusterDlg.pointStability = None
@@ -345,7 +345,7 @@ class OWScatterPlotXp(OWWidget):
             self.attrColor = self.data.domain.classVar.name
 
         self.majorUpdateGraph(attrs)
-        
+
 
     def showSelectedCluster(self):
         val = self.clusterDlg.getSelectedCluster()
@@ -359,7 +359,7 @@ class OWScatterPlotXp(OWWidget):
 
         self.majorUpdateGraph(attrList, insideColors, (closure, enlargedClosure, classValue))
 
-       
+
     # ##############################################################################################################################################################
     # ATTRIBUTE SELECTION
     # ##############################################################################################################################################################
@@ -404,7 +404,7 @@ class OWScatterPlotXp(OWWidget):
         self.attrX = str(self.attrXCombo.text(0))
         if self.attrYCombo.count() > 1: self.attrY = str(self.attrYCombo.text(1))
         else:                           self.attrY = str(self.attrYCombo.text(0))
-            
+
         if self.data.domain.classVar:
             self.attrColor = self.data.domain.classVar.name
         else:
@@ -422,7 +422,7 @@ class OWScatterPlotXp(OWWidget):
         self.graph.zoomStack = []
         if not self.data:
             return
-    
+
         if attrList:
             self.attrX = attrList[0]
             self.attrY = attrList[1]
@@ -433,14 +433,14 @@ class OWScatterPlotXp(OWWidget):
             else: kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")
         else:
             kNNExampleAccuracy = None
-            
+
         self.graph.insideColors = insideColors or self.classificationResults or kNNExampleAccuracy or self.outlierValues
         self.graph.clusterClosure = clusterClosure
 
         self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrBrighten, self.attrShape, self.attrSize, self.showColorLegend, self.attrLabel)
         self.graph.repaint()
 
-    
+
     # ##############################################################################################################################################################
     # SCATTERPLOT SETTINGS
     # ##############################################################################################################################################################
@@ -509,5 +509,5 @@ if __name__=="__main__":
     a.setMainWidget(ow)
     ow.show()
 
-    #save settings 
+    #save settings
     ow.saveSettings()

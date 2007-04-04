@@ -2,7 +2,7 @@
 <name>Predictions</name>
 <description>Displays predictions of models for a particular data set.</description>
 <icon>icons/Predictions.png</icon>
-<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>300</priority>
 """
 
@@ -31,8 +31,8 @@ class OWPredictions(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Classifications")
 
         self.callbackDeposit = []
-        self.inputs = [("Examples", ExampleTable, self.dataset), ("Classifiers", orange.Classifier, self.classifier, Multiple)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass)]
+        self.inputs = [("Examples", ExampleTable, self.setData),("Classifiers", orange.Classifier, self.setClassifier, Multiple)]
+        self.outputs = [("Selected Examples", ExampleTable)]
         self.classifiers = {}
 
         # saveble settings
@@ -43,7 +43,7 @@ class OWPredictions(OWWidget):
 
         self.freezeAttChange = 0 # 1 to block table update followed by changes in attribute list box
         self.data=None
-        
+
         # GUI - Options
         self.options = QVButtonGroup("Options", self.controlArea)
         self.options.setDisabled(1)
@@ -79,7 +79,7 @@ class OWPredictions(OWWidget):
 
         self.outBox.setDisabled(1)
 
-        # GUI - Table        
+        # GUI - Table
         self.layout = QVBoxLayout(self.mainArea)
         self.table = QTable(self.mainArea)
         self.table.setSelectionMode(QTable.NoSelection)
@@ -98,7 +98,7 @@ class OWPredictions(OWWidget):
             return
         if not self.data or not self.classifiers:
             return
-        
+
         attsel = [self.lbClasses.isSelected(i) for i in range(len(self.data.domain.attributes))]
         showatt = attsel.count(1)
         # sindx is the column where these start
@@ -132,7 +132,7 @@ class OWPredictions(OWWidget):
                 for c in range(len(self.classifiers)):
                     self.table.setText(self.rindx[i], col+c, '')
             col += len(self.classifiers)
-    
+
         for i in range(sindx, col):
             self.table.adjustColumn(i)
             if self.ShowClass or self.ShowProb:
@@ -158,7 +158,7 @@ class OWPredictions(OWWidget):
             for i in range(len(self.data.domain.attributes)):
                 self.table.hideColumn(i+1)
 
-    # defines the table and paints its contents    
+    # defines the table and paints its contents
     def setTable(self):
         if self.data==None:
             return
@@ -193,7 +193,7 @@ class OWPredictions(OWWidget):
                 self.table.setItem(i, col, item)
                 self.classifications[i] = [c]
             col += 1
-    
+
         for i in range(col):
             self.table.adjustColumn(i)
 
@@ -202,7 +202,7 @@ class OWPredictions(OWWidget):
         self.updateAttributes()
         self.updateTrueClass()
         self.table.hideColumn(0) # hide column with indices, we will use vertical header to show this info
-                
+
     def sort(self, col):
         "sorts the table by column col"
         self.sortby = - self.sortby
@@ -213,13 +213,13 @@ class OWPredictions(OWWidget):
             self.rindx[int(str(self.table.item(i,0).text()))-1] = i
         for (i, indx) in enumerate(self.rindx):
             self.vheader.setLabel(i, self.table.item(i,0).text())
-        
+
     ##############################################################################
     # Input signals
 
-    def dataset(self,data):
-        self.data = data
-        if not data:
+    def setData(self,data):
+        self.data = self.isDataWithClass(data) and data or None
+        if not self.data:
             self.table.hide()
             self.send("Selected Examples", None)
         else:
@@ -240,13 +240,13 @@ class OWPredictions(OWWidget):
 
             if not self.classifiers:
                 self.ShowTrueClass = 1
-            
+
             self.rindx = range(len(self.data))
             self.setTable()
             self.table.show()
             self.checkenable()
 
-    def classifier(self, c, id):
+    def setClassifier(self, c, id):
         if not c:
             if self.classifiers.has_key(id):
                 del self.classifiers[id]
@@ -270,9 +270,9 @@ class OWPredictions(OWWidget):
 
         self.trueClassCheckBox.setEnabled(self.data<>None and self.data.domain.classVar<>None)
 ##        self.options.setEnabled(len(self.classifiers)>0)
-        self.att.setEnabled(self.data<>None)            
-        self.options.setEnabled(self.data<>None)            
-        
+        self.att.setEnabled(self.data<>None)
+        self.options.setEnabled(self.data<>None)
+
 
     ##############################################################################
     # Ouput signals
@@ -283,7 +283,7 @@ class OWPredictions(OWWidget):
 
     # assumes that the data and display conditions
     # (enough classes are displayed) have been checked
-    
+
     def senddata(self):
         def cmpclasses(clist):
             ref = clist[0]
@@ -317,8 +317,8 @@ if __name__=="__main__":
 
     if 0: # data set only
         data = orange.ExampleTable('sailing')
-        ow.dataset(data)
-    elif 0: 
+        ow.setData(data)
+    elif 0:
         data = orange.ExampleTable('outcome')
         test = orange.ExampleTable('cheat', uses=data.domain)
         data = orange.ExampleTable('iris')
@@ -327,32 +327,32 @@ if __name__=="__main__":
 
         import orngTree
         tree = orngTree.TreeLearner(data, name="Tree")
-        ow.classifier(bayes, 1)
-        ow.classifier(tree, 2)
-        ow.dataset(test)
+        ow.setClassifier(bayes, 1)
+        ow.setClassifier(tree, 2)
+        ow.setData(test)
     elif 1: # two classifiers
         data = orange.ExampleTable('sailing.txt')
         bayes = orange.BayesLearner(data)
         bayes.name = "NBC"
-        ow.classifier(bayes, 1)
+        ow.setClassifier(bayes, 1)
         maj = orange.MajorityLearner(data)
         maj.name = "Majority"
         import orngTree
         tree = orngTree.TreeLearner(data, name="Tree")
         knn = orange.kNNLearner(data, k = 10)
         knn.name = "knn"
-        ow.classifier(maj, 2)
-        ow.classifier(knn, 3)
-        ow.dataset(data)
+        ow.setClassifier(maj, 2)
+        ow.setClassifier(knn, 3)
+        ow.setData(data)
     else: # regression
         data = orange.ExampleTable('auto-mpg')
         knn = orange.kNNLearner(data, name="knn")
         knn.name = "knn"
         maj = orange.MajorityLearner(data)
         maj.name = "Majority"
-        ow.classifier(knn, 1)
-        ow.classifier(maj, 2)
-        ow.dataset(data)
-        
+        ow.setClassifier(knn, 1)
+        ow.setClassifier(maj, 2)
+        ow.setData(data)
+
     a.exec_loop()
     ow.saveSettings()
