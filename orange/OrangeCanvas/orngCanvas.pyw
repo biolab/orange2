@@ -19,9 +19,9 @@ class OrangeCanvasDlg(QMainWindow):
 
         #self.setFocusPolicy(QWidget.StrongFocus)
         
-#        import OWReport
-#        OWReport.IEFeeder(self.reportsDir)
-		
+##        import OWReport
+##        OWReport.IEFeeder(self.reportsDir)
+
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
 
         canvasIconName = os.path.join(self.canvasDir, "icons/CanvasIcon.png")

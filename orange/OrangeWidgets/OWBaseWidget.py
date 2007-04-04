@@ -628,24 +628,29 @@ class OWBaseWidget(QDialog):
         self.setState("Error", id, text)
 
     def setState(self, stateType, id, text):
+        changed = 0
         if type(id) == list:
             for val in id:
                 if self.widgetState[stateType].has_key(val):
                     self.widgetState[stateType].pop(val)
+                    changed = 1
         else:
             if type(id) == str:
                 text = id; id = 0       # if we call information(), warning(), or error() function with only one parameter - a string - then set id = 0
             if not text:
                 if self.widgetState[stateType].has_key(id):
                     self.widgetState[stateType].pop(id)
+                    changed = 1
             else:
                 self.widgetState[stateType][id] = text
+                changed = 1
 
-        if self.widgetStateHandler:
-            self.widgetStateHandler()
-        elif text and stateType != "Info":
-            self.printEvent(stateType + " - " + text)
-        qApp.processEvents()
+        if changed:
+            if self.widgetStateHandler:
+                self.widgetStateHandler()
+            elif text and stateType != "Info":
+                self.printEvent(stateType + " - " + text)
+            qApp.processEvents()
 
     def synchronizeContexts(self):
         if hasattr(self, "contextHandlers"):
