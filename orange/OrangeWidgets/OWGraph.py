@@ -64,7 +64,7 @@ class OWGraph(QwtPlot):
         self.zoomKey = None
         self.tempSelectionCurve = None
         self.selectionCurveKeyList = []
-        self.autoSendSelectionCallback = None   # callback function to call when we add new selection polygon or rectangle
+        self.selectionChangedCallback = None   # callback function to call when we add new selection polygon or rectangle
         self.legendCurveKeys = []
 
         self.enableGridX(FALSE)
@@ -329,6 +329,8 @@ class OWGraph(QwtPlot):
         self.removeAllSelections(0)  # clear all selections
         self.removeCurves()
         self.legendCurveKeys = []
+        if hasattr(self, "oldLegendKeys"):
+            self.oldLegendKeys = {}
         self.removeMarkers()
         self.tips.removeAll()
         self.zoomStack = []
@@ -427,8 +429,8 @@ class OWGraph(QwtPlot):
             self.removeCurve(lastCurve)
             self.tempSelectionCurve = None
             self.replot()
-            if self.autoSendSelectionCallback:
-                self.autoSendSelectionCallback() # do we want to send new selection
+            if self.selectionChangedCallback:
+                self.selectionChangedCallback() # do we want to send new selection
             return 1
         else:
             return 0
@@ -438,8 +440,8 @@ class OWGraph(QwtPlot):
             self.removeCurve(key)
         self.selectionCurveKeyList = []
         self.replot()
-        if send and self.autoSendSelectionCallback:
-            self.autoSendSelectionCallback() # do we want to send new selection
+        if send and self.selectionChangedCallback:
+            self.selectionChangedCallback()
 
     def zoomOut(self):
         if len(self.zoomStack):
@@ -486,7 +488,8 @@ class OWGraph(QwtPlot):
             if self.tempSelectionCurve.closed():    # did we intersect an existing line. if yes then close the curve and finish appending lines
                 self.tempSelectionCurve = None
                 self.replot()
-                if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+                if self.selectionChangedCallback:
+                    self.selectionChangedCallback() # do we want to send new selection
 
         # fake a mouse move to show the cursor position
         self.onMouseMoved(e)
@@ -555,7 +558,8 @@ class OWGraph(QwtPlot):
             elif self.state == SELECT_RECTANGLE:
                 if self.tempSelectionCurve:
                     self.tempSelectionCurve = None
-                if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+                if self.selectionChangedCallback:
+                    self.selectionChangedCallback() # do we want to send new selection
 
         elif e.button() == Qt.RightButton:
             if self.state == ZOOMING:
@@ -600,6 +604,22 @@ class OWGraph(QwtPlot):
         unselected = numpy.equal(total, 0)
         selected = 1 - unselected
         return selected.tolist(), unselected.tolist()
+
+    # set selections
+    def setSelections(self, selections):
+        for (xs, ys) in selections:
+            curve = SelectionCurve(self)
+            curve.setData(xs, ys)
+            key = self.insertCurve(curve)
+            self.selectionCurveKeyList.append(key)
+
+    # get current selections in the form [([xs1, ys1]), (xs2, ys2)]
+    def getSelections(self):
+        data = []
+        for key in self.selectionCurveKeyList:
+            curve = self.curve(key)
+            data.append(([curve.x(i) for i in range(curve.dataSize())], [curve.y(i) for i in range(curve.dataSize())]))
+        return data
 
     def randomChange(self):
         import random
