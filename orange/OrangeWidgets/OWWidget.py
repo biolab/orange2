@@ -10,7 +10,7 @@ class OWWidget(OWBaseWidget):
     def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = FALSE, wantStatusBar = FALSE, savePosition = True, noReport = False):
         """
         Initialization
-        Parameters: 
+        Parameters:
             title - The title of the\ widget, including a "&" (for shortcut in about box)
             wantGraph - displays a save graph button or not
         """
@@ -36,7 +36,7 @@ class OWWidget(OWBaseWidget):
         #self.controlArea.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         #self.setSizeGripEnabled(1)
-        
+
         if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
 
         self.reportData = None
@@ -58,7 +58,7 @@ class OWWidget(OWBaseWidget):
         self.statusBar.addWidget(self.statusBarTextArea, 1)
         self.statusBarIconArea.setMinimumSize(16*3,16)
         self.statusBarIconArea.setMaximumSize(16*3,16)
-        
+
         # create pixmaps used in statusbar to show info, warning and error messages
         self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-blue.png")
         self._warningWidget, self._warningPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
@@ -68,7 +68,7 @@ class OWWidget(OWBaseWidget):
 
         if wantStatusBar == 0:
             self.widgetStatusArea.hide()
-        
+
         self.resize(640,480)
 
     def createPixmapWidget(self, parent, iconName):
@@ -79,15 +79,24 @@ class OWWidget(OWBaseWidget):
             pix = QPixmap(iconName)
         else:
             pix = None
-            
+
         return w, pix
 
     def setState(self, stateType, id, text):
-        if type(id) == str:
-            text = id; id = 0
-        exState = self.widgetState[stateType].has_key(id)
-        OWBaseWidget.setState(self, stateType, id, text)
+        if type(id) == list:
+            stateChanged = 0
+            for val in id:
+                if self.widgetState[stateType].has_key(val):
+                    self.widgetState[stateType].pop(val)
+                    stateChanged = 1
+        else:
+            if type(id) == str:
+                text = id; id = 0
+            stateChanged = self.widgetState[stateType].has_key(id) or text
+            OWBaseWidget.setState(self, stateType, id, text)
 
+        if not stateChanged:
+            return
         for state, widget, icon, use in [("Info", self._infoWidget, self._infoPixmap, self._owInfo), ("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
             if use and self.widgetState[state] != {}:
                 widget.setBackgroundPixmap(icon)
@@ -96,12 +105,16 @@ class OWWidget(OWBaseWidget):
             else:
                 widget.setBackgroundPixmap(QPixmap())
                 QToolTip.remove(widget)
-        
+
+        if self.widgetStateHandler:
+            self.widgetStateHandler()
+
         if (stateType == "Info" and self._owInfo) or (stateType == "Warning" and self._owWarning) or (stateType == "Error" and self._owError):
             if text:
                 self.setStatusBarText(stateType + ": " + text)
-            elif exState:
+            else:
                 self.setStatusBarText("")
+        qApp.processEvents()
 
     def setStatusBarVisible(self, visible):
         if visible:
@@ -112,7 +125,7 @@ class OWWidget(OWBaseWidget):
 
     def setStatusBarText(self, text):
         self.statusBarTextArea.setText("  " + text)
-        qApp.processEvents()        
+        qApp.processEvents()
 
     def startReport(self, name, needDirectory = False):
         if self.reportData:
@@ -124,31 +137,31 @@ class OWWidget(OWBaseWidget):
             return OWReport.createDirectory()
         else:
             return True
-        
+
     def reportSection(self, title):
         self.reportData += "<H2>%s</H2>\n" % title
-        
+
     def reportSubsection(self, title):
         self.reportData += "<H3>%s</H3>\n" % title
-        
+
     def reportList(self, items):
         self.startReportList()
         for item in items:
             self.addToReportList(item)
         self.finishReportList()
-        
+
     def reportImage(self, filename):
         self.reportData += '<IMG src="%s"/>' % filename
-        
+
     def startReportList(self):
         self.reportData += "<UL>\n"
-        
+
     def addToReportList(self, item):
         self.reportData += "    <LI>%s</LI>\n" % item
-        
+
     def finishReportList(self):
         self.reportData += "</UL>\n"
-        
+
     def reportSettings(self, settingsList, closeList = True):
         self.startReportList()
         for item in settingsList:
@@ -156,16 +169,16 @@ class OWWidget(OWBaseWidget):
                 self.addToReportList("<B>%s:</B> %s" % item)
         if closeList:
             self.finishReportList()
-        
+
     def reportRaw(self, text):
         self.reportData += text
-        
+
     def finishReport(self):
         import OWReport
         OWReport.feed(self.reportData or "")
         self.reportData = None
-        
-if __name__ == "__main__":  
+
+if __name__ == "__main__":
     a=QApplication(sys.argv)
     oww=OWWidget()
     a.setMainWidget(oww)
