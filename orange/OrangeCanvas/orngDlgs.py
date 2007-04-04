@@ -9,15 +9,13 @@ from string import strip
 import sys
 from orngCanvasItems import *
 from qttable import *
-#from orngSignalManager import ExampleTable, ExampleTableWithClass
-#from orngSignalManager import *
 
 def indentedCheckBox(text, parent):
     b = QHBox(parent)
     sep = QWidget(b)
     sep.setFixedSize(10, 10)
     return QCheckBox(text, b)
-    
+
 
 class QCanvasIcon(QCanvasRectangle):
     def __init__(self, canvas, fileName):
@@ -65,10 +63,10 @@ class SignalCanvasView(QCanvasView):
         ySignalSize = 20    # height of the signal box
         xSignalSize = 20    # width of the signal box
         xIconOff = 10
-        
+
         count = max(len(inputs), len(outputs))
         height = max ((count)*ySignalSpace, 70)
-        
+
 
         # calculate needed sizes of boxes to show text
         maxLeft = 0
@@ -130,7 +128,7 @@ class SignalCanvasView(QCanvasView):
 
         self.texts.append(MyCanvasText(self.dlg.canvas, outName, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
         self.texts.append(MyCanvasText(self.dlg.canvas, inName, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
-                
+
         return (2*xWidgetOff + 2*width + xSpaceBetweenWidgets, yWidgetOffTop + height + yWidgetOffBottom)
 
     def getTextWidth(self, text, bold = 0):
@@ -147,7 +145,7 @@ class SignalCanvasView(QCanvasView):
     def contentsMousePressEvent(self, ev):
         self.bMouseDown = 1
         activeItems = self.canvas().collisions(QRect(ev.pos().x()-1, ev.pos().y()-1,2,2))
-       
+
         if activeItems == []: return
         box = self.findItem(activeItems, QCanvasRectangle)
         if box and box != self.outWidget and box != self.inWidget:
@@ -158,14 +156,14 @@ class SignalCanvasView(QCanvasView):
             self.tempLine.setZ(-120)
             self.tempLine.show()
             return
-        
+
         line = self.findItem(activeItems, QCanvasLine)
         if line:
             for (Line, outName, inName, outBox, inBox) in self.lines:
                 if Line == line:
                     self.dlg.removeLink(outName, inName)
                     return
-        
+
     # ###################################################################
     # mouse button was released #########################################
     def contentsMouseMoveEvent(self, ev):
@@ -193,11 +191,11 @@ class SignalCanvasView(QCanvasView):
                 for (name, box) in self.inBoxes:
                     if box == inBox: inName = name
                 if outName != None and inName != None: self.dlg.addLink(outName, inName)
-            
+
             self.tempLine.hide()
             self.tempLine.setCanvas(None)
             self.canvas().update()
-        
+
 
     def findItem(self, items, wantedType):
         for item in items:
@@ -220,7 +218,7 @@ class SignalCanvasView(QCanvasView):
         line.show()
         self.canvas().update()
         self.lines.append((line, outName, inName, outBox, inBox))
-        
+
 
     def removeLink(self, outName, inName):
         for (line, outN, inN, outBox, inBox) in self.lines:
@@ -253,9 +251,9 @@ class SignalDialog(QDialog):
 
         self.canvasGroup = QHGroupBox("", self)
         self.canvas = QCanvas(1000,1000)
-        self.canvasView = SignalCanvasView(self, self.canvas, self.canvasGroup) 
+        self.canvasView = SignalCanvasView(self, self.canvas, self.canvasGroup)
         self.grid.addWidget(self.canvasGroup, 1,1)
-        
+
 
         LayoutWidget = QWidget(self,'Layout1')
         LayoutWidget.setGeometry(QRect(20,240,476,33))
@@ -267,7 +265,7 @@ class SignalDialog(QDialog):
         #self.buttonHelp = QPushButton("&Help", LayoutWidget)
         #self.buttonHelp.setAutoDefault(1)
         #Layout1.addWidget(self.buttonHelp)
-        
+
         self.buttonClearAll = QPushButton("Clear &All", LayoutWidget)
         Layout1.addWidget(self.buttonClearAll)
 
@@ -308,11 +306,11 @@ class SignalDialog(QDialog):
                 if not issubclass(inType, inInstance.getInputType(inS.name)): continue
                 if issubclass(outInstance.getOutputType(outS.name), inInstance.getInputType(inS.name)): count+= 1
 
-        return count               
+        return count
 
     def existsABetterLink(self, outSignal, inSignal, outSignals, inSignals):
         existsBetter = 0
-       
+
         betterOutSignal = None; betterInSignal = None
         for outS in outSignals:
             for inS in inSignals:
@@ -403,7 +401,7 @@ class SignalDialog(QDialog):
         can = [can1, can2, can3, can4]
         self.multiplePossibleConnections = (same[can.index(1)] != 1 and sum(can) > 1)
         return len(all) > 0
-        
+
 
 
     def addLink(self, outName, inName):
@@ -419,11 +417,11 @@ class SignalDialog(QDialog):
         for i in range(len(inputs)):
             if inputs[i].name == inName: inSignal = inputs[i]
 
-        # if inName is a single signal and connection already exists -> delete it        
+        # if inName is a single signal and connection already exists -> delete it
         for (outN, inN) in self._links:
             if inN == inName and inSignal.single:
                 self.removeLink(outN, inN)
-                                
+
         self._links.append((outName, inName))
         self.canvasView.addLink(outName, inName)
         return 1
@@ -452,7 +450,7 @@ class ColorIcon(QPushButton):
         painter.drawRect(3, 3, self.width()-6, self.height()-6)
 
     def showColorDialog(self):
-        color = QColorDialog.getColor(self.color, self.parent)        
+        color = QColorDialog.getColor(self.color, self.parent)
         if color.isValid():
             self.color = color
             self.repaint()
@@ -501,7 +499,7 @@ class CanvasOptionsDlg(QDialog):
         widthLabel = QLabel("Width:  ", widthBox)
         self.widthEdit = QLineEdit(widthBox)
         self.widthEdit.setValidator(validator)
-        
+
         heightBox = QHBox(canvasSizeBox)
         heightLabel = QLabel("Height: ", heightBox)
         self.heightEdit = QLineEdit(heightBox)
@@ -521,7 +519,7 @@ class CanvasOptionsDlg(QDialog):
         lineBox = QHBox(colorsBox)
         self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
         lineLabel = QLabel(" Lines", lineBox)
-        
+
 
         # #################################################################
         # EXCEPTION TAB
@@ -529,7 +527,7 @@ class CanvasOptionsDlg(QDialog):
         #self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
         self.focusOnCatchExceptionCB = QCheckBox('Focus output window on catch', exceptions)
         self.printExceptionInStatusBarCB = QCheckBox('Print last exception in status bar', exceptions)
-        
+
         output = QVGroupBox("System output", ExceptionsTab)
         #self.catchOutputCB = QCheckBox('Catch system output', output)
         self.focusOnCatchOutputCB = QCheckBox('Focus output window on system output', output)
@@ -557,7 +555,7 @@ class CanvasOptionsDlg(QDialog):
         self.verbosityCombo.insertItem("High")
 
         # #################################################################
-        # WIDGET TAB ORDER 
+        # WIDGET TAB ORDER
         caption = QLabel("Set order of widget categories", TabOrderTab)
         hbox1 = QHBox(TabOrderTab)
         hbox1.layout().setSpacing(5)
@@ -579,14 +577,14 @@ class CanvasOptionsDlg(QDialog):
         self.connect(self.tabOrderList, SIGNAL("highlighted(int)"), self.enableDisableButtons)
 
         # OK, Cancel buttons
-        
+
         hbox = QHBox(self)
         if hbox.layout():
             hbox.layout().setSpacing(6)
             hbox.layout().setMargin(0)
         sep = QWidget(hbox)
         sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
-        
+
         self.okButton = QPushButton("OK", hbox)
         self.cancelButton = QPushButton("Cancel", hbox)
 
@@ -619,7 +617,7 @@ class CanvasOptionsDlg(QDialog):
         self.upButton.setEnabled(itemIndex > 0)
         self.downButton.setEnabled(itemIndex < self.tabOrderList.count()-1)
         self.removeButton.setEnabled(not self.tabs.tabDict[str(self.tabOrderList.currentText())].builtIn)
-        
+
     def removeCategory(self):
         curCat = str(self.tabOrderList.currentText())
         if QMessageBox.warning(self,'Orange Canvas', "Unregister widget category '%s' from Orange canvas?\nThis will not remove any files." % curCat, QMessageBox.Yes, QMessageBox.No | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Yes:
@@ -649,7 +647,7 @@ class KeyEdit(QLineEdit):
                 del self.invdict[self.widget]
                 del self.invInvDict[prevkey]
             return
-            
+
         if e.key() not in range(32, 128): # + range(Qt.Key_F1, Qt.Key_F35+1): -- this wouldn't work, see the line below, and also writing to file etc.
             e.ignore()
             return
@@ -659,22 +657,22 @@ class KeyEdit(QLineEdit):
         assigned = self.invInvDict.get(pressed, None)
         if assigned == self:
             return
-        
+
         if assigned:
             dlg = QMessageBox("Confirmation", "'%s' is already assigned to '%s'. Override?" % (pressed, assigned.widget.nameKey),
                               QMessageBox.Warning, QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape, 0)
             dlg.exec_loop()
             if dlg.result() == QMessageBox.No:
                 return
-            
+
         self.setText(pressed)
         self.invdict[self.widget] = pressed
         self.invInvDict[pressed] = self
         if assigned:
             assigned.setText("<none>")
             del self.invdict[assigned.widget]
-        
-        
+
+
 class WidgetRegistryDlg(QDialog):
     def __init__(self, canvasDlg, *args):
         import orngTabs
@@ -687,7 +685,7 @@ class WidgetRegistryDlg(QDialog):
 
         self.invDict = dict([(y, x) for x, y in canvasDlg.widgetShortcuts.items()])
         invInvDict = {}
-        
+
         self.tabs = QTabWidget(self, 'tabWidget')
         for tab in canvasDlg.tabs.tabs:
             wtab = QWidget(self.tabs)
@@ -701,14 +699,14 @@ class WidgetRegistryDlg(QDialog):
                 layout.addColSpacing(i, 20)
             for i in range(0, 2*rows, 2):
                 layout.addRowSpacing(i, 20)
-                
+
             for i, w in enumerate(widgets):
                 y, x = 1 + 2 * (i % rows), 3 * (i/rows)
                 pixmap = w.iconSet().pixmap(QIconSet.Large, QIconSet.Normal)
                 label = QLabel(wtab)
                 label.setPixmap(pixmap)
                 layout.addWidget(label, y, x)
-                
+
                 optionsw = QVBox(wtab)
                 layout.addWidget(optionsw, y, x+1, Qt.AlignLeft + Qt.AlignVCenter)
 
@@ -732,10 +730,10 @@ class WidgetRegistryDlg(QDialog):
         if hbox.layout():
             hbox.layout().setSpacing(6)
             hbox.layout().setMargin(0)
-            
+
         sep = QWidget(hbox)
         sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
-        
+
         self.okButton = QPushButton("OK", hbox)
         self.okButton.setFixedWidth(110)
         self.okButton.setDefault(True)
@@ -759,7 +757,7 @@ class PreferencesDlg(QDialog):
         self.topLayout = QVBoxLayout( self, 10 )
         self.grid = QGridLayout( 5, 3 )
         self.topLayout.addLayout( self.grid, 10 )
-        
+
         groupBox  = QGroupBox(self, "Channel_settings")
         groupBox.setTitle("Channel settings")
         self.grid.addWidget(groupBox, 1,1)
@@ -772,10 +770,10 @@ class PreferencesDlg(QDialog):
         cap2 = QLabel("Priority:", groupBox)
         cap3 = QLabel("Color:", groupBox)
         self.editFullName = QLineEdit(groupBox)
-        self.editPriority = QComboBox( False, groupBox, "priority" ) 
+        self.editPriority = QComboBox( False, groupBox, "priority" )
         self.editColor    = QComboBox( False, groupBox, "color" )
         #self.connect( self.editPriority, SIGNAL("activated(int)"), self.comboValueChanged )
-        #self.connect( self.editColor, SIGNAL("activated(int)"), self.comboValueChanged ) 
+        #self.connect( self.editColor, SIGNAL("activated(int)"), self.comboValueChanged )
 
         propGrid.addWidget(cap1, 0,0, Qt.AlignVCenter+Qt.AlignHCenter)
         propGrid.addWidget(cap2, 1,0, Qt.AlignVCenter+Qt.AlignHCenter)
@@ -786,14 +784,14 @@ class PreferencesDlg(QDialog):
 
         groupBox.setMinimumSize(180,150)
         groupBox.setMaximumSize(180,150)
-        
+
         saveButton = QPushButton("Save changes", groupBox)
         addButton = QPushButton("Add new channel name", self)
         removeButton = QPushButton("Remove selected name", self)
         closeButton = QPushButton("Close",self)
         self.channelList = QListBox( self, "channels" )
         self.channelList.setMinimumHeight(200)
-        self.connect( self.channelList, SIGNAL("highlighted(int)"), self.listItemChanged ) 
+        self.connect( self.channelList, SIGNAL("highlighted(int)"), self.listItemChanged )
 
         self.grid.addWidget(cap0,0,0, Qt.AlignLeft+Qt.AlignBottom)
         self.grid.addWidget(addButton, 2,1)
@@ -881,18 +879,18 @@ class PreferencesDlg(QDialog):
             if temp == string:
                 self.channelList.setCurrentItem(i)
                 return
-            
+
     def removeSignal(self):
         index = self.channelList.currentItem()
         if index != -1:
             tempDict = {}
             symbName = str(self.channelList.text(index))
-            
+
             for key in self.channels.keys():
                 if key != symbName:
                     tempDict[key] = self.channels[key]
-            self.channels = copy(tempDict)        
-            
+            self.channels = copy(tempDict)
+
         self.reloadList()
 
     def closeClicked(self):
@@ -917,7 +915,7 @@ class saveApplicationDlg(QDialog):
         self.tab.setSelectionMode(QTable.Single )
         self.tab.setRowMovingEnabled(1)
         self.grid.addWidget(self.tab, 1,1)
-        
+
         self.tab.setNumCols(2)
         self.tabHH = self.tab.horizontalHeader()
         self.tabHH.setLabel(0, 'Show')
@@ -940,6 +938,7 @@ class saveApplicationDlg(QDialog):
         Layout1.addItem(spacer)
 
         self.okButton = QPushButton('&OK', LayoutWidget)
+        self.okButton.setDefault(1)
         Layout1.addWidget(self.okButton)
         self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
 
@@ -948,7 +947,7 @@ class saveApplicationDlg(QDialog):
         Layout1.addWidget(self.buttonCancel)
         self.connect(self.buttonCancel, SIGNAL('clicked()'), self, SLOT('reject()'))
 
-        self.resize(200,250)
+        self.resize(250,250)
 
     def accept(self):
         self.shownWidgetList = []
@@ -958,8 +957,8 @@ class saveApplicationDlg(QDialog):
                 self.shownWidgetList.append(self.tab.text(i, 1))
             elif self.tab.text(i,1) != "[Separator]":
                 self.hiddenWidgetList.append(self.tab.text(i,1))
-        QDialog.accept(self)        
-        
+        QDialog.accept(self)
+
 
     def insertSeparator(self):
         curr = max(0, self.findSelected())
@@ -976,8 +975,8 @@ class saveApplicationDlg(QDialog):
         self.tab.setCellWidget(index, 0, check)
         self.tab.setText(index, 1, name)
         #self.tab.adjustColumn(1)
-        
-        
+
+
     def swapCells(self, row1, row2):
         self.tab.swapCells( row1,0, row2, 0)
         self.tab.swapCells( row1,1, row2, 1)
@@ -989,13 +988,13 @@ class saveApplicationDlg(QDialog):
     def findSelected(self):
         for i in range(self.tab.numRows()):
             if self.tab.isSelected(i, 0) or self.tab.isSelected(i, 1): return i
-        return -1 
+        return -1
 
 
 if __name__=="__main__":
-    app = QApplication(sys.argv) 
+    app = QApplication(sys.argv)
     dlg = CanvasOptionsDlg(app)
     app.setMainWidget(dlg)
     dlg.show()
-    app.exec_loop() 
+    app.exec_loop()
 

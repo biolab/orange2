@@ -29,16 +29,16 @@ class TempCanvasLine(QCanvasLine):
     def remove(self):
         self.hide()
         self.setCanvas(None)
-                       
+
     # draw the line
     def drawShape(self, painter):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
         (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
-        
+
         painter.setPen(QPen(self.canvasDlg.lineColor, 1, Qt.SolidLine))
         painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
 
-        
+
     # we don't print temp lines
     def printShape(self, painter):
         pass
@@ -48,7 +48,7 @@ class TempCanvasLine(QCanvasLine):
 
     def updateTooltip(self):
         pass
-    
+
     # redraw the line
     def repaintLine(self, canvasView):
         p1 = self.startPoint()
@@ -72,7 +72,6 @@ class CanvasLine(QCanvasLine):
         self.inWidget = inWidget
         self.view = view
         self.setZ(-10)
-        self.signals = []
         self.colors = []
         outPoint = outWidget.getRightEdgePoint()
         inPoint = inWidget.getLeftEdgePoint()
@@ -86,7 +85,7 @@ class CanvasLine(QCanvasLine):
         self.text.show()
         self.text.setTextFlags(Qt.AlignHCenter + Qt.AlignBottom)
         self.text.setColor(QColor(100,100,100))
-        
+
     def remove(self):
         self.hide()
         self.text.hide()
@@ -97,52 +96,31 @@ class CanvasLine(QCanvasLine):
 
     def getEnabled(self):
         signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
-        if signals!= [] and self.signalManager.isSignalEnabled(self.outWidget.instance, self.inWidget.instance, signals[0][0], signals[0][1]):
-            return 1
-        else: return 0
+        if not signals: return 0
+        return int(self.signalManager.isSignalEnabled(self.outWidget.instance, self.inWidget.instance, signals[0][0], signals[0][1]))
 
     def setEnabled(self, enabled):
-        if enabled: self.setPen(QPen(self.canvasDlg.lineColor, 5, Qt.SolidLine))
-        else:       self.setPen(QPen(self.canvasDlg.lineColor, 5, Qt.DashLine))
-        self.updateTooltip()
-
-
-    def setSignals(self, signals):
-        self.signals = signals
+        self.setPen(QPen(self.canvasDlg.lineColor, 5, enabled and Qt.SolidLine or Qt.DashLine))
         self.updateTooltip()
 
     def getSignals(self):
-        return self.signals
-    
-    # show only colors that belong to 3 most important signals
-    def setRightColors(self):
-        self.colors = []
-        tempList = []
-        for signal in self.signals:
-            tempList.append(self.canvasDlg.getChannelInfo(signal))
-        for i in range(3):
-            if tempList != []:
-                # find signal with highest priority
-                top = 0
-                index = 0
-                for i in range(len(tempList)):
-                    if int(tempList[i][1]) > top:
-                        top = int(tempList[i][1])
-                        index = i
-                self.colors.append(tempList[index][2])
-                tempList.pop(index)
+        signals = []
+        for (inWidgetInstance, outName, inName, X) in self.signalManager.links.get(self.outWidget.instance, []):
+            if inWidgetInstance == self.inWidget.instance:
+                signals.append((outName, inName))
+        return signals
 
     def drawShape(self, painter):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
         (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
 
         if self.getEnabled(): lineStyle = Qt.SolidLine
-        else:                 lineStyle = Qt.DashLine 
+        else:                 lineStyle = Qt.DashLine
 
         painter.setPen(QPen(self.canvasDlg.lineColor, 5 , lineStyle))
         painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
-        
-        
+
+
     """
     # draw the line
     def drawShape(self, painter):
@@ -150,7 +128,7 @@ class CanvasLine(QCanvasLine):
         (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
 
         if self.getEnabled(): lineStyle = Qt.SolidLine
-        else:                 lineStyle = Qt.DashLine 
+        else:                 lineStyle = Qt.DashLine
 
         painter.setPen(QPen(QColor("green"), 1, lineStyle))
         painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
@@ -170,18 +148,18 @@ class CanvasLine(QCanvasLine):
             painter.drawLine(QPoint(startX, startY)   , QPoint(endX, endY))
             painter.setPen(QPen(QColor(self.colors[0]), 2, lineStyle))
             painter.drawLine(QPoint(startX, startY-3), QPoint(endX, endY-3))
-    
+
     # draw the line on the printer
     def printShape(self, painter):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
         (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
 
         fact = 10
-        
+
         if self.getEnabled():
             lineStyle = Qt.SolidLine
         else:
-            lineStyle = Qt.DotLine 
+            lineStyle = Qt.DotLine
 
         if len(self.colors) == 1:
             painter.setPen(QPen(QColor(self.colors[0]), 6*fact, lineStyle))
@@ -204,7 +182,7 @@ class CanvasLine(QCanvasLine):
         x1 = self.startPoint().x(); y1 = self.startPoint().y()
         x2 = self.endPoint().x(); y2 = self.endPoint().y()
         self.setPoints(x1 + dx, y1 + dy, x2 + dx, y2 + dy)
-        
+
     # set the line positions based on the position of input and output widgets
     def updateLinePos(self):
         x1 = self.outWidget.x() + 68 - 2
@@ -230,9 +208,10 @@ class CanvasLine(QCanvasLine):
         self.removeTooltip()
         p1 = self.startPoint()
         p2 = self.endPoint()
+        signals = self.getSignals()
 
         string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><br><hr>Signals:<br>"
-        for (outSignal, inSignal) in self.signals:
+        for (outSignal, inSignal) in signals:
             string += "<nobr> &nbsp &nbsp - " + outSignal + " --> " + inSignal + "</nobr><br>"
         string = string[:-4]
 
@@ -244,7 +223,7 @@ class CanvasLine(QCanvasLine):
             y1 = p1.y() + (i/float(count))*yDiff - 5
             x2 = p1.x() + ((i+1)/float(count))*xDiff + 5
             y2 = p1.y() + ((i+1)/float(count))*yDiff + 5
-            
+
             rect = QRect(min(x1, x2), min(y1,y2), abs(x1-x2), abs(y1-y2))
             self.tooltipRects.append(rect)
             QToolTip.add(self.view, rect, string)
@@ -252,7 +231,7 @@ class CanvasLine(QCanvasLine):
         # print the text with the signals
         caption = ""
         if self.showSignalNames:
-            for (outSignal, inSignal) in self.signals:
+            for (outSignal, inSignal) in signals:
                 caption += outSignal + "\n"
         self.text.hide()
         self.text.setText(caption)
@@ -271,7 +250,7 @@ class CanvasWidgetState(QCanvasRectangle):
         self.view = view
         self.parent = parent
         self.setSize(100, 30)
-        
+
         self.infoTexts = []
         self.warningTexts = []
         self.errorTexts = []
@@ -282,15 +261,15 @@ class CanvasWidgetState(QCanvasRectangle):
         self.showError = 1
 
     def updateState(self, widgetState):
-        self.infoTexts = widgetState["Info"].values() 
-        self.warningTexts = widgetState["Warning"].values() 
-        self.errorTexts = widgetState["Error"].values() 
+        self.infoTexts = widgetState["Info"].values()
+        self.warningTexts = widgetState["Warning"].values()
+        self.errorTexts = widgetState["Error"].values()
         self.updateWidgetState()
 
     def drawShape(self, painter):
         for (x,y,rect, pixmap, text) in self.activeItems:
             painter.drawPixmap(x, y, pixmap)
-       
+
     def addWidgetIcon(self, x, y, texts, iconName):
         if not texts:
             return 0
@@ -308,13 +287,17 @@ class CanvasWidgetState(QCanvasRectangle):
     def updateWidgetState(self):
         self.removeTooltips()
         self.activeItems = []
-        if not self.showIcons: return
+        if not self.showIcons or not self.widgetIcons: return
+
         count = int(self.infoTexts != []) + int(self.warningTexts != []) + int(self.errorTexts != [])
-        if not self.widgetIcons or count == 0: return
-        
         startX = self.parent.x() + (self.parent.width()/2) - (count*self.widgetIcons["Info"].width()/2)
         y = self.parent.y() - 25
         self.move(startX, y)
+
+        if count == 0:
+            self.view.repaintContents(QRect(startX, y, 100, 40))
+            return
+
         off  = 0
         if self.showInfo:
             off  = self.addWidgetIcon(startX, y, self.infoTexts, "Info")
@@ -322,9 +305,9 @@ class CanvasWidgetState(QCanvasRectangle):
             off += self.addWidgetIcon(startX+off, y, self.warningTexts, "Warning")
         if self.showError:
             off += self.addWidgetIcon(startX+off, y, self.errorTexts, "Error")
-        self.view.repaintContents(QRect(startX, y, 100, 30))
-        
-        
+        self.view.repaintContents(QRect(startX, y, 100, 40))
+
+
 
 # #######################################
 # # CANVAS WIDGET
@@ -342,7 +325,7 @@ class CanvasWidget(QCanvasRectangle):
         self.imageEdge = None
         if os.path.exists(os.path.join(canvasDlg.picsDir,"WidgetEdge.png")):
             self.imageEdge = QPixmap(os.path.join(canvasDlg.picsDir,"WidgetEdge.png"))
-            
+
         self.setSize(68, 68)
         self.selected = False
         self.invalidPosition = False    # is the widget positioned over other widgets
@@ -360,7 +343,7 @@ class CanvasWidget(QCanvasRectangle):
         self.isProcessing = 0   # is this widget currently processing signals
         self.widgetStateRect = CanvasWidgetState(self, canvas, view, self.canvasDlg.widgetIcons)
         self.widgetStateRect.show()
-        
+
         # import widget class and create a class instance
         code = compile("import " + widget.getFileName(), ".", "single")
         exec(code)
@@ -409,16 +392,16 @@ class CanvasWidget(QCanvasRectangle):
         self.widgetStateRect.showWarning = self.canvasDlg.settings["ocWarning"]
         self.widgetStateRect.showError = self.canvasDlg.settings["ocError"]
         self.refreshWidgetState()
-        
+
     def refreshWidgetState(self):
         self.widgetStateRect.updateState(self.instance.widgetState)
-        
+
 
     # get the list of connected signal names
     def getInConnectedSignalNames(self):
         signals = []
         for line in self.inLines:
-            for (outSignal, inSignal) in line.signals:
+            for (outSignal, inSignal) in line.getSignals():
                 if inSignal not in signals: signals.append(inSignal)
         return signals
 
@@ -426,10 +409,10 @@ class CanvasWidget(QCanvasRectangle):
     def getOutConnectedSignalNames(self):
         signals = []
         for line in self.outLines:
-            for (outSignal, inSignal) in line.signals:
+            for (outSignal, inSignal) in line.getSignals():
                 if outSignal not in signals: signals.append(outSignal)
         return signals
-        
+
     def remove(self):
         self.progressBarRect.hide()
         self.progressRect.hide()
@@ -442,7 +425,7 @@ class CanvasWidget(QCanvasRectangle):
 
         self.hide()
         self.setCanvas(None)    # hide the widget
-        
+
         # save settings
         if (self.instance != None):
             try:    self.instance.saveSettings()
@@ -451,14 +434,14 @@ class CanvasWidget(QCanvasRectangle):
             del self.instance
         self.removeTooltip()
         self.text.hide()
-        
+
     def savePosition(self):
         self.oldXPos = self.xPos
         self.oldYPos = self.yPos
 
     def restorePosition(self):
         self.setCoords(self.oldXPos, self.oldYPos)
-        
+
     def updateTextCoords(self):
         self.text.move(self.xPos + 34, self.yPos + 60)
 
@@ -516,7 +499,7 @@ class CanvasWidget(QCanvasRectangle):
         if isinstance(pos, QPoint) and LBox.contains(pos): return True
         elif isinstance(pos, QRect) and LBox.intersects(pos): return True
         else: return False
-        
+
     # is mouse position inside the right signal channel
     def mouseInsideRightChannel(self, pos):
         if self.widget.getOutputs() == []: return False
@@ -525,7 +508,7 @@ class CanvasWidget(QCanvasRectangle):
         if isinstance(pos, QPoint) and RBox.contains(pos): return True
         elif isinstance(pos, QRect) and RBox.intersects(pos): return True
         else: return False
-            
+
 
     # we know that the mouse was pressed inside a channel box. We only need to find
     # inside which one it was
@@ -542,7 +525,7 @@ class CanvasWidget(QCanvasRectangle):
     def getRightEdgePoint(self):
         return QPoint(self.x()+ 68, self.y() + 26)
 
-    # draw the widget        
+    # draw the widget
     def drawShape(self, painter):
         if self.isProcessing:
             painter.setPen(QPen(self.canvasDlg.widgetActiveColor))
@@ -558,7 +541,7 @@ class CanvasWidget(QCanvasRectangle):
             #painter.drawRect(self.x()+8, self.y(), 52, 52)
             painter.drawRect(self.x()+7, self.y(), 54, 54)
 
-        
+
         painter.drawPixmap(self.x()+2+8, self.y()+3, self.image)
 
         if self.imageEdge != None:
@@ -575,7 +558,7 @@ class CanvasWidget(QCanvasRectangle):
         painter.drawRect(self.x()+8, self.y(), 52, 52)
 
         painter.setBrush(QBrush(self.black))
-        
+
         if self.imageEdge != None:
             if self.widget.getInputs() != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
             if self.widget.getOutputs() != []:   painter.drawPixmap(self.x()+60, self.y() + 18, self.imageEdge)
@@ -589,7 +572,7 @@ class CanvasWidget(QCanvasRectangle):
         #self.captionWidth = rect.width()
         #painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, rect.width(), rect.height(), 0, self.caption)
         #painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
-    """ 
+    """
 
     def addOutLine(self, line):
         self.outLines.append(line)
@@ -606,7 +589,7 @@ class CanvasWidget(QCanvasRectangle):
             print "Orange Canvas: Erorr. Unable to remove line"
 
         self.updateTooltip()
-                
+
 
     def setAllLinesFinished(self, finished):
         for line in self.inLines: line.finished = finished
@@ -671,7 +654,7 @@ class CanvasWidget(QCanvasRectangle):
         #rect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
         #QToolTip.remove(self.view, self.rect())
         QToolTip.remove(self.view, self.lastRect)
-        
+
 
     def showProgressBar(self):
         self.progressRect.setSize(0, self.progressRect.height())
@@ -697,7 +680,7 @@ class CanvasWidget(QCanvasRectangle):
         self.isProcessing = value
         self.canvas.update()
         self.repaintWidget()
-        
+
     def rtti(self):
         return 1001
 
