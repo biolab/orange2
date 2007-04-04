@@ -9,7 +9,7 @@ from OWTools import *
 import orngVisFuncts
 
 
-# ####################################################################    
+# ####################################################################
 # return a list of sorted values for attribute at index index
 # EXPLANATION: if variable values have values 1,2,3,4,... then their order in orange depends on when they appear first
 # in the data. With this function we get a sorted list of values
@@ -17,7 +17,7 @@ def getVariableValuesSorted(data, index):
     if data.domain[index].varType == orange.VarTypes.Continuous:
         print "getVariableValuesSorted - attribute %s is a continuous variable" % (str(index))
         return []
-    
+
     values = list(data.domain[index].values)
     intValues = []
 
@@ -68,7 +68,7 @@ def discretizeDomain(data, removeUnusedValues = 1):
         newClass.name = className
         newDomain = orange.Domain(data.domain.attributes, newClass)
         data = orange.ExampleTable(newDomain, data)
-    
+
     for attr in data.domain.attributes:
         try:
             name = attr.name
@@ -88,7 +88,7 @@ def discretizeDomain(data, removeUnusedValues = 1):
     return data.select(discAttrs)
 
 
-    
+
 class orngScaleData:
     def __init__(self):
         self.rawdata = None                     # input data
@@ -107,9 +107,10 @@ class orngScaleData:
         self.subDataMinMaxDict = {}             # dictionary of tuples. keys are attribute names. values are (min, max) vals for examples in subsetData
         self.validDataArray = None
         self.validSubDataArray = None
-        
-       
-    
+        self.attrValues = {}
+        self.attrSubValues = {}
+
+
     # Converts orange.ExampleTable to numpy.array based on the attribute values.
     # rows correspond to examples, columns correspond to attributes, class values are left out
     # missing values and attributes of types other than orange.FloatVariable are masked
@@ -130,11 +131,11 @@ class orngScaleData:
 
         self.rawdata = data
         numpy.random.seed(1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
-                
+
         if data == None or len(data) == 0:
             self.originalData = self.scaledData = self.noJitteringScaledData = self.validDataArray = None
             return
-        
+
         self.attributeFlipInfo = dict([(attr.name, 0) for attr in data.domain]) # reset the fliping information
 
         self.domainDataStat = orange.DomainBasicAttrStat(data)
@@ -142,31 +143,23 @@ class orngScaleData:
         self.normalizers = []
         self.attributeNames = [attr.name for attr in data.domain]
         self.attributeNameIndex = dict([(data.domain[i].name, i) for i in range(len(data.domain))])
-        
-        Min = -1; Max = -1
-        if self.globalValueScaling == 1:
+
+        if self.globalValueScaling:
             (Min, Max) = self.getMinMaxValDomain(data, self.attributeNames)
 
         arr = MA.transpose(data.toNumpyMA("ac")[0])
         averages = MA.average(arr, 1)
-        averages = MA.filled(averages, 1)   # replace missing values with 1
-        self.averages = averages.tolist()
+        self.averages = MA.filled(averages, 1)   # replace missing values with 1
         self.validDataArray = numpy.array(1-arr.mask, numpy.int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
         arr = numpy.array(MA.filled(arr, -99999999))
-##        arr = numpy.array(MA.filled(arr, averages))
-##        arr2 = numpy.zeros(arr.shape)
-##        for i in range(arr.shape[0]):
-##            arr2[i] = MA.filled(arr[i], averages[i])
-##        self.originalData = arr2.copy()
-##        arr = arr2
         self.originalData = arr.copy()
         self.scaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
         self.noJitteringScaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
 
-        # see if the values for discrete attributes have to be resorted 
+        # see if the values for discrete attributes have to be resorted
         for index in range(len(data.domain)):
             attr = data.domain[index]
-            
+
             if attr.varType == orange.VarTypes.Discrete:
                 variableValueIndices = getVariableValueIndices(data, index, sortValuesForDiscreteAttrs)
                 for i in range(len(attr.values)):
@@ -178,8 +171,8 @@ class orngScaleData:
                         arr[index] = line   # save the changed array
                         break
 
-                if not self.attrValues.has_key(attr.name):  self.attrValues[attr.name] = [0, len(attr.values)]
-                count = self.attrValues[attr.name][1]
+                count = len(attr.values)
+                self.attrValues[attr.name] = [0, count]
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
                 self.offsets.append(0.0)
                 self.normalizers.append(count-1)
@@ -211,38 +204,44 @@ class orngScaleData:
                 else:
                     self.scaledData[index] = arr[index]
 
-            self.noJitteringScaledData = arr
+        self.noJitteringScaledData = arr
+#        if self.subsetData:
+#            self.setSubsetData(self.subsetData)
 
-        if self.subsetData:
-            self.setSubsetData(self.subsetData)
-        
     def setSubsetData(self, subData):
         self.subsetData = subData
         self.validSubDataArray = []
+        self.attrSubValues = {}
+        self.subDataMinMaxDict = {}
+
+#        if not subData or not self.rawdata or subData.domain.checksum() != self.rawdata.domain.checksum():
+#            return
+
+        if not subData:
+            return
 
         # create a  valid data array
         arr = MA.transpose(subData.toNumpyMA("ac")[0])
         self.validSubDataArray = numpy.array(1-arr.mask, numpy.int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
 
-        self.subDataMinMaxDict = {}
-        if not subData or not self.rawdata or subData.domain != self.rawdata.domain:
-            return
-        if self.scalingByVariance or self.globalValueScaling: return
-        
         domainSubDataStat = orange.DomainBasicAttrStat(subData)
         for index in range(len(subData.domain)):
             attr = subData.domain[index]
             if subData.domain[index].varType == orange.VarTypes.Continuous:
                 Min = domainSubDataStat[index].min
                 Max = domainSubDataStat[index].max
+                self.attrSubValues[attr.name] = (Min, Max)
+                if self.scalingByVariance or self.globalValueScaling:
+                    continue
                 projMin = (Min - self.offsets[index]) / self.normalizers[index]
                 projMax = (Max - self.offsets[index]) / self.normalizers[index]
                 if projMin < 0.0 or projMax > 1.0:
                     self.subDataMinMaxDict[attr.name] = (min(projMin, 0.0), max(1.0, projMax))
+            elif subData.domain[index].varType == orange.VarTypes.Discrete:
+                self.attrSubValues[attr.name] = [0, len(attr.values)]
 
- 
     # ####################################################################
-    # compute min and max value for a list of attributes 
+    # compute min and max value for a list of attributes
     def getMinMaxValDomain(self, data, attrList):
         first = TRUE
         min = -1; max = -1
@@ -256,7 +255,7 @@ class orngScaleData:
                 if minVal < min: min = minVal
                 if maxVal > max: max = maxVal
         return (min, max)
-    
+
 
     # ####################################################################
     # get min and max value of data attribute at index index
@@ -269,7 +268,7 @@ class orngScaleData:
             return (0, float(len(attr.values))-1)
         else:
             return (self.domainDataStat[index].min, self.domainDataStat[index].max)
-        
+
     # ####################################################################
     # scale data at index index to the interval 0 to 1
     # min, max - if booth -1 --> scale to interval 0 to 1, else scale inside interval [min, max]
@@ -280,7 +279,7 @@ class orngScaleData:
         values = []
 
         arr = numpy.zeros([len(data)], numpy.float)
-        
+
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
             # is the attribute discrete
@@ -295,7 +294,7 @@ class orngScaleData:
                 arr = (arr*2 + 1) / float(2*count)
             if jitteringEnabled:
                 arr = arr + 0.5 - (self.jitterSize/(50.0*count))*numpy.random.random(len(data))
-            
+
         # is the attribute continuous
         else:
             if min == max == -1:
@@ -304,7 +303,7 @@ class orngScaleData:
             values = [min, max]
             diff = max - min
             if diff == 0.0: diff = 1    # prevent division by zero
-            
+
             for i in range(len(data)):
                 if data[i][index].isSpecial() == 1: continue
                 arr[i] = data[i][index].value
@@ -316,7 +315,7 @@ class orngScaleData:
     def scaleExampleValue(self, example, index):
         if example[index].isSpecial():
             print "Warning: scaling example with missing value"
-            return 0.5     #1e20     
+            return 0.5     #1e20
         if example.domain[index].varType == orange.VarTypes.Discrete:
             d = getVariableValueIndices(example, index)
             return (d[example[index].value]*2 + 1) / float(2*len(d))
@@ -329,7 +328,7 @@ class orngScaleData:
                 m, M = self.subDataMinMaxDict[self.rawdata.domain[index].name]
                 position = (position - m) / float(max(M-m, 1e-10))
             return position
-        
+
 
     def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):
         if len(attrList) == 0: return
@@ -352,12 +351,12 @@ class orngScaleData:
         if attrName not in self.attributeNames: return 0
         if self.rawdata.domain[attrName].varType == orange.VarTypes.Discrete: return 0
         if self.globalValueScaling: return 0
-            
+
         index = self.attributeNameIndex[attrName]
         self.attributeFlipInfo[attrName] = not self.attributeFlipInfo[attrName]
         if self.rawdata.domain[attrName].varType == orange.VarTypes.Continuous:
             self.attrValues[attrName] = [-self.attrValues[attrName][1], -self.attrValues[attrName][0]]
-    
+
         self.scaledData[index] = 1 - self.scaledData[index]
         self.noJitteringScaledData[index] = 1 - self.noJitteringScaledData[index]
         return 1
@@ -384,10 +383,9 @@ class orngScaleData:
     def getValidSubIndices(self, indices):
         validList = self.getValidSubList(indices)
         return numpy.nonzero(validList)[0]
-        
+
     # returns a number from -max to max
     def rndCorrection(self, max):
         if max == 0: return 0.0
         return (random() - 0.5)*2*max
-        
-    
+
