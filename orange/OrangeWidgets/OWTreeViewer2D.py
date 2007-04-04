@@ -44,7 +44,7 @@ class CanvasTextContainer(QCanvasRectangle):
         QCanvasRectangle.setSize(self, w, h)
         for s in self.spliterObj:
             s.setPoints(0,0,w-1,0)
-            
+
     def setFont(self, font, rearange=True):
         for r in self.textObj:
             r.setFont(font)
@@ -93,11 +93,11 @@ class CanvasTextContainer(QCanvasRectangle):
             self.spliterObj.append(t)
             self.spliterLines.append((text, color))
         self.lineObj.append(t)
-        if fitSquare:  
-            self.fitSquare()                
+        if fitSquare:
+            self.fitSquare()
         if self.isShown:
             self.show()
-    
+
     def truncateText(self, trunc=True):
         if trunc:
             for r in self.textObj:
@@ -108,7 +108,7 @@ class CanvasTextContainer(QCanvasRectangle):
         else:
             for i in range(len(self.textObj)):
                 self.textObj[i].setText(self.textLines[i][0])
-                
+
     def reArangeText(self, fitSquare=True, startOffset=0):
         self.textOffset=startOffset
         for line in self.lineObj:
@@ -119,7 +119,7 @@ class CanvasTextContainer(QCanvasRectangle):
                 line.move(self.x(),self.y()+self.textOffset)
                 self.textOffset+=self.lineSpacing
         if fitSquare:
-            self.fitSquare()                
+            self.fitSquare()
 
     def setText(self, ind, text, fitSquare=True):
         if ind <len(self.textObj):
@@ -127,7 +127,7 @@ class CanvasTextContainer(QCanvasRectangle):
             self.textLines[ind]=(text, self.textLines[ind][1])
             if fitSquare:
                 self.fitSquare()
-                
+
     def fitSquare(self):
         w=max([t.boundingRect().width() for t in self.textObj]+[2])
         h=self.textOffset+2
@@ -144,7 +144,7 @@ class CanvasBubbleInfo(CanvasTextContainer):
     def setZ(self, z):
         CanvasTextContainer.setZ(self,z)
         self.shadow.setZ(z-1)
-        
+
     def setSize(self, w, h):
         CanvasTextContainer.setSize(self, w, h)
         self.shadow.setSize(w,h)
@@ -252,7 +252,7 @@ class CanvasNode(CanvasTextContainer):
         self.show()
         if self.isOpen:
             for n in self.nodeList:
-                n.showSubtree()        
+                n.showSubtree()
 
     def updateEdge(self):
         if self.parent!=self.canvas and self.parentEdge:
@@ -292,11 +292,11 @@ class CanvasNode(CanvasTextContainer):
             self.canvasObj.remove(l)
         self.selectionSquare=[]
 
-    
+
 
 def bubbleConstructor(node=None, pos =None, canvas=None):
     return CanvasBubbleInfo(node, pos, canvas)
-    
+
 class TreeCanvasView(QCanvasView):
     def __init__(self, master, canvas, *args):
         apply(QCanvasView.__init__,(self,canvas)+args)
@@ -308,17 +308,17 @@ class TreeCanvasView(QCanvasView):
         self.navigator=None
         self.viewport().setMouseTracking(True)
         self.bubbleConstructor=bubbleConstructor
-        
+
     def setNavigator(self, nav):
         self.navigator=nav
         self.master.connect(self.canvas(),SIGNAL("resized()"),self.navigator.resizeCanvas)
         self.master.connect(self ,SIGNAL("contentsMoving(int,int)"),self.navigator.moveView)
-        
+
     def resizeEvent(self, event):
         QCanvasView.resizeEvent(self, event)
         if self.navigator:
             self.navigator.resizeView()
-            
+
     def updateDropplet(self, dropplet=None):
         if dropplet==self.dropplet:
             return
@@ -328,7 +328,7 @@ class TreeCanvasView(QCanvasView):
         if self.dropplet:
             self.dropplet.setBrush(QBrush(Qt.black))
         self.canvas().update()
-        
+
     def updateBubble(self, node=None, pos=QPoint(0,0)):
         if self.bubbleNode==node and self.bubble:
             self.bubble.move(pos.x()+5,pos.y()+5)
@@ -345,7 +345,7 @@ class TreeCanvasView(QCanvasView):
             self.bubble.setCanvas(None)
             self.bubble=self.bubbleNode=None
         self.canvas().update()
-    
+
     def updateSelection(self, node=None):
         if not node or node==self.selectedNode:
             if self.selectedNode:
@@ -358,7 +358,7 @@ class TreeCanvasView(QCanvasView):
             self.selectedNode=node
             self.selectedNode.setSelectionBox()
             self.master.updateSelection(self.selectedNode)
-            
+
     def contentsMouseMoveEvent(self,event):
         obj=self.canvas().collisions(event.pos())
         obj=filter(lambda a:a.z()==-21 or a.z()==-20,obj)
@@ -373,7 +373,7 @@ class TreeCanvasView(QCanvasView):
         else:
             self.updateDropplet()
             self.updateBubble()
-                
+
     def contentsMousePressEvent(self, event):
         if self.dropplet:
             self.dropplet.node.setOpen(not self.dropplet.node.isOpen,
@@ -384,7 +384,7 @@ class TreeCanvasView(QCanvasView):
             obj=filter(lambda a:a.z()==-20, obj)
             if obj and isinstance(obj[0], QCanvasRectangle):
                 self.updateSelection(obj[0])
-        self.canvas().update()          
+        self.canvas().update()
 
 
 class TreeCanvas(QCanvas):
@@ -418,7 +418,7 @@ class TreeCanvas(QCanvas):
         if not x or not y: x, y= self.HSpacing, self.VSpacing
         self._fixPos(node,x,y)
         self.resize(self.gx+ExpectedBubbleWidth, self.gy+ExpectedBubbleHeight)
-        
+
     def _fixPos(self, node, x, y):
         ox=x
         if node.nodeList and node.isOpen:
@@ -461,7 +461,7 @@ class TreeNavigator(TreeCanvasView):
         self.buttonPressed=False
         self.bubbleConstructor=self.myBubbleConstructor
         self.isShown=False
-        
+
     def leech(self):
         if not self.isShown:
             return
@@ -473,8 +473,8 @@ class TreeNavigator(TreeCanvasView):
         else:
             self.walkupdate(self.rootNode)
         self.canvas().update()
-            
-    
+
+
     def walkcreate(self, masterNode, parent):
         node=self.NavigatorNode(masterNode, masterNode.tree, parent or self.canvas(), self.canvas())
         node.setZ(0)
@@ -493,7 +493,7 @@ class TreeNavigator(TreeCanvasView):
                 n.updateEdge()
         else:
             node.hideSubtree()
-        
+
     def contentsMousePressEvent(self, event):
         if self.canvas().onCanvas(event.pos()):
             self.masterView.center(event.pos().x()/self.rx,event.pos().y()/self.ry)
@@ -501,7 +501,7 @@ class TreeNavigator(TreeCanvasView):
 
     def contentsMouseReleaseEvent(self, event):
         self.buttonPressed=False
-        
+
     def contentsMouseMoveEvent(self, event):
         if self.buttonPressed:
             self.masterView.center(event.pos().x()/self.rx, event.pos().y()/self.ry)
@@ -547,9 +547,9 @@ class TreeNavigator(TreeCanvasView):
 
     def myBubbleConstructor(self, node, pos, canvas):
         return self.masterView.bubbleConstructor(node.masterNode, pos, canvas)
-        
-    
-class OWTreeViewer2D(OWWidget):	
+
+
+class OWTreeViewer2D(OWWidget):
     settingsList = ["ZoomAutoRefresh", "AutoArrange", "NodeBubblesEnabled",
                     "Zoom", "VSpacing", "HSpacing", "MaxTreeDepth", "MaxTreeDepthB",
                     "LineWidth", "LineWidthMethod",
@@ -557,13 +557,13 @@ class OWTreeViewer2D(OWWidget):
                     "TruncateText"]
 
     def __init__(self, parent=None, signalManager = None, name='TreeViewer2D'):
-        OWWidget.__init__(self, parent, signalManager, name) 
+        OWWidget.__init__(self, parent, signalManager, name)
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         self.root = None
         self.selectedNode = None
-        
+
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
-        self.outputs = [("Classified Examples", ExampleTableWithClass), ("Examples", ExampleTable)]
+        self.outputs = [("Examples", ExampleTable)]
 
         # some globaly used variables (get rid!)
         #self.TargetClassIndex = 0
@@ -576,7 +576,7 @@ class OWTreeViewer2D(OWWidget):
         self.LineWidth = 5; self.LineWidthMethod = 0
         self.NodeSize = 5
         self.NodeInfo = [0, 1]
-        
+
         self.NodeColorMethod = 0
         self.Zoom = 5
         self.VSpacing = 5; self.HSpacing = 5
@@ -600,13 +600,13 @@ class OWTreeViewer2D(OWWidget):
         #OWGUI.checkBox(GeneralTab, self, 'AutoArrange', 'Auto Arrange', tooltip='Auto arrange the position of the nodes\nafter any change of nodes visibility')
         OWGUI.checkBox(GeneralTab, self, 'NodeBubblesEnabled', 'Node Bubbles', tooltip='When mouse over the node show info bubble')
         OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate Text To Fit Margins', tooltip='Truncate any text to fit the node width', callback=self.toggleTruncateText)
-        
+
         self.infBox = QVGroupBox(GeneralTab)
         self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         self.infBox.setTitle('Tree Size Info')
 	self.infoa = QLabel('No tree.', self.infBox)
         self.infob = QLabel('', self.infBox)
-        
+
         self.tabs.insertTab(GeneralTab, "General")
 
         # TREE TAB
@@ -645,27 +645,27 @@ class OWTreeViewer2D(OWWidget):
         self.rescaleTree()
         self.canvas.fixPos(self.rootNode,10,10)
         self.canvas.update()
-        
+
     def toggleVSpacing(self):
         self.rescaleTree()
         self.canvas.fixPos(self.rootNode,10,10)
         self.canvas.update()
-        
+
     def toggleHSpacing(self):
         self.rescaleTree()
         self.canvas.fixPos(self.rootNode,10,10)
         self.canvas.update()
-        
+
     def toggleTruncateText(self):
         for n in self.canvas.nodeList:
            n.truncateText(self.TruncateText)
         self.canvas.update()
-    
+
     def toggleTreeDepth(self):
         self.walkupdate(self.rootNode)
         self.canvas.fixPos(self.rootNode,10,10)
         self.canvas.update()
-        
+
     def toggleLineWidth(self):
         for n in self.canvas.nodeList:
             if self.LineWidthMethod==0:
@@ -677,10 +677,10 @@ class OWTreeViewer2D(OWWidget):
                                     n.parent.tree.distribution.cases) or n.tree.distribution.cases)) * self.LineWidth
             n.setEdgeWidth(width)
         self.canvas.update()
-            
+
     def toggleNodeSize(self):
         pass
-    
+
     def toggleNavigator(self):
         if self.navWidget.isVisible():
             self.navWidget.hide()
@@ -689,10 +689,10 @@ class OWTreeViewer2D(OWWidget):
             self.navWidget.show()
             self.treeNav.isShown=True    # just so it knows it is shown
             self.treeNav.leech()
-            
+
     def activateLoadedSettings(self):
         if not self.tree:
-            return 
+            return
         self.rescaleTree()
         self.canvas.fixPos(self.rootNode,10,10)
         self.canvas.update()
@@ -702,7 +702,7 @@ class OWTreeViewer2D(OWWidget):
         self.toggleNodeSize()
         self.treeNav.leech()
         #self.toggleNavigator()
-        
+
     def ctree(self, tree=None):
         self.clear()
         if not tree:
@@ -715,7 +715,7 @@ class OWTreeViewer2D(OWWidget):
             self.tree=tree.tree
             self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
             self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
-            self.ClassColors=OWGraphTools.ColorPaletteHSV(len(self.tree.distribution))                         
+            self.ClassColors=OWGraphTools.ColorPaletteHSV(len(self.tree.distribution))
             self.rootNode=self.walkcreate(self.tree, None)
             self.canvas.fixPos(self.rootNode,self.HSpacing,self.VSpacing)
             self.activateLoadedSettings()
@@ -741,7 +741,7 @@ class OWTreeViewer2D(OWWidget):
             node.setOpen(True,1)
         for n in node.nodeList:
             self.walkupdate(n,level+1)
-            
+
     def clear(self):
         self.tree=None
         self.canvas.clear()
@@ -758,11 +758,9 @@ class OWTreeViewer2D(OWWidget):
         self.selectedNode=node
         if node:
             self.centerNodeButton.setDisabled(0)
-            self.send("Classified Examples", node.tree.examples)
             self.send("Examples", node.tree.examples)
         else:
             self.centerNodeButton.setDisabled(1)
-            self.send("Classified Examples", None)
             self.send("Examples", None)
 
 class OWDefTreeViewer2D(OWTreeViewer2D):
