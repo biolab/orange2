@@ -114,7 +114,7 @@ class orngMosaic:
         self.data = discretizeDomain(data, removeUnusedValues)
         if not self.data:
             return
-        
+
         self.attributeNameIndex = dict([(self.data.domain[i].name, i) for i in range(len(self.data.domain))])
 
         if self.data.domain.classVar:
@@ -132,7 +132,7 @@ class orngMosaic:
                     p = 99999.99
                 self.logits[self.classVals[i]] = log(p)
 
-    
+
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
     def getEvaluatedAttributes(self, data):
         if not data.domain.classVar or data.domain.classVar.varType != orange.VarTypes.Discrete:
@@ -146,7 +146,7 @@ class orngMosaic:
             from qt import qApp, QWidget
             self.setStatusBarText("Evaluating attributes...")
             qApp.setOverrideCursor(QWidget.waitCursor)
-        
+
         try:
             # evaluate attributes using the selected attribute measure
             self.evaluatedAttributes = orngVisFuncts.evaluateAttributes(data, None, discMeasures[self.attrDisc][1])
@@ -162,7 +162,7 @@ class orngMosaic:
         if self.__class__.__name__ == "OWMosaicOptimization":
             self.setStatusBarText("")
             qApp.restoreOverrideCursor()
-            
+
         if not self.evaluatedAttributes: return []
         else:                            return self.evaluatedAttributes
 
@@ -191,7 +191,7 @@ class orngMosaic:
 
         self.contingencies.update(conts)
         return conts
-            
+
 
     def isEvaluationCanceled(self):
         stop = 0
@@ -210,19 +210,19 @@ class orngMosaic:
 
         self.clearResults()
         self.resultListIndices = []
-        
+
         if self.__class__.__name__ == "OWMosaicOptimization":
             self.disableControls()
             self.parentWidget.progressBarInit()
             from qt import qApp
-            
+
         self.startTime = time.time()
 
         maxLength = self.attributeCount
         if self.optimizationType == 0: minLength = self.attributeCount
         else:                          minLength = 1
 
-        # generate cn2 rules and show projections that have 
+        # generate cn2 rules and show projections that have
         if self.qualityMeasure == CN2_RULES:
             ruleFinder = orange.RuleBeamFinder()
             ruleFinder.evaluator = orange.RuleEvaluator_Laplace()
@@ -237,9 +237,9 @@ class orngMosaic:
             if self.__class__.__name__ == "OWMosaicOptimization":
                 from OWCN2 import CN2ProgressBar
                 learner.progressCallback = CN2ProgressBar(self.parentWidget)
-                                
+
             classifier = learner(self.data)
-            
+
             self.dictResults = {}
             for rule in classifier.rules:
                 conds = rule.filter.conditions
@@ -255,8 +255,8 @@ class orngMosaic:
                 el = self.dictResults[key]
                 score = sum([e[0] for e in el]) / float(len(el))
                 self.insertItem(score, el[0][1], self.findTargetIndex(score, max), 0, extraInfo = el)
-            
-        else:            
+
+        else:
             evaluatedAttrs = self.getEvaluatedAttributes(self.data)
             if evaluatedAttrs == []:
                 self.data = fullData
@@ -273,10 +273,10 @@ class orngMosaic:
             for z in range(len(evaluatedAttrs)):
                 for u in range(minLength-1, maxLength):
                     combinations = orngVisFuncts.combinations(evaluatedAttrs[:z], u)
-                    
+
                     for attrList in combinations:
                         triedPossibilities += 1
-                        
+
                         attrs = [evaluatedAttrs[z]] + attrList
                         diffVals = reduce(operator.mul, [max(1, len(self.data.domain[attr].values)) for attr in attrs])
                         if diffVals > 200: continue     # we cannot efficiently deal with projections with more than 200 different values
@@ -287,9 +287,9 @@ class orngMosaic:
                             self.data = fullData
                             self.finishEvaluation(triedPossibilities)
                             return
-                        
+
                         self.insertItem(val, attrs, self.findTargetIndex(val, max), triedPossibilities)
-                        
+
                         if self.__class__.__name__ == "OWMosaicOptimization":
                             self.parentWidget.progressBarSet(100.0*triedPossibilities/float(totalPossibilities))
                             self.setStatusBarText("Evaluated %s/%s visualizations..." % (orngVisFuncts.createStringFromNumber(triedPossibilities), totalStr))
@@ -310,7 +310,7 @@ class orngMosaic:
 
     def _Evaluate(self, attrs):
         newFeature, quality = FeatureByCartesianProduct(self.data, attrs)
-        
+
         retVal = -1
         if self.qualityMeasure in [CHI_SQUARE, CRAMERS_PHI]:
             aprioriSum = sum(self.aprioriDistribution)
@@ -327,7 +327,7 @@ class orngMosaic:
                 vals = min(len(newFeature.values), len(self.data.domain.classVar.values))-1
                 if vals:
                     retVal = sqrt(retVal / (len(self.data) * vals))
-                    
+
         elif self.qualityMeasure == GAIN_RATIO:
             retVal = orange.MeasureAttribute_gainRatio(newFeature, self.data)
 
@@ -352,14 +352,14 @@ class orngMosaic:
         elif self.qualityMeasure == AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION:
             d = self.data.select([newFeature, self.data.domain.classVar])     # create a dataset that has only this new feature and class info
 
-            if not self.cvIndices:            
+            if not self.cvIndices:
                 if self.testingMethod == PROPORTION_TEST:
                     pick = orange.MakeRandomIndices2(stratified = orange.MakeRandomIndices.StratifiedIfPossible, p0 = 0.7, randomGenerator = 0)
                     self.cvIndices = [pick(d) for i in range(10)]
                 elif self.testingMethod == CROSSVALIDATION:
                     ind = orange.MakeRandomIndicesCV(d, 10, randomGenerator = 0, stratified = orange.MakeRandomIndices.StratifiedIfPossible)
                     self.cvIndices = [[val == i for val in ind] for i in range(10)]
-            
+
             acc = 0.0; count = 0
             for ind in self.cvIndices:
                 learnset = d.selectref(ind, 0)
@@ -377,16 +377,16 @@ class orngMosaic:
                         acc   += learnClassProb[i] * testClassDist[i]
                         count += testClassDist[i]
             retVal = 100*acc / max(1, float(count))
-            
+
         del newFeature, quality
         return retVal
 
-    # 
+    #
     # ARGUMENTATION FUNCTIONS
-    # 
+    #
     def findArguments(self, example = None):
         self.arguments = dict([(val, []) for val in self.classVals])
-        
+
         if not example or len(self.results) == 0: return None, None
         if not (self.data and self.data.domain.classVar and self.logits and self.classVals): return None, None
 
@@ -408,7 +408,7 @@ class orngMosaic:
                 if self.__class__.__name__ == "OWMosaicOptimization" and val == str(self.classValueList.currentText()):
                     self.insertArgument(args[val][0], args[val][1], attrList, pos)
                     qApp.processEvents()
-            usedArguments += 1 
+            usedArguments += 1
 
         predictions = []
         if self.classificationMethod == MOS_TOPPROJ:
@@ -428,7 +428,7 @@ class orngMosaic:
             for val in self.classVals:
                 value = self.logits[val] + sum([v[0] for v in self.arguments[val]])
                 predictions.append(e**value / (1 + e**value))       # use predictions from all arguments to classify an example
-            
+
         classValue = self.data.domain.classVar[predictions.index(max(predictions))]
         if sum(predictions) == 0:
             predictions = [1]*len(predictions)
@@ -465,7 +465,7 @@ class orngMosaic:
                 for attr in attrList:
                     prob *= self.contingencies[attr][example[attr]][i] / float(max(1,sum(self.contingencies[attr][example[attr]].values())))
                 eps += P_Ci * abs( actualProbabilities[i]/float(lenSubData) - (prob / P_Ci) )
-                                                                              
+
             for i in range(len(self.aprioriDistribution)):
                 arguments[self.classVals[i]] = (actualProbabilities[i], (eps, lenSubData))
 
@@ -495,13 +495,13 @@ class orngMosaic:
 
         return arguments
 
-        
+
     # probability estimation function
     def estimateClassProbabilities(self, data, example, attrList, subData = None, subDataDistribution = None, aprioriDistribution = None, probabilityEstimation = -1, mValue = -1):
         if probabilityEstimation == -1: probabilityEstimation = self.probabilityEstimation
         if aprioriDistribution == None: aprioriDistribution = self.aprioriDistribution
         if mValue == -1:                mValue = self.mValue
-        
+
         if not subData:
             attrVals = [example[attr] for attr in attrList]
             if "?" in attrVals: return None      # the testExample has a missing value at one of the visualized attributes
@@ -512,7 +512,7 @@ class orngMosaic:
 
         lenData = len(data)
         lenSubData = len(subData)
-        
+
         # estimate probabilities
         if probabilityEstimation == RELATIVE:
             if not len(subData):
@@ -570,7 +570,7 @@ class orngMosaic:
                         sameSign = (sum([abs(val) == val for val in vals]) in [0, len(vals)])   # do all values in vals have the same sign
                         partialVals = sum([abs(val) for val in vals] + errors)        # vals may have all - or all + values. errors are all +. to sum, we must make all vals +.
                         complexVal = abs(args[key][0]) - args[key][1]       # value and error of the combination of attributes
-                        if not sameSign or partialVals >= complexVal:   
+                        if not sameSign or partialVals >= complexVal:
                             args.pop(key)   # remove the combination of attributes because a split exists, that produces a more important argument
                             break
                     if args.has_key(key):
@@ -602,7 +602,7 @@ class orngMosaic:
                 if i not in indicesToKeep:
                     arguments.pop(i)
 
-            
+
     # compute probability that the combination of attribute values in attrValues is significantly different from being independent
     # see Kononenko: Semi-naive Bayes
     def argumentation_SemiNaive(self):
@@ -626,13 +626,13 @@ class orngMosaic:
                         argList[count].pop(key)
 
             indicesToKeep = [val[1] for val in argList[1].values() + argList[2].values() + argList[3].values() + argList[4].values()]
-            
+
             for i in range(len(arguments))[::-1]:       # we remove all arguments that are not in indicesToKeep
                 if i not in indicesToKeep:
                     arguments.pop(i)
-                
 
-            
+
+
     def getInteractionImportanceProbability(self, attrList, attrValues, subData = None, contingencies = None, aprioriDistribution = None, subDataDistribution = None):
         assert len(attrList) == len(attrValues)
 
@@ -659,7 +659,7 @@ class orngMosaic:
                 N_ci_aj = self.classDistributionsForExample[attrList[j]][i]
                 N_aj = sum(self.classDistributionsForExample[attrList[j]])
                 product *= N_ci_aj / N_aj       # P(ci|aj)
-            
+
             eps += (aprioriDistribution[i]/lenData) * abs((subDataDistribution[i]/lenSubData) - (product*lenData)/aprioriDistribution[i])
             #eps += abs((subDataDistribution[i]/lenSubData) - (product*lenData)/aprioriDistribution[i])
 
@@ -673,7 +673,7 @@ class orngMosaic:
 
     def getArgumentIndex(self, value, classValue):
         if len(self.arguments[classValue]) == 0: return 0
-        
+
         top = 0; bottom = len(self.arguments[classValue])
         while (bottom-top) > 1:
             mid  = (bottom + top)/2
@@ -694,7 +694,7 @@ class orngMosaic:
             domain.addmeta(self.weightID, orange.FloatVariable("ExampleWeight"))
         projData = orange.ExampleTable(domain)
         projData.domain.classVar.distributed = True
-        
+
         triedIndices = [0]*(len(attrs))
         maxVals = [len(val) for val in valueOrder]
         xpos = 0; ypos = 0
@@ -719,7 +719,7 @@ class orngMosaic:
             ypos = len(attrs) > 1 and 2 * triedIndices[-2]
             if len(attrs) > 2: xpos += (2 + maxVals[-1]) * triedIndices[-3] # add the space of 3 between each different value of third attribute
             if len(attrs) > 3: ypos += (4 + maxVals[-2]) * triedIndices[-4] # add the space of 4 between each different value of fourth attribute
-            
+
         distance = orange.ExamplesDistanceConstructor_Manhattan()
         distance.normalize = 0
         learner = orange.kNNLearner(rankWeight = 0, k = len(projData)/2, distanceConstructor = distance)
@@ -743,11 +743,11 @@ class orngMosaic:
             else:
                 quotients = map(operator.div, cont[key], apriori)
                 conditions[key] = (dist[key], self.data.domain.classVar.values[quotients.index(max(quotients))], cont[key])
-        
+
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.data.domain.classVar])
         self.weightID = orange.newmetaid()
         domain.addmeta(self.weightID, orange.FloatVariable("ExampleWeight"))
-        
+
         # create permutations of attributes and attribute values
         attrPerms = orngVisFuncts.permutations(range(len(attrs)))
         valuePerms = {}     # for each attribute we generate permutations of its values (if optimizeValueOrder = 1)
@@ -794,7 +794,7 @@ class orngMosaic:
         if self.__class__.__name__ == "OWMosaicOptimization":
             self.setStatusBarText("")
             self.parentWidget.progressBarFinished()
-            
+
         bestPlacements.sort()
         bestPlacements.reverse()
         return bestPlacements
@@ -815,22 +815,22 @@ class orngMosaic:
         if len(self.results) == 0: return 0
         if funct(score, self.results[top][SCORE]) == score:
             return top
-        else: 
+        else:
             return bottom
 
     # insert new result - give parameters: score of projection, number of examples in projection and list of attributes.
     def insertItem(self, score, attrList, index, tryIndex, extraInfo = []):
         self.results.insert(index, (score, attrList, tryIndex, extraInfo))
-        
+
         if self.__class__.__name__ == "OWMosaicOptimization":
-            
+
             self.resultList.insertItem("%.3f : %s" % (score, self.buildAttrString(attrList)), index)
             self.resultListIndices.insert(index, index)
 
     # from a list of attributes build a nice string with attribute names
     def buildAttrString(self, attrList):
         if len(attrList) == 0: return ""
-        
+
         strList = attrList[0]
         for attr in attrList[1:]:
             strList += ", " + attr
@@ -845,19 +845,19 @@ class orngMosaic:
         for v in self.data.domain.variables:
             filter.check[v] = v.name in attrList
         return filter(temp)
-    
 
-    # 
+
+    #
     # LOADING, SAVING, .....
     #
-    # save evaluated projections into a file        
+    # save evaluated projections into a file
     def save(self, filename):
         dict = {}
         for attr in ["attrDisc", "qualityMeasure", "percentDataUsed"]:
             dict[attr] = self.__dict__[attr]
         dict["dataCheckSum"] = self.data.checksum()
 
-        file = open(filename, "wt")        
+        file = open(filename, "wt")
         file.write("%s\n" % (str(dict)))
         for (score, attrList, tryIndex, extraInfo) in self.results:
             file.write("(%.4f, %s, %d)\n" % (score, attrList, tryIndex))
@@ -877,7 +877,7 @@ class orngMosaic:
                     return
             else:
                 print "dataset checksum does not agree with the checksum in the projections file. loading anyway"
-                
+
         #self.setSettings(settings)
         for key in settings.keys():
             setattr(self, key, settings[key])
@@ -890,7 +890,7 @@ class orngMosaic:
         file.close()
 
         return ind
-        
+
 
 # #############################################################################
 # class that represents kNN classifier that classifies examples based on top evaluated projections
@@ -900,16 +900,16 @@ class MosaicVizRankClassifier(orange.Classifier):
 
         if self.Mosaic.__class__.__name__ == "OWMosaicOptimization":
             self.Mosaic.parentWidget.subsetdataHander(None)
-            self.Mosaic.parentWidget.cdata(data)
+            self.Mosaic.parentWidget.setData(data)
         else:
             self.Mosaic.setData(data)
 
-        #if self.Mosaic.__class__.__name__ == "OWMosaicOptimization": self.Mosaic.useTimeLimit = 1   
+        #if self.Mosaic.__class__.__name__ == "OWMosaicOptimization": self.Mosaic.useTimeLimit = 1
         self.Mosaic.evaluateProjections()
         #if self.Mosaic.__class__.__name__ == "OWMosaicOptimization": del self.Mosaic.useTimeLimit
 
 
-    # for a given example run argumentation and find out to which class it most often fall        
+    # for a given example run argumentation and find out to which class it most often fall
     def __call__(self, example, returnType = orange.GetBoth):
         # if in widget, also show the example
         if self.Mosaic.__class__.__name__ == "OWMosaicOptimization":
@@ -921,7 +921,7 @@ class MosaicVizRankClassifier(orange.Classifier):
 
         if returnType == orange.GetBoth: return classVal, prob
         else:                            return classVal
-        
+
 
 # #############################################################################
 # learner that builds MosaicVizRankLearner
@@ -930,7 +930,7 @@ class MosaicVizRankLearner(orange.Learner):
         if not mosaic: mosaic = orngMosaic()
         self.Mosaic = mosaic
         self.name = self.Mosaic.learnerName
-        
+
     def __call__(self, examples, weightID = 0):
         return MosaicVizRankClassifier(self.Mosaic, examples)
 

@@ -41,16 +41,16 @@ class FreeViz:
         self.classPermutationList = None
         self.attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000]
         #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
-        
+
     def setData(self, data):
         self.rawdata = data
         self.s2nMixData = None
         self.classPermutationList = None
-        
+
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
-    
+
 
     def showAllAttributes(self):
         self.graph.anchorData = [(0,0, a.name) for a in self.graph.rawdata.domain.attributes]
@@ -94,7 +94,7 @@ class FreeViz:
         if not self.restrain == 2 and self.mirrorSymmetry:
             #### Need to rotate and mirror here
             pass
-            
+
         self.graph.anchorData = anchors
 
     def optimizeSeparation(self, steps = 10, singleStep = False):
@@ -109,7 +109,7 @@ class FreeViz:
             XAnchors = None; YAnchors = None
             if self.__class__ != FreeViz: from qt import qApp
 
-            for c in range((singleStep and 1) or 50):                
+            for c in range((singleStep and 1) or 50):
                 for i in range(steps):
                     if self.__class__ != FreeViz and self.cancelOptimization == 1: return
                     self.graph.anchorData, (XAnchors, YAnchors) = impl(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
@@ -124,7 +124,7 @@ class FreeViz:
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
         if self.__class__ != FreeViz: from qt import qApp
-       
+
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
         positions = [numpy.array([x[:2] for x in self.graph.anchorData])]
         neededSteps = 0
@@ -141,7 +141,7 @@ class FreeViz:
                 qApp.processEvents()
                 self.graph.potentialsBmp = None
                 self.graph.updateData()
-                
+
             positions = positions[-49:]+[numpy.array([x[:2] for x in self.graph.anchorData])]
             if len(positions)==50:
                 m = max(numpy.sum((positions[0]-positions[49])**2, 1))
@@ -158,11 +158,11 @@ class FreeViz:
 
         if not XAnchors: XAnchors = numpy.array([a[0] for a in anchorData], numpy.Float)
         if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
-        
+
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
         if not transProjData:
             return anchorData
-        
+
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]; y_positions = projData[1]; classData = projData[2]
 
@@ -174,12 +174,12 @@ class FreeViz:
             averages.append((xave, yave))
 
         # compute the positions of all the points. we will try to move all points so that the center will be in the (0,0)
-        xCenterVector = -numpy.sum(x_positions) / len(x_positions)   
+        xCenterVector = -numpy.sum(x_positions) / len(x_positions)
         yCenterVector = -numpy.sum(y_positions) / len(y_positions)
         centerVectorLength = math.sqrt(xCenterVector*xCenterVector + yCenterVector*yCenterVector)
 
         meanDestinationVectors = []
-        
+
         for i in range(classCount):
             xDir = 0.0; yDir = 0.0; rs = 0.0
             for j in range(classCount):
@@ -198,7 +198,7 @@ class FreeViz:
             #xDir = rs * (xDir/s)
             #yDir = rs * (yDir/s)
             meanDestinationVectors.append((xDir, yDir))
-            
+
 
         maxLength = math.sqrt(max([x**2 + y**2 for (x,y) in meanDestinationVectors]))
         meanDestinationVectors = [(x/(2*maxLength), y/(2*maxLength)) for (x,y) in meanDestinationVectors]     # normalize destination vectors to some normal values
@@ -208,23 +208,23 @@ class FreeViz:
 
         FXs = numpy.zeros(len(x_positions), numpy.Float)        # forces
         FYs = numpy.zeros(len(x_positions), numpy.Float)
-        
+
         for c in range(classCount):
             ind = (classData == c)
             numpy.putmask(FXs, ind, meanDestinationVectors[c][0] - x_positions)
             numpy.putmask(FYs, ind, meanDestinationVectors[c][1] - y_positions)
-            
+
         # compute gradient for all anchors
         GXs = numpy.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
         GYs = numpy.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
 
         m = max(max(abs(GXs)), max(abs(GYs)))
         GXs /= (20*m); GYs /= (20*m)
-        
+
         newXAnchors = XAnchors + GXs
         newYAnchors = YAnchors + GYs
 
-        # normalize so that the anchor most far away will lie on the circle        
+        # normalize so that the anchor most far away will lie on the circle
         m = math.sqrt(max(newXAnchors**2 + newYAnchors**2))
         newXAnchors /= m
         newYAnchors /= m
@@ -233,9 +233,9 @@ class FreeViz:
 
         """
         for a in range(len(anchorData)):
-            x = anchorData[a][0]; y = anchorData[a][1]; 
+            x = anchorData[a][0]; y = anchorData[a][1];
             self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x, x+GXs[a]], yData = [y, y+GYs[a]], forceFilledSymbols = 1, lineWidth=3)
-        
+
         for i in range(classCount):
             self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [averages[i][0], meanDestinationVectors[i][0]], yData = [averages[i][1], meanDestinationVectors[i][1]], forceFilledSymbols = 1, lineWidth=3)
             self.parentWidget.graph.addCurve("lll%i" % i, QColor(0, 0, 0), QColor(0, 0, 0), 10, style = QwtCurve.Lines, xData = [averages[i][0], averages[i][0]], yData = [averages[i][1], averages[i][1]], forceFilledSymbols = 1, lineWidth=5)
@@ -245,7 +245,7 @@ class FreeViz:
         #self.graph.updateData(attrs, 0)
         return [(newXAnchors[i], newYAnchors[i], anchorData[i][2]) for i in range(len(anchorData))], (newXAnchors, newYAnchors)
 
-            
+
     def optimize_SLOW_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
         dataSize = len(self.graph.rawdata)
         validData = self.graph.getValidList(attrIndices)
@@ -253,11 +253,11 @@ class FreeViz:
 
         if not XAnchors: XAnchors = numpy.array([a[0] for a in anchorData], numpy.Float)
         if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
-        
+
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
         if not transProjData:
             return anchorData
-        
+
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]; x_positions2 = numpy.array(x_positions)
         y_positions = projData[1]; y_positions2 = numpy.array(y_positions)
@@ -267,7 +267,7 @@ class FreeViz:
         FYs = numpy.zeros(len(x_positions), numpy.Float)
         GXs = numpy.zeros(len(anchorData), numpy.Float)        # gradients
         GYs = numpy.zeros(len(anchorData), numpy.Float)
-        
+
         rotateArray = range(len(x_positions)); rotateArray = rotateArray[1:] + [0]
         for i in range(len(x_positions)-1):
             x_positions2 = numpy.take(x_positions2, rotateArray)
@@ -278,7 +278,7 @@ class FreeViz:
             rs2 = dx**2 + dy**2
             rs2 += numpy.where(rs2 == 0.0, 0.0001, 0.0)    # replace zeros to avoid divisions by zero
             rs = numpy.sqrt(rs2)
-            
+
             F = numpy.zeros(len(x_positions), numpy.Float)
             classDiff = numpy.where(classData == classData2, 1, 0)
             numpy.putmask(F, classDiff, 150*self.attractG*rs2)
@@ -292,17 +292,17 @@ class FreeViz:
 
         m = max(max(abs(GXs)), max(abs(GYs)))
         GXs /= (20*m); GYs /= (20*m)
-        
+
         newXAnchors = XAnchors + GXs
         newYAnchors = YAnchors + GYs
 
-        # normalize so that the anchor most far away will lie on the circle        
+        # normalize so that the anchor most far away will lie on the circle
         m = math.sqrt(max(newXAnchors**2 + newYAnchors**2))
         newXAnchors /= m
         newYAnchors /= m
         return [(newXAnchors[i], newYAnchors[i], anchorData[i][2]) for i in range(len(anchorData))], (newXAnchors, newYAnchors)
 
-            
+
 ##    def recomputeEnergy(self, newEnergy = None):
 ##        if not newEnergy:
 ##            classes = [int(x.getclass()) for x in self.graph.rawdata]
@@ -319,10 +319,10 @@ class FreeViz:
             if not attrIndices:
                 attributes = self.getShownAttributeList()
                 attrIndices = [ai[label] for label in attributes]
-                
+
             validData = self.graph.getValidList(attrIndices)
             self.graph.normalizeExamples = 0
-            
+
             selectedData = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
             classData = numpy.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
 
@@ -330,10 +330,10 @@ class FreeViz:
                 indices = orange.MakeRandomIndices2(self.graph.rawdata, 1.0-(float(percentDataUsed)/100.0))
                 selectedData = numpy.compress(indices, selectedData, axis = 1)
                 classData = numpy.compress(indices, classData)
-            
+
             selectedData = numpy.transpose(selectedData)
-            
-            s = numpy.sum(selectedData, axis=0)/float(len(selectedData))  
+
+            s = numpy.sum(selectedData, axis=0)/float(len(selectedData))
             selectedData -= s       # substract average value to get zero mean
 
             # define the Laplacian matrix
@@ -342,7 +342,7 @@ class FreeViz:
                 for j in range(i+1, len(selectedData)):
                     L[i,j] = -int(classData[i] != classData[j])
                     L[j,i] = -int(classData[i] != classData[j])
-            
+
             s = numpy.sum(L, axis=0)      # doesn't matter which axis since the matrix L is symmetrical
             for i in range(len(selectedData)):
                 L[i,i] = -s[i]
@@ -353,16 +353,16 @@ class FreeViz:
                 matrix = numpy.dot(matrix, numpy.transpose(selectedData))
             else:
                 matrix = numpy.transpose(selectedData)
-            
+
             # compute selectedDataT * L * selectedData
             if SPCA:
                 matrix = numpy.dot(matrix, L)
-                
+
             matrix = numpy.dot(matrix, selectedData)
 
             vals, vectors = eig(matrix)
             firstInd  = list(vals).index(max(vals))     # save the index of the largest eigenvector
-            vals[firstInd] = -1   
+            vals[firstInd] = -1
             secondInd = list(vals).index(max(vals));    # save the index of the second largest eigenvector
 
             xAnchors = vectors[:, firstInd]
@@ -383,7 +383,7 @@ class FreeViz:
 ##            import sys
 ##            type, val, traceback = sys.exc_info()
 ##            sys.excepthook(type, val, traceback)
-            
+
             names = self.graph.attributeNames
             attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
             anchors = self.graph.createAnchors(len(attributes), attributes)
@@ -393,13 +393,13 @@ class FreeViz:
     # ###############################################################
     # S2N HEURISTIC FUNCTIONS
     # ###############################################################
-    
+
     # if autoSetParameters is set then try different values for parameters and see how good projection do we get
     # if not then just use current parameters to place anchors
     def s2nMixAnchorsAutoSet(self):
         if self.__class__ != FreeViz:
             import qt
-                
+
         if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             if self.__class__ != FreeViz:
                 qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
@@ -408,10 +408,13 @@ class FreeViz:
             return
 
         import orngVizRank
-        vizrank = orngVizRank.VizRank(orngVizRank.RADVIZ, graph = self.graph)
+        if self.graph.normalizeExamples:
+            vizrank = orngVizRank.VizRank(orngVizRank.RADVIZ)
+        else:
+            vizrank = orngVizRank.VizRank(orngVizRank.LINEAR_PROJECTION)
         vizrank.qualityMeasure = orngVizRank.AVERAGE_CORRECT
         vizrank.setData(self.rawdata)
-        
+
         if self.autoSetParameters:
             results = {}
             self.s2nSpread = 0
@@ -421,21 +424,23 @@ class FreeViz:
                 for val in self.attrsNum:
                     if self.attrsNum[self.attrsNum.index(val)-1] > len(self.rawdata.domain.attributes): continue    # allow the computations once
                     self.s2nPlaceAttributes = val
-                    self.s2nMixAnchors(0)
+                    if not self.s2nMixAnchors(0):
+                        return
                     if self.__class__ != FreeViz:
                         qt.qApp.processEvents()
-                        
+
                     acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
                     if hasattr(self, "setStatusBarText"):
                         if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
                         else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
-                                                             
+
                     results[acc] = (perm, val)
             if results.keys() == []: return
             self.classPermutationList, self.s2nPlaceAttributes = results[max(results.keys())]
             if self.__class__ != FreeViz:
                 qt.qApp.processEvents()
-            self.s2nMixAnchors(0)        # update the best number of attributes
+            if not self.s2nMixAnchors(0):        # update the best number of attributes
+                return
 
             results = []
             anchors = self.graph.anchorData
@@ -443,7 +448,8 @@ class FreeViz:
             attrIndices = [attributeNameIndex[val[2]] for val in anchors]
             for val in range(10):
                 self.s2nSpread = val
-                self.s2nMixAnchors(0)
+                if not self.s2nMixAnchors(0):
+                    return
                 acc, other = vizrank.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = 1))
                 results.append(acc)
                 if hasattr(self, "setStatusBarText"):
@@ -464,8 +470,8 @@ class FreeViz:
             import qt
             if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
-                return
-        
+                return 0
+
         # compute the quality of attributes only once
         if self.s2nMixData == None:
             rankedAttrs, rankedAttrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.rawdata, orngVisFuncts.S2NMeasureMix())
@@ -475,11 +481,12 @@ class FreeViz:
         else:
             classCount = len(self.s2nMixData[1])
             attrs = self.s2nMixData[0][:(self.s2nPlaceAttributes/classCount)*classCount]
-            
+
+        if len(attrs) == 0: return 0
+
         arr = [0]       # array that will tell where to put the next attribute
         for i in range(1,len(attrs)/2): arr += [i,-i]
 
-        if len(attrs) == 0: return
         phi = (2*math.pi*self.s2nSpread)/(len(attrs)*10.0)
         anchorData = []; start = []
         arr2 = arr[:(len(attrs)/classCount)+1]
@@ -501,27 +508,28 @@ class FreeViz:
                 self.parentWidget.setShownAttributeList(self.rawdata, attrNames)
             self.graph.updateData(attrNames)
             self.graph.repaint()
+        return 1
 
 
 
 
 # #############################################################################
-# class that represents FreeViz classifier 
+# class that represents FreeViz classifier
 class FreeVizClassifier(orange.Classifier):
     def __init__(self, data, freeviz):
         self.FreeViz = freeviz
 
         if self.FreeViz.__class__ != FreeViz:
-            self.FreeViz.parentWidget.cdata(data)
+            self.FreeViz.parentWidget.setData(data)
             self.FreeViz.parentWidget.showAllAttributes = 1
         else:
             self.FreeViz.graph.setData(data)
             self.FreeViz.showAllAttributes()
-            
+
         #self.FreeViz.randomAnchors()
         self.FreeViz.radialAnchors()
         self.FreeViz.optimizeSeparation()
-        
+
         graph = self.FreeViz.graph
         ai = graph.attributeNameIndex
         labels = [a[2] for a in graph.anchorData]
@@ -536,7 +544,7 @@ class FreeVizClassifier(orange.Classifier):
                                       numpy.transpose(numpy.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawdata]])),
                                       graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=self.FreeViz.law)
 
-    # for a given example run argumentation and find out to which class it most often fall        
+    # for a given example run argumentation and find out to which class it most often fall
     def __call__(self, example, returnType):
         #example.setclass(0)
         return self.classifier(example, returnType)
@@ -548,7 +556,7 @@ class FreeVizLearner(orange.Learner):
             freeviz = FreeViz()
         self.FreeViz = freeviz
         self.name = "FreeViz Learner"
-        
+
     def __call__(self, examples, weightID = 0):
         return FreeVizClassifier(examples, self.FreeViz)
 
@@ -562,11 +570,11 @@ class S2NHeuristicClassifier(orange.Classifier):
         self.data = data
 
         if self.FreeViz.__class__ != FreeViz:
-            self.FreeViz.parentWidget.cdata(data)
+            self.FreeViz.parentWidget.setData(data)
         else:
             self.FreeViz.setData(data)
             self.FreeViz.graph.setData(data)
-            
+
         self.FreeViz.s2nMixAnchorsAutoSet()
 
     def __call__(self, example, returnType):
@@ -576,15 +584,15 @@ class S2NHeuristicClassifier(orange.Classifier):
         if self.FreeViz.__class__ != FreeViz:
             self.FreeViz.parentWidget.subsetdata(table)      # show the example is we use the widget
         else:
-            self.FreeViz.graph.setSubsetData(table)       
-            
+            self.FreeViz.graph.setSubsetData(table)
+
         anchorData = self.FreeViz.graph.anchorData
         attributeNameIndex = self.FreeViz.graph.attributeNameIndex
         scaleFunction = self.FreeViz.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
 
         attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
         attrVals = [scaleFunction(example, index) for index in attrListIndices]
-                
+
         table = self.FreeViz.graph.createProjectionAsExampleTable(attrListIndices, scaleFactor = self.FreeViz.graph.trueScaleFactor, useAnchorData = 1)
         kValue = int(math.sqrt(len(self.data)))
         knn = orange.kNNLearner(k = kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
@@ -592,10 +600,10 @@ class S2NHeuristicClassifier(orange.Classifier):
         [xTest, yTest] = self.FreeViz.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
         classifier = knn(table, 0)
         (classVal, dist) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
-        
+
         if returnType == orange.GetBoth: return classVal, dist
         else:                            return classVal
-        
+
 
 class S2NHeuristicLearner(orange.Learner):
     def __init__(self, freeviz = None):
@@ -603,7 +611,7 @@ class S2NHeuristicLearner(orange.Learner):
             freeviz = FreeViz()
         self.FreeViz = freeviz
         self.name = "S2N Feature Selection Learner"
-        
+
     def __call__(self, examples, weightID = 0):
         return S2NHeuristicClassifier(examples, self.FreeViz)
 

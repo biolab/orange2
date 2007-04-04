@@ -262,10 +262,7 @@ class S2NMeasureMix(S2NMeasure):
         self.sortedAttrList = []
         
     def __call__(self, attribute, data):
-        if data.domain[attribute].varType == orange.VarTypes.Discrete:
-            print "S2NMeasureMix can not evaluate discrete attributes"
-            return -1
-        
+                
         # if the data changed clear the attribute values
         if data != self.dataMix:
             self.attrInfoMix = {}
@@ -284,12 +281,15 @@ class S2NMeasureMix(S2NMeasure):
                 attrValsList = []
                 newData = mergeClassValues(data, c)
                 for attrIndex in range(len(attrs)):
+                    if data.domain[attrIndex].varType == orange.VarTypes.Discrete:      # ignore discrete attributes
+                        continue    
                     val = S2NMeasure.__call__(self, attrs[attrIndex], newData)
                     if statistics[0][attrIndex] == None:
                         attrValsList.append((0,attrs[attrIndex]))
                     else:
                         aves = [stat[attrIndex].avg for stat in statistics]
-                        if max(aves) != aves[classVarIndex] : val = -val
+                        if max(aves) != aves[classVarIndex] :
+                            val = -val
                         attrValsList.append((val, attrs[attrIndex]))
                 attrValsList.sort()
                 attrValsList = [element[1] for element in attrValsList]     # remove the value
@@ -300,25 +300,27 @@ class S2NMeasureMix(S2NMeasure):
             for arr in cls:
                 for i in range(len(arr)):
                     attrPositionsDict[arr[i]].append(i)
-
-            ableToAdd = 1
+            
             numClasses = len(classVar.values)
             currPos = [0 for i in range(numClasses)]
             self.sortedAttrList = []
+            ableToAdd = 1
             while ableToAdd:    # sometimes some attributes are duplicated. in such cases we will add only one instance of such attribute to the list
                 ableToAdd = 0
                 for i in range(numClasses):
                     pos = currPos[i]
-                    while pos < len(cls[i]) and cls[i][pos] == None: pos += 1
+                    while pos < len(cls[i]) and cls[i][pos] == None:
+                        pos += 1
                     currPos[i] = pos + 1
-                    if pos >= len(cls[i]): continue
+                    if pos >= len(cls[i]):
+                        continue
                     ableToAdd = 1
                     
                     attr = cls[i][pos]
                     self.sortedAttrList.append(attr)
                     attrPositions = attrPositionsDict[attr]     # get indices in cls where attribute attr is placed
-                    for j in range(numClasses): cls[j][attrPositions[j]] = None
-                    
+                    for j in range(numClasses):
+                        cls[j][attrPositions[j]] = None
                     
             count = len(self.sortedAttrList)
             for (i, attr) in enumerate(self.sortedAttrList):
