@@ -2,7 +2,7 @@
 <name>Continuize</name>
 <description>Turns discrete attributes into continuous and, optionally, normalizes the continuous values.</description>
 <icon>icons/Continuize.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>2110</priority>
 """
 #
@@ -17,7 +17,7 @@ import OWGUI
 class OWContinuize(OWWidget):
     settingsList = ["multinomialTreatment", "classTreatment", "zeroBased", "continuousTreatment", "autosend"]
     contextHandlers = {"": ClassValuesContextHandler("", ["targetValue"])}
-    
+
     multinomialTreats = (("Target or First value as base", orange.DomainContinuizer.LowestIsBase),
                          ("Most frequent value as base", orange.DomainContinuizer.FrequentIsBase),
                          ("One attribute per value", orange.DomainContinuizer.NValues),
@@ -29,7 +29,7 @@ class OWContinuize(OWWidget):
     continuousTreats = (("Leave as are", orange.DomainContinuizer.Leave),
                         ("Normalize by span", orange.DomainContinuizer.NormalizeBySpan),
                         ("Normalize by variance", orange.DomainContinuizer.NormalizeByVariance))
-    
+
     classTreats = (("Leave as is", orange.DomainContinuizer.Ignore),
                    ("Treat as ordinal", orange.DomainContinuizer.AsOrdinal),
                    ("Divide by number of values", orange.DomainContinuizer.AsNormalizedOrdinal),
@@ -37,9 +37,9 @@ class OWContinuize(OWWidget):
 
     def __init__(self,parent=None, signalManager = None, name = "Continuizer"):
         OWWidget.__init__(self, parent, signalManager, name)
-        
-        self.inputs = [("Examples", ExampleTable, self.examples)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
+
+        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.outputs = [("Examples", ExampleTable)]
 
         self.multinomialTreatment = 0
         self.targetValue = 0
@@ -68,7 +68,7 @@ class OWContinuize(OWWidget):
 
         QWidget(self.controlArea).setFixedSize(19, 8)
 
-        zbbox = QVButtonGroup("Value range", self.controlArea) 
+        zbbox = QVButtonGroup("Value range", self.controlArea)
         OWGUI.radioButtonsInBox(zbbox, self, "zeroBased", btnLabels=["from -1 to 1", "from 0 to 1"], callback=self.sendDataIf)
 
         QWidget(self.controlArea).setFixedSize(19, 8)
@@ -83,15 +83,14 @@ class OWContinuize(OWWidget):
         self.classTreatment = 3
         self.sendDataIf()
 
-    def examples(self,data):
+    def setData(self,data):
         self.closeContext()
-        
+
         if not data:
             self.data = None
             self.cbTargetValue.clear()
             self.openContext("", self.data)
             self.send("Examples", None)
-            self.send("Classified Examples", None)
         else:
             if not self.data or data.domain.classVar != self.data.domain.classVar:
                 self.cbTargetValue.clear()
@@ -103,7 +102,7 @@ class OWContinuize(OWWidget):
                 else:
                     self.ctreat.setDisabled(True)
             self.data = data
-            self.openContext("", self.data)            
+            self.openContext("", self.data)
             self.sendData()
 
     def sendDataIf(self):
@@ -114,7 +113,7 @@ class OWContinuize(OWWidget):
     def enableAuto(self):
         if self.dataChanged:
             self.sendData()
-            
+
     def sendData(self):
         if self.data:
             conzer = orange.DomainContinuizer()
@@ -126,16 +125,14 @@ class OWContinuize(OWWidget):
             else:
                 conzer.classTreatment = self.classTreats[self.classTreatment][1]
                 domain = conzer(self.data)
-            data = orange.ExampleTable(domain, self.data)
-            self.send("Examples", data)
-            self.send("Classified Examples", data.domain.classVar and data or None)
+            self.send("Examples", orange.ExampleTable(domain, self.data))
         self.dataChanged = False
-    
+
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWContinuize()
     data = orange.ExampleTable("d:\\ai\\orange\\test\\iris")
-    ow.examples(data)
+    ow.setData(data)
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()

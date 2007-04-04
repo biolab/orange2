@@ -3,7 +3,7 @@
 <description>Reads data from a file; can accept an existing domain.</description>
 <icon>icons/ExtendedFile.png</icon>
 <priority>11</priority>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 """
 
 #
@@ -18,8 +18,8 @@ class OWExtendedFile(OWSubFile):
         OWSubFile.__init__(self, parent, signalManager, "AdvancedFile")
 
         self.inputs = [("Attribute Definitions", orange.Domain, self.setDomain)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Attribute Definitions", orange.Domain)]
-    
+        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
+
         #set default settings
         self.recentFiles=["(none)"]
         self.resetDomain = 0
@@ -28,7 +28,7 @@ class OWExtendedFile(OWSubFile):
         self.symbolDK = "~"
         #get settings from the ini file, if they exist
         self.loadSettings()
-        
+
         #GUI
         self.box = QHGroupBox("Data File", self.controlArea)
         self.filecombo=QComboBox(self.box)
@@ -45,7 +45,7 @@ class OWExtendedFile(OWSubFile):
         box = QVGroupBox("Info", self.controlArea)
         self.infoa = QLabel('No data loaded.', box)
         self.infob = QLabel('', box)
-            
+
         self.rbox = QHGroupBox("Reload", self.controlArea)
         self.reloadBtn = OWGUI.button(self.rbox, self, "Reload File", callback = self.reload)
         OWGUI.separator(self.rbox, 8, 0)
@@ -57,16 +57,16 @@ class OWExtendedFile(OWSubFile):
     def setDomain(self, domain):
         domainChanged = self.domain != domain
         self.domain = domain
-        
+
         if self.domain:
             self.resetDomainCb.setDisabled(1)
         else:
             self.resetDomainCb.setDisabled(0)
-            
+
         if domainChanged and len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
             self.resetDomain = 1
             self.openFile(self.recentFiles[0], 1)
-            
+
 
     def reload(self):
         if self.recentFiles:
@@ -93,7 +93,7 @@ class OWExtendedFile(OWSubFile):
 
     def openFile(self,fn, throughReload = 0):
         self.openFileBase(fn, throughReload=throughReload, DK=self.symbolDK, DC=self.symbolDC)
-        
+
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)
@@ -104,5 +104,5 @@ if __name__ == "__main__":
     ow.symbolDK = "<NO DATA>"
     ow.openFile(r"C:\Documents and Settings\peterjuv\My Documents\STEROLTALK\array-pro\experiments\Tadeja 2nd image analysis\10vs10mg original data\0449.txt")
     a.exec_loop()
-    #save settings 
+    #save settings
     ow.saveSettings()

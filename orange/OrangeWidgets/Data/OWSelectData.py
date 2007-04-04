@@ -23,8 +23,8 @@ class OWSelectData(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
 
         # set channels
-        self.inputs = [("Examples", ExampleTable, self.onDataInput)]
-        self.outputs = [("Matching Examples", ExampleTable, Default), ("Non-Matching Examples", ExampleTable), ("Matching Classified Examples", ExampleTableWithClass, Default), ("Non-Matching Classified Examples", ExampleTableWithClass)]
+        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.outputs = [("Matching Examples", ExampleTable, Default), ("Non-Matching Examples", ExampleTable)]
 
         # manually set member variables
         self.name2var = {}   # key: variable name, item: orange.Variable
@@ -51,7 +51,7 @@ class OWSelectData(OWWidget):
         self.loadedVarNames = []
         self.loadedConditions = []
         self.loadSettings()
-        
+
         # GUI
         self.mainArea.setFixedWidth(0)
         ca=QFrame(self.controlArea)
@@ -145,9 +145,9 @@ class OWSelectData(OWWidget):
         gl.addMultiCellWidget(self.boxButtons, 1,1,0,2)
         self.btnNew = OWGUI.button(self.boxButtons, self, "Add", self.OnNewCondition)
         self.btnUpdate = OWGUI.button(self.boxButtons, self, "Update", self.OnUpdateCondition)
-        self.btnRemove = OWGUI.button(self.boxButtons, self, "Remove", self.OnRemoveCondition)        
-        self.btnOR = OWGUI.button(self.boxButtons, self, "OR", self.OnDisjunction)        
-        self.btnMoveUp = OWGUI.button(self.boxButtons, self, "Move Up", self.btnMoveUpClicked)        
+        self.btnRemove = OWGUI.button(self.boxButtons, self, "Remove", self.OnRemoveCondition)
+        self.btnOR = OWGUI.button(self.boxButtons, self, "OR", self.OnDisjunction)
+        self.btnMoveUp = OWGUI.button(self.boxButtons, self, "Move Up", self.btnMoveUpClicked)
         self.btnMoveDown = OWGUI.button(self.boxButtons, self, "Move Down", self.btnMoveDownClicked)
         self.btnRemove.setEnabled(False)
         self.btnUpdate.setEnabled(False)
@@ -182,7 +182,7 @@ class OWSelectData(OWWidget):
         # data out
         boxDataOut = QVGroupBox(ca)
         boxDataOut.setTitle('Data Out')
-        gl.addWidget(boxDataOut, 3,1)        
+        gl.addWidget(boxDataOut, 3,1)
         self.dataOutExamplesLabel = OWGUI.widgetLabel(boxDataOut, "num examples")
         self.dataOutAttributesLabel = OWGUI.widgetLabel(boxDataOut, "num attributes")
 
@@ -197,7 +197,7 @@ class OWSelectData(OWWidget):
 
         # icons
         self.icons = self.createAttributeIconDict()
-        self.onDataInput(None)
+        self.setData(None)
         self.lbOperatorsD.setCurrentItem(0)
         self.lbOperatorsC.setCurrentItem(0)
         self.lbOperatorsS.setCurrentItem(0)
@@ -208,7 +208,7 @@ class OWSelectData(OWWidget):
     ## Data input and output management ########################################################################################################################
     ############################################################################################################################################################
 
-    def onDataInput(self, data):
+    def setData(self, data):
         """Loads stored conditions (if we have a similar domain), updates list boxes and data in info, sends out data.
         """
         self.data = data
@@ -303,7 +303,7 @@ class OWSelectData(OWWidget):
                 newDomain = remover(matchingOutput, 0, True, self.purgeClasses)
                 if newDomain != matchingOutput.domain:
                     matchingOutput = orange.ExampleTable(newDomain, matchingOutput)
-                    
+
                 newDomain = remover(nonMatchingOutput, 0, True, self.purgeClasses)
                 if newDomain != nonMatchingOutput.domain:
                     nonmatchingOutput = orange.ExampleTable(newDomain, nonMatchingOutput)
@@ -311,12 +311,6 @@ class OWSelectData(OWWidget):
         self.send("Matching Examples", matchingOutput)
         self.send("Non-Matching Examples", nonMatchingOutput)
 
-        if hasClass:
-            self.send("Matching Classified Examples", matchingOutput)
-            self.send("Non-Matching Classified Examples", nonMatchingOutput)
-        else:
-            self.send("Matching Classified Examples", None)
-            self.send("Non-Matching Classified Examples", None)
         self.updateInfoOut(matchingOutput)
 
 
@@ -399,7 +393,7 @@ class OWSelectData(OWWidget):
         # enable Update/Remove buttons
         self.btnUpdate.setEnabled(True)
         self.btnRemove.setEnabled(True)
-        # send out new data 
+        # send out new data
         if self.updateOnChange:
             self.setOutput()
         self.leSelect.clear()
@@ -415,10 +409,10 @@ class OWSelectData(OWWidget):
                 self.purgeClassesCB.setEnabled(False)
                 self.oldPurgeClasses = self.purgeClasses
                 self.purgeClasses = False
-                
+
         if self.updateOnChange:
             self.setOutput()
-            
+
     def OnUpdateCondition(self):
         """Calls remove and insert.
         TODO: sends out data twice - fix that!
@@ -438,7 +432,7 @@ class OWSelectData(OWWidget):
         self.updateFilteredDataLens()
         # send out new data
         if self.updateOnChange:
-            self.setOutput()        
+            self.setOutput()
         self.leSelect.clear()
 
 
@@ -470,9 +464,9 @@ class OWSelectData(OWWidget):
         if len(self.Conditions) == 0:
             self.btnUpdate.setEnabled(False)
             self.btnRemove.setEnabled(False)
-        # send out new data 
+        # send out new data
         if self.updateOnChange:
-            self.setOutput()        
+            self.setOutput()
 
 
     def OnDisjunction(self):
@@ -490,10 +484,10 @@ class OWSelectData(OWWidget):
         # enable Update/Remove buttons
         self.btnUpdate.setEnabled(True)
         self.btnRemove.setEnabled(True)
-        # send out new data 
+        # send out new data
         if self.updateOnChange:
-            self.setOutput()        
-        
+            self.setOutput()
+
 
     def btnMoveUpClicked(self):
         """Moves the selected condition one row up.
@@ -511,11 +505,11 @@ class OWSelectData(OWWidget):
         self.criteriaTable.updateCell(currRow-1, 1)
         self.updateFilteredDataLens()
         self.updateMoveButtons()
-        # send out new data 
+        # send out new data
         if self.updateOnChange:
-            self.setOutput()        
+            self.setOutput()
 
-        
+
     def btnMoveDownClicked(self):
         """Moves the selected condition one row down.
         """
@@ -532,9 +526,9 @@ class OWSelectData(OWWidget):
         self.criteriaTable.updateCell(currRow+1, 1)
         self.updateFilteredDataLens()
         self.updateMoveButtons()
-        # send out new data 
+        # send out new data
         if self.updateOnChange:
-            self.setOutput()        
+            self.setOutput()
 
 
     def currentCriteriaChange(self, row, col):
@@ -587,7 +581,7 @@ class OWSelectData(OWWidget):
         self.updateFilteredDataLens(condition)
         # send out new data
         if self.updateOnChange:
-            self.setOutput()        
+            self.setOutput()
 
 
     ############################################################################################################################################################
@@ -708,7 +702,7 @@ class OWSelectData(OWWidget):
                     self.leStr2.hide()
         else:
             self.valuesStack.raiseWidget(0)
-            
+
 
     def insertCriteriaTableRow(self, cond, row):
         """Inserts condition at the given row.
@@ -722,7 +716,7 @@ class OWSelectData(OWWidget):
         self.putContitionToTable(row, cond)
         self.criteriaTable.setCurrentCell(row,1)
 
-        
+
     def getCondtionFromSelection(self):
         """Returns a condition according to the currently selected attribute / operator / values.
         """
@@ -836,8 +830,8 @@ class OWSelectData(OWWidget):
         else:
             self.dataInExamplesLabel.setText("No examples.")
             self.dataInAttributesLabel.setText("No attributes.")
-            
-                        
+
+
     def updateInfoOut(self, data):
         """Updates data out info box.
         """
@@ -859,7 +853,7 @@ class OWSelectData(OWWidget):
         """
         n = len(l)
         if n == 0:
-            if capitalize:                    
+            if capitalize:
                 return "No", "s"
             else:
                 return "no", "s"
@@ -881,7 +875,7 @@ class OWSelectData(OWWidget):
                 int(cond.enabled),cond.type,cond.varName,str(cond.operator),
                 int(cond.negated),str(cond.val1),str(cond.val2),int(cond.caseSensitive))
 
-        
+
 class Condition:
     def __init__(self, enabled, type, attribute = None, operator = None, negate = False, value1 = None, value2 = None, caseSensitive = False):
         self.enabled = enabled                  # True/False
@@ -900,7 +894,7 @@ class Operator:
     operatorsS = staticmethod(["=","<","<=",">",">=","contains","begins with","ends with","between","outside"])
     operatorDef = staticmethod("is defined")
     getOperators = staticmethod(lambda: Operator.operatorsD + Operator.operatorsS + [Operator.operatorDef])
-    
+
     _operFilter = {"=":orange.Filter_values.Equal,
                    "<":orange.Filter_values.Less,
                    "<=":orange.Filter_values.LessEqual,
@@ -911,7 +905,7 @@ class Operator:
                    "contains":orange.Filter_values.Contains,
                    "begins with":orange.Filter_values.BeginsWith,
                    "ends with":orange.Filter_values.EndsWith}
-    
+
     def __init__(self, operator, varType):
         """Members: operator, varType, isInterval.
         """
@@ -985,6 +979,6 @@ if __name__=="__main__":
     ow=OWSelectData()
     a.setMainWidget(ow)
     ow.show()
-    ow.onDataInput(data)
+    ow.setData(data)
     a.exec_loop()
 

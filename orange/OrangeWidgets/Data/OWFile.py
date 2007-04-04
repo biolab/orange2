@@ -2,7 +2,7 @@
 <name>File</name>
 <description>Reads data from a file.</description>
 <icon>icons/File.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>10</priority>
 """
 
@@ -26,15 +26,15 @@ class OWSubFile(OWWidget):
     def destroy(self, destroyWindow, destroySubWindows):
         OWSubFile.allFileWidgets.remove(self)
         OWWidget.destroy(self, destroyWindow, destroySubWindows)
-                 
+
     def activateLoadedSettings(self):
         # remove missing data set names
         self.recentFiles=filter(os.path.exists,self.recentFiles)
         self.setFileList()
-        
+
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
             self.openFile(self.recentFiles[0])
-            
+
         # connecting GUI to code
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
 
@@ -46,7 +46,7 @@ class OWSubFile(OWWidget):
             self.recentFiles.insert(0, name)
         elif n:
             self.browseFile(1)
-            
+
         if len(self.recentFiles) > 0:
             self.setFileList()
             self.openFile(self.recentFiles[0])
@@ -63,7 +63,7 @@ class OWSubFile(OWWidget):
                 startfile = t[:t.find("orange")] + "orange\\doc\\datasets"
             except:
                 startfile = ""
-                
+
             if not startfile or not os.path.exists(startfile):
                 d = OWGUI.__file__
                 if d[-8:] == "OWGUI.py":
@@ -80,7 +80,7 @@ class OWSubFile(OWWidget):
                         d+= "/"
                     startfile = d+"doc/datasets"
 
-            if not os.path.exists(startfile):                    
+            if not os.path.exists(startfile):
                 QMessageBox.information( None, "File", "Cannot find the directory with example data sets", QMessageBox.Ok + QMessageBox.Default)
                 return
         else:
@@ -88,11 +88,11 @@ class OWSubFile(OWWidget):
                 startfile="."
             else:
                 startfile=self.recentFiles[0]
-                
+
         filename = str(QFileDialog.getOpenFileName(startfile,
         'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
         None,'Open Orange Data File'))
-    
+
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
@@ -101,7 +101,7 @@ class OWSubFile(OWWidget):
 
     def setInfo(self, info):
         for (i, s) in enumerate(info):
-            self.info[i].setText(s)            
+            self.info[i].setText(s)
 
     # checks whether any file widget knows of any variable from the current domain
     def attributesOverlap(self, domain):
@@ -146,7 +146,7 @@ class OWSubFile(OWWidget):
                     data = loader(fn, **argdict)
 
             self.dataDomain = data.domain
-            
+
             # update data info
             def sp(l):
                 n = len(l)
@@ -173,27 +173,25 @@ class OWSubFile(OWWidget):
                 data.name = fName
             self.send("Examples", data)
             self.send("Attribute Definitions", data.domain)
-            self.send("Classified Examples", data.domain.classVar and data or None)
         else:
-            self.send("Classified Examples", None)
             self.send("Examples", None)
             self.send("Attribute Definitions", None)
 
-        
-    
+
+
 class OWFile(OWSubFile):
     def __init__(self,parent=None, signalManager = None):
         OWSubFile.__init__(self, parent, signalManager, "File")
 
         self.inputs = []
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Attribute Definitions", orange.Domain)]
-    
+        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
+
         #set default settings
         self.recentFiles=["(none)"]
         self.domain = None
         #get settings from the ini file, if they exist
         self.loadSettings()
-        
+
         #GUI
         self.box = QHGroupBox("Data File", self.controlArea)
         self.filecombo=QComboBox(self.box)
@@ -205,7 +203,7 @@ class OWFile(OWSubFile):
         box = QVGroupBox("Info", self.controlArea)
         self.infoa = QLabel('No data loaded.', box)
         self.infob = QLabel('', box)
-            
+
         self.resize(150,100)
 
     # set the file combo box
@@ -227,7 +225,7 @@ class OWFile(OWSubFile):
         self.openFileBase(fn, throughReload=throughReload)
 
 
-    
+
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owf=OWFile()

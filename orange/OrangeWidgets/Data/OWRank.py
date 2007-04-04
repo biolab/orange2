@@ -2,7 +2,7 @@
 <name>Rank</name>
 <description>Ranks and filters attributes by their relevance.</description>
 <icon>icons/Rank.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>1102</priority>
 """
 
@@ -17,15 +17,15 @@ class OWRank(OWWidget):
     measuresAttrs     = ["computeReliefF", "computeInfoGain", "computeGainRatio", "computeGini"]
     estimators        = [orange.MeasureAttribute_relief, orange.MeasureAttribute_info, orange.MeasureAttribute_gainRatio, orange.MeasureAttribute_gini]
     handlesContinuous = [True, False, False, False]
-    
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Rank")
-        
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
-        self.outputs = [("Reduced Example Table", ExampleTableWithClass, Default + Single), ("ExampleTable Attributes", ExampleTable, NonDefault)]
+
+        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.outputs = [("Reduced Example Table", ExampleTable, Default + Single), ("ExampleTable Attributes", ExampleTable, NonDefault)]
 
         self.settingsList += self.measuresAttrs
-        
+
         self.nDecimals = 3
         self.reliefK = 10
         self.reliefN = 20
@@ -37,10 +37,10 @@ class OWRank(OWWidget):
 
         for meas in self.measuresAttrs:
             setattr(self, meas, True)
-            
+
         self.loadSettings()
 
-        labelWidth = 80        
+        labelWidth = 80
 
         box = OWGUI.widgetBox(self.controlArea, "Measures", addSpace=True)
         for meas, valueName in zip(self.measures, self.measuresAttrs):
@@ -56,21 +56,21 @@ class OWRank(OWWidget):
 
         box = OWGUI.widgetBox(self.controlArea, "Discretization", addSpace=True)
         OWGUI.spin(box, self, "nIntervals", 2, 20, label="Intervals", labelWidth=labelWidth, orientation=0, callback=self.discretizationChanged, callbackOnReturn = True)
-        
+
         box = OWGUI.widgetBox(self.controlArea, "Precision", addSpace=True)
         OWGUI.spin(box, self, "nDecimals", 1, 6, label="No. of decimals", labelWidth=labelWidth, orientation=0, callback=self.decimalsChanged)
 
-        OWGUI.rubber(self.controlArea)        
+        OWGUI.rubber(self.controlArea)
 
         selMethBox = OWGUI.radioButtonsInBox(self.controlArea, self, "selectMethod", ["None", "All", "Manual", "Best ranked"], box="Select attributes", callback=self.selectMethodChanged)
         OWGUI.spin(OWGUI.indentedBox(selMethBox), self, "nSelected", 1, 100, label="No. selected"+"  ", orientation=0, callback=self.nSelectedChanged)
-        
+
         OWGUI.separator(selMethBox)
 
         applyButton = OWGUI.button(selMethBox, self, "Commit", callback = self.apply)
         autoApplyCB = OWGUI.checkBox(selMethBox, self, "autoApply", "Commit automatically")
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.apply)
-        
+
         self.layout=QVBoxLayout(self.mainArea)
         box = OWGUI.widgetBox(self.mainArea, orientation=0)
         self.table = QTable(0, 6, self.mainArea)
@@ -103,11 +103,11 @@ class OWRank(OWWidget):
         self.dataChanged = False
         self.adjustCol0 = True
         self.lastSentAttrs = None
-        
+
         self.table.setNumRows(0)
         self.table.adjustSize()
 
-        
+
     def selectMethodChanged(self):
         if self.selectMethod == 0:
             self.selected = []
@@ -134,25 +134,25 @@ class OWRank(OWWidget):
 
         self.send("ExampleTable Attributes", orange.ExampleTable(orange.Domain(attrs, self.data.domain.classVar), self.data))
 
-        
-    def cdata(self,data):
+
+    def setData(self,data):
         self.resetInternals()
-        
-        self.data = data
+
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         if self.data:
             self.adjustCol0 = True
             self.usefulAttributes = filter(lambda x:x.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous], self.data.domain.attributes)
             self.table.setNumRows(len(self.data.domain.attributes))
             self.reprint()
             self.table.adjustSize()
-            
+
         self.resendAttributes()
         self.applyIf()
 
 
     def discretizationChanged(self):
         self.discretizedData = None
-        
+
         removed = False
         for meas, cont in zip(self.measuresAttrs, self.handlesContinuous):
             if not cont and self.measured.has_key(meas):
@@ -197,7 +197,7 @@ class OWRank(OWWidget):
             self.topheader.setLabel(col+2, self.measuresShort[meas_idx])
             self.table.setColumnWidth(col+2, 80)
 
-        
+
     def measuresChanged(self):
         self.setMeasures()
         if self.data:
@@ -218,7 +218,7 @@ class OWRank(OWWidget):
     def decimalsChanged(self):
         self.reprint(True)
 
-        
+
     def getMeasure(self, meas_idx):
         measAttr = self.measuresAttrs[meas_idx]
         mdict = self.measured.get(measAttr, False)
@@ -263,16 +263,16 @@ class OWRank(OWWidget):
         self.measured[measAttr] = mdict
         return mdict
 
-        
+
     def reprint(self, noSort = False):
         if not self.data:
             return
-        
+
         prec = " %%.%df" % self.nDecimals
 
         if not noSort:
             self.resort()
-        
+
         for row, attr in enumerate(self.attributeOrder):
             self.table.setText(row, 0, attr.name)
             self.table.setText(row, 1, attr.varType==orange.VarTypes.Continuous and "C" or str(len(attr.values)))
@@ -287,7 +287,7 @@ class OWRank(OWWidget):
             mdict = self.getMeasure(meas_idx)
             for row, attr in enumerate(self.attributeOrder):
                 self.table.setText(row, col+2, mdict[attr] != None and prec % mdict[attr] or "NA")
-                
+
         self.reselect()
 
         if self.sortBy < 3:
@@ -313,12 +313,12 @@ class OWRank(OWWidget):
             attrData.append([attr.name, cont, cont and "?" or len(attr.values)] + [meas[attr] or "?" for meas in measDicts])
 
         self.send("ExampleTable Attributes", attrData)
-                              
+
 
     def selectRow(self, i, *foo):
         if i < 0:
             return
-        
+
         attr = self.attributeOrder[i]
         if attr in self.selected:
             self.selected.remove(attr)
@@ -375,7 +375,7 @@ class OWRank(OWWidget):
             self.apply()
         else:
             self.dataChanged = True
-            
+
     def apply(self):
         if not self.data or not self.selected:
             self.send("Reduced Example Table", None)
@@ -384,17 +384,17 @@ class OWRank(OWWidget):
             if self.lastSentAttrs != self.selected:
                 self.send("Reduced Example Table", orange.ExampleTable(orange.Domain(self.selected, self.data.domain.classVar), self.data))
                 self.lastSentAttrs = self.selected[:]
-            
+
         self.dataChanged = False
-    
+
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWRank()
     a.setMainWidget(ow)
-    ow.cdata(orange.ExampleTable("../../doc/datasets/iris.tab"))
+    ow.setData(orange.ExampleTable("../../doc/datasets/iris.tab"))
     ow.show()
     a.exec_loop()
-    
+
     ow.saveSettings()
 

@@ -42,12 +42,12 @@ class DiscGraph(OWGraph):
         self.resolution=50
         self.setCursor(Qt.arrowCursor)
         self.canvas().setCursor(Qt.arrowCursor)
-        
+
         self.data = self.attr = self.contingency = None
         self.minVal = self.maxVal = 0
         self.curCutPoints=[]
-        
-    
+
+
     def computeAddedScore(self, spoints):
         candidateSplits = [x for x in frange(self.minVal, self.maxVal, self.resolution) if x not in spoints]
         idisc = orange.IntervalDiscretizer(points = [-99999] + spoints)
@@ -62,10 +62,10 @@ class DiscGraph(OWGraph):
 
         return candidateSplits, score
 
-        
+
     def invalidateBaseScore(self):
         self.baseCurveX = self.baseCurveY = None
-        
+
 
     def computeLookaheadScore(self, split):
         if self.data and self.data.domain.classVar:
@@ -82,7 +82,7 @@ class DiscGraph(OWGraph):
         if self.baseCurveKey:
             self.removeCurve(self.baseCurveKey)
             self.baseCurveKey = None
-        
+
         if self.lookaheadCurveKey:
             self.removeCurve(self.lookaheadCurveKey)
             self.lookaheadCurveKey = None
@@ -94,14 +94,14 @@ class DiscGraph(OWGraph):
         for c in self.cutLineKeys:
             self.removeCurve(c)
         self.cutLineKeys = []
-        
+
         for m in self.cutMarkerKeys:
             self.removeMarker(m)
         self.cutMarkerKeys = []
-        
+
         self.update()
-        
-        
+
+
     def setData(self, attr, data):
         self.clearAll()
         self.attr, self.data = attr, data
@@ -117,12 +117,12 @@ class DiscGraph(OWGraph):
             self.contingency = orange.ContingencyAttrClass(attr, data)
             try:
                 self.condProb = orange.ConditionalProbabilityEstimatorConstructor_loess(
-                   self.contingency, 
+                   self.contingency,
                    nPoints=50)
             except:
                 self.condProb = None
             self.probDist = None
-            attrValues = self.contingency.keys()        
+            attrValues = self.contingency.keys()
         else:
             self.condProb = self.contingency = None
             self.probDist = orange.Distribution(attr, data)
@@ -137,7 +137,7 @@ class DiscGraph(OWGraph):
             self.snapDecimals = -int(math.ceil(math.log(mdist, 10)) -2)
         else:
             self.snapDecimals = 1
-        
+
         self.baseCurveX = None
 
         self.plotRug(True)
@@ -165,7 +165,7 @@ class DiscGraph(OWGraph):
                 freqlow = self.probDist.items()
             else:
                 return
-            
+
             if freqhigh:
                 maxf = max([f[1] for f in freqhigh])
                 if freqlow:
@@ -174,21 +174,21 @@ class DiscGraph(OWGraph):
                 maxf = max([f[1] for f in freqlow])
             else:
                 return
-            
+
             freqfac = maxf > 1e-6 and .1 / maxf or 1
 
-            for val, freq in freqhigh:        
+            for val, freq in freqhigh:
                 c = self.addCurve("", Qt.gray, Qt.gray, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [val, val], yData = [1.0, 1.0 - max(.02, freqfac * freq)])
                 self.setCurveYAxis(c, QwtPlot.yRight)
                 self.rugKeys.append(c)
 
-            for val, freq in freqlow:        
+            for val, freq in freqlow:
                 c = self.addCurve("", Qt.gray, Qt.gray, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [val, val], yData = [0.04, 0.04 + max(.02, freqfac * freq)])
                 self.setCurveYAxis(c, QwtPlot.yRight)
                 self.rugKeys.append(c)
 
         if not noUpdate:
-            self.update()            
+            self.update()
 
 
     def plotBaseCurve(self, noUpdate = False):
@@ -199,27 +199,27 @@ class DiscGraph(OWGraph):
         if self.master.showBaseLine and self.master.resetIndividuals and self.data and self.data.domain.classVar and self.attr:
             if not self.baseCurveX:
                 self.baseCurveX, self.baseCurveY = self.computeAddedScore(list(self.curCutPoints))
-                
+
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.baseCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.baseCurveX, yData = self.baseCurveY, lineWidth = 2)
             self.setCurveYAxis(self.baseCurveKey, QwtPlot.yLeft)
 
-        if not noUpdate:                
+        if not noUpdate:
             self.update()
 
-        
+
     def plotLookaheadCurve(self, noUpdate = False):
         if self.lookaheadCurveKey:
             self.removeCurve(self.lookaheadCurveKey)
             self.lookaheadCurveKey = None
-                        
+
         if self.lookaheadCurveX and self.master.showLookaheadLine:
             self.setAxisOptions(QwtPlot.yLeft, self.master.measure == 3 and QwtAutoScale.Inverted or QwtAutoScale.None)
             self.lookaheadCurveKey = self.addCurve("", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = self.lookaheadCurveX, yData = self.lookaheadCurveY, lineWidth = 1)
             self.setCurveYAxis(self.lookaheadCurveKey, QwtPlot.yLeft)
             self.curve(self.lookaheadCurveKey).setEnabled(1)
 
-        if not noUpdate:            
+        if not noUpdate:
             self.update()
 
 
@@ -227,8 +227,8 @@ class DiscGraph(OWGraph):
         if self.probCurveKey:
             self.removeCurve(self.probCurveKey)
             self.probCurveKey = None
-            
-        if self.contingency and self.condProb and self.master.showTargetClassProb:            
+
+        if self.contingency and self.condProb and self.master.showTargetClassProb:
             xData = self.contingency.keys()[1:-1]
             self.probCurveKey = self.addCurve("", Qt.gray, Qt.gray, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xData, yData = [self.condProb(x)[self.master.targetClass] for x in xData], lineWidth = 2)
             self.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
@@ -236,13 +236,13 @@ class DiscGraph(OWGraph):
         if not noUpdate:
             self.update()
 
-        
+
     def plotCutLines(self):
         attr = self.data.domain[self.master.continuousIndices[self.master.selectedAttr]]
         for c in self.cutLineKeys:
             self.removeCurve(c)
         self.cutLineKeys = []
-        
+
         for m in self.cutMarkerKeys:
             self.removeMarker(m)
         self.cutMarkerKeys = []
@@ -275,7 +275,7 @@ class DiscGraph(OWGraph):
             self.baseCurveX = None
             self.plotBaseCurve()
             self.plotCutLines()
-            
+
 
     def addCutPoint(self, cut):
         self.curCutPoints.append(cut)
@@ -283,21 +283,21 @@ class DiscGraph(OWGraph):
         self.setCurveYAxis(c, QwtPlot.yRight)
         self.cutLineKeys.append(c)
         curve = self.curve(c)
-        curve.curveInd = len(self.cutLineKeys) - 1        
+        curve.curveInd = len(self.cutLineKeys) - 1
         return curve
 
-    
+
     def onMousePressed(self, e):
         if not self.data:
             return
-        
+
         self.mouseCurrentlyPressed = 1
-        
+
         cut = self.invTransform(QwtPlot.xBottom, e.x())
         curve = self.getCutCurve(cut)
         if not curve and self.master.snap:
             curve = self.getCutCurve(round(cut, self.snapDecimals))
-            
+
         if curve:
             if e.button() == Qt.RightButton:
                 self.curCutPoints.pop(curve.curveInd)
@@ -319,7 +319,7 @@ class DiscGraph(OWGraph):
     def onMouseMoved(self, e):
         if not self.data:
             return
-        
+
         if self.mouseCurrentlyPressed:
             if self.selectedCutPoint:
                 pos = self.invTransform(QwtPlot.xBottom, e.x())
@@ -334,7 +334,7 @@ class DiscGraph(OWGraph):
                     self.plotCutLines()
                     self.mouseCurrentlyPressed = 0
                     return
-                
+
                 self.curCutPoints[self.selectedCutPoint.curveInd] = pos
                 self.selectedCutPoint.setData([pos, pos], [.9, 0.1])
 
@@ -343,18 +343,18 @@ class DiscGraph(OWGraph):
                 self.update()
 
                 self.master.synchronizeIf()
-                
-                
+
+
         elif self.getCutCurve(self.invTransform(QwtPlot.xBottom, e.x())):
             self.canvas().setCursor(Qt.sizeHorCursor)
         else:
             self.canvas().setCursor(Qt.arrowCursor)
 
-                                  
+
     def onMouseReleased(self, e):
         if not self.data:
             return
-        
+
         self.mouseCurrentlyPressed = 0
         self.selectedCutPoint = None
         self.baseCurveX = None
@@ -378,7 +378,7 @@ class ListItemWithLabel(QListBoxPixmap):
         QListBoxPixmap.__init__(self, icon, name)
         self.master = master
         self.labelIdx = labelIdx
-        
+
 
     def paint(self, painter):
         btext = str(self.text())
@@ -389,17 +389,17 @@ class ListItemWithLabel(QListBoxPixmap):
 
 class OWDiscretize(OWWidget):
     settingsList=["autoApply", "measure", "showBaseLine", "showLookaheadLine", "showTargetClassProb", "showRug", "snap", "autoSynchronize"]
-    contextHandlers = {"": DomainContextHandler("", ["targetClass", "discretization", "classDiscretization", 
-                                                     "indiDiscretization", "intervals", "classIntervals", "indiIntervals", 
-                                                     "outputOriginalClass", "indiData", "indiLabels", "resetIndividuals", 
+    contextHandlers = {"": DomainContextHandler("", ["targetClass", "discretization", "classDiscretization",
+                                                     "indiDiscretization", "intervals", "classIntervals", "indiIntervals",
+                                                     "outputOriginalClass", "indiData", "indiLabels", "resetIndividuals",
                                                      "selectedAttr", "customSplits", "customClassSplits"], False, False, False, False)}
 
     callbackDeposit=[]
-    
+
     D_N_METHODS = 5
     D_LEAVE, D_ENTROPY, D_FREQUENCY, D_WIDTH, D_REMOVE = range(5)
     D_NEED_N_INTERVALS = [2, 3]
-    
+
     def __init__(self, parent=None, signalManager=None, name="Interactive Discretization"):
         OWWidget.__init__(self, parent, signalManager, name)
         self.showBaseLine=1
@@ -416,7 +416,7 @@ class OWDiscretize(OWWidget):
         self.indiLabels = []
         self.resetIndividuals = 0
         self.customClassSplits = ""
-        
+
         self.selectedAttr = 0
         self.customSplits = ["", "", ""]
         self.autoApply = True
@@ -430,15 +430,15 @@ class OWDiscretize(OWWidget):
         self.data = self.originalData = None
 
         self.loadSettings()
-        
-        self.inputs=[("Examples", ExampleTable, self.cdata)]
-        self.outputs=[("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
-        self.measures=[("Information gain", orange.MeasureAttribute_info()), 
+
+        self.inputs=[("Examples", ExampleTable, self.setData)]
+        self.outputs=[("Examples", ExampleTable)]
+        self.measures=[("Information gain", orange.MeasureAttribute_info()),
                        #("Gain ratio", orange.MeasureAttribute_gainRatio),
-                       ("Gini", orange.MeasureAttribute_gini()), 
-                       ("chi-square", orange.MeasureAttribute_chiSquare()), 
-                       ("chi-square prob.", orange.MeasureAttribute_chiSquare(computeProbabilities=1)), 
-                       ("Relevance", orange.MeasureAttribute_relevance()), 
+                       ("Gini", orange.MeasureAttribute_gini()),
+                       ("chi-square", orange.MeasureAttribute_chiSquare()),
+                       ("chi-square prob.", orange.MeasureAttribute_chiSquare(computeProbabilities=1)),
+                       ("Relevance", orange.MeasureAttribute_relevance()),
                        ("ReliefF", orange.MeasureAttribute_relief())]
         self.discretizationMethods=["Leave continuous", "Entropy-MDL discretization", "Equal-frequency discretization", "Equal-width discretization", "Remove continuous attributes"]
         self.classDiscretizationMethods=["Equal-frequency discretization", "Equal-width discretization"]
@@ -466,9 +466,9 @@ class OWDiscretize(OWWidget):
         hcustbox = OWGUI.widgetBox(OWGUI.indentedBox(ribg), 0, 0)
         for c in range(1, 4):
             OWGUI.appendRadioButton(ribg, self, "resetIndividuals", "Custom %i" % c, insertInto = hcustbox)
-        
+
         OWGUI.separator(vbox)
-        
+
         box = self.classDiscBox = OWGUI.radioButtonsInBox(vbox, self, "classDiscretization", self.classDiscretizationMethods, "Class discretization", callback=[self.clearLineEditFocus, self.classMethodChanged])
         cinterBox = OWGUI.widgetBox(box)
         OWGUI.widgetLabel(cinterBox, "Number of intervals")
@@ -498,8 +498,8 @@ class OWDiscretize(OWWidget):
         self.layout.addWidget(self.mainVBox)
         self.mainBox = OWGUI.widgetBox(self.mainIABox, orientation=0)
         OWGUI.separator(self.mainIABox)#, height=30)
-        
-        
+
+
         graphBox = OWGUI.widgetBox(self.mainIABox, "", orientation=0)
 #        self.needsDiscrete.append(graphBox)
         graphOptBox = OWGUI.widgetBox(graphBox)
@@ -563,9 +563,9 @@ class OWDiscretize(OWWidget):
 
 
 
-    def cdata(self, data=None):
+    def setData(self, data=None):
         self.closeContext()
-        
+
         self.indiData = []
         self.attrList.clear()
         for le in self.customLineEdits:
@@ -591,7 +591,7 @@ class OWDiscretize(OWWidget):
             self.continuousIndices = [i for i, attr in enumerate(domain.attributes) if attr.varType == orange.VarTypes.Continuous]
             if not self.continuousIndices:
                 self.data = None
-            
+
         self.classDiscBox.setEnabled(not data or continuousClass)
         if self.data:
             for i, attr in enumerate(domain.attributes):
@@ -628,9 +628,9 @@ class OWDiscretize(OWWidget):
             self.graph.setData(None, None)
 
 #        self.graph.setData(self.data)
-        
-        self.makeConsistent()        
-        
+
+        self.makeConsistent()
+
         # this should be here because 'resetIndividuals' is a context setting
         self.showHideIndividual()
 
@@ -642,7 +642,7 @@ class OWDiscretize(OWWidget):
 
         if not self.data or not self.data.domain.classVar:
             return
-        
+
         domain = self.data.domain
         for v in domain.classVar.values:
             self.targetCombo.insertItem(str(v))
@@ -666,15 +666,15 @@ class OWDiscretize(OWWidget):
             self.indiDiscretization = self.indiData[self.continuousIndices[self.selectedAttr]][0] = df
             if self.classCustomLineEdit.hasFocus():
                 self.classCustomLineEdit.clearFocus()
-            
 
-                
+
+
     def individualSelected(self, i):
         if not self.data:
             return
 
         self.selectedAttr = i
-        attrIndex = self.continuousIndices[i]        
+        attrIndex = self.continuousIndices[i]
         attr = self.data.domain[attrIndex]
         indiData = self.indiData[attrIndex]
 
@@ -690,10 +690,10 @@ class OWDiscretize(OWWidget):
         else:
             self.graph.plotBaseCurve(False)
 
-    
+
     def computeDiscretizers(self):
         self.discretizers = []
-        
+
         if not self.data:
             return
 
@@ -701,14 +701,14 @@ class OWDiscretize(OWWidget):
         for i, idx in enumerate(self.continuousIndices):
             self.computeDiscretizer(i, idx)
 
-        self.commitIf()            
+        self.commitIf()
 
 
     def makeConsistent(self):
         self.interBox.setEnabled(self.discretization in self.D_NEED_N_INTERVALS)
         self.indiInterBox.setEnabled(self.indiDiscretization-1 in self.D_NEED_N_INTERVALS)
 
-    
+
     def defaultMethodChanged(self):
         self.interBox.setEnabled(self.discretization in self.D_NEED_N_INTERVALS)
 
@@ -718,12 +718,12 @@ class OWDiscretize(OWWidget):
         for i, idx in enumerate(self.continuousIndices):
             self.computeDiscretizer(i, idx, True)
 
-        self.commitIf()            
+        self.commitIf()
 
     def classMethodChanged(self):
         if not self.data:
             return
-        
+
         self.discretizeClass()
         self.classChanged()
         attrIndex = self.continuousIndices[self.selectedAttr]
@@ -756,7 +756,7 @@ class OWDiscretize(OWWidget):
             else:
                 self.computeDiscretizer(i, idx)
 
-            self.commitIf()            
+            self.commitIf()
 
 
     def customSelected(self, which):
@@ -766,7 +766,7 @@ class OWDiscretize(OWWidget):
             attr = self.data.domain[idx]
             self.indiMethodChanged()
 
-    
+
     def showHideIndividual(self):
         if not self.resetIndividuals:
                 self.mainIABox.hide()
@@ -779,11 +779,11 @@ class OWDiscretize(OWWidget):
         self.adjustSize()
 
     def setAllIndividuals(self):
-        self.showHideIndividual()    
+        self.showHideIndividual()
 
         if not self.data:
             return
-        
+
         self.clearLineEditFocus()
         method = self.resetIndividuals
         if method == 1:
@@ -827,7 +827,7 @@ class OWDiscretize(OWWidget):
 
         self.computeDiscretizer(self.selectedAttr, self.continuousIndices[self.selectedAttr])
         self.commitIf()
-                
+
 
     def copyToCustom(self, which):
         self.clearLineEditFocus()
@@ -845,7 +845,7 @@ class OWDiscretize(OWWidget):
         else:
             valid = False
 
-        if not valid:        
+        if not valid:
             attr = self.data.domain[idx]
             splits = list(self.discretizers[idx] and self.discretizers[idx].getValueFrom.transformer.points or [])
             splits = [str(attr(i)) for i in splits]
@@ -854,7 +854,7 @@ class OWDiscretize(OWWidget):
         self.customLineEdits[which].setText(" ".join(splits))
 #        self.customSelected(which)
 
-    
+
     shortDiscNames = ("", " (leave continuous)", " (entropy)", " (equal frequency)", " (equal width)", " (removed)", " (custom 1)", " (custom 2)", " (custom 3)")
 
     def computeDiscretizer(self, i, idx, onlyDefaults=False):
@@ -876,7 +876,7 @@ class OWDiscretize(OWWidget):
                 customs = [float(r) for r in indiData[discType-self.D_N_METHODS+1]]
             except:
                 customs = []
-                
+
             if not customs:
                 discType = self.discretization+1
                 intervals = self.intervals
@@ -885,7 +885,7 @@ class OWDiscretize(OWWidget):
 
         if onlyDefaults and not defaultUsed:
             return
-        
+
         discType -= 1
         try:
             if discType == self.D_LEAVE: # leave continuous
@@ -916,7 +916,7 @@ class OWDiscretize(OWWidget):
             points = discretizer.getValueFrom.transformer.points
             discInts = points and (": " + ", ".join([str(attr(x)) for x in points])) or ": <removed>"
         self.indiLabels[i] = discInts + discName
-                        
+
         self.attrList.triggerUpdate(0)
 
         if i == self.selectedAttr:
@@ -928,7 +928,7 @@ class OWDiscretize(OWWidget):
         if self.originalData:
             discType = self.classDiscretization
             classVar = self.originalData.domain.classVar
-            
+
             if discType == 2:
                 try:
                     content = self.customClassSplits.replace(":", " ").replace(",", " ").replace("-", " ").split()
@@ -952,7 +952,7 @@ class OWDiscretize(OWWidget):
                 if self.data:
                     self.data = self.discClassData
                 # else, the data has no continuous attributes other then the class
-            
+
                 self.classIntervalsLabel.setText("Current splits: " + ", ".join([str(classVar(x)) for x in discretizer.getValueFrom.transformer.points]))
                 self.error(0)
                 self.warning(0)
@@ -962,7 +962,7 @@ class OWDiscretize(OWWidget):
                 else:
                     self.error(0, "Cannot discretize the class")
                 self.classIntervalsLabel.setText("")
-        
+
 
     def classCustomChanged(self):
         self.classMethodChanged()
@@ -972,7 +972,7 @@ class OWDiscretize(OWWidget):
             self.classDiscretization = 2
             self.classMethodChanged()
             self.classCustomLineEdit.setFocus()
-            
+
     def discretize(self):
         if not self.data:
             return
@@ -991,7 +991,7 @@ class OWDiscretize(OWWidget):
     def synchronize(self):
         if not self.data:
             return
-        
+
         slot = self.indiDiscretization - self.D_N_METHODS - 1
         if slot < 0:
             for slot in range(3):
@@ -1026,10 +1026,10 @@ class OWDiscretize(OWWidget):
             self.commit()
         else:
             self.dataChanged = True
-            
+
     def commit(self):
         self.clearLineEditFocus()
-        
+
         if self.data:
             newattrs=[]
             for attr, disc in zip(self.data.domain.attributes, self.discretizers):
@@ -1049,27 +1049,14 @@ class OWDiscretize(OWWidget):
 
             newdata = orange.ExampleTable(newdomain, self.originalData)
             self.send("Examples", newdata)
-            if self.data.domain.classVar:
-                self.send("Classified Examples", newdata)
-            else:
-                self.send("Classified Examples", None)
-
         elif self.discClassData:
             self.send("Examples", self.discClassData)
-            self.send("Classified Examples", self.discClassData)
-            
         elif self.originalData:  # no continuous attributes...
             self.send("Examples", self.originalData)
-            if self.originalData.domain.classVar:
-                self.send("Classified Examples", self.originalData)
-            else:
-                self.send("Classified Examples", None)
-                
         else:
             self.send("Examples", None)
-            self.send("Classified Examples", None)
 
-        dataChanged = False            
+        dataChanged = False
 
 
 import sys
@@ -1081,8 +1068,8 @@ if __name__=="__main__":
 #    d=orange.ExampleTable("../../doc/datasets/bridges.tab")
 #    d=orange.ExampleTable("../../doc/datasets/auto-mpg.tab")
     d = orange.ExampleTable("../../doc/datasets/iris.tab")
-    w.cdata(d)
-    w.cdata(None)
-    w.cdata(d)
+    w.setData(d)
+    w.setData(None)
+    w.setData(d)
     app.exec_loop()
     w.saveSettings()

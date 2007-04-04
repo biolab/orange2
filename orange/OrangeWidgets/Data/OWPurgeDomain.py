@@ -2,23 +2,23 @@
 <name>Purge Domain</name>
 <description>Removes redundant values and attributes, sorts values.</description>
 <icon>icons/PurgeDomain.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>1105</priority>
 """
 from OWWidget import *
 import OWGUI
 
 class OWPurgeDomain(OWWidget):
-    
+
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'PurgeDomain')
         self.settingsList=["removeValues", "removeAttributes", "removeClassAttribute", "removeClasses", "autoSend", "sortValues", "sortClasses"]
-        
-        self.inputs = [("Examples", ExampleTable, self.cdata)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
+
+        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.outputs = [("Examples", ExampleTable)]
 
         self.data = None
-        
+
         self.preRemoveValues = self.removeValues = 1
         self.removeAttributes = 1
         self.removeClassAttribute = 1
@@ -31,7 +31,7 @@ class OWPurgeDomain(OWWidget):
         self.loadSettings()
 
         self.removedAttrs = self.reducedAttrs = self.resortedAttrs = self.classAttr = "-"
-        
+
         boxAt = OWGUI.widgetBox(self.controlArea, "Attributes")
         OWGUI.checkBox(boxAt, self, 'sortValues', 'Sort attribute values', callback = self.optionsChanged)
         rua = OWGUI.checkBox(boxAt, self, "removeAttributes", "Remove attributes with less than two values", callback = self.removeAttributesChanged)
@@ -39,7 +39,7 @@ class OWPurgeDomain(OWWidget):
         OWGUI.separator(boxH, width=30, height=0)
         ruv = OWGUI.checkBox(boxH, self, "removeValues", "Remove unused attribute values", callback = self.optionsChanged)
         rua.disables = [ruv]
-        
+
         OWGUI.separator(self.controlArea)
 
         boxAt = OWGUI.widgetBox(self.controlArea, "Classes")
@@ -56,7 +56,7 @@ class OWPurgeDomain(OWWidget):
         cbAutoSend = OWGUI.checkBox(box2, self, "autoSend", "Send automatically")
 
         OWGUI.setStopper(self, btSend, cbAutoSend, "dataChanged", self.process)
-        
+
         OWGUI.separator(self.controlArea, height=24)
 
         box3 = OWGUI.widgetBox(self.controlArea, 'Statistics')
@@ -65,16 +65,15 @@ class OWPurgeDomain(OWWidget):
         OWGUI.label(box3, self, "Resorted attributes: %(resortedAttrs)s")
         OWGUI.label(box3, self, "Class attribute: %(classAttr)s")
 
-        self.adjustSize()        
+        self.adjustSize()
 
-    def cdata(self, dataset):
+    def setData(self, dataset):
         if dataset:
             self.data = dataset
             self.process()
         else:
             self.reducedAttrs = self.removedAttrs = self.resortedAttrs = self.classAttr = ""
             self.send("Examples", None)
-            self.send("Classified Examples", None)
             self.data = None
         self.dataChanged = False
 
@@ -85,7 +84,7 @@ class OWPurgeDomain(OWWidget):
         else:
             self.removeValues = self.preRemoveValues
         self.optionsChanged()
-            
+
     def removeClassesChanged(self):
         if not self.removeClassAttribute:
             self.preRemoveClasses = self.removeClasses
@@ -108,7 +107,7 @@ class OWPurgeDomain(OWWidget):
         newvalues.sort()
         if newvalues == list(interattr.values):
             return interattr
-        
+
         newattr = orange.EnumVariable(interattr.name, values=newvalues)
         newattr.getValueFrom = orange.ClassifierByLookupTable(newattr, attr)
         lookupTable = newattr.getValueFrom.lookupTable
@@ -140,12 +139,12 @@ class OWPurgeDomain(OWWidget):
                     if not newattr:
                         self.removedAttrs += 1
                         continue
-                    
+
                     if newattr != attr:
                         self.reducedAttrs += 1
                 else:
                     newattr = attr
-                    
+
                 if self.removeValues and len(newattr.values) < 2:
                     self.removedAttrs += 1
                     continue
@@ -155,7 +154,7 @@ class OWPurgeDomain(OWWidget):
                     if newnewattr != newattr:
                         self.resortedAttrs += 1
                         newattr = newnewattr
-                    
+
                 newattrs.append(newattr)
         else:
             newattrs = self.data.domain.attributes
@@ -174,12 +173,12 @@ class OWPurgeDomain(OWWidget):
             self.classAttr = "Class is not checked."
         else:
             self.classAttr = ""
-            
+
             if self.removeClasses:
                 newclass = orange.RemoveUnusedValues(klass, self.data)
             else:
                 newclass = klass
-                
+
             if not newclass or self.removeClassAttribute and len(newclass.values) < 2:
                 newclass = None
                 self.classAttr = "Class is removed."
@@ -203,14 +202,10 @@ class OWPurgeDomain(OWWidget):
             newData = orange.ExampleTable(newDomain, self.data)
         else:
             newData = self.data
-            
-        self.send("Examples", newData)
-        if newclass:
-            self.send("Classified Examples", newData)
-        else:
-            self.send("Classified Examples", None)
 
-        self.dataChanged = False            
+        self.send("Examples", newData)
+
+        self.dataChanged = False
 
 
 if __name__=="__main__":
@@ -220,7 +215,7 @@ if __name__=="__main__":
 
     data = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
     data.domain.attributes[3].values.append("X")
-    ow.cdata(data)
+    ow.setData(data)
     ow.show()
     appl.exec_loop()
     ow.saveSettings()

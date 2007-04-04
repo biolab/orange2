@@ -27,8 +27,8 @@ class OWDataDomain(OWWidget):
     def __init__(self,parent = None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Domain") #initialize base class
 
-        self.inputs = [("Examples", ExampleTable, self.onDataInput), ("Attribute Subset", AttributeList, self.onAttributeList)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Subset", AttributeList, self.setAttributeList)]
+        self.outputs = [("Examples", ExampleTable)]
 
         buttonWidth = 50
         applyButtonWidth = 101
@@ -46,7 +46,7 @@ class OWDataDomain(OWWidget):
         self.selectedMeta = []
 
         self.loadSettings()
-        
+
         self.mainArea.setFixedWidth(0)
         ca = QFrame(self.controlArea)
         ca.adjustSize()
@@ -62,11 +62,11 @@ class OWDataDomain(OWWidget):
         gl.addWidget(vbAttr, 0,1)
         self.attributesButtonUp = OWGUI.button(vbAttr, self, "Up", self.onAttributesButtonUpClick)
         self.attributesButtonUp.setMaximumWidth(buttonWidth)
-        self.attributesButton = OWGUI.button(vbAttr, self, ">",self.onAttributesButtonClicked)        
+        self.attributesButton = OWGUI.button(vbAttr, self, ">",self.onAttributesButtonClicked)
         self.attributesButton.setMaximumWidth(buttonWidth)
         self.attributesButtonDown = OWGUI.button(vbAttr, self, "Down", self.onAttributesButtonDownClick)
         self.attributesButtonDown.setMaximumWidth(buttonWidth)
-        
+
         boxAttr = QVGroupBox(ca)
         boxAttr.setTitle('Attributes')
         gl.addWidget(boxAttr, 0,2)
@@ -80,7 +80,7 @@ class OWDataDomain(OWWidget):
         boxClass.setFixedHeight(46)
         gl.addWidget(boxClass, 1,2)
         self.classList = OWGUI.listBox(boxClass, self, "selectedClass", "classAttribute", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
-        
+
         vbMeta = QVBox(ca)
         gl.addWidget(vbMeta, 2,1)
         self.metaButtonUp = OWGUI.button(vbMeta, self, "Up", self.onMetaButtonUpClick)
@@ -93,7 +93,7 @@ class OWDataDomain(OWWidget):
         boxMeta.setTitle('Meta Attributes')
         gl.addWidget(boxMeta, 2,2)
         self.metaList = OWGUI.listBox(boxMeta, self, "selectedMeta", "metaAttributes", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
-        
+
         boxApply = QHBox(ca)
         gl.addMultiCellWidget(boxApply, 3,3,0,2)
         self.applyButton = OWGUI.button(boxApply, self, "Apply", callback = self.setOutput)
@@ -105,12 +105,12 @@ class OWDataDomain(OWWidget):
         self.icons = self.createAttributeIconDict()
 
         self.inChange = False
-        self.resize(400,480)       
+        self.resize(400,480)
 
 
-    def onAttributeList(self, attrList):
+    def setAttributeList(self, attrList):
         self.receivedAttrList = attrList
-        self.onDataInput(self.data)
+        self.setData(self.data)
 
     def onSelectionChange(self):
         if not self.inChange:
@@ -123,21 +123,21 @@ class OWDataDomain(OWWidget):
                     setattr(self, co, [])
             self.inChange = False
 
-        self.updateInterfaceState()            
+        self.updateInterfaceState()
 
 
-    def onDataInput(self, data):
+    def setData(self, data):
         if self.data and data and self.data.checksum() == data.checksum():
             return   # we received the same dataset again
 
         self.closeContext()
-        
+
         self.data = data
         self.attributes = {}
-        
+
         if data:
             domain = data.domain
-            
+
             if domain.classVar:
                 self.classAttribute = [(domain.classVar.name, domain.classVar.varType)]
             else:
@@ -169,7 +169,7 @@ class OWDataDomain(OWWidget):
         self.setOutput()
         self.updateInterfaceState()
 
-        
+
     def setOutput(self):
         if self.data:
             self.applyButton.setEnabled(False)
@@ -183,23 +183,16 @@ class OWDataDomain(OWWidget):
             newdata = orange.ExampleTable(domain, self.data)
             newdata.name = self.data.name
             self.send("Examples", newdata)
-
-            if classVar:
-                self.send("Classified Examples", newdata)
-            else:
-                self.send("Classified Examples", None)
-
         else:
             self.send("Examples", None)
-            self.send("Classified Examples", None)
 
-        
+
     def reset(self):
         data = self.data
         self.data = None
-        self.onDataInput(data)
+        self.setData(data)
 
-        
+
     def disableButtons(self, *arg):
         for b in arg:
             b.setEnabled(False)
@@ -208,7 +201,7 @@ class OWDataDomain(OWWidget):
         button.setText(dir)
         button.setEnabled(True)
 
-        
+
     def updateInterfaceState(self):
         if self.selectedInput:
             self.setButton(self.attributesButton, ">")
@@ -219,7 +212,7 @@ class OWDataDomain(OWWidget):
                 self.setButton(self.classButton, ">")
             else:
                 self.classButton.setEnabled(False)
-            
+
         elif self.selectedChosen:
             self.setButton(self.attributesButton, "<")
             self.disableButtons(self.classButton, self.metaButton, self.metaButtonUp, self.metaButtonDown)
@@ -279,7 +272,7 @@ class OWDataDomain(OWWidget):
         self.usedAttributes.update(dict.fromkeys(attributes))
         self.setInputAttributes()
 
-       
+
     def onAttributesButtonClicked(self):
         if self.selectedInput:
             selList, restList = self.splitSelection(self.inputAttributes, self.selectedInput)
@@ -307,7 +300,7 @@ class OWDataDomain(OWWidget):
             self.classAttribute = []
 
         self.updateInterfaceState()
-        self.applyButton.setEnabled(True)        
+        self.applyButton.setEnabled(True)
 
 
     def onMetaButtonClicked(self):
@@ -341,13 +334,13 @@ class OWDataDomain(OWWidget):
 
     def onMetaButtonDownClick(self):
         self.moveSelection("metaAttributes", "selectedMeta", 1)
-        
+
     def onAttributesButtonUpClick(self):
         self.moveSelection("chosenAttributes", "selectedChosen", -1)
-        
+
     def onAttributesButtonDownClick(self):
         self.moveSelection("chosenAttributes", "selectedChosen", 1)
-        
+
 
 if __name__=="__main__":
     import sys
@@ -361,6 +354,6 @@ if __name__=="__main__":
     ow=OWDataDomain()
     a.setMainWidget(ow)
     ow.show()
-    ow.onDataInput(data)
+    ow.setData(data)
     a.exec_loop()
     ow.saveSettings()

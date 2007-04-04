@@ -5,7 +5,7 @@
 <priority>2130</priority>
 <contact>Janez Demsar</contact>
 """
- 
+
 import OWGUI
 from OWWidget import *
 
@@ -39,12 +39,12 @@ class OWImpute(OWWidget):
 
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
         OWWidget.__init__(self, parent, signalManager, name)
-        
-        self.inputs = [("Examples", ExampleTable, self.cdata, Default), ("Learner for Imputation", orange.Learner, self.setModel)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Imputer", orange.ImputerConstructor)]
+
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Learner for Imputation", orange.Learner, self.setModel)]
+        self.outputs = [("Examples", ExampleTable), ("Imputer", orange.ImputerConstructor)]
 
         self.attrIcons = self.createAttributeIconDict()
-        
+
         self.defaultMethod = 0
         self.selectedAttr = 0
         self.indiType = 0
@@ -52,7 +52,7 @@ class OWImpute(OWWidget):
         self.autosend = 1
         self.methods = {}
         self.dataChanged = False
-        
+
         self.model = self.data = None
 
         self.indiValue = ""
@@ -66,12 +66,12 @@ class OWImpute(OWWidget):
 
         self.indibox = OWGUI.widgetBox(self.controlArea, "Individual attribute settings", "horizontal")
 
-        attrListBox = QVBox(self.indibox)        
+        attrListBox = QVBox(self.indibox)
         self.attrList = QListBox(attrListBox)
         self.attrList.setFixedWidth(220)
         self.connect(self.attrList, SIGNAL("highlighted ( int )"), self.individualSelected)
 
-        indiMethBox = QVBox(self.indibox)       
+        indiMethBox = QVBox(self.indibox)
         self.indiButtons = OWGUI.radioButtonsInBox(indiMethBox, self, "indiType", ["Default (above)", "Don't impute", "Avg/Most frequent", "Model-based", "Random", "Value"], 1, callback=self.indiMethodChanged)
         self.indiValueCtrlBox = OWGUI.indentedBox(self.indiButtons)
 
@@ -86,18 +86,18 @@ class OWImpute(OWWidget):
         OWGUI.rubber(indiMethBox)
         self.btAllToDefault = OWGUI.button(indiMethBox, self, "Set All to Default", callback = self.allToDefault)
 
-        OWGUI.separator(self.controlArea, 19, 8)        
+        OWGUI.separator(self.controlArea, 19, 8)
 
         box = OWGUI.widgetBox(self.controlArea, "Settings")
         self.cbImputeClass = OWGUI.checkBox(box, self, "imputeClass", "Impute class values", callback=self.sendIf)
-        
-        OWGUI.separator(self.controlArea, 19, 8)        
+
+        OWGUI.separator(self.controlArea, 19, 8)
 
         snbox = OWGUI.widgetBox(self.controlArea, self, "Send data and imputer")
         self.btApply = OWGUI.button(snbox, self, "Apply", callback=self.sendDataAndImputer)
         OWGUI.checkBox(snbox, self, "autosend", "Send automatically", callback=self.enableAuto, disables = [(-1, self.btApply)])
-       
-        self.activateLoadedSettings()        
+
+        self.activateLoadedSettings()
         self.adjustSize()
 
 
@@ -129,7 +129,7 @@ class OWImpute(OWWidget):
                         self.indiValue = specific[1]
             else:
                 self.indiType = 0
-        
+
     def individualSelected(self, i):
         if self.data:
             self.selectedAttr = i
@@ -151,7 +151,7 @@ class OWImpute(OWWidget):
                 self.indiValue = self.methods[attrName][1]
             self.indiValueLineEdit.show()
             self.indiValueComboBox.hide()
-            
+
         self.indiValueCtrlBox.update()
 
 
@@ -198,15 +198,14 @@ class OWImpute(OWWidget):
             self.sendDataAndImputer()
 
 
-    def cdata(self,data):
+    def setData(self,data):
         self.closeContext()
-        
+
         self.methods = {}
         if not data:
             self.indibox.setDisabled(True)
-            self.attrList.clear()                
+            self.attrList.clear()
             self.data = None
-            self.send("Classified Examples", None)
             self.send("Examples", None)
         else:
             self.indibox.setDisabled(False)
@@ -219,7 +218,7 @@ class OWImpute(OWWidget):
                     self.cbImputeClass.setDisabled(False)
                     pass
 
-                self.attrList.clear()                
+                self.attrList.clear()
                 for i, attr in enumerate(self.data.domain):
                     self.attrList.insertItem(ImputeListboxItem(self.attrIcons[attr.varType], attr.name, self))
 
@@ -237,7 +236,7 @@ class OWImpute(OWWidget):
     def setModel(self, model):
         self.model = model
         self.sendIf()
-        
+
 
     def constructImputer(self, *a):
         if not self.methods:
@@ -270,7 +269,7 @@ class OWImpute(OWWidget):
                     basstat = orange.BasicAttrStat(self.attr, examples, weight)
                     probabilities = orange.GaussianDistribution(basstat.avg, basstat.dev)
                 return orange.RandomClassifier(classVar = self.attr, probabilities = probabilities)
-               
+
         class AttrModelLearner:
             def __init__(self, attr, model):
                 self.attr = attr
@@ -280,7 +279,7 @@ class OWImpute(OWWidget):
                 newdata = orange.ExampleTable(orange.Domain([attr for attr in examples.domain.attributes if attr != self.attr] + [self.attr]), examples)
                 newdata = orange.Filter_hasClassValue(newdata)
                 return self.model(newdata, weight)
-                    
+
         classVar = self.data.domain.classVar
         imputeClass = self.imputeClass or classVar and self.methods.get(classVar.name, (0, None))[0]
         imputerModels = []
@@ -315,13 +314,13 @@ class OWImpute(OWWidget):
             else:
                 msg = "The imputed values for some attributes (%s, ...) are not specified." % ", ".join(missingValues[:3])
             self.warning(0, msg + "\nAverages and/or majority values are used instead.")
-            
+
         if classVar and not imputeClass:
             imputerModels.append(lambda e, wei=0: None)
 
         self.imputer = lambda ex, wei=0, ic=imputerModels: orange.Imputer_model(models=[i(ex, wei) for i in ic])
 
-        
+
     def sendIf(self):
         if self.autosend:
             self.sendDataAndImputer()
@@ -347,7 +346,6 @@ class OWImpute(OWWidget):
             else:
                 data = None
             self.send("Examples", data)
-            self.send("Classified Examples", self.data.domain.classVar and data or None)
         else:
             self.dataChanged = False
 
@@ -359,7 +357,7 @@ if __name__ == "__main__":
     data = orange.ExampleTable("c:\\d\\ai\\orange\\doc\\datasets\\imports-85")
     a.setMainWidget(ow)
     ow.show()
-    ow.cdata(data)
+    ow.setData(data)
     a.exec_loop()
-    ow.cdata(None)
+    ow.setData(None)
     ow.saveSettings()
