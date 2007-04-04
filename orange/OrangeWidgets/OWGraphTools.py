@@ -22,6 +22,9 @@ class ColorPaletteGenerator:
     def __init__(self, numberOfColors = 0, rgbColors = defaultRGBColors):
         self.rgbColors = rgbColors
         self.numberOfColors = numberOfColors
+        if rgbColors:
+            self.rgbQColors = [QColor(*color) for color in self.rgbColors]
+        
 
     def __getitem__(self, index, brightness = None):
         if type(index) == tuple:
@@ -33,11 +36,13 @@ class ColorPaletteGenerator:
             return col
         else:
             if index < len(self.rgbColors):
-                color = QColor(*self.rgbColors[index])
-                if brightness == None: return color
-                h,s,v = color.getHsv()
-                color.setHsv(h, int(brightness), v)
-                return color
+                if brightness == None:
+                    return self.rgbQColors[index]
+                else:
+                    color = QColor(*self.rgbColors[index])
+                    h,s,v = color.getHsv()
+                    color.setHsv(h, int(brightness), v)
+                    return color
             else:
                 col = QColor()
                 col.setHsv(index*self.maxHueVal, brightness or 255, 255)
@@ -230,6 +235,23 @@ class SelectionCurve(QwtPlotCurve):
             return (0, xi, yi)
 
 
+class UnconnectedLinesCurve(QwtPlotCurve):
+    def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
+        QwtPlotCurve.__init__(self, parent)
+        self.setPen(pen)
+        self.Pen = pen
+        self.setStyle(QwtCurve.Lines)
+        if xData != None and yData != None:
+            self.setData(xData, yData)
+
+    def drawCurve(self, painter, style, xMap, yMap, start, stop):
+        start = max(start + start%2, 0)
+        if stop == -1:
+            stop = self.dataSize()
+        for i in range(start, stop, 2):
+            QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+1)
+            
+
 # ###########################################################
 # a class that is able to draw arbitrary polygon curves.
 # data points are specified by a standard call to graph.setCurveData(key, xArray, yArray)
@@ -241,61 +263,13 @@ class PolygonCurve(QwtPlotCurve):
         self.setBrush(brush)
         self.Pen = pen
         self.Brush = brush
-        self.setStyle(QwtCurve.UserCurve)
+        self.setStyle(QwtCurve.Lines)
         if xData != None and yData != None:
             self.setData(xData, yData)
 
-    # Draws rectangles with the corners taken from the x- and y-arrays.        
-    def draw(self, painter, xMap, yMap, start, stop):
-        #painter.setPen(self.Pen)
-        #painter.setBrush(self.Brush)
-        painter.setPen(self.pen())
-        painter.setBrush(self.brush())
-        if stop == -1: stop = self.dataSize()
-        start = max(start, 0)
-        stop = max(stop, 0)
-        array = QPointArray(stop-start)
-        for i in range(start, stop):
-            array.setPoint(i-start, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
-
-        if stop-start > 2:
-            painter.drawPolygon(array)
-            
-
-# ####################################################################
-# draw a rectangle
-# this class of curves is not yet drawn if you export picture to matplotlib
-class RectanglePlotCurve(QwtPlotCurve):
-    def __init__(self, parent = None, pen = QPen(Qt.black), brush = QBrush(), text = None):
-        QwtPlotCurve.__init__(self, parent, text)
-        self.setPen(pen)
-        self.setBrush(brush)
-        self.setStyle(QwtCurve.UserCurve)
-
-    def draw(self, p, xMap, yMap, f, t):
-        # save ex settings
-        back = p.backgroundMode()
-        pen = p.pen()
-        brush = p.brush()
-        
-        p.setPen(self.pen())
-        p.setBrush(self.brush())
-        
-        if t < 0: t = self.dataSize() - 1
-        if divmod(f, 2)[1] != 0: f -= 1
-        if divmod(t, 2)[1] == 0:  t += 1
-        for i in range(f, t+1, 2):
-            px1 = xMap.transform(self.x(i))
-            py1 = yMap.transform(self.y(i))
-            px2 = xMap.transform(self.x(i+1))
-            py2 = yMap.transform(self.y(i+1))
-            p.drawRect(px1, py1, (px2 - px1), (py2 - py1))
-
-        # restore ex settings
-        p.setBackgroundMode(back)
-        p.setPen(pen)
-        p.setBrush(brush)
-
+    def drawCurve(self, painter, style, xMap, yMap, start, stop):
+        for i in range(start, stop, 4):
+            QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+3)
 
 # ####################################################################
 # create a marker in QwtPlot, that doesn't have a transparent background. Currently used in parallel coordinates widget.
