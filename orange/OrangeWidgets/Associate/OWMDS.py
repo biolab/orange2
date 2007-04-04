@@ -113,7 +113,7 @@ class OWMDS(OWWidget):
         infoBox=OWGUI.widgetBox(self.controlArea, "Info")
         self.infoA=QLabel("Avg. stress:", infoBox)
         self.infoB=QLabel("Num. steps", infoBox)
-        OWGUI.button(self.controlArea, self, "Save", self.graph.saveToFile)
+        OWGUI.button(self.controlArea, self, "Save", self.graph.saveToFile, debuggingEnabled = 0)
         #self.info
         self.resize(900,700)
 

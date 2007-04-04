@@ -2,7 +2,7 @@
 <name>K-Means Clustering</name>
 <description>K-means clustering.</description>
 <icon>icons/KMeans.png</icon>
-<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>2000</priority>
 """
 
@@ -18,15 +18,15 @@ from OWWidget import *
 ##############################################################################
 # main class
 
-class OWKMeans(OWWidget):	
+class OWKMeans(OWWidget):
     settingsList = ["K", "DistanceMeasure"]
 
     def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, 'k-Means Clustering') 
-        
-        self.inputs = [("Examples", ExampleTable, self.dataset)]
-        self.outputs = [("Classified Examples", ExampleTableWithClass)]
+        OWWidget.__init__(self, parent, signalManager, 'k-Means Clustering')
+
+        self.inputs = [("Examples", ExampleTable, self.setData)]
+        self.outputs = [("Examples", ExampleTable)]
 
         #set default settings
         self.K = 3
@@ -36,7 +36,7 @@ class OWKMeans(OWWidget):
         self.data = None
 
         # GUI definition
-        # settings        
+        # settings
         OWGUI.qwtHSlider(self.controlArea, self, "K", box="Number of Clusters", label="K: ", minValue=1, maxValue=30, step=1, callback=self.settingsChanged)
         OWGUI.comboBox(self.controlArea, self, "DistanceMeasure", box="Distance Measure", items=["Euclidean", "Manthattan"], tooltip=None, callback=self.settingsChanged)
         QWidget(self.controlArea).setFixedSize(0, 8)
@@ -119,9 +119,9 @@ class OWKMeans(OWWidget):
 
         self.showResults()
         self.applyBtn.setDisabled(TRUE)
-        self.send("Classified Examples", self.cdata)
-        
-    def dataset(self, data):
+        self.send("Examples", self.cdata)
+
+    def setData(self, data):
         if not data:
             pass
         else:
@@ -183,7 +183,7 @@ if __name__=="__main__":
     ow = OWKMeans()
     a.setMainWidget(ow)
     d = orange.ExampleTable('glass')
-    ow.dataset(d)
+    ow.setData(d)
     ow.show()
     a.exec_loop()
     ow.saveSettings()

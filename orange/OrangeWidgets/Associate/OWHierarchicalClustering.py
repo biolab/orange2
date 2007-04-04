@@ -121,7 +121,7 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.button(commitBox, self, "&Commit", self.commitData)
         OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
         OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
-        OWGUI.button(self.controlArea, self, "&Save graph", self.saveGraph)
+        OWGUI.button(self.controlArea, self, "&Save graph", self.saveGraph, debuggingEnabled = 0)
 
         self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
         scale=QCanvas(self)

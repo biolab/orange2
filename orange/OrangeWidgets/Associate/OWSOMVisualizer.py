@@ -642,7 +642,6 @@ class OWSOMVisualizer(OWWidget):
         OWGUI.checkBox(b, self, "commitOnChange", "Commit on change")
 
         OWGUI.separator(self.controlArea)
-        \
         OWGUI.button(self.controlArea, self, "&Save Graph", callback=self.saveGraph, debuggingEnabled = 0)
         
         self.selectionList=[]
