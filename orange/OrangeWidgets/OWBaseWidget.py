@@ -21,7 +21,7 @@ def unisetattr(self, name, value, grandparent):
     if not obj:
         print "unable to set setting ", name, " to value ", value
     else:
-        if hasattr(grandparent, "__setattr__"):
+        if hasattr(grandparent, "__setattr__") and isinstance(obj, grandparent):
             grandparent.__setattr__(obj, lastname,  value)
         else:
             obj.__dict__[lastname] = value
@@ -44,7 +44,7 @@ def unisetattr(self, name, value, grandparent):
                 controlledAttributes = getattr(controller, "controlledAttributes", None)
                 if controlledAttributes:
                     fullName = myself + "." + name
-                    
+
                     controlCallback = controlledAttributes.get(fullName, None)
                     if controlCallback:
                         for callback in controlCallback:
@@ -71,8 +71,8 @@ def unisetattr(self, name, value, grandparent):
 class ExampleTable(orange.ExampleTable):
     pass
 
-class ExampleTableWithClass(ExampleTable):
-    pass
+#class ExampleTableWithClass(ExampleTable):
+#    pass
 
 class AttributeList(list):
     pass
@@ -94,23 +94,25 @@ class OWBaseWidget(QDialog):
         self.savePosition = savePosition
         if savePosition:
             self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown"]
-        
+
         self.title = title.replace("&","")
 
         QDialog.__init__(self, parent, self.title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize + Qt.WStyle_Maximize)
-        
+
         # directories are better defined this way, otherwise .ini files get written in many places
         self.widgetDir = os.path.dirname(__file__) + "/"
 
         # create output directory for widget settings
-        if os.name == "nt": self.outputDir = self.widgetDir
-        else:               self.outputDir = os.path.join(user.home, "Orange")
+        if os.name == "nt":
+            self.outputDir = os.path.join(os.path.join(user.home, "Application Data"), "Orange")                  # directory for saving settings and stuff
+        else:
+            self.outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
         if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
         self.outputDir = os.path.join(self.outputDir, "widgetSettings")
         if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
-        
+
         self.loadContextSettings()
-        
+
         self.captionTitle = title.replace("&","")     # used for widget caption
 
         # if we want the widget to show the title then the title must start with "Qt"
@@ -136,10 +138,10 @@ class OWBaseWidget(QDialog):
         self.eventHandler = None
         self.callbackDeposit = []
         self.startTime = time.time()    # used in progressbar
-        
+
         self.widgetStateHandler = None
         self.widgetState = {"Info":{}, "Warning":{}, "Error":{}}
-    
+
         #the title
         self.setCaption(self.captionTitle)
 
@@ -170,6 +172,18 @@ class OWBaseWidget(QDialog):
         import OWGUI
         return OWGUI.getAttributeIcons()
 
+    def isDataWithClass(self, data, wantedVarType = None):
+        self.error([1234, 1235])
+        if not data:
+            return 0
+        if not data.domain.classVar:
+            self.error(1234, "A data set with a class attribute is required.")
+            return 0
+        if wantedVarType and data.domain.classVar.varType != wantedVarType:
+            self.error(1235, "Unable to handle %s class." % (data.domain.classVar.varType == orange.VarTypes.Discrete and "discrete" or "continuous"))
+            return 0
+        return 1
+
     # call processEvents(), but first remember position and size of widget in case one of the events would be move or resize
     # call this function if needed in __init__ of the widget
     def safeProcessEvents(self):
@@ -189,7 +203,7 @@ class OWBaseWidget(QDialog):
                 self.move(self.widgetXPosition, self.widgetYPosition)
             if getattr(self, "widgetWidth", None) != None and getattr(self, "widgetHeight", None) != None:
                 self.resize(self.widgetWidth, self.widgetHeight)
-            
+
     # this is called in canvas when loading a schema. it opens the widgets that were shown when saving the schema
     def restoreWidgetStatus(self):
         if self.savePosition and getattr(self, "widgetShown", None):
@@ -203,7 +217,7 @@ class OWBaseWidget(QDialog):
             self.widgetWidth = self.width()
             self.widgetHeight = self.height()
 ##            print self.title, "saving resize", self.widgetWidth, self.widgetHeight
-            
+
 
     # when widget is moved, save new x and y position into widgetXPosition and widgetYPosition. some widgets can put this two
     # variables into settings and last widget position is restored after restart
@@ -233,7 +247,7 @@ class OWBaseWidget(QDialog):
     def setCaptionTitle(self, caption):
         self.captionTitle = caption     # we have to save caption title in case progressbar will change it
         self.setCaption(caption)
-        
+
     # put this widget on top of all windows
     def reshow(self):
         self.hide()
@@ -242,12 +256,12 @@ class OWBaseWidget(QDialog):
     def send(self, signalName, value, id = None):
         if not self.hasOutputName(signalName):
             print "Warning! Signal '%s' is not a valid signal name for the '%s' widget. Please fix the signal name." % (signalName, self.title)
-            
+
         if self.linksOut.has_key(signalName):
             self.linksOut[signalName][id] = value
         else:
             self.linksOut[signalName] = {id:value}
-            
+
         self.signalManager.send(self, signalName, value, id)
 
 
@@ -262,7 +276,7 @@ class OWBaseWidget(QDialog):
 
 
     # Set all settings
-    # settings - the map with the settings       
+    # settings - the map with the settings
     def setSettings(self,settings):
         for key in settings:
             self.__setattr__(key, settings[key])
@@ -294,8 +308,8 @@ class OWBaseWidget(QDialog):
         else:
             return file
 
-        
-    # Loads settings from the widget's .ini file 
+
+    # Loads settings from the widget's .ini file
     def loadSettings(self, file = None):
         file = self.getSettingsFile(file)
         if file:
@@ -304,11 +318,11 @@ class OWBaseWidget(QDialog):
             except:
                 settings = None
 
-            # can't close everything into one big try-except since this would mask all errors in the below code                
+            # can't close everything into one big try-except since this would mask all errors in the below code
             if settings:
                 if hasattr(self, "settingsList"):
                     self.setSettings(settings)
-                
+
                 contextHandlers = getattr(self, "contextHandlers", {})
                 for contextHandler in contextHandlers.values():
                     if not getattr(contextHandler, "globalContexts", False): # don't have it or empty
@@ -319,7 +333,7 @@ class OWBaseWidget(QDialog):
                         if contextHandler.syncWithGlobal:
                             setattr(self, contextHandler.localContextName, contextHandler.globalContexts)
 
-                    
+
     def loadContextSettings(self, file = None):
         if not hasattr(self.__class__, "savedContextSettings"):
             file = self.getSettingsFile(file)
@@ -329,24 +343,24 @@ class OWBaseWidget(QDialog):
                 except:
                     settings = None
 
-                # can't close everything into one big try-except since this would mask all errors in the below code                
-                if settings:                    
+                # can't close everything into one big try-except since this would mask all errors in the below code
+                if settings:
                     if settings.has_key("savedContextSettings"):
                         self.__class__.savedContextSettings = settings["savedContextSettings"]
                         return
-                
+
             self.__class__.savedContextSettings = {}
 
 
     def saveSettings(self, file = None):
         settings = self.getSettings()
-        
+
         contextHandlers = getattr(self, "contextHandlers", {})
         for contextHandler in contextHandlers.values():
             contextHandler.mergeBack(self)
             settings[contextHandler.localContextName] = contextHandler.globalContexts
 
-        if settings:                    
+        if settings:
             if file==None:
                 file = os.path.join(self.outputDir, self.title + ".ini")
             if type(file) == str:
@@ -357,7 +371,7 @@ class OWBaseWidget(QDialog):
     def loadSettingsStr(self, str):
         if str == None or str == "":
             return
-        
+
         settings = cPickle.loads(str)
         self.setSettings(settings)
 
@@ -370,7 +384,7 @@ class OWBaseWidget(QDialog):
     def saveSettingsStr(self):
         str = ""
         settings = self.getSettings()
-        
+
         contextHandlers = getattr(self, "contextHandlers", {})
         for contextHandler in contextHandlers.values():
             settings[contextHandler.localContextName] = getattr(self, contextHandler.localContextName)
@@ -381,7 +395,7 @@ class OWBaseWidget(QDialog):
     def activateLoadedSettings(self):
         pass
 
-    # reimplemented in other widgets        
+    # reimplemented in other widgets
     def setOptions(self):
         pass
 
@@ -415,12 +429,12 @@ class OWBaseWidget(QDialog):
         QDialog.connect(control, signal, wrapper)
         #QWidget.connect(control, signal, method)        # ordinary connection useful for dialogs and windows that don't send signals to other widgets
 
-  
+
     def disconnect(self, control, signal, method):
         wrapper = self.connections[(control, signal)]
         QDialog.disconnect(control, signal, wrapper)
 
-  
+
     def signalIsOnlySingleConnection(self, signalName):
         for i in self.inputs:
             input = InputSignal(*i)
@@ -431,7 +445,7 @@ class OWBaseWidget(QDialog):
             if self.inputs[i][0] == signalName:
                 handler = self.inputs[i][2]
                 break
-            
+
         existing = []
         if self.linksIn.has_key(signalName):
             existing = self.linksIn[signalName]
@@ -456,40 +470,45 @@ class OWBaseWidget(QDialog):
         for i in self.inputs:
             input = InputSignal(*i)
             if input.name == signal and not input.single: return None
-            
+
         for signalName in self.linksIn.keys():
             if signalName == signal:
                 widget = self.linksIn[signalName][0][1]
                 del self.linksIn[signalName]
                 return widget
-               
+
         return None
 
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
         if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
-        
-        # we define only a way to handle signals that have defined a handler function
-        for key in self.linksIn.keys():
-            for i in range(len(self.linksIn[key])):
-                (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
-                if not (handler and dirty): continue
-                
-                qApp.setOverrideCursor(QWidget.waitCursor)
-                try:                    
-                    for (value, id, nameFrom) in signalData:
-                        if self.signalIsOnlySingleConnection(key):
-                            self.printEvent("ProcessSignals: Calling %s with %s" % (handler, value), eventVerbosity = 2)
-                            handler(value)
-                        else:
-                            self.printEvent("ProcessSignals: Calling %s with %s (%s, %s)" % (handler, value, nameFrom, id), eventVerbosity = 2)
-                            handler(value, (widgetFrom, nameFrom, id))
-                except:
-                    type, val, traceback = sys.exc_info()
-                    sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
 
-                qApp.restoreOverrideCursor()
-                self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
+        # we define only a way to handle signals that have defined a handler function
+        for signal in self.inputs:        # we go from the first to the last defined input
+            key = signal[0]
+            if self.linksIn.has_key(key):
+                for i in range(len(self.linksIn[key])):
+                    (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
+                    if not (handler and dirty): continue
+
+                    qApp.setOverrideCursor(QWidget.waitCursor)
+                    try:
+                        for (value, id, nameFrom) in signalData:
+                            if self.signalIsOnlySingleConnection(key):
+                                self.printEvent("ProcessSignals: Calling %s with %s" % (handler, value), eventVerbosity = 2)
+                                handler(value)
+                            else:
+                                self.printEvent("ProcessSignals: Calling %s with %s (%s, %s)" % (handler, value, nameFrom, id), eventVerbosity = 2)
+                                handler(value, (widgetFrom, nameFrom, id))
+                    except:
+                        type, val, traceback = sys.exc_info()
+                        sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
+
+                    qApp.restoreOverrideCursor()
+                    self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
+
+        if hasattr(self, "handleNewSignals"):
+            self.handleNewSignals()
 
         if self.processingHandler:
             self.processingHandler(self, 0)    # remove focus from this widget
@@ -522,7 +541,7 @@ class OWBaseWidget(QDialog):
         self.startTime = time.time()
         self.setCaption(self.captionTitle + " (0% complete)")
         if self.progressBarHandler: self.progressBarHandler(self, -1)
-        
+
     def progressBarSet(self, value):
         if value > 0:
             self.progressBarValue = value
@@ -565,7 +584,7 @@ class OWBaseWidget(QDialog):
     # if we are in debug mode print the event into the file
     def printEvent(self, text, eventVerbosity = 1):
         self.signalManager.addEvent(self.captionTitle[3:] + ": " + text, eventVerbosity = eventVerbosity)
-        if self.eventHandler: 
+        if self.eventHandler:
             self.eventHandler(self.captionTitle[3:] + ": " + text, eventVerbosity)
 
     def openWidgetHelp(self):
@@ -591,32 +610,37 @@ class OWBaseWidget(QDialog):
         except:
             pass
 
-        
+
     def keyPressEvent(self, e):
         if e.key() == 0x1030:
             self.openWidgetHelp()
-#            e.ignore()            
+#            e.ignore()
         else:
             QDialog.keyPressEvent(self, e)
 
     def information(self, id = 0, text = None):
         self.setState("Info", id, text)
-        
+
     def warning(self, id = 0, text = ""):
         self.setState("Warning", id, text)
-        
+
     def error(self, id = 0, text = ""):
         self.setState("Error", id, text)
-        
+
     def setState(self, stateType, id, text):
-        if type(id) == str:
-            text = id; id = 0       # if we call information(), warning(), or error() function with only one parameter - a string - then set id = 0
-        if not text:
-            if self.widgetState[stateType].has_key(id):
-                self.widgetState[stateType].pop(id)
+        if type(id) == list:
+            for val in id:
+                if self.widgetState[stateType].has_key(val):
+                    self.widgetState[stateType].pop(val)
         else:
-            self.widgetState[stateType][id] = text
-        
+            if type(id) == str:
+                text = id; id = 0       # if we call information(), warning(), or error() function with only one parameter - a string - then set id = 0
+            if not text:
+                if self.widgetState[stateType].has_key(id):
+                    self.widgetState[stateType].pop(id)
+            else:
+                self.widgetState[stateType][id] = text
+
         if self.widgetStateHandler:
             self.widgetStateHandler()
         elif text and stateType != "Info":
@@ -668,13 +692,13 @@ class OWBaseWidget(QDialog):
             obj = getattr(obj, parts[0], None)
             prefix += parts[0]
             controlledName = parts[1]
-        
+
     def __setattr__(self, name, value):
         return unisetattr(self, name, value, QDialog)
 
     def randomlyChangeSettings(self, verboseMode = 0):
         if len(self._guiElements) == 0: return
-        
+
         try:
             index = random.randint(0, len(self._guiElements)-1)
             elementType, widget = self._guiElements[index][0], self._guiElements[index][1]
@@ -682,7 +706,7 @@ class OWBaseWidget(QDialog):
             if elementType == "qwtPlot":
                 widget.randomChange()
                 return
-            
+
             if not widget.isEnabled(): return
             newValue = ""
             callback = None
@@ -752,9 +776,9 @@ class OWBaseWidget(QDialog):
             sys.stderr.write("Widget settings are:\n")
             for i, setting in enumerate(getattr(self, "settingsList", [])):
                 sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
-                
 
-if __name__ == "__main__":  
+
+if __name__ == "__main__":
     a=QApplication(sys.argv)
     oww=OWBaseWidget()
     a.setMainWidget(oww)
