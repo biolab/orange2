@@ -2,7 +2,7 @@
 <name>Association Rules</name>
 <description>Induces association rules from data.</description>
 <icon>icons/AssociationRules.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 """
 
@@ -14,11 +14,11 @@ class OWAssociationRules(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AssociationRules")
 
-        self.inputs = [("Examples", ExampleTable, self.cdata)]
+        self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
 
         self.settingsList = ["useSparseAlgorithm", "classificationRules", "minSupport", "minConfidence", "maxRules"]
-                
+
         self.useSparseAlgorithm = 0
         self.classificationRules = 0
         self.minSupport = 40
@@ -78,8 +78,8 @@ class OWAssociationRules(OWWidget):
             self.cbClassificationRules.setChecked(0)
         else:
             self.cbClassificationRules.setEnabled(1)
-        
-    def cdata(self,dataset):
+
+    def setData(self,dataset):
         self.dataset = dataset
         self.generateRules()
 
@@ -89,9 +89,9 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
 ##    data = orange.ExampleTable("car")
-##    ow.cdata(data)
-    
+##    ow.setData(data)
+
     ow.show()
     a.exec_loop()
     ow.saveSettings()
-    
+
