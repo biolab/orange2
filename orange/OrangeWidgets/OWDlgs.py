@@ -472,8 +472,8 @@ class ColorPalette(OWBaseWidget):
             self.__dict__[name+"Right"].setColor(self.rgbToQColor(r))
             self.__dict__[name+"passThroughBlack"] = chk
             self.__dict__[name+"passThroughBlackCheckbox"].setChecked(chk)
-            pallete = self.createPalette(self.rgbToQColor(l), self.rgbToQColor(r), chk) + 5*[Qt.white.rgb()]
-            self.__dict__[name+"View"].setPalette1(pallete)
+            palette = self.createPalette(self.rgbToQColor(l), self.rgbToQColor(r), chk) + 5*[Qt.white.rgb()]
+            self.__dict__[name+"View"].setPalette1(palette)
 
         self.discreteColors = [self.rgbToQColor(col) for col in discPalette]
         if self.discreteColors:

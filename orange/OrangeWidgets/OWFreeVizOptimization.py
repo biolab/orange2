@@ -16,7 +16,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
     forceRelValues = ["4 : 1", "3 : 1", "2 : 1", "3 : 2", "1 : 1", "2 : 3", "1 : 2", "1 : 3", "1 : 4"]
     attractRepelValues = [(4, 1), (3, 1), (2, 1), (3, 2), (1, 1), (2, 3), (1, 2), (1, 3), (1, 4)]
-    
+
     def __init__(self, parentWidget = None, signalManager = None, graph = None, parentName = "Visualization widget"):
         OWBaseWidget.__init__(self, None, signalManager, "FreeViz Dialog")
         FreeViz.__init__(self, graph)
@@ -31,36 +31,36 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.disableRepulsive = 0
         self.graph = graph
         self.rawdata = None
-        
+
         if self.graph:
             self.graph.hideRadius = 0
             self.graph.showAnchors = 1
 
         # differential evolution
         self.differentialEvolutionPopSize = 100
-        self.DERadvizSolver = None        
-        
+        self.DERadvizSolver = None
+
         self.loadSettings()
-        
+
         self.tabs = QTabWidget(self, 'tabWidget')
         self.controlArea.addWidget(self.tabs)
-        
+
         self.MainTab = QVGroupBox(self)
         self.S2NHeuristicTab = QVGroupBox(self)
-                
+
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.S2NHeuristicTab, "S2N Heuristic")
 
         if parentName.lower() != "radviz":
             self.LinearTransformationTab = QVGroupBox(self)
             self.tabs.insertTab(self.LinearTransformationTab, "Supervised PCA")
-        
+
         # ###########################
         # MAIN TAB
         OWGUI.comboBox(self.MainTab, self, "implementation", box = "FreeViz Implementation", items = ["Fast (C) implementation", "Slow (Python) implementation", "LDA"])
-        
+
         box = OWGUI.widgetBox(self.MainTab, "Gradient Optimization")
-        
+
         self.optimizeButton = OWGUI.button(box, self, "Optimize Separation", callback = self.optimizeSeparation)
         self.stopButton = OWGUI.button(box, self, "Stop optimization", callback = self.stopOptimization)
         self.singleStepButton = OWGUI.button(box, self, "Single Step", callback = self.singleStepOptimization)
@@ -69,7 +69,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.stopButton.setFont(f); self.stopButton.hide()
         self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(box, self, "stepsBeforeUpdate", "Number of steps before updating graph: ", tooltip = "Set the number of optimization steps that will be executed before the updated anchor positions will be visualized", items = [1, 3, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300], sendSelectedValue = 1, valueType = int)
         OWGUI.checkBox(box, self, "mirrorSymmetry", "Keep mirror symmetry", tooltip = "'Rotational' keeps the second anchor upside")
-        
+
         vbox = OWGUI.widgetBox(self.MainTab, "Set Anchor Positions")
         hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
         OWGUI.button(hbox1, self, "Normal", callback = self.radialAnchors)
@@ -83,7 +83,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.cbLaw = OWGUI.comboBox(box2, self, "law", label="Law", labelWidth = 40, orientation="horizontal", items=["Linear", "Square", "Gaussian", "KNN", "Variance"], callback = self.forceLawChanged)
 
         hbox2 = QHBox(box2); OWGUI.separator(hbox2, 20, 0); vbox2 = QVBox(hbox2)
-        
+
         validSigma = QDoubleValidator(self); validSigma.setBottom(0.01)
         self.spinSigma = OWGUI.lineEdit(vbox2, self, "forceSigma", label = "Kernel width (sigma) ", labelWidth = 110, orientation = "horizontal", valueType = float)
         self.spinSigma.setFixedSize(60, self.spinSigma.sizeHint().height())
@@ -109,7 +109,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 ##        box2 = OWGUI.widgetBox(box, 0, orientation = "horizontal")
 ##        self.createPopulationButton = OWGUI.button(box2, self, "Create population", callback = self.createPopulation)
 ##        self.evolvePopulationButton = OWGUI.button(box2, self, "Evolve population", callback = self.evolvePopulation)
-##    
+##
         #box = OWGUI.widgetBox(self.MainTab, 1)
         #self.energyLabel = QLabel(box, "Energy: ")
 
@@ -122,15 +122,15 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         OWGUI.hSlider(box2, self, 's2nSpread', minValue=0, maxValue=10, step=1, callback = self.s2nMixAnchors, labelFormat="  %d", ticks=0)
         OWGUI.comboBoxWithCaption(box, self, "s2nPlaceAttributes", "Attributes to place: ", tooltip = "Set the number of top ranked attributes to place. You can select a higher value than the actual number of attributes", items = self.attrsNum, callback = self.s2nMixAnchors, sendSelectedValue = 1, valueType = int)
         OWGUI.checkBox(box, self, 'autoSetParameters', 'Automatically find optimal parameters')
-        self.s2nMixButton = OWGUI.button(box, self, "Place anchors", callback = self.s2nMixAnchorsAutoSet)        
+        self.s2nMixButton = OWGUI.button(box, self, "Place anchors", callback = self.s2nMixAnchorsAutoSet)
 
         # ##########################
         # SUPERVISED PCA TAB
         if parentName.lower() != "radviz":
-            OWGUI.button(self.LinearTransformationTab, self, "Find PCA projection", callback = self.findPCAProjection)        
-            OWGUI.button(self.LinearTransformationTab, self, "Find supervised PCA projection", callback = self.findSPCAProjection)        
+            OWGUI.button(self.LinearTransformationTab, self, "Find PCA projection", callback = self.findPCAProjection)
+            OWGUI.button(self.LinearTransformationTab, self, "Find supervised PCA projection", callback = self.findSPCAProjection)
             OWGUI.checkBox(self.LinearTransformationTab, self, "useGeneralizedEigenvectors", "Try to merge examples with same class value")
-            
+
 
         # ###########################
         self.statusBar = QStatusBar(self)
@@ -141,10 +141,10 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.setMinimumWidth(310)
         self.tabs.setMinimumWidth(310)
 
-        self.parentWidget.learnersArray[3] = S2NHeuristicLearner(self, self.parentWidget)
+##        self.parentWidget.learnersArray[3] = S2NHeuristicLearner(self, self.parentWidget)
         self.activateLoadedSettings()
-    
-        
+
+
     def activateLoadedSettings(self):
         self.forceLawChanged()
         self.updateForces()
@@ -156,16 +156,16 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
     # ##############################################################
     def setManualPosition(self):
         self.parentWidget.graph.manualPositioning = self.manualPositioningButton.isOn()
-            
+
     def setData(self, data):
         self.rawdata = data
         self.s2nMixData = None
         self.classPermutationList = None
-        
+
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
-                    
+
     def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()
 
@@ -182,7 +182,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
             self.attractG, self.repelG = self.attractRepelValues[self.forceRelation]
             self.cbforcerel.setDisabled(False)
             self.cbforcebal.setDisabled(False)
-            
+
         self.printEvent("Updated: %i, %i" % (self.attractG, self.repelG), eventVerbosity = 1)
 
     def forceLawChanged(self):
@@ -210,7 +210,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         if self.cbDisableAttractive.isChecked():
             self.disableRepulsive = 0
         self.updateForces()
-            
+
     def setDisableRepulsive(self):
         if self.cbDisableRepulsive.isChecked():
             self.disableAttractive = 0
@@ -224,7 +224,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.updateData()
         self.graph.repaint()
         #self.recomputeEnergy()
-        
+
     def radialAnchors(self):
         FreeViz.radialAnchors(self)
         self.graph.updateData()
@@ -251,7 +251,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         FreeViz.optimizeSeparation(self, 1, 1)
         self.graph.potentialsBmp = None
         self.graph.updateData()
-   
+
     def optimizeSeparation(self, steps = 10, singleStep = False):
         self.optimizeButton.hide()
         self.stopButton.show()
@@ -278,7 +278,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         Min = [0.0] * 2* l
         Max = [1.0] * 2* l
         self.DERadvizSolver.Setup(Min, Max, 0, 0.95, 1)
-        
+
     def evolvePopulation(self):
         if not self.DERadvizSolver:
             QMessageBox.critical( None, "Differential evolution", 'To evolve a population you first have to create one by pressing "Create population" button', QMessageBox.Ok)
@@ -305,9 +305,9 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         if sum(validData) <= len(attrIndices):
             self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
             return
-        
+
         FreeViz.findSPCAProjection(self, attrIndices, setGraphAnchors = 1, SPCA = SPCA)
-        
+
         self.graph.updateData()
         self.graph.repaint()
 
@@ -317,7 +317,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         qApp.processEvents()
 
 # ###############################################################
-# Optimize anchor position using differential evolution 
+# Optimize anchor position using differential evolution
 class RadvizSolver(DESolver.DESolver):
     def __init__(self, radvizWidget, dim, pop):
         DESolver.DESolver.__init__(self, dim, pop) # superclass
@@ -354,19 +354,20 @@ class S2NHeuristicClassifier(orange.Classifier):
         if nrOfFreeVizSteps > 0:
             self.optimizationDlg.optimize(nrOfFreeVizSteps)
 
-    # for a given example run argumentation and find out to which class it most often fall        
+    # for a given example run argumentation and find out to which class it most often fall
     def __call__(self, example, returnType):
         table = orange.ExampleTable(example.domain)
         table.append(example)
         self.radvizWidget.setSubsetData(table)       # show the example is we use the widget
-            
+        self.radvizWidget.handleNewSignals()
+
         anchorData = self.radvizWidget.graph.anchorData
         attributeNameIndex = self.radvizWidget.graph.attributeNameIndex
         scaleFunction = self.radvizWidget.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
 
         attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
         attrVals = [scaleFunction(example, index) for index in attrListIndices]
-                
+
         table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, scaleFactor = self.radvizWidget.graph.trueScaleFactor, useAnchorData = 1)
         knn = self.radvizWidget.optimizationDlg.createkNNLearner(kValueFormula = 0)(table)
 
@@ -375,19 +376,19 @@ class S2NHeuristicClassifier(orange.Classifier):
 
         if returnType == orange.GetBoth: return classVal, prob
         else:                            return classVal
-        
+
 
 class S2NHeuristicLearner(orange.Learner):
     def __init__(self, optimizationDlg, radvizWidget):
         self.radvizWidget = radvizWidget
         self.optimizationDlg = optimizationDlg
         self.name = "S2N Feature Selection Learner"
-        
+
     def __call__(self, examples, weightID = 0, nrOfFreeVizSteps = 0):
         return S2NHeuristicClassifier(self.optimizationDlg, self.radvizWidget, examples, nrOfFreeVizSteps)
 
 
-                
+
 
 #test widget appearance
 if __name__=="__main__":
@@ -397,4 +398,3 @@ if __name__=="__main__":
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()
-    
