@@ -32,7 +32,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
     def setData(self, data):
         OWGraph.setData(self, data)
         orngScaleData.setData(self, data)
-        
+
 
     # update shown data. Set attributes, coloring by className ....
     def updateData(self, attributes, targetValue, midLabels = None, startIndex = 0, stopIndex = 0):
@@ -44,7 +44,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.nonDataKeys = []
 
         blackColor = QColor(0, 0, 0)
-        
+
         if self.scaledData == None:  return
         if len(attributes) == 0: return
 
@@ -68,8 +68,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)  # hide ticks
         self.axisScaleDraw(QwtPlot.xBottom).setOptions(0)           # hide horizontal line representing x axis
         self.axisScaleDraw(QwtPlot.yLeft).setTickLength(0, 0, 0)
-        self.axisScaleDraw(QwtPlot.yLeft).setOptions(0) 
-        
+        self.axisScaleDraw(QwtPlot.yLeft).setOptions(0)
+
         self.setAxisMaxMajor(QwtPlot.xBottom, len(attributes))
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
@@ -79,15 +79,13 @@ class OWParallelGraph(OWGraph, orngScaleData):
             classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
             continuousClass = self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous
 
-        haveSubsetData = 0
-        if self.subsetData and self.rawdata and self.subsetData.domain == self.rawdata.domain:
-            haveSubsetData = 1
-        
+        haveSubsetData = self.subsetData and self.rawdata and self.subsetData.domain.checksum() == self.rawdata.domain.checksum()
+
         length = len(attributes)
         indices = [self.attributeNameIndex[label] for label in attributes]
         xs = range(length)
         dataSize = len(self.scaledData[0])
-        
+
         if self.rawdata.domain.classVar and not continuousClass:
             classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
@@ -107,7 +105,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             for i in range(length):
                 if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Discrete or attributes[i] == self.rawdata.domain.classVar.name: continue
 
-                attr = self.rawdata.domain[indices[i]]                
+                attr = self.rawdata.domain[indices[i]]
                 for attrVal in attr.values:
                     tempData = self.rawdata.select({attr.name:attrVal})
 
@@ -117,7 +115,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                             val = tempData[ind][classNameIndex]
                             break
                         ind += 1
-                        
+
                     # do all instances belong to the same class?
                     while ind < len(tempData):
                         if dataStop[int(tempData[ind].getmeta(metaid))] != lastIndex: ind += 1; continue
@@ -145,7 +143,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             if not validData[i]:
                 self.curvePoints.append([]) # add an empty list
                 continue
-                        
+
             curve = QwtPlotCurve(self)
             if targetValue != None:
                 if self.rawdata[i].getclass().value == targetValue:
@@ -168,7 +166,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     curves[1].append(curve)
                     if subsetReferencesToDraw:
                         subsetReferencesToDraw.remove(self.rawdata[i].reference())
-                    
+
             curve.setPen(QPen(newColor, 1))
             if not dataStop:
                 ys = [self.scaledData[index][i] for index in indices]
@@ -188,11 +186,11 @@ class OWParallelGraph(OWGraph, orngScaleData):
             for i in range(len(indices)):
                 subData[i] = self.scaleData(self.subsetData, indices[i])[0]
             subData = subData.transpose()
-            
+
             for i in range(len(self.subsetData)):
                 if not self.subsetData[i].reference() in subsetReferencesToDraw: continue
                 subsetReferencesToDraw.remove(self.subsetData[i].reference())
-                
+
                 # check if has missing values
                 if 1 in [self.subsetData[i][ind].isSpecial() for ind in indices]: continue
 
@@ -212,12 +210,12 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     else:
                         newColor = self.discPalette[classValueIndices[self.subsetData[i].getclass().value]]
                     curves[1].append(curve)
-                    
+
                 curve.setPen(QPen(newColor, 1))
                 curve.setData(xs, subData[i].tolist())
                 if self.useSplines:
                     curve.setStyle(QwtCurve.Spline)
-                
+
         # now add all curves. First add the gray curves (they will be shown in the back) and then the blue (target value) curves (shown in front)
         for curve in curves[0]: self.insertCurve(curve)
         for curve in curves[1]: self.insertCurve(curve)
@@ -227,7 +225,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         # do we want to show distributions with discrete attributes
         if self.showDistributions and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             self.showDistributionValues(targetValue, validData, indices, dataStop)
-            
+
         # ############################################
         # draw vertical lines that represent attributes
         for i in range(len(attributes)):
@@ -277,7 +275,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     data.append([()])
                     continue  # only for continuous attributes
                 array = numpy.compress(numpy.equal(self.validDataArray[indices[i]], 1), self.scaledData[indices[i]])  # remove missing values
-                
+
                 if classNameIndex == -1 or continuousClass:    # no class
                     if self.showStatistics == MEANS:
                         m = array.mean()
@@ -330,7 +328,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                         xs = []; ys = []
                 self.nonDataKeys.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4))
 
-        
+
         # ##################################################
         # show labels in the middle of the axis
         if midLabels:
@@ -369,10 +367,10 @@ class OWParallelGraph(OWGraph, orngScaleData):
     # ##########################################
     # SHOW DISTRIBUTION BAR GRAPH
     def showDistributionValues(self, targetValue, validData, indices, dataStop):
-        # get index of class         
+        # get index of class
         classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
 
-        # create color table            
+        # create color table
         count = len(self.rawdata.domain.classVar.values)
         #if count < 1: count = 1.0
 
@@ -380,20 +378,20 @@ class OWParallelGraph(OWGraph, orngScaleData):
         classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
         classValueSorted  = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
 
-        self.toolInfo = []        
+        self.toolInfo = []
         for graphAttrIndex in range(len(indices)):
             index = indices[graphAttrIndex]
             if self.rawdata.domain[index].varType != orange.VarTypes.Discrete: continue
             attr = self.rawdata.domain[index]
             attrLen = len(attr.values)
-            
+
             values = []
             totals = [0] * attrLen
 
             # we create a hash table of variable values and their indices
             variableValueIndices = getVariableValueIndices(self.rawdata, index)
             variableValueSorted = getVariableValuesSorted(self.rawdata, index)
-            
+
             for i in range(count):
                 values.append([0] * attrLen)
 
@@ -448,7 +446,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     self.nonDataKeys.append(ckey)
 
         self.addTooltips()
-        
+
     def addTooltips(self):
         for i in range(len(self.toolInfo)):
             (name, value, total, sumTotals, lista, (x_start,x_end), (y_start, y_end)) = self.toolInfo[i]
@@ -463,7 +461,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             y_1 = self.transform(QwtPlot.yLeft, y_start)
             y_2 = self.transform(QwtPlot.yLeft, y_end)
             rect = QRect(x_1, y_1, x_2-x_1, y_2-y_1)
-            self.toolRects.append(rect)            
+            self.toolRects.append(rect)
             QToolTip.add(self, rect, tooltipText)
 
     def removeTooltips(self):
@@ -472,7 +470,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.toolRects = []
 
 
-    # if user clicked between two lines send signal that 
+    # if user clicked between two lines send signal that
     def staticMouseClick(self, e):
         if self.parallelDlg:
             x1 = int(self.invTransform(QwtPlot.xBottom, e.x()))
@@ -486,7 +484,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
     """
     def updateAxes(self):
-        OWGraph.updateAxes()        
+        OWGraph.updateAxes()
         self.removeTooltips()
         self.addTooltips()
     """
@@ -494,7 +492,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.removeTooltips()
         self.addTooltips()
 
-    # if we zoomed, we have to update tooltips    
+    # if we zoomed, we have to update tooltips
     def onMouseReleased(self, e):
         OWGraph.onMouseReleased(self, e)
         self.updateTooltips()
@@ -519,11 +517,11 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     existingPen = self.curvePen(self.lastSelectedKey)
                     existingPen.setWidth(3)
                     self.setCurvePen(self.lastSelectedKey, existingPen)
-                    
+
             else:
                 OWGraph.onMouseMoved(self, e)
                 return
-            
+
             OWGraph.onMouseMoved(self, e)
             self.replot()
 
@@ -532,7 +530,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             return (None, None)
         if self.selectionCurveKeyList == []:
             return (None, self.rawdata)
-        
+
         selIndices = []
         unselIndices = range(len(self.rawdata))
 
@@ -547,7 +545,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         selIndices.reverse()
         selected = self.rawdata.getitemsref(selIndices)
         unselected = self.rawdata.getitemsref(unselIndices)
-        
+
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
 

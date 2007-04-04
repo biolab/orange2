@@ -23,7 +23,7 @@ class OWSieveMultigram(OWVisWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
         self.outputs = [] 
 
         #set default settings
@@ -195,7 +195,7 @@ class OWSieveMultigram(OWVisWidget):
         self.statusBar.message("")
 
     # receive info about which attributes to show
-    def setAttributeSelection(self, list):
+    def setShownAttributes(self, list):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 

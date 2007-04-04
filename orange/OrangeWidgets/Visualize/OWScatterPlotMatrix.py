@@ -39,7 +39,7 @@ class OWScatterPlotMatrix(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Scatterplot matrix", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
         self.outputs = [("Attribute Selection List", AttributeList)] 
 
         #set default settings
@@ -378,7 +378,7 @@ class OWScatterPlotMatrix(OWWidget):
                 self.createGraphs()   # if we had already created graphs, redraw them with new data
             return  
 
-        if not self.setAttributeSelection(self.attributeSelection):
+        if not self.setShownAttributes(self.attributeSelection):
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
         
@@ -389,7 +389,7 @@ class OWScatterPlotMatrix(OWWidget):
 
     #################################################
 
-    def setAttributeSelection(self, attrList):
+    def setShownAttributes(self, attrList):
         self.attributeSelection = attrList
 
         if not self.data or not attrList: return 0

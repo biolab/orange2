@@ -31,7 +31,7 @@ class OWSieveDiagram(OWWidget):
 
         self.controlArea.setMinimumWidth(250)
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
         self.outputs = []
 
         #set default settings
@@ -108,10 +108,10 @@ class OWSieveDiagram(OWWidget):
         if not sameDomain:
             self.initCombos()
 
-        self.setAttributeSelection(self.attributeSelectionList)
+        self.setShownAttributes(self.attributeSelectionList)
 
     ## Attribute selection signal
-    def setAttributeSelection(self, attrList):
+    def setShownAttributes(self, attrList):
         self.attributeSelectionList = attrList
         if self.data and self.attributeSelectionList and len(attrList) >= 2:
             attrs = [attr.name for attr in self.data.domain]

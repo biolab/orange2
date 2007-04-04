@@ -8,23 +8,21 @@
 # ParallelCoordinates.py
 #
 # Show data using parallel coordinates visualization method
-# 
+#
 
 from OWVisWidget import *
 from OWParallelGraph import *
-import OWToolbars, OWGUI, OWDlgs, orngVisFuncts 
+import OWToolbars, OWGUI, OWDlgs, orngVisFuncts
 from sys import getrecursionlimit, setrecursionlimit
 
 ###########################################################################################
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWVisWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "graph.jitterSize", "graph.showDistributions",
+    settingsList = ["graph.jitterSize", "graph.showDistributions",
                     "graph.showAttrValues", "graph.hidePureExamples", "graph.globalValueScaling", "linesDistance",
                     "graph.useSplines", "graph.lineTracking", "graph.enabledLegend", "autoSendSelection",
-                    "toolbarSelection", "graph.showStatistics", "colorSettings", "showAllAttributes"]
-    attributeContOrder = ["None", "ReliefF", "Fisher discriminant", "Signal to Noise", "Signal to Noise For Each Class"]
-    attributeDiscOrder = ["None", "ReliefF", "GainRatio"]
+                    "toolbarSelection", "graph.showStatistics", "colorSettings", "selectedSchemaIndex", "showAllAttributes"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
     linesDistanceNums = [10, 20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
@@ -40,13 +38,13 @@ class OWParallelCoordinates(OWVisWidget):
         self.slider.setTickmarks(QSlider.Below)
         self.isResizing = 0
         self.showAllAttributes = 0
-        
+
         self.box.addWidget(self.graph)
         self.box.addWidget(self.slider)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.setData), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
-    
+
         #set default settings
         self.data = None
         self.linesDistance = 60
@@ -56,10 +54,11 @@ class OWParallelCoordinates(OWVisWidget):
         self.projections = None
         self.correlationDict = {}
         self.middleLabels = "Correlations"
-        self.attributeSelectionList = None  
+        self.attributeSelectionList = None
         self.toolbarSelection = 0
         self.colorSettings = None
-        
+        self.selectedSchemaIndex = 0
+
         self.graph.jitterSize = 10
         self.graph.showDistributions = 1
         self.graph.showStatistics = 0
@@ -103,7 +102,7 @@ class OWParallelCoordinates(OWVisWidget):
         boxX = OWGUI.widgetBox(self.SettingsTab, "Graph settings")
         OWGUI.comboBox(boxX, self, "graph.jitterSize", label = 'Jittering size (% of size):  ', orientation='horizontal', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.comboBox(boxX, self, "linesDistance", label = 'Minimum axis distance:  ', orientation='horizontal', callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "What is the minimum distance between two adjecent attribute axis", sendSelectedValue = 1, valueType = int)
-        
+
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
         OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateValues)
@@ -118,27 +117,23 @@ class OWParallelCoordinates(OWVisWidget):
         OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
 
         OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = "Middle labels", items = ["Off", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "What information do you wish to view on top in the middle of coordinate axes?", sendSelectedValue = 1, valueType = str)
-        
+
         hbox4 = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(hbox4, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
         box2 = OWGUI.widgetBox(self.SettingsTab, "Sending selection")
-        OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
-
-        # continuous attribute ordering
-        OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = "Continuous attribute ordering", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
-        OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = "Discrete attribute ordering", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+        OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
 
         self.safeProcessEvents()
         self.tabs.updateGeometry()
 
-        self.graph.autoSendSelectionCallback = self.setAutoSendSelection
+        self.graph.selectionChangedCallback = self.selectionChanged
         self.icons = self.createAttributeIconDict()
-        
-        # add a settings dialog and initialize its values        
+
+        # add a settings dialog and initialize its values
         self.activateLoadedSettings()
         self.resize(900, 700)
-        
+
 
     # #########################
     # OPTIONS
@@ -157,7 +152,7 @@ class OWParallelCoordinates(OWVisWidget):
             self.information(0)
         else:
             self.information(0, "Didn't flip the attribute. To flip a continuous attribute uncheck 'Global value scaling' checkbox.")
-        
+
     def updateGraph(self, *args):
         attrs = self.getShownAttributeList()
         maxAttrs = self.mainArea.width() / self.linesDistance
@@ -218,27 +213,33 @@ class OWParallelCoordinates(OWVisWidget):
                 if val: labels.append("%2.2f%%" % (val))
                 else: labels.append("")
         return labels
-                
-      
-    def sendShownAttributes(self):
-        self.send("Attribute Selection List", self.getShownAttributeList())
+
 
     # #############################################
 
-    # had to override standart show to call updateGraph. otherwise self.mainArea.width() gives incorrect value    
+    # had to override standart show to call updateGraph. otherwise self.mainArea.width() gives incorrect value
     def show(self):
         OWWidget.show(self)
         self.updateGraph()
 
     def setSubsetData(self, data, update = 1):
-        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        self.graph.setSubsetData(data)
+        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum():
+            return    # check if the new data set is the same as the old one
+
+        try:
+            subsetData = data.select(self.data.domain)
+            self.warning(10)
+        except:
+            subsetData = None
+            self.warning(10, "'Examples' and 'Example Subset' data do not have copatible domains. Unable to draw 'Example Subset' data.")
+
+        self.graph.setSubsetData(subsetData)
         qApp.processEvents()
         if update:
             self.updateGraph()
             qApp.processEvents()
-    
-    # ###### DATA ################################
+
+    # ------------- SIGNALS --------------------------
     # receive new data and update all fields
     def setData(self, data):
         if data and data.domain.classVar:
@@ -247,25 +248,20 @@ class OWParallelCoordinates(OWVisWidget):
             data.name = name
         if self.data != None and data != None and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
-            
+
         self.projections = None
         self.correlationDict = {}
-        
+
         exData = self.data
         self.data = data
-        
+
         self.graph.setData(self.data)
         self.optimizationDlg.setData(self.data)
 
         # preserve attribute choice if the domain is the same
         sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
-        if sameDomain:
-            self.updateGraph()
-            self.sendSelections()
-        else:
-            self.shownAttribsLB.clear()
-            self.hiddenAttribsLB.clear()
-
+        if not sameDomain:
+            self.setShownAttributeList(self.data, self.attributeSelectionList)
             self.targetValueCombo.clear()
             self.targetValueCombo.insertItem("(None)")
 
@@ -274,38 +270,33 @@ class OWParallelCoordinates(OWVisWidget):
                 for val in self.data.domain.classVar.values:
                     self.targetValueCombo.insertItem(val)
                 self.targetValueCombo.setCurrentItem(0)
-            self.setAttributeSelection()       # this will show first 10 attributes or attributes that were received in attributeSelection signal
-            
-
         self.resetAttrManipulation()    # update up down buttons
-            
-    # ################################################
-    
-    def setAttributeSelection(self, attributeSelectionList = None):
-        if not attributeSelectionList:
-            attributeSelectionList = self.attributeSelectionList
-        else:
-            self.attributeSelectionList = attributeSelectionList
 
-        if not self.data:       # if we don't have data we have nothing to do
-            return
-        
-        if attributeSelectionList:  # check if we have attributes that actually exist in the current domain. we might get this signal before the actual data
-            exist = [self.graph.attributeNameIndex.has_key(attr) for attr in attributeSelectionList]
-            if 0 in exist:      # current attributeSelectionList is not valid
-                attributeSelectionList = None
-            else:
-                self.attributeSelectionList = None
-                print "this must be valid:", attributeSelectionList
+    # attribute selection signal - info about which attributes to show
+    def setShownAttributes(self, attributeSelectionList):
+        self.attributeSelectionList = attributeSelectionList
+        if self.data and self.attributeSelectionList:
+            for attr in self.attributeSelectionList:
+                if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
+                    return
 
-        if not attributeSelectionList:
-            attributeSelectionList = [attr.name for attr in self.data.domain.attributes[:10]]
+            self.setShownAttributeList(self.data, self.attributeSelectionList)
+            self.attributeSelectionList = None
+            self.selectionChanged()
 
-        if attributeSelectionList:      # here we have a valid list of attributes that can be visualized
-            self.setShownAttributeList(self.data, attributeSelectionList)
-            self.updateGraph()
-        self.sendSelections()
+    # this is called by OWBaseWidget after setData and setSubsetData are called. this way the graph is updated only once
+    def handleNewSignals(self):
+        self.updateGraph()
+        self.selectionChanged()
 
+    # ------------------------------------------------
+    def sendShownAttributes(self):
+        self.send("Attribute Selection List", self.getShownAttributeList())
+
+    def selectionChanged(self):
+        self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)
+        if self.autoSendSelection:
+            self.sendSelections()
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
@@ -319,11 +310,11 @@ class OWParallelCoordinates(OWVisWidget):
         else: targetVal = self.data.domain.classVar.values.index(targetVal)
 
         (selected, unselected) = self.graph.getSelectionsAsExampleTables(targetVal)
-        
+
         self.send("Selected Examples", selected)
         self.send("Unselected Examples", unselected)
 
-    #################################################
+    # ------------------------------------------------
 
     def updateValues(self):
         self.isResizing = 0
@@ -353,18 +344,11 @@ class OWParallelCoordinates(OWVisWidget):
         self.setShownAttributeList(self.data)
         self.updateGraph()
 
-    def setAutoSendSelection(self):
-        if self.autoSendSelection:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
-            self.sendSelections()
-        else:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
-            
-
     def setColors(self):
         dlg = self.createColorDialog()
         if dlg.exec_loop():
             self.colorSettings = dlg.getColorSchemas()
+            self.selectedSchemaIndex = dlg.selectedSchemaIndex
             self.graph.contPalette = dlg.getContinuousPalette("contPalette")
             self.graph.discPalette = dlg.getDiscretePalette()
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
@@ -378,7 +362,7 @@ class OWParallelCoordinates(OWVisWidget):
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         box.adjustSize()
-        c.setColorSchemas(self.colorSettings)
+        c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
     def destroy(self, dw = 1, dsw = 1):
@@ -394,15 +378,15 @@ class ParallelOptimization(OWBaseWidget):
     resultListList = [50, 100, 200, 500, 1000]
     qualityMeasure =  ["Classification accuracy", "Average correct", "Brier score"]
     testingMethod = ["Leave one out", "10-fold cross validation", "Test on learning set"]
-    
+
     settingsList = ["attributeCount", "fileBuffer", "lastSaveDirName", "optimizationMeasure",
                     "numberOfAttributes", "orderAllAttributes", "optimizationMeasure"]
-    
+
     def __init__(self, parallelWidget, parent=None, signalManager = None):
         OWBaseWidget.__init__(self, parent, signalManager, "Parallel Optimization Dialog", FALSE)
 
         self.setCaption("Qt Parallel Optimization Dialog")
-        self.topLayout = QVBoxLayout( self, 10 ) 
+        self.topLayout = QVBoxLayout( self, 10 )
         self.grid=QGridLayout(4,2)
         self.topLayout.addLayout( self.grid, 10 )
         self.parallelWidget = parallelWidget
@@ -444,8 +428,8 @@ class ParallelOptimization(OWBaseWidget):
         self.resultList = QListBox(self.resultsBox)
         self.resultList.setMinimumSize(200,200)
         self.connect(self.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
-        
-              
+
+
         # remove non-existing files
         names = []
         for i in range(len(self.fileBuffer)-1, -1, -1):
@@ -455,7 +439,7 @@ class ParallelOptimization(OWBaseWidget):
             else: names.append(short)
         names.append("(None)")
         self.fileName = "(None)"
-                
+
         self.hbox1 = OWGUI.widgetBox(self.vizrankSettingsBox, "VizRank projections file", orientation = "horizontal")
         self.vizrankFileCombo = OWGUI.comboBox(self.hbox1, self, "fileName", items = names, tooltip = "File that contains information about interestingness of scatterplots \ngenerated by VizRank method in scatterplot widget", callback = self.changeProjectionFile, sendSelectedValue = 1, valueType = str)
         self.browseButton = OWGUI.button(self.hbox1, self, "...", callback = self.loadProjections)
@@ -475,7 +459,7 @@ class ParallelOptimization(OWBaseWidget):
         self.connect(self.subsetAttributeRadio, SIGNAL("clicked()"), self.setSubsetAttributeRadio)
         self.subsetAttributeEdit = OWGUI.lineEdit(box, self, "numberOfAttributes", valueType = int)
         label  = OWGUI.widgetLabel(box, "   attributes")
-        
+
         self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, "Start optimization", callback = self.startOptimization)
         f = self.startOptimizationButton.font()
         f.setBold(1)
@@ -485,7 +469,7 @@ class ParallelOptimization(OWBaseWidget):
         self.stopOptimizationButton.hide()
         self.connect(self.stopOptimizationButton , SIGNAL("clicked()"), self.stopOptimizationClick)
 
-        
+
         self.clearButton = OWGUI.button(self.manageBox, self, "Clear results", self.clearResults)
         self.loadButton  = OWGUI.button(self.manageBox, self, "Load", self.loadResults)
         self.saveButton  = OWGUI.button(self.manageBox, self, "Save", self.saveResults)
@@ -537,15 +521,15 @@ class ParallelOptimization(OWBaseWidget):
     def setData(self, data):
         if hasattr(data, "name"):
             self.datasetName = data.name
-        else: self.datasetName = ""        
-        
+        else: self.datasetName = ""
+
     # called when optimization is in progress
     def canContinueOptimization(self):
         return self.canOptimize
 
     def getWorstVal(self):
         return self.worstVal
-        
+
     def stopOptimizationClick(self):
         self.canOptimize = 0
 
@@ -572,7 +556,7 @@ class ParallelOptimization(OWBaseWidget):
         self.percentDataUsedLabel.setText("Percent of data used:" )
         self.testingMethodLabel.setText("Testing method used:" )
         self.qualityMeasureLabel.setText("Quality measure used:" )
-        
+
         if name == None:
             name = str(QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting projections (*.proj)", self, "", "Open Projections"))
             if name == "": return
@@ -586,7 +570,7 @@ class ParallelOptimization(OWBaseWidget):
             QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. Only projection file generated by scatterplot is compatible. \nThis file was created using %s method'%(settings["parentName"]), QMessageBox.Ok)
             file.close()
             return
-        
+
         if type(eval(file.readline()[:-1])) != list:    # second line must contain a list of classes that we tried to separate
             QMessageBox.critical(None,'Old version of projection file','This file was saved with an older version of k-NN Optimization Dialog. The new version of dialog offers \nsome additional functionality and therefore you have to compute the projection quality again.',QMessageBox.Ok)
             file.close()
@@ -599,7 +583,7 @@ class ParallelOptimization(OWBaseWidget):
                 QMessageBox.information(self, "Incorrect file", "File should contain projections with 2 attributes!", QMessageBox.Ok)
                 file.close()
                 return
-            
+
             while (line != ""):
                 (acc, other_results, lenTable, attrList, tryIndex, strList) = eval(line)
                 self.projections += [(acc, attrList)]
@@ -616,16 +600,16 @@ class ParallelOptimization(OWBaseWidget):
             self.fileBuffer.remove((shortFileName, name))
 
         self.fileBuffer.insert(0, (shortFileName, name))
-        
+
 
         if len(self.fileBuffer) > 10:
             self.fileBuffer.remove(self.fileBuffer[-1])
-            
+
         self.vizrankFileCombo.clear()
         for i in range(len(self.fileBuffer)):
             self.vizrankFileCombo.insertItem(self.fileBuffer[i][0])
         self.fileName = shortFileName
-            
+
         self.kNeighborsLabel.setText("Number of neighbors (k): %s" % (str(settings["kValue"])))
         self.percentDataUsedLabel.setText("Percent of data used: %d %%" % (settings["percentDataUsed"]))
         self.testingMethodLabel.setText("Testing method used: %s" % (self.testingMethod[settings["testingMethod"]]))
@@ -636,7 +620,7 @@ class ParallelOptimization(OWBaseWidget):
         index = self.findTargetIndex(val, max)
         self.allResults.insert(index, (val, attrList))
         self.resultList.insertItem("%.3f - %s" % (val, str(attrList)), index)
-       
+
 
     def findTargetIndex(self, accuracy, funct):
         # use bisection to find correct index
@@ -650,14 +634,14 @@ class ParallelOptimization(OWBaseWidget):
         if len(self.allResults) == 0: return 0
         if funct(accuracy, self.allResults[top][0]) == accuracy:
             return top
-        else: 
+        else:
             return bottom
 
 
     def startOptimization(self):
         self.clearResults()
         if self.parallelWidget.data == None: return
-        
+
         if self.optimizationMeasure == VIZRANK and self.fileName == "":
             QMessageBox.information(self, "No projection file", "If you wish to optimize using VizRank you first have to load a projection file \ncreated by VizRank using Scatterplot widget.", QMessageBox.Ok)
             return
@@ -692,7 +676,7 @@ class ParallelOptimization(OWBaseWidget):
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
         qApp.processEvents()        # allow processing of other events
-        
+
         if self.orderAllAttributes:
             orngVisFuncts.optimizeAttributeOrder(attrInfo, len(self.parallelWidget.data.domain.attributes), self, qApp)
         else:
@@ -700,7 +684,7 @@ class ParallelOptimization(OWBaseWidget):
 
         self.stopOptimizationButton.hide()
         self.startOptimizationButton.show()
-                    
+
 
     # ################################
     # MANAGE RESULTS
@@ -708,8 +692,8 @@ class ParallelOptimization(OWBaseWidget):
         self.resultList.clear()
         for i in range(len(self.allResults)):
             self.resultList.insertItem("%.2f - %s" % (self.allResults[i][0], str(self.allResults[i][1])), i)
-        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)  
-    
+        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)
+
     def clearResults(self):
         self.allResults = []
         self.resultList.clear()
@@ -722,7 +706,7 @@ class ParallelOptimization(OWBaseWidget):
                 filename = os.path.splitext(os.path.split(self.datasetName)[1])[0]
             if self.optimizationMeasure == CORRELATION: filename += " - " + "correlation"
             else:                                       filename += " - " + "vizrank"
-                
+
             name = str(QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Parallel projections (*.papr)", self, "", "Save Parallel Projections"))
             if name == "": return
         else:
@@ -742,7 +726,7 @@ class ParallelOptimization(OWBaseWidget):
 
     def loadResults(self):
         self.clearResults()
-                
+
         name = str(QFileDialog.getOpenFileName( self.lastSaveDirName, "Parallel projections (*.papr)", self, "", "Open Parallel Projections"))
         if name == "": return
 
@@ -759,8 +743,8 @@ class ParallelOptimization(OWBaseWidget):
             ind+=1
         file.close()
 
-        
-   
+
+
 
 #test widget appearance
 if __name__=="__main__":
@@ -770,5 +754,5 @@ if __name__=="__main__":
     ow.show()
     a.exec_loop()
 
-    #save settings 
+    #save settings
     ow.saveSettings()

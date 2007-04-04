@@ -20,13 +20,13 @@ class OWPolyviz(OWLinProj):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.scaleFactor",
                     "graph.showLegend", "graph.showFilledSymbols", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection",
                     "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankLearnerName",
-                    "colorSettings", "addProjectedPositions", "showAllAttributes", "graph.lineLength"]
+                    "colorSettings", "selectedSchemaIndex", "addProjectedPositions", "showAllAttributes", "graph.lineLength"]
         
     def __init__(self,parent=None, signalManager = None):
         OWLinProj.__init__(self, parent, signalManager, "Polyviz", graphClass = OWPolyvizGraph)
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setAttributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList), ("Learner", orange.Learner)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
+        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
 
         # SETTINGS TAB
         self.extraTopBox.show()

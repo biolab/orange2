@@ -4,7 +4,7 @@ import time, math
 from OWkNNOptimization import *
 from orngScalePolyvizData import *
 import orngVisFuncts
-#import orange
+from OWGraphTools import UnconnectedLinesCurve
 
 # ####################################################################
 # get a list of all different permutations
@@ -171,10 +171,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             useDifferentSymbols = 1
         
         dataSize = len(self.rawdata)
-        blackColor = QColor(0,0,0)
-        curveData = [[0, 0, 0, QwtSymbol.Ellipse, blackColor, blackColor, [], []] for i in range(dataSize)]
+        curveData = [[0, 0, 0, QwtSymbol.Ellipse, Qt.black, Qt.black, [], []] for i in range(dataSize)]
 
-        
         # ##########
         # draw text at lines
         for i in range(length):
@@ -229,6 +227,10 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             curveData[i][XANCHORS] = XAnchorPositions[i]
             curveData[i][YANCHORS] = YAnchorPositions[i]
 
+        xPointsToAdd = {}
+        yPointsToAdd = {}
+        self.xLinesToAdd = {}   # this is filled in addAnchorLine function
+        self.yLinesToAdd = {}
 
         if self.showKNNModel == 1 and hasClass:
             # variables and domain for the table
@@ -264,7 +266,11 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             for i in range(len(table)):
                 fillColor = bwColors.getColor(kNNValues[i])
                 edgeColor = classColors.getColor(classValueIndices[table[i].getclass().value])
-                self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [table[i][0].value], yData = [table[i][1].value])
+                if not xPointsToAdd.has_key((fillColor, edgeColor, QwtSymbol.Ellipse, 1)):
+                    xPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)] = []
+                    yPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)] = []
+                xPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)].append(table[i][0].value)
+                yPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)].append(table[i][1].value)
                 self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], fillColor, i, length)
 
         # CONTINUOUS class 
@@ -279,44 +285,36 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
                 self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
 
-        # DISCRETE class + optimize drawing
-        elif self.optimizedDrawing or not hasClass:
-            pos = [[ [] , [], [],  [], [] ] for i in range(valLen)]
-            posIndex = 0
+        # DISCRETE class or no class at all
+        else:
+            color = Qt.black
+            symbol = self.curveSymbols[0]
             for i in range(dataSize):
                 if not validData[i]: continue
                 if hasClass:
-                    posIndex = classValueIndices[self.rawdata[i].getclass().value]
-                pos[posIndex][0].append(x_positions[i])
-                pos[posIndex][1].append(y_positions[i])
-                pos[posIndex][2].append(i)
-                pos[posIndex][3].append(curveData[i][XANCHORS])
-                pos[posIndex][4].append(curveData[i][YANCHORS])
-                if useDifferentColors: self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], self.discPalette[classValueIndices[self.rawdata[i].getclass().value]], i, length)
-                else:                  self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], QColor(0,0,0), i, length)
-
-            for i in range(valLen):
-                if useDifferentColors: newColor = self.discPalette[i]
-                else:                  newColor = QColor(0,0,0)
+                    ind = classValueIndices[self.rawdata[i].getclass().value]
+                    if self.useDifferentSymbols:
+                        symbol = self.curveSymbols[ind]
+                    if useDifferentColors:
+                        color = self.discPalette[ind]
+                if not xPointsToAdd.has_key((color, color, symbol, 1)):
+                    xPointsToAdd[(color, color, symbol, 1)] = []
+                    yPointsToAdd[(color, color, symbol, 1)] = []
+                xPointsToAdd[(color, color, symbol, 1)].append(x_positions[i])
+                yPointsToAdd[(color, color, symbol, 1)].append(y_positions[i])
                 
-                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[i]
-                else: curveSymbol = self.curveSymbols[0]
+                self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], color, i, length)
+                self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], color, i)
 
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = pos[i][0], yData = pos[i][1])
-                for k in range(len(pos[i][0])):
-                    self.addTooltipKey(pos[i][0][k], pos[i][1][k], pos[i][3][k], pos[i][4][k], newColor, pos[i][2][k])
+        # draw the points
+        for i, (fillColor, edgeColor, symbol, showFilled) in enumerate(xPointsToAdd.keys()):
+            xData = xPointsToAdd[(fillColor, edgeColor, symbol, showFilled)]
+            yData = yPointsToAdd[(fillColor, edgeColor, symbol, showFilled)]
+            self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
 
-        # unoptimized drawing in case of discrete class
-        elif hasDiscreteClass:
-            for i in range(dataSize):
-                if not validData[i]: continue
-                if useDifferentColors: newColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
-                else:                  newColor = QColor(0,0,0)
-                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
-                else:                        curveSymbol = self.curveSymbols[0]
-                self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x_positions[i]], yData = [y_positions[i]])
-                self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
-                self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
+        self.showAnchorLines()
+        self.xLinesToAdd = {}
+        self.yLinesToAdd = {}
 
         # draw polygon
         self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = list(self.XAnchor) + [self.XAnchor[0]], yData = list(self.YAnchor) + [self.YAnchor[0]], lineWidth = 2)
@@ -370,9 +368,15 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             else:
                 lineX2 = (1.0 - kvoc)*xAnchors[j] + kvoc * lineX1
                 lineY2 = (1.0 - kvoc)*yAnchors[j] + kvoc * lineY1
+            
+            self.xLinesToAdd[color] = self.xLinesToAdd.get(color, []) + [xAnchors[j], lineX2]
+            self.yLinesToAdd[color] = self.yLinesToAdd.get(color, []) + [yAnchors[j], lineY2]
 
-            self.addCurve('line' + str(index), color, color, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = [xAnchors[j], lineX2], yData = [yAnchors[j], lineY2])
 
+    def showAnchorLines(self):
+        for i, color in enumerate(self.xLinesToAdd.keys()):
+            curve = UnconnectedLinesCurve(self, QPen(color), self.xLinesToAdd[color], self.yLinesToAdd[color])
+            self.insertCurve(curve)
 
     # create a dictionary value for the data point
     # this will enable to show tooltips faster and to make selection of examples available

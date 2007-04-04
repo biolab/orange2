@@ -403,8 +403,8 @@ class OWDistributions(OWWidget):
         # GUI
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = QVGroupBox(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "General")
+        self.SettingsTab = QVGroupBox(self)
+        self.tabs.insertTab(self.GeneralTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
         
         self.box = QVBoxLayout(self.mainArea)

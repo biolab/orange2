@@ -8,7 +8,7 @@
 # Radviz.py
 #
 # Show a radviz projection of the data
-# 
+#
 
 from OWLinProj import *
 
@@ -17,13 +17,13 @@ class OWRadviz(OWLinProj):
                     "graph.showLegend", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "graph.showClusters", "clusterClassifierName",
                     "valueScalingType", "graph.showProbabilities", "showAllAttributes",
-                    "learnerIndex", "colorSettings", "addProjectedPositions", "VizRankLearnerName"]
-            
+                    "learnerIndex", "colorSettings", "selectedSchemaIndex", "addProjectedPositions", "VizRankLearnerName"]
+
     def __init__(self, parent=None, signalManager = None):
         OWLinProj.__init__(self, parent, signalManager, "Radviz")
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setAttributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("Learner", orange.Learner)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]
+        self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
 
 
 #test widget appearance
@@ -34,5 +34,5 @@ if __name__=="__main__":
     ow.show()
     a.exec_loop()
 
-    #save settings 
+    #save settings
     ow.saveSettings()

@@ -59,6 +59,8 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
         self.updateLayout()
 
+        xRectsToAdd = {}
+        yRectsToAdd = {}
         classNameIndex = -1
         if self.rawdata.domain.classVar:
             classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
@@ -74,11 +76,12 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
 
             for j in range(self.length):
                 width = self.noJitteringScaledData[indices[j]][i] * 0.45
-                ckey = self.insertCurve(PolygonCurve(self, pen = QPen(newColor), brush = QBrush(newColor)))
-                self.setCurveData(ckey, [j-width, j+width, j+width, j-width], [y, y, y+1, y+1])
-
-            ##########
+                xRectsToAdd[newColor] = xRectsToAdd.get(newColor, []) + [j-width, j+width, j+width, j-width]
+                yRectsToAdd[newColor] = yRectsToAdd.get(newColor, []) + [y, y, y+1, y+1]
             y += 1
+
+        for i, key in enumerate(xRectsToAdd.keys()):
+            self.insertCurve(PolygonCurve(self, QPen(key), QBrush(key), xRectsToAdd[key], yRectsToAdd[key]))
 
         if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)

@@ -12,6 +12,7 @@
 
 from OWVisWidget import *
 from OWSurveyPlotGraph import *
+from OWDlgs import ColorPalette
 import orngVisFuncts
 import OWGUI
            
@@ -19,14 +20,15 @@ import OWGUI
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWVisWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend", "graph.tooltipKind", "showAllAttributes"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend",
+                    "graph.tooltipKind", "showAllAttributes", "colorSettings", "selectedSchemaIndex"]
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["None","ReliefF","GainRatio"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Attribute Selection List", AttributeList, self.setAttributeSelection)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
         self.outputs = [("Attribute Selection List", AttributeList)]
 
         #add a graph widget
@@ -49,6 +51,8 @@ class OWSurveyPlot(OWVisWidget):
         self.graphCanvasColor = str(Qt.white.name())
         self.primaryAttribute = "(None)"
         self.secondaryAttribute = "(None)"
+        self.colorSettings = None
+        self.selectedSchemaIndex = 0
 
         #load settings
         self.loadSettings()
@@ -56,7 +60,7 @@ class OWSurveyPlot(OWVisWidget):
         #GUI
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = QVGroupBox(self, "Settings")
+        self.SettingsTab = QVGroupBox(self)
         self.tabs.insertTab(self.GeneralTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
@@ -80,7 +84,8 @@ class OWSurveyPlot(OWVisWidget):
         box = OWGUI.widgetBox(self.SettingsTab, "Tooltips settings")
         OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
 
-        OWGUI.button(self.SettingsTab, self, "Canvas Color", callback = self.setGraphCanvasColor, tooltip = "Set color for canvas background", debuggingEnabled = 0)
+        self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
+        OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
         self.icons = self.createAttributeIconDict()
 
@@ -96,7 +101,12 @@ class OWSurveyPlot(OWVisWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.graph.setCanvasColor(QColor(self.graphCanvasColor))
+        dlg = self.createColorDialog()
+        self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+        self.graph.discPalette = dlg.getDiscretePalette()
+        self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+        self.graph.setGridPen(QPen(dlg.getColor("Grid")))
+        
         #self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.cbShowAllAttributes()
 
@@ -153,7 +163,7 @@ class OWSurveyPlot(OWVisWidget):
 
     ####### SELECTION signal ################################
     # receive info about which attributes to show
-    def setAttributeSelection(self, attributeSelectionList):
+    def setShownAttributes(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
         if self.data and self.attributeSelectionList:
             for attr in self.attributeSelectionList:
@@ -184,13 +194,29 @@ class OWSurveyPlot(OWVisWidget):
 
         self.updateGraph()
 
-    def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
-        if newColor.isValid():
-            self.graphCanvasColor = str(newColor.name())
-            self.graph.setCanvasColor(QColor(newColor))
+    def setColors(self):
+        dlg = self.createColorDialog()
+        if dlg.exec_loop():
+            self.colorSettings = dlg.getColorSchemas()
+            self.selectedSchemaIndex = dlg.selectedSchemaIndex
+            self.graph.contPalette = dlg.getContinuousPalette("contPalette")
+            self.graph.discPalette = dlg.getDiscretePalette()
+            self.graph.setCanvasBackground(dlg.getColor("Canvas"))
+            self.graph.setGridPen(QPen(dlg.getColor("Grid")))
+            self.updateGraph()
 
-
+    def createColorDialog(self):
+        c = ColorPalette(self, "Color Palette")
+        c.createDiscretePalette("Discrete Palette")
+        c.createContinuousPalette("contPalette", "Continuous palette")
+        box = c.createBox("otherColors", "Other Colors")
+        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        box.addSpace(5)
+        c.createColorButton(box, "Grid", "Grid color", Qt.black)
+        box.addSpace(5)
+        box.adjustSize()
+        c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
+        return c
 
 #test widget appearance
 if __name__=="__main__":
