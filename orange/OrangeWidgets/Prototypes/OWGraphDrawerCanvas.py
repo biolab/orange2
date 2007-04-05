@@ -13,6 +13,7 @@ import copy
 from OWGraph import *
 from Numeric import *
 from orngScaleScatterPlotData import *
+from OWGraphTools import UnconnectedLinesCurve
 
 class OWGraphDrawerCanvas(OWGraph):
     def __init__(self, graphDrawWidget, parent = None, name = "None"):
@@ -30,10 +31,11 @@ class OWGraphDrawerCanvas(OWGraph):
         self.selectedCurve = None
         self.selectedVertex = None
         self.vertexDegree = []     # seznam vozlisc oblike (vozlisce, stevilo povezav), sortiran po stevilu povezav
-        
+        self.edgesKey = -1
         self.vertexSize = 6
         self.nVertices = 0
-        
+        self.xData = []
+        self.yData = []
         self.enableXaxis(0)
         self.enableYLaxis(0)
         self.state = NOTHING  #default je rocno premikanje
@@ -168,11 +170,13 @@ class OWGraphDrawerCanvas(OWGraph):
         # ce ni nic izbrano
         if self.selectedCurve == None:
             return
-   
-        curve = self.curve(self.vertices[self.selectedVertex])  #self.selectedCurve je key
-        
-        newX = self.invTransform(curve.xAxis(), pos.x())
-        newY = self.invTransform(curve.yAxis(), pos.y())
+        #curve = self.curve(self.vertices[self.selectedVertex])  #self.selectedCurve je key
+        #newX = self.invTransform(curve.xAxis(), pos.x())
+        #newY = self.invTransform(curve.yAxis(), pos.y())
+
+        newX = self.invTransform(2, pos.x())
+        newY = self.invTransform(0, pos.y())
+
 
         self.visualizer.xCoors[self.selectedVertex] = newX
         self.visualizer.yCoors[self.selectedVertex] = newY
@@ -181,13 +185,19 @@ class OWGraphDrawerCanvas(OWGraph):
         
         for e in range(self.nEdges):
             (key,i,j) = self.edges[e]
-            
+
             if i == self.selectedVertex:
-                currEdgeObj = self.curve(key)
-                self.setCurveData(key, [newX, currEdgeObj.x(1)], [newY, currEdgeObj.y(1)])                    
+                self.xData[key*2] = newX
+                self.yData[key*2] = newY
+                #currEdgeObj = self.curve(key)
+                #self.setCurveData(key, [newX, currEdgeObj.x(1)], [newY, currEdgeObj.y(1)])                    
             elif j == self.selectedVertex:
-                currEdgeObj = self.curve(key)
-                self.setCurveData(key, [currEdgeObj.x(0), newX], [currEdgeObj.y(0), newY])
+                self.xData[key*2 + 1] = newX
+                self.yData[key*2 + 1] = newY
+                #currEdgeObj = self.curve(key)
+                #self.setCurveData(key, [currEdgeObj.x(0), newX], [currEdgeObj.y(0), newY])
+      
+        self.setCurveData(self.edgesKey, self.xData, self.yData)
     
     def onMouseMoved(self, event):
         if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
@@ -284,34 +294,63 @@ class OWGraphDrawerCanvas(OWGraph):
                 self.addSelection(self.indexPairs[vertexKey])
                 
     def selectVertex(self, pos):
-        key, dist, xVal, yVal, index = self.closestCurve(pos.x(), pos.y())
-
-        if key >= 0 and dist < 15:
-            if key in self.indexPairs.keys():   #to se zgodi samo, ce vozlisce ni povezano
-                self.addSelection(self.indexPairs[key])
-                return
-
-            curve = self.curve(key)  #to je povezava, ker so bile te z insertCurve() dodane prej,
-                                     #da se ne vidijo skozi vozlisca
+        #key, dist, xVal, yVal, index = self.closestCurve(pos.x(), pos.y())
+        #curve = self.curve(key)
+        min = 1000000
+        ndx = -1
+        #print "x: " + str(pos.x()) + " y: " + str(pos.y()) 
+        #px = self.invTransform(curve.xAxis(), pos.x())
+        #py = self.invTransform(curve.yAxis(), pos.y())   
+        px = self.invTransform(2, pos.x())
+        py = self.invTransform(0, pos.y())   
+        #print "xAxis: " + str(curve.xAxis()) + " yAxis: " + str(curve.yAxis())
+        #print "px: " + str(px) + " py: " + str(py)
+        for v in range(self.nVertices):
+            x1 = self.visualizer.xCoors[v]
+            y1 = self.visualizer.yCoors[v]
+            #print "x: " + str(x1) + " y: " + str(y1)
+            dist = self.dist([px, py], [x1, y1])
             
-            for e in range(self.nEdges):
-                (keyTmp,i,j) = self.edges[e]
-                if keyTmp == key:
-                    ndx1 = i
-                    ndx2 = j
-
-            vOb1 = self.curve(self.vertices[ndx1])
-            vOb2 = self.curve(self.vertices[ndx2])
-            
-            px = self.invTransform(curve.xAxis(), pos.x())
-            py = self.invTransform(curve.yAxis(), pos.y())
-
-            if self.dist([px, py], [vOb1.x(0), vOb1.y(0)]) <= self.dist([px, py], [vOb2.x(0), vOb2.y(0)]):
-                self.addSelection(ndx1)
-            else:
-                self.addSelection(ndx2)
+            if dist < min:
+                min = dist
+                ndx = v
+                
+                if min < 10:
+                    break
+        
+        if min < 10 and ndx != -1:
+            self.addSelection(ndx)
         else:
             self.removeSelection()
+
+#        key, dist, xVal, yVal, index = self.closestCurve(pos.x(), pos.y())
+#
+#        if key >= 0 and dist < 15:
+#            if key in self.indexPairs.keys():   #to se zgodi samo, ce vozlisce ni povezano
+#                self.addSelection(self.indexPairs[key])
+#                return
+#
+#            curve = self.curve(key)  #to je povezava, ker so bile te z insertCurve() dodane prej,
+#                                     #da se ne vidijo skozi vozlisca
+#            
+#            for e in range(self.nEdges):
+#                (keyTmp,i,j) = self.edges[e]
+#                if keyTmp == key:
+#                    ndx1 = i
+#                    ndx2 = j
+#
+#            vOb1 = self.curve(self.vertices[ndx1])
+#            vOb2 = self.curve(self.vertices[ndx2])
+#            
+#            px = self.invTransform(curve.xAxis(), pos.x())
+#            py = self.invTransform(curve.yAxis(), pos.y())
+#
+#            if self.dist([px, py], [vOb1.x(0), vOb1.y(0)]) <= self.dist([px, py], [vOb2.x(0), vOb2.y(0)]):
+#                self.addSelection(ndx1)
+#            else:
+#                self.addSelection(ndx2)
+#        else:
+#            self.removeSelection()
             
     def dist(self, s1, s2):
         return math.sqrt((s1[0]-s2[0])**2 + (s1[1]-s2[1])**2)
@@ -320,6 +359,10 @@ class OWGraphDrawerCanvas(OWGraph):
         self.removeDrawingCurves(removeLegendItems = 0)
         self.removeMarkers()
         self.tips.removeAll()
+        
+        self.xData = []
+        self.yData = []
+        edgesCount = 0
         
         # draw edges
         for e in range(self.nEdges):
@@ -333,8 +376,18 @@ class OWGraphDrawerCanvas(OWGraph):
             fillColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j]]
             edgeColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
 
-            key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
-            self.edges[e] = (key,i,j)
+            #key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
+            #self.edges[e] = (key,i,j)
+            self.xData.append(x1)
+            self.xData.append(x2)
+            self.yData.append(y1)
+            self.yData.append(y2)
+                        
+            self.edges[e] = (edgesCount,i,j)
+            edgesCount += 1
+        
+        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(224,224,224)), self.xData, self.yData)
+        self.edgesKey = self.insertCurve(edgesCurveObject)
         
         # draw vertices
         for v in range(self.nVertices):
