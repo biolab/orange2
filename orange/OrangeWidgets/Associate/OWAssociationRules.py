@@ -41,7 +41,7 @@ class OWAssociationRules(OWWidget):
         OWGUI.hSlider(box, self, 'minConfidence', minValue=10, maxValue=100, ticks=10, step = 1)
         OWGUI.separator(box, 0, 0)
         OWGUI.widgetLabel(box, 'Maximal number of rules')
-        OWGUI.hSlider(box, self, 'maxRules', minValue=10000, maxValue=100000, step=10000, ticks=10000)
+        OWGUI.hSlider(box, self, 'maxRules', minValue=10000, maxValue=100000, step=10000, ticks=10000, debuggingEnabled = 0)
         OWGUI.separator(self.space, 0, 8)
 
         # Generate button
