@@ -1,5 +1,5 @@
 """
-<name>Graph File</name>
+<name>Network File</name>
 <description>Reads data from a graf file (Pajek networks (.net) files).</description>
 <icon>icons/File.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
@@ -17,7 +17,7 @@ import OWGUI, string, os.path
 from orange import Graph
 #from OWGraphDrawer import *
 
-class OWGraphFile(OWWidget):
+class OWNetworkFile(OWWidget):
     
     settingsList=["recentFiles"]
     
@@ -520,7 +520,7 @@ class OWGraphFile(OWWidget):
     
 if __name__ == "__main__":
     a=QApplication(sys.argv)
-    owf=OWGraphFile()
+    owf=OWNetworkFile()
     owf.activateLoadedSettings()
     a.setMainWidget(owf)
     owf.show()

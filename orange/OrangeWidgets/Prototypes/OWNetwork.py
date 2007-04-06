@@ -1,6 +1,6 @@
 """
-<name>Graph Canvas</name>
-<description>The Graph Canvas Widget enables users to visualize graph schemas.</description>
+<name>Network</name>
+<description>Network Widget visualizes graphs.</description>
 <icon>icons/Outlier.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>2040</priority>
@@ -11,9 +11,9 @@ from OWWidget import *
 from qwt import *
 from qt import *
 from OWGraphDrawerCanvas import *
-from OWGraphVisualizer import * 
+from orngNetwork import * 
 
-class OWGraphDrawer(OWWidget):
+class OWNetwork(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'GraphDrawer')
 
@@ -230,7 +230,7 @@ class OWGraphDrawer(OWWidget):
         
 if __name__=="__main__":    
     appl = QApplication(sys.argv)
-    ow = OWGraphDrawer()
+    ow = OWNetwork()
     appl.setMainWidget(ow)
     ow.show()
     appl.exec_loop()
