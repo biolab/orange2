@@ -34,8 +34,6 @@ class OWGraphDrawerCanvas(OWGraph):
         self.edgesKey = -1
         self.vertexSize = 6
         self.nVertices = 0
-        self.xData = []
-        self.yData = []
         self.enableXaxis(0)
         self.enableYLaxis(0)
         self.state = NOTHING  #default je rocno premikanje
@@ -185,40 +183,40 @@ class OWGraphDrawerCanvas(OWGraph):
         
         for e in range(self.nEdges):
             (key,i,j) = self.edges[e]
-
+            edgesCurve = self.curve(self.edgesKey)
+            
             if i == self.selectedVertex:
-                self.xData[key*2] = newX
-                self.yData[key*2] = newY
+                edgesCurve.xData[key*2] = newX
+                edgesCurve.yData[key*2] = newY
                 #currEdgeObj = self.curve(key)
                 #self.setCurveData(key, [newX, currEdgeObj.x(1)], [newY, currEdgeObj.y(1)])                    
             elif j == self.selectedVertex:
-                self.xData[key*2 + 1] = newX
-                self.yData[key*2 + 1] = newY
+                edgesCurve.xData[key*2 + 1] = newX
+                edgesCurve.yData[key*2 + 1] = newY
                 #currEdgeObj = self.curve(key)
                 #self.setCurveData(key, [currEdgeObj.x(0), newX], [currEdgeObj.y(0), newY])
-      
-        self.setCurveData(self.edgesKey, self.xData, self.yData)
+        self.setCurveData(self.edgesKey, edgesCurve.xData, edgesCurve.yData)
     
     def onMouseMoved(self, event):
         if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
             if len(self.selection) > 0:
-                border=self.vertexSize/2
-                maxx=max(take(self.visualizer.xCoors, self.selection))
-                maxy=max(take(self.visualizer.yCoors, self.selection))
-                minx=min(take(self.visualizer.xCoors, self.selection))
-                miny=min(take(self.visualizer.yCoors, self.selection))
+                border = self.vertexSize / 2
+                maxx = max(take(self.visualizer.xCoors, self.selection))
+                maxy = max(take(self.visualizer.yCoors, self.selection))
+                minx = min(take(self.visualizer.xCoors, self.selection))
+                miny = min(take(self.visualizer.yCoors, self.selection))
                 #relativni premik v pikslih
-                dx=event.pos().x() - self.GMmouseStartEvent.x()
-                dy=event.pos().y() - self.GMmouseStartEvent.y()
+                dx = event.pos().x() - self.GMmouseStartEvent.x()
+                dy = event.pos().y() - self.GMmouseStartEvent.y()
 
-                maxx=self.transform(self.xBottom, maxx) + border + dx
-                maxy=self.transform(self.yLeft, maxy) + border + dy
-                minx=self.transform(self.xBottom, minx) - border + dx
-                miny=self.transform(self.yLeft, miny) - border + dy
-                maxx=self.invTransform(self.xBottom, maxx)
-                maxy=self.invTransform(self.yLeft, maxy)
-                minx=self.invTransform(self.xBottom, minx)
-                miny=self.invTransform(self.yLeft, miny)
+                maxx = self.transform(self.xBottom, maxx) + border + dx
+                maxy = self.transform(self.yLeft, maxy) + border + dy
+                minx = self.transform(self.xBottom, minx) - border + dx
+                miny = self.transform(self.yLeft, miny) - border + dy
+                maxx = self.invTransform(self.xBottom, maxx)
+                maxy = self.invTransform(self.yLeft, maxy)
+                minx = self.invTransform(self.xBottom, minx)
+                miny = self.invTransform(self.yLeft, miny)
 
                 if maxx >= self.axisScale(self.xBottom).hBound():
                     return
@@ -360,8 +358,8 @@ class OWGraphDrawerCanvas(OWGraph):
         self.removeMarkers()
         self.tips.removeAll()
         
-        self.xData = []
-        self.yData = []
+        xData = []
+        yData = []
         edgesCount = 0
         
         # draw edges
@@ -378,15 +376,17 @@ class OWGraphDrawerCanvas(OWGraph):
 
             #key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
             #self.edges[e] = (key,i,j)
-            self.xData.append(x1)
-            self.xData.append(x2)
-            self.yData.append(y1)
-            self.yData.append(y2)
+            xData.append(x1)
+            xData.append(x2)
+            yData.append(y1)
+            yData.append(y2)
                         
             self.edges[e] = (edgesCount,i,j)
             edgesCount += 1
         
-        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192,192,192)), self.xData, self.yData)
+        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192,192,192)), xData, yData)
+        edgesCurveObject.xData = xData
+        edgesCurveObject.yData = yData
         self.edgesKey = self.insertCurve(edgesCurveObject)
         
         # draw vertices

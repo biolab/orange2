@@ -15,7 +15,7 @@ from orngNetwork import *
 
 class OWNetwork(OWWidget):
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'GraphDrawer')
+        OWWidget.__init__(self, parent, signalManager, 'Network')
 
         self.inputs = [("Graph with ExampleTable", orange.Graph, self.setGraph)]
         self.outputs=[("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]

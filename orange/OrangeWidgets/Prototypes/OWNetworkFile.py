@@ -22,7 +22,7 @@ class OWNetworkFile(OWWidget):
     settingsList=["recentFiles"]
     
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "GraphFile")
+        OWWidget.__init__(self, parent, signalManager, "Network File")
 
         self.inputs = []
         self.outputs = [("Graph with ExampleTable", Graph)]
