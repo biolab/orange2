@@ -386,7 +386,7 @@ class OWGraphDrawerCanvas(OWGraph):
             self.edges[e] = (edgesCount,i,j)
             edgesCount += 1
         
-        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(224,224,224)), self.xData, self.yData)
+        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192,192,192)), self.xData, self.yData)
         self.edgesKey = self.insertCurve(edgesCurveObject)
         
         # draw vertices
