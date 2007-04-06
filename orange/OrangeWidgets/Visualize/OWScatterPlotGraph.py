@@ -271,10 +271,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
                 if colorIndex != -1:
                     if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
-                        newColor = self.contPalette[self.noJitteringScaledData[colorIndex][i]]
+                        newColor = self.contPalette.getRGB(self.noJitteringScaledData[colorIndex][i])
                     else:
-                        newColor = self.discPalette[colorIndices[self.rawdata[i][colorIndex].value]]
-                else: newColor = Qt.black
+                        newColor = self.discPalette.getRGB(colorIndices[self.rawdata[i][colorIndex].value])
+                else: newColor = (0,0,0)
 
                 Symbol = self.curveSymbols[0]
                 if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.rawdata[i][shapeIndex].value]]
@@ -326,10 +326,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                     if colorIndex != -1 and not self.subsetData[i][colorIndex].isSpecial():
                         val = min(1.0, max(0.0, self.scaleExampleValue(self.subsetData[i], colorIndex)))    # scale to 0-1 interval
                         if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
-                            newColor = self.contPalette[val]
+                            newColor = self.contPalette.getRGB(val)
                         else:
-                            newColor = self.discPalette[colorIndices[self.subsetData[i][colorIndex].value]]
-                    else: newColor = Qt.black
+                            newColor = self.discPalette.getRGB(colorIndices[self.subsetData[i][colorIndex].value])
+                    else: newColor = (0,0,0)
 
                     if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.subsetData[i][shapeIndex].value]]
                     else:                Symbol = self.curveSymbols[0]
@@ -358,7 +358,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             for i, (color, size, symbol, showFilled) in enumerate(xPointsToAdd.keys()):
                 xData = xPointsToAdd[(color, size, symbol, showFilled)]
                 yData = yPointsToAdd[(color, size, symbol, showFilled)]
-                self.addCurve(str(i), color, color, size, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
+                self.addCurve(str(i), QColor(*color), QColor(*color), size, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
 
         # ##############################################################
         # show legend if necessary

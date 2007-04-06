@@ -259,11 +259,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
                 if not validData[i]: continue
                 if hasDiscreteClass and self.useDifferentColors:
-                    newColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
+                    newColor = self.discPalette.getRGB(classValueIndices[self.rawdata[i].getclass().value])
                 elif hasContinuousClass and self.useDifferentColors:
-                    newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
+                    newColor = self.contPalette.getRGB(self.noJitteringScaledData[classNameIndex][i])
                 else:
-                    newColor = Qt.black
+                    newColor = (0,0,0)
 
                 if self.useDifferentSymbols and classValueIndices:
                     curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
@@ -276,7 +276,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 xPointsToAdd[(newColor, curveSymbol, showFilled)].append(x_positions[i])
                 yPointsToAdd[(newColor, curveSymbol, showFilled)].append(y_positions[i])
 
-                self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
+                self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
 
             # if we have a data subset that contains examples that don't exist in the original dataset we show them here
             if shownSubsetCount < len(self.subsetData):
@@ -296,12 +296,12 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     [x,y] = self.getProjectedPointPosition(indices, dataVals, useAnchorData = 1, anchorRadius = anchorRadius)  # compute position of the point
 
                     if not self.subsetData.domain.classVar or self.subsetData[i].getclass().isSpecial():
-                        newColor = Qt.black
+                        newColor = (0,0,0)
                     else:
                         if classValueIndices:
-                            newColor = self.discPalette[classValueIndices[self.subsetData[i].getclass().value]]
+                            newColor = self.discPalette.getRGB(classValueIndices[self.subsetData[i].getclass().value])
                         else:
-                            newColor = self.contPalette[self.scaleExampleValue(self.subsetData[i], classNameIndex)]
+                            newColor = self.contPalette.getRGB(self.scaleExampleValue(self.subsetData[i], classNameIndex))
 
                     if self.useDifferentSymbols and hasDiscreteClass and not self.subsetData[i].getclass().isSpecial():
                         try:
@@ -342,24 +342,24 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         elif hasDiscreteClass:
             for i in range(dataSize):
                 if not validData[i]: continue
-                if self.useDifferentColors: newColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
-                else:                       newColor = Qt.black
+                if self.useDifferentColors: newColor = self.discPalette.getRGB(classValueIndices[self.rawdata[i].getclass().value])
+                else:                       newColor = (0,0,0)
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
                 else:                        curveSymbol = self.curveSymbols[0]
-
+                #print newColor, curveSymbol, self.showFilledSymbols
                 if not xPointsToAdd.has_key((newColor, curveSymbol, self.showFilledSymbols)):
                     xPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)] = []
                     yPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)] = []
                 xPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)].append(x_positions[i])
                 yPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)].append(y_positions[i])
 
-                self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
+                self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
 
         # draw all the points with a small number of curves
         for i, (color, symbol, showFilled) in enumerate(xPointsToAdd.keys()):
             xData = xPointsToAdd[(color, symbol, showFilled)]
             yData = yPointsToAdd[(color, symbol, showFilled)]
-            self.addCurve(str(i), color, color, self.pointWidth, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
+            self.addCurve(str(i), QColor(*color), QColor(*color), self.pointWidth, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
 
         # ##############################################################
         # draw the legend

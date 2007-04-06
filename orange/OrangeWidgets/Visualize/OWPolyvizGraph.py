@@ -42,17 +42,11 @@ def fact(i):
             ret = ret*i
             i -= 1
         return ret
-    
+
 # return number of combinations where we select "select" from "total"
 def combinations(select, total):
     return fact(total)/ (fact(total-select)*fact(select))
 
-
-SYMBOL = 0
-PENCOLOR = 1
-BRUSHCOLOR = 2
-XANCHORS = 3
-YANCHORS = 4
 
 LINE_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
@@ -69,7 +63,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
         orngScalePolyvizData.__init__(self)
-        
+
         self.lineLength = 2
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
         self.triedPossibilities = 0 # how many possibilities did we already try
@@ -96,10 +90,10 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-        scaleDraw.setOptions(0) 
+        scaleDraw.setOptions(0)
         scaleDraw.setTickLength(0, 0, 0)
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setOptions(0) 
+        scaleDraw.setOptions(0)
         scaleDraw.setTickLength(0, 0, 0)
         self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
 
@@ -124,7 +118,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
         self.tips.removeAll()
-    
+
         # initial var values
         self.showKNNModel = 0
         self.showCorrect = 1
@@ -136,12 +130,12 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.YAnchor = self.createYAnchors(length)
         self.shownAttributes = labels
         polyvizLineCoordsX = []; polyvizLineCoordsY = []    # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
-            
+
         # we must have at least 3 attributes to be able to show anything
         if self.scaledData == None or len(labels) < 3:
             self.updateLayout()
             return
-        
+
         dataSize = len(self.rawdata)
         hasClass = self.rawdata and self.rawdata.domain.classVar != None
         hasDiscreteClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete
@@ -151,7 +145,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         else:        useDifferentColors = 0
 
         self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20 + 0.05 * self.showLegend, 1)
-        
+
         # store indices to shown attributes
         indices = [self.attributeNameIndex[label] for label in labels]
 
@@ -161,17 +155,16 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         if hasDiscreteClass:        # if we have a discrete class
             valLen = len(self.rawdata.domain.classVar.values)
-            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices            
-        else:    
+            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices
+        else:
             valLen = 1
 
-        # will we show different symbols?        
+        # will we show different symbols?
         useDifferentSymbols = 0
         if self.useDifferentSymbols and hasDiscreteClass and valLen < len(self.curveSymbols):
             useDifferentSymbols = 1
-        
+
         dataSize = len(self.rawdata)
-        curveData = [[0, 0, 0, QwtSymbol.Ellipse, Qt.black, Qt.black, [], []] for i in range(dataSize)]
 
         # ##########
         # draw text at lines
@@ -209,7 +202,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         XAnchorPositions = numpy.swapaxes(XAnchorPositions, 0,1)
         YAnchorPositions = numpy.swapaxes(YAnchorPositions, 0,1)
-            
+
         selectedData = numpy.take(self.scaledData, indices, axis = 0)
         sum_i = numpy.add.reduce(selectedData)
 
@@ -220,12 +213,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         x_positions = numpy.sum(numpy.swapaxes(XAnchorPositions * numpy.swapaxes(selectedData, 0,1), 0,1), axis=0) * self.scaleFactor / sum_i
         y_positions = numpy.sum(numpy.swapaxes(YAnchorPositions * numpy.swapaxes(selectedData, 0,1), 0,1), axis=0) * self.scaleFactor / sum_i
-        validData = self.getValidList(indices)      
-
-        for i in range(dataSize):
-            if validData[i] == 0: continue                       
-            curveData[i][XANCHORS] = XAnchorPositions[i]
-            curveData[i][YANCHORS] = YAnchorPositions[i]
+        validData = self.getValidList(indices)
 
         xPointsToAdd = {}
         yPointsToAdd = {}
@@ -237,7 +225,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
             table = orange.ExampleTable(domain)
 
-            # build an example table            
+            # build an example table
             for i in range(dataSize):
                 if validData[i]:
                     table.append(orange.Example(domain, [x_positions[i], y_positions[i], self.rawdata[i].getclass()]))
@@ -249,9 +237,10 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 if ((measure == CLASS_ACCURACY or measure == AVERAGE_CORRECT) and self.showCorrect) or (measure == BRIER_SCORE and not self.showCorrect):
                     kNNValues = [1.0 - val for val in kNNValues]
             else:
-                if self.showCorrect: kNNValues = [1.0 - val for val in kNNValues]
+                if self.showCorrect:
+                    kNNValues = [1.0 - val for val in kNNValues]
 
-            # fill and edge color palettes 
+            # fill and edge color palettes
             bwColors = ColorPaletteBW(-1, 55, 255)
 
             if hasContinuousClass:
@@ -264,30 +253,28 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 else:                            preText = "Brier score : "
 
             for i in range(len(table)):
-                fillColor = bwColors.getColor(kNNValues[i])
-                edgeColor = classColors.getColor(classValueIndices[table[i].getclass().value])
+                fillColor = bwColors.getRGB(kNNValues[i])
+                edgeColor = classColors.getRGB(classValueIndices[table[i].getclass().value])
                 if not xPointsToAdd.has_key((fillColor, edgeColor, QwtSymbol.Ellipse, 1)):
                     xPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)] = []
                     yPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)] = []
                 xPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)].append(table[i][0].value)
                 yPointsToAdd[(fillColor, edgeColor, QwtSymbol.Ellipse, 1)].append(table[i][1].value)
-                self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], fillColor, i, length)
+                self.addAnchorLine(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], fillColor, i, length)
 
-        # CONTINUOUS class 
+        # CONTINUOUS class
         elif hasContinuousClass:
             for i in range(dataSize):
                 if not validData[i]: continue
                 if useDifferentColors:  newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
                 else:                   newColor = QColor(0,0,0)
-                curveData[i][PENCOLOR] = newColor
-                curveData[i][BRUSHCOLOR] = newColor
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
-                self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
-                self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
+                self.addTooltipKey(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], newColor, i)
+                self.addAnchorLine(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], (newColor.red(), newColor.green(), newColor.blue()), i, length)
 
         # DISCRETE class or no class at all
         else:
-            color = Qt.black
+            color = (0,0,0)
             symbol = self.curveSymbols[0]
             for i in range(dataSize):
                 if not validData[i]: continue
@@ -296,21 +283,21 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     if self.useDifferentSymbols:
                         symbol = self.curveSymbols[ind]
                     if useDifferentColors:
-                        color = self.discPalette[ind]
+                        color = self.discPalette.getRGB(ind)
                 if not xPointsToAdd.has_key((color, color, symbol, 1)):
                     xPointsToAdd[(color, color, symbol, 1)] = []
                     yPointsToAdd[(color, color, symbol, 1)] = []
                 xPointsToAdd[(color, color, symbol, 1)].append(x_positions[i])
                 yPointsToAdd[(color, color, symbol, 1)].append(y_positions[i])
-                
-                self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], color, i, length)
-                self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], color, i)
+
+                self.addAnchorLine(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], color, i, length)
+                self.addTooltipKey(x_positions[i], y_positions[i], XAnchorPositions[i], YAnchorPositions[i], QColor(*color), i)
 
         # draw the points
         for i, (fillColor, edgeColor, symbol, showFilled) in enumerate(xPointsToAdd.keys()):
             xData = xPointsToAdd[(fillColor, edgeColor, symbol, showFilled)]
             yData = yPointsToAdd[(fillColor, edgeColor, symbol, showFilled)]
-            self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
+            self.addCurve(str(i), QColor(*fillColor), QColor(*edgeColor), self.pointWidth, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
 
         self.showAnchorLines()
         self.xLinesToAdd = {}
@@ -325,7 +312,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             # show legend for discrete class
             if hasDiscreteClass:
                 self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
-                    
+
                 classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 for index in range(len(classVariableValues)):
                     if useDifferentColors: color = self.discPalette[index]
@@ -368,21 +355,22 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             else:
                 lineX2 = (1.0 - kvoc)*xAnchors[j] + kvoc * lineX1
                 lineY2 = (1.0 - kvoc)*yAnchors[j] + kvoc * lineY1
-            
+
             self.xLinesToAdd[color] = self.xLinesToAdd.get(color, []) + [xAnchors[j], lineX2]
             self.yLinesToAdd[color] = self.yLinesToAdd.get(color, []) + [yAnchors[j], lineY2]
 
 
     def showAnchorLines(self):
         for i, color in enumerate(self.xLinesToAdd.keys()):
-            curve = UnconnectedLinesCurve(self, QPen(color), self.xLinesToAdd[color], self.yLinesToAdd[color])
+            curve = UnconnectedLinesCurve(self, QPen(QColor(*color)), self.xLinesToAdd[color], self.yLinesToAdd[color])
             self.insertCurve(curve)
 
     # create a dictionary value for the data point
     # this will enable to show tooltips faster and to make selection of examples available
     def addTooltipKey(self, x, y, xAnchors, yAnchors, color, index):
         dictValue = "%.1f-%.1f"%(x, y)
-        if not self.dataMap.has_key(dictValue): self.dataMap[dictValue] = []
+        if not self.dataMap.has_key(dictValue):
+            self.dataMap[dictValue] = []
         self.dataMap[dictValue].append((x, y, xAnchors, yAnchors, color, index))
 
 
@@ -391,7 +379,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
     def onMouseMoved(self, e):
         redraw = 0
         if self.tooltipCurveKeys != [] or self.tooltipMarkers != []: redraw = 1
-        
+
         for key in self.tooltipCurveKeys:  self.removeCurve(key)
         for marker in self.tooltipMarkers: self.removeMarker(marker)
         self.tooltipCurveKeys = []
@@ -402,8 +390,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if self.mouseCurrentlyPressed:
             OWGraph.onMouseMoved(self, e)
             if redraw: self.replot()
-            return 
-            
+            return
+
         xFloat = self.invTransform(QwtPlot.xBottom, e.x())
         yFloat = self.invTransform(QwtPlot.yLeft, e.y())
         dictValue = "%.1f-%.1f"%(xFloat, yFloat)
@@ -420,7 +408,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             (x_i, y_i, xAnchors, yAnchors, color, index) = nearestPoint
             if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 for i in range(len(self.shownAttributes)):
-                    
+
                     # draw lines
                     key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchors[i]], yData = [y_i, yAnchors[i]])
                     self.tooltipCurveKeys.append(key)
@@ -435,7 +423,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     font.setPointSize(12)
                     self.setMarkerFont(marker, font)
                     self.tooltipMarkers.append(marker)
-                    
+
             elif self.tooltipKind == VISIBLE_ATTRIBUTES or self.tooltipKind == ALL_ATTRIBUTES:
                 if self.tooltipKind == VISIBLE_ATTRIBUTES: labels = self.shownAttributes
                 else:                                      labels = self.attributeNames
@@ -445,7 +433,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         OWGraph.onMouseMoved(self, e)
         self.update()
-        
+
 
     def generateAttrReverseLists(self, attrList, fullAttribList, tempList):
         if attrList == []: return tempList
@@ -454,7 +442,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         for list in tempList2: list[index] = 1
         return self.generateAttrReverseLists(attrList[1:], fullAttribList, tempList + tempList2)
 
-   
+
     # save projection (xAttr, yAttr, classVal) into a filename fileName
     def saveProjectionAsTabData(self, fileName, attrList):
         orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList]))
@@ -481,13 +469,13 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         validData = self.getValidList(attrIndices)
-        
+
         array = self.createProjectionAsNumericArray(attrIndices, validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
         if array == None:       # if all examples have missing values
             return (None, None)
-        
+
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
-                 
+
         if addProjectedPositions:
             selected = orange.ExampleTable(domain, self.rawdata.selectref(selIndices))
             unselected = orange.ExampleTable(domain, self.rawdata.selectref(unselIndices))
@@ -508,7 +496,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
         return (selected, unselected)
-    
+
 
     def getSelectionsAsIndices(self, attrList, validData = None):
         if not self.rawdata: return [], []
@@ -516,13 +504,13 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         if validData == None:
             validData = self.getValidList(attrIndices)
-        
+
         array = self.createProjectionAsNumericArray(attrIndices, validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
         if array == None:
             return [], []
         array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)
-    
+
 
 
     def createCombinations(self, attrList, count):
@@ -548,7 +536,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 temp.append( attrList[i] )
             answer.append( temp )
         return answer
-    
+
 
     def createAttrReverseList(self, attrLen):
         res = [[]]
@@ -587,7 +575,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
                 XAnchors = anchorList[u+1-minLength][0]
                 YAnchors = anchorList[u+1-minLength][1]
-                
+
                 for attrList in combinations:
                     attrs = attrList + [attributes[z]] # remove the value of this attribute subset
                     indices = [self.attributeNameIndex[attr] for attr in attrs]
@@ -595,7 +583,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     indPermutations = {}
                     getPermutationList(indices, [], indPermutations, attrReverseDict == None)
 
-                    if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes 
+                    if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes
                         attrReverse = [[attrReverseDict[attr] for attr in attrs]]
 
                     permutationIndex = 0 # current permutation index
@@ -608,7 +596,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
                     tempList = []
 
-                    # for every permutation compute how good it separates different classes            
+                    # for every permutation compute how good it separates different classes
                     for permutation in indPermutations.values():
                         for attrOrder in attrReverse:
                             if self.kNNOptimization.isOptimizationCanceled():
@@ -620,13 +608,13 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
                             table = self.createProjectionAsExampleTable(permutation, reverse = attrOrder, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                             accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                        
+
                             # save the permutation
                             if not self.onlyOnePerSubset:
                                 addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], self.triedPossibilities, generalDict = {"reverse": attrOrder})
                             else:
                                 tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
-                                
+
                             self.triedPossibilities += 1
                             self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
                             self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities)))
@@ -666,7 +654,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             for u in range(minLength-1, maxLength):
                 projs = orngVisFuncts.createProjections(numClasses, u+1)
                 attrListLength = u+1
-                
+
                 combinations = orngVisFuncts.combinations(range(z), u)
 
                 if attrReverseDict == None:
@@ -676,7 +664,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
                 XAnchors = anchorList[u+1-minLength][0]
                 YAnchors = anchorList[u+1-minLength][1]
-                
+
                 for comb in combinations:
                     comb = comb + [z]  # remove the value of this attribute subset
                     counts = [0 for i in range(numClasses)]
@@ -692,7 +680,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     indPermutations = {}
                     getPermutationList(attrs, [], indPermutations, attrReverseDict == None)
 
-                    if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes 
+                    if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes
                         attrReverse = [[attrReverseDict[attr] for attr in attrs]]
 
                     permutationIndex = 0 # current permutation index
@@ -719,22 +707,22 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
                                 table = self.createProjectionAsExampleTable(permutation, reverse = attrOrder, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors,  YAnchors = YAnchors, domain = domain)
                                 accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                            
+
                                 # save the permutation
                                 if not self.onlyOnePerSubset:
                                     addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], self.triedPossibilities, generalDict = {"reverse": attrOrder})
                                 else:
                                     tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
-                                    
+
                                 self.triedPossibilities += 1
                                 self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), z))
                         except:
                             pass
-                            
+
                     if self.onlyOnePerSubset and tempList:
                         (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
                         addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, generalDict = {"reverse": attrOrder})
-               
+
         secs = time.time() - startTime
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.polyvizWidget.progressBarFinished()
@@ -755,16 +743,16 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
         classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
         allAttrReverse = {}
-        
+
         optimizedProjection = 1
         while optimizedProjection:
             optimizedProjection = 0
             significantImprovement = 0
-            
+
             # in the first step try to find a better projection by substituting an existent attribute with a new one
             # in the second step try to find a better projection by adding a new attribute to the circle
             for iteration in range(2):
-                if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue    
+                if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue
                 if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
                 strTotalAtts = orngVisFuncts.createStringFromNumber(lenOfAttributes)
                 listOfCanditates = []
@@ -773,7 +761,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     if not allAttrReverse.has_key(len(projection) + iteration):
                         allAttrReverse[len(projection) + iteration] = self.createAttrReverseList(len(projection) + iteration)
                     attrReverse = allAttrReverse[len(projection) + iteration]
-                    
+
                 for (attrIndex, attr) in enumerate(attributes):
                     if attr in projection: continue
                     if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
@@ -783,7 +771,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     else:
                         rev = [0 for i in range(len(projection))]
                         projections = [(copy(projection), rev) for i in range(len(projection))]
-                        
+
                     if iteration == 0:  # replace one attribute in each projection with attribute attr
                         count = len(projection)
                         for i in range(count): projections[i][0][i] = attr
@@ -805,21 +793,21 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     YAnchors = anchorList[count-3][1]
                     validData = self.getValidList(projections[0][0])
                     classList = numpy.compress(validData, classListFull)
-                    
+
                     tempList = []
                     for (testProj, reverse) in projections:
                         if self.kNNOptimization.isOptimizationCanceled(): return
 
                         table = self.createProjectionAsExampleTable(testProj, reverse = reverse, validData = validData, classList = classList, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
                         acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                        
+
                         # save the permutation
                         tempList.append((acc, other_results, len(table), testProj, reverse))
 
                         self.triedPossibilities += 1
                         qApp.processEvents()        # allow processing of other events
                         if self.kNNOptimization.isOptimizationCanceled(): return
-                        
+
 
                     # return only the best attribute placements
                     (acc, other_results, lenTable, attrList, reverse) = self.kNNOptimization.getMaxFunct()(tempList)
@@ -835,19 +823,19 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                             addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1, generalDict = {"reverse": reverse})
 
 
-                # select the best new projection and say this is now our new projection to optimize    
+                # select the best new projection and say this is now our new projection to optimize
                 if len(listOfCanditates) > 0:
                     (accuracy, projection, reverse) = self.kNNOptimization.getMaxFunct()(listOfCanditates)
                     if attrReverseList != None: attrReverseList = reverse
                     self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
 
-    
+
 if __name__== "__main__":
     #Draw a simple graph
-    a = QApplication(sys.argv)        
+    a = QApplication(sys.argv)
     c = OWPolyvizGraph()
-        
+
     a.setMainWidget(c)
     c.show()
     a.exec_loop()
