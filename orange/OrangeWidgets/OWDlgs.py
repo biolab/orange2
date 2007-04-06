@@ -341,7 +341,7 @@ class ColorPalette(OWBaseWidget):
     # #####################################################
     # DISCRETE COLOR PALETTE
     # #####################################################
-    def createDiscretePalette(self, boxCaption):
+    def createDiscretePalette(self, boxCaption, colorPalette = OWGraphTools.defaultRGBColors):
         box = OWGUI.widgetBox(self.mainArea, boxCaption)
         hbox = OWGUI.widgetBox(box, orientation = 'horizontal')
 
@@ -366,7 +366,7 @@ class ColorPalette(OWBaseWidget):
         self.popupMenu.insertItem("Load default RGB palette", self.loadRGBPalette)
         self.popupMenu.insertItem("Load Color Brewer palette", self.loadCBPalette)
 
-        self.discreteColors = [QColor(r,g,b) for (r,g,b) in OWGraphTools.defaultRGBColors]
+        self.discreteColors = [QColor(r,g,b) for (r,g,b) in colorPalette]
         for ind in range(len(self.discreteColors)):
             self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
 
