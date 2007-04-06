@@ -18,18 +18,18 @@ ColorBrewerRGBValues = [(0, 140, 255), (228, 26, 28), (77, 175, 74), (255, 127, 
 
 class ColorPaletteGenerator:
     maxHueVal = 260
-    
+
     def __init__(self, numberOfColors = 0, rgbColors = defaultRGBColors):
         self.rgbColors = rgbColors
         self.numberOfColors = numberOfColors
         if rgbColors:
             self.rgbQColors = [QColor(*color) for color in self.rgbColors]
-        
+
 
     def __getitem__(self, index, brightness = None):
         if type(index) == tuple:
             index, brightness = index
-            
+
         if self.numberOfColors == -1:     # is this color for continuous attribute?
             col = QColor()
             col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
@@ -47,7 +47,25 @@ class ColorPaletteGenerator:
                 col = QColor()
                 col.setHsv(index*self.maxHueVal, brightness or 255, 255)
                 return col
-       
+
+    def getRGB(self, index, brightness = None):
+        if self.numberOfColors == -1:     # is this color for continuous attribute?
+            col = QColor()
+            col.setHsv(index*self.maxHueVal, brightness or 255, 255)     # index must be between 0 and 1
+            return (col.red(), col.green(), col.blue())
+        else:
+            if index < len(self.rgbColors):
+                if brightness == None:
+                    return self.rgbColors[index]
+                else:
+                    color = QColor(*self.rgbColors[index])
+                    h,s,v = color.getHsv()
+                    color.setHsv(h, int(brightness), v)
+                    return (col.red(), col.green(), col.blue())
+            else:
+                col = QColor()
+                col.setHsv(index*self.maxHueVal, brightness or 255, 255)
+                return (col.red(), col.green(), col.blue())
 
     # get QColor instance for given index
     def getColor(self, index, brightness = None):
@@ -65,7 +83,7 @@ class ColorPaletteBW:
         self.brightest = brightest
         self.darkest = darkest
         self.hueValues = []
-        
+
         if numberOfColors == -1: return  # used for coloring continuous variables
         else:
             self.values = [int(brightest + (darkest-brightest)*x/float(numberOfColors-1)) for x in range(numberOfColors)]
@@ -76,12 +94,12 @@ class ColorPaletteBW:
             return QColor(val, val, val)
         else:                                                                           # get color for discrete attribute
             return QColor(self.values[index], self.values[index], self.values[index])   # index must be between 0 and self.numberofColors
-                
+
     # get QColor instance for given index
     def getColor(self, index):
         return self.__getitem__(index)
-    
-        
+
+
 
 # ####################################################################
 # calculate Euclidean distance between two points
@@ -90,7 +108,7 @@ def EuclDist(v1, v2):
     for i in range(len(v1)):
         val += (v1[i]-v2[i])**2
     return sqrt(val)
-        
+
 
 # ####################################################################
 # add val to sorted list list. if len > maxLen delete last element
@@ -114,7 +132,7 @@ class SelectionCurve(QwtPlotCurve):
         self.pointArrayValid = 0
         self.setStyle(QwtCurve.Lines)
         self.setPen(QPen(QColor(128,128,128), 1, pen))
-        
+
     def addPoint(self, xPoint, yPoint):
         xVals = []
         yVals = []
@@ -170,7 +188,7 @@ class SelectionCurve(QwtPlotCurve):
         return selected
 
     # is point defined at x,y inside a rectangle defined with this curve
-    def isInside(self, x, y):       
+    def isInside(self, x, y):
         xMap = self.parentPlot().canvasMap(self.xAxis())
         yMap = self.parentPlot().canvasMap(self.yAxis())
 
@@ -204,10 +222,10 @@ class SelectionCurve(QwtPlotCurve):
     def lineIntersection(self, x1, y1, x2, y2, X1, Y1, X2, Y2):
         if min(x1,x2) > max(X1, X2) or max(x1,x2) < min(X1,X2): return (0, 0, 0)
         if min(y1,y2) > max(Y1, Y2) or max(y1,y2) < min(Y1,Y2): return (0, 0, 0)
-        
+
         if x2-x1 != 0: k1 = (y2-y1)/(x2-x1)
         else:          k1 = 1e+12
-        
+
         if X2-X1 != 0: k2 = (Y2-Y1)/(X2-X1)
         else:          k2 = 1e+12
 
@@ -250,7 +268,7 @@ class UnconnectedLinesCurve(QwtPlotCurve):
             stop = self.dataSize()
         for i in range(start, stop, 2):
             QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+1)
-            
+
 
 # ###########################################################
 # a class that is able to draw arbitrary polygon curves.
@@ -283,14 +301,14 @@ class nonTransparentMarker(QwtPlotMarker):
         p.setFont(self.font())
 
         th = p.fontMetrics().height();
-        tw = p.fontMetrics().width(self.label()); 
+        tw = p.fontMetrics().width(self.label());
         r = QRect(x + 4, y - th/2 - 2, tw + 4, th + 4)
         p.fillRect(r, QBrush(self.backColor))
         p.drawText(r, Qt.AlignHCenter + Qt.AlignVCenter, self.label());
-        
+
 
 # ####################################################################
-# 
+#
 class errorBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None, connectPoints = 0, tickXw = 0.1, tickYw = 0.1, showVerticalErrorBar = 1, showHorizontalErrorBar = 0):
         QwtPlotCurve.__init__(self, parent, text)
@@ -303,12 +321,12 @@ class errorBarQwtPlotCurve(QwtPlotCurve):
     def draw(self, p, xMap, yMap, f, t):
         # save ex settings
         pen = p.pen()
-        
+
         self.setPen( self.symbol().pen() )
         p.setPen( self.symbol().pen() )
         if self.style() == QwtCurve.UserCurve:
             back = p.backgroundMode()
-            
+
             p.setBackgroundMode(Qt.OpaqueMode)
             if t < 0: t = self.dataSize() - 1
 
@@ -359,7 +377,7 @@ class errorBarQwtPlotCurve(QwtPlotCurve):
 
         # restore ex settings
         p.setPen(pen)
-        
+
 # ####################################################################
 # draw labels for discrete attributes
 class DiscreteAxisScaleDraw(QwtScaleDraw):
@@ -378,6 +396,6 @@ class DiscreteAxisScaleDraw(QwtScaleDraw):
 class HiddenScaleDraw(QwtScaleDraw):
     def __init__(self, *args):
         QwtScaleDraw.__init__(self, *args)
-        
+
     def label(self, value):
         return QString.null
