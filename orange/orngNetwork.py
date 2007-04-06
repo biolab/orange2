@@ -32,7 +32,7 @@ class GraphVisualizer:
             if isinstance(self.graph.items, orange.ExampleTable):
                 vars[:0] = self.graph.items.domain.variables
             
-                metas = self.graph.items.domain.getmetas()
+                metas = self.graph.items.domain.getmetas(0)
                 for i, var in metas.iteritems():
                     vars.append(var)
         return vars
