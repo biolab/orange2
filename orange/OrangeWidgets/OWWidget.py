@@ -45,22 +45,24 @@ class OWWidget(OWBaseWidget):
             self.connect(self.reportButton, SIGNAL("clicked()"), self.sendReport)
 
         self.widgetStatusArea = QHBox(self)
-        self.widgetStatusArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
+        #self.widgetStatusArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
         self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
-        self.statusBar = QStatusBar(self.widgetStatusArea)
-        self.statusBar.setSizeGripEnabled(0)
-        self.statusBarIconArea = QHBox(self.statusBar)
-        self.statusBarTextArea = QLabel("", self.statusBar)
+        #self.statusBar = QStatusBar(self.widgetStatusArea)
+        #self.statusBar.setSizeGripEnabled(0)
+        self.statusBarIconArea = QHBox(self.widgetStatusArea)
+        self.statusBarTextArea = QLabel("", self.widgetStatusArea)
+        self.statusBarIconArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
+        self.statusBarTextArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
         self.statusBarTextArea.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
-##        self.statusBarIconArea.setMinimumSize(16*3,16)
-##        self.statusBarIconArea.setMaximumSize(16*3,16)
-        self.statusBar.addWidget(self.statusBarIconArea, 0)
-        self.statusBar.addWidget(self.statusBarTextArea, 1)
-        self.statusBarIconArea.setMinimumSize(16*3,16)
-        self.statusBarIconArea.setMaximumSize(16*3,16)
+        #self.statusBar.addWidget(self.statusBarIconArea, 0)
+        #self.statusBar.addWidget(self.statusBarTextArea, 1)
+        #self.statusBarIconArea.setMinimumSize(16*3,16)
+        #self.statusBarIconArea.setMaximumSize(16*3,16)
+        self.statusBarIconArea.setMinimumSize(16*2,18)
+        self.statusBarIconArea.setMaximumSize(16*2,18)
 
         # create pixmaps used in statusbar to show info, warning and error messages
-        self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-blue.png")
+        #self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-blue.png")
         self._warningWidget, self._warningPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
         self._errorWidget, self._errorPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-red.png")
 ##        spacer = QWidget(self.statusBarIconArea)
@@ -83,49 +85,40 @@ class OWWidget(OWBaseWidget):
         return w, pix
 
     def setState(self, stateType, id, text):
-        if type(id) == list:
-            stateChanged = 0
-            for val in id:
-                if self.widgetState[stateType].has_key(val):
-                    self.widgetState[stateType].pop(val)
-                    stateChanged = 1
-        else:
-            if type(id) == str:
-                text = id; id = 0
-            stateChanged = self.widgetState[stateType].has_key(id) or text
-            OWBaseWidget.setState(self, stateType, id, text)
-
+        stateChanged = OWBaseWidget.setState(self, stateType, id, text)
         if not stateChanged:
             return
-        for state, widget, icon, use in [("Info", self._infoWidget, self._infoPixmap, self._owInfo), ("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
+
+        #for state, widget, icon, use in [("Info", self._infoWidget, self._infoPixmap, self._owInfo), ("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
+        for state, widget, icon, use in [("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
             if use and self.widgetState[state] != {}:
                 widget.setBackgroundPixmap(icon)
-                tooltip = reduce(lambda x,y: x+'\n'+y, self.widgetState[state].values())
-                QToolTip.add(widget, tooltip)
+                QToolTip.add(widget, "\n".join(self.widgetState[state].values()))
             else:
                 widget.setBackgroundPixmap(QPixmap())
                 QToolTip.remove(widget)
 
-        if self.widgetStateHandler:
-            self.widgetStateHandler()
+##        if self.widgetStateHandler:
+##            self.widgetStateHandler()
 
-        if (stateType == "Info" and self._owInfo) or (stateType == "Warning" and self._owWarning) or (stateType == "Error" and self._owError):
+        #if (stateType == "Info" and self._owInfo) or (stateType == "Warning" and self._owWarning) or (stateType == "Error" and self._owError):
+        if (stateType == "Warning" and self._owWarning) or (stateType == "Error" and self._owError):
             if text:
                 self.setStatusBarText(stateType + ": " + text)
             else:
                 self.setStatusBarText("")
-        qApp.processEvents()
+        self.updateStatusBarState()
+        #qApp.processEvents()
 
-    def setStatusBarVisible(self, visible):
-        if visible:
+    def updateStatusBarState(self):
+        if self._owShowStatus and (self.widgetState["Warning"] != {} or self.widgetState["Error"] != {}):
             self.widgetStatusArea.show()
         else:
             self.widgetStatusArea.hide()
-        self.setState("Info", -9999, "")
 
     def setStatusBarText(self, text):
         self.statusBarTextArea.setText("  " + text)
-        qApp.processEvents()
+        #qApp.processEvents()
 
     def startReport(self, name, needDirectory = False):
         if self.reportData:
