@@ -18,25 +18,31 @@ class OWSimilarityNetwork(OWWidget):
     settingsList=["threshold"]
     
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, "Connect Nodes by Euclid")
+        OWWidget.__init__(self, parent, signalManager, "Similarity Network")
         
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.cdata, Default)]
         self.outputs = [("Graph with ExampleTable", Graph), ("Examples", ExampleTable)]
 
-        self.threshold = 0
+        self.spinLowerThreshold = 0
+        self.spinLowerChecked = False
+        self.spinUpperThreshold = 0
+        self.spinUpperChecked = False
     
         # GUI
         # general settings
-        boxGeneral = QVGroupBox("General Settings", self.controlArea)
-        self.spin = OWGUI.doubleSpin(boxGeneral, self, "threshold", 0, 100000, step=0.01, label="Threshold:", callback=self.changeSpin)
-        self.spin.setMinimumWidth(250)
+        boxGeneral = QVGroupBox("Thresholding", self.controlArea)
+        #cb, self.spinLower = OWGUI.checkWithSpin(boxGeneral, self, "Lower:", 0, 100000, "spinLowerChecked", "spinLowerThreshold", step=0.01, spinCallback=self.changeSpin)
+        #cb, self.spinUpper = OWGUI.checkWithSpin(boxGeneral, self, "Upper:", 0, 100000, "spinUpperChecked", "spinUpperThreshold", step=0.01, spinCallback=self.changeSpin)
+        
+        OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", callback=self.changeSpin, valueType=float)
+        OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeSpin, valueType=float)
         
         # info
         boxInfo = QVGroupBox("Info", self.controlArea)
         self.infoa = QLabel("No data loaded.", boxInfo)
         self.infob = QLabel('', boxInfo)
         
-        self.resize(150,80)
+        self.resize(230,80)
 
         # set default settings
         self.data = None
@@ -46,6 +52,12 @@ class OWSimilarityNetwork(OWWidget):
         
     def cdata(self, data):
         self.data = data
+        
+        maxValue = max([max(r) for r in data])
+        print maxValue
+        #self.spinLower.setMaxValue(maxValue)
+        #self.spinUpper.setMaxValue(maxValue)
+        
         self.generateGraph()
         
     def changeSpin(self):
@@ -56,42 +68,42 @@ class OWSimilarityNetwork(OWWidget):
             self.infoa.setText("No data loaded.")
             self.infob.setText("")
             return
-        
-        # construct the function to measure the distances
-        dist = data
-        
+
         nedges = [] 
-        for i in range(len(self.data)):
+        print self.data.dim
+        for i in range(self.data.dim):
            n = 0
-           for j in range(len(self.data)):
+           for j in range(self.data.dim):
               if i == j: continue
-              if dist(self.data[i], self.data[j]) < self.threshold:
+              if self.spinLowerThreshold < self.data[i][j] and self.data[i][j] < self.spinUpperThreshold:
                  n += 1
            nedges.append(n)
         n = 0; idid = []
-        for i in range(len(self.data)):
+        for i in range(self.data.dim):
            idid.append(n)
            if nedges[i]:
               n += 1
 
-        self.infoa.setText("%d vertices, " % len(self.data) + "%d (%3.2f) not connected" % (nedges.count(0), nedges.count(0)/float(len(self.data))))
+        self.infoa.setText("%d vertices, " % self.data.dim + "%d (%3.2f) not connected" % (nedges.count(0), nedges.count(0)/float(self.data.dim)))
 
-        graph = orange.GraphAsList(len(self.data), 0)
-        graph.setattr("items", self.data)
+        graph = orange.GraphAsList(self.data.dim, 0)
+        graph.setattr("items", self.data.items)
         
         # set the threshold
         # set edges where distance is lower than threshold
         n = 0
-        for i in range(len(self.data)):
-           for j in range(i+1):
+        print self.spinLowerThreshold
+        print self.spinUpperThreshold
+        for i in range(self.data.dim):
+           for j in range(i):
               if i == j: 
                   continue
-              if dist(self.data[i], self.data[j]) < self.threshold:
+              if self.spinLowerThreshold < self.data[i][j] and self.data[i][j] < self.spinUpperThreshold:
                   n += 1
                   graph[i,j] = 1
           
         self.graph = graph
-        self.infob.setText("%d edges (%d average)" % (n, n/float(len(self.data))))
+        self.infob.setText("%d edges (%d average)" % (n, n/float(self.data.dim)))
         self.send("Graph with ExampleTable", graph)
         self.send("Examples", graph.items)
     
