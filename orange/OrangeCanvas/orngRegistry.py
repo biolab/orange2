@@ -172,11 +172,15 @@ def rebuildRegistry():
 
 def readAdditionalCategories():
     dirs = __getDirectoryNames()
-    return [tuple([x.strip() for x in lne.split("\t")]) for lne in open(os.path.join(dirs["outputDir"], "additionalCategories"), "r")]
+    addCatFile = os.path.join(dirs["outputDir"], "additionalCategories")
+    if os.path.exists(addCatFile):
+        return [tuple([x.strip() for x in lne.split("\t")]) for lne in open(addCatFile, "r")]
+    else:
+        return []
 
 def writeAdditionalCategories(categories):
     dirs = __getDirectoryNames()
-    open(os.path.join(dirs["canvasDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
+    open(os.path.join(dirs["outputDir"], "additionalCategories"), "w").write("\n".join(["\t".join(l) for l in categories]))
 
 def addWidgetCategory(category, directory, add = True):
     if os.path.isfile(directory):
