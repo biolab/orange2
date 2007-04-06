@@ -105,6 +105,8 @@ class OWBaseWidget(QDialog):
 
         # create output directory for widget settings
         if os.name == "nt":
+            if not os.path.exists(os.path.join(user.home, "Application Data")):
+                os.mkdir(os.path.join(user.home, "Application Data"))
             self.outputDir = os.path.join(os.path.join(user.home, "Application Data"), "Orange")                  # directory for saving settings and stuff
         else:
             self.outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff

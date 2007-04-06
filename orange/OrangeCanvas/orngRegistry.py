@@ -212,7 +212,10 @@ def __getDirectoryNames():
         print "Error. Directory %s not found. Unable to locate widget icons." % picsDir
 
     if os.name == "nt":
-        outputDir = os.path.join(os.path.join(user.home, "Application Data"), "Orange")                  # directory for saving settings and stuff
+        applicationDir = os.path.join(user.home, "Application Data")
+        if not os.path.exists(applicationDir):
+            os.mkdir(applicationDir)
+        outputDir = os.path.join(applicationDir, "Orange")                  # directory for saving settings and stuff
     else:
         outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
     if not os.path.exists(outputDir):
