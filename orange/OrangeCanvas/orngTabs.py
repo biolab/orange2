@@ -90,14 +90,18 @@ class WidgetButton(QToolButton):
 
     def getFullIconName(self):
         name = self.getIconName()
-        if os.path.exists(os.path.join(self.canvasDlg.picsDir, name)):
-            return os.path.join(self.canvasDlg.picsDir, name)
-        elif os.path.exists(os.path.join(self.canvasDlg.widgetDir, name)):
-            return os.path.join(self.canvasDlg.widgetDir, name)
-        elif os.path.exists(name):
-            return name
-        else:
-            return self.canvasDlg.defaultPic
+        widgetDir = str(self.widgetTabs.widgetInfo[self.nameKey]["directory"])#os.path.split(self.getFileName())[0]
+        
+        for paths in [(self.canvasDlg.picsDir, name),
+                      (self.canvasDlg.widgetDir, name),
+                      (name,),
+                      (widgetDir, name),
+                      (widgetDir, "icons", name)]:
+            fname = os.path.join(*paths)
+            if os.path.exists(fname):
+                return fname
+            
+        return self.canvasDlg.defaultPic
         
     def getIconName(self):
         return str(self.widgetTabs.widgetInfo[self.nameKey]["iconName"])
@@ -334,6 +338,7 @@ class WidgetTabs(QTabWidget):
         else:    tab = self.insertWidgetTab(strCategory)
 
         tab.builtIn = not category.hasAttribute("directory")
+        directory = not tab.builtIn and str(category.getAttribute("directory"))
         
         priorityList = []
         nameList = []
@@ -386,7 +391,7 @@ class WidgetTabs(QTabWidget):
         exIndex = 0
         for i in range(len(priorityList)):            
             button = WidgetButton(tab)
-            self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button}
+            self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
             button.setValue(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg, self.useLargeIcons)
             self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
             if exIndex != priorityList[i] / 1000:
