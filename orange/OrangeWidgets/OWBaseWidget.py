@@ -86,9 +86,10 @@ class OWBaseWidget(QDialog):
         self.currentContexts = {}
         self._guiElements = []      # used for automatic widget debugging
         self._useContexts = 1       # do you want to use contexts
-        self._owInfo = 1
-        self._owWarning = 1
-        self._owError = 1
+        self._owInfo = 1            # currently disabled !!!
+        self._owWarning = 1         # do we want to see warnings
+        self._owError = 1           # do we want to see errors
+        self._owShowStatus = 0      # do we want to see warnings and errors in status bar area of the widget
 
         # do we want to save widget position and restore it on next load
         self.savePosition = savePosition
@@ -540,7 +541,8 @@ class OWBaseWidget(QDialog):
         self.progressBarValue = 0
         self.startTime = time.time()
         self.setCaption(self.captionTitle + " (0% complete)")
-        if self.progressBarHandler: self.progressBarHandler(self, -1)
+        if self.progressBarHandler:
+            self.progressBarHandler(self, -1)
 
     def progressBarSet(self, value):
         if value > 0:
@@ -619,7 +621,8 @@ class OWBaseWidget(QDialog):
             QDialog.keyPressEvent(self, e)
 
     def information(self, id = 0, text = None):
-        self.setState("Info", id, text)
+        #self.setState("Info", id, text)
+        self.setState("Warning", id, text)      # if we want information just set warning
 
     def warning(self, id = 0, text = ""):
         self.setState("Warning", id, text)
@@ -648,9 +651,10 @@ class OWBaseWidget(QDialog):
         if changed:
             if self.widgetStateHandler:
                 self.widgetStateHandler()
-            elif text and stateType != "Info":
+            elif text: # and stateType != "Info":
                 self.printEvent(stateType + " - " + text)
-            qApp.processEvents()
+            #qApp.processEvents()
+        return changed
 
     def synchronizeContexts(self):
         if hasattr(self, "contextHandlers"):
@@ -725,7 +729,7 @@ class OWBaseWidget(QDialog):
                     newValue = "Clicking button %s. State is %d" % (str(widget.text()).strip(), not widget.isOn())
                     widget.setOn(not widget.isOn())
                 else:
-                    newValue = "Pressed button %s" % (str(self.caption()))
+                    newValue = "Pressed button %s" % (str(widget.text()).strip())
             elif elementType == "listBox":
                 elementType, widget, value, callback = self._guiElements[index]
                 if widget.count():
