@@ -42,7 +42,7 @@ class OWGraphDrawerCanvas(OWGraph):
         #print("add selection")
         if not ndx in self.selection:
             self.selectionStyles[ndx] = self.curve(self.vertices[ndx]).symbol().brush().color().name()
-            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(Qt.green), QPen(Qt.green), QSize(6, 6))
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
             self.setCurveSymbol(self.vertices[ndx], newSymbol)
             self.selection.append(ndx);
             self.replot()
