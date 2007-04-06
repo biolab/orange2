@@ -729,7 +729,8 @@ class OrangeCanvasDlg(QMainWindow):
                     widget.instance._owInfo      = self.settings["owInfo"]
                     widget.instance._owWarning   = self.settings["owWarning"]
                     widget.instance._owError     = self.settings["owError"]
-                    widget.instance.setStatusBarVisible(self.settings["owShow"])
+                    widget.instance._owShowStatus= self.settings["owShow"]
+                    widget.instance.updateStatusBarState()
 
             for win in self.workspace.getDocumentList():
                 win.canvasView.repaint()

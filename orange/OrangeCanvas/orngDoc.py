@@ -265,7 +265,8 @@ class SchemaDoc(QMainWindow):
             newwidget.instance._owInfo = self.canvasDlg.settings["owInfo"]
             newwidget.instance._owWarning = self.canvasDlg.settings["owWarning"]
             newwidget.instance._owError = self.canvasDlg.settings["owError"]
-            newwidget.instance.setStatusBarVisible(self.canvasDlg.settings["owShow"])
+            newwidget.instance._owShowStatus = self.canvasDlg.settings["owShow"]
+            #newwidget.instance.updateStatusBarState()
             newwidget.instance._useContexts = self.canvasDlg.settings["useContexts"]
         except:
             type, val, traceback = sys.exc_info()
@@ -508,7 +509,7 @@ class SchemaDoc(QMainWindow):
                     if tempWidget.caption in settingsDict.keys():
                         tempWidget.instance.loadSettingsStr(settingsDict[tempWidget.caption])
                         tempWidget.instance.activateLoadedSettings()
-                qApp.processEvents()
+                #qApp.processEvents()
 
             #read lines
             lineList = lines.getElementsByTagName("channel")
