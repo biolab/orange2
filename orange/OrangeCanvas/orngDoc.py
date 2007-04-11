@@ -262,12 +262,6 @@ class SchemaDoc(QMainWindow):
             newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
             newwidget.instance.category = widget.getCategory()
             newwidget.instance.setEventHandler(self.canvasDlg.output.widgetEvents)
-            newwidget.instance._owInfo = self.canvasDlg.settings["owInfo"]
-            newwidget.instance._owWarning = self.canvasDlg.settings["owWarning"]
-            newwidget.instance._owError = self.canvasDlg.settings["owError"]
-            newwidget.instance._owShowStatus = self.canvasDlg.settings["owShow"]
-            #newwidget.instance.updateStatusBarState()
-            newwidget.instance._useContexts = self.canvasDlg.settings["useContexts"]
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas

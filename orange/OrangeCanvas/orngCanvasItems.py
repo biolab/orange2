@@ -352,6 +352,12 @@ class CanvasWidget(QCanvasRectangle):
         self.instance.setProgressBarHandler(self.view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(self.view.processingHandler)
         self.instance.setWidgetStateHandler(self.refreshWidgetState)
+        self.instance._owInfo = self.canvasDlg.settings["owInfo"]
+        self.instance._owWarning = self.canvasDlg.settings["owWarning"]
+        self.instance._owError = self.canvasDlg.settings["owError"]
+        self.instance._owShowStatus = self.canvasDlg.settings["owShow"]
+        #self.instance.updateStatusBarState()
+        self.instance._useContexts = self.canvasDlg.settings["useContexts"]
 
         # do we want to restore last position and size of the widget
         if self.canvasDlg.settings["saveWidgetsPosition"]:
