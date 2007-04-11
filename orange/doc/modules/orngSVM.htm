@@ -85,32 +85,49 @@ and uses them to compute a new kernel function. The available kernel wrappers ar
 <h2><INDEX name="classes/AdditionKernelWrapper (in orngSVM)">AdditionKernelWrapper</h2>
 <p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)+K2(x,y)
 <h2><INDEX name="classes/MultiplicationKernelWrapper (in orngSVM)">MultiplicationKernelWrapper</h2>
-<p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)*K2(x,y)
-</p>
+<p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=K1(x,y)*K2(x,y)</p>
+<h2><INDEX name="classes/CompositeKernelWrapper (in orngSVM)">CompositeKernelWrapper</h2>
+<p>Takes two kernel functions (K1  and K2) in initialization and uses them to compute a new kernel function: K(x,y)=&lambda*K1(x,y)+(1-&lambda)*K2(x,y)</p>
+<p class=section>Attributes</p>
+<dl class=attributes>
+    <dt>_lambda</dt>
+    <dd>lambda to use in the kernel function</dd>
+</dl>
+<h2><INDEX name="classes/SparseLinKernel (in orngSVM)">SparseLinKernel</h2>
+<p>A linear kernel function that uses the examples meta attributes (must be floats) that need not be present in all examples</p>
 <h2>Examples</h2>
+<p class="header">part of <a href="svm-custom-kernel.py">svm-custom-kernel.py</a>
+(uses <a href="iris.tab">iris.tab</a>)</p>
 <xmp class=code>import orange, orngSVM
 data=orange.ExampleTable("iris.tab")
 l1=orngSVM.SVMLearner()
-l1.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data))
+l1.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5)
 l1.kernel_type=orange.SVMLearner.CUSTOM
-l1.kernelFunc.gamma=0.5
 l1.probability=True
 c1=l1(data)
 l1.name="SVM - RBF(Euclidean)"
 
 l2=orngSVM.SVMLearner()
-l2.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamming(data))
+l2.kernelFunc=orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamming(data), gamma=0.5)
 l2.kernel_type=orange.SVMLearner.CUSTOM
-l2.kernelFunc.gamma=0.5
 l2.probability=True
 c2=l2(data)
-l2.name="SVM - RBF(Hamiltonian)"
+l2.name="SVM - RBF(Hamming)"
+
+l3=orngSVM.SVMLearner()
+l3.kernelFunc=orngSVM.CompositeKernelWrapper(orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Euclidean(data), gamma=0.5),orngSVM.RBFKernelWrapper(orange.ExamplesDistanceConstructor_Hamming(data), gamma=0.5), l=0.5)
+l3.kernel_type=orange.SVMLearner.CUSTOM
+l3.probability=True
+c3=l1(data)
+l3.name="SVM - Composite"
+
 
 import orngTest, orngStat
-tests=orngTest.crossValidation([l1, l2], data, folds=5)
-[ca1, ca2]=orngStat.CA(tests)
+tests=orngTest.crossValidation([l1, l2, l3], data, folds=5)
+[ca1, ca2, ca3]=orngStat.CA(tests)
 print l1.name, "CA:", ca1
 print l2.name, "CA:", ca2
+print l3.name, "CA:", ca3
 </xmp>
 
 
