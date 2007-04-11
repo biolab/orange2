@@ -15,7 +15,7 @@ class Cache:
 
 
 def clearCache(cache):
-    cache.points = cache.tri = cache.stars = cache.dts = cache.deltas = cache.findNearest = cache.attrStat = None
+    cache.points = cache.tri = cache.stars = cache.dts = cache.deltas = cache.errors = cache.findNearest = cache.attrStat = None
 
 
 def makeEmptyCache(cache = None):
@@ -40,7 +40,7 @@ def makeBasicCache(data, cache = None):
     cache.contIndices = [i for i, attr in enumerate(attributes) if attr.varType == orange.VarTypes.Continuous]
     cache.contAttributes = [attributes[i] for i in cache.contIndices]
     cache.attributes = [(attr.name, attr.varType) for attr in cache.contAttributes]
-    
+
     clearCache(cache)
     return cache
 
@@ -72,9 +72,9 @@ def simplex_with_xnDBG(cache, xp, Star, d):
         return D 
     return None
 
-def simplex_with_xn(cache, xn,Star):
+def simplex_with_xn(cache, xn, Star):
     for simplex in Star:
-        bl = [numpy.linalg.det(a) for a in inside(cache, xn,simplex)]
+        bl = [numpy.linalg.det(a) for a in inside(cache, xn, simplex)]
         if reduce(lambda x,y: x and y, [i<0 for i in bl]) or reduce(lambda x,y: x and y, [i>0 for i in bl]):
             return simplex
     return None
@@ -105,8 +105,8 @@ def firstTriangle(cache, dimensions, progressCallback = None, **args):
         cache.stars = [star(x, tri) for x in xrange(npoints)]
     S = cache.stars
 
-    if not cache.dts:
-        cache.dts = [min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x], 0) for simplex in S[x]], 0)*.1 for x in xrange(npoints)]
+    if not cache.dts:        
+        cache.dts = [min([ min([ dist(points[x][:-1],points[v][:-1]) for v in simplex if v!=x]) for simplex in S[x]])*.1 for x in xrange(npoints)]
 
 
     if progressCallback:
@@ -127,7 +127,7 @@ def firstTriangle(cache, dimensions, progressCallback = None, **args):
 
             xn[d] += dt
             swx = simplex_with_xn(cache, xn, S)
-            if swx:                
+            if swx:          
                 if DBG:
                     print "iskanje cudnih trikotnikov"
                     print swx
@@ -165,8 +165,8 @@ def firstTriangle(cache, dimensions, progressCallback = None, **args):
                         deltas[d] = do
                     else:
                         deltas[d] = "?"
-                        continue
-
+                    continue
+            
             vecs = numpy.array([numpy.array(points[p][:-1])-O for p in swx if p!=x])
             vecs = vecs.transpose()
             XN = numpy.array(xn)-O
@@ -580,13 +580,41 @@ def tubedRegression(cache, dimensions, progressCallback = None, **args):
             div = n*Sxx-Sx**2
             if div:# and i<40:
                 b = (Sxy*n - Sx*Sy) / div
-##                    a = (Sy - b*Sx)/n
-##                    err = (n * a**2 + b**2 * Sxx + Syy + 2*a*b*Sx - 2*a*Sy - 2*b*Sxy)
-##                    tot = Syy - Sy**2/n
-##                    mod = tot - err
-##                    merr = err/(n-2)
-##                    F = mod/merr
-##                    Fprob = statc.fprob(F, 1, int(n-2))
+                
+#                div = Sx*Sy/n - Sxy
+#                if abs(div) < 1e-10:
+#                    cache.errors[exi][d] = 1
+#                else:
+#                    B = ((Syy - Sy**2/n) - (Sxx - Sx**2/n)) / 2 / div
+#
+#                    b_p = -B + math.sqrt(B**2+1)
+#                    a = Sy/n - b_p * Sx/n
+#                    error1 = 1/(1+b_p**2) * (Syy + a**2 + b_p**2*Sxx - 2*a*Sy + 2*a*b_p*Sx - 2*b_p*Sxy)
+#
+#                    b_2 = -B - math.sqrt(B**2+1)
+#                    a = Sy/n - b_p * Sx/n
+#                    error2 = 1/(1+b_p**2) * (Syy + a**2 + b_p**2*Sxx - 2*a*Sy + 2*a*b_p*Sx - 2*b_p*Sxy)
+#                    
+#                    if error1 < error2 and error1 >= 0:
+#                        cache.errors[exi][d] = error1
+#                    elif error2 >= 0:
+#                        cache.errors[exi][d] = error2
+#                    else:
+#                        cache.errors[exi][d] = 42
+#                        print error1, error2
+                            
+                a = (Sy - b*Sx)/n
+                err = (n * a**2 + b**2 * Sxx + Syy + 2*a*b*Sx - 2*a*Sy - 2*b*Sxy)
+                tot = Syy - Sy**2/n
+                mod = tot - err
+                merr = err/(n-2)
+                if merr < 1e-10:
+                    F = 0
+                    Fprob = 1
+                else:
+                    F = mod/merr
+                    Fprob = statc.fprob(F, 1, int(n-2))
+                cache.errors[exi][d] = Fprob
 #                        print "%.4f" % Fprob,
                 #print ("%.3f\t" + "%.0f\t"*6 + "%f\t%f") % (w, ref_x, ex_x, n, a, b, merr, F, Fprob)
                 cache.deltas[exi][d] = b
@@ -607,7 +635,7 @@ def createClassVar(attributes, MQCNotation = False):
         return orange.EnumVariable("Q", values = ["Q(%s)" % ", ".join(["+-"[x]+attr for attr, x in zip(attributes, v) if x<2]) for v in orngMisc.LimitedCounter([3]*len(attributes))])
 
     
-def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, originalAsMeta = False):
+def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, correlationsAsMeta = False, originalAsMeta = False):
     nDimensions = len(dimensions)
     
     needQ = outputAttr < 0 or derivativeAsMeta
@@ -637,6 +665,18 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
             dom.addmeta(metaID, metaVar)
             metaIDs.append(metaID)
 
+    corMetaIDs = []
+    if correlationsAsMeta:
+        for dim in dimensions:
+            metaVar = orange.FloatVariable("corr(%s)" % cache.attributes[dim][0])
+            metaID = orange.newmetaid()
+            dom.addmeta(metaID, metaVar)
+            corMetaIDs.append(metaID)
+        metaVar = orange.FloatVariable("corr")
+        metaID = orange.newmetaid()
+        dom.addmeta(metaID, metaVar)
+        corMetaIDs.append(metaID)
+
     if originalAsMeta:
         originalID = orange.newmetaid()
         dom.addmeta(originalID, data.domain.classVar)
@@ -646,7 +686,7 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
 
     paded = orange.ExampleTable(dom, data)
 
-    for pad, alldeltas in zip(paded, cache.deltas):
+    for i, (pad, alldeltas) in enumerate(zip(paded, cache.deltas)):
         deltas = [alldeltas[d] for d in dimensions]
 
         if needQ:
@@ -665,10 +705,20 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
             for a in zip(metaIDs, deltas):
                 pad.setmeta(*a)
 
-    return paded, derivativeID, metaIDs, originalID
+        if correlationsAsMeta:
+            if 0 or hasattr(cache, "errors"):
+                for id, val in zip(corMetaIDs, [cache.errors[i][d] for d in dimensions]):
+                    pad.setmeta(id, val)
+                pad.setmeta(corMetaIDs[-1], min([cache.errors[i][d] for d in dimensions]))
+            else:
+                for id, val in zip(corMetaIDs[:-1], deltas):
+                    pad.setmeta(id, type(val) == str and "?" or abs(val))
+                pad.setmeta(corMetaIDs[-1], min([abs(v) for v in alldeltas if type(v) == float]))
+
+    return paded, derivativeID, metaIDs, corMetaIDs, originalID
 
 
-def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, originalAsMeta = False):
+def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, correlationsAsMeta = False, originalAsMeta = False):
     cache = makeBasicCache(data)
     cache.deltas = [[None] * len(cache.contAttributes) for x in xrange(len(data))]
     cache.nNeighbours = 30
@@ -684,7 +734,7 @@ def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, thr
             dimensions.append(outputAttr)
 
     method(cache, dimensions)
-    return createQTable(cache, data, dimensions, outputAttr, threshold, MQCNotation, derivativeAsMeta, differencesAsMeta, originalAsMeta)
+    return createQTable(cache, data, dimensions, outputAttr, threshold, MQCNotation, derivativeAsMeta, differencesAsMeta, correlationsAsMeta, originalAsMeta)
 
 
 ### Quin-like measurement of quality
