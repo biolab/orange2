@@ -22,7 +22,7 @@ Additionally you can use the following kernel functions:
  <li>polynomial: (gamma*u'*v + coef0)^degree</li>
  <li>radial basis function: exp(-gamma*|u-v|^2)</li>
  <li>sigmoid: tanh(gamma*u'*v + coef0)</li>
- <li>custom kernel (any function that remotely resembles a distance measure between two examples that can be implemented in python)</li>
+ <li>custom kernel (any function that remotely resembles a distance measure between two examples that can be implemented in python; note that if the function is not )</li>
 </ul>
 </p>
 <h2>SVMLearner</h2>
@@ -58,12 +58,24 @@ Additionally you can use the following kernel functions:
 </dl>
 <h2>SVMClassifier</h2>
 <p>Classifier used for classification, regression or distribution estimation (ONE_CLASS). In the later case the return value of the __call__ function can be 1.0 (positive case) or -1.0(negative case).</p>
+<p>For a multiclass classification problem with k classes there are k*(k-1)/2 1class vs. 1class internal binary classifiers being build. The multiclass classification is then performed by a majority vote.</p>
 <p class=section>Attributes</p>
 <dl class=attributes>
   <dt>examples</dt>
   <dd>Holds the examples used for training</dd>
   <dt>supportVectors</dt>
-  <dd>Holds the support vectors</dd>
+  <dd>Holds the support vectors. They are listed in the order of their classes (i.e. they are grouped by the order of classes as they apear in the domains <code>classVar.values</code>) </dd>
+  <dt>nSV</dt>
+  <dd>Number of support vectors for each class (the same order as above)</dd>
+  <dt>rho</dt>
+  <dd>Constants in decision functions in the order of 1v2, 1v3, ... 1vsN, 2vs3, 2vs4, ...</dd>
+  <dt>coef</dt>
+  <dd>Coefficients for support vectors in decision functions (coef[nClass-1][nSupportVectors]). If k is the total number of classes then, for each support vector there are k-1 coefficients y*alpha where alpha are dual solution of the following two class problems: 1 vs j, 2 vs j, ..., j-1 vs j, j vs j+1, j vs j+2, ..., j vs k; and y=1 in first j-1 coefficients, y=-1 in the remaining k-j coefficients</dd>
+</dl>
+<p class=section>Methods</p>
+<dl class=attributes>
+  <dt>getDecisionValues(example)</dt>
+  <dd>Return the decision values of all nClass*(nClass-1)/2 internal binary classifiers in the order of 1v2, 1v3, ... 1vsN, 2vs3, 2vs4, ...</dd>
 </dl>
 </p>
 <h2>Examples</h2>
@@ -74,9 +86,6 @@ Additionally you can use the following kernel functions:
 >>> l.nu=0.3
 >>> l.probability=True
 >>> c=l(data)
-training
-*
-...
 >>> for e in data:
 ...  print e[-1], c(e), c(e, c.GetProbabilities)
 ...
