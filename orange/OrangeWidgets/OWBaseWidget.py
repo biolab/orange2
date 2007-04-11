@@ -110,9 +110,13 @@ class OWBaseWidget(QDialog):
             self.outputDir = os.path.join(os.path.join(user.home, "Application Data"), "Orange")                  # directory for saving settings and stuff
         else:
             self.outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
-        if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
+        if not os.path.exists(self.outputDir):
+            try: os.mkdir(self.outputDir)            # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
+            except: pass
         self.outputDir = os.path.join(self.outputDir, "widgetSettings")
-        if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
+        if not os.path.exists(self.outputDir):
+            try: os.mkdir(self.outputDir)            # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
+            except: pass
 
         self.loadContextSettings()
 

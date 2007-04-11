@@ -205,7 +205,8 @@ def __getDirectoryNames():
 
     reportsDir = os.path.join(orangeDir, "report")
     if not os.path.exists(reportsDir):
-        os.mkdir(reportsDir)
+        try: os.mkdir(reportsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
+        except: pass
 
     picsDir = os.path.join(widgetDir, "icons")
     if not os.path.exists(picsDir):
@@ -214,20 +215,23 @@ def __getDirectoryNames():
     if os.name == "nt":
         applicationDir = os.path.join(user.home, "Application Data")
         if not os.path.exists(applicationDir):
-            os.mkdir(applicationDir)
+            try: os.mkdir(applicationDir)
+            except: pass
         outputDir = os.path.join(applicationDir, "Orange")                  # directory for saving settings and stuff
     else:
         outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
     if not os.path.exists(outputDir):
-        os.mkdir(outputDir)
+        try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
+        except: pass
     outputDir = os.path.join(outputDir, "OrangeCanvas")
     if not os.path.exists(outputDir):
-        os.mkdir(outputDir)
+        try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
+        except: pass
 
     registryFileName = os.path.join(outputDir, "widgetregistry.xml")
     if not os.path.exists(registryFileName):
         WidgetsToXML().ParseWidgetRoot(widgetDir, canvasDir)
-  
+
     return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "outputDir", "registryFileName"]])
 
 
