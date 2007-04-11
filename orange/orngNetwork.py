@@ -44,7 +44,8 @@ class GraphVisualizer:
             return self.data[i][j]
         
     def nVertices(self):
-        return self.graph.nVertices
+        if self.graph:
+            return self.graph.nVertices
   
   
     def fruchtermanReingold(self):
