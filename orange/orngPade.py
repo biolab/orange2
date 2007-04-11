@@ -706,14 +706,24 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
                 pad.setmeta(*a)
 
         if correlationsAsMeta:
-            if 0 or hasattr(cache, "errors"):
+            if hasattr(cache, "errors"):
+                maxerr = -1e20
                 for id, val in zip(corMetaIDs, [cache.errors[i][d] for d in dimensions]):
-                    pad.setmeta(id, val)
-                pad.setmeta(corMetaIDs[-1], min([cache.errors[i][d] for d in dimensions]))
+                    if val == None:
+                        pad.setmeta(id, "?")
+                    else:
+                        pad.setmeta(id, val)
+                        maxerr = max(maxerr, val)
+                pad.setmeta(corMetaIDs[-1], maxerr)
             else:
+                minder = 0
                 for id, val in zip(corMetaIDs[:-1], deltas):
-                    pad.setmeta(id, type(val) == str and "?" or abs(val))
-                pad.setmeta(corMetaIDs[-1], min([abs(v) for v in alldeltas if type(v) == float]))
+                    if type(val) == str:
+                        pad.setmeta(id, "?")
+                    else:
+                        pad.setmeta(id, abs(val))
+                        minder = min(minder, abs(val))
+                pad.setmeta(corMetaIDs[-1], minder)
 
     return paded, derivativeID, metaIDs, corMetaIDs, originalID
 
