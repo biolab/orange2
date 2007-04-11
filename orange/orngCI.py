@@ -209,7 +209,7 @@ class FeatureByKramerClass:
 
   def __call__(self, table, bound, weightID=0):
     if not self.instance:
-      self.createInstance()
+            self.createInstance()
     return self.instance(table, bound, "", weightID)
 
 
