@@ -592,6 +592,24 @@ class OWTreeViewer2D(OWWidget):
         # GENERAL TAB
         GeneralTab = QVGroupBox(self)
 
+        OWGUI.hSlider(GeneralTab, self, 'Zoom', box='Zoom', minValue=1, maxValue=10, step=1,
+                      callback=self.toggleZoomSlider, ticks=1)
+        OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical Spacing', minValue=1, maxValue=10, step=1,
+                      callback=self.toggleVSpacing, ticks=1)
+        OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal Spacing', minValue=1, maxValue=10, step=1,
+                      callback=self.toggleHSpacing, ticks=1)
+
+        # OWGUI.checkBox(GeneralTab, self, 'ZoomAutoRefresh', 'Auto Refresh After Zoom',
+        #                tooltip='Refresh after change of zoom setting?')
+        # OWGUI.checkBox(GeneralTab, self, 'AutoArrange', 'Auto Arrange',
+        #                tooltip='Auto arrange the position of the nodes\nafter any change of nodes visibility')
+        OWGUI.checkBox(GeneralTab, self, 'NodeBubblesEnabled', 'Node bubbles',
+                       tooltip='When mouse over the node show info bubble')
+        OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate text to fit margins',
+                       tooltip='Truncate any text to fit the node width',
+                       callback=self.toggleTruncateText)
+        
+
         OWGUI.hSlider(GeneralTab, self, 'Zoom', box='Zoom', minValue=1, maxValue=10, step=1, callback=self.toggleZoomSlider, ticks=1)
         OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleVSpacing, ticks=1)
         OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleHSpacing, ticks=1)
@@ -603,7 +621,7 @@ class OWTreeViewer2D(OWWidget):
 
         self.infBox = QVGroupBox(GeneralTab)
         self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        self.infBox.setTitle('Tree Size Info')
+        self.infBox.setTitle('Tree Size')
 	self.infoa = QLabel('No tree.', self.infBox)
         self.infob = QLabel('', self.infBox)
 
@@ -611,26 +629,38 @@ class OWTreeViewer2D(OWWidget):
 
         # TREE TAB
         TreeTab = QVGroupBox(self)
-        OWGUI.checkWithSpin(TreeTab, self, 'Max Tree Depth:', 1, 20, 'MaxTreeDepthB', "MaxTreeDepth", tooltip='Defines the depth of the tree displayed', checkCallback=self.toggleTreeDepth, spinCallback=self.toggleTreeDepth)
-        OWGUI.spin(TreeTab, self, 'LineWidth', min=1, max=10, step=1, label='Max Line Width:', tooltip='Defines max width of the edges that connect tree nodes', callback=self.toggleLineWidth)
-        OWGUI.radioButtonsInBox(TreeTab, self,  'LineWidthMethod', ['No Dependency', 'Root Node', 'Parent Node'], box='Reference for Line Width',
-                                tooltips=['All edges are of the same width', 'Line width is relative to number of cases in root node', 'Line width is relative to number of cases in parent node'],
+        OWGUI.checkWithSpin(TreeTab, self, 'Max tree depth:', 1, 20, 'MaxTreeDepthB', "MaxTreeDepth",
+                            tooltip='Defines the depth of the tree displayed',
+                            checkCallback=self.toggleTreeDepth,
+                            spinCallback=self.toggleTreeDepth)
+        OWGUI.spin(TreeTab, self, 'LineWidth', min=1, max=10, step=1, label='Max line width:',
+                   tooltip='Defines max width of the edges that connect tree nodes',
+                   callback=self.toggleLineWidth)
+        OWGUI.radioButtonsInBox(TreeTab, self,  'LineWidthMethod',
+                                ['No dependency', 'Root node', 'Parent node'],
+                                box='Reference for Line Width',
+                                tooltips=['All edges are of the same width',
+                                          'Line width is relative to number of cases in root node',
+                                          'Line width is relative to number of cases in parent node'],
                                 callback=self.toggleLineWidth)
         self.tabs.insertTab(TreeTab, "Tree")
 
         # NODE TAB
         NodeTab = QVGroupBox(self)
         # Node size options
-        OWGUI.hSlider(NodeTab, self, 'NodeSize', box='Node Width', minValue=1, maxValue=10, step=1, callback=self.toggleNodeSize, ticks=1)
+        OWGUI.hSlider(NodeTab, self, 'NodeSize', box='Node Width',
+                      minValue=1, maxValue=10, step=1,
+                      callback=self.toggleNodeSize, ticks=1)
+
         # Node information
-
-
         OWGUI.button(self.controlArea, self, "Navigator", self.toggleNavigator, debuggingEnabled = 0)
         findbox = QHBox(self.controlArea)
-        self.centerRootButton=OWGUI.button(findbox, self, "Find Root", callback=lambda :self.rootNode and self.canvasView.center(self.rootNode.x(),
-                                                                                                                      self.rootNode.y()))
-        self.centerNodeButton=OWGUI.button(findbox, self, "Find Selected", callback=lambda :self.canvasView.selectedNode and \
-                                     self.canvasView.center(self.canvasView.selectedNode.x(), self.canvasView.selectedNode.y()))
+        self.centerRootButton=OWGUI.button(findbox, self, "Find Root",
+                                           callback=lambda :self.rootNode and self.canvasView.center(self.rootNode.x(), self.rootNode.y()))
+        self.centerNodeButton=OWGUI.button(findbox, self, "Find Selected",
+                                           callback=lambda :self.canvasView.selectedNode and \
+                                     self.canvasView.center(self.canvasView.selectedNode.x(),
+                                                            self.canvasView.selectedNode.y()))
         self.tabs.insertTab(NodeTab,"Node")
         self.NodeTab=NodeTab
         self.TreeTab=TreeTab
