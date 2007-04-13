@@ -232,8 +232,8 @@ class OWDataTable(OWWidget):
             else:
                 bgColor = Qt.white
             # generate list of tuples (attribute value, instance index) and sort by attrVal
-            valIdx = [(ex[key].native(),idx) for idx,ex in enumerate(data)]
-            table.values[j]=[str(v[0])+" " for v in valIdx]
+            valIdx = [(str(ex[key]),idx) for idx,ex in enumerate(data)]
+            table.values[j]=[v[0]+" " for v in valIdx]
             valIdx.sort()
             # generate a dictionary where key: instance index, value: rank
             idx2rankDict = dict(zip([x[1] for x in valIdx], range(numEx)))
@@ -369,7 +369,7 @@ class MyTable(QTable):
             self.setColumnWidth(col,w)
         except KeyError, err:
             pass
-            #print "Exception in adjustColumn ", col
+            print "Exception in adjustColumn ", col
                 
     def sliderPressed(self):
         self.disableColumnAdjust=True
@@ -422,10 +422,11 @@ class MyTable(QTable):
             self.sortingColumn=self.numCols()-1
         #self.paintEmptyArea(painter, cx, cy, cw, ch)
         self.setPainterFont(painter)
-        xStart=self.columnAt(cx)
-        xEnd=min([self.columnAt(cx+cw)+1, self.numCols()])
-        yStart=self.rowAt(cy)
-        yEnd=min([self.rowAt(cy+ch)+1, self.numRows()])
+        xStart=max(self.columnAt(cx), 0)
+        xEnd=min(self.columnAt(cx+cw)+1, self.numCols()) or self.numCols() #columnAt can return -1 if there is no cell at that position
+        yStart=max(self.rowAt(cy),0)
+        yEnd=min(self.rowAt(cy+ch)+1, self.numRows()) or self.numRows() # the same as above
+        #print "X start:", xStart, "X end:", xEnd, "Y start:", yStart, "Y end:", yEnd
         for i in range(xStart, xEnd):
             painter.setBrush(QBrush(self.columnColor[i]))
             for j in range(yStart, yEnd):
@@ -433,7 +434,8 @@ class MyTable(QTable):
                 
     def paintEvent(self, paintEvent):
         QTable.paintEvent(self, paintEvent)
-        painter=QPainter(self) #upper left corner gets painted like the 0,0 cell (why??) 
+        #upper left corner gets painted like the 0,0 cell (why??) 
+        painter=QPainter(self)
         painter.setBrush(QBrush(Qt.gray))
         painter.drawRect(1, 1, 32, 20)
 
