@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="Windows-1252"?>
+<?xml version="1.0" encoding="windows-1250"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="orangeom"
-	ProjectGUID="{1DD56474-1110-413B-80B8-707E8EE28EC6}"
-	RootNamespace="orangeom"
+	ProjectGUID="{DF2FC6FC-42B7-4946-9C2E-252D66D562A2}"
 	>
 	<Platforms>
 		<Platform
@@ -38,7 +37,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG;NO_PIPED_COMANDS"
+				PreprocessorDefinitions="NDEBUG"
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
@@ -51,7 +50,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../orange,../include,px,$(PYTHON)\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ORANGEOM_EXPORTS;NO_PIPED_COMMANDS;NUMPY"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ORANGEOM_EXPORTS;NO_PIPED_COMMANDS"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -68,7 +67,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;NO_PIPED_COMANDS"
+				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
 			/>
 			<Tool
@@ -77,12 +76,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="orange.lib odbc32.lib odbccp32.lib"
-				OutputFile="$(PYTHON)/lib/site-packages/orange/orangeom.pyd"
+				OutputFile="obj/release_debug/orangeom.pyd"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(PYTHON)\libs,../../lib"
 				GenerateDebugInformation="true"
-				ImportLibrary="$(PYTHON)/lib/site-packages/orange/libs/orangeom.lib"
+				ImportLibrary=".\obj/Release_Debug/orangeom.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -115,8 +114,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(PYTHON)/lib/site-packages/orange/libs"
-			IntermediateDirectory="$(PYTHON)/lib/site-packages/orange/obj/$(ConfigurationName)/$(ProjectName)"
+			OutputDirectory=".\obj/Release"
+			IntermediateDirectory=".\obj/Release"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
@@ -137,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG;NO_PIPED_COMANDS"
+				PreprocessorDefinitions="NDEBUG"
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
@@ -150,24 +149,24 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../orange,../include,px,$(PYTHON)\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ORANGEOM_EXPORTS;NO_PIPED_COMMANDS;NUMPY"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;ORANGEOM_EXPORTS;NO_PIPED_COMMANDS"
 				StringPooling="true"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				FloatingPointModel="2"
 				RuntimeTypeInfo="true"
 				PrecompiledHeaderFile=".\obj/Release/orangeom.pch"
-				ProgramDataBaseFileName="$(IntDir)\vc80.pdb"
+				AssemblerListingLocation=".\obj/Release/"
+				ObjectFile=".\obj/Release/"
+				ProgramDataBaseFileName=".\obj/Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				DisableSpecificWarnings="4251;4996;4275"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;NO_PIPED_COMANDS"
+				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
 			/>
 			<Tool
@@ -176,12 +175,11 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="orange.lib"
-				OutputFile="$(PYTHON)/lib/site-packages/orange/orangeom.pyd"
+				OutputFile="obj/release/orangeom.pyd"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(PYTHON)/libs,$(PYTHON)/lib/site-packages/orange/libs"
-				GenerateDebugInformation="true"
-				ImportLibrary="$(TargetDir)libs/$(TargetName).lib"
+				AdditionalLibraryDirectories="../../lib,$(PYTHON)\libs"
+				ImportLibrary=".\obj/Release/orangeom.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -209,13 +207,13 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="rem ..\upx.bat orangeom"
+				CommandLine="..\upx.bat orangeom"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(PYTHON)/lib/site-packages/orange/libs"
-			IntermediateDirectory="$(PYTHON)/lib/site-packages/orange/obj/$(ConfigurationName)/$(ProjectName)"
+			OutputDirectory=".\obj/Debug"
+			IntermediateDirectory=".\obj/Debug"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
@@ -236,7 +234,7 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG;NO_PIPED_COMANDS"
+				PreprocessorDefinitions="_DEBUG"
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
@@ -248,25 +246,25 @@
 				AdditionalOptions="/Zm700 "
 				Optimization="0"
 				AdditionalIncludeDirectories="../orange,../include,px,$(PYTHON)\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ORANGEOM_EXPORTS;NO_PIPED_COMMANDS;NUMPY"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;ORANGEOM_EXPORTS;NO_PIPED_COMMANDS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				FloatingPointModel="2"
+				RuntimeLibrary="3"
 				RuntimeTypeInfo="true"
 				PrecompiledHeaderFile=".\obj/Debug/orangeom.pch"
-				ProgramDataBaseFileName="$(PYTHON)/lib/site-packages/orange/obj/$(ConfigurationName)/$(ProjectName)"
+				AssemblerListingLocation=".\obj/Debug/"
+				ObjectFile=".\obj/Debug/"
+				ProgramDataBaseFileName=".\obj/Debug/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
-				DisableSpecificWarnings="4251;4996;4275;4244;4101"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;NO_PIPED_COMANDS"
+				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
 			/>
 			<Tool
@@ -275,13 +273,13 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="orange_d.lib odbc32.lib odbccp32.lib"
-				OutputFile="$(PYTHON)/lib/site-packages/orange/orangeom_d.pyd"
+				OutputFile="..\..\orangeom_d.pyd"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(PYTHON)/libs,$(PYTHON)/lib/site-packages/orange/libs"
+				AdditionalLibraryDirectories="$(PYTHON)\libs,../../lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\obj/Debug/orangeom_d.pdb"
-				ImportLibrary="$(TargetDir)libs/$(TargetName).lib"
+				ImportLibrary=".\obj/Debug/orangeom_d.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -309,7 +307,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="rem copy obj\Debug\orangeom_d.lib ..\..\lib\orangeom_d.lib"
+				CommandLine="copy obj\Debug\orangeom_d.lib ..\..\lib\orangeom_d.lib"
 			/>
 		</Configuration>
 	</Configurations>
@@ -323,26 +321,132 @@
 			<File
 				RelativePath="graphDrawing.cpp"
 				>
-			</File>
-			<File
-				RelativePath="graphoptimization.cpp"
-				>
+				<FileConfiguration
+					Name="Release_Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						DisableSpecificWarnings="4101"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="graphoptimization.cpp"
+				>
+				<FileConfiguration
+					Name="Release_Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="mds.cpp"
 				>
+				<FileConfiguration
+					Name="Release_Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="NO_PIPED_COMANDS"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\networkoptimization.cpp"
+				>
 			</File>
 			<File
 				RelativePath="optimizeAnchors.cpp"
 				>
+				<FileConfiguration
+					Name="Release_Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						DebugInformationFormat="3"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="NO_PIPED_COMANDS"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="orangeom.cpp"
@@ -352,6 +456,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
 						SuppressStartupBanner="false"
 					/>
 				</FileConfiguration>
@@ -360,55 +466,83 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions="NO_PIPED_COMANDS"
 						SuppressStartupBanner="false"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="som.cpp"
 				>
-			</File>
-			<File
-				RelativePath="triangulate.cpp"
-				>
+				<FileConfiguration
+					Name="Release_Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="NO_PIPED_COMANDS;NO_PIPED_COMANDS"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
-			<Filter
-				Name="som"
+			<File
+				RelativePath="triangulate.cpp"
 				>
-				<File
-					RelativePath="som\datafile.c"
+				<FileConfiguration
+					Name="Release_Debug|Win32"
 					>
-				</File>
-				<File
-					RelativePath="som\fileio.c"
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
 					>
-				</File>
-				<File
-					RelativePath="som\labels.c"
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions="NO_PIPED_COMANDS"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
 					>
-				</File>
-				<File
-					RelativePath="som\lvq_pak.c"
-					>
-				</File>
-				<File
-					RelativePath="som\som_rout.c"
-					>
-				</File>
-				<File
-					RelativePath="som\version.c"
-					>
-				</File>
-			</Filter>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
 			<Filter
 				Name="qhull"
 				>
@@ -473,6 +607,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\qhull\qhull_a.h"
+					>
+				</File>
+				<File
 					RelativePath=".\qhull\qset.c"
 					>
 				</File>
@@ -497,17 +635,211 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="som"
+				>
+				<File
+					RelativePath="som\datafile.c"
+					>
+					<FileConfiguration
+						Name="Release_Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="som\fileio.c"
+					>
+					<FileConfiguration
+						Name="Release_Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="som\labels.c"
+					>
+					<FileConfiguration
+						Name="Release_Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="som\lvq_pak.c"
+					>
+					<FileConfiguration
+						Name="Release_Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="som\som_rout.c"
+					>
+					<FileConfiguration
+						Name="Release_Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="som\version.c"
+					>
+					<FileConfiguration
+						Name="Release_Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="graphoptimization.h"
+				RelativePath=".\graphoptimization.hpp"
 				>
 			</File>
 			<File
 				RelativePath="mds.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\networkoptimization.hpp"
 				>
 			</File>
 			<File
@@ -519,46 +851,6 @@
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
-		</Filter>
-		<Filter
-			Name="px"
-			>
-			<File
-				RelativePath=".\px\externs.px"
-				>
-			</File>
-			<File
-				RelativePath=".\px\graphDrawing.px"
-				>
-			</File>
-			<File
-				RelativePath=".\px\graphoptimization.px"
-				>
-			</File>
-			<File
-				RelativePath=".\px\initialization.px"
-				>
-			</File>
-			<File
-				RelativePath=".\px\mds.px"
-				>
-			</File>
-			<File
-				RelativePath=".\px\optimizeAnchors.px"
-				>
-			</File>
-			<File
-				RelativePath=".\px\orangeom.px"
-				>
-			</File>
-			<File
-				RelativePath=".\px\som.px"
-				>
-			</File>
-			<File
-				RelativePath=".\px\triangulate.px"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>
