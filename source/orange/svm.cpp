@@ -36,8 +36,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   #pragma warning (disable : 4512) // assigment operator could not be generated
 #endif
 
-/* CHANGES TO LIBSVM-2.81
- *-#include "svm.h" to #include"svm.hpp"
+/* CHANGES TO LIBSVM-2.83
+ *-#include "svm.h" to #include"svm.ppp"
  *-commented the swap function definition due to conflict with std::swap
  *-added #ifdef around min max definitions
  *-added examples, classifier and learner pointers to svm_parameter
@@ -56,11 +56,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <float.h>
 #include <string.h>
 #include <stdarg.h>
-#include <errno.h>
 #include "svm.ppp"
 typedef float Qfloat;
 typedef signed char schar;
-#if _MSC_VER!=0 && _MSC_VER<1300
 #ifndef min
 template <class T> inline T min(T x,T y) { return (x<y)?x:y; }
 #endif
@@ -68,11 +66,21 @@ template <class T> inline T min(T x,T y) { return (x<y)?x:y; }
 template <class T> inline T max(T x,T y) { return (x>y)?x:y; }
 #endif
 //template <class T> inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
-#endif
 template <class S, class T> inline void clone(T*& dst, S* src, int n)
 {
 	dst = new T[n];
 	memcpy((void *)dst,(void *)src,sizeof(T)*n);
+}
+inline double powi(double base, int times)
+{
+        double tmp = base, ret = 1.0;
+
+        for(int t=times; t>0; t/=2)
+	{
+                if(t%2==1) ret*=tmp;
+                tmp = tmp * tmp;
+        }
+        return ret;
 }
 #define INF HUGE_VAL
 #define TAU 1e-12
@@ -259,7 +267,7 @@ private:
 
 	// svm_parameter
 	const int kernel_type;
-	const double degree;
+	const int degree;
 	const double gamma;
 	const double coef0;
 	svm_parameter param;
@@ -271,7 +279,7 @@ private:
 	}
 	double kernel_poly(int i, int j) const
 	{
-		return pow(gamma*dot(x[i],x[j])+coef0,degree);
+		return powi(gamma*dot(x[i],x[j])+coef0,degree);
 	}
 	double kernel_rbf(int i, int j) const
 	{
@@ -280,6 +288,10 @@ private:
 	double kernel_sigmoid(int i, int j) const
 	{
 		return tanh(gamma*dot(x[i],x[j])+coef0);
+	}
+	double kernel_precomputed(int i, int j) const
+	{
+		return x[i][(int)(x[j][0].value)].value;
 	}
 	double  kernel_custom(int i, int j) const
 	{
@@ -306,6 +318,9 @@ Kernel::Kernel(int l, svm_node * const * x_, const svm_parameter& param)
 			break;
 		case SIGMOID:
 			kernel_function = &Kernel::kernel_sigmoid;
+			break;
+		case PRECOMPUTED:
+			kernel_function = &Kernel::kernel_precomputed;
 			break;
 		case CUSTOM:
 			kernel_function = &Kernel::kernel_custom;
@@ -359,7 +374,7 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 		case LINEAR:
 			return dot(x,y);
 		case POLY:
-			return pow(param.gamma*dot(x,y)+param.coef0,param.degree);
+			return powi(param.gamma*dot(x,y)+param.coef0,param.degree);
 		case RBF:
 		{
 			double sum = 0;
@@ -403,9 +418,11 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 		}
 		case SIGMOID:
 			return tanh(param.gamma*dot(x,y)+param.coef0);
+		case PRECOMPUTED:  //x: test (validation), y: SV
+			return x[(int)(y->value)].value;
 		case CUSTOM:
 		{
-			while(y->index!=-1)
+			while(y->index!=-1)	// the value in the last svm_node is the index of the training example
 				++y;
 			while(x->index!=-1)
 				++x;
@@ -2072,9 +2089,9 @@ void svm_binary_svc_probability(
 			}		
 			svm_destroy_model(submodel);
 			svm_destroy_param(&subparam);
-			free(subprob.x);
-			free(subprob.y);
 		}
+		free(subprob.x);
+		free(subprob.y);
 	}		
 	sigmoid_train(prob->l,dec_values,prob->y,probA,probB);
 	free(dec_values);
@@ -2587,7 +2604,6 @@ void svm_predict_values(const svm_model *model, const svm_node *x, double* dec_v
 			start[i] = start[i-1]+model->nSV[i-1];
 
 		int p=0;
-		int pos=0;
 		for(i=0;i<nr_class;i++)
 			for(int j=i+1;j<nr_class;j++)
 			{
@@ -2604,8 +2620,9 @@ void svm_predict_values(const svm_model *model, const svm_node *x, double* dec_v
 					sum += coef1[si+k] * kvalue[si+k];
 				for(k=0;k<cj;k++)
 					sum += coef2[sj+k] * kvalue[sj+k];
-				sum -= model->rho[p++];
-				dec_values[pos++] = sum;
+				sum -= model->rho[p];
+				dec_values[p] = sum;
+				p++;
 			}
 
 		free(kvalue);
@@ -2703,7 +2720,7 @@ const char *svm_type_table[] =
 
 const char *kernel_type_table[]=
 {
-	"linear","polynomial","rbf","sigmoid",NULL
+	"linear","polynomial","rbf","sigmoid","precomputed",NULL
 };
 
 int svm_save_model(const char *model_file_name, const svm_model *model)
@@ -2717,7 +2734,7 @@ int svm_save_model(const char *model_file_name, const svm_model *model)
 	fprintf(fp,"kernel_type %s\n", kernel_type_table[param.kernel_type]);
 
 	if(param.kernel_type == POLY)
-		fprintf(fp,"degree %g\n", param.degree);
+		fprintf(fp,"degree %d\n", param.degree);
 
 	if(param.kernel_type == POLY || param.kernel_type == RBF || param.kernel_type == SIGMOID)
 		fprintf(fp,"gamma %g\n", param.gamma);
@@ -2778,16 +2795,19 @@ int svm_save_model(const char *model_file_name, const svm_model *model)
 			fprintf(fp, "%.16g ",sv_coef[j][i]);
 
 		const svm_node *p = SV[i];
-		while(p->index != -1)
-		{
-			fprintf(fp,"%d:%.8g ",p->index,p->value);
-			p++;
-		}
+
+		if(param.kernel_type == PRECOMPUTED)
+			fprintf(fp,"0:%d ",(int)(p->value));
+		else
+			while(p->index != -1)
+			{
+				fprintf(fp,"%d:%.8g ",p->index,p->value);
+				p++;
+			}
 		fprintf(fp, "\n");
 	}
-
-	fclose(fp);
-	return 0;
+	if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
+	else return 0;
 }
 
 svm_model *svm_load_model(const char *model_file_name)
@@ -2855,7 +2875,7 @@ svm_model *svm_load_model(const char *model_file_name)
 			}
 		}
 		else if(strcmp(cmd,"degree")==0)
-			fscanf(fp,"%lf",&param.degree);
+			fscanf(fp,"%d",&param.degree);
 		else if(strcmp(cmd,"gamma")==0)
 			fscanf(fp,"%lf",&param.gamma);
 		else if(strcmp(cmd,"coef0")==0)
@@ -2910,7 +2930,7 @@ svm_model *svm_load_model(const char *model_file_name)
 		}
 		else
 		{
-			fprintf(stderr,"unknown text in model file\n");
+			fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
 			free(model->rho);
 			free(model->label);
 			free(model->nSV);
@@ -2973,8 +2993,7 @@ out:
 out2:
 		x_space[j++].index = -1;
 	}
-
-	fclose(fp);
+	if (ferror(fp) != 0 || fclose(fp) != 0) return NULL;
 
 	model->free_sv = 1;	// XXX
 	return model;
@@ -3014,15 +3033,19 @@ const char *svm_check_parameter(const svm_problem *prob, const svm_parameter *pa
 	   svm_type != NU_SVR)
 		return "unknown svm type";
 	
-	// kernel_type
+	// kernel_type, degree
 	
 	int kernel_type = param->kernel_type;
 	if(kernel_type != LINEAR &&
 	   kernel_type != POLY &&
 	   kernel_type != RBF &&
 	   kernel_type != SIGMOID &&
+	   kernel_type != PRECOMPUTED &&
 	   kernel_type != CUSTOM)
 		return "unknown kernel type";
+
+	if(param->degree < 0)
+		return "degree of polynomial kernel < 0";
 
 	// cache_size,eps,C,nu,p,shrinking
 
@@ -3299,7 +3322,6 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 	nSV=mlnew TFloatList(nr_class); // num of SVs for each class (sum = model->l)
 	for(i=0;i<nr_class;i++)
 		nSV->at(i)=model->nSV[i];
-	//printf("nSV");
 
 	coef=mlnew TFloatListList(nr_class-1);
 	for(i=0;i<nr_class-1;i++){
