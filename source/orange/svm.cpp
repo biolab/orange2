@@ -59,12 +59,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "svm.ppp"
 typedef float Qfloat;
 typedef signed char schar;
-#ifndef min
-template <class T> inline T min(T x,T y) { return (x<y)?x:y; }
+
+#if _MSC_VER!=0 && _MSC_VER<1300
+  #ifndef min
+    template <class T> inline T min(T x,T y) { return (x<y)?x:y; }
+  #endif
+  #ifndef max
+    template <class T> inline T max(T x,T y) { return (x>y)?x:y; }
+  #endif
 #endif
-#ifndef max
-template <class T> inline T max(T x,T y) { return (x>y)?x:y; }
-#endif
+
 //template <class T> inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
 template <class S, class T> inline void clone(T*& dst, S* src, int n)
 {
