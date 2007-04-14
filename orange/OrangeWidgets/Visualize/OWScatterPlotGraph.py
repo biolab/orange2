@@ -34,7 +34,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 ##        self.showClusters = 0
         self.tooltipKind = 1
         self.showFilledSymbols = 1
-        self.showProbabilities = 1
+        self.showProbabilities = 0
 
         self.toolRects = []
         self.tooltipData = []
@@ -161,7 +161,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             xdiff = xmax-xmin; ydiff = ymax-ymin
             scX = [x/xdiff for x in xData]
             scY = [y/ydiff for y in yData]
-            clsData = list(numpy.transpose(numpy.take(self.originalData, [colorIndex], axis = 0)))
+            clsData = numpy.take(self.originalData, [colorIndex], axis = 0)[0]
 
             data = numpy.transpose(numpy.array([scX, scY, clsData]))
             data = numpy.compress(validData, data, axis = 0)
