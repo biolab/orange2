@@ -51,7 +51,6 @@ class FreeViz:
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
 
-
     def showAllAttributes(self):
         self.graph.anchorData = [(0,0, a.name) for a in self.graph.rawdata.domain.attributes]
         self.radialAnchors()
@@ -61,6 +60,8 @@ class FreeViz:
 
     def radialAnchors(self):
         attrList = self.getShownAttributeList()
+        if not attrList:
+            return
         phi = 2*math.pi/len(attrList)
         self.graph.anchorData = [(math.cos(i*phi), math.sin(i*phi), a) for i, a in enumerate(attrList)]
 
@@ -98,6 +99,9 @@ class FreeViz:
         self.graph.anchorData = anchors
 
     def optimizeSeparation(self, steps = 10, singleStep = False):
+        # check if we have data and a discrete class
+        if not self.rawdata or len(self.rawdata) == 0 or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+            return
         if self.implementation == FAST_IMPLEMENTATION:
             return self.optimize_FAST_Separation(steps, singleStep)
         else:
@@ -152,16 +156,20 @@ class FreeViz:
 
     def optimize_LDA_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
         dataSize = len(self.graph.rawdata)
+        if dataSize == 0:
+            return anchorData, (XAnchors, YAnchors)
         classCount = len(self.graph.rawdata.domain.classVar.values)
         validData = self.graph.getValidList(attrIndices)
         selectedData = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
 
-        if not XAnchors: XAnchors = numpy.array([a[0] for a in anchorData], numpy.Float)
-        if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
+        if XAnchors == None:
+            XAnchors = numpy.array([a[0] for a in anchorData], numpy.float)
+        if YAnchors == None:
+            YAnchors = numpy.array([a[1] for a in anchorData], numpy.float)
 
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
-        if not transProjData:
-            return anchorData
+        if transProjData == None:
+            return anchorData, (XAnchors, YAnchors)
 
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]; y_positions = projData[1]; classData = projData[2]
@@ -206,8 +214,8 @@ class FreeViz:
         #meanDestinationVectors = [(x + xCenterVector/5, y + yCenterVector/5) for (x,y) in meanDestinationVectors]   # center mean values
         meanDestinationVectors = [(x + xCenterVector, y + yCenterVector) for (x,y) in meanDestinationVectors]   # center mean values
 
-        FXs = numpy.zeros(len(x_positions), numpy.Float)        # forces
-        FYs = numpy.zeros(len(x_positions), numpy.Float)
+        FXs = numpy.zeros(len(x_positions), numpy.float)        # forces
+        FYs = numpy.zeros(len(x_positions), numpy.float)
 
         for c in range(classCount):
             ind = (classData == c)
@@ -215,8 +223,8 @@ class FreeViz:
             numpy.putmask(FYs, ind, meanDestinationVectors[c][1] - y_positions)
 
         # compute gradient for all anchors
-        GXs = numpy.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
-        GYs = numpy.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
+        GXs = numpy.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], numpy.float)
+        GYs = numpy.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], numpy.float)
 
         m = max(max(abs(GXs)), max(abs(GYs)))
         GXs /= (20*m); GYs /= (20*m)
@@ -248,25 +256,29 @@ class FreeViz:
 
     def optimize_SLOW_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
         dataSize = len(self.graph.rawdata)
+        if dataSize == 0:
+            return anchorData, (XAnchors, YAnchors)
         validData = self.graph.getValidList(attrIndices)
         selectedData = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
 
-        if not XAnchors: XAnchors = numpy.array([a[0] for a in anchorData], numpy.Float)
-        if not YAnchors: YAnchors = numpy.array([a[1] for a in anchorData], numpy.Float)
+        if XAnchors == None:
+            XAnchors = numpy.array([a[0] for a in anchorData], numpy.float)
+        if YAnchors == None:
+            YAnchors = numpy.array([a[1] for a in anchorData], numpy.float)
 
         transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
-        if not transProjData:
-            return anchorData
+        if transProjData == None:
+            return anchorData, (XAnchors, YAnchors)
 
         projData = numpy.transpose(transProjData)
         x_positions = projData[0]; x_positions2 = numpy.array(x_positions)
         y_positions = projData[1]; y_positions2 = numpy.array(y_positions)
         classData = projData[2]  ; classData2 = numpy.array(classData)
 
-        FXs = numpy.zeros(len(x_positions), numpy.Float)        # forces
-        FYs = numpy.zeros(len(x_positions), numpy.Float)
-        GXs = numpy.zeros(len(anchorData), numpy.Float)        # gradients
-        GYs = numpy.zeros(len(anchorData), numpy.Float)
+        FXs = numpy.zeros(len(x_positions), numpy.float)        # forces
+        FYs = numpy.zeros(len(x_positions), numpy.float)
+        GXs = numpy.zeros(len(anchorData), numpy.float)        # gradients
+        GYs = numpy.zeros(len(anchorData), numpy.float)
 
         rotateArray = range(len(x_positions)); rotateArray = rotateArray[1:] + [0]
         for i in range(len(x_positions)-1):
@@ -279,7 +291,7 @@ class FreeViz:
             rs2 += numpy.where(rs2 == 0.0, 0.0001, 0.0)    # replace zeros to avoid divisions by zero
             rs = numpy.sqrt(rs2)
 
-            F = numpy.zeros(len(x_positions), numpy.Float)
+            F = numpy.zeros(len(x_positions), numpy.float)
             classDiff = numpy.where(classData == classData2, 1, 0)
             numpy.putmask(F, classDiff, 150*self.attractG*rs2)
             numpy.putmask(F, 1-classDiff, -self.repelG/rs2)
@@ -287,8 +299,8 @@ class FreeViz:
             FYs += F * dy / rs
 
         # compute gradient for all anchors
-        GXs = numpy.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
-        GYs = numpy.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], numpy.Float)
+        GXs = numpy.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], numpy.float)
+        GYs = numpy.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], numpy.float)
 
         m = max(max(abs(GXs)), max(abs(GYs)))
         GXs /= (20*m); GYs /= (20*m)
@@ -397,12 +409,16 @@ class FreeViz:
     # if autoSetParameters is set then try different values for parameters and see how good projection do we get
     # if not then just use current parameters to place anchors
     def s2nMixAnchorsAutoSet(self):
+        # check if we have data and a discrete class
+        if not self.rawdata or len(self.rawdata) == 0 or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+            return
+
         if self.__class__ != FreeViz:
             import qt
 
         if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             if self.__class__ != FreeViz:
-                qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
+                qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', qt.QMessageBox.Ok)
             else:
                 print "S2N heuristic works only in data sets with a discrete class value"
             return
@@ -466,10 +482,14 @@ class FreeViz:
 
     # place a subset of attributes around the circle. this subset must contain "good" attributes for each of the class values
     def s2nMixAnchors(self, setAttributeListInRadviz = 1):
+        # check if we have data and a discrete class
+        if not self.rawdata or len(self.rawdata) == 0 or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+            return
+
         if self.__class__ != FreeViz:
             import qt
             if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-                qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
+                qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', qt.QMessageBox.Ok)
                 return 0
 
         # compute the quality of attributes only once
