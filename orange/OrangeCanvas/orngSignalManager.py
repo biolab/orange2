@@ -98,11 +98,17 @@ class SignalManager:
     # ----------------------------------------------------------
     # DEBUGGING FUNCTION
 
+    def closeDebugFile(self):
+        if self.debugFile:
+            self.debugFile.close()
+        sys.stderr = self.stderr
+        #sys.stdout = self.stdout
+
     def __del__(self):
         if self.debugFile:
             self.debugFile.close()
-            sys.stderr = self.stderr
-            #sys.stdout = self.stdout
+        sys.stderr = self.stderr
+        #sys.stdout = self.stdout
 
     #
     def addEvent(self, strValue, object = None, eventVerbosity = 1):
