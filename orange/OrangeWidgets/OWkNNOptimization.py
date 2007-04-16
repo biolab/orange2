@@ -1090,29 +1090,24 @@ class OWInteractionAnalysis(OWWidget):
                         s += "<hr>Shared gene sets: %s<br>" % (sharedGeneSets)
                     s += "<hr>Gene sets for individual genes:<br>&nbsp; &nbsp; <b>%s</b>: %s<br>&nbsp; &nbsp; <b>%s</b>: %s" % (attributes[x], getGeneSet(self.geneToSet, attributes[x]), attributes[yy], getGeneSet(self.geneToSet, attributes[yy]))
 
-                curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color), [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps])
-                key = self.graph.insertCurve(curve)
+                key = self.graph.insertCurve(PolygonCurve(self.graph, QPen(color, 1), QBrush(color), [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps, y+1-0.5+eps]))
 
                 if self.useGeneSets and self.geneToSet and sharedGeneSets != []:
-                    curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [x-0.5+eps2, x+0.5-eps2, x+0.5-eps2, x-0.5+eps2], [y+1-0.5+eps2, y+1-0.5+eps2, y+1+0.5-eps2, y+1+0.5-eps2])
-                    key = self.graph.insertCurve(curve)
+                    key = self.graph.insertCurve(PolygonCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [x-0.5+eps2, x+0.5-eps2, x+0.5-eps2, x-0.5+eps2, x-0.5+eps2], [y+1-0.5+eps2, y+1-0.5+eps2, y+1+0.5-eps2, y+1+0.5-eps2, y+1-0.5+eps2]))
                 if s != "":
                     self.graph.tips.addToolTip(x, y+1, s, 0.5, 0.5)
 
                 if not self.onlyLower:
-                    curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color), [num-1-0.5-y+eps, num-1-0.5-y+eps, num-1+0.5-y-eps, num-1+0.5-y-eps], [num-0.5-x+eps, num+0.5-x-eps, num+0.5-x-eps, num-0.5-x+eps])
-                    key = self.graph.insertCurve(curve)
+                    key = self.graph.insertCurve(PolygonCurve(self.graph, QPen(color, 1), QBrush(color), [num-1-0.5-y+eps, num-1-0.5-y+eps, num-1+0.5-y-eps, num-1+0.5-y-eps, num-1-0.5-y+eps], [num-0.5-x+eps, num+0.5-x-eps, num+0.5-x-eps, num-0.5-x+eps, num-0.5-x+eps]))
 
                     if self.useGeneSets and self.geneToSet and sharedGeneSets != []:
-                        curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [num-1-0.5-y+eps2, num-1-0.5-y+eps2, num-1+0.5-y-eps2, num-1+0.5-y-eps2], [num-0.5-x+eps2, num+0.5-x-eps2, num+0.5-x-eps2, num-0.5-x+eps2])
-                        key = self.graph.insertCurve(curve)
+                        key = self.graph.insertCurve(PolygonCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [num-1-0.5-y+eps2, num-1-0.5-y+eps2, num-1+0.5-y-eps2, num-1+0.5-y-eps2, num-1-0.5-y+eps2], [num-0.5-x+eps2, num+0.5-x-eps2, num+0.5-x-eps2, num-0.5-x+eps2, num-0.5-x+eps2]))
                     if s != "":
                         self.graph.tips.addToolTip(num-1-y, num-x, s, 0.5, 0.5)
 
         # draw empty boxes at the diagonal
         for x in range(num):
-            curve = PolygonCurve(self.graph, QPen(black, 1), QBrush(white), [x-0.5+2*eps2, x+0.5-2*eps2, x+0.5-2*eps2, x-0.5+2*eps2], [num-x-0.5+2*eps2, num-x-0.5+2*eps2, num-x+0.5-2*eps2, num-x+0.5-2*eps2])
-            key = self.graph.insertCurve(curve)
+            key = self.graph.insertCurve(PolygonCurve(self.graph, QPen(black), QBrush(Qt.NoBrush), [x-0.5+2*eps2, x+0.5-2*eps2, x+0.5-2*eps2, x-0.5+2*eps2, x-0.5+2*eps2], [num-x-0.5+2*eps2, num-x-0.5+2*eps2, num-x+0.5-2*eps2, num-x+0.5-2*eps2, num-x-0.5+2*eps2]))
 
         """
         # draw x markers
@@ -1335,9 +1330,8 @@ class OWGraphAttributeHistogram(OWWidget):
             else:
                 color = black
 
-            curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color))
+            curve = PolygonCurve(self.graph, QPen(color, 1), QBrush(color), [ind-0.5+eps, ind+0.5-eps, ind+0.5-eps, ind-0.5+eps, ind-0.5+eps], [0, 0, count, count, 0])
             key = self.graph.insertCurve(curve)
-            self.graph.setCurveData(key, [ind-0.5+eps, ind+0.5-eps, ind+0.5-eps, ind-0.5+eps], [0, 0, count, count])
 
             if self.progressLines and count*8 > maxProjCount:
                 curr = 0
@@ -1677,7 +1671,7 @@ class OWGraphIdentifyOutliers(OWWidget):
                 numpy.put(self.matrixOfPredictions[(existing + index)*classCount + i], validDataIndices, probabilities[i])
 
             index += 1
-            self.statusBar.message("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(existing + index), orngVisFuncts.createStringFromNumber(projCount)))
+            self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(existing + index), orngVisFuncts.createStringFromNumber(projCount)))
             self.widget.progressBarSet(100.0*(index)/float(projCount-existing))
 
         # update the list box with probabilities for all examples
@@ -1703,7 +1697,7 @@ class OWGraphIdentifyOutliers(OWWidget):
             self.evaluateProjections()
 
             self.widgetStatusArea.show()
-            self.statusBar.message("Computing averages...")
+            self.setStatusBarText("Computing averages...")
 
             projCount = min(int(self.projectionCount), len(self.results))
             classCount = len(self.data.domain.classVar.values)
@@ -1719,8 +1713,8 @@ class OWGraphIdentifyOutliers(OWWidget):
                     values[i] = numpy.sum(predictions) / float(len(predictions))
 
             self.widget.outlierValues = (values, "Probability of correct class value = %.2f%%")
-            self.statusBar.message("")
-            self.widgetStatusArea.hide()
+            self.setStatusBarText("")
+            #self.widgetStatusArea.hide()
         else:
             self.widget.outlierValues = None
 
@@ -1825,7 +1819,7 @@ class OWGraphIdentifyOutliers(OWWidget):
                 if not self.showAllClasses and int(self.data[self.selectedExampleIndex].getclass()) != j:
                     continue
                 xDiff = self.graphMatrix[j][index]
-                self.graph.insertCurve(OWGraphTools.PolygonCurve(self.graph, QPen(classColors.getColor(j)), QBrush(classColors.getColor(j)), [x, x+xDiff, x+xDiff, x], [i, i, i+1, i+1]))
+                self.graph.insertCurve(PolygonCurve(self.graph, QPen(classColors.getColor(j)), QBrush(classColors.getColor(j)), [x, x+xDiff, x+xDiff, x, x], [i, i, i+1, i+1, i]))
                 x += xDiff
             self.graph.tips.addToolTip(0, i, s[:-4], 1, 1)
 
@@ -1847,8 +1841,8 @@ class OWGraphIdentifyOutliers(OWWidget):
 
         y = int(math.floor(self.graph.invTransform(QwtPlot.yLeft, e.y())))
         if self.showClickedProjection and y >= 0 and y < len(self.projectionIndices):
-            diff  = 0.01
-            self.selectedRectangle = self.graph.insertCurve(OWGraphTools.PolygonCurve(self.graph, brush = QBrush(Qt.NoBrush), xData = [0-diff, 1+diff, 1+diff, 0-diff], yData = [y-diff, y-diff, y+1+diff, y+1+diff]))
+            diff  = 0.005
+            self.selectedRectangle = self.graph.insertCurve(PolygonCurve(self.graph, brush = QBrush(Qt.NoBrush), xData = [0-diff, 1+diff, 1+diff, 0-diff, 0-diff], yData = [y-diff, y-diff, y+1+diff, y+1+diff, y-diff]))
             self.graph.replot()
 
 

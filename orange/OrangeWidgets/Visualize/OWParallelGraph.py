@@ -283,7 +283,10 @@ class OWParallelGraph(OWGraph, orngScaleData):
                         data.append([(m-dev, m, m+dev)])
                     elif self.showStatistics == MEDIAN:
                         sorted = numpy.sort(array)
-                        data.append([(sorted[int(len(sorted)/4.0)], sorted[int(len(sorted)/2.0)], sorted[int(len(sorted)*0.75)])])
+                        if len(sorted) > 0:
+                            data.append([(sorted[int(len(sorted)/4.0)], sorted[int(len(sorted)/2.0)], sorted[int(len(sorted)*0.75)])])
+                        else:
+                            data.append([(0,0,0)])
                 else:
                     curr = []
                     classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)

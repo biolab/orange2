@@ -252,7 +252,8 @@ class SelectionCurve(QwtPlotCurve):
         else:
             return (0, xi, yi)
 
-
+# a class that draws unconnected lines. first two points in the xData and yData are considered as the first line,
+# the second two points as the second line, etc.
 class UnconnectedLinesCurve(QwtPlotCurve):
     def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
         QwtPlotCurve.__init__(self, parent)
@@ -277,17 +278,19 @@ class UnconnectedLinesCurve(QwtPlotCurve):
 class PolygonCurve(QwtPlotCurve):
     def __init__(self, parent, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
         QwtPlotCurve.__init__(self, parent)
-        self.setPen(pen)
-        self.setBrush(brush)
+        if pen:
+            self.setPen(pen)
+        if brush:
+            self.setBrush(brush)
         self.Pen = pen
         self.Brush = brush
         self.setStyle(QwtCurve.Lines)
         if xData != None and yData != None:
             self.setData(xData, yData)
 
-    def drawCurve(self, painter, style, xMap, yMap, start, stop):
-        for i in range(start, stop, 4):
-            QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+3)
+#    def drawCurve(self, painter, style, xMap, yMap, start, stop):
+#        for i in range(start, stop, 4):
+#            QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+4)
 
 # ####################################################################
 # create a marker in QwtPlot, that doesn't have a transparent background. Currently used in parallel coordinates widget.

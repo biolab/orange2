@@ -77,7 +77,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
     def setData(self, data):
         OWGraph.setData(self, data)
         orngScaleLinProjData.setData(self, data)
-        self.anchorData = []
+        #self.anchorData = []
 
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
@@ -97,19 +97,22 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.shownAttributes = labels
         self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
 
-        if self.scaledData == None or len(labels) < 3: self.updateLayout(); return
+        if self.scaledData == None or len(labels) < 3:
+            self.anchorData = []
+            self.updateLayout()
+            return
 
         haveSubsetData = self.subsetData and self.rawdata and self.subsetData.domain.checksum() == self.rawdata.domain.checksum()
         hasClass = self.rawdata and self.rawdata.domain.classVar != None
         hasDiscreteClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete
         hasContinuousClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous
 
-        indices = [self.attributeNameIndex[label] for label in labels]  # store indices to shown attributes
-
         if setAnchors or (args.has_key("XAnchors") and args.has_key("YAnchors")):
             self.potentialsBmp = None
             self.setAnchors(args.get("XAnchors"), args.get("YAnchors"), labels)
             #self.anchorData = self.createAnchors(len(labels), labels)    # used for showing tooltips
+
+        indices = [self.attributeNameIndex[anchor[2]] for anchor in self.anchorData]  # store indices to shown attributes
 
         # do we want to show anchors and their labels
         if self.showAnchors:
