@@ -14,14 +14,14 @@ class orngScalePolyvizData(orngScaleLinProjData):
         # first call the original function to scale data
         orngScaleLinProjData.setData(self, data)
         
-        if data == None: return
+        if data == None or len(data) == 0: return
 
         if self.globalValueScaling:
             for index in range(len(data.domain)):
                 if data.domain[index].varType == orange.VarTypes.Discrete:
                     self.attrLocalValues[data.domain[index].name] = [0, len(data.domain[index].values)-1]
-                elif self.domainDataStat[index]:
-                    self.attrLocalValues[data.domain[index].name] = [self.domainDataStat[index].min, self.domainDataStat[index].max]
+                elif self.domainDataStat[data.domain[index].name]:
+                    self.attrLocalValues[data.domain[index].name] = [self.domainDataStat[data.domain[index].name].min, self.domainDataStat[data.domain[index].name].max]
                 else:
                     self.attrLocalValues[data.domain[index].name] = [0, 1]
         else:

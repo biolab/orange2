@@ -438,7 +438,11 @@ class VizRank:
                 countsByFold[res.iterationNumber] += 1
             prediction = [val*100.0 for val in prediction]
         elif self.qualityMeasure == AUC:
-            return orngStat.AUC(results)[0], None
+            aucResult = orngStat.AUC(results)
+            if aucResult:
+                return aucResult[0], None
+            else:
+                return 0, None
 
         # compute accuracy only for classes that are selected as interesting. other class values do not participate in projection evaluation
         acc = sum(prediction) / float(max(1, len(results.results)))                 # accuracy over all class values

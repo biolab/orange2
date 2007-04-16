@@ -192,6 +192,8 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         if self.restrain:
             positions = numpy.array([x[:2] for x in self.graph.anchorData])
             attrList = self.getShownAttributeList()
+            if not attrList:
+                return
 
             if self.restrain == 1:
                 positions = numpy.transpose(positions) * numpy.sum(positions**2,1)**-0.5
@@ -233,15 +235,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
     def removeHidden(self):
         rad2 = (self.graph.hideRadius/10)**2
-        rem = 0
         newAnchorData = []
+        shownAttrList = []
         for i, t in enumerate(self.graph.anchorData):
-            if t[0]**2 + t[1]**2 < rad2:
-                self.parentWidget.hiddenAttribsLB.insertItem(self.parentWidget.shownAttribsLB.pixmap(i-rem), self.parentWidget.shownAttribsLB.text(i-rem))
-                self.parentWidget.shownAttribsLB.removeItem(i-rem)
-                rem += 1
-            else:
+            if t[0]**2 + t[1]**2 >= rad2:
+                shownAttrList.append(t[2])
                 newAnchorData.append(t)
+        self.parentWidget.setShownAttributeList(self.parentWidget.data, shownAttrList)
         self.graph.anchorData = newAnchorData
         self.graph.updateData()
         self.graph.repaint()

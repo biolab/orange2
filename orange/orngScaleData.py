@@ -109,6 +109,7 @@ class orngScaleData:
         self.validSubDataArray = None
         self.attrValues = {}
         self.attrSubValues = {}
+        self.normalizers = []
 
 
     # Converts orange.ExampleTable to numpy.array based on the attribute values.
@@ -134,6 +135,8 @@ class orngScaleData:
 
         if data == None or len(data) == 0:
             self.originalData = self.scaledData = self.noJitteringScaledData = self.validDataArray = None
+            self.domainDataStat = [];       self.attributeNames = []
+            self.attributeNameIndex = {};   self.attributeFlipInfo = {}
             return
 
         self.attributeFlipInfo = dict([(attr.name, 0) for attr in data.domain]) # reset the fliping information
@@ -154,7 +157,6 @@ class orngScaleData:
         arr = numpy.array(MA.filled(arr, -99999999))
         self.originalData = arr.copy()
         self.scaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
-        self.noJitteringScaledData = numpy.zeros([len(data.domain), len(data)], numpy.float)
 
         # see if the values for discrete attributes have to be resorted
         for index in range(len(data.domain)):
@@ -217,7 +219,13 @@ class orngScaleData:
 #        if not subData or not self.rawdata or subData.domain.checksum() != self.rawdata.domain.checksum():
 #            return
 
-        if not subData:
+        if not subData or not self.rawdata:
+            return
+
+        try:
+            subData = subData.select(self.rawdata.domain)
+        except:
+            print "Warning: Subset data domain incompatible with data domain.\nData domain: %s\n Subset data domain: %s\n" % (self.rawdata.domain, subData.domain)
             return
 
         # create a  valid data array
@@ -233,8 +241,9 @@ class orngScaleData:
                 self.attrSubValues[attr.name] = (Min, Max)
                 if self.scalingByVariance or self.globalValueScaling:
                     continue
-                projMin = (Min - self.offsets[index]) / self.normalizers[index]
-                projMax = (Max - self.offsets[index]) / self.normalizers[index]
+                normalizer = self.normalizers[index] or 1
+                projMin = (Min - self.offsets[index]) / normalizer
+                projMax = (Max - self.offsets[index]) / normalizer
                 if projMin < 0.0 or projMax > 1.0:
                     self.subDataMinMaxDict[attr.name] = (min(projMin, 0.0), max(1.0, projMax))
             elif subData.domain[index].varType == orange.VarTypes.Discrete:
@@ -364,12 +373,16 @@ class orngScaleData:
 
     # get array of 0 and 1 of len = len(self.rawdata). if there is a missing value at any attribute in indices return 0 for that example
     def getValidList(self, indices):
+        if self.validDataArray == None:
+            return numpy.array([], numpy.bool)
         selectedArray = numpy.take(self.validDataArray, indices, axis = 0)
         arr = numpy.add.reduce(selectedArray)
         return numpy.equal(arr, len(indices))
 
     # get array of 0 and 1 of len = len(self.subsetData). if there is a missing value at any attribute in indices return 0 for that example
     def getValidSubList(self, indices):
+        if self.validSubDataArray == None:
+            return numpy.array([], numpy.bool)
         selectedArray = numpy.take(self.validSubDataArray, indices, axis = 0)
         arr = numpy.add.reduce(selectedArray)
         return numpy.equal(arr, len(indices))
