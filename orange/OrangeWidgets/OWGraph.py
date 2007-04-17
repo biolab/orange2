@@ -450,21 +450,22 @@ class OWGraph(QwtPlot):
             return 1
         return 0
 
-    def setNewZoom(self, currXMin, currXMax, currYMin, currYMax, newXMin, newXMax, newYMin, newYMax):
-        zoomOutCurveKey = self.insertCurve(PolygonCurve(self, brush = None, xData = [currXMin, currXMax, currXMax, currXMin, currXMin], yData = [currYMin, currYMin, currYMax, currYMax, currYMin]))
+    def setNewZoom(self, oldXMin, oldXMax, oldYMin, oldYMax, newXMin, newXMax, newYMin, newYMax):
+        #zoomOutCurveKey = self.insertCurve(RectangleCurve(self, brush = None, xData = [oldXMin, oldXMax, oldXMax, oldXMin], yData = [oldYMin, oldYMin, oldYMax, oldYMax]))
         if len(self.curveKeys()) > 2000:    # if too many curves then don't be smooth
             steps = 1
         else:
             steps = 10
         for i in range(1, steps+1):
-            midXMin = currXMin * (steps-i)/float(steps) + newXMin * i/float(steps)
-            midXMax = currXMax * (steps-i)/float(steps) + newXMax * i/float(steps)
-            midYMin = currYMin * (steps-i)/float(steps) + newYMin * i/float(steps)
-            midYMax = currYMax * (steps-i)/float(steps) + newYMax * i/float(steps)
+            midXMin = oldXMin * (steps-i)/float(steps) + newXMin * i/float(steps)
+            midXMax = oldXMax * (steps-i)/float(steps) + newXMax * i/float(steps)
+            midYMin = oldYMin * (steps-i)/float(steps) + newYMin * i/float(steps)
+            midYMax = oldYMax * (steps-i)/float(steps) + newYMax * i/float(steps)
+            self.setAxisScale(QwtPlot.yLeft, midYMax, midYMin)
             self.setAxisScale(QwtPlot.xBottom, midXMin, midXMax)
-            self.setAxisScale(QwtPlot.yLeft, midYMin, midYMax)
-            if i == steps:
-                self.removeCurve(zoomOutCurveKey)
+
+            #if i == steps:
+            #    self.removeCurve(zoomOutCurveKey)
             self.replot()
 
 
@@ -566,7 +567,7 @@ class OWGraph(QwtPlot):
 
                 self.blankClick = 0
                 self.zoomStack.append((self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(), self.axisScale(QwtPlot.yLeft).hBound()))
-                self.setNewZoom(self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(), self.axisScale(QwtPlot.yLeft).hBound(), xmin, xmax, ymin, ymax)
+                self.setNewZoom(self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(), self.axisScale(QwtPlot.yLeft).hBound(), xmin, xmax, ymax, ymin)
 
             elif self.state == SELECT_RECTANGLE:
                 if self.tempSelectionCurve:
@@ -679,7 +680,7 @@ class OWGraph(QwtPlot):
             color = self._getColorFromObject(c.pen())
             colorB = self._getColorFromObject(c.brush())
             linewidth = c.pen().width()
-            if c.__class__ == PolygonCurve:
+            if c.__class__ == PolygonCurve or c.__class__ == RectangleCurve:
                 x0 = min(xData); x1 = max(xData); diffX = x1-x0
                 y0 = min(yData); y1 = max(yData); diffY = y1-y0
                 f.write("gca().add_patch(Rectangle((%f, %f), %f, %f, edgecolor=%s, facecolor = %s, linewidth = %d, fill = 1))\n" % (x0,y0,diffX, diffY, color, colorB, linewidth))
