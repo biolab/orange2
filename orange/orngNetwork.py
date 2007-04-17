@@ -3,28 +3,21 @@ import orange
 import orangeom
 
 from random import *
-from Numeric import *
+from numpy import *
 
-class GraphVisualizer:
+class NetworkVisualizer(orangeom.NetworkOptimization):
     def __init__(self, graph, parent = None, name = "None"):
         
+        self.setGraph(graph)
+        self.coors = self.getCoors()
         self.graph = graph
-        #self.graph.nVertices = len(graph.items)
-        #self.graph.nVertices = 4
+
         self.parent = parent
         self.maxWidth  = 1000
         self.maxHeight = 1000
         
         self.attributeList = {}
         self.attributeValues = {}
-        #self.data = None
-        self.xCoors = None
-        self.yCoors = None
-        
-        self.random()
-        
-        self.graphOptimization = orangeom.GraphOptimization()
-        self.graphOptimization.newData(self.graph, self.xCoors, self.yCoors)
     
     def getVars(self):
         vars = []
@@ -47,33 +40,6 @@ class GraphVisualizer:
         if self.graph:
             return self.graph.nVertices
   
-  
-    def fruchtermanReingold(self):
-        refreshRate = 150
-        tolerance = 5
-        initTemp = 100
-
-        self.graphOptimization.newData(self.graph, self.xCoors, self.yCoors)
-
-        while True:
-            (self.xCoors, self.yCoors, initTemp) = self.graphOptimization.fruchtermanReingold(refreshRate, initTemp)
-            
-            if (initTemp <= tolerance):
-                #self.postProcess()
-                self.parent.updateCanvas()
-                return
-            
-            self.parent.updateCanvas()
-        
-    def random(self):
-
-        self.xCoors = zeros(self.nVertices(), Float64) # 'f')  !!!
-        self.yCoors = zeros(self.nVertices(), Float64) # 'f')   !!!
-        
-        for i in range(0, self.nVertices()):
-            self.xCoors[i] = randint(0, self.maxWidth  - 1)
-            self.yCoors[i] = randint(0, self.maxHeight - 1)
-            
             
     #procedura za razporejanje nepovezanih vozlisc na kroznico okoli grafa
     def postProcess(self):
