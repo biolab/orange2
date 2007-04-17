@@ -271,6 +271,32 @@ class UnconnectedLinesCurve(QwtPlotCurve):
             QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+1)
 
 
+class RectangleCurve(QwtPlotCurve):
+    def __init__(self, parent, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
+        QwtPlotCurve.__init__(self, parent)
+        if pen:
+            self.setPen(pen)
+        if brush:
+            self.setBrush(brush)
+        self.Pen = pen
+        self.Brush = brush
+        self.setStyle(QwtCurve.Lines)
+        if xData != None and yData != None:
+            self.setData(xData, yData)
+
+    def setData(self, xData, yData):
+        startsX = xData[::4]
+        startsY = yData[::4]
+        for i in range(len(startsX))[::-1]:
+            xData.insert(4+i*4, startsX[i])
+            yData.insert(4+i*4, startsY[i])
+        QwtPlotCurve.setData(self, xData, yData)
+
+    def drawCurve(self, painter, style, xMap, yMap, start, stop):
+        for i in range(start, stop, 5):
+            QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+4)
+
+
 # ###########################################################
 # a class that is able to draw arbitrary polygon curves.
 # data points are specified by a standard call to graph.setCurveData(key, xArray, yArray)
@@ -288,9 +314,6 @@ class PolygonCurve(QwtPlotCurve):
         if xData != None and yData != None:
             self.setData(xData, yData)
 
-#    def drawCurve(self, painter, style, xMap, yMap, start, stop):
-#        for i in range(start, stop, 4):
-#            QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+4)
 
 # ####################################################################
 # create a marker in QwtPlot, that doesn't have a transparent background. Currently used in parallel coordinates widget.
