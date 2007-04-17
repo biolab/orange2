@@ -170,7 +170,7 @@ class OWNetwork(OWWidget):
         self.updateCanvas()
     
     def setGraph(self, graph):
-        self.visualize = GraphVisualizer(graph, self)
+        self.visualize = NetworkVisualizer(graph, self)
         
         self.colorCombo.clear()
         self.attListBox.clear()
@@ -193,7 +193,19 @@ class OWNetwork(OWWidget):
             return
 
         #najprej nakljucne koordinate za vsa vozlisca
-        self.visualize.fruchtermanReingold()
+        refreshRate = 10
+        tolerance = 5
+        initTemp = 100
+
+        while True:
+            initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp)
+            
+            if (initTemp <= tolerance):
+                #self.visualize.postProcess()
+                self.updateCanvas()
+                return
+            
+            self.updateCanvas()
         
     def circular(self):
         pass
