@@ -20,14 +20,13 @@
 
 
 #include "ppp/networkoptimization.ppp"
-#include "graph.hpp"
 
-TNetworkOptimization::TNetworkOptimization(int _nVertices, double **_pos, int _nLinks, int **_links)
+TNetworkOptimization::TNetworkOptimization()
 {
-	nVertices = _nVertices;
-	nLinks = _nLinks;
-	pos = _pos;
-	links = _links;
+	import_array();
+	
+	nVertices = 0;
+	nLinks = 0;
 
 	k = 1;
 	k2 = 1;
@@ -44,41 +43,6 @@ inline T &min(const T&x, const T&y)
 #endif
 #endif
 
-void TNetworkOptimization::setData(int _nVertices, double **_pos, int _nLinks, int **_links)
-{
-	int i;
-
-	/*
-	for (i = 0; i < nVertices; i++)
-	{
-		free(pos[i]);
-	}
-	*/
-
-	for (i = 0; i < nLinks; i++)
-	{
-		free(links[i]);
-	}
-	
-	if (pos != NULL)
-	{
-	cout << "set 1" << endl;
-	if (pos[0] != NULL)
-		free(pos[0]);
-	cout << "set 2" << endl;
-	if (pos[1] != NULL)
-		free(pos[1]);
-	cout << "set 3" << endl;
-	free(pos);
-	}
-	free(links);
-
-	nVertices = _nVertices;
-	nLinks = _nLinks;
-	pos = _pos;
-	links = _links;
-}
-
 TNetworkOptimization::~TNetworkOptimization()
 {
 	int i;
@@ -88,17 +52,7 @@ TNetworkOptimization::~TNetworkOptimization()
 	}
 
 	free(links);
-
-	if (pos != NULL)
-	{
-		if (pos[0] != NULL)
-			free(pos[0]);
-
-		if (pos[1] != NULL)
-			free(pos[1]);
-
-		free(pos);
-	}	
+	free_Carrayptrs(pos);
 }
 
 double TNetworkOptimization::attractiveForce(double x)
@@ -119,9 +73,12 @@ double TNetworkOptimization::cool(double t)
 {
 	return t * 0.98;
 }
-/*
-void dumpCoordinates(double **pos, int columns, int rows)
+
+void TNetworkOptimization::dumpCoordinates()
 {
+	int rows = nVertices;
+	int columns = 2;
+
 	for (int i = 0; i < rows; i++)
 	{
 		for (int j = 0; j < columns; j++)
@@ -132,7 +89,19 @@ void dumpCoordinates(double **pos, int columns, int rows)
 		cout << endl;
 	}
 }
-*/
+
+
+void TNetworkOptimization::random()
+{
+	srand(time(NULL));
+	int i;
+	for (i = 0; i < nVertices; i++)
+	{
+		pos[i][0] = rand() % width;
+		pos[i][1] = rand() % height;
+	}
+}
+
 void TNetworkOptimization::fruchtermanReingold(int steps)
 {
 	/*
@@ -177,8 +146,8 @@ void TNetworkOptimization::fruchtermanReingold(int steps)
 		{
 			for (int u = v + 1; u < nVertices; u++)
 			{
-				double difX = pos[0][v] - pos[0][u];
-				double difY = pos[1][v] - pos[1][u];
+				double difX = pos[v][0] - pos[u][0];
+				double difY = pos[v][1] - pos[u][1];
 
 				double dif = sqrt(difX * difX + difY * difY);
 
@@ -206,8 +175,8 @@ void TNetworkOptimization::fruchtermanReingold(int steps)
 
 			// cout << "     v: " << v << " u: " << u << " w: " << edge->weights << endl;
 			
-			double difX = pos[0][v] - pos[0][u];
-			double difY = pos[1][v] - pos[1][u];
+			double difX = pos[v][0] - pos[u][0];
+			double difY = pos[v][1] - pos[u][1];
 
 			double dif = sqrt(difX * difX + difY * difY);
 
@@ -230,8 +199,8 @@ void TNetworkOptimization::fruchtermanReingold(int steps)
 			if (dif == 0)
 				dif = 1;
 
-			pos[0][v] = pos[0][v] + ((disp[v][0] / dif) * min(fabs(disp[v][0]), temperature));
-			pos[1][v] = pos[1][v] + ((disp[v][1] / dif) * min(fabs(disp[v][1]), temperature));
+			pos[v][0] = pos[v][0] + ((disp[v][0] / dif) * min(fabs(disp[v][0]), temperature));
+			pos[v][1] = pos[v][1] + ((disp[v][1] / dif) * min(fabs(disp[v][1]), temperature));
 
 			//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
 			//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
@@ -247,52 +216,92 @@ void TNetworkOptimization::fruchtermanReingold(int steps)
 	}
 
 	free(disp);
+	//dumpCoordinates();
 }
 
 #include "externs.px"
 #include "orange_api.hpp"
 
-int convert_(TGraphAsList *graph, PyObject *pyxcoors, PyObject *pyycoors, double **&pos, int &nLinks, int **&links)
+PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *keyw) BASED_ON (Orange, "(Graph) -> None") 
 {
-	int nRows;
-	double *xCoor;
-	double *yCoor;
+	PyObject *pygraph;
 	
-	numericToDouble(pyxcoors, xCoor, nRows);
-	numericToDouble(pyycoors, yCoor, nRows);
-
-	if (graph->nVertices != nRows)
-      return 1;
-
-	pos = (double**)malloc(2 * sizeof (double));
-
-	if (pos == NULL)
+	if (PyArg_ParseTuple(args, "O:GraphOptimization", &pygraph))
 	{
-		cerr << "Couldn't allocate memory\n";
-		exit(1);
+		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
+
+		if (graph->nVertices < 2)
+		  PYERROR(PyExc_AttributeError, "graph has less than two nodes", NULL);
+
+		//return WrapNewOrange(new TGraphOptimization(graph->nVertices, pos, nLinks, links), type);
+		return WrapNewOrange(new TNetworkOptimization(), type);
+	}
+	else
+	{
+		return WrapNewOrange(new TNetworkOptimization(), type);
+	}
+}
+/* ==== Free a double *vector (vec of pointers) ========================== */ 
+void TNetworkOptimization::free_Carrayptrs(double **v)  {
+	free((char*) v);
+}
+
+/* ==== Allocate a double *vector (vec of pointers) ======================
+    Memory is Allocated!  See void free_Carray(double ** )                  */
+double **TNetworkOptimization::ptrvector(long n)  {
+	double **v;
+	v=(double **)malloc((size_t) (n*sizeof(double)));
+	if (!v)   {
+		printf("In **ptrvector. Allocation of memory for double array failed.");
+		exit(0);  }
+	return v;
+}
+
+/* ==== Create Carray from PyArray ======================
+    Assumes PyArray is contiguous in memory.
+    Memory is allocated!                                    */
+double **TNetworkOptimization::pymatrix_to_Carrayptrs(PyArrayObject *arrayin)  {
+	double **c, *a;
+	int i,n,m;
+	
+	n = arrayin->dimensions[0];
+	m = arrayin->dimensions[1];
+	c = ptrvector(n);
+	a = (double *) arrayin->data;  /* pointer to arrayin data as double */
+	
+	for (i = 0; i < n; i++)
+	{
+		c[i] = a + i * m;
 	}
 
-	pos[0] = (double *)malloc(graph->nVertices * sizeof(double));
-	pos[1] = (double *)malloc(graph->nVertices * sizeof(double));
+	return c;
+}
 
-	if ((pos[0] == NULL) || (pos[1] == NULL))
+void TNetworkOptimization::setGraph(TGraphAsList *graph)
+{
+	int v, l;
+	for (l = 0; l < nLinks; l++)
 	{
-		cerr << "Couldn't allocate memory\n";
-		exit(1);
+		free(links[l]);
 	}
 
-	//int count = 0;
-	int i = 0;
-	for (i = 0; i < graph->nVertices; i++)
-	{
-		pos[0][i] = (double)xCoor[i];
-		pos[1][i] = (double)yCoor[i];
-	}
+	free(links);
+	free_Carrayptrs(pos);
+
+	nVertices = graph->nVertices;
+	int dims[2];
+	dims[0] = nVertices;
+	dims[1] = 2;
+	
+	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
+	pos = pymatrix_to_Carrayptrs(coors);
+	random();
+
+	//dumpCoordinates();
 
 	links = NULL;
 	nLinks = 0;
 
-	int v = 0;
 	for (v = 0; v < graph->nVertices; v++)
 	{
 		TGraphAsList::TEdge *edge = graph->edges[v];
@@ -349,66 +358,24 @@ int convert_(TGraphAsList *graph, PyObject *pyxcoors, PyObject *pyycoors, double
 			}
 		}
 	}
-
-	return 0;
 }
 
-PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *keyw) BASED_ON (Orange, "(Graph, xCoordinates, yCoordinates) -> None") 
+PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Graph) -> None")
 {
 	PyObject *pygraph;
-	PyObject *pyxcoors;
-	PyObject *pyycoors;
 
-	/*
-	if (PyArg_ParseTuple(args, "OOO:GraphOptimization", &pygraph, &pyxcoors, &pyycoors))
-	{
-		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
-
-		if (graph->nVertices < 2)
-		  PYERROR(PyExc_AttributeError, "graph has less than two nodes", NULL);
-
-		int nLinks;
-		int **links;
-		double **pos; 
-
-		convert(graph, pyxcoors, pyycoors, pos, nLinks, links);
-
-		return WrapNewOrange(new TGraphOptimization(graph->nVertices, pos, nLinks, links), type);
-	}
-	else
-	{
-	/**/
-		return WrapNewOrange(new TNetworkOptimization(0, NULL, 0, NULL), type);
-	//}
-}
-
-PyObject *NetworkOptimization_newData(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Graph, xCoordinates, yCoordinates) -> None")
-{
-	PyObject *pygraph;
-	PyObject *pyxcoors;
-	PyObject *pyycoors;
-
-	if (!PyArg_ParseTuple(args, "OOO:NetworkOptimization.newData", &pygraph, &pyxcoors, &pyycoors))
+	if (!PyArg_ParseTuple(args, "O:NetworkOptimization.setGraph", &pygraph))
 		return NULL;
 
 	TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
 
-	int nLinks;
-	int **links;
-	double **pos; 
-
-	convert_(graph, pyxcoors, pyycoors, pos, nLinks, links);
-
 	CAST_TO(TNetworkOptimization, graphOpt);
-	
-	graphOpt->arrayX = (PyArrayObject *)pyxcoors;
-	graphOpt->arrayY = (PyArrayObject *)pyycoors;
-	graphOpt->setData(graph->nVertices, pos, nLinks, links);
-	
+	graphOpt->setGraph(graph);
+
 	RETURN_NONE;
 }
 
-PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps) -> None")
+PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature) -> temperature")
 {
 	int steps;
 	double temperature = 0;
@@ -417,17 +384,26 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 		return NULL;
 
 	CAST_TO(TNetworkOptimization, graph);
+
 	graph->temperature = temperature;
 	graph->fruchtermanReingold(steps);
+	
+	return Py_BuildValue("d", graph->temperature);
+}
 
-	int i;
-	for (i = 0; i < graph->nVertices; i++)
-	{
-		*(double *)(graph->arrayX->data + i * graph->arrayX->strides[0]) = graph->pos[0][i];
-		*(double *)(graph->arrayY->data + i * graph->arrayY->strides[0]) = graph->pos[1][i];
-	}
+PyObject *NetworkOptimization_getCoors(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Coors")
+{
+	CAST_TO(TNetworkOptimization, graph);	
+	return Py_BuildValue("O", graph->coors);
+}
 
-	return Py_BuildValue("OOd", graph->arrayX, graph->arrayY, graph->temperature);
+PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+{
+	CAST_TO(TNetworkOptimization, graph);
+
+	graph->random();
+	
+	RETURN_NONE;
 }
 
 #include "networkoptimization.px"

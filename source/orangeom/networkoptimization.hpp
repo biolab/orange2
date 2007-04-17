@@ -18,15 +18,28 @@
     Author: Miha Stajdohar, 1996--2002
 */
 
-#ifndef __GRAPHOPTIMIZATION_HPP
-#define __GRAPHOPTIMIZATION_HPP
+#ifndef __NETWORKOPTIMIZATION_HPP
+#define __NETWORKOPTIMIZATION_HPP
+
+#include "Python.h"
+
+#ifdef _MSC_VER
+  /* easier to do some ifdefing here than needing to define a special
+     include in every project that includes this header */
+  #include "../lib/site-packages/numpy/core/include/numpy/arrayobject.h"
+#else
+  #include <numpy/arrayobject.h>
+#endif
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include <iostream>
 #include "px/orangeom_globals.hpp"
 #include "root.hpp"
 #include "numeric_interface.hpp"
+#include "graph.hpp"
 
 using namespace std;
 
@@ -35,28 +48,32 @@ class ORANGEOM_API TNetworkOptimization : public TOrange
 public:
 	__REGISTER_CLASS
 
-	TNetworkOptimization(int nVertices, double **pos, int nLinks, int **links);
+	TNetworkOptimization();
 	~TNetworkOptimization();
 	
+	void random();
 	void fruchtermanReingold(int steps);
-	void setData(int nVertices, double **pos, int nLinks, int **links);
 	double getTemperature() {return temperature;}
 	void setTemperature(double t) {temperature = t;}
+	void setGraph(TGraphAsList *graph);
+	void dumpCoordinates();
+
+	double **ptrvector(long n);
+	double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
+	void free_Carrayptrs(double **v);
 
 	float k; //PR
 	float k2; //PR
 	double temperature;
 	int width; //P
 	int height; //PR
+	PyArrayObject *coors;
 
 	int nLinks;
 	int nVertices;
 	int **links;
+
 	double **pos;
-
-	PyArrayObject *arrayX;
-	PyArrayObject *arrayY;
-
     double attractiveForce(double x);
 	double repulsiveForce(double x);
 	double cool(double t);
