@@ -21,14 +21,14 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
     def setData(self, data, **args):
         OWGraph.setData(self, data)
         orngScaleData.setData(self, data, **args)
-        
+
     #
     # update shown data. Set labels, coloring by className ....
     def updateData(self, labels):
         self.removeCurves()
         self.tips.removeAll()
 
-        self.attrLabels = labels        
+        self.attrLabels = labels
         self.length = len(labels)
         indices = [self.attributeNameIndex[label] for label in labels]
         #if self.tooltipKind == DONT_SHOW_TOOLTIPS: MyQToolTip.tip(self.tooltip, QRect(0,0,0,0), "")
@@ -44,13 +44,13 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
 
         self.setAxisScale(QwtPlot.yLeft, 0, totalValid, totalValid)
         self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)
-        #self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
+        #self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)
         #self.setAxisMaxMinor(QwtPlot.xBottom, 0)
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
         self.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)  # hide ticks
         self.axisScaleDraw(QwtPlot.xBottom).setOptions(0)           # hide horizontal line representing x axis
         #self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
-        
+
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
             newCurveKey = self.insertCurve(labels[i])
@@ -66,29 +66,32 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
             classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 classValDict = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar)
-        
+
         y = 0
         for i in range(len(self.rawdata)):
             if validData[i] == 0: continue
-            if classNameIndex == -1: newColor = QColor(0,0,0)
-            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: newColor = self.discPalette[classValDict[self.rawdata[i].getclass().value]]
-            else: newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
+            if classNameIndex == -1: newColor = (0,0,0)
+            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: newColor = self.discPalette.getRGB(classValDict[self.rawdata[i].getclass().value])
+            else: newColor = self.contPalette.getRGB(self.noJitteringScaledData[classNameIndex][i])
 
             for j in range(self.length):
                 width = self.noJitteringScaledData[indices[j]][i] * 0.45
-                xRectsToAdd[newColor] = xRectsToAdd.get(newColor, []) + [j-width, j+width, j+width, j-width]
-                yRectsToAdd[newColor] = yRectsToAdd.get(newColor, []) + [y, y, y+1, y+1]
+                if not xRectsToAdd.has_key(newColor):
+                    xRectsToAdd[newColor] = []
+                    yRectsToAdd[newColor] = []
+                xRectsToAdd[newColor].extend([j-width, j+width, j+width, j-width])
+                yRectsToAdd[newColor].extend([y, y, y+1, y+1])
             y += 1
 
-        for i, key in enumerate(xRectsToAdd.keys()):
-            self.insertCurve(PolygonCurve(self, QPen(key), QBrush(key), xRectsToAdd[key], yRectsToAdd[key]))
+        for key in xRectsToAdd.keys():
+            self.insertCurve(RectangleCurve(self, QPen(QColor(*key)), QBrush(QColor(*key)), xRectsToAdd[key], yRectsToAdd[key]))
 
         if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
             self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
             for ind in range(len(classValues)):
                 self.addCurve(classValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
-           
+
 
     # show rectangle with example shown under mouse cursor
     def onMouseMoved(self, e):
@@ -128,9 +131,9 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
 
 if __name__== "__main__":
     #Draw a simple graph
-    a = QApplication(sys.argv)        
+    a = QApplication(sys.argv)
     c = OWSurveyPlotGraph()
-            
+
     a.setMainWidget(c)
     c.show()
     a.exec_loop()

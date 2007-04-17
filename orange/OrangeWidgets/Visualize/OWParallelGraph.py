@@ -478,7 +478,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if self.parallelDlg:
             x1 = int(self.invTransform(QwtPlot.xBottom, e.x()))
             axis = self.axisScaleDraw(QwtPlot.xBottom)
-            self.parallelDlg.sendAttributeSelection([str(axis.label(x1)), str(axis.label(x1+1))])
+            self.parallelDlg.sendShownAttributes([str(axis.label(x1)), str(axis.label(x1+1))])
 
     def updateLayout(self):
         OWGraph.updateLayout(self)

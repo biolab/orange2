@@ -290,8 +290,10 @@ class OWParallelCoordinates(OWVisWidget):
         self.selectionChanged()
 
     # ------------------------------------------------
-    def sendShownAttributes(self):
-        self.send("Attribute Selection List", self.getShownAttributeList())
+    def sendShownAttributes(self, attrList = None):
+        if not attrList:
+            attrList = self.getShownAttributeList()
+        self.send("Attribute Selection List", attrList)
 
     def selectionChanged(self):
         self.zoomSelectToolbar.buttonSendSelections.setEnabled(not self.autoSendSelection)
