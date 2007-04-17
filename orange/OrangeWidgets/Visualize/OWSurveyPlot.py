@@ -74,7 +74,7 @@ class OWSurveyPlot(OWVisWidget):
         # ##################################
         # survey plot settings
         box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
-        OWGUI.checkBox(box, self, "graph.globalValueScaling", "Global Value Scaling", callback = self.setGlobalValueScaling)
+        OWGUI.checkBox(box, self, "graph.globalValueScaling", "Global value scaling", callback = self.setGlobalValueScaling)
         OWGUI.checkBox(box, self, "graph.exampleTracking", "Enable example tracking", callback = self.updateGraph)
         OWGUI.checkBox(box, self, "graph.enabledLegend", "Show legend", callback = self.updateGraph)
 
