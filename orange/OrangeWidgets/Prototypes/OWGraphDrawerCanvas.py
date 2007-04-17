@@ -335,6 +335,9 @@ class OWGraphDrawerCanvas(OWGraph):
         yData = []
         edgesCount = 0
         
+        fillColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j]]
+        edgeColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
+        
         # draw edges
         for e in range(self.nEdges):
             (key,i,j) = self.edges[e]
@@ -343,9 +346,6 @@ class OWGraphDrawerCanvas(OWGraph):
             x2 = self.visualizer.coors[j][0]
             y1 = self.visualizer.coors[i][1]
             y2 = self.visualizer.coors[j][1]
-            
-            fillColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j]]
-            edgeColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
 
             #key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
             #self.edges[e] = (key,i,j)
