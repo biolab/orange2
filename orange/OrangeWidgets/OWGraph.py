@@ -51,13 +51,13 @@ class OWGraph(QwtPlot):
 
         self.showAxisScale = 1
         self.showMainTitle = FALSE
-        self.mainTitle = None
+        self.mainTitle = ""
         self.showXaxisTitle = FALSE
-        self.XaxisTitle = None
+        self.XaxisTitle = ""
         self.showYLaxisTitle = FALSE
-        self.YLaxisTitle = None
+        self.YLaxisTitle = ""
         self.showYRaxisTitle = FALSE
-        self.YRaxisTitle = None
+        self.YRaxisTitle = ""
 
         self.state = ZOOMING
         self.tooltip = MyQToolTip(self)

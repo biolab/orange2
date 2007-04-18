@@ -19,6 +19,24 @@ colorButtonSize = 15
 specialColorLabelWidth = 160
 paletteInterpolationColors = 250
 
+# On Mac OS X QRgb is really unsigned int and so Python uses long int for it (as it
+# cannot store it always in signed int), but this breaks QImage as it expects palette
+# of ints, so we are manually casting long unsigned ints to signed ints (even if QRgb
+# should be in fact unsigned)
+def signedPalette(palette):
+    def signedInt(long):
+        if type(long) == int:
+            return long
+        elif long > 0xFFFFFFFF:
+             long &= 0xFFFFFFFF
+        
+	if long & 0x80000000:
+            return int(-((long ^ 0xFFFFFFFF) + 1))
+        else:
+            return int(long)
+    
+    return [signedInt(color) for color in palette]
+
 class ColorPalette(QWidget):
     def __init__(self, parent, master, value, label = "Colors", additionalColors = None, callback = None):
         QWidget.__init__(self, parent)
@@ -286,7 +304,7 @@ class InterpolationView(QCanvasView):
     def setPalette1(self, palette):
         dx = 140; dy = colorButtonSize
         bmp = chr(252)*dx*2 + reduce(lambda x,y:x+y, [chr(i*250/dx) for i in range(dx)] * (dy-4)) + chr(252)*dx*2 
-        image = QImage(bmp, dx, dy, 8, palette, 256, QImage.LittleEndian)
+        image = QImage(bmp, dx, dy, 8, signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
         pm = QPixmap()
         pm.convertFromImage(image, QPixmap.Color);
 

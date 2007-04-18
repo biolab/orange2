@@ -567,7 +567,7 @@ class OWDistanceMap(OWWidget):
 class ImageItem(QCanvasRectangle):
     def __init__(self, bitmap, canvas, width, height, palette, depth=8, numColors=256, x=0, y=0, z=0):
         QCanvasRectangle.__init__(self, canvas)
-        self.image = QImage(bitmap, width, height, depth, palette, numColors, QImage.LittleEndian)
+	self.image = QImage(bitmap, width, height, depth, signedPalette(palette), numColors, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
         self.image.bitmap = bitmap # this is tricky: bitmap should not be freed, else we get mess. hence, we store it in the object
         self.canvas = canvas
         self.setSize(width, height)
