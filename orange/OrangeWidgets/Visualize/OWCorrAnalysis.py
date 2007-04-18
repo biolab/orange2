@@ -17,12 +17,22 @@ from OWToolbars import ZoomSelectToolbar
 
 textCorpusModul = 1
 
-try:
-  from orngTextCorpus import CategoryDocument, checkFromText
-except ImportError:
-  textCorpusModul = 0
+#try:
+#  from orngTextCorpus import CategoryDocument, checkFromText
+#except ImportError:
+#  textCorpusModul = 0
+
 
 import os
+
+def checkFromText(data):
+    if not isinstance(data, orange.ExampleTable):
+        return False
+    if len(data.domain.attributes) < 10 and len(data.domain.getmetas()) > 15:
+        return True
+    elif len(data.domain.attributes) * 2 < len(data.domain.getmetas()):
+        return True
+    return False
 
 class OWCorrAnalysis(OWWidget):
     settingsList = ['graph.pointWidth', "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
@@ -122,12 +132,21 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)        
         OWGUI.checkBox(box4, self, 'showGridlines', 'Show gridlines', callback = self.setShowGridlines)
 ##        OWGUI.checkBox(box4, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")        
+        OWGUI.checkBox(box4, self, 'graph.showRowLabels', 'Show row labels', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.showColumnLabels', 'Show column labels', callback = self.updateGraph)
+
 
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Colors ", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
         
         #browsing radius
         OWGUI.hSlider(self.SettingsTab, self, 'percRadius', box=' Browsing Curve Size ', minValue = 0, maxValue=100, step=5, callback = self.calcRadius)
+
+        #font size        
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.labelSize', box=' Set font size for labels ', minValue = 8, maxValue=48, step=1, callback = self.updateGraph)
+
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.maxPoints', box=' Maximum number of points ', minValue = 10, maxValue=40, step=1, callback = None)
+
         
 
         self.activateLoadedSettings()
@@ -167,11 +186,11 @@ class OWCorrAnalysis(OWWidget):
  
         if self.data == None: return 
         
-        if self.textData:
+        if self.textData:            
             self.attrRowCombo.insertItem('document')
             self.attrRowCombo.insertItem('category')
             self.attrColCombo.insertItem('words')
-        else:        
+        else:            
             for attr in self.data.domain:
                 if attr.varType == orange.VarTypes.Discrete: self.attrRowCombo.insertItem(self.icons[attr.varType], attr.name)
                 if attr.varType == orange.VarTypes.Discrete: self.attrColCombo.insertItem(self.icons[attr.varType], attr.name)
@@ -179,7 +198,7 @@ class OWCorrAnalysis(OWWidget):
         self.attrRow = str(self.attrRowCombo.text(0))
         if self.attrColCombo.count() > 1: 
             self.attrCol = str(self.attrColCombo.text(1))
-        else:                           
+        else:
             self.attrCol = str(self.attrColCombo.text(0))
             
         self.updateTables()
@@ -203,7 +222,7 @@ class OWCorrAnalysis(OWWidget):
                 caList.append(cur)
             self.CA = orngCA.CA(caList)
             try:
-                self.tipsR = [ex['meta'].native() for ex in data]
+                self.tipsR = [ex['name'].native() for ex in data]
             except:
                 self.tipsR = [ex.name for ex in data]
             self.tipsC = [a.name for a in data.domain.getmetas().values()]
@@ -281,6 +300,7 @@ class OWCorrAnalysis(OWWidget):
         indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
         tipsR = [self.tipsR[i] for i in indices]
+        if not self.graph.showRowLabels: tipsR = ['' for i in indices]
         self.plotPoint(cor, 0, tipsR, "Row points", self.graph.showFilledSymbols)            
             
         cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))      
@@ -288,6 +308,7 @@ class OWCorrAnalysis(OWWidget):
         indices = self.CA.PointsWithMostInertia(rowColumn = 1, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
         tipsC = [self.tipsC[i] for i in indices]
+        if not self.graph.showColumnLabels: tipsC = ['' for i in indices]        
         self.plotPoint(cor, 1, tipsC, "Column points", self.graph.showFilledSymbols)
 
         self.graph.enableLegend(1)

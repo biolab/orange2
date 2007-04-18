@@ -27,6 +27,10 @@ class OWCorrAnalysisGraph(OWGraph):
         self.showLegend = 1
 ##        self.showClusters = 0
         self.showFilledSymbols = 1
+        self.labelSize = 12
+        self.showRowLabels = 1
+        self.showColumnLabels = 1
+        self.maxPoints = 10
         
 ##        self.tooltipKind = 1
         
@@ -96,6 +100,7 @@ class OWCorrAnalysisGraph(OWGraph):
                 self.removeCurve(line)
             self.markLines = []
 ##            print self.tips.positions
+            
             cor = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius]
             self.addMarkers(cor, xFloat, yFloat, self.radius)
 ##            for x, y, text in cor:
@@ -116,7 +121,7 @@ class OWCorrAnalysisGraph(OWGraph):
             for line in self.markLines:
                 self.removeCurve(line)
             self.markLines = []            
-            cor = [(x, y, self.tips.texts[i]) for (i,(x,y)) in enumerate(self.tips.positions) if ((xFloat - x)*(xFloat - x) + (yFloat - y)*(yFloat - y) <= self.radius * self.radius)]
+            cor = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if ((xFloat - x)*(xFloat - x) + (yFloat - y)*(yFloat - y) <= self.radius * self.radius)]
             self.addMarkers(cor, xFloat, yFloat, self.radius)
 ##            for x, y, text in cor:
 ##                self.addMarker(text, x, y)
@@ -191,31 +196,94 @@ class OWCorrAnalysisGraph(OWGraph):
 ##        left = self.invTransform(QwtPlot.xBottom, left) 
         right = x + r
 ##        right = self.transform(QwtPlot.xBottom, right) + 20
-##        right = self.invTransform(QwtPlot.xBottom, right) 
+##        right = self.invTransform(QwtPlot.xBottom, right)
+        posX = x
+        posY = y
+        topR = topL = top
         
         newMark = []
-        for i, (x, y, text) in zip(range(len(cor)), cor):
+        points = zip(range(len(cor)), cor)
+        #sort using height
+        points.sort(cmp = lambda x,y: -cmp(x[1][1], y[1][1]))
+        prevY = points[0][1][1]
+        i = 1
+
+#        while i <= len(points) - 1:
+#            y = points[i][1][1]
+#            if prevY - y < 10 and points[i-1][1][0] < points[i][1][0]:
+#                t = points[i]
+#                points[i] = points[i-1]
+#                points[i-1] = t            
+#            i = i + 1                
+                
+        
+        for i, (x, y, text) in points:
             side = left
-            if not (i & 1):
-                if self.checkPerc(left) > 0:
-                    newMark.append((left, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignLeft, x, y))
+            if not text: continue
+            
+            if x < posX:
+                #pokusaj lijevo
+                if self.checkPerc(left, len(text)) > 0:
+                    newMark.append((left, self.invTransform(QwtPlot.yLeft, topL), text, Qt.AlignLeft, x, y))
+                    topL = topL + self.labelSize
                 else:
-                    newMark.append((right, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignRight, x, y))
-                    top = top + 10                    
+                    newMark.append((right, self.invTransform(QwtPlot.yLeft, topR), text, Qt.AlignRight, x, y))
+                    topR = topR + self.labelSize
             else:
-                if self.checkPerc(right) < 70:
-                    newMark.append((right, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignRight, x, y))
+                #pokusaj desno
+                if self.checkPerc(right, len(text)) < 70:
+                    newMark.append((right, self.invTransform(QwtPlot.yLeft, topR), text, Qt.AlignRight, x, y))
+                    topR = topR + self.labelSize
                 else:
-                    top = top + 10
-                    newMark.append((left, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignLeft, x, y))
-                top = top + 10
+                    topL = topL + self.labelSize
+                    newMark.append((left, self.invTransform(QwtPlot.yLeft, topL), text, Qt.AlignLeft, x, y))
+                
+#            if not (i & 1):
+#                if self.checkPerc(left) > 0:
+#                        newMark.append((left, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignLeft, x, y))
+#                else:
+#                    newMark.append((right, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignRight, x, y))
+#                    top = top + 10                    
+#            else:
+#                if self.checkPerc(right) < 70:
+#                    newMark.append((right, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignRight, x, y))
+#                else:
+#                    top = top + 10
+#                    newMark.append((left, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignLeft, x, y))
+#                top = top + 10
+        prevYR = prevYL = -666
+        prevIndL = prevIndR = -1
+        prevXL = prevXR = 0
+        i = 0
+
+        while i <= len(newMark) - 1:
+            y = newMark[i][1]
+            if newMark[i][3] == Qt.AlignLeft:
+                if abs(prevYL - y) < abs(prevXL - newMark[i][0]):
+                    t = newMark[i]
+                    newMark[i] = newMark[prevIndL]
+                    newMark[prevIndL] = t
+                prevYL = y
+                prevXL = newMark[i][0]
+                prevIndL = i
+            if  newMark[i][3] == Qt.AlignRight:
+                if abs(prevYR - y) < abs(prevXR - newMark[i][0]):
+                    t = newMark[i]
+                    newMark[i] = newMark[prevIndR]
+                    newMark[prevIndR] = t
+                prevYR = y
+                prevXR = newMark[i][0]
+                prevIndR = i                
+            i = i + 1  
+    
+
             
         for x, y, text, al, x1, y1 in newMark:
-            self.addMarker(text, x, y, alignment = al, color = QColor())
+            self.addMarker(text, x, y, alignment = al, color = QColor(255,0,0), size = self.labelSize)
             self.markLines.append(self.addCurve("", QColor("black"), QColor("black"), 1, QwtCurve.Lines, xData = [x, x1], yData = [y, y1] ))
 
             
-    def checkPerc(self, x):
+    def checkPerc(self, x, textLen):
         div = self.axisScale(QwtPlot.xBottom)
         if x < div.lBound():
             return -1
