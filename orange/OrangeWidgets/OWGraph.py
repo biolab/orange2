@@ -5,7 +5,10 @@
 
 from qt import *
 from OWTools import *
-from qwt import *
+try:
+    from qwt import *
+except:
+    from Qwt4 import *
 import qtcanvas, orange, math
 from OWGraphTools import *      # color palletes, user defined curves, ...
 from OWDlgs import OWChooseImageSizeDlg

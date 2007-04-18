@@ -74,7 +74,10 @@ except:
     gotNumPy = "n/a"
 
 try:
-    import Qwt4
+    try:
+        import Qwt4
+    except:
+        import qwt
     gotQwt = "n/a"
 except:
     print "PyQwt not installed!"

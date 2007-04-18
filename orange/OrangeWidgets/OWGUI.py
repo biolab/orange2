@@ -487,7 +487,10 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
 
 
 def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80, tooltip = None, debuggingEnabled = 1):
-    import qwt
+    try:
+        from qwt import *
+    except:
+        from Qwt4 import *
     init = master.getdeepattr(value)
     if box:
         sliderBox = QHButtonGroup(box, widget)

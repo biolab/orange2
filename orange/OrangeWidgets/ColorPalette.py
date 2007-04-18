@@ -1,7 +1,10 @@
 from qt import *
 from qttable import *
 from qtcanvas import *
-import qwt
+try:
+    import qwt
+except:
+    import Qwt4 as qwt
 import math
 from OWWidget import *
 import OWGUI

@@ -1,5 +1,9 @@
 from qt import *
-from qwt import *
+try:
+    from qwt import *
+except:
+    from Qwt4 import *
+
 #from Numeric import *
 #from OWGraphTools import *
 from math import sqrt

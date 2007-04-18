@@ -1,7 +1,11 @@
 import os
 from OWBaseWidget import *
 import OWGUI, OWGraphTools, OWTools
-from qwt import QwtPlot
+try:
+   from qwt import QwtPlot
+except:
+   from Qwt4 import QwtPlot
+
 from qtcanvas import QCanvas
 from ColorPalette import *
 
