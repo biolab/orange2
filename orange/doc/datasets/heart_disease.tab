@@ -1,5 +1,5 @@
 age	gender	chest pain	rest SBP	cholesterol	fasting blood sugar > 120	rest ECG	max HR	exerc ind ang	ST by exercise	slope peak exc ST	major vessels colored	thal	diameter narrowing
-c	d	d	c	c	c	normal left\ vent\ hypertrophy ST-T\ abnormal	c	0 1	c	upsloping flat downsloping	c	normal reversable\ defect fixed\ defect	d
+c	d	d	c	c	d	normal left\ vent\ hypertrophy ST-T\ abnormal	c	0 1	c	upsloping flat downsloping	c	normal reversable\ defect fixed\ defect	d
 													class
 63	male	typical ang	145	233	1	left vent hypertrophy	150	0	2.3	downsloping	0	fixed defect	0
 67	male	asymptomatic	160	286	0	left vent hypertrophy	108	1	1.5	flat	3	normal	1
