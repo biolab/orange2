@@ -290,10 +290,10 @@ class OWCorrAnalysis(OWWidget):
         self.graph.tips.removeAll()
         
         if self.graph.showXaxisTitle == 1: self.graph.setXaxisTitle("Axis " + self.attrX)
-        else: self.graph.setXaxisTitle(None)
+        else: self.graph.setXaxisTitle("")
 
         if self.graph.showYLaxisTitle == 1: self.graph.setYLaxisTitle("Axis " + self.attrY)
-        else: self.graph.setYLaxisTitle(None)        
+        else: self.graph.setYLaxisTitle("")        
         
         cor = self.CA.getPrincipalRowProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
         numCor = int(self.percRow)

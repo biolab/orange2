@@ -218,7 +218,7 @@ class OWGraph(QwtPlot):
         if (self.showMainTitle <> 0):
             self.setTitle(self.mainTitle)
         else:
-            self.setTitle(None)
+            self.setTitle("")
         self.updateLayout()
         self.repaint()
 
@@ -227,7 +227,7 @@ class OWGraph(QwtPlot):
         if (self.showMainTitle <> 0):
             self.setTitle(self.mainTitle)
         else:
-            self.setTitle(None)
+            self.setTitle("")
         self.updateLayout()
         self.repaint()
 
@@ -239,7 +239,7 @@ class OWGraph(QwtPlot):
         if self.showXaxisTitle:
             self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
         else:
-            self.setAxisTitle(QwtPlot.xBottom, None)
+            self.setAxisTitle(QwtPlot.xBottom, "")
         self.updateLayout()
         self.repaint()
 

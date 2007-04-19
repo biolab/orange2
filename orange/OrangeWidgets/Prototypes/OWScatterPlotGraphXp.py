@@ -123,10 +123,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
 
         if self.showXaxisTitle: self.setXaxisTitle(xAttr)
-        else: self.setXaxisTitle(None)
+        else: self.setXaxisTitle("")
 
         if self.showYLaxisTitle: self.setYLaxisTitle(yAttr)
-        else: self.setYLaxisTitle(None)
+        else: self.setYLaxisTitle("")
 
         self.oldShowColorLegend = showColorLegend
 
