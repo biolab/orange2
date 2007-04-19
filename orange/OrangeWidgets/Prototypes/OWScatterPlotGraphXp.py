@@ -6,6 +6,7 @@ import time
 from orngCI import FeatureByCartesianProduct
 import OWClusterOptimization
 import RandomArray
+import ColorPalette
 import orngVisFuncts
 from orngScaleScatterPlotData import *
 
@@ -633,7 +634,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                         palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
                 palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
 
-            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, palette, 256, QImage.LittleEndian)
+            image = QImage(imagebmp, (rx + 3) & ~3, ry, 8, ColorPalette.signedPalette(palette), 256, QImage.LittleEndian) # palette should be 32 bit, what is not so on some platforms (Mac) so we force it
             self.potentialsBmp = QPixmap()
             self.potentialsBmp.convertFromImage(image)
             self.potentialContext = (rx, ry, self.shownXAttribute, self.shownYAttribute, self.squareGranularity, self.jitterSize, self.jitterContinuous, self.spaceBetweenCells)

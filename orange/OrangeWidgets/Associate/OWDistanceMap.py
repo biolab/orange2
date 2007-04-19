@@ -199,7 +199,10 @@ class OWDistanceMap(OWWidget):
 
 
     def qrgbToQColor(self, color):
-        return QColor(qRed(color), qGreen(color), qBlue(color))
+        # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
+        # why this was not used before so I am leaving it as it is
+        	
+        return QColor(qRed(positiveColor(color)), qGreen(positiveColor(color)), qBlue(positiveColor(color))) # on Mac color cannot be negative number in this case so we convert it manually
 
     def getItemFromPos(self, i):
         if (len(self.distanceMap.elementIndices)==0):

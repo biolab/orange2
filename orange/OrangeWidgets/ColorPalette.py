@@ -22,23 +22,31 @@ colorButtonSize = 15
 specialColorLabelWidth = 160
 paletteInterpolationColors = 250
 
-# On Mac OS X QRgb is really unsigned int and so Python uses long int for it (as it
-# cannot store it always in signed int), but this breaks QImage as it expects palette
-# of ints, so we are manually casting long unsigned ints to signed ints (even if QRgb
-# should be in fact unsigned)
-def signedPalette(palette):
-    def signedInt(long):
-        if type(long) == int:
-            return long
-        elif long > 0xFFFFFFFF:
-             long &= 0xFFFFFFFF
-        
-	if long & 0x80000000:
-            return int(-((long ^ 0xFFFFFFFF) + 1))
-        else:
-            return int(long)
+# On Mac OS X there are problems with QRgb and whether it is long or int and even whether
+# it is positive or negative number (there is corelation between those)
+# Color can be stored in 32 bit unsigned int but Python does not have unsigned int explicitly
+# So Python on Mac sometimes uses long where it should use int (when the highest bit is set and
+# it sees the number as positive - so it cannot be stored as positive number in 31 bits) and sometimes
+# it needs unsigned number and so uses long and does not want a signed int
+def signedColor(long):
+    if type(long) == int:
+        return long
+    elif long > 0xFFFFFFFF:
+	long &= 0xFFFFFFFF
     
-    return [signedInt(color) for color in palette]
+    if long & 0x80000000:
+        return int(-((long ^ 0xFFFFFFFF) + 1))
+    else:
+        return int(long)
+
+def positiveColor(color):
+    if color < 0:
+        return (-color - 1) ^ 0xFFFFFFFF
+    else:
+        return color
+
+def signedPalette(palette):
+    return [signedColor(color) for color in palette]
 
 class ColorPalette(QWidget):
     def __init__(self, parent, master, value, label = "Colors", additionalColors = None, callback = None):
@@ -216,7 +224,10 @@ class ColorPalette(QWidget):
             self.callback()
 
     def rgbToQColor(self, rgb):
-        return QColor(qRed(rgb), qGreen(rgb), qBlue(rgb))
+        # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
+        # why this was not used before so I am leaving it as it is
+        
+        return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
 
     def qRgbFromQColor(self, qcolor):
         return qRgb(qcolor.red(), qcolor.green(), qcolor.blue())

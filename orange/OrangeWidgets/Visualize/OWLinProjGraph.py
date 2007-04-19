@@ -832,7 +832,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
                 for cls in self.potentialsClassifier.classVar.values:
                     color = colors[sortedClasses.index(cls)].light(150).rgb()
-                    color = [f(color) for f in [qRed, qGreen, qBlue]]
+                    color = [f(ColorPalette.positiveColor(color)) for f in [qRed, qGreen, qBlue]] # on Mac color cannot be negative number in this case so we convert it manually
                     towhite = [255-c for c in color]
                     for s in range(nShades):
                         si = 1-float(s)/nShades

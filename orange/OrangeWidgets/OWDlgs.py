@@ -521,7 +521,10 @@ class ColorPalette(OWBaseWidget):
 
 
     def rgbToQColor(self, rgb):
-        return QColor(qRed(rgb), qGreen(rgb), qBlue(rgb))
+        # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
+        # why this was not used before so I am leaving it as it is
+        
+        return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
 
     def qRgbFromQColor(self, qcolor):
         return qRgb(qcolor.red(), qcolor.green(), qcolor.blue())
