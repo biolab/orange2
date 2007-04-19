@@ -218,6 +218,10 @@ def __getDirectoryNames():
             try: os.mkdir(applicationDir)
             except: pass
         outputDir = os.path.join(applicationDir, "Orange")                  # directory for saving settings and stuff
+    elif sys.platform == "darwin":
+        applicationDir = os.path.join(user.home, "Library")
+        applicationDir = os.path.join(user.home, "Application Support")
+        outputDir = os.path.join(applicationDir, "Orange")
     else:
         outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
     if not os.path.exists(outputDir):
