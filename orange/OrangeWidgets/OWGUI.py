@@ -690,11 +690,11 @@ class widgetHider(QWidget):
         self.disables = widgets or [] # need to create a new instance of list (in case someone would want to append...)
         self.makeConsistent = Disabler(self, master, value, type = HIDER)
         if self.pixmaps != []:
-	    # a little compatibility for QT 3.3 (on Mac at least)
+            # a little compatibility for QT 3.3 (on Mac at least)
             if hasattr(self, "setPaletteBackgroundPixmap"):
-		self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
-	    else:
-		self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
+                self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
+            else:
+                self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
 
         if widgets != []:
             self.setWidgets(widgets)
@@ -702,22 +702,22 @@ class widgetHider(QWidget):
     def mousePressEvent(self, ev):
         self.master.__setattr__(self.value, not self.master.getdeepattr(self.value))
         if self.pixmaps != []:
-	    # a little compatibility for QT 3.3 (on Mac at least)
-	    if hasattr(self, "setPaletteBackgroundPixmap"):
-		self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
-	    else:
-        	self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
+            # a little compatibility for QT 3.3 (on Mac at least)
+            if hasattr(self, "setPaletteBackgroundPixmap"):
+                self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
+            else:
+                self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
         self.makeConsistent.__call__()
 
 
     def setWidgets(self, widgets):
         self.disables = widgets or []
         if self.pixmaps != []:
-	    # a little compatibility for QT 3.3 (on Mac at least)
-	    if hasattr(self, "setPaletteBackgroundPixmap"):
-		self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
-	    else:
-        	self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
+            # a little compatibility for QT 3.3 (on Mac at least)
+            if hasattr(self, "setPaletteBackgroundPixmap"):
+                self.setPaletteBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
+            else:
+                self.setBackgroundPixmap(self.pixmaps[self.master.getdeepattr(self.value)])
         self.makeConsistent.__call__()
 
 

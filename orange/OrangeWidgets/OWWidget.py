@@ -92,10 +92,18 @@ class OWWidget(OWBaseWidget):
         #for state, widget, icon, use in [("Info", self._infoWidget, self._infoPixmap, self._owInfo), ("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
         for state, widget, icon, use in [("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
             if use and self.widgetState[state] != {}:
-                widget.setBackgroundPixmap(icon)
+                # a little compatibility for QT 3.3 (on Mac at least)
+                if hasattr(widget, "setPaletteBackgroundPixmap"):
+                    widget.setPaletteBackgroundPixmap(icon)
+                else:
+                    widget.setBackgroundPixmap(icon)
                 QToolTip.add(widget, "\n".join(self.widgetState[state].values()))
             else:
-                widget.setBackgroundPixmap(QPixmap())
+                # a little compatibility for QT 3.3 (on Mac at least)
+                if hasattr(widget, "setPaletteBackgroundPixmap"):
+                    widget.setPaletteBackgroundPixmap(QPixmap())
+                else:
+                    widget.setBackgroundPixmap(QPixmap())
                 QToolTip.remove(widget)
 
 ##        if self.widgetStateHandler:

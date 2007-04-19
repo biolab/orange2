@@ -322,7 +322,11 @@ class InterpolationView(QCanvasView):
         pm = QPixmap()
         pm.convertFromImage(image, QPixmap.Color);
 
-        self.canvas.setBackgroundPixmap(pm)
+        # a little compatibility for QT 3.3 (on Mac at least)
+        if hasattr(self.canvas, "setPaletteBackgroundPixmap"):
+            self.canvas.setPaletteBackgroundPixmap(pm)
+        else:
+            self.canvas.setBackgroundPixmap(pm)
         self.canvas.update()
 
 class ColorButton(QCanvasView):
