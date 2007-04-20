@@ -67,15 +67,12 @@ class OWSave(OWWidget):
         if self.recentFiles:
             startfile = self.recentFiles[0]
         else:
-            if sys.platform == "darwin":
-                startfile = user.home
-            else:
-                startfile = "."
+            startfile = user.home
 
-        dlg = QFileDialog(startfile,
+        dlg = QFileDialog.getSaveFileName(startfile,
                           'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nRetis files (*.rda *.rdo)\nAll files(*.*)', #\nAssistant files (*.dat)
-                          None, "Orange Data File", True)
-        dlg.exec_loop()
+                          None, "Orange Data File")
+#        dlg.exec_loop()
 
         filename = str(dlg.selectedFile())
         if not filename or not os.path.split(filename)[1]:
