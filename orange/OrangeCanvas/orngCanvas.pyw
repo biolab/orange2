@@ -3,7 +3,7 @@
 #    main file, that creates the MDI environment
 
 from qt import *
-import sys, os, cPickle
+import sys, os, cPickle, user
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngRegistry
 
 class OrangeCanvasDlg(QMainWindow):
@@ -525,7 +525,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.statusBar.message("")
 
     def menuItemSaveOutputWindow(self):
-        qname = QFileDialog.getSaveFileName( self.outputDir + "/Output.htm", "HTML Document (*.htm)", self, "", "Save Output To File")
+        qname = QFileDialog.getSaveFileName( self.saveSchemaDir + "/Output.htm", "HTML Document (*.htm)", self, "", "Save Output To File")
         if qname.isEmpty(): return
         name = str(qname)
 
@@ -808,8 +808,12 @@ class OrangeCanvasDlg(QMainWindow):
         #if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
         #if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
 
-        self.settings.setdefault("saveSchemaDir", self.outputDir)
-        self.settings.setdefault("saveApplicationDir", self.outputDir)
+        if sys.platform == "darwin":
+            self.settings.setdefault("saveSchemaDir", user.home)
+            self.settings.setdefault("saveApplicationDir", user.home)
+        else:
+            self.settings.setdefault("saveSchemaDir", self.outputDir)
+            self.settings.setdefault("saveApplicationDir", self.outputDir)
         self.settings.setdefault("showSignalNames", 1)
         self.settings.setdefault("useContexts", 1)
 
