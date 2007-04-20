@@ -6,7 +6,7 @@
 <priority>100</priority>
 """
 
-import orange, orngSVM, OWGUI, thread
+import orange, orngSVM, OWGUI, thread, sys
 from OWWidget import *
 from threading import Thread
 from exceptions import SystemExit
@@ -49,7 +49,7 @@ class OWSVM(OWWidget):
         OWGUI.separator(self.controlArea)
 
         self.optionsBox=b=OWGUI.widgetBox(self.controlArea, "Options", addSpace = True)
-        OWGUI.doubleSpin(b,self, "C", 0.0, 100.0, 0.5, label="Model complexity (C)", labelWidth = 120, orientation="horizontal")
+        OWGUI.doubleSpin(b,self, "C", 0.0, 512.0, 0.5, label="Model complexity (C)", labelWidth = 120, orientation="horizontal")
         OWGUI.doubleSpin(b,self, "p", 0.0, 10.0, 0.1, label="Tolerance (p)", labelWidth = 120, orientation="horizontal")
         OWGUI.doubleSpin(b,self, "eps", 0.0, 0.5, 0.001, label="Numeric precision (eps)", labelWidth = 120, orientation="horizontal")
 
@@ -71,9 +71,7 @@ class OWSVM(OWWidget):
         self.adjustSize()
         self.loadSettings()
         self.changeKernel()
-        self.thread=MyThread(self)
-        self.lock=thread.allocate_lock()
-        self.terminateThread=False
+        self.searching=False
         self.applySettings()
 
     def changeKernel(self):
@@ -141,32 +139,22 @@ class OWSVM(OWWidget):
             self.send("Support Vectors", self.supportVectors)
 
     def parameterSearch(self):
-        if self.thread.isAlive():
-            self.lock.acquire()
-            self.terminateThread=True
-            self.lock.release()
-            #self.thread.join()
-            self.kernelBox.setDisabled(0)
-            self.optionsBox.setDisabled(0)
-            self.paramButton.setText("Automatic parameter search")
+        if self.searching:
+            self.searching=False
         else:
             self.kernelBox.setDisabled(1)
             self.optionsBox.setDisabled(1)
             self.progressBarInit()
-            self.thread=MyThread(self)
-            self.thread.start()
             self.paramButton.setText("Stop")
-
+            self.searching=True
+            self.search_()
+            
     def progres(self, f, best):
+        qApp.processEvents()
         self.best=best
         self.progressBarSet(int(f*100))
-        if self.terminateThread:
-            self.lock.acquire()
-            self.terminateThread=False
-            self.lock.release()
-            import sys
-            sys.exit()
-            raise "thread exit"
+        if not self.searching:
+            raise UnhandledException()
 
     def finishSearch(self):
         del self.best["error"]
@@ -176,36 +164,36 @@ class OWSVM(OWWidget):
         self.kernelBox.setDisabled(0)
         self.optionsBox.setDisabled(0)
         self.paramButton.setText("Automatic parameter search")
+        self.searching=False
 
-
-class MyThread(Thread):
-    def __init__(self, widget):
-        apply(Thread.__init__,(self,))
-        self.widget=widget
-
-    def run(self):
+    def search_(self):
         params={}
-        if self.widget.useNu:
+        if self.useNu:
             params["nu"]=[0.25, 0.5, 0.75]
         else:
             params["C"]=map(lambda g:2**g, range(-5,10,2))
-        if self.widget.kernel_type in [1,2]:
-            params["gamma"]=map(lambda g:2**g, range(-3,10,2))
-        if self.widget.kernel_type==1:
+        if self.kernel_type in [1,2]:
+            params["gamma"]=map(lambda g:2**g, range(-3,10,2))+[0]
+        if self.kernel_type==1:
             params["degree"]=[1,2,3]
         best={}
         try:
-            best=orngSVM.parameter_selection(orngSVM.SVMLearner(),self.widget.data, 4, params, best, callback=self.widget.progres)
-        except SystemExit:
+            best=orngSVM.parameter_selection(orngSVM.SVMLearner(),self.data, 4, params, best, callback=self.progres)
+        except :
             pass
-        self.widget.finishSearch()
+        self.finishSearch()
+
+from exceptions import Exception        
+class UnhandledException(Exception):
+    pass
+
 import sys
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWSVM()
     app.setMainWidget(w)
     w.show()
-    d=orange.ExampleTable("../../doc/datasets/tic_tac_toe.tab")
+    d=orange.ExampleTable("../../doc/datasets/iris.tab")
     w.setData(d)
     app.exec_loop()
     w.saveSettings()
