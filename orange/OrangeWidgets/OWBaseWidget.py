@@ -108,6 +108,10 @@ class OWBaseWidget(QDialog):
             if not os.path.exists(os.path.join(user.home, "Application Data")):
                 os.mkdir(os.path.join(user.home, "Application Data"))
             self.outputDir = os.path.join(os.path.join(user.home, "Application Data"), "Orange")                  # directory for saving settings and stuff
+        elif sys.platform == "darwin":
+            self.outputDir = os.path.join(user.home, "Library")
+            self.outputDir = os.path.join(self.outputDir, "Application Support")
+            self.outputDir = os.path.join(self.outputDir, "Orange")
         else:
             self.outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
         if not os.path.exists(self.outputDir):

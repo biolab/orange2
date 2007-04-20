@@ -14,7 +14,7 @@
 
 from OWWidget import *
 import OWGUI
-import re, os.path
+import re, os.path, user, sys
 from exceptions import Exception
 
 class OWSave(OWWidget):
@@ -67,7 +67,10 @@ class OWSave(OWWidget):
         if self.recentFiles:
             startfile = self.recentFiles[0]
         else:
-            startfile = "."
+            if sys.platform == "darwin":
+                startfile = user.home
+            else:
+                startfile = "."
 
         dlg = QFileDialog(startfile,
                           'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nRetis files (*.rda *.rdo)\nAll files(*.*)', #\nAssistant files (*.dat)

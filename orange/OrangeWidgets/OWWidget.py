@@ -66,7 +66,7 @@ class OWWidget(OWBaseWidget):
         self._warningWidget, self._warningPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
         self._errorWidget, self._errorPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-red.png")
 ##        spacer = QWidget(self.statusBarIconArea)
-##        spacer.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
+##        spacer.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
         if wantStatusBar == 0:
             self.widgetStatusArea.hide()

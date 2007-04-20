@@ -13,7 +13,7 @@
 #
 
 from OWWidget import *
-import OWGUI, string, os.path
+import OWGUI, string, os.path, user, sys
 
 class OWSubFile(OWWidget):
     settingsList=["recentFiles"]
@@ -85,7 +85,10 @@ class OWSubFile(OWWidget):
                 return
         else:
             if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
-                startfile="."
+                if sys.platform == "darwin":
+                    startfile = user.home
+                else:
+                    startfile="."
             else:
                 startfile=self.recentFiles[0]
 

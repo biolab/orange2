@@ -186,12 +186,12 @@ class updateOrangeDlg(QMainWindow):
         if not os.path.exists(self.foldersIcon): self.foldersIcon = defaultIcon
         if not os.path.exists(self.optionsIcon): self.optionsIcon = defaultIcon
         
-        self.toolUpdate  = QToolButton(QPixmap(self.updateIcon), "Update" , QString.null, self.executeUpdate, self.toolbar, 'Update Files')
+        self.toolUpdate  = QToolButton(QIconSet(QPixmap(self.updateIcon)), "Update" , QString.null, self.executeUpdate, self.toolbar, 'Update Files')
         self.toolUpdate.setUsesTextLabel (1)
         self.toolbar.addSeparator()
-        self.toolFolders = QToolButton(QPixmap(self.foldersIcon), "Folders" , QString.null, self.showFolders, self.toolbar, 'Show folders that will be updated')
+        self.toolFolders = QToolButton(QIconSet(QPixmap(self.foldersIcon)), "Folders" , QString.null, self.showFolders, self.toolbar, 'Show folders that will be updated')
         self.toolFolders.setUsesTextLabel (1)
-        self.toolOptions = QToolButton(QPixmap(self.optionsIcon), "Options" , QString.null, self.showOptions, self.toolbar, 'Show update options')
+        self.toolOptions = QToolButton(QIconSet(QPixmap(self.optionsIcon)), "Options" , QString.null, self.showOptions, self.toolbar, 'Show update options')
         self.toolOptions.setUsesTextLabel (1)
         self.setIcon(QPixmap(self.updateIcon))
                 

@@ -254,7 +254,10 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.insertItem( "&Rebuild Widget Registry",  self.menuItemRebuildWidgetRegistry)
         self.menuOptions.insertItem( "&Customize Shortcuts",  self.menuItemEditWidgetShortcuts)
         self.menuOptions.insertSeparator()
-        self.menuOptions.insertItem( "Canvas &Options...",  self.menuItemCanvasOptions)
+        if sys.platform == "darwin":
+            self.menuOptions.insertItem("&Preferences...", self.menuItemCanvasOptions)
+        else:
+            self.menuOptions.insertItem( "Canvas &Options...",  self.menuItemCanvasOptions)
 
         self.menuWindow = QPopupMenu( self )
         self.menuWindow.insertItem("&Cascade", self.workspace.cascade)

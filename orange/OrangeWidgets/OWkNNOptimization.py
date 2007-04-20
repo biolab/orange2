@@ -1,6 +1,6 @@
 from OWBaseWidget import *
 from OWWidget import OWWidget
-import OWGUI, OWDlgs, OWGraphTools, numpy
+import OWGUI, OWDlgs, OWGraphTools, numpy, user, sys
 from OWGraph import *
 from orngVizRank import *
 from orngScaleData import getVariableValuesSorted
@@ -964,7 +964,10 @@ class OWInteractionAnalysis(OWWidget):
     def browseGeneFile(self):
         d = os.getcwd()
         if len(self.recentGeneSets) == 0 or self.recentGeneSets[0] == "(none)":
-            startfile = "."
+            if sys.platform == "darwin":
+                startfile = user.home
+            else:
+                startfile = "."
         else:
             startfile = self.recentGeneSets[0]
         filename = str(QFileDialog.getOpenFileName(startfile, 'Gene set files (*.gmt)\nAll files(*.*)', None,'Open Gene Set File'))

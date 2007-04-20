@@ -460,7 +460,10 @@ class CanvasOptionsDlg(QDialog):
     def __init__(self, canvasDlg, *args):
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        self.setCaption("Qt Canvas Options")
+        if sys.platform == "darwin":
+            self.setCaption("Qt Preferences")
+        else:
+            self.setCaption("Qt Canvas Options")
         #self.controlArea = QVBoxLayout (self)
         self.topLayout = QVBoxLayout( self, 10 )
         self.resize(500,450)
@@ -583,7 +586,7 @@ class CanvasOptionsDlg(QDialog):
             hbox.layout().setSpacing(6)
             hbox.layout().setMargin(0)
         sep = QWidget(hbox)
-        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
         self.okButton = QPushButton("OK", hbox)
         self.cancelButton = QPushButton("Cancel", hbox)
@@ -732,7 +735,7 @@ class WidgetRegistryDlg(QDialog):
             hbox.layout().setMargin(0)
 
         sep = QWidget(hbox)
-        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, 0))
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
         self.okButton = QPushButton("OK", hbox)
         self.okButton.setFixedWidth(110)

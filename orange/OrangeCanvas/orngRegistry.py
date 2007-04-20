@@ -220,7 +220,7 @@ def __getDirectoryNames():
         outputDir = os.path.join(applicationDir, "Orange")                  # directory for saving settings and stuff
     elif sys.platform == "darwin":
         applicationDir = os.path.join(user.home, "Library")
-        applicationDir = os.path.join(user.home, "Application Support")
+        applicationDir = os.path.join(applicationDir, "Application Support")
         outputDir = os.path.join(applicationDir, "Orange")
     else:
         outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
@@ -234,7 +234,7 @@ def __getDirectoryNames():
 
     registryFileName = os.path.join(outputDir, "widgetregistry.xml")
     if not os.path.exists(registryFileName):
-        WidgetsToXML().ParseWidgetRoot(widgetDir, canvasDir)
+        WidgetsToXML().ParseWidgetRoot(widgetDir, outputDir)
 
     return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "outputDir", "registryFileName"]])
 

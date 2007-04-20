@@ -13,7 +13,7 @@
 #
 
 from OWWidget import *
-import OWGUI, string, os.path
+import OWGUI, string, os.path, user, sys
 from orange import Graph
 #from OWGraphDrawer import *
 
@@ -91,7 +91,10 @@ class OWNetworkFile(OWWidget):
     def browseFile(self, inDemos=0):
         "Display a FileDialog and select a file"
         if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
-            startfile="."
+            if sys.platform == "darwin":
+                startfile = user.home
+            else:
+                startfile="."
         else:
             startfile=self.recentFiles[0]
                 
