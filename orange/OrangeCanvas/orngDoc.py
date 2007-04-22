@@ -611,7 +611,7 @@ orngRegistry.addWidgetDirectories()\n"""
                 instancesB += "self.ow%s = %s(signalManager = self.signalManager)\n" %(name, widget.widget.getFileName()) +t+t
                 signals += "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
                 icons += "self.ow%s.setWidgetIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
-                captions  += "if (int(qVersion()[0]) >= 3):\n" +t+t+t + "self.ow%s.setCaptionTitle('%s')\n" %(name, widget.caption) +t+t "else:\n" +t+t+t "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
+                captions += "if (int(qVersion()[0]) >= 3):\n" +t+t+t + "self.ow%s.setCaptionTitle('%s')\n" %(name, widget.caption) +t+t + "else:\n" +t+t+t + "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "self.signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 tabs += "self.ow%s.captionTitle = '%s'\n" % (name, widget.caption)+t+t
