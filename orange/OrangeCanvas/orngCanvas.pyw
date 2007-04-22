@@ -11,7 +11,10 @@ class OrangeCanvasDlg(QMainWindow):
         apply(QMainWindow.__init__,(self,) + args)
         self.ctrlPressed = 0    # we have to save keystate, so that orngView can access information about keystate
         self.debugMode = 1        # print extra output for debuging
-        self.setCaption("Qt Orange Canvas")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Orange Canvas")
+        else:
+            self.setCaption("Qt Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
 

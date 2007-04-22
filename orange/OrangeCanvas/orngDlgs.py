@@ -243,8 +243,12 @@ class SignalDialog(QDialog):
 
         # GUI
         self.resize(515,286)
-        self.setName('Qt Connect Signals')
-        self.setCaption(self.tr("Qt Connect Signals"))
+        if (int(qVersion()[0]) >= 3):
+            self.setName('Connect Signals')
+            self.setCaption(self.tr("Connect Signals"))
+        else:
+            self.setName('Qt Connect Signals')
+            self.setCaption(self.tr("Qt Connect Signals"))
 
         self.grid = QGridLayout( 2, 1 )
         self.topLayout.addLayout( self.grid, 10 )
@@ -460,10 +464,16 @@ class CanvasOptionsDlg(QDialog):
     def __init__(self, canvasDlg, *args):
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        if sys.platform == "darwin":
-            self.setCaption("Qt Preferences")
+        if (int(qVersion()[0]) >= 3):
+            if sys.platform == "darwin":
+                self.setCaption("Preferences")
+            else:
+                self.setCaption("Canvas Options")
         else:
-            self.setCaption("Qt Canvas Options")
+            if sys.platform == "darwin":
+                self.setCaption("Qt Preferences")
+            else:
+                self.setCaption("Qt Canvas Options")
         #self.controlArea = QVBoxLayout (self)
         self.topLayout = QVBoxLayout( self, 10 )
         self.resize(500,450)
@@ -682,7 +692,10 @@ class WidgetRegistryDlg(QDialog):
 
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        self.setCaption("Qt Widget Shortcuts")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Widget Shortcuts")
+        else:
+            self.setCaption("Qt Widget Shortcuts")
         self.topLayout = QVBoxLayout( self, 10 )
         self.resize(500,500)
 
@@ -866,7 +879,10 @@ class PreferencesDlg(QDialog):
             self.channels[name] = str(self.editFullName.text()) + "::" + str(self.editPriority.currentText()) + "::" + str(self.editColor.currentText())
 
     def addNewSignal(self):
-        (Qstring,ok) = QInputDialog.getText("Qt Add New Channel Name", "Enter new symbolic channel name")
+        if (int(qVersion()[0]) >= 3):
+            (Qstring,ok) = QInputDialog.getText("Add New Channel Name", "Enter new symbolic channel name")
+        else:
+            (Qstring,ok) = QInputDialog.getText("Qt Add New Channel Name", "Enter new symbolic channel name")
         string = str(Qstring)
         if ok:
             self.editColor.setCurrentItem(0)
@@ -905,7 +921,10 @@ class PreferencesDlg(QDialog):
 class saveApplicationDlg(QDialog):
     def __init__(self, *args):
         apply(QDialog.__init__,(self,) + args)
-        self.setCaption("Qt Set widget order")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Set Widget Order")
+        else:
+            self.setCaption("Qt Set Widget Order")
         self.shownWidgetList = []
         self.hiddenWidgetList = []
 

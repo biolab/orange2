@@ -81,7 +81,7 @@ class ExampleList(list):
     pass
 
 class OWBaseWidget(QDialog):
-    def __init__(self, parent = None, signalManager = None, title="Qt Orange BaseWidget", modal=FALSE, savePosition = False):
+    def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False):
         # the "currentContexts" MUST be the first thing assigned to a widget
         self.currentContexts = {}
         self._guiElements = []      # used for automatic widget debugging
@@ -127,7 +127,7 @@ class OWBaseWidget(QDialog):
         self.captionTitle = title.replace("&","")     # used for widget caption
 
         # if we want the widget to show the title then the title must start with "Qt"
-        if self.captionTitle[:2].upper() != "QT":
+        if (int(qVersion()[0]) < 3) and self.captionTitle[:2].upper() != "QT":
             self.captionTitle = "Qt " + self.captionTitle
 
         # number of control signals, that are currently being processed

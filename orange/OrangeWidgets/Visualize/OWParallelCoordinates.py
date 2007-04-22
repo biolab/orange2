@@ -387,7 +387,10 @@ class ParallelOptimization(OWBaseWidget):
     def __init__(self, parallelWidget, parent=None, signalManager = None):
         OWBaseWidget.__init__(self, parent, signalManager, "Parallel Optimization Dialog", FALSE)
 
-        self.setCaption("Qt Parallel Optimization Dialog")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Parallel Optimization Dialog")
+        else:
+            self.setCaption("Qt Parallel Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 )
         self.grid=QGridLayout(4,2)
         self.topLayout.addLayout( self.grid, 10 )

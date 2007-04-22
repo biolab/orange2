@@ -63,7 +63,10 @@ class SchemaView(QCanvasView):
     # popMenuAction - user selected to rename active widget
     def renameActiveWidget(self):
         exName = str(self.tempWidget.caption)
-        (newName ,ok) = QInputDialog.getText("Qt Rename Widget", "Enter new name for the widget \"" + exName + "\":", exName)
+        if (int(qVersion()[0]) >= 3):
+            (newName ,ok) = QInputDialog.getText("Rename Widget", "Enter new name for the widget \"" + exName + "\":", exName)
+        else:
+            (newName ,ok) = QInputDialog.getText("Qt Rename Widget", "Enter new name for the widget \"" + exName + "\":", exName)
         newName = str(newName)
         if ok and self.tempWidget != None and newName != exName:
             for widget in self.doc.widgets:
@@ -73,7 +76,7 @@ class SchemaView(QCanvasView):
             self.tempWidget.updateText(newName)
             self.tempWidget.updateTooltip()
             self.tempWidget.updateLinePosition()
-            if len(newName) < 3 or newName[:2].lower() != "qt":
+            if (int(qVersion()[0]) < 3) and len(newName) < 3 or newName[:2].lower() != "qt":
                 newName = "Qt " + newName
             self.tempWidget.instance.setCaption(newName)
             self.doc.enableSave(True)

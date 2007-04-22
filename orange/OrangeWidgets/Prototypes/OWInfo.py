@@ -35,7 +35,7 @@ class OWInfo(OWWidget):
         self.title = self.captionTitle = "Info Widget"
 
         # if we want the widget to show the title then the title must start with "Qt"
-        if self.captionTitle[:2].upper != "QT": self.captionTitle = "Qt " + self.captionTitle
+        if (int(qVersion()[0]) < 3) and self.captionTitle[:2].upper != "QT": self.captionTitle = "Qt " + self.captionTitle
             
         #the title
         self.setCaption(self.captionTitle)

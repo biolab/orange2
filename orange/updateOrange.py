@@ -26,7 +26,10 @@ def splitDirs(path):
 class OptionsDlg(QDialog):
     def __init__(self, settings, *args):
         apply(QDialog.__init__,(self,) + args)
-        self.setCaption("Qt Update Options")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Update Options")
+        else:
+            self.setCaption("Qt Update Options")
 
         if self.layout():
             self.topLayout = self.layout()
@@ -86,7 +89,10 @@ class FoldersDlg(QDialog):
         self.groupBoxLayout = QVBoxLayout(self.groupBox, 5)
         self.groupBoxLayout.setMargin(20)
                 
-        self.setCaption("Qt Select Folders")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Select Folders")
+        else:
+            self.setCaption("Qt Select Folders")
         self.resize(300,100)
         
         self.folders = []
@@ -133,7 +139,10 @@ class updateOrangeDlg(QMainWindow):
     def __init__(self,*args):
         apply(QMainWindow.__init__,(self,) + args)
         self.resize(600,600)
-        self.setCaption("Qt Orange Update")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Orange Update")
+        else:
+            self.setCaption("Qt Orange Update")
         self.toolbar = QToolBar(self, 'toolbar')
         self.statusBar = QStatusBar(self)
         self.text = QTextView (self)

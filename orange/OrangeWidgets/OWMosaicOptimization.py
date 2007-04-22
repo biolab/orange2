@@ -31,7 +31,10 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         self.resize(375,620)
 
-        self.setCaption("Qt Mosaic Optimization Dialog")
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Mosaic Optimization Dialog")
+        else:
+            self.setCaption("Qt Mosaic Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
 
         # loaded variables

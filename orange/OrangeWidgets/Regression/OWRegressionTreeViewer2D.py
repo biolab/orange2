@@ -149,7 +149,10 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.navWidget.lay.addWidget(self.treeNav)
         self.canvasView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
-        self.navWidget.setCaption("Qt Navigator")
+        if (int(qVersion()[0]) >= 3):
+            self.navWidget.setCaption("Navigator")
+        else:
+            self.navWidget.setCaption("Qt Navigator")
         self.setMouseTracking(True)
 
         nodeInfoBox = QVButtonGroup("Show Info On", self.NodeTab)
