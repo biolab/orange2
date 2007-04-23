@@ -220,10 +220,11 @@ class OWCorrAnalysisGraph(OWGraph):
         for i, (x, y, text) in points:
             side = left
             if not text: continue
-            
+            print right, left
             if x < posX:
                 #pokusaj lijevo
-                if self.checkPerc(left, len(text)) > 0:
+                #if self.checkPerc(left, len(text)) > 0:
+                if self.place(left, len(text), 'left') == True:
                     newMark.append((left, self.invTransform(QwtPlot.yLeft, topL), text, Qt.AlignLeft, x, y))
                     topL = topL + self.labelSize
                 else:
@@ -231,12 +232,13 @@ class OWCorrAnalysisGraph(OWGraph):
                     topR = topR + self.labelSize
             else:
                 #pokusaj desno
-                if self.checkPerc(right, len(text)) < 70:
+                #if self.checkPerc(right, len(text)) < 70:
+                if self.place(right, len(text), 'right') == True:
                     newMark.append((right, self.invTransform(QwtPlot.yLeft, topR), text, Qt.AlignRight, x, y))
                     topR = topR + self.labelSize
-                else:
-                    topL = topL + self.labelSize
+                else:                    
                     newMark.append((left, self.invTransform(QwtPlot.yLeft, topL), text, Qt.AlignLeft, x, y))
+                    topL = topL + self.labelSize
                 
 #            if not (i & 1):
 #                if self.checkPerc(left) > 0:
@@ -251,30 +253,99 @@ class OWCorrAnalysisGraph(OWGraph):
 #                    top = top + 10
 #                    newMark.append((left, self.invTransform(QwtPlot.yLeft, top), text, Qt.AlignLeft, x, y))
 #                top = top + 10
-        prevYR = prevYL = -666
-        prevIndL = prevIndR = -1
-        prevXL = prevXR = 0
-        i = 0
+        again = True
+        swapCounter = 0
+        while again:
+            #don't take too long
+            if swapCounter > 100:
+                break
+            again = False
+            prevIndL = prevIndR = -1
+            topR = topL = top
+            #prevXL = prevXR = 0
+            i = 0
 
-        while i <= len(newMark) - 1:
-            y = newMark[i][1]
-            if newMark[i][3] == Qt.AlignLeft:
-                if abs(prevYL - y) < abs(prevXL - newMark[i][0]):
-                    t = newMark[i]
-                    newMark[i] = newMark[prevIndL]
-                    newMark[prevIndL] = t
-                prevYL = y
-                prevXL = newMark[i][0]
-                prevIndL = i
-            if  newMark[i][3] == Qt.AlignRight:
-                if abs(prevYR - y) < abs(prevXR - newMark[i][0]):
-                    t = newMark[i]
-                    newMark[i] = newMark[prevIndR]
-                    newMark[prevIndR] = t
-                prevYR = y
-                prevXR = newMark[i][0]
-                prevIndR = i                
-            i = i + 1  
+            while i <= len(newMark) - 1:
+                if newMark[i][3] == Qt.AlignLeft:                    
+                    #compute line parameters
+                    if prevIndL == -1:
+                        prevIndL = i
+                        #topL += self.labelSize
+                        i += 1
+                        continue
+                    #print 'looking %s and %s' %(newMark[i][2], newMark[prevIndL][2])
+                    k1 = (newMark[i][1] - newMark[i][5]) / (newMark[i][0] - newMark[i][4])
+                    l1 = -k1 * newMark[i][4] + newMark[i][5]
+                    k2 = (newMark[prevIndL][1] - newMark[prevIndL][5]) / (newMark[prevIndL][0] - newMark[prevIndL][4])
+                    l2 = -k2 * newMark[prevIndL][4] + newMark[prevIndL][5]                                    
+                    if k1 == k2:
+                        i += 1
+                        continue
+                    intersection = (l2 - l1) / (k2 - k1)
+                    intersection = -intersection
+                    #print intersection, left, min(newMark[i][4], newMark[prevIndL][4])
+                    if intersection > left and intersection < min(newMark[i][4], newMark[prevIndL][4]):
+                        #swap labels
+                        #print "swapping %s and %s " %(newMark[i][2], newMark[prevIndL][2])
+                        #t = (left, self.invTransform(QwtPlot.yLeft, topL + self.labelSize), newMark[i][2], newMark[i][3], newMark[i][4], newMark[i][5])
+                        t = (left, newMark[prevIndL][1], newMark[i][2], newMark[i][3], newMark[i][4], newMark[i][5])
+                        #newMark[i] = (left, self.invTransform(QwtPlot.yLeft, topL), newMark[prevIndL][2], newMark[prevIndL][3], newMark[prevIndL][4], newMark[prevIndL][5])
+                        newMark[i] = (left, newMark[i][1], newMark[prevIndL][2], newMark[prevIndL][3], newMark[prevIndL][4], newMark[prevIndL][5])
+                        newMark[prevIndL] = t
+                        again = True
+                        swapCounter += 1
+                    prevIndL = i
+                    topL += self.labelSize
+                        
+                if newMark[i][3] == Qt.AlignRight:
+                    #compute line parameters
+                    if prevIndR == -1:
+                        prevIndR = i
+                        #topR += self.labelSize
+                        i += 1
+                        continue
+                    #print 'looking %s and %s' %(newMark[i][2], newMark[prevIndR][2])
+                    k1 = (newMark[i][1] - newMark[i][5]) / (newMark[i][0] - newMark[i][4])
+                    l1 = -k1 * newMark[i][4] + newMark[i][5]
+                    k2 = (newMark[prevIndR][1] - newMark[prevIndR][5]) / (newMark[prevIndR][0] - newMark[prevIndR][4])
+                    l2 = -k2 * newMark[prevIndR][4] + newMark[prevIndR][5]                                    
+                    if k1 == k2 or newMark[i][4] == newMark[prevIndR][4]:
+                        i += 1
+                        continue
+                    intersection = (l2 - l1) / (k2 - k1)
+                    #print intersection, right, min(newMark[i][4], newMark[prevIndR][4])
+                    intersection = -intersection
+                    if intersection < right and intersection > max(newMark[i][4], newMark[prevIndR][4]):
+                        #swap labels
+                        t = (right, newMark[prevIndR][1], newMark[i][2], newMark[i][3], newMark[i][4], newMark[i][5])
+                        newMark[i] = (right, newMark[i][1], newMark[prevIndR][2], newMark[prevIndR][3], newMark[prevIndR][4], newMark[prevIndR][5])
+                        newMark[prevIndR] = t
+                        again = True
+                        swapCounter += 1
+                    prevIndR = i
+                    topR += self.labelSize
+                i = i + 1
+
+
+##        while i <= len(newMark) - 1:
+##            y = newMark[i][1]
+##            if newMark[i][3] == Qt.AlignLeft:
+##                if abs(prevYL - y) < abs(prevXL - newMark[i][0]):
+##                    t = newMark[i]
+##                    newMark[i] = newMark[prevIndL]
+##                    newMark[prevIndL] = t
+##                prevYL = y
+##                prevXL = newMark[i][0]
+##                prevIndL = i
+##            if  newMark[i][3] == Qt.AlignRight:
+##                if abs(prevYR - y) < abs(prevXR - newMark[i][0]):
+##                    t = newMark[i]
+##                    newMark[i] = newMark[prevIndR]
+##                    newMark[prevIndR] = t
+##                prevYR = y
+##                prevXR = newMark[i][0]
+##                prevIndR = i                
+##            i = i + 1  
     
 
             
@@ -283,11 +354,26 @@ class OWCorrAnalysisGraph(OWGraph):
             self.markLines.append(self.addCurve("", QColor("black"), QColor("black"), 1, QwtCurve.Lines, xData = [x, x1], yData = [y, y1] ))
 
             
-    def checkPerc(self, x, textLen):
+##    def checkPerc(self, x, textLen):
+##        div = self.axisScale(QwtPlot.xBottom)
+##        if x - textLen < div.lBound():
+##            return -1
+##        elif x + textLen > div.hBound():
+##            return 101
+##        else:
+##            return (x - div.lBound()) / (div.hBound() - div.lBound())
+
+    def place(self, x, textLen, prefered):
+        """Tries to determine where to place the label. Returns True or False."""
         div = self.axisScale(QwtPlot.xBottom)
-        if x < div.lBound():
-            return -1
-        elif x > div.hBound():
-            return 101
+        textLen = textLen / 16.
+        if prefered == 'left':
+            if x - textLen < div.lBound():
+                return False
+            return True
         else:
-            return (x - div.lBound()) / (div.hBound() - div.lBound())
+            if x + textLen > div.hBound():
+                return False
+            return True
+        
+        

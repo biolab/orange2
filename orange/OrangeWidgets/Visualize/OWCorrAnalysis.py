@@ -26,8 +26,9 @@ textCorpusModul = 1
 import os
 
 def checkFromText(data):
+
     if not isinstance(data, orange.ExampleTable):
-        return False
+        return False        
     if len(data.domain.attributes) < 10 and len(data.domain.getmetas()) > 15:
         return True
     elif len(data.domain.attributes) * 2 < len(data.domain.getmetas()):
@@ -422,12 +423,24 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
 
 if __name__=="__main__":
-    from orngTextCorpus import *
-    import cPickle
+    #from orngTextCorpus import *
+    import cPickle, orngText
 ##    os.chdir("/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/")
-    appl = QApplication(sys.argv) 
-    ow = OWCorrAnalysis() 
-    appl.setMainWidget(ow) 
+    appl = QApplication(sys.argv)
+    ow = OWCorrAnalysis()
+    
+    #owb = OWBagofWords.OWBagofWords()
+    t = orngText.loadFromXML(r'c:\test\msnbc.xml')
+    #owb.data = t
+    #owb.show()
+    print 'Done with loading'
+    t1 = orngText.bagOfWords(t)
+    print 'Done with bagging'
+    t2 = orngText.FSS(t1, 'TF', 'MIN', 0.9)
+    print 'Done with feature selection'
+    appl.setMainWidget(ow)
+    ow.dataset(t2)
+    print 'Done'
     ow.show() 
 ##    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab') 
 
@@ -436,9 +449,10 @@ if __name__=="__main__":
 ##        lem.stopwords.append(word)       
 ##    a = TextCorpusLoader('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/Other/reuters-exchanges-small.xml', lem = lem)
 
-    #a = orange.ExampleTable('../../doc/datasets/smokers_ct.tab')
-    f=open('../../CDFSallDataCW', 'r')
-    a =cPickle.load(f)
-    f.close()
-    ow.dataset(a) 
-    appl.exec_loop()            
+##    #a = orange.ExampleTable('../../doc/datasets/smokers_ct.tab')
+##    f=open('../../CDFSallDataCW', 'r')
+##    a =cPickle.load(f)
+##    f.close()
+##    ow.dataset(a)
+    
+    appl.exec_loop()
