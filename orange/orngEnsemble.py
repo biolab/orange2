@@ -234,3 +234,191 @@ class RandomForestClassifier:
         if resultType == orange.GetValue: return cvalue
         elif resultType == orange.GetProbabilities: return cprob
         else: return (cvalue, cprob)
+
+
+##########################################################
+### MeasureAttribute_randomForests
+
+class MeasureAttribute_randomForests(orange.MeasureAttribute):
+
+  def __init__(self, learner=None, trees = 100, attributes=None, rand=None):
+    self.trees = trees
+    self.learner = learner
+    self.bufexamples = None
+    self.attributes = attributes
+    
+    if self.learner == None:
+      temp = RandomForestLearner(attributes=self.attributes)
+      self.learner = temp.learner
+    
+    if hasattr(self.learner.split, 'attributes'):
+      self.origattr = self.learner.split.attributes
+      
+    if rand:
+      self.rand = rand             # a random generator
+    else:
+      self.rand = random.Random()
+      self.rand.seed(0)
+
+  def __call__(self, a1, a2, a3=None):
+    """
+    Returns importance of a given attribute. Can be given by index, 
+    name or as a orange.Variable.
+    """
+    attrNo = None
+    examples = None
+
+    if type(a1) == int: #by attr. index
+      attrNo, examples, apriorClass = a1, a2, a3
+    elif type(a1) == type("a"): #by attr. name
+      attrName, examples, apriorClass = a1, a2, a3
+      attrNo = examples.domain.index(attrName)
+    elif isinstance(a1, orange.Variable):
+      a1, examples, apriorClass = a1, a2, a3
+      atrs = [a for a in examples.domain.attributes]
+      attrNo = atrs.index(a1)
+    else:
+      contingency, classDistribution, apriorClass = a1, a2, a3
+      raise Exception("MeasureAttribute_rf can not be called with (contingency, classDistribution, apriorClass) as fuction arguments.")
+
+    self.buffer(examples)
+
+    return self.avimp[attrNo]*100/self.trees
+
+  def importances(self, examples):
+    """
+    Returns importances of all attributes in dataset in a list. Buffered.
+    """
+    self.buffer(examples)
+    
+    return [a*100/self.trees for a in self.avimp]
+
+  def buffer(self, examples):
+    """
+    recalcule importances if needed (new examples)
+    """
+    recalculate = False
+    
+    if examples != self.bufexamples:
+      recalculate = True
+    elif examples.version != self.bufexamples.version:
+      recalculate = True
+         
+    if (recalculate):
+      self.bufexamples = examples
+      self.avimp = [0.0]*len(self.bufexamples.domain.attributes)
+      self.acu = 0
+      
+      if hasattr(self.learner.split, 'attributes'):
+          self.learner.split.attributes = self.origattr
+      
+      # if number of attributes for subset is not set, use square root
+      if hasattr(self.learner.split, 'attributes') and not self.learner.split.attributes:
+          self.learner.split.attributes = int(sqrt(len(examples.domain.attributes)))
+      
+      self.importanceAcu(self.bufexamples, self.trees, self.avimp)
+      
+  def getOOB(self, examples, selection, nexamples):
+        ooblist = filter(lambda x: x not in selection, range(nexamples))
+        return examples.getitems(ooblist)
+
+  def numRight(self, oob, classifier):
+        """
+        returns a number of examples which are classified correcty
+        """
+        right = 0
+        for el in oob:
+            if (el.getclass() == classifier(el)):
+                right = right + 1
+        return right
+    
+  def numRightMix(self, oob, classifier, attr):
+        """
+        returns a number of examples  which are classified
+        correctly even if an attribute is shuffled
+        """
+        n = len(oob)
+
+        perm = range(n)
+        self.rand.shuffle(perm)
+
+        right = 0
+
+        for i in range(n):
+            ex = orange.Example(oob[i])
+            ex[attr] = oob[perm[i]][attr]
+            
+            if (ex.getclass() == classifier(ex)):
+                right = right + 1
+                
+        return right
+
+  def importanceAcu(self, examples, trees, avimp):
+        """
+        accumulate avimp by importances for a given number of trees
+        """
+  
+
+        n = len(examples)
+
+        attrs = len(examples.domain.attributes)
+
+        attrnum = {}
+        for attr in range(len(examples.domain.attributes)):
+           attrnum[examples.domain.attributes[attr].name] = attr            
+   
+        # build the forest
+        classifiers = []  
+        for i in range(trees):
+            
+            # draw bootstrap sample
+            selection = []
+            for j in range(n):
+                selection.append(self.rand.randrange(n))
+            data = examples.getitems(selection)
+            
+            # build the model from the bootstrap sample
+            cla = self.learner(data)
+
+            #prepare OOB data
+            oob = self.getOOB(examples, selection, n)
+            
+            #right on unmixed
+            right = self.numRight(oob, cla)
+            
+            presl = list(self.presentInTree(cla.tree, attrnum))
+                      
+            #randomize each attribute in data and test
+            #only those on which there was a split
+            for attr in presl:
+                #calculate number of right classifications
+                #if the values of this attribute are permutated randomly
+                rightimp = self.numRightMix(oob, cla, attr)                
+                avimp[attr] += (float(right-rightimp))/len(oob)
+
+        self.acu += trees  
+
+  def presentInTree(self, node, attrnum):
+        """
+        returns attributes present in tree (attributes that split)
+        """
+
+        if not node:
+          return set([])
+
+        if  node.branchSelector:
+            j = attrnum[node.branchSelector.classVar.name]
+            
+            cs = set([])
+            for i in range(len(node.branches)):
+                s = self.presentInTree(node.branches[i], attrnum)
+                cs = s | cs
+            
+            cs = cs | set([j])
+            
+            return cs
+            
+        else:
+          return set([])
+
+
