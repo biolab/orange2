@@ -147,7 +147,19 @@ public:
 class ORANGE_API TRuleEvaluator_Python : public TRuleEvaluator {
 public:
   __REGISTER_CLASS
-  virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution) const;
+  virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution);
+};
+
+class ORANGE_API TEVCDistGetter_Python : public TEVCDistGetter {
+public:
+  __REGISTER_CLASS
+  virtual PEVCDist operator()(const PRule, const int &) const;
+};
+
+class ORANGE_API TChiFunction_Python : public TChiFunction {
+public:
+  __REGISTER_CLASS
+  virtual float operator()(PRule rule, PExampleTable data, const int & weightID, const int & targetClass, PDistribution apriori, float & nonOptimistic_Chi) const;
 };
 
 class ORANGE_API TRuleValidator_Python : public TRuleValidator {

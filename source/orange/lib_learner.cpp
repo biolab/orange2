@@ -1144,6 +1144,12 @@ C_NAMED(RuleValidator_LRS, RuleValidator, "([alpha=0.05,min_coverage=0,max_rule_
 
 C_NAMED(RuleEvaluator_Entropy, RuleEvaluator, "()")
 C_NAMED(RuleEvaluator_Laplace, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_LRS, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_mEVC, RuleEvaluator, "()")
+
+C_NAMED(EVCDist, Orange, "()")
+C_NAMED(ChiFunction_2LOGLR, ChiFunction, "()")
+C_NAMED(EVCDistGetter_Standard, EVCDistGetter, "()")
 
 C_NAMED(RuleBeamFinder, RuleFinder, "([validator=, evaluator=, initializer=, refiner=, candidateSelector=, ruleFilter=])")
 
@@ -1239,6 +1245,70 @@ PyObject *RuleEvaluator_call(PyObject *self, PyObject *args, PyObject *keywords)
     return PyFloat_FromDouble(quality);
   PyCATCH
 }
+
+PyObject *EVCDistGetter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrEVCDistGetter_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TEVCDistGetter_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TEVCDistGetter_Python(), type);
+}
+
+PyObject *EVCDistGetter__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrEVCDistGetter_Type);
+}
+
+
+PyObject *EVCDistGetter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, length) -/-> (EVCdist)")
+{
+  PyTRY
+    NO_KEYWORDS
+
+    PRule rule;
+    int rLength;
+
+    if (!PyArg_ParseTuple(args, "O&i:EVCDistGetter.call", cc_Rule, &rule, &rLength))
+      return PYNULL;
+    CAST_TO(TEVCDistGetter, getter)
+    PEVCDist dist = (*getter)(rule, rLength);
+
+    return WrapOrange(dist);
+  PyCATCH
+}
+
+PyObject *ChiFunction_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrChiFunction_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TChiFunction_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TChiFunction_Python(), type);
+}
+
+PyObject *ChiFunction__reduce__(PyObject *self)
+{
+  return callbackReduce(self, PyOrChiFunction_Type);
+}
+
+PyObject *ChiFunction_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, data, weight, targetClass, apriori) -/-> (nonOptimistic_Chi, optimistic_Chi)")
+{
+  PyTRY
+    NO_KEYWORDS
+
+    PRule rule;
+    PExampleGenerator gen;
+    int weightID = 0;
+    int targetClass = -1;
+    PDistribution apriori;
+
+    if (!PyArg_ParseTuple(args, "O&O&O&iO&:ChiFunction.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass, cc_Distribution, &apriori))
+      return PYNULL;
+    CAST_TO(TChiFunction, chif);
+    float nonOptimistic_Chi = 0.0;
+    float chi = (*chif)(rule, gen, weightID, targetClass, apriori, nonOptimistic_Chi);
+
+    return Py_BuildValue("ii", nonOptimistic_Chi, chi);
+  PyCATCH
+}
+
 
 PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleValidator_Type)
@@ -1571,7 +1641,7 @@ PyObject *RuleClassifierConstructor_call(PyObject *self, PyObject *args, PyObjec
   PyCATCH
 }
 
-PyObject *RuleClassifier_logit_new(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, examples[, weight])")
+PyObject *RuleClassifier_logit_new(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, min_beta, examples[, weight])")
 { 
   PyTRY
     NO_KEYWORDS
@@ -1585,11 +1655,13 @@ PyObject *RuleClassifier_logit_new(PyObject *self, PyObject *args, PyObject *key
     int weightID = 0;
     float minBeta = 0.0;
     PRuleList rules;
+    PDistributionList probList;
+    PClassifier classifier;
 
-    if (!PyArg_ParseTuple(args, "O&fO&|O&:RuleClassifier.call", cc_RuleList, &rules, &minBeta, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+    if (!PyArg_ParseTuple(args, "O&fO&|O&O&O&:RuleClassifier.call", cc_RuleList, &rules, &minBeta, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, cc_Classifier, &classifier, cc_DistributionList, &probList))
       return PYNULL;
 
-    TRuleClassifier *rc = new TRuleClassifier_logit(rules, minBeta, gen, weightID);
+    TRuleClassifier *rc = new TRuleClassifier_logit(rules, minBeta, gen, weightID, classifier, probList);
     PRuleClassifier ruleClassifier = rc;
 //    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
     return WrapOrange(ruleClassifier);
@@ -1610,11 +1682,13 @@ PyObject *RuleClassifier_logit_bestRule_new(PyObject *self, PyObject *args, PyOb
     int weightID = 0;
     float minBeta = 0.0;
     PRuleList rules;
+    PDistributionList probList;
+    PClassifier classifier;
 
-    if (!PyArg_ParseTuple(args, "O&fO&|O&:RuleClassifier.call", cc_RuleList, &rules, &minBeta, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+    if (!PyArg_ParseTuple(args, "O&fO&|O&O&O&:RuleClassifier.call", cc_RuleList, &rules, &minBeta, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, cc_Classifier, &classifier, cc_DistributionList, &probList))
       return PYNULL;
 
-    TRuleClassifier *rc = new TRuleClassifier_logit_bestRule(rules, minBeta, gen, weightID);
+    TRuleClassifier *rc = new TRuleClassifier_logit_bestRule(rules, minBeta, gen, weightID, classifier, probList);
     PRuleClassifier ruleClassifier = rc;
 //    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
     return WrapOrange(ruleClassifier);
@@ -1648,6 +1722,32 @@ PyObject *RuleList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { 
 PyObject *RuleList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_sort(self, args); }
 PyObject *RuleList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_reduce(self); }
 
+PEVCDistList PEVCDistList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::P_FromArguments(arg); }
+PyObject *EVCDistList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_FromArguments(type, arg); }
+PyObject *EVCDistList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of EVCDist>)") ALLOWS_EMPTY { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_new(type, arg, kwds); }
+PyObject *EVCDistList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_getitem(self, index); }
+int       EVCDistList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_setitem(self, index, item); }
+PyObject *EVCDistList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_getslice(self, start, stop); }
+int       EVCDistList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_setslice(self, start, stop, item); }
+int       EVCDistList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_len(self); }
+PyObject *EVCDistList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_richcmp(self, object, op); }
+PyObject *EVCDistList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_concat(self, obj); }
+PyObject *EVCDistList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_repeat(self, times); }
+PyObject *EVCDistList_str(TPyOrange *self) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_str(self); }
+PyObject *EVCDistList_repr(TPyOrange *self) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_str(self); }
+int       EVCDistList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_contains(self, obj); }
+PyObject *EVCDistList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(EVCDist) -> None") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_append(self, item); }
+PyObject *EVCDistList_extend(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(sequence) -> None") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_extend(self, obj); }
+PyObject *EVCDistList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(EVCDist) -> int") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_count(self, obj); }
+PyObject *EVCDistList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> EVCDistList") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_filter(self, args); }
+PyObject *EVCDistList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(EVCDist) -> int") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_index(self, obj); }
+PyObject *EVCDistList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_insert(self, args); }
+PyObject *EVCDistList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_native(self); }
+PyObject *EVCDistList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> EVCDist") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_pop(self, args); }
+PyObject *EVCDistList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(EVCDist) -> None") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_remove(self, obj); }
+PyObject *EVCDistList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_reverse(self); }
+PyObject *EVCDistList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_sort(self, args); }
+PyObject *EVCDistList__reduce__(TPyOrange *self, PyObject *) { return ListOfWrappedMethods<PEVCDistList, TEVCDistList, PEVCDist, &PyOrEVCDist_Type>::_reduce(self); }
 
 #include "lib_learner.px"
 

@@ -70,6 +70,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    normalList("TreeNode", "lib_learner.cpp"),
    normalList("C45TreeNode", "lib_learner.cpp"),
    normalList("Rule", "lib_learner.cpp"),
+   normalList("EVCDist", "lib_learner.cpp"),
 
    normalList("Heatmap", "orangene.cpp"),
    normalList("SOMNode", "som.cpp")
