@@ -53,6 +53,9 @@ with a highest number of votes. As implemented in Orange, when class
 probabilities are requested, these are proportional to the number of
 votes for a particular class.<p>
 
+<H3>Example</H3>
+<p>See <a href="#ble">BoostedLearner example</a>.</p>
+
 
 <h2>BoostedLearner</h2>
 <index name="modules+boosting">
@@ -88,6 +91,41 @@ deal with example weights.</p>
   <dt>name</dt>
   <dd>The name of the learner (default: AdaBoost.M1).</dd>
 </dl>
+
+
+<a name="ble"><H3>Example</H3>
+
+<P>Let us try boosting and bagging on Iris data set and use
+<code>TreeLearner</code> with post-pruning as a base learner. For
+testing, we use 10-fold cross validation and observe classification
+accuracy.</p>
+
+<p class="header"><a href="ensemble.py">ensemble.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class=code>import orange, orngEnsemble, orngTree
+import orngTest, orngStat
+
+tree = orngTree.TreeLearner(mForPruning=2, name="tree")
+bs = orngEnsemble.BoostedLearner(tree, name="boosted tree")
+bg = orngEnsemble.BaggedLearner(tree, name="bagged tree")
+
+data = orange.ExampleTable("lymphography.tab")
+
+learners = [tree, bs, bg]
+results = orngTest.crossValidation(learners, data)
+print "Classification Accuracy:"
+for i in range(len(learners)):
+    print ("%15s: %5.3f") % (learners[i].name, orngStat.CA(results)[i])
+</XMP>
+
+<p>Running this script, we may get something like:</p>
+<XMP class=code>Classification Accuracy:
+Classification Accuracy:
+           tree: 0.769
+   boosted tree: 0.782
+    bagged tree: 0.783
+</XMP>
+
 
 
 <h2>RandomForestLearner</h2>
@@ -148,42 +186,7 @@ example. Most frequent vote is returned. However, in our
 implementation, if class probability is requested from a classifier,
 this will return the averaged probabilities from each of the trees.</p>
 
-
-<hr>
-
-<H2>Examples</H2>
-
-<P>Let us try boosting and bagging on Iris data set and use
-<code>TreeLearner</code> with post-pruning as a base learner. For
-testing, we use 10-fold cross validation and observe classification
-accuracy.</p>
-
-<p class="header"><a href="ensemble.py">ensemble.py</a> (uses <a href=
-"iris.tab">iris.tab</a>)</p>
-<XMP class=code>import orange, orngEnsemble, orngTree
-import orngTest, orngStat
-
-tree = orngTree.TreeLearner(mForPruning=2, name="tree")
-bs = orngEnsemble.BoostedLearner(tree, name="boosted tree")
-bg = orngEnsemble.BaggedLearner(tree, name="bagged tree")
-
-data = orange.ExampleTable("lymphography.tab")
-
-learners = [tree, bs, bg]
-results = orngTest.crossValidation(learners, data)
-print "Classification Accuracy:"
-for i in range(len(learners)):
-    print ("%15s: %5.3f") % (learners[i].name, orngStat.CA(results)[i])
-</XMP>
-
-<p>Running this script, we may get something like:</p>
-<XMP class=code>Classification Accuracy:
-Classification Accuracy:
-           tree: 0.769
-   boosted tree: 0.782
-    bagged tree: 0.783
-</XMP>
-
+<h3>Examples</h3>
 
 <p>The following script assembles a random forest learner and compares
 it to a tree learner on a liver disorder (bupa) data set.</p>
@@ -250,6 +253,110 @@ print
 <p>Running the above code would report on sizes (number of nodes) of
 the tree in a constructed random forest.</p>
 
+
+
+<h2>MeasureAttribute_randomForests</h2>
+
+<p>L. Breiman (2001) suggested the possibility of using random forests 
+as a non-myopic measure of attribute importance. </p>
+
+<p>Assessing relevance of attributes with random forests is based
+on the idea that randomly changing the value of an important attribute
+greatly affects example's classification while changing the value
+of an unimportant attribute doen't affect it much. Implemented algorithm
+accumulates attribute scores over given number of trees.
+Importances of all atributes for a single tree are computed as: 
+correctly classified OOB examples 
+minus correctly classified OOB examples when an attribute is randomly
+shuffled. The accumulated attribute scores are divided by the number
+of used trees and multiplied by 100 before they are returned.</p>
+
+<p class=section>Attributes</p>
+<dl class=attributes>
+
+  <dt>trees</dt>
+  <dd>Number of trees in the forest (default: 100).</dd>
+
+  <dt>learner</dt>
+  <dd>Although not required, one can use this argument to pass one's
+  own tree induction algorithm. If none is passed,
+  <code>MeasureAttribute_randomForests</code> will use Orange's tree induction
+  algorithm such that in induction nodes with less then 5 examples
+  will not be considered for (further) splitting. (default: None)</dd>
+
+  <dt>attributes</dt>
+  <dd>Number of attributes used in a randomly drawn subset when
+  searching for best attribute to split the node in tree growing
+  (default: None, and if kept this way, this is turned into square
+  root of attributes in example set).</dd>
+
+  <dt>rand</dt>
+  <dd>Random generator used in bootstrap sampling. If none is passed,
+  then Python's Random from random library is used, with seed
+  initialized to 0.</dd>
+
+</dl>
+
+<p>Computation of attribute importance with random forests is rather slow. 
+Also, importances for all attributes need to be considered simultaneous.
+Since we normally compute attribute importance with random forests
+for all attributes in the dataset, <CODE>MeasureAttribute_randomForests</CODE>
+caches the results. When it is called to compute a quality of certain attribute, 
+it computes qualities for all attributes in the dataset. 
+When called again, it uses the stored results if the domain is still 
+the same and the example table has not changed (this is done by 
+checking the example tables version and is not foolproof; 
+it won't detect if you change values of existing examples, 
+but will notice adding and removing examples; see the page on 
+<A href="ExampleTable.htm"><CODE>ExampleTable</CODE></A> for details).</P>
+
+<p>Caching will only have an effect if you use the same instance for all attributes in the domain.</p>
+
+<h3>Example</h3>
+
+<p>The following script demonstrates measuring attribute importance with random forests.</p>
+
+<p class="header"><a href="ensemble4.py">ensemble4.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<xmp class=code>import orange, orngEnsemble, random
+
+data = orange.ExampleTable("iris.tab")
+
+measure = orngEnsemble.MeasureAttribute_randomForests(trees=100)
+
+#call by attribute index
+imp0 = measure(0, data) 
+#call by orange.Variable
+imp1 = measure(data.domain.attributes[1], data)
+print "first: %0.2f, second: %0.2f\n" % (imp0, imp1)
+
+print "different random seed"
+measure = orngEnsemble.MeasureAttribute_randomForests(trees=100, rand=random.Random(10))
+
+imp0 = measure(0, data)
+imp1 = measure(data.domain.attributes[1], data)
+print "first: %0.2f, second: %0.2f\n" % (imp0, imp1)
+
+print "All importances:"
+imps = measure.importances(data)
+for i,imp in enumerate(imps):
+    print "%15s: %6.2f" % (data.domain.attributes[i].name, imp)
+</xmp>
+
+<p>Corresponding output:</p>
+
+<xmp class=code>first: 0.32, second: 0.04
+
+different random seed
+first: 0.33, second: 0.14
+
+All importances:
+   sepal length:   0.33
+    sepal width:   0.14
+   petal length:  15.16
+    petal width:  48.59
+</xmp>
+
 <HR>
 <H2>References</H2>
 
@@ -264,7 +371,7 @@ International Conference (ICML'96), 1996. [<a href="http://citeseer.ist.psu.edu/
 National Conference on Artificial Intelligence (AAAI'96). pp. 725-730,
 1996. [<a href="http://www.rulequest.com/Personal/q.aaai96.ps">PS</a>]</P>
 
-<p>L Brieman. Random Forests. Machine Learning, 45, 5-32, 2001. [<a href="http://www.springerlink.com/app/home/contribution.asp?wasp=bd3f27906cfa4bfdaa16527c7c167456&referrer=parent&backto=issue,1,5;journal,32,140;linkingpublicationresults,1:100309,1">SpringerLink</a>]</p>
+<p>L Brieman. Random Forests. Machine Learning, 45, 5-32, 2001. [<a href="http://www.springerlink.com/content/u0p06167n6173512/">SpringerLink</a>]</p>
 
 <p> M Robnik-Sikonja. Improving Random Forests. In Proc. of European Conference on Machine Learning (ECML 2004), pp. 359-370, 2004. [<a href="http://lkm.fri.uni-lj.si/rmarko/papers/robnik04-ecml.pdf">PDF</a>]</p>
 
