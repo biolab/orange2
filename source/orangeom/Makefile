@@ -2,7 +2,7 @@ all:	objdir $(OLD)/orangeom.so
 
 MODULENAME=ORANGEOM
 include ../makefile.defs
-include makefile.deps
+-include makefile.deps
 
 obj/som_datafile.o : som/datafile.c
 obj/som_lvq_pak.o : som/lvq_pak.c
@@ -40,4 +40,5 @@ ifeq ($(OS), Darwin)
 endif
 
 clean:	cleantemp
+	rm -f lib_vectors.cpp lib_vectors_auto.txt
 	rm -f $(OLD)/orangeom.so

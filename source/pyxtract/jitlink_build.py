@@ -32,13 +32,13 @@ for r in file(hppname):
             dllfname = cname
         functions.append((cname, dllfname, r))
 
-f = file("ppp/"+hppname[:-4]+".ipp", "wt")
+f = file(hppname[:-4]+".ipp", "wt")
 
 for func,dllfunc,line in functions:
     f.write("#define %s (*i__%s)\n" % (func, func))
 f.close()
 
-f = file("ppp/"+hppname[:-4]+".jpp", "wt")
+f = file(hppname[:-4]+".jpp", "wt")
 f.write('#include "errors.hpp"\n#include "%s"\n#include "jit_linker.hpp"\n\n' % hppname)
 
 for func,dllfunc,line in functions:

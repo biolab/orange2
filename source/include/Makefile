@@ -2,7 +2,7 @@ all:	objdir $(OLD)/liborange_include.a
 
 MODULENAME=INCLUDE
 include ../makefile.defs
-include makefile.deps
+-include makefile.deps
 
 $(OLD)/liborange_include.a:	$(INCLUDE_OBJECTS)
 	ar -r $(OLD)/liborange_include.a $(INCLUDE_OBJECTS)

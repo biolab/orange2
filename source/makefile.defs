@@ -68,4 +68,4 @@ objdir:
 	-@mkdir -p obj > /dev/null
 
 cleantemp:
-	rm -rf obj/* ppp/* px/*
+	rm -rf obj ppp px makefile.deps
