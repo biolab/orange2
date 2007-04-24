@@ -9,11 +9,16 @@
 from OWWidget import *
 import OWGUI, math, re
 
-re_identifier = re.compile("(?<=\W)[a-zA-Z_]\w*(?=(\Z|\W))")
+re_identifier = re.compile(r'((?<=\W)[a-zA-Z_]\w*(?=(\Z|\W)))|("[^"]+")')
 
 def identifier_replacer(id):
     id = id.group()
-    return id in math.__dict__ and id or "_ex['%s']" % id
+    if id in math.__dict__:
+        return id
+    if id[0] == id[-1] == '"':
+        return "_ex[%s]" % id
+    else:
+        return "_ex['%s']" % id
 
 class AttrComputer:
     def __init__(self, expression):
@@ -21,7 +26,6 @@ class AttrComputer:
         
     def __call__(self, ex, weight):
         try:
-            print eval(self.expression, math.__dict__, {"_ex": ex})
             return float(eval(self.expression, math.__dict__, {"_ex": ex}))
         except:
             return "?"
@@ -62,9 +66,7 @@ class OWFeatureConstructor(OWWidget):
                 t += 1
             attrname = "T%04i" % t
 
-
         exp = re_identifier.sub(identifier_replacer, " "+self.expression)
-        print exp
         newattr = orange.FloatVariable(str(attrname), getValueFrom = AttrComputer(exp))
 
         newDomain = orange.Domain(oldDomain.attributes + [newattr], oldDomain.classVar)
