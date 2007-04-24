@@ -1513,7 +1513,7 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
 
    // if initial example probability is given, update F and P
   if (probList) {
-    double *matrix = new double [pow(examples->domain->classVar->noOfValues()-1,2)];
+    double *matrix = new double [sqr(examples->domain->classVar->noOfValues()-1)];
     double *fVals = new double [examples->domain->classVar->noOfValues()-1];
     double *results = new double [examples->domain->classVar->noOfValues()-1];
     for (i=0; i<probList->size(); i++) {
@@ -1980,7 +1980,7 @@ float TRuleClassifier_logit::compPotEval(int ruleIndex, int classIndex, float ne
 
 void TRuleClassifier_logit::addPriorClassifier(const TExample &ex, double * priorFs) {
   // initialize variables
-  double *matrix = new double [pow(examples->domain->classVar->noOfValues()-1,2)];
+  double *matrix = new double [sqr(examples->domain->classVar->noOfValues()-1)];
   double *fVals = new double [examples->domain->classVar->noOfValues()-1];
   double *results = new double [examples->domain->classVar->noOfValues()-1];
   int k1, k2;
