@@ -169,6 +169,23 @@ Attributes: <EnumVariable 'prescr', EnumVariable 'astigm'>, classVar EnumVariabl
 <P>There are four preprocessors that select or remove examples with missing values. <CODE><INDEX name="classes/Preprocessor_dropMissing">Preprocessor_dropMissing</CODE> removes examples with any missing values and <CODE><INDEX name="classes/Preprocessor_dropMissingClasses">Preprocessor_dropMissingClasses</CODE> removes examples with missing the class value. The other pair is <CODE><INDEX name="classes/Preprocessor_takeMissing">Preprocessor_takeMissing</CODE> and <CODE><INDEX name="classes/Preprocessor_takeMissingClasses">Preprocessor_takeMissingClasses</CODE> that select only examples with at least one missing value or without class value, respectively. See examples in the section about <a href="#adding_missing_values">adding missing values</A>.</P>
 
 
+<H2>Shuffling</H2>
+<index name="preprocessing/shuffling attribute values">
+<index name="shuffle"
+
+<P>Some statistical tests require making a certain attribute useless by permuting its values across examples. There is a preprocessor to do this, called <code>Preprocessor_shuffle</code>.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>attributes</DT>
+<DD>A list of attributes (usually a single attribute) whose values need to be shuffled.</DD>
+</DL>
+
+<P>Here's how to use it:</P>
+<xmp class="code">d2 = orange.Preprocessor_shuffle(d, attributes=[d.domain[0]])</xmp>
+
+<P>Executing this will create a new table <code>d2</code>, which will contain all examples from <code>d</code> but with the values of the first attribute permuted.</P>
+
 <H2>Adding noise</H2>
 <index name="preprocessing+adding noise">
 <index name="noise">
