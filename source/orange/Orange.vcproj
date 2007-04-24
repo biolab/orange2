@@ -46,7 +46,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="LINK_C45;ORANGE_EXPORTS"
+				PreprocessorDefinitions="ORANGE_EXPORTS"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
