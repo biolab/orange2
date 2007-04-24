@@ -870,6 +870,9 @@ bool TDiscDistribution::noDeviation() const
 int TDiscDistribution::randomInt(const long &random)
 { 
   float ri = (random & 0x7fffffff) / float(0x7fffffff);
+  if (!abs || !size())
+    raiseError("cannot return a random element of an empty distribution");
+  ri = fmod(ri, abs);
   const_iterator di(begin());
   while (ri > *di)
     ri -= *(di++);
@@ -879,6 +882,9 @@ int TDiscDistribution::randomInt(const long &random)
 
 int TDiscDistribution::randomInt()
 { 
+  if (!abs || !size())
+    raiseError("cannot return a random element of an empty distribution");
+
   if (!randomGenerator)
     randomGenerator = mlnew TRandomGenerator;
 
