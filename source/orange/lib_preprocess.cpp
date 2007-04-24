@@ -275,6 +275,8 @@ C_CALL(Preprocessor_dropMissing, Preprocessor, "([examples[, weightID]]) -/-> Ex
 C_CALL(Preprocessor_takeMissingClasses, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
 C_CALL(Preprocessor_dropMissingClasses, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
 
+C_CALL(Preprocessor_shuffle, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
+
 C_CALL(Preprocessor_addMissing, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
 C_CALL(Preprocessor_addMissingClasses, Preprocessor, "([examples[, weightID]] [classMissing=<float>]) -/-> ExampleTable")
 C_CALL(Preprocessor_addNoise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")

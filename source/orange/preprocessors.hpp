@@ -147,6 +147,19 @@ public:
 };
 
 
+class ORANGE_API TPreprocessor_shuffle : public TPreprocessor {
+public:
+  __REGISTER_CLASS
+
+  PVarList attributes; //P tells which attributes to shuffle
+  PRandomGenerator randomGenerator; //P random number generator
+
+  TPreprocessor_shuffle();
+  TPreprocessor_shuffle(PVarList);
+  virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+};
+
+
 #define TVariableFloatMap TOrangeMap_K<PVariable, float>
 MWRAPPER(VariableFloatMap)
 

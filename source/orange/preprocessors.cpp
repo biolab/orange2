@@ -269,6 +269,45 @@ PBoolList TPreprocessor_takeMissingClasses::selectionVector(PExampleGenerator ge
 }
 
 
+TPreprocessor_shuffle::TPreprocessor_shuffle()
+: attributes(mlnew TVarList())
+{}
+
+
+TPreprocessor_shuffle::TPreprocessor_shuffle(PVarList attrs)
+: attributes(attrs)
+{}
+
+
+PExampleGenerator TPreprocessor_shuffle::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+{
+  vector<int> indices;
+  PITERATE(TVarList, vi, attributes) {
+    const int idx = gen->domain->getVarNum(*vi, false);
+    if (idx == ILLEGAL_INT)
+      raiseError("attribute '%s' not found", (*vi)->name.c_str());
+    indices.push_back(idx);
+  }
+    
+  newWeight = weightID;
+
+  TExampleTable *newData = mlnew TExampleTable(gen);
+  PExampleGenerator wdata = newData;
+  const int tlen = newData->size();
+  if (!tlen || !indices.size())
+    return wdata;
+    
+  PRandomGenerator rg = randomGenerator ? randomGenerator : mlnew TRandomGenerator;
+
+  const_ITERATE(vector<int>, ii, indices) {
+    for(int i = tlen; --i; )
+      swap((*newData)[i][*ii], (*newData)[rg->randint(i)][*ii]);
+  }
+      
+  return wdata;
+}
+
+
 
 void addNoise(const int &index, const float &proportion, TMakeRandomIndicesN &mri, TExampleTable *table)
 { 
