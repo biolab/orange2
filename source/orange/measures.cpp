@@ -802,8 +802,8 @@ float TMeasureAttribute_chiSquare::operator()(PContingency probabilities, const 
     if (*pi > 1e-6)
       df_in += 1.0;
 
-  if (df_in == 0.0)
-    return 0.0;
+  if (df_in <= 0.0)
+    return computeProbabilities ? 1.0 : 0.0;
 
   float chisq = 0.0;
   const_ITERATE(TDistributionVector, ci, *probabilities->discrete) {
@@ -822,8 +822,8 @@ float TMeasureAttribute_chiSquare::operator()(PContingency probabilities, const 
     }
   }
 
-  if (df_out == 0.0)
-    return 0.0;
+  if (df_out <= 0.0)
+    return computeProbabilities ? 1.0 : 0.0;
 
   return computeProbabilities ? chisqprob(chisq, df_in * df_out) : chisq;
 }
