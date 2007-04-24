@@ -117,7 +117,7 @@ class OWPade(OWWidget):
 
     def onDataInput(self, data):
         self.closeContext()
-        if data and self.isDataWithClass(data, orange.VarTypes.Discrete):
+        if data and self.isDataWithClass(data, orange.VarTypes.Continuous):
             orngPade.makeBasicCache(data, self)
 
             icons = OWGUI.getAttributeIcons()
