@@ -81,7 +81,7 @@ TDomain::TDomain(const TDomain &old)
   variables(mlnew TVarList(old.variables.getReference())), 
   metas(old.metas),
   version(++domainVersion),
-  knownDomains(old.knownDomains),
+  knownDomains(),  // don't copy, unless you want to mess with the notifiers..
   lastDomain(knownDomains.end()),
   destroyNotifiers()
 {}
