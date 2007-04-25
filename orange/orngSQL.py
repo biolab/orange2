@@ -4,17 +4,18 @@
 # For now, the writing shall be basic, if it works at all.
 
 import orange
-
+import os
 import urllib
 
 class SQLReader:
-    def __init__(addr = None):
+    def __init__(self, addr = None):
         if addr:
-            connect(addr)
+            self.connect(addr)
         self.domainDepot = orange.DomainDepot()
         self.domain = None
-
-    def _parseURI(uri):
+        self.exampleTable = None
+        
+    def _parseURI(self, uri):
         """ lifted straight from sqlobject """
         schema, rest = uri.split(':', 1)
         assert rest.startswith('/'), "URIs must start with scheme:/ -- you did not include a / (in %r)" % rest
@@ -64,7 +65,7 @@ class SQLReader:
                 args[argname] = argvalue
         return schema, user, password, host, port, path, args
 
-    def connect(uri):
+    def connect(self, uri):
         """the uri string's syntax is the same as that of sqlobject.
         Unfortunately, only postgres and mysql are going to be supported in
         the near future.
@@ -92,21 +93,26 @@ class SQLReader:
         if port:
             dbArgDict['port'] = port
         if path:
-            dbArgDict['database'] = path
+            dbArgDict['database'] = path[1:]
         self.conn = self.dbmod.connect(**dbArgDict)
         
-    def query(s, discreteAttrs = None, classAttr = None, metaAttrs = None):
+    def query(self, s, discreteAttrs = None, classAttr = None, metaAttrs = None):
         """executes a read query and constructs the orange.Domain.
         If the name of the class attribute is not supplied, the first column is used as the class attribute.
         If any of the attributes are considered to be discrete, they should be specified.
         """
+        self.exampleTable = None
         try:
-            self.curs = self.conn.cursor()
-            self.curs.execute(s)
-            desc = self.curs.desctiption
+            curs = self.conn.cursor()
+            curs.execute(s)
+            desc = curs.description
             if not classAttr:
                 classAttr = desc[0][0]
             attrNames = []
+            if not discreteAttrs:
+                discreteAttrs = []
+            if not metaAttrs:
+                metaAttrs = []
             for i in desc:
                 name = i[0]
                 typ = i[1]
@@ -121,19 +127,29 @@ class SQLReader:
                 elif name in metaAttrs:
                     attrName = "m" + attrName
                 attrNames.append(attrName)
-            self.domain = self.domainDepot.prepareDomain(attrNames)
-        except:
-            self.domain = None
-    def data():
-        data = None
-        if self.domain:
-            data = orange.ExampleTable(self.domain)
-            r = self.curs.fetchone()
+            (self.domain, self.metaIDs, dummy) = self.domainDepot.prepareDomain(attrNames)
+            del dummy
+            # for reasons unknown, the attributes get reordered.
+            domainIndexes = [0] * len(desc)
+            for i, name in enumerate(desc):
+            #    print name[0], '->', self.domain.index(name[0])
+                domainIndexes[self.domain.index(name[0])] = i
+            self.exampleTable = orange.ExampleTable(self.domain)
+            r = curs.fetchone()
             while r:
-                example = orange.Example(self.domain, [str(i) for i in r])
-                data.append(example)
-                r = self.curs.fetchone()
-        return data
+                # for reasons unknown, domain rearranges the properties
+                example = orange.Example(self.domain, [str(r[domainIndexes[i]]) for i in xrange(len(r))])
+                self.exampleTable.append(example)
+                r = curs.fetchone()
+        except Exception, e:
+            raise e
+            self.domain = None
+
+    def data(self):
+        data = None
+        if self.exampleTable:
+            return self.exampleTable
+        return None
     
 class SQLWriter:
     pass
