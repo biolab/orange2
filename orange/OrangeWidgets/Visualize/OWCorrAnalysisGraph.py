@@ -31,10 +31,13 @@ class OWCorrAnalysisGraph(OWGraph):
         self.showRowLabels = 1
         self.showColumnLabels = 1
         self.maxPoints = 10
+        self.docs = []
+        self.features = []
         
 ##        self.tooltipKind = 1
         
         self.markLines = []
+        self.mytips = MyQToolTip(self)
         
         self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.onMouseMoved)
         self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
@@ -105,12 +108,9 @@ class OWCorrAnalysisGraph(OWGraph):
             self.addMarkers(cor, xFloat, yFloat, self.radius)
 ##            for x, y, text in cor:
 ##                self.addMarker(text, x, y)
-            
-            ##
-            
-            self.replot()
 
-            self.event(e)            
+            self.replot()
+            self.event(e)
         elif self.state == BROWSE_CIRCLE:
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
             yFloat = self.invTransform(QwtPlot.yLeft, e.y())     
@@ -125,18 +125,22 @@ class OWCorrAnalysisGraph(OWGraph):
             self.addMarkers(cor, xFloat, yFloat, self.radius)
 ##            for x, y, text in cor:
 ##                self.addMarker(text, x, y)
-    
-            #
             self.replot()   
-            
             self.event(e) 
         else:   
             OWGraph.onMouseMoved(self, e)
             
             
     def onMousePressed(self, e):        
-        if self.state == BROWSE_RECTANGLE or self.state == BROWSE_CIRCLE:   
-            self.event(e)            
+        if self.state == BROWSE_RECTANGLE:
+            xFloat = self.invTransform(QwtPlot.xBottom, e.x())
+            yFloat = self.invTransform(QwtPlot.yLeft, e.y())
+            all = [(self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius]
+            self.docs = [tip[:-1] for tip in all if tip[-1] == 'R']
+            self.features = [tip[:-1] for tip in all if tip[-1] == 'C']
+            self.event(e)
+        elif self.state == BROWSE_CIRCLE:
+            self.event(e)
         else:
             OWGraph.onMousePressed(self, e)
             
@@ -215,12 +219,12 @@ class OWCorrAnalysisGraph(OWGraph):
 #                points[i] = points[i-1]
 #                points[i-1] = t            
 #            i = i + 1                
-                
+
+        points = [(i, (x, y, t[:-1])) for (i, (x, y, t)) in points[:self.maxPoints]]
         
         for i, (x, y, text) in points:
             side = left
             if not text: continue
-            print right, left
             if x < posX:
                 #pokusaj lijevo
                 #if self.checkPerc(left, len(text)) > 0:
@@ -351,9 +355,9 @@ class OWCorrAnalysisGraph(OWGraph):
             
         for x, y, text, al, x1, y1 in newMark:
             self.addMarker(text, x, y, alignment = al, color = QColor(255,0,0), size = self.labelSize)
+            #self.showTip(x, y, text)
             self.markLines.append(self.addCurve("", QColor("black"), QColor("black"), 1, QwtCurve.Lines, xData = [x, x1], yData = [y, y1] ))
 
-            
 ##    def checkPerc(self, x, textLen):
 ##        div = self.axisScale(QwtPlot.xBottom)
 ##        if x - textLen < div.lBound():

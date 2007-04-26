@@ -115,6 +115,7 @@ class OWCorrAnalysis(OWWidget):
         #zooming
         self.zoomSelectToolbar = ZoomBrowseSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
+        self.connect(self.graph, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.sendSelections)
         
         self.apply = False
         OWGUI.button(self.GeneralTab, self, 'Update Graph', self.buttonUpdate)
@@ -147,6 +148,16 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.hSlider(self.SettingsTab, self, 'graph.labelSize', box=' Set font size for labels ', minValue = 8, maxValue=48, step=1, callback = self.updateGraph)
 
         OWGUI.hSlider(self.SettingsTab, self, 'graph.maxPoints', box=' Maximum number of points ', minValue = 10, maxValue=40, step=1, callback = None)
+
+        self.resultsTab = QVGroupBox(self, "Results")
+        self.tabsMain.insertTab(self.resultsTab, "Results")
+        self.chosenDoc = []
+        self.docs = self.graph.docs
+        OWGUI.listBox(self.resultsTab, self, "chosenDoc", "docs", box="Documents", callback = None)
+        self.chosenFeature = []
+        self.features = self.graph.features
+        OWGUI.listBox(self.resultsTab, self, "chosenFeature", "features", box="Features", callback = None)
+        
 
         
 
@@ -300,15 +311,15 @@ class OWCorrAnalysis(OWWidget):
         numCor = int(self.percRow)
         indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
-        tipsR = [self.tipsR[i] for i in indices]
+        tipsR = [self.tipsR[i] + 'R' for i in indices]
         if not self.graph.showRowLabels: tipsR = ['' for i in indices]
-        self.plotPoint(cor, 0, tipsR, "Row points", self.graph.showFilledSymbols)            
+        self.plotPoint(cor, 0, tipsR, "Row points", self.graph.showFilledSymbols)
             
-        cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))      
+        cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
         numCor = int(self.percCol)
         indices = self.CA.PointsWithMostInertia(rowColumn = 1, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
-        tipsC = [self.tipsC[i] for i in indices]
+        tipsC = [self.tipsC[i] + 'C' for i in indices]
         if not self.graph.showColumnLabels: tipsC = ['' for i in indices]        
         self.plotPoint(cor, 1, tipsC, "Column points", self.graph.showFilledSymbols)
 
@@ -325,12 +336,12 @@ class OWCorrAnalysis(OWWidget):
         
         for i in range(len(cor)):
             x = cor[i][0]
-            y = cor[i][1]           
-         
+            y = cor[i][1]
             self.graph.tips.addToolTip(x, y, tips[i])   
 
-    def sendSelections(self):
-        pass
+    def sendSelections(self, e):
+        self.docs = self.graph.docs
+        self.features = self.graph.features
         
         
     def replotCurves(self):
@@ -434,14 +445,18 @@ if __name__=="__main__":
     #owb.data = t
     #owb.show()
     print 'Done with loading'
-    t1 = orngText.bagOfWords(t)
-    print 'Done with bagging'
-    t2 = orngText.FSS(t1, 'TF', 'MIN', 0.9)
+    t1 = orngText.extractLetterNGram(t, 3)
+    print 'Done with extracting'
+    t2 = orngText.FSS(t1, 'TF', 'MAX', 0.95)
+    #print t2[0]
+    #print len(t2.domain.getmetas())
     print 'Done with feature selection'
     appl.setMainWidget(ow)
-    ow.dataset(t2)
+    t3 = orngText.DSS(t2, 'WF', 'MIN', 1)
+    print 'Done with document selection'
+    ow.dataset(t3)
     print 'Done'
-    ow.show() 
+    ow.show()
 ##    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab') 
 
 ##    lem = lemmatizer.FSALemmatization('/home/mkolar/Docs/Diplomski/repository/orange/OrangeWidgets/TextData/engleski_rjecnik.fsa')
