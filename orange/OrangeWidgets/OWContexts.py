@@ -407,7 +407,7 @@ class ClassValuesContextHandler(ContextHandler):
 ### (the latter gets really simple now).
 ### We could simplify some other methods, but prefer not to replicate the code
 class PerfectDomainContextHandler(DomainContextHandler):
-    def __init__(self, contextName, fields = [],
+    def __init__(self, contextName = "", fields = [],
                  syncWithGlobal = True, maxAttributesToPickle = 100, matchValues = 0, **args):
         DomainContextHandler.__init__(self, contextName, fields, False, False, False, syncWithGlobal, **args)
 
