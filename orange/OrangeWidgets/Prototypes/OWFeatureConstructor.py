@@ -110,8 +110,6 @@ class OWFeatureConstructor(OWWidget):
 
     def setData(self, data):
         self.closeContext()
-        if not self.data or self.data.domain != data.domain:
-            self.clearLineEdits()
         self.data = data
         self.cbAttrs.clear()
         self.cbAttrs.insertItem("(all attributes)")
