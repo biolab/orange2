@@ -89,6 +89,27 @@ struct svm_parameter
 	TSVMClassifier *classifier;
 };
 
+struct svm_model
+{
+	svm_parameter param;	// parameter
+	int nr_class;		// number of classes, = 2 in regression/one class svm
+	int l;			// total #SV
+	svm_node **SV;		// SVs (SV[l])
+	double **sv_coef;	// coefficients for SVs in decision functions (sv_coef[n-1][l])
+	double *rho;		// constants in decision functions (rho[n*(n-1)/2])
+	double *probA;          // pariwise probability information
+	double *probB;
+
+	// for classification only
+
+	int *label;		// label of each class (label[n])
+	int *nSV;		// number of SVs for each class (nSV[n])
+				// nSV[0] + nSV[1] + ... + nSV[n-1] = l
+	// XXX
+	int free_sv;		// 1 if svm_model is created by svm_load_model
+				// 0 if svm_model is created by svm_train
+};
+
 struct svm_model *svm_train(const struct svm_problem *prob, const struct svm_parameter *param);
 void svm_cross_validation(const struct svm_problem *prob, const struct svm_parameter *param, int nr_fold, double *target);
 
@@ -128,6 +149,10 @@ int svm_check_probability_model(const struct svm_model *model);
 #include "table.hpp"
 #include "examples.hpp"
 #include "distance.hpp"
+#include "slist.hpp"
+
+svm_model *svm_load_model_alt(TCharBuffer& buffer);
+int svm_save_model_alt(TCharBuffer& buffer, const svm_model *model);
 
 WRAPPER(ExampleGenerator)
 WRAPPER(KernelFunc)
@@ -194,6 +219,8 @@ public:
 	PKernelFunc kernelFunc;	//PR custom kernel function
 
 	const TExample *currentExample;
+
+    svm_model* getModel(){return model;};
 
 private:
 	svm_model *model;

@@ -45,6 +45,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *-added kernel_custom method to Kernel
  *-added code to compute custom kernel in Kernel::k_function
  *-handle CUSTOM in svm_check_parameter
+ *-moved svm_model definition into svm.hpp
+ *-added custom to kernel_type_table
 /*##########################################
 ##########################################*/
 
@@ -426,10 +428,10 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 			return x[(int)(y->value)].value;
 		case CUSTOM:
 		{
-			while(y->index!=-1)	// the value in the last svm_node is the index of the training example
+			/*while(y->index!=-1)	// the value in the last svm_node is the index of the training example
 				++y;
 			while(x->index!=-1)
-				++x;
+				++x;*/
 			if(!param.classifier)
 				return param.learner->kernelFunc->operator()(param.learner->tempExamples->at((int)x->value),
 			param.learner->tempExamples->at((int)y->value));
@@ -1807,26 +1809,7 @@ decision_function svm_train_one(
 //
 // svm_model
 //
-struct svm_model
-{
-	svm_parameter param;	// parameter
-	int nr_class;		// number of classes, = 2 in regression/one class svm
-	int l;			// total #SV
-	svm_node **SV;		// SVs (SV[l])
-	double **sv_coef;	// coefficients for SVs in decision functions (sv_coef[n-1][l])
-	double *rho;		// constants in decision functions (rho[n*(n-1)/2])
-	double *probA;          // pariwise probability information
-	double *probB;
 
-	// for classification only
-
-	int *label;		// label of each class (label[n])
-	int *nSV;		// number of SVs for each class (nSV[n])
-				// nSV[0] + nSV[1] + ... + nSV[n-1] = l
-	// XXX
-	int free_sv;		// 1 if svm_model is created by svm_load_model
-				// 0 if svm_model is created by svm_train
-};
 
 // Platt's binary SVM Probablistic Output: an improvement from Lin et al.
 void sigmoid_train(
@@ -2724,7 +2707,7 @@ const char *svm_type_table[] =
 
 const char *kernel_type_table[]=
 {
-	"linear","polynomial","rbf","sigmoid","precomputed",NULL
+	"linear","polynomial","rbf","sigmoid","custom", "precomputed",NULL
 };
 
 int svm_save_model(const char *model_file_name, const svm_model *model)
@@ -3158,8 +3141,314 @@ int svm_check_probability_model(const svm_model *model)
 
 //#_i_nclu_sde "svm.ppp"
 
+/*
+Save load functions for use with orange pickling.
+They are a copy of the standard libSVM save-load functions
+except that they read/write from/to a temp file that is deleted
+at the end with fclose
+*/
+#include "slist.hpp"
+int svm_save_model_alt(TCharBuffer& buffer, const svm_model *model){
+	FILE *fp = tmpfile();
+	if(fp==NULL) return -1;
+
+	const svm_parameter& param = model->param;
+
+	fprintf(fp,"svm_type %s\n", svm_type_table[param.svm_type]);
+	fprintf(fp,"kernel_type %s\n", kernel_type_table[param.kernel_type]);
+
+	if(param.kernel_type == POLY)
+		fprintf(fp,"degree %d\n", param.degree);
+
+	if(param.kernel_type == POLY || param.kernel_type == RBF || param.kernel_type == SIGMOID)
+		fprintf(fp,"gamma %g\n", param.gamma);
+
+	if(param.kernel_type == POLY || param.kernel_type == SIGMOID)
+		fprintf(fp,"coef0 %g\n", param.coef0);
+
+	int nr_class = model->nr_class;
+	int l = model->l;
+	fprintf(fp, "nr_class %d\n", nr_class);
+	fprintf(fp, "total_sv %d\n",l);
+	
+	{
+		fprintf(fp, "rho");
+		for(int i=0;i<nr_class*(nr_class-1)/2;i++)
+			fprintf(fp," %g",model->rho[i]);
+		fprintf(fp, "\n");
+	}
+	
+	if(model->label)
+	{
+		fprintf(fp, "label");
+		for(int i=0;i<nr_class;i++)
+			fprintf(fp," %d",model->label[i]);
+		fprintf(fp, "\n");
+	}
+
+	if(model->probA) // regression has probA only
+	{
+		fprintf(fp, "probA");
+		for(int i=0;i<nr_class*(nr_class-1)/2;i++)
+			fprintf(fp," %g",model->probA[i]);
+		fprintf(fp, "\n");
+	}
+	if(model->probB)
+	{
+		fprintf(fp, "probB");
+		for(int i=0;i<nr_class*(nr_class-1)/2;i++)
+			fprintf(fp," %g",model->probB[i]);
+		fprintf(fp, "\n");
+	}
+
+	if(model->nSV)
+	{
+		fprintf(fp, "nr_sv");
+		for(int i=0;i<nr_class;i++)
+			fprintf(fp," %d",model->nSV[i]);
+		fprintf(fp, "\n");
+	}
+
+	fprintf(fp, "SV\n");
+	const double * const *sv_coef = model->sv_coef;
+	const svm_node * const *SV = model->SV;
+
+	for(int i=0;i<l;i++)
+	{
+		for(int j=0;j<nr_class-1;j++)
+			fprintf(fp, "%.16g ",sv_coef[j][i]);
+
+		const svm_node *p = SV[i];
+
+		if(param.kernel_type == PRECOMPUTED)
+			fprintf(fp,"0:%d ",(int)(p->value));
+		else
+			while(p->index != -1)
+			{
+				fprintf(fp,"%d:%.8g ",p->index,p->value);
+				p++;
+			}
+		fprintf(fp, "\n");
+	}
+	if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
+
+	fseek(fp, SEEK_SET, 0);
+	string tmpbuf;
+	char str[512];
+	while(fgets(str, 512, fp)){
+		tmpbuf+=str;
+	}
+	//if(!feof(fp))
+	//	printf("Error saving svm_model");
+	buffer.writeInt(tmpbuf.size()+1);
+    printf(tmpbuf.c_str());
+	buffer.writeBuf((void*)tmpbuf.c_str(), tmpbuf.size()+1);
+	fclose(fp);
+	return 0;
+}
+
+svm_model *svm_load_model_alt(TCharBuffer& buffer)
+{
+	FILE *fp = tmpfile();
+	if(fp==NULL) return NULL;
+	int bufflen=buffer.readInt();
+	char *tmpstr=(char*)malloc(sizeof(char)*bufflen);
+	buffer.readBuf(tmpstr, bufflen);
+	fwrite(tmpstr, sizeof(char), bufflen, fp);
+	fseek(fp, SEEK_SET, 0);
+	free(tmpstr);
+	
+	// read parameters
+
+	svm_model *model = Malloc(svm_model,1);
+	svm_parameter& param = model->param;
+	model->rho = NULL;
+	model->probA = NULL;
+	model->probB = NULL;
+	model->label = NULL;
+	model->nSV = NULL;
+
+	char cmd[81];
+	while(1)
+	{
+		fscanf(fp,"%80s",cmd);
+
+		if(strcmp(cmd,"svm_type")==0)
+		{
+			fscanf(fp,"%80s",cmd);
+			int i;
+			for(i=0;svm_type_table[i];i++)
+			{
+				if(strcmp(svm_type_table[i],cmd)==0)
+				{
+					param.svm_type=i;
+					break;
+				}
+			}
+			if(svm_type_table[i] == NULL)
+			{
+				fprintf(stderr,"unknown svm type.\n");
+				free(model->rho);
+				free(model->label);
+				free(model->nSV);
+				free(model);
+				fclose(fp);
+				return NULL;
+			}
+		}
+		else if(strcmp(cmd,"kernel_type")==0)
+		{		
+			fscanf(fp,"%80s",cmd);
+			int i;
+			for(i=0;kernel_type_table[i];i++)
+			{
+				if(strcmp(kernel_type_table[i],cmd)==0)
+				{
+					param.kernel_type=i;
+					break;
+				}
+			}
+			if(kernel_type_table[i] == NULL)
+			{
+				fprintf(stderr,"unknown kernel function.\n");
+				free(model->rho);
+				free(model->label);
+				free(model->nSV);
+				free(model);
+				fclose(fp);
+				return NULL;
+			}
+		}
+		else if(strcmp(cmd,"degree")==0)
+			fscanf(fp,"%d",&param.degree);
+		else if(strcmp(cmd,"gamma")==0)
+			fscanf(fp,"%lf",&param.gamma);
+		else if(strcmp(cmd,"coef0")==0)
+			fscanf(fp,"%lf",&param.coef0);
+		else if(strcmp(cmd,"nr_class")==0)
+			fscanf(fp,"%d",&model->nr_class);
+		else if(strcmp(cmd,"total_sv")==0)
+			fscanf(fp,"%d",&model->l);
+		else if(strcmp(cmd,"rho")==0)
+		{
+			int n = model->nr_class * (model->nr_class-1)/2;
+			model->rho = Malloc(double,n);
+			for(int i=0;i<n;i++)
+				fscanf(fp,"%lf",&model->rho[i]);
+		}
+		else if(strcmp(cmd,"label")==0)
+		{
+			int n = model->nr_class;
+			model->label = Malloc(int,n);
+			for(int i=0;i<n;i++)
+				fscanf(fp,"%d",&model->label[i]);
+		}
+		else if(strcmp(cmd,"probA")==0)
+		{
+			int n = model->nr_class * (model->nr_class-1)/2;
+			model->probA = Malloc(double,n);
+			for(int i=0;i<n;i++)
+				fscanf(fp,"%lf",&model->probA[i]);
+		}
+		else if(strcmp(cmd,"probB")==0)
+		{
+			int n = model->nr_class * (model->nr_class-1)/2;
+			model->probB = Malloc(double,n);
+			for(int i=0;i<n;i++)
+				fscanf(fp,"%lf",&model->probB[i]);
+		}
+		else if(strcmp(cmd,"nr_sv")==0)
+		{
+			int n = model->nr_class;
+			model->nSV = Malloc(int,n);
+			for(int i=0;i<n;i++)
+				fscanf(fp,"%d",&model->nSV[i]);
+		}
+		else if(strcmp(cmd,"SV")==0)
+		{
+			while(1)
+			{
+				int c = getc(fp);
+				if(c==(char)EOF || c=='\n') break;	
+			}
+			break;
+		}
+		else
+		{
+			fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
+			free(model->rho);
+			free(model->label);
+			free(model->nSV);
+			free(model);
+			fclose(fp);
+			return NULL;
+		}
+	}
+
+	// read sv_coef and SV
+
+	int elements = 0;
+	long pos = ftell(fp);
+
+	while(1)
+	{
+		int c = fgetc(fp);
+		switch(c)
+		{
+			case '\n':
+				// count the '-1' element
+			case ':':
+				++elements;
+				break;
+			case (char)EOF:
+				goto out;
+			default:
+				;
+		}
+	}
+out:
+	fseek(fp,pos,SEEK_SET);
+
+	int m = model->nr_class - 1;
+	int l = model->l;
+	model->sv_coef = Malloc(double *,m);
+	int i;
+	for(i=0;i<m;i++)
+		model->sv_coef[i] = Malloc(double,l);
+	model->SV = Malloc(svm_node*,l);
+	svm_node *x_space=NULL;
+	if(l>0) x_space = Malloc(svm_node,elements);
+
+	int j=0;
+	for(i=0;i<l;i++)
+	{
+		model->SV[i] = &x_space[j];
+		for(int k=0;k<m;k++)
+			fscanf(fp,"%lf",&model->sv_coef[k][i]);
+		while(1)
+		{
+			int c;
+			do {
+				c = getc(fp);
+				if(c=='\n') goto out2;
+			} while(isspace(c));
+			ungetc(c,fp);
+			fscanf(fp,"%d:%lf",&(x_space[j].index),&(x_space[j].value));
+			++j;
+		}	
+out2:
+		x_space[j++].index = -1;
+	}
+	if (ferror(fp) != 0 || fclose(fp) != 0) return NULL;
+
+	model->free_sv = 1;	// XXX
+
+    printf("%i\n",model->param.kernel_type);
+	return model;
+}
+	
 svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0){
-	//if(type==0)
+    if(type==0)
         for(int i=0;i<ex.domain->attributes->size();i++){
 			if(ex[i].isRegular()){
 				if(ex[i].varType==TValue::FLOATVAR)
@@ -3173,17 +3462,14 @@ svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int
 				node++;
 			}
 		}
-	//if(type==0 || type==1){
-		node->index=-1;
-		node->value=last;
-		node++;
-	/*}
-	else{
-		node->index=-1;
-		const TExample *e=&ex;
-		memcpy((void *)&node->value, (void *)&e, sizeof(TExample*));
-		node++;
-	}*/
+    if(type == 1){ /*one dummy attr so we can pickle the classifier and keep the SV index in the training table*/
+        node->index=1;
+        node->value=last;
+        node++;
+    }
+	node->index=-1;
+	node->value=last;
+	node++;
 	return node;
 }
 /*
@@ -3268,7 +3554,7 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	svm_node *node=x_space;
 	PEITERATE(iter, examples){
 		prob.x[k]=node;
-		node=example_to_svm(*iter, node, k);//, (param.kernel_type==CUSTOM)? 1:0);
+		node=example_to_svm(*iter, node, k, (param.kernel_type==CUSTOM)? 1:0);
 		switch(classVarType){
 			case TValue::FLOATVAR:{
 				prob.y[k]=(*iter).getClass().floatV;
@@ -3308,7 +3594,9 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 	x_space=_x_space;
 	examples=_examples;
 	model->param.classifier=this;
-	kernelFunc=model->param.learner->kernelFunc;
+    if (model->param.learner) // if the model constructed at unpickling 
+	    kernelFunc=model->param.learner->kernelFunc;
+    model->param.learner=NULL;
 	currentExample=NULL;
 	computesProbabilities = model && model->param.svm_type!=EPSILON_SVR &&
 		model->param.svm_type!=NU_SVR &&  (model->param.probability != 0);
@@ -3323,9 +3611,12 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 			node++;
 		supportVectors->addExample(mlnew TExample(examples->at(int(node->value))));
 	}
-	nSV=mlnew TFloatList(nr_class); // num of SVs for each class (sum = model->l)
-	for(i=0;i<nr_class;i++)
-		nSV->at(i)=model->nSV[i];
+    int svm_type=model->param.svm_type;
+    if (svm_type==C_SVC || svm_type==NU_SVC){
+	    nSV=mlnew TFloatList(nr_class); // num of SVs for each class (sum = model->l)
+	    for(i=0;i<nr_class;i++)
+		    nSV->at(i)=model->nSV[i];
+    }
 
 	coef=mlnew TFloatListList(nr_class-1);
 	for(i=0;i<nr_class-1;i++){
@@ -3383,7 +3674,7 @@ TValue TSVMClassifier::operator()(const TExample & example){
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
 	svm_node *x=Malloc(svm_node, exlen+1);
-	example_to_svm(example, x, -1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
+	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	double v;
 	if(model->param.probability){
 		double *prob=(double *) malloc(nr_class*sizeof(double));
