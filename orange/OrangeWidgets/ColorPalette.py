@@ -28,26 +28,32 @@ paletteInterpolationColors = 250
 # So Python on Mac sometimes uses long where it should use int (when the highest bit is set and
 # it sees the number as positive - so it cannot be stored as positive number in 31 bits) and sometimes
 # it needs unsigned number and so uses long and does not want a signed int
-def signedColor(long):
-    if type(long) == int:
-        return long
-    elif long > 0xFFFFFFFF:
-	long &= 0xFFFFFFFF
+
+import sys
+if sys.platform == "darwin":
+    def signedColor(long):
+        if type(long) == int:
+            return long
+        elif long > 0xFFFFFFFF:
+            long &= 0xFFFFFFFF
+        
+        if long & 0x80000000:
+            return int(-((long ^ 0xFFFFFFFF) + 1))
+        else:
+            return int(long)
+
+    def positiveColor(color):
+        if color < 0:
+            return (-color - 1) ^ 0xFFFFFFFF
+        else:
+            return color
+
+    def signedPalette(palette):
+        return [signedColor(color) for color in palette]
+
+else:
+    signedColor = positiveColor = signedPalette = lambda x:x
     
-    if long & 0x80000000:
-        return int(-((long ^ 0xFFFFFFFF) + 1))
-    else:
-        return int(long)
-
-def positiveColor(color):
-    if color < 0:
-        return (-color - 1) ^ 0xFFFFFFFF
-    else:
-        return color
-
-def signedPalette(palette):
-    return [signedColor(color) for color in palette]
-
 class ColorPalette(QWidget):
     def __init__(self, parent, master, value, label = "Colors", additionalColors = None, callback = None):
         QWidget.__init__(self, parent)
