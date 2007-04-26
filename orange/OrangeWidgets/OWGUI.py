@@ -155,6 +155,8 @@ def spin(widget, master, value, min, max, step=1,
         master.connect(wa.editor(), SIGNAL("textChanged(const QString &)"), wa.onChange)
         master.connect(wa.editor(), SIGNAL("returnPressed()"), wa.onEnter)
         master.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
+        master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+        master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
 
     if posttext:
         QLabel(posttext, bi)
@@ -859,7 +861,7 @@ class ValueCallback(ControlledCallback):
             try:
                 self.acyclic_setattr(value)
             except:
-                print "OWGUI.ValueCallback: %s", value
+                print "OWGUI.ValueCallback: %s" % value
 #                traceback.print_exception(*sys.exc_info())
 
 
