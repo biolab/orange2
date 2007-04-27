@@ -134,10 +134,15 @@ class OWCorrAnalysisGraph(OWGraph):
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
             yFloat = self.invTransform(QwtPlot.yLeft, e.y())
             all = [(self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius]
-            self.docs = [tip[:-1] for tip in all if tip[-1] == 'R']
-            self.features = [tip[:-1] for tip in all if tip[-1] == 'C']
+            self.docs = [tip[:-1] for tip in all if tip and tip[-1] == 'R']
+            self.features = [tip[:-1] for tip in all if tip and tip[-1] == 'C']
             self.event(e)
         elif self.state == BROWSE_CIRCLE:
+            xFloat = self.invTransform(QwtPlot.xBottom, e.x())
+            yFloat = self.invTransform(QwtPlot.yLeft, e.y())
+            all = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if ((xFloat - x)*(xFloat - x) + (yFloat - y)*(yFloat - y) <= self.radius * self.radius)]
+            self.docs = [tip[:-1] for tip in all if tip and tip[-1] == 'R']
+            self.features = [tip[:-1] for tip in all if tip and tip[-1] == 'C']
             self.event(e)
         else:
             OWGraph.onMousePressed(self, e)
@@ -217,7 +222,7 @@ class OWCorrAnalysisGraph(OWGraph):
 #                points[i] = points[i-1]
 #                points[i-1] = t            
 #            i = i + 1                
-
+        points = [(i, (x, y, text)) for (i, (x, y, text)) in points if text]
         points = [(i, (x, y, t[:-1])) for (i, (x, y, t)) in points[:self.maxPoints]]
         
         for i, (x, y, text) in points:
