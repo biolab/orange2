@@ -75,12 +75,12 @@ class OWCN2(OWWidget):
         self.mSpin=Spin=OWGUI.spin(self.ruleQualityGroup, self, "m", 0, 100, label="m",
                 orientation="horizontal", labelWidth=labelWidth-100, tooltip="m value for m estimate rule evaluator")
         """
-        
+
         QRadioButton("Laplace",self.ruleQualityBG)
         g = QHBox(self.ruleQualityBG)
         b = QRadioButton("m-estimate",g)
         self.ruleQualityBG.insert(b)
-        self.mSpin = OWGUI.spin(g,self,"m",0,100)
+        self.mSpin = OWGUI.doubleSpin(g,self,"m",0,100)
         self.mSpin.setDisabled(1)
         QRadioButton("WRACC",self.ruleQualityBG)
         self.connect(self.ruleQualityBG,SIGNAL("released(int)"),self.qualityButtonPressed)
@@ -158,7 +158,7 @@ class OWCN2(OWWidget):
         if self.useMaxRuleLength:
             maxRuleLength = self.MaxRuleLength
         else:
-            maxRuleLength = 0
+            maxRuleLength = -1
         ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS(alpha=self.stepAlpha,
                     min_coverage=self.MinCoverage, max_rule_complexity=maxRuleLength)
         ruleFinder.validator=orange.RuleValidator_LRS(alpha=self.Alpha,
@@ -177,7 +177,7 @@ class OWCN2(OWWidget):
             oldDomain = orange.Domain(self.data.domain)
             learnData = orange.ExampleTable(oldDomain, self.data)
             self.classifier=self.learner(learnData)
-            self.classifier.name=self.LearnerName
+            self.classifier.name=self.name
             for r in self.classifier.rules:
                 r.examples = orange.ExampleTable(oldDomain, r.examples)
             self.classifier.examples = orange.ExampleTable(oldDomain, self.classifier.examples)
