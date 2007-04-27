@@ -170,7 +170,7 @@ def CN2UnorderedLearner(examples = None, weightID=0, **kwds):
 
 # Kako nastavim v c++, da mi ni potrebno dodati imena
 class CN2UnorderedLearnerClass(orange.RuleLearner):
-    def __init__(self, evaluator = LaplaceEvaluator(), beamWidth = 5, alpha = 1.0, **kwds):
+    def __init__(self, evaluator = orange.RuleEvaluator_Laplace(), beamWidth = 5, alpha = 1.0, **kwds):
         self.__dict__ = kwds
         self.ruleFinder = orange.RuleBeamFinder()
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
@@ -214,31 +214,34 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         self.prior = orange.Distribution(examples.domain.classVar, examples)
 
     def __call__(self, example, result_type=orange.GetValue, retRules = False):
-        def add(disc1, disc2):
+        def add(disc1, disc2, sumd):
             disc = orange.DiscDistribution(disc1)
+            sumdisc = sumd
             for i,d in enumerate(disc):
                 disc[i]+=disc2[i]
-            return disc
+                sumdisc += disc2[i]
+            return disc, sumdisc
 
         # create empty distribution
         retDist = orange.DiscDistribution(self.examples.domain.classVar)
         covRules = orange.RuleList()
         # iterate through examples - add distributions
+        sumdisc = 0.
         for r in self.rules:
             if r(example) and r.classDistribution:
-                retDist = add(retDist, r.classDistribution)
+                retDist, sumdisc = add(retDist, r.classDistribution, sumdisc)
                 covRules.append(r)
-        if not retDist.abs:
+        if not sumdisc:
             retDist = self.prior
-        retDist.normalize()
-        # return classifier(example, result_type=result_type)
+            sumdisc = self.prior.abs
+        for c in self.examples.domain.classVar:
+            retDist[c] /= sumdisc
         if retRules:
             if result_type == orange.GetValue:
               return (retDist.modus(), covRules)
             if result_type == orange.GetProbabilities:
               return (retDist, covRules)
             return (retDist.modus(),retDist,covRules)
-        
         if result_type == orange.GetValue:
           return retDist.modus()
         if result_type == orange.GetProbabilities:
