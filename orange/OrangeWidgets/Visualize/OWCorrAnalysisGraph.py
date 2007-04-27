@@ -108,7 +108,6 @@ class OWCorrAnalysisGraph(OWGraph):
             self.addMarkers(cor, xFloat, yFloat, self.radius)
 ##            for x, y, text in cor:
 ##                self.addMarker(text, x, y)
-
             self.replot()
             self.event(e)
         elif self.state == BROWSE_CIRCLE:
@@ -127,9 +126,8 @@ class OWCorrAnalysisGraph(OWGraph):
 ##                self.addMarker(text, x, y)
             self.replot()   
             self.event(e) 
-        else:   
+        else:
             OWGraph.onMouseMoved(self, e)
-            
             
     def onMousePressed(self, e):        
         if self.state == BROWSE_RECTANGLE:

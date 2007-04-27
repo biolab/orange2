@@ -441,20 +441,22 @@ if __name__=="__main__":
     ow = OWCorrAnalysis()
     
     #owb = OWBagofWords.OWBagofWords()
-    t = orngText.loadFromXML(r'c:\test\msnbc.xml')
+    t = orngText.loadFromXML(r'c:\test\r.xml')
     #owb.data = t
     #owb.show()
     print 'Done with loading'
     t1 = orngText.extractLetterNGram(t, 3)
+##    print len(t1[0].domain.getmetas())
+##    print len(t1.domain.getmetas())
     print 'Done with extracting'
-    t2 = orngText.FSS(t1, 'TF', 'MAX', 0.95)
-    #print t2[0]
-    #print len(t2.domain.getmetas())
+    t2 = orngText.FSS(t1, 'TF', 'MIN', 0.90)
+##    print len(t2[0].domain.getmetas())
+    print len(t2.domain.getmetas())
     print 'Done with feature selection'
     appl.setMainWidget(ow)
-    t3 = orngText.DSS(t2, 'WF', 'MIN', 1)
+    #t3 = orngText.DSS(t2, 'WF', 'MIN', 1)
     print 'Done with document selection'
-    ow.dataset(t3)
+    ow.dataset(t2)
     print 'Done'
     ow.show()
 ##    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab') 
