@@ -1038,7 +1038,7 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 #include "svm.hpp"
 C_CALL(SVMLearner, Learner, "([examples] -/-> Classifier)")
 C_NAMED(SVMClassifier, Classifier," ")
-NO_PICKLE(SVMClassifier)
+//N O _PICKLE(SVMClassifier)
 
 PYCLASSCONSTANT_INT(SVMLearner, C_SVC, 0)
 PYCLASSCONSTANT_INT(SVMLearner, NU_SVC, 1)
@@ -1085,6 +1085,55 @@ PyObject *KernelFunc_call(PyObject *self, PyObject *args, PyObject *keywords) PY
 	return Py_BuildValue("f", f);
   PyCATCH
 }
+
+PyObject *SVMClassifier__reduce__(PyObject* self)
+{
+  PyTRY
+    //TCharBuffer buf(100);
+    CAST_TO(TSVMClassifier, svm);
+    string buf;
+    if (svm_save_model_alt(buf, svm->getModel())){
+        printf("error saving svm model");
+    }
+    return Py_BuildValue("O(OOOOs)N", getExportedFunction("__pickleLoaderSVMClassifier"),
+                                    self->ob_type,
+                                    WrapOrange(svm->classVar),
+                                    WrapOrange(svm->examples),
+                                    WrapOrange(svm->supportVectors),
+                                    //WrapOrange(svm->kernelFunc),
+                                    buf.c_str(),
+                                    packOrangeDictionary(self));
+  PyCATCH
+}
+
+PyObject *__pickleLoaderSVMClassifier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_data)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PVariable var;
+    PExampleTable examples;
+    PExampleTable supportVectors;
+    PKernelFunc kernel;
+    char *pbuf;
+    int bufSize;
+    if (!PyArg_ParseTuple(args, "OO&O&O&s#:__pickleLoaderSVMClassifier", &type, cc_Variable, &var,
+        cc_ExampleTable, &examples, cc_ExampleTable, &supportVectors, /*cc_KernelFunc, &kernel,*/  &pbuf, &bufSize))
+        return NULL;
+    //TCharBuffer buf(pbuf);
+    string buf(pbuf);
+    printf("loading model\n");
+    svm_model *model=svm_load_model_alt(buf);
+
+    if (!model)
+        return NULL;
+    model->param.learner=NULL;
+    PSVMClassifier svm=mlnew TSVMClassifier(var, examples, model, NULL);
+    svm->kernelFunc=kernel;
+    svm->supportVectors=supportVectors;
+    return WrapOrange(svm);
+  PyCATCH
+}
+  
 
 PyObject *SVMClassifier_getDecisionValues(PyObject *self, PyObject* args, PyObject *keywords) PYARGS(METH_VARARGS, "(Example) -> list of floats")
 {PyTRY

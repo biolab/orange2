@@ -3148,7 +3148,7 @@ except that they read/write from/to a temp file that is deleted
 at the end with fclose
 */
 #include "slist.hpp"
-int svm_save_model_alt(TCharBuffer& buffer, const svm_model *model){
+int svm_save_model_alt(string& buffer, const svm_model *model){
 	FILE *fp = tmpfile();
 	if(fp==NULL) return -1;
 
@@ -3230,33 +3230,33 @@ int svm_save_model_alt(TCharBuffer& buffer, const svm_model *model){
 			}
 		fprintf(fp, "\n");
 	}
-	if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
 
 	fseek(fp, SEEK_SET, 0);
-	string tmpbuf;
+	//string tmpbuf;
 	char str[512];
 	while(fgets(str, 512, fp)){
-		tmpbuf+=str;
+		buffer+=str;
 	}
 	//if(!feof(fp))
 	//	printf("Error saving svm_model");
-	buffer.writeInt(tmpbuf.size()+1);
-    printf(tmpbuf.c_str());
-	buffer.writeBuf((void*)tmpbuf.c_str(), tmpbuf.size()+1);
-	fclose(fp);
+	//buffer.writeInt(tmpbuf.size()+1);
+    //printf(tmpbuf.c_str());
+	//buffer.writeBuf((void*)tmpbuf.c_str(), tmpbuf.size()+1);
+	if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
 	return 0;
 }
 
-svm_model *svm_load_model_alt(TCharBuffer& buffer)
+svm_model *svm_load_model_alt(string& buffer)
 {
 	FILE *fp = tmpfile();
 	if(fp==NULL) return NULL;
-	int bufflen=buffer.readInt();
-	char *tmpstr=(char*)malloc(sizeof(char)*bufflen);
-	buffer.readBuf(tmpstr, bufflen);
-	fwrite(tmpstr, sizeof(char), bufflen, fp);
+	//int bufflen=buffer.readInt();
+	//char *tmpstr=(char*)malloc(sizeof(char)*bufflen);
+	//buffer.readBuf(tmpstr, bufflen);
+	//fwrite(tmpstr, sizeof(char), bufflen, fp);
+	fprintf(fp, buffer.c_str());
 	fseek(fp, SEEK_SET, 0);
-	free(tmpstr);
+	//free(tmpstr);
 	
 	// read parameters
 
@@ -3443,7 +3443,7 @@ out2:
 
 	model->free_sv = 1;	// XXX
 
-    printf("%i\n",model->param.kernel_type);
+    //printf("%i\n",model->param.kernel_type);
 	return model;
 }
 	

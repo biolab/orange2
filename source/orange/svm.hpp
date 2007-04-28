@@ -151,8 +151,8 @@ int svm_check_probability_model(const struct svm_model *model);
 #include "distance.hpp"
 #include "slist.hpp"
 
-svm_model *svm_load_model_alt(TCharBuffer& buffer);
-int svm_save_model_alt(TCharBuffer& buffer, const svm_model *model);
+svm_model *svm_load_model_alt(string& buffer);
+int svm_save_model_alt(string& buffer, const svm_model *model);
 
 WRAPPER(ExampleGenerator)
 WRAPPER(KernelFunc)
