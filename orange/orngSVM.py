@@ -145,7 +145,7 @@ class SVMLearnerClassEasy(SVMLearnerClass):
         else:
             params["C"]=map(lambda a: 2**a, range(-5,15,2))
         if self.kernel_type==2:
-            params["gamma"]=map(lambda a: 2**a, range(-3,15,2))
+            params["gamma"]=map(lambda a: 2**a, range(-3,15,2))+[0]
         best=parameter_selection(self.learner, newexamples, self.folds, params)
         #print best["error"]
         del best["error"]
@@ -176,12 +176,16 @@ class DualKernelWrapper(KernelWrapper):
         self.wrapped2=wrapped2
         
 class RBFKernelWrapper(KernelWrapper):
-    gamma=0.5
+    def __init__(self, wrapped, gamma=0.5):
+        KernelWrapper.__init__(self, wrapped)
+        self.gamma=gamma
     def __call__(self, example1, example2):
         return math.exp(-math.pow(self.wrapped(example1, example2),2)/self.gamma)
 
 class PolyKernelWrapper(KernelWrapper):
-    degree=3.0
+    def __init__(self, wrapped, degree=3.0):
+        KernelWrapper.__init__(self, wrapped)
+        self.degree=degree
     def __call__(self, example1, example2):
         return math.pow(self.wrapped(example1, example2), self.degree)
 
@@ -192,3 +196,30 @@ class AdditionKernelWrapper(DualKernelWrapper):
 class MultiplicationKernelWrapper(DualKernelWrapper):
     def __call__(self, example1, example2):
         return self.wrapped1(example1, example2)*self.wrapped2(example1, example2)
+
+class CompositeKernelWrapper(DualKernelWrapper):
+    def __init__(self, wrapped1, wrapped2, l=0.5):
+        DualKernelWrapper.__init__(self, wrapped1, wrapped2)
+        self.l=l
+    def __call__(self, example1, example2):
+        return self.l*self.wrapped1(example1, example2) + (1-self.l)*self.wrapped2(example1,example2)
+
+from sets import Set
+class SparseLinKernel:
+    """Computes a linear kernel function using the examples meta attributes (need to be floats)"""
+    def __call__(self, example1, example2):
+        s=Set(example1.getmetas().keys()+example2.getmetas().keys())
+        sum=0
+        getmeta=lambda e: e.hasmeta(key) and float(e[key]) or 0.0
+        for key in s:
+            sum+=pow(getmeta(example2)-getmeta(example1), 2)
+        return pow(sum, 0.5)
+
+class BagOfWords:
+    """Computes a BOW kernel function (sum_i(example[i]*example[i])) using the examples meta attributes (need to be floats)"""
+    def __call__(self, example1, example2):
+        s=Set(example1.getmetas().keys()).intersection(Set(example2.getmetas().keys()))
+        sum=0
+        for key in s:
+            sum+=float(example2[key])*float(example1[key])
+        return sum
