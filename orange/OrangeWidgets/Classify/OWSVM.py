@@ -6,9 +6,8 @@
 <priority>100</priority>
 """
 
-import orange, orngSVM, OWGUI, thread, sys
+import orange, orngSVM, OWGUI, sys
 from OWWidget import *
-from threading import Thread
 from exceptions import SystemExit
 
 class OWSVM(OWWidget):
