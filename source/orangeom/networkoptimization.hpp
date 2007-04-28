@@ -34,12 +34,16 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <iostream>
+#include <sstream>
+#include <fstream>
+#include <string>
+#include <time.h>
 #include "px/orangeom_globals.hpp"
 #include "root.hpp"
 #include "numeric_interface.hpp"
 #include "graph.hpp"
+#include "stringvars.hpp"
 
 using namespace std;
 

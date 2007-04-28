@@ -8,7 +8,9 @@ from numpy import *
 class NetworkVisualizer(orangeom.NetworkOptimization):
     def __init__(self, graph, parent = None, name = "None"):
         
+        print "orngNetwork/init: setGraph..."
         self.setGraph(graph)
+        print "orngNetwork/init: getCoors..."
         self.coors = self.getCoors()
         self.graph = graph
 

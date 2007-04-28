@@ -54,7 +54,7 @@ class OWSimilarityNetwork(OWWidget):
         self.data = data
         
         maxValue = max([max(r) for r in data])
-        print maxValue
+        #print maxValue
         #self.spinLower.setMaxValue(maxValue)
         #self.spinUpper.setMaxValue(maxValue)
         
@@ -69,40 +69,26 @@ class OWSimilarityNetwork(OWWidget):
             self.infob.setText("")
             return
 
-        nedges = [] 
-        print self.data.dim
-        for i in range(self.data.dim):
-           n = 0
-           for j in range(self.data.dim):
-              if i == j: continue
-              if self.spinLowerThreshold < self.data[i][j] and self.data[i][j] < self.spinUpperThreshold:
-                 n += 1
-           nedges.append(n)
-        n = 0; idid = []
-        for i in range(self.data.dim):
-           idid.append(n)
-           if nedges[i]:
-              n += 1
-
-        self.infoa.setText("%d vertices, " % self.data.dim + "%d (%3.2f) not connected" % (nedges.count(0), nedges.count(0)/float(self.data.dim)))
-
         graph = orange.GraphAsList(self.data.dim, 0)
         graph.setattr("items", self.data.items)
-        
+            
         # set the threshold
         # set edges where distance is lower than threshold
         n = 0
-        print self.spinLowerThreshold
-        print self.spinUpperThreshold
+        nedges = 0
+        #print self.spinLowerThreshold
+        #print self.spinUpperThreshold
         for i in range(self.data.dim):
-           for j in range(i):
-              if i == j: 
-                  continue
-              if self.spinLowerThreshold < self.data[i][j] and self.data[i][j] < self.spinUpperThreshold:
-                  n += 1
-                  graph[i,j] = 1
+            oldn = n
+            for j in range(i):
+                if self.spinLowerThreshold < self.data[i][j] and self.data[i][j] < self.spinUpperThreshold:
+                    n += 1
+                    graph[i,j] = 1
+            if n > oldn:
+                nedges += 1
           
         self.graph = graph
+        self.infoa.setText("%d vertices, " % self.data.dim + "%d (%3.2f) not connected" % (nedges, nedges/float(self.data.dim)))
         self.infob.setText("%d edges (%d average)" % (n, n/float(self.data.dim)))
         self.send("Graph with ExampleTable", graph)
         self.send("Examples", graph.items)

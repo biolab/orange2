@@ -71,7 +71,7 @@ double TNetworkOptimization::repulsiveForce(double x)
 
 double TNetworkOptimization::cool(double t)
 {
-	return t * 0.98;
+	return t * 0.96;
 }
 
 void TNetworkOptimization::dumpCoordinates()
@@ -279,20 +279,22 @@ double **TNetworkOptimization::pymatrix_to_Carrayptrs(PyArrayObject *arrayin)  {
 
 void TNetworkOptimization::setGraph(TGraphAsList *graph)
 {
+	cout << "1" << endl; 
 	int v, l;
 	for (l = 0; l < nLinks; l++)
 	{
 		free(links[l]);
 	}
-
+	cout << "2" << endl; 
 	free(links);
+	cout << "3" << endl; 
 	free_Carrayptrs(pos);
-
+	cout << "4" << endl; 
 	nVertices = graph->nVertices;
 	int dims[2];
 	dims[0] = nVertices;
 	dims[1] = 2;
-	
+	cout << "5" << endl; 
 	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
 	random();
@@ -301,7 +303,7 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 
 	links = NULL;
 	nLinks = 0;
-
+	cout << "6" << endl; 
 	for (v = 0; v < graph->nVertices; v++)
 	{
 		TGraphAsList::TEdge *edge = graph->edges[v];
@@ -360,6 +362,64 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 	}
 }
 
+int getWords(string const& s, vector<string> &container)
+{
+    int n = 0;
+	bool quotation = false;
+    string::const_iterator it = s.begin(), end = s.end(), first;
+    for (first = it; it != end; ++it)
+    {
+        // Examine each character and if it matches the delimiter
+        if (((!quotation) && ((' ' == *it) || ('\t' == *it) || ('\r' == *it) || ('\f' == *it) || ('\v' == *it))) || ('\n' == *it))
+        {
+            if (first != it)
+            {
+                // extract the current field from the string and
+                // append the current field to the given container
+                container.push_back(string(first, it));
+                ++n;
+                
+                // skip the delimiter
+                first = it + 1;
+            }
+            else
+            {
+                ++first;
+            }
+        }
+		else if (('\"' == *it) || ('\'' == *it))
+		{
+			if (quotation)
+			{
+				quotation = false;
+
+				// extract the current field from the string and
+                // append the current field to the given container
+                container.push_back(string(first, it));
+                ++n;
+                
+                // skip the delimiter
+                first = it + 1;
+			}
+			else
+			{
+				quotation = true;
+
+				// skip the quotation
+				first = it + 1;
+			}
+		}
+    }
+    if (first != it)
+    {
+        // extract the last field from the string and
+        // append the last field to the given container
+        container.push_back(string(first, it));
+        ++n;
+    }
+    return n;
+}
+
 PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Graph) -> None")
 {
 	PyObject *pygraph;
@@ -370,8 +430,9 @@ PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(ME
 	TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
 
 	CAST_TO(TNetworkOptimization, graphOpt);
+	cout << "networkoptimization.cpp/setGraph: setting graph..." << endl;
 	graphOpt->setGraph(graph);
-
+	cout << "done." << endl;
 	RETURN_NONE;
 }
 
@@ -404,6 +465,247 @@ PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH
 	graph->random();
 	
 	RETURN_NONE;
+}
+
+void temp(TGraph &graph)
+{
+	graph = TGraphAsList(5, 0, false);
+}
+
+WRAPPER(ExampleTable)
+
+PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Graph")
+{
+	TGraph *graph;
+	TDomain *domain = new TDomain();
+	TExampleTable *table;
+
+	//cout << "readNetwork" << endl;
+	char *fn;
+
+	if (!PyArg_ParseTuple(args, "s", &fn))
+		return NULL;
+
+	//cout << "File: " << fn << endl;
+
+	string line;
+	ifstream file(fn);
+	string graphName = "";
+	int nVertices = 0;
+
+	if (file.is_open())
+	{
+		// read head
+		while (!file.eof())
+		{
+			getline (file, line);
+			vector<string> words;
+			int n = getWords(line, words);
+			//cout << line << "  -  " << n << endl;
+			if (n > 0)
+			{
+				if (strcmpi(words[0].c_str(), "*network") == 0)
+				{
+					//cout << "Network" << endl;
+					if (n > 1)
+					{
+						graphName = words[1];
+						//cout << "Graph name: " << graphName << endl;
+					}
+					else
+						return NULL;
+				}
+				else if (strcmpi(words[0].c_str(), "*vertices") == 0)
+				{
+					//cout << "Vertices" << endl;
+					if (n > 1)
+					{
+						istringstream strVertices(words[1]);
+						strVertices >> nVertices;
+						if (nVertices == 0)
+							return NULL;
+
+						//cout << "nVertices: " << nVertices << endl;
+					}
+					else
+						return NULL;
+
+					break;
+				}
+			}
+		}
+		graph = new TGraphAsList(nVertices, 0, false);
+		domain->addVariable(new TIntVariable("index"));
+		domain->addVariable(new TStringVariable("label"));
+		domain->addVariable(new TFloatVariable("x"));
+		domain->addVariable(new TFloatVariable("y"));
+		domain->addVariable(new TFloatVariable("z"));
+		domain->addVariable(new TStringVariable("ic"));
+		domain->addVariable(new TStringVariable("bc"));
+		domain->addVariable(new TStringVariable("bw"));
+		table = new TExampleTable(domain);
+
+		// read vertex descriptions
+		while (!file.eof())
+		{
+			getline (file, line);
+			vector<string> words;
+			int n = getWords(line, words);
+			//cout << line << "  -  " << n << endl;
+			if (n > 0)
+			{
+				TExample *example = new TExample(domain);
+
+				if ((strcmpi(words[0].c_str(), "*arcs") == 0) || (strcmpi(words[0].c_str(), "*edges") == 0))
+					break;
+
+				int index = -1;
+				istringstream strIndex(words[0]);
+				strIndex >> index;
+				if ((index <= 0) || (index > nVertices))
+					return NULL;
+
+				//cout << "index: " << index << " n: " << n << endl;
+				(*example)[0] = TValue(index);
+
+				if (n > 1)
+				{
+					string label = words[1];
+					//cout << "label: " << label << endl;
+					(*example)[1] = TValue((PSomeValue)TStringValue(label), STRINGVAR);
+
+					int i = 2;
+					char *xyz = "  xyz";
+					// read coordinates
+					while ((i <= 4) && (i < n))
+					{
+						float coor = -1;	
+						istringstream strCoor(words[i]);
+						strCoor >> coor;
+						
+						if ((coor < 0) || (coor > 1))
+							break;
+						
+						//cout << xyz[i] << ": " << coor * 1000 << endl;
+						(*example)[i] = TValue(coor);
+						i++;
+					}
+					// read attributes
+					while (i < n)
+					{
+						if (strcmpi(words[i].c_str(), "ic") == 0)
+						{
+							if (i + 1 < n) i++; else return NULL;
+
+							//cout << "ic: " << words[i] << endl;
+							(*example)[5] = TValue((PSomeValue)TStringValue(words[i]), STRINGVAR);
+						}
+						else if (strcmpi(words[i].c_str(), "bc") == 0)
+						{
+							if (i + 1 < n) i++; else return NULL;
+
+							//cout << "bc: " << words[i] << endl;
+							(*example)[6] = TValue((PSomeValue)TStringValue(words[i]), STRINGVAR);
+						}
+						else if (strcmpi(words[i].c_str(), "bw") == 0)
+						{
+							if (i + 1 < n) i++; else return NULL;
+
+							//cout << "bw: " << words[i] << endl;
+							(*example)[7] = TValue((PSomeValue)TStringValue(words[i]), STRINGVAR);
+						}
+						i++;
+					}
+					table->push_back(example);
+				}
+			}
+		}
+		// read arcs
+		vector<string> words;
+		int n = getWords(line, words);
+		if (n > 0)
+		{
+			if (strcmpi(words[0].c_str(), "*arcs") == 0)
+			{
+				while (!file.eof())
+				{
+					getline (file, line);
+					vector<string> words;
+					int n = getWords(line, words);
+					//cout << line << "  -  " << n << endl;
+					if (n > 0)
+					{
+						if (strcmpi(words[0].c_str(), "*edges") == 0)
+							break;
+
+						if (n > 1)
+						{
+							int i1 = -1;
+							int i2 = -1;
+							istringstream strI1(words[0]);
+							istringstream strI2(words[1]);
+
+							strI1 >> i1;
+							strI2 >> i2;
+
+							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices)) 
+								return NULL;
+
+							if (i1 == i2)
+								continue;
+							
+							//cout << "i1: " << i1 << " i2: " << i2 << endl;
+							*graph->getOrCreateEdge(i1 - 1, i2 - 1) = 1;
+						}
+					}
+				}
+			}
+		}
+		// read edges
+		n = getWords(line, words);
+		if (n > 0)
+		{
+			if (strcmpi(words[0].c_str(), "*edges") == 0)
+			{
+				while (!file.eof())
+				{
+					getline (file, line);
+					vector<string> words;
+					int n = getWords(line, words);
+					//cout << line << "  -  " << n << endl;
+					if (n > 1)
+					{
+						int i1 = -1;
+						int i2 = -1;
+						istringstream strI1(words[0]);
+						istringstream strI2(words[1]);
+
+						strI1 >> i1;
+						strI2 >> i2;
+
+						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices)) 
+							return NULL;
+
+						if (i1 == i2)
+							continue;
+
+						*graph->getOrCreateEdge(i1 - 1, i2 - 1) = 1;
+						*graph->getOrCreateEdge(i2 - 1, i1 - 1) = 1;
+					}
+				}
+			}
+		}
+
+		file.close();
+	}
+	else 
+		cout << "Unable to open file."; 
+	
+	PExampleTable wtable = table;
+	PGraph wgraph = graph;
+	//graph->setProperty("items", wtable);
+
+	return Py_BuildValue("OO", WrapOrange(wgraph), WrapOrange(wtable));
 }
 
 #include "networkoptimization.px"

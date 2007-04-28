@@ -170,8 +170,9 @@ class OWNetwork(OWWidget):
         self.updateCanvas()
     
     def setGraph(self, graph):
+        print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkVisualizer(graph, self)
-        
+        print "done."
         self.colorCombo.clear()
         self.attListBox.clear()
         self.tooltipListBox.clear()
@@ -182,22 +183,40 @@ class OWNetwork(OWWidget):
             self.attListBox.insertItem(unicode(var.name))
             self.tooltipListBox.insertItem(unicode(var.name))
 
+        print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)
-        self.displayRandom(firstTime = True)
+        print "done."
+        print "OWNetwork/setGraph: display random..."
+        self.random()
+        print "done."
         
     def random(self):
-        self.displayRandom(firstTime=False); 
+        print "OWNetwork/random.."
+        if self.visualize == None:   #grafa se ni
+            return
+        
+        self.visualize.random()
+        
+        print "OWNetwork/random: updating canvas..."
+        self.updateCanvas();
+        print "done."
+        
         
     def ff(self):
+        print "OWNetwork/ff..."
         if self.visualize == None:   #grafa se ni
             return
 
         #najprej nakljucne koordinate za vsa vozlisca
-        refreshRate = 10
+        refreshRate = 20 #- self.visualize.nVertices() / 50 + 100
+        #if refreshRate < 5:
+        #    refreshRate = 5;
+        
         tolerance = 5
         initTemp = 100
 
         while True:
+            print initTemp
             initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp)
             
             if (initTemp <= tolerance):
@@ -217,23 +236,6 @@ class OWNetwork(OWWidget):
     def setGraphGrid(self):
         self.graph.enableGridY(self.graphShowGrid)
         self.graph.enableGridX(self.graphShowGrid)
-            
-    def displayRandom(self, firstTime=False):
-        if self.visualize == None:   #grafa se ni
-            return
-
-        #najprej nakljucne koordinate za vsa vozlisca
-        self.visualize.random()
-
-        #ko graf preberemo iz datoteke, upostevamo podane koordinate
-#        if firstTime == True: 
-#            for i in range(0, self.visualize.nVertices()):
-#                if self.verticesDescriptions[i].inFileDefinedCoors[0] != None:
-#                    self.visualize.xCoors[i] = self.verticesDescriptions[i].inFileDefinedCoors[0]
-#                    
-#                if self.verticesDescriptions[i].inFileDefinedCoors[1] != None:
-#                    self.visualize.yCoors[i] = self.verticesDescriptions[i].inFileDefinedCoors[1]        
-        self.updateCanvas(); 
                     
     def updateCanvas(self):
         #ce imamo graf

@@ -471,23 +471,23 @@ class OWGraphDrawerCanvas(OWGraph):
         self.vertexDegree = []
         
         #dodajanje vozlisc
+        print "OWGraphDrawerCanvas/addVisualizer: adding vertices..."
+        self.vertices = {}
         for v in range(0, self.nVertices):
             self.vertices[v] = None
-            
-        #dodajanje povezav
+        print "done."
         
-        for i in range(0, self.nVertices):
-            for j in range(0, self.nVertices):
-                try: 
-                    if visualizer.graph[i,j] > 0:
-                        if not self.edgesContainsEdge(i,j):
-                            self.edges[self.nEdges] = (None,i,j)
-                            self.nEdges += 1
-                except TypeError:
-                    pass # `visualizer.graph[i,j]' does not exist
-                else:
-                    pass # `visualizer.graph[i,j]' exists             
-    
+        #dodajanje povezav
+        print "OWGraphDrawerCanvas/addVisualizer: adding edges..."
+        self.edges = {}
+        self.nEdges = 0
+        
+        for (i,j) in visualizer.graph.getEdges():
+            self.edges[self.nEdges] = (None,i,j)
+            self.nEdges += 1
+        
+        print "done."
+        
     def resetValues(self):
         self.vertices={}
         self.edges={}
