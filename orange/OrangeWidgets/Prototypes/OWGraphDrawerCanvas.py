@@ -105,27 +105,30 @@ class OWGraphDrawerCanvas(OWGraph):
             count += 1
             
     def selectConnectedNodes(self, distance):
-        i = 0
-        newSelections = -1
-        while i < distance and newSelections <> 0:
-            newSelections = 0
-            selectedVertexes = []
+        sel = set(self.selection)
         
-            for v in self.selection:
-                selectedVertexes.append(v)
+        for v in self.selection:
+            neighbours = set(self.visualizer.graph.getNeighbours(v))
+            self.selectNeighbours(sel, neighbours - sel);
             
-            for v in selectedVertexes:
-                for e in range(self.nEdges):
-                    (key,i,j) = self.edges[e]
-                    
-                    if i == v:
-                        if self.addSelection(j):
-                            newSelections += 1
-                    elif j == v:
-                        if self.addSelection(i):
-                            newSelections += 1
-            
-            i += 1
+        self.removeSelection()
+        
+        for ndx in sel:
+            self.selectionStyles[ndx] = self.curve(self.vertices[ndx]).symbol().brush().color().name()
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
+            self.setCurveSymbol(self.vertices[ndx], newSymbol)
+            self.selection.append(ndx);
+        
+        self.replot()
+    
+    def selectNeighbours(self, sel, nodes):
+        #print "list: " + str(sel)
+        #print "nodes: " + str(nodes)
+        sel.update(nodes)
+        for i in nodes:
+            neighbours = set(self.visualizer.graph.getNeighbours(i))
+            #print "neighbours: " + str(neighbours)
+            self.selectNeighbours(sel, neighbours - sel)
         
     def getSelectedExamples(self):
         if len(self.selection) == 0:
