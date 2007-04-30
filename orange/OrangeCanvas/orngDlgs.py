@@ -596,7 +596,7 @@ class CanvasOptionsDlg(QDialog):
             hbox.layout().setSpacing(6)
             hbox.layout().setMargin(0)
         sep = QWidget(hbox)
-        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
 
         self.okButton = QPushButton("OK", hbox)
         self.cancelButton = QPushButton("Cancel", hbox)
