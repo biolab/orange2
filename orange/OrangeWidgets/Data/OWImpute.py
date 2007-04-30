@@ -24,7 +24,13 @@ class ImputeListboxItem(QListBoxPixmap):
                 ntext = self.master.indiShorts[meth]
             elif meth:
                 attr = self.master.data.domain[btext]
-                ntext = attr.varType == orange.VarTypes.Discrete and attr.values[val] or val
+                if attr.varType == orange.VarTypes.Discrete:
+                    if val < len(attr.values):
+                        ntext = attr.values[val]
+                    else:
+                        ntext = "?"
+                else:
+                    ntext = str(val)
             self.setText(btext + " -> " + ntext)
         painter.font().setBold(meth)
         QListBoxPixmap.paint(self, painter)
@@ -60,7 +66,7 @@ class OWImpute(OWWidget):
 
         self.loadSettings()
 
-        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Don't Impute", "Average/Most frequent", "Model-based imputer", "Random values"], "Default imputation method", callback=self.sendIf)
+        bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Don't Impute", "Average/Most frequent", "Model-based imputer (can be slow!)", "Random values"], "Default imputation method", callback=self.sendIf)
 
         OWGUI.separator(self.controlArea)
 
@@ -334,14 +340,14 @@ class OWImpute(OWWidget):
         self.send("Imputer", self.imputer)
         if self.data:
             if self.imputer:
-                constructed = self.imputer(self.data)
                 try:
+                    constructed = self.imputer(self.data)
                     data = constructed(self.data)
                     ## meta-comment: is there a missing 'not' in the below comment?
                     # if the above fails, dataChanged should be set to False
                     self.dataChanged = False
                 except:
-                    self.error(0, "Imputation failed; this is typically due to unsuitable model.")
+                    self.error(0, "Imputation failed; this is typically due to unsuitable model.\nIt can also happen with some imputation techniques if no values are defined.")
                     data = None
             else:
                 data = None
