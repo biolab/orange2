@@ -308,19 +308,40 @@ TRemoveRedundantOneValue::TRemoveRedundantOneValue(bool anOnData)
   onData(anOnData)
 {}
 
+bool TRemoveRedundantOneValue::hasAtLeastTwo(PExampleGenerator gen, const int &idx)
+{
+  float ev = ILLEGAL_FLOAT;
+  PEITERATE(ei, gen) {
+    const TValue val = (*ei)[idx];
+    if (!val.isSpecial())
+      if (ev == ILLEGAL_FLOAT)
+        ev = val.floatV;
+      else
+        if (ev != val.floatV)
+          return true;
+  }
+  
+  return false;
+}
+
+
 PDomain TRemoveRedundantOneValue::operator()
   (PExampleGenerator gen, PVarList suspicious, PExampleGenerator *nonRedundantResult, int weightID)
 {
   PDomain newDomain = mlnew TDomain;
 
   if (onData) {
-    TDomainDistributions distr(gen, weightID);
+    TDomainDistributions distr(gen, weightID, false, true);
     TDomainDistributions::iterator di(distr.begin());
-    PITERATE(TVarList, vi, gen->domain->attributes) {
-      if (   suspicious && suspicious->size() && !exists(suspicious.getReference(), *vi))
+    TVarList::const_iterator vi(gen->domain->attributes->begin()), ve(gen->domain->attributes->end());
+    int idx = 0;
+    for(; vi!= ve; vi++, di++, idx++) {
+      if (   suspicious && suspicious->size() && !exists(suspicious.getReference(), *vi)
+          || ((*vi)->varType == TValue::FLOATVAR) && hasAtLeastTwo(gen, idx))
         newDomain->addVariable(*vi);
+      
       else {
-        const TDiscDistribution *discdist = (*di).AS(TDiscDistribution);
+        const TDiscDistribution *discdist = *di ? (*di).AS(TDiscDistribution) : NULL;
         if (!discdist)
           newDomain->addVariable(*vi);
         else {
@@ -332,7 +353,6 @@ PDomain TRemoveRedundantOneValue::operator()
             newDomain->addVariable(*vi);
         }
       }
-      di++;
     }
   }
   else
@@ -354,6 +374,7 @@ PDomain TRemoveRedundantOneValue::operator()
 TRemoveUnusedValues::TRemoveUnusedValues(bool rov)
 : removeOneValued(rov)
 {}
+
 
 
 PVariable TRemoveUnusedValues::operator()(PVariable var, PExampleGenerator gen, const int &weightID)

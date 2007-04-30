@@ -221,6 +221,20 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
 }
 
 
+PyObject *RemoveRedundantOneValue_hasAtLeastTwoValues(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_STATIC, "(attribute, examples) -> bool")
+{
+  PyTRY
+    PExampleGenerator gen;
+    PyObject *var;
+    if (!PyArg_ParseTuple(args, "O&O:RemoveRedundantOneValue.hasAtLeastTwoValues", pt_ExampleGenerator, &gen, &var))
+      return NULL;
+    int varIdx;
+    if (!varNumFromVarDom(var, gen->domain, varIdx))
+      PYERROR(PyExc_AttributeError, "RemoveRedundantOneValue.hasAtLeastTwoValues: invalid attribute", NULL);
+    return PyBool_FromLong(TRemoveRedundantOneValue::hasAtLeastTwo(gen, varIdx) ? 1 : 0);
+  PyCATCH
+}
+    
 PyObject *RemoveUnusedValues_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attribute, examples[, weightId]) -> attribute")
 {
   PyTRY

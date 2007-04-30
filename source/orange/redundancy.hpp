@@ -73,6 +73,7 @@ public:
 
   TRemoveRedundantOneValue(bool anOnData=true);
   virtual PDomain operator()(PExampleGenerator gen, PVarList suspicious=PVarList(), PExampleGenerator *nonRedundantResult=NULL, int aweightID=0);
+  static bool hasAtLeastTwo(PExampleGenerator gen, const int &idx);
 };
 
 /*
