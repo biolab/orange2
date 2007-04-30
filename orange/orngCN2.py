@@ -123,8 +123,7 @@ class CN2LearnerClass(orange.RuleLearner):
         
     def __call__(self, examples, weight=0):
         if examples.domain.classVar.varType == orange.VarTypes.Continuous:
-            print "CN2 can learn only on discrete class!"
-            return
+            raise "CN2 requires a discrete class"
         cl = orange.RuleLearner.__call__(self,examples,weight)
         rules = cl.rules
         return CN2Classifier(rules, examples, weight)
