@@ -305,25 +305,25 @@ PyObject *Orange_getattr1(TPyOrange *self, const char *name)
         if (propertyType==typeid(bool)) {
           bool value;
           me->getProperty(name, value);
-          return Py_BuildValue("i", value ? 1 : 0);
+          return PyInt_FromLong(value ? 1 : 0);
         }
 
         if (propertyType==typeid(int)) {
           int value;
           me->getProperty(name, value);
-          return Py_BuildValue("i", value);
+          return PyInt_FromLong(value);
         }
 
         if (propertyType==typeid(float)) {
           float value;
           me->getProperty(name, value);
-          return Py_BuildValue("f", value);
+          return PyFloat_FromDouble(value);
         }
 
         if (propertyType==typeid(string)) {
           string value;
           me->getProperty(name, value);
-          return Py_BuildValue("s", value.c_str());
+          return PyString_FromString(value.c_str());
         }
 
         if (propertyType==typeid(TValue)) {
