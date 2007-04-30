@@ -263,7 +263,7 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_loess::operator()(PDistri
 { TContDistribution *cdist = frequencies.AS(TContDistribution);
   if (!cdist)
     if (frequencies && frequencies->variable)
-      raiseError("attribute '%s' is not continuous", cdist->variable->name.c_str());
+      raiseError("attribute '%s' is not continuous", frequencies->variable->name.c_str());
     else
       raiseError("continuous distribution expected");
   if (!cdist->size())
