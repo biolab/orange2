@@ -126,14 +126,20 @@ class OWPurgeDomain(OWWidget):
         self.removedAttrs = 0
         self.resortedAttrs = 0
         self.classAttribute = 0
-
+        
         if self.removeAttributes or self.sortValues:
             newattrs = []
             for attr in self.data.domain.attributes:
+                if attr.varType == orange.VarTypes.Continuous:
+                    if orange.RemoveRedundantOneValue.hasAtLeastTwoValues(self.data, attr):
+                        newattrs.append(attr)
+                        removedAttrs += 1
+                    continue
+
                 if attr.varType != orange.VarTypes.Discrete:
                     newattrs.append(attr)
                     continue
-
+                
                 if self.removeValues:
                     newattr = orange.RemoveUnusedValues(attr, self.data)
                     if not newattr:
@@ -197,7 +203,7 @@ class OWPurgeDomain(OWWidget):
             if not self.classAttr:
                 self.classAttr = "Class is unchanged"
 
-        if self.reducedAttrs or self.removeAttributes or self.resortedAttrs or newclass != klass:
+        if self.reducedAttrs or self.removedAttrs or self.resortedAttrs or newclass != klass:
             newDomain = orange.Domain(newattrs, newclass)
             newData = orange.ExampleTable(newDomain, self.data)
         else:
