@@ -10,6 +10,10 @@ from OWWidget import *
 import OWGUI, orange
 from exceptions import Exception
 
+import warnings
+warnings.filterwarnings("ignore", r"'BayesLearner': invalid conditional probability or no attributes \(the classifier will use apriori probabilities\)", orange.KernelWarning, ".*OWNaiveBayes", 136)
+warnings.filterwarnings("ignore", "'BayesLearner': threshold can only be optimized for binary classes", orange.KernelWarning, ".*OWNaiveBayes", 136)
+
 class OWNaiveBayes(OWWidget):
     settingsList = ["m_estimator.m", "name", "probEstimation", "condProbEstimation", "adjustThreshold", "windowProportion"]
 
@@ -126,12 +130,12 @@ class OWNaiveBayes(OWWidget):
 
 
     def applyData(self):
+        self.error(1)
         if self.data and self.learner:
             try:
                 classifier = self.learner(self.data)
                 classifier.setattr("data", self.data)
                 classifier.name = self.name
-                self.error(1)
             except Exception, (errValue):
                 classifier = None
                 self.error(1, "Naive Bayes error: " + str(errValue))
@@ -153,7 +157,7 @@ class OWNaiveBayes(OWWidget):
                              ("Conditional probability", self.condEstMethods[self.condProbEstimation][0]),
                              self.mwidget.box.isEnabled and ("m for m-estimate", "%.1f" % self.m_estimator.m),
                              ("LOESS window size", "%.1f" % self.windowProportion),
-                             ("Number of points in LOESS", "%i" % self.loessPoints)
+                             ("Number of points in LOESS", "%i" % self.loessPoints),
                              ("Adjust classification threshold", OWGUI.YesNo[self.adjustThreshold])
                             ])
         self.finishReport()
