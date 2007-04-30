@@ -62,7 +62,7 @@ class OWAttributeStatistics(OWWidget):
         
 
     def resizeEvent(self, event):
-        if self.canvas and self.HighlightedAttribute>=0:
+        if self.canvas and self.data and self.HighlightedAttribute>=0:
             # canvas height should be a bit less than the height of the widget frame
             self.ch = self.height()-20
             self.canvas = DisplayStatistics (self.cw, self.ch)
@@ -88,7 +88,7 @@ class OWAttributeStatistics(OWWidget):
         
         self.attributes.clear()
         if data==None:
-            self.dataset = None
+            self.dataset = self.dist = None
             self.canvasview.hide()
         else:
             self.canvasview.show()
@@ -121,6 +121,9 @@ class DisplayStatistics (QCanvas):
         self.vbias, self.hbias = 60, 200
 
     def displayStat(self, data, ind, dist):
+        if not data:
+            return
+        
         attr = data.domain[ind]
         attr_name = QCanvasText (attr.name, self)
         attr_name.move(10, 10)
