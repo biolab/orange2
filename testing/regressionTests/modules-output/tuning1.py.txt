@@ -9,7 +9,7 @@
 *** Optimal parameter: minSubset = 4
 Optimal setting:  4
 *** orngWrap  1: [0.9782347670250896]:
-*** orngWrap  2: [0.98062500000000008]:
+*** orngWrap  2: [0.98055555555555562]:
 *** orngWrap  3: [0.98620743727598559]:
 *** orngWrap  4: [0.99153673835125455]:
 *** orngWrap  5: [0.98888888888888882]:
@@ -89,7 +89,7 @@ Optimal setting:  4
 *** orngWrap  15: [0.9903830645161289]:
 *** orngWrap  20: [0.99143145161290303]:
 *** Optimal parameter: minSubset = 10
-*** orngWrap  1: [0.97126792114695348]:
+*** orngWrap  1: [0.97196236559139793]:
 *** orngWrap  2: [0.9737051971326165]:
 *** orngWrap  3: [0.9743705197132615]:
 *** orngWrap  4: [0.98385080645161282]:

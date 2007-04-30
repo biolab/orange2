@@ -46,14 +46,14 @@ AUC (voting)
 
 AUC for vehicle using weighted single-out method
 bayes	tree	majority
-0.841	0.810	0.500
+0.841	0.811	0.500
 
 AUC for vehicle, using different methods
                            	bayes	tree	majority
-       by pairs, weighted: 	0.860	0.880	0.500
-                 by pairs: 	0.861	0.882	0.500
-    one vs. all, weighted: 	0.841	0.810	0.500
-              one vs. all: 	0.841	0.810	0.500
+       by pairs, weighted: 	0.860	0.881	0.500
+                 by pairs: 	0.861	0.883	0.500
+    one vs. all, weighted: 	0.841	0.811	0.500
+              one vs. all: 	0.841	0.811	0.500
 
 AUC for detecting class 'van' in 'vehicle'
 0.922	0.922	0.500
@@ -61,8 +61,8 @@ AUC for detecting class 'van' in 'vehicle'
 AUCs for detecting various classes in 'vehicle'
 bus (218.000) vs others: 	0.956	0.933	0.500
 van (199.000) vs others: 	0.922	0.922	0.500
-saab (217.000) vs others: 	0.739	0.690	0.500
-opel (212.000) vs others: 	0.749	0.694	0.500
+saab (217.000) vs others: 	0.739	0.693	0.500
+opel (212.000) vs others: 	0.749	0.697	0.500
 
 	bus	van	saab
 van	0.989
@@ -75,7 +75,7 @@ saab vs bus: 	0.928	0.935	0.500
 saab vs van: 	0.855	0.924	0.500
 opel vs bus: 	0.925	0.937	0.500
 opel vs van: 	0.895	0.925	0.500
-opel vs saab: 	0.576	0.591	0.500
+opel vs saab: 	0.576	0.596	0.500
 
 AUC and SE for voting
 bayes: 0.933+-0.021
