@@ -409,7 +409,7 @@ class ClassValuesContextHandler(ContextHandler):
 class PerfectDomainContextHandler(DomainContextHandler):
     def __init__(self, contextName = "", fields = [],
                  syncWithGlobal = True, maxAttributesToPickle = 100, matchValues = 0, **args):
-        DomainContextHandler.__init__(self, contextName, fields, False, False, False, syncWithGlobal, **args)
+        DomainContextHandler.__init__(self, contextName, fields, False, False, False, syncWithGlobal, maxAttributesToPickle = maxAttributesToPickle, matchValues = matchValues, **args)
 
         
     def encodeDomain(self, domain):
@@ -418,7 +418,7 @@ class PerfectDomainContextHandler(DomainContextHandler):
                          for attr in domain])
             classVar = domain.classVar
             if classVar:
-                classVar = classVar.name, classVar.varType != orange.VarType.Discrete and classVar.varType or classVar.values
+                classVar = classVar.name, classVar.varType != orange.VarTypes.Discrete and classVar.varType or classVar.values
             metas = dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
                          for attr in domain.getmetas().values()])
         else:
