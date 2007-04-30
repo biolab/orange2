@@ -35,8 +35,8 @@ DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList", true, OR
 
 bool c45Loaded = false;
 
-typedef void *learnFunc(char gainRatio, char subset, char batch, char probThresh,
-                       int trials, int minObjs, int window, int increment, float cf, char prune);
+typedef void *learnFunc(int trials, char gainRatio, char subset, char batch, char probThresh,
+                       int minObjs, int window, int increment, float cf, char prune);
 typedef void garbageFunc();
 
 learnFunc *c45learn;
@@ -456,6 +456,10 @@ bool TC45Learner::convertParameters()
 PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
 {   if (!gen->domain->classVar)
       raiseError("class-less domain");
+    if (!gen->numberOfExamples())
+      raiseError("no examples");
+    if (!gen->domain->attributes->size())
+      raiseError("no attributes");
  
     convertGenerator(gen);
     Tree tree = (Tree)c45learn(trials, gainRatio, subset, batch, probThresh, minObjs, window, increment, cf, prune);
