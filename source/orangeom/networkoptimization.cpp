@@ -452,10 +452,11 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	return Py_BuildValue("d", graph->temperature);
 }
 
-PyObject *NetworkOptimization_getCoors(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Coors")
+PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> Coors")*/
 {
 	CAST_TO(TNetworkOptimization, graph);	
-	return Py_BuildValue("O", graph->coors);
+	Py_INCREF(graph->coors);
+	return (PyObject *)graph->coors;
 }
 
 PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
@@ -504,7 +505,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 			//cout << line << "  -  " << n << endl;
 			if (n > 0)
 			{
-				if (strcmpi(words[0].c_str(), "*network") == 0)
+				if (stricmp(words[0].c_str(), "*network") == 0)
 				{
 					//cout << "Network" << endl;
 					if (n > 1)
@@ -515,7 +516,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 					else
 						return NULL;
 				}
-				else if (strcmpi(words[0].c_str(), "*vertices") == 0)
+				else if (stricmp(words[0].c_str(), "*vertices") == 0)
 				{
 					//cout << "Vertices" << endl;
 					if (n > 1)
@@ -556,7 +557,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 			{
 				TExample *example = new TExample(domain);
 
-				if ((strcmpi(words[0].c_str(), "*arcs") == 0) || (strcmpi(words[0].c_str(), "*edges") == 0))
+				if ((stricmp(words[0].c_str(), "*arcs") == 0) || (stricmp(words[0].c_str(), "*edges") == 0))
 					break;
 
 				int index = -1;
@@ -572,7 +573,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 				{
 					string label = words[1];
 					//cout << "label: " << label << endl;
-					(*example)[1] = TValue((PSomeValue)TStringValue(label), STRINGVAR);
+					(*example)[1] = TValue(new TStringValue(label), STRINGVAR);
 
 					int i = 2;
 					char *xyz = "  xyz";
@@ -593,21 +594,21 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 					// read attributes
 					while (i < n)
 					{
-						if (strcmpi(words[i].c_str(), "ic") == 0)
+						if (stricmp(words[i].c_str(), "ic") == 0)
 						{
 							if (i + 1 < n) i++; else return NULL;
 
 							//cout << "ic: " << words[i] << endl;
 							(*example)[5] = TValue((PSomeValue)TStringValue(words[i]), STRINGVAR);
 						}
-						else if (strcmpi(words[i].c_str(), "bc") == 0)
+						else if (stricmp(words[i].c_str(), "bc") == 0)
 						{
 							if (i + 1 < n) i++; else return NULL;
 
 							//cout << "bc: " << words[i] << endl;
 							(*example)[6] = TValue((PSomeValue)TStringValue(words[i]), STRINGVAR);
 						}
-						else if (strcmpi(words[i].c_str(), "bw") == 0)
+						else if (stricmp(words[i].c_str(), "bw") == 0)
 						{
 							if (i + 1 < n) i++; else return NULL;
 
@@ -625,7 +626,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 		int n = getWords(line, words);
 		if (n > 0)
 		{
-			if (strcmpi(words[0].c_str(), "*arcs") == 0)
+			if (stricmp(words[0].c_str(), "*arcs") == 0)
 			{
 				while (!file.eof())
 				{
@@ -635,7 +636,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 					//cout << line << "  -  " << n << endl;
 					if (n > 0)
 					{
-						if (strcmpi(words[0].c_str(), "*edges") == 0)
+						if (stricmp(words[0].c_str(), "*edges") == 0)
 							break;
 
 						if (n > 1)
@@ -665,7 +666,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 		n = getWords(line, words);
 		if (n > 0)
 		{
-			if (strcmpi(words[0].c_str(), "*edges") == 0)
+			if (stricmp(words[0].c_str(), "*edges") == 0)
 			{
 				while (!file.eof())
 				{
