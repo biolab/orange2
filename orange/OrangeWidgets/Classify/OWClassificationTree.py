@@ -63,9 +63,9 @@ class OWClassificationTree(OWWidget):
         self.pBox = QVGroupBox(self.controlArea)
         self.pBox.setTitle('Pre-Pruning')
 
-        self.preLeafInstBox, self.preLeafInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Min. instances in leaves: ", 1, 1000, "preLeafInst", "preLeafInstP")
-        self.preNodeInstBox, self.preNodeInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 1000, "preNodeInst", "preNodeInstP", " or fewer instances")
-        self.preNodeMajBox, self.preNodeMajPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 100, "preNodeMaj", "preNodeMajP", "% of majority class")
+        self.preLeafInstBox, self.preLeafInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Min. instances in leaves ", 1, 1000, "preLeafInst", "preLeafInstP")
+        self.preNodeInstBox, self.preNodeInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with less instances than ", 1, 1000, "preNodeInst", "preNodeInstP")
+        self.preNodeMajBox, self.preNodeMajPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with a majority class of (%)", 1, 100, "preNodeMaj", "preNodeMajP")
 
         OWGUI.separator(self.controlArea)
         self.mBox = QVGroupBox(self.controlArea)
@@ -76,8 +76,6 @@ class OWClassificationTree(OWWidget):
 
         OWGUI.separator(self.controlArea)
         self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.setLearner, disabled=0)
-
-        self.resize(100,400)
 
     def setLearner(self):
         if hasattr(self, "btnApply"):
