@@ -599,21 +599,21 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							if (i + 1 < n) i++; else return NULL;
 
 							//cout << "ic: " << words[i] << endl;
-							(*example)[5] = TValue((PSomeValue)TStringValue(words[i]), STRINGVAR);
+							(*example)[5] = TValue(new TStringValue(words[i]), STRINGVAR);
 						}
 						else if (stricmp(words[i].c_str(), "bc") == 0)
 						{
 							if (i + 1 < n) i++; else return NULL;
 
 							//cout << "bc: " << words[i] << endl;
-							(*example)[6] = TValue((PSomeValue)TStringValue(words[i]), STRINGVAR);
+							(*example)[6] = TValue(new TStringValue(words[i]), STRINGVAR);
 						}
 						else if (stricmp(words[i].c_str(), "bw") == 0)
 						{
 							if (i + 1 < n) i++; else return NULL;
 
 							//cout << "bw: " << words[i] << endl;
-							(*example)[7] = TValue((PSomeValue)TStringValue(words[i]), STRINGVAR);
+							(*example)[7] = TValue(new TStringValue(words[i]), STRINGVAR);
 						}
 						i++;
 					}
