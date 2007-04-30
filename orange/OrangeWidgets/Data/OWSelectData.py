@@ -13,29 +13,23 @@ import OWGUI
 
 
 class OWSelectData(OWWidget):
-
-    # loadedConditions and loadedVarNames saved the last conditions, but they failed to show
-    # in the table when they are reloaded!
-    # I removed them; we shall have the context settings doing that some day
-    settingsList = ["updateOnChange", "purgeAttributes", "purgeClasses"]#, "loadedConditions", "loadedVarNames"]
+    settingsList = ["updateOnChange", "purgeAttributes", "purgeClasses"]
+    contextHandlers = {"": PerfectDomainContextHandler(fields = ["Conditions"], matchValues=2)}
 
     def __init__(self, parent = None, signalManager = None, name = "Select data"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
 
-        # set channels
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Matching Examples", ExampleTable, Default), ("Non-Matching Examples", ExampleTable)]
 
-        # manually set member variables
         self.name2var = {}   # key: variable name, item: orange.Variable
         self.Conditions = []
 
-        # handled member variables
         self.currentVar = None
         self.NegateCondition = False
-        self.currentOperatorDict = {orange.VarTypes.Continuous:Operator(Operator.operatorsC[0], orange.VarTypes.Continuous),
-                                    orange.VarTypes.Discrete:Operator(Operator.operatorsD[0],orange.VarTypes.Discrete),
-                                    orange.VarTypes.String:Operator(Operator.operatorsS[0], orange.VarTypes.String)}
+        self.currentOperatorDict = {orange.VarTypes.Continuous: Operator(Operator.operatorsC[0], orange.VarTypes.Continuous),
+                                    orange.VarTypes.Discrete: Operator(Operator.operatorsD[0],orange.VarTypes.Discrete),
+                                    orange.VarTypes.String: Operator(Operator.operatorsS[0], orange.VarTypes.String)}
         self.Num1 = 0.0
         self.Num2 = 0.0
         self.Str1 = ""
@@ -47,18 +41,15 @@ class OWSelectData(OWWidget):
         self.purgeClasses = True
         self.oldPurgeClasses = True
 
-        # load settings
         self.loadedVarNames = []
         self.loadedConditions = []
         self.loadSettings()
 
-        # GUI
         self.mainArea.setFixedWidth(0)
         ca=QFrame(self.controlArea)
         ca.adjustSize()
         gl=QGridLayout(ca,4,3,5)
 
-        # attribute condition box
         boxAttrCond = QVGroupBox('Attribute Condition', ca)
         gl.addMultiCellWidget(boxAttrCond, 0,0,0,2)
         frmAttrCond = QFrame(boxAttrCond)
@@ -68,7 +59,6 @@ class OWSelectData(OWWidget):
         glac.setColStretch(1,1)
         glac.setColStretch(2,2)
 
-        # attributes
         boxAttr = QVGroupBox(frmAttrCond)
         glac.addWidget(boxAttr,0,0)
         boxAttr.setTitle('Attribute')
@@ -80,7 +70,6 @@ class OWSelectData(OWWidget):
         self.leSelect = QLineEdit(sbox)
         self.connect(self.leSelect, SIGNAL('textChanged(const QString &)'), self.setLbAttr)
 
-        # operators
         boxOper = QVGroupBox('Operator', frmAttrCond)
         # operators 0: empty
         self.lbOperatosNone = QListBox(boxOper, 'SelAttr')
@@ -106,11 +95,11 @@ class OWSelectData(OWWidget):
                                 orange.VarTypes.Continuous: self.lbOperatorsC,
                                 orange.VarTypes.Discrete: self.lbOperatorsD,
                                 orange.VarTypes.String: self.lbOperatorsS}
-        # NOT checkbox
+
         glac.addWidget(boxOper,0,1)
         self.cbNot = OWGUI.checkBox(boxOper, self, "NegateCondition", "NOT")
 
-        # values
+
         self.valuesStack = QWidgetStack(frmAttrCond)
         glac.addWidget(self.valuesStack,0,2)
         # values 0: empty
@@ -140,7 +129,6 @@ class OWSelectData(OWWidget):
         self.leStr2 = OWGUI.lineEdit(boxVal, self, "Str2")
         self.cbCaseSensitive = OWGUI.checkBox(boxVal, self, "CaseSensitive", "Case sensitive")
 
-        # buttons Add, Update, Remove, Disjunction, Up, Down
         self.boxButtons = QHBox(ca)
         gl.addMultiCellWidget(self.boxButtons, 1,1,0,2)
         self.btnNew = OWGUI.button(self.boxButtons, self, "Add", self.OnNewCondition)
@@ -154,7 +142,7 @@ class OWSelectData(OWWidget):
         self.btnMoveUp.setEnabled(False)
         self.btnMoveDown.setEnabled(False)
 
-        # data selection criteria
+
         boxCriteria = QVGroupBox(ca)
         boxCriteria.setTitle('Data Selection Criteria')
         gl.addMultiCellWidget(boxCriteria, 2,2,0,2)
@@ -172,21 +160,18 @@ class OWSelectData(OWWidget):
         self.criteriaTable.adjustColumn(0)
         self.criteriaTable.setColumnWidth(1, 360)
 
-        # data in
         boxDataIn = QVGroupBox(ca)
         boxDataIn.setTitle('Data In')
         gl.addWidget(boxDataIn, 3,0)
         self.dataInExamplesLabel = OWGUI.widgetLabel(boxDataIn, "num examples")
         self.dataInAttributesLabel = OWGUI.widgetLabel(boxDataIn, "num attributes")
 
-        # data out
         boxDataOut = QVGroupBox(ca)
         boxDataOut.setTitle('Data Out')
         gl.addWidget(boxDataOut, 3,1)
         self.dataOutExamplesLabel = OWGUI.widgetLabel(boxDataOut, "num examples")
         self.dataOutAttributesLabel = OWGUI.widgetLabel(boxDataOut, "num attributes")
 
-        # update
         boxSettings = QVGroupBox(ca)
         boxSettings.setTitle('Update')
         gl.addWidget(boxSettings, 3,2)
@@ -195,7 +180,6 @@ class OWSelectData(OWWidget):
         OWGUI.checkBox(boxSettings, self, "updateOnChange", "Update on any change", box=None)
         btnUpdate = OWGUI.button(boxSettings, self, "Update", self.setOutput)
 
-        # icons
         self.icons = self.createAttributeIconDict()
         self.setData(None)
         self.lbOperatorsD.setCurrentItem(0)
@@ -204,65 +188,40 @@ class OWSelectData(OWWidget):
         self.resize(500,661)
 
 
-    ############################################################################################################################################################
-    ## Data input and output management ########################################################################################################################
-    ############################################################################################################################################################
-
     def setData(self, data):
-        """Loads stored conditions (if we have a similar domain), updates list boxes and data in info, sends out data.
-        """
+        self.closeContext("")
         self.data = data
         self.bas = orange.DomainBasicAttrStat(data)
+        self.name2var = {}
+        self.Conditions = []
+
         if self.data:
-            # set self.name2var
             optmetas = self.data.domain.getmetas(True).values()
             optmetas.sort(lambda x,y: cmp(x.name, y.name))
             self.varList = self.data.domain.variables.native() + self.data.domain.getmetas(False).values() + optmetas
-            varNames = []
             for v in self.varList:
                 self.name2var[v.name] = v
-                varNames.append(v.name)
-            if varNames == self.loadedVarNames:
-                if self.Conditions == []:
-                    self.Conditions = self.loadedConditions
-            else:
-                self.loadedVarNames = varNames
-
-                # clear conditions and criteria table
-                self.Conditions = []
-                for row in range(self.criteriaTable.numRows()-1,-1,-1):
-                    self.criteriaTable.clearCellWidget(row,0)
-                    self.criteriaTable.clearCell(row,1)
-                    self.criteriaTable.hideRow(row)
-                self.criteriaTable.setNumRows(0)
-
             self.setLbAttr()
-
-            self.criteriaTable.setCurrentCell(-1,1)
             self.boxButtons.setEnabled(True)
-
         else:
-            self.name2var = {}
             self.varList = []
-            self.Conditions = []
+            self.currentVar = None
+            
             self.lbAttr.clear()
             self.leSelect.clear()
-            self.currentVar = None
-            for row in range(self.criteriaTable.numRows()-1,-1,-1):
-                self.criteriaTable.clearCellWidget(row,0)
-                self.criteriaTable.clearCell(row,1)
-                self.criteriaTable.hideRow(row)
-            self.criteriaTable.setNumRows(0)
-            self.criteriaTable.setCurrentCell(-1,1)
             self.boxButtons.setEnabled(False)
-        # update operators, values and info, and send out data
+
+        self.openContext("", data)
+        self.synchronizeTable()
+        self.criteriaTable.setCurrentCell(-1,1)
+        
         self.updateOperatorStack()
         self.updateValuesStack()
         self.updateInfoIn(self.data)
         self.setOutput()
 
+
     def setLbAttr(self, filter=None):
-        # update attribute listbox
         self.lbAttr.clear()
         if not filter:
             for v in self.varList:
@@ -279,9 +238,11 @@ class OWSelectData(OWWidget):
             self.lbAttrChange()
 
 
+    def setOutputIf(self):
+        if self.updateOnChange:
+            self.setOutput()
+
     def setOutput(self):
-        """Sends out data, updates data out info.
-        """
         matchingOutput = self.data
         nonMatchingOutput = None
         hasClass = False
@@ -324,19 +285,10 @@ class OWSelectData(OWWidget):
                 fdList.append([])
             elif cond.enabled or not enabledOnly:
                 fdList[-1].append(cond.operator.getFilter(domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive))
-##        # remove the first list if empty
-##        if len(fdList) > 1 and len(fdList[0]) == 0:
-##            fdList.pop(0)
         return fdList
 
 
-    ############################################################################################################################################################
-    ## Callback handlers ###################################################################################################################################
-    ############################################################################################################################################################
-
     def lbAttrChange(self):
-        """Updates operator listBox and value stack, only if necesarry.
-        """
         text = str(self.lbAttr.currentText())
         prevVar = self.currentVar
         if prevVar:
@@ -363,7 +315,7 @@ class OWSelectData(OWWidget):
         """
         if self.currentVar:
             varType = self.currentVar.varType
-            self.currentOperatorDict[varType] = Operator(self.lbOperatorsDict[varType].currentText(), varType)
+            self.currentOperatorDict[varType] = Operator(str(self.lbOperatorsDict[varType].currentText()), varType)
             self.updateValuesStack()
 
 
@@ -374,29 +326,6 @@ class OWSelectData(OWWidget):
         for i in range(0, self.lbVals.count()):
             if self.lbVals.isSelected(i):
                 self.currentVals.append(str(self.lbVals.text(i)))
-
-
-    def OnNewCondition(self):
-        """Updates conditions and condition table, sends out new data.
-        """
-        # update self.Conditions
-        row = self.criteriaTable.currentRow()
-        if row == self.criteriaTable.numRows():
-            row -= 1
-        cond = self.getCondtionFromSelection()
-        if not cond:
-            return
-        self.Conditions.insert(row+1, cond)
-        # update self.criteriaTable
-        self.insertCriteriaTableRow(cond, row+1)
-        self.updateFilteredDataLens()
-        # enable Update/Remove buttons
-        self.btnUpdate.setEnabled(True)
-        self.btnRemove.setEnabled(True)
-        # send out new data
-        if self.updateOnChange:
-            self.setOutput()
-        self.leSelect.clear()
 
 
     def OnPurgeChange(self):
@@ -413,26 +342,30 @@ class OWSelectData(OWWidget):
         if self.updateOnChange:
             self.setOutput()
 
+
+    def OnNewCondition(self):
+        cond = self.getConditionFromSelection()
+        if not cond:
+            return
+
+        where = min(self.criteriaTable.currentRow() + 1, self.criteriaTable.numRows())
+        self.Conditions.insert(where, cond)
+        self.synchronizeTable()
+        self.criteriaTable.setCurrentCell(where, 1)
+        self.setOutputIf()
+        self.leSelect.clear()
+
+
     def OnUpdateCondition(self):
-        """Calls remove and insert.
-        TODO: sends out data twice - fix that!
-        """
-        # update self.Conditions
         row = self.criteriaTable.currentRow()
         if row < 0:
             return
-        cond = self.getCondtionFromSelection()
+        cond = self.getConditionFromSelection()
         if not cond:
             return
         self.Conditions[row] = cond
-        # update self.criteriaTable
-        self.criteriaTable.clearCellWidget(row, 0)
-        self.criteriaTable.clearCell(row, 1)
-        self.putContitionToTable(row, cond)
-        self.updateFilteredDataLens()
-        # send out new data
-        if self.updateOnChange:
-            self.setOutput()
+        self.synchronizeTable()
+        self.setOutputIf()
         self.leSelect.clear()
 
 
@@ -444,49 +377,20 @@ class OWSelectData(OWWidget):
         if currRow < 0:
             return
         self.Conditions.pop(currRow)
-        # update self.criteriaTable
-        numRows = self.criteriaTable.numRows()
-        for r in range(currRow, numRows - 1):
-            self.criteriaTable.swapRows(r+1,r)
-            self.criteriaTable.updateCell(r, 0)
-            self.criteriaTable.updateCell(r, 1)
-        for c in range(2):
-            self.criteriaTable.clearCellWidget(numRows-1, 0)
-            self.criteriaTable.clearCell(numRows-1, 1)
-        self.criteriaTable.hideRow(numRows - 1)
-        self.criteriaTable.setNumRows(numRows - 1)
-        if currRow == numRows - 1:
-            self.criteriaTable.setCurrentCell(currRow-1,1)
-        else:
-            self.criteriaTable.setCurrentCell(currRow,1)
-        self.updateFilteredDataLens()
-        # disable Update/Remove buttons
-        if len(self.Conditions) == 0:
-            self.btnUpdate.setEnabled(False)
-            self.btnRemove.setEnabled(False)
-        # send out new data
-        if self.updateOnChange:
-            self.setOutput()
+        self.synchronizeTable()
+        self.criteriaTable.setCurrentCell(min(currRow, self.criteriaTable.numRows()-1), 1)
+        self.setOutputIf()
 
 
     def OnDisjunction(self):
         """Updates conditions and condition table, sends out new data.
         """
         # update self.Conditions
-        row = self.criteriaTable.currentRow()
-        if row == self.criteriaTable.numRows():
-            row -= 1
-        cond = Condition(True, "OR")
-        self.Conditions.insert(row+1, cond)
-        # update self.criteriaTable
-        self.insertCriteriaTableRow(cond, row+1)
-        self.updateFilteredDataLens()
-        # enable Update/Remove buttons
-        self.btnUpdate.setEnabled(True)
-        self.btnRemove.setEnabled(True)
-        # send out new data
-        if self.updateOnChange:
-            self.setOutput()
+        where = min(self.criteriaTable.currentRow() + 1, self.criteriaTable.numRows())
+        self.Conditions.insert(where, Condition(True, "OR"))
+        self.criteriaTable.setCurrentCell(where, 1)
+        self.synchronizeTable()
+        self.setOutputIf()
 
 
     def btnMoveUpClicked(self):
@@ -497,17 +401,8 @@ class OWSelectData(OWWidget):
         if currRow < 1 or currRow >= numRows:
             return
         self.Conditions = self.Conditions[:currRow-1] + [self.Conditions[currRow], self.Conditions[currRow-1]] + self.Conditions[currRow+1:]
-        self.criteriaTable.swapRows(currRow, currRow-1)
-        self.criteriaTable.setCurrentCell(currRow-1,1)
-        self.criteriaTable.updateCell(currRow, 0)
-        self.criteriaTable.updateCell(currRow, 1)
-        self.criteriaTable.updateCell(currRow-1, 0)
-        self.criteriaTable.updateCell(currRow-1, 1)
-        self.updateFilteredDataLens()
-        self.updateMoveButtons()
-        # send out new data
-        if self.updateOnChange:
-            self.setOutput()
+        self.synchronizeTable()
+        self.setOutputIf()
 
 
     def btnMoveDownClicked(self):
@@ -518,17 +413,8 @@ class OWSelectData(OWWidget):
         if currRow < 0 or currRow >= numRows-1:
             return
         self.Conditions = self.Conditions[:currRow] + [self.Conditions[currRow+1], self.Conditions[currRow]] + self.Conditions[currRow+2:]
-        self.criteriaTable.swapRows(currRow, currRow+1)
-        self.criteriaTable.setCurrentCell(currRow+1,1)
-        self.criteriaTable.updateCell(currRow, 0)
-        self.criteriaTable.updateCell(currRow, 1)
-        self.criteriaTable.updateCell(currRow+1, 0)
-        self.criteriaTable.updateCell(currRow+1, 1)
-        self.updateFilteredDataLens()
-        self.updateMoveButtons()
-        # send out new data
-        if self.updateOnChange:
-            self.setOutput()
+        self.synchronizeTable()
+        self.setOutputIf()
 
 
     def currentCriteriaChange(self, row, col):
@@ -704,20 +590,7 @@ class OWSelectData(OWWidget):
             self.valuesStack.raiseWidget(0)
 
 
-    def insertCriteriaTableRow(self, cond, row):
-        """Inserts condition at the given row.
-        """
-        numRows = self.criteriaTable.numRows()
-        self.criteriaTable.setNumRows(numRows + 1)
-        for r in range(numRows, row, -1):
-            self.criteriaTable.swapRows(r-1,r)
-            self.criteriaTable.updateCell(r, 0)
-            self.criteriaTable.updateCell(r, 1)
-        self.putContitionToTable(row, cond)
-        self.criteriaTable.setCurrentCell(row,1)
-
-
-    def getCondtionFromSelection(self):
+    def getConditionFromSelection(self):
         """Returns a condition according to the currently selected attribute / operator / values.
         """
         if self.currentVar.varType == orange.VarTypes.Continuous:
@@ -736,52 +609,66 @@ class OWSelectData(OWWidget):
         return Condition(True, "AND", self.currentVar.name, self.currentOperatorDict[self.currentVar.varType], self.NegateCondition, val1, val2, self.CaseSensitive)
 
 
-    def putContitionToTable(self, row, cond):
-        """Writes out the condition to the given row in a criteria table.
-        """
-        # column 0 getFilter(self, domain, variable, value1, value2, negate, caseSensitive)
-        if cond.type == "OR":
-            cw = QLabel("", self)
-        else:
-            cw = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
-            cw.setChecked(cond.enabled)
-            self.connect(cw, SIGNAL("toggled(bool)"), lambda val: self.criteriaActiveChange(cond, val))
-        self.criteriaTable.setCellWidget(row, 0, cw)
-        # column 1
-        if cond.type == "OR":
-            txt = "OR"
-        else:
-            txt = ""
-            if cond.negated:
-                txt += "NOT "
-            txt += cond.varName + " " + str(cond.operator) + " "
-            if cond.operator != Operator.operatorDef:
-                if cond.operator.varType == orange.VarTypes.Discrete:
-                    if cond.operator.isInterval:
-                        if len(cond.val1) > 0:
-                            txt += "["
-                            for name in cond.val1:
-                                txt += "%s, " % name
-                            txt = txt[0:-2] + "]"
+    def synchronizeTable(self):
+        for row in range(len(self.Conditions), self.criteriaTable.numRows()):
+            self.criteriaTable.clearCellWidget(row,0)
+            self.criteriaTable.clearCell(row,1)
+            
+        self.criteriaTable.setNumRows(len(self.Conditions))
+
+        for row, cond in enumerate(self.Conditions):
+            if cond.type == "OR":
+                cw = QLabel("", self)
+            else:
+                cw = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
+                cw.setChecked(cond.enabled)
+                self.connect(cw, SIGNAL("toggled(bool)"), lambda val: self.criteriaActiveChange(cond, val))
+
+            self.criteriaTable.setCellWidget(row, 0, cw)
+
+            # column 1
+            if cond.type == "OR":
+                txt = "OR"
+            else:
+                txt = ""
+                if cond.negated:
+                    txt += "NOT "
+                txt += cond.varName + " " + str(cond.operator) + " "
+                if cond.operator != Operator.operatorDef:
+                    if cond.operator.varType == orange.VarTypes.Discrete:
+                        if cond.operator.isInterval:
+                            if len(cond.val1) > 0:
+                                txt += "["
+                                for name in cond.val1:
+                                    txt += "%s, " % name
+                                txt = txt[0:-2] + "]"
+                            else:
+                                txt += "[]"
                         else:
-                            txt += "[]"
-                    else:
-                        txt += cond.val1[0]
-                elif cond.operator.varType == orange.VarTypes.String:
-                    if cond.caseSensitive:
-                        cs = " (C)"
-                    else:
-                        cs = ""
-                    if cond.operator.isInterval:
-                        txt += "'%s'%s and '%s'%s" % (cond.val1, cs, cond.val2, cs)
-                    else:
-                        txt += "'%s'%s" % (cond.val1, cs)
-                elif cond.operator.varType == orange.VarTypes.Continuous:
-                    if cond.operator.isInterval:
-                        txt += str(cond.val1) + " and " + str(cond.val2)
-                    else:
-                        txt += str(cond.val1)
-        OWGUI.tableItem(self.criteriaTable, row, 1, txt , editType=QTableItem.Never)
+                            txt += cond.val1[0]
+                    elif cond.operator.varType == orange.VarTypes.String:
+                        if cond.caseSensitive:
+                            cs = " (C)"
+                        else:
+                            cs = ""
+                        if cond.operator.isInterval:
+                            txt += "'%s'%s and '%s'%s" % (cond.val1, cs, cond.val2, cs)
+                        else:
+                            txt += "'%s'%s" % (cond.val1, cs)
+                    elif cond.operator.varType == orange.VarTypes.Continuous:
+                        if cond.operator.isInterval:
+                            txt += str(cond.val1) + " and " + str(cond.val2)
+                        else:
+                            txt += str(cond.val1)
+                            
+            OWGUI.tableItem(self.criteriaTable, row, 1, txt , editType=QTableItem.Never)
+        
+        self.updateFilteredDataLens()
+
+        en = len(self.Conditions)
+        self.btnUpdate.setEnabled(en)
+        self.btnRemove.setEnabled(en)
+        self.updateMoveButtons()
 
 
     def updateFilteredDataLens(self, cond=None):
@@ -810,6 +697,7 @@ class OWSelectData(OWWidget):
                 self.criteriaTable.cellWidget(idx1-1,0).setText(str(len(orange.Filter_conjunction(fdListEnabled[0])(self.data))))
             # update the clicked row
             self.criteriaTable.cellWidget(condIdx,0).setText(str(len(fdListAll[0][condIdx-idx1](self.data))))
+            
         elif len(self.Conditions) > 0:
             # update all "OR" rows
             fdList = self.getFilterList(self.data.domain, self.Conditions, enabledOnly=True)
