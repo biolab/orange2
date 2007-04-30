@@ -43,6 +43,10 @@ using namespace std;
 
 inline float sqr(const float &f1) { return f1*f1; }
 
+#ifdef __GNUC__
+#define stricmp strcasecmp
+#endif
+
 typedef vector<string> TIdList;
 
 #define ILLEGAL_INT numeric_limits<int>::min()
