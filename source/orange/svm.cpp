@@ -3580,6 +3580,13 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 
 	model=svm_train(&prob,&param);
 
+  if (!model->nSV) {
+  	svm_destroy_model(model);
+    if (x_space)
+      free(x_space);
+      raiseError("LibSVM returned no support vectors");
+  }
+  
 	//cout<<"end training"<<endl;
 	svm_destroy_param(&param);
 	free(prob.y);
