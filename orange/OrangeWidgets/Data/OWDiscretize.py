@@ -578,7 +578,10 @@ class OWDiscretize(OWWidget):
 
         self.data = self.originalData
         if continuousClass:
-            self.discretizeClass()
+            if not self.discretizeClass():
+                self.data = self.discClassData = None
+                self.warning(0)
+                self.error(0, "Cannot discretize the class")
         else:
             self.data = self.originalData
             self.discClassData = None
@@ -606,8 +609,8 @@ class OWDiscretize(OWWidget):
 
             self.graph.setData(None, self.data)
             self.openContext("", data)
-            if self.classDiscretization == 2:
-                self.discretizeClass()
+#            if self.classDiscretization == 2:
+#                self.discretizeClass()
 
             # Prevent entropy discretization with non-discrete class
             if not haveClass:
@@ -956,12 +959,14 @@ class OWDiscretize(OWWidget):
                 self.classIntervalsLabel.setText("Current splits: " + ", ".join([str(classVar(x)) for x in discretizer.getValueFrom.transformer.points]))
                 self.error(0)
                 self.warning(0)
+                return True
             except:
                 if self.data:
                     self.warning(0, "Cannot discretize the class; using previous class")
                 else:
                     self.error(0, "Cannot discretize the class")
                 self.classIntervalsLabel.setText("")
+                return False
 
 
     def classCustomChanged(self):
@@ -1049,9 +1054,11 @@ class OWDiscretize(OWWidget):
 
             newdata = orange.ExampleTable(newdomain, self.originalData)
             self.send("Examples", newdata)
-        elif self.discClassData:
+
+        elif self.discClassData and self.outputOriginalClass:
             self.send("Examples", self.discClassData)
-        elif self.originalData:  # no continuous attributes...
+            
+        elif self.originalData and not (self.originalData.domain.classVar and self.originalData.domain.classVar.varType == orange.VarTypes.Continuous and not self.discClassData):  # no continuous attributes...
             self.send("Examples", self.originalData)
         else:
             self.send("Examples", None)

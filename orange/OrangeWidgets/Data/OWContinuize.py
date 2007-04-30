@@ -120,10 +120,14 @@ class OWContinuize(OWWidget):
             conzer.zeroBased = self.zeroBased
             conzer.continuousTreatment = self.continuousTreatment
             conzer.multinomialTreatment = self.multinomialTreats[self.multinomialTreatment][1]
-            if self.classTreatment == 3 and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+            classVar = self.data.domain.classVar
+            if self.classTreatment == 3 and classVar and classVar.varType == orange.VarTypes.Discrete and len(classVar.values) >= 2:
                 domain = conzer(self.data, 0, self.targetValue)
             else:
-                conzer.classTreatment = self.classTreats[self.classTreatment][1]
+                if classVar and (classVar.varType != orange.VarTypes.Discrete or len(classVar.values) >= 2):
+                    conzer.classTreatment = self.classTreats[self.classTreatment][1]
+                else:
+                    conzer.classTreatment = orange.DomainContinuizer.Ignore
                 domain = conzer(self.data)
             self.send("Examples", orange.ExampleTable(domain, self.data))
         self.dataChanged = False
