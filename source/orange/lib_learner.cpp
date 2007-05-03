@@ -1095,12 +1095,12 @@ PyObject *SVMClassifier__reduce__(PyObject* self)
     if (svm_save_model_alt(buf, svm->getModel())){
         printf("error saving svm model");
     }
-    return Py_BuildValue("O(OOOOs)N", getExportedFunction("__pickleLoaderSVMClassifier"),
+    return Py_BuildValue("O(OOOOOs)N", getExportedFunction("__pickleLoaderSVMClassifier"),
                                     self->ob_type,
                                     WrapOrange(svm->classVar),
                                     WrapOrange(svm->examples),
                                     WrapOrange(svm->supportVectors),
-                                    //WrapOrange(svm->kernelFunc),
+                                    WrapOrange(svm->kernelFunc),
                                     buf.c_str(),
                                     packOrangeDictionary(self));
   PyCATCH
@@ -1109,15 +1109,15 @@ PyObject *SVMClassifier__reduce__(PyObject* self)
 PyObject *__pickleLoaderSVMClassifier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_data)")
 {
   PyTRY
-    PyTypeObject *type;
+    PyTypeObject* type;
     PVariable var;
     PExampleTable examples;
     PExampleTable supportVectors;
-    PKernelFunc kernel;
+    PyObject* kernel;
     char *pbuf;
     int bufSize;
-    if (!PyArg_ParseTuple(args, "OO&O&O&s#:__pickleLoaderSVMClassifier", &type, cc_Variable, &var,
-        cc_ExampleTable, &examples, cc_ExampleTable, &supportVectors, /*cc_KernelFunc, &kernel,*/  &pbuf, &bufSize))
+    if (!PyArg_ParseTuple(args, "OO&O&O&Os#:__pickleLoaderSVMClassifier", &type, cc_Variable, &var,
+        cc_ExampleTable, &examples, cc_ExampleTable, &supportVectors, &kernel, &pbuf, &bufSize))
         return NULL;
     //TCharBuffer buf(pbuf);
     string buf(pbuf);
@@ -1125,10 +1125,10 @@ PyObject *__pickleLoaderSVMClassifier(PyObject *, PyObject *args) PYARGS(METH_VA
     svm_model *model=svm_load_model_alt(buf);
 
     if (!model)
-        return NULL;
+        raiseError("Error building LibSVM model");
     model->param.learner=NULL;
     PSVMClassifier svm=mlnew TSVMClassifier(var, examples, model, NULL);
-    svm->kernelFunc=kernel;
+    svm->kernelFunc=(TKernelFunc*)((TGCCounter*)kernel)->ptr;
     svm->supportVectors=supportVectors;
     return WrapOrange(svm);
   PyCATCH
