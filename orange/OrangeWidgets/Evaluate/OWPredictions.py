@@ -9,6 +9,7 @@
 from qttable import *
 from OWWidget import *
 import OWGUI
+import statc
 
 ##############################################################################
 
@@ -24,60 +25,91 @@ class colorItem(QTableItem):
 ##############################################################################
 
 class OWPredictions(OWWidget):
-    settingsList = ["ShowProb", "ShowClass", "ShowTrueClass",
-                    "ShowAttributeMethod", "sendDataType", "commitOnChange"]
+    settingsList = ["showProb", "showClass",
+                    "ShowAttributeMethod", "sendDataType", "sendOnChange",
+                    "sendPredictions", "sendSelection", "classvalues",
+                    "rbest", "rpercentile"]
 
     def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Classifications")
+        OWWidget.__init__(self, parent, signalManager, "Predictions")
 
         self.callbackDeposit = []
         self.inputs = [("Examples", ExampleTable, self.setData),("Classifiers", orange.Classifier, self.setClassifier, Multiple)]
-        self.outputs = [("Selected Examples", ExampleTable)]
+        self.outputs = [("Predictions", ExampleTable), ("Selected Examples", ExampleTable)]
         self.classifiers = {}
 
         # saveble settings
-        self.ShowProb = 1; self.ShowClass = 1; self.ShowTrueClass = 0
+        self.showProb = 1; self.showClass = 1
         self.ShowAttributeMethod = 0
-        self.sendDataType = 0; self.commitOnChange = 1
+        self.sendDataType = 0; self.sendOnChange = 1
+        self.sendPredictions = 0
+        self.sendSelection = 1
+        self.rbest = 0
         self.loadSettings()
+        self.outvar = None # current output variable (set by the first predictor send in)
 
-        self.freezeAttChange = 0 # 1 to block table update followed by changes in attribute list box
-        self.data=None
+        self.freezeAttChange = 0 # block table update after changes in attribute list box?
+        self.data = None
 
         # GUI - Options
-        self.options = QVButtonGroup("Options", self.controlArea)
-        self.options.setDisabled(1)
-        OWGUI.checkBox(self.options, self, 'ShowProb', "Show predicted probabilities",
+
+        # Options - classification
+        self.copt = QVButtonGroup("Options (classification)", self.controlArea)
+        self.copt.setDisabled(1)
+        OWGUI.checkBox(self.copt, self, 'showProb', "Show predicted probabilities",
                        callback=self.updateTableOutcomes)
 
-        self.lbClasses = QListBox(self.options)
+        self.lbClasses = QListBox(self.copt)
         self.lbClasses.setSelectionMode(QListBox.Multi)
         self.connect(self.lbClasses, SIGNAL("selectionChanged()"), self.updateTableOutcomes)
         
-        OWGUI.checkBox(self.options, self, 'ShowClass', "Show predicted class",
-                       callback=[self.updateTableOutcomes, self.checkenable])
-        self.trueClassCheckBox = OWGUI.checkBox(self.options, self, 'ShowTrueClass',
-                                                "Show true class", callback=self.updateTrueClass, disabled=1)
+        OWGUI.checkBox(self.copt, self, 'showClass', "Show predicted class",
+                       callback=[self.updateTableOutcomes, self.checksendpredictions])
 
+        # Options - regression
+        # self.ropt = QVButtonGroup("Options (regression)", self.controlArea)
+        # OWGUI.checkBox(self.ropt, self, 'showClass', "Show predicted class",
+        #                callback=[self.updateTableOutcomes, self.checksendpredictions])
+        # self.ropt.hide()
+        
         OWGUI.separator(self.controlArea)
-        self.att = QVButtonGroup("Data Attributes", self.controlArea)
+
+        self.att = QVButtonGroup("Data attributes", self.controlArea)
         OWGUI.radioButtonsInBox(self.att, self, 'ShowAttributeMethod', ['Show all', 'Hide all'],
                                 callback=self.updateAttributes)
         self.att.setDisabled(1)
 
         OWGUI.separator(self.controlArea)
-        self.outBox = QVButtonGroup("Output", self.controlArea)
-        OWGUI.radioButtonsInBox(self.outBox, self, 'sendDataType',
-                                ['None', 'Data with class conflict', 'Data with class agreement'],
-                                box='Data Selection',
-                                tooltips=['No data will be sent to the output channel',
-                                          'Send data for which the predicted (and true class, if shown) are different.',
-                                          'Send data for which the predicted (and true class, if shown) match.'],
-                                callback=self.checksenddata)
-        OWGUI.checkBox(self.outBox, self, 'commitOnChange', 'Commit data on any change')
-        self.commitBtn = OWGUI.button(self.outBox, self, "Commit", callback=self.senddata)
+        self.outbox = QVButtonGroup("Output", self.controlArea)
+        
+        self.dsel = OWGUI.checkBox(self.outbox, self, "sendSelection", "Send data selection")
+        # data selection for classification
+        self.csel = OWGUI.radioButtonsInBox(self.outbox, self, 'sendDataType',
+                                ['Examples with class conflict', 'Examples with class agreement'],
+                                box='Data selection',
+                                tooltips=['Data instances with different true and predictied class.',
+                                          'Data instances with matching true and predictied class.'],
+                                callback=self.checksendselection)
+        # data selection for regression
+        self.rsel = QVButtonGroup("Data selection", self.outbox)
+        OWGUI.radioButtonsInBox(self.rsel, self, "rbest", ["Highest variance", "Lowest variance"],
+                                callback = self.checksendselection)
+        hb = OWGUI.widgetBox(self.rsel, orientation = "horizontal")
+        QLabel('Percentiles: ', hb)
+        OWGUI.comboBox(hb, self, "rpercentile",
+                       items = [0.01, 0.02, 0.05, 0.1, 0.2],
+                       sendSelectedValue = 1, valueType = float, callback = self.checksendselection)
 
-        self.outBox.setDisabled(1)
+        self.dsel.disables = [self.csel, self.rsel]
+
+        OWGUI.checkBox(self.outbox, self, 'sendPredictions', "Send predictions",
+                       callback=self.updateTableOutcomes)
+        OWGUI.separator(self.controlArea)
+
+        self.commitBtn = OWGUI.button(self.outbox, self, "Send data", callback=self.senddata)
+        OWGUI.checkBox(self.outbox, self, 'sendOnChange', 'Send automatically')
+
+        self.outbox.setDisabled(1)
 
         # GUI - Table
         self.layout = QVBoxLayout(self.mainArea)
@@ -90,42 +122,50 @@ class OWPredictions(OWWidget):
         self.sortby = -1
 
         self.layout.add(self.table)
-#        self.table.hide()
 
-    # updates the columns associated with the classifiers
+    ##############################################################################
+    # Contents painting
+ 
     def updateTableOutcomes(self):
+        """updates the columns associated with the classifiers"""
         if self.freezeAttChange: # program-based changes should not alter the table immediately
             return
         if not self.data or not self.classifiers:
             return
 
-        attsel = [self.lbClasses.isSelected(i) for i in range(len(self.data.domain.attributes))]
-        showatt = attsel.count(1)
+        classification = None
+        if self.outvar:
+            classification = self.outvar.varType == orange.VarTypes.Discrete
+            if classification:
+                selclass = [self.lbClasses.isSelected(i) for i in range(len(self.data.domain.classVar.values))]
+                showclass = selclass.count(1)
+            else:
+                showclass = 1
+            
         # sindx is the column where these start
         sindx = 1 + len(self.data.domain.attributes) + 1 * (self.data.domain.classVar<>None)
         col = sindx
-        if self.ShowClass or self.ShowProb:
+        if self.showClass or self.showProb:
             for (cid, c) in enumerate(self.classifiers.values()):
-                if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
+                if classification:
+                    for (i, d) in enumerate(self.data):
+                        (cl, p) = c(d, orange.GetBoth)
+
+                        self.classifications[i].append(cl)
+                        if self.showProb and showclass:
+                            s = " : ".join(["%5.3f" % p for (vi,p) in enumerate(p) if selclass[vi]])
+                            if self.showClass: s += " -> "
+                        else:
+                            s = ""
+                        if self.showClass:
+                            s += str(cl)
+                        self.table.setText(self.rindx[i], col, s)
+                else:
                     # regression
                     for (i, d) in enumerate(self.data):
                         cl = c(d)
                         self.classifications[i].append(cl)
                         self.table.setText(self.rindx[i], col, str(cl))
-                else:
-                    # classification
-                    for (i, d) in enumerate(self.data):
-                        (cl, p) = c(d, orange.GetBoth)
-                        self.classifications[i].append(cl)
-                        s = ''
-                        if self.ShowProb and showatt:
-                            s += reduce(lambda x,y: x+' : '+y,
-                                        map(lambda x: "%5.3f"%x[1], filter(lambda x,s=attsel: s[x[0]], enumerate(p))))
-                            if self.ShowClass:
-                                s += ' -> '
-                        if self.ShowClass:
-                            s += str(cl)
-                        self.table.setText(self.rindx[i], col, s)
                 col += 1
         else:
             for i in range(len(self.data)):
@@ -135,19 +175,18 @@ class OWPredictions(OWWidget):
 
         for i in range(sindx, col):
             self.table.adjustColumn(i)
-            if self.ShowClass or self.ShowProb:
+            if self.showClass or self.showProb:
                 self.table.showColumn(i)
             else:
                 self.table.hideColumn(i)
 
     def updateTrueClass(self):
-        if self.classifiers:
-            col = 1+len(self.data.domain.attributes)
-            if self.ShowTrueClass and self.data.domain.classVar:
-                self.table.showColumn(col)
-                self.table.adjustColumn(col)
-            else:
-                self.table.hideColumn(col)
+        col = 1+len(self.data.domain.attributes)
+        if self.data.domain.classVar:
+            self.table.showColumn(col)
+            self.table.adjustColumn(col)
+        else:
+            self.table.hideColumn(col)
 
     def updateAttributes(self):
         if self.ShowAttributeMethod == 0:
@@ -158,13 +197,13 @@ class OWPredictions(OWWidget):
             for i in range(len(self.data.domain.attributes)):
                 self.table.hideColumn(i+1)
 
-    # defines the table and paints its contents
     def setTable(self):
+        """defines the attribute/predictions table and paints its contents"""
         if self.data==None:
             return
 
         self.table.setNumCols(0)
-        self.table.setNumCols(1 + len(self.data.domain.attributes) + (self.ShowTrueClass) + len(self.classifiers))
+        self.table.setNumCols(1 + len(self.data.domain.attributes) + (self.data.domain.classVar <> None) + len(self.classifiers))
         self.table.setNumRows(len(self.data))
 
         # HEADER: set the header (attribute names)
@@ -186,7 +225,6 @@ class OWPredictions(OWWidget):
 
         self.classifications = [[]] * len(self.data)
         if self.data.domain.classVar:
-            # column for the true class
             for i in range(len(self.data)):
                 c = self.data[i].getclass()
                 item = colorItem(self.table, QTableItem.WhenCurrent, str(c))
@@ -214,96 +252,184 @@ class OWPredictions(OWWidget):
         for (i, indx) in enumerate(self.rindx):
             self.vheader.setLabel(i, self.table.item(i,0).text())
 
+    def checkenable(self):
+        # following should be more complicated and depends on what data are we showing
+        cond = len(self.classifiers)
+        self.outbox.setEnabled(cond)
+        self.att.setEnabled(cond)
+        self.copt.setEnabled(cond)
+        e = (self.data and (self.data.domain.classVar <> None) + len(self.classifiers)) >= 2
+        # need at least two classes to compare predictions
+        self.dsel.setEnabled(e)
+        if e and self.sendSelection:
+            self.csel.setEnabled(1)
+            self.rsel.setEnabled(1)
+
     ##############################################################################
     # Input signals
 
-    def setData(self,data):
-        self.data = self.isDataWithClass(data) and data or None
-        if not self.data:
+    def consistenttarget(self, target):
+        """returns TRUE if target is consistent with current predictiors and data"""
+        if self.classifiers:
+            return target == self.classifiers.values()[0]
+        return True
+
+    def setData(self, data):
+        if not data:
+            self.data = data
             self.table.hide()
             self.send("Selected Examples", None)
+            self.send("Predictions", None)
+            self.att.setDisabled(1)
+            self.outbox.setDisabled(1)
         else:
-            if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
-                # regression
-                pass
-            else:
-                lb = self.lbClasses
-                lb.clear()
-                for v in self.data.domain.classVar.values:
-                    lb.insertItem(str(v))
-                self.freezeAttChange = 1
-                for i in range(len(self.data.domain.classVar.values)):
-                    lb.setSelected(i, 1)
-                self.freezeAttChange = 0
-                lb.show()
-                # classification
-
-            if not self.classifiers:
-                self.ShowTrueClass = 1
-
+            vartypes = {1:"discrete", 2:"continuous"}
+            if len(self.classifiers) and data.domain.classVar and data.domain.classVar <> self.outvar:
+                self.warning(id, "Data set %s ignored, inconsistent outcome variables\n%s/%s <> %s/%s (type or variable mismatch)" % (data.name, data.domain.classVar.name, vartypes.get(data.domain.classVar.varType, "?"), self.outvar.name, vartypes.get(self.outvar.varType, "?")))
+                return
+            self.data = data
             self.rindx = range(len(self.data))
             self.setTable()
             self.table.show()
-            self.checkenable()
+            self.checksenddata()
+        self.checkenable()
 
     def setClassifier(self, c, id):
+        """handles incoming classifier (prediction, as could be a regressor as well)"""
         if not c:
             if self.classifiers.has_key(id):
                 del self.classifiers[id]
+                if len(self.classifiers) == 0: self.outvar = None
+            else:
+                self.warning(id, "")
         else:
+            if len(self.classifiers) and c.classVar <> self.outvar:
+                vartypes = {1:"discrete", 2:"continuous"}
+                self.warning(id, "Predictor %s ignored, inconsistent outcome variables\n%s/%s <> %s/%s (type or variable mismatch)" % (c.name, c.classVar.name, vartypes.get(c.classVar.varType, "?"), self.outvar.name, vartypes.get(self.outvar.varType, "?")))
+                return
+            else:
+                self.outvar = c.classVar
             self.classifiers[id] = c
+
+        if len(self.classifiers) == 1 and c:
+            # defines the outcome variable and the type of the problem we are dealing with (regression/classification)
+            self.outvar == c.classVar
+            if self.outvar.varType == orange.VarTypes.Continuous:
+                # regression
+                self.copt.hide(); self.csel.hide(); self.rsel.show()
+            else:
+                # classification
+                self.rsel.hide(); self.copt.show(); self.csel.show()
+                lb = self.lbClasses
+                lb.clear()
+                for v in self.outvar.values:
+                    lb.insertItem(str(v))
+                self.freezeAttChange = 1
+                for i in range(len(self.outvar.values)):
+                    lb.setSelected(i, 1)
+                lb.show()
+                self.freezeAttChange = 0
+                
         if self.data:
             self.setTable()
             self.table.show()
+            self.checksenddata()
         self.checkenable()
-
-    # based on the data and classifiers enables/disables the control boxes
-    def checkenable(self):
-        # following should be more complicated and depends on what data are we showing
-        cond = self.data<>None and (len(self.classifiers)>1 or len(self.classifiers)>0 and self.ShowTrueClass)
-        self.outBox.setEnabled(cond)
-        if self.commitOnChange:
-            if cond:
-                self.senddata()
-            else:
-                self.send("Selected Examples", None)
-
-        self.trueClassCheckBox.setEnabled(self.data<>None and self.data.domain.classVar<>None)
-##        self.options.setEnabled(len(self.classifiers)>0)
-        self.att.setEnabled(self.data<>None)
-        self.options.setEnabled(self.data<>None)
-
 
     ##############################################################################
     # Ouput signals
 
     def checksenddata(self):
-        if self.commitOnChange and self.outBox.isEnabled():
-            self.senddata()
+        # if self.sendOnChange and self.outbox.isEnabled():
+        if len(self.classifiers) and self.sendOnChange: self.senddata()
+
+    def checksendselection(self):
+        if len(self.classifiers) and self.sendOnChange: self.selection()
+
+    def checksendpredictions(self):
+        if len(self.classifiers) and self.sendOnChange: self.predictions()
+
+    def senddata(self):
+        self.predictions()
+        self.selection()
 
     # assumes that the data and display conditions
     # (enough classes are displayed) have been checked
 
-    def senddata(self):
+    def predictions(self):
+        if self.freezeAttChange: return
+        if not self.data or not self.classifiers:
+            self.send("Predictions", None)
+
+        if self.sendPredictions:
+            # predictions, data set with class predictions
+            classification = self.outvar.varType == orange.VarTypes.Discrete
+
+            metas = []
+            if classification:
+                selclass = [self.lbClasses.isSelected(i) for i in range(len(self.data.domain.classVar.values))]
+                showclass = selclass.count(1)
+                if showclass:
+                    for c in self.classifiers.values():
+                        m = [orange.FloatVariable(name="%s(%s)" % (c.name, str(v)),
+                                                  getValueFrom = lambda ex, rw, cindx=i: orange.Value(c(ex, c.GetProbabilities)[cindx])) \
+                             for (i, v) in enumerate(self.data.domain.classVar.values) if selclass[i]]
+                        metas.extend(m)
+                if self.showClass:
+                    mc = [orange.EnumVariable(name="%s" % c.name, values = self.data.domain.classVar.values,
+                                             getValueFrom = lambda ex, rw: orange.Value(c(ex)))
+                          for c in self.classifiers.values()]
+                    metas.extend(mc)
+            else:
+                # regression
+                mc = [orange.FloatVariable(name="%s" % c.name, 
+                                           getValueFrom = lambda ex, rw: orange.Value(c(ex)))
+                      for c in self.classifiers.values()]
+                metas.extend(mc)
+
+            domain = orange.Domain(self.data.domain.attributes + [self.data.domain.classVar])
+            for m in metas:
+                domain.addmeta(orange.newmetaid(), m)
+            predictions = orange.ExampleTable(domain, self.data)
+            predictions.name = self.data.name
+            self.send("Predictions", predictions)
+
+    def selection(self):
         def cmpclasses(clist):
+            """returns True if all elements in clist are the same"""
+            clist = filter(lambda x: not x.isSpecial(), clist)
             ref = clist[0]
             for c in clist[1:]:
                 if c<>ref: return 0
             return 1
 
-        if not self.sendDataType or not self.data or not self.classifiers:
-            self.send("Selected Examples", None)
+        if not self.sendSelection:
             return
 
-        # list of columns to check
-        selclass = [[],[0]][self.ShowTrueClass>0]
-        for (i, classifier) in enumerate(self.classifiers):
-            selclass.append(i+1)
-        
-        s = [cmpclasses(map(lambda x: cls[x], selclass)) for cls in self.classifications]
-        if self.sendDataType == 1:
-            s = [not x for x in s]
-        data_selection = self.data.select(s)
+        if not self.data or not self.classifiers:
+            self.send("Selected Examples", None)
+
+        classification = self.outvar.varType == orange.VarTypes.Discrete
+        if classification:
+            s = [cmpclasses(cls) for cls in self.classifications]
+            if self.sendDataType == 1:
+                s = [not x for x in s]
+            data_selection = self.data.select(s)
+        else:
+            if self.data.domain.classVar:
+                variance = [(i, statc.var(cls)) for (i, cls) in enumerate(self.classifications)
+                            if not cls[0].isSpecial()]
+            else:
+                variance = [(i, statc.var(cls)) for (i, cls) in enumerate(self.classifications)]
+            variance.sort(lambda x, y: cmp(x[1], y[1]))
+            if not self.rbest:
+                variance.reverse()
+            n = int(len(self.data) * self.rpercentile)
+            if not n:
+                return
+            sel = [r[0] for r in variance[:n]]
+            data_selection = self.data.getitems(sel)
+        data_selection.name = self.data.name
         self.send("Selected Examples", data_selection)
 
 ##############################################################################
@@ -318,7 +444,7 @@ if __name__=="__main__":
     if 0: # data set only
         data = orange.ExampleTable('sailing')
         ow.setData(data)
-    elif 0:
+    if 0:
         data = orange.ExampleTable('outcome')
         test = orange.ExampleTable('cheat', uses=data.domain)
         data = orange.ExampleTable('iris')
@@ -330,7 +456,7 @@ if __name__=="__main__":
         ow.setClassifier(bayes, 1)
         ow.setClassifier(tree, 2)
         ow.setData(test)
-    elif 1: # two classifiers
+    if 1: # two classifiers
         data = orange.ExampleTable('sailing.txt')
         bayes = orange.BayesLearner(data)
         bayes.name = "NBC"
@@ -344,13 +470,14 @@ if __name__=="__main__":
         ow.setClassifier(maj, 2)
         ow.setClassifier(knn, 3)
         ow.setData(data)
-    else: # regression
+    if 0: # regression
         data = orange.ExampleTable('auto-mpg')
+        data.name = 'auto-mpg'
         knn = orange.kNNLearner(data, name="knn")
         knn.name = "knn"
         maj = orange.MajorityLearner(data)
         maj.name = "Majority"
-        ow.setClassifier(knn, 1)
+        ow.setClassifier(knn, 10)
         ow.setClassifier(maj, 2)
         ow.setData(data)
 
