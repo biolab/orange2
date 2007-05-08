@@ -3614,8 +3614,9 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 	supportVectors=mlnew TExampleTable(examples->domain);
 	for(i=0;i<model->l;i++){
 		svm_node *node=model->SV[i];
-		while(node->index!=-1)
-			node++;
+        if(model->param.kernel_type!=CUSTOM)
+			while(node->index!=-1)
+				node++;
 		supportVectors->addExample(mlnew TExample(examples->at(int(node->value))));
 	}
     int svm_type=model->param.svm_type;
@@ -3680,7 +3681,7 @@ TValue TSVMClassifier::operator()(const TExample & example){
 	int exlen=example.domain->attributes->size();
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
-	svm_node *x=Malloc(svm_node, exlen+1);
+	svm_node *x=Malloc(svm_node, (exlen+1>2)? exlen+1 : 2);
 	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	double v;
 	if(model->param.probability){
