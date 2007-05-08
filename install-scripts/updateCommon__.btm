@@ -34,11 +34,11 @@ for %pyver in (%PYTHONVERSIONS) (
 
   cdd %BINDIR
   if exist stamps_pyd.txt del stamps_pyd.txt
-  echo SetOutPath "$INSTDIR" > %SCRIPTDIR\snapshotfiles_binaries.inc
+  echo SetOutPath "$INSTDIR" > %SCRIPTDIR\files_binaries.inc
   for %fle in (*.pyd) do (
     set MD5=%@MD5[%fle]
     echo %fle %MD5 >> stamps_pyd.txt
-    echo File %BINDIR\%fle >> %SCRIPTDIR\snapshotfiles_binaries.inc
+    echo File %BINDIR\%fle >> %SCRIPTDIR\files_binaries.inc
     echo FileWrite $WhatsDownFile "%fle=1.0:%MD5%$\r$\n" >> %SCRIPTDIR\snapshotfiles_binaries.inc
   )
 
@@ -63,6 +63,6 @@ rem set | grep  orange.*Version > %SCRIPTDIR\versions.set
 rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh %TAG %PLINK_MACINTOSH MACINTOSH 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh %TAG %PLINK_MACINTOSH_GENOMICS MACINTOSH_GENOMICS 1 0
 
 cdd %SCRIPTDIR
-python whatsup.py %DOWNLOADDIR\update %WEBDOWNLOAD
+python whatsup.py %WEBDOWNLOAD\update %WEBDOWNLOAD
 break_on_error
 rem updateSnapshot.btm
