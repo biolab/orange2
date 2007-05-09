@@ -38,6 +38,7 @@ Section Uninstall
 	    SetShellVarContext current	   
 	${Endif}
 	RmDir /R "$SMPROGRAMS\Orange"
+	RmDir /R "$APPDATA\Orange"
 	
 	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\${NPYVER}\InstallPath ""
 	${If} $PythonDir != ""
