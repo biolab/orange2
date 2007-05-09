@@ -105,7 +105,7 @@ class SignalManager:
         #sys.stdout = self.stdout
 
     def __del__(self):
-        if not self:
+        if type(self) == type(None):
             return
         if self.debugFile:
             self.debugFile.close()
