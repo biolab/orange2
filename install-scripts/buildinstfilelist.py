@@ -10,6 +10,9 @@ if basedir[-1] != "\\":
 
 print "Constructing file lists for Orange in '%s', prefix is '%s'" % (basedir, fileprefix)
 
+snapshot = fileprefix[:8] == "snapshot"
+protoDir = "orange\\orangewidgets\\prototypes\\"
+
 exclude = [x.lower().replace("/", "\\")[:-1] for x in open(basedir+"orange\\exclude.lst", "rt").readlines()]
 file_re = re.compile(r'/(?P<fname>.*)/(?P<version>.*)/(?P<date>.*)/[^/]*/')
 
@@ -22,6 +25,10 @@ def computeMD(filename):
 
 def excluded(fname):
     fname = fname.lower()
+    if not snapshot and fname[:len(protoDir)] == protoDir:
+        print "Excluded %s (prototype)" % fname
+        return 1
+
     for ex in exclude:
         if ex==fname[:len(ex)]:
             print "Excluded %s (as %s)" % (fname, ex)
