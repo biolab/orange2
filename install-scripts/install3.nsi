@@ -29,6 +29,11 @@ Var MissingModules
 Page license
 Page instfiles
 
+!define SHELLFOLDERS \
+  "Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"
+ 
+
+
 Section Uninstall
 	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n$\r$\nThis won't remove any 3rd party software possibly installed with Orange, such as Python or Qt,$\r$\n$\r$\nbut make sure you have not left any of your files in Orange's directories!" /SD IDYES IDNO abort
 	RmDir /R "$INSTDIR"
@@ -38,7 +43,12 @@ Section Uninstall
 	    SetShellVarContext current	   
 	${Endif}
 	RmDir /R "$SMPROGRAMS\Orange"
-	RmDir /R "$APPDATA\Orange"
+
+	ReadRegStr $0 HKCU "${SHELLFOLDERS}" AppData
+	StrCmp $0 "" 0 +2
+	  ReadRegStr $0 HKLM "${SHELLFOLDERS}" "Common AppData"
+	StrCmp $0 "" +2 0
+	  RmDir /R "$0\Orange"
 	
 	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\${NPYVER}\InstallPath ""
 	${If} $PythonDir != ""
@@ -97,6 +107,7 @@ SectionEnd
 !macroend
 		
 
+
 !ifdef COMPLETE
 
 !if ${PYVER} == 23
@@ -111,17 +122,6 @@ Section ""
 			MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO installpython
 				Quit
 		installpython:
-
-		IfFileExists "$APPDATA\Orange" not_installed_before
-			ask_remove_old:
-			MessageBox MB_YESNOCANCEL "Another version of Orange has been found on the computer.$\r$\nRemove the existing settings for canvas and widgets?$\r$\n$\r$\nYou can usually safely leave them; in case of problems, re-run this installation." /SD IDYES IDYES not_installed_before IDNO remove_old_settings
-				MessageBox MB_YESNO "Abort the installation?" IDNO ask_remove_old
-					Quit
-
-			remove_old_settings:
-			RmDir /R "$APPDATA\Orange"
-
-		not_installed_before:
 
 		SetOutPath $DESKTOP
 		!if ${PYVER} == 23
@@ -187,6 +187,22 @@ SectionEnd
 
 
 Section ""
+	ReadRegStr $0 HKCU "${SHELLFOLDERS}" AppData
+	StrCmp $0 "" 0 +2
+	  ReadRegStr $0 HKLM "${SHELLFOLDERS}" "Common AppData"
+	StrCmp $0 "" +2 0
+
+	IfFileExists "$0\Orange" not_installed_before
+		ask_remove_old:
+		MessageBox MB_YESNOCANCEL "Another version of Orange has been found on the computer.$\r$\nRemove the existing settings for canvas and widgets?$\r$\n$\r$\nYou can usually safely leave them; in case of problems, re-run this installation." /SD IDYES IDYES not_installed_before IDNO remove_old_settings
+			MessageBox MB_YESNO "Abort the installation?" IDNO ask_remove_old
+				Quit
+
+		remove_old_settings:
+		RmDir /R "$0\Orange"
+
+	not_installed_before:
+
 	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\orange"
 	SetOutPath $INSTDIR
 	File "license.txt"
