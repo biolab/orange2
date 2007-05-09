@@ -112,6 +112,17 @@ Section ""
 				Quit
 		installpython:
 
+		IfFileExists "$APPDATA\Orange" not_installed_before
+			ask_remove_old:
+			MessageBox MB_YESNOCANCEL "Another version of Orange has been found on the computer.$\r$\nRemove the existing settings for canvas and widgets?$\r$\n$\r$\nYou can usually safely leave them; in case of problems, re-run this installation." /SD IDYES IDYES not_installed_before IDNO remove_old_settings
+				MessageBox MB_YESNO "Abort the installation?" IDNO ask_remove_old
+					Quit
+
+			remove_old_settings:
+			RmDir /R "$APPDATA\Orange"
+
+		not_installed_before:
+
 		SetOutPath $DESKTOP
 		!if ${PYVER} == 23
 			File 3rdparty-23\Python-2.3.5.exe
