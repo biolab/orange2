@@ -3658,10 +3658,10 @@ PDistribution TSVMClassifier::classDistribution(const TExample & example){
 		raiseError("Model does not support probabilities for regression");
 	int *labels=(int *) malloc(nr_class*sizeof(int));
 	double *prob_estimates=NULL;
-	svm_node *x=Malloc(svm_node, exlen+1);
+	svm_node *x=Malloc(svm_node, (exlen+1>2)? exlen+1 : 2);
 	svm_get_labels(model,labels);
 	prob_estimates = (double *) malloc(nr_class*sizeof(double));
-	example_to_svm(example, x, -1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
+	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	svm_predict_probability(model,x,prob_estimates);
 	currentExample=NULL;
 	PDistribution dist=TDistribution::create(example.domain->classVar);
@@ -3707,8 +3707,8 @@ PFloatList TSVMClassifier::getDecisionValues(const TExample &example){
 	int exlen=example.domain->attributes->size();
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
-	svm_node *x=Malloc(svm_node, exlen+1);
-	example_to_svm(example, x, -1.0);//, (model->param.kernel_type==CUSTOM)? 2:0);
+	svm_node *x=Malloc(svm_node, (exlen+1>2)? exlen+1 : 2);
+	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	int nDecValues=nr_class*(nr_class-1)/2;
 	double *dec= (double*) malloc(sizeof(double)*nDecValues);
 	svm_predict_values(model, x, dec);
