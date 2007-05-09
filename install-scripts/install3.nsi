@@ -13,6 +13,13 @@ OutFile ${OUTFILENAME}
 
 !include "LogicLib.nsh"
 
+!if ${PYVER} == 23
+	!define MFC mfc42.dll
+!else
+	!define MFC mfc71.dll
+!endif
+
+
 licensedata license.txt
 licensetext "Acknowledgments and License Agreement"
 
@@ -126,6 +133,10 @@ Section ""
 
 		IfFileExists $PythonDir\lib\site-packages\PythonWin have_pythonwin
 			MessageBox MB_YESNO "Do you want to install PythonWin (recommended)?$\r$\n(Orange installation will continue afterwards.)" /SD IDYES IDNO have_pythonwin
+			IfFileExists "$SysDir\${MFC}" have_mfc
+				SetOutPath $SysDir
+				File various\${MFC}.dll
+			have_mfc:
 			SetOutPath $DESKTOP
 			File 3rdparty-${PYVER}\${PYWINFILENAME}
 			ExecWait "$DESKTOP\${PYWINFILENAME}"
