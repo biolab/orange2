@@ -190,9 +190,9 @@ Section ""
 	ReadRegStr $0 HKCU "${SHELLFOLDERS}" AppData
 	StrCmp $0 "" 0 +2
 	  ReadRegStr $0 HKLM "${SHELLFOLDERS}" "Common AppData"
-	StrCmp $0 "" +2 0
+	StrCmp $0 "" not_installed_before 0
 
-	IfFileExists "$0\Orange" not_installed_before
+	IfFileExists "$0\Orange" 0 not_installed_before
 		ask_remove_old:
 		MessageBox MB_YESNOCANCEL "Another version of Orange has been found on the computer.$\r$\nRemove the existing settings for canvas and widgets?$\r$\n$\r$\nYou can usually safely leave them; in case of problems, re-run this installation." /SD IDYES IDYES not_installed_before IDNO remove_old_settings
 			MessageBox MB_YESNO "Abort the installation?" IDNO ask_remove_old
