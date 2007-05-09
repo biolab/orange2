@@ -194,7 +194,7 @@ Section ""
 
 	IfFileExists "$0\Orange" 0 not_installed_before
 		ask_remove_old:
-		MessageBox MB_YESNOCANCEL "Another version of Orange has been found on the computer.$\r$\nRemove the existing settings for canvas and widgets?$\r$\n$\r$\nYou can usually safely leave them; in case of problems, re-run this installation." /SD IDYES IDYES not_installed_before IDNO remove_old_settings
+		MessageBox MB_YESNOCANCEL "Another version of Orange has been found on the computer.$\r$\nDo you want to keep the existing settings for canvas and widgets?$\r$\n$\r$\nYou can usually safely answer 'Yes'; in case of problems, re-run this installation." /SD IDYES IDYES not_installed_before IDNO remove_old_settings
 			MessageBox MB_YESNO "Abort the installation?" IDNO ask_remove_old
 				Quit
 
@@ -290,6 +290,7 @@ Function .onInit
 	!ifndef COMPLETE
 		StrCmp $PythonDir "" 0 have_python
 			MessageBox MB_OK "Please install Python first (www.python.org)$\r$\nor download Orange which includes Python."
+			Quit
 		have_python:
 
 		!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\PythonWin" "PythonWin"
