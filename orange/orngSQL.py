@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # A module to read data from an SQL database into an Orange ExampleTable.
 # The goal is to keep it compatible with PEP 249.
 # For now, the writing shall be basic, if it works at all.
@@ -14,6 +13,10 @@ class SQLReader:
         self.domainDepot = orange.DomainDepot()
         self.domain = None
         self.exampleTable = None
+        self.metaNames = None
+        self.discreteNames = None
+        self.classVarName = None
+        self._dirty = False
         
     def _parseURI(self, uri):
         """ lifted straight from sqlobject """
@@ -94,37 +97,73 @@ class SQLReader:
             dbArgDict['port'] = port
         if path:
             dbArgDict['database'] = path[1:]
+        self._dirty = True
         self.conn = self.dbmod.connect(**dbArgDict)
+
+    def classVar(self, classVarName = None):
+        """if classVarName is set, the class variable is set to that value."""
+        if classVarName is not None:
+            self.classVarName = classVarName
+            self._dirty = True
+        self.update()
+        return self.domain.classVar
+    def setMetaNames(self, metaNames):
+        self.metaNames = metaNames
+        self._dirty = True
+    def getmetas(self, metaAttrNames = None):
+        self.update()
+        return self.domain.getmetas()
+    def setDiscreteNames(self, discreteNames):
+        self.discreteNames = discreteNames
+        self._dirty = True
         
-    def query(self, s, discreteAttrs = None, classAttr = None, metaAttrs = None):
-        """executes a read query and constructs the orange.Domain.
-        If the name of the class attribute is not supplied, the first column is used as the class attribute.
-        If any of the attributes are considered to be discrete, they should be specified.
-        """
+    def setQuery(self, s):
+        """sets the query, resets the internal variables, without executing the query"""
+        self.query = s
+        self.classAttrName = None
+        self.metaAttrNames = None
+        self._dirty = True
+        
+    def execute(self, s):
+        """executes an sql query"""
+        self.setQuery(s)
+        self.update()
+        
+    def update(self):
+        if not self._dirty:
+            return self.exampleTable
         self.exampleTable = None
         try:
             curs = self.conn.cursor()
-            curs.execute(s)
+            curs.execute(self.query)
             desc = curs.description
-            if not classAttr:
-                classAttr = desc[0][0]
+            if not self.classVarName:
+                classVarName = desc[0][0]
+            else:
+                classVarName = self.classVarName
             attrNames = []
-            if not discreteAttrs:
-                discreteAttrs = []
-            if not metaAttrs:
-                metaAttrs = []
+            if not self.discreteNames:
+                discreteNames = []
+            else:
+                discreteNames = self.discreteNames
+            if not self.metaNames:
+                metaNames = []
+            else:
+                metaNames = self.metaNames
             for i in desc:
                 name = i[0]
                 typ = i[1]
-                if typ in [self.dbmod.STRING, self.dbmod.DATETIME]:
-                    attrName = 'S#' + name
-                elif name in discreteAttrs:
+                if name in discreteNames:
                     attrName = 'D#' + name
+                elif typ == self.dbmod.STRING:
+                    attrName = 'S#' + name
+                elif typ == self.dbmod.DATETIME:
+                    attrName = 'S#' + name
                 else:
                     attrName = 'C#' + name
-                if name == classAttr:
+                if name == classVarName:
                     attrName = "c" + attrName
-                elif name in metaAttrs:
+                elif name in metaNames:
                     attrName = "m" + attrName
                 attrNames.append(attrName)
             (self.domain, self.metaIDs, dummy) = self.domainDepot.prepareDomain(attrNames)
@@ -141,12 +180,24 @@ class SQLReader:
                 example = orange.Example(self.domain, [str(r[domainIndexes[i]]) for i in xrange(len(r))])
                 self.exampleTable.append(example)
                 r = curs.fetchone()
+            self._dirty = False
         except Exception, e:
             raise e
             self.domain = None
 
+    def query(self, s, discreteAttrs = None, classVarName = None, metaNames = None):
+        """executes a read query and constructs the orange.Domain.
+        If the name of the class attribute is not supplied, the first column is used as the class attribute.
+        If any of the attributes are considered to be discrete, they should be specified.
+        """
+        self.setQuery(s)
+        self.setDiscrete(discreteAttrs)
+        self.classVar(classVarName)
+        self.setMetaNames(metaNames)
+        self.update()
+
     def data(self):
-        data = None
+        self.update()
         if self.exampleTable:
             return self.exampleTable
         return None
