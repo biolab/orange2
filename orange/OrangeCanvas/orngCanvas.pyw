@@ -31,6 +31,9 @@ class OrangeCanvasDlg(QMainWindow):
         if os.path.exists(canvasIconName):
             self.setIcon(QPixmap(canvasIconName))
 
+        if not self.orangeDir in sys.path:
+            sys.path.append(self.orangeDir)
+
         if not self.widgetDir in sys.path:
             sys.path.append(self.widgetDir)
 
