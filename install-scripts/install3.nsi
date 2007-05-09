@@ -13,11 +13,6 @@ OutFile ${OUTFILENAME}
 
 !include "LogicLib.nsh"
 
-!if ${PYVER} == 23
-	!define MFC mfc42.dll
-!else
-	!define MFC mfc71.dll
-!endif
 
 
 licensedata license.txt
@@ -102,6 +97,13 @@ SectionEnd
 		
 
 !ifdef COMPLETE
+
+!if ${PYVER} == 23
+	!define MFC mfc42.dll
+!else
+	!define MFC mfc71.dll
+!endif
+
 Section ""
 		StrCmp $PythonDir "" 0 have_python
 		MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python ${NPYVER}$\r$\nOrange installation will continue after you finish installing Python." /SD IDOK IDOK installpython
@@ -135,7 +137,7 @@ Section ""
 			MessageBox MB_YESNO "Do you want to install PythonWin (recommended)?$\r$\n(Orange installation will continue afterwards.)" /SD IDYES IDNO have_pythonwin
 			IfFileExists "$SysDir\${MFC}" have_mfc
 				SetOutPath $SysDir
-				File various\${MFC}.dll
+				File various\${MFC}
 			have_mfc:
 			SetOutPath $DESKTOP
 			File 3rdparty-${PYVER}\${PYWINFILENAME}
