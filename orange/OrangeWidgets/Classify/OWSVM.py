@@ -88,8 +88,13 @@ class OWSVM(OWWidget):
                 a.setDisabled(b)
 
     def setData(self, data=None):
+        self.error(0)
         if data:
-            self.data=data
+            if data.domain.classVar:
+                self.data=data
+            else:
+                self.data=None
+                self.error(0, "The dataset does not contain a class variable")
         else:
             self.data=None
         self.applySettings()
@@ -138,6 +143,8 @@ class OWSVM(OWWidget):
             self.send("Support Vectors", self.supportVectors)
 
     def parameterSearch(self):
+        if not self.data:
+            return
         if self.searching:
             self.searching=False
         else:
