@@ -123,7 +123,6 @@ class FreeViz:
                 #self.recomputeEnergy()
 
     def optimize_FAST_Separation(self, steps = 10, singleStep = False):
-        classes = [int(x.getclass()) for x in self.graph.rawdata]
         optimizer = [orangeom.optimizeAnchors, orangeom.optimizeAnchorsRadial, orangeom.optimizeAnchorsR][self.restrain]
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
@@ -132,8 +131,17 @@ class FreeViz:
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
         positions = [numpy.array([x[:2] for x in self.graph.anchorData])]
         neededSteps = 0
+
+        validData = self.graph.getValidList(attrIndices)
+        if sum(validData) == 0:
+            return 0
+
+        data = numpy.compress(validData, self.graph.noJitteringScaledData, axis=1)
+        data = numpy.transpose(data).tolist()
+        classes = [int(x.getclass()) for i,x in enumerate(self.graph.rawdata) if validData[i]]
+        
         while 1:
-            self.graph.anchorData = optimizer(numpy.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices,
+            self.graph.anchorData = optimizer(data, classes, self.graph.anchorData, attrIndices,
                                               attractG = self.attractG, repelG = self.repelG, law = self.law,
                                               sigma2 = self.forceSigma, dynamicBalancing = self.forceBalancing, steps = steps,
                                               normalizeExamples = self.graph.normalizeExamples,
@@ -148,7 +156,7 @@ class FreeViz:
 
             positions = positions[-49:]+[numpy.array([x[:2] for x in self.graph.anchorData])]
             if len(positions)==50:
-                m = max(numpy.sum((positions[0]-positions[49])**2, 1))
+                m = max(numpy.sum((positions[0]-positions[49])**2), 0)
                 if m < 1e-3: break
             if singleStep or (self.__class__ != FreeViz and self.cancelOptimization):
                 break
