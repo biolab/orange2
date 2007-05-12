@@ -15,7 +15,9 @@ class Cache:
 
 
 def clearCache(cache):
-    cache.points = cache.tri = cache.stars = cache.dts = cache.deltas = cache.errors = cache.findNearest = cache.attrStat = None
+    cache.points = cache.tri = cache.stars = cache.dts = cache.deltas = cache.findNearest = cache.attrStat = None
+    if hasattr(cache, "errors"):
+        delattr(cache, "errors")
 
 
 def makeEmptyCache(cache = None):
@@ -731,6 +733,9 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
 def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, correlationsAsMeta = False, originalAsMeta = False):
     cache = makeBasicCache(data)
     cache.deltas = [[None] * len(cache.contAttributes) for x in xrange(len(data))]
+    if method == tubedRegression:
+        cache.errors = [[None] * len(cache.contAttributes) for x in xrange(len(data))]
+
     cache.nNeighbours = 30
 
     if not attributes:
