@@ -100,27 +100,31 @@ class FreeViz:
 
     def optimizeSeparation(self, steps = 10, singleStep = False):
         # check if we have data and a discrete class
-        if not self.rawdata or len(self.rawdata) == 0 or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+        if not self.rawdata or len(self.rawdata) == 0 or not self.rawdata.domain.classVar:
             return
+
         if self.implementation == FAST_IMPLEMENTATION:
             return self.optimize_FAST_Separation(steps, singleStep)
-        else:
-            if singleStep: steps = 1
-            if self.implementation == SLOW_IMPLEMENTATION:  impl = self.optimize_SLOW_Separation
-            elif self.implementation == LDA_IMPLEMENTATION: impl = self.optimize_LDA_Separation
-            ai = self.graph.attributeNameIndex
-            attrIndices = [ai[label] for label in self.getShownAttributeList()]
-            XAnchors = None; YAnchors = None
-            if self.__class__ != FreeViz: from qt import qApp
 
-            for c in range((singleStep and 1) or 50):
-                for i in range(steps):
-                    if self.__class__ != FreeViz and self.cancelOptimization == 1: return
-                    self.graph.anchorData, (XAnchors, YAnchors) = impl(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
-                if self.graph.__class__ != orngScaleLinProjData:
-                    qApp.processEvents()
-                    self.graph.updateData()
-                #self.recomputeEnergy()
+        if self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+            return
+
+        if singleStep: steps = 1
+        if self.implementation == SLOW_IMPLEMENTATION:  impl = self.optimize_SLOW_Separation
+        elif self.implementation == LDA_IMPLEMENTATION: impl = self.optimize_LDA_Separation
+        ai = self.graph.attributeNameIndex
+        attrIndices = [ai[label] for label in self.getShownAttributeList()]
+        XAnchors = None; YAnchors = None
+        if self.__class__ != FreeViz: from qt import qApp
+
+        for c in range((singleStep and 1) or 50):
+            for i in range(steps):
+                if self.__class__ != FreeViz and self.cancelOptimization == 1: return
+                self.graph.anchorData, (XAnchors, YAnchors) = impl(attrIndices, self.graph.anchorData, XAnchors, YAnchors)
+            if self.graph.__class__ != orngScaleLinProjData:
+                qApp.processEvents()
+                self.graph.updateData()
+            #self.recomputeEnergy()
 
     def optimize_FAST_Separation(self, steps = 10, singleStep = False):
         optimizer = [orangeom.optimizeAnchors, orangeom.optimizeAnchorsRadial, orangeom.optimizeAnchorsR][self.restrain]
