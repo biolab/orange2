@@ -13,11 +13,8 @@ import OWGUI
 class OWPade(OWWidget):
 
     settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
-    #contextHandlers = {"": DomainContextHandler("", ["outputAttr", ContextField("attributes", DomainContextHandler.RequiredList, selected="dimensions")], False, False, False, False)}
     contextHandlers = {"": PerfectDomainContextHandler("", ["outputAttr", ContextField("attributes", selected="dimensions")])}
 
-    #methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression", "Canceling"]    
-    #methods = [orngPade.firstTriangle, orngPade.starRegression, orngPade.starUnivariateRegression, orngPade.tubedRegression, orngPade.canceling]
     methodNames = ["First Triangle", "Star Univariate Regression", "Tube Regression"]    
     methods = [orngPade.firstTriangle, orngPade.starUnivariateRegression, orngPade.tubedRegression]
     
@@ -32,6 +29,7 @@ class OWPade(OWWidget):
         self.outputAttr = 0
         self.derivativeAsMeta = 0
         self.savedDerivativeAsMeta = 0
+        self.correlationsAsMeta = 1
         self.differencesAsMeta = 1
         self.originalAsMeta = 1
         self.enableThreshold = 0
@@ -72,6 +70,7 @@ class OWPade(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)      
         self.metaCB = OWGUI.checkBox(box, self, "derivativeAsMeta", label="Qualitative constraint")
         OWGUI.checkBox(box, self, "differencesAsMeta", label="Derivatives of selected attributes")
+        OWGUI.checkBox(box, self, "correlationsAsMeta", label="Absolute values of derivatives")
         OWGUI.checkBox(box, self, "originalAsMeta", label="Original class attribute")
 
         self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
@@ -98,7 +97,6 @@ class OWPade(OWWidget):
         self.dimensionsChanged()
 
     def dimensionsChanged(self):
-        print self.dimensions
         if self.output and self.dimensions:
             if not self.metaCB.isEnabled():
                 self.derivativeAsMeta = self.savedDerivativeAsMeta
@@ -119,11 +117,10 @@ class OWPade(OWWidget):
 
     def onDataInput(self, data):
         self.closeContext()
-        if data:
+        if data and self.isDataWithClass(data, orange.VarTypes.Continuous):
             orngPade.makeBasicCache(data, self)
 
             icons = OWGUI.getAttributeIcons()
-            print data.domain.attributes, self.contAttributes
             self.outputLB.clear()
             for attr in self.contAttributes:
                 self.outputLB.insertItem(icons[attr.varType], attr.name)
@@ -145,6 +142,8 @@ class OWPade(OWWidget):
 
         if not self.deltas:
             self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
+        if not self.errors:
+            self.errors = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
 
         dimensionsToCompute = [d for d in self.dimensions if not self.deltas[0][d]]
         if self.output and self.outputAttr not in self.dimensions and not self.deltas[0][self.outputAttr]:
@@ -154,7 +153,7 @@ class OWPade(OWWidget):
             self.methods[self.method](self, dimensionsToCompute, self.progressBarSet)
             self.progressBarFinished()
 
-        paded, derivativeID, metaIDs, classID = orngPade.createQTable(self, data, self.dimensions,
+        paded, derivativeID, metaIDs, classID, corrIDs = orngPade.createQTable(self, data, self.dimensions,
                                                              not self.output and -1 or self.outputAttr,
                                                              self.enableThreshold and abs(self.threshold),
                                                              self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, self.originalAsMeta)
