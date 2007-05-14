@@ -133,7 +133,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         OWTreeViewer2D.__init__(self, parent, signalManager, name)
         
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
-        self.outputs = [("Classified Examples", ExampleTableWithClass), ("Examples", ExampleTable)]
+        self.outputs = [("Examples", ExampleTable)]
         
         self.canvas=TreeCanvas(self)
         self.canvasView=TreeCanvasView(self, self.canvas, self.mainArea, "CView")
