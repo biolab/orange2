@@ -12,12 +12,15 @@ import OWGUI
 
 class OWPade(OWWidget):
 
-    settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "correlationsAsMeta", "enableThreshold", "threshold"]
+    settingsList = ["output", "method", "derivativeAsMeta", "originalAsMeta", "savedDerivativeAsMeta", "differencesAsMeta", "enableThreshold", "threshold"]
+    #contextHandlers = {"": DomainContextHandler("", ["outputAttr", ContextField("attributes", DomainContextHandler.RequiredList, selected="dimensions")], False, False, False, False)}
     contextHandlers = {"": PerfectDomainContextHandler("", ["outputAttr", ContextField("attributes", selected="dimensions")])}
 
-    methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression", "1D Qing"]
-    methods = [orngPade.firstTriangle, orngPade.starRegression, orngPade.starUnivariateRegression, orngPade.tubedRegression, orngPade.qing1D]
-
+    #methodNames = ["First Triangle", "Star Regression", "Star Univariate Regression", "Tube Regression", "Canceling"]    
+    #methods = [orngPade.firstTriangle, orngPade.starRegression, orngPade.starUnivariateRegression, orngPade.tubedRegression, orngPade.canceling]
+    methodNames = ["First Triangle", "Star Univariate Regression", "Tube Regression"]    
+    methods = [orngPade.firstTriangle, orngPade.starUnivariateRegression, orngPade.tubedRegression]
+    
     def __init__(self, parent = None, signalManager = None, name = "Pade"):
         OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
         self.inputs = [("Examples", ExampleTable, self.onDataInput)]
@@ -30,16 +33,15 @@ class OWPade(OWWidget):
         self.derivativeAsMeta = 0
         self.savedDerivativeAsMeta = 0
         self.differencesAsMeta = 1
-        self.correlationsAsMeta = 1
         self.originalAsMeta = 1
         self.enableThreshold = 0
         self.threshold = 0.0
         self.method = 2
         self.useMQCNotation = False
-        self.persistence = 40
+        #self.persistence = 40
 
-        self.nNeighbours = 30
-
+        self.nNeighbours = 30        
+        
         self.loadSettings()
 
         box = OWGUI.widgetBox(self.controlArea, "Attributes", addSpace = True)
@@ -53,7 +55,7 @@ class OWPade(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Method", addSpace = 24)
         OWGUI.comboBox(box, self, "method", callback = self.methodChanged, items = self.methodNames)
 #        self.nNeighboursSpin = OWGUI.spin(box, self, "nNeighbours", 10, 200, 10, label = "Number of neighbours" + "  ", callback = self.methodChanged)
-        self.persistenceSpin = OWGUI.spin(box, self, "persistence", 0, 100, 5, label = "Persistence (0-100)" + "  ", callback = self.methodChanged, controlWidth=50, callbackOnReturn = True)
+        #self.persistenceSpin = OWGUI.spin(box, self, "persistence", 0, 100, 5, label = "Persistence (0-100)" + "  ", callback = self.methodChanged, controlWidth=50)
 
         OWGUI.separator(box)
         hbox = OWGUI.widgetBox(box, orientation=0)
@@ -67,19 +69,18 @@ class OWPade(OWWidget):
         box = OWGUI.radioButtonsInBox(self.controlArea, self, "output", ["Qualitative constraint", "Quantitative differences"], box="Output class", addSpace = True, callback=self.dimensionsChanged)
         self.outputLB = OWGUI.comboBox(OWGUI.indentedBox(box), self, "outputAttr", callback=self.outputDiffChanged)
 
-        box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)
+        box = OWGUI.widgetBox(self.controlArea, "Output meta attributes", addSpace = True)      
         self.metaCB = OWGUI.checkBox(box, self, "derivativeAsMeta", label="Qualitative constraint")
         OWGUI.checkBox(box, self, "differencesAsMeta", label="Derivatives of selected attributes")
-        OWGUI.checkBox(box, self, "correlationsAsMeta", label="Absolute values of derivatives")
         OWGUI.checkBox(box, self, "originalAsMeta", label="Original class attribute")
 
         self.applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback=self.apply)
 
         self.adjustSize()
         self.activateLoadedSettings()
-
-        self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.qing1D)
-
+        
+        #self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.canceling)
+        
         self.setFixedWidth(self.sizeHint().width())
 
 
@@ -97,6 +98,7 @@ class OWPade(OWWidget):
         self.dimensionsChanged()
 
     def dimensionsChanged(self):
+        print self.dimensions
         if self.output and self.dimensions:
             if not self.metaCB.isEnabled():
                 self.derivativeAsMeta = self.savedDerivativeAsMeta
@@ -111,20 +113,21 @@ class OWPade(OWWidget):
 
     def methodChanged(self):
         self.deltas = None
-        self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.qing1D)
+        #self.persistenceSpin.setEnabled(self.methods[self.method] == orngPade.canceling)
         #self.nNeighboursSpin.setEnabled(bool(self.method==3))
 
 
     def onDataInput(self, data):
         self.closeContext()
-        if data and self.isDataWithClass(data, orange.VarTypes.Continuous):
+        if data:
             orngPade.makeBasicCache(data, self)
 
             icons = OWGUI.getAttributeIcons()
+            print data.domain.attributes, self.contAttributes
             self.outputLB.clear()
             for attr in self.contAttributes:
                 self.outputLB.insertItem(icons[attr.varType], attr.name)
-
+           
             self.dimensions = range(len(self.attributes))
         else:
             orngPade.makeEmptyCache(self)
@@ -142,25 +145,23 @@ class OWPade(OWWidget):
 
         if not self.deltas:
             self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
-        if not self.errors:
-            self.errors = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
 
         dimensionsToCompute = [d for d in self.dimensions if not self.deltas[0][d]]
         if self.output and self.outputAttr not in self.dimensions and not self.deltas[0][self.outputAttr]:
             dimensionsToCompute.append(self.outputAttr)
         if dimensionsToCompute:
             self.progressBarInit()
-            self.methods[self.method](self, dimensionsToCompute, self.progressBarSet, persistence=self.persistence/100.)
+            self.methods[self.method](self, dimensionsToCompute, self.progressBarSet)
             self.progressBarFinished()
 
-        paded, derivativeID, metaIDs, classID, corrIDs = orngPade.createQTable(self, data, self.dimensions,
+        paded, derivativeID, metaIDs, classID = orngPade.createQTable(self, data, self.dimensions,
                                                              not self.output and -1 or self.outputAttr,
                                                              self.enableThreshold and abs(self.threshold),
-                                                             self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, self.correlationsAsMeta, self.originalAsMeta)
+                                                             self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, self.originalAsMeta)
         self.send("Examples", paded)
 
-
-
+                            
+       
 if __name__=="__main__":
     import sys
 
@@ -168,8 +169,8 @@ if __name__=="__main__":
     ow=OWPade()
     a.setMainWidget(ow)
     ow.show()
-    ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\xyz-t"))
-#    ow.onDataInput(orange.ExampleTable(r"c:\delo\qing\smartquin\x2y2.txt"))
+    #ow.onDataInput(orange.ExampleTable(r"c:\D\ai\Orange\test\squin\xyz-t"))
+    ow.onDataInput(orange.ExampleTable(r"C:\delo\PADE\JJ_testi\sinxsiny\sinxsiny_noise05.tab"))
     a.exec_loop()
-
+    
     ow.saveSettings()

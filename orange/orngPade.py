@@ -16,8 +16,6 @@ class Cache:
 
 def clearCache(cache):
     cache.points = cache.tri = cache.stars = cache.dts = cache.deltas = cache.findNearest = cache.attrStat = None
-    if hasattr(cache, "errors"):
-        delattr(cache, "errors")
 
 
 def makeEmptyCache(cache = None):
@@ -51,6 +49,19 @@ def makeBasicCache(data, cache = None):
 def triangulate(cache, points):
     import orangeom
     return orangeom.qhull(cache.data.toNumpy("a")[0][:, cache.contIndices]).tolist()
+#    num_points = len(points)
+#    pts1 = points
+#    f = file('input4qdelaunay.tab','w')
+#    f.write(reduce(lambda x, y: x+y, [str(len(cache.contAttributes))+"\n"+str(len(pts1))+"\n"]+ [string.join([str(x) for x in pts1[i][:-1]],'\t')+'\n' for i in xrange(num_points)] )) # [str(pts1[i][0])+"\t"+str(pts1[i][1])+"\n" for i in xrange(num_points)]
+#    f.close()
+#    os.system(pathQHULL + r"\qdelaunay s i Qt TO 'outputFromQdelaunay.tab' < input4qdelaunay.tab")
+#    f = file('outputFromQdelaunay.tab','r')
+#    vhod = f.read()
+#    f.close()
+#    k = string.find(vhod,'\n')
+#    num_of_triangles = int(vhod[0:k])
+#    vhod = vhod[k+1:]
+#    l = string.split(vhod,' \n')
 #    return [map(int, string.split(l[i],' ')) for i in xrange(num_of_triangles+1) if l[i]!='']
 
 # 
@@ -116,24 +127,22 @@ def firstTriangle(cache, dimensions, progressCallback = None, **args):
         
     for x, (S, xp, dt, deltas) in enumerate(zip(cache.stars, points, cache.dts, cache.deltas)):
         for d in dimensions:
-
             xn = xp[:-1]
-            
             DBG=0
-            if xn[0]>16 and xn[1]<44.5 and xn[1]>43:
-            #if xn[0]>4.7 and xn[0]<4.9 and xn[1]<24.5 and xn[1]>23.5:
-                DBG=1
-                print "DBG"
+#            if xn[0]>16 and xn[1]<44.5 and xn[1]>43:
+#            #if xn[0]>4.7 and xn[0]<4.9 and xn[1]<24.5 and xn[1]>23.5:
+#                DBG=1
+#                #print "DBG"
             
             O = numpy.array(xp[:-1])
 
             xn[d] += dt
             swx = simplex_with_xn(cache, xn, S)
-            if swx:          
-                if DBG:
-                    print "iskanje cudnih trikotnikov"
-                    print swx
-                    print [points[k] for k in swx]
+            if swx:
+#                if DBG:
+#                    print "iskanje cudnih trikotnikov"
+#                    print swx
+#                    print [points[k] for k in swx]
                 obrni = 1
 #                if DBG:
 #                    print xp
@@ -176,6 +185,7 @@ def firstTriangle(cache, dimensions, progressCallback = None, **args):
             xnz = sum(coef*[numpy.array(points[p][-1]-xp[-1])for p in swx if p!=x])+xp[-1]
 
             deltas[d] = obrni * (xnz-xp[-1]) / dt
+            #print "DELTAS = ",deltas[d]
 
         if progressCallback:
             progressCallback(x*nPoints)
@@ -564,7 +574,7 @@ def tubedRegression(cache, dimensions, progressCallback = None, **args):
             if not mx:
                 cache.deltas[exi][d] = "?"
                 continue
-            if max(mx) < 1e-10:
+            if max(mx)==0:
                 kw = math.log(.001)
             else:
                 kw = math.log(.001) / max(mx)**2
@@ -582,41 +592,13 @@ def tubedRegression(cache, dimensions, progressCallback = None, **args):
             div = n*Sxx-Sx**2
             if div:# and i<40:
                 b = (Sxy*n - Sx*Sy) / div
-                
-#                div = Sx*Sy/n - Sxy
-#                if abs(div) < 1e-10:
-#                    cache.errors[exi][d] = 1
-#                else:
-#                    B = ((Syy - Sy**2/n) - (Sxx - Sx**2/n)) / 2 / div
-#
-#                    b_p = -B + math.sqrt(B**2+1)
-#                    a = Sy/n - b_p * Sx/n
-#                    error1 = 1/(1+b_p**2) * (Syy + a**2 + b_p**2*Sxx - 2*a*Sy + 2*a*b_p*Sx - 2*b_p*Sxy)
-#
-#                    b_2 = -B - math.sqrt(B**2+1)
-#                    a = Sy/n - b_p * Sx/n
-#                    error2 = 1/(1+b_p**2) * (Syy + a**2 + b_p**2*Sxx - 2*a*Sy + 2*a*b_p*Sx - 2*b_p*Sxy)
-#                    
-#                    if error1 < error2 and error1 >= 0:
-#                        cache.errors[exi][d] = error1
-#                    elif error2 >= 0:
-#                        cache.errors[exi][d] = error2
-#                    else:
-#                        cache.errors[exi][d] = 42
-#                        print error1, error2
-                            
-                a = (Sy - b*Sx)/n
-                err = (n * a**2 + b**2 * Sxx + Syy + 2*a*b*Sx - 2*a*Sy - 2*b*Sxy)
-                tot = Syy - Sy**2/n
-                mod = tot - err
-                merr = err/(n-2)
-                if merr < 1e-10:
-                    F = 0
-                    Fprob = 1
-                else:
-                    F = mod/merr
-                    Fprob = statc.fprob(F, 1, int(n-2))
-                cache.errors[exi][d] = Fprob
+##                    a = (Sy - b*Sx)/n
+##                    err = (n * a**2 + b**2 * Sxx + Syy + 2*a*b*Sx - 2*a*Sy - 2*b*Sxy)
+##                    tot = Syy - Sy**2/n
+##                    mod = tot - err
+##                    merr = err/(n-2)
+##                    F = mod/merr
+##                    Fprob = statc.fprob(F, 1, int(n-2))
 #                        print "%.4f" % Fprob,
                 #print ("%.3f\t" + "%.0f\t"*6 + "%f\t%f") % (w, ref_x, ex_x, n, a, b, merr, F, Fprob)
                 cache.deltas[exi][d] = b
@@ -637,7 +619,7 @@ def createClassVar(attributes, MQCNotation = False):
         return orange.EnumVariable("Q", values = ["Q(%s)" % ", ".join(["+-"[x]+attr for attr, x in zip(attributes, v) if x<2]) for v in orngMisc.LimitedCounter([3]*len(attributes))])
 
     
-def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, correlationsAsMeta = False, originalAsMeta = False):
+def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, originalAsMeta = False):
     nDimensions = len(dimensions)
     
     needQ = outputAttr < 0 or derivativeAsMeta
@@ -650,7 +632,6 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
         classVar = qVar
             
     dom = orange.Domain(data.domain.attributes, classVar)
-    dom.addmetas(data.domain.getmetas())
     setattr(dom, "constraintAttributes", [cache.contAttributes[i] for i in dimensions])
 
     if derivativeAsMeta:
@@ -667,18 +648,6 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
             dom.addmeta(metaID, metaVar)
             metaIDs.append(metaID)
 
-    corMetaIDs = []
-    if correlationsAsMeta:
-        for dim in dimensions:
-            metaVar = orange.FloatVariable("corr(%s)" % cache.attributes[dim][0])
-            metaID = orange.newmetaid()
-            dom.addmeta(metaID, metaVar)
-            corMetaIDs.append(metaID)
-        metaVar = orange.FloatVariable("corr")
-        metaID = orange.newmetaid()
-        dom.addmeta(metaID, metaVar)
-        corMetaIDs.append(metaID)
-
     if originalAsMeta:
         originalID = orange.newmetaid()
         dom.addmeta(originalID, data.domain.classVar)
@@ -688,9 +657,9 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
 
     paded = orange.ExampleTable(dom, data)
 
-    for i, (pad, alldeltas) in enumerate(zip(paded, cache.deltas)):
+    for pad, alldeltas in zip(paded, cache.deltas):
         deltas = [alldeltas[d] for d in dimensions]
-
+        
         if needQ:
             qs = "".join([(delta > threshold and "0") or (delta < -threshold and "1") or (delta == "?" and "?") or "2" for delta in deltas])
             q = ("?" in qs and "?") or int(qs, 3)
@@ -707,35 +676,12 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
             for a in zip(metaIDs, deltas):
                 pad.setmeta(*a)
 
-        if correlationsAsMeta:
-            if hasattr(cache, "errors"):
-                maxerr = -1e20
-                for id, val in zip(corMetaIDs, [cache.errors[i][d] for d in dimensions]):
-                    if val == None:
-                        pad.setmeta(id, "?")
-                    else:
-                        pad.setmeta(id, val)
-                        maxerr = max(maxerr, val)
-                pad.setmeta(corMetaIDs[-1], maxerr)
-            else:
-                minder = 0
-                for id, val in zip(corMetaIDs[:-1], deltas):
-                    if type(val) == str:
-                        pad.setmeta(id, "?")
-                    else:
-                        pad.setmeta(id, abs(val))
-                        minder = min(minder, abs(val))
-                pad.setmeta(corMetaIDs[-1], minder)
-
-    return paded, derivativeID, metaIDs, corMetaIDs, originalID
+    return paded, derivativeID, metaIDs, originalID
 
 
-def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, correlationsAsMeta = False, originalAsMeta = False):
+def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, threshold = 0, MQCNotation = False, derivativeAsMeta = False, differencesAsMeta = False, originalAsMeta = False):
     cache = makeBasicCache(data)
     cache.deltas = [[None] * len(cache.contAttributes) for x in xrange(len(data))]
-    if method == tubedRegression:
-        cache.errors = [[None] * len(cache.contAttributes) for x in xrange(len(data))]
-
     cache.nNeighbours = 30
 
     if not attributes:
@@ -749,7 +695,7 @@ def pade(data, attributes = None, method = tubedRegression, outputAttr = -1, thr
             dimensions.append(outputAttr)
 
     method(cache, dimensions)
-    return createQTable(cache, data, dimensions, outputAttr, threshold, MQCNotation, derivativeAsMeta, differencesAsMeta, correlationsAsMeta, originalAsMeta)
+    return createQTable(cache, data, dimensions, outputAttr, threshold, MQCNotation, derivativeAsMeta, differencesAsMeta, originalAsMeta)
 
 
 ### Quin-like measurement of quality
