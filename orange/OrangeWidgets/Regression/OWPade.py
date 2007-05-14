@@ -142,7 +142,7 @@ class OWPade(OWWidget):
 
         if not self.deltas:
             self.deltas = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
-        if not self.errors:
+        if not getattr(self, "errors", None):
             self.errors = [[None] * len(self.contAttributes) for x in xrange(len(self.data))]
 
         dimensionsToCompute = [d for d in self.dimensions if not self.deltas[0][d]]
