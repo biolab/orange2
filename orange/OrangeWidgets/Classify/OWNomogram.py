@@ -509,7 +509,10 @@ class OWNomogram(OWWidget):
             mult = -1.
             
         # calculate prior probability (from self.TargetClassIndex)
-        self.bnomogram = BasicNomogram(self, AttValue("Constant", mult*cl.priorProbBetas[0]))
+        if self.bnomogram:
+            self.bnomogram.destroy_and_init(self, AttValue("Constant", mult*cl.priorProbBetas[0]))
+        else:
+            self.bnomogram = BasicNomogram(self, AttValue("Constant", mult*cl.priorProbBetas[0]))            
         self.cl.setattr("rulesOrdering", [])
         for r_i,r in enumerate(cl.rules):
             a = AttrLine(getConditions(r), self.bnomogram)
