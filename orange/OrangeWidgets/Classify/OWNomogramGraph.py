@@ -267,7 +267,6 @@ class Descriptor(QCanvasRectangle):
 class AttValueMarker(QCanvasEllipse):
     def __init__(self, attribute, canvas, z=50):
         apply(QCanvasEllipse.__init__,(self,10,10,canvas))
-        self.attribute = attribute
         #self.canvas = canvas
         self.setZ(z)
         self.setBrush(QBrush(Qt.blue))
@@ -299,7 +298,6 @@ class AttValueMarker(QCanvasEllipse):
         #self.borderCircle.hide()
         self.setBrush(QBrush(Qt.blue, self.brush().style()))
         self.descriptor.hideAll()
-
 
 
 # #################################################################### 
@@ -512,7 +510,6 @@ class AttrLine:
             val[i].x = atValues_mapped[i]
             val[i].high_errorX = atErrors_mapped[i][1]
             val[i].low_errorX = atErrors_mapped[i][0]
-            a = time.time()
             if canvas.parent.confidence_check and val[i].error>0:
                 val[i].showErr = True
             else:
@@ -597,8 +594,7 @@ class AttrLine:
 
     # string representation of attribute
     def toString(self):
-        return self.name + str([at.toString() for at in self.attValues])        
-        
+        return self.name + str([at.toString() for at in self.attValues])
 
 
 # #################################################################### 
@@ -622,13 +618,13 @@ class AttrLineCont(AttrLine):
 
     # initialization before 2d paint
     def initializeBeforePaint(self, canvas):
+        [l.setCanvas(None) for l in self.contLabel]
         self.atNames = AttrLine(self.name, canvas)
         for at in self.attValues:
             self.atNames.addAttValue(AttValue(at.name, float(at.name)))
         verticalRect = QRect(0, 0, self.getHeight(canvas), self.getHeight(canvas))
         verticalMapper = Mapper_Linear_Fixed(self.atNames.minValue, self.atNames.maxValue, verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = self.atNames.maxValue, minLinearValue = self.atNames.minValue)
         label = verticalMapper.getHeaderLine(canvas, QRect(0,0,self.getHeight(canvas), self.getHeight(canvas))) 
-        [l.setCanvas(None) for l in self.contLabel]
         self.contLabel=[]
         for val in label.attValues:
             # draw value
@@ -919,21 +915,32 @@ class AttrLineOrdered(AttrLine):
 class BasicNomogramHeader(QCanvas):
     def __init__(self, nomogram, parent):
         apply(QCanvas.__init__,(self, parent, ""))
+        self.initVars(nomogram, parent)
+
+    def initVars(self, nomogram, parent):
         self.fontSize = parent.fontSize
         self.headerAttrLine = None
         self.nomogram = nomogram
         self.parent = parent
-       
-    def paintHeader(self, rect, mapper):
-        #if self.headerAttrLine:
-        #    self.headerAttrLine.destroy()
-        [item.setCanvas(None) for item in self.allItems()]
 
+    def destroy_and_init(self, nomogram, parent):
+        self.destroy()
+        self.initVars(nomogram, parent)
+
+    def destroy(self):
+        for item in self.allItems():
+            item.setCanvas(None)
+            if hasattr(item, "attribute"):
+                item.attribute = None
+##        [item.setCanvas(None) for item in self.allItems()]
+        
+    def paintHeader(self, rect, mapper):
         self.headerAttrLine = mapper.getHeaderLine(self, rect)
         self.headerAttrLine.name = self.nomogram.parent.pointsName[self.nomogram.parent.yAxis]
         self.headerAttrLine.paint(self, rect, mapper)
         self.resize(self.nomogram.pright, rect.height()+16)
         self.update()
+
 
 
 # #################################################################### 
@@ -942,6 +949,9 @@ class BasicNomogramHeader(QCanvas):
 class BasicNomogramFooter(QCanvas):
     def __init__(self, nomogram, parent):
         apply(QCanvas.__init__,(self, parent, ""))
+        self.initVars(nomogram, parent)
+
+    def initVars(self, nomogram, parent):        
         self.fontSize = parent.fontSize
         self.headerAttrLine = None
         self.nomogram = nomogram
@@ -968,6 +978,15 @@ class BasicNomogramFooter(QCanvas):
 
         self.linkFunc = self.logit
         self.invLinkFunc = self.invLogit
+
+    def destroy_and_init(self, nomogram, parent):
+        for item in self.allItems():
+            item.setCanvas(None)
+            if hasattr(item, "attribute"):
+                item.attribute = None
+##        
+##        [item.setCanvas(None) for item in self.allItems()]
+        self.initVars(nomogram, parent)
 
     def logit(self, val):
         return math.exp(val)/(1+math.exp(val))
@@ -1154,8 +1173,16 @@ class BasicNomogramFooter(QCanvas):
 class BasicNomogram(QCanvas):
     def __init__(self, parent, constant, *args):
         apply(QCanvas.__init__,(self, parent, ""))
-        
+
+        self.initVars(parent, constant)
+
         self.parent=parent
+        self.header = BasicNomogramHeader(self, parent)
+        self.footerCanvas = BasicNomogramFooter(self, parent)
+        self.parent.header.setCanvas(self.header)
+        self.parent.footer.setCanvas(self.footerCanvas)
+
+    def initVars(self, parent, constant):        
         self.items = []
         
         self.attributes = []
@@ -1170,10 +1197,16 @@ class BasicNomogram(QCanvas):
         self.zeroLine.setPen(QPen(Qt.DotLine))
         self.zeroLine.setZ(-10)
 
-        self.header = BasicNomogramHeader(self, parent)
-        self.footerCanvas = BasicNomogramFooter(self, parent)
-        self.parent.header.setCanvas(self.header)
-        self.parent.footer.setCanvas(self.footerCanvas)
+    def destroy_and_init(self, parent, constant):
+        for item in self.allItems():
+            item.setCanvas(None)
+            if hasattr(item, "attribute"):
+                item.attribute = None
+##        [item.setCanvas(None) for item in self.allItems()]
+        self.header.destroy_and_init(self,parent)
+        self.footerCanvas.destroy_and_init(self,parent)
+
+        self.initVars(parent, constant)
         
     def addAttribute(self, attr):
         self.attributes.append(attr)
@@ -1275,8 +1308,10 @@ class BasicNomogram(QCanvas):
 
 
     def show(self):
-        # set sizes
         [item.hide() for item in self.allItems()]
+        
+        self.header.destroy_and_init(self,self.parent)
+        self.footerCanvas.destroy_and_init(self,self.parent)
         
         self.setSizes(self.parent)
         self.setBackgroundColor(Qt.white)
@@ -1326,10 +1361,10 @@ class BasicNomogram(QCanvas):
         return None
         
     def updateValues(self, x, y, obj):
-        if obj.attribute.updateValueXY(x, y):
+        if obj.descriptor.attribute.updateValueXY(x, y):
             self.footerCanvas.updateMarkers()
             self.update()
-            self.header.headerAttrLine.marker.setX(obj.attribute.marker.x())
+            self.header.headerAttrLine.marker.setX(obj.descriptor.attribute.marker.x())
             self.header.headerAttrLine.marker.show()
             self.header.update()
 

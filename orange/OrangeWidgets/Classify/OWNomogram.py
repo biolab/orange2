@@ -205,12 +205,17 @@ class OWNomogram(OWWidget):
             priorError = math.sqrt(1/((dist1*dist0/sumd/sumd)*len(self.data)))
         else:
             priorError = 0
-        self.bnomogram = BasicNomogram(self, AttValue("Constant", math.log(prior), error = priorError))
+
+        if self.bnomogram:
+            self.bnomogram.destroy_and_init(self, AttValue("Constant", math.log(prior), error = priorError))
+        else:
+            self.bnomogram = BasicNomogram(self, AttValue("Constant", math.log(prior), error = priorError))
 
         if self.data:
             stat = orange.DomainBasicAttrStat(self.data)
 
         for at in range(len(att)):
+            a = None
             if att[at].varType == orange.VarTypes.Discrete:
                 if att[at].ordered:
                     a = AttrLineOrdered(att[at].name, self.bnomogram)
@@ -230,6 +235,7 @@ class OWNomogram(OWWidget):
                         se = 0
                         
                     a.addAttValue(AttValue(str(cd), beta, lineWidth=thickness, error = se))
+                    
             else:
                 a = AttrLineCont(att[at].name, self.bnomogram)
                 numOfPartitions = 50 
@@ -281,7 +287,7 @@ class OWNomogram(OWWidget):
                 a.continuous = True
                 # invert values:
             # if there are more than 1 value in the attribute, add it to the nomogram
-            if len(a.attValues)>1:
+            if a and len(a.attValues)>1:
                 self.bnomogram.addAttribute(a)
 
         self.graph.setCanvas(self.bnomogram)
@@ -294,8 +300,10 @@ class OWNomogram(OWWidget):
         else:
             mult = 1
 
-        self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*cl.beta[0], error = 0))
-        a = None
+        if self.bnomogram:
+            self.bnomogram.destroy_and_init(self, AttValue('Constant', mult*cl.beta[0], error = 0))
+        else:
+            self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*cl.beta[0], error = 0))            
 
         # After applying feature subset selection on discrete attributes
         # aproximate unknown error for each attribute is math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
@@ -394,8 +402,11 @@ class OWNomogram(OWWidget):
 #            QMessageBox("orngLinVis.Visualizer error", str(sys.exc_info()[0])+":"+str(sys.exc_info()[1]), QMessageBox.Warning,
 #                        QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
             return
-        
-        self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/min(max(visualizer.probfunc(0.0),aproxZero),0.9999))-1), 0))
+
+        if self.bnomogram:
+            self.bnomogram.destroy_and_init(self, AttValue('Constant', -mult*math.log((1.0/min(max(visualizer.probfunc(0.0),aproxZero),0.9999))-1), 0))
+        else:
+            self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/min(max(visualizer.probfunc(0.0),aproxZero),0.9999))-1), 0))            
 
         # get maximum and minimum values in visualizer.m
         maxMap = reduce(Numeric.maximum, visualizer.m)
@@ -804,6 +815,7 @@ if __name__=="__main__":
 
     bayes = orange.BayesLearner(data)
     bayes.setattr("data",data)
+##    for i in range(100000):
     ow.classifier(bayes)
 
     # here you can test setting some stuff
