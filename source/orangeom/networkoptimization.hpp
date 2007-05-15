@@ -65,6 +65,24 @@ public:
 	double **ptrvector(long n);
 	double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
 	void free_Carrayptrs(double **v);
+	void free_Links()
+	{		
+		if (links != NULL)
+		{
+			int i;
+			for (i = 0; i < nLinks; i++)
+			{
+				if (links[i] != NULL)
+				{
+					free(links[i]);
+					links[i] = NULL;
+				}
+			}
+
+			free(links);
+			links = NULL;
+		}
+	}
 
 	float k; //PR
 	float k2; //PR

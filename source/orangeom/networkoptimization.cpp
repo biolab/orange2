@@ -32,6 +32,7 @@ TNetworkOptimization::TNetworkOptimization()
 	k2 = 1;
 	width = 1000;
 	height = 1000;
+	links = NULL;
 	temperature = sqrt((double)(width*width + height*height)) / 10;
 }
 
@@ -45,13 +46,7 @@ inline T &min(const T&x, const T&y)
 
 TNetworkOptimization::~TNetworkOptimization()
 {
-	int i;
-	for (i = 0; i < nLinks; i++)
-	{
-		free(links[i]);
-	}
-
-	free(links);
+	free_Links();
 	free_Carrayptrs(pos);
 }
 
@@ -119,7 +114,7 @@ void TNetworkOptimization::fruchtermanReingold(int steps)
 
 		if (disp[i] == NULL)
 		{
-			cerr << "Couldn't allocate memory\n";
+			cerr << "Couldn't allocate memory (disp[])\n";
 			exit(1);
 		}
 	}
@@ -213,9 +208,11 @@ void TNetworkOptimization::fruchtermanReingold(int steps)
 	for (i = 0; i < nVertices; i++)
 	{
 		free(disp[i]);
+		disp[i] = NULL;
 	}
 
 	free(disp);
+	disp = NULL;
 	//dumpCoordinates();
 }
 
@@ -277,33 +274,24 @@ double **TNetworkOptimization::pymatrix_to_Carrayptrs(PyArrayObject *arrayin)  {
 	return c;
 }
 
+
 void TNetworkOptimization::setGraph(TGraphAsList *graph)
 {
-	cout << "1" << endl; 
-	int v, l;
-	for (l = 0; l < nLinks; l++)
-	{
-		free(links[l]);
-	}
-	cout << "2" << endl; 
-	free(links);
-	cout << "3" << endl; 
+	free_Links();
 	free_Carrayptrs(pos);
-	cout << "4" << endl; 
+
 	nVertices = graph->nVertices;
 	int dims[2];
 	dims[0] = nVertices;
 	dims[1] = 2;
-	cout << "5" << endl; 
+
 	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
 	random();
-
+ 
 	//dumpCoordinates();
-
-	links = NULL;
 	nLinks = 0;
-	cout << "6" << endl; 
+	int v;
 	for (v = 0; v < graph->nVertices; v++)
 	{
 		TGraphAsList::TEdge *edge = graph->edges[v];
@@ -315,7 +303,7 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 
 			if (links == NULL)
 			{
-				cerr << "Couldn't allocate memory\n";
+				cerr << "Couldn't allocate memory (links 1)\n";
 				exit(1);
 			}
 
@@ -323,7 +311,7 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 
 			if (links[nLinks] == NULL)
 			{
-				cerr << "Couldn't allocate memory\n";
+				cerr << "Couldn't allocate memory (links[] 1)\n";
 				exit(1);
 			}
 
@@ -340,7 +328,7 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 
 				if (links == NULL)
 				{
-					cerr << "Couldn't allocate memory\n";
+					cerr << "Couldn't allocate memory (links 2)\n";
 					exit(1);
 				}
 
@@ -348,7 +336,7 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 				
 				if (links[nLinks] == NULL)
 				{
-					cerr << "Couldn't allocate memory\n";
+					cerr << "Couldn't allocate memory (links[] 2)\n";
 					exit(1);
 				}
 
@@ -514,7 +502,10 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						//cout << "Graph name: " << graphName << endl;
 					}
 					else
+					{
+						file.close();
 						return NULL;
+					}
 				}
 				else if (stricmp(words[0].c_str(), "*vertices") == 0)
 				{
@@ -524,12 +515,18 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						istringstream strVertices(words[1]);
 						strVertices >> nVertices;
 						if (nVertices == 0)
+						{
+							file.close();
 							return NULL;
+						}
 
 						//cout << "nVertices: " << nVertices << endl;
 					}
 					else
+					{
+						file.close();
 						return NULL;
+					}
 
 					break;
 				}
@@ -564,7 +561,10 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 				istringstream strIndex(words[0]);
 				strIndex >> index;
 				if ((index <= 0) || (index > nVertices))
+				{
+					file.close();
 					return NULL;
+				}
 
 				//cout << "index: " << index << " n: " << n << endl;
 				(*example)[0] = TValue(index);
@@ -596,21 +596,39 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 					{
 						if (stricmp(words[i].c_str(), "ic") == 0)
 						{
-							if (i + 1 < n) i++; else return NULL;
+							if (i + 1 < n) 
+								i++; 
+							else 
+							{
+								file.close();
+								return NULL;
+							}
 
 							//cout << "ic: " << words[i] << endl;
 							(*example)[5] = TValue(new TStringValue(words[i]), STRINGVAR);
 						}
 						else if (stricmp(words[i].c_str(), "bc") == 0)
 						{
-							if (i + 1 < n) i++; else return NULL;
+							if (i + 1 < n) 
+								i++; 
+							else 
+							{
+								file.close();
+								return NULL;
+							}
 
 							//cout << "bc: " << words[i] << endl;
 							(*example)[6] = TValue(new TStringValue(words[i]), STRINGVAR);
 						}
 						else if (stricmp(words[i].c_str(), "bw") == 0)
 						{
-							if (i + 1 < n) i++; else return NULL;
+							if (i + 1 < n) 
+								i++; 
+							else
+							{
+								file.close();
+								return NULL;
+							}
 
 							//cout << "bw: " << words[i] << endl;
 							(*example)[7] = TValue(new TStringValue(words[i]), STRINGVAR);
@@ -649,8 +667,11 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							strI1 >> i1;
 							strI2 >> i2;
 
-							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices)) 
+							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
+							{
+								file.close();
 								return NULL;
+							}
 
 							if (i1 == i2)
 								continue;
@@ -684,8 +705,11 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						strI1 >> i1;
 						strI2 >> i2;
 
-						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices)) 
+						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
+						{
+							file.close();
 							return NULL;
+						}
 
 						if (i1 == i2)
 							continue;
@@ -699,8 +723,11 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 
 		file.close();
 	}
-	else 
-		cout << "Unable to open file."; 
+	else
+	{
+		cout << "Unable to open file " << fn << "."; 
+		return NULL;
+	}
 	
 	PExampleTable wtable = table;
 	PGraph wgraph = graph;
