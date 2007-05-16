@@ -48,6 +48,7 @@ TNetworkOptimization::~TNetworkOptimization()
 {
 	free_Links();
 	free_Carrayptrs(pos);
+	Py_DECREF(coors);
 }
 
 double TNetworkOptimization::attractiveForce(double x)
@@ -444,7 +445,7 @@ PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A 
 {
 	CAST_TO(TNetworkOptimization, graph);	
 	Py_INCREF(graph->coors);
-	return (PyObject *)graph->coors;
+	return (PyObject *)graph->coors;  
 }
 
 PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
@@ -466,13 +467,16 @@ WRAPPER(ExampleTable)
 PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Graph")
 {
 	TGraph *graph;
+	PGraph wgraph;
 	TDomain *domain = new TDomain();
+	PDomain wdomain = domain;
 	TExampleTable *table;
+	PExampleTable wtable;
 
 	//cout << "readNetwork" << endl;
 	char *fn;
 
-	if (!PyArg_ParseTuple(args, "s", &fn))
+	if (!PyArg_ParseTuple(args, "s:orangeom.readNetwork", &fn))
 		return NULL;
 
 	//cout << "File: " << fn << endl;
@@ -504,7 +508,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 					else
 					{
 						file.close();
-						return NULL;
+            PYERROR(PyExc_SystemError, "invalid file format", NULL);
 					}
 				}
 				else if (stricmp(words[0].c_str(), "*vertices") == 0)
@@ -517,7 +521,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						if (nVertices == 0)
 						{
 							file.close();
-							return NULL;
+              PYERROR(PyExc_SystemError, "invalid file format", NULL);
 						}
 
 						//cout << "nVertices: " << nVertices << endl;
@@ -525,7 +529,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 					else
 					{
 						file.close();
-						return NULL;
+            PYERROR(PyExc_SystemError, "invalid file format", NULL);
 					}
 
 					break;
@@ -533,6 +537,8 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 			}
 		}
 		graph = new TGraphAsList(nVertices, 0, false);
+		wgraph = graph;
+
 		domain->addVariable(new TIntVariable("index"));
 		domain->addVariable(new TStringVariable("label"));
 		domain->addVariable(new TFloatVariable("x"));
@@ -542,6 +548,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 		domain->addVariable(new TStringVariable("bc"));
 		domain->addVariable(new TStringVariable("bw"));
 		table = new TExampleTable(domain);
+  	wtable = table;
 
 		// read vertex descriptions
 		while (!file.eof())
@@ -563,7 +570,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 				if ((index <= 0) || (index > nVertices))
 				{
 					file.close();
-					return NULL;
+          PYERROR(PyExc_SystemError, "invalid file format", NULL);
 				}
 
 				//cout << "index: " << index << " n: " << n << endl;
@@ -601,7 +608,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							else 
 							{
 								file.close();
-								return NULL;
+                PYERROR(PyExc_SystemError, "invalid file format", NULL);
 							}
 
 							//cout << "ic: " << words[i] << endl;
@@ -614,7 +621,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							else 
 							{
 								file.close();
-								return NULL;
+                PYERROR(PyExc_SystemError, "invalid file format", NULL);
 							}
 
 							//cout << "bc: " << words[i] << endl;
@@ -627,7 +634,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							else
 							{
 								file.close();
-								return NULL;
+                PYERROR(PyExc_SystemError, "invalid file format", NULL);
 							}
 
 							//cout << "bw: " << words[i] << endl;
@@ -670,7 +677,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 							{
 								file.close();
-								return NULL;
+                PYERROR(PyExc_SystemError, "invalid file format", NULL);
 							}
 
 							if (i1 == i2)
@@ -708,7 +715,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 						{
 							file.close();
-							return NULL;
+              PYERROR(PyExc_SystemError, "invalid file format", NULL);
 						}
 
 						if (i1 == i2)
@@ -725,15 +732,13 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 	}
 	else
 	{
-		cout << "Unable to open file " << fn << "."; 
-		return NULL;
+	  PyErr_Format(PyExc_SystemError, "unable to open file '%s'", fn);
+	  return NULL;
 	}
 	
-	PExampleTable wtable = table;
-	PGraph wgraph = graph;
 	//graph->setProperty("items", wtable);
 
-	return Py_BuildValue("OO", WrapOrange(wgraph), WrapOrange(wtable));
+	return Py_BuildValue("NN", WrapOrange(wgraph), WrapOrange(wtable));
 }
 
 #include "networkoptimization.px"
