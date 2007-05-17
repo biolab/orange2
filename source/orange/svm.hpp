@@ -195,15 +195,21 @@ public:
 	TSVMLearner();
 
 	PClassifier operator()(PExampleGenerator, const int & = 0);
+protected:
+	bool sparse;
 };
 
+class ORANGE_API TSVMLearnerSparse : public TSVMLearner{
+public:
+	TSVMLearnerSparse();
+};
 
 
 class ORANGE_API TSVMClassifier : public TClassifier{
 public:
 	__REGISTER_CLASS
 		TSVMClassifier(){};
-	TSVMClassifier(PVariable, PExampleTable, svm_model*, svm_node*);
+	TSVMClassifier(PVariable, PExampleTable, svm_model*, svm_node*, bool);
 	~TSVMClassifier();
 
 	TValue operator()(const TExample&);
@@ -222,9 +228,12 @@ public:
 
     svm_model* getModel(){return model;};
 
+	bool supportsSparse(){return sparse;}
+
 private:
 	svm_model *model;
 	svm_node *x_space;
+	bool sparse;
 };
 
 
