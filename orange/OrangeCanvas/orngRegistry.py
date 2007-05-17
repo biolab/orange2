@@ -212,18 +212,21 @@ def __getDirectoryNames():
     if not os.path.exists(picsDir):
         print "Error. Directory %s not found. Unable to locate widget icons." % picsDir
 
+    home = user.home
+    if home[-1] == ":":
+        home += "\\"
     if os.name == "nt":
-        applicationDir = os.path.join(user.home, "Application Data")
+        applicationDir = os.path.join(home, "Application Data")
         if not os.path.exists(applicationDir):
             try: os.mkdir(applicationDir)
             except: pass
         outputDir = os.path.join(applicationDir, "Orange")                  # directory for saving settings and stuff
     elif sys.platform == "darwin":
-        applicationDir = os.path.join(user.home, "Library")
+        applicationDir = os.path.join(home, "Library")
         applicationDir = os.path.join(applicationDir, "Application Support")
         outputDir = os.path.join(applicationDir, "Orange")
     else:
-        outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
+        outputDir = os.path.join(home, "Orange")                  # directory for saving settings and stuff
     if not os.path.exists(outputDir):
         try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
@@ -240,6 +243,8 @@ def __getDirectoryNames():
 
 
 def addWidgetDirectories():
+    sys.path.append(orangeDir)
+    sys.path.append(widgetDir)
     if os.path.exists(widgetDir):
         for name in os.listdir(widgetDir):
             fullName = os.path.join(widgetDir, name)
