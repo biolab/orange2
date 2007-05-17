@@ -8,7 +8,7 @@
 # ScatterPlotMatrix.py
 #
 # Show data using scatterplot matrix visualization method
-# 
+#
 
 from OWWidget import *
 from OWScatterPlotGraph import OWScatterPlotGraph
@@ -25,7 +25,7 @@ class QMyLabel(QLabel):
 
     def setSize(self, size):
         self.size = size
- 
+
     def sizeHint(self):
         return self.size
 
@@ -35,16 +35,17 @@ class QMyLabel(QLabel):
 class OWScatterPlotMatrix(OWWidget):
     settingsList = ["pointWidth", "showAxisScale", "showXaxisTitle", "showYLaxisTitle",  "showLegend", "jitterSize", "jitterContinuous", "showFilledSymbols", "colorSettings"]
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
-    
+
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Scatterplot matrix", TRUE)
+        OWWidget.__init__(self, parent, signalManager, "Scatterplot Matrix", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
-        self.outputs = [("Attribute Selection List", AttributeList)] 
+        self.outputs = [("Attribute Selection List", AttributeList)]
 
         #set default settings
         self.data = None
-        
+        self.visualizedAttributes = []
+
         self.pointWidth = 5
         self.showAxisScale = 1
         self.showXaxisTitle = 0
@@ -67,7 +68,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.SettingsTab = QVGroupBox(self, "Settings")
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
-        
+
         #add controls to self.controlArea widget
         self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Shown Attributes")
         self.shownAttribsGroup.setMinimumWidth(200)
@@ -115,7 +116,7 @@ class OWScatterPlotMatrix(OWWidget):
         OWGUI.checkBox(box4, self, 'showYLaxisTitle', 'Y axis title', callback = self.updateSettings)
         OWGUI.checkBox(box4, self, 'showLegend', 'Show legend', callback = self.updateSettings)
         OWGUI.checkBox(box4, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateSettings)
-        
+
         hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
@@ -127,10 +128,10 @@ class OWScatterPlotMatrix(OWWidget):
         self.graphParameters = []
 
         # add a settings dialog and initialize its values
-        self.icons = self.createAttributeIconDict()    
+        self.icons = self.createAttributeIconDict()
         self.activateLoadedSettings()
         self.resize(900, 700)
-        
+
 
     # #########################
     # OPTIONS
@@ -140,7 +141,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.contPalette = dlg.getContinuousPalette("contPalette")
         self.discPalette = dlg.getDiscretePalette()
         self.graphCanvasColor = dlg.getColor("Canvas")
-        
+
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
         c.createDiscretePalette("Discrete Palette")
@@ -160,7 +161,7 @@ class OWScatterPlotMatrix(OWWidget):
             self.discPalette = dlg.getDiscretePalette()
             self.graphCanvasColor = dlg.getColor("Canvas")
             self.updateSettings()
-            
+
     def setGraphOptions(self, graph, title):
         graph.showAxisScale = self.showAxisScale
         graph.showXaxisTitle = self.showXaxisTitle
@@ -176,7 +177,7 @@ class OWScatterPlotMatrix(OWWidget):
         for graph in self.graphs:
             graph.pointWidth = n
         self.updateGraph()
-        
+
     def updateShowLegend(self):
         for graph in self.graphs:
             graph.showLegend = self.showLegend
@@ -186,7 +187,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.graphs[0].jitterSize = self.jitterSize
         self.graphs[0].jitterContinuous = self.jitterContinuous
         self.graphs[0].setData(self.data)
-        
+
         for graph in self.graphs[1:]:
             graph.jitterSize = self.jitterSize
             graph.jitterContinuous = self.jitterContinuous
@@ -196,7 +197,7 @@ class OWScatterPlotMatrix(OWWidget):
             graph.domainDataStat = self.graphs[0].domainDataStat
             graph.attributeNames = self.graphs[0].attributeNames
         self.updateGraph()
-    
+
     # #########################
     # GRAPH MANIPULATION
     # #########################
@@ -205,13 +206,13 @@ class OWScatterPlotMatrix(OWWidget):
             (attr1, attr2, className, title) = self.graphParameters[i]
             self.setGraphOptions(self.graphs[i], title)
         self.updateGraph()
-    
+
     def updateGraph(self):
         for i in range(len(self.graphs)):
             (attr1, attr2, className, title) = self.graphParameters[i]
             self.graphs[i].updateData(attr1, attr2, className)
             self.graphs[i].repaint()
-            
+
     def removeAllGraphs(self):
         for graph in self.graphs:
             graph.hide()
@@ -222,56 +223,54 @@ class OWScatterPlotMatrix(OWWidget):
         for label in self.labels:
             label.hide()
         self.labels = []
-    
+
 
     def createGraphs(self):
         self.removeAllGraphs()
 
-        list = []
-        for i in range(self.shownAttribsLB.count()): list.append(str(self.shownAttribsLB.text(i)))
-        list.reverse()
-        count = len(list)
-        
+        attrs = [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())]
+        if len(attrs) < 2:
+            return
+        self.visualizedAttributes = attrs
+        attrs.reverse()
+        count = len(attrs)
+        w = self.mainArea.width()/(len(self.visualizedAttributes)-1)
+        h = self.mainArea.height()/(len(self.visualizedAttributes)-1)
+                
         self.shownAttrCount = count-1
         for i in range(count-1, -1, -1):
             for j in range(i):
                 graph = OWScatterPlotGraph(self, self.mainArea)
-                graph.setMinimumSize(QSize(10,10))
+                #graph.setMinimumSize(QSize(10,10))
                 graph.jitterSize = self.jitterSize
                 graph.jitterContinuous = self.jitterContinuous
-                
+
                 if self.graphs == []:
                     graph.setData(self.data)
                 else:
-                    graph.rawdata = self.graphs[0].rawdata
-                    graph.domainDataStat = self.graphs[0].domainDataStat
-                    graph.scaledData = self.graphs[0].scaledData
-                    graph.noJitteringScaledData = self.graphs[0].noJitteringScaledData
-                    graph.validDataArray = self.graphs[0].validDataArray
-                    graph.attrValues = self.graphs[0].attrValues
-                    graph.attributeNames = self.graphs[0].attributeNames
-                    graph.attributeNameIndex = self.graphs[0].attributeNameIndex
-                    graph.domainDataStat = self.graphs[0].domainDataStat
-                    graph.attributeNames = self.graphs[0].attributeNames
+                    for attr in ["rawdata", "domainDataStat", "scaledData", "noJitteringScaledData", "validDataArray", "attrValues", "attributeNames", "domainDataStat", "attributeNameIndex"]:
+                        setattr(graph, attr, getattr(self.graphs[0], attr))
 
                 self.setGraphOptions(graph, "")
                 self.grid.addWidget(graph, count-i-1, j)
                 self.graphs.append(graph)
                 self.connect(graph, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
-                params = (list[j], list[i], self.data.domain.classVar.name, "")
+                params = (attrs[j], attrs[i], self.data.domain.classVar.name, "")
                 self.graphParameters.append(params)
+                graph.setMinimumSize(w,h)
+                graph.setMaximumSize(w,h)
                 graph.show()
 
         self.updateGraph()
 
-        w = self.mainArea.width()
-        h = self.mainArea.height()
-        for i in range(len(list)):
-            label = QMyLabel(QSize(w/(count+1), h/(count+1)), list[i], self.mainArea)
-            self.grid.addWidget(label, len(list)-i-1, i, Qt.AlignCenter)
-            label.setAlignment(Qt.AlignCenter)
-            label.show()
-            self.labels.append(label)
+##        w = self.mainArea.width()
+##        h = self.mainArea.height()
+##        for i in range(len(attrs)):
+##            label = QMyLabel(QSize(w/(count+1), h/(count+1)), attrs[i], self.mainArea)
+##            self.grid.addWidget(label, len(attrs)-i-1, i, Qt.AlignCenter)
+##            label.setAlignment(Qt.AlignCenter)
+##            label.show()
+##            self.labels.append(label)
 
 
     def saveToFile(self):
@@ -286,7 +285,7 @@ class OWScatterPlotMatrix(OWWidget):
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
-        if ext == "":	
+        if ext == "":
         	ext = "PNG"  	# if no format was specified, we choose png
         	fileName = fileName + ".png"
         ext = ext.upper()
@@ -322,7 +321,7 @@ class OWScatterPlotMatrix(OWWidget):
             # here we have i-th scatterplot printed in a QPixmap. we have to print this pixmap into the right position in the big pixmap
             (found, y, x) = self.grid.findWidget(self.graphs[i])
             fullPainter.drawPixmap(attrNameSpace + x*(smallSize.width() + dist), y*(smallSize.height() + dist) + topOffset, buffer)
-        
+
 
         list = []
         for i in range(self.shownAttribsLB.count()): list.append(str(self.shownAttribsLB.text(i)))
@@ -333,7 +332,7 @@ class OWScatterPlotMatrix(OWWidget):
             y1 = topOffset + i*(smallSize.height() + dist)
             newRect = fullPainter.xFormDev(QRect(0,y1,30, smallSize.height()));
             fullPainter.drawText(newRect, Qt.AlignCenter, str(self.labels[len(self.labels)-i-1].text()))
-            
+
         # draw hortizonatal text
         fullPainter.rotate(90)
         for i in range(len(self.labels)-1):
@@ -341,7 +340,7 @@ class OWScatterPlotMatrix(OWWidget):
             y1 = (len(self.labels)-1-i)*(smallSize.height() + dist)
             rect = QRect(x1, y1, smallSize.width(), 30)
             fullPainter.drawText(rect, Qt.AlignCenter, str(self.labels[i].text()))
-            
+
 
         fullPainter.end()
         fullBuffer.save(fileName, ext)
@@ -359,29 +358,32 @@ class OWScatterPlotMatrix(OWWidget):
     # receive new data and update all fields
     def setData(self, data):
         exData = self.data
-        
+
+        if data:
+            name = getattr(data, "name", "")
+            data = data.filterref(orange.Filter_hasClassValue())
+            data.name = name
+            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
+                data = None
+
         if data == None:
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
             self.removeAllGraphs()
             return
-        
-        if data and data.domain.classVar:
-            name = getattr(data, "name", "")
-            data = data.filterref(orange.Filter_hasClassValue())
-            data.name = name
+
         self.data = data
 
         sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         if sameDomain:
             if self.graphs != []:
                 self.createGraphs()   # if we had already created graphs, redraw them with new data
-            return  
+            return
 
         if not self.setShownAttributes(self.attributeSelection):
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
-        
+
             for attr in self.data.domain.attributes:
                 self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
 
@@ -397,7 +399,7 @@ class OWScatterPlotMatrix(OWWidget):
         domain = [attr.name for attr in self.data.domain]
         for attr in attrList:
             if attr not in domain: return 0  # this attribute list belongs to a new dataset that has not come yet
-        
+
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
@@ -407,7 +409,7 @@ class OWScatterPlotMatrix(OWWidget):
         for attr in self.data.domain.attributes:
             if attr.name not in attrList:
                 self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-                
+
         self.createGraphs()
         return 1
 
@@ -444,14 +446,15 @@ class OWScatterPlotMatrix(OWWidget):
                 self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
                 self.shownAttribsLB.removeItem(i)
                 self.shownAttribsLB.setSelected(i+1, TRUE)
-                
+
     def resizeEvent(self, e):
         OWWidget.resizeEvent(self,e)
-        w = self.mainArea.width()
-        h = self.mainArea.height()
-        size = QSize(w/(len(self.labels)+1), h/(len(self.labels)+1))
-        for label in self.labels:
-            label.setSize(size)
+        if len(self.visualizedAttributes) >= 2:
+            w = self.mainArea.width()/(len(self.visualizedAttributes)-1)
+            h = self.mainArea.height()/(len(self.visualizedAttributes)-1)
+            for graph in self.graphs:
+                graph.setMinimumSize(w,h)
+                graph.setMaximumSize(w,h)
 
 
 
@@ -463,5 +466,5 @@ if __name__=="__main__":
     ow.show()
     a.exec_loop()
 
-    #save settings 
+    #save settings
     ow.saveSettings()
