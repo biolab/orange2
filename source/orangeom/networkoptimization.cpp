@@ -23,6 +23,7 @@
 
 TNetworkOptimization::TNetworkOptimization()
 {
+	//cout << "constructor" << endl;
 	import_array();
 	
 	nVertices = 0;
@@ -33,6 +34,7 @@ TNetworkOptimization::TNetworkOptimization()
 	width = 1000;
 	height = 1000;
 	links = NULL;
+	pos = NULL;
 	temperature = sqrt((double)(width*width + height*height)) / 10;
 }
 
@@ -46,6 +48,7 @@ inline T &min(const T&x, const T&y)
 
 TNetworkOptimization::~TNetworkOptimization()
 {
+	//cout << "destructor" << endl;
 	free_Links();
 	free_Carrayptrs(pos);
 	Py_DECREF(coors);
@@ -98,7 +101,7 @@ void TNetworkOptimization::random()
 	}
 }
 
-void TNetworkOptimization::fruchtermanReingold(int steps)
+int TNetworkOptimization::fruchtermanReingold(int steps)
 {
 	/*
 	cout << "nVertices: " << nVertices << endl << endl;
@@ -116,7 +119,7 @@ void TNetworkOptimization::fruchtermanReingold(int steps)
 		if (disp[i] == NULL)
 		{
 			cerr << "Couldn't allocate memory (disp[])\n";
-			exit(1);
+			return 1;
 		}
 	}
 
@@ -215,6 +218,7 @@ void TNetworkOptimization::fruchtermanReingold(int steps)
 	free(disp);
 	disp = NULL;
 	//dumpCoordinates();
+	return 0;
 }
 
 #include "externs.px"
@@ -241,6 +245,7 @@ PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *
 }
 /* ==== Free a double *vector (vec of pointers) ========================== */ 
 void TNetworkOptimization::free_Carrayptrs(double **v)  {
+
 	free((char*) v);
 }
 
@@ -276,8 +281,9 @@ double **TNetworkOptimization::pymatrix_to_Carrayptrs(PyArrayObject *arrayin)  {
 }
 
 
-void TNetworkOptimization::setGraph(TGraphAsList *graph)
+int TNetworkOptimization::setGraph(TGraphAsList *graph)
 {
+	//cout << "-1" << endl;
 	free_Links();
 	free_Carrayptrs(pos);
 
@@ -285,7 +291,7 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 	int dims[2];
 	dims[0] = nVertices;
 	dims[1] = 2;
-
+	//cout << "0" << endl;
 	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
 	random();
@@ -301,19 +307,19 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 		{
 			int u = edge->vertex;
 			links = (int**)realloc(links, (nLinks + 1) * sizeof(int));
-
+			//cout << "1" << endl;
 			if (links == NULL)
 			{
 				cerr << "Couldn't allocate memory (links 1)\n";
-				exit(1);
+				return 1;
 			}
 
 			links[nLinks] = (int *)malloc(2 * sizeof(int));
-
+			//cout << "2" << endl;
 			if (links[nLinks] == NULL)
 			{
 				cerr << "Couldn't allocate memory (links[] 1)\n";
-				exit(1);
+				return 1;
 			}
 
 			links[nLinks][0] = v;
@@ -326,19 +332,19 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 				int u = next->vertex;
 
 				links = (int**)realloc(links, (nLinks + 1) * sizeof (int));
-
+				//cout << "3" << endl;
 				if (links == NULL)
 				{
 					cerr << "Couldn't allocate memory (links 2)\n";
-					exit(1);
+					return 1;
 				}
 
 				links[nLinks] = (int *)malloc(2 * sizeof(int));
-				
+				//cout << "4" << endl;
 				if (links[nLinks] == NULL)
 				{
 					cerr << "Couldn't allocate memory (links[] 2)\n";
-					exit(1);
+					return 1;
 				}
 
 				links[nLinks][0] = v;
@@ -349,6 +355,8 @@ void TNetworkOptimization::setGraph(TGraphAsList *graph)
 			}
 		}
 	}
+	//cout << "5" << endl;
+	return 0;
 }
 
 int getWords(string const& s, vector<string> &container)
@@ -419,9 +427,12 @@ PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(ME
 	TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
 
 	CAST_TO(TNetworkOptimization, graphOpt);
-	cout << "networkoptimization.cpp/setGraph: setting graph..." << endl;
-	graphOpt->setGraph(graph);
-	cout << "done." << endl;
+	//cout << "networkoptimization.cpp/setGraph: setting graph..." << endl;
+	if (graphOpt->setGraph(graph) > 0)
+	{
+		PYERROR(PyExc_SystemError, "setGraph failed", NULL);
+	}
+	//cout << "done." << endl;
 	RETURN_NONE;
 }
 
@@ -436,7 +447,11 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	CAST_TO(TNetworkOptimization, graph);
 
 	graph->temperature = temperature;
-	graph->fruchtermanReingold(steps);
+	
+	if (graph->fruchtermanReingold(steps) > 0)
+	{
+		PYERROR(PyExc_SystemError, "fruchtermanReingold failed", NULL);
+	}
 	
 	return Py_BuildValue("d", graph->temperature);
 }
@@ -508,7 +523,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 					else
 					{
 						file.close();
-            PYERROR(PyExc_SystemError, "invalid file format", NULL);
+						PYERROR(PyExc_SystemError, "invalid file format", NULL);
 					}
 				}
 				else if (stricmp(words[0].c_str(), "*vertices") == 0)
@@ -521,7 +536,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						if (nVertices == 0)
 						{
 							file.close();
-              PYERROR(PyExc_SystemError, "invalid file format", NULL);
+							PYERROR(PyExc_SystemError, "invalid file format", NULL);
 						}
 
 						//cout << "nVertices: " << nVertices << endl;
@@ -529,7 +544,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 					else
 					{
 						file.close();
-            PYERROR(PyExc_SystemError, "invalid file format", NULL);
+						PYERROR(PyExc_SystemError, "invalid file format", NULL);
 					}
 
 					break;
@@ -548,7 +563,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 		domain->addVariable(new TStringVariable("bc"));
 		domain->addVariable(new TStringVariable("bw"));
 		table = new TExampleTable(domain);
-  	wtable = table;
+  		wtable = table;
 
 		// read vertex descriptions
 		while (!file.eof())
@@ -570,7 +585,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 				if ((index <= 0) || (index > nVertices))
 				{
 					file.close();
-          PYERROR(PyExc_SystemError, "invalid file format", NULL);
+					PYERROR(PyExc_SystemError, "invalid file format", NULL);
 				}
 
 				//cout << "index: " << index << " n: " << n << endl;
@@ -608,7 +623,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							else 
 							{
 								file.close();
-                PYERROR(PyExc_SystemError, "invalid file format", NULL);
+								PYERROR(PyExc_SystemError, "invalid file format", NULL);
 							}
 
 							//cout << "ic: " << words[i] << endl;
@@ -621,7 +636,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							else 
 							{
 								file.close();
-                PYERROR(PyExc_SystemError, "invalid file format", NULL);
+								PYERROR(PyExc_SystemError, "invalid file format", NULL);
 							}
 
 							//cout << "bc: " << words[i] << endl;
@@ -634,7 +649,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							else
 							{
 								file.close();
-                PYERROR(PyExc_SystemError, "invalid file format", NULL);
+								PYERROR(PyExc_SystemError, "invalid file format", NULL);
 							}
 
 							//cout << "bw: " << words[i] << endl;
@@ -677,7 +692,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 							if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 							{
 								file.close();
-                PYERROR(PyExc_SystemError, "invalid file format", NULL);
+								PYERROR(PyExc_SystemError, "invalid file format", NULL);
 							}
 
 							if (i1 == i2)
@@ -715,7 +730,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						if ((i1 <= 0) || (i1 > nVertices) || (i2 <= 0) || (i2 > nVertices))
 						{
 							file.close();
-              PYERROR(PyExc_SystemError, "invalid file format", NULL);
+							PYERROR(PyExc_SystemError, "invalid file format", NULL);
 						}
 
 						if (i1 == i2)

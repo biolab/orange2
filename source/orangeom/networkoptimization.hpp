@@ -56,10 +56,10 @@ public:
 	~TNetworkOptimization();
 	
 	void random();
-	void fruchtermanReingold(int steps);
+	int fruchtermanReingold(int steps);
 	double getTemperature() {return temperature;}
 	void setTemperature(double t) {temperature = t;}
-	void setGraph(TGraphAsList *graph);
+	int setGraph(TGraphAsList *graph);
 	void dumpCoordinates();
 
 	double **ptrvector(long n);
