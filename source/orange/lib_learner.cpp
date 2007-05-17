@@ -1139,7 +1139,7 @@ PyObject *__pickleLoaderSVMClassifier(PyObject *, PyObject *args) PYARGS(METH_VA
     if (!model)
         raiseError("Error building LibSVM model");
     model->param.learner=NULL;
-    PSVMClassifier svm=mlnew TSVMClassifier(var, examples, model, NULL, sparse);
+    PSVMClassifier svm=mlnew TSVMClassifier(var, examples, model, NULL, sparse != 0);
     svm->kernelFunc=kernel;
     svm->supportVectors=supportVectors;
     return WrapOrange(svm);
