@@ -3491,7 +3491,7 @@ svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int
 
 class SVM_NodeSort{
 public:
-	bool operator() (svm_node &lhs, svm_node &rhs){
+	bool operator() (const svm_node &lhs, const svm_node &rhs){
 		return lhs.index < rhs.index;
 	}
 };
