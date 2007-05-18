@@ -41,10 +41,17 @@ learner's accuracy try scaling the data and using the <code>parameter_selection<
   <dt>probability</dt>
   <dd>Determines if a probability model should be build (default False)</dd>
 </dl>
+<h2>SVMLearnerSparse</h2>
+<p><INDEX name="classes/SVMLearnerSparse (in orngSVM)">Same as <code>SVMLearner</code> except that it learns from the examples mata attributes.  Note that meta attributes dont need to be registerd with the dataset domain, or present in all the examples.
+Use this if you are using large sparse datasets. </p>
 
 <h2>SVMLearnerEasy</h2>
 <p><INDEX name="classes/SVMLearner (in orngSVM)">Same as above except that it will automaticaly scale the data and perform parameter optimization using the <code>parameter_selection</code> similar to the easy.py script 
 in libSVM package. Use this if the <code>SVMLearner</code> performs badly. </p> 
+
+<h2>SVMLearnerSparseEasy</h2>
+<p><INDEX name="classes/SVMLearnerSparseEasy (in orngSVM)">Same as <code>SVMLearnerEasy</code> except that it learns from the examples mata attributes.  Note that meta attributes dont need to be registerd with the dataset domain, or present in all the examples.
+Use this if you are using large sparse datasets (and have absolutely no respect for the fourth dimension commonly named as time). </p>
 
 <h2>parameterSelection</h2>
 <p>parameterSelection tool that uses cross validation to find the optimal parameters.</p>
