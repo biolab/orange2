@@ -56,6 +56,10 @@ Additionally you can use the following kernel functions:
   <dt>probability</dt>
   <dd>Determines if a probability model should be build (default False)</dd>
 </dl>
+<h2>SVMLearnerSparse</h2>
+<p><INDEX name="classes/SVMLearnerSparse">Same as above except that it learns from the examples mata attributes.  Note that meta attributes dont need to be registerd with the dataset domain, or present in all the examples.
+Use this if you are using large sparse datasets. </p>
+
 <h2>SVMClassifier</h2>
 <p>Classifier used for classification, regression or distribution estimation (ONE_CLASS). In the later case the return value of the __call__ function can be 1.0 (positive case) or -1.0(negative case).</p>
 <p>For a multiclass classification problem with k classes there are k*(k-1)/2 1class vs. 1class internal binary classifiers being build. The multiclass classification is then performed by a majority vote.</p>
