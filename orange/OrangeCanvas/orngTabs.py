@@ -125,16 +125,32 @@ class WidgetButton(QToolButton):
     def getOutputs(self):
         return self.widgetTabs.widgetInfo[self.nameKey]["outputs"]
 
+    def getMajorInputs(self):
+        ret = []
+        for signal in self.widgetTabs.widgetInfo[self.nameKey]["inputs"]:
+            if signal.default:
+                ret.append(signal)
+        return ret
+
+    def getMajorOutputs(self):
+        ret = []
+        for signal in self.widgetTabs.widgetInfo[self.nameKey]["outputs"]:
+            if signal.default:
+                ret.append(signal)
+        return ret
+
     def getMinorInputs(self):
         ret = []
         for signal in self.widgetTabs.widgetInfo[self.nameKey]["inputs"]:
-            if not signal.default: ret.append(signal)
+            if not signal.default:
+                ret.append(signal)
         return ret
 
     def getMinorOutputs(self):
         ret = []
         for signal in self.widgetTabs.widgetInfo[self.nameKey]["outputs"]:
-            if not signal.default: ret.append(signal)
+            if not signal.default:
+                ret.append(signal)
         return ret
 
     def getCategory(self):

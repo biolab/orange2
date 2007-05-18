@@ -240,6 +240,7 @@ class SignalDialog(QDialog):
         self.topLayout = QVBoxLayout( self, 10 )
         self.signals = []
         self._links = []
+        self.allSignalsTaken = 0
 
         # GUI
         self.resize(515,286)
@@ -326,31 +327,19 @@ class SignalDialog(QDialog):
         return existsBetter, betterOutSignal, betterInSignal
 
 
-    def getPossibleConnections(self, outputs, inputs, outConnected, inConnected):
+    def getPossibleConnections(self, outputs, inputs):
         possibleLinks = []
-        canConnect = 0
-        sameType = 0
         for outS in outputs:
             outType = self.outWidget.instance.getOutputType(outS.name)
-            if outType == None:
-                #print "Unable to find signal type for signal %s. Check the definition of the widget." % (outS.name)
-                #return []                                         # report error
+            if outType == None:     #print "Unable to find signal type for signal %s. Check the definition of the widget." % (outS.name)
                 continue
             for inS in inputs:
                 inType = self.inWidget.instance.getInputType(inS.name)
                 if inType == None:
-                    continue
-                    #print "Unable to find signal type for signal %s. Check the definition of the widget." % (inS.name)
-                    #return None                                        # report error
+                    continue        #print "Unable to find signal type for signal %s. Check the definition of the widget." % (inS.name)
                 if issubclass(outType, inType):
-                    canConnect = 1
-                    if (outS.name in outConnected) or (inS.name in inConnected): continue
-                    if issubclass(inType, outType):
-                        possibleLinks.insert(sameType, (outS.name, inS.name))
-                        sameType += 1
-                    else:
-                        possibleLinks.append((outS.name, inS.name))
-        return possibleLinks, canConnect, sameType
+                    possibleLinks.append((outS.name, inS.name))
+        return possibleLinks
 
     def addDefaultLinks(self):
         canConnect = 0
@@ -358,55 +347,54 @@ class SignalDialog(QDialog):
         addedOutLinks = []
         self.multiplePossibleConnections = 0    # can we connect some signal with more than one widget
 
-        allInputs = self.inWidget.widget.getInputs()
-        allOutputs = self.outWidget.widget.getOutputs()
         minorInputs = self.inWidget.widget.getMinorInputs()
         minorOutputs = self.outWidget.widget.getMinorOutputs()
-        majorInputs = []
-        majorOutputs = []
-        for s in allInputs:
-            if s not in minorInputs: majorInputs.append(s)
-
-        for s in allOutputs:
-            if s not in minorOutputs: majorOutputs.append(s)
+        majorInputs = self.inWidget.widget.getMajorInputs()
+        majorOutputs = self.outWidget.widget.getMajorOutputs()
 
         inConnected = self.inWidget.getInConnectedSignalNames()
         outConnected = self.outWidget.getOutConnectedSignalNames()
 
+        # input connections that can be simultaneously connected to multiple outputs are not to be considered as already connected 
         for i in inConnected[::-1]:
             if not self.inWidget.instance.signalIsOnlySingleConnection(i):
                 inConnected.remove(i)
 
         # rebuild registry if necessary
-        for s in allInputs:
-            if not self.inWidget.instance.hasInputName(s.name): return -1
-        for s in allOutputs:
-            if not self.outWidget.instance.hasOutputName(s.name): return -1
+        for s in majorInputs + minorInputs:
+            if not self.inWidget.instance.hasInputName(s.name):
+                return -1
+        for s in majorOutputs + minorOutputs:
+            if not self.outWidget.instance.hasOutputName(s.name):
+                return -1
 
-        pL1,can1,sameType1 = self.getPossibleConnections(majorOutputs, majorInputs, [], [])
-        pL2,can2,sameType2 = self.getPossibleConnections(majorOutputs, minorInputs, [], [v[1] for v in pL1])
-        pL3,can3,sameType3 = self.getPossibleConnections(minorOutputs, majorInputs, [], [v[1] for v in pL1+pL2])
-        pL4,can4,sameType4 = self.getPossibleConnections(minorOutputs, minorInputs, [], [v[1] for v in pL1+pL2+pL3])
+        pl1 = self.getPossibleConnections(majorOutputs, majorInputs)
+        pl2 = self.getPossibleConnections(majorOutputs, minorInputs)
+        pl3 = self.getPossibleConnections(minorOutputs, majorInputs)
+        pl4 = self.getPossibleConnections(minorOutputs, minorInputs)
 
-        all = pL1 + pL2 + pL3 + pL4
-
-        # try to find if there are links to any inputs that haven't been previously connected
-        for (o,i) in all:
-            if not 1 in [i == s for s in inConnected]:
-                all.remove((o,i))
-                all.insert(0, (o,i))
-                break
+        all = pl1 + pl2 + pl3 + pl4
 
         if not all: return 0
-
+        
+        # try to find a link to any inputs that hasn't been previously connected
+        self.allSignalsTaken = 1
+        for (o,i) in all:
+            if i not in inConnected:
+                all.remove((o,i))
+                all.insert(0, (o,i))
+                self.allSignalsTaken = 0       # we found an unconnected link. no need to show the signal dialog
+                break
         self.addLink(all[0][0], all[0][1])  # add only the best link
 
-        same = [sameType1, sameType2, sameType3, sameType4]
-        can = [can1, can2, can3, can4]
-        self.multiplePossibleConnections = (same[can.index(1)] != 1 and sum(can) > 1)
+        # there are multiple possible connections if we have in the same priority class more than one possible unconnected link
+        for pl in [pl1, pl2, pl3, pl4]:
+            #if len(pl) > 1 and sum([i not in inConnected for (o,i) in pl]) > 1: # if we have more than one valid
+            if len(pl) > 1:     # if we have more than one valid 
+                self.multiplePossibleConnections = 1
+            if len(pl) > 0:     # when we find a first non-empty list we stop searching
+                break
         return len(all) > 0
-
-
 
     def addLink(self, outName, inName):
         if (outName, inName) in self._links: return 1

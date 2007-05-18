@@ -116,9 +116,8 @@ class SchemaDoc(QMainWindow):
             QMessageBox.critical( None, "Orange Canvas", "Error while connecting widgets. Please rebuild  widget registry (menu Options/Rebuild widget registry) and restart Orange Canvas. Some of the widgets have now different signals.", QMessageBox.Ok + QMessageBox.Default )
             return
 
-
         # if there are multiple choices, how to connect this two widget, then show the dialog
-        if self.ctrlPressed or len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
+        if self.ctrlPressed or len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.allSignalsTaken or dialog.getLinks() == []:
             res = dialog.exec_loop()
             if dialog.result() == QDialog.Rejected:
                 return
