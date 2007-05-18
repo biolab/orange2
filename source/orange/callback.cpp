@@ -161,6 +161,22 @@ float TMeasureAttribute_Python::operator()(int attrNo, PDomainContingency dcont,
                                             WrapOrange(dcont),
                                             WrapOrange(apriorClass))); }
 
+float TMeasureAttribute_Python::operator ()(PDistribution d) const
+{ 
+  return (const_cast <TMeasureAttribute_Python *>(this))->callMeasure(Py_BuildValue("(NOO)", WrapOrange(d), Py_None, Py_None));
+}
+
+float TMeasureAttribute_Python::operator ()(const TDiscDistribution &d) const
+{ 
+  PDiscDistribution nd = new TDiscDistribution(d);
+  return (const_cast <TMeasureAttribute_Python *>(this))->callMeasure(Py_BuildValue("(NOO)", WrapOrange(nd), Py_None, Py_None));
+}
+
+float TMeasureAttribute_Python::operator ()(const TContDistribution &d) const
+{ 
+  PContDistribution nd = new TContDistribution(d);
+  return (const_cast <TMeasureAttribute_Python *>(this))->callMeasure(Py_BuildValue("(NOO)", WrapOrange(nd), Py_None, Py_None));
+}
 
 
 PClassifier TLearner_Python::operator()(PExampleGenerator eg, const int &weight)

@@ -54,6 +54,9 @@ public:
   TMeasureAttribute_Python();
   virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
   virtual float operator()(int attrNo, PDomainContingency, PDistribution apriorClass=PDistribution());
+  virtual float operator()(PDistribution) const;
+  virtual float operator ()(const TDiscDistribution &) const;
+  virtual float operator ()(const TContDistribution &) const;
 
 private:
   float callMeasure(PyObject *args);
