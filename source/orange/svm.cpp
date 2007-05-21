@@ -3691,7 +3691,7 @@ TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model
 	}
     int svm_type=model->param.svm_type;
     if (svm_type==C_SVC || svm_type==NU_SVC){
-	    nSV=mlnew TFloatList(nr_class); // num of SVs for each class (sum = model->l)
+	    nSV=mlnew TIntList(nr_class); // num of SVs for each class (sum = model->l)
 	    for(i=0;i<nr_class;i++)
 		    nSV->at(i)=model->nSV[i];
     }

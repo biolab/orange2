@@ -217,7 +217,7 @@ public:
 
 	PFloatList getDecisionValues(const TExample &);
 
-	PFloatList nSV; //PR nSV
+	PIntList nSV; //PR nSV
 	PFloatList rho;	//PR rho
 	PFloatListList coef; //PR coef
 	PExampleTable supportVectors; //PR support vectors
