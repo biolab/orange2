@@ -42,7 +42,8 @@ TRule::TRule()
   complexity(ILLEGAL_FLOAT),
   coveredExamples(NULL),
   coveredExamplesLength(-1),
-  parentRule(NULL)
+  parentRule(NULL),
+  chi(0.0)
 {}
 
 
@@ -56,7 +57,8 @@ TRule::TRule(PFilter af, PClassifier cl, PLearner lr, PDistribution dist, PExamp
   quality(qu),
   coveredExamples(NULL),
   coveredExamplesLength(-1),
-  parentRule(NULL)
+  parentRule(NULL),
+  chi(0.0)
 {}
 
 
@@ -71,7 +73,8 @@ TRule::TRule(const TRule &other, bool copyData)
   quality(copyData ? other.quality : ILLEGAL_FLOAT),
   coveredExamples(copyData && other.coveredExamples && (other.coveredExamplesLength >= 0) ? (int *)memcpy(new int[other.coveredExamplesLength], other.coveredExamples, other.coveredExamplesLength) : NULL),
   coveredExamplesLength(copyData ? other.coveredExamplesLength : -1),
-  parentRule(other.parentRule)
+  parentRule(other.parentRule),
+  chi(other.chi)
 {}
 
 
@@ -667,6 +670,51 @@ float brent(const float & minv, const float & maxv, const int & maxsteps, DiffFu
     }
 }
 
+bool TRuleEvaluator_mEVC::ruleAttSignificant(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, float & aprioriProb)
+{
+  // Should classical LRS be use, or EVC corrected?
+  TFilter_values *filter = rule->filter.AS(TFilter_values);
+  int rLength = filter->conditions->size();
+  PEVCDist full_evc = evcDistGetter->call(rule, rLength);
+  PEVCDist short_evc = evcDistGetter->call(rule, rLength-1);
+  
+  bool useClassicLRS = false;
+  if (full_evc->mu - short_evc->mu < 1.0)
+    useClassicLRS = true;
+
+  // Loop through all attributes - remove each and check significance
+  bool rasig = true;
+  int i,j;
+  float quality;
+  TFilter_values *newfilter;
+
+  for (i=0; i<filter->conditions->size(); i++)
+  {
+      TRule *newRule = new TRule();
+      PRule wnewRule = newRule;
+      wnewRule->filter = new TFilter_values();
+      wnewRule->filter->domain = examples->domain;
+      wnewRule->complexity = rule->complexity - 1;
+      newfilter = newRule->filter.AS(TFilter_values);
+      for (j=0; j<filter->conditions->size(); j++)
+        if (j!=i)
+          newfilter->conditions->push_back(filter->conditions->at(j));
+      wnewRule->filterAndStore(examples, weightID, targetClass);
+      if (!useClassicLRS) {
+        quality = evaluateRule(wnewRule, examples, weightID, targetClass, apriori, newfilter->conditions->size(), aprioriProb);
+        rasig = rasig & (((rule->chi- wnewRule->chi) > 0.0) && (chisqprob(rule->chi- wnewRule->chi, 1.0f) <= attributeAlpha));
+      }
+      else 
+      {
+        float nonOptimistic_Chi;
+        wnewRule->chi = chiFunction->call(rule, examples, weightID, targetClass, wnewRule->classDistribution, nonOptimistic_Chi);
+        wnewRule->chi += nonOptimistic_Chi;
+        rasig = rasig & ((wnewRule->chi > 0.0) && (chisqprob(wnewRule->chi, 1.0f) <= attributeAlpha));
+      }
+  }
+  return rasig;
+}
+
 float TRuleEvaluator_mEVC::evaluateRule(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb) const
 {
   PEVCDist evc = evcDistGetter->call(rule, rLength);
@@ -748,11 +796,13 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
     futureQuality = 1+rule->quality;
   else {
     PDistribution oldRuleDist = rule->classDistribution;
+    float rulesTrueChi = rule->chi;
     rule->classDistribution = mlnew TDiscDistribution(examples->domain->classVar);
     rule->classDistribution->setint(targetClass, oldRuleDist->atint(targetClass));
     rule->classDistribution->abs = rule->classDistribution->atint(targetClass);
     float bestQuality = evaluateRule(rule,examples,weightID,targetClass,apriori,rLength+1,aprioriProb);
     rule->classDistribution = oldRuleDist;
+    rule->chi = rulesTrueChi;
     if (bestQuality < rule->quality)
       futureQuality = -1;
     else if (bestQuality < requiredQuality || (bestRule && bestQuality <= bestRule->quality))
@@ -763,11 +813,20 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
 
   // store best rule and return result
   if (improved >= min_improved && improved/rule->classDistribution->atint(targetClass) > min_improved_perc &&
-      rule->quality > aprioriProb &&
+      rule->quality > aprioriProb && 
       (!bestRule || (rule->quality>bestRule->quality)) &&
       (!validator || validator->call(rule, examples, weightID, targetClass, apriori))) {
       TRule *pbestRule = new TRule(rule.getReference(), true);
-      bestRule = pbestRule;
+      PRule wpbestRule = pbestRule;
+
+      bool ruleGoodEnough = true;
+      // check if rule is significant enough
+      if (ruleAlpha < 1.0)
+        ruleGoodEnough = ruleGoodEnough & ((rule->chi > 0.0) && (chisqprob(rule->chi, 1.0f) <= ruleAlpha));
+      if (attributeAlpha < 1.0) 
+        ruleGoodEnough = ruleGoodEnough & ruleAttSignificant(rule, examples, weightID, targetClass, apriori, aprioriProb);
+      if (ruleGoodEnough)
+        bestRule = wpbestRule;
   }
   return futureQuality;
 }

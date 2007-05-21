@@ -226,10 +226,13 @@ public:
   int min_improved; //P minimal number of improved examples
   float min_improved_perc; //P minimal percentage of improved examples
   PRule bestRule; //P best rule found and evaluated given conditions (min_improved, validator)
+  float ruleAlpha; //P minimal 'true' rule significance
+  float attributeAlpha; //P minimal attribute significance
 
   TRuleEvaluator_mEVC();
   TRuleEvaluator_mEVC(const int & m, PChiFunction, PEVCDistGetter, PVariable, PRuleValidator, const int & min_improved, const float & min_improved_perc);
   void reset();
+  bool ruleAttSignificant(PRule, PExampleTable, const int &, const int &targetClass, PDistribution, float &);
   float chiAsimetryCorrector(const float &);
   float evaluateRule(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb) const;
   float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution );
