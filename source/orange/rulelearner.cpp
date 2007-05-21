@@ -734,6 +734,7 @@ float TRuleEvaluator_mEVC::evaluateRule(PRule rule, PExampleTable examples, cons
   if ((evc->mu-chi)/evc->beta < -100)
     return (rule->classDistribution->atint(targetClass)+m*aprioriProb)/(rule->classDistribution->abs+m);
 
+
   float median = evc->median();
   float chiCorrected = nonOptimistic_Chi;
   // chi is less then median ..
@@ -753,9 +754,10 @@ float TRuleEvaluator_mEVC::evaluateRule(PRule rule, PExampleTable examples, cons
   if (chiCorrected > 0.0)
   {
     LRInv *diffFunc = new LRInv(rule->classDistribution->abs,apriori->atint(targetClass),apriori->abs,chiCorrected);
-    ePositives = brent(0.0, rule->classDistribution->atint(targetClass), 100, diffFunc);
+    ePositives = brent(rule->classDistribution->abs*aprioriProb, rule->classDistribution->atint(targetClass), 100, diffFunc);
     delete diffFunc;
   }
+
   float quality = (ePositives + m*aprioriProb)/(rule->classDistribution->abs+m);
   if (quality > aprioriProb)
     return quality;
@@ -1013,7 +1015,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
           newRule->complexity++;
           newRule->parentRule = wrule;
 
-          newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::LessEqual, cutoffs.front(), 0, 0));
+          newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::LessEqual,		cutoffs.front(), 0, 0));
           newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
           if (wrule->classDistribution->cases > wnewRule->classDistribution->cases)
             ruleList->push_back(newRule);
@@ -1739,7 +1741,10 @@ float TRuleClassifier_logit::cutOptimisticBetas(float step, float curr_eval)
   	for (int i=0; i<rules->size(); i++)
       if ((wavgProb->at(i) > rules->at(i)->quality) && (betas[i]-step)>=minBeta) {
         newEval = compPotEval(i, getClassIndex(rules->at(i)), betas[i]-step,tempF,tempP,wavgProb,wpriorProb);
-				betas[i] = betas[i]-step;
+        if (betas[i]-step<minBeta)
+          betas[i] = 0.0;
+        else
+				  betas[i] = betas[i]-step;
         changedOptimistic = true;
       }
   }
@@ -1777,7 +1782,10 @@ void TRuleClassifier_logit::updateRuleBetas(float step)
         raiseWarning("after cut 2 rule 0 prob: %f, rule 0 beta: %f, step: %f, counter: %d, %d",wavgProb->at(0),betas[0],step, counter,i);*/
       if (newEval>eval && wavgProb->at(i) <= rules->at(i)->quality) { //  
 		    memcpy(oldBetasU,betas,sizeof(float)*rules->size());
-				betas[i] = betas[i]+step;
+        if ((betas[i]+step) < minBeta)
+          betas[i] = minBeta;
+        else
+				  betas[i] = betas[i]+step;
         newEval = cutOptimisticBetas(step, newEval);
         if (newEval>eval) {
 				  eval = newEval;
@@ -1915,13 +1923,15 @@ float TRuleClassifier_logit::findMax(int clIndex, int exIndex) {
 float TRuleClassifier_logit::compPotEval(int ruleIndex, int classIndex, float newBeta, float **tempF, float **tempP, PFloatList &wavgProb, PFloatList &wpriorProb)
 {
   float dif = 0.0;
-  if (betas[ruleIndex] > minBeta && newBeta > minBeta)
+  if (betas[ruleIndex] >= minBeta && newBeta >= minBeta)
     dif = newBeta - betas[ruleIndex];
-  else if (betas[ruleIndex] > minBeta) {
+  else if (betas[ruleIndex] >= minBeta) {
     dif = -betas[ruleIndex];
   }
-  else if (newBeta > minBeta)
+  else if (newBeta >= minBeta)
     dif = newBeta;
+  else 
+	  dif = minBeta - betas[ruleIndex];
 /*  if (ruleIndex == 0)
     raiseWarning("dif = %f, %d, %d", dif, useBestRuleOnly, classIndex);*/
   // prepare new probabilities
