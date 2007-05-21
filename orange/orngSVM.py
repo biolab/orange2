@@ -200,7 +200,6 @@ def getLinearSVMWeights(classifier):
     for i in range(len(classes)-1):
         for j in range(i+1, len(classes)):
             w={}
-            print i,j, j-1, i
             coefInd=j-1
             for svInd in apply(range, svRanges[i]):
                 for attr in SVs.domain.attributes+SVs[svInd].getmetas(orange.Variable).keys():
@@ -213,7 +212,13 @@ def getLinearSVMWeights(classifier):
                         updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
             weights.append(w)
     return weights
-        
+
+def exampleWeightedSum(example, weights):
+    sum=0
+    for attr, w in weights.items():
+        sum+=float(example[attr])*w
+    return sum
+
 import math
 class KernelWrapper:
     def __init__(self, wrapped):
