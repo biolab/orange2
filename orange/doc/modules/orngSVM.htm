@@ -67,6 +67,9 @@ Use this if you are using large sparse datasets (and have absolutely no respect 
     <dd>Dictionary with parameters as keys and containing lists of values (eg. {"gamma":[0.5,0.6,0.7],"C":[1.0,1.1.2])</dd>
 </dl>
 
+<h2>getLinearSVMWeights</h2>
+<p>Returns a list of weights of linear class vs. class classifiers for the linear multiclass svm classifier. The list is in the order of 1vs2, 1vs3 ... 1vsN, 2vs3 ...
+
 <h2>KernelWrapper (DualKernelWrapper)</h2>
 <p><INDEX name="classes/KernelWrapper (in orngSVM)">KernelWrapper (DualKernelWrapper) is an abstract wrapper class that take one (two) kernel function (functions) as a initalization parameters
 and uses them to compute a new kernel function. The available kernel wrappers are RBFKernelWrapper, PolyKernelWrapper, AdditionKernelWrapper, MultiplicationKernelWrapper.</p>
