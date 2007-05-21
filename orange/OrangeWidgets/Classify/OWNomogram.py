@@ -126,7 +126,8 @@ class OWNomogram(OWWidget):
         NomogramStyleTab = QVGroupBox(self)
 
         self.verticalSpacingLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacing', 15, 100, box = 'Vertical spacing:',  tooltip='Define space (pixels) between adjacent attributes.', callback = self.showNomogram)
-        self.verticalSpacingLabel.setDisabled(True)
+        self.verticalSpacingContLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacingContinuous', 15, 100, box = 'Vertical spacing 2d.:',  tooltip='Define space (pixels) between adjacent 2d presentation of attributes.', callback = self.showNomogram)
+##        self.verticalSpacingLabel.setDisabled(True)
         self.fontSizeLabel = OWGUI.spin(NomogramStyleTab, self, 'fontSize', 4, 14, box = 'Font size:', tooltip='Font size of nomogram labels.')
         self.fontSizeLabel.setDisabled(True)
         self.lineWidthLabel = OWGUI.spin(NomogramStyleTab, self, 'lineWidth', 1, 10, box = 'Line width:',  tooltip='Define width of lines shown in nomogram.')
@@ -469,7 +470,7 @@ class OWNomogram(OWWidget):
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
 
-    # Input channel: the rule classifier (from ABCN2 only)
+    # Input channel: the rule classifier (from CN2-EVC only)
     def ruleClassifier(self, cl):
         def selectSign(oper):
             if oper == orange.ValueFilter_continuous.Less:
@@ -485,16 +486,16 @@ class OWNomogram(OWWidget):
         def getConditions(rule):
             conds = rule.filter.conditions
             domain = rule.filter.domain
-            ret = ""
+            ret = []
             if len(conds)==0:
-                ret = ret + "TRUE"
+                ret = ret + ["TRUE"]
             for i,c in enumerate(conds):
                 if i > 0:
-                    ret += " & "
+                    ret[-1] += " & "
                 if type(c) == orange.ValueFilter_discrete:
-                    ret += domain[c.position].name[:2] + "=" + str(domain[c.position].values[int(c.values[0])])
+                    ret += [domain[c.position].name + "=" + str(domain[c.position].values[int(c.values[0])])]
                 elif type(c) == orange.ValueFilter_continuous:
-                    ret += domain[c.position].name[:2] + selectSign(c.oper) + "%.1f"%c.ref
+                    ret += [domain[c.position].name + selectSign(c.oper) + "%.3f"%c.ref]
             return ret
 
         self.error(1)            

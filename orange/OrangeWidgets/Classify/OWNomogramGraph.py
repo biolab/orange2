@@ -468,11 +468,18 @@ class AttrLine:
         self.marker.setPos(self.selectedValue[0], self.selectedValue[1])
 
     def initialize(self, canvas):
-        self.label = QCanvasText(canvas)
-        self.label.setText(self.name)
-        font = QFont(self.label.font())
-        font.setBold(True)
-        self.label.setFont(font)         # draw label in bold
+        def createText(name):
+            label = QCanvasText(canvas)
+            label.setText(name)
+            font = QFont(label.font())
+            font.setBold(True)
+            label.setFont(font) # draw label in bold
+            return label
+            
+        if type(self.name) == str:
+            self.label = [createText(self.name)]
+        else:
+            self.label = [createText(n) for n in self.name]
         self.line = QCanvasLine(canvas)
 
         # create blue probability marker
@@ -480,8 +487,10 @@ class AttrLine:
 
     def drawAttributeLine(self, canvas, rect, mapper):
         atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
-        self.label.setX(1)
-        self.label.setY(rect.bottom()-canvas.fontSize)
+        for l_i,l in enumerate(self.label):
+            l.setX(1)
+            l.setY(rect.bottom()-(1-l_i)*canvas.fontSize+l_i*canvas.fontSize/3)
+            l.show()
 
         # draw attribute line
         self.line.setPoints(min_mapped, rect.bottom(), max_mapped, rect.bottom())
@@ -497,7 +506,7 @@ class AttrLine:
             self.selectedValue = self.selectValues[0]
         
     def paint(self, canvas, rect, mapper):
-        self.label.setText(self.name)
+##        self.label.setText(self.name)
         atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
 
         self.drawAttributeLine(canvas, rect, mapper)        
@@ -547,7 +556,7 @@ class AttrLine:
         self.updateValue()
         if max_mapped - min_mapped > 5.0:
             self.line.show()
-        self.label.show()
+        [l.show() for l in self.label]
 
     # some supplementary methods for 2d presentation
     # draw bounding box around cont. attribute
@@ -558,9 +567,10 @@ class AttrLine:
         self.box.setSize(max_mapped-min_mapped, rect.height()*7/8)
 
         # show att. name
-        self.label.setText(self.name)
-        self.label.setX(min_mapped)
-        self.label.setY(rect.top()+rect.height()/8)
+##        self.label.setText(self.name)
+        for l_i,l in enumerate(self.label):
+            l.setX(min_mapped)
+            l.setY(rect.top()+(l_i+1)*rect.height()/8)
 
     # draws a vertical legend on the left side of the bounding box
     def drawVerticalLabel(self, attLineLabel, min_mapped, mapped_labels, canvas):
@@ -651,7 +661,7 @@ class AttrLineCont(AttrLine):
 
         
     def paint(self, canvas, rect, mapper):
-        self.label.setText(self.name)
+##        self.label.setText(self.name)
         atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
 
         self.drawAttributeLine(canvas, rect, mapper)  
@@ -685,7 +695,7 @@ class AttrLineCont(AttrLine):
 
         self.updateValue()
         self.line.show()
-        self.label.show()
+        [l.show() for l in self.label]
 
 
     # create an AttrLine object from a continuous variable (to many values for a efficient presentation)
@@ -735,7 +745,7 @@ class AttrLineCont(AttrLine):
 
     def paint2d(self, canvas, rect, mapper):
         self.initializeBeforePaint(canvas)
-        self.label.setText(self.name)
+##        self.label.setText(self.name)
 
         # get all values tranfsormed with current mapper 
         atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
@@ -794,7 +804,7 @@ class AttrLineCont(AttrLine):
                 
         self.updateValue()
         self.box.show()
-        self.label.show()
+        [l.show() for l in self.label]
 
 
 
@@ -906,7 +916,7 @@ class AttrLineOrdered(AttrLine):
 
         self.updateValue()
         self.box.show()
-        self.label.show()
+        [l.show() for l in self.label]
 
 
 # #################################################################### 
@@ -1288,8 +1298,8 @@ class BasicNomogram(QCanvas):
         #graph sizes
         self.gleft = 0
         for at in self.attributes:
-            if not (self.parent.contType == 1 and isinstance(at, AttrLineCont)) and at.label.boundingRect().width()>self.gleft:
-                self.gleft = at.label.boundingRect().width()
+            if not (self.parent.contType == 1 and isinstance(at, AttrLineCont)) and max([l.boundingRect().width() for l in at.label])>self.gleft:
+                self.gleft = max([l.boundingRect().width() for l in at.label])
         if QCanvasText(self.footerCanvas.footerPercentName, self.footerCanvas).boundingRect().width()>self.gleft:
             self.gleft = QCanvasText(self.footerCanvas.footerPercentName, self.footerCanvas).boundingRect().width()
             
@@ -1329,13 +1339,13 @@ class BasicNomogram(QCanvas):
             else:
                 self.mapper = Mapper_Linear_Center(self.minBeta, self.maxBeta, self.gleft, self.gright, maxLinearValue = self.maxBeta, minLinearValue = self.minBeta)
         # draw HEADER and vertical line
-        topRect=QRect(self.gleft, self.gtop, self.gwidth, self.parent.verticalSpacing-20)
+        topRect=QRect(self.gleft, self.gtop, self.gwidth, 40)
         self.header.paintHeader(topRect, self.mapper) 
         # draw nomogram
         middleRect=QRect(self.gleft, self.ptop, self.gwidth, self.gheight)
         self.paint(middleRect, self.mapper)
         # draw final line
-        bottomRect=QRect(self.gleft, self.gtop, self.gwidth, 2*self.parent.verticalSpacing-30)
+        bottomRect=QRect(self.gleft, self.gtop, self.gwidth, 90)
         self.footerCanvas.paintFooter(bottomRect, self.parent.alignType, self.parent.yAxis, self.mapper)        
         self.footerCanvas.updateMarkers()
         if self.parent.probability:
