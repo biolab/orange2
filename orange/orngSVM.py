@@ -21,9 +21,14 @@ def SVMLearner(examples=None, weightID=0, **kwds):
         l=l(examples)
     return l
 
+def SVMLearnerSparse(examples=None, weightID=0, **kwds):
+    l=apply(SVMLearnerSparseClass, (), kwds)
+    if examples:
+        l=l(examples)
+    return l
+
 class SVMLearnerClass:
     def __init__(self, **kwds):
-        self.learner=orange.SVMLearner()
         self.svm_type=0
         self.kernel_type=2
         self.kernelFunc=None
@@ -40,11 +45,11 @@ class SVMLearnerClass:
         self.__dict__.update(kwds)
         self.learner=orange.SVMLearner(**kwds)
 
-    def __setattr__(self, name, value):
+    """def __setattr__(self, name, value):
         if name in ["svm_type", "kernel_type", "kernelFunc", "C", "nu", "p", "gamma", "degree",
                     "coef0", "shrinking", "probability", "cache_size", "eps"]:
             self.learner.__dict__[name]=value
-        self.__dict__[name]=value
+        self.__dict__[name]=value"""
 
     def __call__(self, examples, weight=0):
         if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.VarTypes.Discrete:
@@ -54,7 +59,7 @@ class SVMLearnerClass:
         if self.kernel_type==4 and not self.kernelFunc:
             raise AttributeError, "Custom kernel function not supplied"
         ##################################################
-        if self.kernel_type==4:     #There is a bug in svm
+        if self.kernel_type==4:     #There is a bug in svm. For some unknown reason only the probability model works with custom kernels
             self.probability=True
         ##################################################
 
@@ -65,7 +70,11 @@ class SVMLearnerClass:
 
     def learnClassifier(self, examples):
         return self.learner(examples)
-        
+
+class SVMLearnerSparseClass(SVMLearnerClass):
+    def __init__(self, **kwds):
+        SVMLearnerClass.__init__(self, **kwds)
+        self.learner=orange.SVMLearnerSparse(**kwds)
 
 def parameter_selection(learner, data, folds=4, parameters={}, best={}, callback=None):
     """parameter selection tool: uses cross validation to find the optimal parameters.
@@ -124,6 +133,12 @@ def SVMLearnerEasy(examples=None, weightID=0, **kwds):
         l=l(examples)
     return l
 
+def SVMLearnerSparseEasy(examples=None, weightID=0, **kwds):
+    l=apply(SVMLearnerSparseClassEasy, (), kwds)
+    if examples:
+        l=l(examples)
+    return l
+
     
 class SVMLearnerClassEasy(SVMLearnerClass):
     folds=5
@@ -153,6 +168,10 @@ class SVMLearnerClassEasy(SVMLearnerClass):
             setattr(self.learner, name, val)
         return SVMClassifierClassEasyWrapper(self.learner(newexamples), newdomain)
 
+class SVMLearnerSparseClassEasy(SVMLearnerClassEasy, SVMLearnerSparseClass):
+    def __init__(self, **kwds):
+        SVMLearnerSparseClass.__init__(self, **kwds)
+        
 class SVMClassifierClassEasyWrapper:
     def __init__(self, classifier, domain=None):
         self.classifier=classifier
@@ -163,6 +182,38 @@ class SVMClassifierClassEasyWrapper:
     def __getattr__(self, name):
         return getattr(self.classifier,name)
 
+def getLinearSVMWeights(classifier):
+    """returns list of weights of linear class vs. class classifiers for the linear multiclass svm classifier. The list is in the order of 1vs2, 1vs3 ... 1vsN, 2vs3 ..."""
+    def updateWeights(w, key, val, mul):
+        if key in w:
+            w[key]+=mul*val
+        else:
+            w[key]=mul*val
+            
+    SVs=classifier.supportVectors
+    weights=[]
+    classes=classifier.supportVectors.domain.classVar.values
+    classSV=dict([(value, filter(lambda sv: sv.getclass()==value, classifier.supportVectors)) for value in classes])
+    svRanges=[(0, classifier.nSV[0])]
+    for n in classifier.nSV[1:]:
+        svRanges.append((svRanges[-1][1], svRanges[-1][1]+n))
+    for i in range(len(classes)-1):
+        for j in range(i+1, len(classes)):
+            w={}
+            print i,j, j-1, i
+            coefInd=j-1
+            for svInd in apply(range, svRanges[i]):
+                for attr in SVs.domain.attributes+SVs[svInd].getmetas(orange.Variable).keys():
+                    if attr.varType==orange.VarTypes.Continuous:
+                        updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
+            coefInd=i
+            for svInd in apply(range, svRanges[j]):
+                for attr in SVs.domain.attributes+SVs[svInd].getmetas(orange.Variable).keys():
+                    if attr.varType==orange.VarTypes.Continuous:
+                        updateWeights(w, attr, float(SVs[svInd][attr]), classifier.coef[coefInd][svInd])
+            weights.append(w)
+    return weights
+        
 import math
 class KernelWrapper:
     def __init__(self, wrapped):
