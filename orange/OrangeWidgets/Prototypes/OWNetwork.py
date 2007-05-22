@@ -13,6 +13,72 @@ from qt import *
 from OWGraphDrawerCanvas import *
 from orngNetwork import * 
 
+#ta razred je potreben, da lahko narisemo pixmap z painterjem
+class pixmaps(QWidget):
+    def __init__(self):
+        apply(QWidget.__init__, (self,))
+
+        #risanje lupe
+        self.LOOKG=QPixmap(20,20)
+        self.LOOKG.fill()
+        painter=QPainter(self.LOOKG)
+        painter.setPen(QPen(Qt.black,1))
+        painter.setBrush(QBrush(Qt.red))
+        pa=QPointArray([2,5,2,10,5,13,10,13,13,10,13,5,10,2,5,2,2,5])
+        painter.drawPolygon(pa)
+        painter.drawLine(12,11,19,18)
+        painter.drawLine(11,12,18,19)
+        painter.drawLine(12,12,18,18)
+        painter.end()
+
+        #risanje roke
+        self.HAND=QPixmap(20,20)
+        self.HAND.fill()
+        painter=QPainter(self.HAND)
+        painter.setPen(QPen(Qt.black,1))
+        painter.setBrush(QBrush(Qt.red))
+        pa=QPointArray([1,4,1,6,4,6,4,8,6,8,6,10,8,10,8,12,11,12,15,8,15,7,12,4,1,4])
+        painter.drawPolygon(pa)
+        painter.drawLine(5,6,7,6)
+        painter.drawLine(7,8,9,8)
+        painter.drawPoint(9,10)
+        painter.setBrush(QBrush(QColor(192,192,255)))
+        pa=QPointArray([11,12,14,15,18,11,15,8,11,12])
+        painter.drawPolygon(pa)
+        painter.end()
+
+        #risanje pravokotnega izbiralnika
+        self.RECTG=QPixmap(20,20)
+        self.RECTG.fill()
+        painter=QPainter(self.RECTG)
+        painter.setPen(QPen(Qt.black,1))
+        painter.setBrush(QBrush(QColor(192,192,255)))
+        pa=QPointArray([2,2,2,17,17,17,17,2,2,2])
+        painter.drawPolygon(pa)
+        painter.setPen(QPen(Qt.white,1))
+        pa=QPointArray([2,5,2,7,2,9,2,11,2,13,2,15,4,17,6,17,8,17,10,17,12,17,14,17,17,14,17,12,17,10,17,8,17,6,17,4,15,2,13,2,11,2,9,2,7,2,5,2])
+        painter.drawPoints(pa,0,-1)
+        painter.setPen(QPen(Qt.black,1))
+        pa=QPointArray([6,6,6,13,13,13,13,6,6,6])
+        painter.drawPolygon(pa)
+        painter.drawLine(6,6,13,13)
+        painter.drawLine(6,13,13,6)
+        painter.setPen(QPen(QColor(192,192,255),1))
+        pa=QPointArray([6,9,6,10,9,13,10,13,13,10,13,9,10,6,9,6])
+        painter.drawPoints(pa,0,-1)
+        painter.end()
+
+        #risanje poligonskega izbiralnika
+        self.POLYG=QPixmap(20,20)
+        self.POLYG.fill()
+        painter=QPainter(self.POLYG)
+        painter.setPen(QPen(Qt.black,1))
+        painter.setBrush(QBrush(QColor(192,192,255)))
+        pa=QPointArray([1,5,3,15,9,13,14,18,18,12,18,11,13,2,13,1,1,5])
+        painter.drawPolygon(pa)
+        painter.end()
+
+
 class OWNetwork(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
@@ -75,6 +141,7 @@ class OWNetwork(OWWidget):
         self.btnPolySel.setToggleButton(1)
         self.btnPolySel.setPixmap(QPixmap(pics.POLYG))
         
+        OWGUI.button(self.controlArea, self, "Save network", callback=self.saveNetwork)
         OWGUI.button(self.controlArea, self, "Send", callback=self.sendData)
         
         self.graph = OWGraphDrawerCanvas(self, self.mainArea, "ScatterPlot")
@@ -83,6 +150,18 @@ class OWNetwork(OWWidget):
         self.box = QVBoxLayout(self.mainArea)
         self.box.addWidget(self.graph)
         
+    def saveNetwork(self):
+        filename = QFileDialog.getSaveFileName(QString.null,'PAJEK networks (*.net)')
+        if filename:
+            fn = ""
+            head, tail = os.path.splitext(str(filename))
+            if not tail:
+                fn = head + ".net"
+            else:
+                fn = str(filename)
+            
+            self.graph.visualizer.saveNetwork(fn)
+    
     def selectConnectedNodes(self):
         self.graph.selectConnectedNodes(self.connectDistance)
         
@@ -215,6 +294,8 @@ class OWNetwork(OWWidget):
         tolerance = 5
         initTemp = 100
 
+#        self.visualize.fruchtermanReingold(refreshRate, initTemp)
+        
         while True:
             print initTemp
             initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp)
@@ -248,68 +329,3 @@ if __name__=="__main__":
     appl.setMainWidget(ow)
     ow.show()
     appl.exec_loop()
-
-#ta razred je potreben, da lahko narisemo pixmap z painterjem
-class pixmaps(QWidget):
-    def __init__(self):
-        apply(QWidget.__init__, (self,))
-
-        #risanje lupe
-        self.LOOKG=QPixmap(20,20)
-        self.LOOKG.fill()
-        painter=QPainter(self.LOOKG)
-        painter.setPen(QPen(Qt.black,1))
-        painter.setBrush(QBrush(Qt.red))
-        pa=QPointArray([2,5,2,10,5,13,10,13,13,10,13,5,10,2,5,2,2,5])
-        painter.drawPolygon(pa)
-        painter.drawLine(12,11,19,18)
-        painter.drawLine(11,12,18,19)
-        painter.drawLine(12,12,18,18)
-        painter.end()
-
-        #risanje roke
-        self.HAND=QPixmap(20,20)
-        self.HAND.fill()
-        painter=QPainter(self.HAND)
-        painter.setPen(QPen(Qt.black,1))
-        painter.setBrush(QBrush(Qt.red))
-        pa=QPointArray([1,4,1,6,4,6,4,8,6,8,6,10,8,10,8,12,11,12,15,8,15,7,12,4,1,4])
-        painter.drawPolygon(pa)
-        painter.drawLine(5,6,7,6)
-        painter.drawLine(7,8,9,8)
-        painter.drawPoint(9,10)
-        painter.setBrush(QBrush(QColor(192,192,255)))
-        pa=QPointArray([11,12,14,15,18,11,15,8,11,12])
-        painter.drawPolygon(pa)
-        painter.end()
-
-        #risanje pravokotnega izbiralnika
-        self.RECTG=QPixmap(20,20)
-        self.RECTG.fill()
-        painter=QPainter(self.RECTG)
-        painter.setPen(QPen(Qt.black,1))
-        painter.setBrush(QBrush(QColor(192,192,255)))
-        pa=QPointArray([2,2,2,17,17,17,17,2,2,2])
-        painter.drawPolygon(pa)
-        painter.setPen(QPen(Qt.white,1))
-        pa=QPointArray([2,5,2,7,2,9,2,11,2,13,2,15,4,17,6,17,8,17,10,17,12,17,14,17,17,14,17,12,17,10,17,8,17,6,17,4,15,2,13,2,11,2,9,2,7,2,5,2])
-        painter.drawPoints(pa,0,-1)
-        painter.setPen(QPen(Qt.black,1))
-        pa=QPointArray([6,6,6,13,13,13,13,6,6,6])
-        painter.drawPolygon(pa)
-        painter.drawLine(6,6,13,13)
-        painter.drawLine(6,13,13,6)
-        painter.setPen(QPen(QColor(192,192,255),1))
-        pa=QPointArray([6,9,6,10,9,13,10,13,13,10,13,9,10,6,9,6])
-        painter.drawPoints(pa,0,-1)
-        painter.end()
-
-        #risanje poligonskega izbiralnika
-        self.POLYG=QPixmap(20,20)
-        self.POLYG.fill()
-        painter=QPainter(self.POLYG)
-        painter.setPen(QPen(Qt.black,1))
-        painter.setBrush(QBrush(QColor(192,192,255)))
-        pa=QPointArray([1,5,3,15,9,13,14,18,18,12,18,11,13,2,13,1,1,5])
-        painter.drawPolygon(pa)
-        painter.end()

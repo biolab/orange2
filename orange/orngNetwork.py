@@ -8,10 +8,10 @@ from numpy import *
 class NetworkVisualizer(orangeom.NetworkOptimization):
     def __init__(self, graph, parent = None, name = "None"):
         
-        print "orngNetwork/init: setGraph..."
+        #print "orngNetwork/init: setGraph..."
         self.setGraph(graph)
-        print "orngNetwork/init: getCoors..."
-        self.coors = self.getCoors()
+        #print "orngNetwork/init: getCoors..."
+        #self.coors = self.getCoors()
         self.graph = graph
 
         self.parent = parent
@@ -89,3 +89,89 @@ class NetworkVisualizer(orangeom.NetworkOptimization):
         ccY=R*sin(allAngles)+cY
         self.xCoors = where(pos, ccX, self.xCoors)
         self.yCoors = where(pos, ccY, self.yCoors)
+
+    def saveNetwork(self, fn):
+        name = ''
+        try:
+            graphFile = file(fn,'w+')
+        except IOError:
+            return 1
+
+        graphFile.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
+        if name == '':
+            graphFile.write('*Network ' + '"Qt network" \n\n')
+        else:
+            graphFile.write('*Network ' + str(name) + ' \n\n')
+
+
+        #izpis opisov vozlisc
+
+#        if writeCoordinates:
+#            xs=copy.deepcopy(self.GraphBase.Xcoors)
+#            ys=copy.deepcopy(self.GraphBase.Ycoors)
+#            (xs, ys,)=normalizeCoordinates(MAXX, MAXY, xs, ys)
+
+        graphFile.write('*Vertices% 8d\n' %self.graph.nVertices)
+        for v in range(self.graph.nVertices):
+            graphFile.write('% 8d ' % (v + 1))
+#            if verticesParms[v].label!='':
+#                self.GraphFile.write(str('"'+ verticesParms[v].label + '"') + ' \t')
+#            else:
+            graphFile.write(str('"'+ str(v) + '"') + ' \t')
+            x = self.coors[v][0] / 1000
+            y = self.coors[v][1] / 1000
+            if x < 0: x = 0
+            if x >= 1: x = 0.9999
+            if y < 0: y = 0
+            if y >= 1: y = 0.9999
+            z = 0.5000
+            graphFile.write('%.4f    %.4f    %.4f\t' % (x, y, z))
+#            if verticesParms[v].inFileDefinedCoors[2]!=None:
+#                self.GraphFile.write(str(verticesParms[v].inFileDefinedCoors[2]/MAXZ) + ' \t')
+#
+#            if verticesParms[v].colorName!=None:
+#                self.GraphFile.write(' ic ' + verticesParms[v].colorName + ' \t')
+#            if verticesParms[v].borderColorName!=None:
+#                self.GraphFile.write(' bc ' + verticesParms[v].borderColorName + ' \t')
+#            if verticesParms[v].borderWidthFromFile==True:
+#                self.GraphFile.write(' bw ' + str(verticesParms[v].borderWidth) + ' \t')
+            graphFile.write('\n')
+
+        #izpis opisov povezav
+        #najprej neusmerjene
+        graphFile.write('*Edges \n')
+        for (i,j) in self.graph.getEdges():
+            graphFile.write('% 8d % 8d 1' % (i+1, j+1))
+            graphFile.write('\n')
+#                    
+        #self.graph.
+#        for v1 in edgesParms.keys():
+#            for v2 in edgesParms[v1].keys():
+#                if edgesParms[v1][v2].type==UNDIRECTED:
+#                    #osnova
+#                    self.GraphFile.write(str(v1+1) + ' ' + str(v2+1) + ' ' + str(edgesParms[v1][v2].weight) + ' \t')
+#                    #dodatni parametri
+#                    if edgesParms[v1][v2].label != '':
+#                        self.GraphFile.write(' l ' + str('"'+edgesParms[v1][v2].label+'"') + ' \t')
+#                    if edgesParms[v1][v2].colorName!=None:
+#                        self.GraphFile.write(' c ' + edgesParms[v1][v2].colorName + ' \t')
+#                    self.GraphFile.write('\n')
+#
+#        #se usmerjene
+#        self.GraphFile.write('*Arcs \n')
+#        for v1 in edgesParms.keys():
+#            for v2 in edgesParms[v1].keys():
+#                if edgesParms[v1][v2].type==DIRECTED:
+#                    #osnova
+#                    self.GraphFile.write(str(v1+1) + ' ' + str(v2+1) + ' ' + str(edgesParms[v1][v2].weight) + '\t')
+#                    #dodatni parametri
+#                    if edgesParms[v1][v2].label != '':
+#                        self.GraphFile.write(' l ' + str('"'+edgesParms[v1][v2].label+'"') + ' \t')
+#                    if edgesParms[v1][v2].colorName!=None:
+#                        self.GraphFile.write(' c ' + edgesParms[v1][v2].colorName + ' \t')
+#                    self.GraphFile.write('\n')
+
+        graphFile.write('\n')
+        graphFile.close()
+
+        return 0  #uspesen konec
