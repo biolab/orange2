@@ -64,6 +64,7 @@ public:
 
 	double **ptrvector(long n);
 	double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
+	bool *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
 	void free_Carrayptrs(double **v);
 	void free_Links()
 	{		
@@ -90,15 +91,17 @@ public:
 	int width; //P
 	int height; //PR
 	PyArrayObject *coors;
+	PyArrayObject *filter;
 
 	int nLinks;
 	int nVertices;
 	int **links;
-
+	bool *nodes;
 	double **pos;
     double attractiveForce(double x);
 	double repulsiveForce(double x);
 	double cool(double t);
+	bool isFilter();
 };
 
 #endif

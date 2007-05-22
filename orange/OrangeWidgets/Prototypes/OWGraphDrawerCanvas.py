@@ -45,6 +45,7 @@ class OWGraphDrawerCanvas(OWGraph):
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
             self.setCurveSymbol(self.vertices[ndx], newSymbol)
             self.selection.append(ndx);
+            self.visualizer.filter[ndx] = True
             self.replot()
             return True
         
@@ -58,6 +59,7 @@ class OWGraphDrawerCanvas(OWGraph):
             self.setCurveSymbol(self.vertices[v], newSymbol)
             
         self.selection = []
+        self.visualizer.unselectAll()
         self.selectionStyles = {}
         self.replot()
         
@@ -86,9 +88,10 @@ class OWGraphDrawerCanvas(OWGraph):
                     self.vertexDegree[j] = (v_i,power_i)
         
     def selectHubs(self, no):
+        print "start selecting..."
         if self.vertexDegree == []:
             self.generateVertexPower()
-            
+        print "generated generateVertexPower"
         count = 0
         old_power = -1
         next_power = -1     
@@ -103,6 +106,7 @@ class OWGraphDrawerCanvas(OWGraph):
             self.addSelection(v)
             #print "old_power: " + str(old_power) + " new_power: " + str(next_power)
             count += 1
+        print "selected."
             
     def selectConnectedNodes(self, distance):
         sel = set(self.selection)

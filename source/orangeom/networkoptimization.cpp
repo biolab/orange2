@@ -34,6 +34,7 @@ TNetworkOptimization::TNetworkOptimization()
 	width = 1000;
 	height = 1000;
 	links = NULL;
+	nodes = NULL;
 	pos = NULL;
 	temperature = sqrt((double)(width*width + height*height)) / 10;
 }
@@ -51,7 +52,9 @@ TNetworkOptimization::~TNetworkOptimization()
 	//cout << "destructor" << endl;
 	free_Links();
 	free_Carrayptrs(pos);
+	free((char*) nodes);
 	Py_DECREF(coors);
+	Py_DECREF(filter);
 }
 
 double TNetworkOptimization::attractiveForce(double x)
@@ -89,15 +92,29 @@ void TNetworkOptimization::dumpCoordinates()
 	}
 }
 
+bool TNetworkOptimization::isFilter()
+{
+	int i;
+	for (i = 0; i < nVertices; i++)
+		if (nodes[i])
+			return true;
+
+	return false;
+}
 
 void TNetworkOptimization::random()
 {
 	srand(time(NULL));
+	bool _isFilter = isFilter();
+
 	int i;
 	for (i = 0; i < nVertices; i++)
 	{
-		pos[i][0] = rand() % width;
-		pos[i][1] = rand() % height;
+		if (!_isFilter || nodes[i])
+		{
+			pos[i][0] = rand() % width;
+			pos[i][1] = rand() % height;
+		}
 	}
 }
 
@@ -107,6 +124,7 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 	cout << "nVertices: " << nVertices << endl << endl;
 	dumpCoordinates(pos, nVertices, 2);
 	/**/
+	bool _isFilter = isFilter();
 	int i = 0;
 	int count = 0;
 	double kk = 1;
@@ -145,21 +163,24 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 		{
 			for (int u = v + 1; u < nVertices; u++)
 			{
-				double difX = pos[v][0] - pos[u][0];
-				double difY = pos[v][1] - pos[u][1];
-
-				double dif = sqrt(difX * difX + difY * difY);
-
-				if (dif == 0)
-					dif = 1;
-
-				if (dif < kk)
+				if (!_isFilter || (nodes[u] && nodes[v]))
 				{
-					disp[v][0] = disp[v][0] + ((difX / dif) * repulsiveForce(dif));
-					disp[v][1] = disp[v][1] + ((difY / dif) * repulsiveForce(dif));
+					double difX = pos[v][0] - pos[u][0];
+					double difY = pos[v][1] - pos[u][1];
 
-					disp[u][0] = disp[u][0] - ((difX / dif) * repulsiveForce(dif));
-					disp[u][1] = disp[u][1] - ((difY / dif) * repulsiveForce(dif));
+					double dif = sqrt(difX * difX + difY * difY);
+
+					if (dif == 0)
+						dif = 1;
+
+					if (dif < kk)
+					{
+						disp[v][0] = disp[v][0] + ((difX / dif) * repulsiveForce(dif));
+						disp[v][1] = disp[v][1] + ((difY / dif) * repulsiveForce(dif));
+
+						disp[u][0] = disp[u][0] - ((difX / dif) * repulsiveForce(dif));
+						disp[u][1] = disp[u][1] - ((difY / dif) * repulsiveForce(dif));
+					}
 				}
 			}
 		}
@@ -173,36 +194,41 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 			//cout << "v: " << v << " u: " << u << endl;
 
 			// cout << "     v: " << v << " u: " << u << " w: " << edge->weights << endl;
-			
-			double difX = pos[v][0] - pos[u][0];
-			double difY = pos[v][1] - pos[u][1];
+			if (!_isFilter || (nodes[u] && nodes[v]))
+			{
+				double difX = pos[v][0] - pos[u][0];
+				double difY = pos[v][1] - pos[u][1];
 
-			double dif = sqrt(difX * difX + difY * difY);
+				double dif = sqrt(difX * difX + difY * difY);
 
-			if (dif == 0)
-				dif = 1;
+				if (dif == 0)
+					dif = 1;
 
-			disp[v][0] = disp[v][0] - ((difX / dif) * attractiveForce(dif));
-			disp[v][1] = disp[v][1] - ((difY / dif) * attractiveForce(dif));
+				disp[v][0] = disp[v][0] - ((difX / dif) * attractiveForce(dif));
+				disp[v][1] = disp[v][1] - ((difY / dif) * attractiveForce(dif));
 
-			disp[u][0] = disp[u][0] + ((difX / dif) * attractiveForce(dif));
-			disp[u][1] = disp[u][1] + ((difY / dif) * attractiveForce(dif));
+				disp[u][0] = disp[u][0] + ((difX / dif) * attractiveForce(dif));
+				disp[u][1] = disp[u][1] + ((difY / dif) * attractiveForce(dif));
+			}
 		}
 
 		// limit the maximum displacement to the temperature t
 		// and then prevent from being displaced outside frame
 		for (v = 0; v < nVertices; v++)
 		{
-			double dif = sqrt(disp[v][0] * disp[v][0] + disp[v][1] * disp[v][1]);
+			if (!_isFilter || nodes[v])
+			{
+				double dif = sqrt(disp[v][0] * disp[v][0] + disp[v][1] * disp[v][1]);
 
-			if (dif == 0)
-				dif = 1;
+				if (dif == 0)
+					dif = 1;
 
-			pos[v][0] = pos[v][0] + ((disp[v][0] / dif) * min(fabs(disp[v][0]), temperature));
-			pos[v][1] = pos[v][1] + ((disp[v][1] / dif) * min(fabs(disp[v][1]), temperature));
+				pos[v][0] = pos[v][0] + ((disp[v][0] / dif) * min(fabs(disp[v][0]), temperature));
+				pos[v][1] = pos[v][1] + ((disp[v][1] / dif) * min(fabs(disp[v][1]), temperature));
 
-			//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
-			//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
+				//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
+				//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
+			}
 		}
 
 		temperature = cool(temperature);
@@ -280,6 +306,14 @@ double **TNetworkOptimization::pymatrix_to_Carrayptrs(PyArrayObject *arrayin)  {
 	return c;
 }
 
+/* ==== Create 1D Carray from PyArray ======================
+ 129     Assumes PyArray is contiguous in memory.             */
+bool *TNetworkOptimization::pyvector_to_Carrayptrs(PyArrayObject *arrayin)  {
+	int n;
+
+	n = arrayin->dimensions[0];
+	return (bool *) arrayin->data;  /* pointer to arrayin data as double */
+}
 
 int TNetworkOptimization::setGraph(TGraphAsList *graph)
 {
@@ -293,7 +327,10 @@ int TNetworkOptimization::setGraph(TGraphAsList *graph)
 	dims[1] = 2;
 	//cout << "0" << endl;
 	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
+	filter = (PyArrayObject *) PyArray_FromDims(1, dims, NPY_BOOL);
 	pos = pymatrix_to_Carrayptrs(coors);
+	nodes = pyvector_to_Carrayptrs(filter);
+
 	random();
  
 	//dumpCoordinates();
@@ -463,11 +500,40 @@ PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A 
 	return (PyObject *)graph->coors;  
 }
 
+PyObject *NetworkOptimization_get_filter(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> Filter")*/
+{
+	CAST_TO(TNetworkOptimization, graph);	
+	Py_INCREF(graph->filter);
+	return (PyObject *)graph->filter;  
+}
+
 PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
 {
 	CAST_TO(TNetworkOptimization, graph);
 
 	graph->random();
+	
+	RETURN_NONE;
+}
+
+PyObject *NetworkOptimization_selectAll(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+{
+	CAST_TO(TNetworkOptimization, graph);
+
+	int i;
+	for (i = 0; i < graph->nVertices; i++)
+		graph->nodes[i] = true;
+	
+	RETURN_NONE;
+}
+
+PyObject *NetworkOptimization_unselectAll(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+{
+	CAST_TO(TNetworkOptimization, graph);
+
+	int i;
+	for (i = 0; i < graph->nVertices; i++)
+		graph->nodes[i] = false;
 	
 	RETURN_NONE;
 }

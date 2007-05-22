@@ -272,8 +272,8 @@ class OWNetwork(OWWidget):
     def random(self):
         print "OWNetwork/random.."
         if self.visualize == None:   #grafa se ni
-            return
-        
+            return    
+            
         self.visualize.random()
         
         print "OWNetwork/random: updating canvas..."
@@ -302,10 +302,12 @@ class OWNetwork(OWWidget):
             
             if (initTemp <= tolerance):
                 #self.visualize.postProcess()
+                print "OWNetwork/ff: updating canvas..."
                 self.updateCanvas()
                 return
-            
+            print "OWNetwork/ff: updating canvas..."
             self.updateCanvas()
+        print "done."
         
     def circular(self):
         pass
