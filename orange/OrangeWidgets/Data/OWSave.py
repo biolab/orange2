@@ -74,15 +74,13 @@ class OWSave(OWWidget):
                           None, "Orange Data File")
 #        dlg.exec_loop()
 
-        filename = str(dlg.selectedFile())
+        filename = str(dlg)
         if not filename or not os.path.split(filename)[1]:
             return
         
         ext = lower(os.path.splitext(filename)[1])
         if not self.savers.has_key(ext):
-            filt_ext = self.re_filterExtension.search(str(dlg.selectedFilter())).group("ext")
-            if filt_ext == ".*":
-                filt_ext = ".tab"
+            filt_ext = ".tab"
             filename += filt_ext
             
 
