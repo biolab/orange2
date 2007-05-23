@@ -88,6 +88,7 @@ public:
 	float k; //PR
 	float k2; //PR
 	double temperature;
+	double coolFactor;
 	int width; //P
 	int height; //PR
 	PyArrayObject *coors;

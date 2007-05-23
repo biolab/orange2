@@ -68,6 +68,8 @@ void TNetworkOptimization::dumpCoordinates()
 
 		cout << endl;
 	}
+
+	coolFactor = 0.96;
 }
 
 void TNetworkOptimization::random()
@@ -92,6 +94,7 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 	int count = 0;
 	double kk = 1;
 	double **disp = (double**)malloc(nVertices * sizeof (double));
+	double localTemparature = 5;
 
 	for (i = 0; i < nVertices; i++)
 	{
@@ -192,8 +195,8 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 			//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
 			//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
 		}
-
-		temperature = temperature * 0.96;
+		//cout << temperature << ", ";
+		temperature = temperature * coolFactor;
 	}
 
 	// free space
@@ -202,7 +205,7 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 		free(disp[i]);
 		disp[i] = NULL;
 	}
-
+	//cout << endl;
 	free(disp);
 	disp = NULL;
 	//dumpCoordinates();
@@ -444,6 +447,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	CAST_TO(TNetworkOptimization, graph);
 
 	graph->temperature = temperature;
+	graph->coolFactor = exp(log(0.04) / steps);
 	
 	if (graph->fruchtermanReingold(steps) > 0)
 	{
