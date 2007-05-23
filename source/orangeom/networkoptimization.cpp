@@ -31,11 +31,12 @@ TNetworkOptimization::TNetworkOptimization()
 
 	k = 1;
 	k2 = 1;
-	width = 1000;
-	height = 1000;
+	width = 10000;
+	height = 10000;
 	links = NULL;
 	pos = NULL;
 	temperature = sqrt((double)(width*width + height*height)) / 10;
+	coolFactor = 0.96;
 }
 
 #ifdef _MSC_VER
@@ -68,8 +69,6 @@ void TNetworkOptimization::dumpCoordinates()
 
 		cout << endl;
 	}
-
-	coolFactor = 0.96;
 }
 
 void TNetworkOptimization::random()
@@ -447,7 +446,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	CAST_TO(TNetworkOptimization, graph);
 
 	graph->temperature = temperature;
-	graph->coolFactor = exp(log(0.04) / steps);
+	graph->coolFactor = exp(log(0.02) / steps);
 	
 	if (graph->fruchtermanReingold(steps) > 0)
 	{
@@ -472,12 +471,7 @@ PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH
 	
 	RETURN_NONE;
 }
-/*
-void temp(TGraph &graph)
-{
-	graph = TGraphAsList(5, 0, false);
-}
-*/
+
 WRAPPER(ExampleTable)
 
 PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Graph")
