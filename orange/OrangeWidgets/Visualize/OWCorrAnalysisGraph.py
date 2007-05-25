@@ -195,6 +195,7 @@ class OWCorrAnalysisGraph(OWGraph):
             return
 
         cor.sort(self._sort)
+        labSize = self.labelSize * 1.4
         
         top = y + r
         top = self.transform(QwtPlot.yLeft, top)
@@ -223,7 +224,8 @@ class OWCorrAnalysisGraph(OWGraph):
 #                points[i-1] = t            
 #            i = i + 1                
         points = [(i, (x, y, text)) for (i, (x, y, text)) in points if text]
-        points = [(i, (x, y, t[:-1])) for (i, (x, y, t)) in points[:self.maxPoints]]
+        #points = [(i, (x, y, t[:-1])) for (i, (x, y, t)) in points[:self.maxPoints]]
+        points = points[:self.maxPoints]
         
         for i, (x, y, text) in points:
             side = left
@@ -233,19 +235,19 @@ class OWCorrAnalysisGraph(OWGraph):
                 #if self.checkPerc(left, len(text)) > 0:
                 if self.place(left, len(text), 'left') == True:
                     newMark.append((left, self.invTransform(QwtPlot.yLeft, topL), text, Qt.AlignLeft, x, y))
-                    topL = topL + self.labelSize
+                    topL = topL + labSize
                 else:
                     newMark.append((right, self.invTransform(QwtPlot.yLeft, topR), text, Qt.AlignRight, x, y))
-                    topR = topR + self.labelSize
+                    topR = topR + labSize
             else:
                 #pokusaj desno
                 #if self.checkPerc(right, len(text)) < 70:
                 if self.place(right, len(text), 'right') == True:
                     newMark.append((right, self.invTransform(QwtPlot.yLeft, topR), text, Qt.AlignRight, x, y))
-                    topR = topR + self.labelSize
+                    topR = topR + labSize
                 else:                    
                     newMark.append((left, self.invTransform(QwtPlot.yLeft, topL), text, Qt.AlignLeft, x, y))
-                    topL = topL + self.labelSize
+                    topL = topL + labSize
                 
 #            if not (i & 1):
 #                if self.checkPerc(left) > 0:
@@ -302,7 +304,7 @@ class OWCorrAnalysisGraph(OWGraph):
                         again = True
                         swapCounter += 1
                     prevIndL = i
-                    topL += self.labelSize
+                    topL += labSize
                         
                 if newMark[i][3] == Qt.AlignRight:
                     #compute line parameters
@@ -330,7 +332,7 @@ class OWCorrAnalysisGraph(OWGraph):
                         again = True
                         swapCounter += 1
                     prevIndR = i
-                    topR += self.labelSize
+                    topR += labSize
                 i = i + 1
 
 
@@ -355,11 +357,36 @@ class OWCorrAnalysisGraph(OWGraph):
 ##            i = i + 1  
     
 
-            
         for x, y, text, al, x1, y1 in newMark:
-            self.addMarker(text, x, y, alignment = al, color = QColor(255,0,0), size = self.labelSize)
-            #self.showTip(x, y, text)
+            #self.addMarker(text, x, y, alignment = al, color = QColor(255,0,0), size = self.labelSize)
+            mkey = self.addMarker(text, x, y, size=self.labelSize)
+            ma = self.marker(mkey)
+            font = ma.font()
+            font.setPixelSize(self.labelSize)
+            ma.setFont(font)
+            labelcolor = (QBrush(Qt.yellow), QBrush(Qt.gray))[text[-1]=='R']
+            self.setMarkerLabel(mkey, ' ' + text[:-1] + ' ', ma.font(), ma.labelColor(), ma.labelPen(), labelcolor)
+            self.setMarkerLabelAlign(mkey, al)
+            
+
+##            mkey = self.insertMarker(nonTransparentMarker(QColor(255,255,255), self))
+##            self.marker(mkey).setLabel(text)
+####            self.marker(mkey).setXValue(x)
+####            self.marker(mkey).setYValue(y)
+##            if al == Qt.AlignRight:
+##                self.marker(mkey).setXValue(x)
+##                self.marker(mkey).setYValue(y)
+###                self.marker(mkey).setLabelAlignment(Qt.AlignRight)
+##            else:
+##                self.marker(mkey).setXValue(x - 0.4)
+##                self.marker(mkey).setYValue(y)
+###                self.marker(mkey).setLabelAlignment(Qt.AlignLeft)
+##            font = self.marker(mkey).font()
+##            font.setPixelSize(self.labelSize)
+##            self.marker(mkey).setFont(font)
+##            #self.showTip(x, y, text)
             self.markLines.append(self.addCurve("", QColor("black"), QColor("black"), 1, QwtCurve.Lines, xData = [x, x1], yData = [y, y1] ))
+            
 
 ##    def checkPerc(self, x, textLen):
 ##        div = self.axisScale(QwtPlot.xBottom)

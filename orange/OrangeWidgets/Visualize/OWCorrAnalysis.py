@@ -50,6 +50,7 @@ class OWCorrAnalysis(OWWidget):
         
         self.data = None
         self.CA = None
+        self.CAloaded = False
         self.colors = ColorPaletteHSV(2)
         
         #Locals
@@ -119,7 +120,10 @@ class OWCorrAnalysis(OWWidget):
         
         self.apply = False
         OWGUI.button(self.GeneralTab, self, 'Update Graph', self.buttonUpdate)
-            
+        
+        OWGUI.button(self.GeneralTab, self, 'Save graph', self.graph.saveToFile)
+        OWGUI.button(self.GeneralTab, self, 'Save CA', self.saveCA)
+        OWGUI.button(self.GeneralTab, self, 'Load CA', self.loadCA)
         # ####################################
         # SETTINGS TAB
         # point width
@@ -156,13 +160,74 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.listBox(self.resultsTab, self, "chosenDoc", "docs", box="Documents", callback = None)
         self.chosenFeature = []
         self.features = self.graph.features
-        OWGUI.listBox(self.resultsTab, self, "chosenFeature", "features", box="Features", callback = None)
-        
-
+        OWGUI.listBox(self.resultsTab, self, "chosenFeature", "features", box="Features", selectionMode = QListBox.Multi, callback = None)
+        OWGUI.button(self.resultsTab, self, "Save selected features", callback = self.saveFeatures)
+        OWGUI.button(self.resultsTab, self, "Reconstruct words from letter ngrams", callback = self.reconstruct)
+        self.chosenWord = []
+        self.words = []
+        OWGUI.listBox(self.resultsTab, self, "chosenWord", "words", box="Suggested words", callback = None)
+                
         
 
         self.activateLoadedSettings()
-        self.resize(700, 800)        
+        self.resize(700, 800)
+        
+        
+    def loadCA(self):
+        import pickle
+        try:
+            f = open('pickleca.p')
+            self.CA = pickle.load(f)
+            f.close()
+            f = open('pickledata.p')
+            data = pickle.load(f)
+            f.close()
+            self.CAloaded = True
+            self.dataset(data)
+        except:
+            self.CA = None
+        
+        
+        
+    def saveCA(self):
+        f = open('pickleca.p', 'w')
+        import pickle
+        pickle.dump(self.CA, f)
+        f.close()
+        f = open('pickledata.p','w')
+        pickle.dump(self.data, f)
+        f.close()
+
+    def saveFeatures(self):
+        """Saves the features in a file called features.txt"""
+        f = open("features.txt", 'a')
+        f.write('=========================\n')
+        for fn in self.chosenFeature:
+            f.write(self.features[fn]+'\n')
+        f.close()
+        
+
+    def reconstruct(self):
+        if self.textData:
+            import tmt
+            tokens = set([])
+            for ex in self.data:
+                tmp = tmt.tokenizeNonWords(ex['text'].value.decode('utf-8','ignore').encode('cp1250','ignore'))
+                for t in tmp:
+                    tokens.add(' ' + t + ' ')
+            del tmp
+            wordList = dict.fromkeys(tokens, 0)
+            ngrams = set(self.features)
+            n = len(self.features[0])
+            for token in tokens:
+                i = 0
+                while i < len(token) - n:
+                    if token[i:i+n] in ngrams:
+                        wordList[token] += 1.0
+                    i += 1
+            tmp = [(k, v) for k, v in wordList.items() if v]
+            tmp.sort(lambda x,y: -cmp(x[1], y[1]))
+            self.words = [i[0] + '  ' + str(i[1]) for i in tmp]
         
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
@@ -232,16 +297,26 @@ class OWCorrAnalysis(OWWidget):
                     except:
                         cur[i] = 0
                 caList.append(cur)
-            self.CA = orngCA.CA(caList)
+            if not self.CAloaded:
+                self.CA = orngCA.CA(caList)
             try:
                 self.tipsR = [ex['name'].native() for ex in data]
+                self.rowCategories = [(ex['name'].native(), ex['category'].native()) for ex in data]
+                self.catColors = {}
+                col = 0
+                colors = [0, 2, 3, 5, 6, 12]
+                for ex in data:
+                    if ex['category'].native() not in self.catColors.keys():
+                        self.catColors[ex['category'].native()] = colors[col]
+                        col += 1
             except:
                 self.tipsR = [ex.name for ex in data]
             self.tipsC = [a.name for a in data.domain.getmetas().values()]
         else:            
             ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
             caList = [[col for col in row] for row in ca]
-            self.CA = orngCA.CA(caList)
+            if not self.CAloaded:
+                self.CA = orngCA.CA(caList)
             self.tipsR = [s for s, v in ca.outerDistribution.items()]
             self.tipsC = [s for s, v in ca.innerDistribution.items()]
             del ca
@@ -286,6 +361,10 @@ class OWCorrAnalysis(OWWidget):
         
     def buttonUpdate(self):
         self.apply = True
+        self.graph.state = ZOOMING
+        self.zoomSelectToolbar.buttonBrowse.setOn(0)
+        self.zoomSelectToolbar.buttonBrowseCircle.setOn(0)
+        self.zoomSelectToolbar.buttonZoom.setOn(1)
         self.updateGraph()
         self.apply = False
     def updateGraph(self):
@@ -312,8 +391,14 @@ class OWCorrAnalysis(OWWidget):
         indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
         tipsR = [self.tipsR[i] + 'R' for i in indices]
-        if not self.graph.showRowLabels: tipsR = ['' for i in indices]
-        self.plotPoint(cor, 0, tipsR, "Row points", self.graph.showFilledSymbols)
+        #if not self.graph.showRowLabels: tipsR = ['' for i in indices]
+        labelDict = dict(zip(tipsR, cor))
+        rowCategories = [self.rowCategories[i] for i in indices]
+        for cat, col in self.catColors.items():
+            newtips = [c[0] + 'R' for c in rowCategories if c[1] == cat]
+            newcor = [labelDict[f] for f in newtips]
+            if not self.graph.showRowLabels: newtips = ['' for i in indices]
+            self.plotPoint(newcor, col, newtips, cat or "Row points", self.graph.showFilledSymbols)
             
         cor = self.CA.getPrincipalColProfilesCoordinates((int(self.attrX)-1, int(self.attrY)-1))
         numCor = int(self.percCol)
@@ -441,16 +526,21 @@ if __name__=="__main__":
     ow = OWCorrAnalysis()
     
     #owb = OWBagofWords.OWBagofWords()
-    t = orngText.loadFromXML(r'c:\test\rtl.xml')
+    t = orngText.loadFromXML(r'c:\test\orange\msnbc.xml')
     #owb.data = t
     #owb.show()
-    stop = orngText.loadWordSet(r'C:\tmtorange\common\en_stopwords.txt')
+    stop = orngText.loadWordSet(r'C:\tmtorange\common\fr_stopwords.txt')
+    p = orngText.Preprocess(language = 'hr')
     print 'Done with loading'
     #t1 = orngText.extractLetterNGram(t, 3)
-    t1 = orngText.extractWordNGram(t, stopwords = stop)
+    t1 = orngText.extractWordNGram(t, stopwords = stop, measure = 'MI', threshold = 7, n=2)
+    #t1 = orngText.extractWordNGram(t1, stopwords = stop, measure = 'MI', threshold = 10, n=3)
+    #t1 = orngText.extractNamedEntities(t, stopwords = stop)
+    #t1 = orngText.bagOfWords(t1, stopwords = stop)
     print len(t1.domain.getmetas())
     print 'Done with extracting'
-    t2 = orngText.FSS(t1, 'TF', 'MIN', 0.95)
+    t2 = orngText.FSS(t1, 'TF', 'MIN', 0.98)
+    print len(t2.domain.getmetas())
     print 'Done with feature selection'
     appl.setMainWidget(ow)
     t3 = orngText.DSS(t2, 'WF', 'MIN', 1)
