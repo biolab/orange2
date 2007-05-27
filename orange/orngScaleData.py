@@ -239,13 +239,13 @@ class orngScaleData:
                 Min = domainSubDataStat[index].min
                 Max = domainSubDataStat[index].max
                 self.attrSubValues[attr.name] = (Min, Max)
-                if self.scalingByVariance or self.globalValueScaling:
-                    continue
-                normalizer = self.normalizers[index] or 1
-                projMin = (Min - self.offsets[index]) / normalizer
-                projMax = (Max - self.offsets[index]) / normalizer
-                if projMin < 0.0 or projMax > 1.0:
-                    self.subDataMinMaxDict[attr.name] = (min(projMin, 0.0), max(1.0, projMax))
+                #if self.scalingByVariance or self.globalValueScaling:
+                #    continue
+                #normalizer = self.normalizers[index] or 1
+                #projMin = (Min - self.offsets[index]) / normalizer
+                #projMax = (Max - self.offsets[index]) / normalizer
+                #if projMin < 0.0 or projMax > 1.0:
+                #    self.subDataMinMaxDict[attr.name] = (min(projMin, 0.0), max(1.0, projMax))
             elif subData.domain[index].varType == orange.VarTypes.Discrete:
                 self.attrSubValues[attr.name] = [0, len(attr.values)]
 

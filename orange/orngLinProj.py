@@ -15,6 +15,20 @@ LAW_GAUSSIAN = 2
 LAW_KNN = 3
 LAW_LINEAR_PLUS = 4
 
+DR_PCA = 0
+DR_SPCA = 1
+DR_PLS = 2
+
+def normalize(x):
+    return x / numpy.linalg.norm(x)
+
+def center(matrix):
+    '''centers all variables, i.e. subtracts averages in colomns
+    and divides them by their standard deviations'''
+    n,m = numpy.shape(matrix)	
+    return (matrix - numpy.multiply(matrix.mean(axis = 0), numpy.ones((n,m))))/numpy.std(matrix, axis = 0)
+
+
 class FreeViz:
     def __init__(self, graph = None):
         if not graph:
@@ -337,83 +351,7 @@ class FreeViz:
 ##            self.energyLabel.setText("Energy: %.3f" % newEnergy)
 ##            self.energyLabel.repaint()
 
-    def findSPCAProjection(self, attrIndices = None, setGraphAnchors = 1, percentDataUsed = 100, SPCA = 1):
-        try:
-            ai = self.graph.attributeNameIndex
-            if not attrIndices:
-                attributes = self.getShownAttributeList()
-                attrIndices = [ai[label] for label in attributes]
-
-            validData = self.graph.getValidList(attrIndices)
-            self.graph.normalizeExamples = 0
-
-            selectedData = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
-            classData = numpy.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
-
-            if percentDataUsed != 100:
-                indices = orange.MakeRandomIndices2(self.graph.rawdata, 1.0-(float(percentDataUsed)/100.0))
-                selectedData = numpy.compress(indices, selectedData, axis = 1)
-                classData = numpy.compress(indices, classData)
-
-            selectedData = numpy.transpose(selectedData)
-
-            s = numpy.sum(selectedData, axis=0)/float(len(selectedData))
-            selectedData -= s       # substract average value to get zero mean
-
-            # define the Laplacian matrix
-            L = numpy.zeros((len(selectedData), len(selectedData)))
-            for i in range(len(selectedData)):
-                for j in range(i+1, len(selectedData)):
-                    L[i,j] = -int(classData[i] != classData[j])
-                    L[j,i] = -int(classData[i] != classData[j])
-
-            s = numpy.sum(L, axis=0)      # doesn't matter which axis since the matrix L is symmetrical
-            for i in range(len(selectedData)):
-                L[i,i] = -s[i]
-
-            if self.useGeneralizedEigenvectors:
-                covarMatrix = numpy.dot(numpy.transpose(selectedData), selectedData)
-                matrix = inv(covarMatrix)
-                matrix = numpy.dot(matrix, numpy.transpose(selectedData))
-            else:
-                matrix = numpy.transpose(selectedData)
-
-            # compute selectedDataT * L * selectedData
-            if SPCA:
-                matrix = numpy.dot(matrix, L)
-
-            matrix = numpy.dot(matrix, selectedData)
-
-            vals, vectors = eig(matrix)
-            firstInd  = list(vals).index(max(vals))     # save the index of the largest eigenvector
-            vals[firstInd] = -1
-            secondInd = list(vals).index(max(vals));    # save the index of the second largest eigenvector
-
-            xAnchors = vectors[:, firstInd]
-            yAnchors = vectors[:, secondInd]
-
-            lengthArr = xAnchors**2 + yAnchors**2
-            m = math.sqrt(max(lengthArr))
-            xAnchors /= m
-            yAnchors /= m
-            names = self.graph.attributeNames
-            attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
-
-            if setGraphAnchors:
-                self.graph.setAnchors(list(xAnchors), list(yAnchors), attributes)
-            return list(xAnchors), list(yAnchors), (attributes, attrIndices)
-        except:
-            #print "unable to compute the inverse of a singular matrix."
-##            import sys
-##            type, val, traceback = sys.exc_info()
-##            sys.excepthook(type, val, traceback)
-
-            names = self.graph.attributeNames
-            attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
-            anchors = self.graph.createAnchors(len(attributes), attributes)
-            if setGraphAnchors: self.graph.anchorData = self.graph.createAnchors(len(attributes), attributes)
-            return [anchors[i][0] for i in range(len(attributes))], [anchors[i][1] for i in range(len(attributes))], (attributes, attrIndices)
-
+    
     # ###############################################################
     # S2N HEURISTIC FUNCTIONS
     # ###############################################################
@@ -542,7 +480,157 @@ class FreeViz:
             self.graph.repaint()
         return 1
 
+    # find interesting linear projection using PCA, SPCA, or PLS
+    def findProjection(self, method, attrIndices = None, setAnchors = 0, percentDataUsed = 100):
+        ai = self.graph.attributeNameIndex
+        if attrIndices == None:
+            attributes = self.getShownAttributeList()
+            attrIndices = [ai[label] for label in attributes]
 
+        validData = self.graph.getValidList(attrIndices)
+        dataMatrix = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
+        hasClass = self.graph.rawdata.domain.classVar != None
+        if hasClass:
+            classArray = numpy.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
+
+        if percentDataUsed != 100:
+            indices = orange.MakeRandomIndices2(self.graph.rawdata, 1.0-(float(percentDataUsed)/100.0))
+            dataMatrix = numpy.compress(indices, dataMatrix, axis = 1)
+            if hasClass:
+                classArray = numpy.compress(indices, classArray)
+            
+        #if sum(validData) <= len(attrIndices):
+        #    self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
+        #    return
+
+        vectors = None
+        if method == DR_PCA:
+            vectors = FreeViz.findSPCAProjection(self, dataMatrix, classArray, SPCA = 0)
+        elif method == DR_SPCA and hasClass:
+            vectors = FreeViz.findSPCAProjection(self, dataMatrix, classArray, SPCA = 1)
+        elif method == DR_PLS and hasClass:
+            dataMatrix = dataMatrix.transpose()
+            classMatrix = numpy.transpose(numpy.matrix(classArray))
+            vectors = FreeViz.findPLSProjection(self, dataMatrix, classMatrix, 2)
+            vectors = vectors.T
+
+        if vectors == None:
+            return None
+
+        xAnchors = vectors[0]
+        yAnchors = vectors[1]
+
+        m = math.sqrt(max(xAnchors**2 + yAnchors**2))
+        xAnchors /= m
+        yAnchors /= m
+        names = self.graph.attributeNames
+        attributes = [names[attrIndices[i]] for i in range(len(attrIndices))]
+
+        if setAnchors:
+            self.graph.setAnchors(list(xAnchors), list(yAnchors), attributes)
+            self.graph.updateData()
+            self.graph.repaint()
+        return xAnchors, yAnchors, (attributes, attrIndices)
+
+
+
+    def findPLSProjection(self, X,Y,Ncomp):
+        '''Predict Y from X using first Ncomp principal components'''
+
+        # data dimensions
+        n, mx = numpy.shape(X)
+        my = numpy.shape(Y)[1]
+
+        # Z-scores of original matrices
+        YMean = Y.mean()
+        X,Y = center(X), center(Y)
+
+        P = numpy.empty((mx,Ncomp))
+        W = numpy.empty((mx,Ncomp))
+        C = numpy.empty((my,Ncomp))
+        T = numpy.empty((n,Ncomp))
+        U = numpy.empty((n,Ncomp))
+        B = numpy.zeros((Ncomp,Ncomp))
+
+        E,F = X,Y
+        
+        # main algorithm
+        for i in range(Ncomp):
+
+            u = numpy.random.random_sample((n,1))
+            w = normalize(numpy.dot(E.T,u))
+            t = normalize(numpy.dot(E,w))
+
+            dif = t    
+            # iterations for loading vector t
+            while numpy.linalg.norm(dif) > 10e-16:
+                c = normalize(numpy.dot(F.T,t))
+                u = numpy.dot(F,c)
+                w = normalize(numpy.dot(E.T,u))
+                t0 = normalize(numpy.dot(E,w))
+                dif = t - t0
+                t = t0
+
+            T[:,i] = t.T
+            U[:,i] = u.T
+            C[:,i] = c.T
+            W[:,i] = w.T
+        
+            b = numpy.dot(t.T,u)[0,0]
+            B[i][i] = b
+            p = numpy.dot(E.T,t)
+            P[:,i] = p.T
+            E = E - numpy.dot(t,p.T)
+            xx = b * numpy.dot(t,c.T)
+            F = F - xx
+
+        # esimated Y
+        #YE = numpy.dot(numpy.dot(T,B),C.T)*numpy.std(Y, axis = 0) + YMean
+        #Y = Y*numpy.std(Y, axis = 0)+ YMean
+        #BPls = numpy.dot(numpy.dot(numpy.linalg.pinv(P.T),B),C.T)
+                   
+        return W
+
+    def findSPCAProjection(self, dataMatrix, classArray, SPCA = 1):
+        try:
+            dataMatrix = numpy.transpose(dataMatrix)
+
+            s = numpy.sum(dataMatrix, axis=0)/float(len(dataMatrix))
+            dataMatrix -= s       # substract average value to get zero mean
+
+            # define the Laplacian matrix
+            L = numpy.zeros((len(dataMatrix), len(dataMatrix)))
+            for i in range(len(dataMatrix)):
+                for j in range(i+1, len(dataMatrix)):
+                    L[i,j] = -int(classArray[i] != classArray[j])
+                    L[j,i] = -int(classArray[i] != classArray[j])
+
+            s = numpy.sum(L, axis=0)      # doesn't matter which axis since the matrix L is symmetrical
+            for i in range(len(dataMatrix)):
+                L[i,i] = -s[i]
+
+            if self.useGeneralizedEigenvectors:
+                covarMatrix = numpy.dot(numpy.transpose(dataMatrix), dataMatrix)
+                matrix = inv(covarMatrix)
+                matrix = numpy.dot(matrix, numpy.transpose(dataMatrix))
+            else:
+                matrix = numpy.transpose(dataMatrix)
+
+            # compute dataMatrixT * L * dataMatrix
+            if SPCA:
+                matrix = numpy.dot(matrix, L)
+
+            matrix = numpy.dot(matrix, dataMatrix)
+
+            vals, vectors = eig(matrix)
+            firstInd  = list(vals).index(max(vals))     # save the index of the largest eigenvector
+            vals[firstInd] = -1
+            secondInd = list(vals).index(max(vals));    # save the index of the second largest eigenvector
+
+            vectors = vectors.transpose()
+            return numpy.take(vectors, [firstInd, secondInd], axis = 0)
+        except:
+            return None
 
 
 # #############################################################################

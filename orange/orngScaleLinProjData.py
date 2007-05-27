@@ -70,6 +70,7 @@ class orngScaleLinProjData(orngScaleData):
         if normalizeExample == 1 or (normalizeExample == None and self.normalizeExamples):
             m = min(values); M = max(values)
             if m < 0.0 or M > 1.0:  # we have to do rescaling of values so that all the values will be in the 0-1 interval
+                #print "example values are not in the 0-1 interval"
                 values = [max(0.0, min(val, 1.0)) for val in values]
                 #m = min(m, 0.0); M = max(M, 1.0); diff = max(M-m, 1e-10)
                 #values = [(val-m) / float(diff) for val in values]
@@ -145,7 +146,7 @@ class orngScaleLinProjData(orngScaleData):
                 if not self.subDataMinMaxDict.has_key(self.rawdata.domain[attrIndices[i]].name):
                     continue
                 m, M = self.subDataMinMaxDict[self.rawdata.domain[attrIndices[i]].name]
-                selectedData[i] = (selectedData[i] - m) / float(M-m)
+                selectedData[i] = (selectedData[i] - m) / float(max(M-m, 1e-10))
 
         if useAnchorData and self.anchorData:
             XAnchors = numpy.array([val[0] for val in self.anchorData])
