@@ -119,7 +119,7 @@ class VizRank:
         self.attrCont = CONT_MEAS_RELIEFF
         self.attrDisc = DISC_MEAS_RELIEFF
         self.attrSubsetSelection = GAMMA_ALL                # how do we find attribute subsets to evaluate - deterministic according to attribute ranking score or using gamma distribution - if using gamma, do we want to evaluate all possible permutations of attributes or only one
-        self.useSupervisedPCA = 0                           # use the supervisedPCA
+        self.projOptimizationMethod = 0                     # None, supervisedPCA, partial least square
         self.useExampleWeighting = 0                        # weight examples, so that the class that has a low number of examples will have higher weights
 
         self.externalLearner = None                         # do we use knn or some external learner
@@ -600,7 +600,7 @@ class VizRank:
                 permutationIndices = {}
                 for i in range(minLength, maxLength+1):
                     if i > len(attributes): continue        # if we don't have enough attributes
-                    if self.useSupervisedPCA:
+                    if self.projOptimizationMethod != 0:
                         permutationIndices[i] = [range(i)]
                     else:
                         permutationIndices[i] = orngVisFuncts.generateDifferentPermutations(range(i))
@@ -703,7 +703,7 @@ class VizRank:
                         permutations.append(comb)
 
             # create only one permutation, because its all we need
-            elif self.useSupervisedPCA:
+            elif self.projOptimizationMethod != 0:
                 permutations.append(reduce(operator.add, combination))
             else:
                 for proj in orngVisFuncts.createProjections(len(self.data.domain.classVar.values), sum([len(group) for group in combination])):
@@ -727,6 +727,7 @@ class VizRank:
 
         self.evaluationData["index"] = index + 1
         return permutations
+
 
     # ##########################################################################
     # MAIN FUNCTION FOR EVALUATING PROJECTIONS
@@ -783,7 +784,7 @@ class VizRank:
 
         # #################### RADVIZ, LINEAR_PROJECTION  ################################
         elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION, POLYVIZ):
-            if self.useSupervisedPCA:
+            if self.projOptimizationMethod != 0:
                 self.freeviz.useGeneralizedEigenvectors = 1
                 self.graph.normalizeExamples = 0
 
@@ -809,8 +810,8 @@ class VizRank:
                 while permutations:
                     attrIndices = permutations[0]
 
-                    if self.useSupervisedPCA:
-                        xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(attrIndices, setGraphAnchors = 0, percentDataUsed = self.percentDataUsed)
+                    if self.projOptimizationMethod != 0:
+                        xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
                         table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                         if len(table) < self.minNumOfExamples: continue
                         self.evaluatedProjectionsCount += 1
@@ -957,7 +958,7 @@ class VizRank:
                 projIndex -= 1
 
                 # first try to use the attributes in the projection and evaluate only different permutations of these attributes
-                if self.locOptOptimizeProjectionByPermutingAttributes == 1 and self.useSupervisedPCA == 0:
+                if self.locOptOptimizeProjectionByPermutingAttributes == 1 and self.projOptimizationMethod == 0:
                     bestProjection = projection; tempProjection = projection
                     bestAccuracy = accuracy; tempAccuracy = accuracy
                     triedPermutationsDict = {}
@@ -1009,8 +1010,8 @@ class VizRank:
                         if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
                         tempList = []
 
-                        # supervised PCA
-                        if self.useSupervisedPCA:
+                        # SPCA, PLS
+                        if self.projOptimizationMethod != 0:
                             if iteration == 0:  # replace one attribute in each projection with attribute attr
                                 testProjections = [copy(projection) for i in range(len(projection))]
                                 for i in range(len(testProjections)): testProjections[i][len(projection)-1-i] = attr
@@ -1020,7 +1021,7 @@ class VizRank:
                                 proj.sort()
                                 if newProjDict.has_key(str(proj)): continue
                                 newProjDict[str(proj)] = 1
-                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findSPCAProjection(proj, setGraphAnchors = 0)
+                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
                                 table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                                 if len(table) < self.minNumOfExamples: continue
                                 self.optimizedProjectionsCount += 1
@@ -1097,7 +1098,7 @@ class VizRank:
         # open, write and save file
         file = open(name, "wt")
 
-        attrs = ["kValue", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "useSupervisedPCA", "attrSubsetSelection", "optimizationType", "attributeCount", "attrDisc", "attrCont", "timeLimit", "projectionLimit"]
+        attrs = ["kValue", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm", "useExampleWeighting", "projOptimizationMethod", "attrSubsetSelection", "optimizationType", "attributeCount", "attrDisc", "attrCont", "timeLimit", "projectionLimit"]
         dict = {}
         for attr in attrs: dict[attr] = self.__dict__.get(attr)
         dict["dataCheckSum"] = self.data.checksum()
@@ -1264,7 +1265,7 @@ if __name__=="__main__":
     vizrank.optimizationType = EXACT_NUMBER_OF_ATTRS    # MAXIMUM_NUMBER_OF_ATTRS,  EXACT_NUMBER_OF_ATTRS
     vizrank.attributeCount = 10
     vizrank.attrCont = CONT_MEAS_S2NMIX
-    vizrank.useSupervisedPCA = 0
+    vizrank.projOptimizationMethod = 0
     vizrank.useExampleWeighting = 0
     vizrank.attrSubsetSelection = GAMMA_SINGLE
     vizrank.timeLimit = 1
