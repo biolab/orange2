@@ -300,6 +300,18 @@ class FeatureByCartesianProductClass:
       meas = 0
     return newVar, meas
 
+  def getLookupTableIndex(self, valArray):
+    if len(valArray) == 1:
+      return valArray[0]
+    elif len(valArray) == 2:
+      return clsfr.noOfValues1 * valArray[0] + valArray[1]
+    elif len(valArray) == 3:
+      return ((clsfr.noOfValues1 * valArray[0]) + valArray[1]) * clsfr.noOfValues2 + valArray[2]
+    elif len(valArray) > 3:
+      tmp = 0
+      for i in range(len(clsfr.noOfValues)-1):
+        tmp = (tmp + valArray[i]) * clsfr.noOfValues[i]
+      return tmp + valArray[-1]
 
 ######################################################
 # Feature construction for removal of redundant values
