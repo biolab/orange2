@@ -89,6 +89,48 @@ def logMultipleCombs(n, ks):
 
 
 
+def mergeAttrValues(data, attrList, attrMeasure, removeUnusedValues = 1):
+    import orngCI
+    #data = data.select([data.domain[attr] for attr in attrList] + [data.domain.classVar])
+    newData = data.select(attrList + [data.domain.classVar])
+    newAttr = orngCI.FeatureByCartesianProduct(newData, attrList)[0]
+    dist = orange.Distribution(newAttr, newData)
+    activeValues = []
+    for i in range(len(newAttr.values)):
+        if dist[newAttr.values[i]] > 0: activeValues.append(i)
+    currScore = attrMeasure(newAttr, newData)
+    while 1:
+        bestScore, bestMerge = currScore, None
+        for i1, ind1 in enumerate(activeValues):
+            oldInd1 = newAttr.getValueFrom.lookupTable[ind1]
+            for ind2 in activeValues[:i1]:
+                newAttr.getValueFrom.lookupTable[ind1] = ind2
+                score = attrMeasure(newAttr, newData)
+                if score >= bestScore:
+                    bestScore, bestMerge = score, (ind1, ind2)
+                newAttr.getValueFrom.lookupTable[ind1] = oldInd1
+
+        if bestMerge:
+            ind1, ind2 = bestMerge
+            currScore = bestScore
+            for i, l in enumerate(newAttr.getValueFrom.lookupTable):
+                if not l.isSpecial() and int(l) == ind1:
+                    newAttr.getValueFrom.lookupTable[i] = ind2
+            newAttr.values[ind2] = newAttr.values[ind2] + "+" + newAttr.values[ind1]
+            del activeValues[activeValues.index(ind1)]
+        else:
+            break
+
+    if not removeUnusedValues:
+        return newAttr
+
+    reducedAttr = orange.EnumVariable(newAttr.name, values = [newAttr.values[i] for i in activeValues])
+    reducedAttr.getValueFrom = newAttr.getValueFrom
+    reducedAttr.getValueFrom.classVar = reducedAttr
+    return reducedAttr
+
+
+
 ##if __name__=="__main__":
 ##    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
 ##    #newFeature, quality = FeatureByCartesianProduct(data, ["sex", "age"])
@@ -96,4 +138,4 @@ def logMultipleCombs(n, ks):
 ##    #print logMultipleCombs(200, [70,30,100])
 ##    #import orngCI
 ##    #newFeature, quality = orngCI.FeatureByIM(data, ["milk", "airborne"], binary = 0, measure = MeasureAttribute_MDL())
-    
+
