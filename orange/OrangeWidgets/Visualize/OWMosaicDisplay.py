@@ -17,9 +17,10 @@ import operator
 from orngScaleData import getVariableValuesSorted, getVariableValueIndices
 from OWQCanvasFuncts import *
 from OWGraphTools import *
-import OWDlgs, OWExplorer
+import OWDlgs
 from orngVisFuncts import permutations
 from copy import copy
+from OWGraphTools import ColorBrewerColors
 
 PEARSON = 0
 CLASS_DISTRIBUTION = 1
@@ -103,18 +104,19 @@ class OWMosaicDisplay(OWWidget):
         self.colorSettings = None
         self.selectedSchemaIndex = 0
         self.interiorColoring = 0
-        self.showAprioriDistributionLines = 1
+        self.cellspace = 4
         self.showAprioriDistributionBoxes = 1
         self.useBoxes = 1
         self.showSubsetDataBoxes = 1
-        self.horizontalDistribution = 1
+        self.horizontalDistribution = 0
+        self.showAprioriDistributionLines = 0
         self.boxSize = 5
         self.exploreAttrPermutations = 0
         self.attr1 = ""
         self.attr2 = ""
         self.attr3 = ""
         self.attr4 = ""
-        self.cellspace = 4
+
         self.attributeNameOffset = 30
         self.attributeValueOffset = 15
         self.residuals = [] # residual values if the residuals are visualized
@@ -170,12 +172,10 @@ class OWMosaicDisplay(OWWidget):
             setattr(self, "attr" + str(i)+ "Combo", combo)
 
         self.optimizationDlg = OWMosaicOptimization(self, self.signalManager)
-        self.explorerDlg = OWExplorer.OWExplorerDialog(self, self.optimizationDlg, "Mosaic", self.signalManager)
 
         optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Dialogs", orientation = "horizontal")
         optimizationButtons.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed))
         OWGUI.button(optimizationButtons, self, "VizRank", callback = self.optimizationDlg.reshow, debuggingEnabled = 0, tooltip = "Find attribute combinations that will separate different classes as clearly as possible.")
-        OWGUI.button(optimizationButtons, self, "Explorer", callback = self.explorerDlg.reshow, debuggingEnabled = 0, tooltip = "Select specific cells in mosaic and explore this data further.\nBuild a decision tree with mosaic diagrams.")
 
         self.box7 = OWGUI.collapsableWidgetBox(self.GeneralTab, "Explore Attribute Permutations", self, "exploreAttrPermutations", callback = self.permutationListToggle)
 
@@ -219,7 +219,11 @@ class OWMosaicDisplay(OWWidget):
         dlg = self.createColorDialog()
         self.colorPalette = dlg.getDiscretePalette()
 
-        self.VizRankLearner = MosaicVizRankLearner(self.optimizationDlg)
+        from OWGraphTools import ColorBrewerColors, defaultRGBColors
+        #self.selectionColorPalette = [QColor(*col) for col in ColorBrewerColors[::-1]]
+        self.selectionColorPalette = [QColor(*col) for col in defaultRGBColors]
+
+        self.VizRankLearner = MosaicTreeLearner(self.optimizationDlg)
         self.send("Learner", self.VizRankLearner)
 
         # this is needed so that the tabs are wide enough!
@@ -295,7 +299,6 @@ class OWMosaicDisplay(OWWidget):
         self.information([0,1,2])
 
         self.data = self.optimizationDlg.setData(data, self.removeUnusedValues)
-        self.explorerDlg.setData(self.data)
 
         if self.data:
             if data.domain.hasContinuousAttributes():
@@ -379,13 +382,16 @@ class OWMosaicDisplay(OWWidget):
 
     # ############################################################################
     # updateGraph - gets called every time the graph has to be updated
-    def updateGraph(self, data = -1, subsetData = -1, attrList = -1, erasePrevious = 1, **args):
+    def updateGraph(self, data = -1, subsetData = -1, attrList = -1, **args):
         # do we want to erase previous diagram?
-        if erasePrevious:
+        if args.get("erasePrevious", 1):
             for item in self.canvas.allItems():
-                if item.rtti() != 123: item.setCanvas(None)    # remove all canvas items, except SelectionCurves
-            for (rect, tip) in self.tooltips: QToolTip.remove(self.canvasView, rect)
-            self.names = []; self.tooltips = []
+                if type(item) != SelectionRectangle:
+                    item.setCanvas(None)    # remove all canvas items, except SelectionCurves
+            for (rect, tip) in self.tooltips:
+                QToolTip.remove(self.canvasView, rect)
+            self.names = []
+            self.tooltips = []
 
         if data == -1:
             data = self.data
@@ -444,7 +450,8 @@ class OWMosaicDisplay(OWWidget):
         if squareSize < 0: return    # canvas is too small to draw rectangles
 
         self.legend = {}        # dictionary that tells us, for what attributes did we already show the legend
-        for attr in attrList: self.legend[attr] = 0
+        for attr in attrList:
+            self.legend[attr] = 0
 
         self.drawnSides = dict([(0,0),(1,0),(2,0),(3,0)])
         self.drawPositions = {}
@@ -461,12 +468,12 @@ class OWMosaicDisplay(OWWidget):
             self.conditionalSubsetDict[""] = len(subsetData)
 
         # draw rectangles
-        self.DrawData(attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 0, "", len(attrList))
+        self.DrawData(attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 0, "", len(attrList), **args)
         if args.get("drawLegend", 1):
             self.DrawLegend(data, (xOff, xOff+squareSize), (yOff, yOff+squareSize)) # draw class legend
 
         if args.get("drillUpdateSelection", 1):
-            self.explorerDlg.updateState()
+            self.optimizationDlg.mtUpdateState()
 
         self.canvas.update()
 
@@ -474,7 +481,7 @@ class OWMosaicDisplay(OWWidget):
     # ############################################################################
 
     ##  DRAW DATA - draw rectangles for attributes in attrList inside rect (x0,x1), (y0,y1)
-    def DrawData(self, attrList, (x0, x1), (y0, y1), side, condition, totalAttrs, lastValueForFirstAttribute = 0, usedAttrs = [], usedVals = [], attrVals = ""):
+    def DrawData(self, attrList, (x0, x1), (y0, y1), side, condition, totalAttrs, lastValueForFirstAttribute = 0, usedAttrs = [], usedVals = [], attrVals = "", **args):
         if self.conditionalDict[attrVals] == 0:
             self.addRect(x0, x1, y0, y1, attrVals = attrVals)
             self.DrawText(side, attrList[0], (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute, attrVals)  # store coordinates for later drawing of labels
@@ -505,11 +512,11 @@ class OWMosaicDisplay(OWWidget):
             else:              newAttrVals = val
 
             if side % 2 == 0:   # if drawing horizontal
-                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", usedAttrs + [attr], usedVals + [val], newAttrVals)
-                else:                   self.DrawData(attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", totalAttrs, lastValueForFirstAttribute + int(val == values[-1]), usedAttrs + [attr], usedVals + [val], newAttrVals)
+                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
+                else:                   self.DrawData(attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", totalAttrs, lastValueForFirstAttribute + int(val == values[-1]), usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
             else:
-                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, condition + 4*"&nbsp;" + attr + ": <b> " + htmlVal + "</b><br>", usedAttrs + [attr], usedVals + [val], newAttrVals)
-                else:                   self.DrawData(attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", totalAttrs, lastValueForFirstAttribute, usedAttrs + [attr], usedVals + [val], newAttrVals)
+                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, condition + 4*"&nbsp;" + attr + ": <b> " + htmlVal + "</b><br>", usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
+                else:                   self.DrawData(attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", totalAttrs, lastValueForFirstAttribute, usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
             currPos += size + edge
 
         self.DrawText(side, attrList[0], (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute, attrVals)
@@ -565,54 +572,22 @@ class OWMosaicDisplay(OWWidget):
             if side % 2 == 0: currPos += perc*width + self.cellspace*(totalAttrs-side)
             else :            currPos += perc*height+ self.cellspace*(totalAttrs-side)
 
-
-     # draw the class legend below the square
-    def DrawLegend(self, data, (x0, x1), (y0, y1)):
-        if self.interiorColoring == CLASS_DISTRIBUTION and (not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous): return
-
-        if self.interiorColoring == PEARSON:
-            names = ["<-8", "-8:-4", "-4:-2", "-2:2", "2:4", "4:8", ">8", "Residuals:"]
-            colors = self.redColors[::-1] + self.blueColors[1:]
-        else:
-            names = (list(self.attributeValuesDict.get(data.domain.classVar.name, [])) or getVariableValuesSorted(data, data.domain.classVar.name)) + [data.domain.classVar.name+":"]
-            colors = [self.colorPalette[i] for i in range(len(data.domain.classVar.values))]
-
-        for name in names:
-            self.names.append(OWCanvasText(self.canvas, name))
-
-        totalWidth = sum([self.names[i].boundingRect().width() for i in range(len(self.names))])
-
-        # compute the x position of the center of the legend
-        y = y1 + self.attributeNameOffset + 20
-        distance = 30
-        startX = (x0+x1)/2 - (totalWidth + (len(names))*distance)/2
-
-        self.names[-1].move(startX+15, y+1); self.names[-1].show()
-        xOffset = self.names[-1].boundingRect().width() + distance
-
-        size = 16 # 8 + 8*(self.interiorColoring == PEARSON)
-
-        for i in range(len(names)-1):
-            if self.interiorColoring == PEARSON: edgeColor = Qt.black
-            else: edgeColor = colors[i]
-
-            OWCanvasRectangle(self.canvas, startX + xOffset, y-size/2, size, size, edgeColor, colors[i])
-            self.names[i].move(startX + xOffset + 18, y)
-            xOffset += distance + self.names[i].boundingRect().width()
-
-
     # draw a rectangle, set it to back and add it to rect list
-    def addRect(self, x0, x1, y0, y1, condition = "", usedAttrs = [], usedVals = [], attrVals = ""):
+    def addRect(self, x0, x1, y0, y1, condition = "", usedAttrs = [], usedVals = [], attrVals = "", **args):
         x0 = int(x0); x1 = int(x1); y0 = int(y0); y1 = int(y1)
         if x0 == x1: x1+=1
         if y0 == y1: y1+=1
 
         if x1-x0 + y1-y0 == 2: y1+=1        # if we want to show a rectangle of width and height 1 it doesn't show anything. in such cases we therefore have to increase size of one edge
 
+        if args.has_key("selectionDict") and args["selectionDict"].has_key(tuple(usedVals)):
+            d = 2
+            OWCanvasRectangle(self.canvas, x0-d, y0-d, x1-x0+1+2*d, y1-y0+1+2*d, penColor = args["selectionDict"][tuple(usedVals)], penWidth = 2, z = -100)
+
         rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 30)
 
         # we have to remember which conditions were new in this update so that when we right click we can only remove the last added selections
-        if self.selectionRectangle != None and rect in self.canvas.collisions(self.selectionRectangle) and tuple(usedVals) not in self.selectionConditions:
+        if isinstance(self.selectionRectangle, QRect) and rect in self.canvas.collisions(self.selectionRectangle) and tuple(usedVals) not in self.selectionConditions:
             self.recentlyAdded = getattr(self, "recentlyAdded", []) + [tuple(usedVals)]
             self.selectionConditions = self.selectionConditions + [tuple(usedVals)]
 
@@ -775,6 +750,39 @@ class OWMosaicDisplay(OWWidget):
         QToolTip.add(self.canvasView, tipRect, tooltipText)
         self.tooltips.append((tipRect, tooltipText))
 
+    # draw the class legend below the square
+    def DrawLegend(self, data, (x0, x1), (y0, y1)):
+        if self.interiorColoring == CLASS_DISTRIBUTION and (not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous):
+            return
+
+        if self.interiorColoring == PEARSON:
+            names = ["<-8", "-8:-4", "-4:-2", "-2:2", "2:4", "4:8", ">8", "Residuals:"]
+            colors = self.redColors[::-1] + self.blueColors[1:]
+        else:
+            names = (list(self.attributeValuesDict.get(data.domain.classVar.name, [])) or getVariableValuesSorted(data, data.domain.classVar.name)) + [data.domain.classVar.name+":"]
+            colors = [self.colorPalette[i] for i in range(len(data.domain.classVar.values))]
+
+        self.names = [OWCanvasText(self.canvas, name) for name in names]
+        totalWidth = sum([text.boundingRect().width() for text in self.names])
+
+        # compute the x position of the center of the legend
+        y = y1 + self.attributeNameOffset + 20
+        distance = 30
+        startX = (x0+x1)/2 - (totalWidth + (len(names))*distance)/2
+
+        self.names[-1].move(startX+15, y+1); self.names[-1].show()
+        xOffset = self.names[-1].boundingRect().width() + distance
+
+        size = 16 # 8 + 8*(self.interiorColoring == PEARSON)
+
+        for i in range(len(names)-1):
+            if self.interiorColoring == PEARSON: edgeColor = Qt.black
+            else: edgeColor = colors[i]
+
+            OWCanvasRectangle(self.canvas, startX + xOffset, y-size/2, size, size, edgeColor, colors[i])
+            self.names[i].move(startX + xOffset + 18, y)
+            xOffset += distance + self.names[i].boundingRect().width()
+
     def saveToFileCanvas(self):
         sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.canvas)
         sizeDlg.exec_loop()
@@ -789,7 +797,7 @@ class OWMosaicDisplay(OWWidget):
 
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ")
+        c.createDiscretePalette(" Discrete Palette ", ColorBrewerColors)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
@@ -809,7 +817,7 @@ class OWMosaicDisplay(OWWidget):
             self.selectionConditionsHistorically = self.selectionConditionsHistorically + [self.recentlyAdded]
             self.recentlyAdded = []
 
-        self.explorerDlg.updateState()            # we have already called this in self.updateGraph() call
+        self.optimizationDlg.mtUpdateState()            # we have already called this in self.updateGraph() call
         self.selectionRectangle = None
 
     # remove the mosaics that were added with the last selection rectangle
@@ -821,35 +829,35 @@ class OWMosaicDisplay(OWWidget):
                     self.selectionConditions.remove(tuple(val))
 
         self.updateGraph()
-##        self.explorerDlg.updateState()       # we have already called this in self.updateGraph() call
+##        self.optimizationDlg.mtUpdateState()       # we have already called this in self.updateGraph() call
         self.sendSelectedData()
 
     def removeAllSelections(self):
         self.selectionConditions = []
         self.selectionConditionsHistorically = []
-##        self.explorerDlg.updateState()       # removeAllSelections is always called before updateGraph() - where updateState is called
+##        self.optimizationDlg.mtUpdateState()       # removeAllSelections is always called before updateGraph() - where mtUpdateState is called
         self.sendSelectedData()
 
     # return examples in currently selected boxes as example table or array of 0/1 values
-    def getSelectedExamples(self, asExampleTable = 1, negate = 0, selectionConditions = None):
-        attrs = self.getShownAttributeList()
-        if attrs == [] or not self.data:
+    def getSelectedExamples(self, asExampleTable = 1, negate = 0, selectionConditions = None, data = None, attrs = None):
+        if attrs == None:     attrs = self.getShownAttributeList()
+        if data == None:      data = self.data
+        if selectionConditions == None:    selectionConditions = self.selectionConditions
+
+        if attrs == [] or not data:
             return None
 
-        if selectionConditions == None:
-            selectionConditions = self.selectionConditions
-
         pp = orange.Preprocessor_take()
-        sumIndices = numpy.zeros(len(self.data))
+        sumIndices = numpy.zeros(len(data))
         for val in selectionConditions:
             for i, attr in enumerate(attrs):
-                pp.values[self.data.domain[attr]] = val[i]
-            indices = numpy.array(pp.selectionVector(self.data))
+                pp.values[data.domain[attr]] = val[i]
+            indices = numpy.array(pp.selectionVector(data))
             sumIndices += indices
         selectedIndices = list(numpy.where(sumIndices > 0, 1 - negate, 0 + negate))
 
         if asExampleTable:
-            return self.data.selectref(selectedIndices)
+            return data.selectref(selectedIndices)
         else:
             return selectedIndices
 

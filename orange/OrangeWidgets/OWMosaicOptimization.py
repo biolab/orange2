@@ -1,55 +1,64 @@
 from OWBaseWidget import *
 from OWWidget import OWWidget
 import os
-import OWGUI, orngVisFuncts
+import OWGUI, orngVisFuncts, OWQCanvasFuncts
+from qtcanvas import QCanvas, QCanvasView
 from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
 mosaicMeasures = [("Pearson's Chi Square", CHI_SQUARE),
                   ("Cramer's Phi (correlation with class)", CRAMERS_PHI),
                   ("Information Gain (in % of class entropy removed)", INFORMATION_GAIN),
-                  ("Gain Ratio", GAIN_RATIO),
+                  ("Distance Measure", DISTANCE_MEASURE),
+                  ("Minimum Description Length", MDL),
                   ("Interaction Gain (in % of class entropy removed)", INTERACTION_GAIN),
                   ("Average Probability Of Correct Classification", AVERAGE_PROBABILITY_OF_CORRECT_CLASSIFICATION),
                   ("Gini index", GINI_INDEX),
                   ("CN2 Rules", CN2_RULES)]
 
+allExamplesText = "<All examples>"
+
 class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000]
     resultsListLenList = [str(x) for x in resultsListLenNums]
-    settingsList = ["attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
-                    "timeLimit", "useTimeLimit", "VizRankClassifierName", "mValue", "probabilityEstimation", "attributeCount",
+    settingsList = ["optimizationType", "attributeCount", "attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
+                    "timeLimit", "useTimeLimit", "VizRankClassifierName", "mValue", "probabilityEstimation",
                     "optimizeAttributeOrder", "optimizeAttributeValueOrder", "attributeOrderTestingMethod",
-                    "classificationMethod", "classConfidence"]
+                    "classificationMethod", "classConfidence", "lastSaveDirName"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     #evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
 
-    def __init__(self, parentWidget = None, signalManager = None):
-        OWBaseWidget.__init__(self, None, signalManager, "Mosaic Optimization Dialog", savePosition = True)
+    def __init__(self, mosaicWidget = None, signalManager = None):
+        OWBaseWidget.__init__(self, None, signalManager, "Mosaic Evaluation Dialog", savePosition = True)
         orngMosaic.__init__(self)
 
         self.resize(375,620)
 
         if (int(qVersion()[0]) >= 3):
-            self.setCaption("Mosaic Optimization Dialog")
+            self.setCaption("Mosaic Evaluation Dialog")
         else:
-            self.setCaption("Qt Mosaic Optimization Dialog")
+            self.setCaption("Qt Mosaic Evaluation Dialog")
         self.controlArea = QVBoxLayout(self)
 
         # loaded variables
-        self.parentWidget = parentWidget
+        self.mosaicWidget = mosaicWidget
         self.showConfidence = 1
         self.optimizeAttributeOrder = 0
         self.optimizeAttributeValueOrder = 0
         self.VizRankClassifierName = "Mosaic Learner"
 
-
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
-        self.cancelOptimization = 0
         self.cancelArgumentation = 0
         self.useTimeLimit = 0
+
+        # explorer variables
+        self.wholeDataSet = None
+        self.processingSubsetData = 0       # this is a flag that we set when we call mosaicWidget.setData function
+        self.showDataSubset = 1
+        self.invertSelection = 0
+        self.mosaicSize = 300
 
         self.attrLenDict = {}
         self.shownResults = []
@@ -61,6 +70,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         self.MainTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self)
+        self.TreeTab = QVGroupBox(self)
         self.ManageTab = QVGroupBox(self)
         self.ArgumentationTab = QVGroupBox(self)
         self.ClassificationTab = QVGroupBox(self)
@@ -69,7 +79,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.tabs.insertTab(self.SettingsTab, "Settings")
         self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         self.tabs.insertTab(self.ClassificationTab, "Classification")
-        self.tabs.insertTab(self.ManageTab, "Manage & Save")
+        self.tabs.insertTab(self.TreeTab, "Tree")
+        self.tabs.insertTab(self.ManageTab, "Manage")
 
         # ###########################
         # MAIN TAB
@@ -87,7 +98,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start Evaluating Projections", callback = self.evaluateProjections)
         f = self.startOptimizationButton.font(); f.setBold(1);   self.startOptimizationButton.setFont(f)
-        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopOptimizationClick)
+        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopEvaluationClick)
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
 
@@ -103,7 +114,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         # ##########################
         # SETTINGS TAB
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure Projection Interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = "Measure of Projection Interestingness", items = [item[0] for item in mosaicMeasures], tooltip = "What is interesting?", callback = self.updateGUI)
 
         self.ignoreSmallCellsBox = OWGUI.widgetBox(self.SettingsTab, "Ignore Small Cells" )
         self.ignoreSmallCellsCombo = OWGUI.checkBox(self.ignoreSmallCellsBox, self, "ignoreTooSmallCells", "Ignore cells where expected number of cases is less than 5", tooltip = "Statisticians advise that in cases when the number of expected examples is less than 5 we ignore the cell \nsince it can significantly influence the chi-square value.")
@@ -119,7 +130,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         # ##########################
         # ARGUMENTATION TAB
         self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments")
-        self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments, tooltip = "Evaluate arguments for each possible class value using settings in the Classification tab.")
+        self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find Arguments", callback = self.findArguments, tooltip = "Evaluate arguments for each possible class value using settings in the Classification tab.", debuggingEnabled = 0)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
         self.stopArgumentationButton = OWGUI.button(self.argumentationBox, self, "Stop Searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
@@ -169,6 +180,56 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         OWGUI.button(self.ClassificationTab, self, "Resend Learner", callback = self.resendLearner, tooltip = "Resend learner with new settings. You need to press this \nonly when you are sending mosaic learner signal to other widgets.")
 
         # ##########################
+        # TREE TAB
+        subsetBox = OWGUI.widgetBox(self.TreeTab, "Example Subset Analysis")
+        self.splitter = QSplitter(Qt.Vertical, subsetBox, "main")
+        self.subsetTree = QListView(self.splitter)
+        self.subsetTree.setRootIsDecorated(1)
+        self.subsetTree.setAllColumnsShowFocus(1)
+        self.subsetTree.addColumn('Visualized Attributes')
+        self.subsetTree.addColumn('# inst.')
+        self.subsetTree.setColumnWidth(0, 300)
+        self.subsetTree.setColumnWidthMode(0, QListView.Maximum)
+        self.subsetTree.setColumnAlignment(0, QListView.AlignLeft)
+        self.subsetTree.setColumnWidth(1, 50)
+        self.subsetTree.setColumnWidthMode(1, QListView.Manual)
+        self.subsetTree.setColumnAlignment(1, QListView.AlignRight)
+        self.connect(self.subsetTree, SIGNAL("selectionChanged(QListViewItem *)"), self.mtSelectedTreeItemChanged)
+        self.connect(self.subsetTree, SIGNAL("rightButtonPressed(QListViewItem *, const QPoint &, int )"), self.mtSubsetTreeRemoveItemPopup)
+
+        self.selectionsList = QListBox(self.splitter)
+        self.connect(self.selectionsList, SIGNAL("selectionChanged()"), self.mtSelectedListItemChanged)
+        self.connect(self.selectionsList, SIGNAL('doubleClicked(QListBoxItem *)'), self.mtSelectedListItemDoubleClicked)
+
+        self.subsetItems = {}
+        self.subsetUpdateInProgress = 0
+        self.treeRoot = None
+
+        explorerBox = OWGUI.widgetBox(self.TreeTab, 1)
+        OWGUI.button(explorerBox, self, "Explore Currently Selected Examples", callback = self.mtEploreCurrentSelection, tooltip = "Visualize only selected examples and find interesting projections of them", debuggingEnabled=0)
+        OWGUI.checkBox(explorerBox, self, 'showDataSubset', 'Show unselected data as example subset', tooltip = "This option determines what to do with the examples that are not selected in the projection.\nIf checked then unselected examples will be visualized in the same way as examples that are received through the 'Example Subset' signal.")
+
+        self.mosaic = orngMosaic()
+        autoBuildTreeBox = OWGUI.widgetBox(self.TreeTab, "Mosaic Tree", orientation = "vertical")
+        autoBuildTreeButtonBox = OWGUI.widgetBox(autoBuildTreeBox, orientation = "horizontal")
+        self.autoBuildTreeButton = OWGUI.button(autoBuildTreeButtonBox, self, "Build Tree", callback = self.mtMosaicAutoBuildTree, tooltip = "Evaluate different mosaic diagrams and automatically build a tree of mosaic diagrams with clear class separation", debuggingEnabled = 0)
+        OWGUI.button(autoBuildTreeButtonBox, self, "Visualize Tree", callback = self.mtVisualizeMosaicTree, tooltip = "Visualize a tree where each node is a mosaic diagram", debuggingEnabled = 0)
+        OWGUI.lineEdit(autoBuildTreeBox, self, "mosaicSize", "Size of individual mosaic diagrams: ", orientation = "horizontal", tooltip = "What are the X and Y dimensions of individual mosaics in the tree?", valueType = int, validator = QIntValidator(self))
+
+        loadSaveBox = OWGUI.widgetBox(self.TreeTab, "Load/Save Mosaic Tree", orientation = "horizontal")
+        OWGUI.button(loadSaveBox, self, "Load", callback = self.mtLoadTree, tooltip = "Load a tree from a file", debuggingEnabled = 0)
+        OWGUI.button(loadSaveBox, self, "Save", callback = self.mtSaveTree, tooltip = "Save tree to a file", debuggingEnabled = 0)
+
+        self.subsetPopupMenu = QPopupMenu(self)
+        self.subsetPopupMenu.insertItem("Explore currently selected examples", self.mtEploreCurrentSelection)
+        self.subsetPopupMenu.insertItem("Find interesting projection", self.evaluateProjections)
+        self.subsetPopupMenu.insertSeparator()
+        self.subsetPopupMenu.insertItem("Remove node", self.mtRemoveSelectedItem)
+        self.subsetPopupMenu.insertItem("Clear tree", self.mtInitSubsetTree)
+
+
+
+        # ##########################
         # SAVE TAB
         self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, "Number of Concurrently Visualized Attributes")
         self.dialogsBox = OWGUI.widgetBox(self.ManageTab, "Dialogs")
@@ -188,8 +249,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         OWGUI.button(self.buttonBox8, self, "Outlier Identification", self.identifyOutliers, debuggingEnabled = 0)
 
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
-        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
+        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load, debuggingEnabled = 0)
+        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save, debuggingEnabled = 0)
 
         self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.clearButton = OWGUI.button(self.buttonBox5, self, "Clear results", self.clearResults)
@@ -208,7 +269,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     # ##############################################################
     # EVENTS
     def showSelectedAttributes(self, attrs = None):
-        if not self.parentWidget: return
+        if not self.mosaicWidget: return
         if not attrs:
             projection = self.getSelectedProjection()
             if not projection: return
@@ -217,31 +278,31 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                 ruleVals = []   # for which values of the attributes do we have a rule
                 for (q, a, vals) in extraInfo:
                     ruleVals.append([vals[a.index(attr)] for attr in attrs])
-                self.parentWidget.activeRule = (attrs, ruleVals)
+                self.mosaicWidget.activeRule = (attrs, ruleVals)
         valueOrder = None
         if self.optimizeAttributeOrder:
             self.resultList.setEnabled(0)
             self.optimizeCurrentAttributeOrder(attrs)
             self.resultList.setEnabled(1)
         else:
-            self.parentWidget.setShownAttributes(attrs)
+            self.mosaicWidget.setShownAttributes(attrs)
         self.resultList.setFocus()
 
 
     def optimizeCurrentAttributeOrder(self, attrs = None, updateGraph = 1):
         if str(self.optimizeOrderButton.text()) == "Optimize Current Attribute Order":
             self.stopOptimization = 0
-            self.optimizeOrderButton.setText("Stop optimization")
+            self.optimizeOrderButton.setText("Stop Optimization")
 
             if not attrs:
-                attrs = self.parentWidget.getShownAttributeList()
+                attrs = self.mosaicWidget.getShownAttributeList()
 
             bestPlacements = self.findOptimalAttributeOrder(attrs, self.optimizeAttributeValueOrder)
             if updateGraph:
-                self.parentWidget.bestPlacements = bestPlacements
+                self.mosaicWidget.bestPlacements = bestPlacements
                 if bestPlacements:
                     attrList, valueOrder = bestPlacements[0][1], bestPlacements[0][2]
-                    self.parentWidget.setShownAttributes(attrList, customValueOrderDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))]) )
+                    self.mosaicWidget.setShownAttributes(attrList, customValueOrderDict = dict([(attrList[i], tuple(valueOrder[i])) for i in range(len(attrList))]) )
 
             self.optimizeOrderButton.setText("Optimize Current Attribute Order")
             return bestPlacements
@@ -320,6 +381,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.argumentList.clear()
         self.selectedClasses = []
 
+        # for mosaic tree
+        if self.processingSubsetData == 0:
+            self.wholeDataSet = data
+            self.mtInitSubsetTree()
+
         if not self.data: return
 
         if hasattr(self.data, "name"): self.datasetName = data.name
@@ -345,7 +411,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.argumentList.clear()
         self.arguments = [[] for i in range(self.classValueList.count())]
 
-        if not example and not self.parentWidget.subsetData:
+        if not example and not self.mosaicWidget.subsetData:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide an example that you wish to classify. \nYou can do this by sending the example to the Mosaic display widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return None, None
         if len(self.results) == 0:
@@ -356,7 +422,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             QMessageBox.critical(None,'No data','There is no data or no class value is selected in the Manage tab.',QMessageBox.Ok)
             return None, None
 
-        if example == None: example = self.parentWidget.subsetData[0]
+        if example == None: example = self.mosaicWidget.subsetData[0]
 
         self.findArgumentsButton.hide()
         self.stopArgumentationButton.show()
@@ -381,7 +447,6 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
 
     def finishedAddingResults(self):
-        self.cancelOptimization = 0
         self.skipUpdate = 1
 
         self.attrLenDict = dict([(i,1) for i in range(self.attributeCount+1)])
@@ -463,6 +528,486 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.SettingsTab.setEnabled(1)
         self.ManageTab.setEnabled(1)
 
+
+    def attrsToString(self, attrList):
+        return ", ".join(attrList)
+
+    # ######################################################
+    # Mosaic tree functions
+    # ######################################################
+    # clear subset tree and create a new root
+    def mtInitSubsetTree(self):
+        self.subsetItems = {}
+        self.subsetTree.clear()
+        self.selectionsList.clear()
+        self.treeRoot = None
+        self.subsetTree.setColumnWidth(0, self.subsetTree.width() - self.subsetTree.columnWidth(1)-4)
+
+        if self.wholeDataSet:
+            root = QListViewItem(self.subsetTree, allExamplesText, str(len(self.wholeDataSet)))
+            root.details = {"data": self.wholeDataSet, "exampleCount": len(self.wholeDataSet)}
+            root.selections = {}
+            self.treeRoot = root
+            root.setOpen(1)
+            self.subsetTree.insertItem(root)
+            self.processingSubsetData = 1
+            self.subsetTree.setSelected(root, 1)
+            self.processingSubsetData = 0
+
+    # find out which attributes are currently visualized, which examples are selected and what is the additional info
+    def mtGetProjectionState(self, getSelectionIndices = 1):
+        selectedIndices = None
+        attrList = self.mosaicWidget.getShownAttributeList()
+        exampleCount = self.mosaicWidget.data and len(self.mosaicWidget.data) or 0
+        projDict = {"attrs": list(attrList), "exampleCount": exampleCount}
+        selectionDict = {"selectionConditions": list(self.mosaicWidget.selectionConditions), "selectionConditionsHistorically": list(self.mosaicWidget.selectionConditionsHistorically)}
+        if getSelectionIndices:
+            selectedIndices = self.mosaicWidget.getSelectedExamples(asExampleTable = 0)
+            selectionDict["selectedIndices"] = selectedIndices
+        return attrList, selectedIndices, projDict, selectionDict
+
+    # new element is added into the subsetTree
+    def mtEploreCurrentSelection(self):
+        if not self.wholeDataSet:
+            return
+
+        attrList, selectedIndices, projDict, selectionDict = self.mtGetProjectionState()
+
+        if sum(selectedIndices) == 0:
+            QMessageBox.information(self, "No data selection", "To explore a subset of examples you first have to select them in the projection.", QMessageBox.Ok)
+            return
+
+        selectedData = self.mosaicWidget.data.selectref(selectedIndices)
+        unselectedData = self.mosaicWidget.data.selectref(selectedIndices, negate = 1)
+        selectedTreeItem = self.subsetTree.selectedItem()     # current selection
+
+        # add a new item into the list box
+        newListItem = QListBoxText(self.selectionsList, self.mtSelectionsToString(selectionDict))
+        newListItem.selections = selectionDict
+        self.selectionsList.setSelected(newListItem, 1)
+
+        # add a child into the tree view
+        attrListStr = self.attrsToString(attrList)
+        newTreeItem = QListViewItem(selectedTreeItem, attrListStr)
+        newTreeItem.details = {"attrs": list(attrList), "exampleCount": len(selectedData)}
+        newTreeItem.selections = selectionDict
+        newTreeItem.setText(1, str(len(selectedData)))
+        newTreeItem.setOpen(1)
+
+
+    # a different attribute set was selected in mosaic. update the attributes in the selected node
+    def mtUpdateState(self):
+        if not self.wholeDataSet: return
+        if self.processingSubsetData: return
+
+        selectedTreeItem = self.subsetTree.selectedItem()
+        selectedListItem = self.selectionsList.currentItem() != -1 and self.selectionsList.item(self.selectionsList.currentItem()) or None
+        attrList, selectionIndices, projDict, selectionDict = self.mtGetProjectionState(getSelectionIndices = 0)
+        if not selectedTreeItem: return
+
+        # if this is the last element in the tree, then update the element's values
+        if selectedTreeItem.firstChild() == None:
+            selectedTreeItem.setText(0, self.attrsToString(attrList))
+            selectedTreeItem.details.update(projDict)
+            if selectedListItem:
+                selectedListItem.selections = selectionDict
+                selectedListItem.setText(self.mtSelectionsToString(selectionDict))
+        # add a sibling if we changed any value
+        else:
+            # did we change the visualized attributes. If yes then we have to add a new node into the tree
+            if 0 in [selectedTreeItem.details[key] == projDict[key] for key in projDict.keys()]:
+                newTreeItem = QListViewItem(selectedTreeItem.parent() or self.subsetTree, self.attrsToString(attrList), str(selectedTreeItem.text(1)))
+                newTreeItem.setOpen(1)
+                newTreeItem.details = projDict
+                newTreeItem.selections = {}
+                self.subsetTree.setSelected(newTreeItem, 1)
+                self.selectionsList.clear()
+
+
+    # we selected a different item in the tree
+    def mtSelectedTreeItemChanged(self, newSelection):
+        if self.processingSubsetData:
+            return
+        self.processingSubsetData = 1
+
+        indices = self.mtGetItemIndices(newSelection)
+        selectedData = self.wholeDataSet
+        unselectedData = orange.ExampleTable(self.wholeDataSet.domain)
+        for ind in indices:
+            unselectedData.extend(selectedData.selectref(ind, negate = 1))
+            selectedData = selectedData.selectref(ind)
+
+        # set data
+        if self.invertSelection:
+            temp = selectedData
+            selectedData = unselectedData
+            unselectedData = temp
+        self.mosaicWidget.setData(selectedData)  #self.mosaicWidget.setData(selectedData, onlyDrilling = 1)
+        if self.showDataSubset and len(unselectedData) > 0:
+            self.mosaicWidget.setSubsetData(unselectedData)      #self.mosaicWidget.subsetData = unselectedData
+        else:
+            self.mosaicWidget.setSubsetData(None)
+        self.mosaicWidget.handleNewSignals()
+
+        self.selectionsList.clear()
+        child = newSelection.firstChild()
+        while child:
+            selectionDict = child.selections
+            newListItem = QListBoxText(self.selectionsList, self.mtSelectionsToString(selectionDict))
+            newListItem.selections = selectionDict
+            child = child.nextSibling()
+
+        self.mosaicWidget.setShownAttributes(newSelection.details.get("attrs", None))
+        self.mosaicWidget.updateGraph()
+        self.processingSubsetData = 0
+
+    # a new selection was selected in the selection list. update the graph
+    def mtSelectedListItemChanged(self):
+        selectedListItem = self.selectionsList.currentItem() != -1 and self.selectionsList.item(self.selectionsList.currentItem())
+        if not selectedListItem:
+            return
+
+        selectionDict = selectedListItem.selections
+        self.mosaicWidget.selectionConditions = list(selectionDict.get("selectionConditions", []))
+        self.mosaicWidget.selectionConditionsHistorically = list(selectionDict.get("selectionConditionsHistorically", []))
+        self.mosaicWidget.updateGraph()
+
+    def mtSelectedListItemDoubleClicked(self, item):
+        pos = self.selectionsList.currentItem()
+        treeItem = self.subsetTree.selectedItem().firstChild()
+        for i in range(pos):
+            treeItem = treeItem.nextSibling()
+        self.subsetTree.setSelected(treeItem, 1)
+        self.mtSelectedTreeItemChanged(treeItem)
+
+    def mtGetItemIndices(self, item):
+        indices = []
+        while item:
+            ind = item.selections.get("selectedIndices", None)
+            if ind:
+                indices.insert(0, ind)        # insert indices in reverse order
+            item = item.parent()
+        return indices
+
+    def mtGetData(self, indices):
+        data = self.wholeDataSet
+        unselectedData = orange.ExampleTable(data.domain)
+        for ind in indices:
+            unselectedData.extend(data.selectref(ind, negate = 1))
+            data = data.selectref(ind)
+        return data, unselectedData
+
+    # popup menu items
+    def mtRemoveSelectedItem(self):
+        item = self.subsetTree.selectedItem()
+        if not item:
+            return
+        parent = item.parent()
+        if parent == None:
+            self.mtInitSubsetTree()
+        else:
+            self.mtRemoveTreeItem(item)
+            self.subsetTree.setSelected(parent, 1)
+            self.mtSelectedTreeItemChanged(parent)
+
+    def mtSubsetTreeRemoveItemPopup(self, item, point, i):
+        self.subsetPopupMenu.popup(point, 0)
+
+    def resizeEvent(self, ev):
+        OWBaseWidget.resizeEvent(self, ev)
+        self.subsetTree.setColumnWidth(0, self.subsetTree.width()-self.subsetTree.columnWidth(1)-4 - 20)
+
+
+    def mtSelectionsToString(self, settings):
+        attrCombs = ["-".join(sel) for sel in settings.get("selectionConditions", [])]
+        return "+".join(attrCombs)
+
+
+    # return actual item in the tree to that str(item) == strItem
+    def mtStrToItem(self, strItem, currItem = -1):
+        if currItem == -1:
+            currItem = self.treeRoot
+        if currItem == None:
+            return None
+        if str(currItem) == strItem:
+            return currItem
+        child = currItem.firstChild()
+        if child:
+            item = self.mtStrToItem(strItem, child)
+            if item:
+                return item
+        return self.mtStrToItem(strItem, currItem.nextSibling())
+
+
+    # save tree to a file
+    def mtSaveTree(self, name = None):
+        if name == None:
+            qname = QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, "explorer tree.tree"), "Explorer tree (*.tree)", self, "", "Save tree")
+            if qname.isEmpty():
+                return
+            name = str(qname)
+        self.lastSaveDirName = os.path.split(name)[0]
+
+        tree = {}
+        self.mtTreeToDict(self.treeRoot, tree)
+        import cPickle
+        f = open(name, "w")
+        cPickle.dump(tree, f)
+        f.close()
+
+    # load tree from a file
+    def mtLoadTree(self, name = None):
+        self.subsetItems = {}
+        self.subsetTree.clear()
+        self.treeRoot = None
+
+        if name == None:
+            name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Explorer tree (*.tree)", self, "", "Load tree")
+            if name.isEmpty(): return
+            name = str(name)
+
+        self.lastSaveDirName = os.path.split(name)[0]
+        import cPickle
+        f = open(name, "r")
+        tree = cPickle.load(f)
+        self.mtDictToTree(tree, "None", self.subsetTree)
+        root = self.subsetTree.firstChild()
+        if root:
+            self.treeRoot = root
+            self.subsetTree.setSelected(root, 1)
+            self.selectedTreeItemChanged(root)
+
+    # generate a dictionary from the tree that can be pickled
+    def mtTreeToDict(self, node, tree):
+        if not node: return
+
+        child = node.firstChild()
+        if child:
+            self.mtTreeToDict(child, tree)
+
+        tree[str(node.parent())] = tree.get(str(node.parent()), []) + [(str(node), node.details, node.selections)]
+        self.mtTreeToDict(node.nextSibling(), tree)
+
+    # create a tree from a dictionary
+    def mtDictToTree(self, tree, currItemKey, parentItem):
+        if tree.has_key(currItemKey):
+            children = tree[currItemKey]
+            for (strChildNode, details, selections) in children:
+                strAttrs = self.attrsToString(details["attrs"])
+                exampleCount = details["exampleCount"]
+                item = QListViewItem(parentItem, strAttrs, str(exampleCount))
+                item.details = details
+                item.selections = selections
+                item.setOpen(1)
+                self.mtDictToTree(tree, strChildNode, item)
+
+    #################################################
+    # build mosaic tree methods
+    def mtMosaicAutoBuildTree(self):
+        if str(self.autoBuildTreeButton.text()) != "Build Tree":
+            self.cancelTreeBuilding = 1
+            self.cancelEvaluation = 1
+        else:
+            try:
+                self.cancelTreeBuilding = 0
+                self.cancelEvaluation = 0
+                self.autoBuildTreeButton.setText("Stop Building")
+                qApp.processEvents()
+
+                examples = self.mosaicWidget.data
+                selectedItem = self.subsetTree.selectedItem()
+                if selectedItem and selectedItem.parent() != None:
+                    res = QMessageBox.information(self, "Tree Building", "Currently you are visualizing only a subset of examples. Do you want to build the tree\nonly for these examples or for all examples?", "Only for these", "For all examples", None, 0, 1)
+                    if res == 1:
+                        examples = self.wholeDataSet
+                        parent = self.subsetTree
+                    else:
+                        parent = selectedItem.parent()
+                else:
+                    parent = self.subsetTree
+                    selections = selectedItem and selectedItem.selections or {}
+
+                 #create a mosaic and use a classifier to generate a mosaic tree so that we don't set data to the main mosaic (which would mean that we would have to prevent the user from clicking the current tree)
+                for setting in self.settingsList:
+                    setattr(self.mosaic, setting, getattr(self, setting, None))
+                if self.qualityMeasure == CN2_RULES:
+                    self.mosaic.qualityMeasure == MDL
+                self.mosaic.qApp = qApp
+                root = MosaicTreeClassifier(self.mosaic, examples, self.setStatusBarText).mosaicTree
+
+                # create tree items in the listview based on the tree in classifier.mosaicTree
+                if root:
+                    # if the selected item doesn't have any children we remove it and it will be replaced with the root of the tree that we generate
+                    if not selectedItem:
+                        self.subsetTree.clear()
+                    elif selectedItem.firstChild() == None:
+                        self.mtRemoveTreeItem(selectedItem)
+
+                    item = QListViewItem(parent, self.attrsToString(root.attrs), str(len(root.branchSelector.data)))
+                    item.details = {"attrs": root.attrs, "exampleCount": len(root.branchSelector.data)}
+                    item.selections = selections
+                    item.setOpen(1)
+                    if parent == self.subsetTree:
+                        self.treeRoot = item
+                    self.mtGenerateTreeFromClassifier(root, item)
+            except:
+                import sys
+                type, val, traceback = sys.exc_info()
+                sys.excepthook(type, val, traceback)  # print the exception
+            self.autoBuildTreeButton.setText("Build Tree")
+
+    def mtGenerateTreeFromClassifier(self, treeNode, parentTreeItem):
+        for key in treeNode.branches.keys():
+            branch = treeNode.branches[key]
+            strAttrs = self.attrsToString(branch.attrs)
+            selections = treeNode.branchSelector.values[key]
+            exampleCount = len(branch.branchSelector.data)
+            item = QListViewItem(parentTreeItem, strAttrs, str(exampleCount))
+            item.details = {"attrs": branch.attrs, "exampleCount": exampleCount}
+            item.selections = {'selectionConditions': selections, 'selectionConditionsHistorically': [selections], "selectedIndices": self.mosaicWidget.getSelectedExamples(asExampleTable = 0, selectionConditions = selections, data = treeNode.branchSelector.data, attrs = treeNode.attrs)}
+            item.setOpen(1)
+            self.mtGenerateTreeFromClassifier(branch, item)
+
+    # remove a tree item and also remove selections dict from its parent
+    def mtRemoveTreeItem(self, item):
+        parent = item.parent()
+        if parent == None:
+            parent = self.subsetTree
+        parent.takeItem(item)
+
+    def mtVisualizeMosaicTree(self):
+        tree = {}
+        self.mtTreeToDict(self.treeRoot, tree)
+        #dialog = MosaicTreeDialog(self, self.mosaicWidget, self.signalManager)
+        #dialog.visualizeTree(tree)
+        #dialog.show()
+        treeDialog = OWBaseWidget(self, self.signalManager, "Mosaic Tree")
+        treeDialog.canvasLayout = QVBoxLayout(treeDialog)
+        treeDialog.canvasWidget = QWidget(treeDialog)
+
+        treeDialog.canvas = QCanvas(10000, 10000)
+        treeDialog.canvasView = QCanvasView(treeDialog.canvas, treeDialog)
+        treeDialog.canvasLayout.addWidget(treeDialog.canvasView)
+        treeDialog.canvasLayout.activate()
+        treeDialog.canvasView.show()
+        treeDialog.resize(800, 800)
+        treeDialog.move(0,0)
+
+        xMosOffset = 80
+        xMosaicSize = self.mosaicSize + 2 * 50     # we need some space also for text labels
+        yMosaicSize = self.mosaicSize + 2 * 25
+
+        mosaicCanvas = self.mosaicWidget.canvas
+        mosaicCanvasView = self.mosaicWidget.canvasView
+        cellSpace = self.mosaicWidget.cellspace
+        self.mosaicWidget.canvas = treeDialog.canvas
+        self.mosaicWidget.canvasView = treeDialog.canvasView
+        self.mosaicWidget.cellspace = 5
+
+        nodeDict = {}
+        rootNode = {"treeNode": tree["None"][0][0], "parentNode": None, "childNodes": []}
+        rootNode.update(tree["None"][0][1])
+        nodeDict[tree["None"][0][0]] = rootNode
+        itemsToDraw = {0: [(rootNode,)]}
+        treeDepth = 0
+        canvasItems = {}
+
+        # generate the basic structure of the tree
+        while itemsToDraw.has_key(treeDepth):
+            groups = itemsToDraw[treeDepth]
+            xPos = 0
+            for group in groups:
+                for node in group:
+                    node["currXPos"] = xPos
+                    xPos += xMosaicSize        # next mosaic will be to the right
+
+                    toDraw = []
+                    children = tree.get(node["treeNode"], [])
+                    for (strNode, details, selections) in children:
+                        childNode = {"treeNode":strNode, "parentNode":node["treeNode"]}
+                        childNode.update(details)
+                        childNode.update(selections)
+                        childNode["childNodes"] = []
+                        node["childNodes"].append(childNode)
+                        nodeDict[strNode] = childNode
+                        toDraw.append(childNode)
+                    if toDraw != []:
+                        itemsToDraw[treeDepth+1] = itemsToDraw.get(treeDepth+1, []) + [toDraw]
+            treeDepth += 1
+
+        # fix positions of mosaic so that child nodes will be under parent
+        changedPosition = 1
+        while changedPosition:
+            changedPosition = 0
+            treeDepth = max(itemsToDraw.keys())
+            while treeDepth > 0:
+                groups = itemsToDraw[treeDepth]
+                xPos = 0
+                for group in groups:
+                    # the current XPositions of the group might not be valid if we moved items in the previous groups. We therefore have to move the items if their xpos is smaller than xPos
+                    if xPos > group[0]["currXPos"]:
+                        for i in range(len(group)):
+                            group[i]["currXPos"] = xPos + i* xMosaicSize
+
+                    groupMidXPos = (group[0]["currXPos"] + group[-1]["currXPos"]) / 2
+                    parentXPos = nodeDict[group[0]["parentNode"]]["currXPos"]
+                    if abs(parentXPos - groupMidXPos) < 5:
+                        xPos = group[-1]["currXPos"] + xMosaicSize
+                        continue
+                    changedPosition = 1        # we obviously have to move the parent or its children
+                    if parentXPos < groupMidXPos:    # move the parent forward
+                        self.mtRepositionNode(itemsToDraw[treeDepth-1], group[0]["parentNode"], groupMidXPos, xMosaicSize)
+                    elif parentXPos > groupMidXPos:    # move the children backwards
+                        xPos = self.mtRepositionNode(itemsToDraw[treeDepth], group[0]["treeNode"], parentXPos - (group[-1]["currXPos"] - group[0]["currXPos"])/2, xMosaicSize)
+                treeDepth -= 1
+
+        # visualize each mosaic diagram
+        colors = self.mosaicWidget.selectionColorPalette
+
+        for depth in range(max(itemsToDraw.keys())+1):
+            groups = itemsToDraw[depth]
+            yPos = 50 + (depth > 0) * 50 + depth * yMosaicSize
+
+            for group in groups:
+                for node in group:
+                    # create a dict with colors to be used to mark the selected rectangles
+                    selectionDict = {}
+                    for ind, selections in enumerate([child["selectionConditions"] for child in node["childNodes"]]):
+                        for selection in selections:
+                            selectionDict[tuple(selection)] = colors[ind]
+                    data, unselectedData = self.mtGetData(self.mtGetItemIndices(self.mtStrToItem(node["treeNode"])))
+                    # draw the mosaic
+                    self.mosaicWidget.updateGraph(data, unselectedData, node["attrs"], erasePrevious = 0, positions = (node["currXPos"]+xMosOffset, yPos, self.mosaicSize), drawLegend = (depth == 0), drillUpdateSelection = 0, selectionDict = selectionDict)
+
+                    # draw a line between the parent and this node
+                    if node["parentNode"]:
+                        parent = nodeDict[node["parentNode"]]
+                        nodeIndex = parent["childNodes"].index(node)
+                        parentXPos = parent["currXPos"] + xMosaicSize/2 + 10*(-(len(parent["childNodes"])-1)/2 + nodeIndex)
+                        OWQCanvasFuncts.OWCanvasLine(treeDialog.canvas, parentXPos, yPos - 30, node["currXPos"] + xMosaicSize/2, yPos - 10, penWidth = 4, penColor = colors[nodeIndex])
+
+
+        # restore the original canvas and canvas view
+        self.mosaicWidget.canvas = mosaicCanvas
+        self.mosaicWidget.canvasView = mosaicCanvasView
+        self.mosaicWidget.cellspace = cellSpace
+        treeDialog.show()
+
+    # find the node nodeToMove in the groups and move it to newPos. reposition also all nodes that follow this node.
+    def mtRepositionNode(self, groups, nodeToMove, newPos, xMosaicSize):
+        found = 0
+        for group in groups:
+            for node in group:
+                if node["treeNode"] == nodeToMove:        # we found the node to move
+                    node["currXPos"] = newPos
+                    found = 1
+                    xPos = newPos + xMosaicSize
+                elif found == 1:
+                    node["currXPos"] = xPos
+                    xPos += xMosaicSize
+        return xPos     # return next valid position where to put a mosaic
+
+
     # ######################################################
     # Auxiliary functions
     # ######################################################
@@ -473,11 +1018,11 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             return None
         return self.results[self.resultListIndices[currentItem]]      # we have to look into resultListIndices, since perhaps not all projections from the self.results are shown
 
-    def stopOptimizationClick(self):
-        self.cancelOptimization = 1
+    def stopEvaluationClick(self):
+        self.cancelEvaluation = 1
 
     def isEvaluationCanceled(self):
-        if self.cancelOptimization: return 1
+        if self.cancelEvaluation:   return 1
         if self.useTimeLimit:       return orngMosaic.isEvaluationCanceled(self)
 
     def destroy(self, dw = 1, dsw = 1):
@@ -517,7 +1062,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
 
     def resendLearner(self):
-        self.parentWidget.send("Learner", self.parentWidget.VizRankLearner)
+        self.mosaicWidget.send("Learner", self.mosaicWidget.VizRankLearner)
 
     def stopArgumentationClick(self):
         self.cancelArgumentation = 1
@@ -545,7 +1090,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def identifyOutliers(self):
         import OWkNNOptimization
-        dialog = OWkNNOptimization.OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.parentWidget, graph = None)
+        dialog = OWkNNOptimization.OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.mosaicWidget, graph = None)
         dialog.setData(self.results, self.data, OWkNNOptimization.VIZRANK_MOSAIC)
         dialog.show()
 
