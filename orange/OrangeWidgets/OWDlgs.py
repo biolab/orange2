@@ -389,7 +389,7 @@ class ColorPalette(OWBaseWidget):
 
     def loadCBPalette(self):
         self.discListbox.clear()
-        self.discreteColors = [QColor(r,g,b) for (r,g,b) in OWGraphTools.ColorBrewerRGBValues]
+        self.discreteColors = [QColor(r,g,b) for (r,g,b) in OWGraphTools.ColorBrewerColors]
         for ind in range(len(self.discreteColors)):
             self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
 

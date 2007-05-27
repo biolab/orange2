@@ -8,14 +8,14 @@
 # OWSurveyPlot.py
 #
 # Show data using survey plot visualization method
-# 
+#
 
 from OWVisWidget import *
 from OWSurveyPlotGraph import *
 from OWDlgs import ColorPalette
 import orngVisFuncts
 import OWGUI
-           
+
 ###########################################################################################
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
@@ -89,11 +89,11 @@ class OWSurveyPlot(OWVisWidget):
 
         self.icons = self.createAttributeIconDict()
 
-        # add a settings dialog and initialize its values        
+        # add a settings dialog and initialize its values
         self.activateLoadedSettings()
         self.resize(700,700)
 
-        # this is needed so that the tabs are wide enough! 
+        # this is needed so that the tabs are wide enough!
         qApp.processEvents()
         self.tabs.updateGeometry()
 
@@ -106,7 +106,7 @@ class OWSurveyPlot(OWVisWidget):
         self.graph.discPalette = dlg.getDiscretePalette()
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
         self.graph.setGridPen(QPen(dlg.getColor("Grid")))
-        
+
         #self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.cbShowAllAttributes()
 
@@ -124,7 +124,7 @@ class OWSurveyPlot(OWVisWidget):
         #self.secondaryAttrCombo.setCurrentItem(0)
         self.primaryAttribute = "(None)"
         self.secondaryAttribute = "(None)"
-    
+
     def updateGraph(self, *args):
         self.graph.updateData(self.getShownAttributeList())
         self.graph.update()
@@ -138,21 +138,23 @@ class OWSurveyPlot(OWVisWidget):
             self.data.sort(attrs)
 
         self.graph.setData(self.data, sortValuesForDiscreteAttrs = 0)
-        self.updateGraph()        
-        
-   
+        self.updateGraph()
+
+
     # receive new data and update all fields
     def setData(self, data):
         if data:
             name = getattr(data, "name", "")
             data = data.filterref(orange.Filter_hasClassValue())
             data.name = name
+            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
+                data = None
         if self.data != None and data != None and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
         exData = self.data
         self.data = data
-        
+
         sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         if not sameDomain:
             self.resetAttrManipulation()
@@ -226,5 +228,5 @@ if __name__=="__main__":
     ow.show()
     a.exec_loop()
 
-    #save settings 
+    #save settings
     ow.saveSettings()

@@ -53,7 +53,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         if parentName.lower() != "radviz":
             self.LinearTransformationTab = QVGroupBox(self)
-            self.tabs.insertTab(self.LinearTransformationTab, "Supervised PCA")
+            self.tabs.insertTab(self.LinearTransformationTab, "Dimensionality Reduction")
 
         # ###########################
         # MAIN TAB
@@ -127,10 +127,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         # ##########################
         # SUPERVISED PCA TAB
         if parentName.lower() != "radviz":
-            OWGUI.button(self.LinearTransformationTab, self, "Find PCA projection", callback = self.findPCAProjection)
-            OWGUI.button(self.LinearTransformationTab, self, "Find supervised PCA projection", callback = self.findSPCAProjection)
-            OWGUI.checkBox(self.LinearTransformationTab, self, "useGeneralizedEigenvectors", "Try to merge examples with same class value")
-
+            pcaBox = OWGUI.widgetBox(self.LinearTransformationTab, "Principal Component Analysis")
+            OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
+            OWGUI.button(pcaBox, self, "Supervised principal component analysis", callback = self.findSPCAProjection)
+            OWGUI.checkBox(pcaBox, self, "useGeneralizedEigenvectors", "Merge examples with same class value")
+            plsBox = OWGUI.widgetBox(self.LinearTransformationTab, "Partial Least Squares")
+            OWGUI.button(plsBox, self, "Partial least squares", callback = self.findPLSProjection)
+            
 
         # ###########################
         self.statusBar = QStatusBar(self)
@@ -290,27 +293,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.repaint()
 
     def findPCAProjection(self):
-        self.findProjection(0)
+        self.findProjection(DR_PCA)
 
     def findSPCAProjection(self):
-        self.findProjection(1)
+        self.findProjection(DR_SPCA)
 
-    def findProjection(self, SPCA):
-        import LinearAlgebra
-
-        ai = self.graph.attributeNameIndex
-        attributes = self.getShownAttributeList()
-        attrIndices = [ai[label] for label in attributes]
-        validData = self.graph.getValidList(attrIndices)
-        if sum(validData) <= len(attrIndices):
-            self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
-            return
-
-        FreeViz.findSPCAProjection(self, attrIndices, setGraphAnchors = 1, SPCA = SPCA)
-
-        self.graph.updateData()
-        self.graph.repaint()
-
+    def findPLSProjection(self):
+        self.findProjection(DR_PLS)
 
     def setStatusBarText(self, text):
         self.statusBar.message(text)

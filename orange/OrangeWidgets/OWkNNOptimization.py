@@ -11,7 +11,7 @@ class OWVizRank(VizRank, OWBaseWidget):
                     "evaluationAlgorithm", "evaluationTime", "learnerName",
                     "argumentCount", "optimizeBestProjection", "optimizeBestProjectionTime",
                     "locOptMaxAttrsInProj", "locOptAttrsToTry", "locOptProjCount", "locOptAllowAddingAttributes",
-                    "useExampleWeighting", "useSupervisedPCA", "attrSubsetSelection", "optimizationType", "attributeCount",
+                    "useExampleWeighting", "projOptimizationMethod", "attrSubsetSelection", "optimizationType", "attributeCount",
                     "locOptOptimizeProjectionByPermutingAttributes", "timeLimit", "projectionLimit", "storeEachPermutation",
                     "boxLocalOptimization", "boxStopOptimization"]
     resultsListLenNums = [ 10, 100 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
@@ -125,8 +125,9 @@ class OWVizRank(VizRank, OWBaseWidget):
             OWGUI.checkBox(self.optimizationSettingsBox, self, 'storeEachPermutation', 'Save all projections for each permutation of attributes', tooltip = "Do you want to see in the projection list all evaluated projections or only the best projection for each attribute permutation.\nUsually this value is unchecked.")
 
         if visualizationMethod == LINEAR_PROJECTION:
-            OWGUI.checkBox(self.SettingsTab, self, 'useSupervisedPCA', 'Optimize class separation using supervised PCA', box = " Supervised PCA ")
-        else: self.useSupervisedPCA = 0
+            OWGUI.comboBox(self.SettingsTab, self, "projOptimizationMethod", "Projection Optimization Method", items = ["None", "Supervised projection pursuit", "Partial least square"], sendSelectedValue = 0, tooltip = "What method do you want to use to find an interesting projection with good class separation?")
+        else:
+            self.projOptimizationMethod = 0
 
         self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score", "Area under curve (AUC)"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
 
@@ -773,25 +774,29 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     def evaluateProjections(self):
         if str(self.startOptimizationButton.text()) == "Start Evaluating Projections":
-            if self.attributeCount >= 10 and not (self.useSupervisedPCA) and self.visualizationMethod != SCATTERPLOT and self.attrSubsetSelection != GAMMA_SINGLE and QMessageBox.critical(self, 'VizRank', 'You chose to evaluate projections with a high number of attributes. Since VizRank has to evaluate different placements\nof these attributes there will be a high number of projections to evaluate. Do you still want to proceed?','Continue','Cancel', '', 0,1):
-                return
-            if not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete:
-                QMessageBox.information( None, self.parentName, "Projections can be evaluated only for data with a discrete class.", QMessageBox.Ok + QMessageBox.Default)
-                return
-            self.startOptimizationButton.setText("Stop Evaluation")
+            try:
+                if self.attributeCount >= 10 and self.projOptimizationMethod == 0 and self.visualizationMethod != SCATTERPLOT and self.attrSubsetSelection != GAMMA_SINGLE and QMessageBox.critical(self, 'VizRank', 'You chose to evaluate projections with a high number of attributes. Since VizRank has to evaluate different placements\nof these attributes there will be a high number of projections to evaluate. Do you still want to proceed?','Continue','Cancel', '', 0,1):
+                    return
+                if not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+                    QMessageBox.information( None, self.parentName, "Projections can be evaluated only for data with a discrete class.", QMessageBox.Ok + QMessageBox.Default)
+                    return
+                self.startOptimizationButton.setText("Stop Evaluation")
 
-            self.parentWidget.progressBarInit()
-            self.disableControls()
-            evaluatedProjections = VizRank.evaluateProjections(self)
-            self.enableControls()
-            self.parentWidget.progressBarFinished()
+                self.parentWidget.progressBarInit()
+                self.disableControls()
+                evaluatedProjections = VizRank.evaluateProjections(self)
+                self.enableControls()
+                self.parentWidget.progressBarFinished()
 
-            secs = time.time() - self.startTime
-            self.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
-            self.finishedAddingResults()
-            qApp.processEvents()
-            if self.parentWidget:
-                self.parentWidget.showSelectedAttributes()
+                secs = time.time() - self.startTime
+                self.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
+                self.finishedAddingResults()
+                qApp.processEvents()
+                if self.parentWidget:
+                    self.parentWidget.showSelectedAttributes()
+            except:
+                type, val, traceback = sys.exc_info()
+                sys.excepthook(type, val, traceback)  # print the exception
             self.startOptimizationButton.setText("Start Evaluating Projections")
         else:
             self.cancelEvaluation = 1
@@ -799,18 +804,22 @@ class OWVizRank(VizRank, OWBaseWidget):
 
 
     def optimizeBestProjections(self, restartWhenImproved = 1):
-        self.startOptimizationButton.setText("Stop Optimization")
+        try:
+            self.startOptimizationButton.setText("Stop Optimization")
 
-        self.disableControls()
-        evaluatedProjections = VizRank.optimizeBestProjections(self, restartWhenImproved)
-        self.enableControls()
+            self.disableControls()
+            evaluatedProjections = VizRank.optimizeBestProjections(self, restartWhenImproved)
+            self.enableControls()
 
-        secs = time.time() - self.startTime
-        self.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
-        self.finishedAddingResults()
-        qApp.processEvents()
-        if self.parentWidget:
-            self.parentWidget.showSelectedAttributes()
+            secs = time.time() - self.startTime
+            self.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(evaluatedProjections), secs/60, secs%60))
+            self.finishedAddingResults()
+            qApp.processEvents()
+            if self.parentWidget:
+                self.parentWidget.showSelectedAttributes()
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
         self.startOptimizationButton.setText("Start Evaluating Projections")
 
 
@@ -939,7 +948,7 @@ class OWInteractionAnalysis(OWWidget):
         OWGUI.checkBox(b3, self, 'onlyLower', label = "Show only lower diagonal", callback = self.updateGraph)
         OWGUI.checkBox(b3, self, 'sortAttributesByQuality', 'Sort attributes according to quality', callback = self.updateGraph, tooltip = "Do you want to show the attributes as they are ranked according to some quality measure\nor as they appear in the top ranked projections?")
 
-        OWGUI.comboBox(b4, self, "rectColoring", tooltip = "What should darkness of color of rectangles represent?", items = ["(don't use color)", "projection quality", "frequency of occurence in projections"], callback = self.updateGraph)
+        OWGUI.comboBox(b4, self, "rectColoring", tooltip = "What should darkness of color of rectangles represent?", items = ["(don't use color)", "projection quality", "frequency of occurence in projections", "both"], callback = self.updateGraph)
 
         OWGUI.checkBox(b5, self, "useGeneSets", label = "Use gene sets", callback = self.updateGraph)
         bb5 = OWGUI.widgetBox(b5, orientation  = "horizontal")
@@ -1031,6 +1040,8 @@ class OWInteractionAnalysis(OWWidget):
 
         attributes = []
         attrDict = {}
+        countDict = {}
+        bestDict = {}
 
         if self.sortAttributesByQuality:
             attributes = self.attributes[:self.attributeCount]
@@ -1055,20 +1066,17 @@ class OWInteractionAnalysis(OWWidget):
                     Max = max(attrs[i], attrs[j])
 
                     # frequency of occurence
-                    if self.rectColoring == 2:
-                        attrDict[(Min, Max)] = attrDict.get((Min, Max), 0) + 1
+                    countDict[(Min, Max)] = countDict.get((Min, Max), 0) + 1
+
                     # projection quality
-                    elif not attrDict.has_key((Min, Max)):
-                        attrDict[(Min, Max)] = self.results[index][self.ACCURACY]
+                    if not bestDict.has_key((Min, Max)):
+                        bestDict[(Min, Max)] = self.results[index][self.ACCURACY]
             index += 1
 
-        if self.rectColoring == 2:
-            if attrDict.values() != []: best = max(attrDict.values())
-            else: best = 1
-            worst = -1  # we could use 0 but those with 1 would be barely visible
-        else:
-            best = self.results[0][self.ACCURACY]
-            worst= self.results[min(len(self.results)-1, self.projectionCount)][self.ACCURACY]
+        bestCount = max([1] + countDict.values())
+        worstCount = -1  # we could use 0 but those with 1 would be barely visible
+        bestAcc = self.results[0][self.ACCURACY]
+        worstAcc= self.results[min(len(self.results)-1, self.projectionCount)][self.ACCURACY]
 
         eps = 0.05 + 0.15 * self.useGeneSets
         eps2 = 0.05
@@ -1077,25 +1085,40 @@ class OWInteractionAnalysis(OWWidget):
         for x in range(num):
             for y in range(num-x):
                 yy = num-y-1
+                countVal = None; bestVal = None
 
-                if attrDict.has_key((attributes[x], attributes[yy])):
-                    val = attrDict[(attributes[x], attributes[yy])]
-                elif attrDict.has_key((attributes[yy], attributes[x])):
-                    val = attrDict[(attributes[yy], attributes[x])]
-                else:
+                if countDict.has_key((attributes[x], attributes[yy])):
+                    countVal = countDict[(attributes[x], attributes[yy])]
+                elif countDict.has_key((attributes[yy], attributes[x])):
+                    countVal = countDict[(attributes[yy], attributes[x])]
+
+                if bestDict.has_key((attributes[x], attributes[yy])):
+                    accVal = bestDict[(attributes[x], attributes[yy])]
+                elif bestDict.has_key((attributes[yy], attributes[x])):
+                    accVal = bestDict[(attributes[yy], attributes[x])]
+
+                if countVal == bestVal == None:
                     continue
 
-                if not self.rectColoring:
+                if self.rectColoring == 0:
                     color = black
-                else:
-                    v = int(255 - 255*((val-worst)/float(best - worst)))
+                elif self.rectColoring == 1:
+                    v = int(255 - 255*((accVal-worstAcc)/float(bestAcc - worstAcc)))
                     color = QColor(v,v,v)
-
-                s = ""
-                if self.rectColoring == 1:  # projection quality
-                    s = "Pair: <b>%s</b> and <b>%s</b><br>Best projection quality: <b>%.3f</b>" % (attributes[x], attributes[yy], val)
                 elif self.rectColoring == 2:
-                    s = "Pair: <b>%s</b> and <b>%s</b><br>Number of appearances: <b>%d</b>" % (attributes[x], attributes[yy], val)
+                    v = int(255 - 255*((countVal-worstCount)/float(bestCount - worstCount)))
+                    color = QColor(v,v,v)
+                elif self.rectColoring == 3:
+                    v1 = int(255 - 255*((accVal-worstAcc)/float(bestAcc - worstAcc)))
+                    v2 = int(255 - 255*((countVal-worstCount)/float(bestCount - worstCount)))
+                    color1 = QColor(v1,v1,v1)
+                    color2 = QColor(v2,v2,v2)
+
+                s = "Pair: <b>%s</b> and <b>%s</b>" % (attributes[x], attributes[yy])
+                if self.rectColoring in [1,3]:    # projection quality
+                    s += "<br>Best projection quality: <b>%.3f</b>" % (accVal)
+                if self.rectColoring in [2,3]:    # count
+                    s += "<br>Number of appearances: <b>%d</b>" % (countVal)
 
                 sharedGeneSets = []
                 if self.useGeneSets and self.geneToSet:
@@ -1109,18 +1132,26 @@ class OWInteractionAnalysis(OWWidget):
                         s += "<hr>Shared gene sets: %s<br>" % (sharedGeneSets)
                     s += "<hr>Gene sets for individual genes:<br>&nbsp; &nbsp; <b>%s</b>: %s<br>&nbsp; &nbsp; <b>%s</b>: %s" % (attributes[x], getGeneSet(self.geneToSet, attributes[x]), attributes[yy], getGeneSet(self.geneToSet, attributes[yy]))
 
-                key = self.graph.insertCurve(RectangleCurve(self.graph, QPen(color, 1), QBrush(color), [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps]))
+                if self.rectColoring != 3:
+                    self.graph.insertCurve(RectangleCurve(self.graph, QPen(color, 1), QBrush(color), [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps]))
+                else:
+                    self.graph.insertCurve(PolygonCurve(self.graph, QPen(color1, 1), QBrush(color1), [x-0.5+eps, x+0.5-eps, x-0.5+eps, x-0.5+eps], [y+1-0.5+eps, y+1-0.5+eps, y+1+0.5-eps, y+1-0.5+eps]))
+                    self.graph.insertCurve(PolygonCurve(self.graph, QPen(color2, 1), QBrush(color2), [x-0.5+eps, x+0.5-eps, x+0.5-eps, x-0.5+eps], [y+1+0.5-eps, y+1-0.5+eps, y+1+0.5-eps, y+1+0.5-eps]))
 
                 if self.useGeneSets and self.geneToSet and sharedGeneSets != []:
-                    key = self.graph.insertCurve(RectangleCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [x-0.5+eps2, x+0.5-eps2, x+0.5-eps2, x-0.5+eps2], [y+1-0.5+eps2, y+1-0.5+eps2, y+1+0.5-eps2, y+1+0.5-eps2]))
+                    self.graph.insertCurve(RectangleCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [x-0.5+eps2, x+0.5-eps2, x+0.5-eps2, x-0.5+eps2], [y+1-0.5+eps2, y+1-0.5+eps2, y+1+0.5-eps2, y+1+0.5-eps2]))
                 if s != "":
                     self.graph.tips.addToolTip(x, y+1, s, 0.5, 0.5)
 
                 if not self.onlyLower:
-                    key = self.graph.insertCurve(RectangleCurve(self.graph, QPen(color, 1), QBrush(color), [num-1-0.5-y+eps, num-1-0.5-y+eps, num-1+0.5-y-eps, num-1+0.5-y-eps], [num-0.5-x+eps, num+0.5-x-eps, num+0.5-x-eps, num-0.5-x+eps]))
+                    if self.rectColoring != 3:
+                        self.graph.insertCurve(RectangleCurve(self.graph, QPen(color, 1), QBrush(color), [num-1-0.5-y+eps, num-1-0.5-y+eps, num-1+0.5-y-eps, num-1+0.5-y-eps], [num-0.5-x+eps, num+0.5-x-eps, num+0.5-x-eps, num-0.5-x+eps]))
+                    else:
+                        self.graph.insertCurve(PolygonCurve(self.graph, QPen(color1, 1), QBrush(color1), [num-1-0.5-y+eps, num-1+0.5-y-eps, num-1-0.5-y+eps, num-1-0.5-y+eps], [num-0.5-x+eps, num-0.5-x+eps, num+0.5-x-eps, num-0.5-x+eps]))
+                        self.graph.insertCurve(PolygonCurve(self.graph, QPen(color2, 1), QBrush(color2), [num-1-0.5-y+eps, num-1+0.5-y-eps, num-1+0.5-y-eps, num-1-0.5-y+eps], [num+0.5-x-eps, num-0.5-x+eps, num+0.5-x-eps, num+0.5-x-eps]))
 
                     if self.useGeneSets and self.geneToSet and sharedGeneSets != []:
-                        key = self.graph.insertCurve(RectangleCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [num-1-0.5-y+eps2, num-1-0.5-y+eps2, num-1+0.5-y-eps2, num-1+0.5-y-eps2], [num-0.5-x+eps2, num+0.5-x-eps2, num+0.5-x-eps2, num-0.5-x+eps2]))
+                        self.graph.insertCurve(RectangleCurve(self.graph, QPen(color, 1), QBrush(Qt.NoBrush), [num-1-0.5-y+eps2, num-1-0.5-y+eps2, num-1+0.5-y-eps2, num-1+0.5-y-eps2], [num-0.5-x+eps2, num+0.5-x-eps2, num+0.5-x-eps2, num-0.5-x+eps2]))
                     if s != "":
                         self.graph.tips.addToolTip(num-1-y, num-x, s, 0.5, 0.5)
 

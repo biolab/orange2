@@ -667,7 +667,7 @@ class OWGraph(QwtPlot):
 
         f.write("from pylab import *\nfrom matplotlib import font_manager\n\n#possible changes in how the plot looks\n#rcParams['xtick.major.size'] = 0\n#rcParams['ytick.major.size'] = 0\n\n#constants\nx1 = %f; x2 = %f\ny1 = %f; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = %f\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\nhold(True)\n" % (x1,x2,y1,y2,size.width(), size.height(), edgeOffset))
 
-        linestyles = ["o", "-", "-.", "--", ":", "-", "-"]      # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
+        linestyles = ['None', "-", "-.", "--", ":", "-", "-"]      # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
         markers = ["None", "o", "s", "^", "d", "v", "^", "<", ">", "x", "+"]    # curveSymbols = [None, Ellipse, Rect, Triangle, Diamond, DTriangle, UTriangle, LTriangle, RTriangle, XCross, Cross]
 
         f.write("#add curves\n")

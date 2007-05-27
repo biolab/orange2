@@ -337,10 +337,12 @@ class OWLinProj(OWVisWidget):
 
     # receive new data and update all fields
     def setData(self, data):
-        if data and data.domain.classVar:
+        if data:
             name = getattr(data, "name", "")
             data = data.filterref(orange.Filter_hasClassValue())
             data.name = name
+            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
+                data = None
         if self.data and data and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 

@@ -13,7 +13,7 @@
 from OWWidget import *
 from OWScatterPlotGraph import *
 from OWkNNOptimization import *
-import orngVizRank, OWExplorer
+import orngVizRank
 ##from OWClusterOptimization import *
 import OWGUI, OWToolbars, OWDlgs
 from orngScaleData import *
@@ -53,7 +53,6 @@ class OWScatterPlot(OWWidget):
         self.graph = OWScatterPlotGraph(self, self.mainArea, "ScatterPlot")
         self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
 ##        self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
-        self.explorerDlg = OWExplorer.OWExplorerDialog(self, self.vizrank, "Scatterplot", signalManager)
         self.optimizationDlg = self.vizrank
 
         self.data = None
@@ -111,7 +110,7 @@ class OWScatterPlot(OWWidget):
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialogs", orientation = "horizontal")
         OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
-        OWGUI.button(self.optimizationButtons, self, "Explorer", callback = self.explorerDlg.reshow, debuggingEnabled = 0, tooltip = "Select specific cells in mosaic and explore this data further.\nBuild a decision tree with mosaic diagrams.")
+        
 ##        OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
 ##        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
 ##        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
@@ -124,7 +123,7 @@ class OWScatterPlot(OWWidget):
         # ####################################
         # SETTINGS TAB
         # point width
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.pointSizeChange)
 
         # #####
         # jittering options
@@ -222,6 +221,8 @@ class OWScatterPlot(OWWidget):
             name = getattr(data, "name", "")
             data = data.filterref(orange.Filter_hasClassValue())
             data.name = name
+            if len(data) == 0 or len(data.domain) == 0:        # if we don't have any examples or attributes then this is not a valid data set
+                data = None
         if self.data != None and data != None and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
@@ -236,7 +237,6 @@ class OWScatterPlot(OWWidget):
         self.outlierValues = None
 
         self.vizrank.setData(data)
-        self.explorerDlg.setData(self.data)
 ##        self.clusterDlg.setData(data, clearResults)
 
         sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
@@ -430,7 +430,6 @@ class OWScatterPlot(OWWidget):
 
         self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.attrLabel)
         self.graph.repaint()
-        self.explorerDlg.updateState()
 
 
     # ##############################################################################################################################################################
@@ -442,6 +441,11 @@ class OWScatterPlot(OWWidget):
         self.progressBar.setTotalSteps(total)
         self.progressBar.setProgress(current)
 
+    def pointSizeChange(self):
+        if self.attrSize == "":
+            self.replotCurves()
+        else:
+            self.updateGraph()
 
     def replotCurves(self):
         for key in self.graph.curveKeys():
@@ -454,7 +458,6 @@ class OWScatterPlot(OWWidget):
         self.graph.enableGridYL(self.showGridlines)
 
     def setAutoSendSelection(self):
-        self.explorerDlg.updateState()
         if self.autoSendSelection:
             self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
             self.sendSelections()

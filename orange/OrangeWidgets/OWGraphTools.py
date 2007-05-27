@@ -17,8 +17,8 @@ defaultRGBColors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0), (255, 
 
 #colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
 
-#ColorBrewer color set - bad when there are small points
-ColorBrewerRGBValues = [(0, 140, 255), (228, 26, 28), (77, 175, 74), (255, 127, 0), (255, 255, 51), (152, 78, 163), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
+#ColorBrewer color set - bad when there are small points but great when you have to color areas
+ColorBrewerColors = [(0, 140, 255), (228, 26, 28), (77, 175, 74), (255, 127, 0), (255, 255, 51), (152, 78, 163), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
 
 class ColorPaletteGenerator:
     maxHueVal = 260
