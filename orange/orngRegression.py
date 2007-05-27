@@ -88,7 +88,7 @@ class LinearRegression:
         self.__dict__ = kwds
         self.beta = self.statistics['model']['estCoeff']
 
-    def __call__(self, example, returntype=None):
+    def __call__(self, example, result_type=orange.GetValue):
         ex = orange.Example(self.domain, example)
         ex = numpy.array(ex.native())
 
@@ -140,11 +140,11 @@ def normalize(vector):
 
 class PLSRegressionLearner(object):
     """PLSRegressionLearner(data, y, x=None, nc=None)"""
-    def __new__(self, data=None, name='PLS regression', **kwds):
+    def __new__(self, data=None, y=None, x=None, nc = None, name='PLS regression', **kwds):
         learner = object.__new__(self, **kwds)
         if data:
             learner.__init__(name) # force init
-            return learner(data)
+            return learner(data, y)
         else:
             return learner  # invokes the __init__
 
