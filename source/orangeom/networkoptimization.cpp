@@ -35,7 +35,7 @@ TNetworkOptimization::TNetworkOptimization()
 	height = 10000;
 	links = NULL;
 	pos = NULL;
-	temperature = sqrt((double)(width*width + height*height)) / 10;
+	temperature = sqrt(width*width + height*height) / 10;
 	coolFactor = 0.96;
 }
 
@@ -78,23 +78,30 @@ void TNetworkOptimization::random()
 	int i;
 	for (i = 0; i < nVertices; i++)
 	{
-			pos[i][0] = rand() % width;
-			pos[i][1] = rand() % height;
+		pos[i][0] = rand() % (int)width;
+		pos[i][1] = rand() % (int)height;
 	}
 }
+
+static int julery_isqrt(int val) {
+	    int temp, g=0, b = 0x8000, bshft = 15;
+	    do {
+	        if (val >= (temp = (((g << 1) + b)<<bshft--))) {
+	           g += b;
+	           val -= temp;
+	        }
+	    } while (b >>= 1);
+	    return g;
+	}
 
 int TNetworkOptimization::fruchtermanReingold(int steps)
 {
 	/*
 	cout << "nVertices: " << nVertices << endl << endl;
-	dumpCoordinates(pos, nVertices, 2);
+	dumpCoordinates();
 	/**/
-	int i = 0;
-	int count = 0;
-	double kk = 1;
 	double **disp = (double**)malloc(nVertices * sizeof (double));
-	double localTemparature = 5;
-
+	int i = 0;
 	for (i = 0; i < nVertices; i++)
 	{
 		disp[i] = (double *)calloc(2, sizeof(double));
@@ -106,14 +113,20 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 		}
 	}
 
-	int area = width * height;
+	int count = 0;
+	double kk = 1;
+	double localTemparature = 5;
+	double area = width * height;
+
 	k2 = area / nVertices;
 	k = sqrt(k2);
 	kk = 2 * k;
+	double kk2 = kk * kk;
 
 	// iterations
 	for (i = 0; i < steps; i++)
 	{
+		//cout << "iteration: " << i << endl;
 		// reset disp
 		int j = 0;
 		for (j = 0; j < nVertices; j++)
@@ -122,8 +135,9 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 			disp[j][1] = 0;
 		}
 
-		// calculate repulsive force
 		int v = 0;
+		// calculate repulsive force
+		//cout << "repulsive" << endl;
 		for (v = 0; v < nVertices - 1; v++)
 		{
 			for (int u = v + 1; u < nVertices; u++)
@@ -131,16 +145,15 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 				double difX = pos[v][0] - pos[u][0];
 				double difY = pos[v][1] - pos[u][1];
 
-				double dif = sqrt(difX * difX + difY * difY);
+				double dif2 = difX * difX + difY * difY; 
 
-				if (dif < kk)
+				if (dif2 < kk2)
 				{
-					if (dif == 0)
-						dif = 0.01;
+					if (dif2 == 0)
+						dif2 = 1;
 
-					double d = dif * dif / k2;
-					double dX = difX / d;
-					double dY = difY / d;
+					double dX = difX * k2 / dif2;
+					double dY = difY * k2 / dif2;
 
 					disp[v][0] = disp[v][0] + dX;
 					disp[v][1] = disp[v][1] + dY;
@@ -150,27 +163,20 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 				}
 			}
 		}
-
 		// calculate attractive forces
+		//cout << "attractive" << endl;
 		for (j = 0; j < nLinks; j++)
 		{
 			int v = links[j][0];
 			int u = links[j][1];
 
-			//cout << "v: " << v << " u: " << u << endl;
-
-			// cout << "     v: " << v << " u: " << u << " w: " << edge->weights << endl;
 			double difX = pos[v][0] - pos[u][0];
 			double difY = pos[v][1] - pos[u][1];
 
 			double dif = sqrt(difX * difX + difY * difY);
 
-			if (dif == 0)
-				dif = 0.01;
-
-			double d = dif / k;
-			double dX = difX * d;
-			double dY = difY * d;
+			double dX = difX * dif / k;
+			double dY = difY * dif / k;
 
 			disp[v][0] = disp[v][0] - dX;
 			disp[v][1] = disp[v][1] - dY;
@@ -178,7 +184,7 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 			disp[u][0] = disp[u][0] + dX;
 			disp[u][1] = disp[u][1] + dY;
 		}
-
+		//cout << "limit" << endl;
 		// limit the maximum displacement to the temperature t
 		// and then prevent from being displaced outside frame
 		for (v = 0; v < nVertices; v++)
@@ -186,10 +192,10 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 			double dif = sqrt(disp[v][0] * disp[v][0] + disp[v][1] * disp[v][1]);
 
 			if (dif == 0)
-				dif = 0.01;
+				dif = 1;
 
-			pos[v][0] = pos[v][0] + (disp[v][0] / dif * min(fabs(disp[v][0]), temperature));
-			pos[v][1] = pos[v][1] + (disp[v][1] / dif * min(fabs(disp[v][1]), temperature));
+			pos[v][0] = pos[v][0] + (disp[v][0] * min(abs(disp[v][0]), temperature) / dif);
+			pos[v][1] = pos[v][1] + (disp[v][1] * min(abs(disp[v][1]), temperature) / dif);
 
 			//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
 			//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
@@ -197,6 +203,9 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 		//cout << temperature << ", ";
 		temperature = temperature * coolFactor;
 	}
+
+	//cout << "end coors: " << endl;
+	//dumpCoordinates();
 
 	// free space
 	for (i = 0; i < nVertices; i++)
@@ -207,7 +216,7 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 	//cout << endl;
 	free(disp);
 	disp = NULL;
-	//dumpCoordinates();
+	
 	return 0;
 }
 
@@ -241,12 +250,14 @@ void TNetworkOptimization::free_Carrayptrs(double **v)  {
 
 /* ==== Allocate a double *vector (vec of pointers) ======================
     Memory is Allocated!  See void free_Carray(double ** )                  */
-double **TNetworkOptimization::ptrvector(long n)  {
+double **TNetworkOptimization::ptrvector(double n)  {
 	double **v;
 	v=(double **)malloc((size_t) (n*sizeof(double)));
+
 	if (!v)   {
 		printf("In **ptrvector. Allocation of memory for double array failed.");
-		exit(0);  }
+		exit(0);  
+	}
 	return v;
 }
 
@@ -262,8 +273,7 @@ double **TNetworkOptimization::pymatrix_to_Carrayptrs(PyArrayObject *arrayin)  {
 	c = ptrvector(n);
 	a = (double *) arrayin->data;  /* pointer to arrayin data as double */
 	
-	for (i = 0; i < n; i++)
-	{
+	for (i = 0; i < n; i++) {
 		c[i] = a + i * m;
 	}
 
@@ -446,7 +456,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	CAST_TO(TNetworkOptimization, graph);
 
 	graph->temperature = temperature;
-	graph->coolFactor = exp(log(0.02) / steps);
+	graph->coolFactor = exp(log(10.0/10000.0) / steps);
 	
 	if (graph->fruchtermanReingold(steps) > 0)
 	{

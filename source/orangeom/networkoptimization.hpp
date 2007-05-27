@@ -62,7 +62,7 @@ public:
 	int setGraph(TGraphAsList *graph);
 	void dumpCoordinates();
 
-	double **ptrvector(long n);
+	double **ptrvector(double n);
 	double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
 	bool *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
 	void free_Carrayptrs(double **v);
@@ -85,12 +85,12 @@ public:
 		}
 	}
 
-	float k; //PR
-	float k2; //PR
+	double k; //PR
+	double k2; //PR
 	double temperature;
 	double coolFactor;
-	int width; //P
-	int height; //PR
+	double width; //P
+	double height; //PR
 	PyArrayObject *coors;
 
 	int nLinks;
