@@ -17,21 +17,21 @@
 #
 
 
-import Numeric, orange
+import numpy, orange
 from random import *
 
-_log2 = 1.0/Numeric.log(2)
-_log2e = Numeric.log(2)
+_log2 = 1.0/numpy.log(2)
+_log2e = numpy.log(2)
 
 def Flatten(m):
-    if len(Numeric.shape(m)) > 1:
-        v = Numeric.ravel(m)
+    if len(numpy.shape(m)) > 1:
+        v = numpy.ravel(m)
     else:
         v = m
     return v
-    
+
 def Probabilities(m):
-    t = Numeric.sum(Flatten(m))
+    t = numpy.sum(Flatten(m))
     if t == 0:
         return 0
     else:
@@ -40,8 +40,8 @@ def Probabilities(m):
 def Entropy(m):
     v = Flatten(m)
     pv = Probabilities(v)
-    lv = Numeric.log(Numeric.clip(pv,1e-6,1.0))*_log2
-    return -Numeric.dot(pv,lv)
+    lv = numpy.log(numpy.clip(pv,1e-6,1.0))*_log2
+    return -numpy.dot(pv,lv)
 
 
 class ContingencyTable3:
@@ -74,7 +74,7 @@ class ContingencyTable3:
             return s
 
     def IPF(self,tolerance=1e-6,maxiterations=100):
-        d = Numeric.shape(self.m)
+        d = numpy.shape(self.m)
         p = self.pm
         px = self.pab
         py = self.pac
@@ -83,7 +83,7 @@ class ContingencyTable3:
         pyy = self.pb
         pzz = self.pc
         v = 1.0/(d[0]*d[1]*d[2])
-        model = Numeric.ones(d,Numeric.Float)*v
+        model = numpy.ones(d,numpy.float)*v
 
         iterations = 0
         diff = 1e30
@@ -92,11 +92,11 @@ class ContingencyTable3:
             # FIT
             for c in range(3):
                 if c == 0:
-                    mx = Probabilities(Numeric.sum(model,axis=2))
+                    mx = Probabilities(numpy.sum(model,axis=2))
                 elif c == 1:
-                    my = Probabilities(Numeric.sum(model,axis=1))
+                    my = Probabilities(numpy.sum(model,axis=1))
                 else:
-                    mz = Probabilities(Numeric.sum(model,axis=0))
+                    mz = Probabilities(numpy.sum(model,axis=0))
                 for x in xrange(d[0]):
                     for y in xrange(d[1]):
                         for z in xrange(d[2]):
@@ -106,13 +106,13 @@ class ContingencyTable3:
                                 model[x,y,z] *= py[x,z]/max(my[x,z],1e-16)
                             else:
                                 model[x,y,z] *= pz[y,z]/max(mz[y,z],1e-16)
-            # EVALUATE            
+            # EVALUATE
             div = 0.0
             for x in xrange(d[0]):
                 for y in xrange(d[1]):
                     for z in xrange(d[2]):
                         if p[x,y,z]>0:
-                            div += p[x,y,z]*Numeric.log(p[x,y,z]/model[x,y,z])
+                            div += p[x,y,z]*numpy.log(p[x,y,z]/model[x,y,z])
             #print iterations, Entropy(model), div
             iterations += 1
             diff = pdiv-div
@@ -121,8 +121,8 @@ class ContingencyTable3:
         return div*_log2
 
     def KSA(self):
-        d = Numeric.shape(self.m)
-        self.kirk = Numeric.ones(d,Numeric.Float)
+        d = numpy.shape(self.m)
+        self.kirk = numpy.ones(d,numpy.float)
 
         # normalize kirkwood approximation
         sumx = 0.0
@@ -144,7 +144,7 @@ class ContingencyTable3:
             for y in xrange(d[1]):
                 for z in xrange(d[2]):
                     if self.pm[x,y,z]>0:
-                        div += self.pm[x,y,z]*Numeric.log(self.pm[x,y,z]/self.kirk[x,y,z])
+                        div += self.pm[x,y,z]*numpy.log(self.pm[x,y,z]/self.kirk[x,y,z])
         return (div*_log2,sumx)
 
     def Divergence(self,x,y,z):
@@ -152,7 +152,7 @@ class ContingencyTable3:
         pkirkwood  = self.pab[x,y]*self.pbc[y,z]*self.pac[x,z]
         pkirkwood /= self.pa[x]*self.pb[y]*self.pc[z]
         if ptrue > 1e-6:
-            div = Numeric.log(ptrue/pkirkwood)
+            div = numpy.log(ptrue/pkirkwood)
         else:
             div = 0.0
         return (ptrue,pkirkwood,_log2*div)
@@ -163,7 +163,7 @@ class ContingencyTable3:
         pkirkwood  = self.pab[x,y]*self.pbc[y,z]*self.pac[x,z]
         pkirkwood /= self.pa[x]*self.pb[y]*self.pc[z]
         if ptrue > 1e-6:
-            div = Numeric.log(ptrue/(pkirkwood*norm))
+            div = numpy.log(ptrue/(pkirkwood*norm))
         else:
             div = 0.0
         return (ptrue,pkirkwood*norm,_log2*div)
@@ -171,16 +171,16 @@ class ContingencyTable3:
     def __init__(self, m, names, values):
         self.names  = names
         self.values = values
-        m = Numeric.array(m,Numeric.Float)
+        m = numpy.array(m,numpy.float)
         self.m = m
-        self.bc = Numeric.sum(m,axis=0)
-        self.ac = Numeric.sum(m,axis=1)
-        self.ab = Numeric.sum(m,axis=2)
+        self.bc = numpy.sum(m,axis=0)
+        self.ac = numpy.sum(m,axis=1)
+        self.ab = numpy.sum(m,axis=2)
 
-        self.a = Numeric.sum(self.ab,axis=1)
-        self.b = Numeric.sum(self.ab,axis=0)
-        self.c = Numeric.sum(self.ac,axis=0)
-        self.total = Numeric.sum(self.a)
+        self.a = numpy.sum(self.ab,axis=1)
+        self.b = numpy.sum(self.ab,axis=0)
+        self.c = numpy.sum(self.ac,axis=0)
+        self.total = numpy.sum(self.a)
 
         self.pm = Probabilities(self.m)
         self.pab = Probabilities(self.ab)
@@ -190,7 +190,7 @@ class ContingencyTable3:
         self.pb = Probabilities(self.b)
         self.pc = Probabilities(self.c)
         dof = 0
-        (ni,nj,nk) = Numeric.shape(self.m)
+        (ni,nj,nk) = numpy.shape(self.m)
         for ii in xrange(ni):
             for jj in xrange(nj):
                 for kk in xrange(nk):
@@ -214,7 +214,7 @@ class ContingencyTable2:
         ptrue = self.pm[x,y]
         pkirkwood = self.pa[x]*self.pb[y]
         if ptrue > 1e-6:
-            div = Numeric.log(ptrue/pkirkwood)
+            div = numpy.log(ptrue/pkirkwood)
         else:
             div = 0.0
         return (ptrue,pkirkwood,_log2*div)
@@ -225,7 +225,7 @@ class ContingencyTable2:
         nlimit = limit*_log2e
         f = Flatten(self.m)
         p = Probabilities(f)
-        LUT = Numeric.zeros((self.total,),Numeric.Int)
+        LUT = numpy.zeros((self.total,),numpy.int)
         c = 0
         for i in xrange(len(f)):
             for j in xrange(f[i]):
@@ -233,15 +233,15 @@ class ContingencyTable2:
                 c += 1
         assert(c == self.total)
         for i in xrange(N):
-            nt = Numeric.zeros((len(f),),Numeric.Float)
+            nt = numpy.zeros((len(f),),numpy.float)
             for j in xrange(c):
                 nt[ LUT[randint(0,c-1)] ] += 1
             q = Probabilities(nt)
             loss = 0.0
             for j in xrange(len(f)):
                 if q[j] > 1e-6 and p[j] > 0.0:
-                    loss += q[j]*Numeric.log(q[j]/p[j])
-                #loss += p[j]*Numeric.log(max(p[j],1e-5)/max(q[j],1e-6))
+                    loss += q[j]*numpy.log(q[j]/p[j])
+                #loss += p[j]*numpy.log(max(p[j],1e-5)/max(q[j],1e-6))
             if loss >= nlimit:
                 hits += 1
         return float(hits)/N
@@ -253,18 +253,18 @@ class ContingencyTable2:
     def __init__(self, m, names, values):
         self.names  = names
         self.values = values
-        m = Numeric.array(m,Numeric.Float)
+        m = numpy.array(m,numpy.float)
         self.m = m
 
-        self.a = Numeric.sum(self.m,axis=1)
-        self.b = Numeric.sum(self.m,axis=0)
-        self.total = Numeric.sum(self.a)
+        self.a = numpy.sum(self.m,axis=1)
+        self.b = numpy.sum(self.m,axis=0)
+        self.total = numpy.sum(self.a)
 
         self.pa = Probabilities(self.a)
         self.pb = Probabilities(self.b)
         self.pm = Probabilities(self.m)
         dof = 0
-        (ni,nj) = Numeric.shape(self.m)
+        (ni,nj) = numpy.shape(self.m)
         for ii in xrange(ni):
             for jj in xrange(nj):
                 if self.m[ii,jj] > 0:
@@ -276,7 +276,7 @@ def get3Int(t,a,b,c,wid=None,prior=0):
     ni = len(a.values)
     nj = len(b.values)
     nk = len(c.values)
-    M = prior*Numeric.ones((ni,nj,nk),Numeric.Float)
+    M = prior*numpy.ones((ni,nj,nk),numpy.float)
     if wid == None: # no weighting
         for ex in t:
             if not (ex[a].isSpecial() or ex[b].isSpecial() or ex[c].isSpecial()):
@@ -293,7 +293,7 @@ def get3Int(t,a,b,c,wid=None,prior=0):
 def get2Int(t,a,b,wid=None,prior=0):
     ni = len(a.values)
     nj = len(b.values)
-    M = prior*Numeric.ones((ni,nj),Numeric.Float)
+    M = prior*numpy.ones((ni,nj),numpy.float)
     if wid == None: # no weighting
         for ex in t:
             if not (ex[a].isSpecial() or ex[b].isSpecial()):
