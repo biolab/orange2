@@ -285,28 +285,39 @@ class OWNetwork(OWWidget):
         print "OWNetwork/ff..."
         if self.visualize == None:   #grafa se ni
             return
-
+        
+        k = 1.13850193174e-008
+        #k = 1.61735442033e-008
+        nodes = self.visualize.nVertices()
+        t = k * nodes * nodes
+        refreshRate = int(5.0 / t)
+        if refreshRate <   1: refreshRate = 1;
+        if refreshRate > 1500: refreshRate = 1500;
+        print "refreshRate: " + str(refreshRate)
         #najprej nakljucne koordinate za vsa vozlisca
-        refreshRate = 20 #- self.visualize.nVertices() / 50 + 100
+        #- self.visualize.nVertices() / 50 + 100
         #if refreshRate < 5:
         #    refreshRate = 5;
         
         tolerance = 5
-        initTemp = 100
-
+        initTemp = 1000
+        #refreshRate = 1
+        initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp)
+        self.updateCanvas()
+        
 #        self.visualize.fruchtermanReingold(refreshRate, initTemp)
         
-        while True:
-            print initTemp
-            initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp)
-            
-            if (initTemp <= tolerance):
-                #self.visualize.postProcess()
-                print "OWNetwork/ff: updating canvas..."
-                self.updateCanvas()
-                return
-            print "OWNetwork/ff: updating canvas..."
-            self.updateCanvas()
+#        while True:
+#            print initTemp
+#            initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp)
+#            
+#            if (initTemp <= tolerance):
+#                #self.visualize.postProcess()
+#                print "OWNetwork/ff: updating canvas..."
+#                self.updateCanvas()
+#                return
+#            print "OWNetwork/ff: updating canvas..."
+#            self.updateCanvas()
         print "done."
         
     def circular(self):
