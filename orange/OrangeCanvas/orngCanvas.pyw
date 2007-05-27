@@ -531,7 +531,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.statusBar.message("")
 
     def menuItemSaveOutputWindow(self):
-        qname = QFileDialog.getSaveFileName( self.saveSchemaDir + "/Output.htm", "HTML Document (*.htm)", self, "", "Save Output To File")
+        qname = QFileDialog.getSaveFileName( self.settings["saveSchemaDir"] + "/Output.htm", "HTML Document (*.htm)", self, "", "Save Output To File")
         if qname.isEmpty(): return
         name = str(qname)
 

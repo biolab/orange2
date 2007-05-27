@@ -500,7 +500,7 @@ class SchemaDoc(QMainWindow):
                 name = widget.getAttribute("widgetName")
                 tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"), activateSettings = 0)
                 if not tempWidget:
-                    QMessageBox.information(self,'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
+                    QMessageBox.information(self,'Orange Canvas','Unable to create an instance of the \"'+ name + '\" widget',  QMessageBox.Ok + QMessageBox.Default)
                 else:
                     if tempWidget.caption in settingsDict.keys():
                         tempWidget.instance.loadSettingsStr(settingsDict[tempWidget.caption])
@@ -517,7 +517,7 @@ class SchemaDoc(QMainWindow):
                 inWidget = self.getWidgetByCaption(inCaption)
                 outWidget = self.getWidgetByCaption(outCaption)
                 if inWidget == None or outWidget == None:
-                    print "Unable to create a line due to invalid widget name. Try reinstalling widgets."
+                    print 'Unable to create a line between widgets "%s" and "%s" due to a missing widget.' % (outCaption, inCaption)
                     continue
 
                 signalList = eval(signals)

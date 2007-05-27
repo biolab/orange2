@@ -104,13 +104,13 @@ class SignalManager:
         sys.stderr = self.stderr
         #sys.stdout = self.stdout
 
-    def __del__(self):
-        if type(self) == type(None):
-            return
-        if self.debugFile:
-            self.debugFile.close()
-        sys.stderr = self.stderr
-        #sys.stdout = self.stdout
+#    def __del__(self):
+#        if not self or type(self) == type(None):
+#            return
+#        if self.debugFile:
+#            self.debugFile.close()
+#        sys.stderr = self.stderr
+#        #sys.stdout = self.stdout
 
     #
     def addEvent(self, strValue, object = None, eventVerbosity = 1):
