@@ -97,9 +97,9 @@ class LinearRegression:
         else:
             yhat = dot(self.beta, ex[:-1])
         dist = 0                    # this should be distribution
-
+         
         if result_type == orange.GetValue:
-            return yhat
+        return yhat
         if result_type == orange.GetProbabilities:
             return dist
         return (v, dist) # for orange.GetBoth
@@ -140,11 +140,15 @@ def normalize(vector):
 
 class PLSRegressionLearner(object):
     """PLSRegressionLearner(data, y, x=None, nc=None)"""
-    def __new__(self, data=None, y=None, x=None, nc = None, name='PLS regression', **kwds):
+    def __new__(self, data=None, y = None, x = None, nc = None, name='PLS regression', **kwds):
         learner = object.__new__(self, **kwds)
         if data:
             learner.__init__(name) # force init
-            return learner(data, y)
+            if x == None:
+                x = [v for v in data.domain.variables if v not in y]
+            if nc == None:
+                nc = len(x)
+            return learner(data,y,x,nc)
         else:
             return learner  # invokes the __init__
 
@@ -158,15 +162,20 @@ class PLSRegressionLearner(object):
 
         dataX = data.select(x)
         dataY = data.select(y)
-        print y, dataY
-        
+                
         # transformation to numpy arrays
         X = dataX.toNumpy()[0]
-        Y = dataY.toNumpy()[0]
-    
-        # data dimensions
         n, mx = numpy.shape(X)
-        my = numpy.shape(Y)[1]
+        
+        Y = dataY.toNumpy()[0]
+
+        # if Y is class
+        if Y == None:
+            Y = dataY.toNumpy()[1]
+            Y = Y.reshape((n,1))
+        
+        my = Y.shape[1]
+        
 
         # Z-scores of original matrices
         YMean = numpy.mean(Y, axis = 0)
@@ -175,16 +184,16 @@ class PLSRegressionLearner(object):
         XStd = numpy.std(X, axis = 0) 
         X,Y = standardize(X), standardize(Y)
 
-        P = numpy.empty((mx,Ncomp))
-        C = numpy.empty((my,Ncomp))
-        T = numpy.empty((n,Ncomp))
-        U = numpy.empty((n,Ncomp))
-        B = numpy.zeros((Ncomp,Ncomp))
-        W = numpy.empty((mx,Ncomp))
+        P = numpy.empty((mx,nc))
+        C = numpy.empty((my,nc))
+        T = numpy.empty((n,nc))
+        U = numpy.empty((n,nc))
+        B = numpy.zeros((nc,nc))
+        W = numpy.empty((mx,nc))
         E,F = X,Y
     
         # main algorithm
-        for i in range(Ncomp):
+        for i in range(nc):
             u = numpy.random.random_sample((n,1))
             w = normalize(dot(E.T,u))
             t = normalize(dot(E,w))
@@ -213,7 +222,7 @@ class PLSRegressionLearner(object):
         YE = dot(dot(T,B),C.T)*YStd + YMean
         Y = Y*numpy.std(Y, axis = 0)+ YMean
         BPls = dot(dot(numpy.linalg.pinv(P.T),B),C.T)    
-        return PLSRegression(domain=data.domain, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, name=self.name)
+        return PLSRegression(domain=dataX.domain, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, name=self.name)
 
 class PLSRegression:
     def __init__(self, **kwds):
