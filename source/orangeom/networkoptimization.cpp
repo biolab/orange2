@@ -473,6 +473,54 @@ PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A 
 	return (PyObject *)graph->coors;  
 }
 
+PyObject *NetworkOptimization_getHubs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(n) -> HubList")
+{
+	int n;
+
+	if (!PyArg_ParseTuple(args, "n:NetworkOptimization.getHubs", &n))
+		return NULL;
+
+	CAST_TO(TNetworkOptimization, graph);
+
+	int *vertexPower = new int[graph->nVertices];
+
+	int i;
+	for (i=0; i < graph->nVertices; i++)
+	{
+		vertexPower[i] = 0;
+	}
+
+	for (i=0; i < graph->nLinks; i++)
+	{
+		vertexPower[graph->links[i][0]]++;
+		vertexPower[graph->links[i][1]]++;
+	}
+
+	PyObject* hubList = PyList_New(n);
+	
+	for (i=0; i < n; i++)
+	{
+		int j;
+		int ndx_max = -1;
+		int max = 0;
+		for (j=0; j < graph->nVertices; j++)
+		{
+			if (vertexPower[j] > max)
+			{
+				ndx_max = j;
+				max = vertexPower[j];
+			}
+		}
+		//cout << "pow: " << vertexPower[ndx_max] << " ndx: " << ndx_max << endl;
+
+		vertexPower[ndx_max] = -2;
+		PyList_SetItem(hubList, i, PyInt_FromLong(ndx_max));
+	}
+
+	delete [] vertexPower;
+	return hubList;
+}
+
 PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x, y) -> Ndx")
 {
 	double x;
