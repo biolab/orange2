@@ -12,6 +12,7 @@ from qwt import *
 from qt import *
 from OWGraphDrawerCanvas import *
 from orngNetwork import * 
+from time import *
 
 #ta razred je potreben, da lahko narisemo pixmap z painterjem
 class pixmaps(QWidget):
@@ -143,12 +144,19 @@ class OWNetwork(OWWidget):
         
         OWGUI.button(self.controlArea, self, "Save network", callback=self.saveNetwork)
         OWGUI.button(self.controlArea, self, "Send", callback=self.sendData)
+        OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
         
         self.graph = OWGraphDrawerCanvas(self, self.mainArea, "ScatterPlot")
         #self.optimize = OWGraphDrawingOptimize(parent=self);
         #start of content (right) area
         self.box = QVBoxLayout(self.mainArea)
         self.box.addWidget(self.graph)
+        
+    def testRefresh(self):
+        start = time()
+        self.graph.replot()
+        stop = time()    
+        print "replot in " + str(stop - start)
         
     def saveNetwork(self):
         filename = QFileDialog.getSaveFileName(QString.null,'PAJEK networks (*.net)')

@@ -47,7 +47,7 @@ class OWGraphDrawerCanvas(OWGraph):
             self.setCurveSymbol(key, newSymbol)
             self.selection.append(ndx);
             #self.visualizer.filter[ndx] = True
-            self.replot()
+            #self.replot()
             return True
         
         return False
@@ -311,6 +311,7 @@ class OWGraphDrawerCanvas(OWGraph):
             OWGraph.onMouseReleased(self, event)
     
     def selectVertices(self):
+        print "selecting vertices.."
         for vertexKey in self.indexPairs.keys():
             vObj = self.curve(vertexKey)
             
@@ -318,30 +319,18 @@ class OWGraphDrawerCanvas(OWGraph):
                 self.addSelection(self.indexPairs[vertexKey])
                 
     def selectVertex(self, pos):
+        print "select vertex"
         #key, dist, xVal, yVal, index = self.closestCurve(pos.x(), pos.y())
         #curve = self.curve(key)
         min = 1000000
         ndx = -1
         #print "x: " + str(pos.x()) + " y: " + str(pos.y()) 
-        #px = self.invTransform(curve.xAxis(), pos.x())
-        #py = self.invTransform(curve.yAxis(), pos.y())   
         px = self.invTransform(2, pos.x())
         py = self.invTransform(0, pos.y())   
         #print "xAxis: " + str(curve.xAxis()) + " yAxis: " + str(curve.yAxis())
         #print "px: " + str(px) + " py: " + str(py)
-        for v in range(self.nVertices):
-            x1 = self.visualizer.coors[v][0]
-            y1 = self.visualizer.coors[v][1]
-            #print "x: " + str(x1) + " y: " + str(y1)
-            dist = self.dist([px, py], [x1, y1])
-            
-            if dist < min:
-                min = dist
-                ndx = v
-                
-                if min < 10:
-                    break
-        
+        ndx, min = self.visualizer.closestVertex(px, py)
+        #print "ndx: " + str(ndx) + " min: " + str(min)
         if min < 50 and ndx != -1:
             self.addSelection(ndx)
         else:
@@ -372,7 +361,7 @@ class OWGraphDrawerCanvas(OWGraph):
             y1 = self.visualizer.coors[i][1]
             y2 = self.visualizer.coors[j][1]
 
-            #key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
+            key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
             #self.edges[e] = (key,i,j)
             xData.append(x1)
             xData.append(x2)
@@ -391,11 +380,13 @@ class OWGraphDrawerCanvas(OWGraph):
             
             edgesCount += 1
         
-        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192,192,192)), xData, yData)
-        edgesCurveObject.xData = xData
-        edgesCurveObject.yData = yData
-        self.edgesKey = self.insertCurve(edgesCurveObject)
+#        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192,192,192)), xData, yData)
+#        edgesCurveObject.xData = xData
+#        edgesCurveObject.yData = yData
+        #self.edgesKey = self.insertCurve(edgesCurveObject)
         
+        selectionX = []
+        selectionY = []
         # draw vertices
         for v in range(self.nVertices):
             x1 = self.visualizer.coors[v][0]
@@ -409,7 +400,8 @@ class OWGraphDrawerCanvas(OWGraph):
             else: 
                 newColor = Qt.red #QColor(0,0,0)
             
-
+            selectionX.append(x1)
+            selectionY.append(y1)
             key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1])
             
             if v in self.selection:
@@ -419,6 +411,9 @@ class OWGraphDrawerCanvas(OWGraph):
             (tmp, neighbours) = self.vertices[v]
             self.vertices[v] = (key, neighbours)
             self.indexPairs[key] = v
+        
+        #self.addCurve('vertices', fillColor, edgeColor, 6, xData=selectionX, yData=selectionY)
+        
             
 #        selectionX = []
 #        selectionY = []
