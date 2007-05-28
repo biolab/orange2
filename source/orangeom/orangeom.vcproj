@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="Windows-1252"?>
+<?xml version="1.0" encoding="windows-1250"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="orangeom"
 	ProjectGUID="{1DD56474-1110-413B-80B8-707E8EE28EC6}"
 	RootNamespace="orangeom"
@@ -186,10 +186,6 @@
 				>
 			</File>
 			<File
-				RelativePath="graphoptimization.cpp"
-				>
-			</File>
-			<File
 				RelativePath="mds.cpp"
 				>
 			</File>
@@ -338,10 +334,6 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
-			<File
-				RelativePath=".\graphoptimization.hpp"
-				>
-			</File>
 			<File
 				RelativePath="mds.hpp"
 				>
