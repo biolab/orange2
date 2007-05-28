@@ -40,15 +40,29 @@ class OWGraphDrawerCanvas(OWGraph):
         
     def addSelection(self, ndx):
         #print("add selection")
-        if not ndx in self.selection:
-            (key, neighbours) = self.vertices[ndx]
-            self.selectionStyles[ndx] = self.curve(key).symbol().brush().color().name()
-            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
-            self.setCurveSymbol(key, newSymbol)
-            self.selection.append(ndx);
-            #self.visualizer.filter[ndx] = True
-            #self.replot()
-            return True
+        if isinstance(ndx, list):
+            change = False
+            for v in ndx:
+                if not v in self.selection:
+                    (key, neighbours) = self.vertices[v]
+                    self.selectionStyles[v] = self.curve(key).symbol().brush().color().name()
+                    newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(10, 10))
+                    self.setCurveSymbol(key, newSymbol)
+                    self.selection.append(v);
+                    change = True
+            if change:
+                self.replot()
+                return True
+        else:
+            if not ndx in self.selection:
+                (key, neighbours) = self.vertices[ndx]
+                self.selectionStyles[ndx] = self.curve(key).symbol().brush().color().name()
+                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
+                self.setCurveSymbol(key, newSymbol)
+                self.selection.append(ndx);
+                #self.visualizer.filter[ndx] = True
+                self.replot()
+                return True
         
         return False
 
@@ -90,25 +104,12 @@ class OWGraphDrawerCanvas(OWGraph):
                     self.vertexDegree[j] = (v_i,power_i)
         
     def selectHubs(self, no):
-        print "start selecting..."
-        if self.vertexDegree == []:
-            self.generateVertexPower()
-        print "generated generateVertexPower"
-        count = 0
-        old_power = -1
-        next_power = -1     
-        #print "no: " + str(no)
-        while count < no or old_power == next_power:
-            (v,old_power) = self.vertexDegree[count]
-            
-            next_power = -1
-            if count < (len(self.vertexDegree) - 1):
-                (next_v, next_power) = self.vertexDegree[count + 1]
-                
-            self.addSelection(v)
-            #print "old_power: " + str(old_power) + " new_power: " + str(next_power)
-            count += 1
-        print "selected."
+        #print "get hubs..."
+        hubs = self.visualizer.getHubs(no)
+        #print hubs
+        #print "start selecting..."
+        self.addSelection(hubs)
+        #print "done."
             
     def selectConnectedNodes(self, distance):
         sel = set(self.selection)
@@ -361,7 +362,7 @@ class OWGraphDrawerCanvas(OWGraph):
             y1 = self.visualizer.coors[i][1]
             y2 = self.visualizer.coors[j][1]
 
-            key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
+            #key = self.addCurve(str(e), fillColor, edgeColor, 0, style = QwtCurve.Lines, xData = [x1, x2], yData = [y1, y2])
             #self.edges[e] = (key,i,j)
             xData.append(x1)
             xData.append(x2)
@@ -380,10 +381,10 @@ class OWGraphDrawerCanvas(OWGraph):
             
             edgesCount += 1
         
-#        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192,192,192)), xData, yData)
-#        edgesCurveObject.xData = xData
-#        edgesCurveObject.yData = yData
-        #self.edgesKey = self.insertCurve(edgesCurveObject)
+        edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192,192,192)), xData, yData)
+        edgesCurveObject.xData = xData
+        edgesCurveObject.yData = yData
+        self.edgesKey = self.insertCurve(edgesCurveObject)
         
         selectionX = []
         selectionY = []
