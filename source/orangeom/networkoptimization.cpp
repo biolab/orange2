@@ -473,6 +473,35 @@ PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A 
 	return (PyObject *)graph->coors;  
 }
 
+PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x, y) -> Ndx")
+{
+	double x;
+	double y;
+
+	if (!PyArg_ParseTuple(args, "dd:NetworkOptimization.closestVertex", &x, &y))
+		return NULL;
+
+	CAST_TO(TNetworkOptimization, graph);
+
+	int i;
+	double min = 100000000;
+	int ndx = -1;
+	for (i=0; i < graph->nVertices; i++)
+	{
+		double dX = graph->pos[i][0] - x;
+		double dY = graph->pos[i][1] - y;
+		double d = dX*dX + dY*dY;
+
+		if (d < min)
+		{
+			min = d;
+			ndx = i;
+		}
+	}
+
+	return Py_BuildValue("id", ndx, sqrt(min));
+}
+
 PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
 {
 	CAST_TO(TNetworkOptimization, graph);

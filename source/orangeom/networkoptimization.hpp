@@ -85,12 +85,12 @@ public:
 		}
 	}
 
-	double k; //PR
-	double k2; //PR
+	double k; 
+	double k2; 
 	double temperature;
 	double coolFactor;
-	double width; //P
-	double height; //PR
+	double width; 
+	double height; 
 	PyArrayObject *coors;
 
 	int nLinks;
