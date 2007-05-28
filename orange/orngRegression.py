@@ -9,15 +9,17 @@ from string import join
 # Linear Regression
 
 class LinearRegressionLearner(object):
-    def __new__(self, data=None, name='linear regression', **kwds):
+    """LinearRegressionLearner(data, beta0=True)"""
+    def __new__(self, data=None, name='linear regression', beta0=True, **kwds):
         learner = object.__new__(self, **kwds)
         if data:
-            learner.__init__(name) # force init
+            learner.__init__(name=name, beta0=beta0, **kwds) # force init
             return learner(data)
         else:
             return learner  # invokes the __init__
 
-    def __init__(self, name='linear regression', beta0 = True):
+    def __init__(self, name='linear regression', beta0=True, **kwds):
+        self.__dict__ = kwds
         self.name = name
         self.beta0 = beta0
 
@@ -96,13 +98,14 @@ class LinearRegression:
             yhat = self.beta[0] + dot(self.beta[1:], ex[:-1])
         else:
             yhat = dot(self.beta, ex[:-1])
+        yhat = orange.Value(yhat)
         dist = 0                    # this should be distribution
          
         if result_type == orange.GetValue:
-        return yhat
+            return yhat
         if result_type == orange.GetProbabilities:
             return dist
-        return (v, dist) # for orange.GetBoth
+        return (yhat, dist) # for orange.GetBoth
 
 def printLinearRegression(lr):
     """pretty-prints linear regression model"""
@@ -144,11 +147,7 @@ class PLSRegressionLearner(object):
         learner = object.__new__(self, **kwds)
         if data:
             learner.__init__(name) # force init
-            if x == None:
-                x = [v for v in data.domain.variables if v not in y]
-            if nc == None:
-                nc = len(x)
-            return learner(data,y,x,nc)
+            return learner(data, y=y, x=x, nc=nc)
         else:
             return learner  # invokes the __init__
 
@@ -156,9 +155,19 @@ class PLSRegressionLearner(object):
         self.name = name
         self.nc = nc
 
-    def __call__(self, data, y, x=None, nc=None, weight=None):
+    def __call__(self, data, y=None, x=None, nc=None, weight=None):
+        if y == None:
+            try:
+                y = [data.domain.classVar]
+            except:
+                import warnings
+                warnings.warn("PLS requires either specification of response variables or a data domain with a class")
+                return None
         if x == None:
+            print y
             x = [v for v in data.domain.variables if v not in y]
+        if nc == None:
+            nc = len(x)
 
         dataX = data.select(x)
         dataY = data.select(y)
@@ -228,9 +237,15 @@ class PLSRegression:
     def __init__(self, **kwds):
         self.__dict__ = kwds
 
-    def __call__(self, example):
-       ex = orange.Example(self.domain, example)
-       ex = numpy.array(ex.native())
-       ex = (ex - self.XMean) / self.XStd
-       yhat = dot(ex, self.BPls) * self.YStd + self.YMean        
-       return yhat
+    def __call__(self, example, result_type=orange.GetValue):
+        ex = orange.Example(self.domain, example)
+        ex = numpy.array(ex.native())
+        ex = (ex - self.XMean) / self.XStd
+        yhat = orange.Value(dot(ex, self.BPls) * self.YStd + self.YMean)
+        dist = 0
+        
+        if result_type == orange.GetValue:
+            return yhat
+        if result_type == orange.GetProbabilities:
+            return dist
+        return (yhat, dist) # for orange.GetBoth
