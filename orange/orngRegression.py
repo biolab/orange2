@@ -157,12 +157,12 @@ class PLSRegressionLearner(object):
 
     def __call__(self, data, y=None, x=None, nc=None, weight=None):
         if y == None:
-            try:
-                y = [data.domain.classVar]
-            except:
+            if data.domain.classVar == None:
                 import warnings
                 warnings.warn("PLS requires either specification of response variables or a data domain with a class")
                 return None
+            else:
+                y = [data.domain.classVar]
         if x == None:
             print y
             x = [v for v in data.domain.variables if v not in y]
@@ -191,7 +191,7 @@ class PLSRegressionLearner(object):
         YStd = numpy.std(Y, axis = 0)
         XMean = numpy.mean(X, axis = 0)
         XStd = numpy.std(X, axis = 0) 
-        X,Y = standardize(X), standardize(Y)
+        X, Y = standardize(X), standardize(Y)
 
         P = numpy.empty((mx,nc))
         C = numpy.empty((my,nc))
@@ -199,7 +199,7 @@ class PLSRegressionLearner(object):
         U = numpy.empty((n,nc))
         B = numpy.zeros((nc,nc))
         W = numpy.empty((mx,nc))
-        E,F = X,Y
+        E, F = X, Y
     
         # main algorithm
         for i in range(nc):
@@ -231,14 +231,14 @@ class PLSRegressionLearner(object):
         YE = dot(dot(T,B),C.T)*YStd + YMean
         Y = Y*numpy.std(Y, axis = 0)+ YMean
         BPls = dot(dot(numpy.linalg.pinv(P.T),B),C.T)    
-        return PLSRegression(domain=dataX.domain, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, name=self.name)
+        return PLSRegression(x=x, y=y, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, W=W, name=self.name)
 
 class PLSRegression:
     def __init__(self, **kwds):
         self.__dict__ = kwds
 
     def __call__(self, example, result_type=orange.GetValue):
-        ex = orange.Example(self.domain, example)
+        ex = orange.Example(self.x, example)
         ex = numpy.array(ex.native())
         ex = (ex - self.XMean) / self.XStd
         yhat = orange.Value(dot(ex, self.BPls) * self.YStd + self.YMean)
