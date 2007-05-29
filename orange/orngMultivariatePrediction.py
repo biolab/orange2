@@ -1,41 +1,42 @@
 import orange
 import orngRegression
 
-'''
-def MCLearner(baseLearner, data = None, Ncomp = None, listY = None, listX = None, weightID=0, **kwds):
-    l = apply(MCLearnerClass, (), kwds)
-    if data:
-        if baseLearner == 'PlsLearner':
-            l = l(data, Ncomp, listY, listX)
-        if baseLearner == 'SvmLearner':
-            l = l(data, listX, listY)
-    return l
-'''
+class MultiClassPredictionLearner(object):
+    """(self, data, y, x=None)"""
+    def __new__(self, data=None, name='multivar pred', **kwds):
+        learner = object.__new__(self, **kwds)
+        if data:
+            learner.__init__(name) # force init
+            return learner(data)
+        else:
+            return learner  # invokes the __init__
 
-class MCLearnerClass:
-
-    def __call__(self, baseLearner, data, X, Y, PLSNcomp = 3):
-
-        if baseLearner == 'PlsLearner':
-            lr = orngRegression.PLSRegressionLearner(data, PLSNcomp, Y, X)
-            return lr
-        if baseLearner == 'SvmLearner':
-            models = []
-            for i in Y:
-                attr = list(X)
-                attr.append(i)
-                newDomain = orange.Domain([data.domain[a] for a in attr])
-                newData = orange.ExampleTable(newDomain, data)
-                lr = orange.SVMLearner()
-                lr.svm_type=orange.SVMLearner.NU_SVR
-                model = lr(newData)
-                models.append(model)
-            return models
+    def __init__(self, name='multivar pred', baseLearner=orngRegression.LinearRegressionLearner):
+        self.name = name
+        self.baseLearner = baseLearner
                 
-            
-d = orange.ExampleTable('C://Delo//Python//Distance Learning//04-curatedF05.tab')
-ind = d.domain.index('smiles') 
-nd = orange.Domain(d.domain[0:ind-1] + d.domain[ind+1:], 0)
-data = orange.ExampleTable(nd, d)
+    def __call__(self, data, y, x=None, weight=None):
+        if y == None:
+            try:
+                y = [data.domain.classVar]
+            except:
+                import warnings
+                warnings.warn("multi-class learner requires either specification of response variables or a data domain with a class")
+                return None
+        if x == None:
+            print y
+            x = [v for v in data.domain.variables if v not in y]
 
-lr = MCLearnerClass()('SvmLearner', data, ['growthC', 'growthE', 'dev', 'sporesC'], ['C','C-C','C-C-C'])
+        models = []
+        for a in y:
+            newDomain = orange.Domain(x, a)
+            newData = orange.ExampleTable(newDomain, data)
+            models.append(baseLearner(newData))
+        return MultiClassPrediction(x=x, y=y, models=models)
+       
+class MultiClassPrediction:
+    def __init__(self, **kwds):
+        self.__dict__ = kwds
+
+    def __call__(self, example):
+        return [m(example) for m in self.models]
