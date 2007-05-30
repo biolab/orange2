@@ -9,17 +9,15 @@ from string import join
 # Linear Regression
 
 class LinearRegressionLearner(object):
-    """LinearRegressionLearner(data, beta0=True)"""
-    def __new__(self, data=None, name='linear regression', beta0=True, **kwds):
+    def __new__(self, data=None, name='linear regression', **kwds):
         learner = object.__new__(self, **kwds)
         if data:
-            learner.__init__(name=name, beta0=beta0, **kwds) # force init
+            learner.__init__(name) # force init
             return learner(data)
         else:
             return learner  # invokes the __init__
 
-    def __init__(self, name='linear regression', beta0=True, **kwds):
-        self.__dict__ = kwds
+    def __init__(self, name='linear regression', beta0 = True):
         self.name = name
         self.beta0 = beta0
 
@@ -90,7 +88,7 @@ class LinearRegression:
         self.__dict__ = kwds
         self.beta = self.statistics['model']['estCoeff']
 
-    def __call__(self, example, result_type=orange.GetValue):
+    def __call__(self, example):
         ex = orange.Example(self.domain, example)
         ex = numpy.array(ex.native())
 
@@ -98,14 +96,8 @@ class LinearRegression:
             yhat = self.beta[0] + dot(self.beta[1:], ex[:-1])
         else:
             yhat = dot(self.beta, ex[:-1])
-        yhat = orange.Value(yhat)
-        dist = 0                    # this should be distribution
          
-        if result_type == orange.GetValue:
-            return yhat
-        if result_type == orange.GetProbabilities:
-            return dist
-        return (yhat, dist) # for orange.GetBoth
+        return yhat
 
 def printLinearRegression(lr):
     """pretty-prints linear regression model"""
@@ -143,11 +135,11 @@ def normalize(vector):
 
 class PLSRegressionLearner(object):
     """PLSRegressionLearner(data, y, x=None, nc=None)"""
-    def __new__(self, data=None, y = None, x = None, nc = None, name='PLS regression', **kwds):
+    def __new__(self, data=None, name='PLS regression', **kwds):
         learner = object.__new__(self, **kwds)
         if data:
             learner.__init__(name) # force init
-            return learner(data, y=y, x=x, nc=nc)
+            return learner(data)
         else:
             return learner  # invokes the __init__
 
@@ -155,54 +147,39 @@ class PLSRegressionLearner(object):
         self.name = name
         self.nc = nc
 
-    def __call__(self, data, y=None, x=None, nc=None, weight=None):
-        if y == None:
-            if data.domain.classVar == None:
-                import warnings
-                warnings.warn("PLS requires either specification of response variables or a data domain with a class")
-                return None
-            else:
-                y = [data.domain.classVar]
+    def __call__(self, data, y, x=None, nc=None, weight=None):
         if x == None:
-            print y
             x = [v for v in data.domain.variables if v not in y]
-        if nc == None:
-            nc = len(x)
 
         dataX = data.select(x)
         dataY = data.select(y)
-                
+        print y, dataY
+        
         # transformation to numpy arrays
         X = dataX.toNumpy()[0]
-        n, mx = numpy.shape(X)
-        
         Y = dataY.toNumpy()[0]
-
-        # if Y is class
-        if Y == None:
-            Y = dataY.toNumpy()[1]
-            Y = Y.reshape((n,1))
-        
-        my = Y.shape[1]
-        
+    
+        # data dimensions
+        n, mx = numpy.shape(X)
+        my = numpy.shape(Y)[1]
 
         # Z-scores of original matrices
         YMean = numpy.mean(Y, axis = 0)
         YStd = numpy.std(Y, axis = 0)
         XMean = numpy.mean(X, axis = 0)
         XStd = numpy.std(X, axis = 0) 
-        X, Y = standardize(X), standardize(Y)
+        X,Y = standardize(X), standardize(Y)
 
-        P = numpy.empty((mx,nc))
-        C = numpy.empty((my,nc))
-        T = numpy.empty((n,nc))
-        U = numpy.empty((n,nc))
-        B = numpy.zeros((nc,nc))
-        W = numpy.empty((mx,nc))
-        E, F = X, Y
+        P = numpy.empty((mx,Ncomp))
+        C = numpy.empty((my,Ncomp))
+        T = numpy.empty((n,Ncomp))
+        U = numpy.empty((n,Ncomp))
+        B = numpy.zeros((Ncomp,Ncomp))
+        W = numpy.empty((mx,Ncomp))
+        E,F = X,Y
     
         # main algorithm
-        for i in range(nc):
+        for i in range(Ncomp):
             u = numpy.random.random_sample((n,1))
             w = normalize(dot(E.T,u))
             t = normalize(dot(E,w))
@@ -231,21 +208,15 @@ class PLSRegressionLearner(object):
         YE = dot(dot(T,B),C.T)*YStd + YMean
         Y = Y*numpy.std(Y, axis = 0)+ YMean
         BPls = dot(dot(numpy.linalg.pinv(P.T),B),C.T)    
-        return PLSRegression(x=x, y=y, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, W=W, name=self.name)
+        return PLSRegression(domain=data.domain, BPls=BPls, YMean=YMean, YStd=YStd, XMean=XMean, XStd=XStd, name=self.name)
 
 class PLSRegression:
     def __init__(self, **kwds):
         self.__dict__ = kwds
 
-    def __call__(self, example, result_type=orange.GetValue):
-        ex = orange.Example(self.x, example)
-        ex = numpy.array(ex.native())
-        ex = (ex - self.XMean) / self.XStd
-        yhat = orange.Value(dot(ex, self.BPls) * self.YStd + self.YMean)
-        dist = 0
-        
-        if result_type == orange.GetValue:
-            return yhat
-        if result_type == orange.GetProbabilities:
-            return dist
-        return (yhat, dist) # for orange.GetBoth
+    def __call__(self, example):
+       ex = orange.Example(self.domain, example)
+       ex = numpy.array(ex.native())
+       ex = (ex - self.XMean) / self.XStd
+       yhat = dot(ex, self.BPls) * self.YStd + self.YMean        
+       return yhat
