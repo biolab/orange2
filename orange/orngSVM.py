@@ -53,9 +53,11 @@ class SVMLearnerClass:
 
     def __call__(self, examples, weight=0):
         if self.svm_type in [0,1] and examples.domain.classVar.varType!=orange.VarTypes.Discrete:
-            raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
+            self.svm_type+=3
+            #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
         if self.svm_type in [3,4] and examples.domain.classVar.varType==orange.VarTypes.Discrete:
-            raise AttributeError, "Cannot do regression on descrete class data. Use C_SVC or NU_SVC for classification"
+            self.svm_type-=3
+            #raise AttributeError, "Cannot do regression on descrete class data. Use C_SVC or NU_SVC for classification"
         if self.kernel_type==4 and not self.kernelFunc:
             raise AttributeError, "Custom kernel function not supplied"
         ##################################################
@@ -173,17 +175,20 @@ class SVMLearnerSparseClassEasy(SVMLearnerClassEasy, SVMLearnerSparseClass):
         SVMLearnerSparseClass.__init__(self, **kwds)
         
 class SVMClassifierClassEasyWrapper:
-    def __init__(self, classifier, domain=None):
+    def __init__(self, classifier, domain=None, transformer=None):
         self.classifier=classifier
         self.domain=domain
-    def __call__(self,example, getBoth=orange.GetBoth):
+    def __call__(self,example, getBoth=orange.GetValue):
         example=orange.Example(self.domain, example)
         return self.classifier(example, getBoth)
     def __getattr__(self, name):
-        return getattr(self.classifier,name)
+        if name in ["supportVectors", "nSV", "coef", "rho", "examples", "kernelFunc"]:
+            return getattr(self.__dict__["classifier"], name)
+        else:
+            return object.__getattr__(self, name)
 
 def getLinearSVMWeights(classifier):
-    """returns list of weights of linear class vs. class classifiers for the linear multiclass svm classifier. The list is in the order of 1vs2, 1vs3 ... 1vsN, 2vs3 ..."""
+    """returns list of weights for linear class vs. class classifiers for the linear multiclass svm classifier. The list is in the order of 1vs2, 1vs3 ... 1vsN, 2vs3 ..."""
     def updateWeights(w, key, val, mul):
         if key in w:
             w[key]+=mul*val
