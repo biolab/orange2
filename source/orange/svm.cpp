@@ -3717,9 +3717,6 @@ TSVMClassifier::~TSVMClassifier(){
 PDistribution TSVMClassifier::classDistribution(const TExample & example){
 	if(!model)
 		raiseError("No Model");
-	if(!model->param.probability)
-		raiseError("Model does not support probabilities");
-		//return  TDistribution::create(example.domain->classVar);
 	currentExample=&example;
 	int exlen=getNumOfElements(example, sparse);
 	int svm_type=svm_get_svm_type(model);
