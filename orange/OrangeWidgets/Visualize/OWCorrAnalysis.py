@@ -38,15 +38,17 @@ def checkFromText(data):
 class OWCorrAnalysis(OWWidget):
     settingsList = ['graph.pointWidth', "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale",
                     "graph.showLegend", 'autoSendSelection', "graph.showFilledSymbols", 'toolbarSelection',
-                    "colorSettings", "percRadius"]
+                    "colorSettings", "percRadius", "recentFiles"]
                     
     contextHandlers = {"": DomainContextHandler("", ["attrRow", "attrCol"])}
     
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'CorrAnalysis')
+        self.callbackDeposit = []
 
         self.inputs = [("Data", ExampleTable, self.dataset)]
         self.outputs = []
+        self.recentFiles=[]
         
         self.data = None
         self.CA = None
@@ -124,6 +126,9 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.button(self.GeneralTab, self, 'Save graph', self.graph.saveToFile)
         OWGUI.button(self.GeneralTab, self, 'Save CA', self.saveCA)
         OWGUI.button(self.GeneralTab, self, 'Load CA', self.loadCA)
+        self.chosenSelection = []
+        self.selections = []
+        OWGUI.listBox(self.GeneralTab, self, "chosenSelection", "selections", box="Feature selection used", selectionMode = QListBox.Multi, callback = None)
         # ####################################
         # SETTINGS TAB
         # point width
@@ -174,29 +179,70 @@ class OWCorrAnalysis(OWWidget):
         
         
     def loadCA(self):
-        import pickle
+        import cPickle
         try:
-            f = open('pickleca.p')
-            self.CA = pickle.load(f)
+            if self.recentFiles:
+                lastPath = os.path.split(self.recentFiles[0])[0]
+            else:
+                lastPath = "."
+                
+            fn = str(QFileDialog.getOpenFileName(lastPath, "Text files (*.*)", None, "Load CA data"))
+            if not fn:
+                return
+                
+            fn = os.path.abspath(fn)
+            
+            f = open(fn,'rb')
+            self.CA = cPickle.load(f)
             f.close()
-            f = open('pickledata.p')
-            data = pickle.load(f)
+
+            fn = str(QFileDialog.getOpenFileName(lastPath, "Text files (*.*)", None, "Save CA data"))
+            if not fn:
+                return
+                
+            fn = os.path.abspath(fn)
+            if fn in self.recentFiles: # if already in list, remove it
+                self.recentFiles.remove(fn)
+            self.recentFiles.insert(0, fn)
+                        
+            f = open(fn,'rb')
+            data = cPickle.load(f)
             f.close()
             self.CAloaded = True
             self.dataset(data)
-        except:
+        except e:
+            print e
             self.CA = None
         
         
         
     def saveCA(self):
-        f = open('pickleca.p', 'w')
-        import pickle
-        pickle.dump(self.CA, f)
+        from time import time
+
+        if self.recentFiles:
+            lastPath = os.path.split(self.recentFiles[0])[0]
+        else:
+            lastPath = "."
+            
+        fn = str(QFileDialog.getSaveFileName(lastPath, "Text files (*.*)", None, "Save CA data"))
+        if not fn:
+            return
+            
+        fn = os.path.abspath(fn)
+        f = open(fn, 'wb')
+        import cPickle
+        cPickle.dump(self.CA, f, 1)
         f.close()
-        f = open('pickledata.p','w')
-        pickle.dump(self.data, f)
+        fn = str(QFileDialog.getSaveFileName(lastPath, "Text files (*.*)", None, "Save text data"))
+        if not fn:
+            return
+            
+        fn = os.path.abspath(fn)        
+        
+        f = open(fn,'wb')
+        cPickle.dump(self.data, f, 1)
         f.close()
+        
 
     def saveFeatures(self):
         """Saves the features in a file called features.txt"""
@@ -244,15 +290,19 @@ class OWCorrAnalysis(OWWidget):
     def dataset(self, dataset):
         self.closeContext()
         if dataset:
-            self.data = dataset       
+            self.data = dataset
             if textCorpusModul:
               self.textData = checkFromText(self.data)
             else:
               self.textData = False
-            self.initAttrValues()            
+            try:
+                self.selections = self.data.selection
+            except AttributeError:
+                self.selections = []
+            self.initAttrValues()
         else:
             self.data = None
-            self.initAttrValues() 
+            self.initAttrValues()
             
         self.openContext("", dataset)
         self.buttonUpdate()
@@ -263,7 +313,7 @@ class OWCorrAnalysis(OWWidget):
  
         if self.data == None: return 
         
-        if self.textData:            
+        if self.textData:
             self.attrRowCombo.insertItem('document')
             self.attrRowCombo.insertItem('category')
             self.attrColCombo.insertItem('words')
@@ -529,23 +579,23 @@ if __name__=="__main__":
     t = orngText.loadFromXML(r'c:\test\orange\msnbc.xml')
     #owb.data = t
     #owb.show()
-    stop = orngText.loadWordSet(r'C:\tmtorange\common\fr_stopwords.txt')
+    stop = orngText.loadWordSet(r'C:\tmtorange\common\en_stopwords.txt')
     p = orngText.Preprocess(language = 'hr')
     print 'Done with loading'
-    #t1 = orngText.extractLetterNGram(t, 3)
-    t1 = orngText.extractWordNGram(t, stopwords = stop, measure = 'MI', threshold = 7, n=2)
+    t1 = orngText.extractLetterNGram(t, 2)
+    #t1 = orngText.extractWordNGram(t, stopwords = stop, measure = 'MI', threshold = 7, n=2)
     #t1 = orngText.extractWordNGram(t1, stopwords = stop, measure = 'MI', threshold = 10, n=3)
     #t1 = orngText.extractNamedEntities(t, stopwords = stop)
     #t1 = orngText.bagOfWords(t1, stopwords = stop)
     print len(t1.domain.getmetas())
     print 'Done with extracting'
-    t2 = orngText.FSS(t1, 'TF', 'MIN', 0.98)
-    print len(t2.domain.getmetas())
+    #t2 = orngText.FSS(t1, 'TF', 'MIN', 0.98)
+    #print len(t2.domain.getmetas())
     print 'Done with feature selection'
     appl.setMainWidget(ow)
-    t3 = orngText.DSS(t2, 'WF', 'MIN', 1)
+    #t3 = orngText.DSS(t2, 'WF', 'MIN', 1)
     #print 'Done with document selection'
-    ow.dataset(t3)
+    ow.dataset(t1)
     print 'Done'
     ow.show()
 ##    dataset = orange.ExampleTable('/home/mkolar/Docs/Diplomski/repository/orange/doc/datasets/iris.tab') 

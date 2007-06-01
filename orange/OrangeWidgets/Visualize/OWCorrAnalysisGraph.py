@@ -91,6 +91,9 @@ class OWCorrAnalysisGraph(OWGraph):
         self.browseKey = None
      
     def onMouseMoved(self, e):
+        xrange = self.axisScale(QwtPlot.xBottom).hBound() - self.axisScale(QwtPlot.xBottom).lBound()
+        yrange = self.axisScale(QwtPlot.yLeft).hBound() - self.axisScale(QwtPlot.yLeft).lBound()
+        aspectRatio = yrange / xrange
         if self.state == BROWSE_RECTANGLE:
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
             yFloat = self.invTransform(QwtPlot.yLeft, e.y())  
@@ -104,7 +107,7 @@ class OWCorrAnalysisGraph(OWGraph):
             self.markLines = []
 ##            print self.tips.positions
             
-            cor = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius]
+            cor = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius * aspectRatio / 2]
             self.addMarkers(cor, xFloat, yFloat, self.radius)
 ##            for x, y, text in cor:
 ##                self.addMarker(text, x, y)
@@ -120,7 +123,7 @@ class OWCorrAnalysisGraph(OWGraph):
             for line in self.markLines:
                 self.removeCurve(line)
             self.markLines = []            
-            cor = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if ((xFloat - x)*(xFloat - x) + (yFloat - y)*(yFloat - y) <= self.radius * self.radius)]
+            cor = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if ((xFloat - x)*(xFloat - x) + (yFloat - y) / (aspectRatio / 2) /  (aspectRatio / 2) *(yFloat - y) <= self.radius * self.radius)]
             self.addMarkers(cor, xFloat, yFloat, self.radius)
 ##            for x, y, text in cor:
 ##                self.addMarker(text, x, y)
@@ -129,18 +132,21 @@ class OWCorrAnalysisGraph(OWGraph):
         else:
             OWGraph.onMouseMoved(self, e)
             
-    def onMousePressed(self, e):        
+    def onMousePressed(self, e):
+        xrange = self.axisScale(QwtPlot.xBottom).hBound() - self.axisScale(QwtPlot.xBottom).lBound()
+        yrange = self.axisScale(QwtPlot.yLeft).hBound() - self.axisScale(QwtPlot.yLeft).lBound()
+        aspectRatio = yrange / xrange
         if self.state == BROWSE_RECTANGLE:
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
             yFloat = self.invTransform(QwtPlot.yLeft, e.y())
-            all = [(self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius]
+            all = [(self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if abs(xFloat - x)  <= self.radius and abs(yFloat - y) <= self.radius * aspectRatio / 2]
             self.docs = [tip[:-1] for tip in all if tip and tip[-1] == 'R']
             self.features = [tip[:-1] for tip in all if tip and tip[-1] == 'C']
             self.event(e)
         elif self.state == BROWSE_CIRCLE:
             xFloat = self.invTransform(QwtPlot.xBottom, e.x())
             yFloat = self.invTransform(QwtPlot.yLeft, e.y())
-            all = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if ((xFloat - x)*(xFloat - x) + (yFloat - y)*(yFloat - y) <= self.radius * self.radius)]
+            all = [(x, y, self.tips.texts[i]) for (i,(x,y, cx, cy)) in enumerate(self.tips.positions) if ((xFloat - x)*(xFloat - x) + (yFloat - y)*(yFloat - y) / (aspectRatio / 2) /  (aspectRatio / 2) <= self.radius * self.radius)]
             self.docs = [tip[:-1] for tip in all if tip and tip[-1] == 'R']
             self.features = [tip[:-1] for tip in all if tip and tip[-1] == 'C']
             self.event(e)
@@ -155,14 +161,17 @@ class OWCorrAnalysisGraph(OWGraph):
             OWGraph.onMouseReleased(self, e)
             
     def createCurve(self, x, y, circle = 0):
+        xrange = self.axisScale(QwtPlot.xBottom).hBound() - self.axisScale(QwtPlot.xBottom).lBound()
+        yrange = self.axisScale(QwtPlot.yLeft).hBound() - self.axisScale(QwtPlot.yLeft).lBound()
+        aspectRatio = yrange / xrange
         if not circle:
-            self.browseCurve.setData([x - self.radius, x + self.radius, x + self.radius, x - self.radius, x - self.radius], [y - self.radius, y - self.radius, y + self.radius, y + self.radius, y - self.radius])
+            self.browseCurve.setData([x - self.radius, x + self.radius, x + self.radius, x - self.radius, x - self.radius], [y - self.radius * (aspectRatio / 2), y - self.radius * (aspectRatio / 2), y + self.radius * (aspectRatio / 2), y + self.radius * (aspectRatio / 2), y - self.radius * (aspectRatio / 2)])
         else:
             xDataU = arange(x - self.radius + 0.0002, x + self.radius - 0.0002, 0.0001).tolist()
             xDataD = xDataU[:]
             xDataD.reverse()
-            yDataU = [(y  + sqrt(self.radius*self.radius - (t - x)*(t - x))) for t in xDataU]
-            yDataD = [(y  - sqrt(self.radius*self.radius - (t - x)*(t - x))) for t in xDataD]
+            yDataU = [(y  + sqrt(self.radius*self.radius - (t - x)*(t - x)) * (aspectRatio / 2)) for t in xDataU]
+            yDataD = [(y  - sqrt(self.radius*self.radius - (t - x)*(t - x)) * (aspectRatio / 2)) for t in xDataD]
             xDataU.extend(xDataD)
             yDataU.extend(yDataD)
             self.browseCurve.setData(xDataU, yDataU)
@@ -400,7 +409,9 @@ class OWCorrAnalysisGraph(OWGraph):
     def place(self, x, textLen, prefered):
         """Tries to determine where to place the label. Returns True or False."""
         div = self.axisScale(QwtPlot.xBottom)
-        textLen = textLen / 16.
+        aspectRatio = 6. / (div.hBound() - div.lBound())
+        #on a scale where x in [-2, 4], we have to divide by 14
+        textLen = textLen / (14. * aspectRatio)
         if prefered == 'left':
             if x - textLen < div.lBound():
                 return False
