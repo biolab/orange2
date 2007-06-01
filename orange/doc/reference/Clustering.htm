@@ -19,12 +19,34 @@
 
 <P>The distance should contain no negative elements. This limitation is due to implementation details of the algorithm (it is not absolutely necessary and can be lifted in future versions if often requested; it only helps the algorithm run a bit faster). The elements on the diagonal (representing the element's distance from itself) are ignored.</P>
 
-<P>Distance matrix can have the attribute <CODE>objects</CODE> describing the objects we are clustering (this is available only in Python). This can be any sequence of the same length as the matrix - an <CODE>ExampleTable</CODE>, a list of examples, a list of attributes (if you're clustering attributes), or even a string of the correct length. This attribute is not used in clustering but is only passed to the clusters' attribute <CODE>mapping</CODE> (see below), which will hold a reference to it (if you modify the list, the changes will affect the clusters as well).</P>
+<P>Distance matrix can have the attribute <CODE>objects</CODE>
+describing the objects we are clustering (this is available only in
+Python). This can be any sequence of the same length as the matrix -
+an <CODE>ExampleTable</CODE>, a list of examples, a list of attributes
+(if you're clustering attributes), or even a string of the correct
+length. This attribute is not used in clustering but is only passed to
+the clusters' attribute <CODE>mapping</CODE> (see below), which will
+hold a reference to it (if you modify the list, the changes will
+affect the clusters as well).</P>
 
 <P class=section>Attributes of <CODE>HierarchicalClustering</CODE></P>
 <DL class=attributes>
 <DT>linkage</DT>
-<DD>Specifies the linkage method; it can be either <CODE>HierarchicalClustering.Single</CODE> (default), <CODE>HierarchicalClustering.Average</CODE> or <CODE>HierarchicalClustering.Complete</CODE>.</DD>
+<DD>Specifies the linkage method, which can be either
+<ol>
+  <li><CODE>HierarchicalClustering.Single</CODE> (default), where
+distance between groups is defined as the distance between the closest
+pair of objects, one from each group,</li>
+  <li><CODE>HierarchicalClustering.Average</CODE></li>, where the
+distance between two clusters is defined as the average of distances
+between all pairs of objects, where each pair is made up of one object
+from each group, or
+  <li><CODE>HierarchicalClustering.Complete</CODE>, where the distance
+between groups is defined as the distance between the most distant
+pair of objects, one from each group. Complete linkage is also called
+farthest neighbor.</li>
+</ol>
+</DD>
 
 <DT>overwriteMatrix</DT>
 <DD>If true (default is false), the algorithm will work on the original distance matrix, destroying it in the process. The benefit is that it will need much less memory (not much more than what is needed to store the tree of clusters).</DD>
