@@ -194,8 +194,8 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 			if (dif == 0)
 				dif = 1;
 
-			pos[v][0] = pos[v][0] + (disp[v][0] * min(abs(disp[v][0]), temperature) / dif);
-			pos[v][1] = pos[v][1] + (disp[v][1] * min(abs(disp[v][1]), temperature) / dif);
+			pos[v][0] = pos[v][0] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
+			pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
 
 			//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
 			//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
