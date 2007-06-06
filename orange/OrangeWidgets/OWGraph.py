@@ -683,10 +683,18 @@ class OWGraph(QwtPlot):
             color = self._getColorFromObject(c.pen())
             colorB = self._getColorFromObject(c.brush())
             linewidth = c.pen().width()
-            if c.__class__ == PolygonCurve or c.__class__ == RectangleCurve:
+            if isinstance(c, PolygonCurve):
                 x0 = min(xData); x1 = max(xData); diffX = x1-x0
                 y0 = min(yData); y1 = max(yData); diffY = y1-y0
                 f.write("gca().add_patch(Rectangle((%f, %f), %f, %f, edgecolor=%s, facecolor = %s, linewidth = %d, fill = 1))\n" % (x0,y0,diffX, diffY, color, colorB, linewidth))
+            elif isinstance(c, RectangleCurve):        # rectangle curve can contain multiple rects, each has 5 points (the last one is the same as the first)
+                for i in range(len(xData))[::5]:
+                    x0 = min(xData[i:i+5]); x1 = max(xData[i:i+5]); diffX = x1-x0
+                    y0 = min(yData[i:i+5]); y1 = max(yData[i:i+5]); diffY = y1-y0
+                    f.write("gca().add_patch(Rectangle((%f, %f), %f, %f, edgecolor=%s, facecolor = %s, linewidth = %d, fill = 1))\n" % (x0,y0,diffX, diffY, color, colorB, linewidth))
+            elif c.__class__ == UnconnectedLinesCurve:
+                for i in range(len(xData))[::2]:        # multiple unconnected lines
+                    f.write("plot(%s, %s, marker = 'None', linestyle = '-', color = %s, linewidth = %d)\n" % (xData[i:i+2], yData[i:i+2], color, linewidth))
             elif c.style() < len(linestyles):
                 linestyle = linestyles[c.style()]
                 f.write("plot(%s, %s, marker = '%s', linestyle = '%s', markersize = %d, markeredgecolor = %s, markerfacecolor = %s, color = %s, linewidth = %d)\n" % (xData, yData, marker, linestyle, markersize, markeredgecolor, markerfacecolor, color, linewidth))
@@ -728,16 +736,15 @@ class OWGraph(QwtPlot):
 
         f.write("\n# possible settings to change\n#axes().set_frame_on(0) #hide the frame\n#axis('off') #hide the axes and labels on them\n\n")
 
-
         if self.legend().itemCount() > 0:
             legendItems = []
             for item in self.legend().contentsWidget().children():
-                if type(item) != QwtLegendButton: continue
-                text = str(item.title()).replace("<b>", "").replace("</b>", "")
-                if not item.symbol():
-                    legendItems.append((text, None, None, None))
-                else:
-                    legendItems.append((text, markers[item.symbol().style()], self._getColorFromObject(item.symbol().pen()) , self._getColorFromObject(item.symbol().brush())))
+                if isinstance(item, QwtLegendButton):
+                    text = str(item.title()).replace("<b>", "").replace("</b>", "")
+                    if not item.symbol():
+                        legendItems.append((text, None, None, None))
+                    else:
+                        legendItems.append((text, markers[item.symbol().style()], self._getColorFromObject(item.symbol().pen()) , self._getColorFromObject(item.symbol().brush())))
             f.write("""
 #functions to show legend below the figure
 def drawSomeLegendItems(x, items, itemsPerAxis = 1, yDiff = 0.0):
