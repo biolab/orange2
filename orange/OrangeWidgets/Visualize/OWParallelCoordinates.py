@@ -42,7 +42,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.box.addWidget(self.graph)
         self.box.addWidget(self.slider)
 
-        self.inputs = [("Examples", ExampleTable, self.setData), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
+        self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
 
         #set default settings

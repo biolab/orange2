@@ -455,7 +455,7 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
     return w
 
 
-def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False):
+def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False, createLabel = 1):
     if box:
         sliderBox = QHButtonGroup(box, widget)
     else:
@@ -471,18 +471,20 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
         slider.setTickmarks(QSlider.Below)
         slider.setTickInterval(ticks)
 
-    label = QLabel(sliderBox)
-    label.setText(labelFormat % minValue)
-    width1 = label.sizeHint().width()
-    label.setText(labelFormat % maxValue)
-    width2 = label.sizeHint().width()
-    label.setFixedSize(max(width1, width2), label.sizeHint().height())
-    txt = labelFormat % (master.getdeepattr(value)/divideFactor)
-    label.setText(txt)
-    label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
+    if createLabel:
+        label = QLabel(sliderBox)
+        label.setText(labelFormat % minValue)
+        width1 = label.sizeHint().width()
+        label.setText(labelFormat % maxValue)
+        width2 = label.sizeHint().width()
+        label.setFixedSize(max(width1, width2), label.sizeHint().height())
+        txt = labelFormat % (master.getdeepattr(value)/divideFactor)
+        label.setText(txt)
+        label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
+        QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
 
     connectControl(slider, master, value, callback, "valueChanged(int)", CallFront_hSlider(slider))
-    QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
+    
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("hSlider", slider, value, minValue, maxValue, step, callback)]
     return slider

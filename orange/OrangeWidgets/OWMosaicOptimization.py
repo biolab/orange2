@@ -33,7 +33,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         OWBaseWidget.__init__(self, None, signalManager, "Mosaic Evaluation Dialog", savePosition = True)
         orngMosaic.__init__(self)
 
-        self.resize(375,620)
+        self.resize(390,620)
 
         if (int(qVersion()[0]) >= 3):
             self.setCaption("Mosaic Evaluation Dialog")
@@ -109,7 +109,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         OWGUI.checkBox(self.optimizeOrderSubBox, self, "optimizeAttributeOrder", "Optimize order of attributes", callback = self.optimizeCurrentAttributeOrder, tooltip = "Order the visualized attributes so that it will enhance class separation")
         OWGUI.checkBox(self.optimizeOrderSubBox, self, "optimizeAttributeValueOrder", "Optimize order of attribute values", callback = self.optimizeCurrentAttributeOrder, tooltip = "Order also the values of visualized attributes so that it will enhance class separation.\nWARNING: This can take a lot of time when visualizing attributes with many values.")
 
-        self.optimizeOrderButton = OWGUI.button(self.buttonsBox, self, "Optimize Current Attribute Order", callback = self.optimizeCurrentAttributeOrder, tooltip = "Optimize the order of currently visualized attributes")
+        self.optimizeOrderButton = OWGUI.button(self.buttonsBox, self, "Optimize Current Attribute Order", callback = self.optimizeCurrentAttributeOrder, tooltip = "Optimize the order of currently visualized attributes", debuggingEnabled=0)
 
 
         # ##########################
@@ -383,7 +383,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
         # for mosaic tree
         if self.processingSubsetData == 0:
-            self.wholeDataSet = data
+            self.wholeDataSet = self.data        # we have to use self.data and not data, since in self.data we already have discretized attributes
             self.mtInitSubsetTree()
 
         if not self.data: return
@@ -805,12 +805,12 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     # build mosaic tree methods
     def mtMosaicAutoBuildTree(self):
         if str(self.autoBuildTreeButton.text()) != "Build Tree":
-            self.cancelTreeBuilding = 1
-            self.cancelEvaluation = 1
+            self.mosaic.cancelTreeBuilding = 1
+            self.mosaic.cancelEvaluation = 1
         else:
             try:
-                self.cancelTreeBuilding = 0
-                self.cancelEvaluation = 0
+                self.mosaic.cancelTreeBuilding = 0
+                self.mosaic.cancelEvaluation = 0
                 self.autoBuildTreeButton.setText("Stop Building")
                 qApp.processEvents()
 
@@ -903,6 +903,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.mosaicWidget.canvas = treeDialog.canvas
         self.mosaicWidget.canvasView = treeDialog.canvasView
         self.mosaicWidget.cellspace = 5
+        oldMosaicSelectionConditions = self.mosaicWidget.selectionConditions;                         self.mosaicWidget.selectionConditions = []
+        oldMosaicSelectionConditionsHistorically = self.mosaicWidget.selectionConditionsHistorically; self.mosaicWidget.selectionConditionsHistorically = []
 
         nodeDict = {}
         rootNode = {"treeNode": tree["None"][0][0], "parentNode": None, "childNodes": []}
@@ -964,6 +966,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         # visualize each mosaic diagram
         colors = self.mosaicWidget.selectionColorPalette
 
+        maxX = 0
+        maxY = 100 + (max(itemsToDraw.keys())+1) * yMosaicSize
         for depth in range(max(itemsToDraw.keys())+1):
             groups = itemsToDraw[depth]
             yPos = 50 + (depth > 0) * 50 + depth * yMosaicSize
@@ -978,6 +982,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                     data, unselectedData = self.mtGetData(self.mtGetItemIndices(self.mtStrToItem(node["treeNode"])))
                     # draw the mosaic
                     self.mosaicWidget.updateGraph(data, unselectedData, node["attrs"], erasePrevious = 0, positions = (node["currXPos"]+xMosOffset, yPos, self.mosaicSize), drawLegend = (depth == 0), drillUpdateSelection = 0, selectionDict = selectionDict)
+                    maxX = max(maxX, node["currXPos"])
 
                     # draw a line between the parent and this node
                     if node["parentNode"]:
@@ -986,11 +991,14 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                         parentXPos = parent["currXPos"] + xMosaicSize/2 + 10*(-(len(parent["childNodes"])-1)/2 + nodeIndex)
                         OWQCanvasFuncts.OWCanvasLine(treeDialog.canvas, parentXPos, yPos - 30, node["currXPos"] + xMosaicSize/2, yPos - 10, penWidth = 4, penColor = colors[nodeIndex])
 
+        treeDialog.canvas.resize(maxX + self.mosaicSize + 200, maxY)
 
         # restore the original canvas and canvas view
         self.mosaicWidget.canvas = mosaicCanvas
         self.mosaicWidget.canvasView = mosaicCanvasView
         self.mosaicWidget.cellspace = cellSpace
+        self.mosaicWidget.selectionConditions = oldMosaicSelectionConditions
+        self.mosaicWidget.selectionConditionsHistorically = oldMosaicSelectionConditionsHistorically
         treeDialog.show()
 
     # find the node nodeToMove in the groups and move it to newPos. reposition also all nodes that follow this node.
@@ -1090,7 +1098,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def identifyOutliers(self):
         import OWkNNOptimization
-        dialog = OWkNNOptimization.OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.mosaicWidget, graph = None)
+        dialog = OWkNNOptimization.OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.mosaicWidget)
         dialog.setData(self.results, self.data, OWkNNOptimization.VIZRANK_MOSAIC)
         dialog.show()
 
