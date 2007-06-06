@@ -24,7 +24,7 @@ import orngVizRank
 ###########################################################################################
 class OWLinProj(OWVisWidget):
     settingsList = ["graph.pointWidth", "graph.jitterSize", "graph.globalValueScaling", "graph.showFilledSymbols", "graph.scaleFactor",
-                    "graph.showLegend", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors",
+                    "graph.showLegend", "graph.useDifferentSymbols", "autoSendSelection", "graph.useDifferentColors", "graph.showValueLines",
                     "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection",
                     "showProbabilitiesDetails", "graph.showProbabilities", "graph.squareGranularity", "graph.spaceBetweenCells",
                     "valueScalingType", "showAllAttributes", "colorSettings", "selectedSchemaIndex", "addProjectedPositions"]
@@ -80,6 +80,8 @@ class OWLinProj(OWVisWidget):
         self.graph.squareGranularity = 3
         self.graph.spaceBetweenCells = 1
         self.graph.showAxisScale = 0
+        self.graph.showValueLines = 0
+        self.graph.valueLineLength = 5
 
         #load settings
         self.loadSettings()
@@ -171,6 +173,9 @@ class OWLinProj(OWVisWidget):
 
         #OWGUI.checkBox(box3, self, 'graph.normalizeExamples', 'Normalize examples', callback = self.updateGraph)
         OWGUI.checkBox(box3, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
+        box33 = OWGUI.widgetBox(box3, orientation = "horizontal")
+        OWGUI.checkBox(box33, self, 'graph.showValueLines', 'Show value lines  ', callback = self.updateGraph)
+        OWGUI.hSlider(box33, self, 'graph.valueLineLength', minValue=1, maxValue=10, step=1, callback = self.updateGraph, createLabel = 0)
         OWGUI.checkBox(box3, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box3, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
         OWGUI.checkBox(box3, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
