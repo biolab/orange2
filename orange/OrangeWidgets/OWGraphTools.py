@@ -62,9 +62,9 @@ class ColorPaletteGenerator:
                 if brightness == None:
                     return self.rgbColors[index]
                 else:
-                    color = QColor(*self.rgbColors[index])
-                    h,s,v = color.getHsv()
-                    color.setHsv(h, int(brightness), v)
+                    col = QColor(*self.rgbColors[index])
+                    h,s,v = col.getHsv()
+                    col.setHsv(h, int(brightness), v)
                     return (col.red(), col.green(), col.blue())
             else:
                 col = QColor()
@@ -261,6 +261,8 @@ class SelectionCurve(QwtPlotCurve):
 class UnconnectedLinesCurve(QwtPlotCurve):
     def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
         QwtPlotCurve.__init__(self, parent)
+        if pen.width() == 0:
+            pen.setWidth(1)
         self.setPen(pen)
         self.Pen = pen
         self.setStyle(QwtCurve.Lines)
@@ -288,6 +290,8 @@ class RectangleCurve(QwtPlotCurve):
         if xData != None and yData != None:
             self.setData(xData, yData)
 
+    # To show a rectangle, we have to create a closed polygon.
+    # Therefore we add to each rectangle the first point (each rect therefore contains 5 points in the xData and yData)
     def setData(self, xData, yData):
         startsX = xData[::4]
         startsY = yData[::4]

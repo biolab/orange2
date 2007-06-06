@@ -234,27 +234,27 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 for i in range(len(self.rawdata)):
                     if not validData[i]: continue
                     if hasClass:
-                        fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j])
-                        edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
+                        fillColor = classColors.getRGB(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j])
+                        edgeColor = classColors.getRGB(classValueIndices[self.rawdata[i].getclass().value])
                     else:
-                        fillColor = edgeColor = Qt.black
-                    self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
+                        fillColor = edgeColor = (0,0,0)
+                    self.addCurve(str(i), QColor(*fillColor), QColor(*edgeColor), self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                     if self.showValueLines:
                         self.addValueLineCurve(x_positions[i], y_positions[i], edgeColor, i, indices)
-                    self.addTooltipKey(x_positions[i], y_positions[i], edgeColor, i, stringData % (100*insideData[j]))
+                    self.addTooltipKey(x_positions[i], y_positions[i], QColor(*edgeColor), i, stringData % (100*insideData[j]))
                     j+= 1
             else:
                 for i in range(len(self.rawdata)):
                     if not validData[i]: continue
                     if hasClass:
-                        fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[i])
-                        edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
+                        fillColor = classColors.getRGB(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[i])
+                        edgeColor = classColors.getRGB(classValueIndices[self.rawdata[i].getclass().value])
                     else:
-                        fillColor = edgeColor = Qt.black
-                    self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
+                        fillColor = edgeColor = (0,0,0)
+                    self.addCurve(str(i), QColor(*fillColor), QColor(*edgeColor), self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                     if self.showValueLines:
                         self.addValueLineCurve(x_positions[i], y_positions[i], edgeColor, i, indices)
-                    self.addTooltipKey(x_positions[i], y_positions[i], edgeColor, i, stringData % (100*insideData[i]))
+                    self.addTooltipKey(x_positions[i], y_positions[i], QColor(*edgeColor), i, stringData % (100*insideData[i]))
 
         # ##############################################################
         # do we have a subset data to show?
@@ -289,7 +289,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 xPointsToAdd[(newColor, curveSymbol, showFilled)].append(x_positions[i])
                 yPointsToAdd[(newColor, curveSymbol, showFilled)].append(y_positions[i])
                 if self.showValueLines:
-                    self.addValueLineCurve(x_positions[i], y_positions[i], edgeColor, i, indices)
+                    self.addValueLineCurve(x_positions[i], y_positions[i], newColor, i, indices)
 
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
 
