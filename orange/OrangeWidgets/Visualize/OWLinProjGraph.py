@@ -348,11 +348,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         elif hasContinuousClass:
             for i in range(dataSize):
                 if not validData[i]: continue
-                newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
-                self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
+                newColor = self.contPalette.getRGB(self.noJitteringScaledData[classNameIndex][i])
+                self.addCurve(str(i), QColor(*newColor), QColor(*newColor), self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
                 if self.showValueLines:
                     self.addValueLineCurve(x_positions[i], y_positions[i], newColor, i, indices)
-                self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
+                self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
 
         # ##############################################################
         # DISCRETE class
