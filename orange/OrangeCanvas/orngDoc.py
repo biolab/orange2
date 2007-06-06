@@ -667,7 +667,7 @@ orngRegistry.addWidgetDirectories()\n"""
         classinit = """
     def __init__(self,parent=None, debugMode = DEBUG_MODE, debugFileName = "signalManagerOutput.txt", verbosity = 1):
         QVBox.__init__(self,parent)
-        caption = %s
+        caption = '%s'
         if (int(qVersion()[0]) >= 3):
             self.setCaption(caption)
         else:
