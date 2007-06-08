@@ -479,6 +479,9 @@ class __TreeDumper:
         
 
     def formatString(self, strg, node, parent):
+        if hasattr(strg, "__call__"):
+            return strg(node, parent, self.tree)
+        
         if not node:
             return "<null node>"
         
