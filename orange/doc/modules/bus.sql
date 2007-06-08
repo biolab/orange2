@@ -1,7 +1,4 @@
-SELECT VERSION();
-USE test;
-DROP TABLE bus;
--- DROP TABLE buses;
+--DROP TABLE bus;
 CREATE TABLE bus 
   (id varchar(5), 
    line enum('9','10','11'), 
