@@ -6,69 +6,57 @@ import orange
 import os
 import urllib
 
-class SQLReader:
-    def __init__(self, addr = None):
-        if addr:
-            self.connect(addr)
-        self.domainDepot = orange.DomainDepot()
-        self.domain = None
-        self.exampleTable = None
-        self.metaNames = None
-        self.discreteNames = None
-        self.classVarName = None
-        self._dirty = False
-        
-    def _parseURI(self, uri):
-        """ lifted straight from sqlobject """
-        schema, rest = uri.split(':', 1)
-        assert rest.startswith('/'), "URIs must start with scheme:/ -- you did not include a / (in %r)" % rest
-        if rest.startswith('/') and not rest.startswith('//'):
-            host = None
-            rest = rest[1:]
-        elif rest.startswith('///'):
-            host = None
-            rest = rest[3:]
+def _parseURI(uri):
+    """ lifted straight from sqlobject """
+    schema, rest = uri.split(':', 1)
+    assert rest.startswith('/'), "URIs must start with scheme:/ -- you did not include a / (in %r)" % rest
+    if rest.startswith('/') and not rest.startswith('//'):
+        host = None
+        rest = rest[1:]
+    elif rest.startswith('///'):
+        host = None
+        rest = rest[3:]
+    else:
+        rest = rest[2:]
+        if rest.find('/') == -1:
+            host = rest
+            rest = ''
         else:
-            rest = rest[2:]
-            if rest.find('/') == -1:
-                host = rest
-                rest = ''
-            else:
-                host, rest = rest.split('/', 1)
-        if host and host.find('@') != -1:
-            user, host = host.split('@', 1)
-            if user.find(':') != -1:
-                user, password = user.split(':', 1)
-            else:
-                password = None
+            host, rest = rest.split('/', 1)
+    if host and host.find('@') != -1:
+        user, host = host.split('@', 1)
+        if user.find(':') != -1:
+            user, password = user.split(':', 1)
         else:
-            user = password = None
-        if host and host.find(':') != -1:
-            _host, port = host.split(':')
-            try:
-                port = int(port)
-            except ValueError:
-                raise ValueError, "port must be integer, got '%s' instead" % port
-            if not (1 <= port <= 65535):
-                raise ValueError, "port must be integer in the range 1-65535, got '%d' instead" % port
-            host = _host
-        else:
-            port = None
-        path = '/' + rest
-        if os.name == 'nt':
-            if (len(rest) > 1) and (rest[1] == '|'):
-                path = "%s:%s" % (rest[0], rest[2:])
-        args = {}
-        if path.find('?') != -1:
-            path, arglist = path.split('?', 1)
-            arglist = arglist.split('&')
-            for single in arglist:
-                argname, argvalue = single.split('=', 1)
-                argvalue = urllib.unquote(argvalue)
-                args[argname] = argvalue
-        return schema, user, password, host, port, path, args
+            password = None
+    else:
+        user = password = None
+    if host and host.find(':') != -1:
+        _host, port = host.split(':')
+        try:
+            port = int(port)
+        except ValueError:
+            raise ValueError, "port must be integer, got '%s' instead" % port
+        if not (1 <= port <= 65535):
+            raise ValueError, "port must be integer in the range 1-65535, got '%d' instead" % port
+        host = _host
+    else:
+        port = None
+    path = '/' + rest
+    if os.name == 'nt':
+        if (len(rest) > 1) and (rest[1] == '|'):
+            path = "%s:%s" % (rest[0], rest[2:])
+    args = {}
+    if path.find('?') != -1:
+        path, arglist = path.split('?', 1)
+        arglist = arglist.split('&')
+        for single in arglist:
+            argname, argvalue = single.split('=', 1)
+            argvalue = urllib.unquote(argvalue)
+            args[argname] = argvalue
+    return schema, user, password, host, port, path, args
 
-    def connect(self, uri):
+def _connection(uri):
         """the uri string's syntax is the same as that of sqlobject.
         Unfortunately, only postgres and mysql are going to be supported in
         the near future.
@@ -80,121 +68,192 @@ class SQLReader:
         postgres:///full/path/to/socket/database
         postgres://host:5432/database
         """
-        (schema, user, password, host, port, path, args) = self._parseURI(uri)
+        (schema, user, password, host, port, path, args) = _parseURI(uri)
         if schema == 'postgres':
             import psycopg2 as dbmod
+            argTrans = {
+            'host':'host',
+            'port':'port',
+            'user':'user',
+            'password':'password',
+            'database':'database'
+            }
         elif schema == 'mysql':
             import MySQLdb as dbmod
-        self.dbmod = dbmod
+            argTrans = {
+            'host':'host',
+            'port':'port',
+            'user':'user',
+            'password':'passwd',
+            'database':'db'
+            }
+        dbmod = dbmod
         dbArgDict = {}
         if user:
-            dbArgDict['user'] = user
+            dbArgDict[argTrans['user']] = user
         if password:
-            dbArgDict['password'] = password
+            dbArgDict[argTrans['password']] = password
         if host:
-            dbArgDict['host'] = host
+            dbArgDict[argTrans['host']] = host
         if port:
-            dbArgDict['port'] = port
+            dbArgDict[argTrans['port']] = port
         if path:
-            dbArgDict['database'] = path[1:]
-        self._dirty = True
-        self.conn = self.dbmod.connect(**dbArgDict)
+            dbArgDict[argTrans['database']] = path[1:]
+        return (dbmod, dbmod.connect(**dbArgDict))
 
-    def classVar(self, classVarName = None):
-        """if classVarName is set, the class variable is set to that value."""
-        if classVarName is not None:
-            self.classVarName = classVarName
-            self._dirty = True
+class SQLReader(object):
+    def __init__(self, addr = None, domainDepot = None):
+        if addr is not None:
+            self.connect(addr)
+        if domainDepot is not None:
+            self.domainDepot = domainDepot
+        else:
+            self.domainDepot = orange.DomainDepot()
+        self.exampleTable = None
+        self._dirty = True
+    def connect(self, uri):
+        self._dirty = True
+        self.delDomain()
+        (self.dbmod, self.conn) = _connection(uri)
+    def disconnect(self):
+        self.conn.disconnect()
+    def getClassName(self):
         self.update()
-        return self.domain.classVar
+        return self.domain.classVar.name
+    def setClassName(self, className):
+        self._className = className
+        self.delDomain()
+    def delClassName(self):
+        del self._className
+    className = property(getClassName, setClassName, delClassName, "the name of the class variable")
+
+    def getMetaNames(self):
+        self.update()
+        return self.domain.getmetas().values()
     def setMetaNames(self, metaNames):
-        self.metaNames = metaNames
-        self._dirty = True
-    def getmetas(self, metaAttrNames = None):
-        self.update()
-        return self.domain.getmetas()
+        self._metaNames = metaNames
+        self.delDomain()
+    def delMetaNames(self):
+        del self._metaNames
+    metaNames = property(getMetaNames, setMetaNames, delMetaNames, "the names of the meta attributes")
+
     def setDiscreteNames(self, discreteNames):
-        self.discreteNames = discreteNames
-        self._dirty = True
-        
-    def setQuery(self, s):
-        """sets the query, resets the internal variables, without executing the query"""
-        self.query = s
-        self.classAttrName = None
-        self.metaAttrNames = None
-        self._dirty = True
-        
-    def execute(self, s):
-        """executes an sql query"""
-        self.setQuery(s)
+        self._discreteNames = discreteNames
+        self.delDomain()
+    def getDiscreteNames(self):
         self.update()
+        return self._discreteNames
+    def delDiscreteNames(self):
+        del self._discreteNames
+    discreteNames = property(getDiscreteNames, setDiscreteNames, delDiscreteNames, "the names of the discrete attributes")
+
+    def setQuery(self, query, domain = None):
+        """sets the query, resets the internal variables, without executing the query"""
+        self._query = query
+        self._dirty = True
+        if domain is not None:
+            self._domain = domain
+        else:
+            self.delDomain()
+    def getQuery(self):
+        return self._query
+    def delQuery(self):
+        del self._query
+    query = property(getQuery, setQuery, delQuery, "The query to be executed on the next execute()")
+    def generateDomain(self):
+        pass
+    def setDomain(self, domain):
+        self._domain = domain
+        self._dirty = True
+    def getDomain(self):
+        if not hasattr(self, '_domain'):
+            self._createDomain()
+        return self._domain
+    def delDomain(self):
+        if hasattr(self, '_domain'):
+            del self._domain
+    domain = property(getDomain, setDomain, delDomain, "the Orange domain")
+    def execute(self, query, domain = None):
+        """executes an sql query"""
+        self.setQuery(query, domain)
+        self.update()
+        
+    def _createDomain(self):
+        if hasattr(self, '_domain'):
+            return
+        attrNames = []
+        if not hasattr(self, '_discreteNames'):
+            self._discreteNames = []
+        discreteNames = self._discreteNames
+        if not hasattr(self, '_metaNames'):
+            self._metaNames = []
+        metaNames = self._metaNames
+        if not hasattr(self, '_className'):
+            className = None
+        else:
+            className = self._className
+        for i in self.desc:
+            name = i[0]
+            typ = i[1]
+            if name in discreteNames:
+                attrName = 'D#' + name
+            elif typ == self.dbmod.STRING:
+                    attrName = 'S#' + name
+            elif typ == self.dbmod.DATETIME:
+                attrName = 'S#' + name
+            else:
+                attrName = 'C#' + name
+            if name == className:
+                attrName = "c" + attrName
+            elif name in metaNames:
+                attrName = "m" + attrName
+            elif not className and name == 'class':
+                attrName = "c" + attrName
+            attrNames.append(attrName)
+    #       print "NAME:", '"%s"' % name, ", t:", typ, " attrN:", '"%s"' % attrName
+        (self._domain, self._metaIDs, dummy) = self.domainDepot.prepareDomain(attrNames)
+ #           print "Created domain."
+        del dummy
+
         
     def update(self):
-        if not self._dirty:
+        if not self._dirty and hasattr(self, '_domain'):
             return self.exampleTable
         self.exampleTable = None
         try:
             curs = self.conn.cursor()
-            curs.execute(self.query)
-            desc = curs.description
-            if not self.classVarName:
-                classVarName = desc[0][0]
-            else:
-                classVarName = self.classVarName
-            attrNames = []
-            if not self.discreteNames:
-                discreteNames = []
-            else:
-                discreteNames = self.discreteNames
-            if not self.metaNames:
-                metaNames = []
-            else:
-                metaNames = self.metaNames
-            for i in desc:
-                name = i[0]
-                typ = i[1]
-                if name in discreteNames:
-                    attrName = 'D#' + name
-                elif typ == self.dbmod.STRING:
-                    attrName = 'S#' + name
-                elif typ == self.dbmod.DATETIME:
-                    attrName = 'S#' + name
-                else:
-                    attrName = 'C#' + name
-                if name == classVarName:
-                    attrName = "c" + attrName
-                elif name in metaNames:
-                    attrName = "m" + attrName
-                attrNames.append(attrName)
-            (self.domain, self.metaIDs, dummy) = self.domainDepot.prepareDomain(attrNames)
-            del dummy
+            try:
+                curs.execute(self.query)
+            except Exception, e:
+                self.conn.rollback()
+                raise e
+            self.desc = curs.description
             # for reasons unknown, the attributes get reordered.
-            domainIndexes = [0] * len(desc)
-            for i, name in enumerate(desc):
+            domainIndexes = [0] * len(self.desc)
+            self._createDomain()
+            attrNames = []
+            for i, name in enumerate(self.desc):
             #    print name[0], '->', self.domain.index(name[0])
-                domainIndexes[self.domain.index(name[0])] = i
+                domainIndexes[self._domain.index(name[0])] = i
+                attrNames.append(name[0])
             self.exampleTable = orange.ExampleTable(self.domain)
             r = curs.fetchone()
             while r:
                 # for reasons unknown, domain rearranges the properties
-                example = orange.Example(self.domain, [str(r[domainIndexes[i]]) for i in xrange(len(r))])
+                example = orange.Example(self.domain)
+                for i in xrange(len(r)):
+                    val = str(r[i])
+                    var = example[attrNames[i]].variable
+                    if type(var) == orange.EnumVariable and val not in var.values:
+                        var.values.append(val)
+                    example[attrNames[i]] = str(r[i])
                 self.exampleTable.append(example)
                 r = curs.fetchone()
             self._dirty = False
         except Exception, e:
-            raise e
             self.domain = None
-
-    def query(self, s, discreteAttrs = None, classVarName = None, metaNames = None):
-        """executes a read query and constructs the orange.Domain.
-        If the name of the class attribute is not supplied, the first column is used as the class attribute.
-        If any of the attributes are considered to be discrete, they should be specified.
-        """
-        self.setQuery(s)
-        self.setDiscrete(discreteAttrs)
-        self.classVar(classVarName)
-        self.setMetaNames(metaNames)
-        self.update()
+            raise
+            #self.domain = None
 
     def data(self):
         self.update()
@@ -203,4 +262,15 @@ class SQLReader:
         return None
     
 class SQLWriter:
-    pass
+    def __init__(self, uri = None):
+        if uri is not None:
+            self.connection = _connect(uri)
+    
+    def connect(self, uri):
+        self.connection = _connect(uri)
+        
+    def write(self, data, statement):
+        pass
+    
+    def create(self, data, tabname):
+        pass
