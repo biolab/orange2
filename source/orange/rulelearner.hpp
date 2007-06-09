@@ -20,7 +20,7 @@
 */
 
 
-#ifndef __RULES_HPP
+#ifndef __RULES_HPP 
 #define __RULES_HPP
 
 #include "domain.hpp"
@@ -162,7 +162,7 @@ class ORANGE_API TEVCDistGetter: public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
-  virtual PEVCDist operator()(const PRule , const int &) const = 0;
+  virtual PEVCDist operator()(const PRule , const int & parentLength, const int & length) const = 0;
 };
 
 class ORANGE_API TEVCDistGetter_Standard: public TEVCDistGetter {
@@ -172,7 +172,7 @@ public:
   PEVCDistList dists; //P EVC distribution (sorted by rule length, 0 = for rules without conditions)
   TEVCDistGetter_Standard();
   TEVCDistGetter_Standard(PEVCDistList);
-  virtual PEVCDist operator()(const PRule, const int &) const;
+  virtual PEVCDist operator()(const PRule, const int & parentLength, const int & length) const;
 };
 
 WRAPPER(ChiFunction)

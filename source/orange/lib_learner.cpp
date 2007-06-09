@@ -1326,12 +1326,12 @@ PyObject *EVCDistGetter_call(PyObject *self, PyObject *args, PyObject *keywords)
     NO_KEYWORDS
 
     PRule rule;
-    int rLength;
+    int parentLength, rLength;
 
-    if (!PyArg_ParseTuple(args, "O&i:EVCDistGetter.call", cc_Rule, &rule, &rLength))
+    if (!PyArg_ParseTuple(args, "O&ii:EVCDistGetter.call", cc_Rule, &rule, &parentLength, &rLength))
       return PYNULL;
     CAST_TO(TEVCDistGetter, getter)
-    PEVCDist dist = (*getter)(rule, rLength);
+    PEVCDist dist = (*getter)(rule, parentLength, rLength);
 
     return WrapOrange(dist);
   PyCATCH

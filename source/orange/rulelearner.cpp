@@ -31,10 +31,8 @@
 
 #include "rulelearner.ppp"
 
-
 DEFINE_TOrangeVector_classDescription(PRule, "TRuleList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PEVCDist, "TEVCDistList", true, ORANGE_API)
-
 
 TRule::TRule()
 : weightID(0),
@@ -469,7 +467,9 @@ float TRuleEvaluator_LRS::operator()(PRule rule, PExampleTable, const int &, con
   if (n<=0.0)
     n = 1e-6f;
 
-  float lrs = 2 * (p*log(p/P) + n*log(n/N) - obs_dist.abs * log(obs_dist.abs/exp_dist.abs));
+  float lrs = 2 * (p*log(p/obs_dist.abs) + n*log(n/obs_dist.abs) +
+                   (P-p)*log((P-p)/(exp_dist.abs-obs_dist.abs)) + (N-n)*log((N-n)/(exp_dist.abs-obs_dist.abs)) -
+                   P*log(P/exp_dist.abs)-N*log(N/exp_dist.abs));
   if (storeRules) {
     TRuleList &rlist = rules.getReference();
     rlist.push_back(rule);
@@ -517,10 +517,15 @@ TEVCDistGetter_Standard::TEVCDistGetter_Standard(PEVCDistList dists)
 TEVCDistGetter_Standard::TEVCDistGetter_Standard()
 {}
 
-PEVCDist TEVCDistGetter_Standard::operator()(const PRule, const int & length) const
+PEVCDist TEVCDistGetter_Standard::operator()(const PRule, const int & parentLength, const int & length) const
 {
-  if (dists->size() > length)
-    return dists->at(length);
+  // first element (correction for inter - rule optimism
+  if (!length)
+    return dists->at(0);
+  // optimism between rule length of "parentLength" and true length "length"
+  int indx = length*(length-1)/2 + parentLength + 1;
+  if (dists->size() > indx)
+    return dists->at(indx);
   return NULL;
 }
    
@@ -672,24 +677,25 @@ float brent(const float & minv, const float & maxv, const int & maxsteps, DiffFu
 
 bool TRuleEvaluator_mEVC::ruleAttSignificant(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, float & aprioriProb)
 {
-  // Should classical LRS be use, or EVC corrected?
+  // Should classical LRS be used, or EVC corrected?
   TFilter_values *filter = rule->filter.AS(TFilter_values);
   int rLength = filter->conditions->size();
-  PEVCDist full_evc = evcDistGetter->call(rule, rLength);
-  PEVCDist short_evc = evcDistGetter->call(rule, rLength-1);
+  PEVCDist evc = evcDistGetter->call(rule, rLength-1, rLength);
   
   bool useClassicLRS = false;
-  if (full_evc->mu - short_evc->mu < 1.0)
+  if (evc->mu < 1.0)
     useClassicLRS = true;
 
   // Loop through all attributes - remove each and check significance
   bool rasig = true;
   int i,j;
-  float quality;
+  float chi;
   TFilter_values *newfilter;
 
   for (i=0; i<filter->conditions->size(); i++)
   {
+
+    // create a rule without one condition
       TRule *newRule = new TRule();
       PRule wnewRule = newRule;
       wnewRule->filter = new TFilter_values();
@@ -700,29 +706,35 @@ bool TRuleEvaluator_mEVC::ruleAttSignificant(PRule rule, PExampleTable examples,
         if (j!=i)
           newfilter->conditions->push_back(filter->conditions->at(j));
       wnewRule->filterAndStore(examples, weightID, targetClass);
+      // compute lrs of rule vs new rule (without one condtion)
+      if (!rule->classDistribution->abs || wnewRule->classDistribution->abs == rule->classDistribution->abs)
+        return false;
+      chi = getChi(rule->classDistribution->atint(targetClass),
+                   rule->classDistribution->abs - rule->classDistribution->atint(targetClass),
+                   wnewRule->classDistribution->atint(targetClass),
+                   wnewRule->classDistribution->abs - wnewRule->classDistribution->atint(targetClass));
+      // correct lrs with evc
       if (!useClassicLRS) {
-        quality = evaluateRule(wnewRule, examples, weightID, targetClass, apriori, newfilter->conditions->size(), aprioriProb);
-        rasig = rasig & (((rule->chi- wnewRule->chi) > 0.0) && (chisqprob(rule->chi- wnewRule->chi, 1.0f) <= attributeAlpha));
+        LNLNChiSq *diffFunc = new LNLNChiSq(evc,chi);
+        chi = brent(0.0,chi,100, diffFunc);
+        delete diffFunc;
       }
-      else 
-      {
-        float nonOptimistic_Chi;
-        wnewRule->chi = chiFunction->call(rule, examples, weightID, targetClass, wnewRule->classDistribution, nonOptimistic_Chi);
-        wnewRule->chi += nonOptimistic_Chi;
-        rasig = rasig & ((wnewRule->chi > 0.0) && (chisqprob(wnewRule->chi, 1.0f) <= attributeAlpha));
-      }
+      // check significance
+      rasig = rasig & ((chi > 0.0) && (chisqprob(chi, 1.0f) <= attributeAlpha));
+      if (!rasig)
+        return false;
   }
-  return rasig;
+  return true;
 }
 
 float TRuleEvaluator_mEVC::evaluateRule(PRule rule, PExampleTable examples, const int & weightID, const int &targetClass, PDistribution apriori, const int & rLength, const float & aprioriProb) const
 {
-  PEVCDist evc = evcDistGetter->call(rule, rLength);
+  PEVCDist evc = evcDistGetter->call(rule, 0, rLength);
   if (!evc || evc->mu < 0.0)
     return -10e+6;
   if (evc->mu == 0.0 || rLength == 0)
     return (rule->classDistribution->atint(targetClass)+m*aprioriProb)/(rule->classDistribution->abs+m);
-  PEVCDist evc_inter = evcDistGetter->call(rule, 0);
+  PEVCDist evc_inter = evcDistGetter->call(rule, 0, 0);
   float rule_acc = rule->classDistribution->atint(targetClass)/rule->classDistribution->abs;
   // if accuracy of rule is worse than prior probability
   if (rule_acc < aprioriProb)
@@ -1354,6 +1366,11 @@ void copyTable(float **dest, float **source, int nx, int ny) {
     memcpy(dest[i],source[i],ny*sizeof(float));
 }
 
+TRuleClassifier_logit::TRuleClassifier_logit()
+: TRuleClassifier()
+{}
+
+
 // Rule classifier based on logit (beta) coefficients
 TRuleClassifier_logit::TRuleClassifier_logit(PRuleList arules, const float &minBeta, PExampleTable anexamples, const int &aweightID, const PClassifier &classifier, const PDistributionList &probList, const bool &anuseBestRuleOnly)
 : TRuleClassifier(arules, anexamples, aweightID),
@@ -1456,9 +1473,7 @@ TRuleClassifier_logit::TRuleClassifier_logit(PRuleList arules, const float &minB
   delete [] oldF; delete [] oldP;
 }
 
-TRuleClassifier_logit::TRuleClassifier_logit()
-: TRuleClassifier()
-{}
+
 
 
 //==============================================================================

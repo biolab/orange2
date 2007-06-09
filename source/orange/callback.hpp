@@ -156,7 +156,7 @@ public:
 class ORANGE_API TEVCDistGetter_Python : public TEVCDistGetter {
 public:
   __REGISTER_CLASS
-  virtual PEVCDist operator()(const PRule, const int &) const;
+  virtual PEVCDist operator()(const PRule, const int &, const int &) const;
 };
 
 class ORANGE_API TChiFunction_Python : public TChiFunction {

@@ -546,12 +546,12 @@ float TChiFunction_Python::operator()(PRule rule, PExampleTable data, const int 
   return chi;
 }
 
-PEVCDist TEVCDistGetter_Python::operator()(const PRule rule, const int & rLength) const
+PEVCDist TEVCDistGetter_Python::operator()(const PRule rule, const int & parentLength, const int & rLength) const
 {
   if (!rule)
     raiseError("invalid rule");
 
-  PyObject *args = Py_BuildValue("(Ni)", WrapOrange(rule), rLength);
+  PyObject *args = Py_BuildValue("(Nii)", WrapOrange(rule), parentLength, rLength);
   PyObject *result=callCallback((PyObject *)myWrapper, args);
   Py_DECREF(args);
 
