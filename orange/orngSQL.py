@@ -56,6 +56,43 @@ def _parseURI(uri):
             args[argname] = argvalue
     return schema, user, password, host, port, path, args
 
+class __DummyQuirkFix:
+    def __init__(self, dbmod):
+        self.dbmod = dbmod
+        self.typeDict = {
+            orange.VarTypes.Continuous:'FLOAT', 
+            orange.VarTypes.Discrete:'VARCHAR(250)', orange.VarTypes.String:'VARCHAR(250)'}
+    def beforeWrite(self, cursor):
+        pass
+    def beforeCreate(self, cursor):
+        pass
+    def beforeRead(self, cursor):
+        pass
+class __MySQLQuirkFix(__DummyQuirkFix):
+    def __init__(self, dbmod):
+        self.dbmod = dbmod
+        self.typeDict = {
+            orange.VarTypes.Continuous:'DOUBLE', 
+            orange.VarTypes.Discrete:'VARCHAR(250)', orange.VarTypes.String:'VARCHAR(250)'}
+    def beforeWrite(self, cursor):
+        cursor.execute("SET sql_mode='ANSI_QUOTES';")
+    def beforeCreate(self, cursor):
+        cursor.execute("SET sql_mode='ANSI_QUOTES';")
+    def beforeRead(self, cursor):
+        pass
+class __PostgresQuirkFix(__DummyQuirkFix):
+    def __init__(self, dbmod):
+        self.dbmod = dbmod
+        self.typeDict = {
+            orange.VarTypes.Continuous:'FLOAT', 
+            orange.VarTypes.Discrete:'VARCHAR', orange.VarTypes.String:'VARCHAR'}
+    def beforeWrite(self, cursor):
+        pass
+    def beforeCreate(self, cursor):
+        pass
+    def beforeRead(self, cursor):
+        pass
+
 def _connection(uri):
         """the uri string's syntax is the same as that of sqlobject.
         Unfortunately, only postgres and mysql are going to be supported in
@@ -78,6 +115,7 @@ def _connection(uri):
             'password':'password',
             'database':'database'
             }
+            quirks = __PostgresQuirkFix(dbmod)
         elif schema == 'mysql':
             import MySQLdb as dbmod
             argTrans = {
@@ -87,7 +125,7 @@ def _connection(uri):
             'password':'passwd',
             'database':'db'
             }
-        dbmod = dbmod
+            quirks = __MySQLQuirkFix(dbmod)
         dbArgDict = {}
         if user:
             dbArgDict[argTrans['user']] = user
@@ -99,7 +137,7 @@ def _connection(uri):
             dbArgDict[argTrans['port']] = port
         if path:
             dbArgDict[argTrans['database']] = path[1:]
-        return (dbmod, dbmod.connect(**dbArgDict))
+        return (quirks, dbmod.connect(**dbArgDict))
 
 class SQLReader(object):
     def __init__(self, addr = None, domainDepot = None):
@@ -114,7 +152,7 @@ class SQLReader(object):
     def connect(self, uri):
         self._dirty = True
         self.delDomain()
-        (self.dbmod, self.conn) = _connection(uri)
+        (self.quirks, self.conn) = _connection(uri)
     def disconnect(self):
         self.conn.disconnect()
     def getClassName(self):
@@ -197,9 +235,9 @@ class SQLReader(object):
             typ = i[1]
             if name in discreteNames:
                 attrName = 'D#' + name
-            elif typ == self.dbmod.STRING:
+            elif typ == self.quirks.dbmod.STRING:
                     attrName = 'S#' + name
-            elif typ == self.dbmod.DATETIME:
+            elif typ == self.quirks.dbmod.DATETIME:
                 attrName = 'S#' + name
             else:
                 attrName = 'C#' + name
@@ -223,6 +261,7 @@ class SQLReader(object):
         try:
             curs = self.conn.cursor()
             try:
+                self.quirks.beforeRead(curs)
                 curs.execute(self.query)
             except Exception, e:
                 self.conn.rollback()
@@ -261,16 +300,81 @@ class SQLReader(object):
             return self.exampleTable
         return None
     
-class SQLWriter:
+class SQLWriter(object):
     def __init__(self, uri = None):
         if uri is not None:
-            self.connection = _connect(uri)
+            self.connect(uri)
     
     def connect(self, uri):
-        self.connection = _connect(uri)
-        
-    def write(self, data, statement):
-        pass
+        (self.quirks, self.connection) = _connection(uri)
+    def __attrVal2sql(self, d):
+        if d.varType == orange.VarTypes.Continuous:
+            return d.value
+        elif d.varType == orange.VarTypes.Discrete:
+            return str(d.value)
+        else:
+            return "'%s'" % str(d.value)
+    def __attrName2sql(self, d):
+        return d.name
+    def __attrType2sql(self, d):
+        return self.quirks.typeDict[d]
+    def write(self, table, data, renameDict = None):
+        """if provided, renameDict maps the names in data to columns in
+        the database. For each var in data: dbColName = renameDict[var.name]"""
+        l = [i.name for i in data.domain.attributes]
+        l += [i.name for i in data.domain.getmetas().values()]
+        if data.domain.classVar:
+            l.append(data.domain.classVar.name)
+        if renameDict is None:
+            renameDict = {}
+        colList = [renameDict.get(str(i), str(i)) for i in l]
+        try:
+            cursor=self.connection.cursor()
+            self.quirks.beforeWrite(cursor)
+            query = 'INSERT INTO "%s" (%s) VALUES (%s);'
+            for d in data:
+                valList = []
+                colSList = []
+                for name in colList:
+                    colSList.append('"%s"'% name)
+                    valList.append(self.__attrVal2sql(d[name]))
+                valStr = ', '.join(["%s"]*len(colList))
+                # print "exec:", query % (table, "%s ", "%s "), tuple(colList + valList)
+                cursor.execute(query % (table, 
+                    ", ".join(colSList), 
+                    ", ".join (["%s"] * len(valList))), tuple(valList))
+            cursor.close()
+            self.connection.commit()
+        except Exception, e:
+            import traceback
+	    traceback.print_exc()
+            self.connection.rollback()
+
+    def create(self, table, data, renameDict = None, typeDict = None):
+        l = [(i.name, i.varType ) for i in data.domain.attributes]
+        l += [(i.name, i.varType ) for i in data.domain.getmetas().values()]
+        if data.domain.classVar:
+            l.append((data.domain.classVar.name, data.domain.classVar.varType))
+        if renameDict is None:
+            renameDict = {}
+        colNameList = [renameDict.get(str(i[0]), str(i[0])) for i in l]
+        if typeDict is None:
+            typeDict = {}
+        colTypeList = [typeDict.get(str(i[0]), self.__attrType2sql(i[1])) for i in l]
+        try:
+            cursor = self.connection.cursor()
+            colSList = []
+            for (i, name) in enumerate(colNameList):
+                colSList.append('"%s" %s' % (name, colTypeList[i]))
+            colStr = ", ".join(colSList)
+            query = """CREATE TABLE "%s" ( %s );""" % (table, colStr)
+            self.quirks.beforeCreate(cursor)
+	    self.connection.commit()
+            cursor.execute(query)
+            # print query
+            self.write(table, data, renameDict)
+        except Exception, e:
+            self.connection.rollback()
     
-    def create(self, data, tabname):
-        pass
+    def disconnect(self):
+        self.conn.disconnect()
