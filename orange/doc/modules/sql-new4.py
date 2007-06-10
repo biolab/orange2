@@ -10,11 +10,13 @@ data = orange.ExampleTable("iris")
 print "Input data domain:"
 for a in data.domain.variables:
     print a
-r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
+w = orngSQL.SQLWriter('mysql://user:somepass@localhost/test')
+w.create('iris', data)
 
-t.write('iris', data, overwrite=True)
-sel = t.query("SELECT petal_width, petal_length FROM iris WHERE sepal_length<5.0")
-print "\n%d instances returned" % len(sel)
+r = orngSQL.SQLReader('mysql://user:somepass@puhek/test')
+r.execute('SELECT "petal width", "petal length" FROM iris WHERE "sepal length"<5.0')
+data = r.data()
+print "\n%d instances returned" % len(data)
 print "Output data domain:"
-for a in sel.domain.variables:
+for a in data.domain.variables:
     print a

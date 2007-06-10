@@ -137,26 +137,9 @@ the username "user" and the password "somepass"
 <p>We start with setting-up a small data table in the database to be used in
 our examples:</p>
 
-<p class="header"><a href="bus.sql">bus.sql</a> (uses <a href=
+<p class="header"><a href="bus-postgres.sql">bus-postgres.sql</a> (uses <a href=
 "bus.txt">bus.txt</a>)</p>
-<xmp class=code>
--- DROP TABLE bus;
-CREATE TABLE bus
-  (id varchar(5),
-   line enum('9','10','11'),
-   daytime enum('morning','evening', 'midday'),
-   temp float,
-   weather enum('rainy','sunny'),
-   arrival enum('late','on-time'));
-LOAD DATA LOCAL INFILE 'bus.txt' INTO TABLE bus;
-
-SELECT * FROM bus;
-</xmp>
-
-<p class="header"><a href="bus-postgres.sql">bus.sql</a> (uses <a href=
-"bus.txt">bus.txt</a>)</p>
-<xmp class=code>
--- DROP TABLE bus;
+<xmp class="code">DROP TABLE bus;
 CREATE TABLE bus 
   (id varchar(5), 
    line integer, 
@@ -169,10 +152,25 @@ CREATE TABLE bus
 SELECT * from bus;
 </xmp>
 
+<p class="header"><a href="bus-mysql.sql">bus-mysql.sql</a> (uses <a href=
+"bus.txt">bus.txt</a>)</p>
+<xmp class="code">DROP TABLE bus;
+CREATE TABLE bus 
+  (id varchar(5), 
+   line integer, 
+   daytime varchar, 
+   temp float, 
+   weather varchar, 
+   arrival varchar);
+
+LOAD DATA LOCAL INFILE 'bus.txt' INTO TABLE bus;
+SELECT * from bus;
+</xmp>
+
 
 <p>If everything goes well, running the script from shell by something like</p>
-<xmp class="code">mysql &lt bus.sql</xmp> or
-<xmp class="code">psql &lt bus-postgres.sql</xmp>
+<xmp class="code">mysql -u user -p < bus.sql</xmp> or
+<xmp class="code">psql -u user -p < bus-postgres.sql</xmp>
 
 <p>should produce something along the lines of:</p>
 
@@ -290,9 +288,11 @@ as above, with some names and types set explicitly:</p>
 <p class="header"><a href="sql-new4.py">sql-new5.py</a>  (uses <a href=
 "iris.tab">iris.tab</a>)</p>
 <xmp class="code">
+CODE
 </xmp>
 <p>And the output:</p>
 <xmp class="printout">
+LALA
 </xmp>
 </body>
 </html> 

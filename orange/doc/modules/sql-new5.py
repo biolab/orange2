@@ -10,8 +10,8 @@ data = orange.ExampleTable("iris")
 print "Input data domain:"
 for a in data.domain.variables:
     print a
-
 r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
+w = orngSQL.SQLWriter('mysql://user:somepass@localhost/test')
 
 t.write('iris', data, overwrite=True)
 

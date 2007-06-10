@@ -5,7 +5,7 @@
 
 import orange, orngSQL
 
-r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
+r = orngSQL.SQLReader('mysql://user:somepass@localhost/polz')
 r.execute("SELECT * FROM bus WHERE line='10';")
 data = r.data()
 for x in data:
