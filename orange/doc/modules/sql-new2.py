@@ -5,7 +5,7 @@
 
 import orange, orngSQL
 
-r = orngSQL.SQLReader('mysql://polz:r2d2c3po@localhost/polz')
+r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
 r.query = "SELECT * FROM bus WHERE line='10';"
 r.discreteNames = ['weather', 'arrival', 'daytime']
 r.metaNames = ['id']
