@@ -1,0 +1,76 @@
+<html>
+<head>
+<link rel=stylesheet href="../style.css" type="text/css">
+</head>
+<li>
+
+<h1>Orange and SQL</h1>
+<index name="modules+database access"/>
+<index name="SQL"/>
+<p>When accessing data, stored in a relational database, SQL queries are often reused.
+Unfortunately, an sql query is not sufficient to retrieve the data. Before executing the
+query, one must first connect to a database. It is also impossible to infer important
+properties, such as the desired class variable, from the retrieved data.
+</p>
+<p>The simplest method of accessing data, stored in a relational database, from Orange, in most cases,
+is through .sql files with special comments. The examples listed below should be more or less self-explanatory.
+The statements after the keywords <code>uri</code>, <code>discrete</code>, <code>class</code> and <code>metas</code>
+are actually evaluated by the python interpeter. The returned values are then used appropriately.
+</p>
+<p>For now, there is no write support for .sql files. To transfer data from Orange back into an SQL database,
+the <a href="orngSQL.htm">orngSQL</a> should be used directly.
+</p>
+<p class="header"><a href="sql-new-embed.sql">sql-new-embed.sql</a></p>
+<xmp class="code">--orng uri 'mysql://user:somepass@localhost/test'
+--orng discrete ['registration', 'num', 'time of day', 'arrival']
+--orng meta ['weather', 'arrival', 'time']
+--orng class ['arrival']
+
+SELECT
+    "id" as registration,
+    line as num,
+    daytime as "time of day",
+    temp as temperature,
+    weather,
+    arrival
+FROM 
+    bus
+WHERE 
+    line='10';
+</xmp>
+<p class="header"><a href="sql-new-embed.py">sql-new-embed.py</a></p>(uses <a href=
+"sql-new-embed.sql">sql-new-embed.sql</a>)
+<xmp># Description: Reads data from a database
+# Category:    file formats
+# Classes:     orngSQL.SQLReader
+# Referenced:  orngSQL.htm
+
+import orange, orngSQLFile
+
+
+orange.registerFileType("SQL", orngSQLFile.loadSQL, None, ".sql")
+data = orange.ExampleTable('sql-new-embed.sql')
+for x in data:
+    print x
+
+print
+for a in data.domain.attributes:
+    print a
+</xmp>
+<p>The expected output:</p>
+<xmp class=printout>
+(('registration', 253, 2, 2, 2, 31, 0), ('num', 254, 2, 2, 2, 0, 1), ('time of day', 254, 7, 7, 7, 0, 1), ('temperature', 4, 2, 12, 12, 31, 1), ('weather', 254, 5, 5, 5, 0, 1), ('arrival', 254, 7, 7, 7, 0, 1))
+(('registration', 253, 2, 2, 2, 31, 0), ('num', 254, 2, 2, 2, 0, 1), ('time of day', 254, 7, 7, 7, 0, 1), ('temperature', 4, 2, 12, 12, 31, 1), ('weather', 254, 5, 5, 5, 0, 1), ('arrival', 254, 7, 7, 7, 0, 1))
+['id', '10', 'morning', 10.0], {"weather":'sunny', "arrival":'late'}
+['id', '10', 'evening', 25.0], {"weather":'sunny', "arrival":'on-time'}
+['id', '10', 'evening', 5.0], {"weather":'rainy', "arrival":'on-time'}
+['id', '10', 'midday', 8.0], {"weather":'rainy', "arrival":'late'}
+
+EnumVariable 'registration'
+EnumVariable 'num'
+EnumVariable 'time of day'
+FloatVariable 'temperature'
+
+</xmp>
+</body>
+</html>

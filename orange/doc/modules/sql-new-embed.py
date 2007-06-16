@@ -3,11 +3,11 @@
 # Classes:     orngSQL.SQLReader
 # Referenced:  orngSQL.htm
 
-import orange, orngSQL
+import orange, orngSQLFile
 
-r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
-r.execute("SELECT * FROM bus WHERE line='10';")
-data = r.data()
+
+orange.registerFileType("SQL", orngSQLFile.loadSQL, None, ".sql")
+data = orange.ExampleTable('sql-new-embed.sql')
 for x in data:
     print x
 

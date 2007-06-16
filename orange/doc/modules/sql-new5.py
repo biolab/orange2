@@ -12,8 +12,8 @@ for a in data.domain.variables:
     print a
 r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
 w = orngSQL.SQLWriter('mysql://user:somepass@localhost/test')
+w.create('iris', data, renameDict = {'':''}, typeDict = {'':''})
 
-t.write('iris', data, overwrite=True)
 
 sel = t.query("SELECT petal_width, petal_length FROM iris WHERE sepal_length<5.0")
 print "\n%d instances returned" % len(sel)

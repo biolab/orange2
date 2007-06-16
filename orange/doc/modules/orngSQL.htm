@@ -253,14 +253,21 @@ are treated as VARCHARs and all continuous are treated as FLOATs.</p>
 
 <p class="header"><a href="sql-new4.py">sql-new4.py</a>  (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<xmp class="code">import orange, orngMySQL, orngTree
+<xmp class="code"># Description: Writes a data set to and reads from an SQL database
+# Category:    file formats
+# Classes:     ExampleTable, orngSQL.SQLReader, orngSQL.SQLWriter
+# Uses:        iris.tab
+# Referenced:  orngSQL.htm
+
+import orange, orngSQL, orngTree
 
 data = orange.ExampleTable("iris")
 print "Input data domain:"
 for a in data.domain.variables:
     print a
+r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
+w = orngSQL.SQLWriter('mysql://user:somepass@localhost/test')
 
-t = orngMySQL.Connect('localhost','root','','test')
 t.write('iris', data, overwrite=True)
 
 sel = t.query("SELECT petal_width, petal_length FROM iris WHERE sepal_length<5.0")
@@ -285,14 +292,14 @@ FloatVariable 'petal_length'
 </xmp>
 <p>Usually, one needs more control over the sql names and types. Here's the same example
 as above, with some names and types set explicitly:</p>
-<p class="header"><a href="sql-new4.py">sql-new5.py</a>  (uses <a href=
+<p class="header"><a href="sql-new5.py">sql-new5.py</a>(uses <a href=
 "iris.tab">iris.tab</a>)</p>
 <xmp class="code">
-CODE
+
 </xmp>
 <p>And the output:</p>
 <xmp class="printout">
-LALA
+
 </xmp>
 </body>
 </html> 
