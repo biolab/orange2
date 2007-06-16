@@ -327,7 +327,9 @@ class SQLWriter(object):
             l.append(data.domain.classVar.name)
         if renameDict is None:
             renameDict = {}
-        colList = [renameDict.get(str(i), str(i)) for i in l]
+        colList = []
+        for i in l:
+            colList.append(renameDict.get(str(i), str(i)))
         try:
             cursor=self.connection.cursor()
             self.quirks.beforeWrite(cursor)
@@ -335,9 +337,9 @@ class SQLWriter(object):
             for d in data:
                 valList = []
                 colSList = []
-                for name in colList:
+                for (i, name) in enumerate(colList):
                     colSList.append('"%s"'% name)
-                    valList.append(self.__attrVal2sql(d[name]))
+                    valList.append(self.__attrVal2sql(d[l[i]]))
                 valStr = ', '.join(["%s"]*len(colList))
                 # print "exec:", query % (table, "%s ", "%s "), tuple(colList + valList)
                 cursor.execute(query % (table, 
@@ -369,10 +371,10 @@ class SQLWriter(object):
             colStr = ", ".join(colSList)
             query = """CREATE TABLE "%s" ( %s );""" % (table, colStr)
             self.quirks.beforeCreate(cursor)
-	    self.connection.commit()
             cursor.execute(query)
-            # print query
+            print query
             self.write(table, data, renameDict)
+            self.connection.commit()
         except Exception, e:
             self.connection.rollback()
     
