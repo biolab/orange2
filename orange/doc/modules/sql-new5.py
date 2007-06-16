@@ -12,11 +12,18 @@ for a in data.domain.variables:
     print a
 r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
 w = orngSQL.SQLWriter('mysql://user:somepass@localhost/test')
-w.create('iris', data, renameDict = {'':''}, typeDict = {'':''})
+# the following line only works with mysql because it uses the enum type.
+w.create('iris', data, 
+    renameDict = {'sepal length':'seplen',
+        'sepal width':'sepwidth',
+        'petal length':'petlen',
+        'petal width':'petwidth'},
+    typeDict = {'iris':"""enum('Iris-setosa', 'Iris-versicolor', 'Iris-virginica')"""})
 
 
-sel = t.query("SELECT petal_width, petal_length FROM iris WHERE sepal_length<5.0")
-print "\n%d instances returned" % len(sel)
+r.execute("SELECT petwidth, petlen FROM iris WHERE seplen<5.0;")
+data = r.data()
+print "\n%d instances returned" % len(data)
 print "Output data domain:"
-for a in sel.domain.variables:
+for a in data.domain.variables:
     print a

@@ -294,12 +294,49 @@ FloatVariable 'petal_length'
 as above, with some names and types set explicitly:</p>
 <p class="header"><a href="sql-new5.py">sql-new5.py</a>(uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<xmp class="code">
+<xmp class="code"># Description: Writes a data set to and reads from an SQL database
+# Category:    file formats
+# Classes:     ExampleTable, orngSQL.SQLReader, orngSQL.SQLWriter
+# Uses:        iris.tab
+# Referenced:  orngSQL.htm
 
+import orange, orngSQL, orngTree
+
+data = orange.ExampleTable("iris")
+print "Input data domain:"
+for a in data.domain.variables:
+    print a
+r = orngSQL.SQLReader('mysql://user:somepass@localhost/test')
+w = orngSQL.SQLWriter('mysql://user:somepass@localhost/test')
+# the following line only works with mysql because it uses the enum type.
+w.create('iris', data, 
+    renameDict = {'sepal length':'seplen',
+        'sepal width':'sepwidth',
+        'petal length':'petlen',
+        'petal width':'petwidth'},
+    typeDict = {'iris':"""enum('Iris-setosa', 'Iris-versicolor', 'Iris-virginica')"""})
+
+
+r.execute("SELECT petwidth, petlen FROM iris WHERE seplen<5.0;")
+data = r.data()
+print "\n%d instances returned" % len(data)
+print "Output data domain:"
+for a in data.domain.variables:
+    print a
 </xmp>
 <p>And the output:</p>
-<xmp class="printout">
+<xmp class="printout">Input data domain:
+FloatVariable 'sepal length'
+FloatVariable 'sepal width'
+FloatVariable 'petal length'
+FloatVariable 'petal width'
+EnumVariable 'iris'
+CREATE TABLE "iris" ( "seplen" DOUBLE, "sepwidth" DOUBLE, "petlen" DOUBLE, "petwidth" DOUBLE, "iris" enum('Iris-setosa', 'Iris-versicolor', 'Iris-virginica') );
 
+22 instances returned
+Output data domain:
+FloatVariable 'petwidth'
+FloatVariable 'petlen'
 </xmp>
 </body>
 </html> 
