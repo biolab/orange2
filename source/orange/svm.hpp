@@ -196,12 +196,19 @@ public:
 
 	PClassifier operator()(PExampleGenerator, const int & = 0);
 protected:
-	bool sparse;
+	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual int getNumOfElements(PExampleGenerator examples);
+	virtual TSVMClassifier* createClassifier(PVariable var, PExampleTable ex, svm_model* model, svm_node* x_space);
 };
 
 class ORANGE_API TSVMLearnerSparse : public TSVMLearner{
 public:
-	TSVMLearnerSparse();
+	__REGISTER_CLASS
+	bool useNonMeta; //P include non meta attributes in the learning process
+protected:
+	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual int getNumOfElements(PExampleGenerator examples);
+	virtual TSVMClassifier* createClassifier(PVariable var, PExampleTable ex, svm_model* model, svm_node* x_space);
 };
 
 
@@ -209,7 +216,7 @@ class ORANGE_API TSVMClassifier : public TClassifier{
 public:
 	__REGISTER_CLASS
 		TSVMClassifier(){};
-	TSVMClassifier(PVariable, PExampleTable, svm_model*, svm_node*, bool);
+	TSVMClassifier(PVariable, PExampleTable, svm_model*, svm_node*);
 	~TSVMClassifier();
 
 	TValue operator()(const TExample&);
@@ -228,14 +235,27 @@ public:
 
     svm_model* getModel(){return model;};
 
-	bool supportsSparse(){return sparse;}
+protected:
+	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual int getNumOfElements(const TExample& example);
 
 private:
 	svm_model *model;
 	svm_node *x_space;
-	bool sparse;
 };
 
+class ORANGE_API TSVMClassifierSparse : public TSVMClassifier{
+public:
+	__REGISTER_CLASS
+	TSVMClassifierSparse(){};
+	TSVMClassifierSparse(PVariable var , PExampleTable ex, svm_model* model, svm_node* x_space, bool useNonMeta):TSVMClassifier(var, ex, model, x_space){
+		this->useNonMeta=useNonMeta;
+	}
+	bool useNonMeta; //PR include non meta attributes
+protected:
+	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual int getNumOfElements(const TExample& example);
+};
 
 #endif
 

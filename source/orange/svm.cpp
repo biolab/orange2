@@ -3446,12 +3446,12 @@ out2:
     //printf("%i\n",model->param.kernel_type);
 	return model;
 }
-	
+
 svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0){
 	if(type==0){
 		int index=1;
-		for(TExample::iterator i=ex.begin(); i!=ex.end(); i++)
-			if(i->isRegular() && (*i)!=ex.getClass()){
+		for(TExample::iterator i=ex.begin(); i!=ex.end(); i++){
+			if(i->isRegular() && i!=&ex.getClass()){
 				if(i->varType==TValue::FLOATVAR)
 					node->value=float(*i);
 				else
@@ -3462,21 +3462,8 @@ svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int
 					node--;
 				node++;
 			}
+		}
 	}
-
-        /*for(int i=0;i<ex.domain->attributes->size();i++){
-			if(ex[i].isRegular()){
-				if(ex[i].varType==TValue::FLOATVAR)
-					node->value=float(ex[i]);
-				else
-					node->value=int(ex[i]);
-				node->index=i+1;
-				if(node->value==numeric_limits<float>::signaling_NaN() || 
-					node->value==numeric_limits<int>::max())
-					node--;
-				node++;
-			}
-		}*/
     if(type == 1){ /*one dummy attr so we can pickle the classifier and keep the SV index in the training table*/
         node->index=1;
         node->value=last;
@@ -3496,16 +3483,30 @@ public:
 	}
 };
 
-svm_node* example_to_svm_sparse(const TExample &ex, svm_node* node, float last=0.0){
+svm_node* example_to_svm_sparse(const TExample &ex, svm_node* node, float last=0.0, bool useNonMeta=false){
 	svm_node *first=node;
 	int j=1;
+	int index=1;
+	if(useNonMeta)
+		for(TExample::iterator i=ex.begin(); i!=ex.end(); i++)
+			if(i->isRegular() && i!=&ex.getClass()){
+				if(i->varType==TValue::FLOATVAR)
+					node->value=float(*i);
+				else
+					node->value=int(*i);
+				node->index=index++;
+				if(node->value==numeric_limits<float>::signaling_NaN() || 
+					node->value==numeric_limits<int>::max())
+					node--;
+				node++;
+			}
 	for(TMetaValues::const_iterator i=ex.meta.begin(); i!=ex.meta.end();i++,j++){
 		if(i->second.isRegular()){
 			if(i->second.varType==TValue::FLOATVAR)
 				node->value=float(i->second);
 			else
 				node->value=int(i->second);
-			node->index=-i->first;
+			node->index=index-i->first;
 			if(node->value==numeric_limits<float>::signaling_NaN() || 
 				node->value==numeric_limits<int>::max())
 				node--;
@@ -3520,11 +3521,13 @@ svm_node* example_to_svm_sparse(const TExample &ex, svm_node* node, float last=0
 	return node;
 }
 
-int getNumOfElements(const TExample &ex, bool meta=false){
+int getNumOfElements(const TExample &ex, bool meta=false, bool useNonMeta=false){
 	if(!meta)
 		return std::max(ex.domain->attributes->size()+1, 2);
 	else{
 		int count=1; //we need one to indicate the end of a sequence
+		if(useNonMeta)
+			count+=ex.domain->attributes->size();
 		for(TMetaValues::const_iterator i=ex.meta.begin(); i!=ex.meta.end();i++)
 			if(i->second.isRegular())
 				count++;
@@ -3532,20 +3535,20 @@ int getNumOfElements(const TExample &ex, bool meta=false){
 	}
 }
 
-int getNumOfElements(PExampleGenerator &examples, bool meta=false){
+int getNumOfElements(PExampleGenerator &examples, bool meta=false, bool useNonMeta=false){
 	if(!meta)
 		return getNumOfElements(*(examples->begin()), meta)*examples->numberOfExamples();
 	else{
 		int count=0;
 		for(TExampleGenerator::iterator ex(examples->begin()); ex!=examples->end(); ++ex){
-			count+=getNumOfElements(*ex, meta);
+			count+=getNumOfElements(*ex, meta, useNonMeta);
 		}
 		return count;
 	}
 }
 
 TSVMLearner::TSVMLearner(){
-	sparse=false;	//if this learners supports sparse datasets (set to true in TSMVLearnerSparse subclass)
+	//sparse=false;	//if this learners supports sparse datasets (set to true in TSMVLearnerSparse subclass)
 	svm_type = C_SVC;
 	kernel_type = RBF;
 	degree = 3;
@@ -3562,10 +3565,6 @@ TSVMLearner::TSVMLearner(){
 	//weight_label = NULL;
 	//weight = NULL;
 };
-
-TSVMLearnerSparse::TSVMLearnerSparse(){
-	sparse=true;
-}
 
 PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	svm_parameter param;
@@ -3611,7 +3610,7 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	if(param.kernel_type==CUSTOM) // using the custom kernel with non-probabilistic model does not work (for some unknown reason)
 		param.probability=1;
 
-	int numElements=getNumOfElements(examples, sparse);
+	int numElements=getNumOfElements(examples);
 	prob.l=examples->numberOfExamples();
 	prob.y=Malloc(double,prob.l);
 	prob.x=Malloc(svm_node*, prob.l);
@@ -3620,10 +3619,7 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	svm_node *node=x_space;
 	PEITERATE(iter, examples){
 		prob.x[k]=node;
-		if(sparse)
-			node=example_to_svm_sparse(*iter, node, k);
-		else
-			node=example_to_svm(*iter, node, k, (param.kernel_type==CUSTOM)? 1:0);
+		node=example_to_svm(*iter, node, k, (param.kernel_type==CUSTOM)? 1:0);
 		switch(classVarType){
 			case TValue::FLOATVAR:{
 				prob.y[k]=(*iter).getClass().floatV;
@@ -3661,15 +3657,38 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	free(prob.y);
 	free(prob.x);
 	tempExamples=NULL;
-	return PSVMClassifier(mlnew TSVMClassifier((param.svm_type==ONE_CLASS)?  \
-		mlnew TFloatVariable("one class") : examples->domain->classVar, examples, model, x_space, sparse));
+	return PClassifier(createClassifier((param.svm_type==ONE_CLASS)?  \
+		mlnew TFloatVariable("one class") : examples->domain->classVar, examples, model, x_space));
 }
 
-TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model* _model=NULL, svm_node* _x_space=NULL, bool sparse=false):TClassifier(var){
+svm_node* TSVMLearner::example_to_svm(const TExample &ex, svm_node* node, float last, int type){
+	return ::example_to_svm(ex, node, last, type);
+}
+
+int TSVMLearner::getNumOfElements(PExampleGenerator examples){
+	return ::getNumOfElements(examples);
+}
+
+TSVMClassifier* TSVMLearner::createClassifier(PVariable var, PExampleTable ex, svm_model* model, svm_node* x_space){
+	return mlnew TSVMClassifier(var, ex, model, x_space);
+}
+
+svm_node* TSVMLearnerSparse::example_to_svm(const TExample &ex, svm_node* node, float last, int type){
+	return ::example_to_svm_sparse(ex, node, last, useNonMeta);
+}
+
+int TSVMLearnerSparse::getNumOfElements(PExampleGenerator examples){
+	return ::getNumOfElements(examples, true, useNonMeta);
+}
+
+TSVMClassifier* TSVMLearnerSparse::createClassifier(PVariable var, PExampleTable ex, svm_model* model, svm_node *x_space){
+	return mlnew TSVMClassifierSparse(var, ex, model, x_space, useNonMeta);
+}
+
+TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model* _model=NULL, svm_node* _x_space=NULL):TClassifier(var){
 	model=_model;
 	x_space=_x_space;
 	examples=_examples;
-	this->sparse=sparse;
 	model->param.classifier=this;
     if (model->param.learner) // if the model not constructed at unpickling 
 	    kernelFunc=model->param.learner->kernelFunc;
@@ -3718,7 +3737,7 @@ PDistribution TSVMClassifier::classDistribution(const TExample & example){
 	if(!model)
 		raiseError("No Model");
 	currentExample=&example;
-	int exlen=getNumOfElements(example, sparse);
+	int exlen=getNumOfElements(example);
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
 	if(svm_type==NU_SVR || svm_type==EPSILON_SVR)
@@ -3728,10 +3747,7 @@ PDistribution TSVMClassifier::classDistribution(const TExample & example){
 	svm_node *x=Malloc(svm_node, exlen);
 	svm_get_labels(model,labels);
 	prob_estimates = (double *) malloc(nr_class*sizeof(double));
-	if(sparse)
-		example_to_svm_sparse(example, x, -1.0);
-	else
-		example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
+	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	svm_predict_probability(model,x,prob_estimates);
 	currentExample=NULL;
 	PDistribution dist=TDistribution::create(example.domain->classVar);
@@ -3748,14 +3764,11 @@ TValue TSVMClassifier::operator()(const TExample & example){
 	if(!model)
 		raiseError("No Model");
 	currentExample=&example;
-	int exlen=getNumOfElements(example, sparse); //example.domain->attributes->size();
+	int exlen=getNumOfElements(example); //example.domain->attributes->size();
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
 	svm_node *x=Malloc(svm_node, exlen);
-	if(sparse)
-		example_to_svm_sparse(example, x, -1.0);
-	else
-		example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
+	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	double v;
 	if(model->param.probability){
 		double *prob=(double *) malloc(nr_class*sizeof(double));
@@ -3776,14 +3789,11 @@ PFloatList TSVMClassifier::getDecisionValues(const TExample &example){
 		raiseError("No Model");
 	//printf("enter getDecisionValues");
 	currentExample=&example;
-	int exlen=getNumOfElements(example, sparse);
+	int exlen=getNumOfElements(example);
 	int svm_type=svm_get_svm_type(model);
 	int nr_class=svm_get_nr_class(model);
 	svm_node *x=Malloc(svm_node, exlen);
-	if(sparse)
-		example_to_svm_sparse(example, x,  -1.0);
-	else
-		example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
+	example_to_svm(example, x, -1.0, (model->param.kernel_type==CUSTOM)? 1:0);
 	int nDecValues=nr_class*(nr_class-1)/2;
 	double *dec= (double*) malloc(sizeof(double)*nDecValues);
 	svm_predict_values(model, x, dec);
@@ -3795,4 +3805,20 @@ PFloatList TSVMClassifier::getDecisionValues(const TExample &example){
 	free(dec);
 	return res;
 }
+
+svm_node *TSVMClassifier::example_to_svm(const TExample &ex, svm_node *node, float last, int type){
+	return ::example_to_svm(ex, node, last, type);
+}
+
+int TSVMClassifier::getNumOfElements(const TExample& example){
+	return ::getNumOfElements(example);
+}
+svm_node *TSVMClassifierSparse::example_to_svm(const TExample &ex, svm_node *node, float last, int type){
+	return ::example_to_svm_sparse(ex, node, last, useNonMeta);
+}
+
+int TSVMClassifierSparse::getNumOfElements(const TExample& example){
+	return ::getNumOfElements(example, true, useNonMeta);
+}
+
 
