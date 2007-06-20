@@ -112,14 +112,20 @@ class OWGraphDrawerCanvas(OWGraph):
         #print "done."
             
     def selectConnectedNodes(self, distance):
-        sel = set(self.selection)
+        if distance <= 0:
+            return
         
+        print "distance: " + str(distance)
+        sel = set(self.selection)
+        print sel
         for v in self.selection:
             neighbours = set(self.visualizer.graph.getNeighbours(v))
-            self.selectNeighbours(sel, neighbours - sel);
+            print neighbours
+            self.selectNeighbours(sel, neighbours - sel, 1, distance);
             
         self.removeSelection()
-        
+        print "sel"
+        print sel
         for ndx in sel:
             (key, neighbours) = self.vertices[ndx]
             self.selectionStyles[ndx] = self.curve(key).symbol().brush().color().name()
@@ -129,14 +135,15 @@ class OWGraphDrawerCanvas(OWGraph):
         
         self.replot()
     
-    def selectNeighbours(self, sel, nodes):
+    def selectNeighbours(self, sel, nodes, depth, maxdepth):
         #print "list: " + str(sel)
         #print "nodes: " + str(nodes)
         sel.update(nodes)
-        for i in nodes:
-            neighbours = set(self.visualizer.graph.getNeighbours(i))
-            #print "neighbours: " + str(neighbours)
-            self.selectNeighbours(sel, neighbours - sel)
+        if depth < maxdepth:
+            for i in nodes:
+                neighbours = set(self.visualizer.graph.getNeighbours(i))
+                #print "neighbours: " + str(neighbours)
+                self.selectNeighbours(sel, neighbours - sel, depth+1, maxdepth)
         
     def getSelectedExamples(self):
         if len(self.selection) == 0:
