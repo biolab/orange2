@@ -47,6 +47,13 @@
 
 using namespace std;
 
+struct Edge
+{
+public:
+	int u;
+	int v;
+};
+
 class ORANGEOM_API TNetworkOptimization : public TOrange
 {
 public:
@@ -66,25 +73,7 @@ public:
 	double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
 	bool *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
 	void free_Carrayptrs(double **v);
-	void free_Links()
-	{		
-		if (links != NULL)
-		{
-			int i;
-			for (i = 0; i < nLinks; i++)
-			{
-				if (links[i] != NULL)
-				{
-					free(links[i]);
-					links[i] = NULL;
-				}
-			}
-
-			free(links);
-			links = NULL;
-		}
-	}
-
+	
 	double k; 
 	double k2; 
 	double temperature;
@@ -95,7 +84,7 @@ public:
 
 	int nLinks;
 	int nVertices;
-	int **links;
+	vector<int> links[2];
 	double **pos;
 };
 

@@ -33,7 +33,6 @@ TNetworkOptimization::TNetworkOptimization()
 	k2 = 1;
 	width = 10000;
 	height = 10000;
-	links = NULL;
 	pos = NULL;
 	temperature = sqrt(width*width + height*height) / 10;
 	coolFactor = 0.96;
@@ -50,7 +49,6 @@ inline T &min(const T&x, const T&y)
 TNetworkOptimization::~TNetworkOptimization()
 {
 	//cout << "destructor" << endl;
-	free_Links();
 	free_Carrayptrs(pos);
 	Py_DECREF(coors);
 }
@@ -167,8 +165,10 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 		//cout << "attractive" << endl;
 		for (j = 0; j < nLinks; j++)
 		{
-			int v = links[j][0];
-			int u = links[j][1];
+			//int v = links[j][0];
+			//int u = links[j][1];
+			int v = links[0][j];
+			int u = links[1][j];
 
 			double difX = pos[v][0] - pos[u][0];
 			double difY = pos[v][1] - pos[u][1];
@@ -292,7 +292,8 @@ bool *TNetworkOptimization::pyvector_to_Carrayptrs(PyArrayObject *arrayin)  {
 int TNetworkOptimization::setGraph(TGraphAsList *graph)
 {
 	//cout << "-1" << endl;
-	free_Links();
+	links[0].clear();
+	links[1].clear();
 	free_Carrayptrs(pos);
 
 	nVertices = graph->nVertices;
@@ -315,49 +316,18 @@ int TNetworkOptimization::setGraph(TGraphAsList *graph)
 		if (edge != NULL)
 		{
 			int u = edge->vertex;
-			links = (int**)realloc(links, (nLinks + 1) * sizeof(int));
-			//cout << "1" << endl;
-			if (links == NULL)
-			{
-				cerr << "Couldn't allocate memory (links 1)\n";
-				return 1;
-			}
-
-			links[nLinks] = (int *)malloc(2 * sizeof(int));
-			//cout << "2" << endl;
-			if (links[nLinks] == NULL)
-			{
-				cerr << "Couldn't allocate memory (links[] 1)\n";
-				return 1;
-			}
-
-			links[nLinks][0] = v;
-			links[nLinks][1] = u;
+			
+			links[0].push_back(v);
+			links[1].push_back(u);
 			nLinks++;
 
 			TGraphAsList::TEdge *next = edge->next;
 			while (next != NULL)
 			{
 				int u = next->vertex;
-
-				links = (int**)realloc(links, (nLinks + 1) * sizeof (int));
-				//cout << "3" << endl;
-				if (links == NULL)
-				{
-					cerr << "Couldn't allocate memory (links 2)\n";
-					return 1;
-				}
-
-				links[nLinks] = (int *)malloc(2 * sizeof(int));
-				//cout << "4" << endl;
-				if (links[nLinks] == NULL)
-				{
-					cerr << "Couldn't allocate memory (links[] 2)\n";
-					return 1;
-				}
-
-				links[nLinks][0] = v;
-				links[nLinks][1] = u;
+				
+				links[0].push_back(v);
+				links[1].push_back(u);
 				nLinks++;
 
 				next = next->next;
@@ -441,19 +411,46 @@ PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(ME
 	{
 		PYERROR(PyExc_SystemError, "setGraph failed", NULL);
 	}
+
 	//cout << "done." << endl;
 	RETURN_NONE;
 }
 
-PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature) -> temperature")
+PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, hiddenNodes) -> temperature")
 {
 	int steps;
 	double temperature = 0;
+	PyObject* hiddenNodes;
 
-	if (!PyArg_ParseTuple(args, "id:NetworkOptimization.fruchtermanReingold", &steps, &temperature))
+	if (!PyArg_ParseTuple(args, "id|O:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &hiddenNodes))
 		return NULL;
 
+	int size = PyList_Size(hiddenNodes);
+
 	CAST_TO(TNetworkOptimization, graph);
+
+	// remove links for hidden nodes
+	vector<int> removedLinks[2];
+	int i, j;
+	for (i = 0; i < size; i++)
+	{
+		int node = PyInt_AsLong(PyList_GetItem(hiddenNodes, i));
+		
+		//cout <<"size: " << graph->links1->size() << endl;
+		for (j = graph->links[0].size() - 1; j >= 0; j--)
+		{
+			if (graph->links[0][j] == node || graph->links[1][j] == node)
+			{
+				//cout << "j: " << j << " u: " << graph->links1[0][j] << " v: " << graph->links1[1][j] << endl;
+				removedLinks[0].push_back(graph->links[0][j]);
+				removedLinks[1].push_back(graph->links[1][j]);
+
+				graph->links[0].erase(graph->links[0].begin() + j);
+				graph->links[1].erase(graph->links[1].begin() + j);
+			}
+		}
+	}
+	graph->nLinks = graph->links[0].size();
 
 	graph->temperature = temperature;
 	graph->coolFactor = exp(log(10.0/10000.0) / steps);
@@ -462,6 +459,15 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	{
 		PYERROR(PyExc_SystemError, "fruchtermanReingold failed", NULL);
 	}
+
+	// adds back removed links
+	for (i = 0; i < removedLinks[0].size(); i++)
+	{
+		graph->links[0].push_back(removedLinks[0][i]);
+		graph->links[1].push_back(removedLinks[1][i]);
+	}
+
+	graph->nLinks = graph->links[0].size();
 	
 	return Py_BuildValue("d", graph->temperature);
 }
@@ -492,8 +498,8 @@ PyObject *NetworkOptimization_getHubs(PyObject *self, PyObject *args) PYARGS(MET
 
 	for (i=0; i < graph->nLinks; i++)
 	{
-		vertexPower[graph->links[i][0]]++;
-		vertexPower[graph->links[i][1]]++;
+		vertexPower[graph->links[0][i]]++;
+		vertexPower[graph->links[1][i]]++;
 	}
 
 	PyObject* hubList = PyList_New(n);
