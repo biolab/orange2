@@ -117,7 +117,12 @@ class NetworkVisualizer(orangeom.NetworkOptimization):
 #            if verticesParms[v].label!='':
 #                self.GraphFile.write(str('"'+ verticesParms[v].label + '"') + ' \t')
 #            else:
-            graphFile.write(str('"'+ str(v) + '"') + ' \t')
+            try:
+                label = self.graph.items[v]['label']
+                graphFile.write(str('"'+ str(label) + '"') + ' \t')
+            except:
+                graphFile.write(str('"'+ str(v) + '"') + ' \t')
+            
             x = self.coors[v][0] / 1000
             y = self.coors[v][1] / 1000
             if x < 0: x = 0
@@ -141,8 +146,9 @@ class NetworkVisualizer(orangeom.NetworkOptimization):
         #najprej neusmerjene
         graphFile.write('*Edges \n')
         for (i,j) in self.graph.getEdges():
-            graphFile.write('% 8d % 8d 1' % (i+1, j+1))
-            graphFile.write('\n')
+            if len(self.graph[i,j]) > 0:
+                graphFile.write('% 8d % 8d %d' % (i+1, j+1, int(self.graph[i,j][0])))
+                graphFile.write('\n')
 #                    
         #self.graph.
 #        for v1 in edgesParms.keys():

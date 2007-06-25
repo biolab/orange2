@@ -201,6 +201,7 @@ class OWNetwork(OWWidget):
             items = self.graph.getSelectedExamples()
             if items != None:
                 self.send("Selected Examples", items)
+            self.send("Selected Graph", None)
    
     def btnZommClicked(self):
         self.btnZomm.setOn(1)
@@ -257,6 +258,8 @@ class OWNetwork(OWWidget):
         self.updateCanvas()
     
     def setGraph(self, graph):
+        if graph == None:
+            return
         print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkVisualizer(graph, self)
         print "done."
