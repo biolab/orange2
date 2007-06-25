@@ -37,13 +37,19 @@ class OWGraphDrawerCanvas(OWGraph):
         self.enableXaxis(0)
         self.enableYLaxis(0)
         self.state = NOTHING  #default je rocno premikanje
+        self.hiddenNodes = []
+        
+    def setHiddenNodes(self, nodes):
+        self.hiddenNodes = nodes
+        self.updateData()
+        self.updateCanvas()
         
     def addSelection(self, ndx):
         #print("add selection")
         if isinstance(ndx, list):
             change = False
             for v in ndx:
-                if not v in self.selection:
+                if not v in self.selection and not v in self.hiddenNodes:
                     (key, neighbours) = self.vertices[v]
                     self.selectionStyles[v] = self.curve(key).symbol().brush().color().name()
                     newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(10, 10))
@@ -54,7 +60,7 @@ class OWGraphDrawerCanvas(OWGraph):
                 self.replot()
                 return True
         else:
-            if not ndx in self.selection:
+            if not ndx in self.selection and not ndx in self.hiddenNodes:
                 (key, neighbours) = self.vertices[ndx]
                 self.selectionStyles[ndx] = self.curve(key).symbol().brush().color().name()
                 newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
@@ -364,6 +370,9 @@ class OWGraphDrawerCanvas(OWGraph):
         for e in range(self.nEdges):
             (key,i,j) = self.edges[e]
             
+            if i in self.hiddenNodes or j in self.hiddenNodes:
+                continue  
+            
             x1 = self.visualizer.coors[i][0]
             x2 = self.visualizer.coors[j][0]
             y1 = self.visualizer.coors[i][1]
@@ -397,6 +406,9 @@ class OWGraphDrawerCanvas(OWGraph):
         selectionY = []
         # draw vertices
         for v in range(self.nVertices):
+            if v in self.hiddenNodes:
+                continue
+            
             x1 = self.visualizer.coors[v][0]
             y1 = self.visualizer.coors[v][1]
             
@@ -444,6 +456,9 @@ class OWGraphDrawerCanvas(OWGraph):
         # drew markers
         if len(self.labelText) > 0:
             for v in range(self.nVertices):
+                if v in self.hiddenNodes:
+                    continue
+                
                 x1 = self.visualizer.coors[v][0]
                 y1 = self.visualizer.coors[v][1]
                 lbl = ""
@@ -459,8 +474,12 @@ class OWGraphDrawerCanvas(OWGraph):
         
         # add ToolTips
         self.tooltipData = []
+        self.tips.removeAll()
         if len(self.tooltipText) > 0:
             for v in range(self.nVertices):
+                if v in self.hiddenNodes:
+                    continue
+                
                 x1 = self.visualizer.coors[v][0]
                 y1 = self.visualizer.coors[v][1]
                 lbl = ""

@@ -84,7 +84,7 @@ class OWNetwork(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Network')
 
-        self.inputs = [("Graph with ExampleTable", orange.Graph, self.setGraph)]
+        self.inputs = [("Graph with ExampleTable", orange.Graph, self.setGraph), ("Example Subset", orange.ExampleTable, self.setExampleSubset)]
         self.outputs=[("Selected Examples", ExampleTable), ("Selected Graph", orange.Graph)]
         
         self.graphShowGrid = 1  # show gridlines in the graph
@@ -123,6 +123,11 @@ class OWNetwork(OWWidget):
  
         OWGUI.button(self.selectBox, self, "Select all Connected Nodes", callback=self.selectAllConnectedNodes)
         
+        self.hideBox = QVGroupBox("Hide", self.controlArea)
+        OWGUI.button(self.hideBox, self, "Hide selected", callback=self.hideSelected)
+        OWGUI.button(self.hideBox, self, "Hide all but selected", callback=self.hideAllButSelected)
+        OWGUI.button(self.hideBox, self, "Show all", callback=self.showAllNodes)
+        
         pics=pixmaps()
         
         self.cgb = QHGroupBox(self.controlArea)
@@ -151,7 +156,7 @@ class OWNetwork(OWWidget):
         #start of content (right) area
         self.box = QVBoxLayout(self.mainArea)
         self.box.addWidget(self.graph)
-        
+    
     def testRefresh(self):
         start = time()
         self.graph.replot()
@@ -279,6 +284,47 @@ class OWNetwork(OWWidget):
         print "OWNetwork/setGraph: display random..."
         self.random()
         print "done."
+    
+    def setExampleSubset(self, subset):
+        if self.graph == None:
+            return
+        
+        hiddenNodes = []
+        
+        if subset != None:
+            try:
+                expected = 1
+                for row in subset:
+                    index = int(row['index'].value)
+                    if expected != index:
+                        hiddenNodes += range(expected-1, index-1)
+                        expected = index + 1
+                    else:
+                        expected += 1
+                        
+                hiddenNodes += range(expected-1, self.graph.nVertices)
+                
+                self.graph.setHiddenNodes(hiddenNodes)
+            except:
+                print "Error. Index column does not exists."
+        
+        #print "hiddenNodes:"
+        #print hiddenNodes
+        
+    def hideSelected(self):
+        #print self.graph.selection
+        toHide = self.graph.selection + self.graph.hiddenNodes
+        self.graph.setHiddenNodes(toHide)
+        self.graph.removeSelection()
+        
+    def hideAllButSelected(self):
+        allNodes = set(range(self.graph.nVertices))
+        allButSelected = list(allNodes - set(self.graph.selection))
+        toHide = allButSelected + self.graph.hiddenNodes
+        self.graph.setHiddenNodes(toHide)
+    
+    def showAllNodes(self):
+        self.graph.setHiddenNodes([])
         
     def random(self):
         print "OWNetwork/random.."
@@ -313,7 +359,7 @@ class OWNetwork(OWWidget):
         tolerance = 5
         initTemp = 1000
         #refreshRate = 1
-        initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp)
+        initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp, self.graph.hiddenNodes)
         self.updateCanvas()
         
 #        self.visualize.fruchtermanReingold(refreshRate, initTemp)
