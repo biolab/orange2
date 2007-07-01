@@ -24,12 +24,13 @@ class NetworkVisualizer(orangeom.NetworkOptimization):
     def getVars(self):
         vars = []
         if (self.graph != None):
-            if isinstance(self.graph.items, orange.ExampleTable):
-                vars[:0] = self.graph.items.domain.variables
-            
-                metas = self.graph.items.domain.getmetas(0)
-                for i, var in metas.iteritems():
-                    vars.append(var)
+            if hasattr(self.graph, "items"):
+                if isinstance(self.graph.items, orange.ExampleTable):
+                    vars[:0] = self.graph.items.domain.variables
+                
+                    metas = self.graph.items.domain.getmetas(0)
+                    for i, var in metas.iteritems():
+                        vars.append(var)
         return vars
     
     def getData(self, i, j):

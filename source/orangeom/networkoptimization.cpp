@@ -81,16 +81,6 @@ void TNetworkOptimization::random()
 	}
 }
 
-static int julery_isqrt(int val) {
-	    int temp, g=0, b = 0x8000, bshft = 15;
-	    do {
-	        if (val >= (temp = (((g << 1) + b)<<bshft--))) {
-	           g += b;
-	           val -= temp;
-	        }
-	    } while (b >>= 1);
-	    return g;
-	}
 
 int TNetworkOptimization::fruchtermanReingold(int steps)
 {
@@ -220,28 +210,7 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 	return 0;
 }
 
-#include "externs.px"
-#include "orange_api.hpp"
 
-PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *keyw) BASED_ON (Orange, "(Graph) -> None") 
-{
-	PyObject *pygraph;
-	
-	if (PyArg_ParseTuple(args, "O:GraphOptimization", &pygraph))
-	{
-		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
-
-		if (graph->nVertices < 2)
-		  PYERROR(PyExc_AttributeError, "graph has less than two nodes", NULL);
-
-		//return WrapNewOrange(new TGraphOptimization(graph->nVertices, pos, nLinks, links), type);
-		return WrapNewOrange(new TNetworkOptimization(), type);
-	}
-	else
-	{
-		return WrapNewOrange(new TNetworkOptimization(), type);
-	}
-}
 /* ==== Free a double *vector (vec of pointers) ========================== */ 
 void TNetworkOptimization::free_Carrayptrs(double **v)  {
 
@@ -338,6 +307,32 @@ int TNetworkOptimization::setGraph(TGraphAsList *graph)
 	return 0;
 }
 
+
+#include "externs.px"
+#include "orange_api.hpp"
+
+PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *keyw) BASED_ON (Orange, "(Graph) -> None") 
+{
+  PyTRY
+	PyObject *pygraph;
+	
+	if (PyArg_ParseTuple(args, "O:GraphOptimization", &pygraph))
+	{
+		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
+
+		if (graph->nVertices < 2)
+		  PYERROR(PyExc_AttributeError, "graph has less than two nodes", NULL);
+
+		//return WrapNewOrange(new TGraphOptimization(graph->nVertices, pos, nLinks, links), type);
+		return WrapNewOrange(new TNetworkOptimization(), type);
+	}
+	else
+	{
+		return WrapNewOrange(new TNetworkOptimization(), type);
+	}
+  PyCATCH
+}
+
 int getWords(string const& s, vector<string> &container)
 {
     int n = 0;
@@ -396,8 +391,11 @@ int getWords(string const& s, vector<string> &container)
     return n;
 }
 
+
+
 PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(Graph) -> None")
 {
+  PyTRY
 	PyObject *pygraph;
 
 	if (!PyArg_ParseTuple(args, "O:NetworkOptimization.setGraph", &pygraph))
@@ -414,10 +412,12 @@ PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(ME
 
 	//cout << "done." << endl;
 	RETURN_NONE;
+  PyCATCH
 }
 
 PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, hiddenNodes) -> temperature")
 {
+  PyTRY
 	int steps;
 	double temperature = 0;
 	PyObject* hiddenNodes;
@@ -470,17 +470,21 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	graph->nLinks = graph->links[0].size();
 	
 	return Py_BuildValue("d", graph->temperature);
+  PyCATCH
 }
 
 PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> Coors")*/
 {
+  PyTRY
 	CAST_TO(TNetworkOptimization, graph);	
 	Py_INCREF(graph->coors);
 	return (PyObject *)graph->coors;  
+  PyCATCH
 }
 
 PyObject *NetworkOptimization_getHubs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(n) -> HubList")
 {
+  PyTRY
 	int n;
 
 	if (!PyArg_ParseTuple(args, "n:NetworkOptimization.getHubs", &n))
@@ -525,10 +529,12 @@ PyObject *NetworkOptimization_getHubs(PyObject *self, PyObject *args) PYARGS(MET
 
 	delete [] vertexPower;
 	return hubList;
+  PyCATCH
 }
 
 PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x, y) -> Ndx")
 {
+  PyTRY
 	double x;
 	double y;
 
@@ -554,21 +560,25 @@ PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYAR
 	}
 
 	return Py_BuildValue("id", ndx, sqrt(min));
+  PyCATCH
 }
 
 PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
 {
+  PyTRY
 	CAST_TO(TNetworkOptimization, graph);
 
 	graph->random();
 	
 	RETURN_NONE;
+  PyCATCH
 }
 
 WRAPPER(ExampleTable)
 
 PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Graph")
 {
+  PyTRY
 	TGraph *graph;
 	PGraph wgraph;
 	TDomain *domain = new TDomain();
@@ -651,12 +661,12 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 		domain->addVariable(new TStringVariable("bc"));
 		domain->addVariable(new TStringVariable("bw"));
 		table = new TExampleTable(domain);
-  		wtable = table;
+  	wtable = table;
 
 		// read vertex descriptions
 		while (!file.eof())
 		{
-			getline (file, line);
+			getline(file, line);
 			vector<string> words;
 			int n = getWords(line, words);
 			//cout << line << "  -  " << n << endl;
@@ -678,13 +688,13 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 
 				//cout << "index: " << index << " n: " << n << endl;
 				(*example)[0] = TValue(index);
-
+				
 				if (n > 1)
 				{
 					string label = words[1];
 					//cout << "label: " << label << endl;
 					(*example)[1] = TValue(new TStringValue(label), STRINGVAR);
-
+					
 					int i = 2;
 					char *xyz = "  xyz";
 					// read coordinates
@@ -693,7 +703,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						float coor = -1;	
 						istringstream strCoor(words[i]);
 						strCoor >> coor;
-						
+
 						if ((coor < 0) || (coor > 1))
 							break;
 						
@@ -745,8 +755,10 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 						}
 						i++;
 					}
-					table->push_back(example);
+					
 				}
+				table->push_back(example);
+				//cout << "push back" <<endl;
 			}
 		}
 		// read arcs
@@ -842,6 +854,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 	//graph->setProperty("items", wtable);
 
 	return Py_BuildValue("NN", WrapOrange(wgraph), WrapOrange(wtable));
+  PyCATCH
 }
 
 #include "networkoptimization.px"

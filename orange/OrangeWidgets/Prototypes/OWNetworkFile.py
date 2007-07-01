@@ -203,6 +203,7 @@ class OWNetworkFile(OWWidget):
 #            return None
 
         graph, table = readNetwork(fn)
+        #print "table: " + str(len(table))
         graph.setattr("items", table)
         #print "prebral"
         return graph
