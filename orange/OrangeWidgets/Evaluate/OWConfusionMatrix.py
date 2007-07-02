@@ -2,7 +2,7 @@
 <name>Confusion Matrix</name>
 <description>Shows a confusion matrix.</description>
 <contact>Janez Demsar</contact>
-<icon>ConfusionMatrx.png</icon>
+<icon>ConfusionMatrix.png</icon>
 <priority>1001</priority>
 """
 
