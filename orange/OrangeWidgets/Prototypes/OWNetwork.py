@@ -1,7 +1,7 @@
 """
 <name>Network</name>
 <description>Network Widget visualizes graphs.</description>
-<icon>icons/Outlier.png</icon>
+<icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>2040</priority>
 """
