@@ -5,8 +5,8 @@
 <body>
 
 <h1>orngMySQL: Orange's Interface to MySQL</h1>
-<index name="modules+database access">
-<index name="SQL">
+<index name="modules+database access"/>
+<index name="SQL"/>
 
 <p>Module orngMySQL is Orange's gateway to <a
 href="http://www.mysql.com/">MySQL DBMS</a>. It sits on a top of a <a
@@ -20,55 +20,55 @@ with the data base and provides means for communication.</p>
 
 <h2>Connect</h2>
 
-<p><code><INDEX name="classes/Connect (in orngMySQL)">Connect</code> establishes a connection with a data base and
+<p><code><index name="classes/Connect (in orngMySQL)"/>Connect</code> establishes a connection with a data base and
 provides for a number of methods that are used for interchange of the
 data between Orange and MySQL.</p>
 
-<P class=section>Attributes</P>
+<p class=section>Attributes</p>
 
-<DL class=attributes>
-<DT>host</SPAN></DT>
-<DD>Computer hosting the MySQL DBMS.</DD>
+<dl class=attributes>
+<dt>host</span></dt>
+<dd>Computer hosting the MySQL DBMS.</dd>
 
-<DT>user</SPAN></DT>
-<DD>User name for MySQL account.</DD>
+<dt>user</span></dt>
+<dd>User name for MySQL account.</dd>
 
-<DT>passwd</SPAN></DT>
-<DD>Password that provides access to the account.</DD>
+<dt>passwd</span></dt>
+<dd>Password that provides access to the account.</dd>
 
-<DT>db</DT>
-<DD>Name of the data base to establish a connection with.</DD>
-</DL>
+<dt>db</dt>
+<dd>Name of the data base to establish a connection with.</dd>
+</dl>
 
 
-<P class=section>Methods</P>
-<DL class=attributes>
-<DT>query(statement [,use=None])</DT>
-<DD>Executes SQL select statement <code>statement</code> and returns
+<p class=section>Methods</p>
+<dl class=attributes>
+<dt>query(statement [,use=None])</dt>
+<dd>Executes SQL select statement <code>statement</code> and returns
      the data in the form of Orange's example table
      (<code>ExampleTable</code>). If the return data has to conform to
      some existing data domain, this has to be passed using
-     <code>use</code> argument.</DD>
+     <code>use</code> argument.</dd>
 
-<DT>load(table [use])</DT>
-<DD>Returns a complete data set from the MySQL table <code>table</code>
+<dt>load(table [use])</dt>
+<dd>Returns a complete data set from the MySQL table <code>table</code>
      in the form of Orange's example table. The same can be obtained
      by calling <code>query</code> with SELECT * FROM statement, which
      is in fact exactly what this method does. Like in
      <code>query</code>, the domain of Orange's table to be used with
-     returned data set can be passed using the argument <code>use</code>.</DD>
+     returned data set can be passed using the argument <code>use</code>.</dd>
 
-<DT>showTables()</DT>
-<DD>Lists the tables in the data base.</DD>
+<dt>showTables()</dt>
+<dd>Lists the tables in the data base.</dd>
 
-<DT>write(table, data [, overwrite])</DT>
-<DD>Stores Orange data set <code>data</code> to the MySQL table
+<dt>write(table, data [, overwrite])</dt>
+<dd>Stores Orange data set <code>data</code> to the MySQL table
      <code>table</code>. If the table already exists, throws
-     exception. To overwrite, use <code>overwrite=0</code>.</DD>
-<DT></DT>
-<DD></DD>
+     exception. To overwrite, use <code>overwrite=0</code>.</dd>
+<dt></dt>
+<dd></dd>
 
-</DL>
+</dl>
 
 <h2>Attribute Names and Types</h2>
 
