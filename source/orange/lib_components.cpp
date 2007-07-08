@@ -4373,22 +4373,21 @@ PyObject *Graph_getDegreeDistribution(PyObject *self, PyObject *args, PyObject *
 		CAST_TO(TGraph, graph);
 
 		PyObject* degrees = PyDict_New();
+		PyObject *nsize, *pydegree;
 
 		int v;
 		for (v = 0; v < graph->nVertices; v++)
 		{
 			vector<int> neighbours;
 			graph->getNeighbours(v, neighbours);
-			//cout << 
-			if (PyDict_Contains(degrees, PyInt_FromLong(neighbours.size())) == 1)
-			{
-				int degree = PyInt_AsLong(PyDict_GetItem(degrees, PyInt_FromLong(neighbours.size())));
-				PyDict_SetItem(degrees, PyInt_FromLong(neighbours.size()), PyInt_FromLong(degree + 1));
-			}
-			else
-			{
-				PyDict_SetItem(degrees, PyInt_FromLong(neighbours.size()), PyInt_FromLong(1));
-			}
+			nsize = PyInt_FromLong(neighbours.size());
+			
+			pydegree = PyDict_GetItem(degrees, nsize); // returns borrowed reference!
+			int newdegree = pydegree ? PyInt_AsLong(pydegree) + 1 : 1;
+			
+			pydegree = PyInt_FromLong(newdegree);
+      PyDict_SetItem(degrees, nsize, pydegree);
+      Py_DECREF(pydegree);
 		}
 
 		return degrees;
