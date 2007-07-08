@@ -1196,7 +1196,7 @@ PyObject *__pickleLoaderSVMClassifierSparse(PyObject *, PyObject *args) PYARGS(M
     if (!model)
         raiseError("Error building LibSVM model");
     model->param.learner=NULL;
-    PSVMClassifier svm=mlnew TSVMClassifierSparse(var, examples, model, NULL, useNonMeta);
+    PSVMClassifier svm=mlnew TSVMClassifierSparse(var, examples, model, NULL, useNonMeta != 0);
     svm->kernelFunc=kernel;
     svm->supportVectors=supportVectors;
     return WrapOrange(svm);
