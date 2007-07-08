@@ -495,7 +495,7 @@ class updateOrangeDlg(QMainWindow):
 
     # show percent of finished download
     def updateDownloadStatus(self, blk_cnt, blk_size, tot_size):
-        self.statusBar.message("Downloaded %.1f%%" % (100*min(tot_size, blk_cnt*blk_size) / tot_size))
+        self.statusBar.message("Downloaded %.1f%%" % (100*min(tot_size, blk_cnt*blk_size) / (tot_size or 1)))
         
     def computeFileMd(self, fname):
         f = open(fname, "rb")
