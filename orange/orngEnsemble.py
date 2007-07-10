@@ -202,7 +202,7 @@ class RandomForestLearner(orange.Learner):
             classifiers.append(self.learner(data))
             if self.callback: self.callback((i+1.)/self.trees)
 
-        return RandomForestClassifier(classifiers = classifiers, name=self.name, domain=examples.domain)
+        return RandomForestClassifier(classifiers = classifiers, name=self.name, domain=examples.domain, classVar=examples.domain.classVar)
         
 class RandomForestClassifier:
     def __init__(self, **kwds):
