@@ -204,7 +204,7 @@ class RandomForestLearner(orange.Learner):
 
         return RandomForestClassifier(classifiers = classifiers, name=self.name, domain=examples.domain, classVar=examples.domain.classVar)
         
-class RandomForestClassifier:
+class RandomForestClassifier(orange.Classifier):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
