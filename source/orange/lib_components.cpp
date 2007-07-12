@@ -4613,6 +4613,11 @@ PyObject *Graph_getEdges(PyObject *self, PyObject *args, PyObject *) PYARGS(METH
 	PyCATCH
 }
 
+int Graph_len(PyObject *self)
+{
+  return SELF_AS(TGraph).nVertices;
+}
+
 PyObject *GraphAsMatrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
 {
 	PyTRY
