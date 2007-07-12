@@ -283,7 +283,7 @@ class OWBaseWidget(QDialog):
 
     def getdeepattr(self, attr, **argkw):
         try:
-            return reduce(lambda o, n: getattr(o, n, None),  attr.split("."), self)
+            return reduce(lambda o, n: getattr(o, n),  attr.split("."), self)
         except:
             if argkw.has_key("default"):
                 return argkw[default]
