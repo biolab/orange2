@@ -18,7 +18,8 @@ NOTHING = 0
 ZOOMING = 1
 SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
-
+PANNING = 4
+SELECT = 5
 
 class OWGraph(QwtPlot):
     def __init__(self, parent = None, name = "None"):
@@ -83,6 +84,7 @@ class OWGraph(QwtPlot):
         self.canvas().setMouseTracking(1)
         self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.onMouseMoved)
         self.zoomStack = []
+        self.panPosition = None
         self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
         self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
         self.optimizedDrawing = 1
@@ -418,6 +420,13 @@ class OWGraph(QwtPlot):
         self.state = SELECT_POLYGON
         if self.tempSelectionCurve: self.removeLastSelection()
 
+    def activatePanning(self):
+        self.state = PANNING
+        if self.tempSelectionCurve: self.removeLastSelection()
+        
+    def activateSelection(self):
+        self.state = SELECT
+
     def removeDrawingCurves(self, removeLegendItems = 1):
         for key in self.curveKeys():
             if isinstance(self.curve(key), SelectionCurve):
@@ -481,11 +490,23 @@ class OWGraph(QwtPlot):
         self.xpos = e.x()
         self.ypos = e.y()
 
+        
+        xs = self.axisScale(QwtPlot.xBottom)
+        x = self.invTransform(QwtPlot.xBottom, e.x())
+        print "omp", xs.lBound(), xs.hBound(), x
+
         # ####
         # ZOOM
         if e.button() == Qt.LeftButton and self.state == ZOOMING:
             self.tempSelectionCurve = SelectionCurve(self, pen = Qt.DashLine)
             self.zoomKey = self.insertCurve(self.tempSelectionCurve)
+
+        # ####
+        # PANNING
+        if e.button() == Qt.LeftButton and self.state == PANNING:
+            self.panPosition = e.globalX(), e.globalY()
+            self.paniniX = self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound()
+            self.paniniY = self.axisScale(QwtPlot.yLeft).lBound(), self.axisScale(QwtPlot.yLeft).hBound()
 
         # ####
         # SELECT RECTANGLE
@@ -539,6 +560,13 @@ class OWGraph(QwtPlot):
             self.tempSelectionCurve.replaceLastPoint(xFloat,yFloat)
             self.repaint()
 
+        elif self.state == PANNING and self.panPosition:
+            dx = self.invTransform(QwtPlot.xBottom, e.globalX()) - self.invTransform(QwtPlot.xBottom, self.panPosition[0])
+            dy = self.invTransform(QwtPlot.yLeft, e.globalY()) - self.invTransform(QwtPlot.yLeft, self.panPosition[1])
+            self.setAxisScale(QwtPlot.xBottom, self.paniniX[0] - dx, self.paniniX[1] - dx)
+            self.setAxisScale(QwtPlot.yLeft, self.paniniY[0] - dy, self.paniniY[1] - dy)
+            self.replot()
+            
         self.event(e)
 
 
@@ -547,6 +575,7 @@ class OWGraph(QwtPlot):
         self.mouseCurrentlyPressed = 0
         self.mouseCurrentButton = 0
         staticClick = 0
+        self.panPosition = None
 
         if e.button() != Qt.RightButton:
             if self.xpos == e.x() and self.ypos == e.y():
@@ -606,6 +635,26 @@ class OWGraph(QwtPlot):
         #self.replot()
         self.event(e)
 
+    def wheelEvent(self, e):
+        d = -e.delta()/120.
+        ro, rn = .9**d, 1-.9**d
+        
+        pos = self.mapFromGlobal(e.pos())
+        ex, ey = pos.x(), pos.y()
+
+        xs = self.axisScale(QwtPlot.xBottom)
+        x = self.invTransform(QwtPlot.xBottom, ex)
+#        print xs.lBound(), xs.hBound(), x
+        self.setAxisScale(QwtPlot.xBottom, ro*xs.lBound() + rn*x, ro*xs.hBound() + rn*x)
+        print xs.lBound(), xs.hBound() + rn*x, ro*xs.lBound() + rn*x, ro*xs.hBound() + rn*x
+        
+        ys = self.axisScale(QwtPlot.yLeft)
+        y = self.invTransform(QwtPlot.yLeft, ey)
+        self.setAxisScale(QwtPlot.yLeft, ro*ys.lBound() + rn*y, ro*ys.hBound() + rn*y)
+        
+        self.replot()
+
+        
     # does a point (x,y) lie inside one of the selection rectangles (polygons)
     def isPointSelected(self, x,y):
         for curveKey in self.selectionCurveKeyList:
