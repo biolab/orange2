@@ -6,7 +6,7 @@ NOTHING = 0
 ZOOMING = 1
 SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
-MOVE_SELECTION = 4
+MOVE_SELECTION = 100
 
 import copy
 
@@ -16,8 +16,9 @@ from orngScaleScatterPlotData import *
 from OWGraphTools import UnconnectedLinesCurve
 
 class OWGraphDrawerCanvas(OWGraph):
-    def __init__(self, graphDrawWidget, parent = None, name = "None"):
+    def __init__(self, master, parent = None, name = "None"):
         OWGraph.__init__(self, parent, name)
+        self.master = master
         self.parent = parent
         self.labelText = []
         self.tooltipText = []
@@ -25,6 +26,7 @@ class OWGraphDrawerCanvas(OWGraph):
         self.edges = {}            # slovar povezav oblike  curveKey: edge_objekt
         self.indexPairs = {}       # slovar oblike CurveKey: orngIndex   (za vozlisca)
         self.selection = []        # seznam izbranih vozlisc (njihovih indeksov)
+        self.tooltipped = []       # seznam oznacenih vozlisc
         self.selectionStyles = {}  # slovar stilov izbranih vozlisc
         self.colorIndex = -1
         self.visualizer = None
@@ -38,16 +40,23 @@ class OWGraphDrawerCanvas(OWGraph):
         self.enableYLaxis(0)
         self.state = NOTHING  #default je rocno premikanje
         self.hiddenNodes = []
+        self.markedNodes = []
+        
+        self.tooltipNeighbours = 2
+        self.selectionNeighbours = 2
+        self.freezeNeighbours = False
+
         
     def setHiddenNodes(self, nodes):
         self.hiddenNodes = nodes
         self.updateData()
         self.updateCanvas()
         
-    def addSelection(self, ndx):
+       
+    def addSelection(self, ndx, replot = True):
         #print("add selection")
-        if isinstance(ndx, list):
-            change = False
+        change = False
+        if hasattr(ndx, "__iter__"):
             for v in ndx:
                 if not v in self.selection and not v in self.hiddenNodes:
                     (key, neighbours) = self.vertices[v]
@@ -56,9 +65,6 @@ class OWGraphDrawerCanvas(OWGraph):
                     self.setCurveSymbol(key, newSymbol)
                     self.selection.append(v);
                     change = True
-            if change:
-                self.replot()
-                return True
         else:
             if not ndx in self.selection and not ndx in self.hiddenNodes:
                 (key, neighbours) = self.vertices[ndx]
@@ -67,55 +73,51 @@ class OWGraphDrawerCanvas(OWGraph):
                 self.setCurveSymbol(key, newSymbol)
                 self.selection.append(ndx);
                 #self.visualizer.filter[ndx] = True
-                self.replot()
-                return True
-        
-        return False
+                change = True
 
-            
-    def removeSelection(self):
-        #print("remove selection")
-        for v in self.selection:
+        if change:
+            if replot:
+                self.replot()
+            self.markSelectionNeighbours()
+        
+        return change
+
+        
+    def removeVertex(self, v):
+        if v in self.selection:
             (key, neighbours) = self.vertices[v]
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(QColor(self.selectionStyles[v])), QSize(6, 6))
             self.setCurveSymbol(key, newSymbol)
-            
-        self.selection = []
-        #self.visualizer.unselectAll()
-        self.selectionStyles = {}
-        self.replot()
+            selection.remove(v)
+            del self.selectionStyles[v]
+            return True
+        return False
         
-    def generateVertexPower(self):
-        # init vertexPower
-        for i in range(self.nVertices):
-            self.vertexDegree.append((i,0))
+    def removeSelection(self, ndx = None, replot = True):
+        #print("remove selection")
+        change = False
+        if ndx is None:
+            for v in self.selection:
+                (key, neighbours) = self.vertices[v]
+                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(QColor(self.selectionStyles[v])), QSize(6, 6))
+                self.setCurveSymbol(key, newSymbol)
+                self.selection = []
+                #self.visualizer.unselectAll()
+                self.selectionStyles = {}
+                change = True
             
-        # calculate vertex power
-        for e in range(self.nEdges):
-            (key,i,j) = self.edges[e]
-            (v_i,power_i) = self.vertexDegree[i]
-            (v_j,power_j) = self.vertexDegree[j]
-            
-            self.vertexDegree[i] = (v_i, power_i + 1)
-            self.vertexDegree[j] = (v_j, power_j + 1)
+        elif isinstance(ndx, list):
+            for v in ndx:
+                change = self.removeVertex(v) or change
                     
-        # sort ascending by power
-        for i in range(self.nVertices - 1):
-            for j in range(i, self.nVertices):
-                (v_i,power_i) = self.vertexDegree[i]
-                (v_j,power_j) = self.vertexDegree[j]
-                
-                if power_j > power_i:
-                    self.vertexDegree[i] = (v_j,power_j)
-                    self.vertexDegree[j] = (v_i,power_i)
+        else:
+            change = self.removeVertex(ndx)
         
-    def selectHubs(self, no):
-        #print "get hubs..."
-        hubs = self.visualizer.getHubs(no)
-        #print hubs
-        #print "start selecting..."
-        self.addSelection(hubs)
-        #print "done."
+        if change:
+            if replot:
+                self.replot()
+            self.markSelectionNeighbours()
+        
             
     def selectConnectedNodes(self, distance):
         if distance <= 0:
@@ -234,6 +236,16 @@ class OWGraphDrawerCanvas(OWGraph):
 #                #self.setCurveData(key, [currEdgeObj.x(0), newX], [currEdgeObj.y(0), newY])
         self.setCurveData(self.edgesKey, edgesCurve.xData, edgesCurve.yData)
     
+    def getNeighboursUpTo(self, ndx, dist):
+        newNeighbours = neighbours = set([ndx])
+        for d in range(dist):
+            tNewNeighbours = set()
+            for v in newNeighbours:
+                tNewNeighbours |= set(self.visualizer.graph.getNeighbours(v))
+            newNeighbours = tNewNeighbours - neighbours
+            neighbours |= newNeighbours
+        return neighbours
+     
     def onMouseMoved(self, event):
         if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
             if len(self.selection) > 0:
@@ -279,9 +291,48 @@ class OWGraphDrawerCanvas(OWGraph):
                 self.GMmouseStartEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
                 self.GMmouseStartEvent.setY(event.pos().y())
                 self.replot()
-
         else:
             OWGraph.onMouseMoved(self, event)
+
+        if not self.freezeNeighbours and self.tooltipNeighbours:
+            px = self.invTransform(2, event.x())
+            py = self.invTransform(0, event.y())   
+            ndx, mind = self.visualizer.closestVertex(px, py)
+            if ndx != -1 and mind < 50:
+                self.setMarkedNodes(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
+            else:
+                self.setMarkedNodes([])
+        
+        
+    def markSelectionNeighbours(self):
+        if not self.freezeNeighbours and self.selectionNeighbours:
+            toMark = set()
+            for ndx in self.selection:
+                toMark |= self.getNeighboursUpTo(ndx, self.selectionNeighbours)
+            toMark -= set(self.selection)
+            self.setMarkedNodes(toMark)
+        
+    def setMarkedNodes(self, marked):
+        for m in self.markedNodes:
+            (key, neighbours) = self.vertices[m]
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[m])), QPen(QColor(self.selectionStyles[m])), QSize(6, 6))
+            self.setCurveSymbol(key, newSymbol)
+
+        self.markedNodes = marked
+        
+        for m in marked:
+            (key, neighbours) = self.vertices[m]
+            self.selectionStyles[m] = self.curve(key).symbol().brush().color().name()
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[m])), QPen(Qt.green, 3), QSize(10, 10))
+            self.setCurveSymbol(key, newSymbol)
+            self.tooltipped.append(m);
+            
+        self.master.nMarked = len(self.markedNodes)
+        self.replot()
+        
+
+    def activateMoveSelection(self):
+        self.state = MOVE_SELECTION
 
 
     def onMousePressed(self, event):
@@ -330,7 +381,8 @@ class OWGraphDrawerCanvas(OWGraph):
             vObj = self.curve(vertexKey)
             
             if self.isPointSelected(vObj.x(0), vObj.y(0)):
-                self.addSelection(self.indexPairs[vertexKey])
+                self.addSelection(self.indexPairs[vertexKey], False)
+        self.replot()
                 
     def selectVertex(self, pos):
         print "select vertex"
@@ -346,10 +398,11 @@ class OWGraphDrawerCanvas(OWGraph):
         ndx, min = self.visualizer.closestVertex(px, py)
         #print "ndx: " + str(ndx) + " min: " + str(min)
         if min < 50 and ndx != -1:
-            self.addSelection(ndx)
+            self.addSelection(ndx) # do not replot if we replot later anyway
         else:
             self.removeSelection()
             
+                
     def dist(self, s1, s2):
         return math.sqrt((s1[0]-s2[0])**2 + (s1[1]-s2[1])**2)
     
@@ -462,11 +515,9 @@ class OWGraphDrawerCanvas(OWGraph):
                 x1 = self.visualizer.coors[v][0]
                 y1 = self.visualizer.coors[v][1]
                 lbl = ""
-                for ndx in self.labelText:
-                    values = self.visualizer.graph.items[v]
-                    lbl = lbl + str(values[ndx]) + " "
-        
-                if lbl != '':
+                values = self.visualizer.graph.items[v]
+                lbl = " ".join([str(values[ndx]) for ndx in self.labelText])
+                if lbl:
                     mkey = self.insertMarker(lbl)
                     self.marker(mkey).setXValue(float(x1))
                     self.marker(mkey).setYValue(float(y1))
