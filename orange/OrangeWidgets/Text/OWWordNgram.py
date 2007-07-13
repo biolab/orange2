@@ -1,9 +1,9 @@
 """
-<name>Word Ngrams</name>
+<name>Word n-Grams</name>
 <description>Computes the word ngram representation.</description>
 <icon>icons/WordNgram.png</icon>
 <contact>Sasa Petrovic</contact> 
-<priority>1400</priority>
+<priority>1410</priority>
 """
 
 from OWWidget import *
