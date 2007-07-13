@@ -1,16 +1,16 @@
 """
-<name>Feature selection</name>
-<description>Removes features from the data according to some criteria.</description>
-<icon>icons/FeatureSelection.png</icon>
+<name>Feature Selection</name>
+<description>Removes features from the data according to given criteria.</description>
+<icon>icons/TextFeatureSelection.png</icon>
 <contact>Sasa Petrovic</contact> 
-<priority>2100</priority>
+<priority>1500</priority>
 """
 
 from OWWidget import *
 from copy import deepcopy
 import OWGUI, orngText, warnings
 
-class OWFeatureSelection(OWWidget):    
+class OWTextFeatureSelection(OWWidget):    
 
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"FeatureSelection")
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     t = orngText.loadFromXML(r'c:\test\orange\msnbc.xml')
     t2 = orngText.extractLetterNGram(t)
     #print t2.domain.getmetas().values()
-    ow = OWFeatureSelection()
+    ow = OWTextFeatureSelection()
     a.setMainWidget(ow)
     ow.show()
     ow.dataset(t2)
