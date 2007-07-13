@@ -358,9 +358,17 @@ class OWCorrAnalysis(OWWidget):
                 for ex in data:
                     if ex['category'].native() not in self.catColors.keys():
                         self.catColors[ex['category'].native()] = colors[col]
-                        col += 1
+                        col = (col + 1) % len(colors)
             except:
                 self.tipsR = [ex.name for ex in data]
+                self.rowCategories = [(ex.name, ex[-1].native()) for ex in data]
+                self.catColors = {}
+                col = 0
+                colors = [0, 2, 3, 5, 6, 12]
+                for ex in data:
+                    if ex['category'].native() not in self.catColors.keys():
+                        self.catColors[ex['category'].native()] = colors[col]
+                        col = (col + 1) % len(colors)
             self.tipsC = [a.name for a in data.domain.getmetas().values()]
         else:            
             ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
@@ -369,6 +377,9 @@ class OWCorrAnalysis(OWWidget):
                 self.CA = orngCA.CA(caList)
             self.tipsR = [s for s, v in ca.outerDistribution.items()]
             self.tipsC = [s for s, v in ca.innerDistribution.items()]
+            self.rowCategories = [(ex[1].native(), "Row points") for ex in self.data]
+            self.rowCategories = list(dict(self.rowCategories).items())
+            self.catColors = {"Row points": 0}
             del ca
                
         self.rowSlider.setMinValue(1)
