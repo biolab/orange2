@@ -304,13 +304,13 @@ def lineEdit(widget, master, value,
     if validator:
         wa.setValidator(validator)
 
-    wa.cback = connectControl(wa, master, value, callback and callbackOnType, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = value and valueType)[1]
+    wa.cback = connectControl(wa, master, value, callbackOnType and callback, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = value and valueType)[1]
 
     wa.box = b
     return wa
 
 
-def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None, toggleButton = False, value = ""):
+def button(widget, master, label, callback = None, disabled=0, tooltip=None, debuggingEnabled = 1, width = None, toggleButton = False,value = ""):
     btn = QPushButton(label, widget)
     if width:
         btn.setFixedWidth(width)
@@ -321,8 +321,13 @@ def button(widget, master, label, callback = None, disabled=0, tooltip=None, deb
     if toggleButton:
         btn.setToggleButton(True)
 
-    if callback:
-        master.connect(btn, SIGNAL("clicked()"), callback)
+
+    if value:
+        cfront, cback, cfunc = connectControl(btn, master, value, None, "toggled(bool)", CallFront_toggleButton(btn),
+                                              cfunc = callback and FunctionCallback(master, callback, widget=btn))
+    else:
+        if callback:
+            master.connect(btn, SIGNAL("clicked()"), callback)
 
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("button", btn, callback)]
@@ -369,10 +374,14 @@ def getAttributeIcons():
     return attributeIconDict
 
 
-def listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single, debuggingEnabled = 1):
+def listBox(widget, master, value, labels, box = None, tooltip = None, callback = None, selectionMode = QListBox.Single, debuggingEnabled = 1, addSpace = False):
     bg = box and QHButtonGroup(box, widget) or widget
+
     lb = QListBox(bg)
     lb.setSelectionMode(selectionMode)
+
+    if addSpace:
+        separator(widget)
 
     clist = master.getdeepattr(value)
     if type(clist) >= ControlledList:
@@ -552,18 +561,107 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     return slider
 
 
-def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = unicode, control2attributeDict = {}, emptyString = None, debuggingEnabled = 1):
+
+class SearchLineEdit(QLineEdit):
+    def __init__(self, t, searcher):
+        QLineEdit.__init__(self, t)
+        self.searcher = searcher
+        
+    def keyPressEvent(self, e):
+        k = e.key()
+        if k == Qt.Key_Down:
+            curItem = self.searcher.lb.currentItem()
+            if curItem+1 < self.searcher.lb.count():
+                self.searcher.lb.setCurrentItem(curItem+1)
+        elif k == Qt.Key_Up:
+            curItem = self.searcher.lb.currentItem()
+            if curItem:
+                self.searcher.lb.setCurrentItem(curItem-1)
+        elif k == Qt.Key_Escape:
+            self.searcher.window.hide()
+        else:
+            return QLineEdit.keyPressEvent(self, e)
+        
+class Searcher:
+    def __init__(self, control, master):
+        self.control = control
+        self.master = master
+        
+    def __call__(self):
+        self.window = t = QFrame(self.master, "", QStyle.WStyle_Dialog + QStyle.WStyle_Tool + QStyle.WStyle_Customize + QStyle.WStyle_NormalBorder)
+        la = QVBoxLayout(t).setAutoAdd(1)
+        gs = self.master.mapToGlobal(QPoint(0, 0))
+        gl = self.control.mapToGlobal(QPoint(0, 0))
+        t.move(gl.x()-gs.x(), gl.y()-gs.y())
+        self.allItems = [str(self.control.text(i)) for i in range(self.control.count())]
+        le = SearchLineEdit(t, self)
+        self.lb = QListBox(t)
+        for i in self.allItems:
+            self.lb.insertItem(i)
+        t.setFixedSize(self.control.width(), 200)
+        t.show()
+        le.setFocus()
+        
+        self.master.connect(le, SIGNAL("textChanged(const QString &)"), self.textChanged)
+        self.master.connect(le, SIGNAL("returnPressed()"), self.returnPressed)
+        self.master.connect(self.lb, SIGNAL("clicked(QListBoxItem *)"), self.mouseClicked)
+        
+    def textChanged(self, s):
+        s = str(s)
+        self.lb.clear()
+        for i in self.allItems:
+            if s.lower() in i.lower():
+                self.lb.insertItem(i)
+               
+    def returnPressed(self): 
+        if self.lb.count():
+            self.conclude(self.lb.text(max(0, self.lb.currentItem())))
+        else:
+            self.window.hide()
+       
+    def mouseClicked(self, item):
+        self.conclude(item.text())
+       
+    def conclude(self, valueQStr):
+        value = str(valueQStr)
+        index = self.allItems.index(value)
+        self.control.setCurrentItem(index)
+        if self.control.cback:
+            if self.control.sendSelectedValue:
+                self.control.cback(value)
+            else:
+                self.control.cback(index)
+        if self.control.cfunc:
+            self.control.cfunc()
+                
+        self.window.hide()
+
+
+def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = unicode, control2attributeDict = {}, emptyString = None, debuggingEnabled = 1, searchAttr = False, addSpace = False):
+    horizontalBox = False
     if box or label:
         hb = widgetBox(widget, box, orientation)
         widgetLabel(hb, label, labelWidth)
+        horizontalBox = orientation == 'horizontal' or not orientation
     else:
         hb = widget
 
     if tooltip:
         QToolTip.add(hb, tooltip)
 
-    combo = QComboBox(hb)
+    if searchAttr and not horizontalBox:
+        hb2 = widgetBox(hb, "", 0)
+    else:
+        hb2 = hb
+    combo = QComboBox(hb2)
+    if searchAttr:
+        searchButton = enterButton(hb2, combo.sizeHint().height(), False)
+        master.connect(searchButton, SIGNAL("clicked()"), Searcher(combo, master))
+
     combo.box = hb
+
+    if addSpace:
+        separator(widget)
 
     if items:
         for i in items:
@@ -574,15 +672,17 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
         else:
             combo.setDisabled(True)
 
+    combo.sendSelectedValue = sendSelectedValue
     if sendSelectedValue:
         control2attributeDict = dict(control2attributeDict)
         if emptyString:
             control2attributeDict[emptyString] = ""
-        connectControl(combo, master, value, callback, "activated( const QString & )",
+        combo.cfront, combo.cback, combo.cfunc = connectControl(combo, master, value, callback, "activated( const QString & )",
                        CallFront_comboBox(combo, valueType, control2attributeDict),
                        ValueCallbackCombo(master, value, valueType, control2attributeDict))
     else:
-        connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo, None, control2attributeDict))
+        combo.cfront, combo.cback, combo.cfunc = connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo, None, control2attributeDict))
+        
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("comboBox", combo, value, sendSelectedValue, valueType, callback)]
     return combo
@@ -993,10 +1093,10 @@ class CallFront_checkBox(ControlledCallFront):
             self.control.setChecked(value)
 
 
-class CallFront_checkBox(ControlledCallFront):
+class CallFront_toggleButton(ControlledCallFront):
     def action(self, value):
         if value != None:
-            self.control.setChecked(value)
+            self.control.setOn(value)
 
 
 class CallFront_comboBox(ControlledCallFront):
