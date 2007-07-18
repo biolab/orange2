@@ -18,7 +18,7 @@ class InputSignal:
         self.type = signalType
         self.handler = handler
 
-        if type(parameters) == str: parameters = eval(parameters)   # in registry, parameters are stored as strings
+        if isinstance(parameters, str): parameters = eval(parameters)   # in registry, parameters are stored as strings
         # if we have the old definition of parameters then transform them
         if parameters in [0,1]:
             self.single = parameters
@@ -35,7 +35,7 @@ class OutputSignal:
         self.name = name
         self.type = signalType
 
-        if type(parameters) == str: parameters = eval(parameters)
+        if isinstance(parameters, str): parameters = eval(parameters)
         if parameters in [0,1]: # old definition of parameters
             self.default = not parameters
             return
@@ -88,6 +88,7 @@ class SignalManager:
             sys.stderr = self.stderr
             #sys.stdout = self.stdout
             self.debugFile.close()
+            self.debugFile = None
         if debugMode:
             self.debugFile = open(debugFileName, "wt", 0)
             sys.excepthook = self.exceptionHandler
@@ -101,6 +102,7 @@ class SignalManager:
     def closeDebugFile(self):
         if self.debugFile:
             self.debugFile.close()
+            self.debugFile = None
         sys.stderr = self.stderr
         #sys.stdout = self.stdout
 
@@ -118,10 +120,10 @@ class SignalManager:
         if self.verbosity < eventVerbosity: return
 
         self.debugFile.write(strValue)
-        if type(object) == orange.ExampleTable:
+        if isinstance(object, orange.ExampleTable):
             name = " " + getattr(object, "name", "")
             self.debugFile.write(". Token type = ExampleTable" + name + ". len = " + str(len(object)))
-        elif type(object) == list:
+        elif isinstance(object, list):
             self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object[:10])))
         elif object != None:
             self.debugFile.write(". Token type = %s. Value = %s" % (str(type(object)), str(object)[:100]))
@@ -130,6 +132,7 @@ class SignalManager:
 
 
     def exceptionHandler(self, type, value, tracebackInfo):
+        if not self.debugFile: return
         import traceback, os
         list = traceback.extract_tb(tracebackInfo, 10)
         space = "\t"

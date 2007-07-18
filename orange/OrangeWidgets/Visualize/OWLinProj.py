@@ -478,6 +478,11 @@ class OWLinProj(OWVisWidget):
         box.adjustSize()
         return c
 
+    def saveSettings(self):
+        OWWidget.saveSettings(self)
+        self.vizrank.saveSettings()
+        self.freeVizDlg.saveSettings()
+
     def destroy(self, dw = 1, dsw = 1):
 ##        self.clusterDlg.hide()
         self.vizrank.hide()

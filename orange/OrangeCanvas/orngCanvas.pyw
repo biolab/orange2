@@ -867,7 +867,6 @@ class OrangeCanvasDlg(QMainWindow):
 
     def keyPressEvent(self, e):
         QMainWindow.keyPressEvent(self,e)
-        print "state", e.state(), Qt.ControlButton
         if e.state() & Qt.ControlButton != 0:
             self.ctrlPressed = 1
 

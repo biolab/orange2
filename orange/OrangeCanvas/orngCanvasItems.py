@@ -120,69 +120,6 @@ class CanvasLine(QCanvasLine):
         painter.setPen(QPen(self.canvasDlg.lineColor, 5 , lineStyle))
         painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
 
-
-    """
-    # draw the line
-    def drawShape(self, painter):
-        (startX, startY) = (self.startPoint().x(), self.startPoint().y())
-        (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
-
-        if self.getEnabled(): lineStyle = Qt.SolidLine
-        else:                 lineStyle = Qt.DashLine
-
-        painter.setPen(QPen(QColor("green"), 1, lineStyle))
-        painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
-
-        if len(self.colors) == 1:
-            painter.setPen(QPen(QColor(self.colors[0]), 6, lineStyle))
-            painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
-        elif len(self.colors) == 2:
-            painter.setPen(QPen(QColor(self.colors[1]), 3, lineStyle))
-            painter.drawLine(QPoint(startX, startY+3), QPoint(endX, endY+3))
-            painter.setPen(QPen(QColor(self.colors[0]), 3, lineStyle))
-            painter.drawLine(QPoint(startX, startY-3), QPoint(endX, endY-3))
-        elif len(self.colors) == 3:
-            painter.setPen(QPen(QColor(self.colors[2]), 2, lineStyle))
-            painter.drawLine(QPoint(startX, startY+3), QPoint(endX, endY+3))
-            painter.setPen(QPen(QColor(self.colors[1]), 2, lineStyle))
-            painter.drawLine(QPoint(startX, startY)   , QPoint(endX, endY))
-            painter.setPen(QPen(QColor(self.colors[0]), 2, lineStyle))
-            painter.drawLine(QPoint(startX, startY-3), QPoint(endX, endY-3))
-
-    # draw the line on the printer
-    def printShape(self, painter):
-        (startX, startY) = (self.startPoint().x(), self.startPoint().y())
-        (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
-
-        fact = 10
-
-        if self.getEnabled():
-            lineStyle = Qt.SolidLine
-        else:
-            lineStyle = Qt.DotLine
-
-        if len(self.colors) == 1:
-            painter.setPen(QPen(QColor(self.colors[0]), 6*fact, lineStyle))
-            painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
-        elif len(self.colors) == 2:
-            painter.setPen(QPen(QColor(self.colors[0]), 3*fact, lineStyle))
-            painter.drawLine(QPoint(startX, startY-2), QPoint(endX, endY-2))
-            painter.setPen(QPen(QColor(self.colors[1]), 3*fact, lineStyle))
-            painter.drawLine(QPoint(startX, startY+1), QPoint(endX, endY+1))
-        elif len(self.colors) == 3:
-            painter.setPen(QPen(QColor(self.colors[0]), 2*fact, lineStyle))
-            painter.drawLine(QPoint(startX, startY-3), QPoint(endX, endY-3))
-            painter.setPen(QPen(QColor(self.colors[1]), 2*fact, lineStyle))
-            painter.drawLine(QPoint(startX, startY-1), QPoint(endX, endY-1))
-            painter.setPen(QPen(QColor(self.colors[2]), 2*fact, lineStyle))
-            painter.drawLine(QPoint(startX, startY+1), QPoint(endX, endY+1))
-    """
-
-    def moveBy(self, dx, dy):
-        x1 = self.startPoint().x(); y1 = self.startPoint().y()
-        x2 = self.endPoint().x(); y2 = self.endPoint().y()
-        self.setPoints(x1 + dx, y1 + dy, x2 + dx, y2 + dy)
-
     # set the line positions based on the position of input and output widgets
     def updateLinePos(self):
         x1 = self.outWidget.x() + 68 - 2
@@ -332,7 +269,6 @@ class CanvasWidget(QCanvasRectangle):
         self.inLines = []               # list of connected lines on input
         self.outLines = []              # list of connected lines on output
         self.caption = widget.name
-        self.captionWidth = 0
         self.xPos = 0
         self.yPos = 0
         self.oldXPos = 0
@@ -575,7 +511,6 @@ class CanvasWidget(QCanvasRectangle):
 
         #painter.setBrush(QBrush(self.NoBrush))
         #rect = painter.boundingRect(0,0,200,20,0,self.caption)
-        #self.captionWidth = rect.width()
         #painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, rect.width(), rect.height(), 0, self.caption)
         #painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
     """

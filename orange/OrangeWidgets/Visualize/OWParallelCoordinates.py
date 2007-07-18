@@ -369,6 +369,10 @@ class OWParallelCoordinates(OWVisWidget):
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
+    def saveSettings(self):
+        OWWidget.saveSettings(self)
+        self.optimizationDlg.saveSettings()
+
     def destroy(self, dw = 1, dsw = 1):
         self.optimizationDlg.hide()
         OWWidget.destroy(self, dw, dsw)
@@ -492,9 +496,6 @@ class ParallelOptimization(OWBaseWidget):
 
     def updateGUI(self):
         self.vizrankSettingsBox.setEnabled(self.optimizationMeasure)
-
-    def destroy(self, dw = 1, dsw = 1):
-        self.saveSettings()
 
     # if user clicks new attribute list in optimization dialog, we update shown attributes
     def showSelectedAttributes(self):

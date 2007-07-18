@@ -486,8 +486,11 @@ class FreeViz:
         if attrIndices == None:
             attributes = self.getShownAttributeList()
             attrIndices = [ai[label] for label in attributes]
+        if len(attrIndices) == 0: return None
 
         validData = self.graph.getValidList(attrIndices)
+        if sum(validData) == 0: return None
+        
         dataMatrix = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
         hasClass = self.graph.rawdata.domain.classVar != None
         if hasClass:

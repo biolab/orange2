@@ -137,7 +137,7 @@ class SchemaView(QCanvasView):
             self.selectedLine.outWidget.updateTooltip()
             self.selectedLine.updateTooltip()
 
-    def unselecteAllWidgets(self):
+    def unselectAllWidgets(self):
         for item in self.selWidgets: item.setSelected(0)
         self.selWidgets = []
 
@@ -145,35 +145,22 @@ class SchemaView(QCanvasView):
     # ###########################################
 
     # return number of items in "items" of type "type"
-    def findItemTypeCount(self, items, type):
-        count = 0
-        for item in items:
-            try:
-                type.rtti(item)
-                count = count+1
-            except TypeError:
-                pass
-        return count
+    def findItemTypeCount(self, items, Type):
+        return sum([isinstance(item, Type) for item in items])
 
-    # find and return first item of type "type"
-    def findFirstItemType(self, items, type):
+    # find and return first item of type Type
+    def findFirstItemType(self, items, Type):
         for item in items:
-            try:
-                type.rtti(item)
+            if isinstance(item, Type):
                 return item
-            except TypeError:
-                pass
         return None
 
     # find and return all items of type "type"
-    def findAllItemType(self, items, type):
+    def findAllItemType(self, items, Type):
         ret = []
         for item in items:
-            try:
-                type.rtti(item)
+            if isinstance(item, Type):
                 ret.append(item)
-            except TypeError:
-                pass
         return ret
 
 
@@ -200,7 +187,7 @@ class SchemaView(QCanvasView):
             self.tempWidget = None
             self.tempRect = None
             self.bMultipleSelection = True
-            self.unselecteAllWidgets()
+            self.unselectAllWidgets()
 
         # we clicked on a widget or on a line
         elif activeItems != []:
@@ -219,7 +206,7 @@ class SchemaView(QCanvasView):
                         self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.doc.canvas)
                         self.tempLine.setPoints(pos.x(), pos.y(), pos.x(), pos.y())
                         self.tempLine.show()
-                        self.unselecteAllWidgets()
+                        self.unselectAllWidgets()
                         self.canvas().update()
 
                 # we clicked inside the widget and we start dragging it
@@ -227,7 +214,7 @@ class SchemaView(QCanvasView):
                     self.bWidgetDragging = True
 
                     if widget not in self.selWidgets and self.doc.canvasDlg.ctrlPressed == 0:
-                        self.unselecteAllWidgets()
+                        self.unselectAllWidgets()
                         self.selWidgets = [widget]
                         self.bMultipleSelection = False
                     elif self.doc.canvasDlg.ctrlPressed == 1:
@@ -249,13 +236,13 @@ class SchemaView(QCanvasView):
                 elif ev.button() == QMouseEvent.RightButton:
                     self.widgetPopup.popup(ev.globalPos())
                 else:
-                    self.unselecteAllWidgets()
+                    self.unselectAllWidgets()
 
             # if we right clicked on a line we show a popup menu
             elif line != None:
                 if ev.button() == QMouseEvent.RightButton:
                     self.bMultipleSelection = False
-                    self.unselecteAllWidgets()
+                    self.unselectAllWidgets()
                     self.selectedLine = line
                     self.linePopup.setItemChecked(self.menupopupLinkEnabledID, self.selectedLine.getEnabled())
                     self.linePopup.popup(ev.globalPos())
@@ -265,7 +252,7 @@ class SchemaView(QCanvasView):
                         self.doc.signalManager.setLinkEnabled(outWidget, inWidget, True, True)
 
             else:
-                self.unselecteAllWidgets()
+                self.unselectAllWidgets()
 
         self.doc.canvas.update()
         self.bMouseDown = True

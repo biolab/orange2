@@ -908,7 +908,7 @@ def connectValueControl(control, master, value, signal, cfront, cback = None, fv
         if signal:
             master.connect(control, SIGNAL(signal), cback)
         cback.opposite = cfront
-        if value and cfront:
+        if value and cfront and hasattr(master, "controlledAttributes"):
             master.controlledAttributes[value] = cfront
     return cback
 
@@ -931,6 +931,8 @@ class ControlledCallback:
         self.widget = widget
         self.attribute = attribute
         self.f = f
+        if not hasattr(widget, "callbackDeposit"):
+            widget.callbackDeposit = []
         widget.callbackDeposit.append(self)
         self.disabled = False
 

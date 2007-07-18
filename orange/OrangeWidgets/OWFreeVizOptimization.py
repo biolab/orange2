@@ -169,9 +169,6 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
 
-    def destroy(self, dw = 1, dsw = 1):
-        self.saveSettings()
-
     def setStatusBarText(self, text):
         self.statusBar.message(text)
         qApp.processEvents()

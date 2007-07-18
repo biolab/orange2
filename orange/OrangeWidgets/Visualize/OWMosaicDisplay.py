@@ -85,7 +85,7 @@ class OWMosaicDisplay(OWWidget):
                     "horizontalDistribution", "useBoxes", "interiorColoring", "boxSize", "colorSettings", "selectedSchemaIndex", "cellspace",
                     "showSubsetDataBoxes", "removeUnusedValues"]
 
-    contextHandlers = {"": DomainContextHandler("", ["manualAttributeValuesDict"], loadImperfect = 0)}
+    contextHandlers = {"": DomainContextHandler("", ["attr1", "attr2", "attr3", "attr4", "manualAttributeValuesDict"], loadImperfect = 0)}
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Mosaic display", TRUE, TRUE)
@@ -386,7 +386,7 @@ class OWMosaicDisplay(OWWidget):
         # do we want to erase previous diagram?
         if args.get("erasePrevious", 1):
             for item in self.canvas.allItems():
-                if type(item) != SelectionRectangle:
+                if not isinstance(item, SelectionRectangle):
                     item.setCanvas(None)    # remove all canvas items, except SelectionCurves
             for (rect, tip) in self.tooltips:
                 QToolTip.remove(self.canvasView, rect)
@@ -481,10 +481,10 @@ class OWMosaicDisplay(OWWidget):
     # ############################################################################
 
     ##  DRAW DATA - draw rectangles for attributes in attrList inside rect (x0,x1), (y0,y1)
-    def DrawData(self, attrList, (x0, x1), (y0, y1), side, condition, totalAttrs, lastValueForFirstAttribute = 0, usedAttrs = [], usedVals = [], attrVals = "", **args):
+    def DrawData(self, attrList, (x0, x1), (y0, y1), side, condition, totalAttrs, usedAttrs = [], usedVals = [], attrVals = "", **args):
         if self.conditionalDict[attrVals] == 0:
-            self.addRect(x0, x1, y0, y1, attrVals = attrVals)
-            self.DrawText(side, attrList[0], (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute, attrVals)  # store coordinates for later drawing of labels
+            self.addRect(x0, x1, y0, y1, "", usedAttrs, usedVals, attrVals = attrVals)
+            self.DrawText(side, attrList[0], (x0, x1), (y0, y1), totalAttrs, usedAttrs, usedVals, attrVals)  # store coordinates for later drawing of labels
             return
 
         attr = attrList[0]
@@ -499,38 +499,46 @@ class OWMosaicDisplay(OWWidget):
             whole = max(0, (y1-y0)-edge*(len(values)-1))
             if whole == 0: edge = (y1-y0)/float(len(values)-1)
 
-        currPos = 0.0
         if attrVals == "": counts = [self.conditionalDict[val] for val in values]
         else:              counts = [self.conditionalDict[attrVals + "-" + val] for val in values]
         total = sum(counts)
 
-        for i in range(len(counts)):
+        # if we are visualizing the third attribute and the first attribute has the last value, we have to reverse the order in which the boxes will be drawn
+        # otherwise, if the last cell, nearest to the labels of the fourth attribute, is empty, we wouldn't be able to position the labels
+        valRange = range(len(values))
+        if len(attrList + usedAttrs) == 4 and len(usedAttrs) == 2:
+            attr1Values = self.attributeValuesDict.get(usedAttrs[0], None) or getVariableValuesSorted(self.data, usedAttrs[0])
+            if usedVals[0] == attr1Values[-1]:
+                valRange = valRange[::-1]
+
+        for i in valRange:
+            start = i*edge + whole * float(sum(counts[:i])/float(total))
+            end   = i*edge + whole * float(sum(counts[:i+1])/float(total))
             val = values[i]
-            size = whole*float(counts[i])/float(total)
             htmlVal = getHtmlCompatibleString(val)
             if attrVals != "": newAttrVals = attrVals + "-" + val
             else:              newAttrVals = val
 
-            if side % 2 == 0:   # if drawing horizontal
-                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
-                else:                   self.DrawData(attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), side +1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", totalAttrs, lastValueForFirstAttribute + int(val == values[-1]), usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
+            if side % 2 == 0:   # if we are moving horizontally
+                if len(attrList) == 1:  self.addRect(x0+start, x0+end, y0, y1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
+                else:                   self.DrawData(attrList[1:], (x0+start, x0+end), (y0, y1), side +1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", totalAttrs, usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
             else:
-                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, condition + 4*"&nbsp;" + attr + ": <b> " + htmlVal + "</b><br>", usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
-                else:                   self.DrawData(attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), side +1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", totalAttrs, lastValueForFirstAttribute, usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
-            currPos += size + edge
+                if len(attrList) == 1:  self.addRect(x0, x1, y0+start, y0+end, condition + 4*"&nbsp;" + attr + ": <b> " + htmlVal + "</b><br>", usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
+                else:                   self.DrawData(attrList[1:], (x0, x1), (y0+start, y0+end), side +1, condition + 4*"&nbsp;" + attr + ": <b>" + htmlVal + "</b><br>", totalAttrs, usedAttrs + [attr], usedVals + [val], newAttrVals, **args)
 
-        self.DrawText(side, attrList[0], (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute, attrVals)
+        self.DrawText(side, attrList[0], (x0, x1), (y0, y1), totalAttrs, usedAttrs, usedVals, attrVals)
 
 
     ######################################################################
     ## DRAW TEXT - draw legend for all attributes in attrList and their possible values
-    def DrawText(self, side, attr, (x0, x1), (y0, y1), totalAttrs, lastValueForFirstAttribute, attrVals):
+    def DrawText(self, side, attr, (x0, x1), (y0, y1), totalAttrs, usedAttrs, usedVals, attrVals):
         if self.drawnSides[side]: return
-        #if side == RIGHT and lastValueForFirstAttribute != 2: return
+
+        # the text on the right will be drawn when we are processing visualization of the last value of the first attribute
         if side == RIGHT:
-            if lastValueForFirstAttribute != 2: return
-##            elif not self.conditionalDict[attrVals]:
-##                self.conditionalDict[attrVals] = [1 for i in range(len(getVariableValuesSorted(self.data, attr)))]
+            attr1Values = self.attributeValuesDict.get(usedAttrs[0], None) or getVariableValuesSorted(self.data, usedAttrs[0])
+            if usedVals[0] != attr1Values[-1]:
+                return
 
         if not self.conditionalDict[attrVals]:
             if not self.drawPositions.has_key(side): self.drawPositions[side] = (x0, x1, y0, y1)
@@ -586,15 +594,6 @@ class OWMosaicDisplay(OWWidget):
 
         rect = OWCanvasRectangle(self.canvas, x0, y0, x1-x0, y1-y0, z = 30)
 
-        # we have to remember which conditions were new in this update so that when we right click we can only remove the last added selections
-        if isinstance(self.selectionRectangle, QRect) and rect in self.canvas.collisions(self.selectionRectangle) and tuple(usedVals) not in self.selectionConditions:
-            self.recentlyAdded = getattr(self, "recentlyAdded", []) + [tuple(usedVals)]
-            self.selectionConditions = self.selectionConditions + [tuple(usedVals)]
-
-        # show rectangle selected or not
-        if tuple(usedVals) in self.selectionConditions:
-            rect.setPen(QPen(Qt.black, 3, Qt.DotLine))
-
         # if we have selected a rule that contains this combination of attr values then show a kind of selection of this rectangle
         if self.activeRule and len(usedAttrs) == len(self.activeRule[0]) and sum([v in usedAttrs for v in self.activeRule[0]]) == len(self.activeRule[0]):
             for vals in self.activeRule[1]:
@@ -605,8 +604,17 @@ class OWMosaicDisplay(OWWidget):
                     r = OWCanvasRectangle(self.canvas, x0-d, y0-d, x1-x0+2*d+1, y1-y0+2*d+1, z = 50)
                     r.setPen(QPen(self.colorPalette[counts.index(max(counts))], 2, Qt.DashLine))
 
-
         if not self.conditionalDict[attrVals]: return rect
+
+        # we have to remember which conditions were new in this update so that when we right click we can only remove the last added selections
+        if isinstance(self.selectionRectangle, QRect) and rect in self.canvas.collisions(self.selectionRectangle) and tuple(usedVals) not in self.selectionConditions:
+            self.recentlyAdded = getattr(self, "recentlyAdded", []) + [tuple(usedVals)]
+            self.selectionConditions = self.selectionConditions + [tuple(usedVals)]
+
+        # show rectangle selected or not
+        if tuple(usedVals) in self.selectionConditions:
+            rect.setPen(QPen(Qt.black, 3, Qt.DotLine))
+
         if self.interiorColoring == CLASS_DISTRIBUTION and (not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete):
             return rect
 
@@ -861,7 +869,10 @@ class OWMosaicDisplay(OWWidget):
         else:
             return selectedIndices
 
-
+    def saveSettings(self):
+        OWWidget.saveSettings(self)
+        self.optimizationDlg.saveSettings()
+        
 
 
 class SortAttributeValuesDlg(OWBaseWidget):
@@ -919,6 +930,8 @@ if __name__=="__main__":
     ow = OWMosaicDisplay()
     a.setMainWidget(ow)
     ow.show()
-    data = orange.ExampleTable(r"e:\Development\Python23\Lib\site-packages\Orange\Datasets\UCI\imports-85.tab")
-    ow.setData(data)
+    for d in ["zoo.tab", "iris.tab", "zoo.tab"]:
+        data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\\" + d)
+        ow.setData(data)
+        ow.handleNewSignals()
     a.exec_loop()

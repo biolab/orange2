@@ -435,6 +435,9 @@ class OWScatterPlot(OWWidget):
     # ##############################################################################################################################################################
     # SCATTERPLOT SETTINGS
     # ##############################################################################################################################################################
+    def saveSettings(self):
+        OWWidget.saveSettings(self)
+        self.vizrank.saveSettings()
 
     #update status on progress bar - gets called by OWScatterplotGraph
     def updateProgress(self, current, total):

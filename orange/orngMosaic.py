@@ -1016,7 +1016,7 @@ class SplitConstructor_MosaicMeasure(orange.TreeSplitConstructor):
 
     def updateStatus(self, evaluatingProjections):
         if self.statusFunct:
-            s = "%sCurrent tree has %d nodes" % (evaluatingProjections and "Evaluating projections. " or "", self.nodeCount)
+            s = "%sCurrent tree has %d nodes" % (evaluatingProjections and "Please wait, evaluating projections. " or "", self.nodeCount)
             self.statusFunct(s)
 
     def __call__(self, gen, weightID, contingencies, apriori, candidates, nodeClassifier):
@@ -1026,7 +1026,6 @@ class SplitConstructor_MosaicMeasure(orange.TreeSplitConstructor):
             return None
         self.mosaic.evaluateProjections()
         if self.mosaic.cancelTreeBuilding or len(self.mosaic.results) == 0:       # or self.mosaic.results[0][0] <= 0:     # if no results or score <=0 then stop building
-            #self.nodeCount += 1
             self.updateStatus(0)
             return None
 
@@ -1035,21 +1034,9 @@ class SplitConstructor_MosaicMeasure(orange.TreeSplitConstructor):
         newFeature = mergeAttrValues(gen, attrList, self.measure, removeUnusedValues = 0)
         dist = orange.Distribution(newFeature, gen).values()
         if max(dist) == sum(dist):    # if all examples belong to one attribute value then this is obviously a useless attribute and we should stop building
-            #self.nodeCount += 1
             self.updateStatus(0)
             return None
 
-##        if len(attrList) > 1:
-##            # remove all other attributes and examples with missing values and then try to combine different attribute values
-##            subgen = orange.Preprocessor_dropMissing(gen.select(attrList + [gen.domain.classVar.name]))
-##            #newFeature, quality = FeatureByIM(subgen, attrList, binary = 0, measure = orange.MeasureAttribute_info())
-##            newFeature, quality = FeatureByIM(subgen, attrList, binary = 0, measure = MeasureAttribute_MDL())
-##        else:
-##            newFeature = gen.domain[attrList[0]]
-##            dist = orange.Distribution(newFeature, gen).values()
-##            if max(dist) == sum(dist):    # if all examples belong to one attribute value then this is obviously a useless attribute and we should stop building
-##                return None
-##            newFeature.getValueFrom = orange.ClassifierByLookupTable(newFeature, newFeature, list(newFeature.values) + ["?"])
         self.nodeCount += 1
         self.updateStatus(0)
         return (CartesianClassifier(newFeature, attrList, gen), newFeature.values, None, score)

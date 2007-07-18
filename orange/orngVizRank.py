@@ -7,6 +7,11 @@ import numpy, time
 from copy import copy, deepcopy
 from orngLinProj import FreeViz
 
+# used for outlier detection
+VIZRANK_POINT = 0
+CLUSTER_POINT = 1
+VIZRANK_MOSAIC = 2
+
 # quality measure
 CLASS_ACCURACY = 0
 AVERAGE_CORRECT = 1
@@ -54,6 +59,10 @@ DETERMINISTIC_ALL = 0
 GAMMA_ALL = 1
 GAMMA_SINGLE = 2
 
+PROJOPT_NONE = 0
+PROJOPT_SPCA = 1
+PROJOPT_PLS = 2
+
 contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)),
                 ("Signal to Noise Ratio", orngVisFuncts.S2NMeasure()), ("Signal to Noise OVA", orngVisFuncts.S2NMeasureMix())]
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)),
@@ -68,6 +77,7 @@ SCATTERPLOT = 1
 RADVIZ = 2
 LINEAR_PROJECTION = 3
 POLYVIZ = 4
+KNN_IN_ORIGINAL_SPACE = 10
 
 # optimization type
 EXACT_NUMBER_OF_ATTRS = 0
@@ -84,7 +94,7 @@ class VizRank:
                 graph = orngScaleLinProjData.orngScaleLinProjData()
                 graph.normalizeExamples = 1
                 graph.scalingByVariance = 0
-            elif visualizationMethod == LINEAR_PROJECTION:
+            elif visualizationMethod in [LINEAR_PROJECTION, KNN_IN_ORIGINAL_SPACE]:
                 import orngScaleLinProjData
                 graph = orngScaleLinProjData.orngScaleLinProjData()
                 graph.normalizeExamples = 0
@@ -119,8 +129,10 @@ class VizRank:
         self.attrCont = CONT_MEAS_RELIEFF
         self.attrDisc = DISC_MEAS_RELIEFF
         self.attrSubsetSelection = GAMMA_ALL                # how do we find attribute subsets to evaluate - deterministic according to attribute ranking score or using gamma distribution - if using gamma, do we want to evaluate all possible permutations of attributes or only one
-        self.projOptimizationMethod = 0                     # None, supervisedPCA, partial least square
+        self.projOptimizationMethod = PROJOPT_NONE          # None, supervisedPCA, partial least square
         self.useExampleWeighting = 0                        # weight examples, so that the class that has a low number of examples will have higher weights
+        self.evaluationData = {}
+        self.evaluationData["triedCombinations"] = {}
 
         self.externalLearner = None                         # do we use knn or some external learner
         self.selectedClasses = []                           # which classes are we trying to separate
@@ -389,7 +401,7 @@ class VizRank:
             prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
 
             # create a new attribute that is a cartesian product of the two visualized attributes
-            nattr = orange.EnumVariable(values=['i' for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS)])
+            nattr = orange.EnumVariable(values=[str(i) for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS)])
             nattr.getValueFrom = orange.ClassifierByLookupTable2(nattr, testTable.domain[0], testTable.domain[1])
             for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS): nattr.getValueFrom.lookupTable[i] = i
 
@@ -418,6 +430,7 @@ class VizRank:
 
         if self.qualityMeasure == AVERAGE_CORRECT:
             for res in results.results:
+                if not res.probabilities[0]: continue
                 prediction[res.actualClass] += res.probabilities[0][res.actualClass]
                 countsByFold[res.iterationNumber] += 1
             prediction = [val*100.0 for val in prediction]
@@ -425,10 +438,8 @@ class VizRank:
         elif self.qualityMeasure == BRIER_SCORE:
             #return orngStat.BrierScore(results)[0], results
             for res in results.results:
-                val = 0
-                for prob in res.probabilities[0]: val += prob*prob
-                val = val - 2*res.probabilities[0][res.actualClass] + 1
-                prediction[res.actualClass] += val
+                if not res.probabilities[0]: continue
+                prediction[res.actualClass] += sum([prob*prob for prob in res.probabilities[0]]) - 2*res.probabilities[0][res.actualClass] + 1
                 countsByFold[res.iterationNumber] += 1
 
         elif self.qualityMeasure == CLASS_ACCURACY:
@@ -600,7 +611,7 @@ class VizRank:
                 permutationIndices = {}
                 for i in range(minLength, maxLength+1):
                     if i > len(attributes): continue        # if we don't have enough attributes
-                    if self.projOptimizationMethod != 0:
+                    if self.projOptimizationMethod != 0 or self.visualizationMethod == KNN_IN_ORIGINAL_SPACE:
                         permutationIndices[i] = [range(i)]
                     else:
                         permutationIndices[i] = orngVisFuncts.generateDifferentPermutations(range(i))
@@ -662,7 +673,7 @@ class VizRank:
                     tried += 1
                 attrs.sort()
                 if not triedDict.has_key(tuple(attrs)) and len(attrs) == attrCount:
-                    #self.evaluationData["triedCombinations"][tuple(attrs)] = 1     # we don't want to save used combinations since we only test one permutation
+                    self.evaluationData["triedCombinations"][tuple(attrs)] = 1     # this is not the best, since we don't want to save used combinations since we only test one permutation
                     #return [filter(None, attrList)]        # problem: using filter removes value 0 from the array, which means that the attribute ranked as best wont be in the projections
                     return [attrList]
         else:
@@ -703,7 +714,7 @@ class VizRank:
                         permutations.append(comb)
 
             # create only one permutation, because its all we need
-            elif self.projOptimizationMethod != 0:
+            elif self.projOptimizationMethod != 0 or self.visualizationMethod == KNN_IN_ORIGINAL_SPACE:
                 permutations.append(reduce(operator.add, combination))
             else:
                 for proj in orngVisFuncts.createProjections(len(self.data.domain.classVar.values), sum([len(group) for group in combination])):
@@ -732,7 +743,7 @@ class VizRank:
     # ##########################################################################
     # MAIN FUNCTION FOR EVALUATING PROJECTIONS
     # ##########################################################################
-    def evaluateProjections(self):
+    def evaluateProjections(self, clearPreviousProjections = 1):
         random.seed(0)      # always use the same seed to make results repeatable
         if not self.data: return 0
         self.correctSettingsIfNecessary()
@@ -740,15 +751,17 @@ class VizRank:
             print "Evaluation of projections was started without any time or projection restrictions. To prevent an indefinite projection evaluation a time limit of 2 hours was set."
             self.timeLimit = 2 * 60
 
-        self.evaluatedProjectionsCount = 0
-        self.optimizedProjectionsCount = 0
         self.startTime = time.time()
-        self.evaluationData = {}            # clear all previous data about tested permutations and stuff
-        self.evaluationData["triedCombinations"] = {}
 
-        maxFunct = self.getMaxFunct()
-        self.clearResults()
+        if clearPreviousProjections:
+            self.evaluatedProjectionsCount = 0
+            self.optimizedProjectionsCount = 0
+            self.evaluationData = {}            # clear all previous data about tested permutations and stuff
+            self.evaluationData["triedCombinations"] = {}
+            self.clearResults()
+
         self.clearArguments()
+        maxFunct = self.getMaxFunct()
 
         if self.__class__.__name__ == "OWVizRank":
             from qt import qApp
@@ -767,8 +780,9 @@ class VizRank:
             strCount = orngVisFuncts.createStringFromNumber(count)
 
             for i in range(len(evaluatedAttributes)):
+                attr1 = self.attributeNameIndex[evaluatedAttributes[i]]
                 for j in range(i):
-                    attr1 = self.attributeNameIndex[evaluatedAttributes[j]]; attr2 = self.attributeNameIndex[evaluatedAttributes[i]]
+                    attr2 = self.attributeNameIndex[evaluatedAttributes[j]]
                     self.evaluatedProjectionsCount += 1
                     if self.isEvaluationCanceled():
                         return self.evaluatedProjectionsCount
@@ -810,9 +824,14 @@ class VizRank:
                 while permutations:
                     attrIndices = permutations[0]
 
-                    if self.projOptimizationMethod != 0:
-                        xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
-                        table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
+                    # if we use SPCA, PLS or KNN_IN_ORIGINAL_SPACE
+                    if self.projOptimizationMethod != 0 or self.visualizationMethod == KNN_IN_ORIGINAL_SPACE:
+                        if self.visualizationMethod == KNN_IN_ORIGINAL_SPACE:
+                            table = self.data.select([self.data.domain[attr] for attr in attrIndices] + [self.data.domain.classVar] )
+                            xanchors, yanchors = self.graph.createXAnchors(len(attrIndices)), self.graph.createYAnchors(len(attrIndices))
+                        else:
+                            xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
+                            table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                         if len(table) < self.minNumOfExamples: continue
                         self.evaluatedProjectionsCount += 1
                         accuracy, other_results = self.kNNComputeAccuracy(table)
@@ -1194,6 +1213,127 @@ class VizRank:
             if tryIndex <= topProjectionIndex:
                 self.insertItem(i, accuracy, other_results, lenTable, attrList, tryIndex, generalDict)
                 i += 1
+
+
+# ###############################################################################################################################################
+# ######           VIZRANK OUTLIERS            ##############################################################################################
+# ###############################################################################################################################################
+class VizRankOutliers:
+    def __init__(self, vizrank):
+        self.vizrank = vizrank
+        if hasattr(vizrank, "graph"):
+            self.widgetGraph = vizrank.graph
+        else:
+            self.widgetGraph = None
+
+        self.projectionIndices = []
+        self.matrixOfPredictions = None
+        self.graphMatrix = None
+        self.results = None
+        self.data = None
+        self.dialogType = -1
+        self.evaluatedExamples = []
+
+
+    def setData(self, results, data, dialogType):
+        self.results = results
+        self.data = data
+        self.dialogType = dialogType
+        self.matrixOfPredictions = None
+
+        if dialogType == VIZRANK_POINT:
+            self.ATTR_LIST = ATTR_LIST
+            self.ACCURACY = ACCURACY
+        elif dialogType == VIZRANK_MOSAIC:
+            import orngMosaic
+            self.ATTR_LIST = orngMosaic.ATTR_LIST
+            self.ACCURACY = orngMosaic.SCORE
+
+    def evaluateProjections(self, qApp = None):
+        if not self.results or not self.data: return
+
+        projCount = min(int(self.projectionCount), len(self.results))
+        classCount = len(self.data.domain.classVar.values)
+        existing = 0
+        if self.matrixOfPredictions != None:
+            existing = numpy.shape(self.matrixOfPredictions)[0]/classCount
+            if existing < projCount:
+                self.matrixOfPredictions = numpy.resize(self.matrixOfPredictions, (projCount*classCount, len(self.data)))
+            elif existing > projCount:
+                self.matrixOfPredictions = self.matrixOfPredictions[0:classCount*projCount,:]
+        else:
+            self.matrixOfPredictions = -100 * numpy.ones((projCount*classCount, len(self.data)), numpy.float)
+
+        # compute the matrix of predictions
+        results = self.results[existing:min(len(self.results),projCount)]
+        index = 0
+        for result in results:
+            if self.dialogType == VIZRANK_POINT:
+                acc, other, tableLen, attrList, tryIndex, generalDict = result
+                attrIndices = [self.widgetGraph.attributeNameIndex[attr] for attr in attrList]
+                validDataIndices = self.widgetGraph.getValidIndices(attrIndices)
+                table = self.widgetGraph.createProjectionAsExampleTable(attrIndices, settingsDict = generalDict)    # TO DO: this does not work with polyviz!!!
+                acc, probabilities = self.vizrank.kNNClassifyData(table)
+
+            elif self.dialogType == VIZRANK_MOSAIC:
+                from orngCI import FeatureByCartesianProduct
+                acc, attrList, tryIndex, other = result
+                probabilities = numpy.zeros((len(self.data), len(self.data.domain.classVar.values)), numpy.float)
+                newFeature, quality = FeatureByCartesianProduct(self.data, attrList)
+                dist = orange.ContingencyAttrClass(newFeature, self.data)
+                data = self.data.select([newFeature, self.data.domain.classVar])     # create a dataset that has only this new feature and class info
+                clsVals = len(self.data.domain.classVar.values)
+                validDataIndices = range(len(data))
+                for i, ex in enumerate(data):
+                    try:
+                        prob = dist[ex[0]]
+                        for j in range(clsVals):
+                            probabilities[i][j] = prob[j] / float(sum(prob.values()))
+                    except:
+                        validDataIndices.remove(i)
+
+            #self.matrixOfPredictions[(existing + index)*classCount:(existing + index +1)*classCount] = numpy.transpose(probabilities)
+            probabilities = numpy.transpose(probabilities)
+            for i in range(classCount):
+                numpy.put(self.matrixOfPredictions[(existing + index)*classCount + i], validDataIndices, probabilities[i])
+
+            index += 1
+            if hasattr(self, "setStatusBarText"):
+                self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(existing + index), orngVisFuncts.createStringFromNumber(projCount)))
+                self.widget.progressBarSet(100.0*(index)/float(projCount-existing))
+            if qApp:
+                qApp.processEvents()
+
+        # generate a sorted list of (probability, exampleIndex, classDistribution)
+        projCount = min(int(self.projectionCount), len(self.results))
+        classCount = len(self.data.domain.classVar.values)
+        self.evaluatedExamples = []
+        for exIndex in range(len(self.data)):
+            matrix = numpy.transpose(numpy.reshape(self.matrixOfPredictions[:, exIndex], (projCount, classCount)))
+            valid = numpy.where(matrix[int(self.data[exIndex].getclass())] != -100, 1, 0)
+            data = numpy.compress(valid, matrix[int(self.data[exIndex].getclass())])
+            if len(data): aveAcc = numpy.sum(data) / float(len(data))
+            else:         aveAcc = 0
+            classPredictions = []
+            for ind, val in enumerate(self.data.domain.classVar.values):
+                data = numpy.compress(valid, matrix[ind])
+                if len(data): acc = numpy.sum(data) / float(len(data))
+                else:         acc = 0
+                classPredictions.append((acc, val))
+            self.evaluatedExamples.append((aveAcc, exIndex, classPredictions))
+        self.evaluatedExamples.sort()
+
+    # take the self.evaluatedExamples list and find examples where probability of the "correct" class is lower than probability of some other class
+    # change class value of such examples to class value that has the highest probability
+    def changeClassToMostProbable(self):
+        if not self.data or not self.evalueatedExamples or len(self.evaluatedExamples) != len(self.data):
+            print "no data or outliers not found yet. Run evaluateProjections() first."
+            return
+
+        for (aveAcc, exInd, classPredictions) in self.evaluatedExamples:
+            (acc, clsVal) = max(classPredictions)
+            if clsVal != self.data[exInd].getclass().value:   # if the most probable class is not the current class then change the class
+                self.data[exInd].setclass(clsVal)
 
 
 # ###############################################################################################################################################
