@@ -51,8 +51,8 @@ typedef vector<string> TIdList;
 
 #define ILLEGAL_INT numeric_limits<int>::min()
 
-/* Don't use quite_Nan (fall for that trick twice already!): quite_Nan equals anything */
-#define ILLEGAL_FLOAT 1e-30f
+/* Don't use quite_Nan (fell for that trick twice already!): quite_Nan equals anything */
+#define ILLEGAL_FLOAT -1e30f
 
 #define ITERATE(tpe, iter, pna)  for(tpe::iterator iter((pna).begin()), iter##_end((pna).end()); \
                                      iter!=iter##_end; iter++)
