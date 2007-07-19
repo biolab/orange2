@@ -18,6 +18,7 @@ from OWClusterOptimization import *
 import OWGUI, OWToolbars, OWDlgs
 from orngScaleData import *
 from OWGraph import OWGraph
+import numpy
 
 
 ###########################################################################################
