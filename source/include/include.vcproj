@@ -118,6 +118,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName)_d.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
