@@ -82,12 +82,12 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
   if (!atoms.size())
     ::raiseError("empty or invalid names file");
 
-  PStringList classValues = mlnew TStringList;
-  for(vector<string>::iterator ai(atoms.begin()), ei(atoms.end()); ai!=ei; ) 
-    classValues->push_back(*(ai++)); 
-
   TDomainDepot::TAttributeDescriptions attributeDescriptions;
+  TDomainDepot::TAttributeDescription classDescription("y", TValue::INTVAR);
 
+  for(vector<string>::iterator ai(atoms.begin()), ei(atoms.end()); ai!=ei; ai++)
+    classDescription.addValue(*ai);
+  
   do {
     while(!feof(fei.file) && !readC45Atom(fei, atoms));
     if (!atoms.size())
@@ -109,10 +109,9 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
         attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::FLOATVAR));
       else {
         attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::INTVAR));
-        PStringList values = mlnew TStringList;
-        attributeDescriptions.back().values = values;
+        TDomainDepot::TAttributeDescription &desc = attributeDescriptions.back();
         while(ai!=atoms.end())
-          values->push_back(*(ai++));
+          desc.addValue(*ai++);
       }
     }
   } while (!feof(fei.file));
@@ -120,8 +119,7 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
   if (!attributeDescriptions.size())
     ::raiseError("names file contains no variables but class variable");
 
-  attributeDescriptions.push_back(TDomainDepot::TAttributeDescription("y", TValue::INTVAR));
-  attributeDescriptions.back().values = classValues;
+  attributeDescriptions.push_back(classDescription);
   skip->push_back(false);
 
   if (sourceDomain) {

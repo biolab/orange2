@@ -170,6 +170,17 @@ TDomainDepot::TAttributeDescription::TAttributeDescription(const string &n, cons
 {}
 
 
+TDomainDepot::TAttributeDescription::TAttributeDescription(PVariable pvar)
+: preparedVar(pvar)
+{}
+
+
+void TDomainDepot::TAttributeDescription::addValue(const string &s)
+{
+  fixedOrderValues.push_back(s);
+  values.insert(s);
+}
+
 TDomainDepot::~TDomainDepot()
 {
   ITERATE(list<TDomain *>, di, knownDomains) {
@@ -187,7 +198,29 @@ void TDomainDepot::destroyNotifier(TDomain *domain, void *data)
   ((TDomainDepot *)(data))->knownDomains.remove(domain);
 }
 
-                  
+
+ 
+inline bool checkValueOrder(PVariable var, const TDomainDepot::TAttributeDescription &desc)
+{
+  return    desc.varType != TValue::INTVAR
+         || dynamic_cast<TEnumVariable &>(var.getReference()).checkValuesOrder(desc.fixedOrderValues);
+}
+
+void augmentVariableValues(PVariable var, const TDomainDepot::TAttributeDescription &desc)
+{
+  if (desc.varType != TValue::INTVAR)
+    return;
+    
+  TEnumVariable &evar = dynamic_cast<TEnumVariable &>(var.getReference());
+  const_ITERATE(TStringList, fvi, desc.fixedOrderValues)
+    evar.addValue(*fvi);
+  vector<string> sorted;
+  TEnumVariable::presortValues(desc.values, sorted);
+  const_ITERATE(vector<string>, ssi, sorted)
+    evar.addValue(*ssi);
+}
+
+
 bool TDomainDepot::checkDomain(const TDomain *domain, 
                                const TAttributeDescriptions *attributes, bool hasClass,
                                const TAttributeDescriptions *metas,
@@ -202,34 +235,43 @@ bool TDomainDepot::checkDomain(const TDomain *domain,
 
   // check the names and types of attributes
   TVarList::const_iterator vi(domain->variables->begin());
-  const_PITERATE(TAttributeDescriptions, ai, attributes)
+  TAttributeDescriptions::const_iterator ai(attributes->begin()), ae(attributes->end());
+  for(; ai != ae; ai++, vi++)
     if (    ((*ai).name != (*vi)->name)
          || ((*ai).varType>0) && ((*ai).varType != (*vi)->varType)
          || (((*ai).varType==PYTHONVAR) && !pythonDeclarationMatches((*ai).typeDeclaration, *vi))
+         || !checkValueOrder(*vi, *ai)
        )
       return false;
-    else
-      vi++;
 
   // check the meta attributes if they exist
-  if (metas)
-    const_PITERATE(TAttributeDescriptions, mi, metas) {
+  TAttributeDescriptions::const_iterator mi, me;
+  if (metas) {
+    for(mi = metas->begin(), me = metas->end(); mi != me; mi++) {
       PVariable var = domain->getMetaVar((*mi).name, false);
       if (    !var
            || (((*mi).varType > 0) && ((*mi).varType != var->varType))
            || (((*mi).varType==PYTHONVAR) && !pythonDeclarationMatches((*mi).typeDeclaration, var))
+           || !checkValueOrder(var, *mi)
          )
         return false;
       if (metaIDs)
         *(metaIDs++) = domain->getMetaNum((*mi).name, false);
     }
+  }
 
+  for(ai = attributes->begin(), vi = domain->variables->begin(); ai != ae; ai++, vi++)
+    augmentVariableValues(*vi, *ai);
+  for(mi = metas->begin(); mi != me; mi++)
+    if (mi->varType == TValue::INTVAR)
+      augmentVariableValues(domain->getMetaVar((*mi).name), *mi);
+      
   return true;
 }
 
 
-PDomain TDomainDepot::prepareDomain(const TAttributeDescriptions *attributes, bool hasClass,
-                                    const TAttributeDescriptions *metas, PVarList knownVars,
+PDomain TDomainDepot::prepareDomain(TAttributeDescriptions *attributes, bool hasClass,
+                                    TAttributeDescriptions *metas, PVarList knownVars,
                                     const TMetaVector *knownMetas,
                                     const bool dontStore, const bool dontCheckStored,
                                     bool *domainIsNew, int *metaIDs)
@@ -244,7 +286,7 @@ PDomain TDomainDepot::prepareDomain(const TAttributeDescriptions *attributes, bo
 
   TVarList attrList;
   int foo;
-  const_PITERATE(TAttributeDescriptions, ai, attributes) {
+  PITERATE(TAttributeDescriptions, ai, attributes) {
     PVariable newvar = makeVariable(*ai, foo, knownVars, knownMetas, false, false);
     if ((*ai).ordered)
       newvar->ordered = true;
@@ -262,7 +304,7 @@ PDomain TDomainDepot::prepareDomain(const TAttributeDescriptions *attributes, bo
   newDomain = mlnew TDomain(classVar, attrList);
 
   if (metas)
-    const_PITERATE(TAttributeDescriptions, mi, metas) {
+    PITERATE(TAttributeDescriptions, mi, metas) {
       int id;
       PVariable var = makeVariable(*mi, id, knownVars, knownMetas, false, true);
       if (!id)
@@ -337,14 +379,19 @@ PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, con
   return pvar;
 }
 
-PVariable TDomainDepot::createVariable(const TAttributeDescription &desc)
+PVariable TDomainDepot::createVariable(TAttributeDescription &desc)
 {
+  TVariable *existing = TVariable::getExisting(desc.name, desc.varType, &desc.fixedOrderValues, &desc.values);
+  if (existing)
+    return existing;
+
+  
   switch (desc.varType) {
     case TValue::INTVAR: {
-      TEnumVariable *evar = mlnew TEnumVariable(desc.name, desc.values ? desc.values : PStringList(mlnew TStringList()));
-      if (desc.ordered)
-        evar->ordered = true;
-      return evar;
+      TStringList *values = mlnew TStringList(desc.fixedOrderValues);
+      PVariable var = mlnew TEnumVariable(desc.name, values);
+      augmentVariableValues(var, desc);
+      return var;
     }
 
     case TValue::FLOATVAR:
@@ -364,8 +411,10 @@ PVariable TDomainDepot::createVariable(const TAttributeDescription &desc)
 }
 
 
-PVariable TDomainDepot::makeVariable(const TAttributeDescription &desc, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew, bool preferMetas)
+PVariable TDomainDepot::makeVariable(TAttributeDescription &desc, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew, bool preferMetas)
 { 
+  PVariable var;
+  
   if (!preferMetas && knownVars)
     const_PITERATE(TVarList, vi, knownVars)
       if (   ((*vi)->name==desc.name)
@@ -374,12 +423,13 @@ PVariable TDomainDepot::makeVariable(const TAttributeDescription &desc, int &id,
                || ((*vi)->varType==desc.varType)
              )
           && ((desc.varType!=PYTHONVAR) || pythonDeclarationMatches(desc.typeDeclaration, *vi))
+          && checkValueOrder(*vi, desc)
          ) {
         id = 0;
-        return *vi;
+        var = *vi;
       }
 
-  if (metas)
+  if (!var && metas)
     const_PITERATE(TMetaVector, mi, metas)
       if (   ((*mi).variable->name == desc.name)
           && (    (desc.varType == -1)
@@ -387,12 +437,13 @@ PVariable TDomainDepot::makeVariable(const TAttributeDescription &desc, int &id,
                || ((*mi).variable->varType==desc.varType)
              )
           && ((desc.varType!=PYTHONVAR) || pythonDeclarationMatches(desc.typeDeclaration, (*mi).variable))
+          && checkValueOrder((*mi).variable, desc)
          ) {
         id = (*mi).id;
-        return (*mi).variable;
+        var = (*mi).variable;
       }
 
-  if (preferMetas && knownVars)
+  if (!var && preferMetas && knownVars)
     const_PITERATE(TVarList, vi, knownVars)
       if (   ((*vi)->name==desc.name)
           && (    (desc.varType==-1)
@@ -400,12 +451,17 @@ PVariable TDomainDepot::makeVariable(const TAttributeDescription &desc, int &id,
                || ((*vi)->varType==desc.varType)
              )
           && ((desc.varType!=PYTHONVAR) || pythonDeclarationMatches(desc.typeDeclaration, *vi))
+          && checkValueOrder(*vi, desc)
          ) {
         id = 0;
-        return *vi;
+        var = *vi;
       }
+
+  if (var) {  
+    augmentVariableValues(var, desc);
+    return var;
+  }
   
   id = 0;
-
   return dontCreateNew ? PVariable() : createVariable(desc);
 }

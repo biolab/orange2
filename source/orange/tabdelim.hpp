@@ -99,12 +99,12 @@ public:
 
   char *mayBeTabFile(const string &stem);
   PDomain readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore, bool noCodedDiscrete, bool noClass);
-  PDomain domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool noCodedDiscrete, bool noClass);
-  PDomain domainWithoutDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
-
+  void readTxtHeader(const string &stem, TDomainDepot::TAttributeDescriptions &);
+  void readTabHeader(const string &stem, TDomainDepot::TAttributeDescriptions &);
+  int detectAttributeType(TDomainDepot::TAttributeDescription &desc, bool noCodedDiscrete);
+  void scanAttributeValues(const string &stem, TDomainDepot::TAttributeDescriptions &desc);
 private:
   static TDomainDepot domainDepot_tab;
-  static TDomainDepot domainDepot_txt;
 };
 
 

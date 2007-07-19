@@ -140,9 +140,8 @@ PDomain TAssistantExampleGenerator::readDomain(const string &stem, PVarList sour
     ::raiseError("AssistantDomain: cannot open file '%s'", stem.c_str());
 
   TDomainDepot::TAttributeDescription classDescription(getLine(str), TValue::INTVAR);
-  classDescription.values = mlnew TStringList;
   for(int noval = atoi(getLine(str).c_str()); noval; noval--)
-    classDescription.values->push_back(getLine(str));
+    classDescription.addValue(getLine(str));
 
   TDomainDepot::TAttributeDescriptions attributeDescriptions;
 
@@ -152,13 +151,12 @@ PDomain TAssistantExampleGenerator::readDomain(const string &stem, PVarList sour
 
   while(noAttr--) {
     attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(getLine(str), TValue::INTVAR));
-    PStringList values = mlnew TStringList();
-    attributeDescriptions.back().values = values;
+    TDomainDepot::TAttributeDescription &desc = attributeDescriptions.back();
 
 	  int nvalues = atoi(getLine(str).c_str());
 	  if (nvalues>0) {
       while(nvalues--)
-        values->push_back(getLine(str).c_str());
+        desc.addValue(getLine(str));
     }
 	  else if (nvalues<0) {
       *ri = mlnew vector<float>();
@@ -166,10 +164,10 @@ PDomain TAssistantExampleGenerator::readDomain(const string &stem, PVarList sour
 	    while(nvalues++) {
         (*ri)->push_back(atof(getLine(str).c_str()));
         sprintf(buf, "v%i", (*ri)->size());
-        values->push_back(buf);
+        desc.addValue(buf);
 	    }
       sprintf(buf, "v%i", (*ri)->size()+1);
-      values->push_back(buf);
+      desc.addValue(buf);
     }
     else
       attributeDescriptions.back().varType = TValue::FLOATVAR;

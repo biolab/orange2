@@ -221,6 +221,26 @@ C_NAMED(IntVariable, Variable, "([name=, startValue=, endValue=, distributed=, g
 C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
 C_NAMED(FloatVariable, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
 
+PyObject *Variable_getExisting(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_STATIC, "(name, type[, fixedOrderValues[, otherValues]]) -> Variable | None")
+{
+  PyTRY
+    char *varName;
+    int varType;
+    PStringList values;
+    PStringList unorderedValues_asList;
+    
+    if (!PyArg_ParseTuple(args, "si|O&O&:Variable.getExisting", &varName, &varType, ccn_StringList, &values, ccn_StringList, &unorderedValues_asList))
+      return NULL;
+    
+    set<string> unorderedValues;
+    if (unorderedValues_asList)
+      unorderedValues.insert(unorderedValues_asList->begin(), unorderedValues_asList->end());
+      
+    PVariable var = TVariable::getExisting(varName, varType, values.getUnwrappedPtr(), &unorderedValues);
+    return WrapOrange(var);
+  PyCATCH
+}
+
 
 #include "stringvars.hpp"
 C_NAMED(StringVariable, Variable, "([name=])")
@@ -380,6 +400,59 @@ PyObject *Variable_specialValue(PyObject *self, PyObject *arg) PYARGS(METH_O, "(
 }
 
 
+PyObject *EnumVariable__reduce__(PyObject *self)
+{
+	PyTRY
+		return Py_BuildValue("O(ON)", getExportedFunction("__pickleLoaderEnumVariable"), self->ob_type, packOrangeDictionary(self));
+	PyCATCH
+}
+
+
+PyObject *__pickleLoaderEnumVariable(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, dictionary)")
+{
+  PyTRY
+    PyTypeObject *type;
+    PyObject *dict;
+	  if (!PyArg_ParseTuple(args, "OO:__pickleLoaderCostMatrix", &type, &dict))
+		  return NULL;
+
+    char *name = NULL;
+    TStringList *values = NULL;
+    
+    PyObject *pyname = PyDict_GetItemString(dict, "name");
+    if (pyname)
+      name = PyString_AsString(pyname);
+
+    PyObject *pyvalues = PyDict_GetItemString(dict, "values");
+    if (pyvalues)
+      values = PyOrange_AsStringList((TPyOrange *)pyvalues).getUnwrappedPtr();
+      
+    TVariable *var = TVariable::getExisting(name, TValue::INTVAR, values, NULL);
+    PVariable pvar = var;
+    if (!var) {
+      TEnumVariable *evar = new TEnumVariable(name ? name : "");
+      pvar = evar;
+      if (values)
+        const_PITERATE(TStringList, vi, values)
+          evar->addValue(*vi);
+    }
+    
+    PyObject *pyvar = WrapOrange(pvar);
+
+    PyObject *d_key, *d_value;
+    int i = 0;
+    while (PyDict_Next(dict, &i, &d_key, &d_value)) {
+      if (   strcmp("values", PyString_AsString(d_key))
+          && Orange_setattrLow((TPyOrange *)pyvar, d_key, d_value, false) < 0
+         ) {
+          Py_DECREF(pyvar);
+          return NULL;
+        }
+    }
+ 
+    return pyvar;
+	PyCATCH
+}
 
 PyObject *EnumVariable_getitem_sq(PyObject *self, int index)
 { PyTRY

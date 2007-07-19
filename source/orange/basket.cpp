@@ -107,7 +107,10 @@ void TBasketFeeder::addItem(TExample &example, const string &atom2, const int &l
     if (id == ILLEGAL_INT) {
       id = getMetaID();
       // Variable is created solely to hold the name
-      domain->metas.push_back(TMetaDescriptor(id, mlnew TFloatVariable(atom), true));
+      TFloatVariable *var = (TFloatVariable *)TVariable::getExisting(atom, TValue::FLOATVAR);
+      if (!var)
+        var = mlnew TFloatVariable(atom);
+      domain->metas.push_back(TMetaDescriptor(id, var, true));
 
       // store to global cache, if allowed and if not already there
       // Why dontCheckStored? If we have already searched there, we don't have to confirm again it doesn't exist

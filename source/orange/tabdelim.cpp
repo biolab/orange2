@@ -43,7 +43,6 @@ bool atomsEmpty(const vector<string> &atoms);
 
 
 TDomainDepot TTabDelimExampleGenerator::domainDepot_tab;
-TDomainDepot TTabDelimExampleGenerator::domainDepot_txt;
 
 
 const TTabDelimExampleGenerator::TIdentifierDeclaration TTabDelimExampleGenerator::typeIdentifiers[] =
@@ -314,26 +313,130 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
   // NULL if this seems a valid tab file
   char *isNotTab = mayBeTabFile(stem);
 
+  TDomainDepot::TAttributeDescriptions descriptions;
+  
   if (autoDetect) {
     if (!isNotTab)
       raiseWarning("'%s' is being loaded as .txt, but could be .tab file", stem.c_str());
-    else
-      mldelete isNotTab;
-
-    return domainWithDetection(stem, sourceVars, sourceMetas, sourceDomain, dontCheckStored, noCodedDiscrete, noClass);
+    readTxtHeader(stem, descriptions);
   }
-
   else {
-    if (isNotTab) {
+    if (isNotTab)
       raiseWarning("'%s' is being loaded as .tab, but looks more like .txt file\n(%s)", stem.c_str(), isNotTab);
-      mldelete isNotTab;
-    }
-
-    return domainWithoutDetection(stem, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
+    readTabHeader(stem, descriptions);
   }
+
+  if (isNotTab)
+    mldelete isNotTab;
+
+  scanAttributeValues(stem, descriptions);
+  
+  TIntList::iterator ati(attributeTypes->begin());
+  TDomainDepot::TAttributeDescriptions attributeDescriptions, metaDescriptions;
+  int ind = 0, lastRegular = -1;
+
+  for(TDomainDepot::TAttributeDescriptions::iterator adi(descriptions.begin()), ade(descriptions.end()); adi != ade; adi++, ati++, ind++) {
+    if (!*ati)
+      continue;
+      
+    if (adi->varType == -1) {
+      int autoType = detectAttributeType(*adi, noCodedDiscrete);
+      
+      if (autoType == 3) {
+        raiseWarning("cannot determine type for attribute '%s'; the attribute will be ignored", adi->name.c_str());
+        *ati = 0;
+        continue;
+      }
+
+      adi->varType = autoType == 1 ? TValue::FLOATVAR : TValue::INTVAR;
+    }
+    
+    if (*ati == 1)
+      metaDescriptions.push_back(*adi);
+      
+    else if ((classPos != ind) && (basketPos != ind)) {
+      attributeDescriptions.push_back(*adi);
+      lastRegular = ind;
+    }
+  }
+  
+  if (classPos > -1)
+    attributeDescriptions.push_back(descriptions[classPos]);
+  else if (autoDetect && !noClass)
+    classPos = lastRegular;
+    
+  if (basketPos >= 0)
+    basketFeeder = mlnew TBasketFeeder(sourceDomain, dontCheckStored, false);
+    
+  if (sourceDomain) {
+    if (!domainDepot_tab.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, classPos >= 0, NULL))
+      raiseError("given domain does not match the file");
+
+    if (basketFeeder)
+      basketFeeder->domain = sourceDomain;
+    return sourceDomain;
+  }
+
+  int *metaIDs = mlnew int[metaDescriptions.size()];
+  PDomain newDomain = domainDepot_tab.prepareDomain(&attributeDescriptions, classPos>-1, &metaDescriptions, sourceVars, sourceMetas, false, dontCheckStored, NULL, metaIDs);
+
+  int *mid = metaIDs;
+  PITERATE(TIntList, ii, attributeTypes)
+    if (*ii == 1)
+      *ii = *(mid++);
+
+  mldelete metaIDs;
+
+  if (basketFeeder)
+    basketFeeder->domain = newDomain;
+
+  return newDomain;
 }
 
- 
+
+
+int TTabDelimExampleGenerator::detectAttributeType(TDomainDepot::TAttributeDescription &desc, const bool noCodedDiscrete)
+{
+  char numTest[64];
+
+  int status = 3;  //  3 - not encountered any values, 2 - can be coded discrete, 1 - can be float, 0 - must be nominal
+  ITERATE(set<string>, vli, desc.values) {
+
+    if (vli->length() > 63)
+      return 0;
+    
+    const char *ceni = vli->c_str();
+    if (   !*ceni
+        || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*') || (*ceni=='-'))
+        || (*vli == "NA") || (DC && (*vli == DC)) || (DK && (*vli == DK)))
+      continue;
+    
+    if (status == 3)
+      status = 2;
+
+    if ((status == 2) && (ceni[1] || (*ceni<'0') || (*ceni>'9')))
+      status = noCodedDiscrete ? 2 : 1;
+      
+    if (status == 1) {
+      strcpy(numTest, ceni);
+      for(char *sc = numTest; *sc; sc++)
+        if (*sc == ',')
+          *sc = '.';
+
+      char *eptr;
+      strtod(numTest, &eptr);
+      while (*eptr==32)
+        eptr++;
+      if (*eptr)
+        return 0;
+    }
+  }
+  
+  return status;
+}
+
+
+
 
 /* These are the rules for determining the attribute types.
 
@@ -344,6 +447,9 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
       c, m and i mean class attribute, meta attribute and ignore,
       respectively.
       D, C and S mean discrete, continuous and string attributes.
+
+
+!!! NOT TRUE:
 
    2. By knownVars.
       If the type is not determined from header row (either because
@@ -362,40 +468,57 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
       are just codes for otherwise discrete values).
 */
 
-class TSearchWarranty 
-{ public:
-  int posInFile, posInDomain, suspectedType;
-  // suspectedType can be 3 (never seen it yet), 2 (can even be coded discrete), 1 (can be float);
-  //   if it's found that it cannot be float, it can only be discrete, so the warranty is removed
-  TSearchWarranty(const int &pif, const int &pid)
-  : posInFile(pif), posInDomain(pid), suspectedType(3)
-  {}
-};
 
-PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool noCodedDiscrete, bool noClass)
-{ 
-  headerLines = 1;
-
+void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainDepot::TAttributeDescriptions &desc)
+{
   TFileExampleIteratorData fei(stem);
-  
+
+  vector<string> atoms;
+  vector<string>::const_iterator ai, ae;
+  TDomainDepot::TAttributeDescriptions::iterator di, db(desc.begin()), de(desc.end());
+  TIntList::const_iterator ati, atb(attributeTypes->begin());
+
+  for (int i = headerLines; !feof(fei.file) && i--; )
+    while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv) == -1));
+
+  while (!feof(fei.file)) {
+    if (readTabAtom(fei, atoms, true, csv) <= 0)
+      continue;
+    
+    for(di = db, ati = atb, ai = atoms.begin(), ae = atoms.end(); (di != de) && (ai != ae); di++, ai++, ati++) {
+      if (!*atb)
+        continue;
+        
+      const char *ceni = ai->c_str();
+      if (   !*ceni
+          || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*') || (*ceni=='-'))
+          || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
+         continue;
+
+      di->values.insert(*ai);
+    }
+  }
+}
+
+
+void TTabDelimExampleGenerator::readTxtHeader(const string &stem, TDomainDepot::TAttributeDescriptions &descs)
+{ 
+  TFileExampleIteratorData fei(stem);
+
   vector<string> varNames;
-  // read the next non-comment line
   while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
   if (varNames.empty())
-    ::raiseError("unexpected end of file '%s'", fei.filename.c_str());
+    ::raiseError("unexpected end of file '%s' while searching for attribute names", fei.filename.c_str());
 
-  TDomainDepot::TAttributeDescriptions attributeDescriptions, metas;
+  headerLines = 1;
   classPos = -1;
   basketPos = -1;
-  int classType = -1;
-  int lastRegular = -1;
-
-
-  list<TSearchWarranty> searchWarranties;
-
-  /**** Parse the header row */
+  attributeTypes = mlnew TIntList(varNames.size(), -1);
+  TIntList::iterator attributeType(attributeTypes->begin());
+  vector<string>::const_iterator ni(varNames.begin()), ne(varNames.end());
+  int ind = 0;
   
-  ITERATE(vector<string>, ni, varNames) {
+  for(; ni != ne; ni++, ind++, attributeType++) {
     /* Parses the header line
        - sets *ni to a real name (without prefix)
        - sets varType to TValue::varType or -1 if the type is not specified and -2 if it's a basket
@@ -403,243 +526,68 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
          (and reports an error if there is more than one such attribute)
        - to attributeTypes, appends -1 for ordinary atributes, 1 for metas and 0 for ignored or baskets*/
     int varType = -1; // varType, or -1 for unnown, -2 for basket
-    attributeTypes->push_back(-1);
-    int &attributeType = attributeTypes->back();
 
     const char *cptr = (*ni).c_str();
-    if (*cptr && (cptr[1]=='#')) {
-      if (*cptr == 'm')
-        attributeType = 1;
-      else if (*cptr == 'i')
-        attributeType = 0;
+    if (*cptr && (cptr[1]=='#') || (cptr[2] == '#')) {
+      if (*cptr == 'm') {
+        *attributeType = 1;
+        cptr++;
+      }
+      else if (*cptr == 'i') {
+        *attributeType = 0;
+        cptr++;
+      }
       else if (*cptr == 'c') {
         if (classPos>-1)
           ::raiseError("more than one attribute marked as class");
         else
-          classPos = ni-varNames.begin();
+          classPos = ind;
+        cptr++;
       }
-
-      else if (*cptr == 'D')
-        varType = TValue::INTVAR;
-      else if (*cptr == 'C')
-        varType = TValue::FLOATVAR;
-      else if (*cptr == 'S')
-        varType = STRINGVAR;
-      else if (*cptr == 'B') {
-          varType = -2;
-          attributeType = 0;
-          if (basketPos > -1)
-            ::raiseError("more than one basket attribute");
-          else
-            basketPos = ni - varNames.begin();
-      }
-      else
-        ::raiseError("unrecognized flags in attribute name '%s'", cptr);
-
-      *ni = string(cptr+2);
-    }
-
-    else if (*cptr && cptr[1] && (cptr[2]=='#')) {
-      bool beenWarned = false;
-      if (*cptr == 'm')
-        attributeType = 1;
-      else if (*cptr == 'i')
-        attributeType = 0;
-      else if (*cptr == 'c') {
-        if (classPos>-1)
-          ::raiseError("more than one attribute marked as class");
-        else
-          classPos = ni-varNames.begin();
-      }
-      else
-        ::raiseError("unrecognized flags in attribute name '%s'", cptr);
-
-      cptr++;
-      if (*cptr == 'D')
-        varType = TValue::INTVAR;
-      else if (*cptr == 'C')
-        varType = TValue::FLOATVAR;
-      else if (*cptr == 'S')
-        varType = STRINGVAR;
-      else if (*cptr == 'B') {
-        if (attributeType) { // basket can be ignored, too
-          varType = -2;
-          attributeType = 0;  // this is ugly, but baskets are a patch anyway: if not ignored by 'i' flag, it's ignored by 'basket'
-          if (basketPos > -1)
-            ::raiseError("there can only be one basket attribute");
-          else
-            basketPos = ni - varNames.begin();
-        }
-      }
-      else
-        ::raiseError("unrecognized flags in attribute name '%s'", cptr);
-
-      // remove the prefix (we have already increased cptr once)
-      *ni = string(cptr+2);
-    }
-
-    /* If the attribute is not to be ignored, we attempt to either find its descriptor
-       among the known attributes or create a new attribute if the type is given.
-       For ordinary attributes, the descriptor (or PVariable()) is pushed to the list of 'variables'.
-       For meta attributes, a meta descriptor is pushed to 'metas'. If the attribute was used as
-       meta-attribute in some of known domains, the id is reused; otherwise a new id is created.
-       If the descriptor was nor found nor created, a warranty is issued.
-    */
       
-    if ((classPos == ni-varNames.begin())) {
-      classType = varType;
-    }
-    else {
-      if (attributeType == 1) {
-        metas.push_back(TDomainDepot::TAttributeDescription(*ni, varType));
-        if (varType==-1)
-          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -(signed int)(metas.size())));
+      // we may have encountered a m, i or c, so cptr points to the second character,
+      // or it can still point to the first 
+      if (*cptr == 'D') {
+        varType = TValue::INTVAR;
+        cptr++;
       }
-      else if (attributeType) {
-        lastRegular = ni-varNames.begin();
-        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(*ni, varType));
-        if (varType==-1)
-          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), attributeType==-2 ? -1 : attributeDescriptions.size()-1));
+      else if (*cptr == 'C') {
+        varType = TValue::FLOATVAR;
+        cptr++;
       }
-    }
-  }
-
-  if (classPos > -1) {
-    attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(varNames[classPos], classType));
-    if (classType<0)
-      searchWarranties.push_back(TSearchWarranty(classPos, attributeDescriptions.size()-1));
-  }
-  else {
-    if (!noClass)
-      classPos = lastRegular;
-  }
-
-  if (!searchWarranties.empty()) {
-    vector<string> atoms;
-    char numTest[64];
-    while (!feof(fei.file) && !searchWarranties.empty()) {
-      // seek to the next line non-empty non-comment line
-      if (readTabAtom(fei, atoms, true, csv) <= 0)
-        continue;
-    
-      for(list<TSearchWarranty>::iterator wi(searchWarranties.begin()); wi != searchWarranties.end(); ) {
-        if ((*wi).posInFile >= atoms.size()) {
-          wi++;
-          continue;
-//          raiseError("line %i too short", fei.line);
-        }
-
-        const string &atom = atoms[(*wi).posInFile];
-
-        // only discrete attributes can have values longer than 63 characters
-        if (atom.length()>63) {
-          if ((*wi).posInDomain<0)
-            metas[-(*wi).posInDomain - 1].varType = TValue::INTVAR;
-          else
-            attributeDescriptions[(*wi).posInDomain].varType = TValue::INTVAR;
-          wi = searchWarranties.erase(wi);
-          continue;
-        }
-
-        const char *ceni = atom.c_str();
-        if (   !*ceni
-            || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*') || (*ceni=='-'))
-            || (atom == "NA") || (DC && (atom == DC)) || (DK && (atom == DK))) {
-          wi++;
-          continue;
-        }
-
-        // we have encountered some value
-        if ((*wi).suspectedType == 3) 
-          (*wi).suspectedType = 2;
-
-        // If the attribute is a digit, it can be anything
-        if ((!ceni[1]) && (*ceni>='0') && (*ceni<='9')) {
-          wi++;
-          continue;
-        }
-
-        // If it is longer than one character, it cannot be a coded discrete
-        if (ceni[1])
-          (*wi).suspectedType = 1;
-
-        // Convert commas into dots
-        strcpy(numTest, ceni);
-        for(char *sc = numTest; *sc; sc++)
-          if (*sc == ',')
-            *sc = '.';
-
-        // If the attribute cannot be converted into a number, it is enum
-        char *eptr;
-        strtod(numTest, &eptr);
-        while (*eptr==32)
-          eptr++;
-        if (*eptr) {
-          if ((*wi).posInDomain<0)
-            metas[-(*wi).posInDomain - 1].varType = TValue::INTVAR;
-          else
-            attributeDescriptions[(*wi).posInDomain].varType = TValue::INTVAR;
-          wi = searchWarranties.erase(wi);
-          continue;
-        }
-        
-        wi++;
+      else if (*cptr == 'S') {
+        varType = STRINGVAR;
+        cptr++;
       }
+      else if (*cptr == 'B') {
+        varType = -2;
+        if ((*attributeType != -1) || (classPos == ind))
+          ::raiseError("flag 'B' is incompatible with 'i', 'm' and 'c'");
+        *attributeType = 0;
+        if (basketPos > -1)
+          ::raiseError("more than one basket attribute");
+        else
+          basketPos = ind;
+        cptr++;
+      }
+     
+      if (*cptr != '#')     
+        ::raiseError("unrecognized flags in attribute name '%s'", cptr);
+      cptr++;
     }
 
-
-    ITERATE(list<TSearchWarranty>, wi, searchWarranties) {
-      const string &name = varNames[(*wi).posInFile];
-      if ((*wi).suspectedType == 3)
-        raiseWarning("cannot determine type for attribute '%s'; the attribute will be ignored", name.c_str());
-
-      int type = (*wi).suspectedType == 2 && !noCodedDiscrete ? TValue::INTVAR : TValue::FLOATVAR;
-      if ((*wi).posInDomain<0)
-        metas[-(*wi).posInDomain - 1].varType = type;
-      else
-        attributeDescriptions[(*wi).posInDomain].varType = type;
-    }
-
-    for(int i = 0; i < attributeDescriptions.size(); )
-      if (attributeDescriptions[i].varType == -1)
-        attributeDescriptions.erase(attributeDescriptions.begin() + i);
-      else
-        i++;
+    descs.push_back(TDomainDepot::TAttributeDescription(cptr, varType));
   }
-
-
-  if (basketPos >= 0)
-    basketFeeder = mlnew TBasketFeeder(sourceDomain, dontCheckStored, false);
-    
-  if (sourceDomain) {
-    if (!domainDepot_txt.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, classPos>-1, NULL))
-      raiseError("given domain does not match the file");
-    else {
-      if (basketFeeder)
-        basketFeeder->domain = sourceDomain;
-      return sourceDomain;
-    }
-  }
-
-  int *metaIDs = mlnew int[metas.size()];
-  PDomain newDomain = domainDepot_txt.prepareDomain(&attributeDescriptions, classPos>-1, &metas, sourceVars, sourceMetas, false, dontCheckStored, NULL, metaIDs);
-
-  int *mid = metaIDs;
-  PITERATE(TIntList, ii, attributeTypes)
-    if (*ii == 1)
-      *ii = *(mid++);
-
-  mldelete metaIDs;
-
-  if (basketFeeder)
-    basketFeeder->domain = newDomain;
-
-  return newDomain;
 }
 
 
-PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
+
+void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::TAttributeDescriptions &descs)
 {
+  classPos = -1;
+  basketPos = -1;
+  headerLines = 3;
+
   TFileExampleIteratorData fei(stem);
   
   vector<string> varNames, varTypes, varFlags;
@@ -661,79 +609,62 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
   while (varFlags.size() < varNames.size())
     varFlags.push_back("");
 
-  TDomainDepot::TAttributeDescriptions attributeDescriptions, metas;
-  TDomainDepot::TAttributeDescription classDescription("", 0);
-  classPos = -1;
-  basketPos = -1;
-  headerLines = 3;
-
   attributeTypes = mlnew TIntList(varNames.size(), -1);
 
   vector<string>::iterator vni(varNames.begin()), vne(varNames.end());
   vector<string>::iterator ti(varTypes.begin());
   vector<string>::iterator fi(varFlags.begin()), fe(varFlags.end());
-  TIntList::iterator ati(attributeTypes->begin());
-  for(; vni!=vne; fi++, vni++, ti++, ati++) {
-    TDomainDepot::TAttributeDescription *attributeDescription = NULL;
+  TIntList::iterator attributeType(attributeTypes->begin());
+  int ind = 0;
+  
+  for(; vni!=vne; fi++, vni++, ti++, attributeType++, ind++) {
+  
+    descs.push_back(TDomainDepot::TAttributeDescription(*vni, 0));
+    TDomainDepot::TAttributeDescription &desc = descs.back();
+
     bool ordered = false;
+    vector<string> thisDCs;
 
     if (fi!=fe) {
       TProgArguments args("dc: ordered", *fi, false);
 
       if (args.direct.size()) {
+      
         if (args.direct.size()>1)
           ::raiseError("invalid flags for attribute '%s'", (*vni).c_str());
+          
         string direct = args.direct.front();
         if ((direct=="s") || (direct=="skip") || (direct=="i") || (direct=="ignore"))
-          *ati = 0;
-        else if ((direct=="c") || (direct=="class"))
-          if (classPos==-1) {
-            classPos = vni - varNames.begin();
-            classDescription.name = *vni;
-            attributeDescription = &classDescription;
-          }
-          else 
+          *attributeType = 0;
+
+        else if ((direct=="c") || (direct=="class")) {
+          if (classPos != -1)
             ::raiseError("multiple attributes are specified as class attribute ('%s' and '%s')", (*vni).c_str(), (*vni).c_str());
+          classPos = ind;
+        }
+        
         else if ((direct=="m") || (direct=="meta"))
-          *ati = 1;
+          *attributeType = 1;
       }
 
-      if (args.exists("dc")) {
-        const int ind = vni-varNames.begin();
-        ITERATE(TMultiStringParameters, mi, args.options)
-          if ((*mi).first == "dc") {
-            while (DCs.size() <= ind)
-              DCs.push_back(vector<string>());
-            DCs.at(ind).push_back((*mi).second);
-          }
-      }
+      ITERATE(TMultiStringParameters, mi, args.options)
+        if ((*mi).first == "dc")
+          thisDCs.push_back((*mi).second);
 
       ordered = args.exists("ordered");
     }
 
-    if (!*ati)
-      continue;
-
     if (!strcmp((*ti).c_str(), "basket")) {
       if (basketPos > -1)
         ::raiseError("multiple basket attributes are defined");
-      basketPos = vni - varNames.begin();
-      *ati = 0;
-      continue;
+      if (ordered || (classPos == ind) || (*attributeType != -1))
+        ::raiseError("'basket' flag is incompatible with other flags");
+      basketPos = ind;
+      *attributeType = 0;
     }
 
-    if (!attributeDescription) {// this can only be defined if the attribute is a class attribute
-      if (*ati==1) {
-        metas.push_back(TDomainDepot::TAttributeDescription(*vni, -1, *ti, ordered));
-        attributeDescription = &metas.back();
-      }
-      else {
-        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(*vni, -1, *ti, ordered));
-        attributeDescription = &attributeDescriptions.back();
-      }
-    }
-    else
-      attributeDescription->ordered = ordered;
+    if (!*attributeType)
+      continue;
 
     if (!(*ti).length())
       ::raiseError("type for attribute '%s' is missing", (*vni).c_str());
@@ -742,18 +673,18 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
     for(; tid->identifier; tid++)
       if (!(tid->matchRoot ? strncmp(tid->identifier, (*ti).c_str(), tid->matchRoot)
                            : strcmp(tid->identifier, (*ti).c_str()))) {
-        attributeDescription->varType = tid->varType;
+        desc.varType = tid->varType;
         break;
       }
+      
     if (!tid->identifier) {
-      attributeDescription->varType = TValue::INTVAR;
-      attributeDescription->values = mlnew TStringList;
+      desc.varType = TValue::INTVAR;
 
       string vals;
-      ITERATE(string, ci, *ti)
+      ITERATE(string, ci, *ti) {
         if (*ci==' ') {
           if (vals.length())
-            attributeDescription->values->push_back(vals);
+            desc.addValue(vals);
           vals="";
         }
         else {
@@ -764,42 +695,12 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
           else
             vals += *ci;
         }
+      }
 
       if (vals.length())
-        attributeDescription->values->push_back(vals);
+        desc.addValue(vals);
     }
   }
-
-  if (classPos > -1)
-    attributeDescriptions.push_back(classDescription);
-
-  if (basketPos >= 0)
-    basketFeeder = mlnew TBasketFeeder(sourceDomain, dontCheckStored, false);
-    
-  if (sourceDomain) {
-    if (!domainDepot_tab.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, classPos >= 0, NULL))
-      raiseError("given domain does not match the file");
-    else {
-      if (basketFeeder)
-        basketFeeder->domain = sourceDomain;
-      return sourceDomain;
-    }
-  }
-
-  int *metaIDs = mlnew int[metas.size()];
-  PDomain newDomain = domainDepot_tab.prepareDomain(&attributeDescriptions, classPos>=0, &metas, sourceVars, sourceMetas, false, dontCheckStored, NULL, metaIDs);
-
-  int *mid = metaIDs;
-  PITERATE(TIntList, ii, attributeTypes)
-    if (*ii == 1)
-      *ii = *(mid++);
-
-  mldelete metaIDs;
-
-  if (basketFeeder)
-    basketFeeder->domain = newDomain;
-
-  return newDomain;
 }
 
 

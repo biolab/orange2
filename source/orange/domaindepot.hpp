@@ -48,14 +48,21 @@ class ORANGE_API TDomainDepot
 public:
   class TAttributeDescription {
   public:
+    PVariable preparedVar;
+    
     string name;
     int varType;
     string typeDeclaration;
     bool ordered;
-    PStringList values; // not always used, but often comes handy...
-
+    TStringList fixedOrderValues; // these have a fixed order
+    set<string> values; // all values, sorted alpabetically
+    vector<string> DCs;
+    
     TAttributeDescription(const string &, const int &, const string &, bool = false);
     TAttributeDescription(const string &, const int &);
+    TAttributeDescription(PVariable);
+    
+    void addValue(const string &s);
   };
 
   ~TDomainDepot();
@@ -65,22 +72,22 @@ public:
   static bool checkDomain(const TDomain *, const TAttributeDescriptions *attributes, bool hasClass,
                           const TAttributeDescriptions *metas, int *metaIDs = NULL);
 
-  PDomain prepareDomain(const TAttributeDescriptions *attributes, bool hasClass,
-                        const TAttributeDescriptions *metas, PVarList knownVars, const TMetaVector *knownMetas,
+  PDomain prepareDomain(TAttributeDescriptions *attributes, bool hasClass,
+                        TAttributeDescriptions *metas, PVarList knownVars, const TMetaVector *knownMetas,
                         const bool dontStore, const bool dontCheckStored,
                         bool *domainIsNew = NULL, int *metaIDs = NULL);
 
   static void destroyNotifier(TDomain *domain, void *);
 
   /* Creates a variable with given name and type. */
-  static PVariable createVariable(const TAttributeDescription &);
+  static PVariable createVariable(TAttributeDescription &);
   static PVariable createVariable_Python(const string &typeDeclaration, const string &name);
 
   /* Tries to find a variable the given name and type in knownVars or metaVector.
      Any of these (or both) can be omitted. If the variable is found in metaVector,
      the id is set as well; if not, id is set to 0. If the variable is not found,
      a new one is created unless dontCreateNew is set to false. */
-  static PVariable makeVariable(const TAttributeDescription &, int &id, PVarList knownVars, const TMetaVector * = NULL, bool dontCreateNew = false, bool preferMetas = false);
+  static PVariable makeVariable(TAttributeDescription &, int &id, PVarList knownVars, const TMetaVector * = NULL, bool dontCreateNew = false, bool preferMetas = false);
 
 
 private:

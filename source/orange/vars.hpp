@@ -24,6 +24,8 @@
 #define __VARS_HPP
 
 #include <string>
+#include <list>
+#include <set>
 #include "orvector.hpp"
 
 using namespace std;
@@ -71,7 +73,28 @@ protected:
   TValue DK_value;
 
 public:
-  TVariable(const int &avarType=TValue::NONE, const bool &ordered = false);
+  static list<TVariable *> allVariables;
+
+  void *operator new(size_t s) throw(bad_alloc)
+  {
+    void *t = ::operator new(s);
+    TVariable::allVariables.push_back((TVariable *)t);
+    return t;
+  }
+
+  void operator delete(void *t)
+  {
+    /* When the program shuts down, it may happen that the list is destroyed before
+       the variables. We do nothing in this case. */
+    if (allVariables.size())
+      allVariables.remove((TVariable *)t);
+      
+    ::operator delete(t);
+  }
+
+  static TVariable *getExisting(const string &name, const int &varType, TStringList *fixedOrderValues = NULL, set<string> *values = NULL);
+  
+  TVariable(const int &avarType = TValue::NONE, const bool &ordered = false);
   TVariable(const string &aname, const int &avarType=TValue::NONE, const bool &ordered = false);
 
   virtual const TValue &DC() const;
@@ -131,6 +154,9 @@ public:
   virtual void str2val(const string &valname, TValue &valu);
   virtual bool str2val_try(const string &valname, TValue &valu);
   virtual void str2val_add(const string &valname, TValue &valu);
+
+  bool checkValuesOrder(const TStringList &refValues);
+  static void presortValues(const set<string> &unsorted, vector<string> &sorted);
 
 private:
   map<string, int> valuesTree;

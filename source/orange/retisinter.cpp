@@ -130,11 +130,10 @@ PDomain TRetisExampleGenerator::readDomain(const string &stem, PVarList sourceVa
     string type = getLine(str);
     if (type=="discrete") {
       attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::INTVAR));
-      PStringList values = mlnew TStringList;
-      attributeDescriptions.back().values = values;
+      TDomainDepot::TAttributeDescription &desc = attributeDescriptions.back();
       int noVals = atoi(getLine(str).c_str());
       while(noVals--)
-        values->push_back(getLine(str).c_str());
+        desc.addValue(getLine(str).c_str());
     }
     else if (type=="continuous") {
       attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::FLOATVAR));

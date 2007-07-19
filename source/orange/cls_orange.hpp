@@ -37,6 +37,9 @@ ORANGE_API int Orange_setattr1(TPyOrange *self, char *name, PyObject *args);
 ORANGE_API int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args);
 
 ORANGE_API PyObject *packOrangeDictionary(PyObject *self);
+/* Never tested! 
+ORANGE_API int unpackOrangeDictionary(PyObject *self, PyObject *dict);
+*/
 ORANGE_API PyObject *Orange__reduce__(PyObject *self, PyObject *, PyObject *);
 
 ORANGE_API PyObject *objectOnTheFly(PyObject *args, PyTypeObject *objectType);
