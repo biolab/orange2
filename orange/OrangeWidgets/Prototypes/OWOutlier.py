@@ -64,7 +64,7 @@ class OWOutlier(OWWidget):
         box = QVGroupBox(self.controlArea)
         box.setTitle('Settings')
         
-        OWGUI.lineEdit(box, self, 'zscore', label = 'Outlier Z:', orientation='horizontal', box=None, tooltip='Minimum Z score of an outlier', callback=None, valueType = str, validator = kernelSizeValid)
+        OWGUI.lineEdit(box, self, 'zscore', label = 'Outlier Z:', orientation='horizontal', box=None, tooltip='Minimum Z score of an outlier', validator = kernelSizeValid)
 
         OWGUI.separator(self.controlArea)
    	  
