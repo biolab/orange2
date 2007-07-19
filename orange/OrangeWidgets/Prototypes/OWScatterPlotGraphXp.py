@@ -9,6 +9,7 @@ import RandomArray
 import ColorPalette
 import orngVisFuncts
 from orngScaleScatterPlotData import *
+import numpy
 
 DONT_SHOW_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
@@ -87,10 +88,36 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         
         self.__dict__.update(args)      # set value from args dictionary
 
+        colorIndex = -1
+        if colorAttr != "" and colorAttr != "(One color)":
+            colorIndex = self.attributeNameIndex[colorAttr]
+            if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete:
+                colorIndices = getVariableValueIndices(self.rawdata, colorIndex)
+
+        brightenIndex = -1
+        if brightenAttr != "" and brightenAttr != "(One color)":
+            brightenIndex = self.attributeNameIndex[brightenAttr]
+            
+        shapeIndex = -1
+        shapeIndices = {}
+        if shapeAttr != "" and shapeAttr != "(One shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
+            shapeIndex = self.attributeNameIndex[shapeAttr]
+            if self.rawdata.domain[shapeIndex].varType == orange.VarTypes.Discrete:
+                shapeIndices = getVariableValueIndices(self.rawdata, shapeIndex)
+
+        sizeShapeIndex = -1
+        if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
+            sizeShapeIndex = self.attributeNameIndex[sizeShapeAttr]
+
+        showColorLegend = showColorLegend and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous
+
         (xVarMin, xVarMax) = self.attrValues[xAttr]; xVar = xVarMax - xVarMin
         (yVarMin, yVarMax) = self.attrValues[yAttr]; yVar = yVarMax - yVarMin
         xAttrIndex = self.attributeNameIndex[xAttr]
         yAttrIndex = self.attributeNameIndex[yAttr]
+        attrIndices = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
+        while -1 in attrIndices: attrIndices.remove(-1)
+        self.shownAttributeIndices = attrIndices
     
         # set axis for x attribute
         attrXIndices = {}
@@ -130,29 +157,6 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         self.oldShowColorLegend = showColorLegend
 
-        colorIndex = -1
-        if colorAttr != "" and colorAttr != "(One color)":
-            colorIndex = self.attributeNameIndex[colorAttr]
-            if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete: colorIndices = getVariableValueIndices(self.rawdata, colorIndex)
-            
-        brightenIndex = -1
-        if brightenAttr != "" and brightenAttr != "(One color)":
-            brightenIndex = self.attributeNameIndex[brightenAttr]
-        
-        shapeIndex = -1
-        shapeIndices = {}
-        if shapeAttr != "" and shapeAttr != "(One shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
-            shapeIndex = self.attributeNameIndex[shapeAttr]
-            if self.rawdata.domain[shapeIndex].varType == orange.VarTypes.Discrete: shapeIndices = getVariableValueIndices(self.rawdata, shapeIndex)
-
-        sizeShapeIndex = -1
-        if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
-            sizeShapeIndex = self.attributeNameIndex[sizeShapeAttr]
-
-        attrIndices = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
-        while -1 in attrIndices: attrIndices.remove(-1)
-        self.shownAttributeIndices = attrIndices
-
         # compute x and y positions of the points in the scatterplot        
         xData, yData = self.getXYPositions(xAttr, yAttr)
         validData = self.getValidList([xAttrIndex, yAttrIndex])
@@ -166,13 +170,13 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             scX = [x/xdiff for x in xData]
             scY = [y/ydiff for y in yData]
             
-            self.potentialsClassifier = orange.P2NN(domain, Numeric.transpose(Numeric.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawdata]])), None, None, None, None)
+            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([scX, scY, [float(ex[colorIndex]) for ex in self.rawdata]])), None, None, None, None)
             self.xmin = xmin; self.xmax = xmax
             self.ymin = ymin; self.ymax = ymax
             
 
         if self.showTriangulation or self.showBoundaries or self.showUnexplored or self.showUnevenlySampled:
-            import numpy, orangeom
+            import orangeom
             maxdist = max(max(xData) - min(xData), max(yData) - min(yData)) / 2
             triangulation = orangeom.qhull(numpy.array([xData, yData]).transpose())
             facets = len(triangulation)
@@ -234,30 +238,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 c = list(c)
                 self.addCurve("", QColor(0, 0, 0), QColor(0, 0, 0), QwtSymbol.None, style = QwtCurve.Lines, xData = [xData[i] for i in c+[c[0]]], yData = [yData[i] for i in c+[c[0]]])
                 
-        # #######################################################
-        # show clusters
-        if self.showClusters and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            data = self.createProjectionAsExampleTable([xAttrIndex, yAttrIndex], settingsDict = {"validData": validData, "jitterSize": 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation})
-            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
-            
-            classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])
-            indices = Numeric.compress(validData, Numeric.array(range(len(self.rawdata))))
-            
-            for key in valueDict.keys():
-                if not polygonVerticesDict.has_key(key): continue
-                for (i,j) in closureDict[key]:
-                    color = self.discPalette[classIndices[graph.objects[i].getclass().value]]
-                    self.addCurve("", color, color, 1, QwtCurve.Lines, QwtSymbol.None, xData = [float(self.rawdata[indices[i]][xAttr]), float(self.rawdata[indices[j]][xAttr])], yData = [float(self.rawdata[indices[i]][yAttr]), float(self.rawdata[indices[j]][yAttr])], lineWidth = 1)
-
-            self.removeMarkers()
-            for i in range(graph.nVertices):
-                if not validData[i]: continue
-                mkey = self.insertMarker(str(i))
-                self.marker(mkey).setXValue(float(self.rawdata[i][xAttrIndex]))
-                self.marker(mkey).setYValue(float(self.rawdata[i][yAttrIndex]))
-                self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
-            
-        elif self.clusterClosure: self.showClusterLines(xAttr, yAttr)
+ 
 
         # ##############################################################
         # show the distributions
@@ -323,7 +304,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
             # ##############################################################
             # create a small number of curves which will make drawing much faster
             # ##############################################################
-            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not haveSubsetData and brightenIndex == -1:
+            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not haveSubsetData and brightenIndex == -1 and not labelAttr:
                 if colorIndex != -1:
                     classCount = len(colorIndices)
                 else: classCount = 1
@@ -410,6 +391,19 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                         shownSubsetCount += showFilled
 
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y], showFilledSymbols = showFilled)
+
+                    # Show a label by each marker
+                    if labelAttr:
+                        if labelAttr in [self.rawdata.domain.getmeta(mykey).name for mykey in self.rawdata.domain.getmetas().keys()] + [var.name for var in self.rawdata.domain]:
+                            if self.rawdata[i][labelAttr].isSpecial(): continue
+                            if self.rawdata[i][labelAttr].varType==orange.VarTypes.Continuous:
+                                lbl = "%4.1f" % orange.Value(self.rawdata[i][labelAttr])
+                            else:
+                                lbl = str(self.rawdata[i][labelAttr].value)
+                            mkey = self.insertMarker(lbl)
+                            self.marker(mkey).setXValue(float(x))
+                            self.marker(mkey).setYValue(float(y))
+                            self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
                         
                     # we add a tooltip for this point
                     self.tips.addToolTip(x, y, i)
@@ -445,6 +439,19 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                         size = self.pointWidth
                         if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * self.pointWidth)
                         self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y], showFilledSymbols = 1)
+
+                        # Show a label by each marker
+                        if labelAttr:
+                            if labelAttr in [self.rawdata.domain.getmeta(mykey).name for mykey in self.rawdata.domain.getmetas().keys()] + [var.name for var in self.rawdata.domain]:
+                                if self.rawdata[i][labelAttr].isSpecial(): continue
+                                if self.rawdata[i][labelAttr].varType==orange.VarTypes.Continuous:
+                                    lbl = "%4.1f" % orange.Value(self.rawdata[i][labelAttr])
+                                else:
+                                    lbl = str(self.rawdata[i][labelAttr].value)
+                                mkey = self.insertMarker(lbl)
+                                self.marker(mkey).setXValue(float(x))
+                                self.marker(mkey).setYValue(float(y))
+                                self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
 
         
         # ##############################################################
@@ -580,7 +587,8 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         if not self.rawdata: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
-        if not validData: validData = self.getValidList(attrIndices)
+        if validData == None:
+            validData = self.getValidList(attrIndices)
         
         (xArray, yArray) = self.getXYPositions(xAttr, yAttr)
 
