@@ -482,16 +482,8 @@ PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A 
   PyCATCH
 }
 
-PyObject *NetworkOptimization_getHubs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(n) -> HubList")
+int *getVertexPowers(TNetworkOptimization *graph)
 {
-  PyTRY
-	int n;
-
-	if (!PyArg_ParseTuple(args, "n:NetworkOptimization.getHubs", &n))
-		return NULL;
-
-	CAST_TO(TNetworkOptimization, graph);
-
 	int *vertexPower = new int[graph->nVertices];
 
 	int i;
@@ -505,7 +497,36 @@ PyObject *NetworkOptimization_getHubs(PyObject *self, PyObject *args) PYARGS(MET
 		vertexPower[graph->links[0][i]]++;
 		vertexPower[graph->links[1][i]]++;
 	}
+	
+  return vertexPower;
+}
 
+PyObject *NetworkOptimization_getVertexPowers(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "() -> list")
+{
+  PyTRY
+    CAST_TO(TNetworkOptimization, graph);
+    int *vertexPower = getVertexPowers(graph);
+    PyObject *pypowers = PyList_New(graph->nVertices);
+    for(int i =0; i < graph->nVertices; i++)
+      PyList_SetItem(pypowers, i, PyInt_FromLong(vertexPower[i]));
+    delete [] vertexPower;
+    return pypowers;
+  PyCATCH;
+}
+
+PyObject *NetworkOptimization_getHubs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(n) -> HubList")
+{
+  PyTRY
+	int n;
+
+	if (!PyArg_ParseTuple(args, "n:NetworkOptimization.getHubs", &n))
+		return NULL;
+
+	CAST_TO(TNetworkOptimization, graph);
+
+  int i;
+  int *vertexPower = getVertexPowers(graph);
+  
 	PyObject* hubList = PyList_New(n);
 	
 	for (i=0; i < n; i++)
