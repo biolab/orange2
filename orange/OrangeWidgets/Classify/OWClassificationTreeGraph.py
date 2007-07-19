@@ -358,11 +358,11 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         painter.end()
         buffer.save(fileName, ext)
 
-    def sendReport(self):
-        directory = self.startReport("Classification Tree", True)
-        self.saveGraph(directory + "\\tree.png")
-        self.reportImage(directory + "\\tree.png")
-        self.finishReport()
+#    def sendReport(self):
+#        directory = self.startReport("Classification Tree", True)
+#        self.saveGraph(directory + "\\tree.png")
+#        self.reportImage(directory + "\\tree.png")
+#        self.finishReport()
         
 if __name__=="__main__":
     a = QApplication(sys.argv)
