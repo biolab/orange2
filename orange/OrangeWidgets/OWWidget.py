@@ -132,10 +132,11 @@ class OWWidget(OWBaseWidget):
         if self.reportData:
             print "Cannot open a new report when an old report is still active"
             return False
-        self.reportData = "<H1>%s</H1>\n" % name
+        self.reportName = name
+        self.reportData = ""
         if needDirectory:
             import OWReport
-            return OWReport.createDirectory()
+            return OWReport.reportFeeder.createDirectory()
         else:
             return True
 
@@ -176,7 +177,7 @@ class OWWidget(OWBaseWidget):
 
     def finishReport(self):
         import OWReport
-        OWReport.feed(self.reportData or "")
+        OWReport.reportFeeder(self.reportName, self.reportData or "")
         self.reportData = None
 
 if __name__ == "__main__":
