@@ -28,6 +28,7 @@
 #include <map>
 #include <algorithm>
 #include <queue>
+#include <list>
 #include <float.h>
 
 #include "stladdon.hpp"
@@ -45,6 +46,50 @@
 
 DEFINE_TOrangeVector_classDescription(PVariable, "TVarList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList", true, ORANGE_API)
+
+list<TVariable *> TVariable::allVariables;
+
+
+const char *sortedDaNe[] = {"da", "ne", 0 };
+const char *resortedDaNe[] = {"ne", "da", 0};
+
+const char **specialSortCases[] = { sortedDaNe, 0};
+const char **specialCasesResorted[] = { resortedDaNe, 0};
+
+const char *putAtBeginning[] = {"no", "none", "absent", "normal", 0};
+
+TVariable *TVariable::getExisting(const string &name, const int &varType, TStringList *fixedOrderValues, set<string> *values)
+{
+  if ((fixedOrderValues && fixedOrderValues->size() ) && (varType != TValue::INTVAR))
+    ::raiseErrorWho("Variable", "cannot specify the value list for non-discrete attributes");
+    
+  TVariable *var = NULL;
+  
+  ITERATE(list<TVariable *>, vi, TVariable::allVariables)
+    if (((*vi)->varType == varType) && ((*vi)->name == name)) {
+      var = *vi;
+      break;
+    }
+    
+  TEnumVariable *evar = dynamic_cast<TEnumVariable *>(var);
+  if (evar) { 
+    if (fixedOrderValues) {
+      if (!evar->checkValuesOrder(*fixedOrderValues))
+        ::raiseErrorWho("Variable", "a discrete variable named '%s' already exists, but with different order of values", name.c_str());
+      const_PITERATE(TStringList, si, fixedOrderValues)
+        evar->addValue(*si);
+    }
+      
+    if (values) {
+      vector<string> sorted;
+      TEnumVariable::presortValues(*values, sorted);
+      const_ITERATE(vector<string>, ssi, sorted)
+        evar->addValue(*ssi);
+    }
+  }
+  
+  return var;
+}
 
 
 TVariable::TVariable(const int &avarType, const bool &ord)
@@ -402,6 +447,44 @@ void TEnumVariable::createValuesTree()
 }
 
 
+bool TEnumVariable::checkValuesOrder(const TStringList &refValues)
+{
+  for(TStringList::const_iterator ni(refValues.begin()), ne(refValues.end()), ei(values->begin()), ee(values->end()); 
+      (ei != ee) && (ni != ne); ei++, ni++)
+    if (*ei != *ni)
+      return false;
+  return true;
+}
+
+
+void TEnumVariable::presortValues(const set<string> &unsorted, vector<string> &sorted)
+{
+  sorted.clear();
+  sorted.insert(sorted.begin(), unsorted.begin(), unsorted.end());
+  
+  vector<string>::iterator si, se(sorted.end());
+  const char ***ssi, **ssii, ***rssi;
+  for(ssi = specialSortCases, rssi = specialCasesResorted; *ssi; ssi++, rssi++) {
+    for(si = sorted.begin(), ssii = *ssi; *ssii && (si != se) && !_stricmp(*ssii, si->c_str()); *ssii++);
+    if (!*ssii && (si==se)) {
+      sorted.clear();
+      sorted.insert(sorted.begin(), *rssi, *rssi + (ssii - *ssi));
+      return;
+    }
+  }
+  
+  se = sorted.end();
+  for(ssii = putAtBeginning; *ssii; ssii++) {
+    for(si = sorted.begin(); (si != se) && _stricmp(*ssii, si->c_str()); si++);
+    if (si != se) {
+      const string toMove = *si;
+      sorted.erase(si);
+      sorted.insert(sorted.begin(), toMove);
+      break;
+    }
+  }
+}
+
 
 TIntVariable::TIntVariable()
 : TVariable(TValue::INTVAR, true),
@@ -543,7 +626,7 @@ int  TFloatVariable::noOfValues() const
 inline int getNumberOfDecimals(const char *vals, bool &hasE)
 {
   const char *valsi;
-  for(valsi = vals; *valsi && ((*valsi<'0') || (*valsi>'9')); valsi++);
+  for(valsi = vals; *valsi && ((*valsi<'0') || (*valsi>'9')) && (*valsi != '.'); valsi++);
   if (!*valsi)
     return -1;
 
