@@ -26,7 +26,6 @@ class OWGraphDrawerCanvas(OWGraph):
         self.edges = {}            # slovar povezav oblike  curveKey: edge_objekt
         self.indexPairs = {}       # slovar oblike CurveKey: orngIndex   (za vozlisca)
         self.selection = []        # seznam izbranih vozlisc (njihovih indeksov)
-        self.tooltipped = []       # seznam oznacenih vozlisc
         self.selectionStyles = {}  # slovar stilov izbranih vozlisc
         self.colorIndex = -1
         self.visualizer = None
@@ -40,11 +39,14 @@ class OWGraphDrawerCanvas(OWGraph):
         self.enableYLaxis(0)
         self.state = NOTHING  #default je rocno premikanje
         self.hiddenNodes = []
-        self.markedNodes = []
+        self.markedNodes = set()
+        self.markWithRed = False
         
         self.tooltipNeighbours = 2
         self.selectionNeighbours = 2
         self.freezeNeighbours = False
+        
+        self.enableWheelZoom = 1
 
         
     def setHiddenNodes(self, nodes):
@@ -313,20 +315,25 @@ class OWGraphDrawerCanvas(OWGraph):
             self.setMarkedNodes(toMark)
         
     def setMarkedNodes(self, marked):
-        for m in self.markedNodes:
-            (key, neighbours) = self.vertices[m]
-            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[m])), QPen(QColor(self.selectionStyles[m])), QSize(6, 6))
-            self.setCurveSymbol(key, newSymbol)
+        if not isinstance(marked, set):
+            marked = set(marked)
+        if marked == self.markedNodes:
+            return
 
-        self.markedNodes = marked
-        
-        for m in marked:
+        redColor = self.markWithRed and Qt.red
+        markedSize = self.markWithRed and 9 or 6
+        for m in marked - self.markedNodes:
             (key, neighbours) = self.vertices[m]
-            self.selectionStyles[m] = self.curve(key).symbol().brush().color().name()
-            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[m])), QPen(Qt.green, 3), QSize(10, 10))
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
             self.setCurveSymbol(key, newSymbol)
-            self.tooltipped.append(m);
+#            self.curve(key).setBrush(QBrush(redColor or self.nodeColor[m]))
             
+        for m in self.markedNodes - marked:
+            (key, neighbours) = self.vertices[m]
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(self.nodeColor[m]), QSize(6, 6))
+            self.setCurveSymbol(key, newSymbol)
+    
+        self.markedNodes = marked
         self.master.nMarked = len(self.markedNodes)
         self.replot()
         
@@ -418,6 +425,7 @@ class OWGraphDrawerCanvas(OWGraph):
         
         fillColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j]]
         edgeColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
+        emptyFill = Qt.white
         
         # draw edges
         for e in range(self.nEdges):
@@ -457,6 +465,8 @@ class OWGraphDrawerCanvas(OWGraph):
         
         selectionX = []
         selectionY = []
+        self.nodeColor = []
+
         # draw vertices
         for v in range(self.nVertices):
             if v in self.hiddenNodes:
@@ -473,12 +483,16 @@ class OWGraphDrawerCanvas(OWGraph):
             else: 
                 newColor = Qt.red #QColor(0,0,0)
             
+            # This works only if there are no hidden vertices!    
+            self.nodeColor.append(fillColor)
+            
             selectionX.append(x1)
             selectionY.append(y1)
-            key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1])
+            key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1], showFilledSymbols = False)
             
             if v in self.selection:
-                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(fillColor), QPen(Qt.yellow, 3), QSize(10, 10))
+#                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(fillColor), QPen(Qt.yellow, 3), QSize(10, 10))
+                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(Qt.yellow, 3), QSize(10, 10))
                 self.setCurveSymbol(key, newSymbol)
             
             (tmp, neighbours) = self.vertices[v]
@@ -506,7 +520,7 @@ class OWGraphDrawerCanvas(OWGraph):
 #        self.setCurveData(selectionCurve, selectionX, selectionY)
         
         
-        # drew markers
+        # draw markers
         if len(self.labelText) > 0:
             for v in range(self.nVertices):
                 if v in self.hiddenNodes:
