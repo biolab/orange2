@@ -51,6 +51,9 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         self.oldShowColorLegend = -1
         self.oldLegendKeys = {}
+        
+        self.enableWheelZoom = 1
+
 
     def setData(self, data):
         OWGraph.setData(self, data)
