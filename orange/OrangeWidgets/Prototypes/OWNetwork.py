@@ -224,6 +224,7 @@ class OWNetwork(OWWidget):
             self.hubs = i
             
         self.graph.tooltipNeighbours = self.hubs == 2 and self.markDistance or 0
+        self.graph.markWithRed = False
 
         if not self.visualize or not self.visualize.graph:
             return
@@ -237,6 +238,7 @@ class OWNetwork(OWWidget):
         elif hubs == 1:
             txt = self.markSearchString
             labelText = self.graph.labelText
+            self.graph.markWithRed = self.graph.nVertices > 200
             self.graph.setMarkedNodes([i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])])
             return
         
@@ -459,10 +461,27 @@ class OWNetwork(OWWidget):
             self.graph.updateCanvas()#self.visualize.xCoors, self.visualize.yCoors)
         
     def keyPressEvent(self, e):
-        if e.text() == "f":
-            self.graph.freezeNeighbours = not self.graph.freezeNeighbours
-        else:
-            OWWidget.keyPressEvent(self, e)
+        if e.key() == Qt.Key_Control:
+            self.graph.controlPressed = True
+            print "cp"
+        elif e.key() == Qt.Key_Alt:
+            self.graph.altPressed = True
+        QWidget.keyPressEvent(self, e)
+        
+    def keyReleaseEvent(self, e):
+        if e.key() == Qt.Key_Control:
+            self.graph.controlPressed = False
+        elif e.key() == Qt.Key_Alt:
+            self.graph.altPressed = False
+        QWidget.keyReleaseEvent(self, e)
+        
+
+#    def keyPressEvent(self, e):
+#        if e.text() == "f":
+#            self.graph.freezeNeighbours = not self.graph.freezeNeighbours
+#        else:
+#            OWWidget.keyPressEvent(self, e)
+
 
     def markedToSelection(self):
         self.graph.addSelection(self.graph.markedNodes)
