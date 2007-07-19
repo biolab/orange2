@@ -29,7 +29,7 @@ class OWSubFile(OWWidget):
 
     def activateLoadedSettings(self):
         # remove missing data set names
-        self.recentFiles=filter(os.path.exists,self.recentFiles)
+        self.recentFiles=filter(os.path.exists, self.recentFiles)
         self.setFileList()
 
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
@@ -39,7 +39,7 @@ class OWSubFile(OWWidget):
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
 
     # user selected a file from the combo box
-    def selectFile(self,n):
+    def selectFile(self, n):
         if n < len(self.recentFiles) :
             name = self.recentFiles[n]
             self.recentFiles.remove(name)
@@ -93,7 +93,7 @@ class OWSubFile(OWWidget):
                 startfile=self.recentFiles[0]
 
         filename = str(QFileDialog.getOpenFileName(startfile,
-        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
+        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nBasket files (*.basket)\nAll files(*.*)',
         None,'Open Orange Data File'))
 
         if filename == "": return
@@ -123,31 +123,46 @@ class OWSubFile(OWWidget):
         if fn != "(none)":
             fileExt=lower(os.path.splitext(fn)[1])
             argdict = {"dontCheckStored": dontCheckStored, "use": self.domain}
-            if fileExt in (".txt",".tab",".xls"):
-                preloader, loader = orange.ExampleGenerator, orange.ExampleTable
-                if DK:
-                    argdict["DK"] = DK
-                if DC:
-                    argdict["DC"] = DC
-            elif fileExt in (".c45",):
-                preloader = loader = orange.C45ExampleGenerator
+            if fileExt == ".basket":
+                data = orange.ExampleTable(fn, **argdict)
             else:
-                return
-
-            if dontCheckStored:
-                data = loader(fn, **argdict)
-            else:
-                # Load; if the domain is the same and there is no other file widget which
-                # uses any of the same attributes like this one, reload
-                # If the loader for a particular format cannot load the examle generator
-                # (i.e. if it always returns an example table), the data is loaded twice.
-                data = preloader(fn, **argdict)
-                if oldDomain == data.domain and not self.attributesOverlap(data.domain):
-                    argdict["dontCheckStored"] = 1
+                if fileExt in (".txt",".tab",".xls"):
+                    preloader, loader = orange.ExampleGenerator, orange.ExampleTable
+                    if DK:
+                        argdict["DK"] = DK
+                    if DC:
+                        argdict["DC"] = DC
+                elif fileExt in (".c45",):
+                    preloader = loader = orange.C45ExampleGenerator
+                else:
+                    self.error("Unrecognized file format")
+                    self.send("Examples", None)
+                    self.send("Attribute Definitions", None)
+                    return
+    
+                if dontCheckStored:
                     data = loader(fn, **argdict)
-                elif not isinstance(data, orange.ExampleTable):
-                    data = loader(fn, **argdict)
-
+                else:
+                    # Load; if the domain is the same and there is no other file widget which
+                    # uses any of the same attributes like this one, reload
+                    # If the loader for a particular format cannot load the examle generator
+                    # (i.e. if it always returns an example table), the data is loaded twice.
+                    try:
+                        data = preloader(fn, **argdict)
+                        if oldDomain == data.domain and not self.attributesOverlap(data.domain):
+                            argdict["dontCheckStored"] = 1
+                            data = loader(fn, **argdict)
+                        elif not isinstance(data, orange.ExampleTable):
+                            data = loader(fn, **argdict)
+                    except Exception, (errValue):
+                        self.error(str(errValue))
+                        self.send("Examples", None)
+                        self.send("Attribute Definitions", None)
+                        self.dataDomain = None
+                        self.infoa.setText('No data loaded due to an error.')
+                        self.infob.setText('')
+                        return
+                            
             self.dataDomain = data.domain
 
             # update data info
@@ -179,6 +194,7 @@ class OWSubFile(OWWidget):
         else:
             self.send("Examples", None)
             self.send("Attribute Definitions", None)
+        self.error()
 
 
 
