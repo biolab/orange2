@@ -1,2 +1,0 @@
-#define SOM_VERSION "SOM/LVQ_PAK 3.1 beta"
-#define SOM_REVISION 134

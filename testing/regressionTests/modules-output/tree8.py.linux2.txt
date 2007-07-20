@@ -1,9 +1,0 @@
-m = 0.000: 286 nodes, 193 leaves
-m = 0.000: 281 nodes, 190 leaves
-m = 0.100: 239 nodes, 166 leaves
-m = 0.500: 243 nodes, 168 leaves
-m = 1.000: 217 nodes, 148 leaves
-m = 5.000: 197 nodes, 134 leaves
-m = 10.000: 183 nodes, 126 leaves
-m = 50.000: 94 nodes, 66 leaves
-m = 100.000: 94 nodes, 66 leaves

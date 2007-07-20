@@ -1,3 +1,0 @@
-gain: 0.342, attribute: physician-fee-freeze
-stopped (0.000)
-[physician-fee-freeze, party]
