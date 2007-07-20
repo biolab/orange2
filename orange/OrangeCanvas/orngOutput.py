@@ -2,7 +2,8 @@
 # Description:
 #     print system output and exceptions into a window. Enables copy/paste
 #
-from qt import *
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 import sys
 import string
 from time import localtime
@@ -13,31 +14,33 @@ class OutputWindow(QMainWindow):
     def __init__(self, canvasDlg, *args):
         apply(QMainWindow.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
+        self.canvasDlg.workspace.addWindow(self)
 
-        self.textOutput = QTextView(self)
-        self.textOutput.setFont(QFont('Courier New',10, QFont.Normal))
+        self.textOutput = QTextEdit(self)
+        self.textOutput.setReadOnly(1)
+        self.textOutput.setCurrentFont(QFont('Courier New',10, QFont.Normal))
         self.setCentralWidget(self.textOutput)
-        self.setCaption("Output Window")
-        self.setIcon(QPixmap(canvasDlg.outputPix))
+        self.setWindowTitle("Output Window")
+        self.setWindowIcon(QIcon(canvasDlg.outputPix))
 
-        self.defaultExceptionHandler = sys.excepthook
-        self.defaultSysOutHandler = sys.stdout
+        #self.defaultExceptionHandler = sys.excepthook
+        #self.defaultSysOutHandler = sys.stdout
         self.focusOnCatchException = 1
         self.focusOnCatchOutput  = 0
         self.printOutput = 1
         self.printException = 1
         self.writeLogFile = 1
 
-        self.logFile = open(os.path.join(canvasDlg.outputDir, "outputLog.htm"), "w") # create the log file
+        self.logFile = open(os.path.join(canvasDlg.canvasSettingsDir, "outputLog.htm"), "w") # create the log file
         #self.printExtraOutput = 0
         self.unfinishedText = ""
         self.verbosity = 0
-        
+
         #sys.excepthook = self.exceptionHandler
         #sys.stdout = self
         #self.textOutput.setText("")
         #self.setFocusPolicy(QWidget.NoFocus)
-        
+
         self.resize(700,500)
         self.showNormal()
 
@@ -69,7 +72,7 @@ class OutputWindow(QMainWindow):
 
     def setFocusOnException(self, focusOnCatchException):
         self.focusOnCatchException = focusOnCatchException
-        
+
     def setFocusOnOutput(self, focusOnCatchOutput):
         self.focusOnCatchOutput = focusOnCatchOutput
 
@@ -83,17 +86,21 @@ class OutputWindow(QMainWindow):
         self.writeLogFile = write
 
     def clear(self):
-        self.textOutput.setText("")
-    
+        self.textOutput.setHtml("")
+
     # print text produced by warning and error widget calls
     def widgetEvents(self, text, eventVerbosity = 1):
-        if self.verbosity >= eventVerbosity: 
+        if self.verbosity >= eventVerbosity:
             if text != None:
                 self.write(str(text))
             self.canvasDlg.setStatusBarEvent(QString(text))
 
     # simple printing of text called by print calls
     def write(self, text):
+        # is this some extra info for debuging
+        #if len(text) > 7 and text[0:7] == "<extra>":
+        #    if not self.printExtraOutput: return
+        #    text = text[7:]
         text = str(text)
         text = text.replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
         text = text.replace("(br)", "<br>")
@@ -102,25 +109,26 @@ class OutputWindow(QMainWindow):
         text = text.replace("(i)", "<i>").replace("(/i)", "</i>")
         text = text.replace("(hr)", "<hr>")
         text = text.replace("\n", "<br>\n")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
-        #text = "<nobr>" + text + "</nobr>"  
+        #text = "<nobr>" + text + "</nobr>"
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
             self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         if self.writeLogFile:
+            #self.logFile.write(str(text) + "<br>\n")
             self.logFile.write(text)
-            
-        self.textOutput.setText(str(self.textOutput.text()) + text)
-        self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
-        
+
+        #self.textOutput.append(text)
+        self.textOutput.insertHtml(text)
+        #self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
         if text[-1:] == "\n":
             if self.printOutput:
                 self.canvasDlg.setStatusBarEvent(self.unfinishedText + text)
             self.unfinishedText = ""
         else:
             self.unfinishedText += text
-        
+
     def writelines(self, lines):
         for line in lines:
             self.write(line)
@@ -128,25 +136,23 @@ class OutputWindow(QMainWindow):
     def flush(self):
         pass
 
-    def keyReleaseEvent (self, event):
-        if event.state() & Qt.ControlButton != 0 and event.ascii() == 3:    # user pressed CTRL+"C"
-            self.textOutput.copy()
-
     def exceptionHandler(self, type, value, tracebackInfo):
         if self.focusOnCatchException:
             self.canvasDlg.menuItemShowOutputWindow()
             self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         text = ""
+        if str(self.textOutput.toPlainText()) not in ["", "\n"]:
+            text += "<hr>"
         t = localtime()
-        text += "<hr><nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
+        text += "<nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
 
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d. See output window for details." % ( str(type) , t[3],t[4],t[5]))
 
         # TO DO:repair this code to shown full traceback. when 2 same errors occur, only the first one gets full traceback, the second one gets only 1 item
         list = traceback.extract_tb(tracebackInfo, 10)
-        space = "&nbsp &nbsp "
+        space = "&nbsp; &nbsp; "
         totalSpace = space
         for i in range(len(list)):
             (file, line, funct, code) = list[i]
@@ -162,9 +168,10 @@ class OutputWindow(QMainWindow):
 
         value = str(value).replace("<", "(").replace(">", ")")    # since this is rich text control, we have to replace special characters
         text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr><br>"
-        text += "<nobr>" + totalSpace + "Exception value: <b>" + value+ "</b></nobr><br><hr>"
-        self.textOutput.setText(str(self.textOutput.text()) + text)
-        self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
+        text += "<nobr>" + totalSpace + "Exception value: <b>" + value+ "</b></nobr><hr>"
+        text = text.replace("<br>","<br>\n")
+        self.textOutput.insertHtml(text)
+        #self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 
         if self.writeLogFile:
-            self.logFile.write(str(text) + "<br>")
+            self.logFile.write(str(text) + "<br>\n")
