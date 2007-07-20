@@ -12,6 +12,7 @@
 # A widget for opening orange data files
 #
 
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI, string, os.path, user, sys
 
@@ -20,8 +21,9 @@ class OWSubFile(OWWidget):
     allFileWidgets = []
 
     def __init__(self, parent=None, signalManager = None, name = "File"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
         OWSubFile.allFileWidgets.append(self)
+        self.filename = ""
 
     def destroy(self, destroyWindow, destroySubWindows):
         OWSubFile.allFileWidgets.remove(self)
@@ -92,9 +94,8 @@ class OWSubFile(OWWidget):
             else:
                 startfile=self.recentFiles[0]
 
-        filename = str(QFileDialog.getOpenFileName(startfile,
-        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
-        None,'Open Orange Data File'))
+        filename = str(QFileDialog.getOpenFileName(self, 'Open Orange Data File', startfile, "",
+        'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)'))
 
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
@@ -196,16 +197,16 @@ class OWFile(OWSubFile):
         self.loadSettings()
 
         #GUI
-        self.box = QHGroupBox("Data File", self.controlArea)
-        self.filecombo=QComboBox(self.box)
+        self.controlArea.layout().setMargin(4)
+        self.box = OWGUI.widgetBox(self.controlArea, box = "Data File", orientation = "horizontal")
+        self.filecombo = OWGUI.comboBox(self.box, self, "filename")
         self.filecombo.setMinimumWidth(250)
-        button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0)
-        button.setMaximumWidth(25)
+        button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0, width=25)
 
         # info
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data loaded.', box)
-        self.infob = QLabel('', box)
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
+        self.infob = OWGUI.widgetLabel(box, ' ')
 
         self.resize(150,100)
 
@@ -213,15 +214,12 @@ class OWFile(OWSubFile):
     def setFileList(self):
         self.filecombo.clear()
         if not self.recentFiles:
-            self.filecombo.insertItem("(none)")
-        for file in self.recentFiles:
-            if file == "(none)":
-                self.filecombo.insertItem("(none)")
-            else:
-                self.filecombo.insertItem(os.path.split(file)[1])
-        self.filecombo.insertItem("Browse documentation data sets...")
+            self.filecombo.addItem("(none)")
+        else:
+            self.filecombo.insertItems(0, [os.path.split(file)[1] for file in self.recentFiles])
+        self.filecombo.addItem("Browse documentation data sets...")
         #self.filecombo.adjustSize() #doesn't work properly :(
-        self.filecombo.updateGeometry()
+        #self.filecombo.updateGeometry()
 
 
     def openFile(self,fn, throughReload = 0):
@@ -233,7 +231,6 @@ if __name__ == "__main__":
     a=QApplication(sys.argv)
     owf=OWFile()
     owf.activateLoadedSettings()
-    a.setMainWidget(owf)
     owf.show()
-    a.exec_loop()
+    sys.exit(a.exec_())
     owf.saveSettings()

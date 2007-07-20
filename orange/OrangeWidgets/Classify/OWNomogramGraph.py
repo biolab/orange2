@@ -1324,7 +1324,7 @@ class BasicNomogram(QCanvas):
         self.footerCanvas.destroy_and_init(self,self.parent)
         
         self.setSizes(self.parent)
-        self.setBackgroundColor(Qt.white)
+        self.setBackgroundColor(QColor(Qt.white))
         self.resize(self.pright, self.pbottom)
 
         curr_point = self.parent.verticalSpacing

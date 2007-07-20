@@ -5,6 +5,7 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>1105</priority>
 """
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 
@@ -51,7 +52,7 @@ class OWPurgeDomain(OWWidget):
         rua.disables = [ruv]
 
         OWGUI.separator(self.controlArea)
-        box2 = QVGroupBox('', self.controlArea)
+        box2 = OWGUI.widgetBox(self.controlArea)
         btSend = OWGUI.button(box2, self, "Send data", callback = self.process)
         cbAutoSend = OWGUI.checkBox(box2, self, "autoSend", "Send automatically")
 
@@ -65,7 +66,7 @@ class OWPurgeDomain(OWWidget):
         OWGUI.label(box3, self, "Resorted attributes: %(resortedAttrs)s")
         OWGUI.label(box3, self, "Class attribute: %(classAttr)s")
 
-        self.adjustSize()
+        #self.adjustSize()
 
     def setData(self, dataset):
         if dataset:
@@ -126,7 +127,7 @@ class OWPurgeDomain(OWWidget):
         self.removedAttrs = 0
         self.resortedAttrs = 0
         self.classAttribute = 0
-        
+
         if self.removeAttributes or self.sortValues:
             newattrs = []
             for attr in self.data.domain.attributes:
@@ -139,7 +140,7 @@ class OWPurgeDomain(OWWidget):
                 if attr.varType != orange.VarTypes.Discrete:
                     newattrs.append(attr)
                     continue
-                
+
                 if self.removeValues:
                     newattr = orange.RemoveUnusedValues(attr, self.data)
                     if not newattr:
@@ -217,11 +218,9 @@ class OWPurgeDomain(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWPurgeDomain()
-    appl.setMainWidget(ow)
-
-    data = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
-    data.domain.attributes[3].values.append("X")
-    ow.setData(data)
+    #data = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
+    #data.domain.attributes[3].values.append("X")
+    #ow.setData(data)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()
     ow.saveSettings()

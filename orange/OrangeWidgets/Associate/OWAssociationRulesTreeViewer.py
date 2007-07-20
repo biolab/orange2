@@ -2,15 +2,13 @@
 <name>Association Rules Tree Viewer</name>
 <description>Association rules tree viewer.</description>
 <icon>icons/AssociationRulesTreeViewer.png</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact> 
+<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>300</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
-
 import sys, re
-from qt import *
 from OWTools import *
 
 
@@ -30,27 +28,29 @@ class OWAssociationRulesTreeViewer(OWWidget):
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
         self.outputs = []
-        
+
         # Settings
         self.showWholeRules = 1
         self.treeDepth = 2
- 
+
         self.showsupport = self.showconfidence = 1
         self.showlift = self.showleverage = self.showstrength = self.showcoverage = 0
         self.loadSettings()
 
-        self.layout=QVBoxLayout(self.mainArea)
-        self.treeRules = QListView(self.mainArea)       #the rules and their properties are printed into this QListView
+        self.treeRules = QTreeWidget(self.mainArea)       #the rules and their properties are printed into this QListView
+        self.mainArea.layout().addWidget(self.treeRules)
 #        self.treeRules.setMultiSelection (1)              #allow multiple selection
-        self.treeRules.setAllColumnsShowFocus ( 1) 
-        self.treeRules.addColumn("Rules")        #column0
+        self.treeRules.setAllColumnsShowFocus ( 1)
+
+        columnTexts = ["Rules"]
 
         mbox = OWGUI.widgetBox(self.controlArea, "Shown measures")
         self.cbMeasures = []
         for long, short, attr in self.measures:
             self.cbMeasures.append(OWGUI.checkBox(mbox, self, "show"+attr, long, callback = self.showHideColumn))
-            self.treeRules.addColumn(short, 40)
-            
+            columnTexts.append(short)
+        self.treeRules.setHeaderLabels(columnTexts)
+
         OWGUI.separator(self.controlArea)
 
         box = OWGUI.widgetBox(self.controlArea, "Options")
@@ -60,9 +60,6 @@ class OWAssociationRulesTreeViewer(OWWidget):
         OWGUI.checkBox(box, self, "showWholeRules", "Display whole rules", callback = self.setWholeRules)
 
         OWGUI.rubber(self.controlArea)
-        
-        self.layout.addWidget(self.treeRules)
-        
         self.rules = None
 
 
@@ -70,12 +67,12 @@ class OWAssociationRulesTreeViewer(OWWidget):
         d = self.showWholeRules and 1 or 2
         for line in self.wrlist:
             line[0].setText(0,line[d])
-        
+
 
     def showHideColumn(self):
         for i, cb in enumerate(self.cbMeasures):
             self.treeRules.setColumnWidth(i+1, cb.isChecked() and 40)
-                
+
     def displayRules(self):
         """ Display rules as a tree. """
         self.treeRules.clear()
@@ -91,7 +88,7 @@ class OWAssociationRulesTreeViewer(OWWidget):
                         antecedens.append(str(x.variable.name) + "=" + str(x))
                     else:
                         antecedens.append(str(x.variable.name))
-                                
+
                 values = filter(lambda val: not val.isSpecial(), rule.right)
 
                 kons=""
@@ -100,32 +97,32 @@ class OWAssociationRulesTreeViewer(OWWidget):
                         kons=kons + str(x.variable.name) + "=" + str(x) + "  "
                     else:
                         kons=kons + str(x.variable.name) + "  "
-                
+
                 self.rulesLC.append([antecedens, [kons, rule.support, rule.confidence, rule.lift, rule.leverage, rule.strength, rule.coverage]])
-            
+
             self.updateTree()
             self.removeSingleGrouping()        # if there is only 1 rule behind a +, the rule is
             self.setWholeRules()
             self.showHideColumn()
-            self.item0.setOpen(1)                        # display the rules
+            self.item0.setExpanded(1)                        # display the rules
 
 
     def updateTree(self):
-        self.item0 = QListViewItem(self.treeRules,"")        #the first row is different
+        self.item0 = QTreeWidgetItem(self.treeRules, [""])        #the first row is different
         self.buildLayer(self.item0, self.rulesLC, self.treeDepth)     # recursively builds as many layers as are in the.................
 
-        
+
     def buildLayer(self, parent, rulesLC, n):
         if n==0:
            self.printRules(parent, rulesLC)
         elif n>0:
             children = []
             for rule in rulesLC:                                 # for every rule
-                for a in rule[0]:                                # for every antecedens 
+                for a in rule[0]:                                # for every antecedens
                     if a not in children:                        # if it is not in the list of children, add it
                         children.append(a)
             for childText in children:                           # for every entry in the list of children
-                item=QListViewItem(parent,childText)             # add a branch with the text
+                item=QTreeWidgetItem(parent, [childText])             # add a branch with the text
                 rules2=[]
                 for rule in rulesLC:                             # find rules that go in this branch
                     if childText in rule[0]:
@@ -142,27 +139,27 @@ class OWAssociationRulesTreeViewer(OWWidget):
         startOfRule=""                                          # the part of rule that is already in the tree
         gparent=parent
         while str(gparent.text(0))!="":
-            startOfRule = str(gparent.text(0)) +"  "+startOfRule 
-            gparent=gparent.parent()        
-            
+            startOfRule = str(gparent.text(0)) +"  "+startOfRule
+            gparent=gparent.parent()
+
         for rule in rulesLC:
             restOfRule=""                         # concatenate the part that is already in the tree
             for s in rule[0]:                                   # with the rest of the antecedeses
                 restOfRule=restOfRule+"  "+s
-            
-            item=QListViewItem(parent,"", str('%.3f' %rule[1][1]),str('%.3f' %rule[1][2]),str('%.3f' %rule[1][3]),str('%.3f' %rule[1][4]),str('%.3f' %rule[1][5]),str('%.3f' %rule[1][6]))             # add a branch with the text
+
+            item=QTreeWidgetItem(parent, ["", str('%.3f' %rule[1][1]),str('%.3f' %rule[1][2]),str('%.3f' %rule[1][3]),str('%.3f' %rule[1][4]),str('%.3f' %rule[1][5]),str('%.3f' %rule[1][6])])             # add a branch with the text
             self.wrlist.append([item, startOfRule + restOfRule+"  ->   "+rule[1][0] , restOfRule+"  ->   "+rule[1][0]])
 
 
-    def removeSingleGrouping(self):         
+    def removeSingleGrouping(self):
         """Removes a row if it has a "+" and only one child.  """
         for line in self.wrlist:                    # go through the leaves of the tree
             parent=line[0].parent()
             if (parent.childCount())==1:            # if the parent has only one child
                 line[2]=str(parent.text(0))+"  "+line[2]    # add the text to the leaf
                 gparent = parent.parent()                   # find the grand-parent
-                gparent.takeItem(parent)                    # remove the parent
-                gparent.insertItem(line[0])                 # insert a child        
+                gparent.takeChild(gparent.indexOfChild(parent))  # remove the parent
+                gparent.addChild(line[0])                 # insert a child
 
 
     def arules(self,arules):
@@ -172,12 +169,12 @@ class OWAssociationRulesTreeViewer(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWAssociationRulesTreeViewer()
-    a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
+    #dataset = orange.ExampleTable('..\\..\\doc\\datasets\\car.tab')
+    dataset = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\car.tab")
     rules=orange.AssociationRulesInducer(dataset, minSupport = 0.3, maxItemSets=15000)
     ow.arules(rules)
-    
+
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

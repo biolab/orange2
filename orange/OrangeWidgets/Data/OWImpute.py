@@ -5,13 +5,13 @@
 <priority>2130</priority>
 <contact>Janez Demsar</contact>
 """
-
+import orngOrangeFoldersQt4
 import OWGUI
 from OWWidget import *
 
-class ImputeListboxItem(QListBoxPixmap):
+class ImputeListboxItem(QListWidgetItem):
     def __init__(self, icon, name, master):
-        QListBoxPixmap.__init__(self, icon, name)
+        QListWidgetItem.__init__(self, icon, name)
         self.master = master
 
     def paint(self, painter):
@@ -33,7 +33,7 @@ class ImputeListboxItem(QListBoxPixmap):
                     ntext = str(val)
             self.setText(btext + " -> " + ntext)
         painter.font().setBold(meth)
-        QListBoxPixmap.paint(self, painter)
+        QListWidgetItem.paint(self, painter)
         if meth:
             self.setText(btext)
 
@@ -44,7 +44,7 @@ class OWImpute(OWWidget):
     indiShorts = ["", "leave", "avg", "model", "random", ""]
 
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Learner for Imputation", orange.Learner, self.setModel)]
         self.outputs = [("Examples", ExampleTable), ("Imputer", orange.ImputerConstructor)]
@@ -66,18 +66,16 @@ class OWImpute(OWWidget):
 
         self.loadSettings()
 
+        self.controlArea.layout().setSpacing(8)
         bgTreat = OWGUI.radioButtonsInBox(self.controlArea, self, "defaultMethod", ["Don't Impute", "Average/Most frequent", "Model-based imputer (can be slow!)", "Random values"], "Default imputation method", callback=self.sendIf)
-
-        OWGUI.separator(self.controlArea)
 
         self.indibox = OWGUI.widgetBox(self.controlArea, "Individual attribute settings", "horizontal")
 
-        attrListBox = QVBox(self.indibox)
-        self.attrList = QListBox(attrListBox)
+        attrListBox = OWGUI.widgetBox(self.indibox)
+        self.attrList = OWGUI.listBox(attrListBox, self, callback = self.individualSelected)
         self.attrList.setFixedWidth(220)
-        self.connect(self.attrList, SIGNAL("highlighted ( int )"), self.individualSelected)
 
-        indiMethBox = QVBox(self.indibox)
+        indiMethBox = OWGUI.widgetBox(self.indibox)
         self.indiButtons = OWGUI.radioButtonsInBox(indiMethBox, self, "indiType", ["Default (above)", "Don't impute", "Avg/Most frequent", "Model-based", "Random", "Value"], 1, callback=self.indiMethodChanged)
         self.indiValueCtrlBox = OWGUI.indentedBox(self.indiButtons)
 
@@ -92,19 +90,16 @@ class OWImpute(OWWidget):
         OWGUI.rubber(indiMethBox)
         self.btAllToDefault = OWGUI.button(indiMethBox, self, "Set All to Default", callback = self.allToDefault)
 
-        OWGUI.separator(self.controlArea, 19, 8)
-
         box = OWGUI.widgetBox(self.controlArea, "Settings")
         self.cbImputeClass = OWGUI.checkBox(box, self, "imputeClass", "Impute class values", callback=self.sendIf)
-
-        OWGUI.separator(self.controlArea, 19, 8)
 
         snbox = OWGUI.widgetBox(self.controlArea, self, "Send data and imputer")
         self.btApply = OWGUI.button(snbox, self, "Apply", callback=self.sendDataAndImputer)
         OWGUI.checkBox(snbox, self, "autosend", "Send automatically", callback=self.enableAuto, disables = [(-1, self.btApply)])
 
         self.activateLoadedSettings()
-        self.adjustSize()
+        self.resize(200,200)
+        #self.adjustSize()
 
 
     def activateLoadedSettings(self):
@@ -136,7 +131,9 @@ class OWImpute(OWWidget):
             else:
                 self.indiType = 0
 
-    def individualSelected(self, i):
+    def individualSelected(self, i = -1):
+        if i == -1:
+            i = self.attrList.row(self.attrList.selectedItems()[0])
         if self.data:
             self.selectedAttr = i
             attr = self.data.domain[i]
@@ -147,8 +144,8 @@ class OWImpute(OWWidget):
 
         if attr and attr.varType == orange.VarTypes.Discrete:
             self.indiValueComboBox.clear()
-            for value in attr.values:
-                self.indiValueComboBox.insertItem(value)
+            self.indiValueComboBox.insertItems(0, list(attr.values))
+
             self.indiValCom = self.methods.get(attrName, (0, 0))[1] or 0
             self.indiValueLineEdit.hide()
             self.indiValueComboBox.show()
@@ -226,12 +223,12 @@ class OWImpute(OWWidget):
 
                 self.attrList.clear()
                 for i, attr in enumerate(self.data.domain):
-                    self.attrList.insertItem(ImputeListboxItem(self.attrIcons[attr.varType], attr.name, self))
+                    self.attrList.addItem(ImputeListboxItem(self.attrIcons[attr.varType], attr.name, self))
 
                 if self.selectedAttr < self.attrList.count():
-                    self.attrList.setCurrentItem(self.selectedAttr)
+                    self.attrList.setCurrentRow(self.selectedAttr)
                 else:
-                    self.attrList.setCurrentItem(0)
+                    self.attrList.setCurrentRow(0)
 
         self.openContext("", data)
         self.setBtAllToDefault()
@@ -360,10 +357,9 @@ class OWImpute(OWWidget):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWImpute()
-    data = orange.ExampleTable("c:\\d\\ai\\orange\\doc\\datasets\\imports-85")
-    a.setMainWidget(ow)
+    #data = orange.ExampleTable("c:\\d\\ai\\orange\\doc\\datasets\\imports-85")
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\imports-85")
     ow.show()
     ow.setData(data)
-    a.exec_loop()
-    ow.setData(None)
+    a.exec_()
     ow.saveSettings()

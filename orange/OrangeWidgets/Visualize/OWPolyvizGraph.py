@@ -304,7 +304,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         self.yLinesToAdd = {}
 
         # draw polygon
-        self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = list(self.XAnchor) + [self.XAnchor[0]], yData = list(self.YAnchor) + [self.YAnchor[0]], lineWidth = 2)
+        self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = list(self.XAnchor) + [self.XAnchor[0]], yData = list(self.YAnchor) + [self.YAnchor[0]], lineWidth = 2)
 
         #################
         # draw the legend
@@ -410,7 +410,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 for i in range(len(self.shownAttributes)):
 
                     # draw lines
-                    key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchors[i]], yData = [y_i, yAnchors[i]])
+                    key = self.addCurve("Tooltip curve", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [x_i, xAnchors[i]], yData = [y_i, yAnchors[i]])
                     self.tooltipCurveKeys.append(key)
 
                     # draw text
@@ -452,7 +452,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, addProjectedPositions = 0):
         if not self.rawdata: return (None, None)
-        if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawdata)       # if no selections exist
+        if addProjectedPositions == 0 and not self.selectionCurveList: return (None, self.rawdata)       # if no selections exist
 
         xAttr = orange.FloatVariable("X Positions")
         yAttr = orange.FloatVariable("Y Positions")

@@ -5,14 +5,14 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 """
-
+import orngOrangeFoldersQt4
 import orange
 from OWWidget import *
 import OWGUI
 
 class OWAssociationRules(OWWidget):
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "AssociationRules")
+        OWWidget.__init__(self, parent, signalManager, "AssociationRules", wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Association Rules", orange.AssociationRules)]
@@ -45,8 +45,7 @@ class OWAssociationRules(OWWidget):
         OWGUI.separator(self.space, 0, 8)
 
         # Generate button
-        self.btnGenerate = QPushButton("&Build rules", self.space)
-        self.connect(self.btnGenerate,SIGNAL("clicked()"), self.generateRules)
+        self.btnGenerate = OWGUI.button(self.space, self, "&Build rules", callback = self.generateRules)
 
         self.resize(150,180)
 
@@ -86,12 +85,11 @@ class OWAssociationRules(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWAssociationRules()
-    a.setMainWidget(ow)
 
 ##    data = orange.ExampleTable("car")
 ##    ow.setData(data)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()
 

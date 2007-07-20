@@ -5,7 +5,7 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>35</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 from exceptions import Exception
@@ -18,7 +18,7 @@ class OWC45Tree(OWWidget):
                     "convertToOrange"]
 
     def __init__(self, parent=None, signalManager = None, name='C4.5'):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.callbackDeposit = []
 
@@ -72,7 +72,6 @@ class OWC45Tree(OWWidget):
 
         OWGUI.button(self.controlArea, self, "&Apply Setting", callback = self.setLearner, disabled=0)
 
-        self.adjustSize()
 
     def activateLoadedSettings(self):
         self.setLearner()
@@ -133,11 +132,9 @@ class OWC45Tree(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWC45Tree()
-    a.setMainWidget(ow)
-
 ##    dataset = orange.ExampleTable('adult_sample')
 ##    ow.setData(dataset)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

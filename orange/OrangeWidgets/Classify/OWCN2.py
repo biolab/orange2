@@ -2,16 +2,12 @@
 <name>CN2</name>
 <description>Rule-based (CN2) learner/classifier.</description>
 <icon>CN2.png</icon>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>300</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
-import OWGUI
-import orange
-import orngCN2
-import qt
-import sys
+import OWGUI, orange, orngCN2, sys
 
 class CN2ProgressBar(orange.ProgressCallback):
     def __init__(self, widget, start=0.0, end=0.0):
@@ -28,8 +24,8 @@ class OWCN2(OWWidget):
                   "MinCoverage", "BeamWidth", "Alpha", "Weight", "stepAlpha"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self,parent,signalManager,"CN2")
-        #OWWidget.__init__(self,parent,"Rules")
+        OWWidget.__init__(self,parent,signalManager,"CN2", wantMainArea = 0)
+
         self.inputs = [("Example Table", ExampleTable, self.dataset)]
         self.outputs = [("Learner", orange.Learner),("Classifier",orange.Classifier),("Unordered CN2 Classifier", orngCN2.CN2UnorderedClassifier)]
         self.QualityButton = 0
@@ -50,22 +46,22 @@ class OWCN2(OWWidget):
         ##GUI
         labelWidth = 150
         self.learnerName = OWGUI.lineEdit(self.controlArea, self, "name", box="Learner/classifier name",tooltip="Name to be used by other widgets to identify yor learner/classifier")
-        self.learnerName.setText(self.name)
+        #self.learnerName.setText(self.name)
         OWGUI.separator(self.controlArea)
 
-        self.ruleQualityBG=QVButtonGroup(self.controlArea)
-        self.ruleQualityBG.setTitle("Rule quality estimation")
+        self.ruleQualityBG = OWGUI.widgetBox(self.controlArea, "Rule quality estimation")
+        self.ruleQualityBG.buttons = []
 
         OWGUI.separator(self.controlArea)
-        self.ruleValidationGroup=OWGUI.widgetBox(self.controlArea, self)
-        self.ruleValidationGroup.setTitle("Pre-prunning (LRS)")
+        self.ruleValidationGroup = OWGUI.widgetBox(self.controlArea, "Pre-prunning (LRS)")
 
         OWGUI.separator(self.controlArea)
         OWGUI.spin(self.controlArea, self, "BeamWidth", 1, 100, box="Beam width", tooltip="The width of the search beam\n(number of rules to be specialized)")
 
         OWGUI.separator(self.controlArea)
-        self.coveringAlgBG=QVButtonGroup(self.controlArea)
-        self.coveringAlgBG.setTitle("Covering algorithm")
+        self.coveringAlgBG = OWGUI.widgetBox(self.controlArea, "Covering algorithm")
+        self.coveringAlgBG.buttons = []
+
         """
         self.ruleQualityBG=OWGUI.radioButtonsInBox(self.ruleQualityGroup, self, "QualityButton",
                             btnLabels=["Laplace","m-estimate","WRACC"],
@@ -76,15 +72,17 @@ class OWCN2(OWWidget):
                 orientation="horizontal", labelWidth=labelWidth-100, tooltip="m value for m estimate rule evaluator")
         """
 
-        QRadioButton("Laplace",self.ruleQualityBG)
-        g = QHBox(self.ruleQualityBG)
-        b = QRadioButton("m-estimate",g)
-        self.ruleQualityBG.insert(b)
-        self.mSpin = OWGUI.doubleSpin(g,self,"m",0,100)
-        self.mSpin.setDisabled(1)
-        QRadioButton("WRACC",self.ruleQualityBG)
-        self.connect(self.ruleQualityBG,SIGNAL("released(int)"),self.qualityButtonPressed)
-        
+        b1 = QRadioButton("Laplace", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b1)
+        g = OWGUI.widgetBox(self.ruleQualityBG, orientation = "horizontal");
+        b2 = QRadioButton("m-estimate", g); g.layout().addWidget(b2)
+        self.mSpin = OWGUI.doubleSpin(g, self, "m", 0, 100)
+
+        b3 = QRadioButton("WRACC", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b3)
+        self.ruleQualityBG.buttons = [b1, b2, b3]
+
+        for i, button in enumerate([b1, b2, b3]):
+            self.connect(button, SIGNAL("clicked()"), lambda v=i: self.qualityButtonPressed(v))
+
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha (vs. default rule)",
                 orientation="horizontal", labelWidth=labelWidth,
                 tooltip="How different (significance) is prior class distribution\nto that of examples covered by a rule")
@@ -95,8 +93,8 @@ class OWCN2(OWWidget):
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
                 "Minimum number of examples a rule must\ncover (use 0 for dont care)")
         OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Maximum rule length", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
-                            tooltip="Maximum number of conditions in the left\npart of the rule (use 0 for don't care)")        
-        
+                            tooltip="Maximum number of conditions in the left\npart of the rule (use 0 for don't care)")
+
         """
         self.coveringAlgBG=OWGUI.radioButtonsInBox(self.coveringAlgGroup, self, "CoveringButton",
                             btnLabels=["Exclusive covering ","Weighted Covering"],
@@ -108,17 +106,14 @@ class OWCN2(OWWidget):
                 "Multiplication constant by which the weight of\nthe example will be reduced")
         """
 
-        QRadioButton("Exclusive covering",self.coveringAlgBG)
-        g = QHBox(self.coveringAlgBG)
-        b = QRadioButton("Weighted covering",g)
-        self.coveringAlgBG.insert(b)
+        B1 = QRadioButton("Exclusive covering", self.coveringAlgBG); self.coveringAlgBG.layout().addWidget(B1)
+        g = OWGUI.widgetBox(self.coveringAlgBG, orientation = "horizontal")
+        B2 = QRadioButton("Weighted covering", g); g.layout().addWidget(B2)
+        self.coveringAlgBG.buttons = [B1, B2]
         self.weightSpin=OWGUI.doubleSpin(g,self,"Weight",0,0.95,0.05)
-        self.weightSpin.setDisabled(1)
-        self.connect(self.coveringAlgBG,SIGNAL("released(int)"),self.coveringAlgButtonPressed)
-        #layout=QVBoxLayout(self.controlArea)
-        #layout.add(self.ruleQualityGroup)
-        #layout.add(self.ruleValidationGroup)
-        #layout.add(self.coveringAlgGroup)
+
+        for i, button in enumerate([B1, B2]):
+            self.connect(button, SIGNAL("clicked()"), lambda v=i: self.coveringAlgButtonPressed(v))
 
         OWGUI.separator(self.controlArea)
         self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Settings", callback=self.applySettings)
@@ -127,11 +122,9 @@ class OWCN2(OWWidget):
         self.stepAlpha=float(self.stepAlpha)
         self.Weight=float(self.Weight)
 
-        self.ruleQualityBG.setButton(self.QualityButton)
-        self.coveringAlgBG.setButton(self.CoveringButton)
-        self.qualityButtonPressed()
-        self.coveringAlgButtonPressed()
-        self.controlArea.setMinimumWidth(300)
+        #self.ruleQualityBG.buttons[self.QualityButton].setChecked(1)
+        self.qualityButtonPressed(self.QualityButton)
+        self.coveringAlgButtonPressed(self.CoveringButton)
         self.resize(100,100)
         self.setLearner()
 
@@ -141,7 +134,7 @@ class OWCN2(OWWidget):
         #progress bar
         self.progressBarInit()
 
-        #learner        
+        #learner
         self.learner=orngCN2.CN2UnorderedLearner()
         self.learner.name = self.name
         self.learner.progressCallback=CN2ProgressBar(self)
@@ -202,27 +195,26 @@ class OWCN2(OWWidget):
         self.data=data
         self.setLearner()
 
-    def qualityButtonPressed(self,id=0):
-        id=self.QualityButton=self.ruleQualityBG.id(self.ruleQualityBG.selected())
-        if id==1:
-            self.mSpin.setDisabled(0)
-        else:
-            self.mSpin.setDisabled(1)
+    def qualityButtonPressed(self, id=0):
+        self.QualityButton = id
+        for i in range(len(self.ruleQualityBG.buttons)):
+            self.ruleQualityBG.buttons[i].setChecked(id == i)
+        self.mSpin.setEnabled(id == 1)
 
     def coveringAlgButtonPressed(self,id=0):
-        id=self.CoveringButton=self.coveringAlgBG.id(self.coveringAlgBG.selected())
-        if id==1:
-            self.weightSpin.setDisabled(0)
-        else:
-            self.weightSpin.setDisabled(1)
+        self.CoveringButton = id
+        for i in range(len(self.coveringAlgBG.buttons)):
+            self.coveringAlgBG.buttons[i].setChecked(id == i)
+        self.weightSpin.setEnabled(id == 1)
 
     def applySettings(self):
         self.setLearner()
-        
+
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWCN2()
-    w.dataset(orange.ExampleTable("titanic.tab"))
-    app.setMainWidget(w)
+    #w.dataset(orange.ExampleTable("titanic.tab"))
+    w.dataset(orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\titanic.tab"))
     w.show()
-    app.exec_loop()
+    app.exec_()
+    w.saveSettings()

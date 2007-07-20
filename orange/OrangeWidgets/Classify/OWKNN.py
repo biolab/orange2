@@ -5,7 +5,7 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>25</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 from exceptions import Exception
@@ -14,7 +14,7 @@ class OWKNN(OWWidget):
     settingsList = ["name", "k", "metrics", "ranks", "normalize", "ignoreUnknowns"]
 
     def __init__(self, parent=None, signalManager = None, name='kNN'):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.callbackDeposit = []
 
@@ -97,11 +97,10 @@ class OWKNN(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWKNN()
-    a.setMainWidget(ow)
 
 ##    dataset = orange.ExampleTable('adult_sample')
 ##    ow.setData(dataset)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

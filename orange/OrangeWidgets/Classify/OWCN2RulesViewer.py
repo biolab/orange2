@@ -6,13 +6,10 @@
 <priority>2120</priority>
 """
 
-import orange
-import orngCN2
+import orngOrangeFoldersQt4
+import orange, orngCN2
 from OWWidget import *
-import OWGUI
-import OWGraphTools
-import qt
-from qtcanvas import *
+import OWGUI, OWGraphTools
 import sys
 import re
 
@@ -108,7 +105,7 @@ class OWCN2RulesViewer(OWWidget):
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Sorting")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Fixed,QSizePolicy.Fixed))
-        self.sortBox=OWGUI.comboBox(box, self, "Sort", 
+        self.sortBox=OWGUI.comboBox(box, self, "Sort",
                                     items=["No sorting", "Rule length", "Rule quality", "Coverage", "Predicted class",
                                            "Distribution","Rule"]
                                     ,callback=self.drawRules)
@@ -362,7 +359,7 @@ class OWCN2RulesViewer(OWWidget):
 
 
     def saveRules(self):
-        fileName=str(QFileDialog.getSaveFileName("Rules.txt",".txt"))
+        fileName=str(QFileDialog.getSaveFileName(self, "Rules", "Rules.txt",".txt"))
         try:
             f=open(fileName,"w")
         except :

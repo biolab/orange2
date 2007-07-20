@@ -6,21 +6,21 @@
 <priority>300</priority>
 """
 
-from qttable import *
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 import statc
 
 ##############################################################################
 
-class colorItem(QTableItem):
+class colorItem(QTableWidgetItem):
     def __init__(self, table, editType, text):
-        QTableItem.__init__(self, table, editType, str(text))
+        QTableWidgetItem.__init__(self, table, editType, str(text))
 
     def paint(self, painter, colorgroup, rect, selected):
-        g = QColorGroup(colorgroup)
-        g.setColor(QColorGroup.Base, Qt.lightGray)
-        QTableItem.paint(self, painter, g, rect, selected)
+        g = QPalette(colorgroup)
+        g.setColor(QPalette.Base, Qt.lightGray)
+        QTableWidgetItem.paint(self, painter, g, rect, selected)
 
 ##############################################################################
 
@@ -54,34 +54,29 @@ class OWPredictions(OWWidget):
         # GUI - Options
 
         # Options - classification
-        self.copt = QVButtonGroup("Options (classification)", self.controlArea)
+        self.copt = OWGUI.widgetBox(self.controlArea, "Options (classification)")
         self.copt.setDisabled(1)
-        OWGUI.checkBox(self.copt, self, 'showProb', "Show predicted probabilities",
-                       callback=self.updateTableOutcomes)
+        OWGUI.checkBox(self.copt, self, 'showProb', "Show predicted probabilities", callback=self.updateTableOutcomes)
 
-        self.lbClasses = QListBox(self.copt)
-        self.lbClasses.setSelectionMode(QListBox.Multi)
-        self.connect(self.lbClasses, SIGNAL("selectionChanged()"), self.updateTableOutcomes)
-        
-        OWGUI.checkBox(self.copt, self, 'showClass', "Show predicted class",
-                       callback=[self.updateTableOutcomes, self.checksendpredictions])
+        self.lbClasses = OWGUI.listBox(self.copt, self, selectionMode = QListWidget.MultiSelection, callback = self.updateTableOutcomes)
+
+        OWGUI.checkBox(self.copt, self, 'showClass', "Show predicted class", callback=[self.updateTableOutcomes, self.checksendpredictions])
 
         # Options - regression
         # self.ropt = QVButtonGroup("Options (regression)", self.controlArea)
         # OWGUI.checkBox(self.ropt, self, 'showClass', "Show predicted class",
         #                callback=[self.updateTableOutcomes, self.checksendpredictions])
         # self.ropt.hide()
-        
+
         OWGUI.separator(self.controlArea)
 
-        self.att = QVButtonGroup("Data attributes", self.controlArea)
-        OWGUI.radioButtonsInBox(self.att, self, 'ShowAttributeMethod', ['Show all', 'Hide all'],
-                                callback=self.updateAttributes)
+        self.att = OWGUI.widgetBox(self.controlArea, "Data attributes")
+        OWGUI.radioButtonsInBox(self.att, self, 'ShowAttributeMethod', ['Show all', 'Hide all'], callback=self.updateAttributes)
         self.att.setDisabled(1)
 
         OWGUI.separator(self.controlArea)
-        self.outbox = QVButtonGroup("Output", self.controlArea)
-        
+        self.outbox = OWGUI.widgetBox(self.controlArea, "Output")
+
         self.dsel = OWGUI.checkBox(self.outbox, self, "sendSelection", "Send data selection")
         # data selection for classification
         self.csel = OWGUI.radioButtonsInBox(self.outbox, self, 'sendDataType',
@@ -91,11 +86,11 @@ class OWPredictions(OWWidget):
                                           'Data instances with matching true and predictied class.'],
                                 callback=self.checksendselection)
         # data selection for regression
-        self.rsel = QVButtonGroup("Data selection", self.outbox)
+        self.rsel = OWGUI.widgetBox(self.outbox, "Data selection")
         OWGUI.radioButtonsInBox(self.rsel, self, "rbest", ["Highest variance", "Lowest variance"],
                                 callback = self.checksendselection)
         hb = OWGUI.widgetBox(self.rsel, orientation = "horizontal")
-        QLabel('Percentiles: ', hb)
+        OWGUI.widgetLabel(hb, 'Percentiles: ')
         OWGUI.comboBox(hb, self, "rpercentile",
                        items = [0.01, 0.02, 0.05, 0.1, 0.2],
                        sendSelectedValue = 1, valueType = float, callback = self.checksendselection)
@@ -112,20 +107,17 @@ class OWPredictions(OWWidget):
         self.outbox.setDisabled(1)
 
         # GUI - Table
-        self.layout = QVBoxLayout(self.mainArea)
-        self.table = QTable(self.mainArea)
-        self.table.setSelectionMode(QTable.NoSelection)
+        self.table = OWGUI.table(self.mainArea, selectionMode = QTableWidget.NoSelection)
         self.header = self.table.horizontalHeader()
         self.vheader = self.table.verticalHeader()
         # manage sorting (not correct, does not handle real values)
         self.connect(self.header, SIGNAL("pressed(int)"), self.sort)
         self.sortby = -1
 
-        self.layout.add(self.table)
 
     ##############################################################################
     # Contents painting
- 
+
     def updateTableOutcomes(self):
         """updates the columns associated with the classifiers"""
         if self.freezeAttChange: # program-based changes should not alter the table immediately
@@ -137,11 +129,11 @@ class OWPredictions(OWWidget):
         if self.outvar:
             classification = self.outvar.varType == orange.VarTypes.Discrete
             if classification:
-                selclass = [self.lbClasses.isSelected(i) for i in range(len(self.data.domain.classVar.values))]
+                selclass = [self.lbClasses.item(i).isSelected() for i in range(len(self.data.domain.classVar.values))]
                 showclass = selclass.count(1)
             else:
                 showclass = 1
-            
+
         # sindx is the column where these start
         sindx = 1 + len(self.data.domain.attributes) + 1 * (self.data.domain.classVar<>None)
         col = sindx
@@ -202,9 +194,8 @@ class OWPredictions(OWWidget):
         if self.data==None:
             return
 
-        self.table.setNumCols(0)
-        self.table.setNumCols(1 + len(self.data.domain.attributes) + (self.data.domain.classVar <> None) + len(self.classifiers))
-        self.table.setNumRows(len(self.data))
+        self.table.setColumnCount(1 + len(self.data.domain.attributes) + (self.data.domain.classVar <> None) + len(self.classifiers))
+        self.table.setRowCount(len(self.data))
 
         # HEADER: set the header (attribute names)
         self.header.setLabel(0, '#')
@@ -323,13 +314,13 @@ class OWPredictions(OWWidget):
                 lb = self.lbClasses
                 lb.clear()
                 for v in self.outvar.values:
-                    lb.insertItem(str(v))
+                    lb.addItem(str(v))
                 self.freezeAttChange = 1
                 for i in range(len(self.outvar.values)):
-                    lb.setSelected(i, 1)
+                    lb.item(i).setSelected(1)
                 lb.show()
                 self.freezeAttChange = 0
-                
+
         if self.data:
             self.setTable()
             self.table.show()
@@ -367,7 +358,7 @@ class OWPredictions(OWWidget):
 
             metas = []
             if classification:
-                selclass = [self.lbClasses.isSelected(i) for i in range(len(self.data.domain.classVar.values))]
+                selclass = [self.lbClasses.item(i).isSelected() for i in range(len(self.data.domain.classVar.values))]
                 showclass = selclass.count(1)
                 if showclass:
                     for c in self.classifiers.values():
@@ -382,7 +373,7 @@ class OWPredictions(OWWidget):
                     metas.extend(mc)
             else:
                 # regression
-                mc = [orange.FloatVariable(name="%s" % c.name, 
+                mc = [orange.FloatVariable(name="%s" % c.name,
                                            getValueFrom = lambda ex, rw: orange.Value(c(ex)))
                       for c in self.classifiers.values()]
                 metas.extend(mc)
@@ -438,7 +429,6 @@ class OWPredictions(OWWidget):
 if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWPredictions()
-    a.setMainWidget(ow)
     ow.show()
 
     if 0: # data set only
@@ -481,5 +471,5 @@ if __name__=="__main__":
         ow.setClassifier(maj, 2)
         ow.setData(data)
 
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

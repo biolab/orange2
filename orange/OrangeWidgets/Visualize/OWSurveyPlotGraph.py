@@ -11,7 +11,7 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
         orngScaleData.__init__(self)
-        self.selectedRectangle = 0
+        self.selectedRectangle = None
         self.exampleTracking = 1
         self.length = 0 # number of shown attributes - we need it also in mouse movement
         self.enabledLegend = 0
@@ -25,14 +25,12 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
     #
     # update shown data. Set labels, coloring by className ....
     def updateData(self, labels):
-        self.removeCurves()
+        self.clear()
         self.tips.removeAll()
 
         self.attrLabels = labels
         self.length = len(labels)
         indices = [self.attributeNameIndex[label] for label in labels]
-        #if self.tooltipKind == DONT_SHOW_TOOLTIPS: MyQToolTip.tip(self.tooltip, QRect(0,0,0,0), "")
-
 
         if self.noJitteringScaledData == None or len(self.noJitteringScaledData) == 0 or len(labels) == 0:
             self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
@@ -44,20 +42,16 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
 
         self.setAxisScale(QwtPlot.yLeft, 0, totalValid, totalValid)
         self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)
-        #self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)
-        #self.setAxisMaxMinor(QwtPlot.xBottom, 0)
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
-        self.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)  # hide ticks
-        self.axisScaleDraw(QwtPlot.xBottom).setOptions(0)           # hide horizontal line representing x axis
-        #self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+        self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Backbone, 0)
+        self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Ticks, 0)
 
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
-            newCurveKey = self.insertCurve(labels[i])
-            self.setCurveData(newCurveKey, [i,i], [0,1])
+            self.addCurve("", style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [i,i], yData = [0, 1])
 
-        self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
-        self.updateLayout()
+        #self.replot()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
+        #self.updateLayout()
 
         xRectsToAdd = {}
         yRectsToAdd = {}
@@ -84,50 +78,44 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
             y += 1
 
         for key in xRectsToAdd.keys():
-            self.insertCurve(RectangleCurve(self, QPen(QColor(*key)), QBrush(QColor(*key)), xRectsToAdd[key], yRectsToAdd[key]))
+            RectangleCurve("", QPen(QColor(*key)), QBrush(QColor(*key)), xRectsToAdd[key], yRectsToAdd[key]).attach(self)
 
         if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-            self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
+            self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.NoSymbol, enableLegend = 1)
             for ind in range(len(classValues)):
                 self.addCurve(classValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
+        self.replot()
 
 
     # show rectangle with example shown under mouse cursor
-    def onMouseMoved(self, e):
-        self.hideSelectedRectangle()
+    def mouseMoveEvent(self, e):
+        if self.selectedRectangle:
+            self.selectedRectangle.detach()
+            self.selectedRectangle = None
+
         if self.mouseCurrentlyPressed:
-            OWGraph.onMouseMoved(self, e)
+            OWGraph.mouseMoveEvent(self, e)
         elif not self.rawdata:
             return
         else:
-            yFloat = math.floor(self.invTransform(QwtPlot.yLeft, e.y()))
+            canvasPos = self.canvas().mapFrom(self, e.pos())
+            yFloat = math.floor(self.invTransform(QwtPlot.yLeft, canvasPos.y()))
             if self.exampleTracking:
                 width = 0.49
                 xData = [-width, self.length+width-1, self.length+width-1, -width, -width]
                 yData = [yFloat, yFloat, yFloat+1, yFloat+1, yFloat]
-                self.selectedRectangle = self.insertCurve("test")
-                self.setCurveData(self.selectedRectangle, xData, yData)
-                self.setCurveStyle(self.selectedRectangle, QwtCurve.Lines)
+                self.selectedRectangle = self.addCurve("", style=QwtPlotCurve.Lines, symbol=QwtSymbol.NoSymbol, xData=xData, yData=yData)
                 self.replot()
             else:
-                OWGraph.onMouseMoved(self, e)
+                OWGraph.mouseMoveEvent(self, e)
 
             if (self.tooltipKind == VISIBLE_ATTRIBUTES and self.attrLabels != []) or self.tooltipKind == ALL_ATTRIBUTES:
                 if int(yFloat) >= len(self.rawdata): return
                 if self.tooltipKind == VISIBLE_ATTRIBUTES:      text = self.getExampleTooltipText(self.rawdata, self.rawdata[int(yFloat)], self.attrLabels)
                 else:                                           text = self.getExampleTooltipText(self.rawdata, self.rawdata[int(yFloat)], [])
-                y1Int = self.transform(QwtPlot.yLeft, yFloat)
-                y2Int = self.transform(QwtPlot.yLeft, yFloat+1.0)
-                MyQToolTip.tip(self.tooltip, QRect(e.x()+self.canvas().frameGeometry().x()-10, y2Int+self.canvas().frameGeometry().y(), 20, y1Int-y2Int), text)
-                OWGraph.onMouseMoved(self, e)
-
-
-    def hideSelectedRectangle(self):
-        if self.selectedRectangle != 0:
-            self.removeCurve(self.selectedRectangle)
-            self.selectedRectangle = 0
-
+                OWGraph.mouseMoveEvent(self, e)
+                self.showTip(e.x(), e.y(), text)
 
 if __name__== "__main__":
     #Draw a simple graph

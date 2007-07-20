@@ -25,7 +25,7 @@ class distribErrorBarQwtPlotCurve(QwtPlotCurve):
     def draw(self, p, xMap, yMap, f, t):
         self.setPen( self.symbol().pen() )
         p.setPen( self.symbol().pen() )
-        if self.style() == QwtCurve.UserCurve:
+        if self.style() == QwtPlotCurve.UserCurve:
             p.setBackgroundMode(Qt.OpaqueMode)
             if t < 0: t = self.dataSize() - 1
             if divmod(f, 3)[1] != 0: f -= f % 3
@@ -255,7 +255,7 @@ class OWDistributionGraph(OWGraph):
             if self.variableContinuous:
                 self.setCurvePen(key, QPen(Qt.black))
             else:
-                self.setCurveStyle(key, QwtCurve.Dots)
+                self.setCurveStyle(key, QwtPlotCurve.Dots)
                 self.setCurveSymbol(key, QwtSymbol(QwtSymbol.Diamond, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(7,7)))
         else:
             self.enableYRaxis(0)
@@ -336,7 +336,7 @@ class OWDistributionGraph(OWGraph):
 
             ## (re)set the curves
             if self.variableContinuous:
-                newSymbol = QwtSymbol(QwtSymbol.None, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(0,0))
+                newSymbol = QwtSymbol(QwtSymbol.NoSymbol, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(0,0))
             else:
                 newSymbol = QwtSymbol(QwtSymbol.Diamond, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(7,7))
 
@@ -344,15 +344,15 @@ class OWDistributionGraph(OWGraph):
             self.setCurveSymbol(self.probCurveKey, newSymbol)
 
             if self.variableContinuous:
-                self.setCurveStyle(self.probCurveKey, QwtCurve.Lines)
+                self.setCurveStyle(self.probCurveKey, QwtPlotCurve.Lines)
                 if self.showConfidenceIntervals:
                     self.setCurveData(self.probCurveUpperCIKey, xs, ups)
                     self.setCurveData(self.probCurveLowerCIKey, xs, lps)
             else:
                 if self.showConfidenceIntervals:
-                    self.setCurveStyle(self.probCurveKey, QwtCurve.UserCurve)
+                    self.setCurveStyle(self.probCurveKey, QwtPlotCurve.UserCurve)
                 else:
-                    self.setCurveStyle(self.probCurveKey, QwtCurve.Dots)
+                    self.setCurveStyle(self.probCurveKey, QwtPlotCurve.Dots)
         else:
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)
@@ -464,7 +464,7 @@ class OWDistributions(OWWidget):
         #add controls to self.controlArea widget
         self.variablesQCB = OWGUI.comboBox(self.GeneralTab, self, "attribute", box="Attribute", valueType = str, sendSelectedValue = True, callback=self.setVariable)
         self.targetQCB = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box="Target value", valueType=int, callback=self.setTarget)
-        self.outcomesQLB = OWGUI.listBox(self.GeneralTab, self, "visibleOutcomes", "outcomes", "Outcomes", selectionMode = QListBox.Multi, callback = self.outcomeSelectionChange)
+        self.outcomesQLB = OWGUI.listBox(self.GeneralTab, self, "visibleOutcomes", "outcomes", "Outcomes", selectionMode = QListWidget.MultiSelection, callback = self.outcomeSelectionChange)
 
         self.icons = self.createAttributeIconDict()
         

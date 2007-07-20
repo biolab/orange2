@@ -23,11 +23,13 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.toolRects = []
         self.useSplines = 0
         self.showStatistics = 0
-        self.lastSelectedKey = 0
+        self.lastSelectedCurve = None
         self.enabledLegend = 0
         self.curvePoints = []       # save curve points in form [(y1, y2, ..., yi), (y1, y2, ... yi), ...] - used for sending selected and unselected points
         self.lineTracking = 0
-        self.nonDataKeys = []
+        self.nonDataCurves = []
+        self.enableGridXB(0)
+        self.enableGridYL(0)
 
     def setData(self, data):
         OWGraph.setData(self, data)
@@ -41,7 +43,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.removeMarkers()
 
         self.curvePoints = []
-        self.nonDataKeys = []
+        self.nonDataCurves = []
 
         blackColor = QColor(0, 0, 0)
 
@@ -49,27 +51,20 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if len(attributes) == 0: return
 
         if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete:
-            #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-0.5, 1)
-            #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1, 1)   # changed because of qwtplot's bug. only every second attribute label was shown if -0.5 was used
             self.setAxisScale(QwtPlot.xBottom, startIndex, stopIndex-1, 1)   # changed because of qwtplot's bug. only every second attribute label was shown if -0.5 was used
         else:
-            #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)
             self.setAxisScale(QwtPlot.xBottom, startIndex, stopIndex-1, 1)
 
         if self.showAttrValues: self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
         elif midLabels:         self.setAxisScale(QwtPlot.yLeft, 0, 1.04, 1)
         else:                   self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
 
-##        if (self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous and self.enabledLegend) or (len(attributes) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete and (self.showDistributionValues or self.showAttrValues)):
-##            self.addCurve("edge", self.canvasBackground(), self.canvasBackground(), 1, QwtCurve.Lines, QwtSymbol.None, xData = [len(attributes),len(attributes)], yData = [1,1])
-
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw([self.getAttributeLabel(attr) for attr in attributes]))
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-        self.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)  # hide ticks
-        self.axisScaleDraw(QwtPlot.xBottom).setOptions(0)           # hide horizontal line representing x axis
-        self.axisScaleDraw(QwtPlot.yLeft).setTickLength(0, 0, 0)
-        self.axisScaleDraw(QwtPlot.yLeft).setOptions(0)
-
+        self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Backbone, 0)
+        self.axisScaleDraw(QwtPlot.xBottom).enableComponent(QwtScaleDraw.Ticks, 0)
+        self.axisScaleDraw(QwtPlot.yLeft).enableComponent(QwtScaleDraw.Backbone, 0)
+        self.axisScaleDraw(QwtPlot.yLeft).enableComponent(QwtScaleDraw.Ticks, 0)
         self.setAxisMaxMajor(QwtPlot.xBottom, len(attributes))
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
@@ -144,7 +139,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 self.curvePoints.append([]) # add an empty list
                 continue
 
-            curve = QwtPlotCurve(self)
+            curve = QwtPlotCurve("")
+            curve.setItemAttribute(QwtPlotItem.Legend, 0)
             if targetValue != None:
                 if self.rawdata[i].getclass().value == targetValue:
                     newColor = self.colorTargetValue
@@ -178,7 +174,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             curve.setData(xs, ys)
             self.curvePoints.append(ys)  # save curve points
             if self.useSplines:
-                curve.setStyle(QwtCurve.Spline)
+                curve.setCurveAttribute(QwtPlotCurve.Fitted)
 
         # if we have a data subset that contains examples that don't exist in the original dataset we show them here
         if subsetReferencesToDraw != []:
@@ -214,12 +210,11 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 curve.setPen(QPen(newColor, 1))
                 curve.setData(xs, subData[i].tolist())
                 if self.useSplines:
-                    curve.setStyle(QwtCurve.Spline)
+                    curve.setStyle(QwtPlotCurve.Spline)
 
         # now add all curves. First add the gray curves (they will be shown in the back) and then the blue (target value) curves (shown in front)
-        for curve in curves[0]: self.insertCurve(curve)
-        for curve in curves[1]: self.insertCurve(curve)
-
+        for curve in curves[0]: curve.attach(self)
+        for curve in curves[1]: curve.attach(self)
 
         # ############################################
         # do we want to show distributions with discrete attributes
@@ -229,41 +224,30 @@ class OWParallelGraph(OWGraph, orngScaleData):
         # ############################################
         # draw vertical lines that represent attributes
         for i in range(len(attributes)):
-            newCurveKey = self.insertCurve(attributes[i])
-            self.nonDataKeys.append(newCurveKey)
-            self.setCurveData(newCurveKey, [i,i], [0,1])
-            pen = self.curve(newCurveKey).pen(); pen.setWidth(2); self.curve(newCurveKey).setPen(pen)
+            self.nonDataCurves.append(self.addCurve("", lineWidth = 2, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [i,i], yData = [0,1]))
             if self.showAttrValues == 1:
                 attr = self.rawdata.domain[attributes[i]]
                 if attr.varType == orange.VarTypes.Continuous:
-                    strVal = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][0])
-                    mkey1 = self.insertMarker(strVal)
-                    self.marker(mkey1).setXValue(i)
-                    self.marker(mkey1).setYValue(0.0-0.01)
-                    strVal = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][1])
-                    mkey2 = self.insertMarker(strVal)
-                    self.marker(mkey2).setXValue(i)
-                    self.marker(mkey2).setYValue(1.0+0.01)
+                    strVal1 = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][0])
+                    strVal2 = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][1])
                     if i == 0:
-                        self.marker(mkey1).setLabelAlignment(Qt.AlignRight + Qt.AlignBottom)
-                        self.marker(mkey2).setLabelAlignment(Qt.AlignRight + Qt.AlignTop)
+                        align1 = Qt.AlignRight + Qt.AlignBottom
+                        align2 = Qt.AlignRight + Qt.AlignTop
                     elif i == len(attributes)-1:
-                        self.marker(mkey1).setLabelAlignment(Qt.AlignLeft + Qt.AlignBottom)
-                        self.marker(mkey2).setLabelAlignment(Qt.AlignLeft + Qt.AlignTop)
+                        align1 = Qt.AlignLeft + Qt.AlignBottom
+                        align2 = Qt.AlignLeft + Qt.AlignTop
                     else:
-                        self.marker(mkey1).setLabelAlignment(Qt.AlignHCenter + Qt.AlignBottom)
-                        self.marker(mkey2).setLabelAlignment(Qt.AlignHCenter + Qt.AlignTop)
+                        align1 = Qt.AlignHCenter + Qt.AlignBottom
+                        align2 = Qt.AlignHCenter + Qt.AlignTop
+                    self.addMarker(strVal1, i, 0.0-0.01, alignment = align1)
+                    self.addMarker(strVal2, i, 1.0+0.01, alignment = align2)
+
                 elif attr.varType == orange.VarTypes.Discrete:
                     attrVals = getVariableValuesSorted(self.rawdata, attributes[i])
                     valsLen = len(attrVals)
                     for pos in range(len(attrVals)):
                         # show a rectangle behind the marker
-                        mkey = self.insertMarker(nonTransparentMarker(QColor(255,255,255), self))
-                        self.marker(mkey).setLabel(attrVals[pos])
-                        font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
-                        self.marker(mkey).setXValue(i+0.01)
-                        self.marker(mkey).setYValue(float(1+2*pos)/float(2*valsLen))
-                        self.marker(mkey).setLabelAlignment(Qt.AlignRight + Qt.AlignVCenter)
+                        self.addMarker(attrVals[pos], i+0.01, float(1+2*pos)/float(2*valsLen), alignment = Qt.AlignRight | Qt.AlignVCenter, bold = 1, brushColor = Qt.white)
 
         # ##############################################
         # show lines that represent standard deviation or quartiles
@@ -311,10 +295,10 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     if data[i][c] == (): continue
                     x = i - 0.03*(len(data[i])-1)/2.0 + c*0.03
                     col = self.discPalette[c]
-                    self.nonDataKeys.append(self.addCurve("", col, col, 3, QwtCurve.Lines, QwtSymbol.Diamond, xData = [x,x,x], yData = [data[i][c][0], data[i][c][1], data[i][c][2]], lineWidth = 4))
-                    self.nonDataKeys.append(self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][0], data[i][c][0]], lineWidth = 4))
-                    self.nonDataKeys.append(self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][1], data[i][c][1]], lineWidth = 4))
-                    self.nonDataKeys.append(self.addCurve("", col, col, 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][2], data[i][c][2]], lineWidth = 4))
+                    self.nonDataCurves.append(self.addCurve("", col, col, 3, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [x,x,x], yData = [data[i][c][0], data[i][c][1], data[i][c][2]], lineWidth = 4))
+                    self.nonDataCurves.append(self.addCurve("", col, col, 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [x-0.03, x+0.03], yData = [data[i][c][0], data[i][c][0]], lineWidth = 4))
+                    self.nonDataCurves.append(self.addCurve("", col, col, 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [x-0.03, x+0.03], yData = [data[i][c][1], data[i][c][1]], lineWidth = 4))
+                    self.nonDataCurves.append(self.addCurve("", col, col, 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [x-0.03, x+0.03], yData = [data[i][c][2], data[i][c][2]], lineWidth = 4))
 
             # draw lines with mean/median values
             classCount = 1
@@ -327,25 +311,22 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 for i in range(len(data)):
                     if data[i] != [()]: ys.append(data[i][c][1]); xs.append(i+diff)
                     else:
-                        if len(xs) > 1: self.nonDataKeys.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4))
+                        if len(xs) > 1: self.nonDataCurves.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = xs, yData = ys, lineWidth = 4))
                         xs = []; ys = []
-                self.nonDataKeys.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4))
+                self.nonDataCurves.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = xs, yData = ys, lineWidth = 4))
 
 
         # ##################################################
         # show labels in the middle of the axis
         if midLabels:
             for j in range(len(midLabels)):
-                mkey = self.insertMarker(midLabels[j])
-                self.marker(mkey).setXValue(j+0.5)
-                self.marker(mkey).setYValue(1.0)
-                self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
+                self.addMarker(midLabels[j], j+0.5, 1.0, alignment = Qt.AlignCenter | Qt.AlignTop)
 
         # show the legend
         if self.enabledLegend == 1 and self.rawdata.domain.classVar:
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-                self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
+                self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.NoSymbol, enableLegend = 1)
                 for ind in range(len(varValues)):
                     self.addCurve(varValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
             else:
@@ -355,16 +336,17 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 for i in range(count):
                     y = i/float(count)
                     col = self.contPalette[y]
-                    curve = PolygonCurve(self, QPen(col), QBrush(col))
-                    newCurveKey = self.insertCurve(curve)
-                    self.nonDataKeys.append(newCurveKey)
-                    self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
+                    curve = PolygonCurve(self, QPen(col), QBrush(col), xData = xs, yData = [y,y, y+height, y+height])
+                    curve.attach(self)
+                    self.nonDataCurves.append(curve)
 
                 # add markers for min and max value of color attribute
                 [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
                 decimals = self.rawdata.domain.classVar.numberOfDecimals
                 self.addMarker("%%.%df" % (decimals) % (minVal), xs[0] - l*0.02, 0.04, Qt.AlignLeft)
                 self.addMarker("%%.%df" % (decimals) % (maxVal), xs[0] - l*0.02, 1.0 - 0.04, Qt.AlignLeft)
+
+        self.replot()
 
 
     # ##########################################
@@ -429,7 +411,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 item = (self.rawdata.domain[index].name, variableValueSorted[i], totals[i], sumTotals, list, (x_start,x_end), (y_start, y_end))
                 self.toolInfo.append(item)
 
-
             # create bar curve
             for i in range(count):
                 if targetValue != None:
@@ -445,12 +426,13 @@ class OWParallelGraph(OWGraph, orngScaleData):
                     height = 0.7/float(count*attrLen)
 
                     yLowBott = yOff - float(count*height)/2.0 + i*height
-                    ckey = self.insertCurve(PolygonCurve(self, pen = QPen(newColor), brush = QBrush(newColor), xData = [graphAttrIndex, graphAttrIndex + width, graphAttrIndex + width, graphAttrIndex], yData = [yLowBott, yLowBott, yLowBott + height, yLowBott + height]))
-                    self.nonDataKeys.append(ckey)
-
-        self.addTooltips()
+                    curve = PolygonCurve(self, pen = QPen(newColor), brush = QBrush(newColor), xData = [graphAttrIndex, graphAttrIndex + width, graphAttrIndex + width, graphAttrIndex], yData = [yLowBott, yLowBott, yLowBott + height, yLowBott + height])
+                    curve.attach(self)
+                    self.nonDataCurves.append(curve)
+        #self.addTooltips()
 
     def addTooltips(self):
+        return
         for i in range(len(self.toolInfo)):
             (name, value, total, sumTotals, lista, (x_start,x_end), (y_start, y_end)) = self.toolInfo[i]
             if total == 0: continue
@@ -468,6 +450,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             QToolTip.add(self, rect, tooltipText)
 
     def removeTooltips(self):
+        return
         for rect in self.toolRects:
             QToolTip.remove(self, rect)
         self.toolRects = []
@@ -496,42 +479,33 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.addTooltips()
 
     # if we zoomed, we have to update tooltips
-    def onMouseReleased(self, e):
-        OWGraph.onMouseReleased(self, e)
+    def mouseReleaseEvent(self, e):
+        OWGraph.mouseReleaseEvent(self, e)
         self.updateTooltips()
 
-    def onMouseMoved(self, e):
-        if self.mouseCurrentlyPressed:
-            OWGraph.onMouseMoved(self, e)
-            return
-        else:
-            (key, foo1, x, y, foo2) = self.closestCurve(e.pos().x(), e.pos().y())
-            dist = abs(x-self.invTransform(QwtPlot.xBottom, e.x())) + abs(y-self.invTransform(QwtPlot.yLeft, e.y()))
-
-            if self.lineTracking:
-                if (dist >= 0.1 or key != self.lastSelectedKey) and self.lastSelectedKey not in self.nonDataKeys:
-                    existingPen = self.curvePen(self.lastSelectedKey)
+    def mouseMoveEvent(self, e):
+        if self.lineTracking:
+            canvasPos = self.canvas().mapFrom(self, e.pos())
+            (curve, dist, x, y, index) = self.closestCurve(e.pos().x(), e.pos().y())
+            if curve:
+                if self.lastSelectedCurve and (dist >= 5 or curve != self.lastSelectedCurve) and self.lastSelectedCurve not in self.nonDataCurves:
+                    existingPen = self.lastSelectedCurve.pen()
                     existingPen.setWidth(1)
-                    self.setCurvePen(self.lastSelectedKey, existingPen)
-                    self.lastSelectedKey = -1
+                    self.lastSelectedCurve.setPen(existingPen)
+                    self.lastSelectedCurve = None
 
-                if dist < 0.1 and key != self.lastSelectedKey and key not in self.nonDataKeys:
-                    self.lastSelectedKey = key
-                    existingPen = self.curvePen(self.lastSelectedKey)
+                if dist < 5 and curve != self.lastSelectedCurve and curve not in self.nonDataCurves:
+                    self.lastSelectedCurve = curve
+                    existingPen = curve.pen()
                     existingPen.setWidth(3)
-                    self.setCurvePen(self.lastSelectedKey, existingPen)
-
-            else:
-                OWGraph.onMouseMoved(self, e)
-                return
-
-            OWGraph.onMouseMoved(self, e)
-            self.replot()
+                    curve.setPen(existingPen)
+                self.replot()
+        OWGraph.mouseMoveEvent(self, e)
 
     def getSelectionsAsExampleTables(self, targetValue = None):
         if not self.rawdata:
             return (None, None)
-        if self.selectionCurveKeyList == []:
+        if self.selectionCurveList == []:
             return (None, self.rawdata)
 
         selIndices = []

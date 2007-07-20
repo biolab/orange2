@@ -6,6 +6,7 @@
 <priority>10</priority>
 """
 
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI, orange
 from exceptions import Exception
@@ -18,7 +19,7 @@ class OWNaiveBayes(OWWidget):
     settingsList = ["m_estimator.m", "name", "probEstimation", "condProbEstimation", "adjustThreshold", "windowProportion"]
 
     def __init__(self, parent=None, signalManager = None, name='NaiveBayes'):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner),("Naive Bayesian Classifier", orange.BayesClassifier)]
@@ -49,10 +50,10 @@ class OWNaiveBayes(OWWidget):
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        box = QGroupBox('Probability Estimation', self.controlArea)
-        glay = QGridLayout(box, 7, 3, 10, 5)
+        glay = QGridLayout()
+        box = OWGUI.widgetBox(self.controlArea, 'Probability Estimation', orientation = glay)
 
-        glay.addWidget(OWGUI.separator(box, height=5), 0, 0)
+        #glay.addWidget(OWGUI.separator(box, height=5), 0, 0)
 
         glay.addWidget(OWGUI.widgetLabel(box, "Unconditional"), 1, 0)
 
@@ -95,7 +96,6 @@ class OWNaiveBayes(OWWidget):
         applyButton = OWGUI.button(box, self, "&Apply", callback=self.applyLearner)
 
         self.refreshControls()
-        self.adjustSize()
         self.applyLearner()
 
 
@@ -166,8 +166,7 @@ class OWNaiveBayes(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNaiveBayes()
-    a.setMainWidget(ow)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

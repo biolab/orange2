@@ -9,7 +9,7 @@
 #
 # Show data using survey plot visualization method
 #
-
+import orngOrangeFoldersQt4
 from OWVisWidget import *
 from OWSurveyPlotGraph import *
 from OWDlgs import ColorPalette
@@ -32,11 +32,9 @@ class OWSurveyPlot(OWVisWidget):
         self.outputs = [("Attribute Selection List", AttributeList)]
 
         #add a graph widget
-        self.box = QVBoxLayout(self.mainArea)
         self.graph = OWSurveyPlotGraph(self.mainArea)
-        self.box.addWidget(self.graph)
+        self.mainArea.layout().addWidget(self.graph)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-
 
         #set default settings
         self.data = None
@@ -48,7 +46,7 @@ class OWSurveyPlot(OWVisWidget):
         self.attrDiscOrder = "None"
         self.attrContOrder = "None"
         self.attributeSelectionList = None
-        self.graphCanvasColor = str(Qt.white.name())
+        self.graphCanvasColor = str(QColor(Qt.white).name())
         self.primaryAttribute = "(None)"
         self.secondaryAttribute = "(None)"
         self.colorSettings = None
@@ -58,11 +56,10 @@ class OWSurveyPlot(OWVisWidget):
         self.loadSettings()
 
         #GUI
-        self.tabs = QTabWidget(self.space, 'tabWidget')
-        self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = QVGroupBox(self)
-        self.tabs.insertTab(self.GeneralTab, "Main")
-        self.tabs.insertTab(self.SettingsTab, "Settings")
+        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
+        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+
 
         #add controls to self.controlArea widget
         self.sortingAttrGB = OWGUI.widgetBox(self.GeneralTab, "Sorting")
@@ -86,6 +83,7 @@ class OWSurveyPlot(OWVisWidget):
 
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
+        self.SettingsTab.layout().addStretch(100)
 
         self.icons = self.createAttributeIconDict()
 
@@ -93,9 +91,7 @@ class OWSurveyPlot(OWVisWidget):
         self.activateLoadedSettings()
         self.resize(700,700)
 
-        # this is needed so that the tabs are wide enough!
-        qApp.processEvents()
-        self.tabs.updateGeometry()
+
 
     # #########################
     # OPTIONS
@@ -105,7 +101,7 @@ class OWSurveyPlot(OWVisWidget):
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
         self.graph.discPalette = dlg.getDiscretePalette()
         self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-        self.graph.setGridPen(QPen(dlg.getColor("Grid")))
+        self.graph.gridCurve.setPen(QPen(dlg.getColor("Grid")))
 
         #self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.cbShowAllAttributes()
@@ -114,21 +110,18 @@ class OWSurveyPlot(OWVisWidget):
     def setSortCombo(self):
         self.primaryAttrCombo.clear()
         self.secondaryAttrCombo.clear()
-        self.primaryAttrCombo.insertItem("(None)")
-        self.secondaryAttrCombo.insertItem("(None)")
+        self.primaryAttrCombo.addItem("(None)")
+        self.secondaryAttrCombo.addItem("(None)")
         if not self.data: return
         for attr in self.data.domain:
-            self.primaryAttrCombo.insertItem(self.icons[attr.varType], attr.name)
-            self.secondaryAttrCombo.insertItem(self.icons[attr.varType], attr.name)
-        #self.primaryAttrCombo.setCurrentItem(0)
-        #self.secondaryAttrCombo.setCurrentItem(0)
+            self.primaryAttrCombo.addItem(self.icons[attr.varType], attr.name)
+            self.secondaryAttrCombo.addItem(self.icons[attr.varType], attr.name)
         self.primaryAttribute = "(None)"
         self.secondaryAttribute = "(None)"
 
     def updateGraph(self, *args):
         self.graph.updateData(self.getShownAttributeList())
-        self.graph.update()
-        self.repaint()
+
 
     # set combo box values with attributes that can be used for coloring the data
     def sortingClick(self):
@@ -184,8 +177,10 @@ class OWSurveyPlot(OWVisWidget):
 
     # just tell the graph to hide the selected rectangle
     def enterEvent(self, e):
-        self.graph.hideSelectedRectangle()
-        self.graph.replot()
+        if self.graph.selectedRectangle:
+            self.graph.selectedRectangle.detach()
+            self.graph.selectedRectangle = None
+            self.graph.replot()
 
     def setGlobalValueScaling(self):
         self.graph.setData(self.data)
@@ -204,7 +199,7 @@ class OWSurveyPlot(OWVisWidget):
             self.graph.contPalette = dlg.getContinuousPalette("contPalette")
             self.graph.discPalette = dlg.getDiscretePalette()
             self.graph.setCanvasBackground(dlg.getColor("Canvas"))
-            self.graph.setGridPen(QPen(dlg.getColor("Grid")))
+            self.graph.gridCurve.setPen(QPen(dlg.getColor("Grid")))
             self.updateGraph()
 
     def createColorDialog(self):
@@ -213,10 +208,9 @@ class OWSurveyPlot(OWVisWidget):
         c.createContinuousPalette("contPalette", "Continuous palette")
         box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
-        box.addSpace(5)
+        box.layout().addSpacing(5)
         c.createColorButton(box, "Grid", "Grid color", Qt.black)
-        box.addSpace(5)
-        box.adjustSize()
+        box.layout().addSpacing(5)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
@@ -224,9 +218,7 @@ class OWSurveyPlot(OWVisWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWSurveyPlot()
-    a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
-
-    #save settings
-    ow.saveSettings()
+    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
+    ow.setData(data)
+    a.exec_()

@@ -2,23 +2,18 @@
 <name>MDS</name>
 <description>Multi dimensional scaling</description>
 <icon>MDS.png</icon>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>5000</priority>
 """
-
+import orngOrangeFoldersQt4
+from OWWidget import *
 import orange
 import orngMDS
 import OWGUI
-import numpy
-import qt
-import sys
-import math
-import time
-import os
+import numpy, sys, math, time, os
 import OWGraphTools
 import OWToolbars
 from random import random
-from OWWidget import *
 from OWGraph import *
 from sets import Set
 
@@ -59,12 +54,14 @@ class OWMDS(OWWidget):
                               ("Signed sammon stress", orngMDS.SgnSammonStress),
                               ("Signed reative stress", orngMDS.SgnRelStress)]
 
-        self.layout=QVBoxLayout(self.mainArea)
-        self.graph=MDSGraph(self.mainArea)
-        self.layout.addWidget(self.graph)
 
-        tabs=QTabWidget(self.controlArea)
-        graph=QVGroupBox(self)
+        self.graph=MDSGraph(self.mainArea)
+        self.mainArea.layout().addWidget(self.graph)
+
+        tabs = OWGUI.tabWidget(self.controlArea)
+        mds = OWGUI.createTabPage(tabs, "MDS")
+        graph = OWGUI.createTabPage(tabs, "Graph")
+
         OWGUI.hSlider(graph, self, "graph.PointSize", box="Point Size", minValue=1, maxValue=20, callback=self.graph.updateData)
         self.colorCombo=OWGUI.comboBox(graph, self, "graph.ColorAttr", box="Color", callback=self.graph.updateData)
         self.sizeCombo=OWGUI.comboBox(graph, self, "graph.SizeAttr", box="Size", callback=self.graph.updateData)
@@ -78,9 +75,8 @@ class OWMDS(OWWidget):
         self.graph.autoSendSelectionCallback = lambda :self.autoSendSelection and self.sendSelections()
 
         OWGUI.checkBox(graph, self, "autoSendSelection", "Auto send selected")
-        OWGUI.radioButtonsInBox(graph, self, "selectionOptions", ["Don't append", "Append coord.", "Append coord. as meta"], box="Append coordinates") 
-        
-        mds=QVGroupBox(self)
+        OWGUI.radioButtonsInBox(graph, self, "selectionOptions", ["Don't append", "Append coord.", "Append coord. as meta"], box="Append coordinates")
+
         init=OWGUI.widgetBox(mds, "Initialization")
         OWGUI.button(init, self, "Randomize", self.randomize)
         OWGUI.button(init, self, "Jitter", self.jitter)
@@ -94,9 +90,9 @@ class OWMDS(OWWidget):
         #OWGUI.button(opt, self, "Redraw graph", callback=self.graph.updateData)
         #OWGUI.checkBox(opt, self, "ReDraw", "Redraw graph after each step")
         #OWGUI.spin(opt, self, "NumIter",box="Num. Iterations per Step",min=1, max=1000)
-        OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh After Optimization") 
-        
-        
+        OWGUI.radioButtonsInBox(opt, self, "RefreshMode", ["Every step", "Every 10 steps", "Every 100 steps"], "Refresh After Optimization")
+
+
         self.stopping=OWGUI.widgetBox(opt, "Stopping Conditions")
         #OWGUI.checkBox(stopping, self, "computeStress", "Compute stress")
         stress=OWGUI.widgetBox(self.stopping, "Min. Avg. Stress Delta")
@@ -104,18 +100,14 @@ class OWMDS(OWWidget):
         OWGUI.qwtHSlider(stress, self, "minStressDelta", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
         OWGUI.spin(self.stopping, self, "maxIterations", box="Max. Number of Steps", min=1, max=100)
         #OWGUI.spin(stopping, self, "maxImprovment", box="Max. improvment of a run", min=0, max=100, postfix="%")
-    
-        tabs.addTab(mds, "MDS")
-        tabs.addTab(graph, "Graph")
-        mds.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
-        graph.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum))
-        self.controlArea.setMinimumWidth(250)
-        infoBox=OWGUI.widgetBox(self.controlArea, "Info")
-        self.infoA=QLabel("Avg. stress:", infoBox)
-        self.infoB=QLabel("Num. steps", infoBox)
+
+        #self.controlArea.setMinimumWidth(250)
+        infoBox = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoA=OWGUI.widgetLabel(infoBox, "Avg. stress:")
+        self.infoB=OWGUI.widgetLabel(infoBox, "Num. steps")
         OWGUI.button(self.controlArea, self, "Save", self.graph.saveToFile, debuggingEnabled = 0)
         #self.info
-        self.resize(900,700)
+        self.resize(800,700)
 
         self.done=True
 
@@ -135,8 +127,8 @@ class OWMDS(OWWidget):
         self.graph.SizeAttr=0
         self.graph.ShapeAttr=0
         self.graph.NameAttr=0
-            
-                
+
+
         if matrix:
             self.mds=orngMDS.MDS(matrix)
             self.mds.points=numpy.random.random(size=[self.mds.n, self.mds.dim])
@@ -158,14 +150,14 @@ class OWMDS(OWWidget):
         contAttributes=filter(lambda a: a.varType==orange.VarTypes.Continuous, attributes)
         attrName=[attr.name for attr in attributes]
         for name in ["One color"]+attrName:
-            self.colorCombo.insertItem(name)
+            self.colorCombo.addItem(name)
         for name in ["One size"]+map(lambda a:a.name, contAttributes):
-            self.sizeCombo.insertItem(name)
+            self.sizeCombo.addItem(name)
         for name in ["One shape"]+map(lambda a: a.name, discAttributes):
-            self.shapeCombo.insertItem(name)
+            self.shapeCombo.addItem(name)
         for name in ["No  name"]+attrName:
-            self.nameCombo.insertItem(name)
-            
+            self.nameCombo.addItem(name)
+
         self.attributes=attributes
         self.discAttributes=discAttributes
         self.contAttributes=contAttributes
@@ -211,10 +203,10 @@ class OWMDS(OWWidget):
         self.shapeCombo.clear()
         self.nameCombo.clear()
         for name in ["One color", "strain"]:
-            self.colorCombo.insertItem(name)
+            self.colorCombo.addItem(name)
         for name in ["No name", "name", "strain"]:
-            self.nameCombo.insertItem(name)
-            
+            self.nameCombo.addItem(name)
+
         self.colors=[[Qt.black]*3 for i in range(len(data))]
         self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
         self.sizes=[[5] for i in range(len(data))]
@@ -240,9 +232,9 @@ class OWMDS(OWWidget):
         self.shapeCombo.clear()
         self.nameCombo.clear()
         for name in ["One color", "Variable"]:
-            self.colorCombo.insertItem(name)
+            self.colorCombo.addItem(name)
         for name in ["No name", "Var name"]:
-            self.nameCombo.insertItem(name)
+            self.nameCombo.addItem(name)
         self.colors=[[Qt.black]*3 for i in range(len(data))]
         self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
         self.sizes=[[5] for i in range(len(data))]
@@ -254,7 +246,7 @@ class OWMDS(OWWidget):
                 self.names[i][1]=" " +str(d.name)
         except Exception, val:
             print val
-        
+
     def smacofStep(self):
         if not getattr(self, "mds", None):
             return
@@ -387,7 +379,7 @@ class OWMDS(OWWidget):
             return 0
         else:
             return 1
-        
+
 
     def getAvgStress(self, stressf=orngMDS.SgnRelStress):
         return self.mds.avgStress
@@ -476,7 +468,7 @@ class MDSGraph(OWGraph):
                                 QwtSymbol.UTriangle,
                                 QwtSymbol.LTriangle,
                                 QwtSymbol.RTriangle,
-                                QwtSymbol.Cross, 
+                                QwtSymbol.Cross,
                                 QwtSymbol.XCross ]
 
     def setData(self, mds, colors, sizes, shapes, names):
@@ -488,9 +480,9 @@ class MDSGraph(OWGraph):
             self.sizes=sizes
             self.shapes=shapes
             self.names=names
-            
+
             self.updateData()
-                
+
     def updateData(self):
 #        if self.mds:
         if 1:
@@ -512,48 +504,44 @@ class MDSGraph(OWGraph):
         import sets
         if self.ShapeAttr==0 and self.SizeAttr==0 and self.NameAttr==0:
             colors=[c[self.ColorAttr] for c in self.colors]
-            
+
             set=[]
             for c in colors:
                 if  c not in set:
                     set.append(c)
-            #set=reduce(lambda set,a: (not(a in set)) and set.append(a), colors, []) 
+            #set=reduce(lambda set,a: (not(a in set)) and set.append(a), colors, [])
             #set=sets.ImmutableSet([c[self.ColorAttr] for c in self.colors])
-            
+
             dict={}
             for i in range(len(self.colors)):
-                c=self.colors[i][self.ColorAttr]
-                if dict.has_key(c.hsv()):
-                    dict[c.hsv()].append(i)
+                hsv = QColor(self.colors[i][self.ColorAttr]).getHsv()
+                if dict.has_key(hsv):
+                    dict[hsv].append(i)
                 else:
-                    dict[c.hsv()]=[i]
+                    dict[hsv]=[i]
             for color in set:
-                #print len(dict[color.hsv()]), color.name()
-                X=[self.mds.points[i][0] for i in dict[color.hsv()]]
-                Y=[self.mds.points[i][1] for i in dict[color.hsv()]]
+                #print len(dict[color.getHsv()]), color.name()
+                X=[self.mds.points[i][0] for i in dict[QColor(color).getHsv()]]
+                Y=[self.mds.points[i][1] for i in dict[QColor(color).getHsv()]]
                 self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y)
-            return 
+            return
         for i in range(len(self.colors)):
             self.addCurve("a", self.colors[i][self.ColorAttr], self.colors[i][self.ColorAttr], self.sizes[i][self.SizeAttr]*1.0/5*self.PointSize,
                           symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]])
             if self.NameAttr!=0:
                 self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
-            
-                               
-    def setLines(self, reset=False):
-        def removeCurve(keys):
-            self.removeCurve(keys[0])
-            if len(keys)==2:
-                self.removeCurve(keys[1])
 
+
+    def setLines(self, reset=False):
         if reset:
             #for k in self.lineKeys:
             #    removeCurve(k)
             self.lineKeys=[]
-        if not getattr(self, "mds", None): return 
+        if not getattr(self, "mds", None): return
         if self.NumStressLines<len(self.lineKeys):
-            for k in self.lineKeys[self.NumStressLines:]:
-                removeCurve(k)
+            for c in self.lineKeys[self.NumStressLines:]:
+                c[0].detach()
+                if len(c) == 2: c[1].detach()
             self.lineKeys=self.lineKeys[:self.NumStressLines]
         else:
             #stress=[(abs(s),s,(a,b)) for s,(a,b) in self.mds.arr]
@@ -567,13 +555,13 @@ class MDSGraph(OWGraph):
                 #color=s<0 and Qt.red or Qt.green
                 if self.mds.projectedDistances[a,b]-self.mds.distances[a,b]>0:
                     color=Qt.green
-                    k1=self.addCurve("A", color, color, 0, QwtCurve.Lines, xData=[xa,xb], yData=[ya,yb], lineWidth=1)
+                    k1=self.addCurve("A", color, color, 0, QwtPlotCurve.Lines, xData=[xa,xb], yData=[ya,yb], lineWidth=1)
                     r=self.mds.distances[a,b]/max(self.mds.projectedDistances[a,b], 1e-6)
                     xa1=xa+(1-r)/2*(xb-xa)
                     xb1=xb+(1-r)/2*(xa-xb)
                     ya1=ya+(1-r)/2*(yb-ya)
                     yb1=yb+(1-r)/2*(ya-yb)
-                    k2=self.addCurve("A", color, color, 0, QwtCurve.Lines, xData=[xa1,xb1], yData=[ya1,yb1], lineWidth=4)    
+                    k2=self.addCurve("A", color, color, 0, QwtPlotCurve.Lines, xData=[xa1,xb1], yData=[ya1,yb1], lineWidth=4)
                     self.lineKeys.append( (k1,k2) )
                 else:
                     color=Qt.red
@@ -582,17 +570,17 @@ class MDSGraph(OWGraph):
                     xb1=(xa+xb)/2+r/2*(xb-xa)
                     ya1=(ya+yb)/2+r/2*(ya-yb)
                     yb1=(ya+yb)/2+r/2*(yb-ya)
-                    k1=self.addCurve("A", color, color, 0, QwtCurve.Lines, xData=[xa1,xb1], yData=[ya1,yb1], lineWidth=2)
+                    k1=self.addCurve("A", color, color, 0, QwtPlotCurve.Lines, xData=[xa1,xb1], yData=[ya1,yb1], lineWidth=2)
                     self.lineKeys.append( (k1,) )
-                    
-        
-            
+
+
+
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWMDS()
-    app.setMainWidget(w)
     w.show()
-    data=orange.ExampleTable("../../doc/datasets/iris.tab")
+    #data=orange.ExampleTable("../../doc/datasets/iris.tab")
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     #data=orange.ExampleTable("/home/ales/src/MDSjakulin/eu_nations.txt")
     matrix = orange.SymMatrix(len(data))
     dist = orange.ExamplesDistanceConstructor_Euclidean(data)
@@ -603,5 +591,5 @@ if __name__=="__main__":
             matrix[i, j] = dist(data[i], data[j])
 
     w.cmatrix(matrix)
-    app.exec_loop()
+    app.exec_()
 

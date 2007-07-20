@@ -2,10 +2,10 @@
 <name>SOM</name>
 <description>Self organizing maps</description>
 <icon>SOM.png</icon>
-<contact>Ales Erjavec (ales.erjevec324(@at@)email.si)</contact> 
+<contact>Ales Erjavec (ales.erjevec324(@at@)email.si)</contact>
 <priority>5010</priority>
 """
-
+import orngOrangeFoldersQt4
 import orange, orangeom
 import orngSOM
 from OWWidget import *
@@ -15,7 +15,7 @@ class OWSOM(OWWidget):
     settingsList=["xdim", "ydim", "neighborhood", "topology", "alphaType", "iterations1", "iterations2",
                   "radius1", "radius2", "alpha1", "alpha2"]
     def __init__(self ,parent=None , signalManager=None, name="SOM"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs=[("Examples", ExampleTable, self.data)]
         self.outputs=[("Classifier", orange.Classifier), ("Learner", orange.Learner), ("SOMMap", orangeom.SOMMap)]
@@ -44,11 +44,12 @@ class OWSOM(OWWidget):
         OWGUI.radioButtonsInBox(self.controlArea, self, "topology", ["Hexagonal topology", "Rectangular topology"], box="Topology")
         OWGUI.radioButtonsInBox(self.controlArea, self, "neighborhood", ["Bubble neighborhood","Gaussian neighborhood"], box="Neighborhood")
         OWGUI.radioButtonsInBox(self.controlArea, self, "alphaType", ["Linear function", "Inverse function"], box="Alpha Function Type")
-        tabW=QTabWidget(self.controlArea)
-        b1=OWGUI.widgetBox(self.controlArea)
-        b2=OWGUI.widgetBox(self.controlArea)
-        tabW.addTab(b1,"Step 1")
-        tabW.addTab(b2,"Step 2")
+        tabW = OWGUI.tabWidget(self.controlArea)
+        b1 = OWGUI.createTabPage(tabW, "Step 1")
+        b2 = OWGUI.createTabPage(tabW, "Step 2")
+        b1.layout().setMargin(7)
+        b2.layout().setMargin(7)
+
         OWGUI.spin(b1, self, "iterations1", 10, 100000, orientation="horizontal", label="Num. iter.")
         OWGUI.spin(b2, self, "iterations2", 10, 100000, orientation="horizontal", label="Num. iter.")
         OWGUI.spin(b1, self, "radius1", 2,1000, orientation="horizontal", label="Radius")
@@ -58,10 +59,10 @@ class OWSOM(OWWidget):
         self.alpha1=self.alpha1
         self.alpha2=self.alpha2
         OWGUI.button(self.controlArea, self,  "&Apply settings", callback=self.ApplySettings)
-        
+
         self.resize(100,100)
 
-        
+
     def data(self, data=None):
         self.data=data
         if data:
@@ -70,7 +71,7 @@ class OWSOM(OWWidget):
             self.send("Classifier", None)
             self.send("SOMMap", None)
             self.send("Learner", None)
-        
+
 
     def ApplySettings(self):
         topology=self.TopolMap[self.topology]
@@ -79,7 +80,7 @@ class OWSOM(OWWidget):
         params=[{"iterations":self.iterations1, "radius":self.radius1, "alpha":self.alpha1},
                 {"iterations":self.iterations2, "radius":self.radius2, "alpha":self.alpha2}]
         self.learner=orngSOM.SOMLearner(xDim=self.xdim, yDim=self.ydim, topology=topology, neighborhood=neigh, alphaType=alphaT, parameters=params)
-        
+
         self.classifier=self.learner(self.data)
         self.classifier.name=self.LearnerName
         self.classifier.setattr("data", self.data)
@@ -87,13 +88,11 @@ class OWSOM(OWWidget):
             self.send("Classifier", self.classifier)
         self.send("SOMMap", self.classifier)
         self.send("Learner", self.learner)
-        
+
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWSOM()
-    app.setMainWidget(w)
     w.show()
-    data=orange.ExampleTable("../../doc/datasets/iris.tab")
-    
-    w.data(data)
-    app.exec_loop()
+    #data=orange.ExampleTable("../../doc/datasets/iris.tab")
+    #w.data(data)
+    app.exec_()

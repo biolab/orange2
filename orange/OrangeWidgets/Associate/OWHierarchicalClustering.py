@@ -2,14 +2,13 @@
 <name>Hierarchical Clustering</name>
 <description>Hierarchical clustering based on distance matrix, and a dendrogram viewer.</description>
 <icon>HierarchicalClustering.png</icon>
-<contact>Ales Erjavec (ales.erjavec324(@at@)email.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec324(@at@)email.si)</contact>
 <prority>1550</priority>
 """
 
+import orngOrangeFoldersQt4
 from OWWidget import *
-from qtcanvas import *
 from sets import Set
-import qt
 import OWGUI
 import OWGraphTools
 import math
@@ -71,11 +70,9 @@ class OWHierarchicalClustering(OWWidget):
         #################################
 
         #Tabs
-        self.tabs=QTabWidget(self.controlArea,"tabWidget")
-        self.settingsTab=QVGroupBox(self,"Settings")
-        self.selectionTab=QVGroupBox(self,"Selection")
-        self.tabs.insertTab(self.settingsTab, "Settings")
-        self.tabs.insertTab(self.selectionTab, "Selection")
+        self.tabs = OWGUI.tabWidget(self.controlArea,"tabWidget")
+        self.settingsTab = OWGUI.createTabPage(self.tabs, "Settings")
+        self.selectionTab= OWGUI.createTabPage(self.tabs, "Selection")
 
         #HC Settings
         OWGUI.comboBox(self.settingsTab, self, "Linkage", box="Linkage",
@@ -87,8 +84,7 @@ class OWHierarchicalClustering(OWWidget):
                 callback=self.updateLabel)
 
         #Dendogram graphics settings
-        dendogramBox=QVGroupBox(self.settingsTab, "Dendogram")
-        dendogramBox.setTitle("Dendogram setings")
+        dendogramBox = OWGUI.widgetBox(self.settingsTab, "Dendogram setings")
         #OWGUI.spin(dendogramBox, self, "Brightness", label="Brigthtness",min=1,max=9,step=1)
         OWGUI.checkWithSpin(dendogramBox, self, "Print depth", 1, 100, "PrintDepthCheck",
                 "PrintDepth")
@@ -108,31 +104,30 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.button(dendogramBox, self, "&Apply",self.applySettings)
 
         #Selection options
-        OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Cutoff line", 
+        OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Cutoff line",
               callback=self.updateCutOffLine)
-        self.classificationBox=QVGroupBox(self.selectionTab)
+        self.classificationBox = OWGUI.widgetBox(self.selectionTab, box = 1)
         #self.classificationBox.setTitle("Classification")
         OWGUI.checkBox(self.classificationBox, self, "ClassifySelected","Classify selected examples")
         OWGUI.lineEdit(self.classificationBox, self, "ClassifyName", "Class name")
         #selectionBox=QVGroupBox(self.selectionTab)
-        commitBox=QVGroupBox(self.selectionTab)
-        commitBox.setTitle("Commit settings")
+        commitBox = OWGUI.widgetBox(self.selectionTab, "Commit settings")
         OWGUI.checkBox(commitBox, self, "CommitOnChange", "Commit on change")
         OWGUI.button(commitBox, self, "&Commit", self.commitData)
         OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
         OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
         OWGUI.button(self.controlArea, self, "&Save graph", self.saveGraph, debuggingEnabled = 0)
 
-        self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
-        scale=QCanvas(self)
-        self.headerView=ScaleCanvas(self, scale, self.mainArea)
-        self.footerView=ScaleCanvas(self, scale, self.mainArea)
-        self.dendogram=Dendogram(self)
-        self.dendogramView=DendogramView(self.dendogram, self.mainArea)
-    
-        self.mainAreaLayout.addWidget(self.headerView)
-        self.mainAreaLayout.addWidget(self.dendogramView)
-        self.mainAreaLayout.addWidget(self.footerView)
+        #self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
+        scale = QCanvas(self)
+        self.headerView = ScaleCanvas(self, scale, self.mainArea)
+        self.footerView = ScaleCanvas(self, scale, self.mainArea)
+        self.dendogram = Dendogram(self)
+        self.dendogramView = DendogramView(self.dendogram, self.mainArea)
+
+        self.mainArea.layout().addWidget(self.headerView)
+        self.mainArea.layout().addWidget(self.dendogramView)
+        self.mainArea.layout().addWidget(self.footerView)
 
         self.dendogram.header=self.headerView
         self.dendogram.footer=self.footerView
@@ -165,7 +160,7 @@ class OWHierarchicalClustering(OWWidget):
                          [a.name for a in items.domain.attributes]
             if items.domain.classVar:
                 self.labels.append(items.domain.classVar.name)
-                    
+
             self.labelInd=range(len(self.labels)-2)
             self.labels.extend([m.name for m in items.domain.getmetas().values()])
             self.labelInd.extend(items.domain.getmetas().keys())
@@ -182,7 +177,7 @@ class OWHierarchicalClustering(OWWidget):
             self.matrixSource="Attribute Distance"
         self.labelCombo.clear()
         for a in self.labels:
-            self.labelCombo.insertItem(a)
+            self.labelCombo.addItem(a)
         if self.labelCombo.count()<self.Annotation-1:
                 self.Annotation=0
         self.labelCombo.setCurrentItem(self.Annotation)
@@ -295,14 +290,14 @@ class OWHierarchicalClustering(OWWidget):
                 table1=orange.ExampleTable(self.selection)
                 self.selectedExamples=table1
             self.send("Selected Examples",self.selectedExamples)
-            
+
         elif self.matrixSource=="Data Distance":
             names=list(Set([d.strain for d in self.selection]))
             data=[(name, [d for d in filter(lambda a:a.strain==name, self.selection)]) for name in names]
             self.send("Structured Data Files",data)
 
     def saveGraph(self):
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        qfileName = QFileDialog.getSaveFileName(self, "Save to..", "graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
@@ -311,10 +306,10 @@ class OWHierarchicalClustering(OWWidget):
         dSize= self.dendogram.size()
         sSize= self.footerView.canvas().size()
         buffer = QPixmap(dSize.width(),dSize.height()+2*sSize.height()) # any size can do, now using the window size
-        bufferTmp= QPixmap(dSize)        
+        bufferTmp= QPixmap(dSize)
         painter = QPainter(buffer)
         painterTmp=QPainter(bufferTmp)
-        
+
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
         painterTmp.fillRect(bufferTmp.rect(), QBrush(QColor(255, 255, 255)))
         self.dendogramView.drawContents(painterTmp,0,0,dSize.width(), dSize.height())
@@ -410,7 +405,7 @@ class Dendogram(QCanvas):
 
         self.bubbleRect=BubbleRect(self)
         self.otherObj.append(self.bubbleRect)
-        fix=max([a.boundingRect().width() for a in self.textObj]) 
+        fix=max([a.boundingRect().width() for a in self.textObj])
         self.resize(leftMargin+self.treeAreaWidth+fix+rightMargin,2*topMargin+self.gTextPos)
         self.cutOffLine.setPoints(0,0,0,self.height())
         self.update()
@@ -481,7 +476,7 @@ class Dendogram(QCanvas):
             else:
                 a.setText(str(a.cluster[0]))
         self.resize(leftMargin+self.treeAreaWidth+max([a.boundingRect().width() \
-                for a in self.textObj])+rightMargin, self.height()) 
+                for a in self.textObj])+rightMargin, self.height())
         self.update()
 
     def highlight(self, objList):
@@ -675,7 +670,7 @@ class Dendogram(QCanvas):
             self.cutOffLine.hide()
             self.cutOffLine.move(x,0)
             self.update()
-        
+
 
 class ScaleCanvas(QCanvasView):
     def __init__(self, parent, *args):
@@ -837,7 +832,7 @@ class BubbleRect(QCanvasRectangle):
             #    while not self.canvas().onCanvas(self.x(),self.y()) and self.y()<self.canvas().height():
             #        QCanvasRectangle.move(self,self.x(), self.y()+10)
             #    self.move(self.x(),self.y())
-            
+
 
     def setCanvas(self, canvas):
         QCanvasRectangle.setCanvas(self,canvas)
@@ -846,7 +841,6 @@ class BubbleRect(QCanvasRectangle):
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWHierarchicalClustering()
-    app.setMainWidget(w)
     w.show()
     data=orange.ExampleTable("../../doc/datasets/iris.tab")
     id=orange.newmetaid()
@@ -861,4 +855,4 @@ if __name__=="__main__":
             matrix[i, j] = dist(data[i], data[j])
 
     w.dataset(matrix)
-    app.exec_loop()
+    app.exec_()

@@ -10,6 +10,7 @@
 # Show a radviz projection of the data
 #
 
+import orngOrangeFoldersQt4
 from OWLinProj import *
 
 class OWRadviz(OWLinProj):
@@ -26,13 +27,13 @@ class OWRadviz(OWLinProj):
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
 
 
+
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWRadviz()
-    a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
-
-    #save settings
-    ow.saveSettings()
+    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
+    ow.setData(data)
+    ow.handleNewSignals()
+    a.exec_()

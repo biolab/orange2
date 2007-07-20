@@ -28,7 +28,7 @@ class OWDataTable(OWWidget):
 
         self.inputs = [("Examples", ExampleTable, self.dataset, Multiple + Default)]
         self.outputs = []
-        
+
         self.data = {}          # key: id, value: ExampleTable
         self.showMetas = {}     # key: id, value: (True/False, columnList)
 
@@ -45,7 +45,7 @@ class OWDataTable(OWWidget):
         infoBox.setMinimumWidth(200)
         #infoBox.setMaximumHeight(infoBox.sizeHint().height())
 
-        # settings box        
+        # settings box
         boxSettings = QVGroupBox("Settings", self.controlArea)
         self.cbShowMeta = QCheckBox('Show meta attributes', boxSettings)
         self.cbShowMeta.setChecked(True)
@@ -54,7 +54,7 @@ class OWDataTable(OWWidget):
         self.btnResetSort = QPushButton("Restore Original Order", boxSettings)
         self.connect(self.btnResetSort, SIGNAL("clicked()"), self.btnResetSortClicked)
         boxSettings.setMaximumHeight(boxSettings.sizeHint().height())
-        
+
         # GUI with tabs
         layout=QVBoxLayout(self.mainArea)
         self.tabs = QTabWidget(self.mainArea, 'tabWidget')
@@ -62,7 +62,7 @@ class OWDataTable(OWWidget):
         self.table2id = {}  # key: table, value: widget id
         layout.addWidget(self.tabs)
         self.connect(self.tabs,SIGNAL("currentChanged(QWidget*)"),self.tabClicked)
-        
+
 
     def dataset(self, data, id=None):
         """Generates a new table and adds it to a new tab when new data arrives;
@@ -152,7 +152,7 @@ class OWDataTable(OWWidget):
         def sp(l, capitalize=False):
             n = len(l)
             if n == 0:
-                if capitalize:                    
+                if capitalize:
                     return "No", "s"
                 else:
                     return "no", "s"
@@ -160,7 +160,7 @@ class OWDataTable(OWWidget):
                 return str(n), ''
             else:
                 return str(n), 's'
-        
+
         if data == None:
             self.infoEx.setText('No data on input.')
             self.infoMiss.setText('')
@@ -187,7 +187,7 @@ class OWDataTable(OWWidget):
     def set_table(self, table, data):
         """Writes data into table, adjusts the column width.
         """
-        qApp.setOverrideCursor(QWidget.waitCursor)
+        qApp.setOverrideCursor(Qt.WaitCursor)
         if data==None:
             return
         vars = data.domain.variables
@@ -212,7 +212,7 @@ class OWDataTable(OWWidget):
         for i,var in enumerate(varsMetas):
             hheader.setLabel(i, var.name)
         hheader.setLabel(numVarsMetas, "")
-        
+
         # set the contents of the table (values of attributes)
         # iterate variables
         table.disableUpdate=True
@@ -230,7 +230,7 @@ class OWDataTable(OWWidget):
                 bgColor = QColor(220,220,200)
                 self.showMetas[id][1].append(j) # store indices of meta attributes
             else:
-                bgColor = Qt.white
+                bgColor = QColor(Qt.white)
             # generate list of tuples (attribute value, instance index) and sort by attrVal
             valIdx = [(str(ex[key]),idx) for idx,ex in enumerate(data)]
             table.values[j]=[v[0]+" " for v in valIdx]
@@ -266,7 +266,7 @@ class OWDataTable(OWWidget):
         table.verticalHeader().setClickEnabled(False)
         table.verticalHeader().setResizeEnabled(False)
         table.verticalHeader().setMovingEnabled(False)
-        
+
         # manage sorting (not correct, does not handle real values)
         self.connect(hheader,SIGNAL("clicked(int)"),self.sort)
         self.sortby = 0
@@ -280,7 +280,7 @@ class OWDataTable(OWWidget):
     def sort(self, col):
         """Sorts the table by column col.
         """
-        qApp.setOverrideCursor(QWidget.waitCursor)
+        qApp.setOverrideCursor(Qt.WaitCursor)
         if col == self.sortby-1:
             self.sortby = - self.sortby
         else:
@@ -304,7 +304,7 @@ class OWDataTable(OWWidget):
 # > python OWDataTable.py)
 # Make sure that a sample data set (adult_sample.tab) is in the directory
 from sets import Set
-class MyTable(QTable):    
+class MyTable(QTable):
     def __init__(self,*args):
         QTable.__init__(self, *args)
         self.disableUpdate=False
@@ -314,7 +314,7 @@ class MyTable(QTable):
         self.sortingAscending=True
         self.delayColumnAdjust=False
         self.columnColor={}
-        #self.setWFlags(Qt.WRepaintNoErase | Qt.WNorthWestGravity)
+        #self.setWindowFlags(Qt.WRepaintNoErase | Qt.WNorthWestGravity)
         self.connect(self, SIGNAL("contentsMoving(int, int)"),self.update1)
         self.connect(self.horizontalScrollBar(), SIGNAL("sliderPressed()"), self.sliderPressed)
         self.connect(self.horizontalScrollBar(), SIGNAL("sliderReleased()"), self.sliderReleased)
@@ -326,21 +326,21 @@ class MyTable(QTable):
         self.setPainterFont(p)
         tm=p.fontMetrics()
         self.charWidth=tm.width("a")
-        
+
 
     def setDelayColumnAdjust(self, bool):
         self.delayColumnAdjust=bool
-        
+
     def clearCache(self):
         self.adjustedColumnCache=Set()
-        
+
     def eventFilter(self, obj, event):
         if obj==self or obj==self.horizontalHeader:
             if event.type()==QEvent.Paint and self.delayColumnAdjust:
                 self.adjustColumns()
-                return True        
+                return True
         return QTable.eventFilter(self, obj, event)
-    
+
     def adjustColumns(self):
         if self.disableColumnAdjust:
             return
@@ -354,7 +354,7 @@ class MyTable(QTable):
                 #self.setColumnWidth(cStart, self.columnWidth(cStart)+22)
                 self.adjustedColumnCache.add(cStart)
             cStart+=1
-    
+
     def setColumnWidth(self, i, w):
         #print i
         QTable.setColumnWidth(self, i, w+22)
@@ -370,14 +370,14 @@ class MyTable(QTable):
         except KeyError, err:
             pass
             print "Exception in adjustColumn ", col
-                
+
     def sliderPressed(self):
         self.disableColumnAdjust=True
 
     def sliderReleased(self):
         self.disableColumnAdjust=False
         #self.update()
-    
+
     def update1(self, i, j):
         self.update()
 
@@ -407,15 +407,15 @@ class MyTable(QTable):
     def clearCell(self, row, col):
         #print "Clear cell: ", row, col
         p=QPainter(self)
-        p.fillRect(self.cellGeometry(row, col), QBrush(Qt.white))
-        
+        p.fillRect(self.cellGeometry(row, col), QBrush(QColor(Qt.white)))
+
     def updateCell(self, row, col):
         #print "Update cell: ",row, col
         if row!=-1 and col!=-1:
             pass
             #self.clearCell(row, col)
         QTable.updateCell(self, row, col)
-        
+
     def drawContents(self, painter, cx=0, cy=0, cw=0, ch=0):
         #print "Draw contnents: ",cx,cy,cw,ch
         if self.sortingColumn not in self.ranks:
@@ -431,16 +431,16 @@ class MyTable(QTable):
             painter.setBrush(QBrush(self.columnColor[i]))
             for j in range(yStart, yEnd):
                 self.paintCell(painter, j, i, self.cellGeometry(j, i), self.isSelected(j, i))
-                
+
     def paintEvent(self, paintEvent):
         QTable.paintEvent(self, paintEvent)
-        #upper left corner gets painted like the 0,0 cell (why??) 
+        #upper left corner gets painted like the 0,0 cell (why??)
         painter=QPainter(self)
         painter.setBrush(QBrush(Qt.gray))
         painter.drawRect(1, 1, 32, 20)
 
     def paintEmptyArea(self, painter, cx, cy, cw, ch):
-        painter.fillRect(cx, cy, cw, ch, QBrush(Qt.white))
+        painter.fillRect(cx, cy, cw, ch, QBrush(QColor(Qt.white)))
 
     def sortColumn(self, col, ascending=True, wholeRows=False):
         self.sortingColumn=col
@@ -458,7 +458,7 @@ class MyTable(QTable):
 
     def isSelected(self, row, col):
         return self.currentSelected==(row, col)
-    
+
     def resizeData(self, i):
         return
 
@@ -467,12 +467,12 @@ class MyTable(QTable):
         font.setStyleHint(QFont.Courier)
         painter.setFont(font)
 
-    """    
+    """
     def columnWidthChanged(self, col):
         pass
         #print col
         #QTable.columnWidthChanged(self, col)"""
-        
+
 if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWDataTable()

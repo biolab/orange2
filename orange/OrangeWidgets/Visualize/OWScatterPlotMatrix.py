@@ -55,7 +55,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.jitterSize = 2
         self.showFilledSymbols = 1
         self.shownAttrCount = 0
-        self.graphCanvasColor = str(Qt.white.name())
+        self.graphCanvasColor = str(QColor(QColor(Qt.white)).name())
         self.attributeSelection = None
         self.colorSettings = None
 
@@ -76,11 +76,8 @@ class OWScatterPlotMatrix(OWWidget):
         self.addRemoveGroup = OWGUI.widgetBox(self.GeneralTab, 1, orientation = "horizontal" )
         self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Hidden Attributes")
 
-        self.shownAttribsLB = QListBox(hbox)
-        self.shownAttribsLB.setSelectionMode(QListBox.Extended)
-
-        self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
-        self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
+        self.shownAttribsLB = OWGUI.listBox(hbox, self, selectionMode = QListWidget.ExtendedSelection)
+        self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, selectionMode = QListWidget.ExtendedSelection)
 
         vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
         self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
@@ -147,7 +144,7 @@ class OWScatterPlotMatrix(OWWidget):
         c.createDiscretePalette("Discrete Palette")
         c.createContinuousPalette("contPalette", "Continuous palette")
         box = c.createBox("otherColors", "Other Colors")
-        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
         box.addSpace(5)
         box.adjustSize()
         c.setColorSchemas(self.colorSettings)
@@ -228,7 +225,7 @@ class OWScatterPlotMatrix(OWWidget):
     def createGraphs(self):
         self.removeAllGraphs()
 
-        attrs = [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())]
+        attrs = [str(self.shownAttribsLB.item(i).text()) for i in range(self.shownAttribsLB.count())]
         if len(attrs) < 2:
             return
         self.visualizedAttributes = attrs
@@ -236,7 +233,7 @@ class OWScatterPlotMatrix(OWWidget):
         count = len(attrs)
         w = self.mainArea.width()/(len(self.visualizedAttributes)-1)
         h = self.mainArea.height()/(len(self.visualizedAttributes)-1)
-                
+
         self.shownAttrCount = count-1
         for i in range(count-1, -1, -1):
             for j in range(i):
@@ -280,7 +277,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.sizeDlg.exec_loop()
 
     def saveToFileAccept(self):
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to..")
+        qfileName = QFileDialog.getSaveFileName(None, "Save to..", "graph.png", "Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
@@ -306,7 +303,7 @@ class OWScatterPlotMatrix(OWWidget):
 
         fullBuffer = QPixmap(size)
         fullPainter = QPainter(fullBuffer)
-        fullPainter.fillRect(fullBuffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+        fullPainter.fillRect(fullBuffer.rect(), QBrush(QColor(Qt.white))) # make background same color as the widget's background
 
         smallSize = QSize((size.width()-attrNameSpace - count*dist - topOffset)/count, (size.height()-attrNameSpace - count*dist)/count)
 
@@ -314,7 +311,7 @@ class OWScatterPlotMatrix(OWWidget):
         for i in range(len(self.graphs)):
             buffer = QPixmap(smallSize)
             painter = QPainter(buffer)
-            painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+            painter.fillRect(buffer.rect(), QBrush(QColor(Qt.white))) # make background same color as the widget's background
             self.graphs[i].printPlot(painter, buffer.rect())
             painter.end()
 
@@ -324,7 +321,7 @@ class OWScatterPlotMatrix(OWWidget):
 
 
         list = []
-        for i in range(self.shownAttribsLB.count()): list.append(str(self.shownAttribsLB.text(i)))
+        for i in range(self.shownAttribsLB.count()): list.append(str(self.shownAttribsLB.item(i).text()))
 
         # draw vertical text
         fullPainter.rotate(-90)
@@ -421,30 +418,30 @@ class OWScatterPlotMatrix(OWWidget):
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.hiddenAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
-                self.hiddenAttribsLB.removeItem(i)
+                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.item(i).text(), pos)
+                self.hiddenAttribsLB.takeItem(i)
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
         pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.shownAttribsLB.isSelected(i):
-                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
-                self.shownAttribsLB.removeItem(i)
+                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.item(i).text(), pos)
+                self.shownAttribsLB.takeItem(i)
 
     def moveAttrUP(self):
         for i in range(1, self.shownAttribsLB.count()):
             if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
-                self.shownAttribsLB.removeItem(i+1)
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.item(i).text(), i-1)
+                self.shownAttribsLB.takeItem(i+1)
                 self.shownAttribsLB.setSelected(i-1, TRUE)
 
     def moveAttrDOWN(self):
         count = self.shownAttribsLB.count()
         for i in range(count-2,-1,-1):
             if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
-                self.shownAttribsLB.removeItem(i)
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.item(i).text(), i+2)
+                self.shownAttribsLB.takeItem(i)
                 self.shownAttribsLB.setSelected(i+1, TRUE)
 
     def resizeEvent(self, e):

@@ -5,7 +5,7 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>2100</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 from orngTree import TreeLearner
 import OWGUI
@@ -25,12 +25,13 @@ class ColumnCallback:
 
 def checkColumn(widget, master, text, value):
     wa = QCheckBox(text, widget)
+    widget.layout().addWidget(wa)
     wa.setChecked(getattr(master,value))
     master.connect(wa, SIGNAL("toggled(bool)"), ColumnCallback(master, value))
     return wa
 
 class OWClassificationTreeViewer(OWWidget):
-    settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "adist", "expslider"]
+    settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "adist", "expslider", "sliderValue"]
 
     def __init__(self, parent=None, signalManager = None, name='Classification Tree Viewer'):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -55,6 +56,7 @@ class OWClassificationTreeViewer(OWWidget):
 
         self.tar = 0
         self.tree = None
+        self.sliderValue = 5
 
         self.precision = 0
         self.precFrmt = "%%.%if" % self.precision
@@ -62,53 +64,49 @@ class OWClassificationTreeViewer(OWWidget):
         # GUI
         # parameters
 
-        self.dBox = QVGroupBox(self.controlArea)
-        self.dBox.setTitle('Show Data')
-        self.dBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        self.dBox = OWGUI.widgetBox(self.controlArea, 'Show Data')
         for i in range(len(self.dataLabels)):
             checkColumn(self.dBox, self, self.dataLabels[i][0], self.settingsList[i])
 
         OWGUI.separator(self.controlArea)
 
-        self.expBox = QHGroupBox(self.controlArea)
-        self.expBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        self.expBox.setTitle('Expand/Shrink to Level')
-        self.slider = QSlider(1, 9, 1, self.expslider, QSlider.Horizontal, self.expBox)
-        self.sliderlabel = QLabel("%2i" % self.expslider, self.expBox)
+        self.slider = OWGUI.hSlider(self.controlArea, self, "sliderValue", box = 'Expand/Shrink to Level', minValue = 1, maxValue = 9, step = 1, callback = self.sliderChanged)
 
         OWGUI.separator(self.controlArea)
 
-        self.infBox = QVGroupBox(self.controlArea)
-        self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        self.infBox.setTitle('Tree Size Info')
-        self.infoa = QLabel('No tree.', self.infBox)
-        self.infob = QLabel('', self.infBox)
+        self.infBox = OWGUI.widgetBox(self.controlArea, 'Tree Size Info')
+        self.infoa = OWGUI.widgetLabel(self.infBox, 'No tree.')
+        self.infob = OWGUI.widgetLabel(self.infBox, ' ')
 
         OWGUI.rubber(self.controlArea)
 
         # list view
-        self.layout=QVBoxLayout(self.mainArea)
-        self.splitter = QSplitter(QSplitter.Vertical, self.mainArea)
-        self.layout.add(self.splitter)
+        self.splitter = QSplitter(Qt.Vertical, self.mainArea)
+        self.mainArea.layout().addWidget(self.splitter)
 
-        self.v = QListView(self.splitter)
+        self.v = QTreeWidget(self.splitter)
+        self.splitter.addWidget(self.v)
         self.v.setAllColumnsShowFocus(1)
-        self.v.addColumn('Classification Tree')
+        self.v.setHeaderLabels(['Classification Tree'] + [label[1] for label in self.dataLabels])
         self.v.setColumnWidth(0, 250)
-        self.v.setColumnWidthMode(0, QListView.Manual)
-        self.v.setColumnAlignment(0, QListView.AlignLeft)
 
         # rule
-        self.rule = QTextView(self.splitter)
-        #self.rule.setMaximumHeight(100)
-        #self.layout.add(self.rule)
-
-        self.splitter.show()
+        self.rule = QTextEdit(self.splitter)
+        self.splitter.addWidget(self.rule)
+        self.rule.setReadOnly(1)
+        self.splitter.setStretchFactor(0, 2)
+        self.splitter.setStretchFactor(1, 1)
 
         self.resize(800,400)
 
-        self.connect(self.v, SIGNAL("selectionChanged(QListViewItem *)"), self.viewSelectionChanged)
-        self.connect(self.slider, SIGNAL("valueChanged(int)"), self.sliderChanged)
+        self.connect(self.v, SIGNAL("itemSelectionChanged()"), self.viewSelectionChanged)
+
+    def getTreeItemSibling(self, item):
+            parent = item.parent()
+            if not parent:
+                parent = self.v.invisibleRootItem()
+            ind = parent.indexOfChild(item)
+            return parent.child(ind+1)
 
     # main part:
 
@@ -137,10 +135,8 @@ class OWClassificationTreeViewer(OWWidget):
                     listviewitem.setText(col, colf[j])
                     col += 1
 
-            child = listviewitem.firstChild()
-            while child:
-                walkupdate(child)
-                child = child.nextSibling()
+            for i in range(listviewitem.childCount()):
+                walkupdate(listviewitem.child(i))
 
         def walkcreate(node, parent):
             if node.branchSelector:
@@ -151,33 +147,33 @@ class OWClassificationTreeViewer(OWWidget):
                             bd = node.branchSelector.classVar.name + " = " + bd
                         else:
                             bd = node.branchSelector.classVar.name + " " + bd
-                        li = QListViewItem(parent, bd)
-                        li.setOpen(1)
+                        li = QTreeWidgetItem(parent, [bd])
+                        li.setExpanded(1)
                         self.nodeClassDict[li] = node.branches[i]
                         walkcreate(node.branches[i], li)
 
-        while self.v.columns()>1:
-            self.v.removeColumn(1)
-
+        headerItemStrings = []
         for i in range(len(self.dataLabels)):
             if getattr(self, self.settingsList[i]):
-                self.v.addColumn(self.dataLabels[i][1])
-##                self.v.setColumnWidth(i, 60)
-##                self.v.setColumnWidthMode(i, QListView.Maximum)
-                self.v.setColumnAlignment(i+1, QListView.AlignCenter)
+                headerItemStrings.append(self.dataLabels[i][1])
+        self.v.setHeaderLabels(["Classification Tree"] + headerItemStrings)
+        self.v.setColumnCount(len(headerItemStrings)+1)
         self.v.setRootIsDecorated(1)
+        self.v.header().setResizeMode(0, QHeaderView.Interactive)
+        for i in range(len(headerItemStrings)):
+            self.v.header().setResizeMode(1+i, QHeaderView.ResizeToContents)
 
         if not updateonly:
             self.v.clear()
             self.nodeClassDict = {}
-            li = QListViewItem(self.v, "<root>")
-            li.setOpen(1)
+            li = QTreeWidgetItem(self.v, ["<root>"])
+            li.setExpanded(1)
             if self.tree:
                 self.nodeClassDict[li] = self.tree.tree
                 walkcreate(self.tree.tree, li)
             self.rule.setText("")
         if self.tree:
-            walkupdate(self.v.firstChild())
+            walkupdate(self.v.invisibleRootItem().child(0))
         self.v.show()
 
     # slots: handle input signals
@@ -191,6 +187,7 @@ class OWClassificationTreeViewer(OWWidget):
             self.tree = tree
 
         self.setTreeView()
+        self.sliderChanged()
 
         if tree:
             self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
@@ -207,7 +204,7 @@ class OWClassificationTreeViewer(OWWidget):
             child = listviewitem.firstChild()
             while child:
                 updatetarget(child)
-                child = child.nextSibling()
+                child = self.getTreeItemSibling(child)
 
         if self.ptarget and (self.tar <> target):
             self.tar = target
@@ -224,19 +221,23 @@ class OWClassificationTreeViewer(OWWidget):
 
     def expandTree(self, lev):
         def expandTree0(listviewitem, lev):
+            if not listviewitem: return
             if not lev:
-                listviewitem.setOpen(0)
+                listviewitem.setExpanded(0)
             else:
-                listviewitem.setOpen(1)
-                child = listviewitem.firstChild()
-                while child:
+                listviewitem.setExpanded(1)
+                for i in range(listviewitem.childCount()):
+                    child = listviewitem.child(i)
                     expandTree0(child, lev-1)
-                    child = child.nextSibling()
 
-        expandTree0(self.v.firstChild(), lev)
+        expandTree0(self.v.invisibleRootItem().child(0), lev)
 
     # signal processing
-    def viewSelectionChanged(self, item):
+    def viewSelectionChanged(self):
+        items = self.v.selectedItems()
+        if len(items) == 0: return
+        item = items[0]
+
         if self.tree:
             data = self.nodeClassDict[item].examples
             self.send("Examples", data)
@@ -263,9 +264,8 @@ class OWClassificationTreeViewer(OWWidget):
             self.send("Examples", None)
             self.rule.setText("")
 
-    def sliderChanged(self, value):
-        self.expandTree(value)
-        self.sliderlabel.setText(str(value))
+    def sliderChanged(self):
+        self.expandTree(self.sliderValue)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
@@ -275,13 +275,10 @@ class OWClassificationTreeViewer(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWClassificationTreeViewer()
-    a.setMainWidget(ow)
-
-    data = orange.ExampleTable(r'../adult_sample')
-
+    ow.show()
+    #data = orange.ExampleTable(r'../adult_sample')
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\adult_sample.tab")
     tree = orange.TreeLearner(data, storeExamples = 1)
     ow.setClassificationTree(tree)
-
-    ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

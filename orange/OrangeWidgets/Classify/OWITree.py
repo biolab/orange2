@@ -5,6 +5,7 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>50</priority>
 """
+import orngOrangeFoldersQt4
 from OWWidget import *
 from OWFile import *
 from OWClassificationTreeViewer import *
@@ -34,23 +35,22 @@ class OWITree(OWClassificationTreeViewer):
         self.treeLearner = None
         self.tree = None
 
-        OWGUI.separator(self.space, height=40)
-        box = OWGUI.widgetBox(self.space, "Split selection")
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        OWGUI.separator(self.controlArea, height=40)
+        box = OWGUI.widgetBox(self.controlArea, "Split selection")
 #        OWGUI.widgetLabel(box, "Split By:")
         self.attrsCombo = OWGUI.comboBox(box, self, 'attridx', orientation="horizontal", callback=self.cbAttributeSelected)
         self.cutoffEdit = OWGUI.lineEdit(box, self, 'cutoffPoint', label = 'Cut off point: ', orientation='horizontal', validator=QDoubleValidator(self))
         OWGUI.button(box, self, "Split", callback=self.btnSplitClicked)
 
-        OWGUI.separator(self.space)
-        box = OWGUI.widgetBox(self.space, "Modify Tree")
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        OWGUI.separator(self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Modify Tree")
         self.btnPrune = OWGUI.button(box, self, "Cut", callback = self.btnPruneClicked)
         self.btnBuild = OWGUI.button(box, self, "Build", callback = self.btnBuildClicked)
 
-        b = QVBox(self.controlArea)
+        OWGUI.rubber(self.controlArea)
+
         self.activateLoadedSettings()
-        self.space.updateGeometry()
+        #self.space.updateGeometry()
 
     def cbAttributeSelected(self):
         val = ""
@@ -66,7 +66,7 @@ class OWITree(OWClassificationTreeViewer):
 
     def updateTree(self):
         self.setTreeView()
-        self.learner = FixedTreeLearner(self.tree, self.title)
+        self.learner = FixedTreeLearner(self.tree, self.captionTitle)
 #        self.send("Examples", self.tree)
         self.send("Classifier", self.tree)
         self.send("Tree Learner", self.learner)
@@ -86,9 +86,10 @@ class OWITree(OWClassificationTreeViewer):
         node.branchDescriptions = node.branchSelector = node.branchSizes = node.branches = None
 
     def findCurrentNode(self, exhaustively=0):
-        sitem = self.v.selectedItem()
+        sitems = self.v.selectedItems()
+        sitem = sitems != [] and sitems[0] or None
         if not sitem and (1 or exhaustively):
-            sitem = self.v.currentItem() or (self.v.childCount() == 1 and self.v.firstChild())
+            sitem = self.v.currentItem() or (self.v.childCount() == 1 and self.v.invisibleRootItem().child(0))
             if sitem.childCount():
                 return
         return sitem and self.nodeClassDict[sitem]
@@ -149,8 +150,7 @@ class OWITree(OWClassificationTreeViewer):
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
 
         if self.data:
-            for attr in data.domain.attributes:
-                self.attrsCombo.insertItem(attr.name)
+            self.attrsCombo.addItems([str(a) for a in data.domain.attributes])
             self.basstat = orange.DomainBasicAttrStat(data)
 #            self.attrsCombo.adjustSize()
             self.attridx = 0
@@ -165,7 +165,7 @@ class OWITree(OWClassificationTreeViewer):
 
         self.send("Examples", None)
         self.updateTree()
-        self.v.setSelected(self.v.firstChild(), TRUE)
+        self.v.invisibleRootItem().child(0).setSelected(1)
 
     def setLearner(self, learner):
         self.treeLearner = learner
@@ -176,9 +176,8 @@ if __name__ == "__main__":
     owi=OWITree()
 
 #    d = orange.ExampleTable('d:\\ai\\orange\\test\\iris')
-    d = orange.ExampleTable('d:\\ai\\orange\\test\\crush')
+    #d = orange.ExampleTable('d:\\ai\\orange\\test\\crush')
+    d = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     owi.setData(d)
-
-    a.setMainWidget(owi)
     owi.show()
-    a.exec_loop()
+    a.exec_()

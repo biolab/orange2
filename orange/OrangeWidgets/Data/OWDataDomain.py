@@ -5,7 +5,7 @@
 <priority>1100</priority>
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
-
+import orngOrangeFoldersQt4
 from OWTools import *
 from OWWidget import *
 from OWGraph import *
@@ -25,7 +25,7 @@ class OWDataDomain(OWWidget):
 
 
     def __init__(self,parent = None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Data Domain") #initialize base class
+        OWWidget.__init__(self, parent, signalManager, "Data Domain", wantMainArea = 0) #initialize base class
 
         self.inputs = [("Examples", ExampleTable, self.setData), ("Attribute Subset", AttributeList, self.setAttributeList)]
         self.outputs = [("Examples", ExampleTable)]
@@ -47,19 +47,19 @@ class OWDataDomain(OWWidget):
 
         self.loadSettings()
 
-        self.mainArea.setFixedWidth(0)
-        ca = QFrame(self.controlArea)
-        ca.adjustSize()
-        gl=QGridLayout(ca,4,3,5)
+        w = QWidget(self)
+        self.controlArea.layout().addWidget(w)
+        grid = QGridLayout()
+        grid.setMargin(0)
+        w.setLayout(grid)
 
-        boxAvail = QVGroupBox(ca)
-        boxAvail.setTitle('Available Attributes')
-        gl.addMultiCellWidget(boxAvail, 0,2,0,0)
+        boxAvail = OWGUI.widgetBox(self, 'Available Attributes', addToLayout = 0)
+        grid.addWidget(boxAvail, 0,0,3,1)
 
-        self.inputAttributesList = OWGUI.listBox(boxAvail, self, "selectedInput", "inputAttributes", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
+        self.inputAttributesList = OWGUI.listBox(boxAvail, self, "selectedInput", "inputAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection)
 
-        vbAttr = QVBox(ca)
-        gl.addWidget(vbAttr, 0,1)
+        vbAttr = OWGUI.widgetBox(self, addToLayout = 0)
+        grid.addWidget(vbAttr, 0,1)
         self.attributesButtonUp = OWGUI.button(vbAttr, self, "Up", self.onAttributesButtonUpClick)
         self.attributesButtonUp.setMaximumWidth(buttonWidth)
         self.attributesButton = OWGUI.button(vbAttr, self, ">",self.onAttributesButtonClicked)
@@ -67,35 +67,32 @@ class OWDataDomain(OWWidget):
         self.attributesButtonDown = OWGUI.button(vbAttr, self, "Down", self.onAttributesButtonDownClick)
         self.attributesButtonDown.setMaximumWidth(buttonWidth)
 
-        boxAttr = QVGroupBox(ca)
-        boxAttr.setTitle('Attributes')
-        gl.addWidget(boxAttr, 0,2)
-        self.attributesList = OWGUI.listBox(boxAttr, self, "selectedChosen", "chosenAttributes", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
+        boxAttr = OWGUI.widgetBox(self, 'Attributes', addToLayout = 0)
+        grid.addWidget(boxAttr, 0,2)
+        self.attributesList = OWGUI.listBox(boxAttr, self, "selectedChosen", "chosenAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection)
 
-        self.classButton = OWGUI.button(ca, self, ">", self.onClassButtonClicked)
+        self.classButton = OWGUI.button(self, self, ">", self.onClassButtonClicked, addToLayout = 0)
         self.classButton.setMaximumWidth(buttonWidth)
-        gl.addWidget(self.classButton, 1,1)
-        boxClass = QVGroupBox(ca)
-        boxClass.setTitle('Class')
+        grid.addWidget(self.classButton, 1,1)
+        boxClass = OWGUI.widgetBox(self, 'Class', addToLayout = 0)
         boxClass.setFixedHeight(46)
-        gl.addWidget(boxClass, 1,2)
-        self.classList = OWGUI.listBox(boxClass, self, "selectedClass", "classAttribute", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
+        grid.addWidget(boxClass, 1,2)
+        self.classList = OWGUI.listBox(boxClass, self, "selectedClass", "classAttribute", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection)
 
-        vbMeta = QVBox(ca)
-        gl.addWidget(vbMeta, 2,1)
+        vbMeta = OWGUI.widgetBox(self, addToLayout = 0)
+        grid.addWidget(vbMeta, 2,1)
         self.metaButtonUp = OWGUI.button(vbMeta, self, "Up", self.onMetaButtonUpClick)
         self.metaButtonUp.setMaximumWidth(buttonWidth)
         self.metaButton = OWGUI.button(vbMeta, self, ">",self.onMetaButtonClicked)
         self.metaButton.setMaximumWidth(buttonWidth)
         self.metaButtonDown = OWGUI.button(vbMeta, self, "Down", self.onMetaButtonDownClick)
         self.metaButtonDown.setMaximumWidth(buttonWidth)
-        boxMeta = QVGroupBox(ca)
-        boxMeta.setTitle('Meta Attributes')
-        gl.addWidget(boxMeta, 2,2)
-        self.metaList = OWGUI.listBox(boxMeta, self, "selectedMeta", "metaAttributes", callback = self.onSelectionChange, selectionMode = QListBox.Extended)
+        boxMeta = OWGUI.widgetBox(self, 'Meta Attributes', addToLayout = 0)
+        grid.addWidget(boxMeta, 2,2)
+        self.metaList = OWGUI.listBox(boxMeta, self, "selectedMeta", "metaAttributes", callback = self.onSelectionChange, selectionMode = QListWidget.ExtendedSelection)
 
-        boxApply = QHBox(ca)
-        gl.addMultiCellWidget(boxApply, 3,3,0,2)
+        boxApply = OWGUI.widgetBox(self, addToLayout = 0, orientation = "horizontal")
+        grid.addWidget(boxApply, 3,0,3,3)
         self.applyButton = OWGUI.button(boxApply, self, "Apply", callback = self.setOutput)
         self.applyButton.setEnabled(False)
         self.applyButton.setMaximumWidth(applyButtonWidth)
@@ -344,7 +341,8 @@ class OWDataDomain(OWWidget):
 
 if __name__=="__main__":
     import sys
-    data = orange.ExampleTable(r'../../doc/datasets/iris.tab')
+    #data = orange.ExampleTable(r'../../doc/datasets/iris.tab')
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     # add meta attribute
     data.domain.addmeta(orange.newmetaid(), orange.StringVariable("name"))
     for ex in data:
@@ -352,8 +350,7 @@ if __name__=="__main__":
 
     a=QApplication(sys.argv)
     ow=OWDataDomain()
-    a.setMainWidget(ow)
     ow.show()
     ow.setData(data)
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

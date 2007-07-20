@@ -28,6 +28,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
     def __init__(self, widget, parent = None, name = "None"):
         OWGraph.__init__(self, parent, name)
         orngScaleLinProjData.__init__(self)
+        self.enableGridXB(0)
+        self.enableGridYL(0)
 
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
         self.triedPossibilities = 0 # how many possibilities did we already try
@@ -35,7 +37,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.p = None
 
         self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
-        self.tooltipCurveKeys = []
+        self.tooltipCurves = []
         self.tooltipMarkers   = []
 ##        self.clusterOptimization = None
         self.widget = widget
@@ -68,14 +70,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.insideColors = None
         self.valueLineCurves = [{}, {}]    # dicts for x and y set of coordinates for unconnected lines
 
-        self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
-        self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-        scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-        scaleDraw.setOptions(0)
-        scaleDraw.setTickLength(0, 0, 0)
-        scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setOptions(0)
-        scaleDraw.setTickLength(0, 0, 0)
+        self.enableXaxis(0)
+        self.enableYLaxis(0)
         self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
@@ -125,7 +121,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             if self.hideRadius > 0:
                 xdata = self.createXAnchors(100)*(self.hideRadius / 10)
                 ydata = self.createYAnchors(100)*(self.hideRadius / 10)
-                self.addCurve("hidecircle", QColor(200,200,200), QColor(200,200,200), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
+                self.addCurve("hidecircle", QColor(200,200,200), QColor(200,200,200), 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
             # draw dots at anchors
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
@@ -134,13 +130,13 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             if self.anchorsAsVectors:
                 r=self.hideRadius**2/100
                 for i,(x,y,a) in enumerate(shownAnchorData):
-                    self.addCurve("l%i" % i, QColor(160, 160, 160), QColor(160, 160, 160), 10, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, x], yData = [0, y], showFilledSymbols = 1, lineWidth=2)
+                    self.addCurve("l%i" % i, QColor(160, 160, 160), QColor(160, 160, 160), 10, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0, x], yData = [0, y], showFilledSymbols = 1, lineWidth=2)
                     if self.showAttributeNames:
                         self.addMarker(a, x*1.07, y*1.04, Qt.AlignCenter, bold=1)
             else:
                 XAnchors = [a[0] for a in shownAnchorData]
                 YAnchors = [a[1] for a in shownAnchorData]
-                self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1)
+                self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = QwtPlotCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, showFilledSymbols = 1)
 
                 # draw text at anchors
                 if self.showAttributeNames:
@@ -151,7 +147,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             # draw "circle"
             xdata = self.createXAnchors(100)
             ydata = self.createYAnchors(100)
-            self.addCurve("circle", Qt.black, Qt.black, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
+            self.addCurve("circle", QColor(Qt.black), QColor(Qt.black), 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
         self.potentialsClassifier = None # remove the classifier so that repaint won't recompute it
         #self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
@@ -198,7 +194,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 ##                if not polygonVerticesDict.has_key(key): continue
 ##                for (i,j) in closureDict[key]:
 ##                    color = classValueIndices[graph.objects[i].getclass().value]
-##                    self.addCurve("", self.discPalette[color], self.discPalette[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
+##                    self.addCurve("", self.discPalette[color], self.discPalette[color], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
 ##
 ##            """
 ##            self.removeMarkers()
@@ -337,10 +333,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 if not validData[i]: continue
                 xs.append(x_positions[i])
                 ys.append(y_positions[i])
-                self.addTooltipKey(x_positions[i], y_positions[i], Qt.black, i)
+                self.addTooltipKey(x_positions[i], y_positions[i], QColor(Qt.black), i)
                 if self.showValueLines:
-                    self.addValueLineCurve(x_positions[i], y_positions[i], Qt.black, i, indices)
-            self.addCurve(str(1), Qt.black, Qt.black, self.pointWidth, symbol = self.curveSymbols[0], xData = xs, yData = ys)
+                    self.addValueLineCurve(x_positions[i], y_positions[i], QColor(Qt.black), i, indices)
+            self.addCurve(str(1), QColor(Qt.black), QColor(Qt.black), self.pointWidth, symbol = self.curveSymbols[0], xData = xs, yData = ys)
 
         # ##############################################################
         # CONTINUOUS class
@@ -376,8 +372,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # first draw value lines
         if self.showValueLines:
             for i, color in enumerate(self.valueLineCurves[0].keys()):
-                curve = UnconnectedLinesCurve(self, QPen(QColor(*color)), self.valueLineCurves[0][color], self.valueLineCurves[1][color])
-                self.insertCurve(curve)
+                curve = UnconnectedLinesCurve("", QPen(QColor(*color)), self.valueLineCurves[0][color], self.valueLineCurves[1][color])
+                curve.attach(self)
 
         # draw all the points with a small number of curves
         for i, (color, symbol, showFilled) in enumerate(xPointsToAdd.keys()):
@@ -396,7 +392,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 for index in range(len(classVariableValues)):
                     if self.useDifferentColors: color = self.discPalette[index]
-                    else:                       color = Qt.black
+                    else:                       color = QColor(Qt.black)
                     y = 1.0 - index * 0.05
 
                     if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
@@ -413,16 +409,17 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     y = -1.0 + i*2.0/float(count)
                     col = self.contPalette[i/float(count)]
                     curve = PolygonCurve(self, QPen(col), QBrush(col))
-                    newCurveKey = self.insertCurve(curve)
-                    self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
+                    curve.setData(xs, [y,y, y+height, y+height])
+                    curve.attach(self)
 
                 # add markers for min and max value of color attribute
                 [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
                 self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
                 self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
-        self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
-        self.updateLayout()
+        #self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
+        #self.updateLayout()
+        self.replot()
 
 
     # ##############################################################
@@ -445,11 +442,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 ##                clusterLines = closure[key]
 ##                colorIndex = classIndices[self.rawdata.domain.classVar[classValue[key]].value]
 ##                for (p1, p2) in clusterLines:
-##                    self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
+##                    self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
 ##        else:
 ##            colorIndex = classIndices[self.rawdata.domain.classVar[classValue].value]
 ##            for (p1, p2) in closure:
-##                self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
+##                self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
 
 
     def addValueLineCurve(self, x, y, color, exampleIndex, attrIndices):
@@ -470,47 +467,48 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.valueLineCurves[1][color] = self.valueLineCurves[1].get(color, []) + ys
 
 
-    def onMousePressed(self, e):
+    def mousePressEvent(self, e):
         if self.manualPositioning:
             self.mouseCurrentlyPressed = 1
             self.selectedAnchorIndex = None
             if self.anchorsAsVectors:
-                key, dist = self.closestMarker(e.x(), e.y())
+                marker, dist = self.closestMarker(e.x(), e.y())
                 if dist < 15:
-                    self.selectedAnchorIndex = self.shownAttributes.index(self.marker(key).label())
+                    self.selectedAnchorIndex = self.shownAttributes.index(str(marker.label().text()))
             else:
-                (key, dist, foo1, foo2, index) = self.closestCurve(e.x(), e.y())
-                if dist < 5 and str(self.curve(key).title()) == "dots":
+                (curve, dist, x, y, index) = self.closestCurve(e.x(), e.y())
+                if dist < 5 and str(curve.title().text()) == "dots":
                     self.selectedAnchorIndex = index
         else:
-            OWGraph.onMousePressed(self, e)
+            OWGraph.mousePressEvent(self, e)
 
 
-    def onMouseReleased(self, e):
+    def mouseReleaseEvent(self, e):
         if self.manualPositioning:
             self.mouseCurrentlyPressed = 0
             self.selectedAnchorIndex = None
         else:
-            OWGraph.onMouseReleased(self, e)
+            OWGraph.mouseReleaseEvent(self, e)
 
     # ##############################################################
     # draw tooltips
-    def onMouseMoved(self, e):
-        redraw = (self.tooltipCurveKeys != [] or self.tooltipMarkers != [])
+    def mouseMoveEvent(self, e):
+        redraw = (self.tooltipCurves != [] or self.tooltipMarkers != [])
 
-        for key in self.tooltipCurveKeys:  self.removeCurve(key)
-        for marker in self.tooltipMarkers: self.removeMarker(marker)
-        self.tooltipCurveKeys = []
+        for curve in self.tooltipCurves:  curve.detach()
+        for marker in self.tooltipMarkers: marker.detach()
+        self.tooltipCurves = []
         self.tooltipMarkers = []
 
-        xFloat = self.invTransform(QwtPlot.xBottom, e.x())
-        yFloat = self.invTransform(QwtPlot.yLeft, e.y())
+        canvasPos = self.canvas().mapFrom(self, e.pos())
+        xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
+        yFloat = self.invTransform(QwtPlot.yLeft, canvasPos.y())
 
         # in case we are drawing a rectangle, we don't draw enhanced tooltips
         # because it would then fail to draw the rectangle
         if self.mouseCurrentlyPressed:
             if not self.manualPositioning:
-                OWGraph.onMouseMoved(self, e)
+                OWGraph.mouseMoveEvent(self, e)
                 if redraw: self.replot()
             else:
                 if self.selectedAnchorIndex != None:
@@ -553,28 +551,23 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     if self.anchorsAsVectors and not self.scalingByVariance:
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
                         markerX, markerY = xAnchor*attrVal, yAnchor*attrVal
-                        key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [0, markerX], yData = [0, markerY], lineWidth=3)
+                        curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0, markerX], yData = [0, markerY], lineWidth=3)
                         fontsize = 9
                         markerAlign = (markerY>0 and Qt.AlignTop or Qt.AlignBottom) + (markerX>0 and Qt.AlignRight or Qt.AlignLeft)
                     else:
-                        key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
+                        curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
                         markerX, markerY = (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0
                         fontsize = 12
                         markerAlign = Qt.AlignCenter
 
-                    self.tooltipCurveKeys.append(key)
+                    self.tooltipCurves.append(curve)
 
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][label]), markerX, markerY, markerAlign, bold = 1)
+                        marker = self.addMarker(str(self.rawdata[index][label]), markerX, markerY, markerAlign, size = fontsize)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[label]][index]), markerX, markerY, markerAlign, bold = 1)
-                    font = self.markerFont(marker)
-                    font.setPointSize(fontsize)
-                    font.setBold(FALSE)
-                    self.setMarkerFont(marker, font)
-
+                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[label]][index]), markerX, markerY, markerAlign, size = fontsize)
                     self.tooltipMarkers.append(marker)
 
             elif self.tooltipKind == VISIBLE_ATTRIBUTES or self.tooltipKind == ALL_ATTRIBUTES:
@@ -585,20 +578,19 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     labels = []
 
                 text = self.getExampleTooltipText(self.rawdata, self.rawdata[index], labels)
-                text += "<br><hr>Example index = %d" % (index)
+                text += "<hr>Example index = %d" % (index)
                 if extraString:
                     text += "<hr>" + extraString
-
                 self.showTip(intX, intY, text)
 
-        OWGraph.onMouseMoved(self, e)
+        OWGraph.mouseMoveEvent(self, e)
         self.replot()
 
 
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, useAnchorData = 1, addProjectedPositions = 0):
         if not self.rawdata: return (None, None)
-        if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawdata)       # if no selections exist
+        if addProjectedPositions == 0 and not self.selectionCurveList: return (None, self.rawdata)       # if no selections exist
         if (useAnchorData and len(self.anchorData) < 3) or len(attrList) < 3: return (None, None)
 
         xAttr=orange.FloatVariable("X Positions")
@@ -756,7 +748,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
     # update shown data. Set labels, coloring by className ....
     def savePicTeX(self):
         lastSave = getattr(self, "lastPicTeXSave", "C:\\")
-        qfileName = QFileDialog.getSaveFileName(lastSave + "graph.pictex","PicTeX (*.pictex);;All files (*.*)", None, "Save to..", "Save to..")
+        qfileName = QFileDialog.getSaveFileName(None, "Save to..", lastSave + "graph.pictex","PicTeX (*.pictex);;All files (*.*)")
         fileName = str(qfileName)
         if fileName == "":
             return

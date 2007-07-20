@@ -9,7 +9,8 @@
 #
 # Adds an input signal to the file widget
 #
-
+import orngOrangeFoldersQt4
+import OWGUI
 from OWFile import *
 
 class OWExtendedFile(OWSubFile):
@@ -30,23 +31,23 @@ class OWExtendedFile(OWSubFile):
         self.loadSettings()
 
         #GUI
-        self.box = QHGroupBox("Data File", self.controlArea)
-        self.filecombo=QComboBox(self.box)
+        self.box = OWGUI.widgetBox(self.controlArea, "Data File", orientation = "horizontal")
+        self.filecombo = OWGUI.comboBox(self.box, self, "filename")
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0)
         button.setMaximumWidth(25)
 
         # settings
-        box = QVGroupBox("Settings", self.controlArea)
+        box = OWGUI.widgetBox(self.controlArea, "Settings")
         OWGUI.lineEdit(box, self, "symbolDC", "Don't care symbol:  ", orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
         OWGUI.lineEdit(box, self, "symbolDK", "Don't know symbol:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
 
         # info
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data loaded.', box)
-        self.infob = QLabel('', box)
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
+        self.infob = OWGUI.widgetLabel(box, ' ')
 
-        self.rbox = QHGroupBox("Reload", self.controlArea)
+        self.rbox = OWGUI.widgetBox(self.controlArea, "Reload")
         self.reloadBtn = OWGUI.button(self.rbox, self, "Reload File", callback = self.reload)
         OWGUI.separator(self.rbox, 8, 0)
         self.resetDomainCb = OWGUI.checkBox(self.rbox, self, "resetDomain", "Reset domain at next reload")
@@ -76,19 +77,19 @@ class OWExtendedFile(OWSubFile):
     def setFileList(self):
         self.filecombo.clear()
         if not self.recentFiles:
-            self.filecombo.insertItem("(none)")
+            self.filecombo.addItem("(none)")
             self.reloadBtn.disabled = 1
         for file in self.recentFiles:
             if file == "(none)":
                 if len(self.recentFiles)==1:
-                    self.filecombo.insertItem("(none)")
+                    self.filecombo.addItem("(none)")
                     self.reloadBtn.disabled = 1
             else:
-                self.filecombo.insertItem(os.path.split(file)[1])
+                self.filecombo.addItem(os.path.split(file)[1])
                 self.reloadBtn.disabled = 0
-        self.filecombo.insertItem("Browse documentation data sets...")
+        self.filecombo.addItem("Browse documentation data sets...")
         #self.filecombo.adjustSize() #doesn't work properly :(
-        self.filecombo.updateGeometry()
+        #self.filecombo.updateGeometry()
 
 
     def openFile(self,fn, throughReload = 0):
@@ -97,12 +98,9 @@ class OWExtendedFile(OWSubFile):
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)
-    ow=OWAdvancedFile()
+    ow=OWExtendedFile()
     ow.activateLoadedSettings()
-    a.setMainWidget(ow)
     ow.show()
-    ow.symbolDK = "<NO DATA>"
-    ow.openFile(r"C:\Documents and Settings\peterjuv\My Documents\STEROLTALK\array-pro\experiments\Tadeja 2nd image analysis\10vs10mg original data\0449.txt")
-    a.exec_loop()
+    a.exec_()
     #save settings
     ow.saveSettings()

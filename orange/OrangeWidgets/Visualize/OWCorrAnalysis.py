@@ -128,7 +128,7 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.button(self.GeneralTab, self, 'Load CA', self.loadCA)
         self.chosenSelection = []
         self.selections = []
-        OWGUI.listBox(self.GeneralTab, self, "chosenSelection", "selections", box="Feature selection used", selectionMode = QListBox.Multi, callback = None)
+        OWGUI.listBox(self.GeneralTab, self, "chosenSelection", "selections", box="Feature selection used", selectionMode = QListWidget.MultiSelection, callback = None)
         # ####################################
         # SETTINGS TAB
         # point width
@@ -165,7 +165,7 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.listBox(self.resultsTab, self, "chosenDoc", "docs", box="Documents", callback = None)
         self.chosenFeature = []
         self.features = self.graph.features
-        OWGUI.listBox(self.resultsTab, self, "chosenFeature", "features", box="Features", selectionMode = QListBox.Multi, callback = None)
+        OWGUI.listBox(self.resultsTab, self, "chosenFeature", "features", box="Features", selectionMode = QListWidget.MultiSelection, callback = None)
         OWGUI.button(self.resultsTab, self, "Save selected features", callback = self.saveFeatures)
         OWGUI.button(self.resultsTab, self, "Reconstruct words from letter ngrams", callback = self.reconstruct)
         self.chosenWord = []
@@ -186,7 +186,7 @@ class OWCorrAnalysis(OWWidget):
             else:
                 lastPath = "."
                 
-            fn = str(QFileDialog.getOpenFileName(lastPath, "Text files (*.*)", None, "Load CA data"))
+            fn = str(QFileDialog.getOpenFileName(None, "Load CA data", lastPath, "Text files (*.*)"))
             if not fn:
                 return
                 
@@ -196,7 +196,7 @@ class OWCorrAnalysis(OWWidget):
             self.CA = cPickle.load(f)
             f.close()
 
-            fn = str(QFileDialog.getOpenFileName(lastPath, "Text files (*.*)", None, "Save CA data"))
+            fn = str(QFileDialog.getOpenFileName(None, "Save CA data", lastPath, "Text files (*.*)"))
             if not fn:
                 return
                 
@@ -224,7 +224,7 @@ class OWCorrAnalysis(OWWidget):
         else:
             lastPath = "."
             
-        fn = str(QFileDialog.getSaveFileName(lastPath, "Text files (*.*)", None, "Save CA data"))
+        fn = str(QFileDialog.getSaveFileName(None, "Save CA data", lastPath, "Text files (*.*)"))
         if not fn:
             return
             
@@ -233,7 +233,7 @@ class OWCorrAnalysis(OWWidget):
         import cPickle
         cPickle.dump(self.CA, f, 1)
         f.close()
-        fn = str(QFileDialog.getSaveFileName(lastPath, "Text files (*.*)", None, "Save text data"))
+        fn = str(QFileDialog.getSaveFileName(None, "Save text data", lastPath, "Text files (*.*)"))
         if not fn:
             return
             
@@ -322,11 +322,11 @@ class OWCorrAnalysis(OWWidget):
                 if attr.varType == orange.VarTypes.Discrete: self.attrRowCombo.insertItem(self.icons[attr.varType], attr.name)
                 if attr.varType == orange.VarTypes.Discrete: self.attrColCombo.insertItem(self.icons[attr.varType], attr.name)
 
-        self.attrRow = str(self.attrRowCombo.text(0))
+        self.attrRow = str(self.attrRowCombo.itemText(0))
         if self.attrColCombo.count() > 1: 
-            self.attrCol = str(self.attrColCombo.text(1))
+            self.attrCol = str(self.attrColCombo.itemText(1))
         else:
-            self.attrCol = str(self.attrColCombo.text(0))
+            self.attrCol = str(self.attrColCombo.itemText(0))
             
         self.updateTables()
         
@@ -406,11 +406,11 @@ class OWCorrAnalysis(OWWidget):
             self.attrXCombo.insertItem(str(i))
             self.attrYCombo.insertItem(str(i))        
         
-        self.attrX = str(self.attrXCombo.text(0))
+        self.attrX = str(self.attrXCombo.itemText(0))
         if self.attrYCombo.count() > 1: 
-            self.attrY = str(self.attrYCombo.text(1))
+            self.attrY = str(self.attrYCombo.itemText(1))
         else:                           
-            self.attrY = str(self.attrYCombo.text(0))
+            self.attrY = str(self.attrYCombo.itemText(0))
             
         self.contributionBox()
         
@@ -515,9 +515,9 @@ class OWCorrAnalysis(OWWidget):
         c.createDiscretePalette(" Discrete Palette ")
         c.createContinuousPalette("contPalette", " Continuous palette ")
         box = c.createBox("otherColors", " Other Colors ")
-        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
+        c.createColorButton(box, "Canvas", "Canvas color", QColor(QColor(Qt.white)))
         box.addSpace(5)
-        c.createColorButton(box, "Grid", "Grid color", Qt.black)
+        c.createColorButton(box, "Grid", "Grid color", QColor(QColor(Qt.black)))
         box.addSpace(5)
         box.adjustSize()
         c.setColorSchemas(self.colorSettings)
@@ -550,7 +550,7 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
         if 'buttonBrowseCircle' in dir(self): self.buttonBrowseCircle.setOn(0)
         
     def actionBrowse(self):
-        state = self.buttonBrowse.isOn()
+        state = self.buttonBrowse.isChecked()
         self.buttonBrowse.setOn(state)
         self.graph.activateBrowsing(state)
         if state:
@@ -565,7 +565,7 @@ class ZoomBrowseSelectToolbar(ZoomSelectToolbar):
             if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
             
     def actionBrowseCircle(self):
-        state = self.buttonBrowseCircle.isOn()
+        state = self.buttonBrowseCircle.isChecked()
         self.buttonBrowseCircle.setOn(state)
         self.graph.activateBrowsingCircle(state)
         if state:

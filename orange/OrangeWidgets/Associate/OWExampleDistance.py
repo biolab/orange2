@@ -2,26 +2,24 @@
 <name>Example Distance</name>
 <description>Computes a distance matrix from a set of data examples.</description>
 <icon>icons/ExampleDistance.png</icon>
-<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>1050</priority>
 """
-
+import orngOrangeFoldersQt4
 import orange, math
 import OWGUI
-from qt import *
-from qtcanvas import *
 from OWWidget import *
 import random
 
 ##############################################################################
 # main class
 
-class OWExampleDistance(OWWidget):	
+class OWExampleDistance(OWWidget):
     settingsList = ["Metrics"]
 
     def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, 'ExampleDistance') 
+        OWWidget.__init__(self, parent, signalManager, 'ExampleDistance', wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
@@ -39,16 +37,15 @@ class OWExampleDistance(OWWidget):
             tooltip="Choose metrics to measure pairwise distance between examples.",
             callback=self.computeMatrix)
         cb.setMinimumWidth(170)
-        cb.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))
 
-        OWGUI.separator(self.controlArea)        
+        OWGUI.separator(self.controlArea)
         self.labelCombo = OWGUI.comboBox(self.controlArea, self, "Label", box="Example Label",
             items=[],
             tooltip="Choose attribute which will be used as a label of the example.",
             callback=self.setLabel, sendSelectedValue = 1)
-        
+
         self.labelCombo.setDisabled(1)
-        self.adjustSize()
+
 
     ##############################################################################
     # callback functions
@@ -77,10 +74,9 @@ class OWExampleDistance(OWWidget):
         self.labelCombo.clear()
         self.labelCombo.setDisabled(0)
         labels = [m.name for m in d.domain.getmetas().values()] + [a.name for a in d.domain.variables]
-        for l in labels:
-            self.labelCombo.insertItem(l)
+        self.labelCombo.addItems(labels)
         # here we would need to use the domain dependent setting of the label id
-        self.labelCombo.setCurrentItem(0); self.Label = labels[0]
+        self.labelCombo.setCurrentIndex(0); self.Label = labels[0]
         self.setLabel()
 
     def dataset(self, data):
@@ -102,8 +98,7 @@ if __name__=="__main__":
         data = orange.ExampleTable('glass')
     a = QApplication(sys.argv)
     ow = OWExampleDistance()
-    a.setMainWidget(ow)
     ow.show()
     ow.dataset(data)
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

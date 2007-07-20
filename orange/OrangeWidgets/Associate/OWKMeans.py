@@ -6,13 +6,10 @@
 <priority>2000</priority>
 """
 
+import orngOrangeFoldersQt4
 import orange, orngCluster
 import OWGUI
 import math, statc
-
-from qt import *
-from qttable import *
-from qtcanvas import *
 from OWWidget import *
 
 ##############################################################################
@@ -40,34 +37,31 @@ class OWKMeans(OWWidget):
         OWGUI.qwtHSlider(self.controlArea, self, "K", box="Number of Clusters", label="K: ", minValue=1, maxValue=30, step=1, callback=self.settingsChanged)
         OWGUI.comboBox(self.controlArea, self, "DistanceMeasure", box="Distance Measure", items=["Euclidean", "Manthattan"], tooltip=None, callback=self.settingsChanged)
         QWidget(self.controlArea).setFixedSize(0, 8)
-        self.applyBtn = QPushButton("Apply Settings", self.controlArea)
+        self.applyBtn = OWGUI.button(self.controlArea, self, "Apply Settings", callback = self.cluster)
         self.applyBtn.setDisabled(TRUE)
+        OWGUI.rubber(self.controlArea)
 
         # display of clustering results
-        self.layout=QVBoxLayout(self.mainArea)
-        self.table=QTable(self.mainArea)
-        self.table.setSelectionMode(QTable.NoSelection)
-        self.layout.add(self.table)
+        self.table = OWGUI.table(self.mainArea, selectionMode = QTableWidget.NoSelection)
         self.table.hide()
 
-        self.resize(350,200)
-        # signals
-        self.connect(self.applyBtn, SIGNAL("clicked()"), self.cluster)
+        self.resize(100,100)
+
 
     def settingsChanged(self):
         if self.data:
             self.applyBtn.setDisabled(FALSE)
 
     def showResults(self):
-        self.table.setNumCols(0); self.table.setNumRows(0) # clears the table
-        self.table.setNumCols(4)
-        self.table.setNumRows(self.K+1)
+        self.table.clear() # clears the table
+        self.table.setColumnCount(4)
+        self.table.setRowCount(self.K+1)
 
         # set the header (attribute names)
-        self.header=self.table.horizontalHeader()
+        self.header = self.table.horizontalHeader()
         header = ["ID", "Items", "Fitness", "BIC"]
         for (i, h) in enumerate(header):
-            self.header.setLabel(i, h)
+            self.table.setHorizontalHeaderItem(i, QTableWidgetItem(h))
 
         dist = [0] * self.K
         for m in self.mc.mapping:
@@ -75,10 +69,10 @@ class OWKMeans(OWWidget):
 
         bic, cbic = compute_bic(self.cdata, self.mc.medoids)
         for k in range(self.K):
-            self.table.setText(k, 0, str(k+1))
-            self.table.setText(k, 1, str(dist[k]))
-            self.table.setText(k, 2, "%5.3f" % self.mc.cdisp[k])
-            self.table.setText(k, 3, "%6.2f" % cbic[k])
+            self.table.setItem(k, 0, QTableWidgetItem(str(k+1)))
+            self.table.setItem(k, 1, QTableWidgetItem(str(dist[k])))
+            self.table.setItem(k, 2, QTableWidgetItem("%5.3f" % self.mc.cdisp[k]))
+            self.table.setItem(k, 3, QTableWidgetItem("%6.2f" % cbic[k]))
 
         colorItem(self.table, self.K, 0, "Total")
         colorItem(self.table, self.K, 1, str(len(self.data)))
@@ -87,10 +81,8 @@ class OWKMeans(OWWidget):
 
         # adjust the width of the table
         for i in range(4):
-            self.table.adjustColumn(i)
-
+            self.table.resizeColumnToContents(i)
         self.table.show()
-        self.layout.activate() # this is needed to scale the widget correctly
 
     def cluster(self):
         self.K = int(self.K)
@@ -162,16 +154,17 @@ def compute_bic(data, medoids):
 
 ##############################################################################
 
-class colorItem(QTableItem):
-    def __init__(self, table, i, j, text, editType=QTableItem.WhenCurrent, color=Qt.lightGray):
+class colorItem(QTableWidgetItem):
+    def __init__(self, table, i, j, text, flags = Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable, color=Qt.lightGray):
         self.color = color
-        QTableItem.__init__(self, table, editType, str(text))
+        QTableWidgetItem.__init__(self, str(text))
+        self.setFlags(flags)
         table.setItem(i, j, self)
 
     def paint(self, painter, colorgroup, rect, selected):
-        g = QColorGroup(colorgroup)
-        g.setColor(QColorGroup.Base, self.color)
-        QTableItem.paint(self, painter, g, rect, selected)
+        g = QPalette(colorgroup)
+        g.setColor(QPalette.Base, self.color)
+        QTableWidgetItem.paint(self, painter, g, rect, selected)
 
 
 ##################################################################################################
@@ -181,9 +174,9 @@ if __name__=="__main__":
     import orange
     a = QApplication(sys.argv)
     ow = OWKMeans()
-    a.setMainWidget(ow)
-    d = orange.ExampleTable('glass')
+    #d = orange.ExampleTable('glass')
+    d = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\zoo.tab")
     ow.setData(d)
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

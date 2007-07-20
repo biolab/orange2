@@ -2,14 +2,12 @@
 <name>Attribute Distance</name>
 <description>Computes attribute distance for given data set.</description>
 <icon>icons/AttributeDistance.png</icon>
-<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact> 
+<contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>1100</priority>
 """
-
+import orngOrangeFoldersQt4
 import orange, math
 import OWGUI
-from qt import *
-from qtcanvas import *
 from OWWidget import *
 import random
 import orngInteract
@@ -19,17 +17,17 @@ warnings.filterwarnings("ignore", module="orngInteract")
 ##############################################################################
 # main class
 
-class OWAttributeDistance(OWWidget):	
+class OWAttributeDistance(OWWidget):
     settingsList = ["ClassInteractions"]
 
     def __init__(self, parent=None, signalManager = None, name='AttributeDistance'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, name) 
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
-        self.data = None        
+        self.data = None
 
         self.ClassInteractions = 0
         self.loadSettings()
@@ -80,7 +78,7 @@ class OWAttributeDistance(OWWidget):
         else:
             matrix = None
         self.send("Distance Matrix", matrix)
-        
+
 
 ##################################################################################################
 # test script
@@ -90,11 +88,11 @@ if __name__=="__main__":
     if os.path.isfile(r'../../doc/datasets/voting.tab'):
         data = orange.ExampleTable(r'../../doc/datasets/voting')
     else:
-        data = orange.ExampleTable('voting')
+        #data = orange.ExampleTable('voting')
+        data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     a = QApplication(sys.argv)
     ow = OWAttributeDistance()
-    a.setMainWidget(ow)
     ow.show()
     ow.dataset(data)
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

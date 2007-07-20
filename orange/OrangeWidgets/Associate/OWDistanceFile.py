@@ -6,17 +6,17 @@
 <priority>1150</priority>
 """
 
+import orngOrangeFoldersQt4
 import orange
 import OWGUI
-from qt import *
 from OWWidget import *
 
-class OWDistanceFile(OWWidget):	
+class OWDistanceFile(OWWidget):
     settingsList = ["recentFiles"]
 
     def __init__(self, parent=None, signalManager = None, name='Distance File'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, name) 
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
         self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
@@ -27,25 +27,25 @@ class OWDistanceFile(OWWidget):
         self.loadSettings()
 
         box = OWGUI.widgetBox(self.controlArea, "Data File")
-        hbox = OWGUI.widgetBox(box, orientation = 0)
+        hbox = OWGUI.widgetBox(box, orientation = "horizontal")
         self.filecombo = OWGUI.comboBox(hbox, self, "fileIndex", callback = self.loadFile)
         self.filecombo.setMinimumWidth(250)
         button = OWGUI.button(hbox, self, '...', callback = self.browseFile)
         button.setMaximumWidth(25)
         OWGUI.checkBox(box, self, "takeAttributeNames", "Take attribute names (instead of examples)", callback = self.relabel)
 
-        self.adjustSize()            
+        self.adjustSize()
 
         if self.recentFiles:
             self.loadFile()
 
-                
+
     def browseFile(self):
         if self.recentFiles:
             lastPath = os.path.split(self.recentFiles[0])[0]
         else:
             lastPath = "."
-        fn = str(QFileDialog.getOpenFileName(lastPath, "Distance matrix (*.*)", None, "Open Distance Matrix File"))
+        fn = str(QFileDialog.getOpenFileName(self, "Open Distance Matrix File", lastPath, "Distance matrix (*.*)"))
         fn = os.path.abspath(fn)
         if fn in self.recentFiles: # if already in list, remove it
             self.recentFiles.remove(fn)
@@ -64,8 +64,8 @@ class OWDistanceFile(OWWidget):
 
         self.filecombo.clear()
         for file in self.recentFiles:
-            self.filecombo.insertItem(os.path.split(file)[1])
-        self.filecombo.updateGeometry()
+            self.filecombo.addItem(os.path.split(file)[1])
+        #self.filecombo.updateGeometry()
 
         self.error()
         try:
@@ -95,7 +95,7 @@ class OWDistanceFile(OWWidget):
     def relabel(self):
         self.error()
         matrix = self.matrix
-        
+
         if self.data:
             if self.takeAttributeNames:
                 domain = self.data.domain
@@ -122,8 +122,6 @@ if __name__=="__main__":
     import orange
     a = QApplication(sys.argv)
     ow = OWDistanceFile()
-    a.setMainWidget(ow)
-
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

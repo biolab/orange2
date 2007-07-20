@@ -8,8 +8,7 @@
 #
 # OWTestLearners.py
 #
-
-from qttable import *
+import orngOrangeFoldersQt4
 from OWWidget import *
 import orngTest, orngStat, OWGUI
 import warnings
@@ -52,60 +51,56 @@ class OWTestLearners(OWWidget):
 
         # GUI
         self.s = [None] * 5
-        self.sBox = QVButtonGroup("Sampling", self.controlArea)
-        self.s[0] = QRadioButton('Cross validation', self.sBox)
+        self.sBox = OWGUI.widgetBox(self.controlArea, "Sampling")
+        self.sBox.buttons = []
+        self.s[0] = OWGUI.appendRadioButton(self.sBox, self, "sampleMethod", 'Cross validation')
 
-        box = QHBox(self.sBox)
-        QWidget(box).setFixedSize(19, 8)
+        box = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
+        OWGUI.separator(box, width = 19)
         OWGUI.spin(box, self, 'nFolds', 2, 100, step=1, label='Number of folds:  ')
 
-        self.s[1] = QRadioButton('Leave one out', self.sBox)
-        self.s[2] = QRadioButton('Random sampling', self.sBox)
+        self.s[1] = OWGUI.appendRadioButton(self.sBox, self, "sampleMethod", 'Leave one out')
+        self.s[2] = OWGUI.appendRadioButton(self.sBox, self, "sampleMethod", 'Random sampling')
 
-        box = QHBox(self.sBox)
-        QWidget(box).setFixedSize(19, 8)
+        box = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
+        OWGUI.separator(box, width = 19)
         OWGUI.spin(box, self, 'pRepeat', 1, 100, step=1, label='Repeat train/test:  ')
 
-        self.h2Box = QHBox(self.sBox)
-        QWidget(self.h2Box).setFixedSize(19, 8)
-        QLabel("Relative training set size:", self.h2Box)
-        box = QHBox(self.sBox)
-        QWidget(box).setFixedSize(19, 8)
+        self.h2Box = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
+        OWGUI.separator(self.h2Box, width = 19)
+        OWGUI.widgetLabel(self.h2Box, "Relative training set size:")
+        box = OWGUI.widgetBox(self.sBox, orientation = "horizontal")
+        OWGUI.separator(box, width = 19)
         OWGUI.hSlider(box, self, 'pLearning', minValue=10, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")
 
-        self.s[3] = QRadioButton('Test on train data', self.sBox)
-        self.s[4] = self.testDataBtn = QRadioButton('Test on test data', self.sBox)
+        self.s[3] = OWGUI.appendRadioButton(self.sBox, self, "sampleMethod", 'Test on train data')
+        self.s[4] = self.testDataBtn = OWGUI.appendRadioButton(self.sBox, self, "sampleMethod", 'Test on test data')
 
-        QWidget(self.sBox).setFixedSize(0, 8)
-        self.applyBtn = QPushButton("&Apply", self.sBox)
+        OWGUI.separator(self.sBox, width = 19)
+        self.applyBtn = OWGUI.button(self.sBox, self, "&Apply", callback = self.test)
         self.applyBtn.setDisabled(TRUE)
 
         if self.sampleMethod == 4:
             self.sampleMethod = 0
-        self.s[self.sampleMethod].setChecked(TRUE)
+        #self.s[self.sampleMethod].setChecked(TRUE)
         OWGUI.separator(self.controlArea)
 
         # statistics
-        self.statBox = QVGroupBox(self.controlArea)
-        self.statBox.setTitle('Statistics')
+        self.statBox = OWGUI.widgetBox(self.controlArea, 'Statistics')
         self.statBtn = []
         for i in range(len(self.stat)):
             self.statBtn.append(QCheckBox(self.stat[i][0], self.statBox))
+            self.statBox.layout().addWidget(self.statBtn[i])
             self.statBtn[i].setChecked(self.useStat[i])
+        self.controlArea.layout().addStretch(100)
 
         # table with results
-        self.layout=QVBoxLayout(self.mainArea)
-        self.g = QVGroupBox(self.mainArea)
-        self.g.setTitle('Evaluation Results')
+        self.g = OWGUI.widgetBox(self.mainArea, 'Evaluation Results')
+        self.tab = OWGUI.table(self.g, selectionMode = QTableWidget.NoSelection)
 
-        self.tab=QTable(self.g)
-        self.tab.setSelectionMode(QTable.NoSelection)
-        self.layout.add(self.g)
-
-        self.lab = QLabel(self.g)
+        #self.lab = QLabel(self.g)
 
         # signals
-        self.connect(self.applyBtn, SIGNAL("clicked()"), self.test)
         self.dummy1 = [None]*len(self.s)
         for i in range(len(self.s)):
             self.dummy1[i] = lambda x, v=i: self.sChanged(x, v)
@@ -277,15 +272,15 @@ class OWTestLearners(OWWidget):
     # reporting on evaluation results
     def setStatTable(self):
         if not self.results:
-            self.tab.setNumRows(0)
+            self.tab.setRowCount(0)
             return
-        self.tab.setNumCols(len(self.stat)+1)
+        self.tab.setColumnCount(len(self.stat)+1)
         self.tabHH=self.tab.horizontalHeader()
         self.tabHH.setLabel(0, 'Classifier')
         for i in range(len(self.stat)):
             self.tabHH.setLabel(i+1, self.stat[i][1])
 
-        self.tab.setNumRows(self.results.numberOfLearners)
+        self.tab.setRowCount(self.results.numberOfLearners)
         for i in range(len(self.results.classifierNames)):
             self.tab.setText(i, 0, self.results.classifierNames[i])
 
@@ -298,8 +293,7 @@ class OWTestLearners(OWWidget):
                 else:
                     self.tab.setText(i, j+1, prec % self.scores[j][i])
 
-        for i in range(len(self.stat)+1):
-            self.tab.adjustColumn(i)
+        self.tab.resizeColumnsToContents()
 
         for i in range(len(self.stat)):
             if not self.useStat[i]:
@@ -324,7 +318,9 @@ class ProgressBar:
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWTestLearners()
-    a.setMainWidget(ow)
+    ow.show()
+    a.exec_()
+
 
     data = orange.ExampleTable('voting')
     data1 = orange.ExampleTable('golf')
@@ -364,6 +360,4 @@ if __name__=="__main__":
     if testcase == 3: # sends data, then learner, then changes the name of the learner, then new data
         pass
 
-    ow.show()
-    a.exec_loop()
     ow.saveSettings()

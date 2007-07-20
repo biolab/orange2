@@ -9,7 +9,7 @@
 #
 # Show data using parallel coordinates visualization method
 #
-
+import orngOrangeFoldersQt4
 from OWVisWidget import *
 from OWParallelGraph import *
 import OWToolbars, OWGUI, OWDlgs, orngVisFuncts
@@ -30,17 +30,15 @@ class OWParallelCoordinates(OWVisWidget):
         OWWidget.__init__(self, parent, signalManager, "Parallel Coordinates", TRUE)
 
         #add a graph widget
-        self.box = QVBoxLayout(self.mainArea)
         self.graph = OWParallelGraph(self, self.mainArea)
-        self.slider = QSlider(QSlider.Horizontal, self.mainArea)
+        self.mainArea.layout().addWidget(self.graph)
+        self.slider = QSlider(Qt.Horizontal, self.mainArea)
+        self.mainArea.layout().addWidget(self.slider)
         self.sliderRange = 0
         self.slider.setRange(0, 0)
-        self.slider.setTickmarks(QSlider.Below)
+        self.slider.setTickPosition(QSlider.TicksBelow)
         self.isResizing = 0
         self.showAllAttributes = 0
-
-        self.box.addWidget(self.graph)
-        self.box.addWidget(self.slider)
 
         self.inputs = [("Examples", ExampleTable, self.setData, Default), ("Example Subset", ExampleTable, self.setSubsetData), ("Attribute Selection List", AttributeList, self.setShownAttributes)]
         self.outputs = [("Selected Examples", ExampleTable), ("Unselected Examples", ExampleTable), ("Attribute Selection List", AttributeList)]
@@ -74,11 +72,9 @@ class OWParallelCoordinates(OWVisWidget):
         self.loadSettings()
 
         #GUI
-        self.tabs = QTabWidget(self.space, 'tabWidget')
-        self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = QVGroupBox(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "Main")
-        self.tabs.insertTab(self.SettingsTab, "Settings")
+        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.GeneralTab = OWGUI.createTabPage(self.tabs, "Main")
+        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
 
         #add controls to self.controlArea widget
         self.targetValueCombo = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box = "Target Class Value", sendSelectedValue = 1, valueType = str, callback = self.updateGraph)
@@ -124,8 +120,7 @@ class OWParallelCoordinates(OWVisWidget):
         box2 = OWGUI.widgetBox(self.SettingsTab, "Sending selection")
         OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
 
-        self.safeProcessEvents()
-        self.tabs.updateGeometry()
+        self.SettingsTab.layout().addStretch(100)
 
         self.graph.selectionChangedCallback = self.selectionChanged
         self.icons = self.createAttributeIconDict()
@@ -181,16 +176,14 @@ class OWParallelCoordinates(OWVisWidget):
         if targetVal == "(None)": targetVal = None
         #self.graph.updateData(attrs[start:start+maxAttrs], targetVal, self.buildMidLabels(attrs[start:start+maxAttrs]))
         self.graph.updateData(attrs, targetVal, self.buildMidLabels(attrs), start, start + maxAttrs)
-        self.slider.repaint()
-        self.graph.update()
-        #self.graph.repaint()
+        #self.slider.repaint()
 
     def updateGraphSlider(self, *args):
         attrs = self.getShownAttributeList()
         maxAttrs = self.mainArea.width() / self.linesDistance
         start = min(self.slider.value(), len(attrs)-maxAttrs)
         self.graph.setAxisScale(QwtPlot.xBottom, start, start + maxAttrs - 1, 1)
-        self.graph.update()
+        self.graph.replot()
 
     # build a list of strings that will be shown in the middle of the parallel axis
     def buildMidLabels(self, attrs):
@@ -265,13 +258,13 @@ class OWParallelCoordinates(OWVisWidget):
         if not sameDomain:
             self.setShownAttributeList(self.data, self.attributeSelectionList)
             self.targetValueCombo.clear()
-            self.targetValueCombo.insertItem("(None)")
+            self.targetValueCombo.addItem("(None)")
 
             # update target combo
             if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
                 for val in self.data.domain.classVar.values:
-                    self.targetValueCombo.insertItem(val)
-                self.targetValueCombo.setCurrentItem(0)
+                    self.targetValueCombo.addItem(val)
+                self.targetValueCombo.setCurrentIndex(0)
         self.resetAttrManipulation()    # update up down buttons
 
     # attribute selection signal - info about which attributes to show
@@ -363,9 +356,8 @@ class OWParallelCoordinates(OWVisWidget):
         c.createDiscretePalette("Discrete Palette")
         c.createContinuousPalette("contPalette", "Continuous palette")
         box = c.createBox("otherColors", "Other Colors")
-        c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
-        box.addSpace(5)
-        box.adjustSize()
+        c.createColorButton(box, "Canvas", "Canvas color", QColor(QColor(Qt.white)))
+        box.layout().addSpacing(5)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 
@@ -373,16 +365,17 @@ class OWParallelCoordinates(OWVisWidget):
         OWWidget.saveSettings(self)
         self.optimizationDlg.saveSettings()
 
-    def destroy(self, dw = 1, dsw = 1):
+    def closeEvent(self, ce):
         self.optimizationDlg.hide()
-        OWWidget.destroy(self, dw, dsw)
+        OWWidget.closeEvent(self, ce)
+
 
 
 CORRELATION = 0
 VIZRANK = 1
 #
 # Find attribute subsets that are interesting to visualize using parallel coordinates
-class ParallelOptimization(OWBaseWidget):
+class ParallelOptimization(OWWidget):
     resultListList = [50, 100, 200, 500, 1000]
     qualityMeasure =  ["Classification accuracy", "Average correct", "Brier score"]
     testingMethod = ["Leave one out", "10-fold cross validation", "Test on learning set"]
@@ -391,15 +384,8 @@ class ParallelOptimization(OWBaseWidget):
                     "numberOfAttributes", "orderAllAttributes", "optimizationMeasure"]
 
     def __init__(self, parallelWidget, parent=None, signalManager = None):
-        OWBaseWidget.__init__(self, parent, signalManager, "Parallel Optimization Dialog", FALSE)
-
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("Parallel Optimization Dialog")
-        else:
-            self.setCaption("Qt Parallel Optimization Dialog")
-        self.topLayout = QVBoxLayout( self, 10 )
-        self.grid=QGridLayout(4,2)
-        self.topLayout.addLayout( self.grid, 10 )
+        OWWidget.__init__(self, parent, signalManager, "Parallel Optimization Dialog", FALSE)
+        self.setCaption("Parallel Optimization Dialog")
         self.parallelWidget = parallelWidget
 
         self.optimizationMeasure = 0
@@ -417,29 +403,15 @@ class ParallelOptimization(OWBaseWidget):
 
         self.loadSettings()
 
-        self.measureBox = OWGUI.radioButtonsInBox(self, self, "optimizationMeasure", ["Correlation", "VizRank"], box = "Select optimization measure", callback = self.updateGUI)
-        self.vizrankSettingsBox = OWGUI.widgetBox(self, "VizRank settings")
-        self.optimizeBox = OWGUI.widgetBox(self, "Optimize")
-        self.manageBox = OWGUI.widgetBox(self, "Manage results")
-        self.resultsBox = OWGUI.widgetBox(self, "Results")
+        self.measureBox = OWGUI.radioButtonsInBox(self.controlArea, self, "optimizationMeasure", ["Correlation", "VizRank"], box = "Select optimization measure", callback = self.updateGUI)
+        self.vizrankSettingsBox = OWGUI.widgetBox(self.controlArea, "VizRank settings")
+        self.optimizeBox = OWGUI.widgetBox(self.controlArea, "Optimize")
+        self.manageBox = OWGUI.widgetBox(self.controlArea, "Manage results")
+        self.resultsBox = OWGUI.widgetBox(self.mainArea, "Results")
 
-        self.grid.addWidget(self.measureBox,0,0)
-        self.grid.addWidget(self.vizrankSettingsBox,1,0)
-        self.grid.addWidget(self.optimizeBox,2,0)
-        self.grid.addWidget(self.manageBox,3,0)
-        self.grid.addMultiCellWidget (self.resultsBox,0,3, 1, 1)
-        self.grid.setColStretch(0, 0)
-        self.grid.setColStretch(1, 100)
-        self.grid.setRowStretch(0, 0)
-        self.grid.setRowStretch(1, 0)
-        self.grid.setRowStretch(2, 0)
-        self.grid.setRowStretch(3, 100)
-        self.vizrankSettingsBox.setMinimumWidth(200)
-
-        self.resultList = QListBox(self.resultsBox)
+        self.resultList = OWGUI.listBox(self.resultsBox, self)
         self.resultList.setMinimumSize(200,200)
         self.connect(self.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
-
 
         # remove non-existing files
         names = []
@@ -464,9 +436,11 @@ class ParallelOptimization(OWBaseWidget):
 
         #self.numberOfAttributesCombo = OWGUI.comboBoxWithCaption(self.optimizeBox, self, "numberOfAttributes", "Number of visualized attributes: ", tooltip = "Projections with this number of attributes will be evaluated", items = [x for x in range(3, 12)], sendSelectedValue = 1, valueType = int)
         self.allAttributesRadio = QRadioButton("Order all attributes", self.optimizeBox)
+        self.optimizeBox.layout().addWidget(self.allAttributesRadio)
         self.connect(self.allAttributesRadio, SIGNAL("clicked()"), self.setAllAttributeRadio)
         box = OWGUI.widgetBox(self.optimizeBox, orientation = "horizontal")
         self.subsetAttributeRadio = QRadioButton("find subsets of      ", box)
+        self.optimizeBox.layout().addWidget(self.subsetAttributeRadio)
         self.connect(self.subsetAttributeRadio, SIGNAL("clicked()"), self.setSubsetAttributeRadio)
         self.subsetAttributeEdit = OWGUI.lineEdit(box, self, "numberOfAttributes", valueType = int)
         label  = OWGUI.widgetLabel(box, "   attributes")
@@ -479,7 +453,6 @@ class ParallelOptimization(OWBaseWidget):
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
         self.connect(self.stopOptimizationButton , SIGNAL("clicked()"), self.stopOptimizationClick)
-
 
         self.clearButton = OWGUI.button(self.manageBox, self, "Clear results", self.clearResults)
         self.loadButton  = OWGUI.button(self.manageBox, self, "Load", self.loadResults)
@@ -510,14 +483,14 @@ class ParallelOptimization(OWBaseWidget):
 
     def setAllAttributeRadio(self):
         self.orderAllAttributes = 1
-        self.allAttributesRadio.setState(QButton.On)
-        self.subsetAttributeRadio.setState(QButton.Off)
+        self.allAttributesRadio.setChecked(1)
+        self.subsetAttributeRadio.setChecked(0)
         self.subsetAttributeEdit.setEnabled(0)
 
     def setSubsetAttributeRadio(self):
         self.orderAllAttributes = 0
-        self.allAttributesRadio.setState(QButton.Off)
-        self.subsetAttributeRadio.setState(QButton.On)
+        self.allAttributesRadio.setChecked(0)
+        self.subsetAttributeRadio.setChecked(1)
         self.subsetAttributeEdit.setEnabled(1)
 
     # return list of selected attributes
@@ -541,9 +514,6 @@ class ParallelOptimization(OWBaseWidget):
     def stopOptimizationClick(self):
         self.canOptimize = 0
 
-    def destroy(self, dw, dsw):
-        self.saveSettings()
-
     # get vizrank value for attributes attr1 and attr2
     def getVizRankVal(self, attr1, attr2):
         if not self.projections: return None
@@ -566,7 +536,7 @@ class ParallelOptimization(OWBaseWidget):
         self.qualityMeasureLabel.setText("Quality measure used:" )
 
         if name == None:
-            name = str(QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting projections (*.proj)", self, "", "Open Projections"))
+            name = str(QFileDialog.getOpenFileName(self, "Open Projections",  self.lastSaveDirName, "Interesting projections (*.proj)"))
             if name == "": return
 
         dirName, shortFileName = os.path.split(name)
@@ -615,7 +585,7 @@ class ParallelOptimization(OWBaseWidget):
 
         self.vizrankFileCombo.clear()
         for i in range(len(self.fileBuffer)):
-            self.vizrankFileCombo.insertItem(self.fileBuffer[i][0])
+            self.vizrankFileCombo.addItem(self.fileBuffer[i][0])
         self.fileName = shortFileName
 
         self.kNeighborsLabel.setText("Number of neighbors (k): %s" % (str(settings["kValue"])))
@@ -627,7 +597,7 @@ class ParallelOptimization(OWBaseWidget):
     def addProjection(self, val, attrList):
         index = self.findTargetIndex(val, max)
         self.allResults.insert(index, (val, attrList))
-        self.resultList.insertItem("%.3f - %s" % (val, str(attrList)), index)
+        self.resultList.addItem("%.3f - %s" % (val, str(attrList)), index)
 
 
     def findTargetIndex(self, accuracy, funct):
@@ -699,8 +669,8 @@ class ParallelOptimization(OWBaseWidget):
     def updateShownProjections(self, *args):
         self.resultList.clear()
         for i in range(len(self.allResults)):
-            self.resultList.insertItem("%.2f - %s" % (self.allResults[i][0], str(self.allResults[i][1])), i)
-        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)
+            self.resultList.addItem("%.2f - %s" % (self.allResults[i][0], str(self.allResults[i][1])), i)
+        if self.resultList.count() > 0: self.resultList.setCurrentRow(0)
 
     def clearResults(self):
         self.allResults = []
@@ -715,7 +685,7 @@ class ParallelOptimization(OWBaseWidget):
             if self.optimizationMeasure == CORRELATION: filename += " - " + "correlation"
             else:                                       filename += " - " + "vizrank"
 
-            name = str(QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Parallel projections (*.papr)", self, "", "Save Parallel Projections"))
+            name = str(QFileDialog.getSaveFileName(self, "Save Parallel Projections",  os.path.join(self.lastSaveDirName, filename), "Parallel projections (*.papr)"))
             if name == "": return
         else:
             name = filename
@@ -735,7 +705,7 @@ class ParallelOptimization(OWBaseWidget):
     def loadResults(self):
         self.clearResults()
 
-        name = str(QFileDialog.getOpenFileName( self.lastSaveDirName, "Parallel projections (*.papr)", self, "", "Open Parallel Projections"))
+        name = str(QFileDialog.getOpenFileName(self, "Open Parallel Projections",  self.lastSaveDirName, "Parallel projections (*.papr)"))
         if name == "": return
 
         dirName, shortFileName = os.path.split(name)
@@ -746,21 +716,17 @@ class ParallelOptimization(OWBaseWidget):
         while (line != ""):
             (val, attrList) = eval(line)
             self.allResults.insert(ind, (val, attrList))
-            self.resultList.insertItem("%.2f - %s" % (val, str(attrList)), ind)
+            self.resultList.addItem("%.2f - %s" % (val, str(attrList)), ind)
             line = file.readline()[:-1]
             ind+=1
         file.close()
-
-
-
 
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWParallelCoordinates()
-    a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
-
-    #save settings
-    ow.saveSettings()
+    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
+    ow.setData(data)
+    ow.handleNewSignals()
+    a.exec_()

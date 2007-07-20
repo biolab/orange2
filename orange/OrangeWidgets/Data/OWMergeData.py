@@ -5,24 +5,21 @@
 <priority>1110</priority>
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
-
+import orngOrangeFoldersQt4
 import orange
 from OWWidget import *
-from qttable import *
 import OWGUI
-
 
 ########################################################
 ## TODO: crashes if the same data is sent to both inputs
 ########################################################
-
 
 class OWMergeData(OWWidget):
 
 ##    settingsList = ["memberName"]
 
     def __init__(self, parent = None, signalManager = None, name = "Merge data"):
-        OWWidget.__init__(self, parent, signalManager, name)  #initialize base class
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
 
         # set channels
         self.inputs = [("Examples A", ExampleTable, self.onDataAInput), ("Examples B", ExampleTable, self.onDataBInput)]
@@ -35,44 +32,46 @@ class OWMergeData(OWWidget):
         self.varListB = []
         self.varA = None
         self.varB = None
+        self.lbAttrAItems = []
+        self.lbAttrBItems = []
 
         # load settings
         self.loadSettings()
-        
+
         # GUI
-        self.mainArea.setFixedWidth(0)
-        ca=QFrame(self.controlArea)
-        gl=QGridLayout(ca,2,2,5)
-        
+        w = QWidget(self)
+        self.controlArea.layout().addWidget(w)
+        grid = QGridLayout()
+        grid.setMargin(0)
+        w.setLayout(grid)
+
         # attribute A
-        boxAttrA = QVGroupBox('Attribute A', ca)
-        gl.addWidget(boxAttrA, 0,0)
-        self.lbAttrA = QListBox(boxAttrA)
-        self.connect(self.lbAttrA, SIGNAL('selectionChanged()'), self.lbAttrAChange)
+        boxAttrA = OWGUI.widgetBox(self, 'Attribute A', orientation = "vertical", addToLayout=0)
+        grid.addWidget(boxAttrA, 0,0)
+        self.lbAttrA = OWGUI.listBox(boxAttrA, self, "lbAttrAItems", callback = self.lbAttrAChange)
 
         # attribute B
-        boxAttrB = QVGroupBox('Attribute B', ca)
-        gl.addWidget(boxAttrB, 0,1)
-        self.lbAttrB = QListBox(boxAttrB)
-        self.connect(self.lbAttrB, SIGNAL('selectionChanged()'), self.lbAttrBChange)
+        boxAttrB = OWGUI.widgetBox(self, 'Attribute B', orientation = "vertical", addToLayout=0)
+        grid.addWidget(boxAttrB, 0,1)
+        self.lbAttrB = OWGUI.listBox(boxAttrB, self, "lbAttrBItems", callback = self.lbAttrBChange)
 
         # info A
-        boxDataA = QVGroupBox('Data A', ca)
-        gl.addWidget(boxDataA, 1,0)
+        boxDataA = OWGUI.widgetBox(self, 'Data A', orientation = "vertical", addToLayout=0)
+        grid.addWidget(boxDataA, 1,0)
         self.lblDataAExamples = OWGUI.widgetLabel(boxDataA, "num examples")
         self.lblDataAAttributes = OWGUI.widgetLabel(boxDataA, "num attributes")
 
         # info B
-        boxDataB = QVGroupBox('Data B', ca)
-        gl.addWidget(boxDataB, 1,1)
+        boxDataB = OWGUI.widgetBox(self, 'Data B', orientation = "vertical", addToLayout=0)
+        grid.addWidget(boxDataB, 1,1)
         self.lblDataBExamples = OWGUI.widgetLabel(boxDataB, "num examples")
         self.lblDataBAttributes = OWGUI.widgetLabel(boxDataB, "num attributes")
 
         # icons
         self.icons = self.createAttributeIconDict()
 
-        # resize        
-        self.resize(500,500)
+        # resize
+        self.resize(400,500)
 
 
     ############################################################################################################################################################
@@ -80,7 +79,7 @@ class OWMergeData(OWWidget):
     ############################################################################################################################################################
 
     def onDataAInput(self, data):
-        # set self.dataA, generate new domain if it is the same as of self.dataB.domain 
+        # set self.dataA, generate new domain if it is the same as of self.dataB.domain
         if data and self.dataB and data.domain == self.dataB.domain:
             if data.domain.classVar:
                 classVar = data.domain.classVar.clone()
@@ -106,12 +105,12 @@ class OWMergeData(OWWidget):
         # update attribute A listbox
         self.lbAttrA.clear()
         for var in self.varListA:
-            self.lbAttrA.insertItem(self.icons[var.varType], var.name)
+            self.lbAttrA.addItem(QListWidgetItem(self.icons[var.varType], var.name))
         self.sendData()
 
 
     def onDataBInput(self, data):
-        # set self.dataB, generate new domain if it is the same as of self.dataA.domain 
+        # set self.dataB, generate new domain if it is the same as of self.dataA.domain
         if data and self.dataA and data.domain == self.dataA.domain:
             if data.domain.classVar:
                 classVar = data.domain.classVar.clone()
@@ -150,7 +149,7 @@ class OWMergeData(OWWidget):
         else:
             self.lblDataAExamples.setText("No data on input A.")
             self.lblDataAAttributes.setText("")
-        
+
 
     def updateInfoB(self):
         """Updates data B info box.
@@ -219,7 +218,7 @@ class OWMergeData(OWWidget):
             etAB = orange.ExampleTable([self.dataA, etBreduced])
             etAB.name = nameA + " (merged with %s)" % nameB
             self.send("Merged Examples A+B", etAB)
-            
+
             # create example A with all values unknown
             exADK = orange.Example(self.dataA[0])
             for var in self.varListA:
@@ -250,9 +249,9 @@ class OWMergeData(OWWidget):
 
     def lbAttrAChange(self):
         if self.dataA:
-            currItem = self.lbAttrA.currentItem()
-            if currItem >= 0 and self.lbAttrA.isSelected(currItem):
-                self.varA = self.varListA[self.lbAttrA.currentItem()]
+            if self.lbAttrA.selectedItems() != []:
+                ind = self.lbAttrA.row(self.lbAttrA.selectedItems()[0])
+                self.varA = self.varListA[ind]
             else:
                 self.varA = None
         else:
@@ -262,9 +261,9 @@ class OWMergeData(OWWidget):
 
     def lbAttrBChange(self):
         if self.dataB:
-            currItem = self.lbAttrB.currentItem()
-            if currItem >= 0 and self.lbAttrB.isSelected(currItem):
-                self.varB = self.varListB[self.lbAttrB.currentItem()]
+            if self.lbAttrB.selectedItems() != []:
+                ind = self.lbAttrB.row(self.lbAttrB.selectedItems()[0])
+                self.varB = self.varListB[ind]
             else:
                 self.varB = None
         else:
@@ -273,7 +272,7 @@ class OWMergeData(OWWidget):
 
 
     ############################################################################################################################################################
-    ## Utility functions 
+    ## Utility functions
     ############################################################################################################################################################
 
     def _sp(self, l, capitalize=True):
@@ -281,7 +280,7 @@ class OWMergeData(OWWidget):
         """
         n = len(l)
         if n == 0:
-            if capitalize:                    
+            if capitalize:
                 return "No", "s"
             else:
                 return "no", "s"
@@ -293,6 +292,7 @@ class OWMergeData(OWWidget):
 
 
 if __name__=="__main__":
+    """
     import sys
     import OWDataTable, orngSignalManager
     signalManager = orngSignalManager.SignalManager(0)
@@ -319,4 +319,11 @@ if __name__=="__main__":
     signalManager.setFreeze(0)
     dt.show()
     a.exec_loop()
-
+    """
+    import sys
+    a=QApplication(sys.argv)
+    ow=OWMergeData()
+    ow.show()
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+    ow.onDataAInput(data)
+    a.exec_()

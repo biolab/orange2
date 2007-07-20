@@ -6,10 +6,9 @@
 <priority>1500</priority>
 """
 
+import orngOrangeFoldersQt4
 import orange, math
 import OWGUI, OWToolbars
-from qt import *
-from qtcanvas import *
 from OWWidget import *
 
 from ColorPalette import *
@@ -92,11 +91,11 @@ class OWDistanceMap(OWWidget):
         self.matrix = self.order = None
 
         # GUI definition
-        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
+        self.tabs = OWGUI.tabWidget(self.controlArea)
 
         # SETTINGS TAB
-        tab = QVGroupBox(self)
-        box = QVButtonGroup("Cell Size (Pixels)", tab)
+        tab = OWGUI.createTabPage(self.tabs, "Settings")
+        box = OWGUI.widgetBox(tab, "Cell Size (Pixels)")
         OWGUI.qwtHSlider(box, self, "CellWidth", label='Width: ', labelWidth=38, minValue=1, maxValue=self.maxHSize, step=1, precision=0, callback=self.drawDistanceMap)
         self.sliderVSize = OWGUI.qwtHSlider(box, self, "CellHeight", label='Height: ', labelWidth=38, minValue=1, maxValue=self.maxVSize, step=1, precision=0, callback=self.createDistanceMap)
         OWGUI.checkBox(box, self, "SquareCells", "Cells as squares", callback = self.drawDistanceMap)
@@ -105,11 +104,10 @@ class OWDistanceMap(OWWidget):
         OWGUI.qwtHSlider(tab, self, "Gamma", box="Gamma", minValue=0.1, maxValue=1, step=0.1, callback=self.drawDistanceMap)
 
         self.colorPalette = ColorPalette(tab, self, "", additionalColors =["Cell outline", "Selected cells"], callback = self.setColor)
-        self.tabs.insertTab(tab, "Settings")
 
         # FILTER TAB
-        tab = QVGroupBox(self)
-        box = QVButtonGroup("Threshold Values", tab)
+        tab = OWGUI.createTabPage(self.tabs, "Filter")
+        box = OWGUI.widgetBox(tab, "Threshold Values")
         OWGUI.checkBox(box, self, 'CutEnabled', "Enabled", callback=self.setCutEnabled)
         self.sliderCutLow = OWGUI.qwtHSlider(box, self, 'CutLow', label='Low:', labelWidth=33, minValue=-100, maxValue=0, step=0.1, precision=1, ticks=0, maxWidth=80, callback=self.drawDistanceMap)
         self.sliderCutHigh = OWGUI.qwtHSlider(box, self, 'CutHigh', label='High:', labelWidth=33, minValue=0, maxValue=100, step=0.1, precision=1, ticks=0, maxWidth=80, callback=self.drawDistanceMap)
@@ -117,24 +115,23 @@ class OWDistanceMap(OWWidget):
             self.sliderCutLow.box.setDisabled(1)
             self.sliderCutHigh.box.setDisabled(1)
 
-        box = QVButtonGroup("Merge", tab)
+        box = OWGUI.widgetBox(tab, "Merge")
         OWGUI.qwtHSlider(box, self, "Merge", label='Elements:', labelWidth=50, minValue=1, maxValue=100, step=1, callback=self.createDistanceMap, ticks=0)
         self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort", items=[x[0] for x in self.sorting],
                                          tooltip="Choose method to sort items in distance matrix.", callback=self.sortItems)
-        self.tabs.insertTab(tab, "Filter")
 
         # INFO TAB
-        tab = QVGroupBox(self)
-        box = QVButtonGroup("Annotation && Legends", tab)
+        tab = OWGUI.widgetBox(self.tabs, "Info")
+        box = OWGUI.widgetBox(tab, "Annotation && Legends")
         OWGUI.checkBox(box, self, 'ShowLegend', 'Show legend', callback=self.drawDistanceMap)
         OWGUI.checkBox(box, self, 'ShowAnnotations', 'Show annotations', callback=self.drawDistanceMap)
 
-        box = QVButtonGroup("Balloon", tab)
+        box = OWGUI.widgetBox(tab, "Balloon")
         OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon", callback=None)
         OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names", callback=None)
 
-        box = QVButtonGroup("Select", tab)
-        box2 = QHBox(box)
+        box = OWGUI.widgetBox(tab, "Select")
+        box2 = OWGUI.widgetBox(box, orientation = "horizontal")
         self.box2 = box2
         self.buttonUndo = OWToolbars.createButton(box2, 'Undo', self.actionUndo, QPixmap(OWToolbars.dlg_undo), toggle = 0)
         self.buttonRemoveAllSelections = OWToolbars.createButton(box2, 'Remove all selections', self.actionRemoveAllSelections, QPixmap(OWToolbars.dlg_clear), toggle = 0)
@@ -142,16 +139,12 @@ class OWDistanceMap(OWWidget):
         self.buttonSendSelections = OWToolbars.createButton(box2, 'Send selections', self.sendOutput, QPixmap(OWToolbars.dlg_send), toggle = 0)
         OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release", callback=None)
 
-        self.tabs.insertTab(tab, "Info")
 
         self.resize(700,400)
 
-        self.layout = QVBoxLayout(self.mainArea)
-        self.canvas = QCanvas()
+        self.canvas = QGraphicsScene()
         self.canvasView = EventfulCanvasView(self.canvas, self.mainArea, self)
-
-        self.layout.add(self.canvasView)
-
+        self.mainArea.layout().addWidget(self.canvasView)
 
         #construct selector
         self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.getCellHeight(), self.canvas)
@@ -201,7 +194,7 @@ class OWDistanceMap(OWWidget):
     def qrgbToQColor(self, color):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
         # why this was not used before so I am leaving it as it is
-        	
+
         return QColor(qRed(positiveColor(color)), qGreen(positiveColor(color)), qBlue(positiveColor(color))) # on Mac color cannot be negative number in this case so we convert it manually
 
     def getItemFromPos(self, i):
@@ -747,8 +740,6 @@ if __name__=="__main__":
     import orange
     a = QApplication(sys.argv)
     ow = OWDistanceMap()
-    a.setMainWidget(ow)
-
     ow.show()
 
     data = orange.ExampleTable(r'../../doc/datasets/wt')
@@ -756,6 +747,6 @@ if __name__=="__main__":
     matrix = computeMatrix(data)
     ow.setMatrix(matrix)
 
-    a.exec_loop()
+    a.exec_()
 
     ow.saveSettings()

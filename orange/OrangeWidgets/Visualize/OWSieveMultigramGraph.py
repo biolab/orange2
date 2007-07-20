@@ -79,7 +79,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
         newCurveKey = self.insertCurve("polygon")
         newColor = QColor()
         newColor.setRgb(0, 0, 0)
-        self.setCurveStyle(newCurveKey, QwtCurve.Lines)
+        self.setCurveStyle(newCurveKey, QwtPlotCurve.Lines)
         self.setCurveData(newCurveKey, xData, yData) 
 
         ###########
@@ -159,7 +159,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
         color = QColor(r,g,b)
         
         #print penWidth
-        key = self.addCurve('line', color, color, 0, QwtCurve.Lines, symbol = QwtSymbol.None)
+        key = self.addCurve('line', color, color, 0, QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol)
         pen = QPen(color, penWidth)
         self.setCurvePen(key, pen)
         self.setCurveData(key, xDataList, yDataList)

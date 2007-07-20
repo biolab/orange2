@@ -10,7 +10,7 @@
 # Continuize Widget
 # Turns discrete attributes into continuous
 #
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 import OWGUI
 
@@ -36,7 +36,7 @@ class OWContinuize(OWWidget):
                    ("Specified target value", -1))
 
     def __init__(self,parent=None, signalManager = None, name = "Continuizer"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Examples", ExampleTable)]
@@ -50,34 +50,35 @@ class OWContinuize(OWWidget):
         self.dataChanged = False
         self.loadSettings()
 
-        bgMultiTreatment = QVButtonGroup("Multinomial attributes", self.controlArea)
+        bgMultiTreatment = OWGUI.widgetBox(self.controlArea, "Multinomial attributes")
         OWGUI.radioButtonsInBox(bgMultiTreatment, self, "multinomialTreatment", btnLabels=[x[0] for x in self.multinomialTreats], callback=self.sendDataIf)
 
-        QWidget(self.controlArea).setFixedSize(19, 8)
+        self.controlArea.layout().addSpacing(4)
 
-        bgMultiTreatment = QVButtonGroup("Continuous attributes", self.controlArea)
+        bgMultiTreatment = OWGUI.widgetBox(self.controlArea, "Continuous attributes")
         OWGUI.radioButtonsInBox(bgMultiTreatment, self, "continuousTreatment", btnLabels=[x[0] for x in self.continuousTreats], callback=self.sendDataIf)
 
-        QWidget(self.controlArea).setFixedSize(19, 8)
+        self.controlArea.layout().addSpacing(4)
 
-        bgClassTreatment = QVButtonGroup("Discrete class attribute", self.controlArea)
+        bgClassTreatment = OWGUI.widgetBox(self.controlArea, "Discrete class attribute")
         self.ctreat = OWGUI.radioButtonsInBox(bgClassTreatment, self, "classTreatment", btnLabels=[x[0] for x in self.classTreats], callback=self.sendDataIf)
-        hbox = QHBox(bgClassTreatment)
-        QWidget(hbox).setFixedSize(19, 8)
+        hbox = OWGUI.widgetBox(bgClassTreatment, orientation = "horizontal")
+        OWGUI.separator(hbox, 19, 4)
         self.cbTargetValue = OWGUI.comboBox(hbox, self, "targetValue", label="Target Value ", items=[], orientation="horizontal", callback=self.cbTargetSelected)
 
-        QWidget(self.controlArea).setFixedSize(19, 8)
+        self.controlArea.layout().addSpacing(4)
 
-        zbbox = QVButtonGroup("Value range", self.controlArea)
+        zbbox = OWGUI.widgetBox(self.controlArea, "Value range")
         OWGUI.radioButtonsInBox(zbbox, self, "zeroBased", btnLabels=["from -1 to 1", "from 0 to 1"], callback=self.sendDataIf)
 
-        QWidget(self.controlArea).setFixedSize(19, 8)
+        self.controlArea.layout().addSpacing(4)
 
-        snbox = OWGUI.widgetBox(self.controlArea, self, "Send data")
+        snbox = OWGUI.widgetBox(self.controlArea, "Send data")
         OWGUI.button(snbox, self, "Send data", callback=self.sendData)
         OWGUI.checkBox(snbox, self, "autosend", "Send automatically", callback=self.enableAuto)
         self.data = None
-        self.adjustSize()
+        self.resize(150,300)
+        #self.adjustSize()
 
     def cbTargetSelected(self):
         self.classTreatment = 3
@@ -96,7 +97,7 @@ class OWContinuize(OWWidget):
                 self.cbTargetValue.clear()
                 if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
                     for v in data.domain.classVar.values:
-                        self.cbTargetValue.insertItem(" "+v)
+                        self.cbTargetValue.addItem(" "+v)
                     self.ctreat.setDisabled(False)
                     self.targetValue = 0
                 else:
@@ -135,8 +136,9 @@ class OWContinuize(OWWidget):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWContinuize()
-    data = orange.ExampleTable("d:\\ai\\orange\\test\\iris")
+    #data = orange.ExampleTable("d:\\ai\\orange\\test\\iris")
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
     ow.setData(data)
-    a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    a.exec_()
+    ow.saveSettings()

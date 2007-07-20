@@ -5,7 +5,7 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>30</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 import orngTree, OWGUI
 from exceptions import Exception
@@ -21,7 +21,7 @@ class OWClassificationTree(OWWidget):
     measures = (("Information Gain", "infoGain"), ("Gain Ratio", "gainRatio"), ("Gini Index", "gini"), ("ReliefF", "relief"))
 
     def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.TreeLearner),("Classification Tree", orange.TreeClassifier)]
@@ -42,14 +42,13 @@ class OWClassificationTree(OWWidget):
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        qBox = QVGroupBox(self.controlArea)
-        qBox.setTitle('Attribute selection criterion')
+        qBox = OWGUI.widgetBox(self.controlArea, 'Attribute selection criterion')
 
         self.qMea = OWGUI.comboBox(qBox, self, "estim", items = [m[0] for m in self.measures], callback = self.measureChanged)
 
-        b1 = QHBox(qBox)
+        b1 = OWGUI.widgetBox(qBox, orientation = "horizontal")
         OWGUI.separator(b1, 16, 0)
-        b2 = QVBox(b1)
+        b2 = OWGUI.widgetBox(b1)
         self.cbLimitRef, self.hbxRel1 = OWGUI.checkWithSpin(b2, self, "Limit the number of reference examples to ", 1, 1000, "limitRef", "relM")
         OWGUI.separator(b2)
         self.hbxRel2 = OWGUI.spin(b2, self, "relK", 1, 50, orientation="horizontal", label="Number of neighbours in ReliefF  ")
@@ -60,22 +59,21 @@ class OWClassificationTree(OWWidget):
 
         self.measureChanged()
 
-        self.pBox = QVGroupBox(self.controlArea)
-        self.pBox.setTitle('Pre-Pruning')
+        self.pBox = OWGUI.widgetBox(self.controlArea, 'Pre-Pruning')
 
         self.preLeafInstBox, self.preLeafInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Min. instances in leaves ", 1, 1000, "preLeafInst", "preLeafInstP")
         self.preNodeInstBox, self.preNodeInstPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with less instances than ", 1, 1000, "preNodeInst", "preNodeInstP")
         self.preNodeMajBox, self.preNodeMajPBox = OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with a majority class of (%)", 1, 100, "preNodeMaj", "preNodeMajP")
 
         OWGUI.separator(self.controlArea)
-        self.mBox = QVGroupBox(self.controlArea)
+        self.mBox = OWGUI.widgetBox(self.controlArea, 'Post-Pruning')
 
-        self.mBox.setTitle('Post-Pruning')
         OWGUI.checkBox(self.mBox, self, 'postMaj', 'Recursively merge leaves with same majority class')
         self.postMPruningBox, self.postMPruningPBox = OWGUI.checkWithSpin(self.mBox, self, "Pruning with m-estimate, m=", 0, 1000, 'postMPruning', 'postM')
 
         OWGUI.separator(self.controlArea)
         self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.setLearner, disabled=0)
+
 
     def setLearner(self):
         if hasattr(self, "btnApply"):
@@ -126,11 +124,10 @@ class OWClassificationTree(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWClassificationTree()
-    a.setMainWidget(ow)
 
-    d = orange.ExampleTable('adult_sample')
-    ow.setData(d)
+    #d = orange.ExampleTable('adult_sample')
+    #ow.setData(d)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

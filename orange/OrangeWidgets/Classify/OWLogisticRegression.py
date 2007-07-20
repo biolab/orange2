@@ -5,7 +5,7 @@
 <contact>Martin Mozina (martin.mozina(@at@)fri.uni-lj.si)</contact>
 <priority>15</priority>
 """
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 from orngLR import *
 import OWGUI
@@ -14,7 +14,7 @@ class OWLogisticRegression(OWWidget):
     settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation", "limitNumAttr"]
 
     def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):
-        OWWidget.__init__(self, parent, signalManager, name)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
         self.inputs = [("Examples", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Attributes", list)]
@@ -63,7 +63,7 @@ class OWLogisticRegression(OWWidget):
         applyButton = OWGUI.button(self.controlArea, self, "&Apply", callback = self.applyLearner)
 
         OWGUI.rubber(self.controlArea)
-        self.adjustSize()
+        #self.adjustSize()
 
         self.applyLearner()
 
@@ -113,11 +113,10 @@ class OWLogisticRegression(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWLogisticRegression()
-    a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable(r'..\..\doc\datasets\heart_disease')
-    ow.setData(dataset)
+    #dataset = orange.ExampleTable(r'..\..\doc\datasets\heart_disease')
+    #ow.setData(dataset)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()
