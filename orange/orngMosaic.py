@@ -154,9 +154,10 @@ class orngMosaic:
             return self.evaluatedAttributes
 
         if self.__class__.__name__ == "OWMosaicOptimization":
-            from qt import qApp, QWidget
+            from PyQt4.QtGui import qApp, QWidget
+            from PyQt4.QtCore import Qt
             self.setStatusBarText("Evaluating attributes...")
-            qApp.setOverrideCursor(QWidget.waitCursor)
+            qApp.setOverrideCursor(Qt.WaitCursor)
 
         try:
             # evaluate attributes using the selected attribute measure
@@ -228,7 +229,7 @@ class orngMosaic:
             if self.__class__.__name__ == "OWMosaicOptimization":
                 self.disableControls()
                 self.mosaicWidget.progressBarInit()
-                from qt import qApp
+                from PyQt4.QtGui import qApp
                 self.qApp = qApp
 
             self.startTime = time.time()
@@ -421,7 +422,7 @@ class orngMosaic:
         if not (self.data and self.data.domain.classVar and self.logits and self.classVals): return None, None
 
         if self.__class__.__name__ == "OWMosaicOptimization":
-            from qt import qApp
+            from PyQt4.QtGui import qApp
 
         usedArguments = 0
         for index in range(len(self.results)):
@@ -852,10 +853,7 @@ class orngMosaic:
     def insertItem(self, score, attrList, index, tryIndex, extraInfo = []):
         self.results.insert(index, (score, attrList, tryIndex, extraInfo))
 
-        if self.__class__.__name__ == "OWMosaicOptimization":
-            self.resultList.insertItem("%.3f : %s" % (score, self.buildAttrString(attrList)), index)
-            self.resultListIndices.insert(index, index)
-
+   
     # from a list of attributes build a nice string with attribute names
     def buildAttrString(self, attrList):
         if len(attrList) == 0: return ""
@@ -900,7 +898,7 @@ class orngMosaic:
 
         if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.data.checksum():
             if self.__class__.__name__ == "OWMosaicOptimization":
-                import qt
+                from PyQt4.QtGui import QMessageBox
                 if QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate visualizations in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                     file.close()
                     return

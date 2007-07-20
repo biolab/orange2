@@ -8,36 +8,39 @@ class OWVisWidget(OWWidget):
         return data != None and data.domain.classVar != None and data.domain.classVar.varType == orange.VarTypes.Discrete
 
     def createShowHiddenLists(self, placementTab, callback = None):
+        maxWidth = 180
         self.updateCallbackFunction = callback
         self.shownAttributes = []
         self.selectedShown = []
         self.hiddenAttributes = []
         self.selectedHidden = []
-        
+
         self.shownAttribsGroup = OWGUI.widgetBox(placementTab, " Shown Attributes " )
         self.addRemoveGroup = OWGUI.widgetBox(placementTab, 1, orientation = "horizontal" )
         self.hiddenAttribsGroup = OWGUI.widgetBox(placementTab, " Hidden Attributes ")
 
         hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
-        self.shownAttribsLB = OWGUI.listBox(hbox, self, "selectedShown", "shownAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
+        self.shownAttribsLB = OWGUI.listBox(hbox, self, "selectedShown", "shownAttributes", callback = self.resetAttrManipulation, selectionMode = QListWidget.ExtendedSelection)
+        #self.shownAttribsLB.setMaximumWidth(maxWidth)
         vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
         self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
         self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
         self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
         self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         self.buttonDOWNAttr.setMaximumWidth(20)
         self.buttonUPAttr.setMaximumWidth(20)
 
         self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrAddButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
         self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
-        self.showAllCB = OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
+        self.attrRemoveButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+        self.showAllCB = OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes)
 
-        self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
+        self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", callback = self.resetAttrManipulation, selectionMode = QListWidget.ExtendedSelection)
+        #self.hiddenAttribsLB.setMaximumWidth(maxWidth + 27)
 
 
     def resetAttrManipulation(self):
@@ -50,11 +53,11 @@ class OWVisWidget(OWWidget):
         self.attrRemoveButton.setDisabled(not self.selectedShown or self.showAllAttributes)
         if self.data and self.hiddenAttributes and self.data.domain.classVar and self.hiddenAttributes[0][0] != self.data.domain.classVar.name:
             self.showAllCB.setChecked(0)
-        
+
     def moveAttrSelection(self, labels, selection, dir):
         self.graph.insideColors = None
         self.graph.clusterClosure = None
-        
+
         labs = getattr(self, labels)
         sel = getattr(self, selection)
         mini, maxi = min(sel), max(sel)+1
@@ -73,7 +76,7 @@ class OWVisWidget(OWWidget):
     def moveAttrUP(self):
         self.moveAttrSelection("shownAttributes", "selectedShown", -1)
 
-    # move selected attribute in "Attribute Order" list one place down  
+    # move selected attribute in "Attribute Order" list one place down
     def moveAttrDOWN(self):
         self.moveAttrSelection("shownAttributes", "selectedShown", 1)
 
@@ -95,7 +98,7 @@ class OWVisWidget(OWWidget):
         self.selectedHidden = []
         self.selectedShown = []
         self.resetAttrManipulation()
-                
+
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
 
@@ -113,7 +116,7 @@ class OWVisWidget(OWWidget):
         for i in self.selectedShown:
             del newShown[i]
         self.setShownAttributeList(self.data, newShown)
-                
+
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.sendShownAttributes()

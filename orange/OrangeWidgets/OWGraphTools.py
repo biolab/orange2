@@ -1,8 +1,6 @@
-from qt import *
-try:
-    from qwt import *
-except:
-    from Qwt4 import *
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+from PyQt4.Qwt5 import *
 
 #from Numeric import *
 #from OWGraphTools import *
@@ -19,6 +17,9 @@ defaultRGBColors = [(0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0), (255, 
 
 #ColorBrewer color set - bad when there are small points but great when you have to color areas
 ColorBrewerColors = [(0, 140, 255), (228, 26, 28), (77, 175, 74), (255, 127, 0), (255, 255, 51), (152, 78, 163), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
+
+SelectionCurveRtti = QwtPlotCurve.Rtti_PlotUserItem + 123
+LegendCurveRtti = QwtPlotCurve.Rtti_PlotUserItem + 124
 
 class ColorPaletteGenerator:
     maxHueVal = 260
@@ -128,14 +129,54 @@ def addToList(list, val, ind, maxLen):
     if len(list) < maxLen:
         list.insert(len(list), (val, ind))
 
+
+#A dynamic tool tip class
+class TooltipManager:
+    # Creates a new dynamic tool tip.
+    def __init__(self, qwtplot):
+        self.qwtplot = qwtplot
+        self.positions=[]
+        self.texts=[]
+
+    # Adds a tool tip. If a tooltip with the same name already exists, it updates it instead of adding a new one.
+    def addToolTip(self,x, y,text, customX = 0, customY = 0):
+        self.positions.append((x,y, customX, customY))
+        self.texts.append(text)
+
+    #Decides whether to pop up a tool tip and which text to pop up
+    def maybeTip(self, x, y):
+        if len(self.positions) == 0: return ("", -1, -1)
+        dists = [abs(x-position[0]) + abs(y-position[1]) for position in self.positions]
+        nearestIndex = dists.index(min(dists))
+
+        intX = abs(self.qwtplot.transform(self.qwtplot.xBottom, x) - self.qwtplot.transform(self.qwtplot.xBottom, self.positions[nearestIndex][0]))
+        intY = abs(self.qwtplot.transform(self.qwtplot.yLeft, y) - self.qwtplot.transform(self.qwtplot.yLeft, self.positions[nearestIndex][1]))
+        if self.positions[nearestIndex][2] == 0 and self.positions[nearestIndex][3] == 0:   # if we specified no custom range then assume 6 pixels
+            if intX + intY < 6:  return (self.texts[nearestIndex], self.positions[nearestIndex][0], self.positions[nearestIndex][1])
+            else:                return ("", None, None)
+        else:
+            if abs(self.positions[nearestIndex][0] - x) <= self.positions[nearestIndex][2] and abs(self.positions[nearestIndex][1] - y) <= self.positions[nearestIndex][3]:
+                return (self.texts[nearestIndex], x, y)
+            else:
+                return ("", None, None)
+
+    def removeAll(self):
+        self.positions = []
+        self.texts = []
+
+
 # ####################################################################
 # used in widgets that enable to draw a rectangle or a polygon to select a subset of data points
 class SelectionCurve(QwtPlotCurve):
-    def __init__(self, parent, name = "", pen = Qt.SolidLine ):
-        QwtPlotCurve.__init__(self, parent, name)
+    def __init__(self, name = "", pen = Qt.SolidLine ):
+        QwtPlotCurve.__init__(self, name)
         self.pointArrayValid = 0
-        self.setStyle(QwtCurve.Lines)
+        self.setStyle(QwtPlotCurve.Lines)
         self.setPen(QPen(QColor(128,128,128), 1, pen))
+        self.setItemAttribute(QwtPlotItem.Legend, 0)
+
+    def rtti(self):
+        return SelectionCurveRtti
 
     def addPoint(self, xPoint, yPoint):
         xVals = []
@@ -259,13 +300,14 @@ class SelectionCurve(QwtPlotCurve):
 # a class that draws unconnected lines. first two points in the xData and yData are considered as the first line,
 # the second two points as the second line, etc.
 class UnconnectedLinesCurve(QwtPlotCurve):
-    def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
-        QwtPlotCurve.__init__(self, parent)
+    def __init__(self, name, pen = QPen(Qt.black), xData = None, yData = None):
+        QwtPlotCurve.__init__(self, name)
         if pen.width() == 0:
             pen.setWidth(1)
         self.setPen(pen)
         self.Pen = pen
-        self.setStyle(QwtCurve.Lines)
+        self.setStyle(QwtPlotCurve.Lines)
+        self.setItemAttribute(QwtPlotItem.Legend, 0)
         if xData != None and yData != None:
             self.setData(xData, yData)
 
@@ -278,17 +320,19 @@ class UnconnectedLinesCurve(QwtPlotCurve):
 
 
 class RectangleCurve(QwtPlotCurve):
-    def __init__(self, parent, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
-        QwtPlotCurve.__init__(self, parent)
+    def __init__(self, name, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
+        QwtPlotCurve.__init__(self, name)
         if pen:
             self.setPen(pen)
         if brush:
             self.setBrush(brush)
         self.Pen = pen
         self.Brush = brush
-        self.setStyle(QwtCurve.Lines)
+        self.setStyle(QwtPlotCurve.Lines)
+        self.setItemAttribute(QwtPlotItem.Legend, 0)
         if xData != None and yData != None:
             self.setData(xData, yData)
+
 
     # To show a rectangle, we have to create a closed polygon.
     # Therefore we add to each rectangle the first point (each rect therefore contains 5 points in the xData and yData)
@@ -310,15 +354,16 @@ class RectangleCurve(QwtPlotCurve):
 # data points are specified by a standard call to graph.setCurveData(key, xArray, yArray)
 # brush and pen can also be set by calls to setPen and setBrush functions
 class PolygonCurve(QwtPlotCurve):
-    def __init__(self, parent, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
-        QwtPlotCurve.__init__(self, parent)
+    def __init__(self, name, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
+        QwtPlotCurve.__init__(self, name)
         if pen:
             self.setPen(pen)
         if brush:
             self.setBrush(brush)
         self.Pen = pen
         self.Brush = brush
-        self.setStyle(QwtCurve.Lines)
+        self.setStyle(QwtPlotCurve.Lines)
+        self.setItemAttribute(QwtPlotItem.Legend, 0)
         if xData != None and yData != None:
             self.setData(xData, yData)
 
@@ -344,13 +389,14 @@ class nonTransparentMarker(QwtPlotMarker):
 # ####################################################################
 #
 class errorBarQwtPlotCurve(QwtPlotCurve):
-    def __init__(self, parent = None, text = None, connectPoints = 0, tickXw = 0.1, tickYw = 0.1, showVerticalErrorBar = 1, showHorizontalErrorBar = 0):
-        QwtPlotCurve.__init__(self, parent, text)
+    def __init__(self, text = "", connectPoints = 0, tickXw = 0.1, tickYw = 0.1, showVerticalErrorBar = 1, showHorizontalErrorBar = 0):
+        QwtPlotCurve.__init__(self, text)
         self.connectPoints = connectPoints
         self.tickXw = tickXw
         self.tickYw = tickYw
         self.showVerticalErrorBar = showVerticalErrorBar
         self.showHorizontalErrorBar = showHorizontalErrorBar
+        self.setItemAttribute(QwtPlotItem.Legend, 0)
 
     def draw(self, p, xMap, yMap, f, t):
         # save ex settings
@@ -358,7 +404,7 @@ class errorBarQwtPlotCurve(QwtPlotCurve):
 
         self.setPen( self.symbol().pen() )
         p.setPen( self.symbol().pen() )
-        if self.style() == QwtCurve.UserCurve:
+        if self.style() == QwtPlotCurve.UserCurve:
             back = p.backgroundMode()
 
             p.setBackgroundMode(Qt.OpaqueMode)
@@ -421,9 +467,9 @@ class DiscreteAxisScaleDraw(QwtScaleDraw):
 
     def label(self, value):
         index = int(round(value))
-        if index != value: return ""    # if value not an integer value return ""
-        if index >= len(self.labels) or index < 0: return ''
-        return QString(str(self.labels[index]))
+        if index != value: return QwtText("")    # if value not an integer value return ""
+        if index >= len(self.labels) or index < 0: return QwtText("")
+        return QwtText(str(self.labels[index]))
 
 # ####################################################################
 # use this class if you want to hide labels on the axis
@@ -432,4 +478,4 @@ class HiddenScaleDraw(QwtScaleDraw):
         QwtScaleDraw.__init__(self, *args)
 
     def label(self, value):
-        return QString.null
+        return QwtText()

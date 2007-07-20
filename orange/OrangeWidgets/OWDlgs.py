@@ -1,12 +1,7 @@
 import os
 from OWBaseWidget import *
 import OWGUI, OWGraphTools, OWTools
-try:
-   from qwt import QwtPlot
-except:
-   from Qwt4 import QwtPlot
-
-from qtcanvas import QCanvas
+from PyQt4.Qwt5 import *
 from ColorPalette import *
 
 class OWChooseImageSizeDlg(OWBaseWidget):
@@ -25,25 +20,22 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.loadSettings()
 
         self.space = OWGUI.widgetBox(self)
-        self.layout = QVBoxLayout(self, 8)
-        self.layout.addWidget(self.space)
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setMargin(8)
+        self.layout().addWidget(self.space)
 
-        box = QVButtonGroup("Image Size", self.space)
+        #box = QVButtonGroup(" Image Size ", self.space)
+        box = OWGUI.widgetBox(self.space, "Image Size")
         if isinstance(graph, QwtPlot):
             size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"], callback = self.updateGUI)
-
-            ind1 = OWGUI.indentedBox(box)
-            ind2 = OWGUI.indentedBox(box)
-            self.customXEdit = OWGUI.lineEdit(ind1, self, "customX", "Width:", orientation = "horizontal", valueType = int)
-            self.customYEdit = OWGUI.lineEdit(ind2, self, "customY", "Height:", orientation = "horizontal", valueType = int)
-
-            OWGUI.comboBoxWithCaption(self.space, self, "penWidthFactor", label = 'Factor:', box = "Pen width multiplication factor",  tooltip = "Set the pen width factor for all curves in the plot\n(Useful for example when the lines in the plot look to thin)\nDefault: 1", sendSelectedValue = 1, valueType = int, items = range(1,20))
-
-        elif isinstance(graph, QCanvas):
+            self.customXEdit = OWGUI.lineEdit(OWGUI.indentedBox(box), self, "customX", "Width:", orientation = "horizontal", valueType = int)
+            self.customYEdit = OWGUI.lineEdit(OWGUI.indentedBox(box), self, "customY", "Height:", orientation = "horizontal", valueType = int)
+            OWGUI.comboBoxWithCaption(self.space, self, "penWidthFactor", label = 'Factor:   ', box = " Pen width multiplication factor ",  tooltip = "Set the pen width factor for all curves in the plot\n(Useful for example when the lines in the plot look to thin)\nDefault: 1", sendSelectedValue = 1, valueType = int, items = range(1,20))
+        elif isinstance(graph, QGraphicsScene):
             OWGUI.widgetLabel(box, "Image size will be set automatically.")
 
-        self.printButton =          OWGUI.button(self.space, self, "Print", callback = self.printPic)
-        self.saveImageButton =      OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
+        #self.printButton =     OWGUI.button(self.space, self, "Print", callback = self.printPic)
+        self.saveImageButton = OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
         self.saveMatplotlibButton = OWGUI.button(self.space, self, "Save Graph As matplotlib Script", callback = self.saveToMatplotlib)
         for (text, funct) in extraButtons:
             butt = OWGUI.button(self.space, self, text, callback = funct)
@@ -52,7 +44,6 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
         self.resize(200,270)
         self.updateGUI()
-
 
     def saveImage(self, filename = None, size = None, closeDialog = 1):
         if not filename:
@@ -72,7 +63,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         if size.isEmpty(): buffer = QPixmap(self.graph.size()) # any size can do, now using the window size
         else:              buffer = QPixmap(size)
         painter.begin(buffer)
-        painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+        painter.fillRect(buffer.rect(), QBrush(QColor(Qt.white))) # make background same color as the widget's background
         self.fillPainter(painter, buffer.rect())
         painter.flush()
         painter.end()
@@ -117,7 +108,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                         horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
                         color = tuple([item.color().red()/255., item.color().green()/255., item.color().blue()/255.])
                         weight = item.font().bold() and "bold" or "normal"
-                        f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s')\n" % (item.x(), maxy-item.y(), str(item.text()), vertAlign, horAlign, color, str(item.font().family()), weight))
+                        f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s')\n" % (item.x(), maxy-item.y(), str(item.label().text()), vertAlign, horAlign, color, str(item.font().family()), weight))
 
                 f.write("# disable grid\ngrid(False)\n\n")
                 f.write("#hide axis\naxis('off')\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n")
@@ -132,33 +123,33 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         QDialog.accept(self)
 
 
-    def printPic(self):
-        printer = QPrinter()
-        size = self.getSize()
-
-        if printer.setup():
-            painter = QPainter(printer)
-            metrics = QPaintDeviceMetrics(printer)
-            height = metrics.height() - 2*printer.margins().height()
-            width = metrics.width() - 2*printer.margins().width()
-
-            factor = 1.0
-            if isinstance(self.graph, QCanvas):
-                minx,maxx,miny,maxy = self.getQCanvasBoundaries()
-                factor = min(float(width)/(maxx-minx), float(height)/(maxy-miny))
-
-            if height == 0:
-                print "Error. Height is zero. Preventing division by zero."
-                return
-            pageKvoc = width / float(height)
-            sizeKvoc = size.width() / float(size.height())
-            if pageKvoc < sizeKvoc:     rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
-            else:                       rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
-
-            self.fillPainter(painter, rect, factor)
-            painter.end()
-        self.saveSettings()
-        QDialog.accept(self)
+#    def printPic(self):
+#        printer = QPrinter()
+#        size = self.getSize()
+#
+#        if printer.setup():
+#            painter = QPainter(printer)
+#            metrics = QPaintDeviceMetrics(printer)
+#            height = metrics.height() - 2*printer.margins().height()
+#            width = metrics.width() - 2*printer.margins().width()
+#
+#            factor = 1.0
+#            if isinstance(self.graph, QCanvas):
+#                minx,maxx,miny,maxy = self.getQCanvasBoundaries()
+#                factor = min(float(width)/(maxx-minx), float(height)/(maxy-miny))
+#
+#            if height == 0:
+#                print "Error. Height is zero. Preventing division by zero."
+#                return
+#            pageKvoc = width / float(height)
+#            sizeKvoc = size.width() / float(size.height())
+#            if pageKvoc < sizeKvoc:     rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
+#            else:                       rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
+#
+#            self.fillPainter(painter, rect, factor)
+#            painter.end()
+#        self.saveSettings()
+#        QDialog.accept(self)
 
 
     def fillPainter(self, painter, rect, scale = 1.0):
@@ -173,7 +164,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                 for key in self.graph.curveKeys():
                     pen = self.graph.curve(key).pen(); pen.setWidth(pen.width()/self.penWidthFactor); self.graph.curve(key).setPen(pen)
 
-        elif isinstance(self.graph, QCanvas):
+        elif isinstance(self.graph, QGraphicsScene):
             # draw background
             self.graph.drawBackground(painter, rect)
             minx,maxx,miny,maxy = self.getQCanvasBoundaries()
@@ -190,7 +181,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                         x,y,w,h = int(rect.x()*scale), int(rect.y()*scale), int(rect.width()*scale), int(rect.height()*scale)
                         painter.setFont(item.font())
                         painter.setPen(item.color())
-                        painter.drawText(x,y,w,h,item.textFlags(), item.text())
+                        painter.drawText(x,y,w,h,item.textFlags(), item.label().text())
                         #painter.drawText(int(scale*item.x()), int(scale*item.y()), str(item.text()))
                     else:
                         painter.scale(scale, scale)
@@ -210,19 +201,13 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     # ############################################################
     # EXTRA FUNCTIONS ############################################
     def getQCanvasBoundaries(self):
-        minx,maxx,miny,maxy = 10000000,0,10000000,0
-        for item in self.graph.allItems():
-            if not item.visible(): continue
-            br = item.boundingRect()
-            minx = min(br.left(), minx)
-            maxx = max(maxx, br.right())
-            miny = min(br.top(), miny)
-            maxy = max(maxy, br.bottom())
-        return minx-10, maxx+10, miny-10, maxy+10
+        rect = self.graph.itemsBoundingRect()
+        rect = rect.adjusted(-10, -10, 10, 10)
+        return rect.left()-10, rect.right()+10, rect.bottom()-10, rect.top()+10
 
 
     def getFileName(self, defaultName, mask, extension):
-        fileName = str(QFileDialog.getSaveFileName(self.lastSaveDirName + defaultName, mask, None, "Save to..", "Save to.."))
+        fileName = str(QFileDialog.getSaveFileName(self, "Save to..", self.lastSaveDirName + defaultName, mask))
         if not fileName: return None
         if not os.path.splitext(fileName)[1][1:]: fileName = fileName + extension
 
@@ -235,7 +220,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         return fileName
 
     def getSize(self):
-        if isinstance(self.graph, QCanvas):
+        if isinstance(self.graph, QGraphicsScene):
             minx,maxx,miny,maxy = self.getQCanvasBoundaries()
             size = QSize(maxx-minx, maxy-miny)
         elif self.selectedSize == 0: size = self.graph.size()
@@ -260,7 +245,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 class ColorPalette(OWBaseWidget):
     def __init__(self,parent, caption = "Color Palette", callback = None, modal  = TRUE):
         OWBaseWidget.__init__(self, None, None, caption, modal = modal)
-        self.layout = QVBoxLayout(self, 4)
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setMargin(4)
 
         self.callback = callback
         self.counter = 1
@@ -270,14 +256,11 @@ class ColorPalette(OWBaseWidget):
         self.discreteColors = []
         self.selectedSchemaIndex = 0
 
-        self.mainArea = OWGUI.widgetBox(self, box = None)
-        self.layout.addWidget(self.mainArea)
-        self.mainArea.setSpacing(4)
+        self.mainArea = OWGUI.widgetBox(self, spacing = 4)
+        self.layout().addWidget(self.mainArea)
         self.schemaCombo = OWGUI.comboBox(self.mainArea, self, "selectedSchemaIndex", box = "Saved Profiles", callback = self.paletteSelected)
 
         self.hbox = OWGUI.widgetBox(self, orientation = "horizontal")
-        self.layout.addWidget(self.hbox)
-
         self.okButton = OWGUI.button(self.hbox, self, "OK", self.acceptChanges)
         self.cancelButton = OWGUI.button(self.hbox, self, "Cancel", self.reject)
         self.setMinimumWidth(230)
@@ -308,34 +291,21 @@ class ColorPalette(OWBaseWidget):
         return box
 
     def createColorButton(self, box, buttonName, buttonCaption, initialColor = Qt.black):
-        newbox = QHBox(box)
-        self.__dict__["buttonBox"+str(self.counter)] = newbox
-        newbox.setSpacing(5)
-        self.__dict__[buttonName] = ColorButton(self, newbox)
-        self.__dict__["buttonLabel"+str(self.counter)] = OWGUI.widgetLabel(newbox, buttonCaption)
-        self.__dict__[buttonName].setColor(initialColor)
+        self.__dict__[buttonName] = ColorButton(self, box, buttonCaption)
+        self.__dict__[buttonName].setColor(QColor(initialColor))
         self.colorButtonNames.append(buttonName)
-        self.__dict__["buttonBoxSpacing"+str(self.counter)] = QHBox(newbox)
-
-        self.__dict__[buttonName].setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed ))
-        self.__dict__["buttonLabel"+str(self.counter)].setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed ))
-
         self.counter += 1
 
 
-    def createContinuousPalette(self, paletteName, boxCaption, passThroughBlack = 0, initialColor1 = Qt.white, initialColor2 = Qt.black):
+    def createContinuousPalette(self, paletteName, boxCaption, passThroughBlack = 0, initialColor1 = QColor(Qt.white), initialColor2 = Qt.black):
         self.__dict__["buttonBox"+str(self.counter)] = OWGUI.widgetBox(self.mainArea, boxCaption)
 
         self.__dict__["paletteBox"+str(self.counter)] = OWGUI.widgetBox(self.__dict__["buttonBox"+str(self.counter)], orientation = "horizontal")
-        self.__dict__[paletteName+"Left"]  = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)])
-        self.__dict__[paletteName+"Left"].master = self
+        self.__dict__[paletteName+"Left"]  = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)], color = QColor(initialColor1))
+        #self.__dict__[paletteName+"Left"].master = self
         self.__dict__[paletteName+ "View"] = InterpolationView(self.__dict__["paletteBox"+str(self.counter)])
-        self.__dict__[paletteName+"Right"] = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)])
-        self.__dict__[paletteName+"Right"].master = self
-
-        self.__dict__[paletteName+"Left"].setColor(initialColor1)
-        self.__dict__[paletteName+"Right"].setColor(initialColor2)
-        self.__dict__["buttonBox"+str(self.counter)].addSpace(6)
+        self.__dict__[paletteName+"Right"] = ColorButton(self, self.__dict__["paletteBox"+str(self.counter)], color = QColor(initialColor2))
+        #self.__dict__[paletteName+"Right"].master = self
 
         self.__dict__[paletteName+"passThroughBlack"] = passThroughBlack
         self.__dict__[paletteName+"passThroughBlackCheckbox"] = OWGUI.checkBox(self.__dict__["buttonBox"+str(self.counter)], self, paletteName+"passThroughBlack", "Pass through black", callback = self.colorSchemaChange)
@@ -346,84 +316,78 @@ class ColorPalette(OWBaseWidget):
     # DISCRETE COLOR PALETTE
     # #####################################################
     def createDiscretePalette(self, boxCaption, colorPalette = OWGraphTools.defaultRGBColors):
-        box = OWGUI.widgetBox(self.mainArea, boxCaption)
-        hbox = OWGUI.widgetBox(box, orientation = 'horizontal')
-
-        self.discListbox = QListBox(hbox)
-
+        hbox = OWGUI.widgetBox(self.mainArea, boxCaption, orientation = 'horizontal')
+        self.discListbox = OWGUI.listBox(hbox, self)
         vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
-        self.buttLoad       = OWGUI.button(vbox, self, "D", callback = self.showPopup, tooltip="Load a predefined set of colors")
-        self.buttLoad.setMaximumWidth(20)
-        self.buttLoad.setMaximumHeight(20)
+        #self.buttLoad       = OWGUI.button(vbox, self, "D", callback = self.showPopup, tooltip="Load a predefined set of colors")
+        self.buttLoad       = OWGUI.button(vbox, self, "D", tooltip="Load a predefined set of colors", callback = self.showPopup)
+        self.buttLoad.setFixedSize(20, 20)
         buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
         buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
         buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         buttonUPAttr.setMaximumWidth(20)
-        buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
         buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         buttonDOWNAttr.setMaximumWidth(20)
-        buttonUPAttr.setMaximumWidth(20)
-        self.connect(self.discListbox, SIGNAL("doubleClicked ( QListBoxItem * )"), self.changeDiscreteColor)
+        self.connect(self.discListbox, SIGNAL("itemDoubleClicked ( QListWidgetItem *)"), self.changeDiscreteColor)
 
-        self.popupMenu = QPopupMenu(self)
-        self.popupMenu.insertItem("Load default RGB palette", self.loadRGBPalette)
-        self.popupMenu.insertItem("Load Color Brewer palette", self.loadCBPalette)
+        self.popupMenu = QMenu(self)
+        self.popupMenu.addAction("Load default RGB palette", self.loadRGBPalette)
+        self.popupMenu.addAction("Load Color Brewer palette", self.loadCBPalette)
+        #self.buttLoad.setMenu(self.popupMenu)
 
         self.discreteColors = [QColor(r,g,b) for (r,g,b) in colorPalette]
         for ind in range(len(self.discreteColors)):
-            self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
+            self.discListbox.addItem(QListWidgetItem(OWTools.ColorPixmap(self.discreteColors[ind], 14), "Color %d" % (ind)))
 
     def changeDiscreteColor(self, item):
-        ind = self.discListbox.index(item)
+        ind = self.discListbox.indexFromItem(item).row()
         color = QColorDialog.getColor(self.discreteColors[ind], self)
         if color.isValid():
-            self.discListbox.changeItem(OWTools.ColorPixmap(color, 15), "Color %d" % (ind), ind)
+            self.discListBox.item(ind).setIcon(OWTools.ColorPixmap(color, 14))
             self.discreteColors[ind] = color
 
     def loadRGBPalette(self):
         self.discListbox.clear()
         self.discreteColors = [QColor(r,g,b) for (r,g,b) in OWGraphTools.defaultRGBColors]
         for ind in range(len(self.discreteColors)):
-            self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
+            self.discListbox.addItem(QListWidgetItem(OWTools.ColorPixmap(self.discreteColors[ind], 14), "Color %d" % (ind)))
 
     def loadCBPalette(self):
         self.discListbox.clear()
         self.discreteColors = [QColor(r,g,b) for (r,g,b) in OWGraphTools.ColorBrewerColors]
         for ind in range(len(self.discreteColors)):
-            self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
+            self.discListbox.addItem(QListWidgetItem(OWTools.ColorPixmap(self.discreteColors[ind], 14), "Color %d" % (ind)))
 
     def showPopup(self):
         point = self.buttLoad.mapToGlobal(QPoint(0, self.buttLoad.height()))
-        self.popupMenu.popup(point, 0)
+        self.popupMenu.popup(point)
 
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
-        for i in range(1, self.discListbox.count()):
-            if self.discListbox.isSelected(i):
-                pixI, textI = self.discListbox.pixmap(i-1), self.discListbox.text(i)
-                pixII, textII = self.discListbox.pixmap(i), self.discListbox.text(i-1)
-                self.discListbox.insertItem(pixI, textI, i-1)
-                self.discListbox.insertItem(pixII, textII, i-1)
-                self.discListbox.removeItem(i+1)
-                self.discListbox.removeItem(i+1)
-                self.discListbox.setSelected(i-1, TRUE)
-                self.discreteColors.insert(i-1, self.discreteColors.pop(i))
+        if len(self.discListbox.selectedIndexes()) == 0: return
+        ind = self.discListbox.selectedIndexes()[0].row()
+        if ind == 0: return
+        iconI = self.discListbox.item(ind-1).icon()
+        iconII = self.discListbox.item(ind).icon()
+        self.discListbox.item(ind-1).setIcon(iconII)
+        self.discListbox.item(ind).setIcon(iconI)
+        self.discListbox.setCurrentRow(ind-1)
+        self.discreteColors.insert(ind-1, self.discreteColors.pop(ind))
 
 
     # move selected attribute in "Attribute Order" list one place down
     def moveAttrDOWN(self):
-        count = self.discListbox.count()
-        for i in range(count-2,-1,-1):
-            if self.discListbox.isSelected(i):
-                pixI, textI = self.discListbox.pixmap(i+1), self.discListbox.text(i)
-                pixII, textII = self.discListbox.pixmap(i), self.discListbox.text(i+1)
-                self.discListbox.insertItem(pixI, textI, i)
-                self.discListbox.insertItem(pixII, textII, i+1)
-                self.discListbox.removeItem(i+2)
-                self.discListbox.removeItem(i+2)
-                self.discListbox.setSelected(i+1, TRUE)
-                self.discreteColors.insert(i+1, self.discreteColors.pop(i))
+        if len(self.discListbox.selectedIndexes()) == 0: return
+        ind = self.discListbox.selectedIndexes()[0].row()
+        if ind == self.discListbox.count()-1: return
+        iconI = self.discListbox.item(ind+1).icon()
+        iconII = self.discListbox.item(ind).icon()
+        self.discListbox.item(ind+1).setIcon(iconII)
+        self.discListbox.item(ind).setIcon(iconI)
+        self.discListbox.setCurrentRow(ind+1)
+        self.discreteColors.insert(ind+1, self.discreteColors.pop(ind))
 
 
     # #####################################################
@@ -460,10 +424,9 @@ class ColorPalette(OWBaseWidget):
             schemas = [("Default", self.getCurrentState()) ]
 
         self.colorSchemas = schemas
-        for (name, sch) in schemas:
-            self.schemaCombo.insertItem(name)
+        self.schemaCombo.insertItems(0, [s[0] for s in schemas])
 
-        self.schemaCombo.insertItem("Save current palette as...")
+        self.schemaCombo.addItem("Save current palette as...")
         self.selectedSchemaIndex = selectedSchemaIndex
         self.paletteSelected()
 
@@ -476,14 +439,14 @@ class ColorPalette(OWBaseWidget):
             self.__dict__[name+"Right"].setColor(self.rgbToQColor(r))
             self.__dict__[name+"passThroughBlack"] = chk
             self.__dict__[name+"passThroughBlackCheckbox"].setChecked(chk)
-            palette = self.createPalette(self.rgbToQColor(l), self.rgbToQColor(r), chk) + 5*[Qt.white.rgb()]
+            palette = self.createPalette(self.rgbToQColor(l), self.rgbToQColor(r), chk) + 5*[QColor(Qt.white).rgb()]
             self.__dict__[name+"View"].setPalette1(palette)
 
         self.discreteColors = [self.rgbToQColor(col) for col in discPalette]
         if self.discreteColors:
             self.discListbox.clear()
             for ind in range(len(self.discreteColors)):
-                self.discListbox.insertItem(OWTools.ColorPixmap(self.discreteColors[ind], 15), "Color %d" % (ind))
+                self.discListbox.addItem(QListWidgetItem(OWTools.ColorPixmap(self.discreteColors[ind], 14), "Color %d" % (ind)))
 
     def paletteSelected(self):
         if not self.schemaCombo.count(): return
@@ -492,12 +455,11 @@ class ColorPalette(OWBaseWidget):
         if self.selectedSchemaIndex == self.schemaCombo.count()-1:
             message = "Please enter a new name for the current color schema:"
             ok = FALSE
-            while (not ok):
-                s = QInputDialog.getText("New Schema Name", message, QLineEdit.Normal)
-                ok = TRUE
-                if (s[1]==TRUE):
-                    newName = str(s[0])
-                    oldNames = [str(self.schemaCombo.text(i)).lower() for i in range(self.schemaCombo.count()-1)]
+            while not ok:
+                text, ok = QInputDialog.getText(self, "New Schema Name", message)
+                if (ok):
+                    newName = str(text)
+                    oldNames = [str(self.schemaCombo.itemText(i)).lower() for i in range(self.schemaCombo.count()-1)]
                     if newName.lower() == "default":
                         ok = FALSE
                         message = "Can not change the 'Default' schema. Please enter a different name:"
@@ -505,9 +467,9 @@ class ColorPalette(OWBaseWidget):
                         index = oldNames.index(newName.lower())
                         self.colorSchemas.pop(index)
 
-                    if (ok):
+                    if ok:
                         self.colorSchemas.insert(0, (newName, self.getCurrentState()))
-                        self.schemaCombo.insertItem(newName, 0)
+                        self.schemaCombo.insertItem(0, newName)
                         #self.schemaCombo.setCurrentItem(0)
                         self.selectedSchemaIndex = 0
                 else:
@@ -523,7 +485,7 @@ class ColorPalette(OWBaseWidget):
     def rgbToQColor(self, rgb):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
         # why this was not used before so I am leaving it as it is
-        
+
         return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
 
     def qRgbFromQColor(self, qcolor):
@@ -566,23 +528,23 @@ class ContinuousPaletteGenerator:
 if __name__== "__main__":
     a = QApplication(sys.argv)
 
-##    c = ColorPalette(None, modal = FALSE)
-##    c.createContinuousPalette("continuousPalette", "Continuous Palette")
-##    c.createDiscretePalette("Discrete Palette")
-##    box = c.createBox("otherColors", "Colors")
-##    c.createColorButton(box, "Canvas", "Canvas")
-##    box.addSpace(5)
-##    c.createColorButton(box, "Grid", "Grid")
-##    box.addSpace(5)
-##    c.createColorButton(box, "test", "ttest")
-##    box.addSpace(5)
-##    box.adjustSize()
-##    c.setColorSchemas()
-##    a.setMainWidget(c)
-##    c.show()
-##    a.exec_loop()
-
-    c = OWChooseImageSizeDlg(None)
+    c = ColorPalette(None, modal = FALSE)
+    c.createContinuousPalette("continuousPalette", "Continuous Palette")
+    c.createDiscretePalette("Discrete Palette")
+    box = c.createBox("otherColors", "Colors")
+    c.createColorButton(box, "Canvas", "Canvas")
+    box.addSpace(5)
+    c.createColorButton(box, "Grid", "Grid")
+    box.addSpace(5)
+    c.createColorButton(box, "test", "ttest")
+    box.addSpace(5)
+    box.adjustSize()
+    c.setColorSchemas()
     a.setMainWidget(c)
     c.show()
     a.exec_loop()
+    """
+    c = OWChooseImageSizeDlg(None)
+    c.show()
+    a.exec_loop()
+    """
