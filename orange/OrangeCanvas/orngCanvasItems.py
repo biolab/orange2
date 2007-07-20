@@ -2,33 +2,24 @@
 # Description:
 #    two main objects that are shown in the canvas; Line and Widget
 #
-from qt import *
-from qtcanvas import *
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 import os, sys
 ERROR = 0
 WARNING = 1
 
-class MyCanvasText(QCanvasText):
-    def __init__(self, canvas, text, x, y, flags=Qt.AlignLeft, bold=0, show=1):
-        apply(QCanvasText.__init__, (self, text, canvas))
-        self.setTextFlags(flags)
-        self.move(x,y)
-        if bold:
-            font = self.font();
-            font.setBold(1);
-            self.setFont(font)
-        if show:
-            self.show()
+widgetWidth = 68
+widgetHeight = 68
 
-class TempCanvasLine(QCanvasLine):
-    def __init__(self, canvasDlg, *args):
-        apply(QCanvasLine.__init__,(self,)+ args)
-        self.setZ(-10)
+
+class TempCanvasLine(QGraphicsLineItem):
+    def __init__(self, canvasDlg, canvas):
+        QGraphicsLineItem.__init__(self, None, canvas)
+        self.setZValue(-10)
         self.canvasDlg = canvasDlg
 
     def remove(self):
         self.hide()
-        self.setCanvas(None)
 
     # draw the line
     def drawShape(self, painter):
@@ -43,56 +34,39 @@ class TempCanvasLine(QCanvasLine):
     def printShape(self, painter):
         pass
 
-    def removeTooltip(self):
-        pass
-
-    def updateTooltip(self):
-        pass
 
     # redraw the line
-    def repaintLine(self, canvasView):
-        p1 = self.startPoint()
-        p2 = self.endPoint()
-        #canvasView.repaintContents(QRect(min(p1.x(), p2.x())-5, min(p1.y(), p2.y())-5, abs(p1.x()-p2.x())+10,abs(p1.y()-p2.y())+10))
-        canvasView.repaintContents(QRect(min(p1.x(), p2.x()), min(p1.y(), p2.y()), abs(p1.x()-p2.x()),abs(p1.y()-p2.y())))
-
-    # we need this to separate line objects and widget objects
-    def rtti(self):
-        return 1000
+##    def repaintLine(self, canvasView):
+##        p1 = self.startPoint()
+##        p2 = self.endPoint()
+##        #canvasView.repaintContents(QRect(min(p1.x(), p2.x())-5, min(p1.y(), p2.y())-5, abs(p1.x()-p2.x())+10,abs(p1.y()-p2.y())+10))
+##        #canvasView.repaintContents(QRect(min(p1.x(), p2.x()), min(p1.y(), p2.y()), abs(p1.x()-p2.x()),abs(p1.y()-p2.y())))
 
 # #######################################
 # # CANVAS LINE
 # #######################################
-class CanvasLine(QCanvasLine):
+class CanvasLine(QGraphicsLineItem):
     def __init__(self, signalManager, canvasDlg, view, outWidget, inWidget, canvas, *args):
-        apply(QCanvasLine.__init__,(self,canvas)+ args)
+        QGraphicsLineItem.__init__(self, None, canvas)
         self.signalManager = signalManager
         self.canvasDlg = canvasDlg
         self.outWidget = outWidget
         self.inWidget = inWidget
         self.view = view
-        self.setZ(-10)
+        self.setZValue(-10)
         self.colors = []
+        self.caption = ""
         outPoint = outWidget.getRightEdgePoint()
         inPoint = inWidget.getLeftEdgePoint()
-        self.setPoints(outPoint.x(), outPoint.y(), inPoint.x(), inPoint.y())
-        self.setPen(QPen(self.canvasDlg.lineColor, 5, Qt.SolidLine))
-        self.tooltipRects = []
+        #self.setLine(outPoint.x(), outPoint.y(), inPoint.x(), inPoint.y())
+        #self.setPen(QPen(self.canvasDlg.lineColor, 5, Qt.SolidLine))
+        self.updateLinePos()
 
-        self.showSignalNames = canvasDlg.settings["showSignalNames"]
-        self.text = QCanvasText("", canvas)
-        self.text.setZ(-5)
-        self.text.show()
-        self.text.setTextFlags(Qt.AlignHCenter + Qt.AlignBottom)
-        self.text.setColor(QColor(100,100,100))
 
     def remove(self):
         self.hide()
-        self.text.hide()
-        self.setCanvas(None)
-        self.text.setCanvas(None)
-        self.removeTooltip()
-        self.view.repaintContents(QRect(min(self.startPoint().x(), self.endPoint().x())-55, min(self.startPoint().y(), self.endPoint().y())-55, abs(self.startPoint().x()-self.endPoint().x())+100,abs(self.startPoint().y()-self.endPoint().y())+100))
+        self.setToolTip("")
+        #self.view.repaintContents(QRect(min(self.startPoint().x(), self.endPoint().x())-55, min(self.startPoint().y(), self.endPoint().y())-55, abs(self.startPoint().x()-self.endPoint().x())+100,abs(self.startPoint().y()-self.endPoint().y())+100))
 
     def getEnabled(self):
         signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
@@ -110,15 +84,22 @@ class CanvasLine(QCanvasLine):
                 signals.append((outName, inName))
         return signals
 
-    def drawShape(self, painter):
-        (startX, startY) = (self.startPoint().x(), self.startPoint().y())
-        (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
+    def paint(self, painter, option, widget = None):
+        painter.resetMatrix()
+        x1, x2 = self.line().x1(), self.line().x2()
+        y1, y2 = self.line().y1(), self.line().y2()
 
         if self.getEnabled(): lineStyle = Qt.SolidLine
         else:                 lineStyle = Qt.DashLine
 
         painter.setPen(QPen(self.canvasDlg.lineColor, 5 , lineStyle))
-        painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
+        painter.drawLine(x1, y1, x2, y2)
+
+        if self.canvasDlg.settings["showSignalNames"]:
+            painter.setPen(QColor(100, 100, 100))
+            x = (x1 + x2 - 200)/2.0
+            y = (y1 + y2 - 30)/2.0
+            painter.drawText(x, y, 200, 50, Qt.AlignTop | Qt.AlignHCenter, self.caption)
 
     # set the line positions based on the position of input and output widgets
     def updateLinePos(self):
@@ -126,67 +107,28 @@ class CanvasLine(QCanvasLine):
         y1 = self.outWidget.y() + 26
         x2 = self.inWidget.x() + 2
         y2 = self.inWidget.y() + 26
-        self.setPoints(x1, y1, x2, y2)
-        self.text.move((self.startPoint().x() + self.endPoint().x())/2.0, (self.startPoint().y() + self.endPoint().y()+10)/2.0)
+        self.setLine(x1, y1, x2, y2)
         self.updateTooltip()
 
-    # redraw the line
-    def repaintLine(self, canvasView):
-        p1 = self.startPoint()
-        p2 = self.endPoint()
-        canvasView.repaintContents(QRect(min(p1.x(), p2.x())-55, min(p1.y(), p2.y())-55, abs(p1.x()-p2.x())+100,abs(p1.y()-p2.y())+100))
-
-    def removeTooltip(self):
-        for rect in self.tooltipRects:
-            QToolTip.remove(self.view, rect)
-        self.tooltipRects = []
-
     def updateTooltip(self):
-        self.removeTooltip()
-        p1 = self.startPoint()
-        p2 = self.endPoint()
-        signals = self.getSignals()
-
-        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><br><hr>Signals:<br>"
-        for (outSignal, inSignal) in signals:
-            string += "<nobr> &nbsp &nbsp - " + outSignal + " --> " + inSignal + "</nobr><br>"
+        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><hr>Signals:<br>"
+        for (outSignal, inSignal) in self.getSignals():
+            string += "<nobr> &nbsp; &nbsp; - " + outSignal + " --> " + inSignal + "</nobr><br>"
         string = string[:-4]
-
-        xDiff = p2.x() - p1.x()
-        yDiff = p2.y() - p1.y()
-        count = max(xDiff, yDiff) / 20
-        for i in range(count):
-            x1 = p1.x() + (i/float(count))*xDiff - 5
-            y1 = p1.y() + (i/float(count))*yDiff - 5
-            x2 = p1.x() + ((i+1)/float(count))*xDiff + 5
-            y2 = p1.y() + ((i+1)/float(count))*yDiff + 5
-
-            rect = QRect(min(x1, x2), min(y1,y2), abs(x1-x2), abs(y1-y2))
-            self.tooltipRects.append(rect)
-            QToolTip.add(self.view, rect, string)
+        self.setToolTip(string)
 
         # print the text with the signals
-        caption = ""
-        if self.showSignalNames:
-            for (outSignal, inSignal) in signals:
-                caption += outSignal + "\n"
-        self.text.hide()
-        self.text.setText(caption)
-        self.text.show()
-        self.text.move((self.startPoint().x() + self.endPoint().x())/2.0, (self.startPoint().y() + self.endPoint().y()+25)/2.0)
-
-    # we need this to separate line objects and widget objects
-    def rtti(self):
-        return 1002
+        self.caption = "\n".join([outSignal for (outSignal, inSignal) in self.getSignals()])
+        l = self.line()
+        self.update(min(l.x1(), l.x2())-40, min(l.y1(),l.y2())-40, abs(l.x1()-l.x2())+80, abs(l.y1()-l.y2())+80)
 
 
-class CanvasWidgetState(QCanvasRectangle):
+class CanvasWidgetState(QGraphicsRectItem):
     def __init__(self, parent, canvas, view, widgetIcons):
-        QCanvasRectangle.__init__(self, canvas)
+        QGraphicsRectItem.__init__(self, None, canvas)
         self.widgetIcons = widgetIcons
         self.view = view
         self.parent = parent
-        self.setSize(100, 30)
 
         self.infoTexts = []
         self.warningTexts = []
@@ -245,13 +187,25 @@ class CanvasWidgetState(QCanvasRectangle):
         self.view.repaintContents(QRect(startX, y, 100, 40))
 
 
-
 # #######################################
 # # CANVAS WIDGET
 # #######################################
-class CanvasWidget(QCanvasRectangle):
+class CanvasWidget(QGraphicsRectItem):
     def __init__(self, signalManager, canvas, view, widget, defaultPic, canvasDlg):
-        apply(QCanvasRectangle.__init__, (self,canvas))
+        # import widget class and create a class instance
+        exec(compile("import " + widget.getFileName(), ".", "single"))
+        self.instance = eval(compile(widget.getFileName() + "." + widget.getFileName() + "(signalManager = signalManager)", ".", "eval"))
+        self.instance.setProgressBarHandler(view.progressBarHandler)   # set progress bar event handler
+        self.instance.setProcessingHandler(view.processingHandler)
+        self.instance.setWidgetStateHandler(self.refreshWidgetState)
+        self.instance._owInfo = canvasDlg.settings["owInfo"]
+        self.instance._owWarning = canvasDlg.settings["owWarning"]
+        self.instance._owError = canvasDlg.settings["owError"]
+        self.instance._owShowStatus = canvasDlg.settings["owShow"]
+        #self.instance.updateStatusBarState()
+        self.instance._useContexts = canvasDlg.settings["useContexts"]
+
+        QGraphicsRectItem.__init__(self, None, canvas)
         self.signalManager = signalManager
         self.widget = widget
         self.canvas = canvas
@@ -263,12 +217,13 @@ class CanvasWidget(QCanvasRectangle):
         if os.path.exists(os.path.join(canvasDlg.picsDir,"WidgetEdge.png")):
             self.imageEdge = QPixmap(os.path.join(canvasDlg.picsDir,"WidgetEdge.png"))
 
-        self.setSize(68, 68)
+        self.setRect(0,0, widgetWidth, widgetHeight)
         self.selected = False
         self.invalidPosition = False    # is the widget positioned over other widgets
         self.inLines = []               # list of connected lines on input
         self.outLines = []              # list of connected lines on output
         self.caption = widget.name
+        self.progressBarShown = 0
         self.xPos = 0
         self.yPos = 0
         self.oldXPos = 0
@@ -279,21 +234,6 @@ class CanvasWidget(QCanvasRectangle):
         self.isProcessing = 0   # is this widget currently processing signals
         self.widgetStateRect = CanvasWidgetState(self, canvas, view, self.canvasDlg.widgetIcons)
         self.widgetStateRect.show()
-
-        # import widget class and create a class instance
-        code = compile("import " + widget.getFileName(), ".", "single")
-        exec(code)
-        code = compile(widget.getFileName() + "." + widget.getFileName() + "(signalManager = signalManager)", ".", "eval")
-        self.instance = eval(code)
-        self.instance.setProgressBarHandler(self.view.progressBarHandler)   # set progress bar event handler
-        self.instance.setProcessingHandler(self.view.processingHandler)
-        self.instance.setWidgetStateHandler(self.refreshWidgetState)
-        self.instance._owInfo = self.canvasDlg.settings["owInfo"]
-        self.instance._owWarning = self.canvasDlg.settings["owWarning"]
-        self.instance._owError = self.canvasDlg.settings["owError"]
-        self.instance._owShowStatus = self.canvasDlg.settings["owShow"]
-        #self.instance.updateStatusBarState()
-        self.instance._useContexts = self.canvasDlg.settings["useContexts"]
 
         # do we want to restore last position and size of the widget
         if self.canvasDlg.settings["saveWidgetsPosition"]:
@@ -309,24 +249,6 @@ class CanvasWidget(QCanvasRectangle):
         else:
             self.instance.setWidgetIcon(defaultPic)
 
-        self.text = QCanvasText(self.caption, canvas)
-        self.text.show()
-        self.text.setTextFlags(Qt.AlignCenter)
-        self.updateTextCoords()
-
-        # create and hide progressbar items
-        self.progressBarRect = QCanvasRectangle(self.xPos+8, self.yPos - 20, self.width()-16, 16, canvas)
-        self.progressRect = QCanvasRectangle(self.xPos+8, self.yPos - 20, 0, 16, canvas)
-        self.progressRect.setBrush(QBrush(QColor(0,128,255)))
-        self.progressText = QCanvasText(canvas)
-        self.progressText.move(self.xPos + self.width()/2, self.yPos - 20 + 7)
-        self.progressText.setTextFlags(Qt.AlignCenter)
-        self.progressBarRect.setZ(-100)
-        self.progressRect.setZ(-50)
-        self.progressText.setZ(-10)
-
-        self.updateSettings()
-
     # read the settings if we want to show icons for info, warning, error
     def updateSettings(self):
         self.widgetStateRect.showIcons = self.canvasDlg.settings["ocShow"]
@@ -337,7 +259,6 @@ class CanvasWidget(QCanvasRectangle):
 
     def refreshWidgetState(self):
         self.widgetStateRect.updateState(self.instance.widgetState)
-
 
     # get the list of connected signal names
     def getInConnectedSignalNames(self):
@@ -356,26 +277,15 @@ class CanvasWidget(QCanvasRectangle):
         return signals
 
     def remove(self):
-        self.progressBarRect.hide()
-        self.progressRect.hide()
-        self.progressText.hide()
         self.widgetStateRect.hide()
-        self.progressBarRect.setCanvas(None)
-        self.progressRect.setCanvas(None)
-        self.progressText.setCanvas(None)
-        self.widgetStateRect.setCanvas(None)
-
         self.hide()
-        self.setCanvas(None)    # hide the widget
 
         # save settings
         if (self.instance != None):
             try:    self.instance.saveSettings()
             except: print "Unable to successfully save settings for %s widget" % (self.instance.title)
-            self.instance.hide()
+            self.instance.close()
             del self.instance
-        self.removeTooltip()
-        self.text.hide()
 
     def savePosition(self):
         self.oldXPos = self.xPos
@@ -384,47 +294,33 @@ class CanvasWidget(QCanvasRectangle):
     def restorePosition(self):
         self.setCoords(self.oldXPos, self.oldYPos)
 
-    def updateTextCoords(self):
-        self.text.move(self.xPos + 34, self.yPos + 60)
-
     def updateText(self, text):
         self.caption = str(text)
-        self.text.setText(text)
 
     def updateLinePosition(self):
         for line in self.inLines: line.updateLinePos()
         for line in self.outLines: line.updateLinePos()
 
-    def updateProgressBarPosition(self):
-        self.progressBarRect.move(self.xPos+8, self.yPos - 20)
-        self.progressRect.move(self.xPos+8, self.yPos - 20)
-        self.progressText.move(self.xPos + self.width()/2, self.yPos - 20 + 7)
-
     def setSelected(self, selected):
         self.selected = selected
-        self.repaintWidget()
-
+        #self.repaintWidget()
 
     # set coordinates of the widget
     def setCoords(self, x, y):
         if x > 0 and x < self.canvas.width():  self.xPos = x
         if y > 0 and y < self.canvas.height() - 60: self.yPos = y
-        self.move(self.xPos, self.yPos)
-        self.updateTextCoords()
+        self.setPos(self.xPos, self.yPos)
         self.updateLinePosition()
-        self.updateProgressBarPosition()
 
     def move(self, x, y):
-        QCanvasRectangle.move(self, x, y)
-        self.widgetStateRect.updateWidgetState()
-
+        QGraphicsRectItem.setPos(self, x, y)
+        self.widgetStateRect.updatePosition()
 
     # move existing coorinates by dx, dy
     def setCoordsBy(self, dx, dy):
         if self.xPos + dx > 0 and self.xPos + dx < self.canvas.width(): self.xPos = self.xPos + dx
         if self.yPos + dy > 0 and self.yPos + dy < self.canvas.height() - 60: self.yPos = self.yPos + dy
-        self.move(self.xPos, self.yPos)
-        self.updateTextCoords()
+        self.setPos(self.xPos, self.yPos)
         self.updateLinePosition()
 
     def moveToGrid(self):
@@ -437,18 +333,18 @@ class CanvasWidget(QCanvasRectangle):
     def mouseInsideLeftChannel(self, pos):
         if self.widget.getInputs() == []: return False
 
-        LBox = QRect(self.x(), self.y()+18,8,16)
-        if isinstance(pos, QPoint) and LBox.contains(pos): return True
-        elif isinstance(pos, QRect) and LBox.intersects(pos): return True
+        LBox = QRectF(self.x(), self.y()+18,8,16)
+        if isinstance(pos, QPointF) and LBox.contains(pos): return True
+        elif isinstance(pos, QRectF) and LBox.intersects(pos): return True
         else: return False
 
     # is mouse position inside the right signal channel
     def mouseInsideRightChannel(self, pos):
         if self.widget.getOutputs() == []: return False
 
-        RBox = QRect(self.x() + 60, self.y()+18,8,16)
-        if isinstance(pos, QPoint) and RBox.contains(pos): return True
-        elif isinstance(pos, QRect) and RBox.intersects(pos): return True
+        RBox = QRectF(self.x() + 60, self.y()+18,8,16)
+        if isinstance(pos, QPointF) and RBox.contains(pos): return True
+        elif isinstance(pos, QRectF) and RBox.intersects(pos): return True
         else: return False
 
 
@@ -468,52 +364,44 @@ class CanvasWidget(QCanvasRectangle):
         return QPoint(self.x()+ 68, self.y() + 26)
 
     # draw the widget
-    def drawShape(self, painter):
+    def paint(self, painter, option, widget = None):
+        painter.resetMatrix()
         if self.isProcessing:
             painter.setPen(QPen(self.canvasDlg.widgetActiveColor))
             painter.setBrush(QBrush(self.canvasDlg.widgetActiveColor))
             #painter.drawRect(self.x()+8, self.y(), 52, 52)
             painter.drawRect(self.x()+7, self.y(), 54, 54)
         elif self.selected:
-            if self.invalidPosition: color = self.red
+            if self.invalidPosition: color = Qt.red
             else:                    color = self.canvasDlg.widgetSelectedColor
             painter.setPen(QPen(color))
             painter.setBrush(QBrush(color))
-            #painter.drawRect(self.x()+8+1, self.y()+1, 50, 50)
-            #painter.drawRect(self.x()+8, self.y(), 52, 52)
             painter.drawRect(self.x()+7, self.y(), 54, 54)
-
 
         painter.drawPixmap(self.x()+2+8, self.y()+3, self.image)
 
         if self.imageEdge != None:
             if self.widget.getInputs() != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
-            if self.widget.getOutputs() != []:   painter.drawPixmap(self.x()+60, self.y() + 18, self.imageEdge)
+            if self.widget.getOutputs() != []:   painter.drawPixmap(self.x()+widgetWidth-8, self.y() + 18, self.imageEdge)
         else:
             painter.setBrush(QBrush(self.blue))
             if self.widget.getInputs() != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
-            if self.widget.getOutputs() != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
+            if self.widget.getOutputs() != []:   painter.drawRect(self.x()+widgetWidth-8, self.y() + 18, 8, 16)
 
-    """
-    def printShape(self, painter):
-        painter.setPen(QPen(self.black))
-        painter.drawRect(self.x()+8, self.y(), 52, 52)
+        # draw the label
+        painter.setPen(QPen(Qt.black))
+        midX, midY = self.x()+widgetWidth/2., self.y()+self.image.height()+7
+        painter.drawText(midX-200/2, midY, 200, 20, Qt.AlignTop | Qt.AlignHCenter, self.caption)
 
-        painter.setBrush(QBrush(self.black))
+        if self.progressBarShown:
+            rect = QRectF(self.x()+8, self.y()-20, widgetWidth-16, 16)
+            painter.setBrush(QBrush(QColor(0,0,0)))
+            painter.drawRect(rect)
+            painter.setBrush(QBrush(QColor(0,128,255)))
 
-        if self.imageEdge != None:
-            if self.widget.getInputs() != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
-            if self.widget.getOutputs() != []:   painter.drawPixmap(self.x()+60, self.y() + 18, self.imageEdge)
-        else:
-            painter.setBrush(QBrush(self.blue))
-            if self.widget.getInputs() != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
-            if self.widget.getOutputs() != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
+            painter.drawRect(QRectF(self.x()+8, self.y()-20, (widgetWidth-16)*self.progressBarValue/100., 16))
+            painter.drawText(rect, Qt.AlignCenter, "%d %%" % (self.progressBarValue))
 
-        #painter.setBrush(QBrush(self.NoBrush))
-        #rect = painter.boundingRect(0,0,200,20,0,self.caption)
-        #painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, rect.width(), rect.height(), 0, self.caption)
-        #painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
-    """
 
     def addOutLine(self, line):
         self.outLines.append(line)
@@ -544,84 +432,62 @@ class CanvasWidget(QCanvasRectangle):
             line.updateLinePos()
             #line.repaintLine(self.view)
 
-    def repaintWidget(self):
-        (x,y,w,h) = ( self.x(), self.y(), self.width(), self.height() )
-        self.view.repaintContents(QRect(x-20,y-20,w+40,h+40))
+##    def repaintWidget(self):
+##        (x,y,w,h) = ( self.x(), self.y(), self.rect().width(), self.rect().height() )
+##        self.view.repaintContents(QRect(x-20,y-20,w+40,h+40))
 
-    def repaintAllLines(self):
-        for line in self.inLines:
-            line.repaintLine(self.view)
-        for line in self.outLines:
-            line.repaintLine(self.view)
+##    def repaintAllLines(self):
+##        for line in self.inLines:
+##            line.repaintLine(self.view)
+##        for line in self.outLines:
+##            line.repaintLine(self.view)
 
     def updateTooltip(self):
-        self.removeTooltip()
-        string = "<nobr><b>" + self.caption + "</b></nobr><br><hr>Inputs:<br>"
+        string = "<nobr><b>" + self.caption + "</b></nobr><hr>Inputs:<br>"
 
-        if self.widget.getInputs() == []: string += "&nbsp &nbsp None<br>"
+        if self.widget.getInputs() == []: string += "&nbsp; &nbsp; None<br>"
         else:
             for signal in self.widget.getInputs():
                 widgets = self.signalManager.getLinkWidgetsIn(self.instance, signal.name)
                 if len(widgets) > 0:
-                    string += "<nobr> &nbsp &nbsp - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (from "
+                    string += "<nobr> &nbsp; &nbsp; - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (from "
                     for i in range(len(widgets)-1):
                         string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
                     string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
-                    string += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+                    string += "<nobr> &nbsp; &nbsp; - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
 
+        string = string[:-4]
         string += "<hr>Outputs:<br>"
-        if self.widget.getOutputs() == []: string += "&nbsp &nbsp None<br>"
+        if self.widget.getOutputs() == []: string += "&nbsp; &nbsp; None<br>"
         else:
             for signal in self.widget.getOutputs():
                 widgets = self.signalManager.getLinkWidgetsOut(self.instance, signal.name)
                 if len(widgets) > 0:
-                    string += "<nobr> &nbsp &nbsp - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (to "
+                    string += "<nobr> &nbsp; &nbsp; - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (to "
                     for i in range(len(widgets)-1):
                         string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
                     string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
-                    string += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+                    string += "<nobr> &nbsp; &nbsp; - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
         string = string[:-4]
-        self.lastRect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
-        QToolTip.add(self.view, self.lastRect, string)
-
-
-    def setViewPos(self, x, y):
-        self.viewXPos = x
-        self.viewYPos = y
-
-    def removeTooltip(self):
-        #rect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
-        #QToolTip.remove(self.view, self.rect())
-        QToolTip.remove(self.view, self.lastRect)
-
+        self.setToolTip(string)
 
     def showProgressBar(self):
-        self.progressRect.setSize(0, self.progressRect.height())
-        self.progressText.setText("0 %")
-        self.progressBarRect.show()
-        self.progressRect.show()
-        self.progressText.show()
+        self.progressBarShown = 1
+        self.progressBarValue = 0
         self.canvas.update()
 
     def hideProgressBar(self):
-        self.progressBarRect.hide()
-        self.progressRect.hide()
-        self.progressText.hide()
+        self.progressBarShown = 0
         self.canvas.update()
 
     def setProgressBarValue(self, value):
-        totalSize = self.progressBarRect.width()
-        self.progressRect.setSize(totalSize*(float(value)/100.0), self.progressRect.height())
-        self.progressText.setText(str(int(value)) + " %")
+        self.progressBarValue = value
         self.canvas.update()
 
     def setProcessing(self, value):
         self.isProcessing = value
         self.canvas.update()
-        self.repaintWidget()
-
-    def rtti(self):
-        return 1001
+##        self.repaintWidget()
 
