@@ -2,15 +2,39 @@
 # Description:
 #    signal dialog, canvas options dialog
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-#from orngCanvasItems import *
-import orngGui
+from qt import *
+from qtcanvas import *
+from copy import copy
+from string import strip
+import sys
+from orngCanvasItems import *
+from qttable import *
+
+def indentedCheckBox(text, parent):
+    b = QHBox(parent)
+    sep = QWidget(b)
+    sep.setFixedSize(10, 10)
+    return QCheckBox(text, b)
+
+
+class QCanvasIcon(QCanvasRectangle):
+    def __init__(self, canvas, fileName):
+        QCanvasRectangle.__init__(self,canvas)
+        self.pixmap = QPixmap(fileName)
+        self.setZ(100)
+
+    def setCenterPos(self, x, y):
+        self.x = x - self.pixmap.width()/2.0
+        self.y = y - self.pixmap.height()/2.0
+
+    def drawShape(self, painter):
+        if self.pixmap:
+            painter.drawPixmap(self.x, self.y, self.pixmap)
 
 # this class is needed by signalDialog to show widgets and lines
-class SignalCanvasView(QGraphicsView):
+class SignalCanvasView(QCanvasView):
     def __init__(self, dlg, *args):
-        apply(QGraphicsView.__init__,(self,) + args)
+        apply(QCanvasView.__init__,(self,) + args)
         self.dlg = dlg
         self.bMouseDown = False
         self.bLineDragging = False
@@ -23,18 +47,13 @@ class SignalCanvasView(QGraphicsView):
         self.outBoxes = []
         self.inBoxes = []
         self.texts = []
-        self.ensureVisible(0,0,1,1)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self.setRenderHint(QPainter.Antialiasing)
+
+        #self.connect(self, SIGNAL("contentsMoving(int,int)"), self.contentsMoving)
 
     def addSignalList(self, outName, inName, outputs, inputs, outIconName, inIconName):
-        for item in self.scene().items(): item.hide()
-        self.lines = []
-        self.outBoxes = []
-        self.inBoxes = []
-        self.texts = []
+        items = self.canvas().allItems()
+        for item in items: item.hide()
+        self.lines = []; self.outBoxes = []; self.inBoxes = []; self.texts = []
         xSpaceBetweenWidgets = 100  # space between widgets
         xWidgetOff = 10     # offset for widget position
         yWidgetOffTop = 10     # offset for widget position
@@ -64,112 +83,124 @@ class SignalCanvasView(QGraphicsView):
 
         # show boxes
         brush = QBrush(QColor(60,150,255))
-        self.outWidget = QGraphicsRectItem(xWidgetOff, yWidgetOffTop, width, height, None, self.dlg.canvas)
+        self.outWidget = QCanvasRectangle(xWidgetOff, yWidgetOffTop, width, height, self.dlg.canvas)
         self.outWidget.setBrush(brush)
-        self.outWidget.setZValue(-100)
-##        self.outWidget.show()
+        self.outWidget.setZ(-100)
+        self.outWidget.show()
 
-        self.inWidget = QGraphicsRectItem(xWidgetOff + width + xSpaceBetweenWidgets, yWidgetOffTop, width, height, None, self.dlg.canvas)
+        self.inWidget = QCanvasRectangle(xWidgetOff + width + xSpaceBetweenWidgets, yWidgetOffTop, width, height, self.dlg.canvas)
         self.inWidget.setBrush(brush)
-        self.inWidget.setZValue(-100)
-##        self.inWidget.show()
+        self.inWidget.setZ(-100)
+        self.inWidget.show()
 
         # if icons -> show them
         if outIconName:
-            self.outWidgetIcon = QGraphicsPixmapItem(QPixmap(outIconName), None, self.dlg.canvas)
-            self.outWidgetIcon.setPos(xWidgetOff + xIconOff, yWidgetOffTop + height/2.0 - self.outWidgetIcon.pixmap().width()/2.0)
-##            self.outWidgetIcon.show()
+            self.outWidgetIcon = QCanvasIcon(self.dlg.canvas, outIconName)
+            self.outWidgetIcon.setCenterPos(xWidgetOff + xIconOff + self.outWidgetIcon.pixmap.width()/2.0, yWidgetOffTop + height/2.0)
+            self.outWidgetIcon.show()
         if inIconName :
-            self.inWidgetIcon = QGraphicsPixmapItem(QPixmap(inIconName), None, self.dlg.canvas)
-            self.inWidgetIcon.setPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - self.inWidgetIcon.pixmap().width(), yWidgetOffTop + height/2.0 - self.inWidgetIcon.pixmap().width()/2.0)
+            self.inWidgetIcon = QCanvasIcon(self.dlg.canvas, inIconName)
+            self.inWidgetIcon.setCenterPos(xWidgetOff + xSpaceBetweenWidgets + 2*width - xIconOff - self.inWidgetIcon.pixmap.width()/2.0, yWidgetOffTop + height/2.0)
+            self.inWidgetIcon.show()
 
         # show signal boxes and text labels
         #signalSpace = (count)*ySignalSpace
         signalSpace = height
         for i in range(len(outputs)):
             y = yWidgetOffTop + ((i+1)*signalSpace)/float(len(outputs)+1)
-            box = QGraphicsRectItem(xWidgetOff + width, y - ySignalSize/2.0, xSignalSize, ySignalSize, None, self.dlg.canvas)
+            box = QCanvasRectangle(xWidgetOff + width, y - ySignalSize/2.0, xSignalSize, ySignalSize, self.dlg.canvas)
             box.setBrush(QBrush(QColor(0,0,255)))
-            box.setZValue(200)
+            box.show()
             self.outBoxes.append((outputs[i].name, box))
 
-            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outputs[i].name, xWidgetOff + width - 5, y - 7, Qt.AlignRight + Qt.AlignVCenter, bold =1, show=1))
-            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outputs[i].type, xWidgetOff + width - 5, y + 7, Qt.AlignRight + Qt.AlignVCenter, bold =0, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, outputs[i].name, xWidgetOff + width - 5, y - 7, Qt.AlignRight + Qt.AlignVCenter, bold =1, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, outputs[i].type, xWidgetOff + width - 5, y + 7, Qt.AlignRight + Qt.AlignVCenter, bold =0, show=1))
 
         for i in range(len(inputs)):
             y = yWidgetOffTop + ((i+1)*signalSpace)/float(len(inputs)+1)
-            box = QGraphicsRectItem(xWidgetOff + width + xSpaceBetweenWidgets - xSignalSize, y - ySignalSize/2.0, xSignalSize, ySignalSize, None, self.dlg.canvas)
+            box = QCanvasRectangle(xWidgetOff + width + xSpaceBetweenWidgets - xSignalSize, y - ySignalSize/2.0, xSignalSize, ySignalSize, self.dlg.canvas)
             box.setBrush(QBrush(QColor(0,0,255)))
-            box.setZValue(200)
+            box.show()
             self.inBoxes.append((inputs[i].name, box))
 
-            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inputs[i].name, xWidgetOff + width + xSpaceBetweenWidgets + 5, y - 7, Qt.AlignLeft + Qt.AlignVCenter, bold =1, show=1))
-            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inputs[i].type, xWidgetOff + width + xSpaceBetweenWidgets + 5, y + 7, Qt.AlignLeft + Qt.AlignVCenter, bold =0, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, inputs[i].name, xWidgetOff + width + xSpaceBetweenWidgets + 5, y - 7, Qt.AlignLeft + Qt.AlignVCenter, bold =1, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, inputs[i].type, xWidgetOff + width + xSpaceBetweenWidgets + 5, y + 7, Qt.AlignLeft + Qt.AlignVCenter, bold =0, show=1))
 
-        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outName, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
-        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inName, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
+        self.texts.append(MyCanvasText(self.dlg.canvas, outName, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
+        self.texts.append(MyCanvasText(self.dlg.canvas, inName, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
 
         return (2*xWidgetOff + 2*width + xSpaceBetweenWidgets, yWidgetOffTop + height + yWidgetOffBottom)
 
     def getTextWidth(self, text, bold = 0):
-        temp = QGraphicsSimpleTextItem(text, None, self.dlg.canvas)
+        temp = QCanvasText(text, self.dlg.canvas)
         if bold:
             font = temp.font()
             font.setBold(1)
             temp.setFont(font)
-        temp.hide()
-        return temp.boundingRect().width()
+        rect = temp.boundingRect()
+        return rect.width()
 
     # ###################################################################
     # mouse button was pressed
-    def mousePressEvent(self, ev):
+    def contentsMousePressEvent(self, ev):
         self.bMouseDown = 1
-        point = self.mapToScene(ev.pos())
-        activeItem = self.scene().itemAt(QPointF(ev.pos()))
-        if type(activeItem) == QGraphicsRectItem and activeItem not in [self.outWidget, self.inWidget]:
+        activeItems = self.canvas().collisions(QRect(ev.pos().x()-1, ev.pos().y()-1,2,2))
+
+        if activeItems == []: return
+        box = self.findItem(activeItems, QCanvasRectangle)
+        if box and box != self.outWidget and box != self.inWidget:
             self.bLineDragging = 1
-            self.tempLine = QGraphicsLineItem(None, self.dlg.canvas)
-            self.tempLine.setLine(point.x(), point.y(), point.x(), point.y())
+            self.tempLine = QCanvasLine(self.dlg.canvas)
+            self.tempLine.setPoints(ev.pos().x(), ev.pos().y(), ev.pos().x(), ev.pos().y())
             self.tempLine.setPen(QPen(QColor(0,255,0), 1))
-            self.tempLine.setZValue(-300)
+            self.tempLine.setZ(-120)
+            self.tempLine.show()
             return
-        elif type(activeItem) == QGraphicsLineItem:
-            for (line, outName, inName, outBox, inBox) in self.lines:
-                if line == activeItem:
+
+        line = self.findItem(activeItems, QCanvasLine)
+        if line:
+            for (Line, outName, inName, outBox, inBox) in self.lines:
+                if Line == line:
                     self.dlg.removeLink(outName, inName)
                     return
 
     # ###################################################################
     # mouse button was released #########################################
-    def mouseMoveEvent(self, ev):
+    def contentsMouseMoveEvent(self, ev):
         if self.bLineDragging:
-            curr = self.mapToScene(ev.pos())
-            start = self.tempLine.line().p1()
-            self.tempLine.setLine(start.x(), start.y(), curr.x(), curr.y())
-            self.scene().update()
+            start = self.tempLine.startPoint()
+            self.tempLine.setPoints(start.x(), start.y(), ev.pos().x(), ev.pos().y())
+            self.canvas().update()
 
     # ###################################################################
     # mouse button was released #########################################
-    def mouseReleaseEvent(self, ev):
+    def contentsMouseReleaseEvent(self, ev):
         if self.bLineDragging:
             self.bLineDragging = 0
-            activeItem = self.scene().itemAt(QPointF(ev.pos()))
+            activeItems = self.canvas().collisions(QRect(ev.pos().x()-1, ev.pos().y()-1,2,2))
 
-            if type(activeItem) == QGraphicsRectItem:
-                activeItem2 = self.scene().itemAt(self.tempLine.line().p1())
-                if activeItem.x() < activeItem2.x(): outBox = activeItem; inBox = activeItem2
-                else:                                outBox = activeItem2; inBox = activeItem
+            box = self.findItem(activeItems, QCanvasRectangle)
+            if box:
+                startItems = self.canvas().collisions(QRect(self.tempLine.startPoint().x()-1, self.tempLine.startPoint().y()-1,2,2))
+                box2 = self.findItem(startItems, QCanvasRectangle)
+                if box.x() < box2.x(): outBox = box; inBox = box2
+                else:                  outBox = box2; inBox = box
                 outName = None; inName = None
                 for (name, box) in self.outBoxes:
                     if box == outBox: outName = name
                 for (name, box) in self.inBoxes:
                     if box == inBox: inName = name
-                if outName != None and inName != None:
-                    self.dlg.addLink(outName, inName)
+                if outName != None and inName != None: self.dlg.addLink(outName, inName)
 
             self.tempLine.hide()
-            self.scene().update()
+            self.tempLine.setCanvas(None)
+            self.canvas().update()
 
+
+    def findItem(self, items, wantedType):
+        for item in items:
+            if isinstance(item, wantedType): return item
+        return None
 
     def addLink(self, outName, inName):
         outBox = None; inBox = None
@@ -180,14 +211,12 @@ class SignalCanvasView(QGraphicsView):
         if outBox == None or inBox == None:
             print "error adding link. Data = ", outName, inName
             return
-        line = QGraphicsLineItem(None, self.dlg.canvas)
-        outRect = outBox.rect()
-        inRect = inBox.rect()
-        line.setLine(outRect.x() + outRect.width()-2, outRect.y() + outRect.height()/2.0, inRect.x()+2, inRect.y() + inRect.height()/2.0)
+        line = QCanvasLine(self.dlg.canvas)
+        line.setPoints(outBox.x() + outBox.width()-2, outBox.y() + outBox.height()/2.0, inBox.x()+2, inBox.y() + inBox.height()/2.0)
         line.setPen(QPen(QColor(0,255,0), 6))
-        line.setZValue(100)
-##        line.show()
-        self.scene().update()
+        line.setZ(-120)
+        line.show()
+        self.canvas().update()
         self.lines.append((line, outName, inName, outBox, inBox))
 
 
@@ -195,8 +224,9 @@ class SignalCanvasView(QGraphicsView):
         for (line, outN, inN, outBox, inBox) in self.lines:
             if outN == outName and inN == inName:
                 line.hide()
+                line.setCanvas(None)
                 self.lines.remove((line, outN, inN, outBox, inBox))
-                self.scene().update()
+                self.canvas().update()
                 return
 
 
@@ -207,29 +237,58 @@ class SignalDialog(QDialog):
     def __init__(self, canvasDlg, *args):
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-
+        self.topLayout = QVBoxLayout( self, 10 )
         self.signals = []
         self._links = []
         self.allSignalsTaken = 0
 
         # GUI
-        self.setWindowTitle('Connect Signals')
-        self.setLayout(QVBoxLayout())
+        self.resize(515,286)
+        if (int(qVersion()[0]) >= 3):
+            self.setName('Connect Signals')
+            self.setCaption(self.tr("Connect Signals"))
+        else:
+            self.setName('Qt Connect Signals')
+            self.setCaption(self.tr("Qt Connect Signals"))
 
-        self.canvasGroup = orngGui.widgetBox(self, 1)
-        self.canvas = QGraphicsScene(0,0,1000,1000)
+        self.grid = QGridLayout( 2, 1 )
+        self.topLayout.addLayout( self.grid, 10 )
+
+        self.canvasGroup = QHGroupBox("", self)
+        self.canvas = QCanvas(1000,1000)
         self.canvasView = SignalCanvasView(self, self.canvas, self.canvasGroup)
-        self.canvasGroup.layout().addWidget(self.canvasView)
+        self.grid.addWidget(self.canvasGroup, 1,1)
 
-        buttons = orngGui.widgetBox(self, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
 
-        self.buttonHelp = orngGui.button(buttons, self, "&Help")
-        buttons.layout().addStretch(1)
-        self.buttonClearAll = orngGui.button(buttons, self, "Clear &All", callback = self.clearAll)
-        self.buttonOk = orngGui.button(buttons, self, "&OK", callback = self.accept)
+        LayoutWidget = QWidget(self,'Layout1')
+        LayoutWidget.setGeometry(QRect(20,240,476,33))
+        self.grid.addWidget(LayoutWidget, 2,1)
+        Layout1 = QHBoxLayout(LayoutWidget)
+        Layout1.setSpacing(6)
+        Layout1.setMargin(0)
+
+        #self.buttonHelp = QPushButton("&Help", LayoutWidget)
+        #self.buttonHelp.setAutoDefault(1)
+        #Layout1.addWidget(self.buttonHelp)
+
+        self.buttonClearAll = QPushButton("Clear &All", LayoutWidget)
+        Layout1.addWidget(self.buttonClearAll)
+
+        spacer = QSpacerItem(20,20,QSizePolicy.Expanding,QSizePolicy.Minimum)
+        Layout1.addItem(spacer)
+
+        self.buttonOk = QPushButton("&OK", LayoutWidget)
         self.buttonOk.setAutoDefault(1)
         self.buttonOk.setDefault(1)
-        self.buttonCancel = orngGui.button(buttons, self, "&Cancel", callback = self.reject)
+        Layout1.addWidget(self.buttonOk)
+
+        self.buttonCancel = QPushButton("&Cancel", LayoutWidget)
+        self.buttonCancel.setAutoDefault(1)
+        Layout1.addWidget(self.buttonCancel)
+
+        self.connect(self.buttonClearAll,SIGNAL('clicked()'),self.clearAll)
+        self.connect(self.buttonOk,SIGNAL('clicked()'),self,SLOT('accept()'))
+        self.connect(self.buttonCancel,SIGNAL('clicked()'),self,SLOT('reject()'))
 
     def clearAll(self):
         while self._links != []:
@@ -239,8 +298,8 @@ class SignalDialog(QDialog):
         self.outWidget = outWidget
         self.inWidget = inWidget
         (width, height) = self.canvasView.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.getOutputs(), inWidget.widget.getInputs(), outWidget.widget.getFullIconName(), inWidget.widget.getFullIconName())
-        self.canvas.setSceneRect(0, 0, width, height)
-        self.resize(width+50, height+80)
+        self.canvas.resize(width, height)
+        self.resize(width+55, height+90)
 
     def countCompatibleConnections(self, outputs, inputs, outInstance, inInstance, outType, inType):
         count = 0
@@ -264,6 +323,7 @@ class SignalDialog(QDialog):
                     existsBetter = 1
                     betterOutSignal = outS
                     betterInSignal = inS
+
         return existsBetter, betterOutSignal, betterInSignal
 
 
@@ -278,7 +338,7 @@ class SignalDialog(QDialog):
                 if inType == None:
                     continue        #print "Unable to find signal type for signal %s. Check the definition of the widget." % (inS.name)
                 if issubclass(outType, inType):
-                        possibleLinks.append((outS.name, inS.name))
+                    possibleLinks.append((outS.name, inS.name))
         return possibleLinks
 
     def addDefaultLinks(self):
@@ -295,7 +355,7 @@ class SignalDialog(QDialog):
         inConnected = self.inWidget.getInConnectedSignalNames()
         outConnected = self.outWidget.getOutConnectedSignalNames()
 
-        # input connections that can be simultaneously connected to multiple outputs are not to be considered as already connected
+        # input connections that can be simultaneously connected to multiple outputs are not to be considered as already connected 
         for i in inConnected[::-1]:
             if not self.inWidget.instance.signalIsOnlySingleConnection(i):
                 inConnected.remove(i)
@@ -316,7 +376,7 @@ class SignalDialog(QDialog):
         all = pl1 + pl2 + pl3 + pl4
 
         if not all: return 0
-
+        
         # try to find a link to any inputs that hasn't been previously connected
         self.allSignalsTaken = 1
         for (o,i) in all:
@@ -330,7 +390,7 @@ class SignalDialog(QDialog):
         # there are multiple possible connections if we have in the same priority class more than one possible unconnected link
         for pl in [pl1, pl2, pl3, pl4]:
             #if len(pl) > 1 and sum([i not in inConnected for (o,i) in pl]) > 1: # if we have more than one valid
-            if len(pl) > 1:     # if we have more than one valid
+            if len(pl) > 1:     # if we have more than one valid 
                 self.multiplePossibleConnections = 1
             if len(pl) > 0:     # when we find a first non-empty list we stop searching
                 break
@@ -368,25 +428,13 @@ class SignalDialog(QDialog):
         return self._links
 
 
-class ColorIcon(QToolButton):
+class ColorIcon(QPushButton):
     def __init__(self, parent, color):
-        QToolButton.__init__(self, parent)
+        QPushButton.__init__(self, parent, "")
         self.color = color
+        self.parent = parent
         self.setMaximumSize(20,20)
         self.connect(self, SIGNAL("clicked()"), self.showColorDialog)
-        self.updateColor()
-
-    def updateColor(self):
-        pixmap = QPixmap(16,16)
-        painter = QPainter()
-        painter.begin(pixmap)
-        painter.setPen(QPen(self.color))
-        painter.setBrush(QBrush(self.color))
-        painter.drawRect(0, 0, 16, 16);
-        painter.end()
-        self.setIcon(QIcon(pixmap))
-        self.setIconSize(QSize(16,16))
-
 
     def drawButtonLabel(self, painter):
         painter.setBrush(QBrush(self.color))
@@ -394,10 +442,9 @@ class ColorIcon(QToolButton):
         painter.drawRect(3, 3, self.width()-6, self.height()-6)
 
     def showColorDialog(self):
-        color = QColorDialog.getColor(self.color, self)
+        color = QColorDialog.getColor(self.color, self.parent)
         if color.isValid():
             self.color = color
-            self.updateColor()
             self.repaint()
 
 # canvas dialog
@@ -405,143 +452,183 @@ class CanvasOptionsDlg(QDialog):
     def __init__(self, canvasDlg, *args):
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        self.setWindowTitle("Canvas Options")
-        self.topLayout = QVBoxLayout(self)
-        self.topLayout.setSpacing(0)
-        self.resize(500,500)
+        if (int(qVersion()[0]) >= 3):
+            if sys.platform == "darwin":
+                self.setCaption("Preferences")
+            else:
+                self.setCaption("Canvas Options")
+        else:
+            if sys.platform == "darwin":
+                self.setCaption("Qt Preferences")
+            else:
+                self.setCaption("Qt Canvas Options")
+        #self.controlArea = QVBoxLayout (self)
+        self.topLayout = QVBoxLayout( self, 10 )
+        self.resize(500,450)
 
-        self.tabs = QTabWidget(self)
-        GeneralTab = orngGui.widgetBox(self.tabs, removeMargin = 0)
-        ExceptionsTab = orngGui.widgetBox(self.tabs, removeMargin = 0)
-        TabOrderTab = orngGui.widgetBox(self.tabs, removeMargin = 0)
-
-        self.tabs.addTab(GeneralTab, "General")
-        self.tabs.addTab(ExceptionsTab, "Exception handling")
-        self.tabs.addTab(TabOrderTab, "Widget tab order")
+        self.tabs = QTabWidget(self, 'tabWidget')
+        GeneralTab = QVGroupBox(self.tabs)
+        ExceptionsTab = QVGroupBox(self.tabs)
+        TabOrderTab = QVGroupBox(self.tabs)
+        self.tabs.insertTab(GeneralTab, "General")
+        self.tabs.insertTab(ExceptionsTab, "Output Handling")
+        self.tabs.insertTab(TabOrderTab, "Widget Tab Order")
 
         # #################################################################
         # GENERAL TAB
-        generalBox = orngGui.widgetBox(GeneralTab, "General Options")
-        self.snapToGridCB = orngGui.checkBox(generalBox, "Snap widgets to grid")
-        self.useLargeIconsCB = orngGui.checkBox(generalBox, "Show widgets using large icons and text")
-        self.writeLogFileCB  = orngGui.checkBox(generalBox, "Write content of Output window to log file")
-        self.showSignalNamesCB = orngGui.checkBox(generalBox, "Show signal names between widgets")
-        self.dontAskBeforeCloseCB= orngGui.checkBox(generalBox, "Don't ask to save schema before closing")
-        self.autoSaveSchemasOnCloseCB = orngGui.checkBox(generalBox, "Automatically save temporary schemas on close")
-        self.saveWidgetsPositionCB = orngGui.checkBox(generalBox, "Save size and position of widgets")
-        self.useContextsCB = orngGui.checkBox(generalBox, "Use context settings")
+        generalBox = QVGroupBox(GeneralTab)
+        generalBox.setTitle("General Options")
+        self.snapToGridCB = QCheckBox("Snap widgets to grid", generalBox)
+        self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", generalBox)
+        self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", generalBox)
+        self.showSignalNamesCB = QCheckBox("Show signal names between widgets", generalBox)
+        self.dontAskBeforeCloseCB= QCheckBox("Don't ask to save schema before closing", generalBox)
+        self.autoSaveSchemasOnCloseCB = QCheckBox("Automatically save temporary schemas on close", generalBox)
+        self.saveWidgetsPositionCB = QCheckBox("Save size and position of widgets", generalBox)
+        self.useContextsCB = QCheckBox("Use context settings", generalBox)
+##        hb = QHBox(generalBox)
+##        sep = QWidget(hb)
+##        sep.setFixedWidth(30)
+##        self.autoLoadSchemasOnStartCB = QCheckBox("Automatically reload last schema", hb)
 
         validator = QIntValidator(self)
         validator.setRange(0,10000)
 
-        canvasSizeBox = orngGui.widgetBox(GeneralTab, "Default Size of Orange Canvas")
-        self.widthEdit = orngGui.lineEdit(canvasSizeBox, "Width:  ", orientation='horizontal', validator = validator )
-        self.heightEdit = orngGui.lineEdit(canvasSizeBox, "Height: ", orientation='horizontal', validator = validator)
+        canvasSizeBox = QVGroupBox(GeneralTab)
+        canvasSizeBox.setTitle("Default Size of Orange Canvas")
+        widthBox = QHBox(canvasSizeBox)
+        widthLabel = QLabel("Width:  ", widthBox)
+        self.widthEdit = QLineEdit(widthBox)
+        self.widthEdit.setValidator(validator)
 
-        colorsBox = orngGui.widgetBox(GeneralTab, "Set Colors")
-        if canvasDlg:
-            selectedWidgetBox = orngGui.widgetBox(colorsBox, orientation = "horizontal")
-            self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)
-            selectedWidgetBox.layout().addWidget(self.selectedWidgetIcon)
-            selectedWidgetLabel = orngGui.widgetLabel(selectedWidgetBox, " Selected Widget")
+        heightBox = QHBox(canvasSizeBox)
+        heightLabel = QLabel("Height: ", heightBox)
+        self.heightEdit = QLineEdit(heightBox)
+        self.heightEdit.setValidator(validator)
 
-            activeWidgetBox = orngGui.widgetBox(colorsBox, orientation = "horizontal")
-            self.activeWidgetIcon = ColorIcon(activeWidgetBox, canvasDlg.widgetActiveColor)
-            activeWidgetBox.layout().addWidget(self.activeWidgetIcon)
-            selectedWidgetLabel = orngGui.widgetLabel(activeWidgetBox, " Active Widget")
+        colorsBox = QVGroupBox(GeneralTab)
+        colorsBox.setTitle("Set Colors For...")
 
-            lineBox = orngGui.widgetBox(colorsBox, orientation = "horizontal")
-            self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
-            lineBox.layout().addWidget(self.lineIcon)
-            selectedWidgetLabel = orngGui.widgetLabel(lineBox, " Lines")
-        GeneralTab.layout().addStretch(1)
+        selectedWidgetBox = QHBox(colorsBox)
+        self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)
+        selectedWidgetLabel = QLabel(" Selected Widget", selectedWidgetBox)
+
+        activeWidgetBox = QHBox(colorsBox)
+        self.activeWidgetIcon = ColorIcon(activeWidgetBox, canvasDlg.widgetActiveColor)
+        activeWidgetLabel = QLabel(" Active Widget", activeWidgetBox)
+
+        lineBox = QHBox(colorsBox)
+        self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
+        lineLabel = QLabel(" Lines", lineBox)
+
 
         # #################################################################
         # EXCEPTION TAB
-        exceptions = orngGui.widgetBox(ExceptionsTab, "Exceptions")
+        exceptions = QVGroupBox("Exceptions", ExceptionsTab)
         #self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
-        self.focusOnCatchExceptionCB = orngGui.checkBox(exceptions, 'Focus output window on catch')
-        self.printExceptionInStatusBarCB = orngGui.checkBox(exceptions, 'Print last exception in status bar')
+        self.focusOnCatchExceptionCB = QCheckBox('Focus output window on catch', exceptions)
+        self.printExceptionInStatusBarCB = QCheckBox('Print last exception in status bar', exceptions)
 
-        output = orngGui.widgetBox(ExceptionsTab, "System output")
+        output = QVGroupBox("System output", ExceptionsTab)
         #self.catchOutputCB = QCheckBox('Catch system output', output)
-        self.focusOnCatchOutputCB = orngGui.checkBox(output, 'Focus output window on system output')
-        self.printOutputInStatusBarCB = orngGui.checkBox(output, 'Print last system output in status bar')
+        self.focusOnCatchOutputCB = QCheckBox('Focus output window on system output', output)
+        self.printOutputInStatusBarCB = QCheckBox('Print last system output in status bar', output)
 
-        hboxExc = orngGui.widgetBox(ExceptionsTab, orientation="horizontal")
-        outputCanvas = orngGui.widgetBox(hboxExc, "Canvas Info Handling")
-        outputWidgets = orngGui.widgetBox(hboxExc, "Widget Info Handling")
-        self.ocShow = orngGui.checkBox(outputCanvas, 'Show icon above widget for...')
-        self.ocInfo = orngGui.checkBox(outputCanvas, 'Information', indent = 10)
-        self.ocWarning = orngGui.checkBox(outputCanvas, 'Warnings', indent = 10)
-        self.ocError = orngGui.checkBox(outputCanvas, 'Errors', indent = 10)
+        hbox = QHBox(ExceptionsTab)
+        hbox.layout().setSpacing(5)
+        outputCanvas = QVGroupBox("Canvas Info Handling", hbox)
+        outputWidgets = QVGroupBox("Widget Info Handling", hbox)
+        self.ocShow = QCheckBox('Show icon above widget for...', outputCanvas)
+        self.ocInfo = indentedCheckBox('Information', outputCanvas)
+        self.ocWarning = indentedCheckBox('Warnings', outputCanvas)
+        self.ocError = indentedCheckBox('Errors', outputCanvas)
 
-        self.owShow = orngGui.checkBox(outputWidgets, 'Show statusbar info for...')
-        self.owInfo = orngGui.checkBox(outputWidgets, 'Information', indent = 10)
-        self.owWarning = orngGui.checkBox(outputWidgets, 'Warnings', indent = 10)
-        self.owError = orngGui.checkBox(outputWidgets, 'Errors', indent = 10)
+        self.owShow = QCheckBox('Show statusbar info for...', outputWidgets)
+        self.owInfo = indentedCheckBox('Information', outputWidgets)
+        self.owWarning = indentedCheckBox('Warnings', outputWidgets)
+        self.owError = indentedCheckBox('Errors', outputWidgets)
 
-        verbosityBox = orngGui.widgetBox(ExceptionsTab, "Verbosity", orientation = "horizontal")
-        verbosityBox.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))
-        self.verbosityCombo = orngGui.comboBox(verbosityBox, label = "Set level of widget output: ", orientation='horizontal', items=["Small", "Medium", "High"])
-        ExceptionsTab.layout().addStretch(1)
+        verbosity = QHGroupBox("Verbosity", ExceptionsTab)
+        QLabel("Set level of widget output: ", verbosity)
+        self.verbosityCombo = QComboBox(verbosity)
+        self.verbosityCombo.insertItem("Small")
+        self.verbosityCombo.insertItem("Medium")
+        self.verbosityCombo.insertItem("High")
 
         # #################################################################
-        # TAB ORDER TAB
-        tabOrderBox = orngGui.widgetBox(TabOrderTab, "Set Order of Widget Categories", orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
-        self.tabOrderList = QListWidget(tabOrderBox)
-        self.tabOrderList.setAcceptDrops(True)
-
-        tabOrderBox.layout().addWidget(self.tabOrderList)
-        self.tabOrderList.setSelectionMode(QListWidget.SingleSelection)
-
-        w = orngGui.widgetBox(tabOrderBox, sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.upButton = orngGui.button(w, self, "Up", callback = self.moveUp)
-        self.downButton = orngGui.button(w, self, "Down", callback = self.moveDown)
-        w.layout().addSpacing(20)
-        self.removeButton = orngGui.button(w, self, "Remove", callback = self.removeCategory)
-        w.layout().addStretch(1)
+        # WIDGET TAB ORDER
+        caption = QLabel("Set order of widget categories", TabOrderTab)
+        hbox1 = QHBox(TabOrderTab)
+        hbox1.layout().setSpacing(5)
+        self.tabOrderList = QListBox(hbox1)
+        self.tabOrderList.setSelectionMode(QListBox.Single)
+        hbox2 = QVBox(hbox1)
+        hbox2.layout().setSpacing(5)
+        self.upButton = QPushButton("Up", hbox2)
+        self.downButton = QPushButton("Down", hbox2)
+        self.removeButton = QPushButton("Remove", hbox2)
+        self.upButton.setMaximumWidth(60)
+        self.downButton.setMaximumWidth(60)
+        self.removeButton.setMaximumWidth(60)
+        sep = QWidget(hbox2)
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred))
+        self.connect(self.upButton, SIGNAL("clicked()"), self.moveUp)
+        self.connect(self.downButton, SIGNAL("clicked()"), self.moveDown)
+        self.connect(self.removeButton, SIGNAL("clicked()"), self.removeCategory)
+        self.connect(self.tabOrderList, SIGNAL("highlighted(int)"), self.enableDisableButtons)
 
         # OK, Cancel buttons
-        hbox = orngGui.widgetBox(self, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        hbox.layout().addStretch(1)
-        self.okButton = orngGui.button(hbox, self, "OK", callback = self.accept)
-        self.cancelButton = orngGui.button(hbox, self, "Cancel", callback = self.reject)
-        self.connect(self.tabOrderList, SIGNAL("currentRowChanged(int)"), self.enableDisableButtons)
+
+        hbox = QHBox(self)
+        if hbox.layout():
+            hbox.layout().setSpacing(6)
+            hbox.layout().setMargin(0)
+        sep = QWidget(hbox)
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+
+        self.okButton = QPushButton("OK", hbox)
+        self.cancelButton = QPushButton("Cancel", hbox)
 
         self.topLayout.addWidget(self.tabs)
         self.topLayout.addWidget(hbox)
 
+        self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
+        self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
 
     # move selected widget category up
     def moveUp(self):
         for i in range(1, self.tabOrderList.count()):
-            if self.tabOrderList.item(i).isSelected():
-                item = self.tabOrderList.takeItem(i)
-                for j in range(self.tabOrderList.count()): self.tabOrderList.item(j).setSelected(0)
-                self.tabOrderList.insertItem(i-1, item)
-                item.setSelected(1)
+            if self.tabOrderList.isSelected(i):
+                text = self.tabOrderList.text(i)
+                self.tabOrderList.removeItem(i)
+                self.tabOrderList.insertItem(text, i-1)
+                self.tabOrderList.setSelected(i-1, True)
 
     # move selected widget category down
     def moveDown(self):
         for i in range(self.tabOrderList.count()-2,-1,-1):
-            if self.tabOrderList.item(i).isSelected():
-                item = self.tabOrderList.takeItem(i)
-                for j in range(self.tabOrderList.count()): self.tabOrderList.item(j).setSelected(0)
-                self.tabOrderList.insertItem(i+1, item)
-                item.setSelected(1)
+            if self.tabOrderList.isSelected(i):
+                text = self.tabOrderList.text(i)
+                self.tabOrderList.removeItem(i)
+                self.tabOrderList.insertItem(text, i+1)
+                self.tabOrderList.setSelected(i+1, True)
 
-    def enableDisableButtons(self, itemIndex):
+    def enableDisableButtons(self, *i):
+        itemIndex = self.tabOrderList.currentItem()
         self.upButton.setEnabled(itemIndex > 0)
         self.downButton.setEnabled(itemIndex < self.tabOrderList.count()-1)
-        self.removeButton.setEnabled(not self.canvasDlg.tabs.tabDict[str(self.tabOrderList.item(self.tabOrderList.currentRow()).text())].builtIn)
+        self.removeButton.setEnabled(not self.tabs.tabDict[str(self.tabOrderList.currentText())].builtIn)
 
     def removeCategory(self):
-        curCat = str(self.tabOrderList.item(self.tabOrderList.currentRow()).text())
-        if QMessageBox.warning(self,'Orange Canvas', "Unregister widget category '%s' from Orange canvas? This will not remove any files." % curCat, QMessageBox.Ok , QMessageBox.Cancel | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Yes:
+        curCat = str(self.tabOrderList.currentText())
+        if QMessageBox.warning(self,'Orange Canvas', "Unregister widget category '%s' from Orange canvas?\nThis will not remove any files." % curCat, QMessageBox.Yes, QMessageBox.No | QMessageBox.Default | QMessageBox.Escape) == QMessageBox.Yes:
             self.removeTabs.append(curCat)
-            self.tabOrderList.takeItem(self.tabOrderList.currentRow())
+            self.tabOrderList.removeItem(self.tabOrderList.currentItem())
 
+
+##########
+### Widget registry editor
+####
 
 class KeyEdit(QLineEdit):
     def __init__(self, parent, key, invdict, widget, invInvDict):
@@ -566,14 +653,18 @@ class KeyEdit(QLineEdit):
             e.ignore()
             return
 
-        pressed = "-".join(filter(None, [e.modifiers() & x and y for x, y in [(Qt.ControlModifier, "Ctrl"), (Qt.AltModifier, "Alt")]]) + [chr(e.key())])
+        pressed = "-".join(filter(None, [e.state() & x and y for x, y in [(e.ControlButton, "Ctrl"), (e.AltButton, "Alt")]]) + [chr(e.key())])
 
         assigned = self.invInvDict.get(pressed, None)
         if assigned == self:
             return
 
-        if assigned and QMessageBox.question(self, "Confirmation", "'%s' is already assigned to '%s'. Override?" % (pressed, assigned.widget.nameKey), QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape) == QMessageBox.No:
-            return
+        if assigned:
+            dlg = QMessageBox("Confirmation", "'%s' is already assigned to '%s'. Override?" % (pressed, assigned.widget.nameKey),
+                              QMessageBox.Warning, QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape, 0)
+            dlg.exec_loop()
+            if dlg.result() == QMessageBox.No:
+                return
 
         self.setText(pressed)
         self.invdict[self.widget] = pressed
@@ -582,75 +673,82 @@ class KeyEdit(QLineEdit):
             assigned.setText("<none>")
             del self.invdict[assigned.widget]
 
-# widget shortcuts dialog
+
 class WidgetRegistryDlg(QDialog):
     def __init__(self, canvasDlg, *args):
         import orngTabs
 
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        self.setWindowTitle("Widget Shortcuts")
-        self.setLayout(QVBoxLayout())
-        self.layout().setSpacing(10)
-        self.resize(700,500)
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Widget Shortcuts")
+        else:
+            self.setCaption("Qt Widget Shortcuts")
+        self.topLayout = QVBoxLayout( self, 10 )
+        self.resize(500,500)
 
         self.invDict = dict([(y, x) for x, y in canvasDlg.widgetShortcuts.items()])
         invInvDict = {}
 
-        self.tabs = QTabWidget(self)
+        self.tabs = QTabWidget(self, 'tabWidget')
         for tab in canvasDlg.tabs.tabs:
-            scrollArea = QScrollArea()
-            self.tabs.addTab(scrollArea, str(canvasDlg.tabs.tabText(canvasDlg.tabs.indexOf(tab))))
-            #scrollArea.setWidgetResizable(1)       # you have to use this or set size to wtab manually - otherwise nothing gets shown
-
             wtab = QWidget(self.tabs)
-            scrollArea.setWidget(wtab)
+            self.tabs.insertTab(wtab, canvasDlg.tabs.tabLabel(tab))
 
             widgets = filter(lambda x:x.__class__ == orngTabs.WidgetButton, tab.widgets)
             rows = (len(widgets)+2) / 3
-            layout = QGridLayout(wtab)
-##            for i in range(2, 9, 3):
-##                layout.addItem(QSpacerItem(20, 0), 0, i)
-##            for i in range(0, 2*rows, 2):
-##                layout.addItem(QSpacerItem(0, 20), i, 0)
+            layout = QGridLayout(wtab, 2*rows+2, 9, 10)
+
+            for i in range(2, 9, 3):
+                layout.addColSpacing(i, 20)
+            for i in range(0, 2*rows, 2):
+                layout.addRowSpacing(i, 20)
 
             for i, w in enumerate(widgets):
-##                y, x = 1 + 2 * (i % rows), 3 * (i/rows)
-                x = i / rows
-                y = i % rows
-
-                hlayout = QHBoxLayout()
-                mainBox = QWidget(wtab)
-                mainBox.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-                mainBox.setLayout(hlayout)
-                layout.addWidget(mainBox, y, x, Qt.AlignTop | Qt.AlignLeft)
+                y, x = 1 + 2 * (i % rows), 3 * (i/rows)
+                pixmap = w.iconSet().pixmap(QIconSet.Large, QIconSet.Normal)
                 label = QLabel(wtab)
-                label.setPixmap(w.icon().pixmap(w.icon().actualSize(QSize(50,50))))
-                hlayout.addWidget(label)
+                label.setPixmap(pixmap)
+                layout.addWidget(label, y, x)
 
-                optionsw = QWidget(self)
-                optionsw.setLayout(QVBoxLayout())
-                hlayout.addWidget(optionsw)
-                optionsw.layout().addStretch(1)
+                optionsw = QVBox(wtab)
+                layout.addWidget(optionsw, y, x+1, Qt.AlignLeft + Qt.AlignVCenter)
 
-                orngGui.widgetLabel(optionsw, w.name)
+                QLabel(w.name, optionsw)
+                QWidget(optionsw).setFixedHeight(8)
+                shb = QHBox(optionsw)
+                #QLabel("Shortcut: ", shb)
                 key = self.invDict.get(w, "<none>")
-                le = KeyEdit(optionsw, key, self.invDict, w, invInvDict)
-                optionsw.layout().addWidget(le)
+                le = KeyEdit(shb, key, self.invDict, w, invInvDict)
                 invInvDict[key] = le
                 le.setFixedWidth(60)
+                sep = QWidget(shb)
+                sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
-            wtab.resize(wtab.sizeHint())
+            sep = QWidget(wtab)
+            sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+            layout.addMultiCellWidget(sep, 2*rows+1, 2*rows+1, 0, 8)
 
         # OK, Cancel buttons
-        hbox = orngGui.widgetBox(self, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        hbox.layout().addStretch(1)
-        self.okButton = orngGui.button(hbox, self, "OK", callback = self.accept)
-        self.cancelButton = orngGui.button(hbox, self, "Cancel", callback = self.reject)
-        self.okButton.setDefault(True)
+        hbox = QHBox(self)
+        if hbox.layout():
+            hbox.layout().setSpacing(6)
+            hbox.layout().setMargin(0)
 
-        self.layout().addWidget(self.tabs)
-        self.layout().addWidget(hbox)
+        sep = QWidget(hbox)
+        sep.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+
+        self.okButton = QPushButton("OK", hbox)
+        self.okButton.setFixedWidth(110)
+        self.okButton.setDefault(True)
+        self.cancelButton = QPushButton("Cancel", hbox)
+        self.cancelButton.setFixedWidth(110)
+
+        self.topLayout.addWidget(self.tabs)
+        self.topLayout.addWidget(hbox)
+
+        self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
+        self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
 
 
 # #######################################
@@ -660,15 +758,16 @@ class PreferencesDlg(QDialog):
     def __init__(self, canvasDlg, *args):
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        self.topLayout = QVBoxLayout(self)
-        self.topLayout.setSpacing(10)
+        self.topLayout = QVBoxLayout( self, 10 )
         self.grid = QGridLayout( 5, 3 )
         self.topLayout.addLayout( self.grid, 10 )
 
         groupBox  = QGroupBox(self, "Channel_settings")
         groupBox.setTitle("Channel settings")
         self.grid.addWidget(groupBox, 1,1)
+        topLayout2 = QVBoxLayout(groupBox, 10 )
         propGrid = QGridLayout(groupBox, 4, 2 )
+        topLayout2.addLayout(propGrid, 10)
 
         cap0 = QLabel("Symbolic channel names:", self)
         cap1 = QLabel("Full name:", groupBox)
@@ -694,7 +793,7 @@ class PreferencesDlg(QDialog):
         addButton = QPushButton("Add new channel name", self)
         removeButton = QPushButton("Remove selected name", self)
         closeButton = QPushButton("Close",self)
-        self.channelList = QListWidget(self)
+        self.channelList = QListBox( self, "channels" )
         self.channelList.setMinimumHeight(200)
         self.connect( self.channelList, SIGNAL("highlighted(int)"), self.listItemChanged )
 
@@ -743,7 +842,7 @@ class PreferencesDlg(QDialog):
         self.reloadList()
 
     def listItemChanged(self, index):
-        name = str(self.channelList.item(index).text())
+        name = str(self.channelList.text(index))
         value = self.channels[name]
         items = value.split("::")
         self.editFullName.setText(items[0])
@@ -764,11 +863,14 @@ class PreferencesDlg(QDialog):
     def saveChanges(self):
         index = self.channelList.currentItem()
         if index != -1:
-            name = str(self.channelList.item(index).text())
+            name = str(self.channelList.text(index))
             self.channels[name] = str(self.editFullName.text()) + "::" + str(self.editPriority.currentText()) + "::" + str(self.editColor.currentText())
 
     def addNewSignal(self):
-        (Qstring,ok) = QInputDialog.getText(self, "Qt Add New Channel Name", "Enter new symbolic channel name")
+        if (int(qVersion()[0]) >= 3):
+            (Qstring,ok) = QInputDialog.getText("Add New Channel Name", "Enter new symbolic channel name")
+        else:
+            (Qstring,ok) = QInputDialog.getText("Qt Add New Channel Name", "Enter new symbolic channel name")
         string = str(Qstring)
         if ok:
             self.editColor.setCurrentItem(0)
@@ -780,7 +882,7 @@ class PreferencesDlg(QDialog):
 
     def selectItem(self, string):
         for i in range(self.channelList.count()):
-            temp = str(self.channelList.item(i).text())
+            temp = str(self.channelList.text(i))
             if temp == string:
                 self.channelList.setCurrentItem(i)
                 return
@@ -789,12 +891,12 @@ class PreferencesDlg(QDialog):
         index = self.channelList.currentItem()
         if index != -1:
             tempDict = {}
-            symbName = str(self.channelList.item(index).text())
+            symbName = str(self.channelList.text(index))
 
             for key in self.channels.keys():
                 if key != symbName:
                     tempDict[key] = self.channels[key]
-            self.channels = dict(tempDict)
+            self.channels = copy(tempDict)
 
         self.reloadList()
 
@@ -807,65 +909,102 @@ class PreferencesDlg(QDialog):
 class saveApplicationDlg(QDialog):
     def __init__(self, *args):
         apply(QDialog.__init__,(self,) + args)
-        self.setWindowTitle("Set Widget Order")
-        self.setLayout(QVBoxLayout())
+        if (int(qVersion()[0]) >= 3):
+            self.setCaption("Set Widget Order")
+        else:
+            self.setCaption("Qt Set Widget Order")
+        self.shownWidgetList = []
+        self.hiddenWidgetList = []
 
-        listbox = orngGui.widgetBox(self, 1, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
-        self.tabOrderList = QListWidget(listbox)
-        self.tabOrderList.setSelectionMode(QListWidget.SingleSelection)
-        listbox.layout().addWidget(self.tabOrderList)
+        self.topLayout = QVBoxLayout( self, 10 )
 
-        w = orngGui.widgetBox(listbox, sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.upButton = orngGui.button(w, self, "Up", callback = self.moveUp)
-        self.downButton = orngGui.button(w, self, "Down", callback = self.moveDown)
-        w.layout().addStretch(1)
+        self.grid = QGridLayout( 2, 1 )
+        self.topLayout.addLayout( self.grid, 10 )
 
-        hbox = orngGui.widgetBox(self, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        orngGui.button(hbox, self, "Add separator", callback = self.insertSeparator)
-        hbox.layout().addStretch(1)
-        orngGui.button(hbox, self, "&OK", callback = self.accept)
-        orngGui.button(hbox, self, "&Cancel", callback = self.reject)
+        self.tab = QTable(self)
+        self.tab.setSelectionMode(QTable.Single )
+        self.tab.setRowMovingEnabled(1)
+        self.grid.addWidget(self.tab, 1,1)
 
-        self.resize(200,250)
+        self.tab.setNumCols(2)
+        self.tabHH = self.tab.horizontalHeader()
+        self.tabHH.setLabel(0, 'Show')
+        self.tabHH.setLabel(1, 'Widget Name')
+        self.tabHH.resizeSection(0, 50)
+        self.tabHH.resizeSection(1, 170)
+
+        LayoutWidget = QWidget(self,'Layout1')
+        LayoutWidget.setGeometry(QRect(200,240,476,33))
+        self.grid.addWidget(LayoutWidget, 2,1)
+        Layout1 = QHBoxLayout(LayoutWidget)
+        Layout1.setSpacing(6)
+        Layout1.setMargin(0)
+
+        self.insertSeparatorButton = QPushButton('Add separator', LayoutWidget)
+        self.connect(self.insertSeparatorButton, SIGNAL("clicked()"), self.insertSeparator)
+        Layout1.addWidget(self.insertSeparatorButton)
+
+        spacer = QSpacerItem(20,20,QSizePolicy.Expanding,QSizePolicy.Minimum)
+        Layout1.addItem(spacer)
+
+        self.okButton = QPushButton('&OK', LayoutWidget)
+        self.okButton.setDefault(1)
+        Layout1.addWidget(self.okButton)
+        self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
+
+        self.buttonCancel = QPushButton("&Cancel", LayoutWidget)
+        self.buttonCancel.setAutoDefault(1)
+        Layout1.addWidget(self.buttonCancel)
+        self.connect(self.buttonCancel, SIGNAL('clicked()'), self, SLOT('reject()'))
+
+        self.resize(250,250)
 
     def accept(self):
-        self.shownWidgetList = [str(self.tabOrderList.item(i).text()) for i in range(self.tabOrderList.count())]
+        self.shownWidgetList = []
+        self.hiddenWidgetList = []
+        for i in range(self.tab.numRows()):
+            if self.tab.cellWidget(i, 0).isChecked():
+                self.shownWidgetList.append(self.tab.text(i, 1))
+            elif self.tab.text(i,1) != "[Separator]":
+                self.hiddenWidgetList.append(self.tab.text(i,1))
         QDialog.accept(self)
 
+
     def insertSeparator(self):
-        curr = self.tabOrderList.indexFromItem(self.tabOrderList.currentItem()).row()
+        curr = max(0, self.findSelected())
         self.insertWidgetName("[Separator]", curr)
 
+
     def insertWidgetName(self, name, index = -1):
-        if index == -1:
-            self.tabOrderList.addItem(name)
-        else:
-            self.tabOrderList.insertItem(index, name)
-
-    # move selected widget category up
-    def moveUp(self):
-        for i in range(1, self.tabOrderList.count()):
-            if self.tabOrderList.item(i).isSelected():
-                item = self.tabOrderList.takeItem(i)
-                for j in range(self.tabOrderList.count()): self.tabOrderList.item(j).setSelected(0)
-                self.tabOrderList.insertItem(i-1, item)
-                item.setSelected(1)
+        if index == -1: index = self.tab.numRows()
+        self.tab.setNumRows(self.tab.numRows()+1)
+        for i in range(self.tab.numRows()-1, index-1, -1):
+            self.swapCells(i, i+1)
+        check = QCheckBox(self.tab)
+        check.setChecked(1)
+        self.tab.setCellWidget(index, 0, check)
+        self.tab.setText(index, 1, name)
+        #self.tab.adjustColumn(1)
 
 
-    # move selected widget category down
-    def moveDown(self):
-        for i in range(self.tabOrderList.count()-2,-1,-1):
-            if self.tabOrderList.item(i).isSelected():
-                item = self.tabOrderList.takeItem(i)
-                for j in range(self.tabOrderList.count()): self.tabOrderList.item(j).setSelected(0)
-                self.tabOrderList.insertItem(i+1, item)
-                item.setSelected(1)
+    def swapCells(self, row1, row2):
+        self.tab.swapCells( row1,0, row2, 0)
+        self.tab.swapCells( row1,1, row2, 1)
+        self.tab.updateCell(row1,0)
+        self.tab.updateCell(row1,1)
+        self.tab.updateCell(row2,0)
+        self.tab.updateCell(row2,1)
+
+    def findSelected(self):
+        for i in range(self.tab.numRows()):
+            if self.tab.isSelected(i, 0) or self.tab.isSelected(i, 1): return i
+        return -1
 
 
 if __name__=="__main__":
-    import sys
     app = QApplication(sys.argv)
-    dlg = saveApplicationDlg(None)
+    dlg = CanvasOptionsDlg(app)
+    app.setMainWidget(dlg)
     dlg.show()
-    sys.exit(app.exec_())
+    app.exec_loop()
 
