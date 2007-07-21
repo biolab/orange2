@@ -465,7 +465,7 @@ void TEnumVariable::presortValues(const set<string> &unsorted, vector<string> &s
   vector<string>::iterator si, se(sorted.end());
   const char ***ssi, **ssii, ***rssi;
   for(ssi = specialSortCases, rssi = specialCasesResorted; *ssi; ssi++, rssi++) {
-    for(si = sorted.begin(), ssii = *ssi; *ssii && (si != se) && !_stricmp(*ssii, si->c_str()); *ssii++);
+    for(si = sorted.begin(), ssii = *ssi; *ssii && (si != se) && !stricmp(*ssii, si->c_str()); *ssii++);
     if (!*ssii && (si==se)) {
       sorted.clear();
       sorted.insert(sorted.begin(), *rssi, *rssi + (ssii - *ssi));
@@ -475,7 +475,7 @@ void TEnumVariable::presortValues(const set<string> &unsorted, vector<string> &s
   
   se = sorted.end();
   for(ssii = putAtBeginning; *ssii; ssii++) {
-    for(si = sorted.begin(); (si != se) && _stricmp(*ssii, si->c_str()); si++);
+    for(si = sorted.begin(); (si != se) && stricmp(*ssii, si->c_str()); si++);
     if (si != se) {
       const string toMove = *si;
       sorted.erase(si);
