@@ -57,7 +57,7 @@ class OWKNN(OWWidget):
 
         OWGUI.separator(self.controlArea)
 
-        OWGUI.button(self.controlArea, self, "&Apply Settings", callback = self.setLearner, disabled=0)
+        OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
 
         self.resize(100,250)
 

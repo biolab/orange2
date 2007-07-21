@@ -1360,7 +1360,7 @@ class BasicNomogram(QCanvas):
         self.update()
 
     def printOUT(self):
-        print "constant:", str(self.constant.betaValue)
+        print "Constant:", str(self.constant.betaValue)
         for a in self.attributes:
             print a.toString()
 

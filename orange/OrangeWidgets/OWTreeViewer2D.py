@@ -594,14 +594,14 @@ class OWTreeViewer2D(OWWidget):
 
         OWGUI.hSlider(GeneralTab, self, 'Zoom', box='Zoom', minValue=1, maxValue=10, step=1,
                       callback=self.toggleZoomSlider, ticks=1)
-        OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical Spacing', minValue=1, maxValue=10, step=1,
+        OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical spacing', minValue=1, maxValue=10, step=1,
                       callback=self.toggleVSpacing, ticks=1)
-        OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal Spacing', minValue=1, maxValue=10, step=1,
+        OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal spacing', minValue=1, maxValue=10, step=1,
                       callback=self.toggleHSpacing, ticks=1)
 
-        # OWGUI.checkBox(GeneralTab, self, 'ZoomAutoRefresh', 'Auto Refresh After Zoom',
+        # OWGUI.checkBox(GeneralTab, self, 'ZoomAutoRefresh', 'Auto refresh after zoom',
         #                tooltip='Refresh after change of zoom setting?')
-        # OWGUI.checkBox(GeneralTab, self, 'AutoArrange', 'Auto Arrange',
+        # OWGUI.checkBox(GeneralTab, self, 'AutoArrange', 'Auto arrange',
         #                tooltip='Auto arrange the position of the nodes\nafter any change of nodes visibility')
         OWGUI.checkBox(GeneralTab, self, 'NodeBubblesEnabled', 'Node bubbles',
                        tooltip='When mouse over the node show info bubble')
@@ -611,13 +611,13 @@ class OWTreeViewer2D(OWWidget):
         
 
         OWGUI.hSlider(GeneralTab, self, 'Zoom', box='Zoom', minValue=1, maxValue=10, step=1, callback=self.toggleZoomSlider, ticks=1)
-        OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleVSpacing, ticks=1)
-        OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleHSpacing, ticks=1)
+        OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical spacing', minValue=1, maxValue=10, step=1, callback=self.toggleVSpacing, ticks=1)
+        OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal spacing', minValue=1, maxValue=10, step=1, callback=self.toggleHSpacing, ticks=1)
 
-        #OWGUI.checkBox(GeneralTab, self, 'ZoomAutoRefresh', 'Auto Refresh After Zoom', tooltip='Refresh after change of zoom setting?')
-        #OWGUI.checkBox(GeneralTab, self, 'AutoArrange', 'Auto Arrange', tooltip='Auto arrange the position of the nodes\nafter any change of nodes visibility')
-        OWGUI.checkBox(GeneralTab, self, 'NodeBubblesEnabled', 'Node Bubbles', tooltip='When mouse over the node show info bubble')
-        OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate Text To Fit Margins', tooltip='Truncate any text to fit the node width', callback=self.toggleTruncateText)
+        #OWGUI.checkBox(GeneralTab, self, 'ZoomAutoRefresh', 'Auto refresh after zoom', tooltip='Refresh after change of zoom setting?')
+        #OWGUI.checkBox(GeneralTab, self, 'AutoArrange', 'Auto arrange', tooltip='Auto arrange the position of the nodes\nafter any change of nodes visibility')
+        OWGUI.checkBox(GeneralTab, self, 'NodeBubblesEnabled', 'Node bubbles', tooltip='When mouse over the node show info bubble')
+        OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate text to fit margins', tooltip='Truncate any text to fit the node width', callback=self.toggleTruncateText)
 
         self.infBox = QVGroupBox(GeneralTab)
         self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
@@ -648,7 +648,7 @@ class OWTreeViewer2D(OWWidget):
         # NODE TAB
         NodeTab = QVGroupBox(self)
         # Node size options
-        OWGUI.hSlider(NodeTab, self, 'NodeSize', box='Node Width',
+        OWGUI.hSlider(NodeTab, self, 'NodeSize', box='Node width',
                       minValue=1, maxValue=10, step=1,
                       callback=self.toggleNodeSize, ticks=1)
 

@@ -170,13 +170,13 @@ class OWPurgeDomain(OWWidget):
         classChanged = False
         if not klass:
             newclass = klass
-            self.classAttr = "No class."
+            self.classAttr = "No class"
         elif klass.varType != orange.VarTypes.Discrete:
             newclass = klass
-            self.classAttr = "Class is not discrete."
+            self.classAttr = "Class is not discrete"
         elif not (self.removeClassAttribute or self.sortClasses):
             newclass = klass
-            self.classAttr = "Class is not checked."
+            self.classAttr = "Class is not checked"
         else:
             self.classAttr = ""
 
@@ -187,9 +187,9 @@ class OWPurgeDomain(OWWidget):
 
             if not newclass or self.removeClassAttribute and len(newclass.values) < 2:
                 newclass = None
-                self.classAttr = "Class is removed."
+                self.classAttr = "Class is removed"
             elif len(newclass.values) != len(klass.values):
-                    self.classAttr = "Class is reduced."
+                    self.classAttr = "Class is reduced"
 
             if newclass and self.sortClasses:
                 newnewclass = self.sortAttrValues(klass, newclass)

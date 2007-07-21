@@ -49,12 +49,12 @@ class OWNaiveBayes(OWWidget):
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        box = QGroupBox('Probability Estimation', self.controlArea)
+        box = QGroupBox('Probability estimation', self.controlArea)
         glay = QGridLayout(box, 7, 3, 10, 5)
 
         glay.addWidget(OWGUI.separator(box, height=5), 0, 0)
 
-        glay.addWidget(OWGUI.widgetLabel(box, "Unconditional"), 1, 0)
+        glay.addWidget(OWGUI.widgetLabel(box, "Prior"), 1, 0)
 
         glay.addWidget(OWGUI.comboBox(box, self, 'probEstimation', items=[e[0] for e in self.estMethods], tooltip='Method to estimate unconditional probability.'),
                         1, 2)

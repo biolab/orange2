@@ -227,16 +227,16 @@ class OWCalibrationPlot(OWWidget):
         self.classifiersQVGB.setTitle("Classifiers")
         self.classifiersQLB = QListBox(self.classifiersQVGB)
         self.classifiersQLB.setSelectionMode(QListBox.Multi)
-        self.unselectAllClassifiersQLB = QPushButton("(Un)select all", self.classifiersQVGB)
+        self.unselectAllClassifiersQLB = QPushButton("(Un)select All", self.classifiersQVGB)
         self.connect(self.classifiersQLB, SIGNAL("selectionChanged()"), self.classifiersSelectionChange)
         self.connect(self.unselectAllClassifiersQLB, SIGNAL("clicked()"), self.SUAclassifiersQLB)
         self.tabs.insertTab(self.generalTab, "General")
 
         ## settings tab
         self.settingsTab = QVGroupBox(self)
-        OWGUI.hSlider(self.settingsTab, self, 'CalibrationCurveWidth', box='Calibration Curve Width', minValue=1, maxValue=9, step=1, callback=self.setCalibrationCurveWidth, ticks=1)
-        OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show Diagonal Line', tooltip='', callback=self.setShowDiagonal)
-        OWGUI.checkBox(self.settingsTab, self, 'ShowRugs', 'Show Rugs', tooltip='', callback=self.setShowRugs)
+        OWGUI.hSlider(self.settingsTab, self, 'CalibrationCurveWidth', box='Calibration curve width', minValue=1, maxValue=9, step=1, callback=self.setCalibrationCurveWidth, ticks=1)
+        OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show diagonal line', tooltip='', callback=self.setShowDiagonal)
+        OWGUI.checkBox(self.settingsTab, self, 'ShowRugs', 'Show rug', tooltip='', callback=self.setShowRugs)
         self.tabs.insertTab(self.settingsTab, "Settings")
 
     def setCalibrationCurveWidth(self):

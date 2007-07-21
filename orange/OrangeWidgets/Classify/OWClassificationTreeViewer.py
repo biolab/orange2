@@ -193,8 +193,8 @@ class OWClassificationTreeViewer(OWWidget):
         self.setTreeView()
 
         if tree:
-            self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
-            self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
+            self.infoa.setText('Number of nodes: %i' % orngTree.countNodes(tree))
+            self.infob.setText('Number of leaves: %i' % orngTree.countLeaves(tree))
         else:
             self.infoa.setText('No tree.')
             self.infob.setText('')
@@ -256,9 +256,9 @@ class OWClassificationTreeViewer(OWWidget):
             classLabel = str(nodeclsfr.defaultValue)
             className = str(nodeclsfr.classVar.name)
             if tx:
-                self.rule.setText("IF %s\nTHEN %s = %s" % (tx, className, classLabel))
+                self.rule.setText("IF %(tx)s\nTHEN %(className)s = %(classLabel)s" % vars())
             else:
-                self.rule.setText("%s = %s" % (className, classLabel))
+                self.rule.setText("%(className)s = %(classLabel)s" % vars())
         else:
             self.send("Examples", None)
             self.rule.setText("")

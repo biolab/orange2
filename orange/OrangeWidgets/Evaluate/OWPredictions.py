@@ -285,7 +285,7 @@ class OWPredictions(OWWidget):
         else:
             vartypes = {1:"discrete", 2:"continuous"}
             if len(self.classifiers) and data.domain.classVar and data.domain.classVar <> self.outvar:
-                self.warning(id, "Data set %s ignored, inconsistent outcome variables\n%s/%s <> %s/%s (type or variable mismatch)" % (data.name, data.domain.classVar.name, vartypes.get(data.domain.classVar.varType, "?"), self.outvar.name, vartypes.get(self.outvar.varType, "?")))
+                self.warning(id, "Data set %s is ignored due to inconsistent outcome variables\n%s/%s <> %s/%s (type or variable mismatch)" % (data.name, data.domain.classVar.name, vartypes.get(data.domain.classVar.varType, "?"), self.outvar.name, vartypes.get(self.outvar.varType, "?")))
                 return
             self.data = data
             self.rindx = range(len(self.data))
@@ -305,7 +305,7 @@ class OWPredictions(OWWidget):
         else:
             if len(self.classifiers) and c.classVar <> self.outvar:
                 vartypes = {1:"discrete", 2:"continuous"}
-                self.warning(id, "Predictor %s ignored, inconsistent outcome variables\n%s/%s <> %s/%s (type or variable mismatch)" % (c.name, c.classVar.name, vartypes.get(c.classVar.varType, "?"), self.outvar.name, vartypes.get(self.outvar.varType, "?")))
+                self.warning(id, "Predictor %s is ignored due to inconsistent outcome variables\n%s/%s <> %s/%s (type or variable mismatch)" % (c.name, c.classVar.name, vartypes.get(c.classVar.varType, "?"), self.outvar.name, vartypes.get(self.outvar.varType, "?")))
                 return
             else:
                 self.outvar = c.classVar

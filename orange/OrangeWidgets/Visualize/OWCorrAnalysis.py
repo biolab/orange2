@@ -67,7 +67,7 @@ class OWCorrAnalysis(OWWidget):
         # GUI
         self.tabs = QTabWidget(self.controlArea, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = QVGroupBox(self, "Settings")
+        self.SettingsTab = QVGroupBox(self)
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
         
@@ -88,11 +88,11 @@ class OWCorrAnalysis(OWWidget):
         
         #col attribute
         self.attrCol = ""
-        self.attrColCombo = OWGUI.comboBox(self.GeneralTab, self, "attrCol", " Column Table Attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
+        self.attrColCombo = OWGUI.comboBox(self.GeneralTab, self, "attrCol", " Column table attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
 
         # row attribute
         self.attrRow = ""
-        self.attrRowCombo = OWGUI.comboBox(self.GeneralTab, self, "attrRow", "Row Table Attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
+        self.attrRowCombo = OWGUI.comboBox(self.GeneralTab, self, "attrRow", "Row table attribute ", callback = self.updateTables, sendSelectedValue = 1, valueType = str)
        
         #x principal axis
         self.attrX = 0
@@ -103,8 +103,8 @@ class OWCorrAnalysis(OWWidget):
         self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Principal axis Y ", callback = self.contributionBox, sendSelectedValue = 1, valueType = str)
         
         contribution = QVGroupBox('Contribution to inertia', self.GeneralTab)
-        self.firstAxis = OWGUI.widgetLabel(contribution, 'Axis 1: 10%')
-        self.secondAxis = OWGUI.widgetLabel(contribution, 'Axis 2: 10%')
+        self.firstAxis = OWGUI.widgetLabel(contribution, 'Axis %d: %f%%' % (1, 10))
+        self.secondAxis = OWGUI.widgetLabel(contribution, 'Axis %d: %f%%' % (2, 10))
         
         sliders = QVGroupBox('Percentage of points', self.GeneralTab)
         OWGUI.widgetLabel(sliders, 'Row points')
@@ -132,12 +132,12 @@ class OWCorrAnalysis(OWWidget):
         # ####################################
         # SETTINGS TAB
         # point width
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point size ', minValue=1, maxValue=20, step=1, callback = self.replotCurves)
         
         # general graph settings
-        box4 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
-        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
-        OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.updateGraph)
+        box4 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
+        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X-axis title', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y-axis title', callback = self.updateGraph)
 ##        OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showLegend', 'Show legend', callback = self.updateGraph)
         OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)        
@@ -151,7 +151,7 @@ class OWCorrAnalysis(OWWidget):
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
         
         #browsing radius
-        OWGUI.hSlider(self.SettingsTab, self, 'percRadius', box=' Browsing Curve Size ', minValue = 0, maxValue=100, step=5, callback = self.calcRadius)
+        OWGUI.hSlider(self.SettingsTab, self, 'percRadius', box=' Browsing curve size ', minValue = 0, maxValue=100, step=5, callback = self.calcRadius)
 
         #font size        
         OWGUI.hSlider(self.SettingsTab, self, 'graph.labelSize', box=' Set font size for labels ', minValue = 8, maxValue=48, step=1, callback = self.updateGraph)
@@ -511,10 +511,10 @@ class OWCorrAnalysis(OWWidget):
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ")
+        c = OWDlgs.ColorPalette(self, "Color palette")
+        c.createDiscretePalette(" Discrete palette ")
         c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other Colors ")
+        box = c.createBox("otherColors", " Other colors ")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         c.createColorButton(box, "Grid", "Grid color", Qt.black)

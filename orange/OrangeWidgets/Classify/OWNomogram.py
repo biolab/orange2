@@ -500,7 +500,7 @@ class OWNomogram(OWWidget):
 
         self.error(1)            
         if not len(self.data.domain.classVar.values) == 2:
-            self.error(1, "Only two class domains can be used for rules!")
+            self.error(1, "Rules require binary classes")
         classVal = cl.domain.classVar
         att = cl.domain.attributes
 
@@ -548,7 +548,7 @@ class OWNomogram(OWWidget):
 
         self.error(2)
         if self.data and self.data.domain and not self.data.domain.classVar:
-            self.error(2, "This domain has no class attribute!")
+            self.error(2, "Classless domain")
             return
 
         self.openContext("", self.data)
@@ -667,7 +667,7 @@ class OWNomogram(OWWidget):
         sizeH = self.graph.canvas().gbottom + self.header.canvas().size().height() + self.footer.canvas().size().height()+EMPTY_SPACE
         size = QSize(sizeW, sizeH)
 
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, None, "Save to..")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)

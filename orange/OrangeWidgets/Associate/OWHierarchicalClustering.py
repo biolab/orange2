@@ -34,9 +34,9 @@ class OWHierarchicalClustering(OWWidget):
         self.callbackDeposit=[]
         self.inputs=[("Distance matrix", orange.SymMatrix, self.dataset)]
         self.outputs=[("Selected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
-        self.linkage=[("Single ", orange.HierarchicalClustering.Single),
-                        ("Average", orange.HierarchicalClustering.Average),
-                        ("Complete", orange.HierarchicalClustering.Complete)]
+        self.linkage=[("Single linkage", orange.HierarchicalClustering.Single),
+                        ("Average linkage", orange.HierarchicalClustering.Average),
+                        ("Complete linkage", orange.HierarchicalClustering.Complete)]
         self.Linkage=0
         self.OverwriteMatrix=0
         self.Annotation=0
@@ -108,7 +108,7 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.button(dendogramBox, self, "&Apply",self.applySettings)
 
         #Selection options
-        OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Cutoff line", 
+        OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Show cutoff line", 
               callback=self.updateCutOffLine)
         self.classificationBox=QVGroupBox(self.selectionTab)
         #self.classificationBox.setTitle("Classification")
@@ -121,7 +121,7 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.button(commitBox, self, "&Commit", self.commitData)
         OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
         OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
-        OWGUI.button(self.controlArea, self, "&Save graph", self.saveGraph, debuggingEnabled = 0)
+        OWGUI.button(self.controlArea, self, "&Save Graph", self.saveGraph, debuggingEnabled = 0)
 
         self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
         scale=QCanvas(self)
@@ -194,6 +194,10 @@ class OWHierarchicalClustering(OWWidget):
         self.constructTree()
 
     def updateLabel(self):
+#        self.rootCluster.mapping.setattr("objects", self.matrix.items)
+#        self.dendogram.updateLabel()
+#        return
+    
         items=self.matrix.items
         if self.Annotation==0:
             self.rootCluster.mapping.setattr("objects",

@@ -511,15 +511,15 @@ class CanvasOptionsDlg(QDialog):
 
         selectedWidgetBox = QHBox(colorsBox)
         self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)
-        selectedWidgetLabel = QLabel(" Selected Widget", selectedWidgetBox)
+        selectedWidgetLabel = QLabel(" Selected widget", selectedWidgetBox)
 
         activeWidgetBox = QHBox(colorsBox)
         self.activeWidgetIcon = ColorIcon(activeWidgetBox, canvasDlg.widgetActiveColor)
-        activeWidgetLabel = QLabel(" Active Widget", activeWidgetBox)
+        activeWidgetLabel = QLabel(" Active widget", activeWidgetBox)
 
         lineBox = QHBox(colorsBox)
         self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
-        lineLabel = QLabel(" Lines", lineBox)
+        lineLabel = QLabel(" Connections", lineBox)
 
 
         # #################################################################
@@ -660,7 +660,7 @@ class KeyEdit(QLineEdit):
             return
 
         if assigned:
-            dlg = QMessageBox("Confirmation", "'%s' is already assigned to '%s'. Override?" % (pressed, assigned.widget.nameKey),
+            dlg = QMessageBox("Confirmation", "'%(pressed)s' is already assigned to '%(assigned)s'. Override?" % {"pressed": pressed, "assigned": assigned.widget.nameKey},
                               QMessageBox.Warning, QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape, 0)
             dlg.exec_loop()
             if dlg.result() == QMessageBox.No:
@@ -789,9 +789,9 @@ class PreferencesDlg(QDialog):
         groupBox.setMinimumSize(180,150)
         groupBox.setMaximumSize(180,150)
 
-        saveButton = QPushButton("Save changes", groupBox)
-        addButton = QPushButton("Add new channel name", self)
-        removeButton = QPushButton("Remove selected name", self)
+        saveButton = QPushButton("Save Changes", groupBox)
+        addButton = QPushButton("Add New Channel Name", self)
+        removeButton = QPushButton("Remove Selected Name", self)
         closeButton = QPushButton("Close",self)
         self.channelList = QListBox( self, "channels" )
         self.channelList.setMinimumHeight(200)
@@ -940,7 +940,7 @@ class saveApplicationDlg(QDialog):
         Layout1.setSpacing(6)
         Layout1.setMargin(0)
 
-        self.insertSeparatorButton = QPushButton('Add separator', LayoutWidget)
+        self.insertSeparatorButton = QPushButton('Add Separator', LayoutWidget)
         self.connect(self.insertSeparatorButton, SIGNAL("clicked()"), self.insertSeparator)
         Layout1.addWidget(self.insertSeparatorButton)
 

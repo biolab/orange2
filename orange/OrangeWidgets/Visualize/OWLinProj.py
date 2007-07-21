@@ -142,7 +142,7 @@ class OWLinProj(OWVisWidget):
         # #####
         self.extraTopBox = OWGUI.widgetBox(self.SettingsTab, orientation = "vertical")
         self.extraTopBox.hide()
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=15, step=1, callback = self.updateGraph)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point size ', minValue=1, maxValue=15, step=1, callback = self.updateGraph)
 
         box = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
         box2 = OWGUI.widgetBox(self.SettingsTab, "Scaling Options")
@@ -185,7 +185,7 @@ class OWLinProj(OWVisWidget):
         box6 = OWGUI.widgetBox(box3, orientation = "horizontal")
         box7 = OWGUI.widgetBox(box3, orientation = "horizontal")
 
-        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
+        OWGUI.checkBox(box5, self, 'graph.showProbabilities', 'Show probabilities'+'  ', callback = self.updateGraph, tooltip = "Show a background image with class probabilities")
         hider = OWGUI.widgetHider(box5, self, "showProbabilitiesDetails", tooltip = "Show/hide extra settings")
         rubb = OWGUI.rubber(box5)
         rubb.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum))
@@ -198,7 +198,7 @@ class OWLinProj(OWVisWidget):
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
         hider.setWidgets([box6, box7])
 
-        OWGUI.button(box8, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
+        OWGUI.button(box8, self, "Colors", self.setColors, tooltip = "Set the canvas background color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
         self.icons = self.createAttributeIconDict()
         self.debugSettings = ["hiddenAttributes", "shownAttributes"]
@@ -210,7 +210,7 @@ class OWLinProj(OWVisWidget):
 
 
     def saveToFile(self):
-        self.graph.saveToFile([("Save PixTex", self.graph.savePicTeX)])
+        self.graph.saveToFile([("Save PicTex", self.graph.savePicTeX)])
 
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
@@ -468,10 +468,10 @@ class OWLinProj(OWVisWidget):
             self.updateGraph()
 
     def createColorDialog(self):
-        c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ")
+        c = OWDlgs.ColorPalette(self, "Color palette")
+        c.createDiscretePalette(" Discrete palette ")
         c.createContinuousPalette("contPalette", " Continuous palette ")
-        box = c.createBox("otherColors", " Other Colors ")
+        box = c.createBox("otherColors", " Other colors ")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         box.addSpace(5)

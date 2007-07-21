@@ -90,7 +90,7 @@ class OWCN2(OWWidget):
                 tooltip="How different (significance) is prior class distribution\nto that of examples covered by a rule")
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "stepAlpha", 0, 1,0.001, label="Stopping Alpha (vs. parent rule)",
                 orientation="horizontal", labelWidth=labelWidth,
-                tooltip="How different (significance) is class distribution from examples\ncovered by a rule and covered by a parent rule")
+                tooltip="Required significance of each specialization of a rule.")
         OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum coverage",
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
                 "Minimum number of examples a rule must\ncover (use 0 for dont care)")
@@ -121,7 +121,7 @@ class OWCN2(OWWidget):
         #layout.add(self.coveringAlgGroup)
 
         OWGUI.separator(self.controlArea)
-        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Settings", callback=self.applySettings)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback=self.applySettings)
 
         self.Alpha=float(self.Alpha)
         self.stepAlpha=float(self.stepAlpha)

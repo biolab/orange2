@@ -425,15 +425,15 @@ class OWDistributions(OWWidget):
 
         # GUI connections
         # options dialog connections
-        self.numberOfBarsSlider = OWGUI.hSlider(self.SettingsTab, self, 'numberOfBars', box='Number of Bars', minValue=5, maxValue=60, step=5, callback=self.setNumberOfBars, ticks=5)
+        self.numberOfBarsSlider = OWGUI.hSlider(self.SettingsTab, self, 'numberOfBars', box='Number of bars', minValue=5, maxValue=60, step=5, callback=self.setNumberOfBars, ticks=5)
         self.numberOfBarsSlider.setTracking(0) # no change until the user stop dragging the slider
 
-        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box=' Bar Size ', minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
+        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box=' Bar size ', minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
 
         box = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
         box.setMinimumWidth(180)
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
-        OWGUI.checkBox(box2, self, 'showMainTitle', 'Show Main Title', callback = self.setShowMainTitle)
+        OWGUI.checkBox(box2, self, 'showMainTitle', 'Show main title', callback = self.setShowMainTitle)
         OWGUI.lineEdit(box2, self, 'mainTitle', callback = self.setMainTitle)
 
         box3 = OWGUI.widgetBox(box, orientation = "horizontal")
@@ -446,14 +446,14 @@ class OWDistributions(OWWidget):
 
         OWGUI.checkBox(box, self, 'showContinuousClassGraph', 'Show continuous class graph', callback=self.setShowContinuousClassGraph)
         
-        box5 = OWGUI.widgetBox(self.SettingsTab, " Probability graph ")
-        self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', ' Show Probabilities ', callback = self.setShowProbabilities)
+        box5 = OWGUI.widgetBox(self.SettingsTab, "Probability plot")
+        self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', 'Show probabilities', callback = self.setShowProbabilities)
 
         box6 = OWGUI.widgetBox(box5, orientation = "horizontal")
 
-        self.showYPaxisCheck = OWGUI.checkBox(box6, self, 'showYPaxisTitle', 'Show Axis Title', callback = self.setShowYPaxisTitle)
+        self.showYPaxisCheck = OWGUI.checkBox(box6, self, 'showYPaxisTitle', 'Show axis title', callback = self.setShowYPaxisTitle)
         self.yPaxisEdit = OWGUI.lineEdit(box6, self, 'yPaxisTitle', callback = self.setYPaxisTitle)
-        self.confIntCheck = OWGUI.checkBox(box5, self, 'showConfidenceIntervals', 'Show Confidence Intervals', callback = self.setShowConfidenceIntervals)
+        self.confIntCheck = OWGUI.checkBox(box5, self, 'showConfidenceIntervals', 'Show confidence intervals', callback = self.setShowConfidenceIntervals)
         self.showProb.disables = [self.showYPaxisCheck, self.yPaxisEdit, self.confIntCheck]
         self.showProb.makeConsistent()
         
@@ -462,7 +462,7 @@ class OWDistributions(OWWidget):
         self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box=' Line width ', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
         
         #add controls to self.controlArea widget
-        self.variablesQCB = OWGUI.comboBox(self.GeneralTab, self, "attribute", box="Attribute", valueType = str, sendSelectedValue = True, callback=self.setVariable)
+        self.variablesQCB = OWGUI.comboBox(self.GeneralTab, self, "attribute", box="Variable", valueType = str, sendSelectedValue = True, callback=self.setVariable)
         self.targetQCB = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box="Target value", valueType=int, callback=self.setTarget)
         self.outcomesQLB = OWGUI.listBox(self.GeneralTab, self, "visibleOutcomes", "outcomes", "Outcomes", selectionMode = QListBox.Multi, callback = self.outcomeSelectionChange)
 

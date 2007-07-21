@@ -186,15 +186,15 @@ class OWMosaicDisplay(OWWidget):
         # ######################
         # SETTINGS TAB
         # ######################
-        box5 = OWGUI.widgetBox(self.SettingsTab, "Colors in Cells Represent...")
+        box5 = OWGUI.widgetBox(self.SettingsTab, "Colors in cells represent...")
         OWGUI.comboBox(box5, self, "interiorColoring", None, items = ["Standardized (Pearson) residuals", "Class distribution"], callback = self.updateGraph)
         box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "cellspace", "Minimum cell distance: ", box = "Visual Settings", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "cellspace", "Minimum cell distance: ", box = "Visual settings", items = range(1,11), callback = self.updateGraph, sendSelectedValue = 1, valueType = int, tooltip = "What is the minimum distance between two rectangles in the plot?")
 
-        self.box6 = OWGUI.widgetBox(self.SettingsTab, "Cell Distribution Settings")
+        self.box6 = OWGUI.widgetBox(self.SettingsTab, "Cell distribution settings")
         OWGUI.comboBox(self.box6, self, 'horizontalDistribution', items = ["Show Distribution Vertically", "Show Distribution Horizontally"], tooltip = "Do you wish to see class distribution drawn horizontally or vertically?", callback = self.updateGraph)
-        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show Apriori Distribution with Lines', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
+        OWGUI.checkBox(self.box6, self, 'showAprioriDistributionLines', 'Show apriori distribution with lines', callback = self.updateGraph, tooltip = "Show the lines that represent the apriori class distribution")
 
         self.box8 = OWGUI.widgetBox(self.SettingsTab, "Subboxes in Cells")
         OWGUI.spin(self.box8, self, 'boxSize', 1, 15, 1, '', "Subbox Size (pixels): ", orientation = "horizontal", callback = self.updateGraph)
@@ -206,7 +206,7 @@ class OWMosaicDisplay(OWWidget):
         OWGUI.checkBox(self.SettingsTab, self, "removeUnusedValues", "Remove unused values", box = "Attributes", tooltip = "Do you want to remove unused attribute values?\nThis setting will not be considered until new data is received.")
 
         hbox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
-        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the color palette for coloring different class values", debuggingEnabled = 0)
+        OWGUI.button(hbox, self, "Set Colors", self.setColors, tooltip = "Set the color palette for class values", debuggingEnabled = 0)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
 
         self.box6.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
@@ -805,7 +805,7 @@ class OWMosaicDisplay(OWWidget):
 
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette(" Discrete Palette ", ColorBrewerColors)
+        c.createDiscretePalette(" Discrete palette ", ColorBrewerColors)
         c.setColorSchemas(self.colorSettings, self.selectedSchemaIndex)
         return c
 

@@ -38,9 +38,9 @@ class OWSOM(OWWidget):
         self.AlphaMap=[orangeom.SOMLearner.LinearFunction, orangeom.SOMLearner.InverseFunction]
         self.learnerName=OWGUI.lineEdit(self.controlArea, self, "LearnerName", box="Learner/Classifier Name", tooltip="Name to be used by other widgets to identify yor Learner/Classifier")
         self.learnerName.setText("SOM Classifier")
-        box=OWGUI.widgetBox(self.controlArea, self)
-        OWGUI.spin(box, self, "xdim", 4, 1000, orientation="horizontal", label="X Dim")
-        OWGUI.spin(box, self, "ydim", 4, 1000, orientation="horizontal", label="Y Dim")
+        box=OWGUI.widgetBox(self.controlArea, self, "Dimensions")
+        OWGUI.spin(box, self, "xdim", 4, 1000, orientation="horizontal", label="Columns")
+        OWGUI.spin(box, self, "ydim", 4, 1000, orientation="horizontal", label="Rows")
         OWGUI.radioButtonsInBox(self.controlArea, self, "topology", ["Hexagonal topology", "Rectangular topology"], box="Topology")
         OWGUI.radioButtonsInBox(self.controlArea, self, "neighborhood", ["Bubble neighborhood","Gaussian neighborhood"], box="Neighborhood")
         OWGUI.radioButtonsInBox(self.controlArea, self, "alphaType", ["Linear function", "Inverse function"], box="Alpha Function Type")
@@ -57,7 +57,7 @@ class OWSOM(OWWidget):
         OWGUI.doubleSpin(b2, self, "alpha2", 0.0, 1.0, 0.01, orientation="horizontal", label="Alpha")
         self.alpha1=self.alpha1
         self.alpha2=self.alpha2
-        OWGUI.button(self.controlArea, self,  "&Apply settings", callback=self.ApplySettings)
+        OWGUI.button(self.controlArea, self,  "&Apply", callback=self.ApplySettings)
         
         self.resize(100,100)
 

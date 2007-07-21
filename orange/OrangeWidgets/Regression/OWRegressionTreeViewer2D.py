@@ -156,7 +156,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.setMouseTracking(True)
 
         nodeInfoBox = QVButtonGroup("Show Info On", self.NodeTab)
-        nodeInfoButtons = ['Predicted value', 'Variance', 'Deviance', 'Error', 'Number of instances']
+        nodeInfoButtons = ['Predicted value', 'Variance', 'Deviation, 'Error', 'Number of instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'error', 'inst']
         self.NodeInfoW = []; self.dummy = 0
         for i in range(len(nodeInfoButtons)):
@@ -238,7 +238,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
             text="THEN "+str(node.defVal)
         b.addTextLine(text)
         b.addTextLine()
-        text="Instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
+        text="#instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
         b.addTextLine(text)
         b.addTextLine()
         b.addTextLine((node.tree.branches and "Partition on %s" % node.name) or "(leaf)")

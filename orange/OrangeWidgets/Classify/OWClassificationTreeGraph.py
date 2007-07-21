@@ -325,20 +325,20 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
             text="THEN "+node.majClassName
         b.addTextLine(text)
         b.addTextLine()
-        text="Instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
+        text="Instances: %(ninst)s (%(prop).1f%%)" % {"ninst": str(node.numInst), "prop": node.numInst/self.tree.distribution.cases*100}
         b.addTextLine(text)
         b.addTextLine()
         for i,d in enumerate(node.dist.items()):
             if d[1]!=0:
                 b.addTextLine("%s: %i (%.1f" %(d[0],int(d[1]),d[1]/sum(node.dist)*100)+"%)",self.ClassColors[i])
         b.addTextLine()
-        b.addTextLine((node.tree.branches and "Partition on: "+node.name) or "(leaf)")
+        b.addTextLine((node.tree.branches and "Partition on: %(nodename)s" % {"nodename": node.name}) or "(leaf)")
         b.show()
         return b
 
     def saveGraph(self, fileName = None):
         if not fileName:
-            qfileName = QFileDialog.getSaveFileName("tree.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)\nDot Tree File(.DOT)", None, "Save to..")
+            qfileName = QFileDialog.getSaveFileName("tree.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)\nDot Tree File(.DOT)", None, None, "Save to..")
             fileName = str(qfileName)
             if not fileName:
                 return

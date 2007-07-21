@@ -133,19 +133,19 @@ class ClusterOptimization(OWBaseWidget):
         # ###########################
         # MAIN TAB
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, "Evaluate")
-        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection List, Most Interesting First")
-        self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, "Shown Details in Projections List" , orientation = "horizontal")
+        self.resultsBox = OWGUI.widgetBox(self.MainTab, "Projection list, most interesting first")
+        self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, "Shown details in projections list" , orientation = "horizontal")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
         self.label1 = QLabel('Projections with ', self.buttonBox)
         self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    exactly    ", "  maximum  "] )
         self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCountIndex", items = [str(x) for x in range(3, 15)] + ["ALL"], tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes")
         self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
-        self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start evaluating projections")
+        self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start Evaluating Projections")
         f = self.startOptimizationButton.font()
         f.setBold(1)
         self.startOptimizationButton.setFont(f)
-        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopOptimizationClick)
+        self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop Evaluation", callback = self.stopOptimizationClick)
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
 
@@ -154,7 +154,7 @@ class ClusterOptimization(OWBaseWidget):
         self.resultList.setMinimumSize(200,200)
 
         self.showRankCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showRank', 'Rank', callback = self.updateShownProjections, tooltip = "Show projection ranks")
-        self.showValueCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showValue', 'Cluster Value', callback = self.updateShownProjections, tooltip = "Show the cluster value")
+        self.showValueCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showValue', 'Cluster value', callback = self.updateShownProjections, tooltip = "Show the cluster value")
 
 
         # ##########################
@@ -170,11 +170,11 @@ class ClusterOptimization(OWBaseWidget):
         self.distributionScaleCheck = OWGUI.checkBox(valueBox, self, "distributionScale", "Scale cluster values according to class distribution", tooltip = "Cluster value is (among other things) determined by the number of points inside the cluster. \nThis criteria is unfair in data sets with uneven class distributions.\nThis option takes this into an account by transforming the number of covered points into percentage of all points with the cluster class value.")
         self.considerDistanceCheck = OWGUI.checkBox(valueBox, self, "considerDistance", "Consider distance between clusters", tooltip = "If checked, cluster value is defined also by the distance between the cluster points and nearest points that belong to a different class")
 
-        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Heuristics for Attribute Ordering")
-        self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Miscellaneous Settings")
+        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Heuristics for attribute ordering")
+        self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Miscellaneous settings")
 
-        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrCont", box = "Ordering of Continuous Attributes", items = [val for (val, m) in contMeasures])
-        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrDisc", box = "Ordering of Discrete Attributes", items = [val for (val, m) in discMeasures])
+        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrCont", box = "Ordering of continuous attributes", items = [val for (val, m) in contMeasures])
+        OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrDisc", box = "Ordering of discrete attributes", items = [val for (val, m) in discMeasures])
         
         self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
         self.minTableLenEdit = OWGUI.lineEdit(self.miscSettingsBox, self, "minExamples", "Minimum examples in data set:        ", orientation = "horizontal", tooltip = "Due to missing values, different subsets of attributes can have different number of examples. Projections with less than this number of examples will be ignored.", valueType = int)
@@ -182,9 +182,9 @@ class ClusterOptimization(OWBaseWidget):
         # ##########################
         # ARGUMENTATION tab        
         self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, "Arguments")
-        self.findArgumentsButton = OWGUI.button(self.argumentationStartBox, self, "Find arguments", callback = self.findArguments)
+        self.findArgumentsButton = OWGUI.button(self.argumentationStartBox, self, "Find Arguments", callback = self.findArguments)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
-        self.stopArgumentationButton = OWGUI.button(self.argumentationStartBox, self, "Stop searching", callback = self.stopArgumentationClick)
+        self.stopArgumentationButton = OWGUI.button(self.argumentationStartBox, self, "Stop Searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
         self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = "Arguments for class:", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
@@ -229,9 +229,9 @@ class ClusterOptimization(OWBaseWidget):
         self.clusterStabilityButton = OWGUI.button(self.buttonBox3, self, 'Show cluster stability', self.evaluatePointsInClusters)
         self.clusterStabilityButton.setToggleButton(1)
         #self.saveProjectionButton = OWGUI.button(self.buttonBox3, self, 'Save projection')
-        OWGUI.button(self.buttonBox3, self, "Save best graphs", self.exportMultipleGraphs)
+        OWGUI.button(self.buttonBox3, self, "Save Best Graphs", self.exportMultipleGraphs)
 
-        OWGUI.button(self.manageBox, self, "Clear results", self.clearResults)
+        OWGUI.button(self.manageBox, self, "Clear Results", self.clearResults)
 
         self.attrLenList = QListBox(self.manageResultsBox)
         self.attrLenList.setSelectionMode(QListBox.Multi)
@@ -705,7 +705,7 @@ class ClusterOptimization(OWBaseWidget):
         self.sizeDlg.exec_loop()
 
     def saveToFileAccept(self):
-        fileName = str(QFileDialog.getSaveFileName("Graph","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to.."))
+        fileName = str(QFileDialog.getSaveFileName("Graph","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to...", "Save to..."))
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
@@ -1032,11 +1032,11 @@ class clusterClassifier(orange.Classifier):
             dist = orange.DiscDistribution([val/float(s) for val in classProjectionVals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
 
             classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
-            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % {"cls": classValue, "prob": dist[classValue]*100}
             for key in dist.keys():
                 s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
             if argumentCount > allowedArguments:
-                s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (argumentCount, allowedArguments)
+                s += "<nobr>Note: To get the current prediction, <b>%(fa)d</b> arguments had to be used (instead of %(ac)d)<br>" % {"fa": argumentCount, "ac": allowedArguments}
             print s[:-4]
             
             return (classValue, dist)
@@ -1080,11 +1080,11 @@ class clusterClassifier(orange.Classifier):
                         dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
 
                         classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
-                        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+                        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % {"cls": classValue, "prob": dist[classValue]*100}
                         for key in dist.keys():
                             s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
                         if consideredArguments > neededArguments:
-                            s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (consideredArguments, neededArguments)
+                            s += "<nobr>Note: To get the current prediction, <b>%(fa)d</b> arguments had to be used (instead of %(ac)d)<br>" % {"fa": consideredArguments, "ac": neededArguments}
                         print s[:-4]
                         
                         return (classValue, dist)
@@ -1106,7 +1106,7 @@ class clusterClassifier(orange.Classifier):
             dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
 
             classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
-            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%(cls)s</b> with probability <b>%(prob).2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % {"cls": classValue, "prob": dist[classValue]*100}
             for key in dist.keys():
                 s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
             s += "<nobr>Note: There were not enough projections to get a reliable prediction<br>"

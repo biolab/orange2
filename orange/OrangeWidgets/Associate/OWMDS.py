@@ -42,7 +42,7 @@ class OWMDS(OWWidget):
 
         self.StressFunc=3
         self.minStressDelta=1e-5
-        self.maxIterations=50
+        self.maxIterations=5000
         self.maxImprovment=10
         self.autoSendSelection=0
         self.toolbarSelection=0
@@ -87,7 +87,7 @@ class OWMDS(OWWidget):
         OWGUI.button(init, self, "Torgerson", self.torgerson)
         opt=OWGUI.widgetBox(mds, "Optimization")
 
-        self.startButton=OWGUI.button(opt, self, "Start", self.testStart)
+        self.startButton=OWGUI.button(opt, self, "Optimize", self.testStart)
         OWGUI.button(opt, self, "LSMT", self.LSMT)
         OWGUI.button(opt, self, "Step", self.smacofStep)
         #OWGUI.button(opt, self, "Stop", self.stop)
@@ -102,7 +102,7 @@ class OWMDS(OWWidget):
         stress=OWGUI.widgetBox(self.stopping, "Min. Avg. Stress Delta")
         OWGUI.comboBox(self.stopping, self, "StressFunc", box="Stress Function", items=[a[0] for a in self.stressFunc], callback=self.updateStress)
         OWGUI.qwtHSlider(stress, self, "minStressDelta", minValue=1e-5, maxValue=1e-2, step=1e-5, precision=6)
-        OWGUI.spin(self.stopping, self, "maxIterations", box="Max. Number of Steps", min=1, max=100)
+        OWGUI.spin(self.stopping, self, "maxIterations", box="Max. Number of Steps", min=1, max=5000)
         #OWGUI.spin(stopping, self, "maxImprovment", box="Max. improvment of a run", min=0, max=100, postfix="%")
     
         tabs.addTab(mds, "MDS")
@@ -157,11 +157,11 @@ class OWMDS(OWWidget):
         discAttributes=filter(lambda a: a.varType==orange.VarTypes.Discrete, attributes)
         contAttributes=filter(lambda a: a.varType==orange.VarTypes.Continuous, attributes)
         attrName=[attr.name for attr in attributes]
-        for name in ["One color"]+attrName:
+        for name in ["Same color"]+attrName:
             self.colorCombo.insertItem(name)
-        for name in ["One size"]+map(lambda a:a.name, contAttributes):
+        for name in ["Same size"]+map(lambda a:a.name, contAttributes):
             self.sizeCombo.insertItem(name)
-        for name in ["One shape"]+map(lambda a: a.name, discAttributes):
+        for name in ["Same shape"]+map(lambda a: a.name, discAttributes):
             self.shapeCombo.insertItem(name)
         for name in ["No  name"]+attrName:
             self.nameCombo.insertItem(name)
@@ -210,7 +210,7 @@ class OWMDS(OWWidget):
         self.sizeCombo.clear()
         self.shapeCombo.clear()
         self.nameCombo.clear()
-        for name in ["One color", "strain"]:
+        for name in ["Same color", "strain"]:
             self.colorCombo.insertItem(name)
         for name in ["No name", "name", "strain"]:
             self.nameCombo.insertItem(name)
@@ -239,7 +239,7 @@ class OWMDS(OWWidget):
         self.sizeCombo.clear()
         self.shapeCombo.clear()
         self.nameCombo.clear()
-        for name in ["One color", "Variable"]:
+        for name in ["Same color", "Variable"]:
             self.colorCombo.insertItem(name)
         for name in ["No name", "Var name"]:
             self.nameCombo.insertItem(name)
@@ -348,7 +348,7 @@ class OWMDS(OWWidget):
             self.progressBarSet(int(pcur))
 
             oldStress=stress
-        self.startButton.setText("Start")
+        self.startButton.setText("Optimize")
         self.progressBarFinished()
         #if not self.ReDraw:
         self.graph.updateData()
@@ -362,7 +362,7 @@ class OWMDS(OWWidget):
             self.done=True
             return
         self.done=False
-        self.startButton.setText("Stop")
+        self.startButton.setText("Stop Optimization")
         self.stopping.setDisabled(1)
         self.progressBarInit()
         self.iterNum=0
@@ -370,7 +370,7 @@ class OWMDS(OWWidget):
         self.mds.mds.optimize(self.maxIterations, self.stressFunc[self.StressFunc][1], self.minStressDelta)
         if self.iterNum%(math.pow(10,self.RefreshMode)):
             self.graph.updateData()
-        self.startButton.setText("Start")
+        self.startButton.setText("Optimize")
         self.stopping.setDisabled(0)
         self.progressBarFinished()
         self.done=True
@@ -433,6 +433,29 @@ class OWMDS(OWWidget):
             self.send("Example Table", selection)
 
     def sendList(self, selectedInd):
+        if self.data and type(self.data[0]) == str:
+            xAttr=orange.FloatVariable("X")
+            yAttr=orange.FloatVariable("Y")
+            nameAttr=  orange.StringVariable("name")
+            if self.selectionOptions == 1:
+                domain = orange.Domain([xAttr, yAttr, nameAttr])
+                selection = orange.ExampleTable(domain)
+                for i in range(len(selectedInd)):
+                    selection.append(list(self.mds.points[selectedInd[i]]) + [self.data[i]])
+            else:
+                domain = orange.Domain([nameAttr])
+                if self.selectionOptions:
+                    domain.addmeta(orange.newmetaid(), xAttr)
+                    domain.addmeta(orange.newmetaid(), yAttr)
+                selection = orange.ExampleTable(domain)
+                for i in range(len(selectedInd)):
+                    selection.append([self.data[i]])
+                    if self.selectionOptions:
+                        selection[i][xAttr]=self.mds.points[selectedInd[i]][0]
+                        selection[i][yAttr]=self.mds.points[selectedInd[i]][1]
+            self.send("Example Table", selection)
+            return
+               
         if not selectedInd:
             self.send("Structured Data Files", None)
         else:
@@ -466,6 +489,7 @@ class MDSGraph(OWGraph):
         self.points=[]
         self.lines=[]
         self.lineKeys=[]
+        self.distanceLineKeys=[]
         self.colors=[]
         self.sizes=[]
         self.shapeList=[QwtSymbol.Ellipse,
@@ -495,14 +519,35 @@ class MDSGraph(OWGraph):
 #        if self.mds:
         if 1:
             self.clear()
-            self.setPoints()
             if self.ShowStress:
-                self.setLines(True)
+                self.updateDistanceLines()
+            self.setPoints()
+                #self.setLines(True)
         for axis in [QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight]:
             self.setAxisAutoScale(axis)
         self.updateAxes()
         self.repaint()
 
+    def updateDistanceLines(self):
+        for k in self.distanceLineKeys:
+            self.removeCurve(k)
+
+        matrix = self.mds.originalDistances
+        mindist = min([min(r) for r in matrix])
+        maxdist = max([max(r) for r in matrix])
+        diff = maxdist - mindist
+# DBLP
+#        maxdist = 0.85 * (mindist + diff)
+        maxdist = 0.5 * (mindist + diff)
+        k = 10 / diff
+        if self.mds:
+            black = QColor(192,192,192)
+            for i, pti in enumerate(self.mds.points):
+                for j, ptj in enumerate(self.mds.points):
+                    dist =  matrix[i, j]
+                    if dist < maxdist:
+                        self.distanceLineKeys.append(self.addCurve("A", black, black, 0, QwtCurve.Lines, xData=[pti[0],ptj[0]], yData=[pti[1],ptj[1]], lineWidth = (maxdist - dist) * k))
+                    
     def updateLines(self):
         if self.mds:
             self.setLines()
@@ -538,6 +583,7 @@ class MDSGraph(OWGraph):
                           symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]])
             if self.NameAttr!=0:
                 self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
+        self.update()
             
                                
     def setLines(self, reset=False):

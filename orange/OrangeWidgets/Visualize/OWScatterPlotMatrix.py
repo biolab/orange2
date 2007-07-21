@@ -70,11 +70,11 @@ class OWScatterPlotMatrix(OWWidget):
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Shown Attributes")
+        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Shown attributes")
         self.shownAttribsGroup.setMinimumWidth(200)
         hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
         self.addRemoveGroup = OWGUI.widgetBox(self.GeneralTab, 1, orientation = "horizontal" )
-        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Hidden Attributes")
+        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Hidden attributes")
 
         self.shownAttribsLB = QListBox(hbox)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
@@ -102,15 +102,15 @@ class OWScatterPlotMatrix(OWWidget):
 
         # ####################################
         # settings tab
-        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.setPointWidth)
+        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box=' Point size ', minValue=1, maxValue=20, step=1, callback = self.setPointWidth)
 
-        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
+        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering options")
         box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
         self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
         self.jitterSizeCombo = OWGUI.comboBox(box3, self, "jitterSize", callback = self.updateJitteringSettings, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box2, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.updateJitteringSettings, tooltip = "Does jittering apply also on continuous attributes?")
 
-        box4 = OWGUI.widgetBox(self.SettingsTab, "General Graph Settings")
+        box4 = OWGUI.widgetBox(self.SettingsTab, "General graph settings")
         OWGUI.checkBox(box4, self, 'showAxisScale', 'Show axis scale', callback = self.updateSettings)
         OWGUI.checkBox(box4, self, 'showXaxisTitle', 'X axis title', callback = self.updateSettings)
         OWGUI.checkBox(box4, self, 'showYLaxisTitle', 'Y axis title', callback = self.updateSettings)
@@ -144,9 +144,9 @@ class OWScatterPlotMatrix(OWWidget):
 
     def createColorDialog(self):
         c = OWDlgs.ColorPalette(self, "Color Palette")
-        c.createDiscretePalette("Discrete Palette")
+        c.createDiscretePalette("Discrete palette")
         c.createContinuousPalette("contPalette", "Continuous palette")
-        box = c.createBox("otherColors", "Other Colors")
+        box = c.createBox("otherColors", "Other colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         box.adjustSize()
@@ -280,7 +280,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.sizeDlg.exec_loop()
 
     def saveToFileAccept(self):
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to..")
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to...")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)

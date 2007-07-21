@@ -115,7 +115,7 @@ class OWSelectData(OWWidget):
         self.lblMin = QLabel("Min: ", boxAttrStat)
         self.lblAvg = QLabel("Avg: ", boxAttrStat)
         self.lblMax = QLabel("Max: ", boxAttrStat)
-        self.lblDefined = QLabel("Defined for ---- examples", boxAttrStat)
+        self.lblDefined = QLabel("Defined for %s examples" % "----", boxAttrStat)
         # values 1: discrete
         boxVal = QVGroupBox("Values", None)
         self.valuesStack.addWidget(boxVal, orange.VarTypes.Discrete)
@@ -132,7 +132,7 @@ class OWSelectData(OWWidget):
         self.boxButtons = QHBox(ca)
         gl.addMultiCellWidget(self.boxButtons, 1,1,0,2)
         self.btnNew = OWGUI.button(self.boxButtons, self, "Add", self.OnNewCondition)
-        self.btnUpdate = OWGUI.button(self.boxButtons, self, "Update", self.OnUpdateCondition)
+        self.btnUpdate = OWGUI.button(self.boxButtons, self, "Modify", self.OnUpdateCondition)
         self.btnRemove = OWGUI.button(self.boxButtons, self, "Remove", self.OnRemoveCondition)
         self.btnOR = OWGUI.button(self.boxButtons, self, "OR", self.OnDisjunction)
         self.btnMoveUp = OWGUI.button(self.boxButtons, self, "Move Up", self.btnMoveUpClicked)
@@ -173,12 +173,12 @@ class OWSelectData(OWWidget):
         self.dataOutAttributesLabel = OWGUI.widgetLabel(boxDataOut, "num attributes")
 
         boxSettings = QVGroupBox(ca)
-        boxSettings.setTitle('Update')
+        boxSettings.setTitle('Commit')
         gl.addWidget(boxSettings, 3,2)
         OWGUI.checkBox(boxSettings, self, "purgeAttributes", "Remove unused values/attributes", box=None, callback=self.OnPurgeChange)
         self.purgeClassesCB = OWGUI.checkBox(OWGUI.indentedBox(boxSettings), self, "purgeClasses", "Remove unused classes", callback=self.OnPurgeChange)
-        OWGUI.checkBox(boxSettings, self, "updateOnChange", "Update on any change", box=None)
-        btnUpdate = OWGUI.button(boxSettings, self, "Update", self.setOutput)
+        OWGUI.checkBox(boxSettings, self, "updateOnChange", "Commit on change", box=None)
+        btnUpdate = OWGUI.button(boxSettings, self, "Commit", self.setOutput)
 
         self.icons = self.createAttributeIconDict()
         self.setData(None)

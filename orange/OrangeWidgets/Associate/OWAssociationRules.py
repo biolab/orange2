@@ -30,7 +30,7 @@ class OWAssociationRules(OWWidget):
 
         box = OWGUI.widgetBox(self.space, "Algorithm", addSpace = True)
         self.cbSparseAlgorithm = OWGUI.checkBox(box, self, 'useSparseAlgorithm', 'Use algorithm for sparse data', tooltip="Use original Agrawal's algorithm", callback = self.checkSparse)
-        self.cbClassificationRules = OWGUI.checkBox(box, self, 'classificationRules', 'Induce classification rules', tooltip="Induce classifaction rules")
+        self.cbClassificationRules = OWGUI.checkBox(box, self, 'classificationRules', 'Induce classification rules', tooltip="Induce classification rules")
         self.checkSparse()
 
         box = OWGUI.widgetBox(self.space, "Pruning", addSpace = True)

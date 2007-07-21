@@ -20,7 +20,7 @@ class SchemaDoc(QMainWindow):
         self.canSave = 0
         self.resize(700,500)
         self.showNormal()
-        self.setCaption("Schema " + str(self.canvasDlg.iDocIndex))
+        self.setCaption("Schema"+" " + str(self.canvasDlg.iDocIndex))
         self.canvasDlg.iDocIndex = self.canvasDlg.iDocIndex + 1
 
         self.enableSave(False)
@@ -473,7 +473,7 @@ class SchemaDoc(QMainWindow):
     def loadDocument(self, filename, caption = None):
         if not os.path.exists(filename):
             self.close()
-            QMessageBox.critical(self,'Orange Canvas','Unable to find file "'+ filename,  QMessageBox.Ok + QMessageBox.Default)
+            QMessageBox.critical(self,'Orange Canvas','Unable to find file "%s"' % filename,  QMessageBox.Ok + QMessageBox.Default)
             return
 
         # set cursor
@@ -500,7 +500,7 @@ class SchemaDoc(QMainWindow):
                 name = widget.getAttribute("widgetName")
                 tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"), activateSettings = 0)
                 if not tempWidget:
-                    QMessageBox.information(self,'Orange Canvas','Unable to create an instance of the \"'+ name + '\" widget',  QMessageBox.Ok + QMessageBox.Default)
+                    QMessageBox.information(self,'Orange Canvas','Unable to create an instance of the widget "%s"' % name,  QMessageBox.Ok + QMessageBox.Default)
                 else:
                     if tempWidget.caption in settingsDict.keys():
                         tempWidget.instance.loadSettingsStr(settingsDict[tempWidget.caption])
@@ -517,7 +517,7 @@ class SchemaDoc(QMainWindow):
                 inWidget = self.getWidgetByCaption(inCaption)
                 outWidget = self.getWidgetByCaption(outCaption)
                 if inWidget == None or outWidget == None:
-                    print 'Unable to create a line between widgets "%s" and "%s" due to a missing widget.' % (outCaption, inCaption)
+                    print 'Unable to connect etween widgets "%s" and "%s" due to a missing widget.' % (outCaption, inCaption)
                     continue
 
                 signalList = eval(signals)

@@ -57,7 +57,7 @@ class OWSieveMultigram(OWVisWidget):
         #add controls to self.controlArea widget
         self.createShowHiddenLists(self.GeneralTab, callback = self.interestingSubsetSelection)
         
-        self.interestingButton = QPushButton("Find interesting attr.", self.GeneralTab)
+        self.interestingButton = QPushButton("Find Interesting Attr.", self.GeneralTab)
         self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection) 
 
         #connect controls to appropriate functions
@@ -232,14 +232,14 @@ class OWSieveMultigramOptions(QVGroupBox):
         self.hbox2 = QHBox(self.pearsonGroup, "residual")
         self.residualLabel = QLabel('Max residual', self.hbox2)
         self.pearsonMaxResCombo = QComboBox(self.hbox2)
-        QToolTip.add(self.hbox2, "What is maximum expected Pearson standardized residual. Greater the maximum, brighter the colors.")
+        QToolTip.add(self.hbox2, "The maximum expected Pearson standardized residual. Greater the maximum, brighter the colors.")
 
         self.hbox3 = QHBox(self.pearsonGroup, "minimum")
         self.residualLabel2 = QLabel('Min residual   ', self.hbox3)
         self.minResidualEdit = QLineEdit(self.hbox3)
-        QToolTip.add(self.hbox3, "What is minimal absolute residual value that will be shown in graph.")
+        QToolTip.add(self.hbox3, "The minimal absolute residual value that will be shown in graph.")
 
-        self.applyButton = QPushButton("Apply changes", self)
+        self.applyButton = QPushButton("&Apply", self)
 
         self.initSettings()        
 

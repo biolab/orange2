@@ -51,7 +51,7 @@ class ZoomSelectToolbar(QHButtonGroup):
             else:
                 button = createButton(self, f[0], lambda x=b: self.action(x), f[3], toggle = f[5])
                 setattr(self, f[1], button)
-                if f[0] == "Send selections":
+                if f[1] == "buttonSendSelections":
                     button.setEnabled(not autoSend)
 
         self.action(0)
@@ -59,7 +59,7 @@ class ZoomSelectToolbar(QHButtonGroup):
 
     def action(self, b):
         f = self.functions[b]
-        if f[5]:
+        if f and f[5]:
             if hasattr(self.widget, "toolbarSelection"):
                 self.widget.toolbarSelection = b
             for fi, ff in enumerate(self.functions):

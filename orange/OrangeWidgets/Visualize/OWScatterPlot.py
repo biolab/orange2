@@ -75,18 +75,18 @@ class OWScatterPlot(OWWidget):
 
         #x attribute
         self.attrX = ""
-        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", "X Axis Attribute", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", "X-axis attribute", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
 
         # y attribute
         self.attrY = ""
-        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", "Y Axis Attribute", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", "Y-axis attribute", callback = self.majorUpdateGraph, sendSelectedValue = 1, valueType = str)
 
         # coloring
         self.showColorLegend = 0
         self.attrColor = ""
-        box = OWGUI.widgetBox(self.GeneralTab, "Color Attribute")
+        box = OWGUI.widgetBox(self.GeneralTab, "Colors")
         OWGUI.checkBox(box, self, 'showColorLegend', 'Show color legend', callback = self.updateGraph)
-        self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One color)")
+        self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same color)")
 
         # labelling
         self.attrLabel = ""
@@ -94,11 +94,11 @@ class OWScatterPlot(OWWidget):
 
         # shaping
         self.attrShape = ""
-        self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", "Shape Attribute", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One shape)")
+        self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", "Shape", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same shape)")
 
         # sizing
         self.attrSize = ""
-        self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", "Size Attribute", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(One size)")
+        self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", "Size", callback = self.updateGraph, sendSelectedValue=1, valueType = str, emptyString = "(Same size)")
 
 ##        # cluster dialog
 ##        self.clusterDlg.label1.hide()
@@ -108,7 +108,7 @@ class OWScatterPlot(OWWidget):
 ##        self.graph.clusterOptimization = self.clusterDlg
 
 
-        self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialogs", orientation = "horizontal")
+        self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization dialogs", orientation = "horizontal")
         OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
         
 ##        OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
@@ -123,18 +123,18 @@ class OWScatterPlot(OWWidget):
         # ####################################
         # SETTINGS TAB
         # point width
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=20, step=1, callback = self.pointSizeChange)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box='Symbol size', minValue=1, maxValue=20, step=1, callback = self.pointSizeChange)
 
         # #####
         # jittering options
-        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering Options")
+        box2 = OWGUI.widgetBox(self.SettingsTab, "Jittering options")
         box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
         self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
         self.jitterSizeCombo = OWGUI.comboBox(box3, self, "graph.jitterSize", callback = self.resetGraphData, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.resetGraphData, tooltip = "Does jittering apply also on continuous attributes?")
 
         # general graph settings
-        box4 = OWGUI.collapsableWidgetBox(self.SettingsTab, "General Graph Settings", self, "boxGeneral")
+        box4 = OWGUI.collapsableWidgetBox(self.SettingsTab, "General graph settings", self, "boxGeneral")
         OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.graph.setShowXaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.graph.setShowYLaxisTitle)
         OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
@@ -155,7 +155,7 @@ class OWScatterPlot(OWWidget):
         OWGUI.hSlider(box6, self, 'graph.squareGranularity', minValue=1, maxValue=10, step=1, callback = self.updateGraph)
 
         box7 = OWGUI.widgetBox(box4, orientation = "horizontal")
-        OWGUI.separator(box7, 20)
+        OWGUI.separator(box7, 17)
         OWGUI.checkBox(box7, self, 'graph.spaceBetweenCells', 'Show space between cells', callback = self.updateGraph)
         hider.setWidgets([box6, box7])
 
@@ -164,8 +164,8 @@ class OWScatterPlot(OWWidget):
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, "Colors", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Set Colors", self.setColors, tooltip = "Set the canvas background color, grid color and color palette for coloring continuous variables", debuggingEnabled = 0)
 
-        box5 = OWGUI.widgetBox(self.SettingsTab, "Tooltips Settings")
-        OWGUI.comboBox(box5, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
+        box5 = OWGUI.widgetBox(self.SettingsTab, "Tooltips settings")
+        OWGUI.comboBox(box5, self, "graph.tooltipKind", items = ["Don't Show Tooltips", "Show Visible Attributes", "Show All Attributes"], callback = self.updateGraph)
 
         OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = "Data selection", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         self.graph.selectionChangedCallback = self.setAutoSendSelection
@@ -292,7 +292,7 @@ class OWScatterPlot(OWWidget):
         self.classificationResults = None
         if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
             self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
-            self.classificationResults = (self.classificationResults, "Probability of correct classificatioin = %.2f%%")
+            self.classificationResults = (self.classificationResults, "Probability of correct classification = %.2f%%")
 
         self.updateGraph()
 
@@ -373,10 +373,10 @@ class OWScatterPlot(OWWidget):
 
         if self.data == None: return
 
-        self.attrColorCombo.insertItem("(One color)")
+        self.attrColorCombo.insertItem("(Same color)")
         self.attrLabelCombo.insertItem("(No labels)")
-        self.attrShapeCombo.insertItem("(One shape)")
-        self.attrSizeCombo.insertItem("(One size)")
+        self.attrShapeCombo.insertItem("(Same shape)")
+        self.attrSizeCombo.insertItem("(Same size)")
 
         #labels are usually chosen from meta variables, put them on top
         for metavar in [self.data.domain.getmeta(mykey) for mykey in self.data.domain.getmetas().keys()]:
@@ -482,7 +482,7 @@ class OWScatterPlot(OWWidget):
         c = OWDlgs.ColorPalette(self, "Color Palette")
         c.createDiscretePalette("Discrete Palette")
         c.createContinuousPalette("contPalette", "Continuous palette")
-        box = c.createBox("otherColors", "Other Colors")
+        box = c.createBox("otherColors", "Other colors")
         c.createColorButton(box, "Canvas", "Canvas color", Qt.white)
         box.addSpace(5)
         c.createColorButton(box, "Grid", "Grid color", Qt.black)

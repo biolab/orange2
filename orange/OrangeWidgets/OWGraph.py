@@ -494,7 +494,6 @@ class OWGraph(QwtPlot):
         
         xs = self.axisScale(QwtPlot.xBottom)
         x = self.invTransform(QwtPlot.xBottom, e.x())
-        print "omp", xs.lBound(), xs.hBound(), x
 
         # ####
         # ZOOM

@@ -14,9 +14,9 @@ class OWVisWidget(OWWidget):
         self.hiddenAttributes = []
         self.selectedHidden = []
         
-        self.shownAttribsGroup = OWGUI.widgetBox(placementTab, " Shown Attributes " )
+        self.shownAttribsGroup = OWGUI.widgetBox(placementTab, " Shown attributes " )
         self.addRemoveGroup = OWGUI.widgetBox(placementTab, 1, orientation = "horizontal" )
-        self.hiddenAttribsGroup = OWGUI.widgetBox(placementTab, " Hidden Attributes ")
+        self.hiddenAttribsGroup = OWGUI.widgetBox(placementTab, " Hidden attributes ")
 
         hbox = OWGUI.widgetBox(self.shownAttribsGroup, orientation = 'horizontal')
         self.shownAttribsLB = OWGUI.listBox(hbox, self, "selectedShown", "shownAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)

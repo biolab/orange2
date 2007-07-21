@@ -87,7 +87,7 @@ class OWDistanceMap(OWWidget):
         self.loadSettings()
 
         self.maxHSize = 30; self.maxVSize = 30
-        self.sorting = [("None", self.sortNone), ("Adjacent distance", self.sortAdjDist), ("Random", self.sortRandom)]
+        self.sorting = [("No sorting", self.sortNone), ("Adjacent distance", self.sortAdjDist), ("Random order", self.sortRandom)]
 
         self.matrix = self.order = None
 
@@ -110,7 +110,7 @@ class OWDistanceMap(OWWidget):
         # FILTER TAB
         tab = QVGroupBox(self)
         box = QVButtonGroup("Threshold Values", tab)
-        OWGUI.checkBox(box, self, 'CutEnabled', "Enabled", callback=self.setCutEnabled)
+        OWGUI.checkBox(box, self, 'CutEnabled', "Enable thresholds", callback=self.setCutEnabled)
         self.sliderCutLow = OWGUI.qwtHSlider(box, self, 'CutLow', label='Low:', labelWidth=33, minValue=-100, maxValue=0, step=0.1, precision=1, ticks=0, maxWidth=80, callback=self.drawDistanceMap)
         self.sliderCutHigh = OWGUI.qwtHSlider(box, self, 'CutHigh', label='High:', labelWidth=33, minValue=0, maxValue=100, step=0.1, precision=1, ticks=0, maxWidth=80, callback=self.drawDistanceMap)
         if not self.CutEnabled:

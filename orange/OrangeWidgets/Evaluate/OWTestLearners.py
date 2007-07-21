@@ -24,7 +24,7 @@ class OWTestLearners(OWWidget):
     stat = ( ('Classification accuracy', 'CA', 'CA(res)'),
              ('Sensitivity', 'Sens', 'sens(cm)'),
              ('Specificity', 'Spec', 'spec(cm)'),
-             ('Area under ROC', 'AUC', 'AUC(res)'),
+             ('Area under ROC curve', 'AUC', 'AUC(res)'),
              ('Information score', 'IS', 'IS(res)'),
              ('Brier score', 'Brier', 'BrierScore(res)')
            )
@@ -96,7 +96,7 @@ class OWTestLearners(OWWidget):
         # table with results
         self.layout=QVBoxLayout(self.mainArea)
         self.g = QVGroupBox(self.mainArea)
-        self.g.setTitle('Evaluation Results')
+        self.g.setTitle('Evaluation results')
 
         self.tab=QTable(self.g)
         self.tab.setSelectionMode(QTable.NoSelection)
@@ -169,7 +169,7 @@ class OWTestLearners(OWWidget):
                         self.scores[i].append(-1) # handle the exception
 #                        type, val, traceback = sys.exc_info()
 #                        sys.excepthook(type, val, traceback)  # print the exception
-                        self.error("Caught an exception while evaluating classifier %s " % learner.name)
+                        self.error("An error occurred while evaluating classifier %s " % learner.name)
             else:
                 # this is an old but updated learner
                 indx = [l.id for l in self.learners].index(learner.id)
@@ -184,7 +184,7 @@ class OWTestLearners(OWWidget):
                         self.scores[i][indx] = -1
 #                        type, val, traceback = sys.exc_info()
 #                        sys.excepthook(type, val, traceback)  # print the exception
-                        self.error("Caught an exception while evaluating classifier %s" % learner.name)
+                        self.error("An error occurred while evaluating classifier %s" % learner.name)
 
         else: # test on all learners, or on the new learner with no other learners in the memory
             self.results = res

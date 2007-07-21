@@ -198,11 +198,11 @@ class OWDataSampler(OWWidget):
             self.ind = self.indices(self.data, p0 = self.pGroups[self.outFold-1])
             sample = self.data.select(self.ind, 0)
             remainder = self.data.select(self.ind, 1)
-            self.infoc.setText('Output: subset %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
+            self.infoc.setText('Output: subset %(outFold)d of %(folds)d, %(instances)d instance(s).' % {"outFold": self.outFold, "folds": self.Folds, "instances": len(sample)})
         else:
             sample = self.data.select(self.ind, self.outFold-1)
             remainder = self.data.select(self.ind, self.outFold-1, negate=1)
-            self.infoc.setText('Output: fold %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
+            self.infoc.setText('Output: fold %(outFold)d of %(folds)d, %(instances)d instance(s).' % {"outFold": self.outFold, "folds": self.Folds, "instances": len(sample)})
         # set name (by PJ)
         if sample:
             sample.name = self.data.name

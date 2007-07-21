@@ -44,7 +44,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
         self.printButton =          OWGUI.button(self.space, self, "Print", callback = self.printPic)
         self.saveImageButton =      OWGUI.button(self.space, self, "Save Image", callback = self.saveImage)
-        self.saveMatplotlibButton = OWGUI.button(self.space, self, "Save Graph As matplotlib Script", callback = self.saveToMatplotlib)
+        self.saveMatplotlibButton = OWGUI.button(self.space, self, "Save Graph as matplotlib Script", callback = self.saveToMatplotlib)
         for (text, funct) in extraButtons:
             butt = OWGUI.button(self.space, self, text, callback = funct)
             self.connect(butt, SIGNAL("clicked()"), self.accept)        # also connect the button to accept so that we close the dialog
@@ -222,7 +222,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
 
     def getFileName(self, defaultName, mask, extension):
-        fileName = str(QFileDialog.getSaveFileName(self.lastSaveDirName + defaultName, mask, None, "Save to..", "Save to.."))
+        fileName = str(QFileDialog.getSaveFileName(self.lastSaveDirName + defaultName, mask, None, "Save to...", "Save to..."))
         if not fileName: return None
         if not os.path.splitext(fileName)[1][1:]: fileName = fileName + extension
 

@@ -65,7 +65,7 @@ class OWSVM(OWWidget):
 
         OWGUI.separator(self.controlArea)
 
-        OWGUI.button(self.controlArea, self,"&Apply settings", callback=self.applySettings)
+        OWGUI.button(self.controlArea, self,"&Apply", callback=self.applySettings)
         self.nuBox.setDisabled(not self.useNu)
         self.adjustSize()
         self.loadSettings()
