@@ -859,7 +859,7 @@ class OWDiscretize(OWWidget):
 
 
     # This weird construction of the list is needed for easier translation into other languages
-    shortDiscNames = "" + [" (%s)" % x for x in ("leave continuous", "entropy", "equal frequency", "equal width", "removed")] + ["custom %i" % x for x in range(1, 4)]
+    shortDiscNames = [""] + [" (%s)" % x for x in ("leave continuous", "entropy", "equal frequency", "equal width", "removed")] + ["custom %i" % x for x in range(1, 4)]
 
     def computeDiscretizer(self, i, idx, onlyDefaults=False):
         attr = self.data.domain[idx]

@@ -156,7 +156,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.setMouseTracking(True)
 
         nodeInfoBox = QVButtonGroup("Show Info On", self.NodeTab)
-        nodeInfoButtons = ['Predicted value', 'Variance', 'Deviation, 'Error', 'Number of instances']
+        nodeInfoButtons = ['Predicted value', 'Variance', 'Deviation', 'Error', 'Number of instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'error', 'inst']
         self.NodeInfoW = []; self.dummy = 0
         for i in range(len(nodeInfoButtons)):

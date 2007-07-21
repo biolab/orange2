@@ -18,6 +18,7 @@ import os
 from re import *
 from math import floor, ceil
 from orngCI import FeatureByCartesianProduct
+import OWGUI
 
 class IntGraphView(QCanvasView):
     def __init__(self, parent, name, *args):

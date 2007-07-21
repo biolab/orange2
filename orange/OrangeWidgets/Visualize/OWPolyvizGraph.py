@@ -819,7 +819,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                         if max(acc, accuracy)/min(acc, accuracy) > 1.01: significantImprovement = 1
                     else:
                        self.kNNOptimization.setStatusBarText("Evaluated %(n)s projections (attribute %(attra)s/%(attrb)s). Last accuracy was: %2.2(acc)f%%" % {"n": orngVisFuncts.createStringFromNumber(self.triedPossibilities), "attra": orngVisFuncts.createStringFromNumber(attrIndex), "attrb": strTotalAtts, "acc": acc})
-                        if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
+                       if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
                             addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1, generalDict = {"reverse": reverse})
 
 
