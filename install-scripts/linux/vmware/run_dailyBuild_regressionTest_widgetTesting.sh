@@ -34,6 +34,7 @@ for f in "${L[@]}"; do
 	rm -Rf cron.$f
    else
         echo "$f"  | mail -s "write locks on VM" tomaz.curk@fri.uni-lj.si
+	rm /home/vmware/daily_run
 	exit
    fi
 done
@@ -63,6 +64,7 @@ for f in "${L[@]}"; do
 	rm -Rf cron.$f
    else
         echo "$f"  | mail -s "write locks on VM" tomaz.curk@fri.uni-lj.si
+	rm /home/vmware/daily_run
 	exit
    fi
 done
