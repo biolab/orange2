@@ -64,6 +64,9 @@ public:
 	
 	void random();
 	int fruchtermanReingold(int steps);
+	int radialFruchtermanReingold(int steps, int nCircles);
+	int circular(int type);
+	//int circularRandom();
 	double getTemperature() {return temperature;}
 	void setTemperature(double t) {temperature = t;}
 	int setGraph(TGraphAsList *graph);
@@ -81,11 +84,13 @@ public:
 	double width; 
 	double height; 
 	PyArrayObject *coors;
+	TGraph *graphStructure;
 
 	int nLinks;
 	int nVertices;
 	vector<int> links[2];
 	double **pos;
+	int *level;
 };
 
 #endif

@@ -20,6 +20,7 @@
 
 
 #include "ppp/networkoptimization.ppp"
+#define PI 3.14159265
 
 TNetworkOptimization::TNetworkOptimization()
 {
@@ -45,7 +46,7 @@ inline T &min(const T&x, const T&y)
 { return x<y ? x : y; }
 #endif
 #endif
-
+ 
 TNetworkOptimization::~TNetworkOptimization()
 {
 	//cout << "destructor" << endl;
@@ -82,8 +83,49 @@ void TNetworkOptimization::random()
 }
 
 
-int TNetworkOptimization::fruchtermanReingold(int steps)
+// type
+// 0 - original
+// 1 - random
+int TNetworkOptimization::circular(int type)
 {
+	int xCenter = width / 2;
+	int yCenter = height / 2;
+	int r = (width < height) ? width * 0.38 : height * 0.38;
+
+	int i;
+	double fi = PI;
+	double step = 2 * PI / nVertices;
+
+	srand(time(NULL));
+	vector<int> vertices;
+	if (type == 1)
+		for (i = 0; i < nVertices; i++)
+			vertices.push_back(i);
+
+	for (i = 0; i < nVertices; i++)
+	{
+		if (type == 0)
+		{
+			pos[i][0] = r * cos(fi) + width;
+			pos[i][1] = r * sin(fi) + height;
+		}
+		else if (type == 1)
+		{
+			int ndx = rand() % vertices.size();
+
+			pos[vertices[ndx]][0] = r * cos(fi) + width;
+			pos[vertices[ndx]][1] = r * sin(fi) + height;
+			
+			vertices.erase(vertices.begin() + ndx);
+		}
+
+		fi = fi - step;
+	}
+
+	return 0;
+}
+int TNetworkOptimization::fruchtermanReingold(int steps)
+{ 
 	/*
 	cout << "nVertices: " << nVertices << endl << endl;
 	dumpCoordinates();
@@ -209,6 +251,176 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 	
 	return 0;
 }
+
+
+int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
+{ 
+	/*
+	cout << "nVertices: " << nVertices << endl << endl;
+	dumpCoordinates();
+	/**/
+	double **disp = (double**)malloc(nVertices * sizeof (double));
+	int i = 0;
+
+	for (i = 0; i < nVertices; i++)
+	{
+		disp[i] = (double *)calloc(2, sizeof(double));
+
+		if (disp[i] == NULL)
+		{
+			cerr << "Couldn't allocate memory (disp[])\n";
+			return 1;
+		}
+	}
+
+	int radius = width / nCircles / 2;
+	//cout << "radius: " << radius << endl;
+	int count = 0;
+	double kk = 1;
+	double localTemparature = 5;
+	double area = width * height;
+
+	k2 = area / nVertices;
+	k = sqrt(k2);
+	kk = 2 * k;
+	double kk2 = kk * kk;
+	cout << "Miha" << endl;
+	// iterations
+	for (i = 0; i < steps; i++)
+	{
+		//cout << "iteration: " << i << endl;
+		// reset disp
+		int j = 0;
+		for (j = 0; j < nVertices; j++)
+		{
+			disp[j][0] = 0;
+			disp[j][1] = 0;
+		}
+
+		int v = 0;
+		// calculate repulsive force
+		for (v = 0; v < nVertices - 1; v++)
+		{
+			for (int u = v + 1; u < nVertices; u++)
+			{
+				// only for vertices on the same level
+				//if (level[v] != level[u])
+				//	continue;
+		
+				double difX = pos[v][0] - pos[u][0];
+				double difY = pos[v][1] - pos[u][1];
+
+				double dif2 = difX * difX + difY * difY; 
+
+				if (dif2 < kk2)
+				{
+					if (dif2 == 0)
+						dif2 = 1;
+
+					double dX = difX * k2 / dif2;
+					double dY = difY * k2 / dif2;
+
+					disp[v][0] = disp[v][0] + dX;
+					disp[v][1] = disp[v][1] + dY;
+
+					disp[u][0] = disp[u][0] - dX;
+					disp[u][1] = disp[u][1] - dY;
+				}
+			}
+		}
+		// calculate attractive forces
+		for (j = 0; j < nLinks; j++)
+		{
+			int v = links[0][j];
+			int u = links[1][j];
+
+			// only for vertices on the same level
+			//if (level[v] != level[u])
+			//	continue;
+
+			double difX = pos[v][0] - pos[u][0];
+			double difY = pos[v][1] - pos[u][1];
+
+			double dif = sqrt(difX * difX + difY * difY);
+
+			double dX = difX * dif / k;
+			double dY = difY * dif / k;
+
+			disp[v][0] = disp[v][0] - dX;
+			disp[v][1] = disp[v][1] - dY;
+
+			disp[u][0] = disp[u][0] + dX;
+			disp[u][1] = disp[u][1] + dY;
+		}
+		// limit the maximum displacement to the temperature t
+		// and then prevent from being displaced outside frame
+		for (v = 0; v < nVertices; v++)
+		{
+			double dif = sqrt(disp[v][0] * disp[v][0] + disp[v][1] * disp[v][1]);
+
+			if (dif == 0)
+				dif = 1;
+
+			pos[v][0] = pos[v][0] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
+			pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
+
+			double distance = (pos[v][0] - (width/2)) * (pos[v][0] - (width/2)) + (pos[v][1] - (height/2)) * (pos[v][1] - (height/2));
+			//cout << "x: " << pos[v][0] << " y: " << pos[v][1] << " width: " << width << " height: " << height << endl;
+			//cout << "distance: " << distance << " radius: " << (level[v] * radius) * (level[v] * radius) << endl;
+			if (level[v] == 0)
+			{
+				// move to center
+				pos[v][0] = width / 2;
+				pos[v][1] = height / 2;
+
+				//cout << "center, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
+			}
+			//*
+			else if (distance > ((level[v] * radius) * (level[v] * radius)))
+			{
+				// move to outer ring
+				double fi = atan((pos[v][1] - (height / 2)) / (pos[v][0] - (width / 2)));
+
+				pos[v][0] = level[v] * radius * cos(fi) + (width / 2);
+				pos[v][1] = level[v] * radius * sin(fi) + (height / 2);
+
+				//cout << "outer, x: " << pos[v][0] << " y: " << pos[v][1] << " radius: " << radius << " fi: " << fi << " level: " << level[v] << " v: " << v << endl;
+			}
+			else if (distance < (((level[v] - 1) * radius) * ((level[v] - 1) * radius)))
+			{
+				// move to inner ring
+				double fi = atan((pos[v][1] - (height / 2)) / (pos[v][0] - (width / 2)));
+
+				pos[v][0] = (level[v] - 1) * radius * cos(fi) + (width / 2);
+				pos[v][1] = (level[v] - 1) * radius * sin(fi) + (height / 2);
+
+				//cout << "inner, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
+			}
+			/**/
+		}
+		//cout << temperature << ", ";
+		temperature = temperature * coolFactor;
+	}
+	/*
+	for (i = 0; i < nVertices; i++)
+		cout << "level " << i << ": " << level[i] << endl;
+	/**/
+	//cout << "end coors: " << endl;
+	//dumpCoordinates();
+
+	// free space
+	for (i = 0; i < nVertices; i++)
+	{
+		free(disp[i]);
+		disp[i] = NULL;
+	}
+	//cout << endl;
+	free(disp);
+	disp = NULL;
+	
+	return 0;
+}
+
 
 
 /* ==== Free a double *vector (vec of pointers) ========================== */ 
@@ -406,11 +618,165 @@ PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(ME
 	CAST_TO(TNetworkOptimization, graphOpt);
 	//cout << "networkoptimization.cpp/setGraph: setting graph..." << endl;
 	if (graphOpt->setGraph(graph) > 0)
-	{
 		PYERROR(PyExc_SystemError, "setGraph failed", NULL);
-	}
+	
+	graphOpt->graphStructure = graph;
 
 	//cout << "done." << endl;
+	RETURN_NONE;
+  PyCATCH
+}
+
+bool hasVertex(int vertex, vector<int> list)
+{
+	int i;
+	for (i = 0; i < list.size(); i++)
+	{
+		//cout << list[i] << " " << vertex << endl;
+		if (list[i] == vertex)
+			return true;
+	}
+
+	return false;
+}
+
+PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(center, steps, temperature) -> temperature")
+{
+  PyTRY
+	int steps, center;
+	double temperature = 0;
+
+	if (!PyArg_ParseTuple(args, "iid:NetworkOptimization.radialFruchtermanReingold", &center, &steps, &temperature))
+		return NULL;
+
+	CAST_TO(TNetworkOptimization, graph);
+
+	graph->pos[center][0] = graph->width / 2;
+	graph->pos[center][1] = graph->height / 2;
+
+	int nCircles = 6;
+	int r = graph->width / nCircles / 2;
+
+	graph->level = new int[graph->nVertices];
+	int i;
+	for (i = 0; i < graph->nVertices; i++)
+		graph->level[i] = nCircles;
+
+	vector<int> removedLinks[2];
+	vector<int> vertices;
+	vector<int> allVertices;
+	vertices.push_back(center);
+	graph->level[center] = 0;
+
+	for (i = 0; i < nCircles; i++)
+	{
+		// position vertices
+		double fi = 360 / vertices.size();
+		int v;
+		for (v = 0; v < vertices.size(); v++)
+		{
+			double x = i * r * cos(v * fi * PI / 180) + (graph->width / 2);
+			double y = i * r * sin(v * fi * PI / 180) + (graph->height / 2);
+
+			graph->pos[vertices[v]][0] = x;
+			graph->pos[vertices[v]][1] = y;
+
+			//cout << "v: " << vertices[v] << " X: " << x << " Y: " << y << " level: " << graph->level[vertices[v]] << endl;
+		}
+		//cout << endl;
+		vector<int> newVertices;
+		for (v = 0; v < vertices.size(); v++)
+		{
+			int j;
+			int node = vertices[v];
+
+			for (j = graph->links[0].size() - 1; j >= 0; j--)
+			{
+				if (graph->links[0][j] == node)
+				{
+					//cout << "j: " << j << " u: " << graph->links1[0][j] << " v: " << graph->links1[1][j] << endl;
+					removedLinks[0].push_back(graph->links[0][j]);
+					removedLinks[1].push_back(graph->links[1][j]);
+
+					if (!hasVertex(graph->links[1][j], allVertices))
+					{
+						newVertices.push_back(graph->links[1][j]);
+						allVertices.push_back(graph->links[1][j]);
+						graph->level[graph->links[1][j]] = i + 1;
+					}
+					graph->links[0].erase(graph->links[0].begin() + j);
+					graph->links[1].erase(graph->links[1].begin() + j);
+				}
+				else if (graph->links[1][j] == node)
+				{
+					//cout << "j: " << j << " u: " << graph->links1[0][j] << " v: " << graph->links1[1][j] << endl;
+					removedLinks[0].push_back(graph->links[0][j]);
+					removedLinks[1].push_back(graph->links[1][j]);
+
+					if (!hasVertex(graph->links[0][j], allVertices))
+					{
+						//cout << "adding: " << 
+						newVertices.push_back(graph->links[0][j]);
+						allVertices.push_back(graph->links[0][j]);
+						graph->level[graph->links[0][j]] = i + 1;
+					}
+
+					graph->links[0].erase(graph->links[0].begin() + j);
+					graph->links[1].erase(graph->links[1].begin() + j);
+				}
+			}
+		}
+
+		vertices.clear();
+
+		if (newVertices.size() == 0)
+			break;
+
+		for (v = 0; v < newVertices.size(); v++)
+		{
+			vertices.push_back(newVertices[v]);
+		}
+	}
+	// adds back removed links
+	for (i = 0; i < removedLinks[0].size(); i++)
+	{
+		graph->links[0].push_back(removedLinks[0][i]);
+		graph->links[1].push_back(removedLinks[1][i]);
+	}
+
+	graph->temperature = temperature;
+	graph->coolFactor = exp(log(10.0/10000.0) / steps);
+	/*
+	for (i = 0; i < graph->nVertices; i++)
+		cout << "level " << i << ": " << graph->level[i] << endl;
+	/**/
+	if (graph->radialFruchtermanReingold(steps, nCircles) > 0)
+	{
+		delete[] graph->level;
+		PYERROR(PyExc_SystemError, "radialFruchtermanReingold failed", NULL);
+	}
+
+	delete[] graph->level;
+
+	return Py_BuildValue("d", graph->temperature);
+  PyCATCH
+}
+
+
+PyObject *NetworkOptimization_circularOriginal(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+{
+  PyTRY
+	CAST_TO(TNetworkOptimization, graph);
+	graph->circular(0);
+	RETURN_NONE;
+  PyCATCH
+}
+
+PyObject *NetworkOptimization_circularRandom(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+{
+  PyTRY
+	CAST_TO(TNetworkOptimization, graph);
+	graph->circular(1);
 	RETURN_NONE;
   PyCATCH
 }

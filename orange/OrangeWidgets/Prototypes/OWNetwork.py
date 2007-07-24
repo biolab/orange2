@@ -134,8 +134,10 @@ class OWNetwork(OWWidget):
 
         self.optimizeBox = OWGUI.radioButtonsInBox(self.mainTab, self, "optimizeWhat", [], "Optimize", addSpace=True)
         OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
-        OWGUI.button(self.optimizeBox, self, "F-R", callback=self.ff)
-        OWGUI.button(self.optimizeBox, self, "Circular", callback=self.circular)
+        OWGUI.button(self.optimizeBox, self, "F-R", callback=self.fr)
+        OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
+        OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
+        OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
         OWGUI.separator(self.optimizeBox)
         OWGUI.widgetLabel("Optimize")
         ib = OWGUI.indentedBox(self.optimizeBox)
@@ -405,7 +407,7 @@ class OWNetwork(OWWidget):
         print "done."
         
         
-    def ff(self):
+    def fr(self):
         print "OWNetwork/ff..."
         if self.visualize == None:   #grafa se ni
             return
@@ -417,35 +419,39 @@ class OWNetwork(OWWidget):
         refreshRate = int(5.0 / t)
         if refreshRate <   1: refreshRate = 1;
         if refreshRate > 1500: refreshRate = 1500;
-        print "refreshRate: " + str(refreshRate)
-        #najprej nakljucne koordinate za vsa vozlisca
-        #- self.visualize.nVertices() / 50 + 100
-        #if refreshRate < 5:
-        #    refreshRate = 5;
-        
+        print "refreshRate: " + str(refreshRate)        
         tolerance = 5
         initTemp = 1000
-        #refreshRate = 1
         initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp, self.graph.hiddenNodes)
         self.updateCanvas()
-        
-#        self.visualize.fruchtermanReingold(refreshRate, initTemp)
-        
-#        while True:
-#            print initTemp
-#            initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp)
-#            
-#            if (initTemp <= tolerance):
-#                #self.visualize.postProcess()
-#                print "OWNetwork/ff: updating canvas..."
-#                self.updateCanvas()
-#                return
-#            print "OWNetwork/ff: updating canvas..."
-#            self.updateCanvas()
         print "done."
         
-    def circular(self):
-        pass
+    def frRadial(self):
+        print "F-R Radial"
+        
+        k = 1.13850193174e-008
+        nodes = self.visualize.nVertices()
+        t = k * nodes * nodes
+        refreshRate = int(5.0 / t)
+        if refreshRate <   1: refreshRate = 1;
+        if refreshRate > 1500: refreshRate = 1500;
+        print "refreshRate: " + str(refreshRate)
+        
+        tolerance = 5
+        initTemp = 100
+        
+        initTemp = self.visualize.radialFruchtermanReingold(0, refreshRate, initTemp)
+        self.updateCanvas()
+        
+    def circularOriginal(self):
+        print "Circular Original"
+        self.visualize.circularOriginal()
+        self.updateCanvas()
+        
+    def circularRandom(self):
+        print "Circular Random"
+        self.visualize.circularRandom()
+        self.updateCanvas()
 
     def setVertexColor(self):
         self.graph.setVertexColor(self.colorCombo.currentText())
