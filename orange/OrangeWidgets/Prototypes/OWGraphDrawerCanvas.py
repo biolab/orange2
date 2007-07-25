@@ -41,7 +41,7 @@ class OWGraphDrawerCanvas(OWGraph):
         self.hiddenNodes = []
         self.markedNodes = set()
         self.markWithRed = False
-        
+        self.circles = []
         self.tooltipNeighbours = 2
         self.selectionNeighbours = 2
         self.freezeNeighbours = False
@@ -418,15 +418,28 @@ class OWGraphDrawerCanvas(OWGraph):
         self.removeDrawingCurves(removeLegendItems = 0)
         self.removeMarkers()
         self.tips.removeAll()
-        
-        xData = []
-        yData = []
+  
         edgesCount = 0
         
         fillColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j]]
         edgeColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
         emptyFill = Qt.white
         
+        for r in self.circles:
+            print "r: " + str(r)
+            step = 2 * pi / 64;
+            fi = 0
+            x = []
+            y = []
+            for i in range(65):
+                x.append(r * cos(fi) + 5000)
+                y.append(r * sin(fi) + 5000)
+                fi += step
+                
+            self.addCurve("radius", fillColor, Qt.green, 1, style = QwtCurve.Lines, xData = x, yData = y, showFilledSymbols = False)
+        
+        xData = []
+        yData = []
         # draw edges
         for e in range(self.nEdges):
             (key,i,j) = self.edges[e]
