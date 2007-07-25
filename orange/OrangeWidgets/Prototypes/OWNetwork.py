@@ -13,7 +13,7 @@ from qt import *
 from OWGraphDrawerCanvas import *
 from orngNetwork import * 
 from time import *
-import OWToolbars
+#import OWToolbars
 from statc import mean
 
 #ta razred je potreben, da lahko narisemo pixmap z painterjem
@@ -134,10 +134,11 @@ class OWNetwork(OWWidget):
 
         self.optimizeBox = OWGUI.radioButtonsInBox(self.mainTab, self, "optimizeWhat", [], "Optimize", addSpace=True)
         OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
-        OWGUI.button(self.optimizeBox, self, "F-R", callback=self.fr)
+        OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr)
         OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
         OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
         OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
+        OWGUI.button(self.optimizeBox, self, "Circular Crossing Reduction", callback=self.circularCrossingReduction)
         OWGUI.separator(self.optimizeBox)
         OWGUI.widgetLabel("Optimize")
         ib = OWGUI.indentedBox(self.optimizeBox)
@@ -201,12 +202,12 @@ class OWNetwork(OWWidget):
         
         pics=pixmaps()
         
-        T = OWToolbars.ZoomSelectToolbar
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
-                                                              buttons = (T.IconZoom, T.IconPan, None,
-                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_zoom), Qt.sizeAllCursor, 1),
-                                                                         T.IconRectangle, T.IconPolygon, 
-                                                                         T.IconSendSelection))
+#        T = OWToolbars.ZoomSelectToolbar
+#        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
+#                                                              buttons = (T.IconZoom, T.IconPan, None,
+#                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_zoom), Qt.sizeAllCursor, 1),
+#                                                                         T.IconRectangle, T.IconPolygon, 
+#                                                                         T.IconSendSelection))
         
         OWGUI.button(self.controlArea, self, "Save network", callback=self.saveNetwork)
         OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
@@ -439,9 +440,16 @@ class OWNetwork(OWWidget):
         
         tolerance = 5
         initTemp = 100
-        
-        initTemp = self.visualize.radialFruchtermanReingold(0, refreshRate, initTemp)
+        centerNdx = 0
+        if len(self.graph.selection) > 0:
+            centerNdx = self.graph.selection[0]
+            
+        print "center ndx: " + str(centerNdx)
+        initTemp = self.visualize.radialFruchtermanReingold(centerNdx, refreshRate, initTemp)
+        self.graph.circles = [10000 / 12, 10000/12*2, 10000/12*3, 10000/12*4, 10000/12*5]
+        #self.graph.circles = [100, 200, 300]
         self.updateCanvas()
+        self.graph.circles = []
         
     def circularOriginal(self):
         print "Circular Original"
@@ -453,6 +461,12 @@ class OWNetwork(OWWidget):
         self.visualize.circularRandom()
         self.updateCanvas()
 
+
+    def circularCrossingReduction(self):
+        print "Circular Crossing Reduction"
+        self.visualize.circularCrossingReduction()
+        self.updateCanvas()
+        
     def setVertexColor(self):
         self.graph.setVertexColor(self.colorCombo.currentText())
         self.updateCanvas()
