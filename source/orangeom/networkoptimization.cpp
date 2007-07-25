@@ -82,6 +82,84 @@ void TNetworkOptimization::random()
 	}
 }
 
+int TNetworkOptimization::circularCrossingReduction()
+{
+	// TODO!!!
+	vector<QueueVertex*> vertices;
+	vector<QueueVertex*> original;
+
+	int i;
+	for (i = 0; i < nVertices; i++)
+	{
+		vector<int> neighbours;
+		graphStructure->getNeighbours(i, neighbours);
+
+		QueueVertex *vertex = new QueueVertex();
+		vertex->ndx = i;
+		vertex->unplacedNeighbours = neighbours.size();
+		vertex->neighbours = neighbours;
+
+		vertices.push_back(vertex);
+	}
+	original.assign(vertices.begin(), vertices.end());
+
+	vector<int> positions;
+	while (vertices.size() > 0)
+	{
+		sort(vertices.begin(), vertices.end(), QueueVertex());
+
+		cout << "vertices" << endl;
+		for (i = 0; i < vertices.size(); i++)
+			cout << *vertices[i] << endl;
+
+		QueueVertex *vertex = vertices.back();
+		positions.push_back(vertex->ndx);
+		//cout << "size: " << vertex->neighbours.size() <<endl;
+		cout << "ndx: " << vertex->ndx << endl;
+		int j;
+		for (j = 0; j < vertex->neighbours.size(); j++)
+		{
+			int ndx = vertex->neighbours[j];
+
+			original[ndx]->placedNeighbours++;
+			original[ndx]->unplacedNeighbours--;
+		}
+
+		vertices.pop_back();
+	}
+
+	cout << "original" << endl;
+	for (i = 0; i < original.size(); i++)
+		cout << *original[i] << endl;
+
+	cout << "positions" << endl;
+	for (i = 0; i < positions.size(); i++)
+		cout << positions[i] << endl;
+
+
+	int xCenter = width / 2;
+	int yCenter = height / 2;
+	int r = (width < height) ? width * 0.38 : height * 0.38;
+
+	double fi = PI;
+	double step = 2 * PI / nVertices;
+
+	for (i = 0; i < nVertices; i++)
+	{
+		pos[positions[i]][0] = r * cos(fi) + xCenter;
+		pos[positions[i]][1] = r * sin(fi) + y Center;
+	
+		fi = fi - step;
+	}
+
+	for (vector<QueueVertex*>::iterator i = original.begin(); i != original.end(); ++i)
+		delete *i;
+
+	original.clear();
+	vertices.clear();
+	
+	return 0;
+}
 
 // type
 // 0 - original
@@ -106,15 +184,15 @@ int TNetworkOptimization::circular(int type)
 	{
 		if (type == 0)
 		{
-			pos[i][0] = r * cos(fi) + width;
-			pos[i][1] = r * sin(fi) + height;
+			pos[i][0] = r * cos(fi) + xCenter;
+			pos[i][1] = r * sin(fi) + yCenter;
 		}
 		else if (type == 1)
 		{
 			int ndx = rand() % vertices.size();
 
-			pos[vertices[ndx]][0] = r * cos(fi) + width;
-			pos[vertices[ndx]][1] = r * sin(fi) + height;
+			pos[vertices[ndx]][0] = r * cos(fi) + xCenter;
+			pos[vertices[ndx]][1] = r * sin(fi) + yCenter;
 			
 			vertices.erase(vertices.begin() + ndx);
 		}
@@ -284,7 +362,6 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 	k = sqrt(k2);
 	kk = 2 * k;
 	double kk2 = kk * kk;
-	cout << "Miha" << endl;
 	// iterations
 	for (i = 0; i < steps; i++)
 	{
@@ -781,6 +858,15 @@ PyObject *NetworkOptimization_circularRandom(PyObject *self, PyObject *args) PYA
   PyCATCH
 }
 
+
+PyObject *NetworkOptimization_circularCrossingReduction(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+{
+  PyTRY
+	CAST_TO(TNetworkOptimization, graph);
+	graph->circularCrossingReduction();
+	RETURN_NONE;
+  PyCATCH
+}
 PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, hiddenNodes) -> temperature")
 {
   PyTRY

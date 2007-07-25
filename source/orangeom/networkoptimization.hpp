@@ -44,6 +44,7 @@
 #include "numeric_interface.hpp"
 #include "graph.hpp"
 #include "stringvars.hpp"
+#include <queue>
 
 using namespace std;
 
@@ -66,6 +67,7 @@ public:
 	int fruchtermanReingold(int steps);
 	int radialFruchtermanReingold(int steps, int nCircles);
 	int circular(int type);
+	int circularCrossingReduction();
 	//int circularRandom();
 	double getTemperature() {return temperature;}
 	void setTemperature(double t) {temperature = t;}
@@ -91,6 +93,45 @@ public:
 	vector<int> links[2];
 	double **pos;
 	int *level;
+};
+
+
+class QueueVertex
+{
+public:
+	int ndx;
+	unsigned int unplacedNeighbours;
+	unsigned int placedNeighbours;
+	vector<int> neighbours;
+
+	friend ostream & operator<<(ostream &os, const QueueVertex &v)
+	{
+		os << "ndx: " << v.ndx << " unplaced: " << v.unplacedNeighbours << " placed: " << v.placedNeighbours << " neighbours: ";
+		int i;
+		for (i = 0; i < v.neighbours.size(); i++)
+			os << v.neighbours[i] << " ";
+
+		return (os);
+	}
+
+	QueueVertex(int index = -1, unsigned int neighbours = 0) 
+	{ 
+		ndx = index; 
+		unplacedNeighbours = neighbours;
+		placedNeighbours = 0;
+	}
+
+	bool operator () (const QueueVertex * a, const QueueVertex * b) 
+	{
+		if (a->unplacedNeighbours < b->unplacedNeighbours)
+			return false;
+		else if (a->unplacedNeighbours > b->unplacedNeighbours)
+			return true;
+		else
+		{
+			return a->placedNeighbours < b->placedNeighbours;
+		}	
+	}
 };
 
 #endif
