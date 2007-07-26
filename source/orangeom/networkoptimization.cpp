@@ -147,7 +147,7 @@ int TNetworkOptimization::circularCrossingReduction()
 	for (i = 0; i < nVertices; i++)
 	{
 		pos[positions[i]][0] = r * cos(fi) + xCenter;
-		pos[positions[i]][1] = r * sin(fi) + y Center;
+		pos[positions[i]][1] = r * sin(fi) + yCenter;
 	
 		fi = fi - step;
 	}
