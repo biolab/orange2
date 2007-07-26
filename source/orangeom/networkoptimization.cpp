@@ -107,12 +107,8 @@ int TNetworkOptimization::circularCrossingReduction()
 	{
 		sort(vertices.begin(), vertices.end(), QueueVertex());
 		QueueVertex *vertex = vertices.back();
-		/*
-		cout << "vertices" << endl;
-		for (i = 0; i < vertices.size(); i++)
-			cout << *vertices[i] << endl;
-		cout << "ndx: " << vertex->ndx << endl;
-		/**/
+
+
 		// update neighbours
 		for (i = 0; i < vertex->neighbours.size(); i++)
 		{
@@ -121,6 +117,7 @@ int TNetworkOptimization::circularCrossingReduction()
 			original[ndx]->placedNeighbours++;
 			original[ndx]->unplacedNeighbours--;
 		}
+
 		// count left & right crossings
 		if (vertex->placedNeighbours > 0)
 		{
@@ -162,32 +159,71 @@ int TNetworkOptimization::circularCrossingReduction()
 
 		vertices.pop_back();
 	}
-	/*
-	cout << "original" << endl;
-	for (i = 0; i < original.size(); i++)
-		cout << *original[i] << endl;
 
-	cout << "positions" << endl;
+	// Circular sifting
 	for (i = 0; i < positions.size(); i++)
-		cout << positions[i] << endl;
-	/**/
-	// TODO: Circular sifting
-	
+		original[positions[i]]->position = i;
 
+	int step;
+	for (step = 0; step < 5; step++)
+	{
+		for (i = 0; i < nVertices; i++)
+		{
+			bool stop = false;
+			int switchNdx = -1;
+			QueueVertex *u = original[positions[i]];
+			int vNdx = (i + 1) % nVertices;
+
+			while (!stop)
+			{
+				QueueVertex *v = original[positions[vNdx]];
+
+				int midCrossings = u->neighbours.size() * v->neighbours.size() / 2;
+				int crossings = 0;
+				int j,k;
+				for (j = 0; j < u->neighbours.size(); j++)
+					for (k = 0; k < v->neighbours.size(); k++)
+						if ((original[u->neighbours[j]]->position == v->position) || (original[v->neighbours[k]]->position == u->position))
+							midCrossings = (u->neighbours.size() - 1) * (v->neighbours.size() - 1) / 2;
+						else if ((original[u->neighbours[j]]->position + nVertices - u->position) % nVertices < (original[v->neighbours[k]]->position + nVertices - u->position) % nVertices)
+							crossings++;
+
+				//cout << "v: " <<  v->ndx << " crossings: " << crossings << " u.n.size: " << u->neighbours.size() << " v.n.size: " << v->neighbours.size() << " mid: " << midCrossings << endl;
+				if (crossings > midCrossings)
+					switchNdx = vNdx;
+				else
+					stop = true;
+
+				vNdx = (vNdx + 1) % nVertices;
+			}
+			int j;
+			if (switchNdx > -1)
+			{
+				//cout << "u: " << u->ndx << " switch: " << original[switchNdx]->ndx << endl << endl;
+				positions.erase(positions.begin() + i);
+				positions.insert(positions.begin() + switchNdx, u->ndx);
+
+				for (j = i; j <= switchNdx; j++)
+					original[positions[j]]->position = j;
+			}
+			//else
+			//	cout << "u: " << u->ndx << " switch: " << switchNdx << endl;
+		}
+	}
 
 	int xCenter = width / 2;
 	int yCenter = height / 2;
 	int r = (width < height) ? width * 0.38 : height * 0.38;
 
 	double fi = PI;
-	double step = 2 * PI / nVertices;
+	double fiStep = 2 * PI / nVertices;
 
 	for (i = 0; i < nVertices; i++)
 	{
 		pos[positions[i]][0] = r * cos(fi) + xCenter;
 		pos[positions[i]][1] = r * sin(fi) + yCenter;
 	
-		fi = fi - step;
+		fi = fi - fiStep;
 	}
 
 	for (vector<QueueVertex*>::iterator i = original.begin(); i != original.end(); ++i)

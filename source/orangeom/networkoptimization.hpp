@@ -100,6 +100,7 @@ class QueueVertex
 {
 public:
 	int ndx;
+	int position;
 	unsigned int unplacedNeighbours;
 	unsigned int placedNeighbours;
 	vector<int> neighbours;
