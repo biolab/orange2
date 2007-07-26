@@ -84,7 +84,6 @@ void TNetworkOptimization::random()
 
 int TNetworkOptimization::circularCrossingReduction()
 {
-	// TODO!!!
 	vector<QueueVertex*> vertices;
 	vector<QueueVertex*> original;
 
@@ -103,31 +102,67 @@ int TNetworkOptimization::circularCrossingReduction()
 	}
 	original.assign(vertices.begin(), vertices.end());
 
-	vector<int> positions;
+	deque<int> positions;
 	while (vertices.size() > 0)
 	{
 		sort(vertices.begin(), vertices.end(), QueueVertex());
-
+		QueueVertex *vertex = vertices.back();
+		/*
 		cout << "vertices" << endl;
 		for (i = 0; i < vertices.size(); i++)
 			cout << *vertices[i] << endl;
-
-		QueueVertex *vertex = vertices.back();
-		positions.push_back(vertex->ndx);
-		//cout << "size: " << vertex->neighbours.size() <<endl;
 		cout << "ndx: " << vertex->ndx << endl;
-		int j;
-		for (j = 0; j < vertex->neighbours.size(); j++)
+		/**/
+		// update neighbours
+		for (i = 0; i < vertex->neighbours.size(); i++)
 		{
-			int ndx = vertex->neighbours[j];
+			int ndx = vertex->neighbours[i];
 
 			original[ndx]->placedNeighbours++;
 			original[ndx]->unplacedNeighbours--;
 		}
+		// count left & right crossings
+		if (vertex->placedNeighbours > 0)
+		{
+			int left = 0;
+			vector<int> lCrossings;
+			vector<int> rCrossings;
+			for (i = 0; i < positions.size(); i++)
+			{
+				int ndx = positions[i];
+				
+				if (vertex->hasNeighbour(ndx))
+				{
+					lCrossings.push_back(left);
+					left += original[ndx]->unplacedNeighbours;
+					rCrossings.push_back(left);
+				}
+				else
+					left += original[ndx]->unplacedNeighbours;
+			}
+
+			int leftCrossings = 0;
+			int rightCrossings = 0;
+
+			for (i = 0; i < lCrossings.size(); i++)
+				leftCrossings += lCrossings[i];
+
+			rCrossings.push_back(left);
+			for (i = rCrossings.size() - 1; i > 0 ; i--)
+				rightCrossings += rCrossings[i] - rCrossings[i - 1];
+			//cout << "left: " << leftCrossings << " right: " <<rightCrossings << endl;
+			if (leftCrossings < rightCrossings)
+				positions.push_front(vertex->ndx);
+			else
+				positions.push_back(vertex->ndx);
+
+		}
+		else
+			positions.push_back(vertex->ndx);
 
 		vertices.pop_back();
 	}
-
+	/*
 	cout << "original" << endl;
 	for (i = 0; i < original.size(); i++)
 		cout << *original[i] << endl;
@@ -135,6 +170,9 @@ int TNetworkOptimization::circularCrossingReduction()
 	cout << "positions" << endl;
 	for (i = 0; i < positions.size(); i++)
 		cout << positions[i] << endl;
+	/**/
+	// TODO: Circular sifting
+	
 
 
 	int xCenter = width / 2;

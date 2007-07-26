@@ -104,6 +104,17 @@ public:
 	unsigned int placedNeighbours;
 	vector<int> neighbours;
 
+	bool hasNeighbour(int index)
+	{
+		vector<int>::iterator iter;
+
+		for (iter = neighbours.begin(); iter != neighbours.end(); iter++)
+			if (*iter == index)
+				return true;
+
+		return false;
+	}
+
 	friend ostream & operator<<(ostream &os, const QueueVertex &v)
 	{
 		os << "ndx: " << v.ndx << " unplaced: " << v.unplacedNeighbours << " placed: " << v.placedNeighbours << " neighbours: ";
