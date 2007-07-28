@@ -13,7 +13,7 @@ from qt import *
 from OWGraphDrawerCanvas import *
 from orngNetwork import * 
 from time import *
-#import OWToolbars
+import OWToolbars
 from statc import mean
 
 #ta razred je potreben, da lahko narisemo pixmap z painterjem
@@ -202,12 +202,12 @@ class OWNetwork(OWWidget):
         
         pics=pixmaps()
         
-#        T = OWToolbars.ZoomSelectToolbar
-#        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
-#                                                              buttons = (T.IconZoom, T.IconPan, None,
-#                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_zoom), Qt.sizeAllCursor, 1),
-#                                                                         T.IconRectangle, T.IconPolygon, 
-#                                                                         T.IconSendSelection))
+        T = OWToolbars.ZoomSelectToolbar
+        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
+                                                              buttons = (T.IconZoom, T.IconPan, None,
+                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_zoom), Qt.sizeAllCursor, 1),
+                                                                         T.IconRectangle, T.IconPolygon, 
+                                                                         T.IconSendSelection))
         
         OWGUI.button(self.controlArea, self, "Save network", callback=self.saveNetwork)
         OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)

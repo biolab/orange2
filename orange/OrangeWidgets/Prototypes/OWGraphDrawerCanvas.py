@@ -56,11 +56,12 @@ class OWGraphDrawerCanvas(OWGraph):
         
        
     def addSelection(self, ndx, replot = True):
-        #print("add selection")
+        print("add selection")
         change = False
         if hasattr(ndx, "__iter__"):
             for v in ndx:
                 if not v in self.selection and not v in self.hiddenNodes:
+                    print "1: " + str(v)
                     (key, neighbours) = self.vertices[v]
                     self.selectionStyles[v] = self.curve(key).symbol().brush().color().name()
                     newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(10, 10))
@@ -69,8 +70,13 @@ class OWGraphDrawerCanvas(OWGraph):
                     change = True
         else:
             if not ndx in self.selection and not ndx in self.hiddenNodes:
+                print "2: " + str(ndx)
                 (key, neighbours) = self.vertices[ndx]
-                self.selectionStyles[ndx] = self.curve(key).symbol().brush().color().name()
+                color = self.curve(key).symbol().pen().color().name()
+                print color
+                self.selectionStyles[int(ndx)] = color
+                for val in self.selectionStyles:
+                    print "selectionStyles: " + str(val)
                 newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
                 self.setCurveSymbol(key, newSymbol)
                 self.selection.append(ndx);
@@ -79,7 +85,9 @@ class OWGraphDrawerCanvas(OWGraph):
 
         if change:
             if replot:
+                print "replot"
                 self.replot()
+                
             self.markSelectionNeighbours()
         
         return change
@@ -88,7 +96,7 @@ class OWGraphDrawerCanvas(OWGraph):
     def removeVertex(self, v):
         if v in self.selection:
             (key, neighbours) = self.vertices[v]
-            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(QColor(self.selectionStyles[v])), QSize(6, 6))
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(self.selectionStyles[v])), QSize(6, 6))
             self.setCurveSymbol(key, newSymbol)
             selection.remove(v)
             del self.selectionStyles[v]
@@ -96,17 +104,20 @@ class OWGraphDrawerCanvas(OWGraph):
         return False
         
     def removeSelection(self, ndx = None, replot = True):
-        #print("remove selection")
+        print("remove selection")
         change = False
         if ndx is None:
             for v in self.selection:
                 (key, neighbours) = self.vertices[v]
-                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(QColor(self.selectionStyles[v])), QSize(6, 6))
+                color = self.selectionStyles[v]
+                print color
+                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(color)), QSize(6, 6))
                 self.setCurveSymbol(key, newSymbol)
-                self.selection = []
-                #self.visualizer.unselectAll()
-                self.selectionStyles = {}
-                change = True
+            
+            self.selection = []
+            #self.visualizer.unselectAll()
+            self.selectionStyles = {}
+            change = True
             
         elif isinstance(ndx, list):
             for v in ndx:
@@ -118,6 +129,7 @@ class OWGraphDrawerCanvas(OWGraph):
         if change:
             if replot:
                 self.replot()
+                
             self.markSelectionNeighbours()
         
             
@@ -322,13 +334,14 @@ class OWGraphDrawerCanvas(OWGraph):
 
         redColor = self.markWithRed and Qt.red
         markedSize = self.markWithRed and 9 or 6
+        # mark
         for m in marked - self.markedNodes:
             (key, neighbours) = self.vertices[m]
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
             self.setCurveSymbol(key, newSymbol)
 #            self.curve(key).setBrush(QBrush(redColor or self.nodeColor[m]))
-            
-        for m in self.markedNodes - marked:
+        # unmark
+        for m in self.markedNodes - marked - set(self.selection):
             (key, neighbours) = self.vertices[m]
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(self.nodeColor[m]), QSize(6, 6))
             self.setCurveSymbol(key, newSymbol)
@@ -389,6 +402,7 @@ class OWGraphDrawerCanvas(OWGraph):
             
             if self.isPointSelected(vObj.x(0), vObj.y(0)):
                 self.addSelection(self.indexPairs[vertexKey], False)
+                
         self.replot()
                 
     def selectVertex(self, pos):
@@ -504,6 +518,7 @@ class OWGraphDrawerCanvas(OWGraph):
             key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1], showFilledSymbols = False)
             
             if v in self.selection:
+                print "sel: " + str(v)
 #                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(fillColor), QPen(Qt.yellow, 3), QSize(10, 10))
                 newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(Qt.yellow, 3), QSize(10, 10))
                 self.setCurveSymbol(key, newSymbol)
