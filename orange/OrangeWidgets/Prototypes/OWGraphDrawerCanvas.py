@@ -313,7 +313,9 @@ class OWGraphDrawerCanvas(OWGraph):
             py = self.invTransform(0, event.y())   
             ndx, mind = self.visualizer.closestVertex(px, py)
             if ndx != -1 and mind < 50:
-                self.setMarkedNodes(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
+                toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
+                toMark -= set(self.selection)
+                self.setMarkedNodes(toMark)
             else:
                 self.setMarkedNodes([])
         
@@ -360,23 +362,23 @@ class OWGraphDrawerCanvas(OWGraph):
             self.mouseCurrentlyPressed = 1
             if self.isPointSelected(self.invTransform(self.xBottom, event.pos().x()), self.invTransform(self.yLeft, event.pos().y())) and self.selection!=[]:
                 self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-                self.canvas().setMouseTracking(True)
             else:
                 #pritisk na gumb izven izbranega podrocja ali pa ni izbranega podrocja
                 self.selectVertex(event.pos())
                 self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-                self.canvas().setMouseTracking(True)
 
             #self.removeAllSelections()
             #self.selectionCurveKeyList=[]
         else:
             OWGraph.onMousePressed(self, event)
+            print "pressed"
+        
 
 
     def onMouseReleased(self, event):  
         if self.state == MOVE_SELECTION:
             self.mouseCurrentlyPressed = 0
-            self.canvas().setMouseTracking(False)
+            
             self.selectedCurve= None
             self.selectedVertex=None
             self.moveGroup=False
@@ -394,6 +396,7 @@ class OWGraphDrawerCanvas(OWGraph):
                     self.selectVertices()
         else:
             OWGraph.onMouseReleased(self, event)
+        
     
     def selectVertices(self):
         print "selecting vertices.."
