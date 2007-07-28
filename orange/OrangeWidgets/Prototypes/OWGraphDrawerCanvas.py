@@ -56,12 +56,11 @@ class OWGraphDrawerCanvas(OWGraph):
         
        
     def addSelection(self, ndx, replot = True):
-        print("add selection")
+        #print("add selection")
         change = False
         if hasattr(ndx, "__iter__"):
             for v in ndx:
                 if not v in self.selection and not v in self.hiddenNodes:
-                    print "1: " + str(v)
                     (key, neighbours) = self.vertices[v]
                     self.selectionStyles[v] = self.curve(key).symbol().brush().color().name()
                     newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(10, 10))
@@ -70,13 +69,9 @@ class OWGraphDrawerCanvas(OWGraph):
                     change = True
         else:
             if not ndx in self.selection and not ndx in self.hiddenNodes:
-                print "2: " + str(ndx)
                 (key, neighbours) = self.vertices[ndx]
                 color = self.curve(key).symbol().pen().color().name()
-                print color
                 self.selectionStyles[int(ndx)] = color
-                for val in self.selectionStyles:
-                    print "selectionStyles: " + str(val)
                 newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
                 self.setCurveSymbol(key, newSymbol)
                 self.selection.append(ndx);
@@ -85,7 +80,6 @@ class OWGraphDrawerCanvas(OWGraph):
 
         if change:
             if replot:
-                print "replot"
                 self.replot()
                 
             self.markSelectionNeighbours()
@@ -104,13 +98,13 @@ class OWGraphDrawerCanvas(OWGraph):
         return False
         
     def removeSelection(self, ndx = None, replot = True):
-        print("remove selection")
+        #print("remove selection")
         change = False
         if ndx is None:
             for v in self.selection:
                 (key, neighbours) = self.vertices[v]
                 color = self.selectionStyles[v]
-                print color
+                #print color
                 newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(color)), QSize(6, 6))
                 self.setCurveSymbol(key, newSymbol)
             
@@ -137,17 +131,14 @@ class OWGraphDrawerCanvas(OWGraph):
         if distance <= 0:
             return
         
-        print "distance: " + str(distance)
+        #print "distance: " + str(distance)
         sel = set(self.selection)
-        print sel
         for v in self.selection:
             neighbours = set(self.visualizer.graph.getNeighbours(v))
-            print neighbours
+            #print neighbours
             self.selectNeighbours(sel, neighbours - sel, 1, distance);
             
         self.removeSelection()
-        print "sel"
-        print sel
         for ndx in sel:
             (key, neighbours) = self.vertices[ndx]
             self.selectionStyles[ndx] = self.curve(key).symbol().brush().color().name()
@@ -352,7 +343,7 @@ class OWGraphDrawerCanvas(OWGraph):
         self.master.nMarked = len(self.markedNodes)
         self.replot()
         
-
+        
     def activateMoveSelection(self):
         self.state = MOVE_SELECTION
 
@@ -370,9 +361,7 @@ class OWGraphDrawerCanvas(OWGraph):
             #self.removeAllSelections()
             #self.selectionCurveKeyList=[]
         else:
-            OWGraph.onMousePressed(self, event)
-            print "pressed"
-        
+            OWGraph.onMousePressed(self, event)     
 
 
     def onMouseReleased(self, event):  
@@ -399,7 +388,7 @@ class OWGraphDrawerCanvas(OWGraph):
         
     
     def selectVertices(self):
-        print "selecting vertices.."
+        #print "selecting vertices.."
         for vertexKey in self.indexPairs.keys():
             vObj = self.curve(vertexKey)
             
@@ -409,7 +398,7 @@ class OWGraphDrawerCanvas(OWGraph):
         self.replot()
                 
     def selectVertex(self, pos):
-        print "select vertex"
+        #print "select vertex"
         #key, dist, xVal, yVal, index = self.closestCurve(pos.x(), pos.y())
         #curve = self.curve(key)
         min = 1000000
@@ -431,7 +420,7 @@ class OWGraphDrawerCanvas(OWGraph):
         return math.sqrt((s1[0]-s2[0])**2 + (s1[1]-s2[1])**2)
     
     def updateData(self):
-        print "OWGraphDrawerCanvas/updateData..."
+        #print "OWGraphDrawerCanvas/updateData..."
         self.removeDrawingCurves(removeLegendItems = 0)
         self.removeMarkers()
         self.tips.removeAll()
@@ -443,7 +432,7 @@ class OWGraphDrawerCanvas(OWGraph):
         emptyFill = Qt.white
         
         for r in self.circles:
-            print "r: " + str(r)
+            #print "r: " + str(r)
             step = 2 * pi / 64;
             fi = 0
             x = []
@@ -521,7 +510,7 @@ class OWGraphDrawerCanvas(OWGraph):
             key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1], showFilledSymbols = False)
             
             if v in self.selection:
-                print "sel: " + str(v)
+                #print "sel: " + str(v)
 #                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(fillColor), QPen(Qt.yellow, 3), QSize(10, 10))
                 newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(Qt.yellow, 3), QSize(10, 10))
                 self.setCurveSymbol(key, newSymbol)
@@ -586,7 +575,7 @@ class OWGraphDrawerCanvas(OWGraph):
                 if lbl != '':
                     lbl = lbl[:-1]
                     self.tips.addToolTip(x1, y1, lbl)
-        print "done."
+        #print "done."
             
     def setVertexColor(self, attribute):
         if attribute == "(one color)":
@@ -643,14 +632,14 @@ class OWGraphDrawerCanvas(OWGraph):
         self.vertexDegree = []
         
         #dodajanje vozlisc
-        print "OWGraphDrawerCanvas/addVisualizer: adding vertices..."
+        #print "OWGraphDrawerCanvas/addVisualizer: adding vertices..."
         self.vertices = {}
         for v in range(0, self.nVertices):
             self.vertices[v] = (None, [])
-        print "done."
+        #print "done."
         
         #dodajanje povezav
-        print "OWGraphDrawerCanvas/addVisualizer: adding edges..."
+        #print "OWGraphDrawerCanvas/addVisualizer: adding edges..."
         self.edges = {}
         self.nEdges = 0
         
@@ -666,7 +655,7 @@ class OWGraphDrawerCanvas(OWGraph):
             
             self.nEdges += 1
         
-        print "done."
+        #print "done."
         
     def resetValues(self):
         self.vertices={}

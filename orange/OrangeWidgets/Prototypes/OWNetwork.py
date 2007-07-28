@@ -335,10 +335,10 @@ class OWNetwork(OWWidget):
     def setGraph(self, graph):
         if graph == None:
             return
-        print "OWNetwork/setGraph: new visualizer..."
+        #print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkVisualizer(graph, self)
         self.nVertices = len(graph)
-        print "done."
+        #print "done."
         vars = self.visualize.getVars()
         self.attributes = [(var.name, var.varType) for var in vars]
 
@@ -348,12 +348,12 @@ class OWNetwork(OWWidget):
             if var.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous]:
                 self.colorCombo.insertItem(self.icons[var.varType], unicode(var.name))
 
-        print "OWNetwork/setGraph: add visualizer..."
+        #print "OWNetwork/setGraph: add visualizer..."
         self.graph.addVisualizer(self.visualize)
-        print "done."
-        print "OWNetwork/setGraph: display random..."
+        #print "done."
+        #print "OWNetwork/setGraph: display random..."
         self.random()
-        print "done."
+        #print "done."
     
     def setExampleSubset(self, subset):
         if self.graph == None:
@@ -397,19 +397,19 @@ class OWNetwork(OWWidget):
         self.graph.setHiddenNodes([])
         
     def random(self):
-        print "OWNetwork/random.."
+        #print "OWNetwork/random.."
         if self.visualize == None:   #grafa se ni
             return    
             
         self.visualize.random()
         
-        print "OWNetwork/random: updating canvas..."
+        #print "OWNetwork/random: updating canvas..."
         self.updateCanvas();
-        print "done."
+        #print "done."
         
         
     def fr(self):
-        print "OWNetwork/ff..."
+        #print "OWNetwork/ff..."
         if self.visualize == None:   #grafa se ni
             return
         
@@ -420,15 +420,15 @@ class OWNetwork(OWWidget):
         refreshRate = int(5.0 / t)
         if refreshRate <   1: refreshRate = 1;
         if refreshRate > 1500: refreshRate = 1500;
-        print "refreshRate: " + str(refreshRate)        
+        #print "refreshRate: " + str(refreshRate)        
         tolerance = 5
         initTemp = 1000
         initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp, self.graph.hiddenNodes)
         self.updateCanvas()
-        print "done."
+        #print "done."
         
     def frRadial(self):
-        print "F-R Radial"
+        #print "F-R Radial"
         
         k = 1.13850193174e-008
         nodes = self.visualize.nVertices()
@@ -436,7 +436,7 @@ class OWNetwork(OWWidget):
         refreshRate = int(5.0 / t)
         if refreshRate <   1: refreshRate = 1;
         if refreshRate > 1500: refreshRate = 1500;
-        print "refreshRate: " + str(refreshRate)
+        #print "refreshRate: " + str(refreshRate)
         
         tolerance = 5
         initTemp = 100
@@ -444,7 +444,7 @@ class OWNetwork(OWWidget):
         if len(self.graph.selection) > 0:
             centerNdx = self.graph.selection[0]
             
-        print "center ndx: " + str(centerNdx)
+        #print "center ndx: " + str(centerNdx)
         initTemp = self.visualize.radialFruchtermanReingold(centerNdx, refreshRate, initTemp)
         self.graph.circles = [10000 / 12, 10000/12*2, 10000/12*3, 10000/12*4, 10000/12*5]
         #self.graph.circles = [100, 200, 300]
@@ -452,18 +452,18 @@ class OWNetwork(OWWidget):
         self.graph.circles = []
         
     def circularOriginal(self):
-        print "Circular Original"
+        #print "Circular Original"
         self.visualize.circularOriginal()
         self.updateCanvas()
         
     def circularRandom(self):
-        print "Circular Random"
+        #print "Circular Random"
         self.visualize.circularRandom()
         self.updateCanvas()
 
 
     def circularCrossingReduction(self):
-        print "Circular Crossing Reduction"
+        #print "Circular Crossing Reduction"
         self.visualize.circularCrossingReduction()
         self.updateCanvas()
         
@@ -483,7 +483,7 @@ class OWNetwork(OWWidget):
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Control:
             self.graph.controlPressed = True
-            print "cp"
+            #print "cp"
         elif e.key() == Qt.Key_Alt:
             self.graph.altPressed = True
         QWidget.keyPressEvent(self, e)
