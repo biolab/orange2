@@ -93,6 +93,9 @@ public:
 	vector<int> links[2];
 	double **pos;
 	int *level;
+	double *kVector;
+	double *levelMin;
+	double *levelMax;
 };
 
 

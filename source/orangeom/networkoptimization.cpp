@@ -458,6 +458,14 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 				//if (level[v] != level[u])
 				//	continue;
 		
+				if (level[u] == level[v])
+					k = kVector[level[u]];
+				else
+					k = radius;
+
+				//kk = 2 * k;
+				k2 = k*k;
+
 				double difX = pos[v][0] - pos[u][0];
 				double difY = pos[v][1] - pos[u][1];
 
@@ -489,6 +497,14 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 			//if (level[v] != level[u])
 			//	continue;
 
+			if (level[u] == level[v])
+					k = kVector[level[u]];
+				else
+					k = radius;
+
+			kk = 2 * k;
+			k2 = k*k;
+
 			double difX = pos[v][0] - pos[u][0];
 			double difY = pos[v][1] - pos[u][1];
 
@@ -505,6 +521,13 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 		}
 		// limit the maximum displacement to the temperature t
 		// and then prevent from being displaced outside frame
+
+		for (v = 0; v < nCircles; v++)
+		{
+			levelMin[v] = INT_MAX;
+			levelMax[v] = 0;
+		}
+
 		for (v = 0; v < nVertices; v++)
 		{
 			double dif = sqrt(disp[v][0] * disp[v][0] + disp[v][1] * disp[v][1]);
@@ -516,6 +539,117 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 			pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
 
 			double distance = (pos[v][0] - (width/2)) * (pos[v][0] - (width/2)) + (pos[v][1] - (height/2)) * (pos[v][1] - (height/2));
+			
+			if (distance < levelMin[level[v]])
+				levelMin[level[v]] = distance;
+
+			if (distance > levelMax[level[v]])
+				levelMax[level[v]] = distance;
+		}
+
+		for (v = 1; v < nCircles; v++)
+		{
+			//cout << "c: " << v << " min: " << sqrt(levelMin[v]) << " max: " << sqrt(levelMax[v]);
+
+			levelMin[v] = (v - 1) * radius / sqrt(levelMin[v]);
+			levelMax[v] =  v      * radius / sqrt(levelMax[v]);
+
+			//cout  << " min: " << levelMin[v] << " max: " << levelMax[v] << "r: " << v * radius << endl;
+		}
+		//*
+		for (v = 0; v < nVertices; v++)
+		{
+			double distance = sqrt((pos[v][0] - (width/2)) * (pos[v][0] - (width/2)) + (pos[v][1] - (height/2)) * (pos[v][1] - (height/2)));
+
+			if (level[v] == 0)
+			{
+				// move to center
+				pos[v][0] = width / 2;
+				pos[v][1] = height / 2;
+
+				//cout << "center, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
+			}
+			else if (distance > level[v] * radius - radius / 2)
+			{
+				// move to outer ring
+				if (levelMax[level[v]] < 1)
+				{
+					double fi = 0;
+					double x = pos[v][0] - (width / 2);
+					double y = pos[v][1] - (height / 2);
+					
+					if (x < 0)
+						fi = atan(y / x) + PI;
+					else if ((x > 0) && (y >= 0))
+						fi = atan(y / x);
+					else if ((x > 0) && (y < 0))
+						fi = atan(y / x) + 2 * PI;
+					else if ((x == 0) && (y > 0))
+						fi = PI / 2;
+					else if ((x == 0) && (y < 0))
+						fi = 3 * PI / 2;
+					/*
+					cout << "width: " << width << " height: " << height << endl;
+					cout << "r: " << distance << endl;
+					cout << "x: " << pos[v][0] << " y: " << pos[v][1] << endl;
+					cout << "x-500: " << pos[v][0]-500 << " y-500: " << pos[v][1]-500 << endl;
+					cout << "x-500^2: " << (pos[v][0]-5000)*(pos[v][0]-5000) << " y-500^2: " << (pos[v][1]-5000)*(pos[v][1]-5000) << endl;
+					cout << "x-500^2 + y-500^2: " << (pos[v][0]-5000)*(pos[v][0]-5000) + (pos[v][1]-5000)*(pos[v][1]-5000) << endl;
+					pos[v][0] = distance * cos(fi) + (width / 2);
+					pos[v][1] = distance * sin(fi) + (height / 2);
+					cout << "x: " << pos[v][0] << " y: " << pos[v][1] << endl;
+					*/
+					pos[v][0] = levelMax[level[v]] * distance * cos(fi) + (width / 2);
+					pos[v][1] = levelMax[level[v]] * distance * sin(fi) + (height / 2);
+
+					//cout << "outer, x: " << pos[v][0] << " y: " << pos[v][1] << " radius: " << radius << " fi: " << fi << " level: " << level[v] << " v: " << v << endl;
+				}
+			}
+			else if (distance < (level[v] - 1) * radius + radius / 2)
+			{
+				// move to inner ring
+				if (levelMin[level[v]] > 1)
+				{
+					double fi = 0;
+					double x = pos[v][0] - (width / 2);
+					double y = pos[v][1] - (height / 2);
+					
+					if (x < 0)
+						fi = atan(y / x) + PI;
+					else if ((x > 0) && (y >= 0))
+						fi = atan(y / x);
+					else if ((x > 0) && (y < 0))
+						fi = atan(y / x) + 2 * PI;
+					else if ((x == 0) && (y > 0))
+						fi = PI / 2;
+					else if ((x == 0) && (y < 0))
+						fi = 3 * PI / 2;
+					
+					//pos[v][0] = distance * cos(fi) + (width / 2);
+					//pos[v][1] = distance * sin(fi) + (height / 2);
+
+					pos[v][0] = levelMin[level[v]] * distance * cos(fi) + (width / 2);
+					pos[v][1] = levelMin[level[v]] * distance * sin(fi) + (height / 2);
+
+					//cout << "inner, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
+				}
+			}
+		}
+		/**/
+		/*
+		for (v = 0; v < nVertices; v++)
+		{
+
+			double dif = sqrt(disp[v][0] * disp[v][0] + disp[v][1] * disp[v][1]);
+
+			if (dif == 0)
+				dif = 1;
+
+			pos[v][0] = pos[v][0] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
+			pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
+			
+			double distance = (pos[v][0] - (width/2)) * (pos[v][0] - (width/2)) + (pos[v][1] - (height/2)) * (pos[v][1] - (height/2));
+			
 			//cout << "x: " << pos[v][0] << " y: " << pos[v][1] << " width: " << width << " height: " << height << endl;
 			//cout << "distance: " << distance << " radius: " << (level[v] * radius) * (level[v] * radius) << endl;
 			if (level[v] == 0)
@@ -547,8 +681,9 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 
 				//cout << "inner, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
 			}
-			/**/
+			
 		}
+		/**/
 		//cout << temperature << ", ";
 		temperature = temperature * coolFactor;
 	}
@@ -809,10 +944,19 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 	int r = graph->width / nCircles / 2;
 
 	graph->level = new int[graph->nVertices];
+	graph->kVector = new double[nCircles];
+	graph->levelMin = new double[nCircles];
+	graph->levelMax = new double[nCircles];
 	int i;
 	for (i = 0; i < graph->nVertices; i++)
 		graph->level[i] = nCircles;
-
+	
+	for (i = 0; i < nCircles; i++)
+	{
+		graph->kVector[i] = 0;
+		graph->levelMin[i] = INT_MAX;
+		graph->levelMax[i] = 0;
+	}
 	vector<int> removedLinks[2];
 	vector<int> vertices;
 	vector<int> allVertices;
@@ -895,6 +1039,25 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 		graph->links[1].push_back(removedLinks[1][i]);
 	}
 
+
+	for (i = 0; i < graph->nVertices; i++)
+	{
+		graph->kVector[graph->level[i]]++;
+	}
+
+	double radius = graph->width / nCircles / 2;
+	for (i = 0; i < nCircles; i++)
+	{
+		//cout << "n: " << graph->kVector[i] << endl;
+		//cout << "r: " << radius * i;
+		if (graph->kVector[i] > 0)
+			graph->kVector[i] = 2 * i * radius * sin(PI / graph->kVector[i]);
+		else
+			graph->kVector[i] = -1;
+
+		//cout << "kvec: " << graph->kVector[i] << endl;
+	}
+
 	graph->temperature = temperature;
 	graph->coolFactor = exp(log(10.0/10000.0) / steps);
 	/*
@@ -904,11 +1067,16 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 	if (graph->radialFruchtermanReingold(steps, nCircles) > 0)
 	{
 		delete[] graph->level;
+		delete[] graph->kVector;
+		delete[] graph->levelMin;
+		delete[] graph->levelMax;
 		PYERROR(PyExc_SystemError, "radialFruchtermanReingold failed", NULL);
 	}
 
 	delete[] graph->level;
-
+	delete[] graph->kVector;
+	delete[] graph->levelMin;
+	delete[] graph->levelMax;
 	return Py_BuildValue("d", graph->temperature);
   PyCATCH
 }
