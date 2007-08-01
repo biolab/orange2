@@ -494,11 +494,13 @@ class OWGraphDrawerCanvas(OWGraph):
             x1 = self.visualizer.coors[v][0]
             y1 = self.visualizer.coors[v][1]
             
-            if self.colorIndex != -1:
+            if self.colorIndex > -1:
                 if self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Continuous:
                     newColor = self.contPalette[self.noJitteringScaledData[self.colorIndex][v]]
                 elif self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Discrete:
                     newColor = self.discPalette[self.colorIndices[self.visualizer.graph.items[v][self.colorIndex].value]]
+                    fillColor = newColor
+                    edgeColor = newColor
             else: 
                 newColor = Qt.red #QColor(0,0,0)
             

@@ -153,6 +153,7 @@ class OWNetwork(OWWidget):
         self.tooltipBox = OWGUI.widgetBox(self.mainTab, "Tooltips", addSpace = True)
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListBox.Multi, callback=self.clickedTooltipLstBox)
 
+        OWGUI.button(self.mainTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
         
         ib = OWGUI.widgetBox(self.markTab, "Info", addSpace = True)
         OWGUI.label(ib, self, "Number of vertices: %(nVertices)i")
@@ -243,6 +244,7 @@ class OWNetwork(OWWidget):
             labelText = self.graph.labelText
             self.graph.markWithRed = self.graph.nVertices > 200
             self.graph.setMarkedNodes([i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])])
+            print [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])]
             return
         
         elif hubs == 2:
@@ -420,7 +422,7 @@ class OWNetwork(OWWidget):
         refreshRate = int(5.0 / t)
         if refreshRate <   1: refreshRate = 1;
         if refreshRate > 1500: refreshRate = 1500;
-        #print "refreshRate: " + str(refreshRate)        
+        print "refreshRate: " + str(refreshRate)        
         tolerance = 5
         initTemp = 1000
         initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp, self.graph.hiddenNodes)
@@ -436,7 +438,7 @@ class OWNetwork(OWWidget):
         refreshRate = int(5.0 / t)
         if refreshRate <   1: refreshRate = 1;
         if refreshRate > 1500: refreshRate = 1500;
-        #print "refreshRate: " + str(refreshRate)
+        print "refreshRate: " + str(refreshRate)
         
         tolerance = 5
         initTemp = 100
@@ -446,7 +448,7 @@ class OWNetwork(OWWidget):
             
         #print "center ndx: " + str(centerNdx)
         initTemp = self.visualize.radialFruchtermanReingold(centerNdx, refreshRate, initTemp)
-        self.graph.circles = [10000 / 12, 10000/12*2, 10000/12*3, 10000/12*4, 10000/12*5]
+        self.graph.circles = [10000 / 12, 10000/12*2, 10000/12*3]#, 10000/12*4, 10000/12*5]
         #self.graph.circles = [100, 200, 300]
         self.updateCanvas()
         self.graph.circles = []
@@ -512,6 +514,24 @@ class OWNetwork(OWWidget):
     def setSelectionToMarked(self):
         self.graph.removeSelection(None, False)
         self.graph.addSelection(self.graph.markedNodes)
+        
+    def showDegreeDistribution(self):
+        from matplotlib import rcParams
+        rcParams['text.fontname'] = 'cmr10'
+        import pylab as p
+        
+        x = self.visualize.graph.getDegrees()
+        #print len(x)
+        #print x
+        # the histogram of the data
+        n, bins, patches = p.hist(x, 500)
+        
+        p.xlabel('No. of nodes')
+        p.ylabel('Degree')
+        p.title(r'Degree distribution')
+        
+        p.show()
+
 
 if __name__=="__main__":    
     appl = QApplication(sys.argv)
