@@ -556,7 +556,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 
 			//cout  << " min: " << levelMin[v] << " max: " << levelMax[v] << "r: " << v * radius << endl;
 		}
-		//*
+		
 		for (v = 0; v < nVertices; v++)
 		{
 			double distance = sqrt((pos[v][0] - (width/2)) * (pos[v][0] - (width/2)) + (pos[v][1] - (height/2)) * (pos[v][1] - (height/2)));
@@ -588,17 +588,7 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 						fi = PI / 2;
 					else if ((x == 0) && (y < 0))
 						fi = 3 * PI / 2;
-					/*
-					cout << "width: " << width << " height: " << height << endl;
-					cout << "r: " << distance << endl;
-					cout << "x: " << pos[v][0] << " y: " << pos[v][1] << endl;
-					cout << "x-500: " << pos[v][0]-500 << " y-500: " << pos[v][1]-500 << endl;
-					cout << "x-500^2: " << (pos[v][0]-5000)*(pos[v][0]-5000) << " y-500^2: " << (pos[v][1]-5000)*(pos[v][1]-5000) << endl;
-					cout << "x-500^2 + y-500^2: " << (pos[v][0]-5000)*(pos[v][0]-5000) + (pos[v][1]-5000)*(pos[v][1]-5000) << endl;
-					pos[v][0] = distance * cos(fi) + (width / 2);
-					pos[v][1] = distance * sin(fi) + (height / 2);
-					cout << "x: " << pos[v][0] << " y: " << pos[v][1] << endl;
-					*/
+					
 					pos[v][0] = levelMax[level[v]] * distance * cos(fi) + (width / 2);
 					pos[v][1] = levelMax[level[v]] * distance * sin(fi) + (height / 2);
 
@@ -624,9 +614,6 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 						fi = PI / 2;
 					else if ((x == 0) && (y < 0))
 						fi = 3 * PI / 2;
-					
-					//pos[v][0] = distance * cos(fi) + (width / 2);
-					//pos[v][1] = distance * sin(fi) + (height / 2);
 
 					pos[v][0] = levelMin[level[v]] * distance * cos(fi) + (width / 2);
 					pos[v][1] = levelMin[level[v]] * distance * sin(fi) + (height / 2);
@@ -635,55 +622,6 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 				}
 			}
 		}
-		/**/
-		/*
-		for (v = 0; v < nVertices; v++)
-		{
-
-			double dif = sqrt(disp[v][0] * disp[v][0] + disp[v][1] * disp[v][1]);
-
-			if (dif == 0)
-				dif = 1;
-
-			pos[v][0] = pos[v][0] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
-			pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
-			
-			double distance = (pos[v][0] - (width/2)) * (pos[v][0] - (width/2)) + (pos[v][1] - (height/2)) * (pos[v][1] - (height/2));
-			
-			//cout << "x: " << pos[v][0] << " y: " << pos[v][1] << " width: " << width << " height: " << height << endl;
-			//cout << "distance: " << distance << " radius: " << (level[v] * radius) * (level[v] * radius) << endl;
-			if (level[v] == 0)
-			{
-				// move to center
-				pos[v][0] = width / 2;
-				pos[v][1] = height / 2;
-
-				//cout << "center, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
-			}
-			//*
-			else if (distance > ((level[v] * radius) * (level[v] * radius)))
-			{
-				// move to outer ring
-				double fi = atan((pos[v][1] - (height / 2)) / (pos[v][0] - (width / 2)));
-
-				pos[v][0] = level[v] * radius * cos(fi) + (width / 2);
-				pos[v][1] = level[v] * radius * sin(fi) + (height / 2);
-
-				//cout << "outer, x: " << pos[v][0] << " y: " << pos[v][1] << " radius: " << radius << " fi: " << fi << " level: " << level[v] << " v: " << v << endl;
-			}
-			else if (distance < (((level[v] - 1) * radius) * ((level[v] - 1) * radius)))
-			{
-				// move to inner ring
-				double fi = atan((pos[v][1] - (height / 2)) / (pos[v][0] - (width / 2)));
-
-				pos[v][0] = (level[v] - 1) * radius * cos(fi) + (width / 2);
-				pos[v][1] = (level[v] - 1) * radius * sin(fi) + (height / 2);
-
-				//cout << "inner, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
-			}
-			
-		}
-		/**/
 		//cout << temperature << ", ";
 		temperature = temperature * coolFactor;
 	}
@@ -1042,6 +980,9 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 
 	for (i = 0; i < graph->nVertices; i++)
 	{
+		if (graph->level[i] >= nCircles)
+			graph->level[i] = nCircles - 1;
+
 		graph->kVector[graph->level[i]]++;
 	}
 
