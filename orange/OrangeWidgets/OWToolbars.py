@@ -59,7 +59,10 @@ class ZoomSelectToolbar(QHButtonGroup):
 
     def action(self, b):
         f = self.functions[b]
-        if f and f[5]:
+        if not f:
+            return
+        
+        if f[5]:
             if hasattr(self.widget, "toolbarSelection"):
                 self.widget.toolbarSelection = b
             for fi, ff in enumerate(self.functions):
