@@ -136,7 +136,7 @@ class OWNetwork(OWWidget):
         self.optimizeBox = OWGUI.radioButtonsInBox(self.mainTab, self, "optimizeWhat", [], "Optimize", addSpace=True)
         OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
         OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr)
-        OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Steps ")
+        OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
         OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
         OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
         OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
