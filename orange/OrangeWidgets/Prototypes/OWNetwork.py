@@ -106,6 +106,7 @@ class OWNetwork(OWWidget):
         self.markProportion = 0
         self.markSearchString = ""
         self.markDistance = 2
+        self.frSteps = 1
         self.hubs = 0
         self.color = 0
         self.nVertices = self.nMarked = self.nSelected = self.nHidden = self.nShown = 0
@@ -135,6 +136,7 @@ class OWNetwork(OWWidget):
         self.optimizeBox = OWGUI.radioButtonsInBox(self.mainTab, self, "optimizeWhat", [], "Optimize", addSpace=True)
         OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
         OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr)
+        OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Steps ")
         OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
         OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
         OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
@@ -354,6 +356,13 @@ class OWNetwork(OWWidget):
         self.graph.addVisualizer(self.visualize)
         #print "done."
         #print "OWNetwork/setGraph: display random..."
+        k = 1.13850193174e-008
+        nodes = self.visualize.nVertices()
+        t = k * nodes * nodes
+        self.frSteps = int(5.0 / t)
+        if self.frSteps <   1: self.frSteps = 1;
+        if self.frSteps > 1500: self.frSteps = 1500;
+        
         self.random()
         #print "done."
     
@@ -415,17 +424,17 @@ class OWNetwork(OWWidget):
         if self.visualize == None:   #grafa se ni
             return
         
-        k = 1.13850193174e-008
-        #k = 1.61735442033e-008
-        nodes = self.visualize.nVertices()
-        t = k * nodes * nodes
-        refreshRate = int(5.0 / t)
-        if refreshRate <   1: refreshRate = 1;
-        if refreshRate > 1500: refreshRate = 1500;
-        print "refreshRate: " + str(refreshRate)        
+#        k = 1.13850193174e-008
+#        #k = 1.61735442033e-008
+#        nodes = self.visualize.nVertices()
+#        t = k * nodes * nodes
+#        refreshRate = int(5.0 / t)
+#        if refreshRate <   1: refreshRate = 1;
+#        if refreshRate > 1500: refreshRate = 1500;
+        print "refreshRate: " + str(self.frSteps)        
         tolerance = 5
         initTemp = 1000
-        initTemp = self.visualize.fruchtermanReingold(refreshRate, initTemp, self.graph.hiddenNodes)
+        initTemp = self.visualize.fruchtermanReingold(self.frSteps, initTemp, self.graph.hiddenNodes)
         self.updateCanvas()
         #print "done."
         
