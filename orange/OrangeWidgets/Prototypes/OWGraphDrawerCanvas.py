@@ -577,6 +577,7 @@ class OWGraphDrawerCanvas(OWGraph):
                 if lbl != '':
                     lbl = lbl[:-1]
                     self.tips.addToolTip(x1, y1, lbl)
+        
         #print "done."
             
     def setVertexColor(self, attribute):
