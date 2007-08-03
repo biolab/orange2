@@ -35,14 +35,14 @@ public:
 
   vector<vector<float> *> intervals;
 
-  TAssistantExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars = PVarList(), PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false);
+  TAssistantExampleGenerator(const string &datafile, const string &domainfile, const int createNewOn, vector<int> &status, vector<int> &metaStatus);
   TAssistantExampleGenerator(const TAssistantExampleGenerator &old);
   ~TAssistantExampleGenerator();
 
   TExampleIterator begin();
   virtual bool readExample (TFileExampleIteratorData &, TExample &);
 
-  PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  PDomain readDomain(const string &stem, const int createNewOn, vector<int> &status, vector<int> &metaStatus);
 
 private:
   static TDomainDepot domainDepot;

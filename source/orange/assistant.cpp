@@ -133,7 +133,7 @@ bool TAssistantExampleGenerator::readExample(TFileExampleIteratorData &fei, TExa
 string getLine(istream &str);
 
 
-PDomain TAssistantExampleGenerator::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+PDomain TAssistantExampleGenerator::readDomain(const string &stem, const int createNewOn, vector<int> &status, vector<int> &metaStatus)
 { 
   ifstream str(stem.c_str(), ios::binary);
   if (!str.is_open())
@@ -184,7 +184,7 @@ PDomain TAssistantExampleGenerator::readDomain(const string &stem, PVarList sour
       return sourceDomain;
   }
 
-  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, sourceVars, NULL, dontStore, dontCheckStored);
+  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, createNewOn, status, metaStatus);
 }
 
 

@@ -33,8 +33,8 @@
 
 TDomainDepot TRetisExampleGenerator::domainDepot;
 
-TRetisExampleGenerator::TRetisExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
-: TFileExampleGenerator(datafile, readDomain(domainfile, sourceVars, sourceDomain, dontCheckStored, dontStore))
+TRetisExampleGenerator::TRetisExampleGenerator(const string &datafile, const string &domainfile, const int createNewOn, vector<int> &status, vector<int> &metaStatus)
+: TFileExampleGenerator(datafile, readDomain(domainfile, createNewOn, status, metaStatus))
 {}
   
 
@@ -114,7 +114,7 @@ bool TRetisExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample
 
 
 // Reads the .names file. The format allow using different delimiters, not just those specified by the original format
-PDomain TRetisExampleGenerator::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+PDomain TRetisExampleGenerator::readDomain(const string &stem, const int createNewOn, vector<int> &status, vector<int> &metaStatus)
 { ifstream str(stem.c_str(), ios::binary);
   if (!str.is_open())
     ::raiseError("RetisDomain: file '%s' not found", stem.c_str());
@@ -145,14 +145,7 @@ PDomain TRetisExampleGenerator::readDomain(const string &stem, PVarList sourceVa
 
   attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(className, TValue::FLOATVAR));
 
-  if (sourceDomain) {
-    if (!domainDepot.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
-      raiseError("given domain does not match the file");
-    else
-      return sourceDomain;
-  }
-
-  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, sourceVars, NULL, dontStore, dontCheckStored);
+  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, createNewOn, status, metaStatus);
 }
 
 

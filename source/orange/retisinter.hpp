@@ -33,11 +33,11 @@ class ORANGE_API TRetisExampleGenerator : public TFileExampleGenerator {
 public:
   __REGISTER_CLASS
 
-  TRetisExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  TRetisExampleGenerator(const string &datafile, const string &domainfile, const int createNewOn, vector<int> &status, vector<int> &metaStatus);
   TExampleIterator begin();
   virtual bool readExample(TFileExampleIteratorData &, TExample &);
 
-  PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  PDomain readDomain(const string &stem, const int createNewOn, vector<int> &status, vector<int> &metaStatus);
 
 private:
   static TDomainDepot domainDepot;
