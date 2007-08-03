@@ -109,7 +109,7 @@ class OWNetwork(OWWidget):
         self.frSteps = 1
         self.hubs = 0
         self.color = 0
-        self.nVertices = self.nMarked = self.nSelected = self.nHidden = self.nShown = 0
+        self.nVertices = self.nMarked = self.nSelected = self.nHidden = self.nShown = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = 0
         self.optimizeWhat = 1
         
         self.loadSettings()
@@ -127,9 +127,11 @@ class OWNetwork(OWWidget):
         self.displayTab = QVGroupBox(self)
         self.mainTab = self.displayTab
         self.markTab = QVGroupBox(self)
+        self.infoTab = QVGroupBox(self)
 #        self.tabs.insertTab(self.mainTab, "Main")
         self.tabs.insertTab(self.displayTab, "Display")
         self.tabs.insertTab(self.markTab, "Mark")
+        self.tabs.insertTab(self.infoTab, "Info")
         OWGUI.separator(self.controlArea)
 
 
@@ -214,6 +216,12 @@ class OWNetwork(OWWidget):
         
         OWGUI.button(self.controlArea, self, "Save network", callback=self.saveNetwork)
         OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
+        
+        ib = OWGUI.widgetBox(self.infoTab, "General", addSpace = True)
+        OWGUI.label(ib, self, "Number of vertices: %(nVertices)i")
+        OWGUI.label(ib, self, "Number of edges: %(nEdges)i")
+        OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
+        OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
 
         self.icons = self.createAttributeIconDict()
         self.setHubs()
@@ -344,6 +352,9 @@ class OWNetwork(OWWidget):
         #print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkVisualizer(graph, self)
         self.nVertices = len(graph)
+        self.nEdges = len(graph.getEdges())
+        self.verticesPerEdge = float(self.nVertices) / float(self.nEdges)
+        self.edgesPerVertex = float(self.nEdges) / float(self.nVertices)
         #print "done."
         vars = self.visualize.getVars()
         self.attributes = [(var.name, var.varType) for var in vars]
@@ -433,7 +444,7 @@ class OWNetwork(OWWidget):
 #        refreshRate = int(5.0 / t)
 #        if refreshRate <   1: refreshRate = 1;
 #        if refreshRate > 1500: refreshRate = 1500;
-        print "refreshRate: " + str(self.frSteps)        
+#        print "refreshRate: " + str(self.frSteps)        
         tolerance = 5
         initTemp = 1000
         initTemp = self.visualize.fruchtermanReingold(self.frSteps, initTemp, self.graph.hiddenNodes)
