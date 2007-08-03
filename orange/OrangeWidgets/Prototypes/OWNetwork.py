@@ -285,29 +285,15 @@ class OWNetwork(OWWidget):
         
     def clickedAttLstBox(self):
         self.graph.setLabelText([self.attributes[i][0] for i in self.markerAttributes])
-        #save current zoom
-        xmin = self.graph.axisScale(QwtPlot.xBottom).lBound()
-        xmax = self.graph.axisScale(QwtPlot.xBottom).hBound()
-        ymax = self.graph.axisScale(QwtPlot.yLeft).lBound()
-        ymin = self.graph.axisScale(QwtPlot.yLeft).hBound()
-        self.updateCanvas()
-        # set old zoom            
-        self.graph.setNewZoom(self.graph.axisScale(QwtPlot.xBottom).lBound(), self.graph.axisScale(QwtPlot.xBottom).hBound(), self.graph.axisScale(QwtPlot.yLeft).lBound(), self.graph.axisScale(QwtPlot.yLeft).hBound(), xmin, xmax, ymax, ymin)
-        
-    
+        self.graph.updateData()
+        self.graph.replot()
+            
         
     def clickedTooltipLstBox(self):
         self.graph.setTooltipText([self.attributes[i][0] for i in self.tooltipAttributes])
-        #save current zoom
-        xmin = self.graph.axisScale(QwtPlot.xBottom).lBound()
-        xmax = self.graph.axisScale(QwtPlot.xBottom).hBound()
-        ymax = self.graph.axisScale(QwtPlot.yLeft).lBound()
-        ymin = self.graph.axisScale(QwtPlot.yLeft).hBound()
-        self.updateCanvas()
-        # set old zoom            
-        self.graph.setNewZoom(self.graph.axisScale(QwtPlot.xBottom).lBound(), self.graph.axisScale(QwtPlot.xBottom).hBound(), self.graph.axisScale(QwtPlot.yLeft).lBound(), self.graph.axisScale(QwtPlot.yLeft).hBound(), xmin, xmax, ymax, ymin)
-        
-    
+        self.graph.updateData()
+        self.graph.replot()
+
 
     def testRefresh(self):
         start = time()
