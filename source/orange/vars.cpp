@@ -39,6 +39,7 @@
 #include "domain.hpp"
 #include "random.hpp"
 #include "orvector.hpp"
+#include "stringvars.hpp"
 
 
 #include "vars.ppp"
@@ -58,28 +59,123 @@ const char **specialCasesResorted[] = { resortedDaNe, 0};
 
 const char *putAtBeginning[] = {"no", "none", "absent", "normal", 0};
 
-TVariable *TVariable::getExisting(const string &name, const int &varType, TStringList *fixedOrderValues, set<string> *values)
+TVariable *TVariable::getExisting(const string &name, const int &varType, TStringList *fixedOrderValues, set<string> *values,
+                                  const int failOn, int *status)
 {
   if ((fixedOrderValues && fixedOrderValues->size() ) && (varType != TValue::INTVAR))
     ::raiseErrorWho("Variable", "cannot specify the value list for non-discrete attributes");
     
-  TVariable *var = NULL;
+  if (failOn == TVariable::OK) {
+    if (status)
+      *status = TVariable::OK;
+    return NULL;
+  }
   
-  ITERATE(list<TVariable *>, vi, TVariable::allVariables)
+  vector<pair<TVariable *, int> > candidates;
+  TStringList::const_iterator vvi, vve;
+  
+  ITERATE(list<TVariable *>, vi, TVariable::allVariables) {
     if (((*vi)->varType == varType) && ((*vi)->name == name)) {
-      var = *vi;
-      break;
-    }
+      int tempStat = TVariable::OK;
+
+      // non-discrete attributes are always ok,
+      // discrete ones need further checking if they have any defined values
+      TEnumVariable *evar = dynamic_cast<TEnumVariable *>(*vi);
+      if (evar && evar->values->size()) {
+      
+        if (fixedOrderValues && !evar->checkValuesOrder(*fixedOrderValues))
+          tempStat = TVariable::Incompatible;
+          
+        if ((tempStat == TVariable::OK) 
+            && (values && values->size() || fixedOrderValues && fixedOrderValues->size())) {
+          for(vvi = evar->values->begin(), vve = evar->values->end();
+              (vvi != vve)
+               && (!values || (values->find(*vvi) == values->end()))
+               && (!fixedOrderValues || (find(fixedOrderValues->begin(), fixedOrderValues->end(), *vvi) == fixedOrderValues->end()));
+              vvi++);
+          if (vvi == vve)
+            tempStat = TVariable::NoRecognizedValues;
+         }
+         
+         if ((tempStat == TVariable::OK) && fixedOrderValues) {
+           for(vvi = fixedOrderValues->begin(), vve = fixedOrderValues->end();
+               (vvi != vve) && evar->hasValue(*vvi);
+               vvi++);
+           if (vvi != vve)
+             tempStat = TVariable::MissingValues;
+         }
+          
+         if ((tempStat == TVariable::OK) && values) {
+           set<string>::const_iterator vsi(values->begin()), vse(values->end());
+           for(; (vsi != vse) && evar->hasValue(*vsi); vsi++);
+           if (vsi != vse)
+             tempStat = TVariable::MissingValues;
+         }
+       }
     
+      candidates.push_back(make_pair(*vi, tempStat));
+      if (tempStat == TVariable::OK)
+        break;
+    }
+  }
+
+  TVariable *var = NULL;
+
+  int intStatus;
+  if (!status)
+    status = &intStatus;
+  *status = TVariable::NotFound;
+  
+  const int actFailOn = failOn > TVariable::Incompatible ? TVariable::Incompatible : failOn;
+  for(vector<pair<TVariable *, int> >::const_iterator ci(candidates.begin()), ce(candidates.end());
+      ci != ce; ci++)
+    if (ci->second < *status) {
+      *status = ci->second;
+      if (*status < actFailOn)
+        var = ci->first;
+    }
+
+  return var;
+}
+
+
+TVariable *TVariable::make(const string &name, const int &varType, TStringList *fixedOrderValues, set<string> *values,
+                           const int createNewOn, int *status)
+{
+  int intStatus;
+  if (!status)
+    status = &intStatus;
+
+  TVariable *var;
+  if (createNewOn == TVariable::OK) {
+    var = NULL;
+    *status = TVariable::OK;
+  }
+  else
+    var = getExisting(name, varType, fixedOrderValues, values, createNewOn, status);
+    
+  if (!var) {
+      switch (varType) {
+        case TValue::INTVAR:
+          var = mlnew TEnumVariable(name);
+          break;
+
+        case TValue::FLOATVAR:
+          var = mlnew TFloatVariable(name);
+          break;
+
+        case STRINGVAR:
+          var = mlnew TStringVariable(name);
+          break;
+     }
+  }
+
   TEnumVariable *evar = dynamic_cast<TEnumVariable *>(var);
   if (evar) { 
-    if (fixedOrderValues) {
-      if (!evar->checkValuesOrder(*fixedOrderValues))
-        ::raiseErrorWho("Variable", "a discrete variable named '%s' already exists, but with different order of values", name.c_str());
+    if (fixedOrderValues)
       const_PITERATE(TStringList, si, fixedOrderValues)
         evar->addValue(*si);
-    }
-      
+  
     if (values) {
       vector<string> sorted;
       TEnumVariable::presortValues(*values, sorted);
@@ -98,7 +194,8 @@ TVariable::TVariable(const int &avarType, const bool &ord)
   distributed(false),
   getValueFromLocked(false),
   DC_value(varType, valueDC),
-  DK_value(varType, valueDK)
+  DK_value(varType, valueDK),
+  defaultMetaId(0)
 {}
 
 
@@ -108,7 +205,8 @@ TVariable::TVariable(const string &aname, const int &avarType, const bool &ord)
   distributed(false),
   getValueFromLocked(false),
   DC_value(varType, valueDC),
-  DK_value(varType, valueDK)
+  DK_value(varType, valueDK),
+  defaultMetaId(0)
 { name = aname; };
 
 
@@ -327,6 +425,19 @@ void TEnumVariable::addValue(const string &val)
         raiseWarning("is '%s' a continuous attribute unintentionally defined by '%s'?", name.c_str(), values->front().c_str());
     }
   }
+}
+
+
+bool TEnumVariable::hasValue(const string &s)
+{
+  if (!valuesTree.empty())
+    return valuesTree.lower_bound(s) != valuesTree.end();
+    
+  PITERATE(TStringList, vli, values)
+    if (*vli == s)
+      return true;
+      
+  return false;
 }
 
 

@@ -31,6 +31,7 @@
 
 #define PYCLASSCONSTANT_INT(classname, constname, intconst)
 #define PYCLASSCONSTANT_FLOAT(classname, constname, intconst)
+#define PYCLASSCONSTANT(classname, constname, oconst)
 
 #define PYPROPERTIES(x)
 #define PYARGS(x,doc)

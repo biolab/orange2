@@ -221,6 +221,20 @@ C_NAMED(IntVariable, Variable, "([name=, startValue=, endValue=, distributed=, g
 C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
 C_NAMED(FloatVariable, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
 
+
+PyObject *MakeStatus()
+{ PyObject *mt=PyModule_New("MakeStatus");
+  PyModule_AddIntConstant(mt, "OK", (int)TVariable::OK);
+  PyModule_AddIntConstant(mt, "MissingValues", (int)TVariable::MissingValues);
+  PyModule_AddIntConstant(mt, "NoRecognizedValues", (int)TVariable::NoRecognizedValues);
+  PyModule_AddIntConstant(mt, "Incompatible", (int)TVariable::Incompatible);
+  PyModule_AddIntConstant(mt, "NotFound", (int)TVariable::NotFound);
+  return mt;
+}
+
+PYCLASSCONSTANT(Variable, MakeStatus, MakeStatus())
+
+
 PyObject *Variable_getExisting(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_STATIC, "(name, type[, fixedOrderValues[, otherValues]]) -> Variable | None")
 {
   PyTRY
@@ -1792,8 +1806,13 @@ bool hasFlag(PyObject *keywords, char *flag)
 }
 
 
-TExampleTable         *readTable(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false);
-TExampleGenerator *readGenerator(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false);
+TExampleTable         *readTable(char *filename, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false);
+TExampleGenerator *readGenerator(char *filename, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus, const char *DK, const char *DC, bool noExcOnUnknown = false, bool noCodedDiscrete = false, bool noClass = false);
+
+PyObject *encodeStatus(const vector<int> &status);
+PyObject *encodeStatus(const vector<pair<int, int> > &metaStatus);
+
+char *obsoleteFlags[] = {"dontCheckStored", "dontStore", "use", "useMetas", "domain", 0 };
 
 PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool generatorOnly = false)
 {
@@ -1809,18 +1828,35 @@ PyObject *loadDataFromFile(PyTypeObject *type, char *filename, PyObject *argstup
 
   PyErr_Clear();
 
-  bool dontCheckStored = hasFlag(keywords, "dontCheckStored") ? readBoolFlag(keywords, "dontCheckStored") : hasFlag(keywords, "use");
+  for(char * const *of = obsoleteFlags; *of; of++)
+    if (hasFlag(keywords, *of))
+      raiseWarning("flag '%s' is not supported any longer", *of);
+
+  int createNewOn = TVariable::Incompatible;
+  if (hasFlag(keywords, "createNewOn"))
+    convertFromPython(PyDict_GetItemString(keywords, "createNewOn"), createNewOn);
+
   char *DK = NULL, *DC = NULL;
   if (!readUndefinedSpecs(keywords, DK, DC))
     return PYNULL;
 
   char *errs = NULL;
+  vector<int> status;
+  vector<pair<int, int> > metaStatus;
   try {
     TExampleGenerator *generator = 
-      generatorOnly ? readGenerator(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, false, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"))
-                    : readTable(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, false, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"));
-    if (generator)
-      return WrapNewOrange(generator, type);
+      generatorOnly ? readGenerator(filename, createNewOn, status, metaStatus, DK, DC, false, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"))
+                    : readTable(filename, createNewOn, status, metaStatus, DK, DC, false, readBoolFlag(keywords, "noCodedDiscrete"), readBoolFlag(keywords, "noClass"));
+    if (generator) {
+      PyObject *pygen = WrapNewOrange(generator, type);
+      PyObject *pystatus = encodeStatus(status);
+      PyObject *pymetastatus = encodeStatus(metaStatus);
+      Orange_setattrDictionary((TPyOrange *)pygen, "attributeLoadStatus", pystatus, false);
+      Orange_setattrDictionary((TPyOrange *)pygen, "metaAttributeLoadStatus", pymetastatus, false);
+      Py_DECREF(pystatus);
+      Py_DECREF(pymetastatus);
+      return pygen;
+    }
   }
   catch (mlexception err) { 
     errs = strdup(err.what());
@@ -2320,8 +2356,6 @@ PyObject *saveTabDelimited(PyObject *, PyObject *args, PyObject *keyws);
 PyObject *saveC45(PyObject *, PyObject *args);
 PyObject *saveTxt(PyObject *, PyObject *args, PyObject *keyws);
 PyObject *saveCsv(PyObject *, PyObject *args, PyObject *keyws);
-PyObject *saveRetis(PyObject *, PyObject *args);
-PyObject *saveAssistant(PyObject *, PyObject *args);
 PyObject *saveBasket(PyObject *, PyObject *args);
 
 PyObject *ExampleGenerator_save(PyObject *self, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "(filename) -> None")
@@ -2364,10 +2398,6 @@ PyObject *ExampleGenerator_save(PyObject *self, PyObject *args, PyObject *keyws)
     res = saveCsv(NULL, newargs, keyws);
   else if (!strcmp(extension, ".names") || !strcmp(extension, ".data") || !strcmp(extension, ".test"))
     res = saveC45(NULL, newargs);
-  else if (!strcmp(extension, ".rda") || !strcmp(extension, ".rdo"))
-    res = saveRetis(NULL, newargs);
-  else if (!strcmp(extension, ".dat"))
-    res = saveAssistant(NULL, newargs);
   else if (!strcmp(extension, ".basket"))
     res = saveBasket(NULL, newargs);
   else
@@ -2625,7 +2655,7 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
 }
 
 
-CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA noClass noCodedDiscrete")
+CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA noClass noCodedDiscrete createNewOn")
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
 {  
@@ -2633,7 +2663,7 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
 
     char *filename = NULL;
     if (PyArg_ParseTuple(argstuple, "s", &filename))
-      return loadDataFromFile(type, filename, argstuple, keywords);
+      return loadDataFromFile(type, filename, argstuple, keywords, false);
 
     PyErr_Clear();
 

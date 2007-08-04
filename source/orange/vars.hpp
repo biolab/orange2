@@ -61,6 +61,7 @@ public:
   int  varType; //P variable type
   bool ordered; //P variable values are ordered
   bool distributed; //P variable values are distributions
+  int defaultMetaId; //P default (proposed, suggested...) meta id for this variable
 
   PRandomGenerator randomGenerator; //P random generator for random values (initialized when first needed)
 
@@ -92,8 +93,32 @@ public:
     ::operator delete(t);
   }
 
-  static TVariable *getExisting(const string &name, const int &varType, TStringList *fixedOrderValues = NULL, set<string> *values = NULL);
+  /* Status codes for getExisting and make. The codes refer to the difference between
+     the requested and the existing variable.
+     OK                  the new variable contains at least one of the existing values,
+                         and no new values; there is no problem with their order
+     MissingValues       the new variable contains at least one of the existing values,
+                         and some new oness; there is no problem with their order
+     NoRecognizedValues  the new variable contains no existing values
+     Incompatible        the new variable prescribes an order of values which is
+                         incompatible with the existing
+     NotFound            the variable with that name and type doesn't exist yet
+  */
+  enum { OK, MissingValues, NoRecognizedValues, Incompatible, NotFound };
   
+  /* This will search for an existing variable and return it unless the status (above)
+     equals or exceeds the failOn argument, Incompatible or NotFound.
+     The status is return if status!=NULL */
+  static TVariable *getExisting(const string &name, const int &varType, TStringList *fixedOrderValues = NULL, set<string> *values = NULL,
+                                const int failOn = Incompatible, int *status = NULL);
+                                
+  /* Gets an existing variable or makes a new one. A new one is made if there is no
+     existing variable by that name or its status (above) equals or exceeds createNewOne.
+     The returned status equals to the result of the search for an existing variable,
+     except if createNewOn==OK, in which case status is always OK.  */
+  static TVariable *make(const string &name, const int &varType, TStringList *fixedOrderValues = NULL, set<string> *value = NULL,
+                                const int createNewOn = Incompatible, int *status = NULL);
+                                
   TVariable(const int &avarType = TValue::NONE, const bool &ordered = false);
   TVariable(const string &aname, const int &avarType=TValue::NONE, const bool &ordered = false);
 
@@ -143,6 +168,7 @@ public:
   TEnumVariable(const TEnumVariable &);
 
   void addValue(const string &);
+  bool hasValue(const string &);
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;

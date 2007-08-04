@@ -58,7 +58,7 @@ public:
   __REGISTER_CLASS
   PBasketFeeder basketFeeder;
 
-  TBasketExampleGenerator(const string &datafile, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  TBasketExampleGenerator(const string &datafile, PDomain sourceDomain, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus);
 
   virtual bool readExample(TFileExampleIteratorData &, TExample &);
 };

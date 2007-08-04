@@ -63,7 +63,7 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGener
 {}
 
 
-TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool autoDetect, bool acsv, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore, const char *aDK, const char *aDC, bool noCodedDiscrete, bool noClass)
+TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool autoDetect, bool acsv, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus, const char *aDK, const char *aDC, bool noCodedDiscrete, bool noClass)
 : TFileExampleGenerator(afname, PDomain()),
   attributeTypes(mlnew TIntList()),
   DCs(),
@@ -74,7 +74,7 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool 
   csv(acsv)
 { 
   // domain needs to be initialized after attributeTypes, DCs, classPos, headerLines
-  domain = readDomain(afname, autoDetect, sourceVars, sourceMetas, sourceDomain, dontCheckStored, dontStore, noCodedDiscrete, noClass);
+  domain = readDomain(afname, autoDetect, createNewOn, status, metaStatus, noCodedDiscrete, noClass);
 
   TFileExampleIteratorData fei(afname);
   
@@ -307,7 +307,7 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
   return NULL;
 }
 
-PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore, bool noCodedDiscrete, bool noClass)
+PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool autoDetect, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus, bool noCodedDiscrete, bool noClass)
 { 
   // non-NULL when this cannot be tab file (reason given as result)
   // NULL if this seems a valid tab file
@@ -366,9 +366,10 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
     classPos = lastRegular;
     
   if (basketPos >= 0)
-    basketFeeder = mlnew TBasketFeeder(sourceDomain, dontCheckStored, false);
+//    basketFeeder = mlnew TBasketFeeder(sourceDomain, createNewOn == TVariable::OK, false);
+    basketFeeder = mlnew TBasketFeeder(PDomain(), createNewOn == TVariable::OK, false);
     
-  if (sourceDomain) {
+/*  if (sourceDomain) {
     if (!domainDepot_tab.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, classPos >= 0, NULL))
       raiseError("given domain does not match the file");
 
@@ -376,16 +377,13 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
       basketFeeder->domain = sourceDomain;
     return sourceDomain;
   }
+*/
+  PDomain newDomain = domainDepot_tab.prepareDomain(&attributeDescriptions, classPos>-1, &metaDescriptions, createNewOn, status, metaStatus);
 
-  int *metaIDs = mlnew int[metaDescriptions.size()];
-  PDomain newDomain = domainDepot_tab.prepareDomain(&attributeDescriptions, classPos>-1, &metaDescriptions, sourceVars, sourceMetas, false, dontCheckStored, NULL, metaIDs);
-
-  int *mid = metaIDs;
+  vector<pair<int, int> >::const_iterator mid(metaStatus.begin());
   PITERATE(TIntList, ii, attributeTypes)
     if (*ii == 1)
-      *ii = *(mid++);
-
-  mldelete metaIDs;
+      *ii = mid++ ->first;
 
   if (basketFeeder)
     basketFeeder->domain = newDomain;

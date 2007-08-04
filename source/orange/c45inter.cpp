@@ -34,11 +34,11 @@ bool readC45Atom(TFileExampleIteratorData &fei, vector<string> &atoms);
 
 TDomainDepot TC45ExampleGenerator::domainDepot;
 
-TC45ExampleGenerator::TC45ExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+TC45ExampleGenerator::TC45ExampleGenerator(const string &datafile, const string &domainfile, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus)
 : TFileExampleGenerator(datafile, PDomain()),
   skip (mlnew TBoolList())
 { // domain needs to be initialized after skip!
-  domain = readDomain(domainfile, sourceVars, sourceDomain, dontCheckStored, dontStore);
+  domain = readDomain(domainfile, createNewOn, status, metaStatus);
 }
 
 
@@ -74,7 +74,7 @@ bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &
 
 
 // Reads the .names file. The format allow using different delimiters, not just those specified by the original format
-PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+PDomain TC45ExampleGenerator::readDomain(const string &stem, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus)
 { TFileExampleIteratorData fei(stem);
   
   vector<string> atoms;
@@ -122,14 +122,7 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
   attributeDescriptions.push_back(classDescription);
   skip->push_back(false);
 
-  if (sourceDomain) {
-    if (!domainDepot.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
-      raiseError("given domain does not match the file");
-    else
-      return sourceDomain;
-  }
-
-  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, sourceVars, NULL, dontStore, dontCheckStored);
+  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, createNewOn, status, metaStatus);
 }
 
 

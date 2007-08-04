@@ -73,21 +73,13 @@ public:
                           const TAttributeDescriptions *metas, int *metaIDs = NULL);
 
   PDomain prepareDomain(TAttributeDescriptions *attributes, bool hasClass,
-                        TAttributeDescriptions *metas, PVarList knownVars, const TMetaVector *knownMetas,
-                        const bool dontStore, const bool dontCheckStored,
-                        bool *domainIsNew = NULL, int *metaIDs = NULL);
+                        TAttributeDescriptions *metas, const int createNewOn,
+                        vector<int> &status, vector<pair<int, int> > &metaStatus);
 
   static void destroyNotifier(TDomain *domain, void *);
 
-  /* Creates a variable with given name and type. */
-  static PVariable createVariable(TAttributeDescription &);
   static PVariable createVariable_Python(const string &typeDeclaration, const string &name);
-
-  /* Tries to find a variable the given name and type in knownVars or metaVector.
-     Any of these (or both) can be omitted. If the variable is found in metaVector,
-     the id is set as well; if not, id is set to 0. If the variable is not found,
-     a new one is created unless dontCreateNew is set to false. */
-  static PVariable makeVariable(TAttributeDescription &, int &id, PVarList knownVars, const TMetaVector * = NULL, bool dontCreateNew = false, bool preferMetas = false);
+  static PVariable makeVariable(TAttributeDescription &desc, int &status, const int &createNewOn = TVariable::Incompatible);
 
 
 private:

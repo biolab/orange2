@@ -36,6 +36,9 @@ ORANGE_API int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *ar
 ORANGE_API int Orange_setattr1(TPyOrange *self, char *name, PyObject *args);
 ORANGE_API int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args);
 
+int Orange_setattrDictionary(TPyOrange *self, const char *name, PyObject *args, bool warn);
+int Orange_setattrDictionary(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
+
 ORANGE_API PyObject *packOrangeDictionary(PyObject *self);
 /* Never tested! 
 ORANGE_API int unpackOrangeDictionary(PyObject *self, PyObject *dict);

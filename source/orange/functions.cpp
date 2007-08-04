@@ -33,7 +33,6 @@
 #include "meta.hpp"
 #include "tabdelim.hpp"
 #include "c45inter.hpp"
-#include "retisinter.hpp"
 #include "table.hpp"
 #include "filter.hpp"
 #include "spec_gen.hpp"

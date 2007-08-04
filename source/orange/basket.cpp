@@ -131,9 +131,9 @@ void TBasketFeeder::addItem(TExample &example, const string &atom2, const int &l
 
 
 
-TBasketExampleGenerator::TBasketExampleGenerator(const string &datafile, PDomain sd, bool dcs, bool ds)
+TBasketExampleGenerator::TBasketExampleGenerator(const string &datafile, PDomain sd, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus)
 : TFileExampleGenerator(datafile, mlnew TDomain()),
-  basketFeeder(new TBasketFeeder(sd, dcs, ds))
+  basketFeeder(new TBasketFeeder(sd, false, false))
 {
   basketFeeder->domain = domain;
 }

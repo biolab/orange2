@@ -174,19 +174,43 @@ PyObject *DomainDepot_checkDomain(PyObject *self, PyObject *args, PyObject *) PY
   PyCATCH
 }
     
+    
+PyObject *encodeStatus(const vector<int> &status)
+{
+  PyObject *pystatus = PyList_New(status.size());
+  int i = 0;
+  const_ITERATE(vector<int>, si, status)
+    PyList_SetItem(pystatus, i++, PyInt_FromLong(*si));
+  return pystatus;
+}
 
+
+PyObject *encodeStatus(const vector<pair<int, int> > &metaStatus)  
+{
+  PyObject *pymetastatus = PyDict_New();
+  for(vector<pair<int, int> >::const_iterator mii(metaStatus.begin()), mie(metaStatus.end()); mii != mie; mii++) {
+    PyObject *id = PyInt_FromLong(mii->first);
+    PyObject *status = PyInt_FromLong(mii->second);
+    PyDict_SetItem(pymetastatus, id, status);
+    Py_DECREF(id);
+    Py_DECREF(status);
+  }
+  return pymetastatus;
+}
+
+    
 PyObject *DomainDepot_prepareDomain(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(list-of-names[, knownVars[, knownMetas[, dont-store[, dont-check-stored]]]])")
 {
   PyTRY
     PyObject *pynames, *pymetaVector = NULL;
     PVarList knownVars;
     TMetaVector knownMetas;
-    int dontStore = 0, dontCheckStored = 0;
+    int createNewOn = TVariable::Incompatible;
 
     TDomainDepot::TAttributeDescriptions attributeDescriptions, metaDescriptions;
     bool hasClass;
 
-    if (   !PyArg_ParseTuple(args, "O|O&Oii", &pynames, ccn_VarList, &knownVars, &pymetaVector, &dontStore, &dontCheckStored)
+    if (   !PyArg_ParseTuple(args, "O|i:DomainDepot.prepareDomain", &pynames, &createNewOn)
         || !decodeDescriptors(pynames, attributeDescriptions, metaDescriptions, hasClass))
       return PYNULL;
 
@@ -197,11 +221,11 @@ PyObject *DomainDepot_prepareDomain(PyObject *self, PyObject *args, PyObject *) 
         return PYNULL;
     }
     
-    bool domainIsNew;
-    int *metaIDs = mlnew int[metaDescriptions.size()];
-    PDomain newDomain = ((TPyDomainDepot *)(self))->domainDepot->prepareDomain(&attributeDescriptions, hasClass, &metaDescriptions, knownVars, &knownMetas, dontStore!=0, dontCheckStored!=0, &domainIsNew, metaIDs);
+    vector<int> status;
+    vector<pair<int, int> > metaStatus;
+    PDomain newDomain = ((TPyDomainDepot *)(self))->domainDepot->prepareDomain(&attributeDescriptions, hasClass, &metaDescriptions, createNewOn, status, metaStatus);
 
-    return Py_BuildValue("NNi", WrapOrange(newDomain), codeMetaIDs(metaIDs, metaDescriptions.size()), domainIsNew ? 1 : 0);
+    return Py_BuildValue("NNN", WrapOrange(newDomain), encodeStatus(status), encodeStatus(metaStatus));
   PyCATCH
 }
 

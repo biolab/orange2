@@ -36,6 +36,9 @@ PVarList knownVars(PyObject *keywords); // defined in lib_kernel.cpp
 TMetaVector *knownMetas(PyObject *keywords); // ibid
 PDomain knownDomain(PyObject *keywords); // ibid
 
+PyObject *encodeStatus(const vector<int> &Status);  // in cls_misc.cpp
+PyObject *encodeStatus(const vector<pair<int, int> > &metaStatus);
+
 /* ************ FILE EXAMPLE GENERATORS ************ */
 
 #include "filegen.hpp"
@@ -43,8 +46,6 @@ BASED_ON(FileExampleGenerator, ExampleGenerator)
 
 #include "tabdelim.hpp"
 #include "c45inter.hpp"
-#include "retisinter.hpp"
-#include "assistant.hpp"
 #include "basket.hpp"
 
 
@@ -58,27 +59,32 @@ bool divDot(const string &name, string &before, string &after)
 }
 
 
-NO_PICKLE(AssistantExampleGenerator)
 NO_PICKLE(BasketExampleGenerator)
 NO_PICKLE(C45ExampleGenerator)
 NO_PICKLE(FileExampleGenerator)
-NO_PICKLE(RetisExampleGenerator)
 NO_PICKLE(TabDelimExampleGenerator)
 NO_PICKLE(BasketFeeder)
 
 BASED_ON(BasketFeeder, Orange)
 
+
+
+
 PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY
     char *fileName;
-    if (!PyArg_ParseTuple(args, "s", &fileName))
-      PYERROR(PyExc_TypeError, "TabDelimExampleGenerator expects a string argument", PYNULL)
+    int createNewOn = TVariable::Incompatible;
+    if (!PyArg_ParseTuple(args, "s|i:TabDelimExampleGenerator.__new__", &fileName, &createNewOn))
+      return NULL;
 
     string name(fileName), b, a;
     if (!divDot(name, b, a))
       name+=".tab";
-
-    return WrapNewOrange(mlnew TTabDelimExampleGenerator(name, false, false, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), false, false), type);
+    
+    vector<int> status;
+    vector<pair<int, int> > metaStatus;
+    TExampleGenerator *egen = mlnew TTabDelimExampleGenerator(name, false, false, createNewOn, status, metaStatus);
+    return Py_BuildValue("NNN", WrapNewOrange(egen, type), encodeStatus(status), encodeStatus(metaStatus));
   PyCATCH
 }
 
@@ -86,14 +92,18 @@ PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObj
 PyObject *BasketExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain])")
 { PyTRY
     char *fileName;
-    if (!PyArg_ParseTuple(args, "s", &fileName))
-      PYERROR(PyExc_TypeError, "BasketExampleGenerator expects a string argument", PYNULL)
+    int createNewOn = TVariable::Incompatible;
+    if (!PyArg_ParseTuple(args, "s|i:BasketExampleGenerator.__new__", &fileName, &createNewOn))
+      return NULL;
 
     string name(fileName), b, a;
     if (!divDot(name, b, a))
       name+=".basket";
 
-    return WrapNewOrange(mlnew TBasketExampleGenerator(name, knownDomain(keywords), false, false), type);
+    vector<int> status;
+    vector<pair<int, int> > metaStatus;
+    TExampleGenerator *egen = mlnew TBasketExampleGenerator(name, PDomain(), createNewOn, status, metaStatus);
+    return Py_BuildValue("NNN", WrapNewOrange(egen, type), encodeStatus(status), encodeStatus(metaStatus));
   PyCATCH
 }
 
@@ -106,29 +116,13 @@ PyObject *BasketFeeder_clearCache(PyObject *, PyObject *) PYARGS(METH_O, "() -> 
 }
 
 
-PyObject *RetisExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
-{ PyTRY
-    char *stem;
-    if (!PyArg_ParseTuple(args, "s", &stem))
-      PYERROR(PyExc_TypeError, "RetisExampleGenerator expects a string argument", PYNULL)
-    
-    string domain, data;
-    string b, a;
-    if (divDot(stem, b, a))
-      { data=stem; domain=b+".rdo"; }
-    else
-      { data=string(stem)+".rda"; domain=string(stem)+".rdo"; }
-      
-    return WrapNewOrange(mlnew TRetisExampleGenerator(data, domain, knownVars(keywords), knownDomain(keywords), false, false), type);
-  PyCATCH
-}
-
 
 PyObject *C45ExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY
     char *stem;
-    if (!PyArg_ParseTuple(args, "s", &stem))
-      PYERROR(PyExc_TypeError, "C45ExampleGenerator expects a string argument", PYNULL)
+    int createNewOn = TVariable::Incompatible;
+    if (!PyArg_ParseTuple(args, "s|i:C45ExampleGenerator.__new__", &stem, &createNewOn))
+      return NULL;
 
     string domain, data;
     string b, a;
@@ -137,30 +131,13 @@ PyObject *C45ExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *
     else
       { data=string(stem)+".data"; domain=string(stem)+".names"; }
 
-    return WrapNewOrange(mlnew TC45ExampleGenerator(data, domain, knownVars(keywords), knownDomain(keywords), false, false), type);
+    vector<int> status;
+    vector<pair<int, int> > metaStatus;
+    TExampleGenerator *egen = mlnew TC45ExampleGenerator(data, domain, createNewOn, status, metaStatus);
+    return Py_BuildValue("NNO", WrapNewOrange(egen, type), encodeStatus(status), encodeStatus(metaStatus));
   PyCATCH
 }
 
-
-PyObject *AssistantExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
-{ PyTRY
-    char *stem;
-    if (!PyArg_ParseTuple(args, "s", &stem))
-      PYERROR(PyExc_TypeError, "AssistantExampleGenerator expects a string argument", PYNULL)
-
-    string domain, data;
-    if (strlen(stem)<=4) // we guess this is the xxxx part of ASDAxxxx.DAT
-      { domain="ASDO"+string(stem)+".DAT"; data="ASDA"+string(stem)+".DAT"; }
-    else if (strncmp(stem, "ASDA", 4)==0)
-      { domain="ASDO"+string(stem+4)+".DAT"; data=string(stem); }
-    else if (strncmp(stem, "ASDO", 4)==0)
-      { domain=string(stem); data="ASDA"+string(stem+4)+".DAT"; }
-    else // this is a longer name, but starting with ASDA
-      { domain="ASDO"+string(stem+4); data=string(stem); }
-
-    return WrapNewOrange(mlnew TAssistantExampleGenerator(data, domain, knownVars(keywords), knownDomain(keywords), false, false), type);
-  PyCATCH
-}
 
 
 
@@ -327,90 +304,8 @@ PyObject *saveC45(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, e
 }
 
 
-void assistant_writeDomain(FILE *, PDomain);
-void assistant_writeExamples(FILE *, PExampleGenerator);
-
-PyObject *saveAssistant(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
-{ PyTRY
-    char *filename;
-    PExampleGenerator gen;
-
-    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
-      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
-  
-    if (!gen->domain->classVar)
-      PYERROR(PyExc_SystemError, "Assistant file cannot store classless data sets.", PYNULL);
-
-    if (gen->domain->classVar->varType!=TValue::INTVAR)
-      PYERROR(PyExc_SystemError, "Class in Assistant format must be discrete.", PYNULL);
-
-    FILE *ostr = fopen(("asdo" + string(filename)+".dat").c_str(), "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file 'asdo%s.dat'", filename);
-      return PYNULL;
-    }
-
-    assistant_writeDomain(ostr, gen->domain);
-    fclose(ostr);
-
-
-    ostr = fopen(("asda" + string(filename)+".dat").c_str(), "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file 'asda%s.dat'", filename);
-      return PYNULL;
-    }
-
-    assistant_writeExamples(ostr, gen);
-    fclose(ostr);
-
-    RETURN_NONE
-  PyCATCH
-}
-
-
-
-void retis_writeDomain(FILE *, PDomain);
-void retis_writeExamples(FILE *, PExampleGenerator);
 
 #include "spec_gen.hpp"
-
-PyObject *saveRetis(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
-{ PyTRY
-    char *filename;
-    PExampleGenerator gen;
-
-    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
-      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
-  
-    if (!gen->domain->classVar)
-      PYERROR(PyExc_SystemError, "Retis file cannot store classless data sets.", PYNULL);
-
-    if (gen->domain->classVar->varType!=TValue::FLOATVAR)
-      PYERROR(PyExc_SystemError, "Class in Retis domain must be continuous.", PYNULL);
-
-    TFilter_hasSpecial tfhs(true);
-    PExampleGenerator filtered=mlnew TFilteredGenerator(PFilter(tfhs), gen);
-    PExampleGenerator wnounk=mlnew TExampleTable(filtered);
-
-    FILE *ostr = fopen((string(filename)+".rdo").c_str(), "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file '%s.rdo'", filename);
-      return PYNULL;
-    }
-
-    retis_writeDomain(ostr, wnounk->domain);
-    fclose(ostr);
-
-    ostr = openExtended(filename, "rda");
-    if (!ostr)
-      return PYNULL;
-
-    c45_writeExamples(ostr, wnounk);
-    fclose(ostr);
-
-    RETURN_NONE
-  PyCATCH
-}
 
 
 void basket_writeExamples(FILE *, PExampleGenerator, set<int> &missing);

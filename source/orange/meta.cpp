@@ -48,7 +48,10 @@ TMetaDescriptor::TMetaDescriptor(const long &ai, const PVariable &avar, const bo
 : id(ai),
   variable(avar),
   optional(opt)
-{}
+{
+  if (!variable->defaultMetaId)
+    variable->defaultMetaId = id;
+}
 
 
 TMetaDescriptor::TMetaDescriptor(const TMetaDescriptor &old)

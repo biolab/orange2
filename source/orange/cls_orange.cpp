@@ -740,35 +740,17 @@ PyObject *Orange_getattr(TPyOrange *self, PyObject *name)
   PyCATCH
 }
 
-int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn)
-// This calls setattr1; first with the given, than with the translated name
+
+int Orange_setattrDictionary(TPyOrange *self, const char *name, PyObject *args, bool warn)
+{
+  PyObject *pyname = PyString_FromString(name);
+  int res = Orange_setattrDictionary(self, pyname, args, warn);
+  Py_DECREF(pyname);
+  return res;
+}
+
+int Orange_setattrDictionary(TPyOrange *self, PyObject* pyname, PyObject *args, bool warn)
 { PyTRY
-    if (!PyString_Check(pyname))
-      PYERROR(PyExc_AttributeError, "object's attribute name must be string", -1);
-
-    // Try to set it as C++ class member
-    int res = Orange_setattr1(self, pyname, args);
-    if (res!=1)
-      return res;
-    
-    PyErr_Clear();
-    // Try to translate it as an obsolete alias for C++ class member
-    PyObject *translation = PyOrange_translateObsolete((PyObject *)self, pyname);
-    if (translation) {   
-      char sbuf[255];
-      char *name = PyString_AsString(pyname);
-      char *transname = PyString_AsString(translation);
-      sprintf(sbuf, "'%s' is an (obsolete) alias for '%s'", name, transname);
-      if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
-        return -1;
-        
-      res = Orange_setattr1(self, translation, args);
-      Py_DECREF(translation);
-      return res;
-    }
-    
-    // Use instance's dictionary
-
     char *name = PyString_AsString(pyname);
     if (args) {
       /* Issue a warning unless name the name is in 'recognized_list' in some of the ancestors
@@ -802,6 +784,39 @@ int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool wa
         return -1;
       }
     }
+  PyCATCH_1
+}
+
+int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn)
+// This calls setattr1; first with the given, than with the translated name
+{ PyTRY
+    if (!PyString_Check(pyname))
+      PYERROR(PyExc_AttributeError, "object's attribute name must be string", -1);
+
+    // Try to set it as C++ class member
+    int res = Orange_setattr1(self, pyname, args);
+    if (res!=1)
+      return res;
+    
+    PyErr_Clear();
+    // Try to translate it as an obsolete alias for C++ class member
+    PyObject *translation = PyOrange_translateObsolete((PyObject *)self, pyname);
+    if (translation) {   
+      char sbuf[255];
+      char *name = PyString_AsString(pyname);
+      char *transname = PyString_AsString(translation);
+      sprintf(sbuf, "'%s' is an (obsolete) alias for '%s'", name, transname);
+      if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
+        return -1;
+        
+      res = Orange_setattr1(self, translation, args);
+      Py_DECREF(translation);
+      return res;
+    }
+    
+    // Use instance's dictionary
+    return Orange_setattrDictionary(self, pyname, args, warn);
+    
   PyCATCH_1
 }
 
