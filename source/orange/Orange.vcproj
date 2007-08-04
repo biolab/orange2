@@ -63,8 +63,6 @@
 				Name="VCLinkerTool"
 				OutputFile="$(PYTHON)/lib/site-packages/orange/orange.pyd"
 				AdditionalLibraryDirectories=""
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
 			/>
 			<Tool
 				Name="VCALinkTool"
