@@ -15,17 +15,77 @@
 from OWWidget import *
 import OWGUI, string, os.path, user, sys
 
-class OWSubFile(OWWidget):
-    settingsList=["recentFiles"]
-    allFileWidgets = []
+class OWFile(OWWidget):
+    settingsList=["recentFiles", "symbolDC", "symbolDK", "createNewOn"]
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "File")
 
-    def __init__(self, parent=None, signalManager = None, name = "File"):
-        OWWidget.__init__(self, parent, signalManager, name)
-        OWSubFile.allFileWidgets.append(self)
+        self.inputs = []
+        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
 
-    def destroy(self, destroyWindow, destroySubWindows):
-        OWSubFile.allFileWidgets.remove(self)
-        OWWidget.destroy(self, destroyWindow, destroySubWindows)
+        #set default settings
+        self.recentFiles=["(none)"]
+        self.symbolDC = "?"
+        self.symbolDK = "~"
+        self.createNewOn = orange.Variable.MakeStatus.NoRecognizedValues
+        self.domain = None
+        #get settings from the ini file, if they exist
+        self.loadSettings()
+
+        box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=0)
+        self.filecombo=QComboBox(box)
+        self.filecombo.setMinimumWidth(150)
+        button = OWGUI.button(box, self, '...', callback = self.browseFile, disabled=0)
+        self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload)
+        button.setMaximumWidth(25)
+
+        OWGUI.separator(self.controlArea, 0, 32)
+        box = OWGUI.widgetBox(self.controlArea, "Advanced")
+
+        OWGUI.widgetLabel(box, "Settings for tab-delimited files")
+#        hbox = OWGUI.widgetBox(box, orientation=0)
+        hbox = OWGUI.indentedBox(box, addSpace=True)
+        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care symbol:  ", orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know symbol:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
+        OWGUI.comboBox(box, self, "createNewOn", 
+                       label = "Create a new attribute when existing attribute(s) ...", 
+                       items = ["... Always create a new attribute", 
+                                "Miss some values of the new attribute", 
+                                "Have no common values with the new (recommended)", 
+                                "Have mismatching order of values"
+                               ])
+
+        OWGUI.rubber(self.controlArea)
+        
+        self.layout = QVBoxLayout(self.mainArea)
+        box = OWGUI.widgetBox(self.mainArea, "Info")
+        self.layout.addWidget(box)
+        self.info = QTextView(box)
+        self.info.setPaper(QBrush(self.backgroundColor()))
+        self.info.setFrameShape(0)
+        self.info.setFixedSize(400, 400)
+        self.info.setText("No data loaded")
+        
+        self.adjustSize()
+
+    # set the file combo box
+    def setFileList(self):
+        self.filecombo.clear()
+        if not self.recentFiles:
+            self.filecombo.insertItem("(none)")
+        for file in self.recentFiles:
+            if file == "(none)":
+                self.filecombo.insertItem("(none)")
+            else:
+                self.filecombo.insertItem(os.path.split(file)[1])
+        self.filecombo.insertItem("Browse documentation data sets...")
+        #self.filecombo.adjustSize() #doesn't work properly :(
+        self.filecombo.updateGeometry()
+
+
+    def reload(self):
+        if self.recentFiles:
+            return self.openFile(self.recentFiles[0], 1)
 
     def activateLoadedSettings(self):
         # remove missing data set names
@@ -106,142 +166,119 @@ class OWSubFile(OWWidget):
         for (i, s) in enumerate(info):
             self.info[i].setText(s)
 
-    # checks whether any file widget knows of any variable from the current domain
-    def attributesOverlap(self, domain):
-        for fw in OWSubFile.allFileWidgets:
-            if fw != self and getattr(fw, "dataDomain", None):
-                for var in domain:
-                    if var in fw.dataDomain:
-                        return True
-        return False
-
     # Open a file, create data from it and send it over the data channel
-    def openFileBase(self,fn, throughReload = 0, DK=None, DC=None):
-        dontCheckStored = throughReload and self.resetDomain
-        self.resetDomain = self.domain != None
-        oldDomain = getattr(self, "dataDomain", None)
-        if fn != "(none)":
-            fileExt=lower(os.path.splitext(fn)[1])
-            argdict = {"dontCheckStored": dontCheckStored, "use": self.domain}
-            if fileExt == ".basket":
-                data = orange.ExampleTable(fn, **argdict)
-            else:
-                if fileExt in (".txt",".tab",".xls"):
-                    preloader, loader = orange.ExampleGenerator, orange.ExampleTable
-                    if DK:
-                        argdict["DK"] = DK
-                    if DC:
-                        argdict["DC"] = DC
-                elif fileExt in (".c45",):
-                    preloader = loader = orange.C45ExampleGenerator
-                else:
-                    self.error("Unrecognized file format")
-                    self.send("Examples", None)
-                    self.send("Attribute Definitions", None)
-                    return
-    
-                if dontCheckStored:
-                    data = loader(fn, **argdict)
-                else:
-                    # Load; if the domain is the same and there is no other file widget which
-                    # uses any of the same attributes like this one, reload
-                    # If the loader for a particular format cannot load the examle generator
-                    # (i.e. if it always returns an example table), the data is loaded twice.
-                    try:
-                        data = preloader(fn, **argdict)
-                        if oldDomain == data.domain and not self.attributesOverlap(data.domain):
-                            argdict["dontCheckStored"] = 1
-                            data = loader(fn, **argdict)
-                        elif not isinstance(data, orange.ExampleTable):
-                            data = loader(fn, **argdict)
-                    except Exception, (errValue):
-                        self.error(str(errValue))
-                        self.send("Examples", None)
-                        self.send("Attribute Definitions", None)
-                        self.dataDomain = None
-                        self.infoa.setText('No data loaded due to an error.')
-                        self.infob.setText('')
-                        return
-                            
-            self.dataDomain = data.domain
-
-            # update data info
-            def sp(l):
-                n = len(l)
-                if n <> 1: return n, 's'
-                else: return n, ''
-
-            self.infoa.setText('%d example%s, ' % sp(data) + '%d attribute%s, ' % sp(data.domain.attributes) + '%d meta attribute%s.' % sp(data.domain.getmetas()))
-            cl = data.domain.classVar
-            if cl:
-                if cl.varType == orange.VarTypes.Continuous:
-                    self.infob.setText('Regression; Numerical class.')
-                elif cl.varType == orange.VarTypes.Discrete:
-                    self.infob.setText('Classification; Discrete class with %d value%s.' % sp(cl.values))
-                else:
-                    self.infob.setText("Class neither descrete nor continuous.")
-            else:
-                self.infob.setText('Classless domain')
-
-            # make new data and send it
-            fName = os.path.split(fn)[1]
-            if "." in fName:
-                data.name = string.join(string.split(fName, '.')[:-1], '.')
-            else:
-                data.name = fName
-            self.send("Examples", data)
-            self.send("Attribute Definitions", data.domain)
-        else:
-            self.send("Examples", None)
-            self.send("Attribute Definitions", None)
+    def openFile(self, fn, throughReload=0, DK=None, DC=None):
         self.error()
 
+        if fn == "(none)":
+            self.send("Examples", None)
+            self.send("Attribute Definitions", None)
+            self.info.setText("No data loaded")
+            return
+            
+        argdict = {"createNewOn": self.createNewOn}
+        if DK:
+            argdict["DK"] = DK
+        if DC:
+            argdict["DC"] = DC
 
+        try:
+            data = orange.ExampleTable(fn, **argdict)
+        except Exception, (errValue):
+            if not data:
+                self.error(str(errValue))
+                self.dataDomain = None
+                self.info.setText('No data loaded due to an error')
+                return
+                        
+        self.dataDomain = data.domain
 
-class OWFile(OWSubFile):
-    def __init__(self,parent=None, signalManager = None):
-        OWSubFile.__init__(self, parent, signalManager, "File")
-
-        self.inputs = []
-        self.outputs = [("Examples", ExampleTable), ("Attribute Definitions", orange.Domain)]
-
-        #set default settings
-        self.recentFiles=["(none)"]
-        self.domain = None
-        #get settings from the ini file, if they exist
-        self.loadSettings()
-
-        #GUI
-        self.box = QHGroupBox("Data File", self.controlArea)
-        self.filecombo=QComboBox(self.box)
-        self.filecombo.setMinimumWidth(250)
-        button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0)
-        button.setMaximumWidth(25)
-
-        # info
-        box = QVGroupBox("Info", self.controlArea)
-        self.infoa = QLabel('No data loaded.', box)
-        self.infob = QLabel('', box)
-
-        self.resize(150,100)
-
-    # set the file combo box
-    def setFileList(self):
-        self.filecombo.clear()
-        if not self.recentFiles:
-            self.filecombo.insertItem("(none)")
-        for file in self.recentFiles:
-            if file == "(none)":
-                self.filecombo.insertItem("(none)")
+        # update data info
+        def describeAttribute(attr):
+            vs = "<b>%s</b>: " % attr.name
+            if attr.varType == orange.VarTypes.Discrete:
+                if attr.values:
+                    vs += ", ".join(attr.values[:5])
+                    if len(attr.values) > 5:
+                        vs += " + %d more" % (len(attr.values)-5)
+                    else:
+                        vs += "."
+                else:
+                    vs += "(none)"
+            elif attr.varType == orange.VarTypes.Continuous:
+                vs += "continuous (%i dig.)" % attr.numberOfDecimals
+            elif attr.varType == orange.VarTypes.String:
+                vs += "text"
             else:
-                self.filecombo.insertItem(os.path.split(file)[1])
-        self.filecombo.insertItem("Browse documentation data sets...")
-        #self.filecombo.adjustSize() #doesn't work properly :(
-        self.filecombo.updateGeometry()
+                vs += "other"
+            return vs
+            
+        infos = ""
+        cl = data.domain.classVar
+        if cl:
+            if cl.varType == orange.VarTypes.Continuous:
+                infos += "<b>Regression:</b> Numerical class '%s'." % cl.name
+            elif cl.varType == orange.VarTypes.Discrete:
+                infos += "<b>Classification:</b> Discrete class '%s' with %d value(s)." % (cl.name, len(cl.values))
+            else:
+                infos += "<b>Class '%s'</b>: neither discrete nor continuous." % cl.name
+        else:
+            infos += '<b>Data without a dependent variable.</b>'
+        
+        infos += '<br/><br/><b>Examples:</b> %d example(s)' % len(data)
 
+        warnings = ""
+        metas = data.domain.getmetas()
+        for status, messageUsed, messageNotUsed in [
+                                (orange.Variable.MakeStatus.Incompatible,
+                                 "",
+                                 "The following attributes already existed but had a different order of values, so new attributes needed to be created"),
+                                (orange.Variable.MakeStatus.NoRecognizedValues,
+                                 "The following attributes were reused although they share no common values with the existing attribute of the same names",
+                                 "The following attributes were not reused since they share no common values with the existing attribute of the same names"),
+                                (orange.Variable.MakeStatus.MissingValues, 
+                                 "The following attribute(s) were reused although some values needed to be added",
+                                 "The following attribute(s) were not reused since they miss some values")
+                                ]:
+            if self.createNewOn > status:
+                message = messageUsed
+            else:
+                message = messageNotUsed
+            if not message:
+                continue
+            attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
+                  + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus[id] == status]
+            print attrs
+            if attrs:
+                warnings += "<li>%s: %s</li>" % (message, ", ".join(attrs))
+            
+        if warnings:
+            infos += "<br/><br/><b>"+"Attribute reuse warnings"+":</b><ul>%s</ul>" % warnings
 
-    def openFile(self,fn, throughReload = 0):
-        self.openFileBase(fn, throughReload=throughReload)
+        infos += '<br/><br/><b>Attributes:</b><br/>'
+        if data.domain.attributes:
+            for attr in data.domain.attributes:
+                infos += "&nbsp;&nbsp;&nbsp;&nbsp;%s<br/>" % describeAttribute(attr)
+        else:
+            infos += "&nbsp;&nbsp;&nbsp;&nbsp;(none)"
+                    
+        if metas:
+            infos += '<br/><b>Meta attributes</b><br/>'
+            for attr in metas.values():
+                infos += "&nbsp;&nbsp;&nbsp;&nbsp;%s<br/>" % describeAttribute(attr)
+            
+        self.info.setText(infos)
+
+        # make new data and send it
+        fName = os.path.split(fn)[1]
+        if "." in fName:
+            data.name = data.name[:data.name.rfind('.')]
+        else:
+            data.name = fName
+            
+        self.send("Examples", data)
+        self.send("Attribute Definitions", data.domain)
+
 
 
 
