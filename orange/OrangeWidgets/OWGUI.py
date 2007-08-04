@@ -40,9 +40,15 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
 
     return b
 
-def indentedBox(widget, sep=20, orientation = False):
+def indentedBox(widget, sep=20, orientation = False, addSpace=False):
     r = widgetBox(widget, orientation = orientation)
     separator(r, sep, 0)
+
+    if type(addSpace) == int:
+        separator(widget, 0, addSpace)
+    elif addSpace:
+        separator(widget)
+
     return widgetBox(r)
 
 def widgetLabel(widget, label=None, labelWidth=None):
@@ -52,6 +58,7 @@ def widgetLabel(widget, label=None, labelWidth=None):
             lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
     else:
         lbl = None
+
     return lbl
 
 
@@ -642,6 +649,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     if box or label:
         hb = widgetBox(widget, box, orientation)
         widgetLabel(hb, label, labelWidth)
+        separator(hb, 8, 4)
         horizontalBox = orientation == 'horizontal' or not orientation
     else:
         hb = widget
