@@ -56,7 +56,6 @@ const TTabDelimExampleGenerator::TIdentifierDeclaration TTabDelimExampleGenerato
 TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old)
 : TFileExampleGenerator(old),
   attributeTypes(mlnew TIntList(old.attributeTypes.getReference())),
-  DCs(old.DCs),
   classPos(old.classPos),
   headerLines(old.headerLines),
   csv(old.csv)
@@ -66,14 +65,13 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGener
 TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool autoDetect, bool acsv, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus, const char *aDK, const char *aDC, bool noCodedDiscrete, bool noClass)
 : TFileExampleGenerator(afname, PDomain()),
   attributeTypes(mlnew TIntList()),
-  DCs(),
   DK(aDK ? strcpy((char *)malloc(strlen(aDK)+1), aDK) : NULL),
   DC(aDC ? strcpy((char *)malloc(strlen(aDC)+1), aDC) : NULL),
   classPos(-1),
   headerLines(0),
   csv(acsv)
 { 
-  // domain needs to be initialized after attributeTypes, DCs, classPos, headerLines
+  // domain needs to be initialized after attributeTypes, classPos, headerLines
   domain = readDomain(afname, autoDetect, createNewOn, status, metaStatus, noCodedDiscrete, noClass);
 
   TFileExampleIteratorData fei(afname);
@@ -125,7 +123,6 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
   TVarList::iterator vi(domain->attributes->begin());
   vector<string>::iterator ai(atoms.begin());
   TIntList::iterator si(attributeTypes->begin()), se(attributeTypes->end());
-  vector<vector<string> >::iterator dci(DCs.begin()), dce(DCs.end());
   int pos=0;
   for (; (si!=se); pos++, si++, ai++) {
     if (*si) { // if attribute is not to be skipped and is not a basket
@@ -133,16 +130,9 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
 
       // Check for don't care
       valstr = *ai;
-      if (dci != dce)
-        ITERATE(vector<string>, dcii, *dci)
-          if (*dcii == valstr) {
-            valstr = '?';
-            break;
-          }
-
-      if (!valstr.length() || (valstr == "NA") || (valstr == ".") || (DC && (valstr == DC)))
+      if (!valstr.length() || (DC && valstr == DC))
         valstr = "?";
-      else if ((valstr == "*") || (DK && (valstr == DK)))
+      else if (DK && (valstr == DK))
         valstr = "~";
 
       try {
@@ -178,9 +168,6 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
           basketFeeder->addItem(exam, string(si->first, si->second), fei.line);
       }
     }
-
-    if (dci != dce)
-      dci++;
   }
 
   if (pos==classPos) // if class is the last value in the line, it is set here
@@ -405,8 +392,7 @@ int TTabDelimExampleGenerator::detectAttributeType(TDomainDepot::TAttributeDescr
     
     const char *ceni = vli->c_str();
     if (   !*ceni
-        || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*') || (*ceni=='-'))
-        || (*vli == "NA") || (DC && (*vli == DC)) || (DK && (*vli == DK)))
+        || !ceni[1] && ((*ceni=='?') || (*ceni=='~') || (DC && (*vli == DC)) || (DK && (*vli == DK))))
       continue;
     
     if (status == 3)
@@ -489,8 +475,7 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
         
       const char *ceni = ai->c_str();
       if (   !*ceni
-          || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*') || (*ceni=='-'))
-          || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
+          || !ceni[1] && ((*ceni=='?') || (*ceni=='~') || (DC && (*ai == DC)) || (DK && (*ai == DK))))
          continue;
 
       di->values.insert(*ai);
@@ -621,7 +606,6 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
     TDomainDepot::TAttributeDescription &desc = descs.back();
 
     bool ordered = false;
-    vector<string> thisDCs;
 
     if (fi!=fe) {
       TProgArguments args("dc: ordered", *fi, false);
@@ -647,7 +631,7 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
 
       ITERATE(TMultiStringParameters, mi, args.options)
         if ((*mi).first == "dc")
-          thisDCs.push_back((*mi).second);
+          raiseWarning("argument -dc is not supported any more");
 
       ordered = args.exists("ordered");
     }

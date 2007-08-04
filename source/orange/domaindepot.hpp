@@ -56,7 +56,6 @@ public:
     bool ordered;
     TStringList fixedOrderValues; // these have a fixed order
     set<string> values; // all values, sorted alpabetically
-    vector<string> DCs;
     
     TAttributeDescription(const string &, const int &, const string &, bool = false);
     TAttributeDescription(const string &, const int &);

@@ -68,9 +68,8 @@ public:
           <-1   meta value. */
   PIntList attributeTypes; //P types of attributes (-1 normal, 0 skip, <-1 = meta ID)
 
-  vector<vector<string> > DCs; // DC symbol(s) for each attribute
-  char *DK; // general character that denotes DK
-  char *DC; // general character that denotes DC
+  char *DK; //P general character that denotes DK
+  char *DC; //P general character that denotes DC
   int classPos; //P position of the class attribute
   int basketPos; //P position of the (virtual) basket attribute
   int headerLines; //P number of header lines (3 for .tab, 1 for .txt)
