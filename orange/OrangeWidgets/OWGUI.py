@@ -649,7 +649,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     if box or label:
         hb = widgetBox(widget, box, orientation)
         widgetLabel(hb, label, labelWidth)
-        separator(hb, 8, 4)
+#        separator(hb, 8, 4)
         horizontalBox = orientation == 'horizontal' or not orientation
     else:
         hb = widget
