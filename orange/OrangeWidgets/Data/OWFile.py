@@ -25,8 +25,8 @@ class OWFile(OWWidget):
 
         #set default settings
         self.recentFiles=["(none)"]
-        self.symbolDC = "?"
-        self.symbolDK = "~"
+        self.symbolDC = ""
+        self.symbolDK = ""
         self.createNewOn = orange.Variable.MakeStatus.NoRecognizedValues
         self.domain = None
         #get settings from the ini file, if they exist
@@ -39,14 +39,17 @@ class OWFile(OWWidget):
         self.reloadBtn = OWGUI.button(box, self, "Reload", callback = self.reload)
         button.setMaximumWidth(25)
 
-        OWGUI.separator(self.controlArea, 0, 32)
-        box = OWGUI.widgetBox(self.controlArea, "Advanced")
+#        OWGUI.rubber(self.controlArea)
+        
+        box = OWGUI.widgetBox(self.controlArea, "Advanced", addSpace=True)
 
-        OWGUI.widgetLabel(box, "Settings for tab-delimited files")
-#        hbox = OWGUI.widgetBox(box, orientation=0)
-        hbox = OWGUI.indentedBox(box, addSpace=True)
-        OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care symbol:  ", orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
-        OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know symbol:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
+#        OWGUI.widgetLabel(box, "Undefineds in tab-delimited files (besides default ones)")
+#        hbox = OWGUI.indentedBox(box, addSpace=True, orientation=False)
+#        le = OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+#        le.setMaximumWidth(48)
+#        OWGUI.separator(hbox, 16, 0)
+#        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
+#        le.setMaximumWidth(48)
         OWGUI.comboBox(box, self, "createNewOn", 
                        label = "Create a new attribute when existing attribute(s) ...", 
                        items = ["... Always create a new attribute", 
@@ -54,18 +57,13 @@ class OWFile(OWWidget):
                                 "Have no common values with the new (recommended)", 
                                 "Have mismatching order of values"
                                ])
+        
+        box = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
+        self.infob = OWGUI.widgetLabel(box, '')
+        self.warnings = OWGUI.widgetLabel(box, '')
 
-        OWGUI.rubber(self.controlArea)
-        
-        self.layout = QVBoxLayout(self.mainArea)
-        box = OWGUI.widgetBox(self.mainArea, "Info")
-        self.layout.addWidget(box)
-        self.info = QTextView(box)
-        self.info.setPaper(QBrush(self.backgroundColor()))
-        self.info.setFrameShape(0)
-        self.info.setFixedSize(400, 400)
-        self.info.setText("No data loaded")
-        
+
         self.adjustSize()
 
     # set the file combo box
@@ -173,7 +171,9 @@ class OWFile(OWWidget):
         if fn == "(none)":
             self.send("Examples", None)
             self.send("Attribute Definitions", None)
-            self.info.setText("No data loaded")
+            self.infoa.setText("No data loaded")
+            self.infob.setText("")
+            self.warnings.setText("")
             return
             
         argdict = {"createNewOn": self.createNewOn}
@@ -188,45 +188,25 @@ class OWFile(OWWidget):
             if not data:
                 self.error(str(errValue))
                 self.dataDomain = None
-                self.info.setText('No data loaded due to an error')
+                self.infoa.setText('No data loaded due to an error')
+                self.infob.setText("")
+                self.warnings.setText("")
                 return
                         
         self.dataDomain = data.domain
 
-        # update data info
-        def describeAttribute(attr):
-            vs = "<b>%s</b>: " % attr.name
-            if attr.varType == orange.VarTypes.Discrete:
-                if attr.values:
-                    vs += ", ".join(attr.values[:5])
-                    if len(attr.values) > 5:
-                        vs += " + %d more" % (len(attr.values)-5)
-                    else:
-                        vs += "."
-                else:
-                    vs += "(none)"
-            elif attr.varType == orange.VarTypes.Continuous:
-                vs += "continuous (%i dig.)" % attr.numberOfDecimals
-            elif attr.varType == orange.VarTypes.String:
-                vs += "text"
-            else:
-                vs += "other"
-            return vs
-            
-        infos = ""
+        self.infoa.setText('%d example(s), ' % len(data) + '%d attribute(s), ' % len(data.domain.attributes) + '%d meta attribute(s).' % len(data.domain.getmetas()))
         cl = data.domain.classVar
         if cl:
             if cl.varType == orange.VarTypes.Continuous:
-                infos += "<b>Regression:</b> Numerical class '%s'." % cl.name
+                    self.infob.setText('Regression; Numerical class.')
             elif cl.varType == orange.VarTypes.Discrete:
-                infos += "<b>Classification:</b> Discrete class '%s' with %d value(s)." % (cl.name, len(cl.values))
+                    self.infob.setText('Classification; Discrete class with %d value(s).' % len(cl.values))
             else:
-                infos += "<b>Class '%s'</b>: neither discrete nor continuous." % cl.name
+                self.infob.setText("Class neither descrete nor continuous.")
         else:
-            infos += '<b>Data without a dependent variable.</b>'
+            self.infob.setText("Data without a dependent variable.")
         
-        infos += '<br/><br/><b>Examples:</b> %d example(s)' % len(data)
-
         warnings = ""
         metas = data.domain.getmetas()
         for status, messageUsed, messageNotUsed in [
@@ -248,26 +228,12 @@ class OWFile(OWWidget):
                 continue
             attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
                   + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus[id] == status]
-            print attrs
             if attrs:
                 warnings += "<li>%s: %s</li>" % (message, ", ".join(attrs))
-            
-        if warnings:
-            infos += "<br/><br/><b>"+"Attribute reuse warnings"+":</b><ul>%s</ul>" % warnings
 
-        infos += '<br/><br/><b>Attributes:</b><br/>'
-        if data.domain.attributes:
-            for attr in data.domain.attributes:
-                infos += "&nbsp;&nbsp;&nbsp;&nbsp;%s<br/>" % describeAttribute(attr)
-        else:
-            infos += "&nbsp;&nbsp;&nbsp;&nbsp;(none)"
-                    
-        if metas:
-            infos += '<br/><b>Meta attributes</b><br/>'
-            for attr in metas.values():
-                infos += "&nbsp;&nbsp;&nbsp;&nbsp;%s<br/>" % describeAttribute(attr)
-            
-        self.info.setText(infos)
+        self.warnings.setText(warnings)
+        qApp.processEvents()
+        self.adjustSize()
 
         # make new data and send it
         fName = os.path.split(fn)[1]
