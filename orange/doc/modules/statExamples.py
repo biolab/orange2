@@ -1,3 +1,8 @@
+# Description: Demostrates the use of classification scores
+# Category:    evaluation
+# Uses:        voting.tab
+# Referenced:  orngStat.htm
+
 import orange, orngTest, orngTree
 
 learners = [orange.BayesLearner(name = "bayes"),
