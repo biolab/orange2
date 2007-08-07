@@ -88,7 +88,7 @@ class LinearRegression:
         self.__dict__ = kwds
         self.beta = self.statistics['model']['estCoeff']
 
-    def __call__(self, example):
+    def __call__(self, example, resultType = orange.GetValue):
         ex = orange.Example(self.domain, example)
         ex = numpy.array(ex.native())
 
@@ -96,8 +96,14 @@ class LinearRegression:
             yhat = self.beta[0] + dot(self.beta[1:], ex[:-1])
         else:
             yhat = dot(self.beta, ex[:-1])
+        yhat = orange.Value(yhat)
          
-        return yhat
+        if resultType == orange.GetValue:
+            return yhat
+        if resultType == orange.GetProbabilities:
+            return orange.ContDistribution({1.0: yhat})
+        return (yhat, orange.ContDistribution({1.0: yhat}))
+
 
 def printLinearRegression(lr):
     """pretty-prints linear regression model"""
