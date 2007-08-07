@@ -47,7 +47,7 @@ class MDS:
             #print "rec:",name            
             return self.__dict__["mds"].__dict__[name]
         else:
-            return self.__dict__[name]
+            raise AttributeError
 
     def __setattr__(self, name, value):
         #print "setattr"
