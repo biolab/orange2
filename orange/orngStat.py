@@ -693,7 +693,7 @@ def NPV(confm):
 
 def F1(confm):
     if type(confm) == list:
-        return [fmeasure(cm) for cm in confm]
+        return [F1(cm) for cm in confm]
     else:
         p = precision(confm)
         r = recall(confm)
@@ -701,7 +701,7 @@ def F1(confm):
 
 def Falpha(confm, alpha=1.0):
     if type(confm) == list:
-        return [fmeasure(cm) for cm in confm]
+        return [Falpha(cm, alpha=alpha) for cm in confm]
     else:
         p = precision(confm)
         r = recall(confm)
