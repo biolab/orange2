@@ -1227,7 +1227,8 @@ if (PyString_Check(args)) {
 		if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable->name==s)
 			: (*ci)->outerVariable && ((*ci)->outerVariable->name==s))
 			return ci - cont->begin();
-	PYERROR(PyExc_IndexError, "invalid variable name", -1);
+  PyErr_Format(PyExc_IndexError, "Domain contingency has no variable '%s'", s);
+  return -1;
 }
 
 if (PyOrVariable_Check(args)) {
@@ -1236,7 +1237,8 @@ if (PyOrVariable_Check(args)) {
 		if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable==var)
 			: (*ci)->outerVariable && ((*ci)->outerVariable==var))
 			return ci - cont->begin();
-	PYERROR(PyExc_IndexError, "invalid variable", -1);
+  PyErr_Format(PyExc_IndexError, "Domain contingency has no variable '%s'", var->name);
+  return -1;
 }
 
 PYERROR(PyExc_TypeError, "invalid index type", -1);

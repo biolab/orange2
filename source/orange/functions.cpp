@@ -39,16 +39,27 @@
 #include "Python.h"
 
 #include "cls_orange.hpp"
-//#include "mlpy.hpp"
+#include "externs.px"
 
 using namespace std;
 
 bool convertFromPython(PyObject *, float &);
 
 
-PyObject *newmetaid(PyObject *, PyObject *) PYARGS(0,"() -> int")
+PyObject *newmetaid(PyObject *, PyObject *args) PYARGS(METH_VARARGS,"([Variable]) -> int")
 { PyTRY
-    return PyInt_FromLong(getMetaID()); 
+    PyObject *pyvar = NULL;
+    if (!PyArg_ParseTuple(args, "|O:newmetaid", &pyvar))
+      return NULL;
+
+    PVariable var;
+    if (pyvar) {
+      if (!PyOrVariable_Check(pyvar))
+        PYERROR(PyExc_AttributeError, "newmetaid: a Variable or no arguments expected", NULL);
+      var = PyOrange_AsVariable(pyvar);
+    }
+    
+    return PyInt_FromLong(getMetaID(var));
   PyCATCH
 }
 

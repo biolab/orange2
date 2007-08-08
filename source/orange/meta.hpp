@@ -28,11 +28,12 @@
 #include "values.hpp"
 using namespace std;
 
-extern long metaID;
-
-ORANGE_API long getMetaID();
 
 WRAPPER(Variable)
+
+extern long metaID;
+
+ORANGE_API long getMetaID(PVariable var = PVariable());
 
 #ifdef _MSC_VER
   #pragma warning (push)

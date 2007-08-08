@@ -34,8 +34,8 @@ long metaID = -1;
 ORANGE_API TValue missingMetaValue;
 
 
-long getMetaID()
-{ return --metaID; }
+long getMetaID(PVariable var)
+{ return var && var->defaultMetaId ? var->defaultMetaId : --metaID; }
 
 
 TMetaDescriptor::TMetaDescriptor()
