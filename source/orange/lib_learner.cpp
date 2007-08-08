@@ -721,8 +721,8 @@ PyObject *C45TreeNodeList__reduce__(TPyOrange *self, PyObject *) { return ListOf
 /************* kNN ************/
 
 #include "knn.hpp"
-C_CALL(kNNLearner, Learner, "([examples] [, weight=, k=] -/-> Classifier")
-C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
+C_CALL(kNNLearner, Learner, "([examples] [k=, weightID=, findNearest=] -/-> Classifier")
+C_NAMED(kNNClassifier, ClassifierFD, "(example[, returnWhat]) -> prediction")
 
 
 /************* PNN ************/
