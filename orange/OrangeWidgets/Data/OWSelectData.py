@@ -297,7 +297,10 @@ class OWSelectData(OWWidget):
         else:
             prevVarType = None
             prevVarName = None
-        self.currentVar = text and self.data.domain[text]
+        try:
+            self.currentVar = self.data.domain[text]
+        except:
+            self.currentVar = None
         if self.currentVar:
             currVarType = self.currentVar.varType
             currVarName = self.currentVar.name
@@ -593,20 +596,21 @@ class OWSelectData(OWWidget):
     def getConditionFromSelection(self):
         """Returns a condition according to the currently selected attribute / operator / values.
         """
-        if self.currentVar.varType == orange.VarTypes.Continuous:
-            val1 = float(self.Num1)
-            val2 = float(self.Num2)
-        elif self.currentVar.varType == orange.VarTypes.String:
-            val1 = self.Str1
-            val2 = self.Str2
-        elif self.currentVar.varType == orange.VarTypes.Discrete:
-            val1 = self.currentVals
-            if not val1:
-                return
-            val2 = None
-        if not self.currentOperatorDict[self.currentVar.varType].isInterval:
-            val2 = None
-        return Condition(True, "AND", self.currentVar.name, self.currentOperatorDict[self.currentVar.varType], self.NegateCondition, val1, val2, self.CaseSensitive)
+        if self.currentVar:
+            if self.currentVar.varType == orange.VarTypes.Continuous:
+                val1 = float(self.Num1)
+                val2 = float(self.Num2)
+            elif self.currentVar.varType == orange.VarTypes.String:
+                val1 = self.Str1
+                val2 = self.Str2
+            elif self.currentVar.varType == orange.VarTypes.Discrete:
+                val1 = self.currentVals
+                if not val1:
+                    return
+                val2 = None
+            if not self.currentOperatorDict[self.currentVar.varType].isInterval:
+                val2 = None
+            return Condition(True, "AND", self.currentVar.name, self.currentOperatorDict[self.currentVar.varType], self.NegateCondition, val1, val2, self.CaseSensitive)
 
 
     def synchronizeTable(self):
