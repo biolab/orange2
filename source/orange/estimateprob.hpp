@@ -174,7 +174,7 @@ public:
   int nPoints; //P The number of points on curve (negative means the given number of points is inserted in each interval)
   int distributionMethod; //P Meaning of the 'nPoints'
 
-  TProbabilityEstimatorConstructor_loess(const float &windowProp = 0.5, const int &nP = -3);
+  TProbabilityEstimatorConstructor_loess(const float &windowProp = 0.5, const int &nP = -1);
   virtual PProbabilityEstimator operator()(PDistribution frequencies, PDistribution apriori = PDistribution(), PExampleGenerator = PExampleGenerator(), const long &weightID = 0, const int &attrNo = -1) const;
 };
 

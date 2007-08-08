@@ -533,8 +533,8 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     
     if (from == highedge)
       from = lowedge;
-    else
-      from++;
+/*    else
+      from++;*/
   }
 
   int numOfOverflowing = 0;
@@ -666,7 +666,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
  
     // now for the variance
     // restore sigma_tmp and compute the conditional sigma
-    if ((difx > 1e-10) && (sigma_x2 > 1e-10)) {
+    if ((fabs(difx) > 1e-10) && (sigma_x2 > 1e-10)) {
       *sigma_tmp *= (1/difx);
       *sigma_tmp *= wsigma_xy;
       *sigma_tmp *= -1; 
