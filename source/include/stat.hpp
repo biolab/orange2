@@ -1546,6 +1546,7 @@ void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, in
 
       T x1 = T(0.0);
       T dx = T(0.0);
+      result.push_back(*ppos.begin());
       for(set<float>::const_iterator pi(ppos.begin()), pe(ppos.end());;) {
         do {
           x1 = *pi;
@@ -1557,10 +1558,14 @@ void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, in
         if (pi==pe)
           break;
 
-        for (; up<1.0; up += step)
-          result.push_back(x1 + dx*up);
+        for (; up<1.0; up += step) {
+          const float toPush = x1+dx*up;
+          if (result.back() != toPush)
+            result.push_back(toPush);
+        }
       }
-      result.push_back(x1);
+      if (result.back() != x1)
+        result.push_back(x1);
       return;
     }
 
