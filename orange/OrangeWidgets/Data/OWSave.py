@@ -53,8 +53,7 @@ class OWSave(OWWidget):
 
     savers = {".txt": orange.saveTxt, ".tab": orange.saveTabDelimited,
               ".names": orange.saveC45, ".test": orange.saveC45, ".data": orange.saveC45,
-              ".rda": orange.saveRetis, ".rdo": orange.saveRetis,
-              ".csv": orange.saveCsv#, ".dat": orange.saveAssistant
+              ".csv": orange.saveCsv
               }
     
     re_filterExtension = re.compile(r"\(\*(?P<ext>\.[^ )]+)")
@@ -89,7 +88,7 @@ class OWSave(OWWidget):
 
     def saveFile(self, *index):
         self.error()
-        if self.data:
+        if self.data is not None:
             filename = self.recentFiles[self.filecombo.currentItem()]
             fileExt = lower(os.path.splitext(filename)[1])
             if fileExt == "":
