@@ -130,9 +130,9 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
 
       // Check for don't care
       valstr = *ai;
-      if (!valstr.length() || (DC && valstr == DC))
+      if (!valstr.length() || (valstr == "NA") || (valstr == ".") || (DC && (valstr == DC)))
         valstr = "?";
-      else if (DK && (valstr == DK))
+      else if ((valstr == "*") || (DK && (valstr == DK)))
         valstr = "~";
 
       try {
@@ -392,7 +392,8 @@ int TTabDelimExampleGenerator::detectAttributeType(TDomainDepot::TAttributeDescr
     
     const char *ceni = vli->c_str();
     if (   !*ceni
-        || !ceni[1] && ((*ceni=='?') || (*ceni=='~') || (DC && (*vli == DC)) || (DK && (*vli == DK))))
+        || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
+        || (*vli == "NA") || (DC && (*vli == DC)) || (DK && (*vli == DK)))
       continue;
     
     if (status == 3)
@@ -475,7 +476,8 @@ void TTabDelimExampleGenerator::scanAttributeValues(const string &stem, TDomainD
         
       const char *ceni = ai->c_str();
       if (   !*ceni
-          || !ceni[1] && ((*ceni=='?') || (*ceni=='~') || (DC && (*ai == DC)) || (DK && (*ai == DK))))
+          || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
+          || (*ai == "NA") || (DC && (*ai == DC)) || (DK && (*ai == DK)))
          continue;
 
       di->values.insert(*ai);
