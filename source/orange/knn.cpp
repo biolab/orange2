@@ -53,16 +53,17 @@ PClassifier TkNNLearner::operator()(PExampleGenerator gen, const int &weight)
   PFindNearest findNearest = TFindNearestConstructor_BruteForce(distanceConstructor ? distanceConstructor : mlnew TExamplesDistanceConstructor_Euclidean(), true)
                                (gen, weight, getMetaID());
 
-  return mlnew TkNNClassifier(gen->domain, weight, k, findNearest, rankWeight);
+  return mlnew TkNNClassifier(gen->domain, weight, k, findNearest, rankWeight, gen->numberOfExamples());
 }
 
 
-TkNNClassifier::TkNNClassifier(PDomain dom, const int &wei, const float &ak, PFindNearest fdist, const bool &rw)
+TkNNClassifier::TkNNClassifier(PDomain dom, const int &wei, const float &ak, PFindNearest fdist, const bool &rw, const int &nEx)
 : TClassifierFD(dom, true),
   findNearest(fdist),
   k(ak),
   rankWeight(rw),
-  weightID(wei)
+  weightID(wei),
+  nExamples(nEx)
 {}
 
 
@@ -71,7 +72,8 @@ PDistribution TkNNClassifier::classDistribution(const TExample &oexam)
 
   TExample exam(domain, oexam);
 
-  PExampleGenerator neighbours = findNearest->call(exam, k, true);
+  const float tk = k ? k : sqrt(float(nExamples));
+  PExampleGenerator neighbours = findNearest->call(exam, tk, true);
   PDistribution classDist = TDistribution::create(classVar);
 
   if (neighbours->numberOfExamples()==1)
@@ -79,7 +81,7 @@ PDistribution TkNNClassifier::classDistribution(const TExample &oexam)
 
   else {
     if (rankWeight) {
-      const float &sigma2 = k*k / -log(0.001);
+      const float &sigma2 = tk*tk / -log(0.001);
       int rank2 = 1, rankp=1; // rank2 is rank^2, rankp = rank^2 - (rank-1)^2; and, voila, we don't need rank :)
       PEITERATE(ei, neighbours)
         classDist->add((*ei).getClass(), WEIGHT(*ei) * exp(-(rank2 += (rankp+=2))/sigma2));
