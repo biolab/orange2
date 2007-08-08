@@ -93,21 +93,11 @@ class OWDistributionGraph(OWGraph):
 
     def setData(self, data, variable):
         self.data = data
-        if data: self.dc = orange.DomainContingency(self.data)
-        if data and data.domain.classVar and data.domain.classVar.varType!=orange.VarTypes.Discrete:
-            self.pureHistogram=True #No class colors
-        else:
-            self.pureHistogram=False
-            
-        if data and data.domain.classVar:
-            self.dataHasClass=True
-            if data.domain.classVar.varType==orange.VarTypes.Continuous:
-                self.dataHasDiscreteClass=False
-            else:
-                self.dataHasDiscreteClass=True
-        else:
-            self.dataHasClass=False
-            
+        self.pureHistogram = not data or not data.domain.classVar or data.domain.classVar.varType!=orange.VarTypes.Discrete
+        self.dataHasClass = data and data.domain.classVar
+        self.dataHasDiscreteClass = self.dataHasClass and data.domain.classVar.varType == orange.VarTypes.Discrete
+        if self.dataHasDiscreteClass:
+            self.dc = orange.DomainContingency(self.data)
         self.setVariable(variable)
 
     def setVariable(self, variable):
@@ -357,12 +347,15 @@ class OWDistributionGraph(OWGraph):
             self.enableYRaxis(0)
             self.setShowYRaxisTitle(0)
 
-        self.curve(self.probCurveKey).setEnabled(self.showProbabilities)
-        self.curve(self.probCurveUpperCIKey).setEnabled(self.showConfidenceIntervals and self.showProbabilities)
-        self.curve(self.probCurveLowerCIKey).setEnabled(self.showConfidenceIntervals and self.showProbabilities)
-        self.curve(self.probCurveKey).itemChanged()
-        self.curve(self.probCurveUpperCIKey).itemChanged()
-        self.curve(self.probCurveLowerCIKey).itemChanged()
+        def enableIfExists(key, en):
+            curve = self.curve(key)
+            if curve:
+                curve.setEnabled(en)
+                curve.itemChanged()
+                
+        enableIfExists(self.probCurveKey, self.showProbabilities)
+        enableIfExists(self.probCurveUpperCIKey, self.showConfidenceIntervals and self.showProbabilities)
+        enableIfExists(self.probCurveLowerCIKey, self.showConfidenceIntervals and self.showProbabilities)
         self.repaint()
 
         
