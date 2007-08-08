@@ -180,7 +180,7 @@ class OWDataDomain(OWWidget):
             for meta in self.metaAttributes:
                 domain.addmeta(orange.newmetaid(), self.data.domain[meta[0]])
 
-            newdata = orange.ExampleTable(domain, self.data)
+            newdata = orange.ExampleTable(domain, self.data, filterMetas=1)
             newdata.name = self.data.name
             self.send("Examples", newdata)
         else:
