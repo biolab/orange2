@@ -178,7 +178,7 @@ class OWParallelCoordinates(OWVisWidget):
             start = 0
 
         targetVal = str(self.targetValueCombo.currentText())
-        if targetVal == "(Unordered)": targetVal = None
+        if targetVal == "(None)": targetVal = None
         #self.graph.updateData(attrs[start:start+maxAttrs], targetVal, self.buildMidLabels(attrs[start:start+maxAttrs]))
         self.graph.updateData(attrs, targetVal, self.buildMidLabels(attrs), start, start + maxAttrs)
         self.slider.repaint()
@@ -271,7 +271,7 @@ class OWParallelCoordinates(OWVisWidget):
             if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
                 for val in self.data.domain.classVar.values:
                     self.targetValueCombo.insertItem(val)
-                self.targetValueCombo.setCurrentItem(0)
+            self.targetValueCombo.setCurrentItem(0)
         self.resetAttrManipulation()    # update up down buttons
 
     # attribute selection signal - info about which attributes to show

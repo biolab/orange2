@@ -74,7 +74,6 @@ class ZoomSelectToolbar(QHButtonGroup):
         cursor = f[4]
         if not cursor is None:
             self.graph.canvas().setCursor(cursor)
-            print self.graph.canvas().cursor().shape()
             if self.widget:
                 self.widget.setCursor(cursor)
             

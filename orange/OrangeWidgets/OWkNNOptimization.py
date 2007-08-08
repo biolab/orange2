@@ -503,53 +503,6 @@ class OWVizRank(VizRank, OWBaseWidget):
             self.identifyOutliersDlg.setData(self.results, self.data, VIZRANK_POINT)
 
 
-    # ##############################################################
-    # kNNClassifyData - compute classification error for every example in table
-    def kNNClassifyData(self, table):
-        if len(table) == 0:
-            return [], []
-
-        # check if we have a discrete class
-        if not table.domain.classVar or not table.domain.classVar.varType == orange.VarTypes.Discrete:
-            return [], []
-
-        if self.externalLearner: learner = self.externalLearner
-        else:                    learner = self.createkNNLearner()
-        results = apply(testingMethods[self.testingMethod], [[learner], table])
-
-        returnTable = []
-
-        if table.domain.classVar.varType == orange.VarTypes.Discrete:
-            probabilities = numpy.zeros((len(table), len(table.domain.classVar.values)), numpy.float)
-            lenClassValues = len(list(table.domain.classVar.values))
-            if self.qualityMeasure in [AVERAGE_CORRECT, AUC]:       # for AUC we have no way of computing the prediction accuracy for each example
-                for i in range(len(results.results)):
-                    res = results.results[i]
-                    returnTable.append(res.probabilities[0][res.actualClass])
-                    probabilities[i] = res.probabilities[0]
-            elif self.qualityMeasure == BRIER_SCORE:
-                for i in range(len(results.results)):
-                    res = results.results[i]
-                    s = sum([val*val for val in res.probabilities[0]])
-                    returnTable.append((s + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
-                    probabilities[i] = res.probabilities[0]
-            elif self.qualityMeasure == CLASS_ACCURACY:
-                for i in range(len(results.results)):
-                    res = results.results[i]
-                    returnTable.append(res.probabilities[0][res.actualClass] == max(res.probabilities[0]))
-                    probabilities[i] = res.probabilities[0]
-            else:
-                print "unknown quality measure for kNNClassifyData"
-        else:
-            probabilities = None
-            # for continuous class we can't compute brier score and classification accuracy
-            for res in results.results:
-                if not res.probabilities[0]: returnTable.append(0)
-                else:                        returnTable.append(res.probabilities[0].density(res.actualClass))
-
-        return returnTable, probabilities
-
-
     # reevaluate projections in result list with the current VizRank settings (different k value, different measure of classification succes, ...)
     def reevaluateAllProjections(self):
         results = list(self.getShownResults())
@@ -1274,7 +1227,6 @@ class OWGraphAttributeHistogram(OWWidget):
             self.loadGeneSet()
 
     def browseGeneFile(self):
-        d = os.getcwd()
         if len(self.recentGeneSets) == 0 or self.recentGeneSets[0] == "(none)":
             startfile = "."
         else:
@@ -1549,7 +1501,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         VizRankOutliers.__init__(self, vizrank)
 
         self.projectionCountList = ["5", "10", "20", "50", "100", "200", "500", "1000", "2000", "5000", "10000", "Other..."]
-        self.projectionCount = "20"
+        self.projectionCountStr = "20"
         self.selectedExampleIndex = 0
         self.showPredictionsInProjection = 0
         self.showLegend = 1
@@ -1560,9 +1512,10 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.widget = widget
 
         self.loadSettings()
+        self.projectionCountStr = str(self.projectionCount)
 
-        b1 = OWGUI.widgetBox(self.controlArea, 'Projection count')
-        self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCount", "Best projections to consider:   ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
+        b1 = OWGUI.widgetBox(self.controlArea, 'Projection Count')
+        self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCountStr", "Best projections to consider:   ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
 
         b2 = OWGUI.widgetBox(self.controlArea, 'Example index', orientation="horizontal")
         self.selectedExampleCombo = OWGUI.comboBox(b2, self, "selectedExampleIndex", tooltip = "Select the index of the example whose predictions you wish to analyse in the graph", callback = self.selectedExampleChanged, sendSelectedValue = 1, valueType = int)
@@ -1636,10 +1589,11 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
                     i = 0
                     while i < len(self.projectionCountList)-1 and int(self.projectionCountList[i]) < int(text): i+=1
                     self.projectionCountList.insert(i, text)
-                    self.projectionCountEdit.insertItem(text, i)
-                self.projectionCount = text
+                    self.projectionCountEdit.insertItem(i, text)
+                self.projectionCountStr = text
             else:
-                self.projectionCount = "20"
+                self.projectionCountStr = "20"
+            self.projectionCount = int(self.projectionCountStr)
         self.evaluateProjections()
         self.selectedExampleChanged()
 
@@ -1720,7 +1674,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.selectedExampleIndex = selected[0]
         self.selectedExampleChanged()
 
-   
+
     def exampleListSelectionChanged(self):
         (val, exampleIndex, classPredictions) = self.evaluatedExamples[self.exampleList.currentItem()]
         self.selectedExampleIndex = exampleIndex
