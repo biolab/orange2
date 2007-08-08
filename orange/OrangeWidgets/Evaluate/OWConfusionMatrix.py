@@ -36,7 +36,7 @@ class ConfusionTableItem(QTableItem):
         return sze
 
 class OWConfusionMatrix(OWWidget):
-    settings = ["shownQuantity", "autoApply"]
+    settings = ["shownQuantity", "autoApply", "appendPredictions", "appendProbabilities"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Confusion Matrix", 1)
@@ -49,6 +49,8 @@ class OWConfusionMatrix(OWWidget):
         self.learnerNames = []
         self.selectionDirty = 0
         self.autoApply = True
+        self.appendPredictions = True
+        self.appendProbabilities = False
         self.shownQuantity = 0
 
         self.learnerList = OWGUI.listBox(self.controlArea, self, "selectedLearner", "learnerNames", box = "Learners", callback = self.learnerChanged)
@@ -63,7 +65,9 @@ class OWConfusionMatrix(OWWidget):
         OWGUI.button(box, self, "Misclassified", callback=self.selectWrong)
         OWGUI.button(box, self, "None", callback=self.selectNone)
 
-        box = OWGUI.widgetBox(self.controlArea, "Commit")
+        box = OWGUI.widgetBox(self.controlArea, "Output")
+        OWGUI.checkBox(box, self, "appendPredictions", "Append class predictions", callback = self.sendIf)
+        OWGUI.checkBox(box, self, "appendProbabilities", "Append predicted class probabilities", callback = self.sendIf)
         applyButton = OWGUI.button(box, self, "Commit", callback = self.sendData)
         autoApplyCB = OWGUI.checkBox(box, self, "autoApply", "Commit automatically")
         OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.sendData)
@@ -244,7 +248,32 @@ class OWConfusionMatrix(OWWidget):
                     selected.add((ri-1, ci-1))
 
         learnerI = self.selectedLearner[0]
-        data = res.examples.getitemsref([i for i, rese in enumerate(res.results) if (rese.actualClass, rese.classes[learnerI]) in selected])
+        selectionIndices = [i for i, rese in enumerate(res.results) if (rese.actualClass, rese.classes[learnerI]) in selected]
+        data = res.examples.getitemsref(selectionIndices)
+        
+        if self.appendPredictions or self.appendProbabilities:
+            domain = orange.Domain(data.domain.attributes, data.domain.classVar)
+            domain.addmetas(data.domain.getmetas())
+            data = orange.ExampleTable(domain, data)
+        
+            if self.appendPredictions:
+                predVar = type(domain.classVar)("%s(%s)" % (domain.classVar.name, self.learnerNames[learnerI]))
+                if hasattr(domain.classVar, "values"):
+                    predVar.values = domain.classVar.values
+                predictionsId = orange.newmetaid()
+                domain.addmeta(predictionsId, predVar)
+                for i, ex in zip(selectionIndices, data):
+                    ex[predictionsId] = res.results[i].classes[learnerI]
+                    
+            if self.appendProbabilities:
+                probVars = [orange.FloatVariable("p(%s)" % v) for v in domain.classVar.values]
+                probIds = [orange.newmetaid() for pv in probVars]
+                domain.addmetas(dict(zip(probIds, probVars)))
+                for i, ex in zip(selectionIndices, data):
+                    for id, p in zip(probIds, res.results[i].probabilities[learnerI]):
+                        ex[id] = p
+    
+#            print predictionsId, probIds
 
         self.send("Selected Examples", data)
 
