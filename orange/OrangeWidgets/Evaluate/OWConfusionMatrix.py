@@ -241,7 +241,7 @@ class OWConfusionMatrix(OWWidget):
             sel = self.table.selection(seli)
             for ri in range(sel.topRow(), sel.bottomRow()+1):
                 for ci in range(sel.leftCol(), sel.rightCol()+1):
-                    selected.add((ri, ci))
+                    selected.add((ri-1, ci-1))
 
         learnerI = self.selectedLearner[0]
         data = res.examples.getitemsref([i for i, rese in enumerate(res.results) if (rese.actualClass, rese.classes[learnerI]) in selected])
