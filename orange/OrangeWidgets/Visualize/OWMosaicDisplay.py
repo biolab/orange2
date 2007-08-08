@@ -607,7 +607,7 @@ class OWMosaicDisplay(OWWidget):
         if not self.conditionalDict[attrVals]: return rect
 
         # we have to remember which conditions were new in this update so that when we right click we can only remove the last added selections
-        if isinstance(self.selectionRectangle, QRect) and rect in self.canvas.collisions(self.selectionRectangle) and tuple(usedVals) not in self.selectionConditions:
+        if self.selectionRectangle is not None and rect in self.canvas.collisions(self.selectionRectangle) and tuple(usedVals) not in self.selectionConditions:
             self.recentlyAdded = getattr(self, "recentlyAdded", []) + [tuple(usedVals)]
             self.selectionConditions = self.selectionConditions + [tuple(usedVals)]
 
