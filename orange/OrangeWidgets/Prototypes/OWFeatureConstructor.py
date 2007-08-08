@@ -36,7 +36,8 @@ class AttrComputer:
             return float(eval(self.expression, math.__dict__, {"_ex": ex}))
         except:
             return "?"
-        
+    
+builtinfuncs = ["round", "cmp", "sum", "abs", "len", "ord", "float", "int", "pow", "divmod", "oct", "hex", "str", "min", "max"]    
 
 class OWFeatureConstructor(OWWidget):
     contextHandlers = {"": PerfectDomainContextHandler()}
@@ -73,7 +74,7 @@ class OWFeatureConstructor(OWWidget):
         self.leExpression = OWGUI.lineEdit(vb, self, "expression", "Expression")
         hhb = OWGUI.widgetBox(vb, None, "horizontal")
         self.cbAttrs = OWGUI.comboBox(hhb, self, "selectedAttr", items = ["(all attributes)"], callback = self.attrListSelected)
-        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + [m for m in math.__dict__.keys() if m[:2]!="__"], callback = self.funcListSelected)
+        self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + [m for m in math.__dict__.keys() if m[:2]!="__"] + builtinfuncs, callback = self.funcListSelected)
         
         OWGUI.separator(hb, 8, 8)
         OWGUI.button(hb, self, "Clear", callback = self.clearLineEdits)
