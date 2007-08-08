@@ -354,6 +354,51 @@ class VizRank:
         return acc
     """
 
+    # kNNClassifyData - compute classification error for every example in table
+    def kNNClassifyData(self, table):
+        if len(table) == 0:
+            return [], []
+
+        # check if we have a discrete class
+        if not table.domain.classVar or not table.domain.classVar.varType == orange.VarTypes.Discrete:
+            return [], []
+
+        if self.externalLearner: learner = self.externalLearner
+        else:                    learner = self.createkNNLearner()
+        results = apply(testingMethods[self.testingMethod], [[learner], table])
+
+        returnTable = []
+
+        if table.domain.classVar.varType == orange.VarTypes.Discrete:
+            probabilities = numpy.zeros((len(table), len(table.domain.classVar.values)), numpy.float)
+            lenClassValues = len(list(table.domain.classVar.values))
+            if self.qualityMeasure in [AVERAGE_CORRECT, AUC]:       # for AUC we have no way of computing the prediction accuracy for each example
+                for i in range(len(results.results)):
+                    res = results.results[i]
+                    returnTable.append(res.probabilities[0][res.actualClass])
+                    probabilities[i] = res.probabilities[0]
+            elif self.qualityMeasure == BRIER_SCORE:
+                for i in range(len(results.results)):
+                    res = results.results[i]
+                    s = sum([val*val for val in res.probabilities[0]])
+                    returnTable.append((s + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
+                    probabilities[i] = res.probabilities[0]
+            elif self.qualityMeasure == CLASS_ACCURACY:
+                for i in range(len(results.results)):
+                    res = results.results[i]
+                    returnTable.append(res.probabilities[0][res.actualClass] == max(res.probabilities[0]))
+                    probabilities[i] = res.probabilities[0]
+            else:
+                print "unknown quality measure for kNNClassifyData"
+        else:
+            probabilities = None
+            # for continuous class we can't compute brier score and classification accuracy
+            for res in results.results:
+                if not res.probabilities[0]: returnTable.append(0)
+                else:                        returnTable.append(res.probabilities[0].density(res.actualClass))
+
+        return returnTable, probabilities
+
     # kNNEvaluate - evaluate class separation in the given projection using a heuristic or k-NN method
     def kNNComputeAccuracy(self, table):
         # select a subset of the data if necessary
@@ -797,7 +842,7 @@ class VizRank:
                         self.parentWidget.progressBarSet(100.0*self.evaluatedProjectionsCount/float(count))
 
         # #################### RADVIZ, LINEAR_PROJECTION  ################################
-        elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION, POLYVIZ):
+        elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION, POLYVIZ, KNN_IN_ORIGINAL_SPACE):
             if self.projOptimizationMethod != 0:
                 self.freeviz.useGeneralizedEigenvectors = 1
                 self.graph.normalizeExamples = 0
@@ -829,6 +874,7 @@ class VizRank:
                         if self.visualizationMethod == KNN_IN_ORIGINAL_SPACE:
                             table = self.data.select([self.data.domain[attr] for attr in attrIndices] + [self.data.domain.classVar] )
                             xanchors, yanchors = self.graph.createXAnchors(len(attrIndices)), self.graph.createYAnchors(len(attrIndices))
+                            attrNames = [self.data.domain[attr].name for attr in attrIndices]
                         else:
                             xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
                             table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
@@ -1233,6 +1279,7 @@ class VizRankOutliers:
         self.data = None
         self.dialogType = -1
         self.evaluatedExamples = []
+        self.projectionCount = 20
 
 
     def setData(self, results, data, dialogType):
@@ -1306,7 +1353,6 @@ class VizRankOutliers:
 
         # generate a sorted list of (probability, exampleIndex, classDistribution)
         projCount = min(int(self.projectionCount), len(self.results))
-        classCount = len(self.data.domain.classVar.values)
         self.evaluatedExamples = []
         for exIndex in range(len(self.data)):
             matrix = numpy.transpose(numpy.reshape(self.matrixOfPredictions[:, exIndex], (projCount, classCount)))
@@ -1326,14 +1372,13 @@ class VizRankOutliers:
     # take the self.evaluatedExamples list and find examples where probability of the "correct" class is lower than probability of some other class
     # change class value of such examples to class value that has the highest probability
     def changeClassToMostProbable(self):
-        if not self.data or not self.evalueatedExamples or len(self.evaluatedExamples) != len(self.data):
+        if not self.data or not self.evaluatedExamples or len(self.evaluatedExamples) != len(self.data):
             print "no data or outliers not found yet. Run evaluateProjections() first."
             return
 
         for (aveAcc, exInd, classPredictions) in self.evaluatedExamples:
             (acc, clsVal) = max(classPredictions)
-            if clsVal != self.data[exInd].getclass().value:   # if the most probable class is not the current class then change the class
-                self.data[exInd].setclass(clsVal)
+            self.data[exInd].setclass(clsVal)
 
 
 # ###############################################################################################################################################
