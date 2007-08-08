@@ -40,8 +40,8 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False):
 
     return b
 
-def indentedBox(widget, sep=20, orientation = False, addSpace=False):
-    r = widgetBox(widget, orientation = orientation)
+def indentedBox(widget, sep=20, orientation = True, addSpace=False):
+    r = widgetBox(widget, orientation = False)
     separator(r, sep, 0)
 
     if type(addSpace) == int:
@@ -49,10 +49,10 @@ def indentedBox(widget, sep=20, orientation = False, addSpace=False):
     elif addSpace:
         separator(widget)
 
-    return widgetBox(r)
+    return widgetBox(r, orientation = orientation)
 
 def widgetLabel(widget, label=None, labelWidth=None):
-    if label:
+    if not label is None:
         lbl = QLabel(label, widget)
         if labelWidth:
             lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
@@ -245,6 +245,7 @@ class LineEditWFocusOut(QLineEdit):
         self.callback = callback
         self.focusInCallback = focusInCallback
         self.enterButton, self.placeHolder = enterButton(parent, self.sizeHint().height())
+        master.connect(self.enterButton, SIGNAL("clicked()"), self.returnPressed)
         master.connect(self, SIGNAL("textChanged(const QString &)"), self.markChanged)
         master.connect(self, SIGNAL("returnPressed()"), self.returnPressed)
 
@@ -411,7 +412,7 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
 
 
 # btnLabels is a list of either char strings or pixmaps
-def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1, addSpace = False, orientation = 'vertical'):
+def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None, debuggingEnabled = 1, addSpace = False, orientation = 'vertical', label = None):
     if box:
         bb = (orientation == 'horizontal' or not orientation) and QHButtonGroup or QVButtonGroup
         if type(box) in [str, unicode]:
@@ -424,6 +425,9 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
     if addSpace:
         separator(widget)
 
+    if not label is None:
+        widgetLabel(bg, label)
+        
     bg.setRadioButtonExclusive(1)
     bg.buttons = []
     for i in range(len(btnLabels)):
