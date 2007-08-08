@@ -6,14 +6,15 @@
 <priority>10</priority>
 """
 
-#
-# OWFile.py
-# The File Widget
-# A widget for opening orange data files
-#
+# Don't move this - the line number of the call is important
+def call(f,*args,**keyargs):
+    return f(*args, **keyargs)
 
 from OWWidget import *
-import OWGUI, string, os.path, user, sys
+import OWGUI, string, os.path, user, sys, warnings
+
+warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
+
 
 class OWFile(OWWidget):
     settingsList=["recentFiles", "symbolDC", "symbolDK", "createNewOn"]
@@ -41,7 +42,6 @@ class OWFile(OWWidget):
 
 #        OWGUI.rubber(self.controlArea)
         
-        box = OWGUI.widgetBox(self.controlArea, "Advanced", addSpace=True)
 
 #        OWGUI.widgetLabel(box, "Undefineds in tab-delimited files (besides default ones)")
 #        hbox = OWGUI.indentedBox(box, addSpace=True, orientation=False)
@@ -50,12 +50,12 @@ class OWFile(OWWidget):
 #        OWGUI.separator(hbox, 16, 0)
 #        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
 #        le.setMaximumWidth(48)
-        OWGUI.comboBox(box, self, "createNewOn", 
+        OWGUI.radioButtonsInBox(self.controlArea, self, "createNewOn", box="Advanced", addSpace=True,
                        label = "Create a new attribute when existing attribute(s) ...", 
-                       items = ["... Always create a new attribute", 
-                                "Miss some values of the new attribute", 
-                                "Have no common values with the new (recommended)", 
-                                "Have mismatching order of values"
+                       btnLabels = ["Have mismatching order of values",
+                                    "Have no common values with the new (recommended)", 
+                                    "Miss some values of the new attribute", 
+                                    "... Always create a new attribute"
                                ])
         
         box = OWGUI.widgetBox(self.controlArea, "Info")
@@ -160,13 +160,11 @@ class OWFile(OWWidget):
         self.setFileList()
         self.openFile(self.recentFiles[0])
 
-    def setInfo(self, info):
-        for (i, s) in enumerate(info):
-            self.info[i].setText(s)
 
     # Open a file, create data from it and send it over the data channel
     def openFile(self, fn, throughReload=0, DK=None, DC=None):
         self.error()
+        self.warning()
 
         if fn == "(none)":
             self.send("Examples", None)
@@ -176,16 +174,23 @@ class OWFile(OWWidget):
             self.warnings.setText("")
             return
             
-        argdict = {"createNewOn": self.createNewOn}
+        argdict = {"createNewOn": 3-self.createNewOn}
         if DK:
             argdict["DK"] = DK
         if DC:
             argdict["DC"] = DC
 
+        data = None
         try:
-            data = orange.ExampleTable(fn, **argdict)
+            data = call(orange.ExampleTable, fn, **argdict)
         except Exception, (errValue):
-            if not data:
+            if "is being loaded as" in str(errValue):
+                try:
+                    data = orange.ExampleTable(fn, **argdict)
+                    self.warning(0, str(errValue))
+                except:
+                    pass
+            if data is None:
                 self.error(str(errValue))
                 self.dataDomain = None
                 self.infoa.setText('No data loaded due to an error')
