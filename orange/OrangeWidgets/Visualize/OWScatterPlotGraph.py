@@ -51,7 +51,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
         self.oldShowColorLegend = -1
         self.oldLegendKeys = {}
-        
+
         self.enableWheelZoom = 1
 
 
@@ -82,20 +82,20 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.__dict__.update(args)      # set value from args dictionary
 
         colorIndex = -1
-        if colorAttr != "" and colorAttr != "(One color)":
+        if colorAttr != "" and colorAttr != "(Same color)":
             colorIndex = self.attributeNameIndex[colorAttr]
             if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete:
                 colorIndices = getVariableValueIndices(self.rawdata, colorIndex)
 
         shapeIndex = -1
         shapeIndices = {}
-        if shapeAttr != "" and shapeAttr != "(One shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
+        if shapeAttr != "" and shapeAttr != "(Same shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
             shapeIndex = self.attributeNameIndex[shapeAttr]
             if self.rawdata.domain[shapeIndex].varType == orange.VarTypes.Discrete:
                 shapeIndices = getVariableValueIndices(self.rawdata, shapeIndex)
 
         sizeIndex = -1
-        if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
+        if sizeShapeAttr != "" and sizeShapeAttr != "(Same size)":
             sizeIndex = self.attributeNameIndex[sizeShapeAttr]
 
         showColorLegend = showColorLegend and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous
