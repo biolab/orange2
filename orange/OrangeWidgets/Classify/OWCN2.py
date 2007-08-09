@@ -176,7 +176,12 @@ class OWCN2(OWWidget):
         if self.data:
             oldDomain = orange.Domain(self.data.domain)
             learnData = orange.ExampleTable(oldDomain, self.data)
-            self.classifier=self.learner(learnData)
+            try:
+                self.classifier=self.learner(learnData)
+            except Exception, strerror:
+                self.error("Exception while learning: %s" % strerror)
+                self.progressBarFinished()
+                return
             self.classifier.name=self.name
             for r in self.classifier.rules:
                 r.examples = orange.ExampleTable(oldDomain, r.examples)
