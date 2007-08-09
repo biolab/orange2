@@ -113,6 +113,12 @@ def CN2Learner(examples = None, weightID=0, **kwds):
     else:
         return cn2
 
+def supervisedClassCheck(examples):
+    if not examples.domain.classVar:
+        raise Exception("Class variable is required!")
+    if examples.domain.classVar.varType == orange.VarTypes.Continuous:
+        raise Exception("CN2 requires a discrete class!")
+    
 class CN2LearnerClass(orange.RuleLearner):
     def __init__(self, evaluator = orange.RuleEvaluator_Entropy(), beamWidth = 5, alpha = 1.0, **kwds):
         self.__dict__ = kwds
@@ -122,8 +128,8 @@ class CN2LearnerClass(orange.RuleLearner):
         self.ruleFinder.validator = orange.RuleValidator_LRS(alpha = alpha)
         
     def __call__(self, examples, weight=0):
-        if examples.domain.classVar.varType == orange.VarTypes.Continuous:
-            raise "CN2 requires a discrete class"
+        supervisedClassCheck(examples)
+        
         cl = orange.RuleLearner.__call__(self,examples,weight)
         rules = cl.rules
         return CN2Classifier(rules, examples, weight)
@@ -180,9 +186,8 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
         self.dataStopping = orange.RuleDataStoppingCriteria_NoPositives()
         
     def __call__(self, examples, weight=0):
-        if examples.domain.classVar.varType == orange.VarTypes.Continuous:
-            print "CN2 can learn only on discrete class!"
-            return
+        supervisedClassCheck(examples)
+        
         rules = orange.RuleList()
         self.ruleStopping.apriori = orange.Distribution(examples.domain.classVar,examples)
         progress=getattr(self,"progressCallback",None)
@@ -394,9 +399,8 @@ class CN2SDUnorderedLearnerClass(CN2UnorderedLearnerClass):
         self.coverAndRemove = CovererAndRemover_multWeights(mult=mult)
 
     def __call__(self, examples, weight=0):        
-        if examples.domain.classVar.varType == orange.VarTypes.Continuous:
-            print "CN2 can learn only on discrete class!"
-            return
+        supervisedClassCheck(examples)
+        
         oldExamples = orange.ExampleTable(examples)
         classifier = CN2UnorderedLearnerClass.__call__(self,examples,weight)
         for r in classifier.rules:
