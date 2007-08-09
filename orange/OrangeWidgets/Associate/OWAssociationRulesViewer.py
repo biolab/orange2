@@ -9,6 +9,7 @@
 import orange, sys
 from qt import *
 from qtcanvas import *
+from qttable import *
 from OWWidget import *
 import OWGUI
 
@@ -120,7 +121,7 @@ class OWAssociationRulesViewer(OWWidget):
                 ("Strength",   "Strg", "strength"),
                 ("Coverage",   "Cov",  "coverage")]
 
-    settingsList = ["autoSend"] + [vn[2] for vn in measures]
+    settingsList = ["autoSend", "sortedBy"] + [vn[2] for vn in measures]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AssociationRulesViewer")
@@ -135,6 +136,7 @@ class OWAssociationRulesViewer(OWWidget):
         for m in self.measures:
             setattr(self, m[2], False)
         self.support = self.confidence = True
+        self.sortedBy = 0
         self.autoSend = True
         
         self.loadSettings()
@@ -189,14 +191,28 @@ class OWAssociationRulesViewer(OWWidget):
         rightUpRight = QWidget(mainRight)
         self.grid=QGridLayout(rightUpRight,2,3,5,5)
         for i, m in enumerate(self.measures):
-            cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.displayRules)
+            cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.showHideColumns)
             self.grid.addWidget(cb.parentWidget(), i % 2, i / 2)
+
+#        rightUpRight = OWGUI.widgetBox(mainRight, orientation=0)
+#        for i, m in enumerate(self.measures):
+#            cb = OWGUI.checkBox(rightUpRight, self, m[2], m[0], callback = self.showHideColumns)
 
         OWGUI.separator(mainRight, 0, 4)
         
-        self.edtRules = QMultiLineEdit(mainRight)
-        self.edtRules.setReadOnly(True)
-        self.edtRules.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+        trules = self.trules = QTable(0, 0, mainRight)
+        trules.setLeftMargin(0)
+        trules.verticalHeader().hide()
+        trules.setSelectionMode(QTable.NoSelection)
+        trules.setNumCols(len(self.measures)+1)
+
+        header = trules.horizontalHeader()
+        for i, m in enumerate(self.measures):
+            trules.setColumnStretchable(i, 0)
+            header.setLabel(i, m[1])
+        trules.setColumnStretchable(len(self.measures), 1)
+        header.setLabel(len(self.measures), "Rule")
+        self.connect(header, SIGNAL("clicked(int)"), self.sort)
 
         bottom = QWidget(mainRight)
         bottomGrid = QGridLayout(bottom, 2, 2, 5, 5)
@@ -212,7 +228,7 @@ class OWAssociationRulesViewer(OWWidget):
 
 
         self.controlArea.setFixedSize(0, 0)
-        self.resize(800, 380)
+        self.resize(1000, 380)
 
     
     def checkScale(self):
@@ -269,17 +285,42 @@ class OWAssociationRulesViewer(OWWidget):
         self.saveButton.setEnabled(len(self.selectedRules) > 0)
 
     def displayRules(self):
-        if hasattr(self, "edtRules"):
-            edtRules = self.edtRules
-            edtRules.clear()
+        if hasattr(self, "trules"):
+            trules = self.trules
+            trules.setNumRows(len(self.selectedRules))
 
-            toWrite = [m for m in self.measures if getattr(self, m[2])]
-            if toWrite:
-                edtRules.append("\t".join([m[1] for m in toWrite]))
-            for rule in self.selectedRules:
-                self.edtRules.append("\t".join(["%.3f" % getattr(rule, m[2]) for m in toWrite] + [`rule`.replace(" ", "  ")]))
+            rulecol = len(self.measures)
+            for row, rule in enumerate(self.selectedRules):
+                for col, m in enumerate(self.measures):
+                    trules.setText(row, col, "  %.3f  " % getattr(rule, m[2]))
+                trules.setText(row, rulecol, `rule`.replace(" ", "  "))
+
+            for i in range(len(self.measures)+1):
+                self.trules.adjustColumn(i)
+                
+            self.showHideColumns()
+            self.sort()
 
 
+    def showHideColumns(self):
+        for i, m in enumerate(self.measures):
+            show = getattr(self, m[2])
+            if bool(self.trules.columnWidth(i)) != bool(show):
+                if show:
+                    self.trules.showColumn(i)
+                    self.trules.adjustColumn(i)
+                else:
+                    self.trules.hideColumn(i)
+
+    def sort(self, i = None):
+        if i is None:
+            i = self.sortedBy
+        else:
+            self.sortedBy = i
+        self.trules.sortColumn(i, i == len(self.measures), True)
+        self.trules.horizontalHeader().setSortIndicator(i)
+        
+            
     def saveRules(self):
         fileName = QFileDialog.getSaveFileName( "myRules.txt", "Textfiles (*.txt)", self );
         if not fileName.isNull() :
