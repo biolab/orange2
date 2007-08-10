@@ -339,6 +339,11 @@ bool TC45Learner::convertExamples(PExampleGenerator table)
       MaxItem ++;
     }
 
+  if (!MaxItem) {
+    mldelete Item;
+    raiseError("empty data set or no examples with defined class");
+  }
+  
   MaxItem--;
   return true;
 }
