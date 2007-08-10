@@ -156,7 +156,7 @@ class OWPade(OWWidget):
         paded, derivativeID, metaIDs, classID, corrIDs = orngPade.createQTable(self, data, self.dimensions,
                                                              not self.output and -1 or self.outputAttr,
                                                              self.enableThreshold and abs(self.threshold),
-                                                             self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, self.originalAsMeta)
+                                                             self.useMQCNotation, self.derivativeAsMeta, self.differencesAsMeta, False, self.originalAsMeta)
         self.send("Examples", paded)
 
                             
