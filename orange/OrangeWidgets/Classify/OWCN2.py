@@ -2,7 +2,7 @@
 <name>CN2</name>
 <description>Rule-based (CN2) learner/classifier.</description>
 <icon>CN2.png</icon>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact> 
+<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>300</priority>
 """
 
@@ -84,7 +84,7 @@ class OWCN2(OWWidget):
         self.mSpin.setDisabled(1)
         QRadioButton("WRACC",self.ruleQualityBG)
         self.connect(self.ruleQualityBG,SIGNAL("released(int)"),self.qualityButtonPressed)
-        
+
         OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha (vs. default rule)",
                 orientation="horizontal", labelWidth=labelWidth,
                 tooltip="How different (significance) is prior class distribution\nto that of examples covered by a rule")
@@ -95,8 +95,8 @@ class OWCN2(OWWidget):
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
                 "Minimum number of examples a rule must\ncover (use 0 for dont care)")
         OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Maximum rule length", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
-                            tooltip="Maximum number of conditions in the left\npart of the rule (use 0 for don't care)")        
-        
+                            tooltip="Maximum number of conditions in the left\npart of the rule (use 0 for don't care)")
+
         """
         self.coveringAlgBG=OWGUI.radioButtonsInBox(self.coveringAlgGroup, self, "CoveringButton",
                             btnLabels=["Exclusive covering ","Weighted Covering"],
@@ -141,7 +141,7 @@ class OWCN2(OWWidget):
         #progress bar
         self.progressBarInit()
 
-        #learner        
+        #learner
         self.learner=orngCN2.CN2UnorderedLearner()
         self.learner.name = self.name
         self.learner.progressCallback=CN2ProgressBar(self)
@@ -176,12 +176,7 @@ class OWCN2(OWWidget):
         if self.data:
             oldDomain = orange.Domain(self.data.domain)
             learnData = orange.ExampleTable(oldDomain, self.data)
-            try:
-                self.classifier=self.learner(learnData)
-            except Exception, strerror:
-                self.error("Exception while learning: %s" % strerror)
-                self.progressBarFinished()
-                return
+            self.classifier=self.learner(learnData)
             self.classifier.name=self.name
             for r in self.classifier.rules:
                 r.examples = orange.ExampleTable(oldDomain, r.examples)
@@ -204,7 +199,8 @@ class OWCN2(OWWidget):
         self.progressBarFinished()
 
     def dataset(self, data):
-        self.data=data
+        #self.data=data
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         self.setLearner()
 
     def qualityButtonPressed(self,id=0):
@@ -223,7 +219,7 @@ class OWCN2(OWWidget):
 
     def applySettings(self):
         self.setLearner()
-        
+
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWCN2()
