@@ -630,7 +630,7 @@ void TDomainContingency::computeMatrix(PExampleGenerator gen, const long &weight
 
     // if variable and class types are discrete, it initializes distributions to full length
     //   (which will help the copy constructor with estimation below)
-    if (((*vli)->varType==TValue::INTVAR) && (classType==TValue::INTVAR))
+    if (((*vli)->varType==TValue::INTVAR) && (classType==TValue::INTVAR) && (lastClassValue.intV >= 0))
       for(int i=0, e=(*vli)->noOfValues(); i!=e; i++)
         back()->add_attrclass(TValue(i), lastClassValue, 0);
   }
