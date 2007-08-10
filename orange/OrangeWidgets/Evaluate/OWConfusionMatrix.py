@@ -87,7 +87,7 @@ class OWConfusionMatrix(OWWidget):
         self.table.setTopMargin(0)
         self.table.verticalHeader().hide()
         self.table.horizontalHeader().hide()
-        self.table.setSelectionMode(QTable.NoSelection)
+        self.table.setSelectionMode(QTable.Multi)
         self.layout.addWidget(self.table, 2, 1)
         self.table.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
