@@ -123,12 +123,21 @@ class OWClassificationTreeViewer(OWWidget):
             ncl = node.nodeClassifier
             dist = node.distribution
             a = dist.abs/100
+            try:
+                p_majclass = f % dist[int(ncl.defaultVal)]/a
+            except:
+                p_majclass = "NA"
+            try:
+                p_tarclass = f % dist[self.tar]
+            except:
+                p_tarclass = "NA"
+            
             colf = (str(ncl.defaultValue),
-                    f % (dist[int(ncl.defaultVal)]/a),
-                    f % (dist[self.tar]/a),
+                    p_majclass,
+                    p_tarclass,
                     f % dist.cases,
-                    reduce(lambda x,y: x+':'+y, [self.precFrmt % (x/a) for x in dist]),
-                    reduce(lambda x,y: x+':'+y, [self.precFrmt % x for x in dist])
+                    len(dist) and reduce(lambda x,y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "NA",
+                    len(dist) and reduce(lambda x,y: x+':'+y, [self.precFrmt % x for x in dist]) or "NA"
                    )
 
             col = 1
