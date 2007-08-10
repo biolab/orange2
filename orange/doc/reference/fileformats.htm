@@ -7,8 +7,6 @@
 <BODY>
 <index name="file formats">
 <index name="c45 file format">
-<index name="Assistant file format">
-<index name="Retis file format">
 <index name="tab-delimited file format">
 <index name="comma-separated file format">
 <index name="basket file format">
@@ -19,12 +17,6 @@
 <DL>
 <DT><B>C4.5</B></DT>
 <DD>A format used in Quinlan's system C45; the system is a standard benchmark and the file format is one of the most widely formats in machine learning. It uses at least two files, &lt;stem&gt;.names contains descriptions of attributes and &lt;stem&gt;.data contains learning examples. If so requested, C4.5 also reads a file &lt;stem&gt;.test with testing examples. The details about the format can be found on Quinlan's web pages. This format is not the same as C5 (aka See5). C5's format is rather complex and only a limited support is planned for some future release of Orange. There's no point in supporting a format that allows specification of all kinds of transformations is these can be done in Python scripts.</DD>
-
-<DT><B>Assistant</B></DT>
-<DD>Assistant format is used by a family of Assistant systems, state-of-the-art tree induction systems that were developed in 80s and early 90s on Jozef Stefan Institute in Ljubljana, Slovenia. The data is stored in two files, ASDO&lt;stem&gt;.DAT containing the attribute descriptions and ASDA&lt;stem&gt;.DAT containing the data. Details can be found in documentation for any version of Assistant.</DD>
-
-<DT><B>Retis</B></DT>
-<DD>Retis is another older product of Jozef Stefan Institute, this one for induction of regression trees. The file format thus supports only continuous outcomes. The description of attributes is stored in &lt;stem&gt;.rdo and the data in &lt;stem&gt;.rda. Details can be found in Retis documentation.</DD>
 
 <DT><B><a href="tabdelimited.htm">Tab-delimited</a></B></DT>
 <DD>An easy-to-use, yet powerful native Orange file format. Both, domain description and examples are stored in the same file. It comes in two flavors. In the older version, the first three lines contain names of the attributes, their values and optional flags, respectively. In newer, the first line contains attribute names whose prefixes describe the attribute types and optional flags - the prefixes need only be given in special occasions, while in general the parser will guess the attribute types itself. In both flavors, the remaining lines contain examples. Fields are delimited by tabulators. Detailed description is given in a page on <a href="tabdelimited.htm">tab-delimited formats</a>.</DD>
@@ -108,7 +100,7 @@ or
 
 Orange will write both files, <CODE>mydata.names</CODE> and <CODE>mydata.data</CODE> in both cases.</P>
 
-<P>Some formats are not able to store all types of data sets. For instance, Retis can only store examples where the outcome is continuous. You cannot store the iris data with its three-valued discrete outcome as Retis file.</P>
+<P>Some formats are not able to store all types of data sets. For instance, C4.5 can only store examples where the outcome is discrete.</P>
 
-<P>Can I save the files using some other extension than the default? Yes, for each file format there is a separate saving function (<CODE>saveAssistant</CODE>, <CODE>saveC45</CODE>, <CODE>saveRetis</CODE> <CODE>saveTabDelimited</CODE>, <CODE>saveBasket</CODE>, <CODE>saveCsv</CODE> or <CODE>saveTxt</CODE>), which accepts two arguments, a filename and the examples. The function will decorate the file name according to the format's customs. One-file formats (such as tab-delimited or basket) will be given the default extension (such as .tab or .basket) unless you provide one. For Assistant's format, the domain description file will always be prefixed with <CODE>asdo</CODE> and the data file with <CODE>asda</CODE>. For C45 and Retis, the domain definition files will be given extension .names and .rdo, respectively, while data files will be given the standard extensions (.data, .rda) only if the filename that you've given as argument doesn't have an extension (ie, doesn't have any dots to the left of the last path separator). These functions are otherwise rather obsolete, so you should avoid them when possible.</P>
+<P>Can I save the files using some other extension than the default? Yes, for each file format there is a separate saving function (<CODE>saveC45</CODE>, <CODE>saveTabDelimited</CODE>, <CODE>saveBasket</CODE>, <CODE>saveCsv</CODE> or <CODE>saveTxt</CODE>), which accepts two arguments, a filename and the examples. The function will decorate the file name according to the format's customs. One-file formats (such as tab-delimited or basket) will be given the default extension (such as .tab or .basket) unless you provide one. For C45, the domain definition files will be given extension .names, while data files will be given the standard extensions (.data) only if the filename that you've given as argument doesn't have an extension (ie, doesn't have any dots to the left of the last path separator). These functions are otherwise rather obsolete, so you should avoid them when possible.</P>
 
