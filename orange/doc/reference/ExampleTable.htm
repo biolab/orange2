@@ -34,6 +34,9 @@ the more advanced operations such as slicing and sorting.</P>
 
 <DT>randomGenerator</DT>
 <DD>Random generator that is used by method <CODE>randomexample</CODE>. If the method is called and <CODE>randomGenerator</CODE> is <CODE>None</CODE> a new generator is constructed with random seed 0, and stored here for subsequent use. If you would like to have different random examples each time your script is run, use a random number from Python for a random seed.</DD>
+
+<dt>attributeLoadStatus, metaAttributeLoadStatus</dt>
+<dd>A list and a dictionary describing how the attributes were created. They exist only for example tables which were loaded from files. A detailed description is available on the page about <a href="fileformats.htm">loading the data</a>.</dd>
 </DL>
 
 
@@ -42,7 +45,7 @@ the more advanced operations such as slicing and sorting.</P>
 <P><CODE>ExampleTable</CODE> can be constructed by reading from file, packing existing examples or creating an empty table. To save the data, see the documentation on <a href="fileformats.htm#saving">file formats</a>.</P>
 
 <DL class=attributes>
-<DT>ExampleTable([filename])</DT>
+<DT>ExampleTable(filename[, createNewOn])</DT>
 <DD><index name="data input">This constructor reads from files. If filename
 includes extension,
 it must be an extension for one of the <A href="fileformats.htm">known

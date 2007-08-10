@@ -8,7 +8,6 @@ Reference Guide ---> default.htm
 			Converting to/from Numeric and GSL ---> matrix.htm
 		Loading and saving data ---> fileformats.htm	
 			Tab-delimited files (.tab, .txt, .csv, .xls) ---> tabdelimited.htm
-			Other formats (C4.5, Assistant, Retis) ---> otherformats.htm
 			Basket file format ---> basket.htm
 			User-defined file formats ---> userformats.htm
 			Domain depots ---> DomainDepot.htm
