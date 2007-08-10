@@ -40,9 +40,6 @@ public:
 
   TExampleTable *operator ()(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
-protected:
-  static TDomainDepot domainDepot;
-
 private:
   IDispatch *pXlApp;
   IDispatch *pXlBooks;
@@ -83,8 +80,6 @@ private:
   void setArg(const int argno, const int arg);
 };
 
-
-TDomainDepot TExcelReader::domainDepot;
 
 
 TExcelReader::TExcelReader()

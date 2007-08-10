@@ -42,9 +42,6 @@ int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escap
 bool atomsEmpty(const vector<string> &atoms);
 
 
-TDomainDepot TTabDelimExampleGenerator::domainDepot_tab;
-
-
 const TTabDelimExampleGenerator::TIdentifierDeclaration TTabDelimExampleGenerator::typeIdentifiers[] =
  {{"discrete", 0, TValue::INTVAR},      {"d", 0, TValue::INTVAR},
   {"continuous", 0, TValue::FLOATVAR},  {"c", 0, TValue::FLOATVAR},
@@ -365,7 +362,7 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
     return sourceDomain;
   }
 */
-  PDomain newDomain = domainDepot_tab.prepareDomain(&attributeDescriptions, classPos>-1, &metaDescriptions, createNewOn, status, metaStatus);
+  PDomain newDomain = domainDepot.prepareDomain(&attributeDescriptions, classPos>-1, &metaDescriptions, createNewOn, status, metaStatus);
 
   vector<pair<int, int> >::const_iterator mid(metaStatus.begin());
   PITERATE(TIntList, ii, attributeTypes)

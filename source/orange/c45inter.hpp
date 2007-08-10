@@ -25,7 +25,6 @@
 
 #include "filegen.hpp"
 #include "domain.hpp"
-#include "domaindepot.hpp"
 
 using namespace std;
 
@@ -41,9 +40,6 @@ public:
   virtual bool readExample(TFileExampleIteratorData &, TExample &);
 
   PDomain readDomain(const string &stem, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus);
-
-private:
-  static TDomainDepot domainDepot;
 };
 
 #endif

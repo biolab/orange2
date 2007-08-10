@@ -28,6 +28,8 @@
 #include "domaindepot.hpp"
 
 
+TDomainDepot domainDepot;
+
 extern TOrangeType PyOrVariable_Type;
 extern TOrangeType PyOrPythonVariable_Type;
 #include "pythonvars.hpp"

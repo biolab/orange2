@@ -101,8 +101,6 @@ public:
   void readTabHeader(const string &stem, TDomainDepot::TAttributeDescriptions &);
   int detectAttributeType(TDomainDepot::TAttributeDescription &desc, bool noCodedDiscrete);
   void scanAttributeValues(const string &stem, TDomainDepot::TAttributeDescriptions &desc);
-private:
-  static TDomainDepot domainDepot_tab;
 };
 
 

@@ -47,6 +47,7 @@
 
 WRAPPER(ExampleTable);
 
+PStringList PStringList_FromArguments(PyObject *arg);
 
 /* This was moved from lib_vectors.cpp:
     - nobody used it
@@ -59,6 +60,28 @@ int pt_FloatList(PyObject *args, void *floatlist)
 }
 */
 
+
+int pt_StringList(PyObject *args, void *stringList)
+{ 
+  PStringList &rsl = *(PStringList *)stringList;
+  
+  if (PyOrStringList_Check(args))
+    rsl = PyOrange_AsStringList(args);
+  else
+    rsl = PStringList_FromArguments(args);
+    
+  return rsl ? 1 : 0;
+}
+
+int ptn_StringList(PyObject *args, void *stringList)
+{
+  if (args == Py_None) {
+    *(PStringList *)stringList = PStringList();
+    return 1;
+  }
+  
+  return pt_StringList(args, stringList);
+}
 
 
 /* ************ PROGRESS CALLBACK ************ */
@@ -235,23 +258,48 @@ PyObject *MakeStatus()
 PYCLASSCONSTANT(Variable, MakeStatus, MakeStatus())
 
 
-PyObject *Variable_getExisting(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_STATIC, "(name, type[, fixedOrderValues[, otherValues]]) -> Variable | None")
+PyObject *Variable_getExisting(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_STATIC, "(name, type[, fixedOrderValues[, otherValues, failOn]]) -> (Variable|None, status)")
 {
   PyTRY
     char *varName;
     int varType;
     PStringList values;
     PStringList unorderedValues_asList;
+    int failOn = TVariable::Incompatible;
     
-    if (!PyArg_ParseTuple(args, "si|O&O&:Variable.getExisting", &varName, &varType, ccn_StringList, &values, ccn_StringList, &unorderedValues_asList))
+    if (!PyArg_ParseTuple(args, "si|O&O&i:Variable.getExisting", &varName, &varType, ptn_StringList, &values, ptn_StringList, &unorderedValues_asList, &failOn))
       return NULL;
     
     set<string> unorderedValues;
     if (unorderedValues_asList)
       unorderedValues.insert(unorderedValues_asList->begin(), unorderedValues_asList->end());
       
-    PVariable var = TVariable::getExisting(varName, varType, values.getUnwrappedPtr(), &unorderedValues);
-    return WrapOrange(var);
+    int status;
+    PVariable var = TVariable::getExisting(varName, varType, values.getUnwrappedPtr(), &unorderedValues, failOn, &status);
+    return Py_BuildValue("Ni", WrapOrange(var), status);
+  PyCATCH
+}
+
+
+PyObject *Variable_make(PyObject *, PyObject *args) PYARGS(METH_VARARGS | METH_STATIC, "(name, type[, fixedOrderValues[, otherValues, createNewOn]]) -> (Variable|None, status)")
+{
+  PyTRY
+    char *varName;
+    int varType;
+    PStringList values;
+    PStringList unorderedValues_asList;
+    int createNewOn = TVariable::Incompatible;
+    
+    if (!PyArg_ParseTuple(args, "si|O&O&i:Variable.getExisting", &varName, &varType, ptn_StringList, &values, ptn_StringList, &unorderedValues_asList, &createNewOn))
+      return NULL;
+    
+    set<string> unorderedValues;
+    if (unorderedValues_asList)
+      unorderedValues.insert(unorderedValues_asList->begin(), unorderedValues_asList->end());
+    
+    int status;  
+    PVariable var = TVariable::make(varName, varType, values.getUnwrappedPtr(), &unorderedValues, createNewOn, &status);
+    return Py_BuildValue("Ni", WrapOrange(var), status);
   PyCATCH
 }
 
@@ -1664,7 +1712,6 @@ ORANGE_API void registerFiletype(const char *name, const vector<string> &extensi
   filetypeDefinitions.push_back(ftd);
 }
 
-PStringList PStringList_FromArguments(PyObject *arg);
 bool fileExists(const string &s);
 const char *getExtension(const char *name);
 

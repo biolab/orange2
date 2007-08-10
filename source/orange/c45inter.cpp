@@ -27,12 +27,11 @@
 #include "vars.hpp"
 #include "domain.hpp"
 #include "examples.hpp"
+#include "domaindepot.hpp"
 
 #include "c45inter.ppp"
 
 bool readC45Atom(TFileExampleIteratorData &fei, vector<string> &atoms);
-
-TDomainDepot TC45ExampleGenerator::domainDepot;
 
 TC45ExampleGenerator::TC45ExampleGenerator(const string &datafile, const string &domainfile, const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus)
 : TFileExampleGenerator(datafile, PDomain()),

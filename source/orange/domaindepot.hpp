@@ -87,10 +87,11 @@ private:
 
 
 
-
-
 PDomain combineDomains(PDomainList sources, TDomainMultiMapping &mapping);
 void computeMapping(PDomain destination, PDomainList sources, TDomainMultiMapping &mapping);
 
+
+// global domain depot
+extern TDomainDepot domainDepot;
 
 #endif
