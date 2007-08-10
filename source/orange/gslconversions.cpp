@@ -25,6 +25,7 @@
 */
 #include <vector>
 
+#include "orange.hpp"
 #include "vars.hpp"
 #include "examplegen.hpp"
 
@@ -147,8 +148,11 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
               raiseErrorWho("parseMatrixContents", "attribute '%s' is multinomial", (*vi)->name.c_str());
           }
       }
-      else
-        raiseErrorWho("parseMatrixContents", "attribute '%s' is of unsupported type", (*vi)->name.c_str());
+      else {
+        attrs_in++;
+        include.push_back(true);
+        raiseWarning(PyExc_OrangeKernelWarning, "attribute '%s' is of unsupported type", (*vi)->name.c_str());
+      }
     }
 
     if (attrsRequested && !attrs_in)
@@ -158,98 +162,3 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
   }
 }
 
-
-/*
-void exampleGenerator2gsl(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
-                          gsl_matrix *&X, gsl_vector *&y, gsl_vector *&w, int &rows, int &columns)
-{
-  bool hasClass, classVector, weightVector, classIsDiscrete;
-  vector<bool> include;
-
-  parseMatrixContents(egen, weightID, contents, multiTreatment,
-                          hasClass, classVector, weightVector, classIsDiscrete, columns, include);
-
-  rows = egen->numberOfExamples();
-
-  X = columns ? gsl_matrix_calloc(rows, columns) : NULL;
-  y = classVector ? gsl_vector_calloc(rows) : NULL;
-  w = weightVector ? gsl_vector_calloc(rows) : NULL;
-
-  try {
-    int row = 0;
-    TExampleGenerator::iterator ei(egen->begin());
-    for(; ei; ++ei, row++) {
-      int col = 0;
-      
-      /* This is all optimized assuming that each symbol (A, C, W) only appears once. 
-         If it would be common for them, we could cache the values, but since this is
-         unlikely, caching would only slow down the conversion 
-      for(const char *cp = contents; *cp && (*cp!='/'); cp++) {
-        switch (*cp) {
-          case 'A':
-          case 'a': {
-            const TVarList &attributes = egen->domain->attributes.getReference();
-            TVarList::const_iterator vi(attributes.begin()), ve(attributes.end());
-            TExample::iterator eei((*ei).begin());
-            vector<bool>::const_iterator bi(include.begin());
-            for(; vi != ve; eei++, vi++, bi++)
-              if (*bi) {
-                if ((*eei).isSpecial())
-                  raiseErrorWho("exampleGenerator2gsl", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
-                gsl_matrix_set(X, row, col++, (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV));
-              }
-            break;
-          }
-
-          case 'C':
-          case 'c': 
-            if (hasClass) {
-              const TValue &classVal = (*ei).getClass();
-              if (classVal.isSpecial())
-                raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
-              gsl_matrix_set(X, row, col++, classIsDiscrete ? float(classVal.intV) : classVal.floatV);
-            }
-            break;
-
-          case 'W':
-            gsl_matrix_set(X, row, col++, weightID ? WEIGHT(*ei) : 1.0);
-            break;
-
-          case 'w': 
-            if (weightID)
-              gsl_matrix_set(X, row, col++, WEIGHT(*ei));
-            break;
-
-          case '0':
-            gsl_matrix_set(X, row, col++, 0.0);
-            break;
-
-          case '1':
-            gsl_matrix_set(X, row, col++, 1.0);
-            break;
-        }
-      }
-
-      if (y) {
-        const TValue &classVal = (*ei).getClass();
-        if (classVal.isSpecial())
-          raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
-        gsl_vector_set(y, row, classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV));
-      }
-
-      if (w)
-        gsl_vector_set(w, row, weightID ? WEIGHT(*ei) : 1.0);
-    }
-  }
-  catch (...) {
-    if (X)
-      gsl_matrix_free(X);
-    if (y)
-      gsl_vector_free(y);
-    if (w)
-      gsl_vector_free(w);
-    throw;
-  }
-}
-
-*/

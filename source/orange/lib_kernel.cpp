@@ -2923,6 +2923,40 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
                          vector<bool> &include);
 
 
+inline bool storeNumPyValue(double *&p, const TValue &val, signed char *&m, const PVariable attr, const int &row)
+{
+  if (val.isSpecial()) {
+    if (m) {
+      *p++ = 0;
+      *m++ = 1;
+    }
+    else {
+      PyErr_Format(PyExc_TypeError, "value of attribute '%s' in example '%i' is undefined", attr->name.c_str(), row);
+      return false;
+    }
+  }
+    
+  else if (val.varType == TValue::FLOATVAR) {
+    *p++ = val.floatV;
+    if (m)
+      *m++ = 0;
+  }
+  
+  else if (val.varType == TValue::INTVAR) {
+    *p++ = float(val.intV);
+    if (m)
+      *m++ = 0;
+  }
+
+  else {
+    *p++ = ILLEGAL_FLOAT;
+    if (m)
+      *m++ = 1;
+  }
+  
+  return true;
+}
+
 
 PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, PyObject **module, PyObject **maskedArray = NULL)
 {
@@ -2955,6 +2989,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
                             hasClass, classVector, weightVector, classIsDiscrete, columns, include);
 
     int rows = egen->numberOfExamples();
+    PVariable classVar = egen->domain->classVar;
 
     PyObject *X, *y, *w, *mask = NULL, *masky = NULL;
     double *Xp, *yp, *wp;
@@ -3025,46 +3060,15 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
               TExample::iterator eei((*ei).begin());
               vector<bool>::const_iterator bi(include.begin());
               for(; vi != ve; eei++, vi++, bi++)
-                if (*bi) {
-                  if ((*eei).isSpecial()) {
-                    if (maskedArray) {
-                      *Xp++ = 0;
-                      *mp++ = 1;
-                    }
-                    else {
-                      PyErr_Format(PyExc_TypeError, "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
-                      return PYNULL;
-                    }
-                  }
-                  else {
-                    *Xp++ = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
-                    if (maskedArray)
-                     *mp++ = 0;
-                  }
-                }
+                if (*bi && !storeNumPyValue(Xp, *eei, mp, *vi, row))
+                  return PYNULL;
               break;
             }
 
             case 'C':
             case 'c': 
-              if (hasClass) {
-                const TValue &classVal = (*ei).getClass();
-                if (classVal.isSpecial()) {
-                  if (maskedArray) {
-                    *Xp++ = 0;
-                    *mp++ = 1;
-                  }
-                  else {
-                    PyErr_Format(PyExc_TypeError, "example '%i' has undefined class", row);
-                    return PYNULL;
-                  }
-                }
-                else {
-                  *Xp++ = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
-                  if (maskedArray)
-                    *mp++ = 0;
-                }
-              }
+              if (hasClass && !storeNumPyValue(Xp, (*ei).getClass(), mp, classVar, row)) 
+                return PYNULL;
               break;
 
             case 'W':
@@ -3089,23 +3093,8 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
           }
         }
 
-        if (yp) {
-          const TValue &classVal = (*ei).getClass();
-          if (classVal.isSpecial()) {
-            if (maskedArray) {
-              *yp++ = 0;
-              *mpy++ = 1;
-            }
-            else {
-              PyErr_Format(PyExc_TypeError, "example '%i' has undefined class", row);
-              return PYNULL;
-            }
-          }
-          else
-            *yp++ = classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV);
-            if (maskedArray)
-              *mpy++ = 0;
-        }
+        if (yp && !storeNumPyValue(yp, (*ei).getClass(), mpy, classVar, row))
+          return PYNULL;
 
         if (wp)
           *wp++ = WEIGHT(*ei);
