@@ -723,7 +723,7 @@ def createQTable(cache, data, dimensions, outputAttr = -1, threshold = 0, MQCNot
                         pad.setmeta(id, abs(val))
                         minder = min(minder, abs(val))
                 pad.setmeta(corMetaIDs[-1], minder)
-
+                
     return paded, derivativeID, metaIDs, corMetaIDs, originalID
 
 
