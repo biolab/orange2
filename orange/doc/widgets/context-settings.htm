@@ -17,16 +17,16 @@ lost. Or do they? Well, change back to the original data and you will
 see the same two attributes on the axes and even the same examples
 selected.</P>
 
-<P>What happens in behind is that Orange remembers the settings
-(chosen attributes etc.) and ties them with the domain. The next time
-it gets the data from the same (or similar enough) domain, the
-settings get reused. The history for an arbitrary number of domains
-can be stored in this manner.</P>
+<P>What happens is that Orange remembers the settings (chosen
+attributes etc.) and ties them with the data domain. The next time it
+gets the data from the same (or similar enough) domain, the settings
+will be reused. The history of an arbitrary number of domains can be
+stored in this manner.</P>
 
-<P>To learn how to do it yourself, consider the below widget for
-selecting a subset of attributes and the class attributes (note that
-there is a better widget for this purpose already supplied in the
-canvas).</P>
+<P>To learn how to do it yourself, consider the widget below used for
+selecting a subset of attributes and the class attributes (note that a
+better widget for this task is already included in your Orange
+instalation).</P>
 
 <img src="attributesampler.png">
 
@@ -66,13 +66,14 @@ somehow store the user's selection.</P>
 <P>Note that we are strictly using controls from OWGUI. As for the
 usual settings, if you use Qt controls directly, their state won't get
 synchronized with the widget's internal variables and vice versa. The
-list box is associated with two variables, <code>attributeList</code>
+list box is associated with two variables: <code>attributeList</code>
 contains the attributes (as tuples with the name and the type), and
 <code>selectedAttributes</code> is a list with indices of selected
 attributes. Combo box will put the index of the chosen class attribute
 into <code>classAttribute</code>.</P>
 
-<P>When the widget gets the data, <code>dataset</code> is called.</P>
+<P>When the widget gets the data, a function <code>dataset</code> is
+called.</P>
 
 <p class="header">part of <a href="OWAttributeSampler.py">OWAttributeSampler.py</a></p>
 <xmp class="code">def dataset(self, data):
@@ -108,7 +109,7 @@ attribute. Output data is put into a separate function because it's
 called by <code>dataset</code> and when the user presses the "Apply"
 button.</P>
 
-<P>The widgets essentially works, but it doesn't remember
+<P>The widgets is functionally complete, but it doesn't remember
 anything. You can try to put the three variables
 (<code>attributeList</code>, <code>selectedAttributes</code> and
 <code>classAttribute</code>) in the <code>settingsList</code>, as
@@ -119,14 +120,14 @@ every time it gets a new signal. Besides, the ordinary settings in the
 would usually try to assign, say, the class attribute which doesn't
 exist in the actual domain at all.</P>
 
-<P>So, put
+<P>To make the setting dependent on the context, we put
 <xmp class="code">contextHandlers = {"": DomainContextHandler("", [
             ContextField("classAttribute", DomainContextHandler.Required),
             ContextField("attributeList", DomainContextHandler.List +
                                           DomainContextHandler.SelectedRequired,
                          selected="selectedAttributes")])}
 </xmp>
-at the same place where you would declare <code>settingsList</code>.</P>
+at the same place where we usually declare <code>settingsList</code>.</P>
 
 <p>"Contexts" may be defined by different things, but settings most
 commonly depend on the domain of the examples. Such settings are taken
