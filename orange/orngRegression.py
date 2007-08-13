@@ -35,8 +35,8 @@ class LinearRegressionLearner(object):
         continuizer.zeroBased = True
         domain0 = continuizer(data)
         data = data.translate(domain0)
- 
-        #   convertion to numpy
+
+        # convertion to numpy
         A, y, w = data.toNumpy()        # weights ??
         n, m = numpy.shape(A)
      
@@ -70,7 +70,7 @@ class LinearRegressionLearner(object):
         t = beta / errCoeff
         significance = [statc.betai(df*0.5,0.5,df/(df+tt*tt)) for tt in t]
  
-        #   standardized coefficients
+        # standardized coefficients
         if self.beta0 == True:   
              stdCoeff = (sqrt(covX.diagonal()) / sigmaY)  * beta[1:]
         else:
@@ -81,7 +81,7 @@ class LinearRegressionLearner(object):
                  'model summary': {'TotalVar' : SST, 'ExplVar' : SSE, 'ResVar' : SSR, 'R' : R, 'RAdjusted' : RAdjusted,
                                    'F' : F, 't' : t, 'sig': significance}}
  
-        return LinearRegression(statistics = model, domain = data.domain, name = self.name, beta0 = self.beta0)
+        return LinearRegression(statistics = model, domain = data.domain, name = self.name, beta0 = self.beta0, imputer=imputer)
 
 class LinearRegression:
     def __init__(self, **kwds):
@@ -89,6 +89,7 @@ class LinearRegression:
         self.beta = self.statistics['model']['estCoeff']
 
     def __call__(self, example, resultType = orange.GetValue):
+        example = self.imputer(example)
         ex = orange.Example(self.domain, example)
         ex = numpy.array(ex.native())
 
