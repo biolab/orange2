@@ -4,7 +4,6 @@ import exceptions, cPickle, os, os.path
 
 #### Some private stuff
 
-
 def encodePP(pps):
     pps=""
     for pp in pps:
@@ -15,8 +14,6 @@ def encodePP(pps):
             return "*"
     return pps
 
-
-        
 #### Data structures
 
 class TestedExample:
@@ -42,7 +39,6 @@ class TestedExample:
         else:
             self.classes[i] = int(aclass)
             self.probabilities[i] = list(aprob)
-
 
 class ExperimentResults:
     def __init__(self, iterations, classifierNames, classValues, weights, baseClass=-1, **argkw):
@@ -78,7 +74,6 @@ class ExperimentResults:
                 
         return not 0 in self.loaded                
                 
-
     def saveToFiles(self, learners, filename):
         for i in range(len(learners)):
             if self.loaded[i]:
@@ -93,21 +88,23 @@ class ExperimentResults:
                 pickler.dump([(  (x.actualClass, x.iterationNumber), (x.classes[i], x.probabilities[i])  ) for x in self.results])
                 f.close()
 
-    # removes data on i-th learner (i=learnerID) from the results
-    def remove(self, learnerID):
+    def remove(self, index):
+        """remove one learner from evaluation results"""
         for r in self.results:
-            del r.classes[learnerID]
-            del r.probabilities[learnerID]
-        del self.classifierNames[learnerID]
+            del r.classes[index]
+            del r.probabilities[index]
+        del self.classifierNames[index]
         self.numberOfLearners -= 1
 
-    # adds evaluation result (for one learner)
-    # handle "classifiers"
     def add(self, results, index, replace=-1):
-        if len(self.results)<>len(results.results): raise SystemError, "mismatch in number of test cases"
+        """add evaluation results (for one learner)"""
+        if len(self.results)<>len(results.results):
+            raise SystemError, "mismatch in number of test cases"
         if self.numberOfIterations<>results.numberOfIterations:
-            raise SystemError, "mismatch in number of iteraions (%d<>%d)" % (self.numberOfIterations, results.numberOfIterations)
-        if len(self.classifiers) and len(results.classifiers)==0: raise SystemError, "classifiers needed in results, present in base results"
+            raise SystemError, "mismatch in number of iterations (%d<>%d)" % \
+                  (self.numberOfIterations, results.numberOfIterations)
+        if len(self.classifiers) and len(results.classifiers)==0:
+            raise SystemError, "no classifiers in results"
 
         if replace < 0 or replace >= self.numberOfLearners: # results for new learner
             self.classifierNames.append(results.classifierNames[index])
@@ -128,7 +125,9 @@ class ExperimentResults:
                     self.classifiers[replace] = results.classifiers[i][index]
 
 #### Experimental procedures
+
 def leaveOneOut(learners, examples, pps=[], indicesrandseed="*", **argkw):
+    """leave-one-out evaluation of learners on a data set"""
     (examples, weight) = demangleExamples(examples)
     return testWithIndices(learners, examples, range(len(examples)), indicesrandseed, pps, **argkw)
     # return testWithIndices(learners, examples, range(len(examples)), pps=pps, argkw)
@@ -136,14 +135,23 @@ def leaveOneOut(learners, examples, pps=[], indicesrandseed="*", **argkw):
 # apply(testWithIndices, (learners, (examples, weight), indices, indicesrandseed, pps), argkw)
 
 
-def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], callback=None, **argkw):
+def proportionTest(learners, examples, learnProp, times=10,
+                   strat=orange.MakeRandomIndices.StratifiedIfPossible,
+                   pps=[], callback=None, **argkw):
+    """train-and-test evaluation (train on a subset, test on remaing examples)"""
     # randomGenerator is set either to what users provided or to orange.RandomGenerator(0)
     # If we left it None or if we set MakeRandomIndices2.randseed, it would give same indices each time it's called
     randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
     pick = orange.MakeRandomIndices2(stratified = strat, p0 = learnProp, randomGenerator = randomGenerator)
     
     examples, weight = demangleExamples(examples)
-    testResults = ExperimentResults(times, [l.name for l in learners], examples.domain.classVar.values.native(), weight!=0, examples.domain.classVar.baseValue)
+    if examples.domain.classVar.varType == orange.VarTypes.Discrete:
+        values = list(examples.domain.classVar.values)
+        basevalue = examples.domain.classVar.baseValue
+    else:
+        basevalue = values = None
+    testResults = ExperimentResults(times, [l.name for l in learners],
+                                    values, weight!=0, basevalue)
     for time in range(times):
         indices = pick(examples)
         learnset = examples.selectref(indices, 0)
@@ -152,8 +160,10 @@ def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRan
         if callback: callback()
     return testResults
 
-
-def crossValidation(learners, examples, folds=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], indicesrandseed="*", **argkw):
+def crossValidation(learners, examples, folds=10,
+                    strat=orange.MakeRandomIndices.StratifiedIfPossible,
+                    pps=[], indicesrandseed="*", **argkw):
+    """cross-validation evaluation of learners"""
     (examples, weight) = demangleExamples(examples)
     if indicesrandseed!="*":
         indices = orange.MakeRandomIndicesCV(examples, folds, randseed=indicesrandseed, stratified = strat)
@@ -163,7 +173,10 @@ def crossValidation(learners, examples, folds=10, strat=orange.MakeRandomIndices
     return testWithIndices(learners, (examples, weight), indices, indicesrandseed, pps, **argkw)
 
 
-def learningCurveN(learners, examples, folds=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, proportions=orange.frange(0.1), pps=[], **argkw):
+def learningCurveN(learners, examples, folds=10,
+                   strat=orange.MakeRandomIndices.StratifiedIfPossible,
+                   proportions=orange.frange(0.1), pps=[], **argkw):
+    """construct a learning curve for learners"""
     seed = argkw.get("indicesrandseed", -1) or argkw.get("randseed", -1)
     if seed:
         randomGenerator = orange.RandomGenerator(seed)
@@ -260,7 +273,9 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
     return allResults
 
 
-def learningCurveWithTestData(learners, learnset, testset, times=10, proportions=orange.frange(0.1), strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], **argkw):
+def learningCurveWithTestData(learners, learnset, testset, times=10,
+                              proportions=orange.frange(0.1),
+                              strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], **argkw):
     verb = argkw.get("verbose", 0)
 
     learnset, learnweight = demangleExamples(learnset)
@@ -271,12 +286,15 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
     allResults=[]
     for p in proportions:
         printVerbose("Proportion: %5.3f" % p, verb)
-        testResults = ExperimentResults(times, [l.name for l in learners], testset.domain.classVar.values.native(), testweight!=0, testset.domain.classVar.baseValue)
+        testResults = ExperimentResults(times, [l.name for l in learners],
+                                        testset.domain.classVar.values.native(),
+                                        testweight!=0, testset.domain.classVar.baseValue)
         testResults.results = []
         
         for t in range(times):
             printVerbose("  repetition %d" % t, verb)
-            learnAndTestOnTestData(learners, (learnset.selectref(pick(learnset, p), 0), learnweight), testset, testResults, t)
+            learnAndTestOnTestData(learners, (learnset.selectref(pick(learnset, p), 0), learnweight),
+                                   testset, testResults, t)
 
         allResults.append(testResults)
         
@@ -293,9 +311,9 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
     nLrn = len(learners)
 
     if not examples:
-        raise SystemError, "no examples"
+        raise SystemError, "Test data set with no examples"
     if not examples.domain.classVar:
-        raise "Datasets has no class attribute"
+        raise "Test data set without class attribute"
     
 ##    for pp in pps:
 ##        if pp[0]!="L":
