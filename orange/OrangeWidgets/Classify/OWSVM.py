@@ -163,7 +163,8 @@ class OWSVM(OWWidget):
             raise UnhandledException()
 
     def finishSearch(self):
-        del self.best["error"]
+        if self.best.has_key("error"):
+            del self.best["error"]
         for key in self.best.keys():
             self.__setattr__(key, self.best[key])
         self.progressBarFinished()
