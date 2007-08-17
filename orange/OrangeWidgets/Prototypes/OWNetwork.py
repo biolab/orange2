@@ -255,6 +255,7 @@ class OWNetwork(OWWidget):
     def selectConnectedNodes(self):
         self.graph.selectConnectedNodes(self.connectDistance)
         
+        
     def selectAllConnectedNodes(self):
         self.graph.selectConnectedNodes(1000000)
             
@@ -275,7 +276,6 @@ class OWNetwork(OWWidget):
                 self.send("Selected Examples", items)
             self.send("Selected Graph", None)
    
-    
     
     def setGraph(self, graph):
         if graph == None:
@@ -342,14 +342,17 @@ class OWNetwork(OWWidget):
         self.graph.setHiddenNodes(toHide)
         self.graph.removeSelection()
         
+        
     def hideAllButSelected(self):
         allNodes = set(range(self.graph.nVertices))
         allButSelected = list(allNodes - set(self.graph.selection))
         toHide = allButSelected + self.graph.hiddenNodes
         self.graph.setHiddenNodes(toHide)
     
+    
     def showAllNodes(self):
         self.graph.setHiddenNodes([])
+        
         
     def random(self):
         #print "OWNetwork/random.."
@@ -361,7 +364,6 @@ class OWNetwork(OWWidget):
         #print "OWNetwork/random: updating canvas..."
         self.updateCanvas();
         #print "done."
-        
         
     def fr(self):
         #print "OWNetwork/ff..."
@@ -402,6 +404,7 @@ class OWNetwork(OWWidget):
         self.visualize.circularOriginal()
         self.updateCanvas()
         
+        
     def circularRandom(self):
         #print "Circular Random"
         self.visualize.circularRandom()
@@ -413,18 +416,22 @@ class OWNetwork(OWWidget):
         self.visualize.circularCrossingReduction()
         self.updateCanvas()
         
+        
     def setVertexColor(self):
         self.graph.setVertexColor(self.colorCombo.currentText())
         self.updateCanvas()
+        
         
     def setGraphGrid(self):
         self.graph.enableGridY(self.graphShowGrid)
         self.graph.enableGridX(self.graphShowGrid)
                     
+                    
     def updateCanvas(self):
         #ce imamo graf
         if self.visualize != None:
             self.graph.updateCanvas()#self.visualize.xCoors, self.visualize.yCoors)
+        
         
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Control:
@@ -433,6 +440,7 @@ class OWNetwork(OWWidget):
         elif e.key() == Qt.Key_Alt:
             self.graph.altPressed = True
         QWidget.keyPressEvent(self, e)
+        
         
     def keyReleaseEvent(self, e):
         if e.key() == Qt.Key_Control:
@@ -452,12 +460,15 @@ class OWNetwork(OWWidget):
     def markedToSelection(self):
         self.graph.addSelection(self.graph.markedNodes)
     
+    
     def markedFromSelection(self):
         self.graph.removeSelection(self.graph.markedNodes)
+    
     
     def setSelectionToMarked(self):
         self.graph.removeSelection(None, False)
         self.graph.addSelection(self.graph.markedNodes)
+        
         
     def showDegreeDistribution(self):
         from matplotlib import rcParams
