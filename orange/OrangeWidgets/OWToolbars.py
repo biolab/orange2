@@ -33,7 +33,7 @@ class ZoomSelectToolbar(QHButtonGroup):
                  ("Polygon selection", "buttonSelectPoly", "activatePolygonSelection", QPixmap(dlg_poly), Qt.arrowCursor, 1), 
                  ("Remove last selection", "buttonRemoveLastSelection", "removeLastSelection", QPixmap(dlg_undo), None, 0), 
                  ("Remove all selections", "buttonRemoveAllSelections", "removeAllSelections", QPixmap(dlg_clear), None, 0), 
-                 ("Send selections", "buttonSendSelections", "", QPixmap(dlg_send), None, 0)
+                 ("Send selections", "buttonSendSelections", "sendData", QPixmap(dlg_send), None, 0)
                 )
                  
     IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection = range(9)
@@ -42,7 +42,7 @@ class ZoomSelectToolbar(QHButtonGroup):
         QHButtonGroup.__init__(self, "Zoom / Select", parent)
         
         self.graph = graph # save graph. used to send signals
-        self.widget = None
+        self.widget = widget
         
         self.functions = [type(f) == int and self.builtinFunctions[f] or f for f in buttons]
         for b, f in enumerate(self.functions):
@@ -68,7 +68,10 @@ class ZoomSelectToolbar(QHButtonGroup):
             for fi, ff in enumerate(self.functions):
                 if ff and ff[5]:
                     getattr(self, ff[1]).setOn(fi == b)
+            
         getattr(self.graph, f[2])()
+        #else:
+        #    getattr(self.widget, f[2])()
         
         # why doesn't this work?
         cursor = f[4]

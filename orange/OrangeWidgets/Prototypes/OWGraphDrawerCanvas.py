@@ -689,3 +689,10 @@ class OWGraphDrawerCanvas(OWGraph):
         self.setAxisScale(self.xBottom, self.axisScale(self.xBottom).lBound(), self.axisScale(self.xBottom).hBound())
         self.setAxisScale(self.yLeft, self.axisScale(self.yLeft).lBound(), self.axisScale(self.yLeft).hBound())
         
+    def sendData(self):
+        try:
+            getattr(self.master, "sendData")()
+        except AttributeError:
+            print "Attribute not foud in self.master"
+        
+        
