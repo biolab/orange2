@@ -3,11 +3,11 @@ import os.path
 
 dir = os.path.dirname(__file__) + "/icons/"
 dlg_zoom = dir + "Dlg_zoom.png"
-dlg_pan = dir + "Dlg_zoom.png"
+dlg_pan = dir + "Dlg_pan_hand.png"
 dlg_select = dir + "Dlg_zoom.png"
 dlg_rect = dir + "Dlg_rect.png"
 dlg_poly = dir + "Dlg_poly.png"
-
+dlg_zoom_extent = dir + "Dlg_zoom_extent.png"
 dlg_undo = dir + "Dlg_undo.png"
 dlg_clear = dir + "Dlg_clear.png"
 dlg_send = dir + "Dlg_send.png"
@@ -42,7 +42,6 @@ class ZoomSelectToolbar(QHButtonGroup):
         QHButtonGroup.__init__(self, "Zoom / Select", parent)
         
         self.graph = graph # save graph. used to send signals
-        self.widget = widget
         
         self.functions = [type(f) == int and self.builtinFunctions[f] or f for f in buttons]
         for b, f in enumerate(self.functions):
@@ -68,6 +67,84 @@ class ZoomSelectToolbar(QHButtonGroup):
             for fi, ff in enumerate(self.functions):
                 if ff and ff[5]:
                     getattr(self, ff[1]).setOn(fi == b)
+            
+        getattr(self.graph, f[2])()
+        #else:
+        #    getattr(self.widget, f[2])()
+        
+        # why doesn't this work?
+        cursor = f[4]
+        if not cursor is None:
+            self.graph.canvas().setCursor(cursor)
+            if self.widget:
+                self.widget.setCursor(cursor)
+            
+        
+    # for backward compatibility with a previous version of this class
+    def actionZooming(self): self.action(0)
+    def actionRectangleSelection(self): self.action(3)
+    def actionPolygonSelection(self): self.action(4)
+    
+    
+class NavigateSelectToolbar(QVBox):
+#                (tooltip, attribute containing the button, callback function, button icon, button cursor, toggle)
+    builtinFunctions = (None,
+                 ("Zooming", "buttonZoom", "activateZooming", QPixmap(dlg_zoom), Qt.sizeAllCursor, 1, "navigate"), 
+                 ("Panning", "buttonPan", "activatePanning", QPixmap(dlg_pan), Qt.pointingHandCursor, 1, "navigate"), 
+                 ("Selection", "buttonSelect", "activateSelection", QPixmap(dlg_select), Qt.arrowCursor, 1, "select"), 
+                 ("Rectangle selection", "buttonSelectRect", "activateRectangleSelection", QPixmap(dlg_rect), Qt.arrowCursor, 1, "select"), 
+                 ("Polygon selection", "buttonSelectPoly", "activatePolygonSelection", QPixmap(dlg_poly), Qt.arrowCursor, 1, "select"), 
+                 ("Remove last selection", "buttonRemoveLastSelection", "removeLastSelection", QPixmap(dlg_undo), None, 0, "select"), 
+                 ("Remove all selections", "buttonRemoveAllSelections", "removeAllSelections", QPixmap(dlg_clear), None, 0, "select"), 
+                 ("Send selections", "buttonSendSelections", "sendData", QPixmap(dlg_send), None, 0, "select"),
+                 ("Zoom to extent", "buttonZoomExtent", "zoomExtent", QPixmap(dlg_zoom_extent), None, 0, "navigate")
+                )
+                 
+    IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent = range(10)
+
+    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8)):
+        #QHButtonGroup.__init__(self, "Zoom / Select", parent)
+        QVBox.__init__(self, parent, "NavigateSelect")
+        
+        self.navigate = QHButtonGroup("Navigate", self)
+        self.select = QHButtonGroup("Select", self)   
+        
+        self.graph = graph # save graph. used to send signals
+
+        self.functions = [type(f) == int and self.builtinFunctions[f] or f for f in buttons]
+        for b, f in enumerate(self.functions):
+            if not f:
+                self.navigate.addSpace(10)
+            else:
+                if f[6] == "navigate":
+                    button = createButton(self.navigate, f[0], lambda x=b: self.action(x), f[3], toggle = f[5])
+                    setattr(self.navigate, f[1], button)
+                    if f[1] == "buttonSendSelections":
+                        button.setEnabled(not autoSend)
+                elif f[6] == "select":
+                    button = createButton(self.select, f[0], lambda x=b: self.action(x), f[3], toggle = f[5])
+                    setattr(self.select, f[1], button)
+                    if f[1] == "buttonSendSelections":
+                        button.setEnabled(not autoSend)
+
+        #self.action(0)
+        self.widget = widget    # we set widget here so that it doesn't affect the value of self.widget.toolbarSelection
+
+    def action(self, b):
+        f = self.functions[b]
+        if not f:
+            return
+        
+        if f[5]:
+            if hasattr(self.widget, "toolbarSelection"):
+                self.widget.toolbarSelection = b
+            for fi, ff in enumerate(self.functions):
+                if ff and ff[5]:
+                    if ff[6] == "navigate":
+                        getattr(self.navigate, ff[1]).setOn(fi == b)
+                    if ff[6] == "select":
+                        getattr(self.select, ff[1]).setOn(fi == b)
+                        
             
         getattr(self.graph, f[2])()
         #else:
