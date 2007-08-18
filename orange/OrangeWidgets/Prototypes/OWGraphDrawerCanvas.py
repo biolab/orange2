@@ -694,5 +694,11 @@ class OWGraphDrawerCanvas(OWGraph):
             getattr(self.master, "sendData")()
         except AttributeError:
             print "Attribute not foud in self.master"
+    
+    
+    def zoomExtent(self):
+        self.setAxisAutoScaled()
+        self.replot()
+        self.setAxisFixedScale()
         
         

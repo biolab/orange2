@@ -133,17 +133,16 @@ class OWNetwork(OWWidget):
         OWGUI.button(ib, self, "Remove Marked from Selection",callback = self.markedFromSelection)
         OWGUI.button(ib, self, "Set Selection to Marked", callback = self.setSelectionToMarked)
 
-        self.hideBox = QVGroupBox("Hide", self.markTab)
-        OWGUI.button(self.hideBox, self, "Hide selected", callback=self.hideSelected)
-        OWGUI.button(self.hideBox, self, "Hide unselected", callback=self.hideAllButSelected)
-        OWGUI.button(self.hideBox, self, "Show all", callback=self.showAllNodes)
+        self.hideBox = QHGroupBox("Hide", self.markTab)
+        OWGUI.button(self.hideBox, self, "Selected", callback=self.hideSelected)
+        OWGUI.button(self.hideBox, self, "Unselected", callback=self.hideAllButSelected)
+        OWGUI.button(self.hideBox, self, "Show", callback=self.showAllNodes)
                 
-        T = OWToolbars.ZoomSelectToolbar
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
-                                                              buttons = (T.IconZoom, T.IconPan, None,
-                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_zoom), Qt.sizeAllCursor, 1),
-                                                                         T.IconRectangle, T.IconPolygon, 
-                                                                         T.IconSendSelection))
+        T = OWToolbars.NavigateSelectToolbar
+        self.zoomSelectToolbar = OWToolbars.NavigateSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
+                                                              buttons = (T.IconZoom, T.IconPan, T.IconZoomExtent,
+                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_zoom), Qt.sizeAllCursor, 1, "select"),
+                                                                         T.IconRectangle, T.IconPolygon, T.IconSendSelection))
         
         OWGUI.button(self.controlArea, self, "Save network", callback=self.saveNetwork)
         #OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
