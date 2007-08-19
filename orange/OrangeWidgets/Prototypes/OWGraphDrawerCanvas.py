@@ -84,6 +84,7 @@ class OWGraphDrawerCanvas(OWGraph):
                 
             self.markSelectionNeighbours()
         
+        self.master.nSelected = len(self.selection)
         return change
 
         
@@ -125,6 +126,8 @@ class OWGraphDrawerCanvas(OWGraph):
                 self.replot()
                 
             self.markSelectionNeighbours()
+            
+        self.master.nSelected = len(self.selection)
         
             
     def selectConnectedNodes(self, distance):
@@ -146,6 +149,7 @@ class OWGraphDrawerCanvas(OWGraph):
             self.setCurveSymbol(key, newSymbol)
             self.selection.append(ndx);
         
+        self.master.nSelected = len(self.selection)
         self.replot()
     
     def selectNeighbours(self, sel, nodes, depth, maxdepth):
@@ -488,12 +492,6 @@ class OWGraphDrawerCanvas(OWGraph):
 
         # draw vertices
         for v in range(self.nVertices):
-            if v in self.hiddenNodes:
-                continue
-            
-            x1 = self.visualizer.coors[v][0]
-            y1 = self.visualizer.coors[v][1]
-            
             if self.colorIndex > -1:
                 if self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Continuous:
                     newColor = self.contPalette[self.noJitteringScaledData[self.colorIndex][v]]
@@ -506,6 +504,12 @@ class OWGraphDrawerCanvas(OWGraph):
             
             # This works only if there are no hidden vertices!    
             self.nodeColor.append(fillColor)
+            
+            if v in self.hiddenNodes:
+                continue
+            
+            x1 = self.visualizer.coors[v][0]
+            y1 = self.visualizer.coors[v][1]
             
             selectionX.append(x1)
             selectionY.append(y1)
@@ -701,4 +705,19 @@ class OWGraphDrawerCanvas(OWGraph):
         self.replot()
         self.setAxisFixedScale()
         
-        
+    def zoomSelection(self):           
+        if len(self.selection) > 0: 
+            x = [self.visualizer.coors[v][0] for v in self.selection]
+            y = [self.visualizer.coors[v][1] for v in self.selection]
+
+            oldXMin = self.axisScale(QwtPlot.xBottom).lBound()
+            oldXMax = self.axisScale(QwtPlot.xBottom).hBound()
+            oldYMin = self.axisScale(QwtPlot.yLeft).lBound()
+            oldYMax = self.axisScale(QwtPlot.yLeft).hBound()
+            newXMin = min(x)
+            newXMax = max(x)
+            newYMin = min(y)
+            newYMax = max(y)
+            self.zoomStack.append((oldXMin, oldXMax, oldYMin, oldYMax))
+            self.setNewZoom(oldXMin, oldXMax, oldYMin, oldYMax, newXMin - 100, newXMax + 100, newYMin - 100, newYMax + 100)
+                    

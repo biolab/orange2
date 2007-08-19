@@ -140,9 +140,9 @@ class OWNetwork(OWWidget):
                 
         T = OWToolbars.NavigateSelectToolbar
         self.zoomSelectToolbar = OWToolbars.NavigateSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
-                                                              buttons = (T.IconZoom, T.IconPan, T.IconZoomExtent,
-                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_zoom), Qt.sizeAllCursor, 1, "select"),
-                                                                         T.IconRectangle, T.IconPolygon, T.IconSendSelection))
+                                                              buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
+                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_select), Qt.arrowCursor, 1, "select"),
+                                                                         T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
         
         OWGUI.button(self.controlArea, self, "Save network", callback=self.saveNetwork)
         #OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
@@ -282,6 +282,7 @@ class OWNetwork(OWWidget):
         #print "OWNetwork/setGraph: new visualizer..."
         self.visualize = NetworkVisualizer(graph, self)
         self.nVertices = len(graph)
+        self.nShown = len(graph)
         self.nEdges = len(graph.getEdges())
         self.verticesPerEdge = float(self.nVertices) / float(self.nEdges)
         self.edgesPerVertex = float(self.nEdges) / float(self.nVertices)
@@ -338,6 +339,8 @@ class OWNetwork(OWWidget):
     def hideSelected(self):
         #print self.graph.selection
         toHide = self.graph.selection + self.graph.hiddenNodes
+        self.nHidden = len(toHide)
+        self.nShown = self.nVertices - self.nHidden 
         self.graph.setHiddenNodes(toHide)
         self.graph.removeSelection()
         
@@ -346,11 +349,15 @@ class OWNetwork(OWWidget):
         allNodes = set(range(self.graph.nVertices))
         allButSelected = list(allNodes - set(self.graph.selection))
         toHide = allButSelected + self.graph.hiddenNodes
+        self.nHidden = len(toHide)
+        self.nShown = self.nVertices - self.nHidden 
         self.graph.setHiddenNodes(toHide)
     
     
     def showAllNodes(self):
         self.graph.setHiddenNodes([])
+        self.nHidden = 0
+        self.nShown = self.nVertices
         
         
     def random(self):
