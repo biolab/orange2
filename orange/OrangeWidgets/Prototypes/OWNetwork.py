@@ -10,7 +10,7 @@ import OWGUI
 from OWWidget import *
 from qwt import *
 from qt import *
-from OWGraphDrawerCanvas import *
+from OWNetworkCanvas import *
 from orngNetwork import * 
 from time import *
 import OWToolbars
@@ -49,7 +49,7 @@ class OWNetwork(OWWidget):
 
         self.visualize = None
 
-        self.graph = OWGraphDrawerCanvas(self, self.mainArea, "Network")
+        self.graph = OWNetworkCanvas(self, self.mainArea, "Network")
         #self.optimize = OWGraphDrawingOptimize(parent=self);
         #start of content (right) area
         self.box = QVBoxLayout(self.mainArea)
@@ -280,7 +280,7 @@ class OWNetwork(OWWidget):
         if graph == None:
             return
         #print "OWNetwork/setGraph: new visualizer..."
-        self.visualize = NetworkVisualizer(graph, self)
+        self.visualize = NetworkOptimization(graph, self)
         self.nVertices = len(graph)
         self.nShown = len(graph)
         self.nEdges = len(graph.getEdges())
@@ -425,7 +425,8 @@ class OWNetwork(OWWidget):
         
     def setVertexColor(self):
         self.graph.setVertexColor(self.colorCombo.currentText())
-        self.updateCanvas()
+        self.graph.updateData()
+        self.graph.replot()
         
         
     def setGraphGrid(self):
