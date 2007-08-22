@@ -5,7 +5,7 @@ import orangeom
 from random import *
 from numpy import *
 
-class NetworkVisualizer(orangeom.NetworkOptimization):
+class NetworkOptimization(orangeom.NetworkOptimization):
     def __init__(self, graph, parent = None, name = "None"):
         
         #print "orngNetwork/init: setGraph..."
