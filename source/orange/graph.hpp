@@ -23,8 +23,15 @@
 #ifndef __GRAPH_HPP
 #define __GRAPH_HPP
 
+#include <stdio.h>
+#include "stdlib.h"
+#include <iostream>
+#include <set>
+#include <queue>
 #include <vector>
 #include "root.hpp"
+
+using namespace std;
 
 /* Because we sometimes interpret the edge weight as a pointer,
    the weight for no connection should be a pointer that can never occur.
@@ -68,6 +75,10 @@ public:
 
   virtual void getNeighboursFrom_Single(const int &v, vector<int> &) = 0;
   virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &) = 0;
+
+	int findPath(int &u, int &v, int level, int &maxLevel, vector<int> &path);
+	vector<int> getShortestPaths(int &u, int &v);
+	int getDiameter();
 };
 
 WRAPPER(Graph)

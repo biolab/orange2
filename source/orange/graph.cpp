@@ -75,6 +75,145 @@ TGraph::TGraph(const int &nVert, const int &nTypes, const bool dir)
     raiseError("invalid (negative) number of edge types");
 }
 
+int TGraph::findPath(int &u, int &v, int level, int &maxLevel, vector<int> &path)
+{
+	if (level > maxLevel)
+		return 0;
+
+	vector<int> neighbours;
+	getNeighboursFrom(u, neighbours);
+	//cout << "iterate level: " << level << " max level: " << maxLevel << " neigh: " << neighbours.size() << endl;
+	for(vector<int>::iterator ni = neighbours.begin(); ni != neighbours.end(); ni++)
+	{
+		if (*ni == v)
+		{
+			path.push_back(*ni);
+			return 1;
+		}
+		else
+		{
+			if (findPath(*ni, v, level + 1, maxLevel, path) == 1)
+			{
+				path.push_back(*ni);
+				return 1;
+			}
+		}
+	}
+	
+	return 0;
+}
+
+int TGraph::getDiameter()
+{
+	int i;
+	int max_level = 0;
+	int max_node = -1;
+
+	set<int> visited;
+	vector<int> toVisitLevel;
+	vector<int> toVisit;
+
+	vector<int> neighbours;
+	getNeighboursFrom(0, neighbours);
+	
+	toVisit.insert(toVisit.begin(), neighbours.begin(), neighbours.end());
+	visited.insert(0);
+	visited.insert(neighbours.begin(), neighbours.end());
+
+	for (i = 0; i < neighbours.size(); i++)
+		toVisitLevel.push_back(1);
+
+	while (toVisit.size() > 0)
+	{
+		int node = toVisit.back();
+		int node_level = toVisitLevel.back();
+
+		toVisit.pop_back();
+		toVisitLevel.pop_back();
+
+		getNeighboursFrom(node, neighbours);
+
+		vector<int> neighTemp;
+		insert_iterator<vector<int>> neigh_it(neighTemp, neighTemp.begin());
+		set_difference(neighbours.begin(), neighbours.end(), visited.begin(), visited.end(), neigh_it);
+
+		toVisit.insert(toVisit.begin(), neighTemp.begin(), neighTemp.end());
+		visited.insert(neighTemp.begin(), neighTemp.end());
+
+		if (node_level > max_level)
+		{
+			max_level = node_level;
+			max_node = node;
+		}
+
+		for (i = 0; i < neighTemp.size(); i++)
+			toVisitLevel.insert(toVisitLevel.begin(), node_level + 1);
+	}
+
+	visited.clear();
+	toVisit.clear();
+	toVisitLevel.clear();
+	max_level = 0;
+	getNeighboursFrom(max_node, neighbours);
+	
+	toVisit.insert(toVisit.begin(), neighbours.begin(), neighbours.end());
+	visited.insert(max_node);
+	visited.insert(neighbours.begin(), neighbours.end());
+
+	for (i = 0; i < neighbours.size(); i++)
+		toVisitLevel.push_back(1);
+
+	while (toVisit.size() > 0)
+	{
+		int node = toVisit.back();
+		int node_level = toVisitLevel.back();
+
+		//cout << "node: " << node << endl;
+		//cout << "node_level: " << node_level << endl;
+
+		toVisit.pop_back();
+		toVisitLevel.pop_back();
+
+		getNeighboursFrom(node, neighbours);
+
+		vector<int> neighTemp;
+		insert_iterator<vector<int>> neigh_it(neighTemp, neighTemp.begin());
+		set_difference(neighbours.begin(), neighbours.end(), visited.begin(), visited.end(), neigh_it);
+
+		toVisit.insert(toVisit.begin(), neighTemp.begin(), neighTemp.end());
+		visited.insert(neighTemp.begin(), neighTemp.end());
+
+		if (node_level > max_level)
+		{
+			max_level = node_level;
+		}
+
+		for (i = 0; i < neighTemp.size(); i++)
+			toVisitLevel.insert(toVisitLevel.begin(), node_level + 1);
+	}
+
+	return max_level;
+}
+
+vector<int> TGraph::getShortestPaths(int &u, int &v)
+{
+	vector<int> path;
+	int maxLevel = 1;
+	while (maxLevel < 10)
+	{
+		path.clear();
+		
+		if (findPath(u, v, 0, maxLevel, path) > 0)
+		{
+			path.push_back(u);	
+			break;
+		}
+
+		maxLevel++;
+	}
+
+	return path;
+}
 
 TGraphAsMatrix::TGraphAsMatrix(const int &nVert, const int &nTypes, const bool dir)
 : TGraph(nVert, nTypes, dir),

@@ -4440,6 +4440,7 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 			return PYNULL;
 
 		int size = PyList_Size(vertices);
+		PyList_Sort(vertices);
 
 		TGraph *subgraph = new TGraphAsList(size, graph->nEdgeTypes, graph->directed);
 		PGraph wsubgraph = subgraph;
@@ -4612,6 +4613,56 @@ PyObject *Graph_getEdges(PyObject *self, PyObject *args, PyObject *) PYARGS(METH
 	}
 
 	return res;
+	PyCATCH
+}
+
+PyObject *Graph_getShortestPaths(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(u, v) -> list of [v1, v2, ..., vn]")
+{
+	PyTRY
+		CAST_TO(TGraph, graph);
+
+	int u, v;
+	u = v = -1;
+	if (!PyArg_ParseTuple(args, "ii:Graph.getShortestPaths", &u, &v))
+		return PYNULL;
+
+	vector<int> path = graph->getShortestPaths(u, v);
+
+	//cout << "vector size: " << neighbours.size() << endl;
+	PyObject *res = PyList_New(0);
+
+	ITERATE(vector<int>, ni, path) {
+		PyObject *nel = Py_BuildValue("i", *ni);
+		PyList_Append(res, nel);
+		Py_DECREF(nel);
+	}
+
+	return res;
+	PyCATCH
+}
+
+PyObject *Graph_getDistance(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(u, v) -> distance")
+{
+	PyTRY
+		CAST_TO(TGraph, graph);
+
+	int u, v;
+	u = v = -1;
+	if (!PyArg_ParseTuple(args, "ii:Graph.getDistance", &u, &v))
+		return PYNULL;
+
+	vector<int> path = graph->getShortestPaths(u, v);
+
+	return Py_BuildValue("i", path.size() - 1);
+	PyCATCH
+}
+
+PyObject *Graph_getDiameter(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "None -> diameter")
+{
+	PyTRY
+		CAST_TO(TGraph, graph);
+
+	return Py_BuildValue("i", graph->getDiameter());
 	PyCATCH
 }
 
