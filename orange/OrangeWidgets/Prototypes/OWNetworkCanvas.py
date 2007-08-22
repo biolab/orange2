@@ -228,21 +228,7 @@ class OWNetworkCanvas(OWGraph):
             elif (oldX == edgesCurve.xData[e*2 + 1]) and (oldY == edgesCurve.yData[e*2 + 1]):
                 edgesCurve.xData[e*2 + 1] = newX
                 edgesCurve.yData[e*2 + 1] = newY
-            
-#        for e in range(self.nEdges):
-#            (key,i,j) = self.edges[e]
-#            edgesCurve = self.curve(self.edgesKey)
-#            
-#            if i == self.selectedVertex:
-#                edgesCurve.xData[key*2] = newX
-#                edgesCurve.yData[key*2] = newY
-#                #currEdgeObj = self.curve(key)
-#                #self.setCurveData(key, [newX, currEdgeObj.x(1)], [newY, currEdgeObj.y(1)])                    
-#            elif j == self.selectedVertex:
-#                edgesCurve.xData[key*2 + 1] = newX
-#                edgesCurve.yData[key*2 + 1] = newY
-#                #currEdgeObj = self.curve(key)
-#                #self.setCurveData(key, [currEdgeObj.x(0), newX], [currEdgeObj.y(0), newY])
+   
         self.setCurveData(self.edgesKey, edgesCurve.xData, edgesCurve.yData)
     
     def getNeighboursUpTo(self, ndx, dist):
