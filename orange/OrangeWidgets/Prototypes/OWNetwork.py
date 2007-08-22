@@ -42,7 +42,7 @@ class OWNetwork(OWWidget):
         self.frSteps = 1
         self.hubs = 0
         self.color = 0
-        self.nVertices = self.nMarked = self.nSelected = self.nHidden = self.nShown = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = 0
+        self.nVertices = self.nMarked = self.nSelected = self.nHidden = self.nShown = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = self.diameter = 0
         self.optimizeWhat = 1
         
         self.loadSettings()
@@ -152,6 +152,7 @@ class OWNetwork(OWWidget):
         OWGUI.label(ib, self, "Number of edges: %(nEdges)i")
         OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
         OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
+        OWGUI.label(ib, self, "Diameter: %(diameter)i")
 
         self.icons = self.createAttributeIconDict()
         self.setHubs()
@@ -286,6 +287,7 @@ class OWNetwork(OWWidget):
         self.nEdges = len(graph.getEdges())
         self.verticesPerEdge = float(self.nVertices) / float(self.nEdges)
         self.edgesPerVertex = float(self.nEdges) / float(self.nVertices)
+        self.diameter = graph.getDiameter()
         #print "done."
         vars = self.visualize.getVars()
         self.attributes = [(var.name, var.varType) for var in vars]
