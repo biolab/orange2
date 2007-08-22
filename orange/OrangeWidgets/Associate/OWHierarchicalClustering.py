@@ -389,13 +389,13 @@ class Dendogram(QCanvas):
         self.rootCluster=root
         if not self.rootCluster:
             return
-        if self.parent.FitToWindow:
-            width=self.parent.dendogramView.size().width()
-            self.resize(width,self.height())
-            self.textAreaWidth=100
-        else:
-            self.textSize=self.parent.TextSize
-            self.textAreaWidth=100 #self.textSize*10
+##        if self.parent.FitToWindow:
+        width=self.parent.dendogramView.size().width()
+        self.resize(width,self.height())
+        self.textAreaWidth=100
+##        else:
+##            self.textSize=self.parent.TextSize
+##            self.textAreaWidth=100 #self.textSize*10
         self.textSize=self.parent.TextSize
         self.gTextPosInc=self.textSize+self.parent.LineSpacing
         self.gTextPos=topMargin
