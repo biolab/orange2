@@ -960,7 +960,7 @@ class ControlledCallback:
         if isinstance(value, QString):
             value = unicode(value)
         if self.f:
-            if self.f in [int, float] and not value   or   value in [str, unicode] and value in "+-":
+            if self.f in [int, float] and (not value or type(value) in [str, unicode] and value in "+-"):
                 value = self.f(0)
             else:
                 value = self.f(value)
