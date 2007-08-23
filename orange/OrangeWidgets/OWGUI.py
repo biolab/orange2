@@ -151,7 +151,7 @@ def spin(widget, master, value, min, max, step=1,
     if value:
         wa.setValue(master.getdeepattr(value))
 
-    cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and "valueChanged(int)", CallFront_spin(wa))
+    cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and (wa.editor(), "textChanged(const QString &)"), CallFront_spin(wa), fvcb=int)
 
     if checked:
         wb.disables = [wa]
@@ -744,7 +744,7 @@ class collapsableWidgetBox(QVGroupBox):
                 self.master.__setattr__(self.value, not self.master.getdeepattr(self.value))
             self.updateControls()
             self.repaint()
-        if self.callback != None:
+        if self.callback is not None:
             self.callback()
 
     # call when all widgets are added into the widget box to update the correct state (shown or hidden)
@@ -914,11 +914,16 @@ class ControlledList(list):
 
 
 
+def connectControlSignal(master, control, signal, f):
+    if type(signal) == tuple:
+        control, signal = signal
+    master.connect(control, SIGNAL(signal), f)
+
 def connectValueControl(control, master, value, signal, cfront, cback = None, fvcb = None):
     cback = cback or value and ValueCallback(master, value, fvcb)
     if cback:
         if signal:
-            master.connect(control, SIGNAL(signal), cback)
+            connectControlSignal(master, control, signal, cback)
         cback.opposite = cfront
         if value and cfront and hasattr(master, "controlledAttributes"):
             master.controlledAttributes[value] = cfront
@@ -930,7 +935,7 @@ def connectControl(control, master, value, f, signal, cfront, cback = None, cfun
     cfunc = cfunc or f and FunctionCallback(master, f)
     if cfunc:
         if signal:
-            master.connect(control, SIGNAL(signal), cfunc)
+            connectControlSignal(master, control, signal, cfunc)
         cfront.opposite = cback, cfunc
     else:
         cfront.opposite = (cback,)
@@ -955,7 +960,7 @@ class ControlledCallback:
         if isinstance(value, QString):
             value = unicode(value)
         if self.f:
-            if self.f in [int, float] and (not value or value in "+-"):
+            if self.f in [int, float] and not value   or   value in [str, unicode] and value in "+-":
                 value = self.f(0)
             else:
                 value = self.f(value)
@@ -973,7 +978,7 @@ class ControlledCallback:
 
 class ValueCallback(ControlledCallback):
     def __call__(self, value):
-        if value != None:
+        if value is not None:
             try:
                 self.acyclic_setattr(value)
             except:
@@ -998,7 +1003,7 @@ class ValueCallbackLineEdit(ControlledCallback):
         self.control = control
 
     def __call__(self, value):
-        if value != None:
+        if value is not None:
             try:
                 pos = self.control.cursorPosition()
                 acyclic_setattr(value)
@@ -1017,7 +1022,7 @@ class SetLabelCallback:
         self.disabled = False
 
     def __call__(self, value):
-        if not self.disabled and value != None:
+        if not self.disabled and value is not None:
             if self.f:
                 value = self.f(value)
             self.label.setText(self.format % value)
@@ -1091,25 +1096,25 @@ class ControlledCallFront:
 
 class CallFront_spin(ControlledCallFront):
     def action(self, value):
-        if value != None:
+        if value is not None:
             self.control.setValue(value)
 
 
 class CallFront_doubleSpin(ControlledCallFront):
     def action(self, value):
-        if value != None:
+        if value is not None:
             self.control.setValue(self.control.expand(value))
 
 
 class CallFront_checkBox(ControlledCallFront):
     def action(self, value):
-        if value != None:
+        if value is not None:
             self.control.setChecked(value)
 
 
 class CallFront_toggleButton(ControlledCallFront):
     def action(self, value):
-        if value != None:
+        if value is not None:
             self.control.setOn(value)
 
 
@@ -1120,7 +1125,7 @@ class CallFront_comboBox(ControlledCallFront):
         self.attribute2controlDict = dict([(y, x) for x, y in control2attributeDict.items()])
 
     def action(self, value):
-        if value != None:
+        if value is not None:
             value = self.attribute2controlDict.get(value, value)
             if self.valType:
                 for i in range(self.control.count()):
@@ -1137,13 +1142,13 @@ class CallFront_comboBox(ControlledCallFront):
 
 class CallFront_hSlider(ControlledCallFront):
     def action(self, value):
-        if value != None:
+        if value is not None:
             self.control.setValue(value)
 
 
 class CallFront_logSlider(ControlledCallFront):
     def action(self, value):
-        if value != None:
+        if value is not None:
             if value < 1e-30:
                 print "unable to set ", self.control, "to value ", value, " (value too small)"
             else:
@@ -1164,7 +1169,7 @@ class CallFront_radioButtons(ControlledCallFront):
 
 class CallFront_ListBox(ControlledCallFront):
     def action(self, value):
-        if value != None:
+        if value is not None:
             if not type(value) <= ControlledList:
                 setattr(self.control.ogMaster, self.control.ogValue, ControlledList(value, self.control))
             for i in range(self.control.count()):
