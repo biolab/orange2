@@ -134,7 +134,7 @@ int TGraph::getDiameter()
 		getNeighboursFrom(node, neighbours);
 
 		vector<int> neighTemp;
-		insert_iterator<vector<int>> neigh_it(neighTemp, neighTemp.begin());
+		insert_iterator<vector<int> > neigh_it(neighTemp, neighTemp.begin());
 		set_difference(neighbours.begin(), neighbours.end(), visited.begin(), visited.end(), neigh_it);
 
 		toVisit.insert(toVisit.begin(), neighTemp.begin(), neighTemp.end());
@@ -177,7 +177,7 @@ int TGraph::getDiameter()
 		getNeighboursFrom(node, neighbours);
 
 		vector<int> neighTemp;
-		insert_iterator<vector<int>> neigh_it(neighTemp, neighTemp.begin());
+		insert_iterator<vector<int> > neigh_it(neighTemp, neighTemp.begin());
 		set_difference(neighbours.begin(), neighbours.end(), visited.begin(), visited.end(), neigh_it);
 
 		toVisit.insert(toVisit.begin(), neighTemp.begin(), neighTemp.end());
