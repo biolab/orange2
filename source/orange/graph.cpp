@@ -150,6 +150,9 @@ int TGraph::getDiameter()
 			toVisitLevel.insert(toVisitLevel.begin(), node_level + 1);
 	}
 
+	if (max_node == -1)
+		return 0;
+
 	visited.clear();
 	toVisit.clear();
 	toVisitLevel.clear();
