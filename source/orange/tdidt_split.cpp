@@ -571,7 +571,7 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
   vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
   TVarList::const_iterator vi, ve(gen->domain->attributes->end());
   for(vi = gen->domain->attributes->begin(); vi != ve; vi++) {
-    bool co = (*vi)->varType == TValue::FLOATVAR && (!cse || (ci!=ce) && *ci);
+    bool co = (*vi)->varType == TValue::FLOATVAR && (cse || (ci!=ce) && *ci++);
     myCandidates.push_back(co);
     haveCandidates = haveCandidates || co;
   }
