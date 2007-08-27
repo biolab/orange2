@@ -30,6 +30,7 @@
 #include <queue>
 #include <list>
 #include <float.h>
+#include <strings.h>
 
 #include "stladdon.hpp"
 #include "errors.hpp"

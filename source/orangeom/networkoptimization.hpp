@@ -39,6 +39,7 @@
 #include <fstream>
 #include <string>
 #include <time.h>
+#include <strings.h>
 #include "px/orangeom_globals.hpp"
 #include "root.hpp"
 #include "numeric_interface.hpp"
