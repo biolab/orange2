@@ -107,7 +107,7 @@ class OWConfusionMatrix(OWWidget):
             self.table.setNumCols(0)
             return
 
-        self.matrix = orngStat.confusionMatrices(res)
+        self.matrix = orngStat.confusionMatrices(res, -2)
 
         dim = len(res.classValues)
 
@@ -132,7 +132,7 @@ class OWConfusionMatrix(OWWidget):
 
     def learnerChanged(self):
         cm = self.matrix[self.selectedLearner[0]]
-
+        
         for r in reduce(add, cm):
             if int(r) != r:
                 self.isInteger = " %5.3f "
