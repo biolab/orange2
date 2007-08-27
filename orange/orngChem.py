@@ -534,7 +534,7 @@ class Fragment(Molecule):
         return writer.WriteString(self.ToOBMol()).strip()
 
     def Support(self, activeSet=None):
-        activeSet=activeSet if activeSet else self.activeSet
+        activeSet=self.miner.activeSet if activeSet==None else activeSet
         uniqueMolecules=set()
         for embeding in self.embedings:
             if embeding.molecule in activeSet:
@@ -563,7 +563,7 @@ class FragmentMiner(object):
     Example:
     >>> miner = FragmentMiner(active = ["CC(C=N)=O", "c1ccccc1C=O", "SCC(N)O"], inactive = [], minSupport = 0.6)
     >>> for fragment in miner.Search():
-    ... 	print fragment.ToSmiles()
+    ... 	print fragment.ToSmiles() , "Support: %.3f" %fragment.Support()
     """
     loader=OBConversion()
     loader.SetInAndOutFormats("smi","smi")
@@ -577,7 +577,7 @@ class FragmentMiner(object):
         self.findClosed=findClosed
         self.addWholeRings=addWholeRings
         self.canonicalPruning=canonicalPruning
-        self.canonicalPruningSet=set()
+        self.canonicalPruningSet={}
 
     def LoadMolecules(self, smiles):
         mol=LoadMolFromSmiles(smiles)
@@ -593,7 +593,7 @@ class FragmentMiner(object):
         self.initialFragments=[]
         self.rings={}
         self.atomCount={}
-        self.canonicalPruningSet=set()
+        self.canonicalPruningSet={}
         candidates=[]
         ringCandidates=[]
         for mol in self.GetAllMolecules():
@@ -642,9 +642,9 @@ class FragmentMiner(object):
         if self.canonicalPruning:
             codeWord=fragment.ToCannonicalSmiles()
             if codeWord in self.canonicalPruningSet:
-                return
+                return self.canonicalPruningSet[codeWord]
             else:
-                self.canonicalPruningSet.add(codeWord)
+                self.canonicalPruningSet[codeWord]=fragment.Support(self.activeSet)
         extended=fragment.Extend()
         extended=filter(lambda f:f.Support(self.activeSet)>=self.minSupport, extended)
         superStructSupport=[]
@@ -652,8 +652,8 @@ class FragmentMiner(object):
             #print self.loader.WriteString(frag.ToOBMol())
             superStructSupport.append(self.TraverseTree(frag))
         support=fragment.Support(self.activeSet)
-        if support>=self.minSupport :
-            if not self.findClosed or (support not in superStructSupport and fragment.Support(self.inactiveSet)<=self.maxSupport):
+        if support>=self.minSupport and fragment.Support(self.inactiveSet)<=self.maxSupport:
+            if not self.findClosed or (support not in superStructSupport):
                 print fragment.ToSmiles().strip()+" %.2f %.2f" % (support, fragment.Support(self.inactiveSet))
                 self.foundFragments.append(fragment)
         return support
@@ -804,7 +804,7 @@ def test():
 ##    active=["CN(C)CCCN1c2ccccc2Sc3c1cc(cc3)C(F)(F)F", "CN(C)CCCN1c2ccccc2Sc3c1cc(cc3)Cl","CN1CCCCC1CCN2c3ccccc3Sc4c2cc(cc4)SC"]
 ##    active=["CN(C)CCCN1c2ccccc2Sc3c1cc(cc3)C(F)(F)F", "CN(C)CCCN1c2ccccc2Sc3c1cc(cc3)Cl"]
 ##    set_trace()
-    miner=FragmentMiner(active, inactive, minSupport=0.1, maxSupport=0.1, addWholeRings=True, canonicalPruning=True)
+    miner=FragmentMiner(active, inactive[:0], minSupport=0.1, maxSupport=0.1, addWholeRings=True, canonicalPruning=True)
     fragments=miner.Search()
 ##    for f in fragments:
 ##        print f.ToSmiles()
@@ -821,6 +821,6 @@ def test1():
 if __name__=="__main__":
     import time
     sTime=time.clock()
-    test1()
+    test()
     print time.clock()-sTime
 
