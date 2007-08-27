@@ -30,7 +30,10 @@
 #include <queue>
 #include <list>
 #include <float.h>
+
+#ifdef DARWIN
 #include <strings.h>
+#endif
 
 #include "stladdon.hpp"
 #include "errors.hpp"

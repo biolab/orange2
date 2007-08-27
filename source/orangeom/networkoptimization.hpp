@@ -39,7 +39,10 @@
 #include <fstream>
 #include <string>
 #include <time.h>
+#ifdef DARWIN
 #include <strings.h>
+#endif
+
 #include "px/orangeom_globals.hpp"
 #include "root.hpp"
 #include "numeric_interface.hpp"
