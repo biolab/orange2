@@ -1,7 +1,7 @@
 """<name>Molecule visualizer</name>"""
 
 import orange
-import orngChem
+import orngChem_Old as orngChem
 from OWWidget import *
 from qt import *
 import OWGUI
