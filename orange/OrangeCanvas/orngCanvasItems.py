@@ -211,7 +211,7 @@ class CanvasWidgetState(QCanvasRectangle):
         if not texts:
             return 0
         pixmap = self.widgetIcons[iconName]
-        rect = QRect(x, y, pixmap.width(), pixmap.height())
+        rect = QRect(x-self.parent.view.contentsXPos, y-self.parent.view.contentsYPos, pixmap.width(), pixmap.height())
         text = reduce(lambda x,y: x+'<br>'+y, texts)
         QToolTip.add(self.view, rect, text)
         self.activeItems.append((x, y, rect, pixmap, text))
@@ -227,8 +227,8 @@ class CanvasWidgetState(QCanvasRectangle):
         if not self.showIcons or not self.widgetIcons: return
 
         count = int(self.infoTexts != []) + int(self.warningTexts != []) + int(self.errorTexts != [])
-        startX = self.parent.x() + (self.parent.width()/2) - (count*self.widgetIcons["Info"].width()/2)
-        y = self.parent.y() - 25
+        startX = self.parent.xPos + (self.parent.width()/2) - (count*self.widgetIcons["Info"].width()/2)
+        y = self.parent.yPos - 25 - self.parent.progressBarRect.visible() * 20
         self.move(startX, y)
 
         if count == 0:
@@ -273,8 +273,6 @@ class CanvasWidget(QCanvasRectangle):
         self.yPos = 0
         self.oldXPos = 0
         self.oldYPos = 0
-        self.viewXPos = 0 # this two variables are used as offset for
-        self.viewYPos = 0 # tooltip placement inside canvasView
         self.lastRect = QRect(0,0,0,0)
         self.isProcessing = 0   # is this widget currently processing signals
         self.widgetStateRect = CanvasWidgetState(self, canvas, view, self.canvasDlg.widgetIcons)
@@ -416,8 +414,7 @@ class CanvasWidget(QCanvasRectangle):
 
     def move(self, x, y):
         QCanvasRectangle.move(self, x, y)
-        self.widgetStateRect.updateWidgetState()
-
+        self.widgetStateRect.updateWidgetState()    # move the icons
 
     # move existing coorinates by dx, dy
     def setCoordsBy(self, dx, dy):
@@ -583,17 +580,11 @@ class CanvasWidget(QCanvasRectangle):
                 else:
                     string += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
         string = string[:-4]
-        self.lastRect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
+        self.lastRect = QRect(self.x()-self.view.contentsXPos, self.y()-self.view.contentsYPos, self.width(), self.height())
         QToolTip.add(self.view, self.lastRect, string)
 
 
-    def setViewPos(self, x, y):
-        self.viewXPos = x
-        self.viewYPos = y
-
     def removeTooltip(self):
-        #rect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
-        #QToolTip.remove(self.view, self.rect())
         QToolTip.remove(self.view, self.lastRect)
 
 
@@ -603,12 +594,14 @@ class CanvasWidget(QCanvasRectangle):
         self.progressBarRect.show()
         self.progressRect.show()
         self.progressText.show()
+        self.widgetStateRect.updateWidgetState()        # have to update positions of info, warning, error icons
         self.canvas.update()
 
     def hideProgressBar(self):
         self.progressBarRect.hide()
         self.progressRect.hide()
         self.progressText.hide()
+        self.widgetStateRect.updateWidgetState()        # have to update positions of info, warning, error icons
         self.canvas.update()
 
     def setProgressBarValue(self, value):

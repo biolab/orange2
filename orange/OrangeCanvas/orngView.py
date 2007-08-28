@@ -26,6 +26,8 @@ class SchemaView(QCanvasView):
         self.tempWidget = None
         self.selWidgets = []
         self.createPopupMenus()
+        self.contentsXPos = 0
+        self.contentsYPos = 0
         self.connect(self, SIGNAL("contentsMoving(int,int)"), self.contentsMoving)
 
 
@@ -396,11 +398,11 @@ class SchemaView(QCanvasView):
 
     # if we scroll the view, we have to update tooltips for widgets
     def contentsMoving(self, x,y):
+        self.contentsXPos = x
+        self.contentsYPos = y
         for widget in self.doc.widgets:
-            #QToolTip.remove(self, QRect(0,0, self.canvas().width(), self.canvas().height()))
-            widget.removeTooltip()
-            widget.setViewPos(x,y)
-            widget.updateTooltip()
+            widget.updateTooltip()                            # move the widget tooltip
+            widget.widgetStateRect.updateWidgetState()        # need to move the icon tooltips
 
     def progressBarHandler(self, widgetInstance, value):
         qApp.processEvents()        # allow processing of other events

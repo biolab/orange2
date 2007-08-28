@@ -230,6 +230,12 @@ def __getDirectoryNames():
     if not os.path.exists(outputDir):
         try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
+
+    widgetSettingsDir = os.path.join(outputDir, "widgetSettings")
+    if not os.path.exists(widgetSettingsDir):
+        try: os.mkdir(widgetSettingsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
+        except: pass
+
     outputDir = os.path.join(outputDir, "OrangeCanvas")
     if not os.path.exists(outputDir):
         try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
@@ -239,7 +245,7 @@ def __getDirectoryNames():
     if not os.path.exists(registryFileName):
         WidgetsToXML().ParseWidgetRoot(widgetDir, outputDir)
 
-    return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "outputDir", "registryFileName"]])
+    return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetSettingsDir", "widgetDir", "reportsDir", "picsDir", "outputDir", "registryFileName"]])
 
 
 def addWidgetDirectories():

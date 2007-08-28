@@ -210,7 +210,7 @@ class SignalManager:
             output = OutputSignal(*o)
             if output.name == signalNameFrom: found=1
         if not found:
-            print "Error. Widget %s changed its output signals. It does not have signal %s anymore." % (str(getattr(widgetFrom, "captionTitle", ""), signalNameFrom))
+            print "Error. Widget %s changed its output signals. It does not have signal %s anymore." % (str(getattr(widgetFrom, "captionTitle", "")), signalNameFrom)
             return 0
 
         found = 0

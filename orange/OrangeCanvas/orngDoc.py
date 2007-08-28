@@ -276,7 +276,6 @@ class SchemaDoc(QMainWindow):
             y = 150
         newwidget.setCoords(x,y)
         self.canvasView.ensureVisible(x+50,y)
-        newwidget.setViewPos(self.canvasView.contentsX(), self.canvasView.contentsY())
 
         if caption == "": caption = newwidget.caption
 

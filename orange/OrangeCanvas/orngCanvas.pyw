@@ -21,7 +21,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.__dict__.update(orngRegistry.directoryNames)
 
         #self.setFocusPolicy(QWidget.StrongFocus)
-        
+
 ##        import OWReport
 ##        OWReport.IEFeeder(self.reportsDir)
 
@@ -259,6 +259,7 @@ class OrangeCanvasDlg(QMainWindow):
         #self.menuOptions.insertSeparator()
         self.menuOptions.insertItem( "&Rebuild Widget Registry",  self.menuItemRebuildWidgetRegistry)
         self.menuOptions.insertItem( "&Customize Shortcuts",  self.menuItemEditWidgetShortcuts)
+        self.menuOptions.insertItem( "&Delete Widget Settings",  self.menuItemDeleteWidgetSettings)
         self.menuOptions.insertSeparator()
         if sys.platform == "darwin":
             self.menuOptions.insertItem("&Preferences...", self.menuItemCanvasOptions)
@@ -577,6 +578,13 @@ class OrangeCanvasDlg(QMainWindow):
             shf = file(os.path.join(self.outputDir, "shortcuts.txt"), "wt")
             for k, v in self.widgetShortcuts.items():
                 shf.write("%s: %s\n" % (k, v.nameKey))
+
+    def menuItemDeleteWidgetSettings(self):
+        if QMessageBox.warning(self,'Orange Canvas','If you want to delete widget settings press Ok, otherwise press Cancel.\nFor the deletion to be complete there cannot be any widgets on your schemas.\nIf there are, close schemas first.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+            if os.path.exists(self.widgetSettingsDir):
+                for f in os.listdir(self.widgetSettingsDir):
+                    if os.path.splitext(f)[1].lower() == ".ini":
+                        os.remove(os.path.join(self.widgetSettingsDir, f))
 
     def menuCloseAll(self):
         wins = self.workspace.getDocumentList()
