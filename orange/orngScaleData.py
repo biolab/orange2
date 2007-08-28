@@ -91,20 +91,20 @@ def discretizeDomain(data, removeUnusedValues = 1):
 
 class orngScaleData:
     def __init__(self):
-        self.rawdata = None                     # input data
+        self.rawData = None                     # input data
+        self.rawSubsetData = None
         self.originalData = None                # input data in a numpy array
         self.scaledData = None                  # scaled data to the interval 0-1
         self.noJitteringScaledData = None
-        self.attributeNames = []                # list of attribute names from self.rawdata
+        self.attributeNames = []                # list of attribute names from self.rawData
         self.attributeNameIndex = {}            # dict with indices to attributes
         self.domainDataStat = []
         self.attributeFlipInfo = {}             # dictionary with attrName: 0/1 attribute is flipped or not
-        self.subsetData = None
         self.globalValueScaling = 0         # do we want to scale data globally
         self.scalingByVariance = 0
         self.jitterSize = 10
         self.jitterContinuous = 0
-        self.subDataMinMaxDict = {}             # dictionary of tuples. keys are attribute names. values are (min, max) vals for examples in subsetData
+        self.subDataMinMaxDict = {}             # dictionary of tuples. keys are attribute names. values are (min, max) vals for examples in rawSubsetData
         self.validDataArray = None
         self.validSubDataArray = None
         self.attrValues = {}
@@ -130,7 +130,7 @@ class orngScaleData:
         self.attrValues = {}
         sortValuesForDiscreteAttrs = args.get("sortValuesForDiscreteAttrs", 1)
 
-        self.rawdata = data
+        self.rawData = data
         numpy.random.seed(1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
 
         if data == None or len(data) == 0:
@@ -207,25 +207,24 @@ class orngScaleData:
                     self.scaledData[index] = arr[index]
 
         self.noJitteringScaledData = arr
-#        if self.subsetData:
-#            self.setSubsetData(self.subsetData)
+
 
     def setSubsetData(self, subData):
-        self.subsetData = subData
+        self.rawSubsetData = subData
         self.validSubDataArray = []
         self.attrSubValues = {}
         self.subDataMinMaxDict = {}
 
-#        if not subData or not self.rawdata or subData.domain.checksum() != self.rawdata.domain.checksum():
+#        if not subData or not self.rawData or subData.domain.checksum() != self.rawData.domain.checksum():
 #            return
 
-        if not subData or not self.rawdata:
+        if not subData or not self.rawData:
             return
 
         try:
-            subData = subData.select(self.rawdata.domain)
+            subData = subData.select(self.rawData.domain)
         except:
-            print "Warning: Subset data domain incompatible with data domain.\nData domain: %s\n Subset data domain: %s\n" % (self.rawdata.domain, subData.domain)
+            print "Warning: Subset data domain incompatible with data domain.\nData domain: %s\n Subset data domain: %s\n" % (self.rawData.domain, subData.domain)
             return
 
         # create a  valid data array
@@ -320,7 +319,7 @@ class orngScaleData:
 
         return (arr, values)
 
-    # scale example's value at index index to a range between 0 and 1 with respect to self.rawdata
+    # scale example's value at index index to a range between 0 and 1 with respect to self.rawData
     def scaleExampleValue(self, example, index):
         if example[index].isSpecial():
             print "Warning: scaling example with missing value"
@@ -333,8 +332,8 @@ class orngScaleData:
                 print "invalid example or attribute index", index, len(self.offsets), len(self.normalizers)
                 return 0.0
             position = (example[index] - self.offsets[index]) / self.normalizers[index]
-            if self.subDataMinMaxDict.has_key(self.rawdata.domain[index].name):
-                m, M = self.subDataMinMaxDict[self.rawdata.domain[index].name]
+            if self.subDataMinMaxDict.has_key(self.rawData.domain[index].name):
+                m, M = self.subDataMinMaxDict[self.rawData.domain[index].name]
                 position = (position - m) / float(max(M-m, 1e-10))
             return position
 
@@ -353,17 +352,17 @@ class orngScaleData:
             self.attrValues[attr] = values
 
     def getAttributeLabel(self, attrName):
-        if self.attributeFlipInfo[attrName] and self.rawdata.domain[attrName].varType == orange.VarTypes.Continuous: return "-" + attrName
+        if self.attributeFlipInfo[attrName] and self.rawData.domain[attrName].varType == orange.VarTypes.Continuous: return "-" + attrName
         return attrName
 
     def flipAttribute(self, attrName):
         if attrName not in self.attributeNames: return 0
-        if self.rawdata.domain[attrName].varType == orange.VarTypes.Discrete: return 0
+        if self.rawData.domain[attrName].varType == orange.VarTypes.Discrete: return 0
         if self.globalValueScaling: return 0
 
         index = self.attributeNameIndex[attrName]
         self.attributeFlipInfo[attrName] = not self.attributeFlipInfo[attrName]
-        if self.rawdata.domain[attrName].varType == orange.VarTypes.Continuous:
+        if self.rawData.domain[attrName].varType == orange.VarTypes.Continuous:
             self.attrValues[attrName] = [-self.attrValues[attrName][1], -self.attrValues[attrName][0]]
 
         self.scaledData[index] = 1 - self.scaledData[index]
@@ -371,7 +370,7 @@ class orngScaleData:
         return 1
 
 
-    # get array of 0 and 1 of len = len(self.rawdata). if there is a missing value at any attribute in indices return 0 for that example
+    # get array of 0 and 1 of len = len(self.rawData). if there is a missing value at any attribute in indices return 0 for that example
     def getValidList(self, indices):
         if self.validDataArray == None:
             return numpy.array([], numpy.bool)
@@ -379,7 +378,7 @@ class orngScaleData:
         arr = numpy.add.reduce(selectedArray)
         return numpy.equal(arr, len(indices))
 
-    # get array of 0 and 1 of len = len(self.subsetData). if there is a missing value at any attribute in indices return 0 for that example
+    # get array of 0 and 1 of len = len(self.rawSubsetData). if there is a missing value at any attribute in indices return 0 for that example
     def getValidSubList(self, indices):
         if self.validSubDataArray == None:
             return numpy.array([], numpy.bool)

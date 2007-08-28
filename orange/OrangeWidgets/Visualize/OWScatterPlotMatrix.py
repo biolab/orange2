@@ -248,7 +248,7 @@ class OWScatterPlotMatrix(OWWidget):
                 if self.graphs == []:
                     graph.setData(self.data)
                 else:
-                    for attr in ["rawdata", "domainDataStat", "scaledData", "noJitteringScaledData", "validDataArray", "attrValues", "attributeNames", "domainDataStat", "attributeNameIndex"]:
+                    for attr in ["rawData", "domainDataStat", "scaledData", "noJitteringScaledData", "validDataArray", "attrValues", "attributeNames", "domainDataStat", "attributeNameIndex"]:
                         setattr(graph, attr, getattr(self.graphs[0], attr))
 
                 self.setGraphOptions(graph, "")

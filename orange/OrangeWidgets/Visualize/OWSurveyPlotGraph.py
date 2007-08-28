@@ -62,16 +62,16 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         xRectsToAdd = {}
         yRectsToAdd = {}
         classNameIndex = -1
-        if self.rawdata.domain.classVar:
-            classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-                classValDict = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar)
+        if self.rawData.domain.classVar:
+            classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
+            if self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
+                classValDict = getVariableValueIndices(self.rawData, self.rawData.domain.classVar)
 
         y = 0
-        for i in range(len(self.rawdata)):
+        for i in range(len(self.rawData)):
             if validData[i] == 0: continue
             if classNameIndex == -1: newColor = (0,0,0)
-            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: newColor = self.discPalette.getRGB(classValDict[self.rawdata[i].getclass().value])
+            elif self.rawData.domain.classVar.varType == orange.VarTypes.Discrete: newColor = self.discPalette.getRGB(classValDict[self.rawData[i].getclass().value])
             else: newColor = self.contPalette.getRGB(self.noJitteringScaledData[classNameIndex][i])
 
             for j in range(self.length):
@@ -86,9 +86,9 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         for key in xRectsToAdd.keys():
             self.insertCurve(RectangleCurve(self, QPen(QColor(*key)), QBrush(QColor(*key)), xRectsToAdd[key], yRectsToAdd[key]))
 
-        if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-            self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
+        if self.enabledLegend and self.rawData.domain.classVar and self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
+            classValues = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
+            self.addCurve("<b>" + self.rawData.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.None, enableLegend = 1)
             for ind in range(len(classValues)):
                 self.addCurve(classValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
 
@@ -98,7 +98,7 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         self.hideSelectedRectangle()
         if self.mouseCurrentlyPressed:
             OWGraph.onMouseMoved(self, e)
-        elif not self.rawdata:
+        elif not self.rawData:
             return
         else:
             yFloat = math.floor(self.invTransform(QwtPlot.yLeft, e.y()))
@@ -114,9 +114,9 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
                 OWGraph.onMouseMoved(self, e)
 
             if (self.tooltipKind == VISIBLE_ATTRIBUTES and self.attrLabels != []) or self.tooltipKind == ALL_ATTRIBUTES:
-                if int(yFloat) >= len(self.rawdata): return
-                if self.tooltipKind == VISIBLE_ATTRIBUTES:      text = self.getExampleTooltipText(self.rawdata, self.rawdata[int(yFloat)], self.attrLabels)
-                else:                                           text = self.getExampleTooltipText(self.rawdata, self.rawdata[int(yFloat)], [])
+                if int(yFloat) >= len(self.rawData): return
+                if self.tooltipKind == VISIBLE_ATTRIBUTES:      text = self.getExampleTooltipText(self.rawData, self.rawData[int(yFloat)], self.attrLabels)
+                else:                                           text = self.getExampleTooltipText(self.rawData, self.rawData[int(yFloat)], [])
                 y1Int = self.transform(QwtPlot.yLeft, yFloat)
                 y2Int = self.transform(QwtPlot.yLeft, yFloat+1.0)
                 MyQToolTip.tip(self.tooltip, QRect(e.x()+self.canvas().frameGeometry().x()-10, y2Int+self.canvas().frameGeometry().y(), 20, y1Int-y2Int), text)

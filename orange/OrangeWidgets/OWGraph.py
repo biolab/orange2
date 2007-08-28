@@ -357,7 +357,7 @@ class OWGraph(QwtPlot):
             if example.getclass().isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (data.domain.classVar.name)
             else:                              text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain.classVar.name, str(example.getclass().value))
 
-        if len(self.rawdata.domain.getmetas()) != 0:
+        if len(self.rawData.domain.getmetas()) != 0:
             text += "<hr><b>Meta attributes:</b><br>"
             # show values of meta attributes
             for key in data.domain.getmetas():
@@ -424,7 +424,7 @@ class OWGraph(QwtPlot):
     def activatePanning(self):
         self.state = PANNING
         if self.tempSelectionCurve: self.removeLastSelection()
-        
+
     def activateSelection(self):
         self.state = SELECT
 
@@ -491,7 +491,7 @@ class OWGraph(QwtPlot):
         self.xpos = e.x()
         self.ypos = e.y()
 
-        
+
         xs = self.axisScale(QwtPlot.xBottom)
         x = self.invTransform(QwtPlot.xBottom, e.x())
 
@@ -566,7 +566,7 @@ class OWGraph(QwtPlot):
             self.setAxisScale(QwtPlot.xBottom, self.paniniX[0] - dx, self.paniniX[1] - dx)
             self.setAxisScale(QwtPlot.yLeft, self.paniniY[0] - dy, self.paniniY[1] - dy)
             self.replot()
-            
+
         self.event(e)
 
 
@@ -635,41 +635,41 @@ class OWGraph(QwtPlot):
         #self.replot()
         self.event(e)
 
-            
+
     def wheelEvent(self, e):
         if not self.enableWheelZoom:
             return
-        
+
         d = -e.delta()/120.
 
         if getattr(self, "controlPressed", False):
             ys = self.axisScale(QwtPlot.yLeft)
             yoff = d * (ys.hBound() - ys.lBound()) / 100.
             self.setAxisScale(QwtPlot.yLeft, ys.lBound() + yoff, ys.hBound() + yoff)
-        
+
         elif getattr(self, "altPressed", False):
             xs = self.axisScale(QwtPlot.xBottom)
             xoff = d * (xs.hBound() - xs.lBound()) / 100.
             self.setAxisScale(QwtPlot.xBottom, xs.lBound() - xoff, xs.hBound() - xoff)
-        
+
         else:
             ro, rn = .9**d, 1-.9**d
-            
+
             pos = self.mapFromGlobal(e.pos())
             ex, ey = pos.x(), pos.y()
-    
+
             xs = self.axisScale(QwtPlot.xBottom)
             x = self.invTransform(QwtPlot.xBottom, ex)
     #        print xs.lBound(), xs.hBound(), x
             self.setAxisScale(QwtPlot.xBottom, ro*xs.lBound() + rn*x, ro*xs.hBound() + rn*x)
-            
+
             ys = self.axisScale(QwtPlot.yLeft)
             y = self.invTransform(QwtPlot.yLeft, ey)
             self.setAxisScale(QwtPlot.yLeft, ro*ys.lBound() + rn*y, ro*ys.hBound() + rn*y)
-        
+
         self.replot()
 
-        
+
     # does a point (x,y) lie inside one of the selection rectangles (polygons)
     def isPointSelected(self, x,y):
         for curveKey in self.selectionCurveKeyList:

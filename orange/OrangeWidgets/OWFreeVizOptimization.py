@@ -30,7 +30,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.disableAttractive = 0
         self.disableRepulsive = 0
         self.graph = graph
-        self.rawdata = None
+        self.rawData = None
 
         if self.graph:
             self.graph.hideRadius = 0
@@ -161,7 +161,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.parentWidget.graph.manualPositioning = self.manualPositioningButton.isOn()
 
     def setData(self, data):
-        self.rawdata = data
+        self.rawData = data
         self.s2nMixData = None
         self.classPermutationList = None
 
@@ -273,7 +273,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
     # DIFFERENTIAL EVOLUTION
     # #############################################################
     def createPopulation(self):
-        l = len(self.rawdata.domain.attributes)
+        l = len(self.rawData.domain.attributes)
         self.DERadvizSolver = RadvizSolver(self.parentWidget, l * 2 , self.differentialEvolutionPopSize)
         Min = [0.0] * 2* l
         Max = [1.0] * 2* l
@@ -285,8 +285,8 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
 
         self.DERadvizSolver.Solve(5)
         solution = self.DERadvizSolver.Solution()
-        self.graph.anchorData = [(solution[2*i], solution[2*i+1], self.rawdata.domain.attributes[i].name) for i in range(len(self.rawdata.domain.attributes))]
-        self.graph.updateData([attr.name for attr in self.rawdata.domain.attributes], 0)
+        self.graph.anchorData = [(solution[2*i], solution[2*i+1], self.rawData.domain.attributes[i].name) for i in range(len(self.rawData.domain.attributes))]
+        self.graph.updateData([attr.name for attr in self.rawData.domain.attributes], 0)
         self.graph.repaint()
 
     def findPCAProjection(self):

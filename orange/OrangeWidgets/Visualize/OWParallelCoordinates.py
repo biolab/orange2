@@ -223,12 +223,15 @@ class OWParallelCoordinates(OWVisWidget):
         self.updateGraph()
 
     def setSubsetData(self, data, update = 1):
-        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum():
+        self.warning(10)
+        if self.graph.rawSubsetData != None and data != None and self.graph.rawSubsetData.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
         try:
-            subsetData = data.select(self.data.domain)
-            self.warning(10)
+            if data:
+                subsetData = data.select(self.data.domain)
+            else:
+                subsetData = None
         except:
             subsetData = None
             self.warning(10, "'Examples' and 'Example Subset' data do not have copatible domains. Unable to draw 'Example Subset' data.")

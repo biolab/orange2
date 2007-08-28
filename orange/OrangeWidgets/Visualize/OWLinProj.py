@@ -379,7 +379,7 @@ class OWLinProj(OWVisWidget):
             self.warning(10)
             return
 
-        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum():
+        if self.graph.rawSubsetData != None and data != None and self.graph.rawSubsetData.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
         try:

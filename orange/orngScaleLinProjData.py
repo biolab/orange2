@@ -87,8 +87,8 @@ class orngScaleLinProjData(orngScaleData):
 
     # create the projection of attribute indices given in attrIndices and create an example table with it.
     def createProjectionAsExampleTable(self, attrIndices, **settingsDict):
-        if self.rawdata.domain.classVar:
-            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        if self.rawData.domain.classVar:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
         else:
             domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar")])
         data = self.createProjectionAsNumericArray(attrIndices, **settingsDict)
@@ -121,8 +121,8 @@ class orngScaleLinProjData(orngScaleData):
         if sum(validData) == 0:
             return None
 
-        if classList == None and self.rawdata.domain.classVar:
-            classList = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
+        if classList == None and self.rawData.domain.classVar:
+            classList = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
 
         # if jitterSize is set below zero we use scaledData that has already jittered data
         if jitterSize < 0.0: data = self.scaledData
@@ -141,11 +141,11 @@ class orngScaleLinProjData(orngScaleData):
                 if m == 0.0 and M == 1.0: continue
                 selectedData[i] = (selectedData[i] - m) / float(M-m)
         """
-        if self.subsetData:
+        if self.rawSubsetData:
             for i in range(len(attrIndices)):
-                if not self.subDataMinMaxDict.has_key(self.rawdata.domain[attrIndices[i]].name):
+                if not self.subDataMinMaxDict.has_key(self.rawData.domain[attrIndices[i]].name):
                     continue
-                m, M = self.subDataMinMaxDict[self.rawdata.domain[attrIndices[i]].name]
+                m, M = self.subDataMinMaxDict[self.rawData.domain[attrIndices[i]].name]
                 selectedData[i] = (selectedData[i] - m) / float(max(M-m, 1e-10))
 
         if useAnchorData and self.anchorData:

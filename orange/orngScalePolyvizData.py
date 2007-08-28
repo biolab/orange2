@@ -30,8 +30,8 @@ class orngScalePolyvizData(orngScaleLinProjData):
 
         # attributeReverse, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0
     def createProjectionAsExampleTable(self, attrList, **settingsDict):
-        if self.rawdata.domain.classVar:
-            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        if self.rawData.domain.classVar:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
         else:
             domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar")])
         data = self.createProjectionAsNumericArray(attrList, **settingsDict)
@@ -58,8 +58,8 @@ class orngScalePolyvizData(orngScaleLinProjData):
         if sum(validData) == 0:
             return None
 
-        if classList == None and self.rawdata.domain.classVar:
-            classList = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]    
+        if classList == None and self.rawData.domain.classVar:
+            classList = numpy.transpose(self.rawData.toNumpy("c")[0])[0]    
 
         if removeMissingData:
             selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, attrIndices, axis = 0), axis = 1)

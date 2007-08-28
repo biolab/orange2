@@ -25,7 +25,7 @@ def normalize(x):
 def center(matrix):
     '''centers all variables, i.e. subtracts averages in colomns
     and divides them by their standard deviations'''
-    n,m = numpy.shape(matrix)	
+    n,m = numpy.shape(matrix)
     return (matrix - numpy.multiply(matrix.mean(axis = 0), numpy.ones((n,m))))/numpy.std(matrix, axis = 0)
 
 
@@ -44,7 +44,7 @@ class FreeViz:
         self.forceSigma = 1.0
         self.mirrorSymmetry = 1
         self.useGeneralizedEigenvectors = 1
-        self.rawdata = None
+        self.rawData = None
 
         # s2n heuristics parameters
         self.stepsBeforeUpdate = 10
@@ -57,7 +57,7 @@ class FreeViz:
         #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
 
     def setData(self, data):
-        self.rawdata = data
+        self.rawData = data
         self.s2nMixData = None
         self.classPermutationList = None
 
@@ -66,7 +66,7 @@ class FreeViz:
         self.subsetdata = subsetdata
 
     def showAllAttributes(self):
-        self.graph.anchorData = [(0,0, a.name) for a in self.graph.rawdata.domain.attributes]
+        self.graph.anchorData = [(0,0, a.name) for a in self.graph.rawData.domain.attributes]
         self.radialAnchors()
 
     def getShownAttributeList(self):
@@ -81,7 +81,8 @@ class FreeViz:
 
 
     def randomAnchors(self):
-        if not self.graph.rawdata: return
+        if not self.graph.rawData: return
+        attrList = self.getShownAttributeList()
 
         if self.restrain == 0:
             def ranch(i, label):
@@ -97,10 +98,10 @@ class FreeViz:
         else:
             def ranch(i, label):
                 r = 0.3+0.7*random.random()
-                phi = 2*math.pi * i / n
+                phi = 2*math.pi * i / max(1, len(attrList))
                 return (r*math.cos(phi), r*math.sin(phi), label)
 
-        anchors = [ranch(*a) for a in enumerate(self.getShownAttributeList())]
+        anchors = [ranch(*a) for a in enumerate(attrList)]
 
         if not self.restrain == 1:
             maxdist = math.sqrt(max([x[0]**2+x[1]**2 for x in anchors]))
@@ -114,13 +115,13 @@ class FreeViz:
 
     def optimizeSeparation(self, steps = 10, singleStep = False):
         # check if we have data and a discrete class
-        if not self.rawdata or len(self.rawdata) == 0 or not self.rawdata.domain.classVar:
+        if not self.rawData or len(self.rawData) == 0 or not self.rawData.domain.classVar:
             return
 
         if self.implementation == FAST_IMPLEMENTATION:
             return self.optimize_FAST_Separation(steps, singleStep)
 
-        if self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+        if self.rawData.domain.classVar.varType != orange.VarTypes.Discrete:
             return
 
         if singleStep: steps = 1
@@ -156,14 +157,14 @@ class FreeViz:
 
         data = numpy.compress(validData, self.graph.noJitteringScaledData, axis=1)
         data = numpy.transpose(data).tolist()
-        classes = [int(x.getclass()) for i,x in enumerate(self.graph.rawdata) if validData[i]]
-        
+        classes = [int(x.getclass()) for i,x in enumerate(self.graph.rawData) if validData[i]]
+
         while 1:
             self.graph.anchorData = optimizer(data, classes, self.graph.anchorData, attrIndices,
                                               attractG = self.attractG, repelG = self.repelG, law = self.law,
                                               sigma2 = self.forceSigma, dynamicBalancing = self.forceBalancing, steps = steps,
                                               normalizeExamples = self.graph.normalizeExamples,
-                                              contClass = self.graph.rawdata.domain.classVar.varType == orange.VarTypes.Continuous,
+                                              contClass = self.graph.rawData.domain.classVar.varType == orange.VarTypes.Continuous,
                                               mirrorSymmetry = self.mirrorSymmetry)
             neededSteps += steps
 
@@ -181,10 +182,10 @@ class FreeViz:
         return neededSteps
 
     def optimize_LDA_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
-        dataSize = len(self.graph.rawdata)
+        dataSize = len(self.graph.rawData)
         if dataSize == 0:
             return anchorData, (XAnchors, YAnchors)
-        classCount = len(self.graph.rawdata.domain.classVar.values)
+        classCount = len(self.graph.rawData.domain.classVar.values)
         validData = self.graph.getValidList(attrIndices)
         selectedData = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
 
@@ -281,7 +282,7 @@ class FreeViz:
 
 
     def optimize_SLOW_Separation(self, attrIndices, anchorData, XAnchors = None, YAnchors = None):
-        dataSize = len(self.graph.rawdata)
+        dataSize = len(self.graph.rawData)
         if dataSize == 0:
             return anchorData, (XAnchors, YAnchors)
         validData = self.graph.getValidList(attrIndices)
@@ -343,7 +344,7 @@ class FreeViz:
 
 ##    def recomputeEnergy(self, newEnergy = None):
 ##        if not newEnergy:
-##            classes = [int(x.getclass()) for x in self.graph.rawdata]
+##            classes = [int(x.getclass()) for x in self.graph.rawData]
 ##            ai = self.graph.attributeNameIndex
 ##            attrIndices = [ai[label] for label in self.parentWidget.getShownAttributeList()]
 ##            newEnergy = orangeom.computeEnergy(numpy.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
@@ -351,7 +352,7 @@ class FreeViz:
 ##            self.energyLabel.setText("Energy: %.3f" % newEnergy)
 ##            self.energyLabel.repaint()
 
-    
+
     # ###############################################################
     # S2N HEURISTIC FUNCTIONS
     # ###############################################################
@@ -360,13 +361,13 @@ class FreeViz:
     # if not then just use current parameters to place anchors
     def s2nMixAnchorsAutoSet(self):
         # check if we have data and a discrete class
-        if not self.rawdata or len(self.rawdata) == 0 or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+        if not self.rawData or len(self.rawData) == 0 or not self.rawData.domain.classVar or self.rawData.domain.classVar.varType != orange.VarTypes.Discrete:
             return
 
         if self.__class__ != FreeViz:
             import qt
 
-        if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+        if not self.rawData.domain.classVar or not self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
             if self.__class__ != FreeViz:
                 qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', qt.QMessageBox.Ok)
             else:
@@ -379,16 +380,16 @@ class FreeViz:
         else:
             vizrank = orngVizRank.VizRank(orngVizRank.LINEAR_PROJECTION)
         vizrank.qualityMeasure = orngVizRank.AVERAGE_CORRECT
-        vizrank.setData(self.rawdata)
+        vizrank.setData(self.rawData)
 
         if self.autoSetParameters:
             results = {}
             self.s2nSpread = 0
-            permutations = orngVisFuncts.generateDifferentPermutations(range(len(self.rawdata.domain.classVar.values)))
+            permutations = orngVisFuncts.generateDifferentPermutations(range(len(self.rawData.domain.classVar.values)))
             for perm in permutations:
                 self.classPermutationList = perm
                 for val in self.attrsNum:
-                    if self.attrsNum[self.attrsNum.index(val)-1] > len(self.rawdata.domain.attributes): continue    # allow the computations once
+                    if self.attrsNum[self.attrsNum.index(val)-1] > len(self.rawData.domain.attributes): continue    # allow the computations once
                     self.s2nPlaceAttributes = val
                     if not self.s2nMixAnchors(0):
                         return
@@ -433,18 +434,18 @@ class FreeViz:
     # place a subset of attributes around the circle. this subset must contain "good" attributes for each of the class values
     def s2nMixAnchors(self, setAttributeListInRadviz = 1):
         # check if we have data and a discrete class
-        if not self.rawdata or len(self.rawdata) == 0 or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+        if not self.rawData or len(self.rawData) == 0 or not self.rawData.domain.classVar or self.rawData.domain.classVar.varType != orange.VarTypes.Discrete:
             return
 
         if self.__class__ != FreeViz:
             import qt
-            if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            if not self.rawData.domain.classVar or not self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
                 qt.QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', qt.QMessageBox.Ok)
                 return 0
 
         # compute the quality of attributes only once
         if self.s2nMixData == None:
-            rankedAttrs, rankedAttrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.rawdata, orngVisFuncts.S2NMeasureMix())
+            rankedAttrs, rankedAttrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.rawData, orngVisFuncts.S2NMeasureMix())
             self.s2nMixData = (rankedAttrs, rankedAttrsByClass)
             classCount = len(rankedAttrsByClass)
             attrs = rankedAttrs[:(self.s2nPlaceAttributes/classCount)*classCount]    # select appropriate number of attributes
@@ -475,7 +476,7 @@ class FreeViz:
 
         if self.__class__ != FreeViz:
             if setAttributeListInRadviz:
-                self.parentWidget.setShownAttributeList(self.rawdata, attrNames)
+                self.parentWidget.setShownAttributeList(self.rawData, attrNames)
             self.graph.updateData(attrNames)
             self.graph.repaint()
         return 1
@@ -490,18 +491,18 @@ class FreeViz:
 
         validData = self.graph.getValidList(attrIndices)
         if sum(validData) == 0: return None
-        
+
         dataMatrix = numpy.compress(validData, numpy.take(self.graph.noJitteringScaledData, attrIndices, axis = 0), axis = 1)
-        hasClass = self.graph.rawdata.domain.classVar != None
+        hasClass = self.graph.rawData.domain.classVar != None
         if hasClass:
-            classArray = numpy.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawdata.domain.classVar.name]])
+            classArray = numpy.compress(validData, self.graph.noJitteringScaledData[ai[self.graph.rawData.domain.classVar.name]])
 
         if percentDataUsed != 100:
-            indices = orange.MakeRandomIndices2(self.graph.rawdata, 1.0-(float(percentDataUsed)/100.0))
+            indices = orange.MakeRandomIndices2(self.graph.rawData, 1.0-(float(percentDataUsed)/100.0))
             dataMatrix = numpy.compress(indices, dataMatrix, axis = 1)
             if hasClass:
                 classArray = numpy.compress(indices, classArray)
-            
+
         #if sum(validData) <= len(attrIndices):
         #    self.setStatusBarText("More attributes than examples. Singular matrix. Exiting...")
         #    return
@@ -556,7 +557,7 @@ class FreeViz:
         B = numpy.zeros((Ncomp,Ncomp))
 
         E,F = X,Y
-        
+
         # main algorithm
         for i in range(Ncomp):
 
@@ -564,7 +565,7 @@ class FreeViz:
             w = normalize(numpy.dot(E.T,u))
             t = normalize(numpy.dot(E,w))
 
-            dif = t    
+            dif = t
             # iterations for loading vector t
             while numpy.linalg.norm(dif) > 10e-16:
                 c = normalize(numpy.dot(F.T,t))
@@ -578,7 +579,7 @@ class FreeViz:
             U[:,i] = u.T
             C[:,i] = c.T
             W[:,i] = w.T
-        
+
             b = numpy.dot(t.T,u)[0,0]
             B[i][i] = b
             p = numpy.dot(E.T,t)
@@ -591,7 +592,7 @@ class FreeViz:
         #YE = numpy.dot(numpy.dot(T,B),C.T)*numpy.std(Y, axis = 0) + YMean
         #Y = Y*numpy.std(Y, axis = 0)+ YMean
         #BPls = numpy.dot(numpy.dot(numpy.linalg.pinv(P.T),B),C.T)
-                   
+
         return W
 
     def findSPCAProjection(self, dataMatrix, classArray, SPCA = 1):
@@ -656,7 +657,7 @@ class FreeVizClassifier(orange.Classifier):
         graph = self.FreeViz.graph
         ai = graph.attributeNameIndex
         labels = [a[2] for a in graph.anchorData]
-        domain = orange.Domain(labels+[graph.rawdata.domain.classVar], graph.rawdata.domain)
+        domain = orange.Domain(labels+[graph.rawData.domain.classVar], graph.rawData.domain)
         indices = [ai[label] for label in labels]
         offsets = [graph.offsets[i] for i in indices]
         normalizers = [graph.normalizers[i] for i in indices]
@@ -664,7 +665,7 @@ class FreeVizClassifier(orange.Classifier):
 
         #self.FreeViz.graph.createProjectionAsNumericArray(indices, useAnchorData = 1)  # Janez: why would you call this function if you don't want its result???
         self.classifier = orange.P2NN(domain,
-                                      numpy.transpose(numpy.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawdata]])),
+                                      numpy.transpose(numpy.array([graph.unscaled_x_positions, graph.unscaled_y_positions, [float(ex.getclass()) for ex in graph.rawData]])),
                                       graph.anchorData, offsets, normalizers, averages, graph.normalizeExamples, law=self.FreeViz.law)
 
     # for a given example run argumentation and find out to which class it most often fall

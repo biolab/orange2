@@ -259,7 +259,7 @@ class OWScatterPlot(OWWidget):
             return
 
         # check if the new data set is the same as the old one
-        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum():
+        if self.graph.rawSubsetData != None and data != None and self.graph.rawSubsetData.checksum() == data.checksum():
             return
 
         try:
@@ -271,7 +271,7 @@ class OWScatterPlot(OWWidget):
 
         self.vizrank.setSubsetData(subsetData)
 ##        self.clusterDlg.setSubsetData(data)
-#        qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawdata - as in cluster argumentation
+#        qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawData - as in cluster argumentation
 
     # this is called by OWBaseWidget after setData and setSubsetData are called. this way the graph is updated only once
     def handleNewSignals(self):

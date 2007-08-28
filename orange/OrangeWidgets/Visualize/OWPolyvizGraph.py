@@ -136,10 +136,10 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             self.updateLayout()
             return
 
-        dataSize = len(self.rawdata)
-        hasClass = self.rawdata and self.rawdata.domain.classVar != None
-        hasDiscreteClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete
-        hasContinuousClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous
+        dataSize = len(self.rawData)
+        hasClass = self.rawData and self.rawData.domain.classVar != None
+        hasDiscreteClass = hasClass and self.rawData.domain.classVar.varType == orange.VarTypes.Discrete
+        hasContinuousClass = hasClass and self.rawData.domain.classVar.varType == orange.VarTypes.Continuous
 
         if hasClass: useDifferentColors = self.useDifferentColors   # don't use colors if we don't have a class
         else:        useDifferentColors = 0
@@ -151,11 +151,11 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         classNameIndex = -1
         if hasClass:
-            classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
+            classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
 
         if hasDiscreteClass:        # if we have a discrete class
-            valLen = len(self.rawdata.domain.classVar.values)
-            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices
+            valLen = len(self.rawData.domain.classVar.values)
+            classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)    # we create a hash table of variable values and their indices
         else:
             valLen = 1
 
@@ -164,7 +164,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if self.useDifferentSymbols and hasDiscreteClass and valLen < len(self.curveSymbols):
             useDifferentSymbols = 1
 
-        dataSize = len(self.rawdata)
+        dataSize = len(self.rawData)
 
         # ##########
         # draw text at lines
@@ -172,9 +172,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             # print attribute name
             self.addMarker(labels[i], 0.6*(self.XAnchor[i]+ self.XAnchor[(i+1)%length]), 0.6*(self.YAnchor[i]+ self.YAnchor[(i+1)%length]), Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
 
-            if self.rawdata.domain[labels[i]].varType == orange.VarTypes.Discrete:
+            if self.rawData.domain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values
-                values = getVariableValuesSorted(self.rawdata, labels[i])
+                values = getVariableValuesSorted(self.rawData, labels[i])
                 count = len(values)
                 k = 1.08
                 for j in range(count):
@@ -185,7 +185,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 if self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                     names = ["%.1f" % (0.0), "%.1f" % (1.0)]
                 elif self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                    names = ["%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.rawdata.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
+                    names = ["%%.%df" % (self.rawData.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][0]), "%%.%df" % (self.rawData.domain[labels[i]].numberOfDecimals) % (self.attrLocalValues[labels[i]][1])]
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
 
@@ -222,18 +222,18 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
         if self.showKNNModel == 1 and hasClass:
             # variables and domain for the table
-            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
             table = orange.ExampleTable(domain)
 
             # build an example table
             for i in range(dataSize):
                 if validData[i]:
-                    table.append(orange.Example(domain, [x_positions[i], y_positions[i], self.rawdata[i].getclass()]))
+                    table.append(orange.Example(domain, [x_positions[i], y_positions[i], self.rawData[i].getclass()]))
 
             kNNValues, probabilities = self.kNNOptimization.kNNClassifyData(table)
             accuracy = copy(kNNValues)
             measure = self.kNNOptimization.getQualityMeasure()
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            if self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
                 if ((measure == CLASS_ACCURACY or measure == AVERAGE_CORRECT) and self.showCorrect) or (measure == BRIER_SCORE and not self.showCorrect):
                     kNNValues = [1.0 - val for val in kNNValues]
             else:
@@ -279,7 +279,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             for i in range(dataSize):
                 if not validData[i]: continue
                 if hasClass:
-                    ind = classValueIndices[self.rawdata[i].getclass().value]
+                    ind = classValueIndices[self.rawData[i].getclass().value]
                     if self.useDifferentSymbols:
                         symbol = self.curveSymbols[ind]
                     if useDifferentColors:
@@ -311,9 +311,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if self.showLegend and hasClass:
             # show legend for discrete class
             if hasDiscreteClass:
-                self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
+                self.addMarker(self.rawData.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
 
-                classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                classVariableValues = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
                 for index in range(len(classVariableValues)):
                     if useDifferentColors: color = self.discPalette[index]
                     else:                       color = QColor(0,0,0)
@@ -338,9 +338,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     self.setCurveData(newCurveKey, xs, [y,y, y+height, y+height])
 
                 # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
-                self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                [minVal, maxVal] = self.attrValues[self.rawData.domain.classVar.name]
+                self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
 
     def addAnchorLine(self, x, y, xAnchors, yAnchors, color, index, count):
@@ -416,7 +416,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][self.shownAttributes[i]]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker(str(self.rawData[index][self.shownAttributes[i]]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                         marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[self.shownAttributes[i]]][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
@@ -428,7 +428,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 if self.tooltipKind == VISIBLE_ATTRIBUTES: labels = self.shownAttributes
                 else:                                      labels = self.attributeNames
 
-                text = self.getExampleTooltipText(self.rawdata, self.rawdata[index], labels)
+                text = self.getExampleTooltipText(self.rawData, self.rawData[index], labels)
                 self.showTip(self.transform(QwtPlot.xBottom, x_i), self.transform(QwtPlot.yLeft, y_i), text)
 
         OWGraph.onMouseMoved(self, e)
@@ -451,21 +451,21 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
     # ####################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, addProjectedPositions = 0):
-        if not self.rawdata: return (None, None)
-        if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawdata)       # if no selections exist
+        if not self.rawData: return (None, None)
+        if addProjectedPositions == 0 and not self.selectionCurveKeyList: return (None, self.rawData)       # if no selections exist
 
         xAttr = orange.FloatVariable("X Positions")
         yAttr = orange.FloatVariable("Y Positions")
         if addProjectedPositions == 1:
-            domain=orange.Domain([xAttr,yAttr] + [v for v in self.rawdata.domain.variables])
+            domain=orange.Domain([xAttr,yAttr] + [v for v in self.rawData.domain.variables])
         elif addProjectedPositions == 2:
-            domain=orange.Domain(self.rawdata.domain)
+            domain=orange.Domain(self.rawData.domain)
             domain.addmeta(orange.newmetaid(), xAttr)
             domain.addmeta(orange.newmetaid(), yAttr)
         else:
-            domain = orange.Domain(self.rawdata.domain)
+            domain = orange.Domain(self.rawData.domain)
 
-        domain.addmetas(self.rawdata.domain.getmetas())
+        domain.addmetas(self.rawData.domain.getmetas())
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         validData = self.getValidList(attrIndices)
@@ -477,8 +477,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
 
         if addProjectedPositions:
-            selected = orange.ExampleTable(domain, self.rawdata.selectref(selIndices))
-            unselected = orange.ExampleTable(domain, self.rawdata.selectref(unselIndices))
+            selected = orange.ExampleTable(domain, self.rawData.selectref(selIndices))
+            unselected = orange.ExampleTable(domain, self.rawData.selectref(unselIndices))
             selIndex = 0; unselIndex = 0
             for i in range(len(selIndices)):
                 if selIndices[i]:
@@ -490,8 +490,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     unselected[unselIndex][yAttr] = array[i][1]
                     unselIndex += 1
         else:
-            selected = self.rawdata.selectref(selIndices)
-            unselected = self.rawdata.selectref(unselIndices)
+            selected = self.rawData.selectref(selIndices)
+            unselected = self.rawData.selectref(unselIndices)
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
@@ -499,7 +499,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
 
     def getSelectionsAsIndices(self, attrList, validData = None):
-        if not self.rawdata: return [], []
+        if not self.rawData: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         if validData == None:
@@ -552,13 +552,13 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     #def getOptimalSeparation(self, attrListLength, attrReverseDict, projections, addResultFunct):
     def getOptimalSeparation(self, attributes, minLength, maxLength, attrReverseDict, addResultFunct):
-        dataSize = len(self.rawdata)
+        dataSize = len(self.rawData)
         self.triedPossibilities = 0
         startTime = time.time()
         self.polyvizWidget.progressBarInit()
 
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
+        classListFull = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
         allAttrReverse = {}    # dictionary where keys are the number of attributes and the values are dictionaries with all reverse orders for this number of attributes
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
 
@@ -632,7 +632,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         # variables and domain for the table
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
+        domain = orange.Domain([xVar, yVar, self.rawData.domain.classVar])
         self.triedPossibilities = 0
 
         # replace attribute names with indices in domain - faster searching
@@ -644,9 +644,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                 d[self.attributeNameIndex[key]] = attrReverseDict[key]
             attrReverseDict = d
 
-        numClasses = len(self.rawdata.domain.classVar.values)
+        numClasses = len(self.rawData.domain.classVar.values)
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
-        classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
+        classListFull = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
         allAttrReverse = {}    # dictionary where keys are the number of attributes and the values are dictionaries with all reverse orders for this number of attributes
         startTime = time.time()
 
@@ -729,8 +729,8 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
 
 
     def optimizeGivenProjection(self, projection, attrReverseList, accuracy, attributes, addResultFunct, restartWhenImproved = 0, maxProjectionLen = -1):
-        dataSize = len(self.rawdata)
-        classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
+        dataSize = len(self.rawData)
+        classIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
         self.triedPossibilities = 0
 
         # replace attribute names with indices in domain - faster searching
@@ -739,9 +739,9 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         projection = [self.attributeNameIndex[name] for name in projection]
 
         # variables and domain for the table
-        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
-        classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
+        classListFull = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
         allAttrReverse = {}
 
         optimizedProjection = 1
