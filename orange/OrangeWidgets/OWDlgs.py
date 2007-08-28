@@ -62,8 +62,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         (fil,ext) = os.path.splitext(filename)
         ext = ext[1:].upper()
         if ext == "" or ext not in ("BMP", "GIF", "PNG") :
-        	ext = "PNG"  	# if no format was specified, we choose png
-        	filename = filename + ".png"
+            ext = "PNG"      # if no format was specified, we choose png
+            filename = filename + ".png"
 
         if not size:
             size = self.getSize()
@@ -95,7 +95,10 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                 sortedList.sort()   # sort items by z value
 
                 for (z, item) in sortedList:
-                    if not item.visible(): continue
+                    # a little compatibility for QT 3.3 (on Mac at least)
+                    if hasattr(item, "isVisible"):
+                        if not item.isVisible(): continue
+                    elif not item.visible(): continue
                     if item.__class__ in [QCanvasEllipse, QCanvasLine, QCanvasPolygon and QCanvasRectangle]:
                         penc   = self._getColorFromObject(item.pen())
                         brushc = self._getColorFromObject(item.brush())
@@ -183,7 +186,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             sortedList.sort()   # sort items by z value
 
             for (z, item) in sortedList:
-                if item.visible():
+                # a little compatibility for QT 3.3 (on Mac at least)
+                if (hasattr(item, "isVisible") and item.isVisible()) or (not hasattr(item, "isVisible") and item.visible()):
                     item.moveBy(-minx, -miny)
                     if isinstance(item, QCanvasText):
                         rect = item.boundingRect()
@@ -212,7 +216,9 @@ class OWChooseImageSizeDlg(OWBaseWidget):
     def getQCanvasBoundaries(self):
         minx,maxx,miny,maxy = 10000000,0,10000000,0
         for item in self.graph.allItems():
-            if not item.visible(): continue
+            if hasattr(item, "isVisible"):
+                if not item.isVisible(): continue
+            elif not item.visible(): continue
             br = item.boundingRect()
             minx = min(br.left(), minx)
             maxx = max(maxx, br.right())

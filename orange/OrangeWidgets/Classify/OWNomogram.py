@@ -756,13 +756,15 @@ class OWNomogram(OWWidget):
         # draw header items
         items_header = self.header.canvas().allItems()
         for item in items_header:
-            if item.visible():
-                item.setCanvas(canvas_glued)
+            # a little compatibility for QT 3.3 (on Mac at least)
+            if hasattr(item, "isVisible"):
+                if item.isVisible(): item.setCanvas(canvas_glued)
+            elif item.visible(): item.setCanvas(canvas_glued)
 
         # draw graph items
         items_graph = self.graph.canvas().allItems()
         for item in items_graph:
-            if item.visible():
+            if (hasattr(item, "isVisible") and item.isVisible()) or (not hasattr(item, "isVisible") and item.visible()):
                 item.setCanvas(canvas_glued)
                 if isinstance(item, QCanvasLine):
                     item.setPoints(item.startPoint().x(), item.startPoint().y()+self.header.size().height(), item.endPoint().x(), item.endPoint().y()+self.header.size().height())
@@ -772,7 +774,7 @@ class OWNomogram(OWWidget):
         # draw graph items
         items_footer = self.footer.canvas().allItems()
         for item in items_footer:
-            if item.visible():
+            if (hasattr(item, "isVisible") and item.isVisible()) or (not hasattr(item, "isVisible") and item.visible()):
                 item.setCanvas(canvas_glued)
                 item.setY(item.y()+self.header.size().height()+self.graph.canvas().gbottom+EMPTY_SPACE)
 

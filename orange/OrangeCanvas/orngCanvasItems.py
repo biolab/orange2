@@ -228,7 +228,11 @@ class CanvasWidgetState(QCanvasRectangle):
 
         count = int(self.infoTexts != []) + int(self.warningTexts != []) + int(self.errorTexts != [])
         startX = self.parent.xPos + (self.parent.width()/2) - (count*self.widgetIcons["Info"].width()/2)
-        y = self.parent.yPos - 25 - self.parent.progressBarRect.visible() * 20
+        # a little compatibility for QT 3.3 (on Mac at least)
+        if hasattr(self.parent.progressBarRect, "isVisible"):
+            y = self.parent.yPos - 25 - self.parent.progressBarRect.isVisible() * 20
+        else:
+            y = self.parent.yPos - 25 - self.parent.progressBarRect.visible() * 20
         self.move(startX, y)
 
         if count == 0:
