@@ -1002,7 +1002,7 @@ class VizRank:
                             self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in testProj], projIndex)
                             self.insertTempProjection(projections, acc, testProj)
                             tempDict[tuple(testProj)] = 1
-                            if max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
+                            if min(acc, accuracy) != 0 and max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
 
                         self.optimizedProjectionsCount += 1
                         if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
@@ -1138,7 +1138,7 @@ class VizRank:
                             self.insertTempProjection(projections, acc, attrList)
                             self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], projIndex , generalDict)
                             if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                        if acc/accuracy > 1.01:  significantImprovement = 1
+                        if accuracy != 0 and acc/accuracy > 1.01:  significantImprovement = 1
 
         else:
             print "unknown visualization method"

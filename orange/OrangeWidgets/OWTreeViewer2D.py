@@ -414,7 +414,9 @@ class TreeCanvas(QCanvas):
     def fixPos(self, node=None, x=10, y=10):
         self.gx=x
         self.gy=y
-        if not node: node=self.nodeList[0]
+        if not node:
+            if self.nodeList == []: return        # don't know if this is ok
+            node=self.nodeList[0]
         if not x or not y: x, y= self.HSpacing, self.VSpacing
         self._fixPos(node,x,y)
         self.resize(self.gx+ExpectedBubbleWidth, self.gy+ExpectedBubbleHeight)
@@ -608,7 +610,7 @@ class OWTreeViewer2D(OWWidget):
         OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate text to fit margins',
                        tooltip='Truncate any text to fit the node width',
                        callback=self.toggleTruncateText)
-        
+
 
         OWGUI.hSlider(GeneralTab, self, 'Zoom', box='Zoom', minValue=1, maxValue=10, step=1, callback=self.toggleZoomSlider, ticks=1)
         OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical spacing', minValue=1, maxValue=10, step=1, callback=self.toggleVSpacing, ticks=1)
@@ -764,6 +766,7 @@ class OWTreeViewer2D(OWWidget):
         return node
 
     def walkupdate(self, node, level=0):
+        if not node: return
         if self.MaxTreeDepthB and self.MaxTreeDepth<=level+1:
             node.setOpen(False)
             return

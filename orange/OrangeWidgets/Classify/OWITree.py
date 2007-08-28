@@ -33,6 +33,7 @@ class OWITree(OWClassificationTreeViewer):
         self.data = None
         self.treeLearner = None
         self.tree = None
+        self.learner = None
 
         OWGUI.separator(self.space, height=40)
         box = OWGUI.widgetBox(self.space, "Split selection")

@@ -120,6 +120,7 @@ class OWClassificationTreeViewer(OWWidget):
 
         def walkupdate(listviewitem):
             node = self.nodeClassDict[listviewitem]
+            if not node: return
             ncl = node.nodeClassifier
             dist = node.distribution
             a = dist.abs/100
@@ -152,6 +153,7 @@ class OWClassificationTreeViewer(OWWidget):
                 child = child.nextSibling()
 
         def walkcreate(node, parent):
+            if not node: return
             if node.branchSelector:
                 for i in range(len(node.branches)):
                     if node.branches[i]:
