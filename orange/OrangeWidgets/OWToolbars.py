@@ -54,8 +54,9 @@ class ZoomSelectToolbar(QHButtonGroup):
                 if f[1] == "buttonSendSelections":
                     button.setEnabled(not autoSend)
 
-        self.action(0)
         self.widget = widget    # we set widget here so that it doesn't affect the value of self.widget.toolbarSelection
+        self.action(0)
+        
 
     def action(self, b):
         f = self.functions[b]
