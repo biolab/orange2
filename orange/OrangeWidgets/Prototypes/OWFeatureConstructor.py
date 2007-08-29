@@ -177,7 +177,11 @@ class OWFeatureConstructor(OWWidget):
         
         
     def insertIntoExpression(self, what):
-        if self.leExpression.hasMarkedText():
+        # a little compatibility for QT 3.3 (on Mac at least)
+        if hasattr(self.leExpression, "hasSelectedText"):
+            if self.leExpression.hasSelectedText():
+                 self.leExpression.delChar()
+        elif self.leExpression.hasMarkedText():
             self.leExpression.delChar()
         
         cp = self.leExpression.cursorPosition()
@@ -201,12 +205,20 @@ class OWFeatureConstructor(OWWidget):
             func = str(self.cbFuncs.text(self.selectedFunc))
             if func in ["atan2", "fmod", "ldexp", "log", "pow"]:
                 self.insertIntoExpression(func + "(,)")
-                self.leExpression.cursorLeft(False, 2)
+                # a little compatibility for QT 3.3 (on Mac at least)
+                if hasattr(self.leExpression, "cursorBackward"):
+                    self.leExpression.cursorBackward(False, 2)
+                else:
+                    self.leExpression.cursorLeft(False, 2)
             elif func == "pi":
                 self.insertIntoExpression(func)
             else:
                 self.insertIntoExpression(func + "()")
-                self.leExpression.cursorLeft(False)
+                # a little compatibility for QT 3.3 (on Mac at least)
+                if hasattr(self.leExpression, "cursorBackward"):
+                    self.leExpression.cursorBackward(False)
+                else:
+                    self.leExpression.cursorLeft(False)
             
             self.selectedFunc = 0
         

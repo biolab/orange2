@@ -733,7 +733,11 @@ class collapsableWidgetBox(QVGroupBox):
         if os.path.exists(icon1) and os.path.exists(icon2):
             self.pixmaps = [QPixmap(icon1), QPixmap(icon2)]
         else:
-            self.setBackgroundColor(Qt.black)
+            # a little compatibility for QT 3.3 (on Mac at least)
+            if hasattr(self, "setPaletteBackgroundColor"):
+                self.setPaletteBackgroundColor(Qt.black)
+            else:
+                self.setBackgroundColor(Qt.black)
         #self.updateControls()      # not needed yet, since no widgets are in it
 
 
@@ -799,7 +803,11 @@ class widgetHider(QWidget):
             self.pixmaps = [QPixmap(icon1), QPixmap(icon2)]
             w = self.pixmaps[0].width(); h = self.pixmaps[0].height()+1
         else:
-            self.setBackgroundColor(Qt.black)
+            # a little compatibility for QT 3.3 (on Mac at least)
+            if hasattr(self, "setPaletteBackgroundColor"):
+                self.setPaletteBackgroundColor(Qt.black)
+            else:
+                self.setBackgroundColor(Qt.black)
             w, h = size
         self.setMaximumWidth(w)
         self.setMaximumHeight(h)
