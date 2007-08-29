@@ -162,8 +162,9 @@ def spin(widget, master, value, min, max, step=1,
         master.connect(wa.editor(), SIGNAL("textChanged(const QString &)"), wa.onChange)
         master.connect(wa.editor(), SIGNAL("returnPressed()"), wa.onEnter)
         master.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
-        master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
-        master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+        if hasattr(wa, "upButton"):
+            master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+            master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
 
     if posttext:
         QLabel(posttext, bi)
