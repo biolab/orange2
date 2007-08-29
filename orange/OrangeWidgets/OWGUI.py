@@ -386,6 +386,7 @@ def listBox(widget, master, value, labels, box = None, tooltip = None, callback 
     bg = box and QHButtonGroup(box, widget) or widget
 
     lb = QListBox(bg)
+    lb.box = bg
     lb.setSelectionMode(selectionMode)
 
     if addSpace:
