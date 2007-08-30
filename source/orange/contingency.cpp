@@ -260,7 +260,13 @@ PDistribution TContingency::p(const TValue &val) const
 PDistribution TContingency::p(const float &f) const
 {
   NEEDS(TValue::FLOATVAR);
-  TDistributionMap::const_iterator i1=continuous->lower_bound(f);
+  TDistributionMap::const_iterator i1;
+  
+  i1 = continuous->end();
+  if (f > (*--i1).first)
+    return CLONE(TDistribution, (*i1).second);
+    
+  i1=continuous->lower_bound(f);
   if (i1==continuous->end())
     if (continuous->size()==0)
       raiseError("empty contingency");
