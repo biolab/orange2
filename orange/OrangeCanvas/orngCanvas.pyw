@@ -310,7 +310,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
             self.menuHelp.insertSeparator()
-            self.menuHelp.insertItem("Check for updates", self.menuCheckForUpdates)
+            self.menuHelp.insertItem("Check for Updates...", self.menuCheckForUpdates)
 
         #self.menuHelp.insertSeparator()
         #self.menuHelp.insertItem("About Orange Canvas", self.menuHelpAbout)
