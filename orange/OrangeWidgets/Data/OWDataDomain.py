@@ -262,6 +262,7 @@ class OWDataDomain(OWWidget):
             self.inputAttributes = filter(lambda x:not self.usedAttributes.has_key(x), self.allAttributes)
         else:
             self.inputAttributes = []
+        self.updateInterfaceState()
 
     def removeFromUsed(self, attributes):
         for attr in attributes:
