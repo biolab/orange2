@@ -817,7 +817,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
                 examples = self.mosaicWidget.data
                 selectedItem = self.subsetTree.selectedItem()
                 if selectedItem and selectedItem.parent() != None:
-                    res = QMessageBox.information(self, "Tree Building", "Currently you are visualizing only a subset of examples. Do you want to build the tree\nonly for these examples or for all examples?", "Only for These", "For All Examples", None, 0, 1)
+                    res = QMessageBox.information(self, "Tree Building", "Currently you are visualizing only a subset of examples. Do you want to build the tree\nonly for these examples or for all examples?", "Only for These", "For All Examples", "", 0, 1)
                     if res == 1:
                         examples = self.wholeDataSet
                         parent = self.subsetTree
