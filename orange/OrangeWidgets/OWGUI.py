@@ -961,7 +961,7 @@ class ControlledCallback:
         if not hasattr(widget, "callbackDeposit"):
             widget.callbackDeposit = []
         widget.callbackDeposit.append(self)
-        self.disabled = False
+        self.disabled = 0
 
     def acyclic_setattr(self, value):
         if self.disabled:
@@ -978,10 +978,10 @@ class ControlledCallback:
         opposite = getattr(self, "opposite", None)
         if opposite:
             try:
-                opposite.disabled = True
+                opposite.disabled += 1
                 setattr(self.widget, self.attribute, value)
             finally:
-                opposite.disabled = False
+                opposite.disabled -= 1
         else:
             setattr(self.widget, self.attribute, value)
 
@@ -1029,7 +1029,7 @@ class SetLabelCallback:
         self.format = format
         self.f = f
         widget.callbackDeposit.append(self)
-        self.disabled = False
+        self.disabled = 0
 
     def __call__(self, value):
         if not self.disabled and value is not None:
@@ -1046,7 +1046,7 @@ class FunctionCallback:
         self.id = id
         self.getwidget = getwidget
         master.callbackDeposit.append(self)
-        self.disabled = False
+        self.disabled = 0
 
     def __call__(self, *value):
         if not self.disabled and value!=None:
@@ -1066,7 +1066,7 @@ class ListBoxCallback:
     def __init__(self, control, widget, attribute):
         self.control = control
         self.widget = widget
-        self.disabled = False
+        self.disabled = 0
 
     def __call__(self): # triggered by selectionChange()
         if not self.disabled:
@@ -1087,7 +1087,7 @@ class ListBoxCallback:
 class ControlledCallFront:
     def __init__(self, control):
         self.control = control
-        self.disabled = False
+        self.disabled = 0
 
     def __call__(self, *args):
         if not self.disabled:
@@ -1095,11 +1095,11 @@ class ControlledCallFront:
             if opposite:
                 try:
                     for op in opposite:
-                        op.disabled = True
+                        op.disabled += 1
                     self.action(*args)
                 finally:
                     for op in opposite:
-                        op.disabled = False
+                        op.disabled -= 1
             else:
                 self.action(*args)
 
@@ -1180,7 +1180,7 @@ class CallFront_radioButtons(ControlledCallFront):
 class CallFront_ListBox(ControlledCallFront):
     def action(self, value):
         if value is not None:
-            if not type(value) <= ControlledList:
+            if not isinstance(value, ControlledList):
                 setattr(self.control.ogMaster, self.control.ogValue, ControlledList(value, self.control))
             for i in range(self.control.count()):
                 self.control.setSelected(i, 0)
