@@ -125,7 +125,9 @@ class OWConfusionMatrix(OWWidget):
         self.learnerNames = res.classifierNames[:]
 
         # This also triggers a callback (learnerChanged)
+        # This USED TO trigger a callback! Not any more, though.
         self.selectedLearner = [self.selectedLearner[0] < res.numberOfLearners and self.selectedLearner[0]]
+        self.learnerChanged()
 
         self.table.clearSelection()
         # if the above doesn't call sendIf, you should call it here
