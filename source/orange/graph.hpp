@@ -78,6 +78,7 @@ public:
 
 	int findPath(int &u, int &v, int level, int &maxLevel, vector<int> &path);
 	vector<int> getShortestPaths(int &u, int &v);
+	set<int> getConnectedComponent(int &u);
 	int getDiameter();
 };
 

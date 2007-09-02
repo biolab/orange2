@@ -4369,7 +4369,55 @@ PyObject *Graph_addCluster(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 	PyCATCH
 }
 
-PyObject *Graph_getDegreeDistribution(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "None -> (distribution)")
+bool lessLength (const set<int>& s1, const set<int>& s2)
+{
+	return s1.size() > s2.size();
+}
+
+PyObject *Graph_getConnectedComponents(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "None -> list of [nodes]")
+{
+	PyTRY
+		CAST_TO(TGraph, graph);
+
+		int node = 0;
+		vector<set<int> > components;
+		set<int> all;
+
+		while (node < graph->nVertices)
+		{
+			set<int> component = graph->getConnectedComponent(node);
+			components.push_back(component);
+			all.insert(component.begin(), component.end());
+
+			while(node < graph->nVertices)
+			{
+				node++;
+				if (all.find(node) == all.end())
+					break;
+			}
+		}
+		sort(components.begin(), components.end(), lessLength);
+
+		PyObject* components_list = PyList_New(0);
+
+		ITERATE(vector<set<int> >, si, components) {
+			PyObject* component_list = PyList_New(0);
+			
+			ITERATE(set<int>, ni, *si) {
+				PyObject *nel = Py_BuildValue("i", *ni);
+				PyList_Append(component_list, nel);
+				Py_DECREF(nel);
+			}
+
+			PyList_Append(components_list, component_list);
+			Py_DECREF(component_list);
+		}
+
+		return components_list;
+	PyCATCH
+}
+
+PyObject *Graph_getDegreeDistribution(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(distribution)")
 {
 	PyTRY
 		CAST_TO(TGraph, graph);
@@ -4396,7 +4444,7 @@ PyObject *Graph_getDegreeDistribution(PyObject *self, PyObject *args, PyObject *
 	PyCATCH
 }
 
-PyObject *Graph_getDegrees(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "None -> (degrees)")
+PyObject *Graph_getDegrees(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "degrees")
 {
 	PyTRY
 		CAST_TO(TGraph, graph);
@@ -4429,7 +4477,7 @@ PyObject *Graph_getDegrees(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 	PyCATCH
 }
 
-PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertices) -> (subgraph)")
+PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertices) -> list of [v1, v2, ..., vn]")
 {
 	PyTRY
 		CAST_TO(TGraph, graph);

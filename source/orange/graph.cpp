@@ -103,6 +103,36 @@ int TGraph::findPath(int &u, int &v, int level, int &maxLevel, vector<int> &path
 	return 0;
 }
 
+set<int> TGraph::getConnectedComponent(int &u)
+{
+	set<int> visited;
+	vector<int> toVisit;
+
+	vector<int> neighbours;
+	getNeighboursFrom(u, neighbours);
+	
+	toVisit.insert(toVisit.begin(), neighbours.begin(), neighbours.end());
+	visited.insert(u);
+	visited.insert(neighbours.begin(), neighbours.end());
+
+	while (toVisit.size() > 0)
+	{
+		int node = toVisit.back();
+		toVisit.pop_back();
+
+		getNeighboursFrom(node, neighbours);
+
+		vector<int> neighTemp;
+		insert_iterator<vector<int> > neigh_it(neighTemp, neighTemp.begin());
+		set_difference(neighbours.begin(), neighbours.end(), visited.begin(), visited.end(), neigh_it);
+
+		toVisit.insert(toVisit.begin(), neighTemp.begin(), neighTemp.end());
+		visited.insert(neighTemp.begin(), neighTemp.end());
+	}
+
+	return visited;
+}
+
 int TGraph::getDiameter()
 {
 	int i;
