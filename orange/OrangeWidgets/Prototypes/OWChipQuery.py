@@ -9,6 +9,7 @@
 from OWWidget import *
 import urllib
 import OWGUI
+import statc
 
 class OWChipQuery(OWWidget):
     settingsList=["serverURL", "biologicalSample", "timePoint", "treatment", "groupBy", "hideRefChannel"]
@@ -21,16 +22,20 @@ class OWChipQuery(OWWidget):
 
         self.biologicalSample = self.timePoint = self.treatment = 0
         
-        self.allGroups = ["Biological sample", "Time point", "Chip set id", "Biological sample id", "Extraction id"]
-        self.groupAttrs = ["biologcal.sample", "extraction.developmental_time_point", "chip.chip_set_id", "biologcal.biological_sample_id", "extraction.extraction_id"]
+        self.allGroups = ["Biological sample", "Chip set id", "Biological sample id", "Extraction id", "Time point"]
+        self.groupAttrs = ["biologcal.sample", "chip.chip_set_id", "biologcal.biological_sample_id", "extraction.extraction_id", "extraction.developmental_time_point"]
         self.groupBy = []
         
         self.allNormalizations = []
         self.normalization = []
         self.hideRefChannel = 1
+        self.aggregation = 0
+        self.timeSeries = 1
         
         self.serverURL = "212.235.189.61/index.php"
         self.loadSettings()
+
+        self.potentialGroups = self.timeSeries and self.allGroups[:-1] or self.allGroups
 
         self.hierarchy = None
         self.groups = None
@@ -49,12 +54,14 @@ class OWChipQuery(OWWidget):
 #        OWGUI.label(box, self, "Selected chips: %(nChips)s")
         self.btRetrieveAnnotations = OWGUI.button(box, self, "Retrieve Annotations", callback = self.retrieveAnnotations)
                 
-        box = OWGUI.widgetBox(self.controlArea, "Normalization and grouping", addSpace = True)
-        self.cbNormalizations = OWGUI.comboBox(box, self, "normalization", label="Normalization")
+        box = OWGUI.widgetBox(self.controlArea, "Processing", addSpace = True)
+        self.cbNormalizations = OWGUI.comboBox(box, self, "normalization", label="Normalization", orientation = 0)
+        OWGUI.comboBox(box, self, "aggregation", items = ["Average", "Median", "None"], label="Aggregation", orientation = 0)
         OWGUI.separator(box)
 
         OWGUI.widgetLabel(box, "Grouping")
-        OWGUI.listBox(box, self, "groupBy", "allGroups",  selectionMode = QListBox.Multi, callback=[self.constructHierarchy, self.updateChipAnnotations])
+        OWGUI.listBox(box, self, "groupBy", "potentialGroups",  selectionMode = QListBox.Multi, callback=[self.constructHierarchy, self.updateChipAnnotations])
+        OWGUI.checkBox(box, self, "timeSeries", label = "Construct time series", callback = self.timeSeriesChanged)
         
         self.getPossibleAnnotations()
         self.queryChanged()
@@ -82,13 +89,24 @@ class OWChipQuery(OWWidget):
     
     def sendQuery(self, action, args):
         url = "http://%s?action=%s%s" % (self.serverURL, action, args and "&"+args or "")
-        print url
         for i in range(5):
             try:
                 r = urllib.urlopen(url)
                 return r
             except:
                 pass
+
+    def timeSeriesChanged(self):
+        g = list(self.groupBy)
+        self.potentialGroups = self.timeSeries and self.allGroups[:-1] or self.allGroups
+        m = max(g)
+        if m >= len(self.potentialGroups):
+            del g[g.index(m)]
+            self.groupBy = g
+            self.constructHierarchy()
+            self.updateChipAnnotations()
+        else:
+            self.groupBy = g
 
     def getPossibleAnnotations(self):
         for annotations, listbox, id in (("allBiologicalSamples", "lbfBiologicalSample", 6),
@@ -149,7 +167,6 @@ class OWChipQuery(OWWidget):
             pass
         
     def retrieveAnnotations(self):
-        print "retrieving"
         self.chipAnnotations = []
         self.allNormalizations = None
 
@@ -172,15 +189,13 @@ class OWChipQuery(OWWidget):
         if annotation:
             self.appendAnnotation(annotation)
 
-        print "retrieved"
-
         self.hierarchy = None
         self.updateChipAnnotations()
         
         self.cbNormalizations.clear()
-        return
         for n in self.allNormalizations:
             self.cbNormalizations.insertItem(n)
+        self.cbNormalizations.insertItem("raw data")
         self.normalization = 0
             
         
@@ -265,6 +280,8 @@ class OWChipQuery(OWWidget):
         
     def constructHierarchy(self):
         criteria = [self.groupAttrs[g] for g in self.groupBy]
+#        if self.timeSeries:
+#            criteria.append(self.groupAttrs["Time point"])
         chipIdxs = range(len(self.chipAnnotations))
         if not criteria:
             self.hierarchy = chipIdxs
@@ -275,18 +292,37 @@ class OWChipQuery(OWWidget):
             
         
     def getData(self):
-        r = self.sendQuery("get_raw_chip", "id=%s" % self.chipId.strip())
-        if not r:
-            self.error("Cannot retrieve the data from the server")
-            self.send("Chip data", None)
-            return
-        outf = file("c:\\d\\cq.txt", "wt").write(r.read().replace("\tspot_id\t", "\tS#spot_id\t"))
-        try:
-            data = orange.ExampleTable("c:\\d\\cq.txt", noClass=True)
-        except:
-            self.error("Cannot read the data, possibly due to invalid format")
-            self.send("Chip data", None)
-            return
+        groups = self.groups
         
-        self.send("Chip data", data)
+        normalizationKey = self.allNormalizations[self.normalization]
+        if normalizationKey == "Raw data":
+            raise "Retrieving raw data is not implemented yet"
+        
+        normalizationKey = "normalizations_data_sets."+normalizationKey
+        normalizedIDs = [an[normalizationKey] for an in self.chipAnnotations]
+        
+        tables = []
+        domain = orange.Domain([orange.StringVariable("spot id"), orange.FloatVariable("intensity")], None)
+        
+        for g in self.groups:
+            r = self.sendQuery("get_normalized_chip", "ids=" + ",".join(normalizedIDs))
+            if not r:
+                self.error("Cannot retrieve the annotations from the server")
+                return
+
+            groupIDs = [str(normalizedIDs[i]) for i in g]
+            chips = {}
+            
+            r.readline()
+            for line in r:
+                gid, spotid, M, A, w = line.strip().split("\t")
+                if int(w):
+                    chips.setdefault(spotid, {}).setdefault(gid, []).append(float(M))
+                else:
+                    chips.setdefault(spotid, {})
+            
+            chips = list([spotid, not chips and "?" or statc.mean([statc.mean(chip) for chip in chips.values()])] for spotid, chips in chips.items())
+            tables.append(orange.ExampleTable(domain, chips))
+
+        self.send("Chip data", tables[0])
         self.error()
