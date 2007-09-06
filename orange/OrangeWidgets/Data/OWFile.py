@@ -216,7 +216,7 @@ class OWFile(OWSubFile):
         if not self.recentFiles:
             self.filecombo.addItem("(none)")
         else:
-            self.filecombo.insertItems(0, [os.path.split(file)[1] for file in self.recentFiles])
+            self.filecombo.addItems([os.path.split(file)[1] for file in self.recentFiles])
         self.filecombo.addItem("Browse documentation data sets...")
         #self.filecombo.adjustSize() #doesn't work properly :(
         #self.filecombo.updateGeometry()

@@ -3,7 +3,6 @@ from copy import copy
 import time
 from operator import add
 from math import *
-##from OWClusterOptimization import *
 from orngScaleLinProjData import *
 import orngVisFuncts
 import ColorPalette
@@ -33,13 +32,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
         self.triedPossibilities = 0 # how many possibilities did we already try
-        self.startTime = time.time()
         self.p = None
 
         self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurves = []
         self.tooltipMarkers   = []
-##        self.clusterOptimization = None
         self.widget = widget
 
         # moving anchors manually
@@ -58,8 +55,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.tooltipKind = 0        # index in ["Show line tooltips", "Show visible attributes", "Show all attributes"]
         self.tooltipValue = 0       # index in ["Tooltips show data values", "Tooltips show spring values"]
         self.scaleFactor = 1.0
-##        self.showClusters = 0
-##        self.clusterClosure = None
         self.showAttributeNames = 1
 
         self.showProbabilities = 0
@@ -75,9 +70,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
-    def setData(self, data):
+    def setData(self, data, subsetData = None, **args):
         OWGraph.setData(self, data)
-        orngScaleLinProjData.setData(self, data)
+        orngScaleLinProjData.setData(self, data, subsetData, **args)
         #self.anchorData = []
 
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
@@ -92,6 +87,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         #self.removeCurves()
         self.removeMarkers()
+        self.tooltipMarkers = []
 
         self.__dict__.update(args)
         if not labels: labels = [anchor[2] for anchor in self.anchorData]
@@ -104,10 +100,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             self.updateLayout()
             return
 
-        haveSubsetData = self.subsetData and self.rawdata and self.subsetData.domain.checksum() == self.rawdata.domain.checksum()
-        hasClass = self.rawdata and self.rawdata.domain.classVar != None
-        hasDiscreteClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete
-        hasContinuousClass = hasClass and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous
+        haveSubsetData = self.rawSubsetData != None
+        hasClass = self.rawData and self.rawData.domain.classVar != None
+        hasDiscreteClass = hasClass and self.rawData.domain.classVar.varType == orange.VarTypes.Discrete
+        hasContinuousClass = hasClass and self.rawData.domain.classVar.varType == orange.VarTypes.Continuous
 
         if setAnchors or (args.has_key("XAnchors") and args.has_key("YAnchors")):
             self.potentialsBmp = None
@@ -154,17 +150,17 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.updateLayout()
 
         if hasClass:
-            classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
+            classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
 
         if hasDiscreteClass:
-            valLen = len(self.rawdata.domain.classVar.values)
-            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices
+            valLen = len(self.rawData.domain.classVar.values)
+            classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)    # we create a hash table of variable values and their indices
         else:    # if we have a continuous class
             valLen = 0
             classValueIndices = None
 
         useDifferentSymbols = self.useDifferentSymbols and hasDiscreteClass and valLen < len(self.curveSymbols)
-        dataSize = len(self.rawdata)
+        dataSize = len(self.rawData)
         validData = self.getValidList(indices)
         transProjData = self.createProjectionAsNumericArray(indices, validData = validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0)
         if transProjData == None:
@@ -177,37 +173,14 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
         if self.showProbabilities and hasClass:
             # construct potentialsClassifier from unscaled positions
-            domain = orange.Domain([self.rawdata.domain[i].name for i in indices]+[self.rawdata.domain.classVar], self.rawdata.domain)
-##            domain = orange.Domain([a[2] for a in self.anchorData]+[self.rawdata.domain.classVar], self.rawdata.domain)
+            domain = orange.Domain([self.rawData.domain[i].name for i in indices]+[self.rawData.domain.classVar], self.rawData.domain)
+##            domain = orange.Domain([a[2] for a in self.anchorData]+[self.rawData.domain.classVar], self.rawData.domain)
             offsets = [self.offsets[i] for i in indices]
             normalizers = [self.normalizers[i] for i in indices]
             averages = [self.averages[i] for i in indices]
-            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawdata]])),
+            self.potentialsClassifier = orange.P2NN(domain, numpy.transpose(numpy.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawData]])),
                                                     self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=1)
 
-
-##        # do we have cluster closure information
-##        if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-##            data = self.createProjectionAsExampleTable(indices, validData = validData, normalize = self.normalizeExamples, scaleFactor = self.trueScaleFactor, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation, useAnchorData = 1)
-##            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
-##            for key in valueDict.keys():
-##                if not polygonVerticesDict.has_key(key): continue
-##                for (i,j) in closureDict[key]:
-##                    color = classValueIndices[graph.objects[i].getclass().value]
-##                    self.addCurve("", self.discPalette[color], self.discPalette[color], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
-##
-##            """
-##            self.removeMarkers()
-##            for i in range(graph.nVertices):
-##                if not validData[i]: continue
-##                mkey = self.insertMarker(str(i+1))
-##                self.marker(mkey).setXValue(float(data[i][0]))
-##                self.marker(mkey).setYValue(float(data[i][1]))
-##                self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
-##            """
-##
-##        elif self.clusterClosure: self.showClusterLines(indices, validData)
-##
         # ##############################################################
         # show model quality
         # ##############################################################
@@ -224,30 +197,30 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             if hasDiscreteClass:        classColors = self.discPalette
             elif hasContinuousClass:    classColors = self.contPalette
 
-            if len(insideData) != len(self.rawdata):
-                #print "Warning: The information that was supposed to be used for coloring of points is not of the same size as the original data. Numer of data examples: %d, number of color data: %d" % (len(self.rawdata), len(self.insideColors))
+            if len(insideData) != len(self.rawData):
+                #print "Warning: The information that was supposed to be used for coloring of points is not of the same size as the original data. Numer of data examples: %d, number of color data: %d" % (len(self.rawData), len(self.insideColors))
                 j = 0
-                for i in range(len(self.rawdata)):
+                for i in range(len(self.rawData)):
                     if not validData[i]: continue
                     if hasClass:
-                        fillColor = classColors.getRGB(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j])
-                        edgeColor = classColors.getRGB(classValueIndices[self.rawdata[i].getclass().value])
+                        fillColor = classColors.getRGB(classValueIndices[self.rawData[i].getclass().value], 255*insideData[j])
+                        edgeColor = classColors.getRGB(classValueIndices[self.rawData[i].getclass().value])
                     else:
                         fillColor = edgeColor = (0,0,0)
-                    self.addCurve(str(i), QColor(*fillColor), QColor(*edgeColor), self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
+                    self.addCurve(str(i), QColor(*fillColor+ (self.alphaValue,)), QColor(*edgeColor+ (self.alphaValue,)), self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                     if self.showValueLines:
                         self.addValueLineCurve(x_positions[i], y_positions[i], edgeColor, i, indices)
                     self.addTooltipKey(x_positions[i], y_positions[i], QColor(*edgeColor), i, stringData % (100*insideData[j]))
                     j+= 1
             else:
-                for i in range(len(self.rawdata)):
+                for i in range(len(self.rawData)):
                     if not validData[i]: continue
                     if hasClass:
-                        fillColor = classColors.getRGB(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[i])
-                        edgeColor = classColors.getRGB(classValueIndices[self.rawdata[i].getclass().value])
+                        fillColor = classColors.getRGB(classValueIndices[self.rawData[i].getclass().value], 255*insideData[i])
+                        edgeColor = classColors.getRGB(classValueIndices[self.rawData[i].getclass().value])
                     else:
                         fillColor = edgeColor = (0,0,0)
-                    self.addCurve(str(i), QColor(*fillColor), QColor(*edgeColor), self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
+                    self.addCurve(str(i), QColor(*fillColor+ (self.alphaValue,)), QColor(*edgeColor+ (self.alphaValue,)), self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
                     if self.showValueLines:
                         self.addValueLineCurve(x_positions[i], y_positions[i], edgeColor, i, indices)
                     self.addTooltipKey(x_positions[i], y_positions[i], QColor(*edgeColor), i, stringData % (100*insideData[i]))
@@ -257,25 +230,25 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # ##############################################################
         elif haveSubsetData:
             shownSubsetCount = 0
-            subsetReferencesToDraw = dict([(example.reference(),1) for example in self.subsetData])
+            subsetReferencesToDraw = dict([(example.reference(),1) for example in self.rawSubsetData])
 
-            # draw the rawdata data set. examples that exist also in the subset data draw full, other empty
+            # draw the rawData data set. examples that exist also in the subset data draw full, other empty
             for i in range(dataSize):
-                showFilled = subsetReferencesToDraw.has_key(self.rawdata[i].reference())
+                showFilled = subsetReferencesToDraw.has_key(self.rawData[i].reference())
                 shownSubsetCount += showFilled
                 if showFilled:
-                    subsetReferencesToDraw.pop(self.rawdata[i].reference())
+                    subsetReferencesToDraw.pop(self.rawData[i].reference())
 
                 if not validData[i]: continue
                 if hasDiscreteClass and self.useDifferentColors:
-                    newColor = self.discPalette.getRGB(classValueIndices[self.rawdata[i].getclass().value])
+                    newColor = self.discPalette.getRGB(classValueIndices[self.rawData[i].getclass().value])
                 elif hasContinuousClass and self.useDifferentColors:
                     newColor = self.contPalette.getRGB(self.noJitteringScaledData[classNameIndex][i])
                 else:
                     newColor = (0,0,0)
 
                 if self.useDifferentSymbols and classValueIndices:
-                    curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
+                    curveSymbol = self.curveSymbols[classValueIndices[self.rawData[i].getclass().value]]
                 else:
                     curveSymbol = self.curveSymbols[0]
 
@@ -290,42 +263,36 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
 
             # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-            if shownSubsetCount < len(self.subsetData):
+            if shownSubsetCount < len(self.rawSubsetData):
                 XAnchors = numpy.array([val[0] for val in self.anchorData])
                 YAnchors = numpy.array([val[1] for val in self.anchorData])
                 anchorRadius = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
+                validSubData = self.getValidSubsetList(indices)
+                projSubData = self.createProjectionAsNumericArray(indices, validData = validSubData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0, useSubsetData = 1).T
+                sub_x_positions = projSubData[0]
+                sub_y_positions = projSubData[1]
 
-                for i in range(len(self.subsetData)):
-                    if not subsetReferencesToDraw.has_key(self.subsetData[i].reference()): continue
+                for i in range(len(self.rawSubsetData)):
+                    if not subsetReferencesToDraw.has_key(self.rawSubsetData[i].reference()): continue
+                    if not validSubData[i]: continue    # check if has missing values
 
-                    # check if has missing values
-                    if 1 in [self.subsetData[i][ind].isSpecial() for ind in indices]: continue
-
-                    # scale data values for example i
-                    dataVals = [self.scaleExampleValue(self.subsetData[i], ind) for ind in indices]
-
-                    [x,y] = self.getProjectedPointPosition(indices, dataVals, useAnchorData = 1, anchorRadius = anchorRadius)  # compute position of the point
-
-                    if not self.subsetData.domain.classVar or self.subsetData[i].getclass().isSpecial():
+                    if not self.rawSubsetData.domain.classVar or self.rawSubsetData[i].getclass().isSpecial():
                         newColor = (0,0,0)
                     else:
                         if classValueIndices:
-                            newColor = self.discPalette.getRGB(classValueIndices[self.subsetData[i].getclass().value])
+                            newColor = self.discPalette.getRGB(classValueIndices[self.rawSubsetData[i].getclass().value])
                         else:
-                            newColor = self.contPalette.getRGB(self.scaleExampleValue(self.subsetData[i], classNameIndex))
+                            newColor = self.contPalette.getRGB(self.scaleExampleValue(self.rawSubsetData[i], classNameIndex))
 
-                    if self.useDifferentSymbols and hasDiscreteClass and not self.subsetData[i].getclass().isSpecial():
-                        try:
-                            curveSymbol = self.curveSymbols[classValueIndices[self.subsetData[i].getclass().value]]
-                        except:
-                            sys.stderr.write("Exception:\n%s\n%s\n%s\n" % (self.subsetData[i].getclass().value, str(classValueIndices), str(self.curveSymbols)))
+                    if self.useDifferentSymbols and hasDiscreteClass and not self.rawSubsetData[i].getclass().isSpecial():
+                        curveSymbol = self.curveSymbols[classValueIndices[self.rawSubsetData[i].getclass().value]]
                     else: curveSymbol = self.curveSymbols[0]
 
                     if not xPointsToAdd.has_key((newColor, curveSymbol, 1)):
                         xPointsToAdd[(newColor, curveSymbol, 1)] = []
                         yPointsToAdd[(newColor, curveSymbol, 1)] = []
-                    xPointsToAdd[(newColor, curveSymbol, 1)].append(x)
-                    yPointsToAdd[(newColor, curveSymbol, 1)].append(y)
+                    xPointsToAdd[(newColor, curveSymbol, 1)].append(sub_x_positions[i])
+                    yPointsToAdd[(newColor, curveSymbol, 1)].append(sub_y_positions[i])
 
         elif not hasClass:
             xs = []; ys = []
@@ -335,8 +302,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 ys.append(y_positions[i])
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(Qt.black), i)
                 if self.showValueLines:
-                    self.addValueLineCurve(x_positions[i], y_positions[i], QColor(Qt.black), i, indices)
-            self.addCurve(str(1), QColor(Qt.black), QColor(Qt.black), self.pointWidth, symbol = self.curveSymbols[0], xData = xs, yData = ys)
+                    self.addValueLineCurve(x_positions[i], y_positions[i], (0,0,0), i, indices)
+            self.addCurve(str(1), QColor(0,0,0,self.alphaValue), QColor(0,0,0,self.alphaValue), self.pointWidth, symbol = self.curveSymbols[0], xData = xs, yData = ys, penAlpha = self.alphaValue, brushAlpha = self.alphaValue)
 
         # ##############################################################
         # CONTINUOUS class
@@ -345,7 +312,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             for i in range(dataSize):
                 if not validData[i]: continue
                 newColor = self.contPalette.getRGB(self.noJitteringScaledData[classNameIndex][i])
-                self.addCurve(str(i), QColor(*newColor), QColor(*newColor), self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
+                self.addCurve(str(i), QColor(*newColor+ (self.alphaValue,)), QColor(*newColor+ (self.alphaValue,)), self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
                 if self.showValueLines:
                     self.addValueLineCurve(x_positions[i], y_positions[i], newColor, i, indices)
                 self.addTooltipKey(x_positions[i], y_positions[i], QColor(*newColor), i)
@@ -356,9 +323,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         elif hasDiscreteClass:
             for i in range(dataSize):
                 if not validData[i]: continue
-                if self.useDifferentColors: newColor = self.discPalette.getRGB(classValueIndices[self.rawdata[i].getclass().value])
+                if self.useDifferentColors: newColor = self.discPalette.getRGB(classValueIndices[self.rawData[i].getclass().value])
                 else:                       newColor = (0,0,0)
-                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
+                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawData[i].getclass().value]]
                 else:                        curveSymbol = self.curveSymbols[0]
                 if not xPointsToAdd.has_key((newColor, curveSymbol, self.showFilledSymbols)):
                     xPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)] = []
@@ -372,14 +339,14 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # first draw value lines
         if self.showValueLines:
             for i, color in enumerate(self.valueLineCurves[0].keys()):
-                curve = UnconnectedLinesCurve("", QPen(QColor(*color)), self.valueLineCurves[0][color], self.valueLineCurves[1][color])
+                curve = UnconnectedLinesCurve("", QPen(QColor(*color + (self.alphaValue,))), self.valueLineCurves[0][color], self.valueLineCurves[1][color])
                 curve.attach(self)
 
         # draw all the points with a small number of curves
         for i, (color, symbol, showFilled) in enumerate(xPointsToAdd.keys()):
             xData = xPointsToAdd[(color, symbol, showFilled)]
             yData = yPointsToAdd[(color, symbol, showFilled)]
-            self.addCurve(str(i), QColor(*color), QColor(*color), self.pointWidth, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
+            self.addCurve(str(i), QColor(*color + (self.alphaValue,)), QColor(*color + (self.alphaValue,)), self.pointWidth, symbol = symbol, xData = xData, yData = yData, showFilledSymbols = showFilled)
 
         # ##############################################################
         # draw the legend
@@ -387,19 +354,19 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if self.showLegend:
             # show legend for discrete class
             if hasDiscreteClass:
-                self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.05, Qt.AlignLeft + Qt.AlignVCenter)
+                self.addMarker(self.rawData.domain.classVar.name, 0.87, 1.05, Qt.AlignLeft | Qt.AlignVCenter)
 
-                classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                classVariableValues = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
                 for index in range(len(classVariableValues)):
-                    if self.useDifferentColors: color = self.discPalette[index]
+                    if self.useDifferentColors: color = QColor(self.discPalette[index])
                     else:                       color = QColor(Qt.black)
                     y = 1.0 - index * 0.05
 
                     if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
                     else:                             curveSymbol = self.curveSymbols[index]
 
-                    self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95], yData = [y])
-                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignVCenter)
+                    self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95], yData = [y], penAlpha = self.alphaValue, brushAlpha = self.alphaValue)
+                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft | Qt.AlignVCenter)
             # show legend for continuous class
             elif hasContinuousClass:
                 xs = [1.15, 1.20, 1.20, 1.15]
@@ -408,17 +375,14 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 for i in range(count):
                     y = -1.0 + i*2.0/float(count)
                     col = self.contPalette[i/float(count)]
-                    curve = PolygonCurve(self, QPen(col), QBrush(col))
-                    curve.setData(xs, [y,y, y+height, y+height])
-                    curve.attach(self)
+                    col.setAlpha(self.alphaValue)
+                    PolygonCurve(QPen(col), QBrush(col), xData = xs, yData = [y,y, y+height, y+height]).attach(self)
 
                 # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
-                self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %%.%df" % (self.rawdata.domain.classVar.name, self.rawdata.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                [minVal, maxVal] = self.attrValues[self.rawData.domain.classVar.name]
+                self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %%.%df" % (self.rawData.domain.classVar.name, self.rawData.domain.classVar.numberOfDecimals) % (maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
-        #self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
-        #self.updateLayout()
         self.replot()
 
 
@@ -429,24 +393,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         dictValue = "%.1f-%.1f"%(x, y)
         if not self.dataMap.has_key(dictValue): self.dataMap[dictValue] = []
         self.dataMap[dictValue].append((x, y, color, index, extraString))
-
-##    def showClusterLines(self, attributeIndices, validData, width = 1):
-##        if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous: return
-##        shortData = self.createProjectionAsExampleTable(attributeIndices, validData = validData, scaleFactor = self.scaleFactor)
-##        classIndices = getVariableValueIndices(self.rawdata, self.attributeNameIndex[self.rawdata.domain.classVar.name])
-##
-##        (closure, enlargedClosure, classValue) = self.clusterClosure
-##
-##        if type(closure) == dict:
-##            for key in closure.keys():
-##                clusterLines = closure[key]
-##                colorIndex = classIndices[self.rawdata.domain.classVar[classValue[key]].value]
-##                for (p1, p2) in clusterLines:
-##                    self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
-##        else:
-##            colorIndex = classIndices[self.rawdata.domain.classVar[classValue].value]
-##            for (p1, p2) in closure:
-##                self.addCurve("", self.discPalette[colorIndex], self.discPalette[colorIndex], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
 
 
     def addValueLineCurve(self, x, y, color, exampleIndex, attrIndices):
@@ -550,10 +496,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 for (xAnchor,yAnchor,label) in shownAnchorData:
                     if self.anchorsAsVectors and not self.scalingByVariance:
                         attrVal = self.scaledData[self.attributeNameIndex[label]][index]
-                        markerX, markerY = xAnchor*attrVal, yAnchor*attrVal
-                        curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0, markerX], yData = [0, markerY], lineWidth=3)
+                        markerX, markerY = xAnchor*(attrVal+0.03), yAnchor*(attrVal+0.03)
+                        curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [0, xAnchor*attrVal], yData = [0, yAnchor*attrVal], lineWidth=3)
                         fontsize = 9
-                        markerAlign = (markerY>0 and Qt.AlignTop or Qt.AlignBottom) + (markerX>0 and Qt.AlignRight or Qt.AlignLeft)
+                        #markerAlign = (markerY>0 and Qt.AlignTop or Qt.AlignBottom) | (markerX>0 and Qt.AlignRight or Qt.AlignLeft)
+                        markerAlign = Qt.AlignCenter
                     else:
                         curve = self.addCurve("", color, color, 1, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
                         markerX, markerY = (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0
@@ -565,7 +512,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][label]), markerX, markerY, markerAlign, size = fontsize)
+                        marker = self.addMarker(str(self.rawData[index][label]), markerX, markerY, markerAlign, size = fontsize)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                         marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[label]][index]), markerX, markerY, markerAlign, size = fontsize)
                     self.tooltipMarkers.append(marker)
@@ -577,7 +524,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 else:
                     labels = []
 
-                text = self.getExampleTooltipText(self.rawdata, self.rawdata[index], labels)
+                text = self.getExampleTooltipText(self.rawData, self.rawData[index], labels)
                 text += "<hr>Example index = %d" % (index)
                 if extraString:
                     text += "<hr>" + extraString
@@ -589,22 +536,22 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self, attrList, useAnchorData = 1, addProjectedPositions = 0):
-        if not self.rawdata: return (None, None)
-        if addProjectedPositions == 0 and not self.selectionCurveList: return (None, self.rawdata)       # if no selections exist
+        if not self.rawData: return (None, None)
+        if addProjectedPositions == 0 and not self.selectionCurveList: return (None, self.rawData)       # if no selections exist
         if (useAnchorData and len(self.anchorData) < 3) or len(attrList) < 3: return (None, None)
 
         xAttr=orange.FloatVariable("X Positions")
         yAttr=orange.FloatVariable("Y Positions")
         if addProjectedPositions == 1:
-            domain=orange.Domain([xAttr,yAttr] + [v for v in self.rawdata.domain.variables])
+            domain=orange.Domain([xAttr,yAttr] + [v for v in self.rawData.domain.variables])
         elif addProjectedPositions == 2:
-            domain=orange.Domain(self.rawdata.domain)
+            domain=orange.Domain(self.rawData.domain)
             domain.addmeta(orange.newmetaid(), xAttr)
             domain.addmeta(orange.newmetaid(), yAttr)
         else:
-            domain = orange.Domain(self.rawdata.domain)
+            domain = orange.Domain(self.rawData.domain)
 
-        domain.addmetas(self.rawdata.domain.getmetas())
+        domain.addmetas(self.rawData.domain.getmetas())
 
         if useAnchorData: indices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
         else:             indices = [self.attributeNameIndex[label] for label in attrList]
@@ -618,8 +565,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         selIndices, unselIndices = self.getSelectionsAsIndices(attrList, useAnchorData, validData)
 
         if addProjectedPositions:
-            selected = orange.ExampleTable(domain, self.rawdata.selectref(selIndices))
-            unselected = orange.ExampleTable(domain, self.rawdata.selectref(unselIndices))
+            selected = orange.ExampleTable(domain, self.rawData.selectref(selIndices))
+            unselected = orange.ExampleTable(domain, self.rawData.selectref(unselIndices))
             selIndex = 0; unselIndex = 0
             for i in range(len(selIndices)):
                 if selIndices[i]:
@@ -631,8 +578,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     unselected[unselIndex][yAttr] = array[i][1]
                     unselIndex += 1
         else:
-            selected = self.rawdata.selectref(selIndices)
-            unselected = self.rawdata.selectref(unselIndices)
+            selected = self.rawData.selectref(selIndices)
+            unselected = self.rawData.selectref(unselIndices)
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
@@ -640,7 +587,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
 
     def getSelectionsAsIndices(self, attrList, useAnchorData = 1, validData = None):
-        if not self.rawdata: return [], []
+        if not self.rawData: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
         if validData == None:
@@ -651,98 +598,6 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             return [], []
         array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)
-
-
-##    def getOptimalClusters(self, attributes, minLength, maxLength, addResultFunct):
-##        self.triedPossibilities = 0
-##
-##        # replace attribute names with indices in domain - faster searching
-##        attributes = [self.attributeNameIndex[name] for name in attributes]
-##        classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-##
-##        # variables and domain for the table
-##        xVar = orange.FloatVariable("xVar")
-##        yVar = orange.FloatVariable("yVar")
-##        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
-##        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
-##
-##        self.widget.progressBarInit()
-##        startTime = time.time()
-##
-##        # build list of indices for permutations of different number of attributes
-##        permutationIndices = {}
-##        for i in range(3, maxLength+1):
-##            permutationIndices[i] = orngVisFuncts.generateDifferentPermutations(range(i))
-##
-##        classListFull = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
-##        for z in range(minLength-1, len(attributes)):
-##            for u in range(minLength-1, maxLength):
-##                combinations = orngVisFuncts.combinations(attributes[:z], u)
-##
-##                XAnchors = anchorList[u+1-minLength][0]
-##                YAnchors = anchorList[u+1-minLength][1]
-##
-##                for attrList in combinations:
-##                    attrs = attrList + [attributes[z]] # remove the value of this attribute subset
-##                    permutations = permutationIndices[len(attrs)]
-##
-##                    validData = self.getValidList(attrs)
-##                    classList = numpy.compress(validData, classListFull)
-##                    selectedData = numpy.compress(validData, numpy.take(self.noJitteringScaledData, attrs, axis = 0), axis = 1)
-##                    sum_i = self._getSum_i(selectedData)
-##
-##                    tempList = []
-##
-##                    # for every permutation compute how good it separates different classes
-##                    for ind in permutations:
-##                        permutation = [attrs[val] for val in ind]
-##                        permutationAttributes = [self.attributeNames[i] for i in permutation]
-##                        if self.clusterOptimization.isOptimizationCanceled():
-##                            secs = time.time() - startTime
-##                            self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-##                            self.widget.progressBarFinished()
-##                            return
-##
-##                        data = self.createProjectionAsExampleTable(permutation, validData = validData, classList = classList, sum_i = sum_i, XAnchors = XAnchors, YAnchors = YAnchors, domain = domain)
-##                        graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
-##
-##                        classesDict = {}
-##                        if not self.onlyOnePerSubset:
-##                            allValue = 0.0
-##                            for key in valueDict.keys():
-##                                addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
-##                                classesDict[key] = otherDict[key][OTHER_CLASS]
-##                                allValue += valueDict[key]
-##                            addResultFunct(allValue, closureDict, polygonVerticesDict, permutationAttributes, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
-##
-##                        else:
-##                            value = 0.0
-##                            for val in valueDict.values(): value += val
-##                            tempList.append((value, valueDict, closureDict, polygonVerticesDict, permutationAttributes, enlargedClosureDict, otherDict))
-##
-##                        self.triedPossibilities += 1
-##                        qApp.processEvents()        # allow processing of other events
-##                        del permutation, data, graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict, classesDict,
-##
-##                    self.widget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-##                    self.clusterOptimization.setStatusBarText("Evaluated %s projections..." % (orngVisFuncts.createStringFromNumber(self.triedPossibilities)))
-##
-##                    if self.onlyOnePerSubset:
-##                        (value, valueDict, closureDict, polygonVerticesDict, attrs, enlargedClosureDict, otherDict) = max(tempList)
-##                        allValue = 0.0
-##                        classesDict = {}
-##                        for key in valueDict.keys():
-##                            addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], attrs, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
-##                            classesDict[key] = otherDict[key][OTHER_CLASS]
-##                            allValue += valueDict[key]
-##                        addResultFunct(allValue, closureDict, polygonVerticesDict, attrs, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
-##
-##                    del validData, classList, selectedData, sum_i, tempList
-##                del combinations
-##
-##        secs = time.time() - startTime
-##        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (orngVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
-##        self.widget.progressBarFinished()
 
 
     # update shown data. Set labels, coloring by className ....
@@ -786,9 +641,9 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
 
         symbols = ("{\\small $\\circ$}", "{\\tiny $\\times$}", "{\\tiny $+$}", "{\\small $\\star$}",
                    "{\\small $\\ast$}", "{\\tiny $\\div$}", "{\\small $\\bullet$}", ) + tuple([chr(x) for x in range(97, 123)])
-        dataSize = len(self.rawdata)
+        dataSize = len(self.rawData)
         labels = self.widget.getShownAttributeList()
-        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+        classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)
         indices = [self.attributeNameIndex[label] for label in labels]
         selectedData = numpy.take(self.scaledData, indices, axis = 0)
         XAnchors = numpy.array([a[0] for a in self.anchorData])
@@ -816,19 +671,19 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         y_positions *= self.trueScaleFactor
 
         validData = self.getValidList(indices)
-        valLen = len(self.rawdata.domain.classVar.values)
+        valLen = len(self.rawData.domain.classVar.values)
 
         pos = [[] for i in range(valLen)]
         for i in range(dataSize):
             if validData[i]:
-                pos[classValueIndices[self.rawdata[i].getclass().value]].append((x_positions[i], y_positions[i]))
+                pos[classValueIndices[self.rawData[i].getclass().value]].append((x_positions[i], y_positions[i]))
 
         for i in range(valLen):
             file.write("\\multiput {%s} at %s /\n" % (symbols[i], " ".join(["%5.3f %5.3f" % p for p in pos[i]])))
 
         if self.showLegend:
-            classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-            file.write("\\put {%s} [lB] at 0.87 1.06\n" % self.rawdata.domain.classVar.name)
+            classVariableValues = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
+            file.write("\\put {%s} [lB] at 0.87 1.06\n" % self.rawData.domain.classVar.name)
             for index in range(len(classVariableValues)):
                 file.write("\\put {%s} at 1.0 %5.3f\n" % (symbols[index], 0.93 - 0.115*index))
                 file.write("\\put {%s} [lB] at 1.05 %5.3f\n" % (classVariableValues[index], 0.9 - 0.115*index))
@@ -895,6 +750,5 @@ if __name__== "__main__":
         attrs = [attr.name for attr in table.domain.attributes]
         graph.setData(table)
         graph.updateData(attrs, 1)
-    a.setMainWidget(graph)
     graph.show()
-    a.exec_loop()
+    a.exec_()

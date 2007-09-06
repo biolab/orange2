@@ -54,8 +54,10 @@ class OWWidget(OWBaseWidget):
 
             # create pixmaps used in statusbar to show info, warning and error messages
             #self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-blue.png")
-            self._warningWidget, self._warningPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
-            self._errorWidget, self._errorPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-red.png")
+            self._warningWidget = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
+            self._errorWidget = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-red.png")
+        else:
+            self.widgetStatusArea = None
 
         if wantMainArea:
             self.resize(640,480)
@@ -70,26 +72,23 @@ class OWWidget(OWBaseWidget):
         w.setFixedSize(16,16)
         w.hide()
         if os.path.exists(iconName):
-            pix = QPixmap(iconName)
-        else:
-            pix = None
-        return w, pix
+            w.setPixmap(QPixmap(iconName))
+        return w
 
     def setState(self, stateType, id, text):
         stateChanged = OWBaseWidget.setState(self, stateType, id, text)
-        if not stateChanged:
+        if not stateChanged or self.widgetStatusArea == None:
             return
 
         iconsShown = 0
-        #for state, widget, icon, use in [("Info", self._infoWidget, self._infoPixmap, self._owInfo), ("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
-        for state, widget, icon, use in [("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:
+        #for state, widget, icon, use in [("Info", self._infoWidget, self._owInfo), ("Warning", self._warningWidget, self._owWarning), ("Error", self._errorWidget, self._owError)]:
+        for state, widget, use in [("Warning", self._warningWidget, self._owWarning), ("Error", self._errorWidget, self._owError)]:
+            if not widget: continue
             if use and self.widgetState[state] != {}:
-                widget.setPixmap(icon)
                 widget.setToolTip("\n".join(self.widgetState[state].values()))
                 widget.show()
                 iconsShown = 1
             else:
-                widget.setPixmap(QPixmap())
                 widget.setToolTip("")
                 widget.hide()
 

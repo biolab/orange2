@@ -74,7 +74,9 @@ class OWConfusionMatrix(OWWidget):
 
         labpred = OWGUI.widgetLabel(self.mainArea, "Correct Class  ")
         self.layout.addWidget(labpred, 2, 0, Qt.AlignCenter)
-        self.layout.addWidget(OWGUI.rubber(self.mainArea), 3, 3, 1, 1)
+        #self.layout.addWidget(OWGUI.rubber(self.mainArea), 3, 3, 1, 1)
+        self.layout.setColumnStretch(3, 100)
+        self.layout.setRowStretch(3, 100)
 
         self.table = OWGUI.table(self.mainArea, rows = 0, columns = 0, selectionMode = QTableWidget.NoSelection, addToLayout = 0)
         self.layout.addWidget(self.table, 2, 1)

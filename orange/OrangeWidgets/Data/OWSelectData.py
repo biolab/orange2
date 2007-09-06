@@ -283,6 +283,7 @@ class OWSelectData(OWWidget):
 
 
     def lbAttrChange(self):
+        if self.lbAttr.selectedItems() == []: return
         text = str(self.lbAttr.selectedItems()[0].text())
         prevVar = self.currentVar
         if prevVar:

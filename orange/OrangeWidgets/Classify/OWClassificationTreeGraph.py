@@ -184,7 +184,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
 
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable)]
-        
+
         self.ShowPies=1
         self.TargetClassIndex=0
         self.canvas=TreeCanvas(self)
@@ -285,7 +285,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.targetCombo.clear()
         if tree:
             for name in tree.tree.examples.domain.classVar.values:
-                self.targetCombo.insertItem(name)
+                self.targetCombo.addItem(name)
 #        if tree and len(tree.tree.distribution)>self.TargetClassIndex:
             self.TargetClassIndex=0
             self.openContext("", tree.domain)

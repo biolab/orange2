@@ -119,9 +119,13 @@ class OutputWindow(QMainWindow):
             #self.logFile.write(str(text) + "<br>\n")
             self.logFile.write(text)
 
-        #self.textOutput.append(text)
-        self.textOutput.insertHtml(text)
-        #self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
+        cursor = QTextCursor(self.textOutput.textCursor())                # clear the current text selection so that
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the
+        self.textOutput.setTextCursor(cursor)                             # existing text
+        self.textOutput.insertHtml(text)                                  # then append the text
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # and then scroll down to the end of the text
+        self.textOutput.setTextCursor(cursor)
+
         if text[-1:] == "\n":
             if self.printOutput:
                 self.canvasDlg.setStatusBarEvent(self.unfinishedText + text)
@@ -170,8 +174,13 @@ class OutputWindow(QMainWindow):
         text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr><br>"
         text += "<nobr>" + totalSpace + "Exception value: <b>" + value+ "</b></nobr><hr>"
         text = text.replace("<br>","<br>\n")
-        self.textOutput.insertHtml(text)
-        #self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
+
+        cursor = QTextCursor(self.textOutput.textCursor())                # clear the current text selection so that
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # the text will be appended to the end of the
+        self.textOutput.setTextCursor(cursor)                             # existing text
+        self.textOutput.insertHtml(text)                                  # then append the text
+        cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)      # and then scroll down to the end of the text
+        self.textOutput.setTextCursor(cursor)
 
         if self.writeLogFile:
             self.logFile.write(str(text) + "<br>\n")

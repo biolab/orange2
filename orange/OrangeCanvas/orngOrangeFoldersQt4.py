@@ -37,33 +37,30 @@ def __getDirectoryNames():
         outputDir = os.path.join(applicationDir, "Orange")
     else:
         outputDir = os.path.join(home, "Orange")                  # directory for saving settings and stuff
-    
+
     if not os.path.exists(outputDir):
         try: os.mkdir(outputDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
 
-    widgetSettingsDir = os.path.join(outputDir, "widgetSettings")
+    widgetSettingsDir = os.path.join(outputDir, "widgetSettingsQt4")
     if not os.path.exists(widgetSettingsDir):
         try: os.mkdir(widgetSettingsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
-        
+
     canvasSettingsDir = os.path.join(outputDir, "OrangeCanvas")
     if not os.path.exists(canvasSettingsDir):
         try: os.mkdir(canvasSettingsDir)        # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
         except: pass
 
     registryFileName = os.path.join(canvasSettingsDir, "widgetregistry.xml")
-    if not os.path.exists(registryFileName):
-        WidgetsToXML().ParseWidgetRoot(widgetDir, canvasSettingsDir)
 
     return dict([(name, vars()[name]) for name in ["canvasDir", "orangeDir", "widgetDir", "reportsDir", "picsDir", "widgetSettingsDir", "canvasSettingsDir", "registryFileName"]])
 
 
 def addOrangeDirectoriesToPath(registryFileName = None):
-    paths = __getDirectoryNames()
-    orangeDir = paths["orangeDir"]
-    widgetDir = paths["widgetDir"]
-    canvasDir = paths["canvasDir"]
+    orangeDir = directoryNames["orangeDir"]
+    widgetDir = directoryNames["widgetDir"]
+    canvasDir = directoryNames["canvasDir"]
     sys.path.insert(0, canvasDir)
     if orangeDir not in sys.path: sys.path.insert(0, orangeDir)
     if widgetDir not in sys.path: sys.path.insert(0, widgetDir)
@@ -73,7 +70,7 @@ def addOrangeDirectoriesToPath(registryFileName = None):
             if os.path.isdir(fullName) and fullName not in sys.path:
                 sys.path.insert(0, fullName)
 
-    if registryFileName != None:
+    if registryFileName != None and os.path.exists(registryFileName):
         import xml
         doc = xml.dom.minidom.parse(registryFileName)
         for category in doc.getElementsByTagName("category"):

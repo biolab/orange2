@@ -13,7 +13,6 @@
 # all sorts of preprocessing (including discretization) on the table,
 # output a new table and export it in variety of formats.
 
-from qttable import *
 from OWWidget import *
 import OWGUI
 import math
@@ -31,38 +30,34 @@ class OWDataTable(OWWidget):
 
         self.data = {}          # key: id, value: ExampleTable
         self.showMetas = {}     # key: id, value: (True/False, columnList)
+        self.showMeta = 1
 
         # info box
         #self.controlArea.layout().setResizeMode(QLayout.Minimum)
-        infoBox = QVGroupBox("Info", self.controlArea)
-        self.infoEx = QLabel('No data on input.', infoBox)
-        self.infoMiss = QLabel('', infoBox)
-        QLabel('', infoBox)
-        self.infoAttr = QLabel('', infoBox)
-        self.infoMeta = QLabel('', infoBox)
-        QLabel('', infoBox)
-        self.infoClass = QLabel('', infoBox)
+        infoBox = OWGUI.widgetBox(self.controlArea, "Info")
+        self.infoEx = OWGUI.widgetLabel(infoBox, 'No data on input.')
+        self.infoMiss = OWGUI.widgetLabel(infoBox, ' ')
+        OWGUI.widgetLabel(infoBox, ' ')
+        self.infoAttr = OWGUI.widgetLabel(infoBox, ' ')
+        self.infoMeta = OWGUI.widgetLabel(infoBox, ' ')
+        OWGUI.widgetLabel(infoBox, ' ')
+        self.infoClass = OWGUI.widgetLabel(infoBox, ' ')
         infoBox.setMinimumWidth(200)
         #infoBox.setMaximumHeight(infoBox.sizeHint().height())
 
         # settings box
-        boxSettings = QVGroupBox("Settings", self.controlArea)
-        self.cbShowMeta = QCheckBox('Show meta attributes', boxSettings)
-        self.cbShowMeta.setChecked(True)
+        boxSettings = OWGUI.widgetBox(self.controlArea, "Settings")
+        self.cbShowMeta = OWGUI.checkBox(boxSettings, self, "showMeta", 'Show meta attributes', callback = self.cbShowMetaClicked)
         self.cbShowMeta.setEnabled(False)
-        self.connect(self.cbShowMeta, SIGNAL("clicked()"), self.cbShowMetaClicked)
-        self.btnResetSort = QPushButton("Restore Original Order", boxSettings)
-        self.connect(self.btnResetSort, SIGNAL("clicked()"), self.btnResetSortClicked)
-        boxSettings.setMaximumHeight(boxSettings.sizeHint().height())
+        #self.btnResetSort = OWGUI.button(boxSettings, self, "Restore Original Order", callback = self.btnResetSortClicked)
+
+        OWGUI.rubber(self.controlArea)
 
         # GUI with tabs
-        layout=QVBoxLayout(self.mainArea)
-        self.tabs = QTabWidget(self.mainArea, 'tabWidget')
+        self.tabs = OWGUI.tabWidget(self.mainArea)
         self.id2table = {}  # key: widget id, value: table
         self.table2id = {}  # key: table, value: widget id
-        layout.addWidget(self.tabs)
         self.connect(self.tabs,SIGNAL("currentChanged(QWidget*)"),self.tabClicked)
-
 
     def dataset(self, data, id=None):
         """Generates a new table and adds it to a new tab when new data arrives;
@@ -75,13 +70,14 @@ class OWDataTable(OWWidget):
                 self.data.pop(id)
                 self.showMetas.pop(id)
                 self.id2table[id].hide()
-                self.tabs.removePage(self.id2table[id])
+                self.tabs.removeTab(self.tabs.indexOf(self.id2table[id]))
                 self.table2id.pop(self.id2table.pop(id))
             self.data[id] = data
             self.showMetas[id] = (True, [])
             self.progressBarInit()
-            table=MyTable(None)
-            table.setSelectionMode(QTable.NoSelection)
+            #table = MyTable(None)
+            table = QTableWidget()
+            table.setSelectionMode(QTableWidget.NoSelection)
             self.id2table[id] = table
             self.table2id[table] = id
             tabName = data.name
@@ -91,20 +87,20 @@ class OWDataTable(OWWidget):
             if id[2] != None:
                 tabName += " [" + str(id[2]) + "]"
 ##            tabName = data.name + " "+str(id)
-            self.tabs.insertTab(table, tabName)
-            self.set_table(table, data)
-            self.tabs.showPage(table)
+            self.tabs.addTab(table, tabName)
+            self.setTable(table, data)
+            self.tabs.setCurrentIndex(self.tabs.indexOf(table))
             self.progressBarFinished()
-            self.set_info(data)
+            self.setInfo(data)
             # enable showMetas checkbox only if metas exist
             self.cbShowMeta.setEnabled(len(self.showMetas[id][1])>0)
         elif self.data.has_key(id):
             self.data.pop(id)
             self.showMetas.pop(id)
             self.id2table[id].hide()
-            self.tabs.removePage(self.id2table[id])
+            self.tabs.removeTab(self.tabs.indexOf(self.id2table[id]))
             self.table2id.pop(self.id2table.pop(id))
-            self.set_info(self.data.get(self.table2id.get(self.tabs.currentPage(),None),None))
+            self.setInfo(self.data.get(self.table2id.get(self.tabs.currentWidget(),None),None))
         # disable showMetas checkbox if there is no data on input
         if len(self.data) == 0:
             self.cbShowMeta.setEnabled(False)
@@ -114,14 +110,14 @@ class OWDataTable(OWWidget):
         """Updates the info box and showMetas checkbox when a tab is clicked.
         """
         id = self.table2id.get(qTableInstance,None)
-        self.set_info(self.data.get(id,None))
+        self.setInfo(self.data.get(id,None))
         show_col = self.showMetas.get(id,None)
         if show_col:
             self.cbShowMeta.setChecked(show_col[0])
             self.cbShowMeta.setEnabled(len(show_col[1])>0)
 
     def cbShowMetaClicked(self):
-        table = self.tabs.currentPage()
+        table = self.tabs.currentWidget()
         id = self.table2id.get(table, None)
         if self.showMetas.has_key(id):
             show,col = self.showMetas[id]
@@ -133,20 +129,21 @@ class OWDataTable(OWWidget):
             for c in col:
                 table.showColumn(c)
                 # we need to readjust the column width
-                table.adjustColumn(c)
-                table.setColumnWidth(c, table.columnWidth(c)+22)
+                #table.adjustColumn(c)
+                #table.setColumnWidth(c, table.columnWidth(c)+22)
+                table.resizeColumnToContents(c)
 
 
     def btnResetSortClicked(self):
         """Sort the data by the last (hidden) column.
         """
         self.sortby = 0
-        table = self.tabs.currentPage()
+        table = self.tabs.currentWidget()
         if table:
-            self.sort(table.numCols()-1)
+            self.sort(table.columnCount()-1)
 
 
-    def set_info(self, data):
+    def setInfo(self, data):
         """Updates data info.
         """
         def sp(l, capitalize=False):
@@ -184,7 +181,7 @@ class OWDataTable(OWWidget):
                 self.infoClass.setText('Classless domain.')
 
 
-    def set_table(self, table, data):
+    def setTable(self, table, data):
         """Writes data into table, adjusts the column width.
         """
         qApp.setOverrideCursor(Qt.WaitCursor)
@@ -203,25 +200,23 @@ class OWDataTable(OWWidget):
         numEx = len(data)
         numSpaces = int(math.log(max(numEx,1), 10))+1
 
-        table.setNumCols(numVarsMetas+1)
-        table.setNumRows(numEx)
+        #table.setColumnCount(numVarsMetas+1)
+        table.setColumnCount(numVarsMetas)
+        table.setRowCount(numEx)
         id = self.table2id.get(table,None)
 
         # set the header (attribute names)
-        hheader=table.horizontalHeader()
-        for i,var in enumerate(varsMetas):
-            hheader.setLabel(i, var.name)
-        hheader.setLabel(numVarsMetas, "")
+        table.setHorizontalHeaderLabels([var.name for var in varsMetas])
 
         # set the contents of the table (values of attributes)
         # iterate variables
-        table.disableUpdate=True
+        #table.disableUpdate=True
         table.hide()
-        table.ranks={}
-        table.values={}
-        table.setDelayColumnAdjust(numVarsMetas>200)
+        table.ranks = {}
+        table.values = {}
+        #table.setDelayColumnAdjust(numVarsMetas>200)
         for j,(key,attr) in enumerate(zip(range(numVars) + metaKeys, varsMetas)):
-            #table.setNumCols(j+1)
+            #table.setColumnCount(j+1)
             #hheader.setLabel(j, attr.name)
             self.progressBarSet(j*100.0/numVarsMetas)
             if attr == data.domain.classVar:
@@ -232,48 +227,54 @@ class OWDataTable(OWWidget):
             else:
                 bgColor = QColor(Qt.white)
             # generate list of tuples (attribute value, instance index) and sort by attrVal
-            valIdx = [(str(ex[key]),idx) for idx,ex in enumerate(data)]
-            table.values[j]=[v[0]+" " for v in valIdx]
-            valIdx.sort()
+            #valIdx = [(str(ex[key]),idx) for idx,ex in enumerate(data)]
+            #table.values[j]=[v[0]+" " for v in valIdx]
+            #valIdx.sort()
             # generate a dictionary where key: instance index, value: rank
-            idx2rankDict = dict(zip([x[1] for x in valIdx], range(numEx)))
-            table.ranks[j]=dict(zip(range(numEx), [x[1] for x in valIdx]))
-            table.columnColor[j]=bgColor
+            #idx2rankDict = dict(zip([x[1] for x in valIdx], range(numEx)))
+            #table.ranks[j]=dict(zip(range(numEx), [x[1] for x in valIdx]))
+            #table.columnColor[j]=bgColor
             for i in range(numEx):
                 # set sorting key to ranks
-                pass
-                #OWGUI.tableItem(table, i, j, str(data[i][key]), editType=QTableItem.Never, background=bgColor, sortingKey=self.sortingKey(idx2rankDict[i], numSpaces))
+                #pass
+                #OWGUI.tableItem(table, i, j, str(data[i][key]), editType = 0, background=bgColor, sortingKey=self.sortingKey(idx2rankDict[i], numSpaces))
+                #OWGUI.tableItem(table, i, j, str(data[i][key]), editType = 0, background=bgColor)
+                item = QTableWidgetItem(str(data[i][key]))
+                item.setBackground(QBrush(bgColor))
+                table.setItem(i,j, item)
             # adjust the width of the table
             #table.showColumn(j)
-            if numVarsMetas<=200:
-                table.adjustColumn(j)
+#            if numVarsMetas<=200:
+#                table.adjustColumn(j)
             #table.setColumnWidth(j, table.columnWidth(j)+22)
         #for j in range(numVarsMetas):
         #    table.adjustColumn(j)
         # add hidden column with consecutive numbers for restoring the original order of examples
         #hheader.setLabel(numVarsMetas, "")
-        #table.setNumCols(numVarsMetas+1)
+        #table.setColumnCount(numVarsMetas+1)
+        table.resizeColumnsToContents()
+        table.setSortingEnabled(1)        # enable sorting after we have inserted all items - otherwise insertion may interfere with sorting
         table.show()
         #for i in range(numEx):
         #    OWGUI.tableItem(table, i, numVarsMetas, "", editType=QTableItem.Never, sortingKey=self.sortingKey(i, numSpaces))
-        table.ranks[table.numCols()-1]=dict([(i,i) for i in range(numEx)])
-        table.values[table.numCols()-1]=["" for i in range(numEx)]
-        table.columnColor[table.numCols()-1]=QColor(0,0,0)
-        table.disableUpdate=False
-        table.hideColumn(numVarsMetas)
+#        table.ranks[table.columnCount()-1]=dict([(i,i) for i in range(numEx)])
+#        table.values[table.columnCount()-1]=["" for i in range(numEx)]
+#        table.columnColor[table.columnCount()-1]=QColor(0,0,0)
+#        table.disableUpdate=False
+#        table.hideColumn(numVarsMetas)
 
         # adjust vertical header
-        table.verticalHeader().setClickEnabled(False)
-        table.verticalHeader().setResizeEnabled(False)
-        table.verticalHeader().setMovingEnabled(False)
+        #table.verticalHeader().setClickable(False)
+        table.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
+        #table.verticalHeader().setMovable(False)
 
         # manage sorting (not correct, does not handle real values)
-        self.connect(hheader,SIGNAL("clicked(int)"),self.sort)
+        #self.connect(hheader,SIGNAL("clicked(int)"),self.sort)
         self.sortby = 0
         #table.setColumnMovingEnabled(1)
         qApp.restoreOverrideCursor()
         table.setCurrentCell(-1,-1)
-        table.clearCache()
+        #table.clearCache()
         table.show()
 
 
@@ -285,7 +286,7 @@ class OWDataTable(OWWidget):
             self.sortby = - self.sortby
         else:
             self.sortby = col+1
-        table = self.tabs.currentPage()
+        table = self.tabs.currentWidget()
         table.sortColumn(col, self.sortby>=0, TRUE)
         table.horizontalHeader().setSortIndicator(col, self.sortby<0)
 ##        table.setSortIndicator(col, self.sortby>=0)
@@ -304,9 +305,9 @@ class OWDataTable(OWWidget):
 # > python OWDataTable.py)
 # Make sure that a sample data set (adult_sample.tab) is in the directory
 from sets import Set
-class MyTable(QTable):
+class MyTable(QTableWidget):
     def __init__(self,*args):
-        QTable.__init__(self, *args)
+        QTableWidget.__init__(self, *args)
         self.disableUpdate=False
         self.disableColumnAdjust=False
         self.adjustedColumnCache=Set()
@@ -347,7 +348,7 @@ class MyTable(QTable):
         #print "adjusting"
         cStart=self.columnAt(self.contentsX())+1
         cEnd=self.columnAt(self.contentsX()+self.visibleWidth())
-        while cStart<min([self.columnAt(self.contentsX()+self.visibleWidth())+1, self.numCols()-1]):
+        while cStart<min([self.columnAt(self.contentsX()+self.visibleWidth())+1, self.columnCount()-1]):
             #for i in range(cStart, cEnd):
             if cStart not in self.adjustedColumnCache:
                 self.adjustColumn(cStart)
@@ -398,7 +399,7 @@ class MyTable(QTable):
         if self.sortingAscending:
             text=self.values[col][self.ranks[self.sortingColumn][row]]
         else:
-            numAll=self.numRows()
+            numAll=self.rowCount()
             text=self.values[col][self.ranks[self.sortingColumn][numAll-1-row]]
         painter.drawText(cr, Qt.AlignRight|Qt.AlignVCenter, text)
         #except:
@@ -419,13 +420,13 @@ class MyTable(QTable):
     def drawContents(self, painter, cx=0, cy=0, cw=0, ch=0):
         #print "Draw contnents: ",cx,cy,cw,ch
         if self.sortingColumn not in self.ranks:
-            self.sortingColumn=self.numCols()-1
+            self.sortingColumn=self.columnCount()-1
         #self.paintEmptyArea(painter, cx, cy, cw, ch)
         self.setPainterFont(painter)
         xStart=max(self.columnAt(cx), 0)
-        xEnd=min(self.columnAt(cx+cw)+1, self.numCols()) or self.numCols() #columnAt can return -1 if there is no cell at that position
+        xEnd=min(self.columnAt(cx+cw)+1, self.columnCount()) or self.columnCount() #columnAt can return -1 if there is no cell at that position
         yStart=max(self.rowAt(cy),0)
-        yEnd=min(self.rowAt(cy+ch)+1, self.numRows()) or self.numRows() # the same as above
+        yEnd=min(self.rowAt(cy+ch)+1, self.rowCount()) or self.rowCount() # the same as above
         #print "X start:", xStart, "X end:", xEnd, "Y start:", yStart, "Y end:", yEnd
         for i in range(xStart, xEnd):
             painter.setBrush(QBrush(self.columnColor[i]))

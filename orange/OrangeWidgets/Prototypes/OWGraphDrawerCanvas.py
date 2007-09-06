@@ -41,18 +41,18 @@ class OWGraphDrawerCanvas(OWGraph):
         self.state = NOTHING  #default je rocno premikanje
         self.hiddenNodes = []
         self.markedNodes = []
-        
+
         self.tooltipNeighbours = 2
         self.selectionNeighbours = 2
         self.freezeNeighbours = False
 
-        
+
     def setHiddenNodes(self, nodes):
         self.hiddenNodes = nodes
         self.updateData()
         self.updateCanvas()
-        
-       
+
+
     def addSelection(self, ndx, replot = True):
         #print("add selection")
         change = False
@@ -79,10 +79,10 @@ class OWGraphDrawerCanvas(OWGraph):
             if replot:
                 self.replot()
             self.markSelectionNeighbours()
-        
+
         return change
 
-        
+
     def removeVertex(self, v):
         if v in self.selection:
             (key, neighbours) = self.vertices[v]
@@ -92,7 +92,7 @@ class OWGraphDrawerCanvas(OWGraph):
             del self.selectionStyles[v]
             return True
         return False
-        
+
     def removeSelection(self, ndx = None, replot = True):
         #print("remove selection")
         change = False
@@ -105,24 +105,24 @@ class OWGraphDrawerCanvas(OWGraph):
                 #self.visualizer.unselectAll()
                 self.selectionStyles = {}
                 change = True
-            
+
         elif isinstance(ndx, list):
             for v in ndx:
                 change = self.removeVertex(v) or change
-                    
+
         else:
             change = self.removeVertex(ndx)
-        
+
         if change:
             if replot:
                 self.replot()
             self.markSelectionNeighbours()
-        
-            
+
+
     def selectConnectedNodes(self, distance):
         if distance <= 0:
             return
-        
+
         print "distance: " + str(distance)
         sel = set(self.selection)
         print sel
@@ -130,7 +130,7 @@ class OWGraphDrawerCanvas(OWGraph):
             neighbours = set(self.visualizer.graph.getNeighbours(v))
             print neighbours
             self.selectNeighbours(sel, neighbours - sel, 1, distance);
-            
+
         self.removeSelection()
         print "sel"
         print sel
@@ -140,9 +140,9 @@ class OWGraphDrawerCanvas(OWGraph):
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
             self.setCurveSymbol(key, newSymbol)
             self.selection.append(ndx);
-        
+
         self.replot()
-    
+
     def selectNeighbours(self, sel, nodes, depth, maxdepth):
         #print "list: " + str(sel)
         #print "nodes: " + str(nodes)
@@ -152,13 +152,13 @@ class OWGraphDrawerCanvas(OWGraph):
                 neighbours = set(self.visualizer.graph.getNeighbours(i))
                 #print "neighbours: " + str(neighbours)
                 self.selectNeighbours(sel, neighbours - sel, depth+1, maxdepth)
-        
+
     def getSelectedExamples(self):
         if len(self.selection) == 0:
             return None
-        
+
         indeces = self.visualizer.nVertices() * [0]
-        
+
         for v in self.selection:
             indeces[v] = v + 1
 
@@ -170,26 +170,26 @@ class OWGraphDrawerCanvas(OWGraph):
     def getSelectedGraph(self):
         if len(self.selection) == 0:
             return None
-        
+
         graph = orange.GraphAsList(len(self.selection), 0)
-        
+
         for e in range(self.nEdges):
             (key,i,j) = self.edges[e]
-            
+
             if (i in self.selection) and (j in self.selection):
                 graph[self.selection.index(i), self.selection.index(j)] = 1
-        
+
         indeces = self.visualizer.nVertices() * [0]
-        
+
         for v in self.selection:
             indeces[v] = v + 1
 
         if self.visualizer.graph.items != None:
             graph.setattr("items", self.visualizer.graph.items.select(indeces))
-            
+
         return graph
 
-            
+
     def moveVertex(self, pos):
         # ce ni nic izbrano
         if self.selectedCurve == None:
@@ -203,13 +203,13 @@ class OWGraphDrawerCanvas(OWGraph):
 
         oldX = self.visualizer.coors[self.selectedVertex][0]
         oldY = self.visualizer.coors[self.selectedVertex][1]
-        
+
         self.visualizer.coors[self.selectedVertex][0] = newX
         self.visualizer.coors[self.selectedVertex][1] = newY
-        
+
         (key, neighbours) = self.vertices[self.selectedVertex]
         self.setCurveData(key, [newX], [newY])
-        
+
         edgesCurve = self.curve(self.edgesKey)
 
         for e in neighbours:
@@ -219,23 +219,23 @@ class OWGraphDrawerCanvas(OWGraph):
             elif (oldX == edgesCurve.xData[e*2 + 1]) and (oldY == edgesCurve.yData[e*2 + 1]):
                 edgesCurve.xData[e*2 + 1] = newX
                 edgesCurve.yData[e*2 + 1] = newY
-            
+
 #        for e in range(self.nEdges):
 #            (key,i,j) = self.edges[e]
 #            edgesCurve = self.curve(self.edgesKey)
-#            
+#
 #            if i == self.selectedVertex:
 #                edgesCurve.xData[key*2] = newX
 #                edgesCurve.yData[key*2] = newY
 #                #currEdgeObj = self.curve(key)
-#                #self.setCurveData(key, [newX, currEdgeObj.x(1)], [newY, currEdgeObj.y(1)])                    
+#                #self.setCurveData(key, [newX, currEdgeObj.x(1)], [newY, currEdgeObj.y(1)])
 #            elif j == self.selectedVertex:
 #                edgesCurve.xData[key*2 + 1] = newX
 #                edgesCurve.yData[key*2 + 1] = newY
 #                #currEdgeObj = self.curve(key)
 #                #self.setCurveData(key, [currEdgeObj.x(0), newX], [currEdgeObj.y(0), newY])
         self.setCurveData(self.edgesKey, edgesCurve.xData, edgesCurve.yData)
-    
+
     def getNeighboursUpTo(self, ndx, dist):
         newNeighbours = neighbours = set([ndx])
         for d in range(dist):
@@ -245,7 +245,7 @@ class OWGraphDrawerCanvas(OWGraph):
             newNeighbours = tNewNeighbours - neighbours
             neighbours |= newNeighbours
         return neighbours
-     
+
     def onMouseMoved(self, event):
         if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
             if len(self.selection) > 0:
@@ -284,7 +284,7 @@ class OWGraphDrawerCanvas(OWGraph):
                     vObj = self.curve(self.selectedCurve)
                     tx = self.transform(vObj.xAxis(), vObj.x(0)) + dx
                     ty = self.transform(vObj.yAxis(), vObj.y(0)) + dy
-                    
+
                     tempPoint = QPoint(tx, ty)
                     self.moveVertex(tempPoint)
 
@@ -296,14 +296,14 @@ class OWGraphDrawerCanvas(OWGraph):
 
         if not self.freezeNeighbours and self.tooltipNeighbours:
             px = self.invTransform(2, event.x())
-            py = self.invTransform(0, event.y())   
+            py = self.invTransform(0, event.y())
             ndx, mind = self.visualizer.closestVertex(px, py)
             if ndx != -1 and mind < 50:
                 self.setMarkedNodes(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
             else:
                 self.setMarkedNodes([])
-        
-        
+
+
     def markSelectionNeighbours(self):
         if not self.freezeNeighbours and self.selectionNeighbours:
             toMark = set()
@@ -311,7 +311,7 @@ class OWGraphDrawerCanvas(OWGraph):
                 toMark |= self.getNeighboursUpTo(ndx, self.selectionNeighbours)
             toMark -= set(self.selection)
             self.setMarkedNodes(toMark)
-        
+
     def setMarkedNodes(self, marked):
         for m in self.markedNodes:
             (key, neighbours) = self.vertices[m]
@@ -319,17 +319,17 @@ class OWGraphDrawerCanvas(OWGraph):
             self.setCurveSymbol(key, newSymbol)
 
         self.markedNodes = marked
-        
+
         for m in marked:
             (key, neighbours) = self.vertices[m]
             self.selectionStyles[m] = self.curve(key).symbol().brush().color().name()
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[m])), QPen(Qt.green, 3), QSize(10, 10))
             self.setCurveSymbol(key, newSymbol)
             self.tooltipped.append(m);
-            
+
         self.master.nMarked = len(self.markedNodes)
         self.replot()
-        
+
 
     def activateMoveSelection(self):
         self.state = MOVE_SELECTION
@@ -353,7 +353,7 @@ class OWGraphDrawerCanvas(OWGraph):
             OWGraph.onMousePressed(self, event)
 
 
-    def onMouseReleased(self, event):  
+    def onMouseReleased(self, event):
         if self.state == MOVE_SELECTION:
             self.mouseCurrentlyPressed = 0
             self.canvas().setMouseTracking(False)
@@ -362,7 +362,7 @@ class OWGraphDrawerCanvas(OWGraph):
             self.moveGroup=False
             #self.selectedVertices=[]
             self.GMmouseStartEvent=None
-            
+
         elif self.state == SELECT_RECTANGLE:
             self.selectVertices()
             OWGraph.onMouseReleased(self, event)
@@ -374,25 +374,25 @@ class OWGraphDrawerCanvas(OWGraph):
                     self.selectVertices()
         else:
             OWGraph.onMouseReleased(self, event)
-    
+
     def selectVertices(self):
         print "selecting vertices.."
         for vertexKey in self.indexPairs.keys():
             vObj = self.curve(vertexKey)
-            
+
             if self.isPointSelected(vObj.x(0), vObj.y(0)):
                 self.addSelection(self.indexPairs[vertexKey], False)
         self.replot()
-                
+
     def selectVertex(self, pos):
         print "select vertex"
         #key, dist, xVal, yVal, index = self.closestCurve(pos.x(), pos.y())
         #curve = self.curve(key)
         min = 1000000
         ndx = -1
-        #print "x: " + str(pos.x()) + " y: " + str(pos.y()) 
+        #print "x: " + str(pos.x()) + " y: " + str(pos.y())
         px = self.invTransform(2, pos.x())
-        py = self.invTransform(0, pos.y())   
+        py = self.invTransform(0, pos.y())
         #print "xAxis: " + str(curve.xAxis()) + " yAxis: " + str(curve.yAxis())
         #print "px: " + str(px) + " py: " + str(py)
         ndx, min = self.visualizer.closestVertex(px, py)
@@ -401,31 +401,31 @@ class OWGraphDrawerCanvas(OWGraph):
             self.addSelection(ndx) # do not replot if we replot later anyway
         else:
             self.removeSelection()
-            
-                
+
+
     def dist(self, s1, s2):
         return math.sqrt((s1[0]-s2[0])**2 + (s1[1]-s2[1])**2)
-    
+
     def updateData(self):
         print "OWGraphDrawerCanvas/updateData..."
         self.removeDrawingCurves(removeLegendItems = 0)
         self.removeMarkers()
         self.tips.removeAll()
-        
+
         xData = []
         yData = []
         edgesCount = 0
-        
-        fillColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j]]
-        edgeColor = Qt.blue#self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
-        
+
+        fillColor = Qt.blue#self.discPalette[classValueIndices[self.rawData[i].getclass().value], 255*insideData[j]]
+        edgeColor = Qt.blue#self.discPalette[classValueIndices[self.rawData[i].getclass().value]]
+
         # draw edges
         for e in range(self.nEdges):
             (key,i,j) = self.edges[e]
-            
+
             if i in self.hiddenNodes or j in self.hiddenNodes:
-                continue  
-            
+                continue
+
             x1 = self.visualizer.coors[i][0]
             x2 = self.visualizer.coors[j][0]
             y1 = self.visualizer.coors[i][1]
@@ -447,71 +447,71 @@ class OWGraphDrawerCanvas(OWGraph):
             if edgesCount not in neighbours:
                 neighbours.append(edgesCount)
             self.vertices[j] = (key, neighbours)
-            
+
             edgesCount += 1
-        
+
         edgesCurveObject = UnconnectedLinesCurve(self, QPen(QColor(192,192,192)), xData, yData)
         edgesCurveObject.xData = xData
         edgesCurveObject.yData = yData
         self.edgesKey = self.insertCurve(edgesCurveObject)
-        
+
         selectionX = []
         selectionY = []
         # draw vertices
         for v in range(self.nVertices):
             if v in self.hiddenNodes:
                 continue
-            
+
             x1 = self.visualizer.coors[v][0]
             y1 = self.visualizer.coors[v][1]
-            
+
             if self.colorIndex != -1:
                 if self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Continuous:
                     newColor = self.contPalette[self.noJitteringScaledData[self.colorIndex][v]]
                 elif self.visualizer.graph.items.domain[self.colorIndex].varType == orange.VarTypes.Discrete:
                     newColor = self.discPalette[self.colorIndices[self.visualizer.graph.items[v][self.colorIndex].value]]
-            else: 
+            else:
                 newColor = Qt.red #QColor(0,0,0)
-            
+
             selectionX.append(x1)
             selectionY.append(y1)
             key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1])
-            
+
             if v in self.selection:
                 newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(fillColor), QPen(Qt.yellow, 3), QSize(10, 10))
                 self.setCurveSymbol(key, newSymbol)
-            
+
             (tmp, neighbours) = self.vertices[v]
             self.vertices[v] = (key, neighbours)
             self.indexPairs[key] = v
-        
+
         #self.addCurve('vertices', fillColor, edgeColor, 6, xData=selectionX, yData=selectionY)
-        
-            
+
+
 #        selectionX = []
 #        selectionY = []
-#        for v in self.selection:    
+#        for v in self.selection:
 #            x1 = self.visualizer.coors[v][0]
 #            y1 = self.visualizer.coors[v][1]
-#            
+#
 #            selectionX.append(x1)
 #            selectionY.append(y1)
-#            
+#
 #        selectionCurve = self.insertCurve('selections')
 #        selectionBrush = QBrush(QBrush.NoBrush)
 #        selectionPen = QPen(Qt.yellow, 3)
 #        selectionSymbol = QwtSymbol(QwtSymbol.Ellipse, selectionBrush, selectionPen, QSize(10, 10))
 #        self.setCurveSymbol(selectionCurve, selectionSymbol)
-#        self.setCurveStyle(selectionCurve, QwtCurve.NoCurve)        
+#        self.setCurveStyle(selectionCurve, QwtCurve.NoCurve)
 #        self.setCurveData(selectionCurve, selectionX, selectionY)
-        
-        
+
+
         # drew markers
         if len(self.labelText) > 0:
             for v in range(self.nVertices):
                 if v in self.hiddenNodes:
                     continue
-                
+
                 x1 = self.visualizer.coors[v][0]
                 y1 = self.visualizer.coors[v][1]
                 lbl = ""
@@ -521,8 +521,8 @@ class OWGraphDrawerCanvas(OWGraph):
                     mkey = self.insertMarker(lbl)
                     self.marker(mkey).setXValue(float(x1))
                     self.marker(mkey).setYValue(float(y1))
-                    self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)            
-        
+                    self.marker(mkey).setLabelAlignment(Qt.AlignCenter | Qt.AlignBottom)
+
         # add ToolTips
         self.tooltipData = []
         self.tips.removeAll()
@@ -530,19 +530,19 @@ class OWGraphDrawerCanvas(OWGraph):
             for v in range(self.nVertices):
                 if v in self.hiddenNodes:
                     continue
-                
+
                 x1 = self.visualizer.coors[v][0]
                 y1 = self.visualizer.coors[v][1]
                 lbl = ""
                 for ndx in self.tooltipText:
                     values = self.visualizer.graph.items[v]
                     lbl = lbl + str(values[ndx]) + "\n"
-        
+
                 if lbl != '':
                     lbl = lbl[:-1]
                     self.tips.addToolTip(x1, y1, lbl)
         print "done."
-            
+
     def setVertexColor(self, attribute):
         if attribute == "(one color)":
             self.colorIndex = -1
@@ -551,11 +551,11 @@ class OWGraphDrawerCanvas(OWGraph):
             for var in self.visualizer.graph.items.domain.variables:
                 if var.name == attribute:
                     self.colorIndex = i
-                    if var.varType == orange.VarTypes.Discrete: 
+                    if var.varType == orange.VarTypes.Discrete:
                         self.colorIndices = getVariableValueIndices(self.visualizer.graph.items, self.colorIndex)
                 i += 1
         pass
-        
+
     def setLabelText(self, attributes):
         self.labelText = []
         if isinstance(self.visualizer.graph.items, orange.ExampleTable):
@@ -564,10 +564,10 @@ class OWGraphDrawerCanvas(OWGraph):
                 for i in range(len(data.domain)):
                     if data.domain[i].name == att:
                         self.labelText.append(i)
-                        
+
                 if self.visualizer.graph.items.domain.hasmeta(att):
                         self.labelText.append(self.visualizer.graph.items.domain.metaid(att))
-    
+
     def setTooltipText(self, attributes):
         self.tooltipText = []
         if isinstance(self.visualizer.graph.items, orange.ExampleTable):
@@ -576,53 +576,53 @@ class OWGraphDrawerCanvas(OWGraph):
                 for i in range(len(data.domain)):
                     if data.domain[i].name == att:
                         self.tooltipText.append(i)
-                        
+
                 if self.visualizer.graph.items.domain.hasmeta(att):
                         self.tooltipText.append(self.visualizer.graph.items.domain.metaid(att))
-        
-                            
+
+
     def edgesContainsEdge(self, i, j):
         for e in range(self.nEdges):
             (key,iTmp,jTmp) = self.edges[e]
-            
+
             if (iTmp == i and jTmp == j) or (iTmp == j and jTmp == i):
                 return True
         return False
-        
+
     def addVisualizer(self, visualizer):
         self.visualizer = visualizer
         self.clear()
-        
+
         self.nVertices = visualizer.graph.nVertices
         self.nEdges = 0
         self.vertexDegree = []
-        
+
         #dodajanje vozlisc
         print "OWGraphDrawerCanvas/addVisualizer: adding vertices..."
         self.vertices = {}
         for v in range(0, self.nVertices):
             self.vertices[v] = (None, [])
         print "done."
-        
+
         #dodajanje povezav
         print "OWGraphDrawerCanvas/addVisualizer: adding edges..."
         self.edges = {}
         self.nEdges = 0
-        
+
         for (i,j) in visualizer.graph.getEdges():
             self.edges[self.nEdges] = (None,i,j)
-            
+
 #            (key, neighbours) = self.vertices[i]
 #            neighbours.append(j)
 #            self.vertices[i] = (key, neighbours)
 #            (key, neighbours) = self.vertices[j]
 #            neighbours.append(i)
 #            self.vertices[j] = (key, neighbours)
-            
+
             self.nEdges += 1
-        
+
         print "done."
-        
+
     def resetValues(self):
         self.vertices={}
         self.edges={}
@@ -630,20 +630,20 @@ class OWGraphDrawerCanvas(OWGraph):
         #self.xCoors = None
         #self.yCoors = None
         self.n = 0
-    
+
     def updateCanvas(self): #, xCoors, yCoors):
         #self.xCoors = xCoors
         #self.yCoors = yCoors
-        
+
         self.setAxisAutoScaled()
 
         #self.drawGraph(self.nVertices);
         self.updateData()
         self.replot()
-        
+
         # preprecimo avtomatsko primikanje plota (kadar smo odmaknili neko skrajno tocko)
-        self.setAxisFixedScale()    
-    
+        self.setAxisFixedScale()
+
     def setAxisAutoScaled(self):
         self.setAxisAutoScale(self.xBottom)
         self.setAxisAutoScale(self.yLeft)
@@ -651,4 +651,3 @@ class OWGraphDrawerCanvas(OWGraph):
     def setAxisFixedScale(self):
         self.setAxisScale(self.xBottom, self.axisScale(self.xBottom).lBound(), self.axisScale(self.xBottom).hBound())
         self.setAxisScale(self.yLeft, self.axisScale(self.yLeft).lBound(), self.axisScale(self.yLeft).hBound())
-        

@@ -13,37 +13,19 @@ from xml.dom.minidom import Document, parse
 ICONS_LARGE_SIZE = 80
 ICONS_SMALL_SIZE = 40
 
-class DirectionButton(QToolButton):
-    def __init__(self, parent, leftDirection = 1, useLargeIcons = 0):
-        apply(QToolButton.__init__,(self, parent))
-        self.setAutoRaise(1)
-        self.parent = parent
-        self.leftDirection = leftDirection        # is direction to left or right
-        self.connect( self, SIGNAL( 'clicked()' ), self.clicked)
-        self.setAutoRepeat(1)
-
-        if self.leftDirection:   self.setIcon(QIcon(self.parent.parent().canvasDlg.move_left))
-        else:                    self.setIcon(QIcon(self.parent.parent().canvasDlg.move_right))
-
-        if useLargeIcons == 1:
-            self.setIconSize(QSize(ICONS_LARGE_SIZE-15,ICONS_LARGE_SIZE-15))
-            self.setMaximumSize(5+ICONS_LARGE_SIZE/2, ICONS_LARGE_SIZE)
-            self.setMinimumSize(5+ICONS_LARGE_SIZE/2, ICONS_LARGE_SIZE)
-        else:
-            self.setIconSize(QSize(ICONS_SMALL_SIZE-4, ICONS_SMALL_SIZE-4))
-            self.setMaximumSize(5+ICONS_SMALL_SIZE/2, ICONS_SMALL_SIZE)
-            self.setMinimumSize(5+ICONS_SMALL_SIZE/2, ICONS_SMALL_SIZE)
-
-    def clicked(self):
-        if self.leftDirection:  self.parent.moveWidgetsToLeft()
-        else:                    self.parent.moveWidgetsToRight()
-
-
 class WidgetButton(QToolButton):
-    def __init__(self, *args):
-        apply(QToolButton.__init__,(self,)+ args)
+    def __init__(self, parent = None):
+        QToolButton.__init__(self, parent)
+        self.parent = parent
         self.setAutoRaise(1)
         self.shiftPressed = 0
+
+    def wheelEvent(self, ev):
+        if self.parent:
+            #qApp.sendEvent(self.parent.horizontalScrollBar(), ev)
+            hs = self.parent.horizontalScrollBar()
+            hs.setValue(min(max(hs.minimum(), hs.value()-ev.delta()), hs.maximum()))
+
 
     def setValue(self, name, nameKey, tabs, canvasDlg, useLargeIcons):
         self.widgetTabs = tabs
@@ -169,7 +151,7 @@ class WidgetButton(QToolButton):
             return
         self.busy = 1
         win = self.canvasDlg.workspace.activeWindow()
-        vrect = win.visibleRect()
+        vrect = win.visibleRegion().boundingRect()
         tl, br = win.mapToGlobal(vrect.topLeft()), win.mapToGlobal(vrect.bottomRight())
         wh2, ww2 = self.width()/2, self.height()/2
         x0, y0, x1, y1 = tl.x(), tl.y(), br.x(), br.y()
@@ -181,10 +163,10 @@ class WidgetButton(QToolButton):
         if dinwin and (dinwin != win or not inwindow):
              dinwin.removeWidget(widget)
              delattr(self, "widgetDragging")
-             dinwin.canvasView.canvas().update()
+             dinwin.canvasView.scene().update()
 
-        wx += win.canvasView.contentsX()
-        wy += win.canvasView.contentsY()
+        wx += win.canvasView.sceneRect().x()
+        wy += win.canvasView.sceneRect().y()
         if inwindow:
             if not widget:
                 widget = win.addWidget(self, wx, wy)
@@ -192,17 +174,17 @@ class WidgetButton(QToolButton):
             else:
                 widget.setCoords(wx, wy)
 
-            import orngCanvasItems
-            items = win.canvasView.canvas().collisions(widget.rect())
-            count = win.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget)
-            if count > 1:
-                    widget.invalidPosition = True
-                    widget.selected = True
-            else:
-                    widget.invalidPosition = False
-                    widget.selected = False
-            widget.updateLineCoords()
-            win.canvasView.canvas().update()
+#            import orngCanvasItems
+#            items = win.canvasView.scene().collisions(widget.rect())
+#            count = win.canvasView.findItemTypeCount(items, orngCanvasItems.CanvasWidget)
+#            if count > 1:
+#                    widget.invalidPosition = True
+#                    widget.selected = True
+#            else:
+#                    widget.invalidPosition = False
+#                    widget.selected = False
+#            widget.updateLineCoords()
+            win.canvasView.scene().update()
         delattr(self, "busy")
 
     def mouseReleaseEvent(self, e):
@@ -211,91 +193,14 @@ class WidgetButton(QToolButton):
         if widget:
             if widget.invalidPosition:
                 dinwin.removeWidget(widget)
-                dinwin.canvasView.canvas().update()
+                dinwin.canvasView.scene().update()
             elif self.shiftPressed and len(dinwin.widgets) > 1:
                 dinwin.addLine(dinwin.widgets[-2], dinwin.widgets[-1])
             delattr(self, "widgetDragging")
         else:  # not dragging, just a click
             if e.button() == Qt.RightButton:
                 self.clicked(True)
-
         QToolButton.mouseReleaseEvent(self, e)
-
-class WidgetTab(QWidget):
-    def __init__(self, useLargeIcons = 0, *args):
-        apply(QWidget.__init__,(self,)+ args)
-        self.HItemBox = QHBoxLayout(self)
-        self.HItemBox.setSpacing(0)
-        self.HItemBox.setMargin(0)
-        self.widgets = []
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
-        self.widgetIndex = 0
-        self.left  = DirectionButton(self, 1, useLargeIcons = useLargeIcons)
-        self.right = DirectionButton(self, 0, useLargeIcons = useLargeIcons)
-        self.frameSpace = QFrame(self)
-        self.frameSpace.setMinimumWidth(10)
-        self.frameSpace.setMaximumWidth(10)
-
-        self.HItemBox.addWidget(self.left)
-        self.HItemBox.addWidget(self.right)
-        self.HItemBox.addWidget(self.frameSpace)
-
-    # hide the first widget on the left
-    def moveWidgetsToLeft(self):
-        self.widgetIndex = max(0, self.widgetIndex-1)
-        while self.widgetIndex > 0 and isinstance(self.widgets[self.widgetIndex], QFrame):
-            self.widgetIndex -= 1
-
-        self.updateLeftRightButtons()
-
-    # show the first hidden widget on the left
-    def moveWidgetsToRight(self):
-        self.widgetIndex = min(self.widgetIndex+1, len(self.widgets)-1)
-
-        while self.widgetIndex < len(self.widgets)-2 and isinstance(self.widgets[self.widgetIndex], QFrame):
-            self.widgetIndex += 1
-
-        self.updateLeftRightButtons()
-
-    def addWidget(self, widget):
-        self.HItemBox.addWidget(widget)
-        self.widgets.append(widget)
-
-    def finishedAdding(self):
-        self.HItemBox.addStretch(10)
-
-    # update new layout
-    def updateLeftRightButtons(self):
-        widgetsWidth = 0
-        for i in range(self.widgetIndex, len(self.widgets)):
-            widgetsWidth += self.widgets[i].width()
-        windowWidth = self.visibleRegion().boundingRect().width() - 2*self.left.width() - 20
-
-        while self.widgetIndex > 0 and windowWidth > widgetsWidth + self.widgets[self.widgetIndex-1].width():
-            widgetsWidth += self.widgets[self.widgetIndex-1].width()
-            self.widgetIndex -= 1
-
-        while self.widgetIndex < len(self.widgets) and isinstance(self.widgets[self.widgetIndex], QFrame):
-            self.widgetIndex += 1
-
-        for widget in self.widgets[:self.widgetIndex]:
-            widget.hide()
-        for widget in self.widgets[self.widgetIndex:]:
-            widget.show()
-
-        self.right.setEnabled(windowWidth < widgetsWidth )
-        self.left.setEnabled(self.widgetIndex > 0)
-
-        if widgetsWidth < windowWidth + 2*self.left.width() + 20 and self.widgetIndex == 0:
-            self.left.hide(); self.right.hide(); self.frameSpace.hide()
-        else:
-            self.left.show(); self.right.show(); self.frameSpace.show()
-
-        self.HItemBox.invalidate()
-
-    def resizeEvent(self, e):
-        QWidget.resizeEvent(self, e)
-        self.updateLeftRightButtons()
 
 
 
@@ -311,14 +216,22 @@ class WidgetTabs(QTabWidget):
         self.widgetInfo = widgetInfo
 
     def insertWidgetTab(self, name):
-        tab = WidgetTab(self.useLargeIcons, self)
+        tab = WidgetScrollArea(self)
+        tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tabs.append(tab)
         self.addTab(tab, name)
         self.tabDict[name] = tab
+        widgetSpace = QWidget(self)
+        widgetSpace.setLayout(QHBoxLayout())
+        widgetSpace.layout().setSpacing(0)
+        widgetSpace.layout().setMargin(0)
+        tab.widgetSpace = widgetSpace
+        tab.widgets = []
+        tab.setWidget(widgetSpace)
         return tab
 
     # read the xml registry and show all installed widgets
-    def readInstalledWidgets(self, registryFileName, widgetDir, picsDir, defaultPic, useLargeIcons):
+    def readInstalledWidgets(self, registryFileName, widgetTabList, widgetDir, picsDir, defaultPic, useLargeIcons):
         self.widgetDir = widgetDir
         self.picsDir = picsDir
         self.defaultPic = defaultPic
@@ -328,6 +241,9 @@ class WidgetTabs(QTabWidget):
         categories = orangeCanvas.getElementsByTagName("widget-categories")[0]
         if (categories == None):
             return
+
+        for tab in widgetTabList:
+            self.insertWidgetTab(tab)
 
         categoryList = categories.getElementsByTagName("category")
         for category in categoryList:
@@ -398,20 +314,31 @@ class WidgetTabs(QTabWidget):
                 sys.excepthook(type, val, traceback)  # print the exception
 
         exIndex = 0
+        width = 0
+        iconSize = self.useLargeIcons == 0 and ICONS_SMALL_SIZE or self.useLargeIcons and ICONS_LARGE_SIZE
         for i in range(len(priorityList)):
             button = WidgetButton(tab)
+            width += iconSize
             self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i], "button": button, "directory": directory}
             button.setValue(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg, self.useLargeIcons)
             self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
             if exIndex != priorityList[i] / 1000:
                 for k in range(priorityList[i]/1000 - exIndex):
-                    frame = QFrame(tab)
-                    frame.setMinimumWidth(10)
-                    frame.setMaximumWidth(10)
-                    tab.addWidget(frame)
-                    #tab.HItemBox.addSpacing(10)
+                    tab.widgetSpace.layout().addSpacing(10)
+                    width += 10
                 exIndex = priorityList[i] / 1000
-            tab.addWidget(button)
+            tab.widgetSpace.layout().addWidget(button)
+            tab.widgets.append(button)
             self.allWidgets.append(button)
+        #tab.widgetSpace.adjustSize()
+        #print tab.horizontalScrollBar().height()
+        #tab.setFixedHeight(height + tab.horizontalScrollBar().height()-11)
+        tab.widgetSpace.setFixedSize(width, iconSize)
+        tab.setFixedHeight(iconSize + tab.horizontalScrollBar().height()-11)
 
-        tab.finishedAdding()
+
+class WidgetScrollArea(QScrollArea):
+    def wheelEvent(self, ev):
+        #qApp.sendEvent(self.parent.horizontalScrollBar(), ev)
+        hs = self.horizontalScrollBar()
+        hs.setValue(min(max(hs.minimum(), hs.value()-ev.delta()), hs.maximum()))

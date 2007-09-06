@@ -14,7 +14,7 @@ class OWAttributeSampler(OWWidget):
             ContextField("classAttribute", DomainContextHandler.Required),
             ContextField("attributeList", DomainContextHandler.List + DomainContextHandler.SelectedRequired,
                          selected="selectedAttributes")])}
-    
+
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'AttributeSampler')
 
@@ -27,7 +27,7 @@ class OWAttributeSampler(OWWidget):
         self.selectedAttributes = []
         self.classAttribute = None
         self.loadSettings()
-        
+
         OWGUI.listBox(self.controlArea, self, "selectedAttributes", "attributeList", box="Selected attributes", selectionMode = QListBox.Extended)
         OWGUI.separator(self.controlArea)
         self.classAttrCombo = OWGUI.comboBox(self.controlArea, self, "classAttribute", box="Class attribute")
@@ -45,15 +45,15 @@ class OWAttributeSampler(OWWidget):
             self.attributeList = [(attr.name, attr.varType) for attr in data.domain]
             self.selectedAttributes = []
             for attrName, attrType in self.attributeList:
-                self.classAttrCombo.insertItem(self.icons[attrType], attrName)
+                self.classAttrCombo.addItem(self.icons[attrType], attrName)
             self.classAttribute = 0
         else:
             self.attributeList = []
             self.selectedAttributes = []
-            self.classAttrCombo.insertItem("")
+            self.classAttrCombo.addItem("")
 
-        self.openContext("", data)            
-           
+        self.openContext("", data)
+
         self.data = data
         self.outputData()
 
@@ -65,7 +65,7 @@ class OWAttributeSampler(OWWidget):
             newDomain = orange.Domain([self.data.domain[i] for i in self.selectedAttributes], self.data.domain[self.classAttribute])
             newData = orange.ExampleTable(newDomain, self.data)
             self.send("Examples", newData)
-            
+
 
 ##############################################################################
 # Test the widget, run from prompt
@@ -75,7 +75,7 @@ if __name__=="__main__":
     ow = OWAttributeSampler()
     appl.setMainWidget(ow)
     ow.show()
-    
+
     data = orange.ExampleTable('../datasets/iris.tab')
     ow.dataset(data)
 

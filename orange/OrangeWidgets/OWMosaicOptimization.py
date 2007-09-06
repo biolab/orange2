@@ -2,7 +2,6 @@ from OWBaseWidget import *
 from OWWidget import OWWidget
 import os
 import OWGUI, orngVisFuncts, OWQCanvasFuncts
-from qtcanvas import QCanvas, QCanvasView
 from orngMosaic import *
 from orngScaleData import getVariableValuesSorted
 
@@ -571,6 +570,8 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
         selectedData = self.mosaicWidget.data.selectref(selectedIndices)
         unselectedData = self.mosaicWidget.data.selectref(selectedIndices, negate = 1)
+
+        if self.subsetTree.selectedItems() == []: return
         selectedTreeItem = self.subsetTree.selectedItems()[0]     # current selection
 
         # add a new item into the list box
@@ -670,6 +671,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.mosaicWidget.updateGraph()
 
     def mtSelectedListItemDoubleClicked(self, item):
+        if self.subsetTree.selectedItems() == []: return
         pos = self.selectionsList.currentRow()
         treeItem = self.subsetTree.selectedItems()[0].child(pos)
         self.mtClearTreeSelections()

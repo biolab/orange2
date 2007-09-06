@@ -122,7 +122,7 @@ class OWPade(OWWidget):
             icons = OWGUI.getAttributeIcons()
             self.outputLB.clear()
             for attr in self.contAttributes:
-                self.outputLB.insertItem(icons[attr.varType], attr.name)
+                self.outputLB.addItem(QListWidgetItem(icons[attr.varType], attr.name))
 
             self.dimensions = range(len(self.attributes))
         else:

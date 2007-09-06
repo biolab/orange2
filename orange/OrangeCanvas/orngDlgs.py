@@ -93,8 +93,8 @@ class SignalCanvasView(QGraphicsView):
             box.setZValue(200)
             self.outBoxes.append((outputs[i].name, box))
 
-            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outputs[i].name, xWidgetOff + width - 5, y - 7, Qt.AlignRight + Qt.AlignVCenter, bold =1, show=1))
-            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outputs[i].type, xWidgetOff + width - 5, y + 7, Qt.AlignRight + Qt.AlignVCenter, bold =0, show=1))
+            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outputs[i].name, xWidgetOff + width - 5, y - 7, Qt.AlignRight | Qt.AlignVCenter, bold =1, show=1))
+            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outputs[i].type, xWidgetOff + width - 5, y + 7, Qt.AlignRight | Qt.AlignVCenter, bold =0, show=1))
 
         for i in range(len(inputs)):
             y = yWidgetOffTop + ((i+1)*signalSpace)/float(len(inputs)+1)
@@ -103,11 +103,11 @@ class SignalCanvasView(QGraphicsView):
             box.setZValue(200)
             self.inBoxes.append((inputs[i].name, box))
 
-            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inputs[i].name, xWidgetOff + width + xSpaceBetweenWidgets + 5, y - 7, Qt.AlignLeft + Qt.AlignVCenter, bold =1, show=1))
-            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inputs[i].type, xWidgetOff + width + xSpaceBetweenWidgets + 5, y + 7, Qt.AlignLeft + Qt.AlignVCenter, bold =0, show=1))
+            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inputs[i].name, xWidgetOff + width + xSpaceBetweenWidgets + 5, y - 7, Qt.AlignLeft | Qt.AlignVCenter, bold =1, show=1))
+            self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inputs[i].type, xWidgetOff + width + xSpaceBetweenWidgets + 5, y + 7, Qt.AlignLeft | Qt.AlignVCenter, bold =0, show=1))
 
-        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outName, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
-        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inName, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
+        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, outName, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter | Qt.AlignTop, bold =1, show=1))
+        self.texts.append(orngGui.MyCanvasText(self.dlg.canvas, inName, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter | Qt.AlignTop, bold =1, show=1))
 
         return (2*xWidgetOff + 2*width + xSpaceBetweenWidgets, yWidgetOffTop + height + yWidgetOffBottom)
 
@@ -410,6 +410,8 @@ class CanvasOptionsDlg(QDialog):
         self.topLayout.setSpacing(0)
         self.resize(500,500)
 
+        self.removeTabs = []
+
         self.tabs = QTabWidget(self)
         GeneralTab = orngGui.widgetBox(self.tabs, removeMargin = 0)
         ExceptionsTab = orngGui.widgetBox(self.tabs, removeMargin = 0)
@@ -423,7 +425,7 @@ class CanvasOptionsDlg(QDialog):
         # GENERAL TAB
         generalBox = orngGui.widgetBox(GeneralTab, "General Options")
         self.snapToGridCB = orngGui.checkBox(generalBox, "Snap widgets to grid")
-        self.useLargeIconsCB = orngGui.checkBox(generalBox, "Show widgets using large icons and text")
+        #self.useLargeIconsCB = orngGui.checkBox(generalBox, "Show widgets using large icons and text")
         self.writeLogFileCB  = orngGui.checkBox(generalBox, "Write content of Output window to log file")
         self.showSignalNamesCB = orngGui.checkBox(generalBox, "Show signal names between widgets")
         self.dontAskBeforeCloseCB= orngGui.checkBox(generalBox, "Don't ask to save schema before closing")
@@ -680,9 +682,9 @@ class PreferencesDlg(QDialog):
         #self.connect( self.editPriority, SIGNAL("activated(int)"), self.comboValueChanged )
         #self.connect( self.editColor, SIGNAL("activated(int)"), self.comboValueChanged )
 
-        propGrid.addWidget(cap1, 0,0, Qt.AlignVCenter+Qt.AlignHCenter)
-        propGrid.addWidget(cap2, 1,0, Qt.AlignVCenter+Qt.AlignHCenter)
-        propGrid.addWidget(cap3, 2,0, Qt.AlignVCenter+Qt.AlignHCenter)
+        propGrid.addWidget(cap1, 0,0, Qt.AlignVCenter|Qt.AlignHCenter)
+        propGrid.addWidget(cap2, 1,0, Qt.AlignVCenter|Qt.AlignHCenter)
+        propGrid.addWidget(cap3, 2,0, Qt.AlignVCenter|Qt.AlignHCenter)
         propGrid.addWidget(self.editFullName, 0,1, Qt.AlignVCenter)
         propGrid.addWidget(self.editPriority, 1,1, Qt.AlignVCenter)
         propGrid.addWidget(self.editColor, 2,1, Qt.AlignVCenter)
@@ -698,7 +700,7 @@ class PreferencesDlg(QDialog):
         self.channelList.setMinimumHeight(200)
         self.connect( self.channelList, SIGNAL("highlighted(int)"), self.listItemChanged )
 
-        self.grid.addWidget(cap0,0,0, Qt.AlignLeft+Qt.AlignBottom)
+        self.grid.addWidget(cap0,0,0, Qt.AlignLeft|Qt.AlignBottom)
         self.grid.addWidget(addButton, 2,1)
         self.grid.addWidget(removeButton, 3,1)
         self.grid.addMultiCellWidget(self.channelList, 1,5,0,0)
@@ -716,25 +718,10 @@ class PreferencesDlg(QDialog):
         self.connect(closeButton, SIGNAL("clicked()"),self.closeClicked)
         self.topLayout.activate()
 
-        self.editColor.insertItem( "black" )
-        self.editColor.insertItem( "darkGray" )
-        self.editColor.insertItem( "gray" )
-        self.editColor.insertItem( "lightGray" )
-        self.editColor.insertItem( "red" )
-        self.editColor.insertItem( "green" )
-        self.editColor.insertItem( "blue" )
-        self.editColor.insertItem( "cyan" )
-        self.editColor.insertItem( "magenta" )
-        self.editColor.insertItem( "yellow" )
-        self.editColor.insertItem( "darkRed" )
-        self.editColor.insertItem( "darkGreen" )
-        self.editColor.insertItem( "darkBlue" )
-        self.editColor.insertItem( "darkCyan" )
-        self.editColor.insertItem( "darkMagenta" )
-        self.editColor.insertItem( "darkYellow" )
+        self.editColor.addItems(["black", "darkGray", "gray", "lightGray", "red", "green", "blue", "cyan", "magenta", "yellow", "darkRed", "darkGreen", "darkBlue", "darkCyan" , "darkMagenta", "darkYellow"])
 
         for i in range(20):
-            self.editPriority.insertItem(str(i+1))
+            self.editPriority.addItem(str(i+1))
 
         self.channels = {}
         if self.canvasDlg.settings.has_key("Channels"):
@@ -750,16 +737,16 @@ class PreferencesDlg(QDialog):
 
         for i in range(self.editPriority.count()):
             if (str(self.editPriority.text(i)) == items[1]):
-                self.editPriority.setCurrentItem(i)
+                self.editPriority.setCurrentIndex(i)
 
         for i in range(self.editColor.count()):
             if (str(self.editColor.text(i)) == items[2]):
-                self.editColor.setCurrentItem(i)
+                self.editColor.setCurrentIndex(i)
 
     def reloadList(self):
         self.channelList.clear()
         for (key,value) in self.channels.items():
-            self.channelList.insertItem(key)
+            self.channelList.addItem(key)
 
     def saveChanges(self):
         index = self.channelList.currentItem()
@@ -771,8 +758,8 @@ class PreferencesDlg(QDialog):
         (Qstring,ok) = QInputDialog.getText(self, "Qt Add New Channel Name", "Enter new symbolic channel name")
         string = str(Qstring)
         if ok:
-            self.editColor.setCurrentItem(0)
-            self.editPriority.setCurrentItem(0)
+            self.editColor.setCurrentIndex(0)
+            self.editPriority.setCurrentIndex(0)
             self.editFullName.setText(string)
             self.channels[string] = str(self.editFullName.text()) + "::" + str(self.editPriority.currentText()) + "::" + str(self.editColor.currentText())
             self.reloadList()
@@ -782,7 +769,7 @@ class PreferencesDlg(QDialog):
         for i in range(self.channelList.count()):
             temp = str(self.channelList.item(i).text())
             if temp == string:
-                self.channelList.setCurrentItem(i)
+                self.channelList.setCurrentIndex(i)
                 return
 
     def removeSignal(self):

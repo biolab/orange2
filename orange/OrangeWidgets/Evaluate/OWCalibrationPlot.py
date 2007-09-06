@@ -333,7 +333,7 @@ class OWCalibrationPlot(OWWidget):
             ## classifiersQLB
             for i in range(self.numberOfClassifiers):
                 newColor = self.classifierColor[i]
-                self.classifiersQLB.insertItem(ColorPixmap(newColor), self.dres.classifierNames[i])
+                self.classifiersQLB.addItem(QListWidgetItem(ColorPixmap(newColor), self.dres.classifierNames[i]))
             self.classifiersQLB.selectAll()
         else:
             self.numberOfClasses = 0

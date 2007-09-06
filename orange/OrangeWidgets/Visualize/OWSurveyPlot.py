@@ -145,10 +145,9 @@ class OWSurveyPlot(OWVisWidget):
         if self.data != None and data != None and self.data.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
 
-        exData = self.data
+        sameDomain = self.data and data and data.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         self.data = data
 
-        sameDomain = self.data and exData and exData.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
         if not sameDomain:
             self.resetAttrManipulation()
             self.setSortCombo()
@@ -184,11 +183,6 @@ class OWSurveyPlot(OWVisWidget):
 
     def setGlobalValueScaling(self):
         self.graph.setData(self.data)
-
-        # this is not optimal, because we do the rescaling twice (TO DO)
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-
         self.updateGraph()
 
     def setColors(self):

@@ -132,7 +132,7 @@ class OWImpute(OWWidget):
                 self.indiType = 0
 
     def individualSelected(self, i = -1):
-        if i == -1:
+        if i == -1 and self.attrList.selectedItems() != []:
             i = self.attrList.row(self.attrList.selectedItems()[0])
         if self.data:
             self.selectedAttr = i
@@ -144,7 +144,7 @@ class OWImpute(OWWidget):
 
         if attr and attr.varType == orange.VarTypes.Discrete:
             self.indiValueComboBox.clear()
-            self.indiValueComboBox.insertItems(0, list(attr.values))
+            self.indiValueComboBox.addItems(list(attr.values))
 
             self.indiValCom = self.methods.get(attrName, (0, 0))[1] or 0
             self.indiValueLineEdit.hide()

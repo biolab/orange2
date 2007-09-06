@@ -9,7 +9,7 @@ class Test(OWWidget):
         self.chosenColor = 1
         self.chosenAttribute = ""
 
-        box = OWGUI.widgetBox(self.controlArea, "Color &  Attribute")       
+        box = OWGUI.widgetBox(self.controlArea, "Color &  Attribute")
         OWGUI.comboBox(box, self, "chosenColor", label="Color: ", items=["Red", "Green", "Blue"])
         self.attrCombo = OWGUI.comboBox(box, self, "chosenAttribute", label="Attribute: ", sendSelectedValue = 1, emptyString="(none)")
 
@@ -20,10 +20,10 @@ class Test(OWWidget):
         self.data = orange.ExampleTable(r"..\datasets\horse-colic.tab")
 
         self.attrCombo.clear()
-        self.attrCombo.insertItem("(none)")
+        self.attrCombo.addItem("(none)")
         icons = OWGUI.getAttributeIcons()
         for attr in self.data.domain:
-            self.attrCombo.insertItem(icons[attr.varType], attr.name)
+            self.attrCombo.addItem(icons[attr.varType], attr.name)
 
         self.chosenAttribute = self.data.domain[0].name
 

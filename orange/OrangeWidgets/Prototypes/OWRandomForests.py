@@ -30,7 +30,7 @@ class OWRandomForests(OWWidget):
 	self.limitDepthP = 3
 	self.rseed = 0
 	self.outtree = 0
-	
+
 
 	self.maxTrees = 10000
 
@@ -62,7 +62,7 @@ class OWRandomForests(OWWidget):
 
         #self.sBox = QVGroupBox(self.controlArea)
         #self.sBox.setTitle('Single Tree Output')
-	
+
 	self.streesBox = OWGUI.spin(self.controlArea, self, "outtree", -1, self.maxTrees, orientation="horizontal", label="Index of tree on the output ", callback=[self.period, self.extree])
 	#self.streesBox.setDisabled(True)
 	self.streeEnabled(False)
@@ -104,13 +104,13 @@ class OWRandomForests(OWWidget):
 
 	#assemble learner
 	rand = random.Random(self.rseed)
-	
+
         attrs = None
         if self.attributes: attrs = self.attributesP
 
 	self.learner = orngEnsemble.RandomForestLearner(trees = self.trees, rand=rand, attributes=attrs, callback=self.pbchange)
-	
-	if self.preNodeInst: self.learner.learner.stop.minExamples = self.preNodeInstP 
+
+	if self.preNodeInst: self.learner.learner.stop.minExamples = self.preNodeInstP
         else: self.learner.learner.stop.minExamples = 0
 
 	self.learner.learner.storeExamples = 1
@@ -155,11 +155,10 @@ class OWRandomForests(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWRandomForests()
-    a.setMainWidget(ow)
 
     d = orange.ExampleTable('adult_sample')
     ow.setData(d)
 
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()

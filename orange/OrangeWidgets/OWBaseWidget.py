@@ -4,6 +4,9 @@
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
 import orngOrangeFoldersQt4
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+
 from OWTools import *
 from OWContexts import *
 import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
@@ -213,9 +216,8 @@ class OWBaseWidget(QDialog):
     def moveEvent(self, ev):
         QDialog.moveEvent(self, ev)
         if self.savePosition:
-            self.widgetXPosition = ev.pos().x()
-            self.widgetYPosition = ev.pos().y()
-            #print self.captionTitle, "saving position", self.widgetXPosition, self.widgetYPosition
+            self.widgetXPosition = self.frameGeometry().x()
+            self.widgetYPosition = self.frameGeometry().y()
 
     # set widget state to hidden
     def hideEvent(self, ev):
@@ -240,8 +242,12 @@ class OWBaseWidget(QDialog):
 
     # put this widget on top of all windows
     def reshow(self):
+        x,y = getattr(self, "widgetXPosition", None), getattr(self, "widgetYPosition", None)
         self.hide()
+        if x != None and y != None:
+            self.move(x,y)
         self.show()
+
 
     def send(self, signalName, value, id = None):
         if not self.hasOutputName(signalName):
@@ -479,8 +485,10 @@ class OWBaseWidget(QDialog):
         if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
 
         # we define only a way to handle signals that have defined a handler function
-        for key in self.linksIn.keys():
-            for i in range(len(self.linksIn[key])):
+        #for key in self.linksIn.keys():
+        for input in self.inputs:
+            key = input[0]
+            for i in range(len(self.linksIn.get(key, []))):
                 (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
                 if not (handler and dirty): continue
 
@@ -577,9 +585,9 @@ class OWBaseWidget(QDialog):
 
     # if we are in debug mode print the event into the file
     def printEvent(self, text, eventVerbosity = 1):
-        self.signalManager.addEvent(self.captionTitle[3:] + ": " + text, eventVerbosity = eventVerbosity)
+        self.signalManager.addEvent(self.captionTitle + ": " + text, eventVerbosity = eventVerbosity)
         if self.eventHandler:
-            self.eventHandler(self.captionTitle[3:] + ": " + text, eventVerbosity)
+            self.eventHandler(self.captionTitle + ": " + text, eventVerbosity)
 
     def openWidgetHelp(self):
         if orangedir:
@@ -613,11 +621,12 @@ class OWBaseWidget(QDialog):
             QDialog.keyPressEvent(self, e)
 
     def information(self, id = 0, text = None):
-        #self.setState("Info", id, text)
-        self.setState("Warning", id, text)      # if we want information just set warning
+        self.setState("Info", id, text)
+        #self.setState("Warning", id, text)
 
     def warning(self, id = 0, text = ""):
-        self.setState("Warning", id, text)
+        #self.setState("Warning", id, text)
+        self.setState("Info", id, text)        # if we want warning just set information
 
     def error(self, id = 0, text = ""):
         self.setState("Error", id, text)
@@ -697,7 +706,7 @@ class OWBaseWidget(QDialog):
     def __setattr__(self, name, value):
         return unisetattr(self, name, value, QDialog)
 
-   
+
     # ##################################################################
     # a function for randomly changing settings in the widget - used in automatic widget debugging
     def randomlyChangeSettings(self, verboseMode = 0):
@@ -720,9 +729,9 @@ class OWBaseWidget(QDialog):
                 setattr(self, value, not self.getdeepattr(value))
             elif elementType == "button":
                 elementType, widget, callback = self._guiElements[index]
-                if widget.isToggleButton():
-                    newValue = "Clicking button %s. State is %d" % (str(widget.text()).strip(), not widget.isOn())
-                    widget.setOn(not widget.isChecked())
+                if widget.isCheckable():
+                    newValue = "Clicking button %s. State is %d" % (str(widget.text()).strip(), not widget.isChecked())
+                    widget.setChecked(not widget.isChecked())
                 else:
                     newValue = "Pressed button %s" % (str(widget.text()).strip())
             elif elementType == "listBox":
@@ -764,7 +773,7 @@ class OWBaseWidget(QDialog):
                 else:
                     callback = None
             if newValue != "":
-                self.printEvent("Widget %s. %s" % (str(self.caption()), newValue), eventVerbosity = 1)
+                self.printEvent("Widget %s. %s" % (str(self.windowTitle()), newValue), eventVerbosity = 1)
             if callback:
                 if type(callback) == list:
                     for c in callback:
@@ -774,7 +783,7 @@ class OWBaseWidget(QDialog):
         except:
             sys.stderr.write("------------------\n")
             if newValue != "":
-                sys.stderr.write("Widget %s. %s\n" % (str(self.caption()), newValue))
+                sys.stderr.write("Widget %s. %s\n" % (str(self.windowTitle()), newValue))
             eType, val, traceback = sys.exc_info()
             sys.excepthook(eType, val, traceback)  # print the exception
             sys.stderr.write("Widget settings are:\n")

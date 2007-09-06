@@ -9,10 +9,9 @@
 #
 # Show data using scatterplot matrix visualization method
 #
-
+import orngOrangeFoldersQt4
 from OWWidget import *
 from OWScatterPlotGraph import OWScatterPlotGraph
-#import qt
 import orngInteract
 import statc
 import OWDlgs, OWGUI
@@ -63,11 +62,9 @@ class OWScatterPlotMatrix(OWWidget):
         self.loadSettings()
 
         #GUI
-        self.tabs = QTabWidget(self.space, 'tabWidget')
-        self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = QVGroupBox(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "General")
-        self.tabs.insertTab(self.SettingsTab, "Settings")
+        self.tabs = OWGUI.tabWidget(self.controlArea)
+        self.GeneralTab = OWGUI.createTabPage(self.tabs, "General")
+        self.SettingsTab = OWGUI.createTabPage(self.tabs, "Settings")
 
         #add controls to self.controlArea widget
         self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, "Shown Attributes")
@@ -82,18 +79,18 @@ class OWScatterPlotMatrix(OWWidget):
         vbox = OWGUI.widgetBox(hbox, orientation = 'vertical')
         self.buttonUPAttr   = OWGUI.button(vbox, self, "", callback = self.moveAttrUP, tooltip="Move selected attributes up")
         self.buttonDOWNAttr = OWGUI.button(vbox, self, "", callback = self.moveAttrDOWN, tooltip="Move selected attributes down")
-        self.buttonUPAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
+        self.buttonUPAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up1.png")))
         self.buttonUPAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         self.buttonUPAttr.setMaximumWidth(20)
-        self.buttonDOWNAttr.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
+        self.buttonDOWNAttr.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down1.png")))
         self.buttonDOWNAttr.setSizePolicy(QSizePolicy(QSizePolicy.Fixed , QSizePolicy.Expanding))
         self.buttonDOWNAttr.setMaximumWidth(20)
         self.buttonUPAttr.setMaximumWidth(20)
 
         self.attrAddButton =    OWGUI.button(self.addRemoveGroup, self, "", callback = self.addAttribute, tooltip="Add (show) selected attributes")
-        self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
+        self.attrAddButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
         self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
-        self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
+        self.attrRemoveButton.setIcon(QIcon(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
 
         self.createMatrixButton = OWGUI.button(self.GeneralTab, self, "Create matrix", callback = self.createGraphs, tooltip="Create scatterplot matrix using shown attributes")
 
@@ -119,7 +116,10 @@ class OWScatterPlotMatrix(OWWidget):
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
 
-        self.grid = QGridLayout(self.mainArea)
+        import sip
+        sip.delete(self.mainArea.layout())
+        self.grid = QGridLayout()
+        self.mainArea.setLayout(self.grid)
         self.graphs = []
         self.labels = []
         self.graphParameters = []
@@ -145,8 +145,7 @@ class OWScatterPlotMatrix(OWWidget):
         c.createContinuousPalette("contPalette", "Continuous palette")
         box = c.createBox("otherColors", "Other Colors")
         c.createColorButton(box, "Canvas", "Canvas color", QColor(Qt.white))
-        box.addSpace(5)
-        box.adjustSize()
+        box.layout().addSpacing(5)
         c.setColorSchemas(self.colorSettings)
         return c
 
@@ -238,14 +237,15 @@ class OWScatterPlotMatrix(OWWidget):
         for i in range(count-1, -1, -1):
             for j in range(i):
                 graph = OWScatterPlotGraph(self, self.mainArea)
-                #graph.setMinimumSize(QSize(10,10))
+                #graph.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+                graph.setMinimumSize(QSize(10,10))
                 graph.jitterSize = self.jitterSize
                 graph.jitterContinuous = self.jitterContinuous
 
                 if self.graphs == []:
                     graph.setData(self.data)
                 else:
-                    for attr in ["rawdata", "domainDataStat", "scaledData", "noJitteringScaledData", "validDataArray", "attrValues", "attributeNames", "domainDataStat", "attributeNameIndex"]:
+                    for attr in ["rawData", "domainDataStat", "scaledData", "noJitteringScaledData", "validDataArray", "attrValues", "attributeNames", "domainDataStat", "attributeNameIndex"]:
                         setattr(graph, attr, getattr(self.graphs[0], attr))
 
                 self.setGraphOptions(graph, "")
@@ -254,11 +254,11 @@ class OWScatterPlotMatrix(OWWidget):
                 self.connect(graph, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
                 params = (attrs[j], attrs[i], self.data.domain.classVar.name, "")
                 self.graphParameters.append(params)
-                graph.setMinimumSize(w,h)
-                graph.setMaximumSize(w,h)
-                graph.show()
-
+                graph.setFixedSize(w,h)
+                self.grid.addWidget(graph, count-i, j+1)
+                #graph.show()
         self.updateGraph()
+
 
 ##        w = self.mainArea.width()
 ##        h = self.mainArea.height()
@@ -382,7 +382,7 @@ class OWScatterPlotMatrix(OWWidget):
             self.hiddenAttribsLB.clear()
 
             for attr in self.data.domain.attributes:
-                self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+                self.shownAttribsLB.addItem(QListWidgetItem(self.icons[attr.varType], attr.name))
 
             #self.createGraphs()
 
@@ -401,11 +401,11 @@ class OWScatterPlotMatrix(OWWidget):
         self.hiddenAttribsLB.clear()
 
         for attr in attrList:
-            self.shownAttribsLB.insertItem(self.icons[self.data.domain[attr].varType], attr)
+            self.shownAttribsLB.addItem(QListWidgetItem(self.icons[self.data.domain[attr].varType], attr))
 
         for attr in self.data.domain.attributes:
             if attr.name not in attrList:
-                self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+                self.hiddenAttribsLB.addItem(QListWidgetItem(self.icons[attr.varType], attr.name))
 
         self.createGraphs()
         return 1
@@ -417,41 +417,40 @@ class OWScatterPlotMatrix(OWWidget):
         count = self.hiddenAttribsLB.count()
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
-            if self.hiddenAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.item(i).text(), pos)
+            if self.hiddenAttribsLB.item(i).isSelected():
+                self.shownAttribsLB.insertItem(pos, QListWidgetItem(self.hiddenAttribsLB.item(i).icon(), self.hiddenAttribsLB.item(i).text()))
                 self.hiddenAttribsLB.takeItem(i)
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
         pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
-            if self.shownAttribsLB.isSelected(i):
-                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.item(i).text(), pos)
+            if self.shownAttribsLB.item(i).isSelected():
+                self.hiddenAttribsLB.insertItem(pos, QListWidgetItem(self.shownAttribsLB.item(i).icon(), self.shownAttribsLB.item(i).text()))
                 self.shownAttribsLB.takeItem(i)
 
     def moveAttrUP(self):
         for i in range(1, self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.item(i).text(), i-1)
+            if self.shownAttribsLB.item(i).isSelected():
+                self.shownAttribsLB.insertItem(i-1, QListWidgetItem(self.shownAttribsLB.item(i).icon(), self.shownAttribsLB.item(i).text()))
                 self.shownAttribsLB.takeItem(i+1)
-                self.shownAttribsLB.setSelected(i-1, TRUE)
+                self.shownAttribsLB.item(i-1).setSelected(TRUE)
 
     def moveAttrDOWN(self):
         count = self.shownAttribsLB.count()
         for i in range(count-2,-1,-1):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.item(i).text(), i+2)
+            if self.shownAttribsLB.item(i).isSelected():
+                self.shownAttribsLB.insertItem(i+2, QListWidgetItem(self.shownAttribsLB.item(i).icon(), self.shownAttribsLB.item(i).text()))
                 self.shownAttribsLB.takeItem(i)
-                self.shownAttribsLB.setSelected(i+1, TRUE)
+                self.shownAttribsLB.item(i+1).setSelected(TRUE)
 
-    def resizeEvent(self, e):
-        OWWidget.resizeEvent(self,e)
-        if len(self.visualizedAttributes) >= 2:
-            w = self.mainArea.width()/(len(self.visualizedAttributes)-1)
-            h = self.mainArea.height()/(len(self.visualizedAttributes)-1)
-            for graph in self.graphs:
-                graph.setMinimumSize(w,h)
-                graph.setMaximumSize(w,h)
+#    def resizeEvent(self, e):
+#        OWWidget.resizeEvent(self,e)
+#        if len(self.visualizedAttributes) >= 2:
+#            w = (self.mainArea.width()-40)/(len(self.visualizedAttributes)-1)
+#            h = (self.mainArea.height()-40)/(len(self.visualizedAttributes)-1)
+#            for graph in self.graphs:
+#                graph.setFixedSize(w,h)
 
 
 
@@ -459,9 +458,10 @@ class OWScatterPlotMatrix(OWWidget):
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWScatterPlotMatrix()
-    a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()
+    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab")
+    ow.setData(data)
+    a.exec_()
 
     #save settings
     ow.saveSettings()

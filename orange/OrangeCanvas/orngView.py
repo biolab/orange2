@@ -31,15 +31,15 @@ class SchemaView(QGraphicsView):
         self.ensureVisible(0,0,1,1)
 
     def createPopupMenus(self):
-        self.widgetPopup = QMenu("Widget", self)
-        self.widgetPopup.addAction( "Open",  self.openActiveWidget)
-        self.widgetPopup.addSeparator()
-        rename = self.widgetPopup.addAction( "&Rename", self.renameActiveWidget, Qt.Key_F2)
-        delete = self.widgetPopup.addAction("Remove", self.removeActiveWidget, Qt.Key_Delete)
-        delete.setShortcut(Qt.Key_Delete)
-        rename.setShortcut(Qt.Key_F2)
-        #self.widgetPopup.insertSeparator()
-        #self.menupopupWidgetEnabledID = self.widgetPopup.addAction("Enabled", self.enabledWidget)
+#        self.widgetPopup = QMenu("Widget", self)
+#        self.widgetPopup.addAction( "Open",  self.openActiveWidget)
+#        self.widgetPopup.addSeparator()
+#        rename = self.widgetPopup.addAction( "&Rename", self.renameActiveWidget, Qt.Key_F2)
+#        delete = self.widgetPopup.addAction("Remove", self.removeActiveWidget, Qt.Key_Delete)
+#        delete.setShortcut(Qt.Key_Delete)
+#        rename.setShortcut(Qt.Key_F2)
+#        #self.widgetPopup.insertSeparator()
+#        #self.menupopupWidgetEnabledID = self.widgetPopup.addAction("Enabled", self.enabledWidget)
 
         self.linePopup = QMenu("Link", self)
         self.lineEnabledAction = self.menupopupLinkEnabledID = self.linePopup.addAction( "Enabled",  self.toggleEnabledLink)
@@ -63,8 +63,10 @@ class SchemaView(QGraphicsView):
 
     # popMenuAction - user selected to rename active widget
     def renameActiveWidget(self):
+        if not self.tempWidget:
+            return
         exName = str(self.tempWidget.caption)
-        (newName ,ok) = QInputDialog.getText(self, "Qt Rename Widget", "Enter new name for the widget \"" + exName + "\":", QLineEdit.Normal, exName)
+        (newName ,ok) = QInputDialog.getText(self, "Rename Widget", "Enter new name for the \"" + exName + "\" widget:", QLineEdit.Normal, exName)
         newName = str(newName)
         if ok and self.tempWidget != None and newName != exName:
             for widget in self.doc.widgets:
@@ -84,7 +86,7 @@ class SchemaView(QGraphicsView):
         if self.doc.signalManager.signalProcessingInProgress:
              QMessageBox.information( self, "Orange Canvas", "Unable to remove widgets while signal processing is in progress. Please wait.")
              return
-        if not self.bMultipleSelection:
+        if self.selWidgets == []:
             self.selWidgets = [self.tempWidget]
 
         for item in self.selWidgets:
@@ -177,10 +179,7 @@ class SchemaView(QGraphicsView):
         for item in self.doc.widgets:
             if item not in self.selWidgets: item.setSelected(0)
 
-        #rect = QRect(ev.pos().x()-5, ev.pos().y()-5,10,10)
-        #activeItems = self.scene().collidingItems(rect)
-        point = QPointF(self.mouseDownPosition.x(), self.mouseDownPosition.y())
-        activeItem = self.scene().itemAt(QPointF(ev.pos()))
+        activeItem = self.scene().itemAt(self.mouseDownPosition)
         if not activeItem:
             self.tempWidget = None
             self.tempRect = None
@@ -195,40 +194,38 @@ class SchemaView(QGraphicsView):
 
                 # did we click inside the boxes to draw connections
                 if ev.button() == Qt.LeftButton:
-                    if activeItem.mouseInsideLeftChannel(point) or activeItem.mouseInsideRightChannel(point):
+                    if activeItem.mouseInsideLeftChannel(self.mouseDownPosition) or activeItem.mouseInsideRightChannel(self.mouseDownPosition):
                         if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
                             self.unselectAllWidgets()
                             self.bLineDragging = True
-                            pos = activeItem.getEdgePoint(point)
+                            pos = activeItem.getEdgePoint(self.mouseDownPosition)
                             self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.scene())
                             self.tempLine.setLine(pos.x(), pos.y(), pos.x(), pos.y())
                             self.tempLine.setPen(QPen(self.doc.canvasDlg.lineColor, 1))
-##                            self.tempLine.show()
-                            self.scene().update()
+                            #self.scene().update()
 
                     else:   # we clicked inside the widget and we start dragging it
                         self.bWidgetDragging = True
-                        if activeItem not in self.selWidgets and not self.doc.ctrlPressed:
-                            self.unselectAllWidgets()
-                            self.selWidgets = [activeItem]
-                            self.bMultipleSelection = False
-                        elif self.doc.ctrlPressed:
+                        if self.doc.ctrlPressed:
                             if activeItem not in self.selWidgets:
                                 self.selWidgets.append(activeItem)
                             else:
                                 self.selWidgets.remove(activeItem)
                                 activeItem.setSelected(0)
+                        elif activeItem not in self.selWidgets:
+                            self.unselectAllWidgets()
+                            self.selWidgets = [activeItem]
+                            self.bMultipleSelection = False
 
                         for w in self.selWidgets:
                             w.setCoords(w.x(), w.y())
                             w.savePosition()
-##                            w.removeTooltip()
                             w.setAllLinesFinished(False)
-    ##                        w.repaintAllLines()
 
                 # is we clicked the right mouse button we show the popup menu for widgets
                 elif ev.button() == Qt.RightButton:
-                    self.widgetPopup.popup(ev.globalPos())
+                    #self.widgetPopup.popup(ev.globalPos())
+                    self.doc.canvasDlg.widgetPopup.popup(ev.globalPos())
                 else:
                     self.unselectAllWidgets()
 
@@ -361,7 +358,8 @@ class SchemaView(QGraphicsView):
         self.bMultipleSelection = False
 
     def mouseDoubleClickEvent(self, ev):
-        activeItem = self.scene().itemAt(QPointF(ev.pos()))
+        point = self.mapToScene(ev.pos())
+        activeItem = self.scene().itemAt(point)
         if type(activeItem) == orngCanvasItems.CanvasWidget:        # if we clicked on a widget
             self.tempWidget = activeItem
             self.openActiveWidget()
@@ -389,6 +387,7 @@ class SchemaView(QGraphicsView):
             if widget.instance == widgetInstance:
                 widget.setProcessing(value)
                 self.repaint()
+                widget.update()
                 return
 
 

@@ -19,12 +19,11 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
         self.loadSettings()
 
-        self.space = OWGUI.widgetBox(self)
         self.setLayout(QVBoxLayout(self))
+        self.space = OWGUI.widgetBox(self)
         self.layout().setMargin(8)
-        self.layout().addWidget(self.space)
+        #self.layout().addWidget(self.space)
 
-        #box = QVButtonGroup(" Image Size ", self.space)
         box = OWGUI.widgetBox(self.space, "Image Size")
         if isinstance(graph, QwtPlot):
             size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"], callback = self.updateGUI)
@@ -59,14 +58,33 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         if not size:
             size = self.getSize()
 
+        if isinstance(self.graph, QGraphicsScene):
+            minx,maxx,miny,maxy = self.getQGraphicsSceneBoundaries()
+            source = QRectF(minx, miny, maxx-minx, maxy-miny)
+
         painter = QPainter()
-        if size.isEmpty(): buffer = QPixmap(self.graph.size()) # any size can do, now using the window size
-        else:              buffer = QPixmap(size)
+        buffer = QPixmap(size)
         painter.begin(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(Qt.white))) # make background same color as the widget's background
-        self.fillPainter(painter, buffer.rect())
-        painter.flush()
-        painter.end()
+        painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+
+        # qwt plot
+        if isinstance(self.graph, QwtPlot):
+            if self.penWidthFactor != 1:
+                for curve in self.graph.itemList():
+                    pen = curve.pen(); pen.setWidth(self.penWidthFactor*pen.width()); curve.setPen(pen)
+
+            self.graph.print_(painter, QRect(0,0,size.width(), size.height()))
+
+            if self.penWidthFactor != 1:
+                for curve in self.graph.itemList():
+                    pen = curve.pen(); pen.setWidth(pen.width()/self.penWidthFactor); curve.setPen(pen)
+
+        # QGraphicsScene
+        elif isinstance(self.graph, QGraphicsScene):
+            xOff = source.left(); yOff = source.top()
+            target = source.adjusted(-xOff, -yOff, -xOff, -yOff)
+            self.graph.render(painter, target, source)
+
         buffer.save(filename, ext)
 
         if closeDialog:
@@ -78,18 +96,18 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             if isinstance(self.graph, QwtPlot):
                 self.graph.saveToMatplotlib(filename, self.getSize())
             else:
-                minx,maxx,miny,maxy = self.getQCanvasBoundaries()
+                minx,maxx,miny,maxy = self.getQGraphicsSceneBoundaries()
                 f = open(filename, "wt")
                 f.write("from pylab import *\nfrom matplotlib.patches import Rectangle\n\n#constants\nx1 = %f; x2 = %f\ny1 = 0.0; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = 0.01\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\na = gca()\nhold(True)\n" % (minx, maxx, maxy, maxx-minx, maxy-miny))
 
-                sortedList = [(item.z(), item) for item in self.graph.allItems()]
+                sortedList = [(item.z(), item) for item in self.graph.items()]
                 sortedList.sort()   # sort items by z value
 
                 for (z, item) in sortedList:
                     if not item.visible(): continue
                     if item.__class__ in [QCanvasEllipse, QCanvasLine, QCanvasPolygon and QCanvasRectangle]:
-                        penc   = self._getColorFromObject(item.pen())
-                        brushc = self._getColorFromObject(item.brush())
+                        penc, penAlpha  = self._getColorFromObject(item.pen())
+                        brushc, brushAlpha = self._getColorFromObject(item.brush())
                         penWidth = item.pen().width()
 
                         if   isinstance(item, QCanvasEllipse): continue
@@ -99,7 +117,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                             f.write("a.add_patch(Rectangle((%d, %d), %d, %d, edgecolor=%s, facecolor = %s, linewidth = %d, fill = %d))\n" % (x,y,w,h, penc, brushc, penWidth, type(brushc) == tuple))
                         elif isinstance(item, QCanvasLine):
                             x1,y1, x2,y2 = item.startPoint().x(), maxy-item.startPoint().y(), item.endPoint().x(), maxy-item.endPoint().y()
-                            f.write("plot(%s, %s, marker = 'None', linestyle = '-', color = %s, linewidth = %d)\n" % ([x1,x2], [y1,y2], penc, penWidth))
+                            f.write("plot(%s, %s, marker = 'None', linestyle = '-', color = %s, linewidth = %d, alpha = %.3f)\n" % ([x1,x2], [y1,y2], penc, penWidth, brushAlpha))
                     elif item.__class__ == QCanvasText:
                         align = item.textFlags()
                         xalign = (align & Qt.AlignLeft and "left") or (align & Qt.AlignHCenter and "center") or (align & Qt.AlignRight and "right")
@@ -108,7 +126,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                         horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
                         color = tuple([item.color().red()/255., item.color().green()/255., item.color().blue()/255.])
                         weight = item.font().bold() and "bold" or "normal"
-                        f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s')\n" % (item.x(), maxy-item.y(), str(item.label().text()), vertAlign, horAlign, color, str(item.font().family()), weight))
+                        f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s', alpha = %.3f)\n" % (item.x(), maxy-item.y(), str(item.label().text()), vertAlign, horAlign, color, str(item.font().family()), weight, item.alpha()/float(255)))
 
                 f.write("# disable grid\ngrid(False)\n\n")
                 f.write("#hide axis\naxis('off')\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n")
@@ -118,92 +136,23 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             try:
                 import matplotlib
             except:
-                QMessageBox.information(self,'Matplotlib missing',"File was saved, but you will not be able to run it because you don't have matplotlib installed.\nYou can download matplotlib for free at matplotlib.sourceforge.net.",'Close')
+                QMessageBox.information(self,'Matplotlib missing',"File was saved, but you will not be able to run it because you don't have matplotlib installed.\nYou can download matplotlib for free at matplotlib.sourceforge.net.", QMessageBox.Ok)
 
         QDialog.accept(self)
 
-
-#    def printPic(self):
-#        printer = QPrinter()
-#        size = self.getSize()
-#
-#        if printer.setup():
-#            painter = QPainter(printer)
-#            metrics = QPaintDeviceMetrics(printer)
-#            height = metrics.height() - 2*printer.margins().height()
-#            width = metrics.width() - 2*printer.margins().width()
-#
-#            factor = 1.0
-#            if isinstance(self.graph, QCanvas):
-#                minx,maxx,miny,maxy = self.getQCanvasBoundaries()
-#                factor = min(float(width)/(maxx-minx), float(height)/(maxy-miny))
-#
-#            if height == 0:
-#                print "Error. Height is zero. Preventing division by zero."
-#                return
-#            pageKvoc = width / float(height)
-#            sizeKvoc = size.width() / float(size.height())
-#            if pageKvoc < sizeKvoc:     rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
-#            else:                       rect = QRect(printer.margins().width(), printer.margins().height(), width, height)
-#
-#            self.fillPainter(painter, rect, factor)
-#            painter.end()
-#        self.saveSettings()
-#        QDialog.accept(self)
-
-
-    def fillPainter(self, painter, rect, scale = 1.0):
-        if isinstance(self.graph, QwtPlot):
-            if self.penWidthFactor != 1:
-                for key in self.graph.curveKeys():
-                    pen = self.graph.curve(key).pen(); pen.setWidth(self.penWidthFactor*pen.width()); self.graph.curve(key).setPen(pen)
-
-            self.graph.printPlot(painter, rect)
-
-            if self.penWidthFactor != 1:
-                for key in self.graph.curveKeys():
-                    pen = self.graph.curve(key).pen(); pen.setWidth(pen.width()/self.penWidthFactor); self.graph.curve(key).setPen(pen)
-
-        elif isinstance(self.graph, QGraphicsScene):
-            # draw background
-            self.graph.drawBackground(painter, rect)
-            minx,maxx,miny,maxy = self.getQCanvasBoundaries()
-
-            # draw items
-            sortedList = [(item.z(), item) for item in self.graph.allItems()]
-            sortedList.sort()   # sort items by z value
-
-            for (z, item) in sortedList:
-                if item.visible():
-                    item.moveBy(-minx, -miny)
-                    if isinstance(item, QCanvasText):
-                        rect = item.boundingRect()
-                        x,y,w,h = int(rect.x()*scale), int(rect.y()*scale), int(rect.width()*scale), int(rect.height()*scale)
-                        painter.setFont(item.font())
-                        painter.setPen(item.color())
-                        painter.drawText(x,y,w,h,item.textFlags(), item.label().text())
-                        #painter.drawText(int(scale*item.x()), int(scale*item.y()), str(item.text()))
-                    else:
-                        painter.scale(scale, scale)
-                        p = item.pen()
-                        oldSize = p.width()
-                        p.setWidth(int(oldSize*scale))
-                        item.setPen(p)
-                        item.draw(painter)
-                        p.setWidth(oldSize)
-                        item.setPen(p)
-                        painter.scale(1.0/scale, 1.0/scale)
-                    item.moveBy(minx, miny)
-
-            # draw foreground
-            self.graph.drawForeground(painter, rect)
-
     # ############################################################
     # EXTRA FUNCTIONS ############################################
-    def getQCanvasBoundaries(self):
-        rect = self.graph.itemsBoundingRect()
-        rect = rect.adjusted(-10, -10, 10, 10)
-        return rect.left()-10, rect.right()+10, rect.bottom()-10, rect.top()+10
+    def getQGraphicsSceneBoundaries(self):
+        source = None
+        for item in self.graph.items():
+            if item.isVisible():
+                if source == None: source = item.boundingRect().translated(item.pos())
+                else:              source = source.united(item.boundingRect().translated(item.pos()))
+        if source == None:
+            source = QRectF(0,0,10,10)
+
+        source.adjust(-10, -10, 10, 10)
+        return source.left(), source.right(), source.top(), source.bottom()
 
 
     def getFileName(self, defaultName, mask, extension):
@@ -211,17 +160,13 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         if not fileName: return None
         if not os.path.splitext(fileName)[1][1:]: fileName = fileName + extension
 
-        if os.path.exists(fileName):
-            res = QMessageBox.information(self,'Save picture','File already exists. Overwrite?','Yes','No', QString.null,0,1)
-            if res == 1: return None
-
         self.lastSaveDirName = os.path.split(fileName)[0] + "/"
         self.saveSettings()
         return fileName
 
     def getSize(self):
         if isinstance(self.graph, QGraphicsScene):
-            minx,maxx,miny,maxy = self.getQCanvasBoundaries()
+            minx,maxx,miny,maxy = self.getQGraphicsSceneBoundaries()
             size = QSize(maxx-minx, maxy-miny)
         elif self.selectedSize == 0: size = self.graph.size()
         elif self.selectedSize == 4: size = QSize(self.customX, self.customY)
@@ -234,11 +179,11 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             self.customYEdit.setEnabled(self.selectedSize == 4)
 
     def _getColorFromObject(self, obj):
-        if obj.__class__ == QBrush and obj.style() == Qt.NoBrush: return "'none'"
-        if obj.__class__ == QPen   and obj.style() == Qt.NoPen: return "'none'"
+        if isinstance(obj, QBrush) and obj.style() == Qt.NoBrush: return "'none'", 1
+        if isinstance(obj, QPen)   and obj.style() == Qt.NoPen: return "'none'", 1
         col = [obj.color().red(), obj.color().green(), obj.color().blue()];
         col = tuple([v/float(255) for v in col])
-        return col
+        return col, obj.color().alpha()/float(255)
 
 
 
@@ -424,8 +369,7 @@ class ColorPalette(OWBaseWidget):
             schemas = [("Default", self.getCurrentState()) ]
 
         self.colorSchemas = schemas
-        self.schemaCombo.insertItems(0, [s[0] for s in schemas])
-
+        self.schemaCombo.addItems([s[0] for s in schemas])
         self.schemaCombo.addItem("Save current palette as...")
         self.selectedSchemaIndex = selectedSchemaIndex
         self.paletteSelected()
@@ -470,7 +414,7 @@ class ColorPalette(OWBaseWidget):
                     if ok:
                         self.colorSchemas.insert(0, (newName, self.getCurrentState()))
                         self.schemaCombo.insertItem(0, newName)
-                        #self.schemaCombo.setCurrentItem(0)
+                        #self.schemaCombo.setCurrentIndex(0)
                         self.selectedSchemaIndex = 0
                 else:
                     state = self.getCurrentState()  # if we pressed cancel we have to select a different item than the "Save current palette as..."
@@ -485,7 +429,6 @@ class ColorPalette(OWBaseWidget):
     def rgbToQColor(self, rgb):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
         # why this was not used before so I am leaving it as it is
-
         return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
 
     def qRgbFromQColor(self, qcolor):
@@ -540,11 +483,10 @@ if __name__== "__main__":
     box.addSpace(5)
     box.adjustSize()
     c.setColorSchemas()
-    a.setMainWidget(c)
     c.show()
-    a.exec_loop()
+    a.exec_()
     """
     c = OWChooseImageSizeDlg(None)
     c.show()
-    a.exec_loop()
+    a.exec_()
     """

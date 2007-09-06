@@ -180,7 +180,7 @@ class OWHierarchicalClustering(OWWidget):
             self.labelCombo.addItem(a)
         if self.labelCombo.count()<self.Annotation-1:
                 self.Annotation=0
-        self.labelCombo.setCurrentItem(self.Annotation)
+        self.labelCombo.setCurrentIndex(self.Annotation)
         if self.matrixSource=="Example Distance":
             self.classificationBox.setDisabled(False)
         else:

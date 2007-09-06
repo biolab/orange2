@@ -17,14 +17,14 @@ class InputSignal:
         self.name = name
         self.type = signalType
         self.handler = handler
-        
+
         if type(parameters) == str: parameters = eval(parameters)   # in registry, parameters are stored as strings
         # if we have the old definition of parameters then transform them
         if parameters in [0,1]:
             self.single = parameters
             self.default = not oldParam
             return
-        
+
         if not (parameters & Single or parameters & Multiple): parameters += Single
         if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
         self.single = parameters & Single
@@ -34,12 +34,12 @@ class OutputSignal:
     def __init__(self, name, signalType, parameters = NonDefault):
         self.name = name
         self.type = signalType
-        
+
         if type(parameters) == str: parameters = eval(parameters)
         if parameters in [0,1]: # old definition of parameters
             self.default = not parameters
             return
-        
+
         if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
         self.default = parameters & Default
 
@@ -150,7 +150,7 @@ class SignalManager:
         self.debugFile.write(totalSpace[:-1] + "Exception type: " + str(type) + "\n")
         self.debugFile.write(totalSpace[:-1] + "Exception value: " + str(value)+ "\n")
         self.debugFile.flush()
-        
+
     # ----------------------------------------------------------
     # ----------------------------------------------------------
 
@@ -164,8 +164,8 @@ class SignalManager:
     # add widget to list
     def addWidget(self, widget):
         if self.verbosity >= 2:
-            self.addEvent("added widget " + widget.title, eventVerbosity = 2)
-            
+            self.addEvent("added widget " + widget.captionTitle, eventVerbosity = 2)
+
         if widget not in self.widgets:
             #self.widgets.insert(0, widget)
             self.widgets.append(widget)
@@ -173,9 +173,9 @@ class SignalManager:
     # remove widget from list
     def removeWidget(self, widget):
         if self.verbosity >= 2:
-            self.addEvent("remove widget " + widget.title, eventVerbosity = 2)
+            self.addEvent("remove widget " + widget.captionTitle, eventVerbosity = 2)
         self.widgets.remove(widget)
-        
+
 
     # send list of widgets, that send their signal to widget's signalName
     def getLinkWidgetsIn(self, widget, signalName):
@@ -195,14 +195,14 @@ class SignalManager:
             if signalName == signalFrom: widgets.append(widgetTo)
         return widgets
 
-    # can we connect widgetFrom with widgetTo, so that there is no cycle?    
+    # can we connect widgetFrom with widgetTo, so that there is no cycle?
     def canConnect(self, widgetFrom, widgetTo):
-        return not self.existsPath(widgetTo, widgetFrom)        
+        return not self.existsPath(widgetTo, widgetFrom)
 
     def addLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo, enabled):
         if self.verbosity >= 2:
-            self.addEvent("add link from " + widgetFrom.title + " to " + widgetTo.title, eventVerbosity = 2)
-        
+            self.addEvent("add link from " + widgetFrom.captionTitle + " to " + widgetTo.captionTitle, eventVerbosity = 2)
+
         if not self.canConnect(widgetFrom, widgetTo): return 0
         # check if signal names still exist
         found = 0
@@ -210,7 +210,7 @@ class SignalManager:
             output = OutputSignal(*o)
             if output.name == signalNameFrom: found=1
         if not found:
-            print "Error. Widget %s changed its output signals. It does not have signal %s anymore." % (str(getattr(widgetFrom, "captionTitle", ""), signalNameFrom))
+            print "Error. Widget %s changed its output signals. It does not have signal %s anymore." % (str(getattr(widgetFrom, "captionTitle", "")), signalNameFrom)
             return 0
 
         found = 0
@@ -240,14 +240,14 @@ class SignalManager:
         if enabled:
             for key in widgetFrom.linksOut[signalNameFrom].keys():
                 widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][key], key, signalNameFrom)
-            
+
         # reorder widgets if necessary
         if self.widgets.index(widgetFrom) > self.widgets.index(widgetTo):
             self.widgets.remove(widgetTo)
             self.widgets.append(widgetTo)   # appent the widget at the end of the list
             self.fixPositionOfDescendants(widgetTo)
 ##            print "--------"
-##            for widget in self.widgets: print widget.title
+##            for widget in self.widgets: print widget.captionTitle
 ##            print "--------"
         return 1
 
@@ -274,11 +274,11 @@ class SignalManager:
             if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
                 return enabled
         return 0
-    
+
     def removeLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo):
         if self.verbosity >= 2:
-            self.addEvent("remove link from " + widgetFrom.title + " to " + widgetTo.title, eventVerbosity = 2)
-        
+            self.addEvent("remove link from " + widgetFrom.captionTitle + " to " + widgetTo.captionTitle, eventVerbosity = 2)
+
         # no need to update topology, just remove the link
         if self.links.has_key(widgetFrom):
             for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
@@ -306,7 +306,7 @@ class SignalManager:
 
         if enabled: self.processNewSignals(widgetTo)
 
-    
+
     def getLinkEnabled(self, widgetFrom, widgetTo):
         for (widget, nameFrom, nameTo, enabled) in self.links[widgetFrom]:      # it is enough that we find one signal connected from widgetFrom to widgetTo
             if widget == widgetTo:                                  # that we know wheather the whole link (all signals) is enabled or not
@@ -318,20 +318,20 @@ class SignalManager:
         # add all target widgets new value and mark them as dirty
         # if not freezed -> process dirty widgets
         if self.verbosity >= 2:
-            self.addEvent("send data from " + widgetFrom.title + ". Signal = " + signalNameFrom, value, eventVerbosity = 2)
+            self.addEvent("send data from " + widgetFrom.captionTitle + ". Signal = " + signalNameFrom, value, eventVerbosity = 2)
 
         if not self.links.has_key(widgetFrom): return
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if signalFrom == signalNameFrom and enabled == 1:
                 #print "signal from ", widgetFrom, " to ", widgetTo, " signal: ", signalNameFrom, " value: ", value, " id: ", id
                 widgetTo.updateNewSignalData(widgetFrom, signalTo, value, id, signalNameFrom)
-                
+
 
         if not self.freezing and not self.signalProcessingInProgress:
             #print "processing new signals"
             self.processNewSignals(widgetFrom)
 
-    # when a new link is created, we have to 
+    # when a new link is created, we have to
     def sendOnNewLink(self, widgetFrom, widgetTo, signals):
         for (outName, inName) in signals:
             for key in widgetFrom.linksOut[outName].keys():
@@ -341,10 +341,10 @@ class SignalManager:
     def processNewSignals(self, firstWidget):
         if len(self.widgets) == 0: return
         if self.signalProcessingInProgress: return
-        
+
         if self.verbosity >= 2:
-            self.addEvent("process new signals from " + firstWidget.title, eventVerbosity = 2)
-        
+            self.addEvent("process new signals from " + firstWidget.captionTitle, eventVerbosity = 2)
+
         if firstWidget not in self.widgets:
             firstWidget = self.widgets[0]   # if some window that is not a widget started some processing we have to process new signals from the first widget
 
@@ -367,7 +367,7 @@ class SignalManager:
     def existsPath(self, widgetFrom, widgetTo):
         # is there a direct link
         if not self.links.has_key(widgetFrom): return 0
-        
+
         for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if widget == widgetTo: return 1
 

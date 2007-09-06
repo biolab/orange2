@@ -24,10 +24,10 @@ class OWGraph(QwtPlot):
         self.parentName = name
         #self.setWindowFlags(Qt.WResizeNoErase) #this works like magic.. no flicker during repaint!
 
-        #self.setAxisAutoScale(QwtPlot.xBottom)
-        #self.setAxisAutoScale(QwtPlot.xTop)
-        #self.setAxisAutoScale(QwtPlot.yLeft)
-        #self.setAxisAutoScale(QwtPlot.yRight)
+        self.setAxisAutoScale(QwtPlot.xBottom)
+        self.setAxisAutoScale(QwtPlot.xTop)
+        self.setAxisAutoScale(QwtPlot.yLeft)
+        self.setAxisAutoScale(QwtPlot.yRight)
 
         self.axisTitleFont = QFont('Helvetica', 10, QFont.Bold)
         text = QwtText("")
@@ -84,6 +84,8 @@ class OWGraph(QwtPlot):
         self.pointWidth = 5
         self.showFilledSymbols = 1
         self.showLegend = 1
+        self.alphaValue = 255
+        self.alphaValue2 = 150
         self.scaleFactor = 1.0              # used in some visualizations to "stretch" the data - see radviz, polviz
         self.setCanvasColor(QColor(Qt.white))
         self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
@@ -98,6 +100,12 @@ class OWGraph(QwtPlot):
         self.contPalette = ColorPaletteGenerator(numberOfColors = -1)
         self.discPalette = ColorPaletteGenerator()
         self.currentScale = {}
+
+        # when using OWGraph we can define functions that will receive mouse move, press, release events. these functions
+        # HAVE TO RETURN whether the signal was handled, or you also want to use default OWGraph handler
+        self.mousePressEventHandler = None
+        self.mouseMoveEventHandler = None
+        self.mouseReleaseEventHandler = None
 
         #self.updateLayout()
 
@@ -299,7 +307,7 @@ class OWGraph(QwtPlot):
         if b == self.showYRaxisTitle: return
         if b != -1:
             self.showYRaxisTitle = b
-        if (self.showYRaxisTitle <> 0):
+        if self.showYRaxisTitle != 0:
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.yRight, QwtText())
@@ -309,7 +317,7 @@ class OWGraph(QwtPlot):
     def setYRaxisTitle(self, title):
         if title == self.YRaxisTitle: return
         self.YRaxisTitle = title
-        if (self.showYRaxisTitle <> 0):
+        if self.showYRaxisTitle != 0:
             self.setAxisTitle(QwtPlot.yRight, self.YRaxisTitle)
         else:
             self.setAxisTitle(QwtPlot.yRight, QwtText())
@@ -359,7 +367,7 @@ class OWGraph(QwtPlot):
             if example.getclass().isSpecial(): text += "&nbsp;"*4 + "%s = ?<br>" % (data.domain.classVar.name)
             else:                              text += "&nbsp;"*4 + "%s = %s<br>" % (data.domain.classVar.name, str(example.getclass().value))
 
-        if len(self.rawdata.domain.getmetas()) != 0:
+        if len(self.rawData.domain.getmetas()) != 0:
             text = text[:-4]
             text += "<hr><b>Meta attributes:</b><br>"
             # show values of meta attributes
@@ -369,12 +377,16 @@ class OWGraph(QwtPlot):
 
         return text[:-4]        # remove the last <br>
 
-    def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = QwtPlotCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None, lineWidth = 1, pen = None, autoScale = 0, antiAlias = 1):
+    def addCurve(self, name, brushColor = Qt.black, penColor = Qt.black, size = 5, style = QwtPlotCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], showFilledSymbols = None, lineWidth = 1, pen = None, autoScale = 0, antiAlias = 1, penAlpha = 255, brushAlpha = 255):
         curve = QwtPlotCurve(name)
         if antiAlias:
             curve.setRenderHint(QwtPlotItem.RenderAntialiased)
         curve.setItemAttribute(QwtPlotItem.Legend, enableLegend)
-        curve.setItemAttribute(QwtPlotItem.AutoScale, enableLegend)
+        curve.setItemAttribute(QwtPlotItem.AutoScale, autoScale)
+        if penAlpha != 255:
+            penColor.setAlpha(penAlpha)
+        if brushAlpha != 255:
+            brushColor.setAlpha(brushAlpha)
 
         if showFilledSymbols or (showFilledSymbols == None and self.showFilledSymbols):
             newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
@@ -403,13 +415,13 @@ class OWGraph(QwtPlot):
         if size:  font.setPixelSize(size)
         text.setFont(font)
         text.setPaintAttribute(QwtText.PaintUsingTextFont, 1)
-        if alignment != -1:  text.setRenderFlags(alignment)
+        #if alignment != -1:  text.setRenderFlags(alignment)
 
         marker = QwtPlotMarker()
         marker.setLabel(text)
         marker.setValue(x,y)
-        #if alignment != -1:
-        #    marker.setLabelAlignment(alignment)
+        if alignment != -1:
+            marker.setLabelAlignment(alignment)
         marker.attach(self)
         return marker
 
@@ -514,6 +526,9 @@ class OWGraph(QwtPlot):
     # HANDLING MOUSE EVENTS
     # ###############################################
     def mousePressEvent(self, e):
+        if self.mousePressEventHandler != None:
+            handled = self.mousePressEventHandler(e)
+            if handled: return
         QwtPlot.mousePressEvent(self, e)
         self.mouseCurrentlyPressed = 1
         self.mouseCurrentButton = e.button()
@@ -563,6 +578,9 @@ class OWGraph(QwtPlot):
 
     # only needed to show the message in statusbar
     def mouseMoveEvent(self, e):
+        if self.mouseMoveEventHandler != None:
+            handled = self.mouseMoveEventHandler(e)
+            if handled: return
         QwtPlot.mouseMoveEvent(self, e)
         canvasPos = self.canvas().mapFrom(self, e.pos())
         xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
@@ -597,6 +615,9 @@ class OWGraph(QwtPlot):
 
 
     def mouseReleaseEvent(self, e):
+        if self.mouseReleaseEventHandler != None:
+            handled = self.mouseReleaseEventHandler(e)
+            if handled: return
         QwtPlot.mouseReleaseEvent(self, e)
         if not self.mouseCurrentlyPressed: return   # this might happen if we double clicked the widget titlebar
         self.mouseCurrentlyPressed = 0
@@ -722,7 +743,7 @@ class OWGraph(QwtPlot):
 
         f.write("from pylab import *\nfrom matplotlib import font_manager\n\n#possible changes in how the plot looks\n#rcParams['xtick.major.size'] = 0\n#rcParams['ytick.major.size'] = 0\n\n#constants\nx1 = %f; x2 = %f\ny1 = %f; y2 = %f\ndpi = 80\nxsize = %d\nysize = %d\nedgeOffset = %f\n\nfigure(facecolor = 'w', figsize = (xsize/float(dpi), ysize/float(dpi)), dpi = dpi)\nhold(True)\n" % (x1,x2,y1,y2,size.width(), size.height(), edgeOffset))
 
-        linestyles = ["o", "-", "-.", "--", ":", "-", "-"]      # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
+        linestyles = ["None", "-", "-.", "--", ":", "-", "-"]      # qwt line styles: NoCurve, Lines, Sticks, Steps, Dots, Spline, UserCurve
         markers = ["None", "o", "s", "^", "d", "v", "^", "<", ">", "x", "+"]    # curveSymbols = [None, Ellipse, Rect, Triangle, Diamond, DTriangle, UTriangle, LTriangle, RTriangle, XCross, Cross]
 
         f.write("#add curves\n")
@@ -730,42 +751,45 @@ class OWGraph(QwtPlot):
             if not isinstance(c, QwtPlotCurve): continue
             xData = [c.x(i) for i in range(c.dataSize())]
             yData = [c.y(i) for i in range(c.dataSize())]
-            marker = markers[c.symbol().style()]
+            marker = markers[c.symbol().style()+1]
 
             markersize = c.symbol().size().width()
-            markeredgecolor = self._getColorFromObject(c.symbol().pen())
-            markerfacecolor = self._getColorFromObject(c.symbol().brush())
-            color = self._getColorFromObject(c.pen())
-            colorB = self._getColorFromObject(c.brush())
+            markeredgecolor, foo = self._getColorFromObject(c.symbol().pen())
+            markerfacecolor, alphaS = self._getColorFromObject(c.symbol().brush())
+            colorP, alphaP = self._getColorFromObject(c.pen())
+            colorB, alphaB = self._getColorFromObject(c.brush())
+            alpha = min(alphaS, alphaP, alphaB)
             linewidth = c.pen().width()
             if c.__class__ == PolygonCurve and len(xData) == 4:
                 x0 = min(xData); x1 = max(xData); diffX = x1-x0
                 y0 = min(yData); y1 = max(yData); diffY = y1-y0
-                f.write("gca().add_patch(Rectangle((%f, %f), %f, %f, edgecolor=%s, facecolor = %s, linewidth = %d, fill = 1))\n" % (x0,y0,diffX, diffY, color, colorB, linewidth))
+                f.write("gca().add_patch(Rectangle((%f, %f), %f, %f, edgecolor=%s, facecolor = %s, linewidth = %d, fill = 1, alpha = %.3f))\n" % (x0,y0,diffX, diffY, colorP, colorB, linewidth, alpha))
             elif c.style() < len(linestyles):
                 linestyle = linestyles[c.style()]
-                f.write("plot(%s, %s, marker = '%s', linestyle = '%s', markersize = %d, markeredgecolor = %s, markerfacecolor = %s, color = %s, linewidth = %d)\n" % (xData, yData, marker, linestyle, markersize, markeredgecolor, markerfacecolor, color, linewidth))
+                f.write("plot(%s, %s, marker = '%s', linestyle = '%s', markersize = %d, markeredgecolor = %s, markerfacecolor = %s, color = %s, linewidth = %d, alpha = %.3f)\n" % (xData, yData, marker, linestyle, markersize, markeredgecolor, markerfacecolor, colorP, linewidth, alpha))
 
         f.write("\n# add markers\n")
         for marker in self.itemList():
             if not isinstance(marker, QwtPlotMarker): continue
             x = marker.xValue()
             y = marker.yValue()
-            text = str(marker.label())
+            text = str(marker.label().text())
             align = marker.labelAlignment()
             xalign = (align & Qt.AlignLeft and "right") or (align & Qt.AlignHCenter and "center") or (align & Qt.AlignRight and "left")
             yalign = (align & Qt.AlignBottom and "top") or (align & Qt.AlignTop and "bottom") or (align & Qt.AlignVCenter and "center")
             vertAlign = (yalign and ", verticalalignment = '%s'" % yalign) or ""
             horAlign = (xalign and ", horizontalalignment = '%s'" % xalign) or ""
-            color = (marker.labelColor().red()/255., marker.labelColor().green()/255., marker.labelColor().blue()/255.)
+            labelColor = marker.label().color()
+            color = (labelColor.red()/255., labelColor.green()/255., labelColor/255.)
+            alpha = labelColor.alpha()/255.
             name = str(marker.font().family())
             weight = marker.font().bold() and "bold" or "normal"
             if marker.__class__ == RotatedMarker: extra = ", rotation = %f" % (marker.rotation)
             else: extra = ""
-            f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s'%s)\n" % (x, y, text, vertAlign, horAlign, color, name, weight, extra))
+            f.write("text(%f, %f, '%s'%s%s, color = %s, name = '%s', weight = '%s'%s, alpha = %.3f)\n" % (x, y, text, vertAlign, horAlign, color, name, weight, extra, alpha))
 
         # grid
-        f.write("# enable grid\ngrid(%s)\n\n" % (self.grid().xEnabled() and self.grid().yEnabled() and "True" or "False"))
+        f.write("# enable grid\ngrid(%s)\n\n" % (self.gridCurve.xEnabled() and self.gridCurve.yEnabled() and "True" or "False"))
 
         # axis
         if self.showAxisScale == 0:
@@ -778,7 +802,7 @@ class OWGraph(QwtPlot):
                 labels = self.axisScaleDraw(QwtPlot.xBottom).labels
                 f.write("xticks(%s, %s)\nlabels = gca().get_xticklabels()\nsetp(labels, rotation=-%.3f) #, weight = 'bold', fontsize=10)\n\n" % (range(len(labels)), labels, self.axisScaleDraw(QwtPlot.xBottom).labelRotation()))
 
-            f.write("#set axis labels\nxlabel('%s', weight = 'bold')\nylabel('%s', weight = 'bold')\n\n" % (str(self.axisTitle(QwtPlot.xBottom)), str(self.axisTitle(QwtPlot.yLeft))))
+            f.write("#set axis labels\nxlabel('%s', weight = 'bold')\nylabel('%s', weight = 'bold')\n\n" % (str(self.axisTitle(QwtPlot.xBottom).text()), str(self.axisTitle(QwtPlot.yLeft).text())))
             f.write("\naxis([x1, x2, y1, y2])\ngca().set_position([edgeOffset, edgeOffset, 1 - 2*edgeOffset, 1 - 2*edgeOffset])\n#subplots_adjust(left = 0.08, bottom = 0.11, right = 0.98, top = 0.98)\n")
 
         f.write("\n# possible settings to change\n#axes().set_frame_on(0) #hide the frame\n#axis('off') #hide the axes and labels on them\n\n")
@@ -786,18 +810,20 @@ class OWGraph(QwtPlot):
 
         if self.legend().itemCount() > 0:
             legendItems = []
-            for item in self.legend().contentsWidget().children():
-                if type(item) != QwtLegendButton: continue
-                text = str(item.title()).replace("<b>", "").replace("</b>", "")
+            for widget in self.legend().legendItems():
+                item = self.legend().find(widget)
+                text = str(item.title().text()).replace("<b>", "").replace("</b>", "")
                 if not item.symbol():
-                    legendItems.append((text, None, None, None))
+                    legendItems.append((text, None, None, None, None))
                 else:
-                    legendItems.append((text, markers[item.symbol().style()], self._getColorFromObject(item.symbol().pen()) , self._getColorFromObject(item.symbol().brush())))
+                    penC, penA = self._getColorFromObject(item.symbol().pen())
+                    brushC, brushA = self._getColorFromObject(item.symbol().brush())
+                    legendItems.append((text, markers[item.symbol().style()+1], penC, brushC, min(brushA, penA)))
             f.write("""
 #functions to show legend below the figure
 def drawSomeLegendItems(x, items, itemsPerAxis = 1, yDiff = 0.0):
     axes([x-0.1, .018*itemsPerAxis - yDiff, .2, .018], frameon = 0); axis('off')
-    lines = [plot([],[], label = text, marker = marker, markeredgecolor = edgeC, markerfacecolor = faceC) for (text, marker, edgeC, faceC) in items]
+    lines = [plot([],[], label = text, marker = marker, markeredgecolor = edgeC, markerfacecolor = faceC, alpha = alpha) for (text, marker, edgeC, faceC, alpha) in items]
     legend(lines, [item[0] for item in items], 'upper center', handlelen = 0.1, numpoints = 1, prop = font_manager.FontProperties(size=11))
     gca().get_legend().draw_frame(False)
 
@@ -820,11 +846,11 @@ drawLegend(items)\n""" % (str(legendItems)))
 
 
     def _getColorFromObject(self, obj):
-        if obj.__class__ == QBrush and obj.style() == Qt.NoBrush: return "'none'"
-        if obj.__class__ == QPen   and obj.style() == Qt.NoPen: return "'none'"
+        if isinstance(obj, QBrush) and obj.style() == Qt.NoBrush: return "'none'", 1
+        if isinstance(obj, QPen)   and obj.style() == Qt.NoPen: return "'none'", 1
         col = [obj.color().red(), obj.color().green(), obj.color().blue()];
         col = tuple([v/float(255) for v in col])
-        return col
+        return col, obj.color().alpha()/float(255)
 
 
 class RotatedMarker(QwtPlotMarker):

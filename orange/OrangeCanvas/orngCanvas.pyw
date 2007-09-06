@@ -18,14 +18,14 @@ class OrangeCanvasDlg(QMainWindow):
         self.__dict__.update(orngOrangeFoldersQt4.directoryNames)
 
         #self.setFocusPolicy(QWidget.StrongFocus)
-        
+
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
 
         canvasIconName = os.path.join(self.canvasDir, "icons/CanvasIcon.png")
         if os.path.exists(canvasIconName):
             self.setWindowIcon(QIcon(canvasIconName))
-        
-        orngOrangeFoldersQt4.addOrangeDirectoriesToPath(self.registryFileName)
+
+        #orngOrangeFoldersQt4.addOrangeDirectoriesToPath(self.registryFileName)
 
         # create error and warning icons
         informationIconName = os.path.join(self.canvasDir, "icons/triangle-blue.png")
@@ -42,31 +42,31 @@ class OrangeCanvasDlg(QMainWindow):
             self.informationIcon = None
             self.widgetIcons = None
             print "Unable to load all necessary icons. Please reinstall Orange."
-        
+
         self.workspace = WidgetWorkspace(self)
         #self.workspace.setBackgroundColor(QColor(255,255,255))
         self.setCentralWidget(self.workspace)
         self.statusBar = MyStatusBar(self)
         self.setStatusBar(self.statusBar)
         self.connect(self.workspace, SIGNAL("windowActivated(QWidget*)"), self.focusDocument)
-        
+
         self.settings = {}
         self.widgetInfo = {} # this is a dictionary with items: category-widget_name : {info about widget (inList, outList, description...}
-        
+
         self.rebuildSignals()    # coloring of signals - unused!
         self.useLargeIcons = False
         self.snapToGrid = True
 
         self.loadSettings()
-        
-        self.useLargeIcons = self.settings["useLargeIcons"]
+
+        #self.useLargeIcons = self.settings["useLargeIcons"]
         self.snapToGrid = self.settings["snapToGrid"]
-        
+
         self.widgetSelectedColor = QColor(self.settings["widgetSelectedColor"][0], self.settings["widgetSelectedColor"][1], self.settings["widgetSelectedColor"][2])
         self.widgetActiveColor   = QColor(self.settings["widgetActiveColor"][0], self.settings["widgetActiveColor"][1], self.settings["widgetActiveColor"][2])
         self.lineColor           = QColor(self.settings["lineColor"][0], self.settings["lineColor"][1], self.settings["lineColor"][2])
 
-        # create toolbar        
+        # create toolbar
         self.toolbar = self.addToolBar("Toolbar")
         self.toolbar.setOrientation(Qt.Horizontal)
 
@@ -92,16 +92,16 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolbar.addAction(QIcon(self.file_print), "Print", self.menuItemPrinter)
 
         self.addToolBarBreak()
-        
-        # read widgets    
-        #if hasattr(self.widgetsToolBar, "setHorizontalStretchable"): self.widgetsToolBar.setHorizontalStretchable(True)        
+
+        # read widgets
+        #if hasattr(self.widgetsToolBar, "setHorizontalStretchable"): self.widgetsToolBar.setHorizontalStretchable(True)
         #else: self.widgetsToolBar.setHorizontallyStretchable(True)
         self.widgetsToolBar = self.addToolBar("Widgets")
         self.widgetsToolBar.setOrientation(Qt.Horizontal)
         self.createWidgetsToolbar(not os.path.exists(self.registryFileName))
-               
+
         self.readShortcuts()
-        
+
         # read recent files
         self.recentDocs = []
         self.readRecentFiles()
@@ -109,7 +109,7 @@ class OrangeCanvasDlg(QMainWindow):
         width  = self.settings.get("canvasWidth", 700)
         height = self.settings.get("canvasHeight", 600)
         self.resize(width, height)
-        
+
         # center window in the desktop
         deskH = app.desktop().height()
         deskW = app.desktop().width()
@@ -117,7 +117,7 @@ class OrangeCanvasDlg(QMainWindow):
         w = max(0, deskW/2 - width/2)
         self.move(w,h)
 
-        
+
         # apply output settings
         self.output = orngOutput.OutputWindow(self, self.workspace)
         self.output.show()
@@ -133,7 +133,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.output.setVerbosity(self.settings["outputVerbosity"])
 
         self.show()
-                
+
         # create new schema
         win = self.menuItemNewSchema()
         if len(sys.argv) > 1 and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
@@ -155,12 +155,12 @@ class OrangeCanvasDlg(QMainWindow):
         self.tabs = orngTabs.WidgetTabs(self, self.widgetInfo, self.widgetsToolBar)
         #self.tabs.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.widgetsToolBar.addWidget(self.tabs)
-                
+
         ## the registry is now build already in the orngRegistry when setting up the directory names
         if rebuildRegistry == 1:
             parse = orngRegistry.WidgetsToXML()
             parse.ParseWidgetRoot(self.widgetDir, self.canvasSettingsDir)
-            
+
         # if registry still doesn't exist then something is very wrong...
         if not os.path.exists(self.registryFileName):
             QMessageBox.critical( self, "Orange Canvas", "Unable to locate widget registry. Exiting...")
@@ -169,19 +169,17 @@ class OrangeCanvasDlg(QMainWindow):
         if self.settings.has_key("WidgetTabs"):
             widgetTabList = self.settings["WidgetTabs"]
         else:
-            widgetTabList = ["Data", "Classify", "Evaluate", "Visualize", "Associate", "Genomics", "Other"]
-            
-        for tab in widgetTabList: self.tabs.insertWidgetTab(tab)
-                
+            widgetTabList = ["Data", "Classify", "Evaluate", "Visualize", "Associate", "Genomics", "Prototypes"]
+
         # read widget registry file and create tab with buttons
-        self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
+        self.tabs.readInstalledWidgets(self.registryFileName, widgetTabList, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
 
         # store order to settings list
         widgetTabList = []
         for tab in self.tabs.tabs:
             widgetTabList.append(str(self.tabs.tabText(self.tabs.indexOf(tab))))
         self.settings["WidgetTabs"] = widgetTabList
-            
+
 
     def readShortcuts(self):
         self.widgetShortcuts = {}
@@ -194,13 +192,13 @@ class OrangeCanvasDlg(QMainWindow):
                     self.widgetShortcuts[key] = widget["button"]
                 else:
                     print "Warning: invalid shortcut %s (%s)" % (key, button)
-        
+
     def initMenu(self):
         # ###################
         # menu items
         # ###################
         self.menuRecent = QMenu("Recent Schemas", self)
-        
+
         self.menuFile = QMenu("&File", self)
         self.menuFile.addAction(QIcon(self.file_new), "&New",  self.menuItemNewSchema, Qt.CTRL+Qt.Key_N )
         #self.menuFile.addAction( "New from template",  self.menuItemNewFromTemplate)
@@ -240,36 +238,37 @@ class OrangeCanvasDlg(QMainWindow):
 
         # uncomment this only for debugging
         #self.menuOptions.addAction("Dump widget variables", self.dumpVariables)
-        
+
         self.menuOptions.addSeparator()
         #self.menuOptions.addAction( "Channel preferences",  self.menuItemPreferences)
         #self.menuOptions.addSeparator()
         self.menuOptions.addAction( "&Rebuild Widget Registry",  self.menuItemRebuildWidgetRegistry)
         self.menuOptions.addAction( "&Customize Shortcuts",  self.menuItemEditWidgetShortcuts)
+        self.menuOptions.addAction( "&Delete Widget Settings",  self.menuItemDeleteWidgetSettings)
         self.menuOptions.addSeparator()
         self.menuOptions.addAction( "Canvas &Options...",  self.menuItemCanvasOptions)
-        
-        self.menuWindow = QMenu("&Window", self) 
+
+        self.menuWindow = QMenu("&Window", self)
         self.menuWindow.addAction("&Cascade", self.workspace.cascade)
         self.menuWindow.addAction("&Tile", self.workspace.tile)
         self.menuWindow.addSeparator()
-        
+
         self.connect(self.menuWindow, SIGNAL("aboutToShow()"), self.showWindows)
 
         self.menupopupShowToolbarID = self.menuWindow.addAction( "Toolbar",  self.menuItemShowToolbar )
-        self.menupopupShowToolbarID.setCheckable(True) 
+        self.menupopupShowToolbarID.setCheckable(True)
         if self.settings.has_key("showToolbar"): self.showToolbar = self.settings["showToolbar"]
         else:                                    self.showToolbar = True
         if not self.showToolbar: self.toolbar.hide()
-        self.menupopupShowToolbarID.setChecked(self.showToolbar) 
-        
+        self.menupopupShowToolbarID.setChecked(self.showToolbar)
+
         self.menupopupShowWidgetToolbarID = self.menuWindow.addAction( "Widget Toolbar",  self.menuItemShowWidgetToolbar)
-        self.menupopupShowWidgetToolbarID.setCheckable(True) 
+        self.menupopupShowWidgetToolbarID.setCheckable(True)
         if self.settings.has_key("showWidgetToolbar"): self.showWidgetToolbar = self.settings["showWidgetToolbar"]
         else:                                          self.showWidgetToolbar = True
         if not self.showWidgetToolbar: self.widgetsToolBar.hide()
         self.menupopupShowWidgetToolbarID.setChecked(self.showWidgetToolbar)
-        
+
         self.menuWindow.addSeparator()
         self.menuOutput = QMenu("Output", self)
         self.menuWindow.addMenu(self.menuOutput)
@@ -289,27 +288,34 @@ class OrangeCanvasDlg(QMainWindow):
         if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")) or os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")):
             if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")): self.menuHelp.addAction("Orange Help", self.menuOpenLocalOrangeHelp)
             if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")): self.menuHelp.addAction("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
-        
+
         self.menuHelp.addAction("Orange Online Help", self.menuOpenOnlineOrangeHelp)
         #self.menuHelp.addAction("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)
-        
+
         if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
             self.menuHelp.addSeparator()
             self.menuHelp.addAction("Check for updates", self.menuCheckForUpdates)
 
         #self.menuHelp.addSeparator()
         #self.menuHelp.addAction("About Orange Canvas", self.menuHelpAbout)
-        
 
-        self.menuBar = QMenuBar(self) 
+        # widget popup menu
+        self.widgetPopup = QMenu("Widget", self)
+        self.widgetPopup.addAction( "Open",  self.openActiveWidget)
+        self.widgetPopup.addSeparator()
+        rename = self.widgetPopup.addAction( "&Rename", self.renameActiveWidget, Qt.Key_F2)
+        delete = self.widgetPopup.addAction("Remove", self.removeActiveWidget, Qt.Key_Delete)
+
+        self.menuBar = QMenuBar(self)
         self.menuBar.addMenu(self.menuFile)
         #self.menuBar.addMenu(self.menuEdit)
         self.menuBar.addMenu(self.menuOptions)
         self.menuBar.addMenu(self.menuWindow)
+        self.menuBar.addMenu(self.widgetPopup)
         self.menuBar.addMenu(self.menuHelp)
         self.setMenuBar(self.menuBar)
 
-        self.printer = QPrinter() 
+        self.printer = QPrinter()
 
 
     def showWindows(self):
@@ -326,7 +332,23 @@ class OrangeCanvasDlg(QMainWindow):
 ##    def actionEvent(self, event):
 ##        if event.type() == QEvent.ActionChanged and event.action() in self.windowsDict.keys():
 ##            self.windowsDict[event.action()].parentWidget.setFocus()
-            
+
+
+    def removeActiveWidget(self):
+        win = self.workspace.activeWindow()
+        if isinstance(win, orngDoc.SchemaDoc):
+            win.canvasView.removeActiveWidget()
+
+    def renameActiveWidget(self):
+        win = self.workspace.activeWindow()
+        if isinstance(win, orngDoc.SchemaDoc):
+            win.canvasView.renameActiveWidget()
+
+    def openActiveWidget(self):
+        win = self.workspace.activeWindow()
+        if isinstance(win, orngDoc.SchemaDoc):
+            win.canvasView.openActiveWidget()
+
 
     def menuItemNewSchema(self, forceNew = 1):
         if not forceNew:
@@ -358,7 +380,7 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemClose(self):
         win = self.workspace.activeWindow()
         win.close()
-        
+
     def menuItemSave(self):
         win = self.workspace.activeWindow()
         if isinstance(win, orngDoc.SchemaDoc):
@@ -379,7 +401,7 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemSaveAsAppTabs(self):
         win = self.workspace.activeWindow()
         if isinstance(win, orngDoc.SchemaDoc):
-            win.saveDocumentAsApp(asTabs = 1)    
+            win.saveDocumentAsApp(asTabs = 1)
 
     def menuItemPrinter(self):
         try:
@@ -391,8 +413,8 @@ class OrangeCanvasDlg(QMainWindow):
         if not isinstance(win, orngDoc.SchemaDoc):
             return
         sizeDlg = OWDlgs.OWChooseImageSizeDlg(win.canvas)
-        sizeDlg.exec_loop()
-        
+        sizeDlg.exec_()
+
 
     def readRecentFiles(self):
         self.menuRecent.clear()
@@ -406,7 +428,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         recentDocs = recentDocs[:9]
         self.settings["RecentFiles"] = recentDocs
-        
+
         for i in range(len(recentDocs)):
             shortName = "&" + str(i+1) + " " + os.path.basename(recentDocs[i])
             self.menuRecent.addAction(shortName, eval("self.menuItemRecent"+str(i+1)))
@@ -424,7 +446,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         # convert to a valid file name
         name = os.path.realpath(name)
-        
+
         if name in recentDocs:
             recentDocs.remove(name)
         recentDocs.insert(0, name)
@@ -475,10 +497,10 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuItemGrid(self):
         return
-        
+
     def menuItemShowGrid(self):
         return
-        
+
     def updateSnapToGrid(self):
         if self.snapToGrid == True:
             for win in self.workspace.windowList():
@@ -491,12 +513,12 @@ class OrangeCanvasDlg(QMainWindow):
 
     def updateUseLargeIcons(self):
         self.createWidgetsToolbar(0)
-                
+
     def menuItemEnableAll(self):
         win = self.workspace.activeWindow()
         if isinstance(win, orngDoc.SchemaDoc):
             win.enableAllLines()
-        
+
     def menuItemDisableAll(self):
         win = self.workspace.activeWindow()
         if isinstance(win, orngDoc.SchemaDoc):
@@ -550,14 +572,14 @@ class OrangeCanvasDlg(QMainWindow):
     """
     def menuItemPreferences(self):
         dlg = orngDlgs.PreferencesDlg(self, None, "", True)
-        dlg.exec_loop()
+        dlg.exec_()
         if dlg.result() == QDialog.Accepted:
             self.rebuildSignals()
     """
 
     def menuItemRebuildWidgetRegistry(self):
         self.createWidgetsToolbar(True)
-        
+
     def menuItemEditWidgetShortcuts(self):
         dlg = orngDlgs.WidgetRegistryDlg(self)
         if dlg.exec_() == QDialog.Accepted:
@@ -566,16 +588,23 @@ class OrangeCanvasDlg(QMainWindow):
             for k, v in self.widgetShortcuts.items():
                 shf.write("%s: %s\n" % (k, v.nameKey))
 
+    def menuItemDeleteWidgetSettings(self):
+        if QMessageBox.warning(self,'Orange Canvas','If you want to delete widget settings press Ok, otherwise press Cancel.\nFor the deletion to be complete there cannot be any widgets on your schemas.\nIf there are, close schemas first.',QMessageBox.Ok | QMessageBox.Default, QMessageBox.Cancel | QMessageBox.Escape) == QMessageBox.Ok:
+            if os.path.exists(self.widgetSettingsDir):
+                for f in os.listdir(self.widgetSettingsDir):
+                    if os.path.splitext(f)[1].lower() == ".ini":
+                        os.remove(os.path.join(self.widgetSettingsDir, f))
+
     def menuCloseAll(self):
         wins = self.workspace.getDocumentList()
         for win in wins:
             win.close()
-            
+
     def menuMinimizeAll(self):
         wins = self.workspace.windowList()
         for win in wins:
             win.showMinimized()
-            
+
     def menuRestoreAll(self):
         wins = self.workspace.windowList()
         for win in wins:
@@ -603,7 +632,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.updateDlg = updateOrange.updateOrangeDlg(None, "", Qt.WDestructiveClose)
 
     def menuHelpAbout(self):
-        pass    
+        pass
 
     def rebuildSignals(self):
         self.channels = {}
@@ -624,7 +653,7 @@ class OrangeCanvasDlg(QMainWindow):
         else:
             return [symbName, str(1), "blue"]
 
-    def focusDocument(self, w):    
+    def focusDocument(self, w):
         if w: w.setFocus()
 
     def menuItemCanvasOptions(self):
@@ -632,7 +661,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         # set general options settings
         dlg.snapToGridCB.setChecked(self.snapToGrid)
-        dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
+        #dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
         dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
         dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
@@ -665,22 +694,22 @@ class OrangeCanvasDlg(QMainWindow):
             text = str(self.tabs.tabText(i))
             dlg.tabOrderList.addItem(text)
             oldTabList.append(text)
-                    
+
         if dlg.exec_() == QDialog.Accepted:
             h = int(str(dlg.heightEdit.text()));
             w = int(str(dlg.widthEdit.text()))
-                        
+
             # save general settings
             if self.snapToGrid != dlg.snapToGridCB.isChecked():
                 self.snapToGrid = dlg.snapToGridCB.isChecked()
                 self.settings["snapToGrid"] = self.snapToGrid
                 self.updateSnapToGrid()
 
-            if self.useLargeIcons != dlg.useLargeIconsCB.isChecked():
-                self.useLargeIcons = dlg.useLargeIconsCB.isChecked()
-                self.settings["useLargeIcons"] = self.useLargeIcons
-                self.updateUseLargeIcons()
-                    
+#            if self.useLargeIcons != dlg.useLargeIconsCB.isChecked():
+#                self.useLargeIcons = dlg.useLargeIconsCB.isChecked()
+#                self.settings["useLargeIcons"] = self.useLargeIcons
+#                self.updateUseLargeIcons()
+
             # save exceptions settings
             #self.settings["catchException"] = dlg.catchExceptionCB.isChecked()
             #self.settings["catchOutput"] = dlg.catchOutputCB.isChecked()
@@ -688,7 +717,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["focusOnCatchException"] = dlg.focusOnCatchExceptionCB.isChecked()
             self.settings["focusOnCatchOutput"] = dlg.focusOnCatchOutputCB.isChecked()
             self.settings["printOutputInStatusBar"] = dlg.printOutputInStatusBarCB.isChecked()
-            self.settings["outputVerbosity"] = dlg.verbosityCombo.currentItem()
+            self.settings["outputVerbosity"] = dlg.verbosityCombo.currentIndex()
             self.settings["ocShow"] = dlg.ocShow.isChecked()
             self.settings["ocInfo"] = dlg.ocInfo.isChecked()
             self.settings["ocWarning"] = dlg.ocWarning.isChecked()
@@ -707,7 +736,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["saveWidgetsPosition"] = dlg.saveWidgetsPositionCB.isChecked()
             self.settings["useContexts"] = dlg.useContextsCB.isChecked()
 ##            self.settings["autoLoadSchemasOnStart"] = dlg.autoLoadSchemasOnStartCB.isChecked()
-            
+
             self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
             self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
             self.settings["lineColor"]           = (dlg.lineIcon.color.red(), dlg.lineIcon.color.green(), dlg.lineIcon.color.blue())
@@ -719,13 +748,13 @@ class OrangeCanvasDlg(QMainWindow):
             # update settings in widgets in current documents
             for win in self.workspace.getDocumentList():
                 for widget in win.widgets:
-                    widget.updateSettings()
                     widget.instance._useContexts = self.settings["useContexts"]
                     widget.instance._owInfo      = self.settings["owInfo"]
                     widget.instance._owWarning   = self.settings["owWarning"]
                     widget.instance._owError     = self.settings["owError"]
                     widget.instance._owShowStatus= self.settings["owShow"]
                     widget.instance.updateStatusBarState()
+                    widget.updateWidgetState()
 
             for win in self.workspace.getDocumentList():
                 win.canvasView.repaint()
@@ -736,7 +765,7 @@ class OrangeCanvasDlg(QMainWindow):
                 for line in doc.lines:
                     line.showSignalNames = show
                     line.updateTooltip()
-                
+
             #self.output.catchException(self.settings["catchException"])
             #self.output.catchOutput(self.settings["catchOutput"])
             self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
@@ -768,12 +797,12 @@ class OrangeCanvasDlg(QMainWindow):
         text = text.replace("<i>", ""); text = text.replace("</i>", "")
         text = text.replace("<br>", ""); text = text.replace("&nbsp", "")
         self.statusBar.showMessage("Last event: " + str(text))
-        
+
     #######################
     # SETTINGS
     #######################
 
-    # Loads settings from the widget's .ini file    
+    # Loads settings from the widget's .ini file
     def loadSettings(self):
         filename = os.path.join(self.canvasSettingsDir, "orngCanvas.ini")
         if os.path.exists(filename):
@@ -790,7 +819,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("autoSaveSchemasOnClose", 0)
         self.settings.setdefault("saveWidgetsPosition", 0)
 ##        self.settings.setdefault("autoLoadSchemasOnStart", 0)
-        
+
         self.settings.setdefault("widgetSelectedColor", (0, 255, 0))
         self.settings.setdefault("widgetActiveColor", (0,0,255))
         self.settings.setdefault("lineColor", (0,255,0))
@@ -805,7 +834,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.settings.setdefault("canvasWidth", 700)
         self.settings.setdefault("canvasHeight", 600)
-        
+
         self.settings.setdefault("focusOnCatchException", 1)
         self.settings.setdefault("focusOnCatchOutput" , 0)
         self.settings.setdefault("printOutputInStatusBar", 1)
@@ -819,7 +848,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("owWarning", 1)
         self.settings.setdefault("ocError", 1)
         self.settings.setdefault("owError", 1)
-                
+
 
     # Saves settings to this widget's .ini file
     def saveSettings(self):
@@ -843,17 +872,17 @@ class OrangeCanvasDlg(QMainWindow):
             self.output.logFile.close()
             ce.accept()
             QMainWindow.closeEvent(self, ce)
-       
+
     def enableSave(self, enable):
         self.toolSave.setEnabled(enable)
         self.menuSaveID.setEnabled(enable)
         self.menuSaveAsID.setEnabled(enable)
 
-    def resizeEvent(self, e):
-        self.tabs.widget(self.tabs.currentIndex()).resizeEvent(e)       # show/hide left and right buttons
-        #self.tabs.widget(self.tabs.currentIndex()).repaint()
+#    def resizeEvent(self, e):
+#        self.tabs.widget(self.tabs.currentIndex()).resizeEvent(e)       # show/hide left and right buttons
+#        #self.tabs.widget(self.tabs.currentIndex()).repaint()
 
-        
+
 
 class MyStatusBar(QStatusBar):
     def __init__(self, parent):
@@ -917,4 +946,5 @@ dlg.show()
 for arg in sys.argv[1:]:
     if arg == "-reload":
         dlg.menuItemOpenLastSchema()
-sys.exit(app.exec_())
+app.exec_()
+app.closeAllWindows()

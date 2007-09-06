@@ -1,5 +1,7 @@
+import orngOrangeFoldersQt4
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 import os, re, urllib, sys
-from qt import *
 import md5, cPickle
 
 # This is Orange Update program. It can check on the web if there are any updates available and download them.
@@ -24,84 +26,78 @@ def splitDirs(path):
     return listOfDirs
 
 class OptionsDlg(QDialog):
-    def __init__(self, settings, *args):
-        apply(QDialog.__init__,(self,) + args)
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("Update Options")
-        else:
-            self.setCaption("Qt Update Options")
+    def __init__(self, settings):
+        QDialog.__init__(self, None)
+        self.setWindowTitle("Update Options")
 
-        if self.layout():
-            self.topLayout = self.layout()
-        else:
-            self.topLayout = QVBoxLayout(self, 8)
+        self.setLayout(QVBoxLayout())
 
-        self.groupBox = QVGroupBox("Updating Options", self)
-        self.topLayout.addWidget(self.groupBox)
+        self.groupBox = QGroupBox("Updating Options", self)
+        self.layout().addWidget(self.groupBox)
         self.check1 = QCheckBox("Update scripts", self.groupBox)
         self.check2 = QCheckBox("Update binary files", self.groupBox)
         self.check3 = QCheckBox("Download new files", self.groupBox)
+        self.groupBox.setLayout(QVBoxLayout())
+        for c in [self.check1, self.check2, self.check3]:
+            self.groupBox.layout().addWidget(c)
 
-        self.groupBox2 = QVGroupBox("Solving Conflicts", self)
-        self.topLayout.addWidget(self.groupBox2)
+        self.groupBox2 = QGroupBox("Solving Conflicts", self)
+        self.groupBox2.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.groupBox2)
         label = QLabel("When your local file was edited\nand a newer version is available...", self.groupBox2)
+        self.groupBox2.layout().addWidget(label)
         self.combo = QComboBox(self.groupBox2)
         for s in ["Ask what to do", "Overwrite your local copy with new file", "Keep your local file"]:
-            self.combo.insertItem(s)
-        
+            self.combo.addItem(s)
+        self.groupBox2.layout().addWidget(self.combo)
+
         self.check1.setChecked(settings["scripts"])
         self.check2.setChecked(settings["binary"])
         self.check3.setChecked(settings["new"])
-        self.combo.setCurrentItem(settings["conflicts"])
+        self.combo.setCurrentIndex(settings["conflicts"])
 
         widget = QWidget(self)
-        self.topLayout.addWidget(widget)
-        widgetLayout = QHBoxLayout(widget)
-        widget.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        widgetLayout.addStretch(1)
+        self.layout().addWidget(widget)
+        widget.setLayout(QHBoxLayout())
+        widget.layout().addStretch(1)
         okButton = QPushButton('OK', widget)
-        widgetLayout.addWidget(okButton)
+        widget.layout().addWidget(okButton)
 ##        self.topLayout.addWidget(okButton)
         self.connect(okButton, SIGNAL('clicked()'),self,SLOT('accept()'))
         cancelButton = QPushButton('Cancel', widget)
-        widgetLayout.addWidget(cancelButton)
+        widget.layout().addWidget(cancelButton)
 ##        self.topLayout.addWidget(cancelButton)
         self.connect(cancelButton, SIGNAL('clicked()'),self,SLOT('reject()'))
 
     def accept(self):
-        self.settings = {"scripts": self.check1.isChecked(), "binary": self.check2.isChecked(), "new": self.check3.isChecked(), "conflicts": self.combo.currentItem()}
+        self.settings = {"scripts": self.check1.isChecked(), "binary": self.check2.isChecked(), "new": self.check3.isChecked(), "conflicts": self.combo.currentIndex()}
         QDialog.accept(self)
 
-    
+
 
 class FoldersDlg(QDialog):
-    def __init__(self, caption, *args):
-        apply(QDialog.__init__,(self,) + args)
+    def __init__(self, caption):
+        QDialog.__init__(self, None)
 
-        if self.layout():
-            self.topLayout = self.layout()
-        else:
-            self.topLayout = QVBoxLayout(self, 8)
+        self.setLayout(QVBoxLayout())
 
         self.groupBox = QGroupBox(self)
-        self.topLayout.addWidget(self.groupBox)
+        self.layout().addWidget(self.groupBox)
         self.groupBox.setTitle(" " + caption.strip() + " ")
-        self.groupBoxLayout = QVBoxLayout(self.groupBox, 5)
+        self.groupBox.setLayout(QVBoxLayout())
         self.groupBoxLayout.setMargin(20)
-                
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("Select Folders")
-        else:
-            self.setCaption("Qt Select Folders")
+
+        self.setWindowCaption("Select Folders")
         self.resize(300,100)
-        
+
         self.folders = []
         self.checkBoxes = []
 
     def addCategory(self, text, checked = 1, indent = 0):
         widget = QWidget(self.groupBox)
-        hboxLayout = QHBoxLayout(widget)
-        self.groupBoxLayout.addWidget(widget)
+        self.groupBox.layout().addWidget(widget)
+        hboxLayout = QHBoxLayout()
+        widget.setLayout(hboxLayout)
 
         if indent:
             sep = QWidget(widget)
@@ -109,23 +105,23 @@ class FoldersDlg(QDialog):
             hboxLayout.addWidget(sep)
         check = QCheckBox(text, widget)
         hboxLayout.addWidget(check)
-            
+
         check.setChecked(checked)
         self.checkBoxes.append(check)
         self.folders.append(text)
 
     def addLabel(self, text):
         label = QLabel(text, self.groupBox)
-        self.groupBoxLayout.addWidget(label)
-        
+        self.groupBox.layout().addWidget(label)
+
 
     def finishedAdding(self, ok = 1, cancel = 1):
         widget = QWidget(self)
-        self.topLayout.addWidget(widget)
+        self.layout().addWidget(widget)
         widgetLayout = QHBoxLayout(widget)
-        widget.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        widget.setLayout(widgetLayout)
         widgetLayout.addStretch(1)
-        
+
         if ok:
             okButton = QPushButton('OK', widget)
             widgetLayout.addWidget(okButton)
@@ -139,21 +135,22 @@ class updateOrangeDlg(QMainWindow):
     def __init__(self,*args):
         apply(QMainWindow.__init__,(self,) + args)
         self.resize(600,600)
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption("Orange Update")
-        else:
-            self.setCaption("Qt Orange Update")
-        self.toolbar = QToolBar(self, 'toolbar')
-        self.statusBar = QStatusBar(self)
-        self.text = QTextView (self)
+        self.setWindowTitle("Orange Update")
+
+        self.toolbar = self.addToolBar("Toolbar")
+
+        self.text = QTextEdit(self)
+        self.text.setReadOnly(1)
         font = self.text.font(); font.setPointSize(10); self.text.setFont(font)
         self.setCentralWidget(self.text)
-        self.statusBar.message('Ready')
+        self.statusBar = QStatusBar(self)
+        self.setStatusBar(self.statusBar)
+        self.statusBar.showMessage('Ready')
 
         import updateOrange
         self.orangeDir = os.path.split(os.path.abspath(updateOrange.__file__))[0]
         os.chdir(self.orangeDir)        # we have to set the current dir to orange dir since we can call update also from orange canvas
-        
+
         self.settings = {"scripts":1, "binary":1, "new":1, "conflicts":0}
         if os.path.exists("updateOrange.set"):
             file = open("updateOrange.set", "r")
@@ -194,19 +191,24 @@ class updateOrangeDlg(QMainWindow):
         if not os.path.exists(self.updateIcon): self.updateIcon = defaultIcon
         if not os.path.exists(self.foldersIcon): self.foldersIcon = defaultIcon
         if not os.path.exists(self.optionsIcon): self.optionsIcon = defaultIcon
-        
-        self.toolUpdate  = QToolButton(QIconSet(QPixmap(self.updateIcon)), "Update" , QString.null, self.executeUpdate, self.toolbar, 'Update Files')
-        self.toolUpdate.setUsesTextLabel (1)
+
+        def createButton(text, icon, callback, tooltip):
+            b = QToolButton(self.toolbar)
+            self.toolbar.layout().addWidget(b)
+            b.setIcon(icon)
+            b.setText(text)
+            self.connect(b, SIGNAL("clicked()"), callback)
+            b.setToolTip(tooltip)
+
+        self.toolUpdate  = self.toolbar.addAction(QIcon(self.updateIcon), "Update" , self.executeUpdate)
         self.toolbar.addSeparator()
-        self.toolFolders = QToolButton(QIconSet(QPixmap(self.foldersIcon)), "Folders" , QString.null, self.showFolders, self.toolbar, 'Show folders that will be updated')
-        self.toolFolders.setUsesTextLabel (1)
-        self.toolOptions = QToolButton(QIconSet(QPixmap(self.optionsIcon)), "Options" , QString.null, self.showOptions, self.toolbar, 'Show update options')
-        self.toolOptions.setUsesTextLabel (1)
-        self.setIcon(QPixmap(self.updateIcon))
-                
+        self.toolFolders = self.toolbar.addAction(QIcon(self.foldersIcon), "Folders" , self.showFolders)
+        self.toolOptions = self.toolbar.addAction(QIcon(self.optionsIcon), "Options" , self.showOptions)
+
+        self.setWindowIcon(QIcon(self.updateIcon))
         self.move((qApp.desktop().width()-self.width())/2, (qApp.desktop().height()-self.height())/2)   # center the window
         self.show()
-        
+
 
     # ####################################
     # show the list of possible folders
@@ -224,9 +226,9 @@ class updateOrangeDlg(QMainWindow):
         groups = [(name, 1) for name in self.updateGroups] + [(name, 0) for name in self.dontUpdateGroups]
         groups.sort()
         groupDict = dict(groups)
-            
-        dlg = FoldersDlg("Select Orange folders that you wish to update", None, "", 1)
-        dlg.setIcon(QPixmap(self.foldersIcon))
+
+        dlg = FoldersDlg("Select Orange folders that you wish to update")
+        dlg.setWindowIcon(QIcon(self.foldersIcon))
 
         dlg.addCategory("Orange Canvas", groupDict.get("Orange Canvas", 1))
         dlg.addCategory("Documentation", groupDict.get("Documentation", 1))
@@ -235,11 +237,11 @@ class updateOrangeDlg(QMainWindow):
         for (group, sel) in groups:
             if group in ["Orange Canvas", "Documentation", "Orange Root"]: continue
             dlg.addCategory(group, sel, indent = 1)
-        
+
         dlg.finishedAdding(cancel = 1)
         dlg.move((qApp.desktop().width()-dlg.width())/2, (qApp.desktop().height()-400)/2)   # center dlg window
-        
-        res = dlg.exec_loop()
+
+        res = dlg.exec_()
         if res == QDialog.Accepted:
             self.updateGroups = []
             self.dontUpdateGroups = []
@@ -247,12 +249,12 @@ class updateOrangeDlg(QMainWindow):
                 if dlg.checkBoxes[i].isChecked(): self.updateGroups.append(dlg.folders[i])
                 else:                             self.dontUpdateGroups.append(dlg.folders[i])
             self.writeVersionFile()
-        return                
+        return
 
     def showOptions(self):
-        dlg = OptionsDlg(self.settings, None, "", 1)
-        dlg.setIcon(QPixmap(self.optionsIcon))
-        res = dlg.exec_loop()
+        dlg = OptionsDlg(self.settings)
+        dlg.setWindowIcon(QIcon(self.optionsIcon))
+        res = dlg.exec_()
         if res == QDialog.Accepted:
             self.settings = dlg.settings
 
@@ -264,7 +266,7 @@ class updateOrangeDlg(QMainWindow):
             line = line.replace("\r", "")   # replace \r in case of linux files
             line = line.replace("\n", "")
             if not line: continue
-            
+
             if line[0] == "+":
                 updateGroups.append(line[1:])
             elif line[0] == "-":
@@ -275,7 +277,7 @@ class updateOrangeDlg(QMainWindow):
                     fname, version, md = fnd.group("fname", "version", "md5")
                     fname = fname.replace("\\", "/")
                     versions[fname] = ([int(x) for x in version.split(".")], md)
-                    
+
                     # add widget category if not already in updateGroups
                     dirs = splitDirs(fname)
                     if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups + dontUpdateGroups and dirs[1].lower() != "icons":
@@ -292,7 +294,7 @@ class updateOrangeDlg(QMainWindow):
         except IOError:
             self.addText('Unable to download current status file. Check your internet connection.')
             return {}, [], []
-        
+
         data = f.read().split("\n")
         versions = {}
         updateGroups = []; dontUpdateGroups = []
@@ -317,7 +319,7 @@ class updateOrangeDlg(QMainWindow):
                     dirs = splitDirs(fname)
                     if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups and dirs[1].lower() != "icons":
                         updateGroups.append(dirs[1])
-                        
+
         return versions, updateGroups, dontUpdateGroups
 
     def writeVersionFile(self):
@@ -335,13 +337,13 @@ class updateOrangeDlg(QMainWindow):
     def executeUpdate(self):
         updatedFiles = 0
         newFiles = 0
-        
+
         if self.settings["scripts"]:
             self.addText("Reading file status from web server")
 
             self.updateGroups = [];  self.dontUpdateGroups = []; self.newGroups = []
             self.downstuff = {}
-            
+
             upstuff, upUpdateGroups, upDontUpdateGroups = self.readInternetVersionFile(updateGroups = 0)
             if upstuff == {}: return
             try:
@@ -362,12 +364,12 @@ class updateOrangeDlg(QMainWindow):
 
             # show dialog with new groups
             if self.newGroups != []:
-                dlg = FoldersDlg("Select new categories you wish to download", None, "", 1)
-                dlg.setIcon(QPixmap(self.foldersIcon))
+                dlg = FoldersDlg("Select new categories you wish to download")
+                dlg.setWindowIcon(QIcon(self.foldersIcon))
                 for group in self.newGroups: dlg.addCategory(group)
                 dlg.finishedAdding(cancel = 0)
 
-                res = dlg.exec_loop()
+                res = dlg.exec_()
                 for i in range(len(dlg.checkBoxes)):
                     if dlg.checkBoxes[i].isChecked():
                         self.updateGroups.append(dlg.folders[i])
@@ -377,11 +379,11 @@ class updateOrangeDlg(QMainWindow):
 
             # update new files
             self.addText("Updating scripts...")
-            self.statusBar.message("Updating scripts")
+            self.statusBar.showMessage("Updating scripts")
 
             for fname, (version, location) in itms:
                 qApp.processEvents()
-                
+
                 # check if it is a widget directory that we don't want to update
                 dirs = splitDirs(fname)
                 if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] in self.dontUpdateGroups: continue
@@ -405,16 +407,16 @@ class updateOrangeDlg(QMainWindow):
             updatedFiles += self.updatePyd()
         else:
             self.addText("Skipping updateing binaries...")
-            
+
         self.addText("Update finished. New files: <b>%d</b>. Updated files: <b>%d</b>\n" %(newFiles, updatedFiles))
 
         # remove widgetregistry.xml in orangeCanvas directory
         if os.path.exists(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml")) and newFiles + updatedFiles > 0:
             os.remove(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml"))
-        
-        self.statusBar.message("Update finished.")
 
-    # update binary files        
+        self.statusBar.showMessage("Update finished.")
+
+    # update binary files
     def updatePyd(self):
         files = "orange", "corn", "statc", "orangeom", "orangene", "_orngCRS"
 
@@ -426,7 +428,7 @@ class updateOrangeDlg(QMainWindow):
             if not os.path.exists(fle+".pyd") or repository_stamps[fle+".pyd"] != md5.md5(file(fle+".pyd", "rb").read()).hexdigest().upper():
                 updated += self.updatefile(baseurl + fle + ".pyd", fle + ".pyd", "", "", "Updating")
         return updated
-    
+
     # #########################################################
     # get new file from the internet and overwrite the old file
     # webName = complete path to the file on the web
@@ -436,14 +438,14 @@ class updateOrangeDlg(QMainWindow):
     def updatefile(self, webName, localName, version, md, type = "Downloading"):
         self.addText(type + " %s ... " % localName, addBreak = 0)
         qApp.processEvents()
-        
+
         try:
-            urllib.urlretrieve(webName, localName + ".temp", self.updateDownloadStatus)            
+            urllib.urlretrieve(webName, localName + ".temp", self.updateDownloadStatus)
         except IOError, inst:
             self.addText('<font color="#FF0000">Failed</font> (%s)' % (inst[1]))
             return 0
 
-        self.statusBar.message("")
+        self.statusBar.showMessage("")
         dname = os.path.dirname(localName)
         if dname and not os.path.exists(dname):
             os.makedirs(dname)
@@ -460,7 +462,7 @@ class updateOrangeDlg(QMainWindow):
                         res = 1
                     elif self.settings["conflicts"] == CONFLICT_ASK:
                         res = QMessageBox.information(self,'Update Orange',"Your local file '%s' was edited, but a newer version of this file is available on the web.\nDo you wish to overwrite local copy with newest version (a backup of current file will be created) or keep your current file?" % (os.path.split(localName)[1]), 'Overwrite with newest', 'Keep current file')
-                        
+
                     if res == 0:    # overwrite
                         currmd = self.computeFileMd(localName+".temp")
                         try:
@@ -479,7 +481,7 @@ class updateOrangeDlg(QMainWindow):
                         return 0
             else:
                 currmd = self.computeFileMd(localName + ".temp")
-            
+
         try:
             if os.path.exists(localName):
                 os.remove(localName)
@@ -495,20 +497,21 @@ class updateOrangeDlg(QMainWindow):
 
     # show percent of finished download
     def updateDownloadStatus(self, blk_cnt, blk_size, tot_size):
-        self.statusBar.message("Downloaded %.1f%%" % (100*min(tot_size, blk_cnt*blk_size) / (tot_size or 1)))
-        
+        self.statusBar.showMessage("Downloaded %.1f%%" % (100*min(tot_size, blk_cnt*blk_size) / (tot_size or 1)))
+
     def computeFileMd(self, fname):
         f = open(fname, "rb")
         md = md5.new()
         md.update(f.read())
         f.close()
         return md
-        
+
     def addText(self, text, nobr = 1, addBreak = 1):
-        if nobr: self.text.setText(str(self.text.text()) + '<nobr>' + text + '</nobr>')
-        else:    self.text.setText(str(self.text.text()) + text)
-        if addBreak: self.text.setText(str(self.text.text()) + "<br>")
-        self.text.ensureVisible(0, self.text.contentsHeight())
+        if nobr: self.text.setText(str(self.text.toPlainText()) + '<nobr>' + text + '</nobr>')
+        else:    self.text.setText(str(self.text.toPlainText()) + text)
+        if addBreak: self.text.setText(str(self.text.toPlainText()) + "<br>")
+        #self.text.ensureVisible(0, self.text.contentsHeight())
+        self.text.verticalScrollBar().setValue(self.text.verticalScrollBar().maximum())
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Escape:
@@ -524,8 +527,7 @@ class updateOrangeDlg(QMainWindow):
 
 # show application dlg
 if __name__ == "__main__":
-    app = QApplication(sys.argv) 
+    app = QApplication(sys.argv)
     dlg = updateOrangeDlg()
-    app.setMainWidget(dlg)
     dlg.show()
-    app.exec_loop() 
+    app.exec_()

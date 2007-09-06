@@ -118,7 +118,9 @@ class OWSieveDiagram(OWWidget):
 
     ###############################################################
     # when clicked on a list box item, show selected attribute pair
-    def showSelectedPair(self, index):
+    def showSelectedPair(self):
+        if self.interestingList.selectedItems() == []: return
+        index = self.interestingList.row(self.interestingList.selectedItems()[0])
         (chisquare, strName, self.attrX, self.attrY) = self.chisquares[index]
         self.updateGraph()
 
@@ -236,6 +238,7 @@ class OWSieveDiagram(OWWidget):
 
     # initialize lists for shown and hidden attributes
     def initCombos(self):
+        self.attrXCombo.clear()
         self.attrYCombo.clear()
         self.attrConditionCombo.clear()
         self.attrConditionCombo.addItem("[None]")
@@ -365,7 +368,7 @@ class OWSieveDiagram(OWWidget):
 
                 currY += height
                 if currX == xOff:
-                    OWCanvasText(self.canvas, data.domain[self.attrY].values[j], xOff - 10, currY - height/2, Qt.AlignRight+Qt.AlignVCenter, bold = 0)
+                    OWCanvasText(self.canvas, data.domain[self.attrY].values[j], xOff - 10, currY - height/2, Qt.AlignRight | Qt.AlignVCenter, bold = 0)
 
             OWCanvasText(self.canvas, data.domain[self.attrX].values[i], currX + width/2, yOff + sqareSize + 5, Qt.AlignCenter, bold = 0)
             currX += width

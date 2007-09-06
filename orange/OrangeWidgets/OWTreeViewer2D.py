@@ -608,7 +608,7 @@ class OWTreeViewer2D(OWWidget):
         OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate text to fit margins',
                        tooltip='Truncate any text to fit the node width',
                        callback=self.toggleTruncateText)
-        
+
 
         OWGUI.hSlider(GeneralTab, self, 'Zoom', box='Zoom', minValue=1, maxValue=10, step=1, callback=self.toggleZoomSlider, ticks=1)
         OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleVSpacing, ticks=1)
@@ -816,7 +816,6 @@ class OWDefTreeViewer2D(OWTreeViewer2D):
 if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWDefTreeViewer2D()
-    a.setMainWidget(ow)
 
     data = orange.ExampleTable('../../doc/datasets/voting.tab')
     tree = orange.TreeLearner(data, storeExamples = 1)
@@ -827,6 +826,6 @@ if __name__=="__main__":
 
     # here you can test setting some stuff
     ow.show()
-    a.exec_loop()
+    a.exec_()
     ow.saveSettings()
 

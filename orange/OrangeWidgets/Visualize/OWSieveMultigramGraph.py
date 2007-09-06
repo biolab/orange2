@@ -30,17 +30,17 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
         self.removeMarkers()
         self.tips.removeAll()
 
-        self.statusBar = statusBar        
+        self.statusBar = statusBar
 
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-        scaleDraw.setOptions(0) 
-        scaleDraw.setTickLength(0, 0, 0) 
+        scaleDraw.setOptions(0)
+        scaleDraw.setTickLength(0, 0, 0)
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setOptions(0) 
-        scaleDraw.setTickLength(0, 0, 0) 
-        
+        scaleDraw.setOptions(0)
+        scaleDraw.setTickLength(0, 0, 0)
+
         self.setAxisScale(QwtPlot.xBottom, -1.25, 1.25, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.25, 1.25, 1)
 
@@ -54,7 +54,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
 
         attrNameList = []
         for attr in data.domain: attrNameList.append(attr.name)
-    
+
         ###########
         # create a table of indices that stores the sequence of variable indices
         for label in labels: indices.append(attrNameList.index(label))
@@ -80,7 +80,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
         newColor = QColor()
         newColor.setRgb(0, 0, 0)
         self.setCurveStyle(newCurveKey, QwtPlotCurve.Lines)
-        self.setCurveData(newCurveKey, xData, yData) 
+        self.setCurveData(newCurveKey, xData, yData)
 
         ###########
         # draw text at lines
@@ -89,7 +89,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
             mkey = self.insertMarker(labels[i])
             self.marker(mkey).setXValue(0.6*(anchors[0][i]+anchors[0][(i+1)%length]))
             self.marker(mkey).setYValue(0.6*(anchors[1][i]+anchors[1][(i+1)%length]))
-            self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
+            self.marker(mkey).setLabelAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
 
 
@@ -103,7 +103,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
                     mkey = self.insertMarker(values[j])
                     self.marker(mkey).setXValue(k*(1-pos)*anchors[0][i]+k*pos*anchors[0][(i+1)%length])
                     self.marker(mkey).setYValue(k*(1-pos)*anchors[1][i]+k*pos*anchors[1][(i+1)%length])
-                    self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
+                    self.marker(mkey).setLabelAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
 
         # -----------------------------------------------------------
         #  create data lines
@@ -123,11 +123,11 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
                         ((nameX, countX),(nameY, countY), actual, sum) = probabilities['%s+%s:%s+%s' %(attrXName, valX, attrYName, valY)]
 
                         # calculate starting and ending coordinates for lines
-                        val = (1.0 + 2.0*float(valXindex)) / float(2*len(data.domain[attrXName].values))                    
+                        val = (1.0 + 2.0*float(valXindex)) / float(2*len(data.domain[attrXName].values))
                         attrXDataAnchorX = anchors[0][attrXindex]*(1-val) + anchors[0][(attrXindex+1)%length]*val
                         attrXDataAnchorY = anchors[1][attrXindex]*(1-val) + anchors[1][(attrXindex+1)%length]*val
 
-                        val = (1.0 + 2.0*float(valYindex)) / float(2*len(data.domain[attrYName].values))                    
+                        val = (1.0 + 2.0*float(valYindex)) / float(2*len(data.domain[attrYName].values))
                         attrYDataAnchorX = anchors[0][attrYindex]*(1-val) + anchors[0][(attrYindex+1)%length]*val
                         attrYDataAnchorY = anchors[1][attrYindex]*(1-val) + anchors[1][(attrYindex+1)%length]*val
 
@@ -143,7 +143,7 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
             pearson = (actual - expected) / sqrt(expected)
 
         if abs(pearson) < self.pearsonMinRes: return # we don't want to draw white lines
-        
+
         if pearson > 0:     # if there are more examples that we would expect under the null hypothesis
             intPearson = min(math.floor(pearson), self.pearsonMaxRes)
             b = 255
@@ -157,19 +157,18 @@ class OWSieveMultigramGraph(OWGraph, orngScaleData):
             b = g = max(b, 55)
             penWidth = int(float(intPearson*self.maxLineWidth)/float(-self.pearsonMaxRes))
         color = QColor(r,g,b)
-        
+
         #print penWidth
         key = self.addCurve('line', color, color, 0, QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol)
         pen = QPen(color, penWidth)
         self.setCurvePen(key, pen)
         self.setCurveData(key, xDataList, yDataList)
 
-            
+
 if __name__== "__main__":
     #Draw a simple graph
-    a = QApplication(sys.argv)        
+    a = QApplication(sys.argv)
     c = OWSieveMultigramGraph()
-        
-    a.setMainWidget(c)
+
     c.show()
-    a.exec_loop()
+    a.exec_()

@@ -45,8 +45,8 @@ class ColorPaletteGenerator:
                     return self.rgbQColors[index]
                 else:
                     color = QColor(*self.rgbColors[index])
-                    h,s,v = color.getHsv()
-                    color.setHsv(h, int(brightness), v)
+                    h,s,v,a = color.getHsv()
+                    color.setHsv(h, int(brightness), v, a)
                     return color
             else:
                 col = QColor()
@@ -64,8 +64,8 @@ class ColorPaletteGenerator:
                     return self.rgbColors[index]
                 else:
                     col = QColor(*self.rgbColors[index])
-                    h,s,v = col.getHsv()
-                    col.setHsv(h, int(brightness), v)
+                    h,s,v,a = col.getHsv()
+                    col.setHsv(h, int(brightness), v, a)
                     return (col.red(), col.green(), col.blue())
             else:
                 col = QColor()
@@ -320,8 +320,8 @@ class UnconnectedLinesCurve(QwtPlotCurve):
 
 
 class RectangleCurve(QwtPlotCurve):
-    def __init__(self, name, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
-        QwtPlotCurve.__init__(self, name)
+    def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
+        QwtPlotCurve.__init__(self)
         if pen:
             self.setPen(pen)
         if brush:
@@ -354,8 +354,8 @@ class RectangleCurve(QwtPlotCurve):
 # data points are specified by a standard call to graph.setCurveData(key, xArray, yArray)
 # brush and pen can also be set by calls to setPen and setBrush functions
 class PolygonCurve(QwtPlotCurve):
-    def __init__(self, name, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
-        QwtPlotCurve.__init__(self, name)
+    def __init__(self, pen = QPen(Qt.black), brush = QBrush(Qt.white), xData = None, yData = None):
+        QwtPlotCurve.__init__(self)
         if pen:
             self.setPen(pen)
         if brush:

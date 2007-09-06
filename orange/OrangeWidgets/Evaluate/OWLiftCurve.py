@@ -315,7 +315,7 @@ class OWLiftCurve(OWROC):
                 self.FNcostList.append( 500)
                 graph = singleClassLiftCurveGraph(self.mainArea, "", "Predicted Class: " + self.dres.classValues[i])
                 self.graphs.append( graph )
-                self.classCombo.insertItem(self.dres.classValues[i])
+                self.classCombo.addItem(self.dres.classValues[i])
 
             ## classifiersQLB
             self.classifierColor = []

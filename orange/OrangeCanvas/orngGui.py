@@ -10,7 +10,7 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePoli
     else:
         b = QWidget(widget)
     if widget.layout(): widget.layout().addWidget(b)
-    
+
     if orientation == 'horizontal' or not orientation:
         b.setLayout(QHBoxLayout())
         #b.setSizePolicy(sizePolicy or QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum))
@@ -20,7 +20,7 @@ def widgetBox(widget, box=None, orientation='vertical', addSpace=False, sizePoli
 
     if not box and removeMargin:
         b.layout().setMargin(0)
-    
+
     return b
 
 
@@ -41,7 +41,7 @@ def checkBox(widget, label, box=None, tooltip=None, disabled=0, labelWidth=None,
         sep.setFixedSize(indent, 5)
         if hbox.layout(): hbox.layout().addWidget(sep)
         widget = hbox
-        
+
     wa = QCheckBox(label, widget)
     if widget.layout(): widget.layout().addWidget(wa)
     if labelWidth:
@@ -60,10 +60,10 @@ def lineEdit(widget, label=None, labelWidth=None, orientation='vertical', box=No
 
     wa = QLineEdit(b)
     if b.layout(): b.layout().addWidget(wa)
-    
+
     if controlWidth:
         wa.setFixedWidth(controlWidth)
-        
+
     if tooltip:
         wa.setToolTip(tooltip)
     if validator:
@@ -74,7 +74,7 @@ def lineEdit(widget, label=None, labelWidth=None, orientation='vertical', box=No
 def button(widget, master, label, callback = None, disabled=0, tooltip=None, width = None):
     btn = QPushButton(label, widget)
     if widget.layout(): widget.layout().addWidget(btn)
-    
+
     if width:
         btn.setFixedWidth(width)
     btn.setDisabled(disabled)
@@ -89,7 +89,7 @@ def listBox(widget, box = None, tooltip = None, selectionMode = QListWidget.Sing
     bg = box and widgetBox(widget, box) or widget
     lb = QListWidget(bg)
     if bg.layout(): bg.layout().addWidget(lb)
-    
+
     lb.setSelectionMode(selectionMode)
     if tooltip:
         lb.setToolTip(tooltip)
@@ -103,13 +103,12 @@ def comboBox(widget, box=None, label=None, labelWidth=None, orientation='vertica
         if hb.layout(): hb.layout().addWidget(l)
     combo = QComboBox(hb)
     if hb.layout(): hb.layout().addWidget(combo)
-    
+
     if tooltip:
         combo.setToolTip(tooltip)
     if items:
-        combo.insertItems(0, items)
-        #for i in items:
-            
+        combo.addItems(items)
+
     return combo
 
 def comboBoxWithCaption(widget, label, box=None, items=None, tooltip=None, callback = None):
@@ -129,7 +128,7 @@ def comboBoxWithCaption(widget, label, box=None, items=None, tooltip=None, callb
 ##
 ##    def dropMimeData(self, index, data, action):
 ##        print "dropMimeData"
-##        
+##
 ##    def dragEnterEvent(self, e):
 ##        if e.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
 ##            e.accept()
@@ -138,7 +137,7 @@ def comboBoxWithCaption(widget, label, box=None, items=None, tooltip=None, callb
 ##        print "drop"
 ##        vals = e.mimeData().retrieveData("application/x-qabstractitemmodeldatalist")
 ##        print vals
-##        
+##
 ##
 ##    def dragMoveEvent(self, e):
 ##        print "moveEvent"
@@ -181,7 +180,7 @@ class MyCanvasText(QGraphicsSimpleTextItem):
             self.show()
 
     def paint(self, painter, option, widget = None):
-        painter.resetMatrix()
+        #painter.resetMatrix()
         painter.setPen(self.pen())
         painter.setFont(self.font())
 
@@ -191,4 +190,5 @@ class MyCanvasText(QGraphicsSimpleTextItem):
         elif self.flags & Qt.AlignRight: xOff = rect.width()
         if self.flags & Qt.AlignVCenter: yOff = rect.height()/2.
         elif self.flags & Qt.AlignBottom:yOff = rect.height()
-        painter.drawText(self.pos().x()-xOff, self.pos().y()-yOff, rect.width(), rect.height(), self.flags, self.text())
+        #painter.drawText(self.pos().x()-xOff, self.pos().y()-yOff, rect.width(), rect.height(), self.flags, self.text())
+        painter.drawText(-xOff, -yOff, rect.width(), rect.height(), self.flags, self.text())

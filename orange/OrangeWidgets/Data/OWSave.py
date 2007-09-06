@@ -112,14 +112,11 @@ class OWSave(OWWidget):
     def setFilelist(self):
         "Set the GUI filelist"
         self.filecombo.clear()
+
         if self.recentFiles:
-            for i, file in enumerate(self.recentFiles):
-                (dir,filename)=os.path.split(file)
-                #leave out the path
-                self.filecombo.insertItem(i, filename)
+            self.filecombo.addItems([os.path.split(file)[1] for file in self.recentFiles])
         else:
-            self.filecombo.insertItem(0, "(none)")
-##        self.filecombo.adjustSize() #doesn't work properly :(
+            self.filecombo.addItem("(none)")
 
 
     def activateLoadedSettings(self):

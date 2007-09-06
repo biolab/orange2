@@ -11,12 +11,12 @@ import OWGUI
 from qt import *
 from OWWidget import *
 
-class OWTextFile(OWWidget):	
+class OWTextFile(OWWidget):
     settingsList = ["recentFiles"]
 
     def __init__(self, parent=None, signalManager = None, name='Text File'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, name) 
+        OWWidget.__init__(self, parent, signalManager, name)
         self.outputs = [("Example Table", ExampleTable)]
 
         self.recentFiles=[]
@@ -32,12 +32,12 @@ class OWTextFile(OWWidget):
         button = OWGUI.button(hbox, self, '...', callback = self.browseFile)
         button.setMaximumWidth(25)
 
-        self.adjustSize()            
+        self.adjustSize()
 
         if self.recentFiles:
             self.loadFile()
 
-                
+
     def browseFile(self):
         if self.recentFiles:
             lastPath = os.path.split(self.recentFiles[0])[0]
@@ -47,7 +47,7 @@ class OWTextFile(OWWidget):
         fn = str(QFileDialog.getOpenFileName(lastPath, "Text files (*.*)", None, "Open Text Files"))
         if not fn:
             return
-        
+
         fn = os.path.abspath(fn)
         if fn in self.recentFiles: # if already in list, remove it
             self.recentFiles.remove(fn)
@@ -67,8 +67,7 @@ class OWTextFile(OWWidget):
 
         self.filecombo.clear()
         for file in self.recentFiles:
-            self.filecombo.insertItem(os.path.split(file)[1])
-        self.filecombo.updateGeometry()
+            self.filecombo.addItem(os.path.split(file)[1])
 
         self.error()
         data = None
@@ -85,7 +84,7 @@ class OWTextFile(OWWidget):
                 self.error("Unknown file format or no documents")
         except:
             self.error("Cannot read the file")
-        
+
         self.send("Example Table", data)
 
 

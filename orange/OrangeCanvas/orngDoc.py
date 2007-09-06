@@ -4,11 +4,9 @@
 #
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-import sys, os, os.path, string, traceback
+import sys, os, os.path, traceback
 from xml.dom.minidom import Document, parse
-import orngView
-import orngCanvasItems
-import orngTabs
+import orngView, orngCanvasItems, orngTabs
 from orngDlgs import *
 from orngSignalManager import SignalManager
 import cPickle
@@ -277,7 +275,6 @@ class SchemaDoc(QMainWindow):
             y = 150
         newwidget.setCoords(x,y)
         self.canvasView.ensureVisible(newwidget)
-##        newwidget.setViewPos(self.canvasView.contentsX(), self.canvasView.contentsY())
 
         if caption == "": caption = newwidget.caption
 
@@ -492,13 +489,17 @@ class SchemaDoc(QMainWindow):
             settingsDict = eval(str(settings[0].getAttribute("settingsDictionary")))
             self.loadedSettingsDict = settingsDict
             self.canvasDlg.settings["saveApplicationDir"] = self.applicationpath
+            failureText = ""
 
             # read widgets
+            loadedOk = 1
             for widget in widgets.getElementsByTagName("widget"):
                 name = widget.getAttribute("widgetName")
                 tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"), activateSettings = 0)
                 if not tempWidget:
-                    QMessageBox.information(self, 'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
+                    #QMessageBox.information(self, 'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
+                    failureText += '<nobr>Unable to create instance of a widget <b>%s</b></nobr><br>' %(name)
+                    loadedOk = 0
                 else:
                     if tempWidget.caption in settingsDict.keys():
                         tempWidget.instance.loadSettingsStr(settingsDict[tempWidget.caption])
@@ -515,13 +516,14 @@ class SchemaDoc(QMainWindow):
                 inWidget = self.getWidgetByCaption(inCaption)
                 outWidget = self.getWidgetByCaption(outCaption)
                 if inWidget == None or outWidget == None:
-                    print "Unable to create a line due to invalid widget name. Try reinstalling widgets."
+                    failureText += "<nobr>Failed to create a signal line between widgets <b>%s</b> and <b>%s</b></nobr><br>" % (outCaption, inCaption)
+                    loadedOk = 0
                     continue
 
                 signalList = eval(signals)
                 for (outName, inName) in signalList:
                     self.addLink(outWidget, inWidget, outName, inName, Enabled)
-                qApp.processEvents()
+                    #qApp.processEvents()
 
             for widget in self.widgets: widget.updateTooltip()
             self.canvas.update()
@@ -529,7 +531,11 @@ class SchemaDoc(QMainWindow):
 
             if caption != None: self.setWindowTitle(caption)
             else:               self.setWindowTitle(self.documentname)
-            self.documentnameValid = True
+            if loadedOk:
+                self.documentnameValid = True
+            else:
+                QMessageBox.information(self, 'Schema Loading Failed', 'The following errors occured while loading the schema: <br><br>' + failureText,  QMessageBox.Ok + QMessageBox.Default)
+
             if self.widgets:
                 self.signalManager.processNewSignals(self.widgets[0].instance)
 
@@ -537,6 +543,7 @@ class SchemaDoc(QMainWindow):
             if self.canvasDlg.settings["saveWidgetsPosition"]:
                 for widget in self.widgets:
                     widget.instance.restoreWidgetStatus()
+
         finally:
             qApp.restoreOverrideCursor()
 
@@ -597,10 +604,11 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
                 instancesT += "self.ow%s = %s (self.tabs, signalManager = self.signalManager)\n" % (name, widget.widget.getFileName())+t+t
                 instancesB += "self.ow%s = %s(signalManager = self.signalManager)\n" %(name, widget.widget.getFileName()) +t+t
                 widgetParameters += "self.setWidgetParameters(self.ow%s, '%s', '%s', %d)\n" % (name, widget.widget.getIconName(), widget.caption, shown) +t+t
-                loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"]); self.ow%s.activateLoadedSettings()\n""" % (name, widget.caption, name) +t+t
+                loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"]); self.ow%s.activateLoadedSettings()\n""" % (name, widget.caption, name) +t+t+t
                 saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
             else:
-                widgetParameters += "self.box.layout().addSpacing(10)\n" +t+t
+                if not asTabs:
+                    widgetParameters += "self.box.layout().addSpacing(10)\n" +t+t
 
         for line in self.lines:
             if not line.getEnabled(): continue
@@ -615,10 +623,14 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
 
         links += "self.signalManager.setFreeze(0)\n" +t+t
         if not asTabs:
-            widgetParameters += "self.box.layout().addSpacing(10)"+n+t+t+"exitButton = OWGUI.button(self.box, self, \"Exit\", callback = self.accept())"+n+t+t
+            widgetParameters += """
+        box2 = OWGUI.widgetBox(self, 1)
+        exitButton = OWGUI.button(box2, self, "Exit", callback = self.accept)
+        self.layout().addStretch(100)"""
 
         progress = """
-        statusBar = QStatusBar(self); self.layout().addWidget(statusBar)
+        statusBar = QStatusBar(self)
+        self.layout().addWidget(statusBar)
         self.caption = QLabel('', statusBar)
         self.caption.setMaximumWidth(230)
         self.progress = QProgressBar(statusBar)
@@ -640,7 +652,7 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
         if shown: """
 
         if asTabs:
-            handlerFuncts += "OWGUI.createTabPage(self.tabs, caption)\n"+t+t
+            handlerFuncts += "OWGUI.createTabPage(self.tabs, caption, widget)\n"+t+t
         else:
             handlerFuncts += "OWGUI.button(self.box, self, caption, callback = widget.reshow)\n"
 
@@ -652,22 +664,23 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
     def progressHandler(self, widget, val):
         if val < 0:
             self.caption.setText("<nobr>Processing: <b>" + str(widget.captionTitle) + "</b></nobr>")
-            self.progress.setProgress(0)
+            self.progress.setValue(0)
         elif val >100:
             self.caption.setText("")
             self.progress.reset()
         else:
-            self.progress.setProgress(val)
+            self.progress.setValue(val)
             self.update()
 
     def loadSettings(self):
         try:
             file = open("%s", "r")
+            strSettings = cPickle.load(file)
+            file.close()
+
+            %s
         except:
-            return
-        strSettings = cPickle.load(file)
-        file.close()
-        %s
+            pass
 
     def closeEvent(self, ev):
         OWBaseWidget.closeEvent(self, ev)
@@ -700,11 +713,13 @@ class GUIApplication(OWBaseWidget):
         if asTabs == 1:
             start += """
         self.tabs = QTabWidget(self)
+        self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.tabs)
         self.resize(800,600)"""
         else:
             start += """
-        self.box = OWGUI.widgetBox(self.topWidgetPart, 'Widgets')"""
+        self.setLayout(QVBoxLayout())
+        self.box = OWGUI.widgetBox(self, 'Widgets')"""
 
         if asTabs:
             whole = start + n+n+t+t+ instancesT + n+t+t + widgetParameters + n+t+t + progress + n+t+t + links + n + handlerFuncts
@@ -735,7 +750,8 @@ class GUIApplication(OWBaseWidget):
     def keyPressEvent(self, e):
         self.ctrlPressed = int(e.modifiers()) & Qt.ControlModifier != 0
         if e.key() > 127:
-            e.ignore()
+            #e.ignore()
+            QMainWindow.keyPressEvent(self, e)
             return
 
         # the list could include (e.ShiftButton, "Shift") if the shift key didn't have the special meaning
@@ -746,12 +762,6 @@ class GUIApplication(OWBaseWidget):
             if e.modifiers() & Qt.ShiftModifier and len(self.widgets) > 1:
                 self.addLine(self.widgets[-2], self.widgets[-1])
         else:
-            e.ignore()
+            #e.ignore()
+            QMainWindow.keyPressEvent(self, e)
 
-
-if __name__=='__main__':
-    app = QApplication(sys.argv)
-    dlg = SchemaDoc()
-    app.setMainWidget(dlg)
-    dlg.show()
-    app.exec_()

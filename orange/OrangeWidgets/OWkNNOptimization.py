@@ -91,7 +91,7 @@ class OWVizRank(VizRank, OWWidget):
         self.optimizeGivenProjectionButton = OWGUI.button(self.optimizationBox, self, "Locally Optimize Best Projections", callback = self.optimizeBestProjections)
 
         self.resultList = OWGUI.listBox(self.resultsBox, self, callback = self.parentWidget and self.parentWidget.showSelectedAttributes or None)
-        self.resultList.setMinimumSize(200,200)
+        #self.resultList.setMinimumSize(200,200)
 
         self.showRankCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showRank', 'Rank', callback = self.updateShownProjections, tooltip = "Show projection ranks")
         self.showAccuracyCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showAccuracy', 'Score', callback = self.updateShownProjections, tooltip = "Show prediction accuracy of a k-NN classifier on the projection")
@@ -117,7 +117,7 @@ class OWVizRank(VizRank, OWWidget):
         self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score", "Area under curve (AUC)"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
 
         self.attributeSelectionBox = OWGUI.widgetBox(self.SettingsTab, "Attribute Subset Selection")
-        OWGUI.comboBox(self.attributeSelectionBox, self, "attrSubsetSelection", items = ["Deterministically using the selected attribute ranking measures", "Use gamma distribution and test all possible placements", "Use gamma distribution and test only one possible placement"])
+        OWGUI.comboBox(self.attributeSelectionBox, self, "attrSubsetSelection", items = ["Deterministically using the selected measures for attribute ranking", "Use gamma distribution and test all possible placements", "Use gamma distribution and test only one possible placement"])
 
         self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, "Measures for Attribute Ranking")
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", "For continuous attributes:", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
@@ -239,7 +239,6 @@ class OWVizRank(VizRank, OWWidget):
     # user clicked in the listbox that shows possible number of attributes of result list
     # result list must be updated accordingly
     def attrLenListChanged(self):
-        print "attrLenListChanged"
         # check which attribute lengths do we want to show
         self.attrLenDict = {}
         for i in range(self.attrLenList.count()):
@@ -475,53 +474,6 @@ class OWVizRank(VizRank, OWWidget):
             self.identifyOutliersDlg.setData(self.results, self.data, VIZRANK_POINT)
 
 
-    # ##############################################################
-    # kNNClassifyData - compute classification error for every example in table
-    def kNNClassifyData(self, table):
-        if len(table) == 0:
-            return [], []
-
-        # check if we have a discrete class
-        if not table.domain.classVar or not table.domain.classVar.varType == orange.VarTypes.Discrete:
-            return [], []
-
-        if self.externalLearner: learner = self.externalLearner
-        else:                    learner = self.createkNNLearner()
-        results = apply(testingMethods[self.testingMethod], [[learner], table])
-
-        returnTable = []
-
-        if table.domain.classVar.varType == orange.VarTypes.Discrete:
-            probabilities = numpy.zeros((len(table), len(table.domain.classVar.values)), numpy.float)
-            lenClassValues = len(list(table.domain.classVar.values))
-            if self.qualityMeasure in [AVERAGE_CORRECT, AUC]:       # for AUC we have no way of computing the prediction accuracy for each example
-                for i in range(len(results.results)):
-                    res = results.results[i]
-                    returnTable.append(res.probabilities[0][res.actualClass])
-                    probabilities[i] = res.probabilities[0]
-            elif self.qualityMeasure == BRIER_SCORE:
-                for i in range(len(results.results)):
-                    res = results.results[i]
-                    s = sum([val*val for val in res.probabilities[0]])
-                    returnTable.append((s + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
-                    probabilities[i] = res.probabilities[0]
-            elif self.qualityMeasure == CLASS_ACCURACY:
-                for i in range(len(results.results)):
-                    res = results.results[i]
-                    returnTable.append(res.probabilities[0][res.actualClass] == max(res.probabilities[0]))
-                    probabilities[i] = res.probabilities[0]
-            else:
-                print "unknown quality measure for kNNClassifyData"
-        else:
-            probabilities = None
-            # for continuous class we can't compute brier score and classification accuracy
-            for res in results.results:
-                if not res.probabilities[0]: returnTable.append(0)
-                else:                        returnTable.append(res.probabilities[0].density(res.actualClass))
-
-        return returnTable, probabilities
-
-
     # reevaluate projections in result list with the current VizRank settings (different k value, different measure of classification succes, ...)
     def reevaluateAllProjections(self):
         results = list(self.getShownResults())
@@ -689,7 +641,6 @@ class OWVizRank(VizRank, OWWidget):
         self.interactionAnalysisDlg.setResults(self.shownResults, VIZRANK_POINT)
         self.interactionAnalysisDlg.show()
 
-
     def attributeAnalysis(self):
         if not self.attributeHistogramDlg:
             self.attributeHistogramDlg = OWGraphAttributeHistogram(self, signalManager = self.signalManager)
@@ -706,6 +657,12 @@ class OWVizRank(VizRank, OWWidget):
             self.identifyOutliersDlg = OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.parentWidget)
         self.identifyOutliersDlg.show()
         self.identifyOutliersDlg.setData(self.results, self.data, VIZRANK_POINT)
+
+    def closeEvent(self, ce):
+        if self.interactionAnalysisDlg: self.interactionAnalysisDlg.close()
+        if self.attributeHistogramDlg: self.attributeHistogramDlg.close()
+        if self.identifyOutliersDlg: self.identifyOutliersDlg.close()
+        OWWidget.closeEvent(self, ce)
 
     # ######################################################
     # Auxiliary functions
@@ -860,7 +817,7 @@ class OWVizRank(VizRank, OWWidget):
             self.argumentList.addItem("%.2f - %s" %(val[0], val[2]))
 
     def argumentSelected(self):
-        #if self.argumentList.selectedItems() == []: return None
+        if self.argumentList.selectedItems() == []: return
         ind = self.argumentList.row(self.argumentList.selectedItems()[0])
         classInd = self.classValueCombo.currentItem()
         generalDict = self.results[self.arguments[classInd][ind][3]][GENERAL_DICT]
@@ -1328,8 +1285,7 @@ class OWGraphAttributeHistogram(OWWidget):
             else:
                 color = black
 
-            curve = RectangleCurve(self.graph, QPen(color, 1), QBrush(color), [ind-0.5+eps, ind+0.5-eps, ind+0.5-eps, ind-0.5+eps], [0, 0, count, count])
-            key = self.graph.insertCurve(curve)
+            RectangleCurve(QPen(color, 1), QBrush(color), [ind-0.5+eps, ind+0.5-eps, ind+0.5-eps, ind-0.5+eps], [0, 0, count, count]).attach(self.graph)
 
             if self.progressLines and count*8 > maxProjCount:
                 curr = 0
@@ -1495,9 +1451,10 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.widget = widget
 
         self.loadSettings()
+        self.projectionCountStr = str(self.projectionCount)
 
         b1 = OWGUI.widgetBox(self.controlArea, 'Projection Count')
-        self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCount", "Best projections to consider:   ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
+        self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCountStr", "Best projections to consider:   ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
 
         b2 = OWGUI.widgetBox(self.controlArea, 'Example Index', orientation="horizontal")
         self.selectedExampleCombo = OWGUI.comboBox(b2, self, "selectedExampleIndex", tooltip = "Select the index of the example whose predictions you wish to analyse in the graph", callback = self.selectedExampleChanged, sendSelectedValue = 1, valueType = int)
@@ -1522,11 +1479,11 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.graph.setXaxisTitle("Predicted class probabilities")
         self.graph.setYLaxisTitle("Projections")
 
-        self.graph.disconnect(self.graph, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.graph.onMousePressed)
-        self.graph.disconnect(self.graph, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.graph.onMouseReleased)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-        self.connect(self.graph, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.graphOnMouseMoved)
-        self.connect(self.graph, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.graphOnMousePressed)
+        self.graph.mouseMoveEventHandler = self.graphOnMouseMoved
+        self.graph.mousePressEventHandler = self.graphOnMousePressed
+        self.selectedRectangle = RectangleCurve(brush = QBrush(Qt.NoBrush))
+        self.selectedRectangle.attach(self.graph)
         self.resize(600, 400)
 
     # on escape
@@ -1565,9 +1522,10 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
                     while i < len(self.projectionCountList)-1 and int(self.projectionCountList[i]) < int(text): i+=1
                     self.projectionCountList.insert(i, text)
                     self.projectionCountEdit.addItem(text, i)
-                self.projectionCount = text
+                self.projectionCountStr = text
             else:
-                self.projectionCount = "20"
+                self.projectionCountStr = "20"
+            self.projectionCount = int(self.projectionCountStr)
         self.evaluateProjections()
         self.selectedExampleChanged()
 
@@ -1581,7 +1539,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         VizRankOutliers.evaluateProjections(self, qApp)
 
         for i, (prob, exIndex, classPredictions) in enumerate(self.evaluatedExamples):
-            self.exampleList.addItem("%.2f - %d" % (prob, exIndex), i)
+            self.exampleList.addItem("%.2f - %d" % (prob, exIndex))
 
         self.widget.progressBarFinished()
         self.widgetStatusArea.hide()
@@ -1650,6 +1608,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
 
 
     def exampleListSelectionChanged(self):
+        if self.exampleList.selectedItems() == []: return
         (val, exampleIndex, classPredictions) = self.evaluatedExamples[self.exampleList.row(self.exampleList.selectedItems()[0])]
         self.selectedExampleIndex = exampleIndex
         self.selectedExampleChanged()
@@ -1658,12 +1617,10 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
     def updateGraph(self):
         self.graph.clear()
         self.graph.tips.removeAll()
-        self.selectedRectangle = None
         if not self.data or self.graphMatrix == None: return
+        if self.graphMatrix == None: return
 
         classColors = ColorPaletteHSV(len(self.data.domain.classVar.values))
-
-        if self.graphMatrix == None: return
 
         self.graph.setAxisScale(QwtPlot.yLeft, 0, len(self.graphMatrix[0]), len(self.graphMatrix[0])/5)
         self.graph.setAxisScale(QwtPlot.xBottom, 0, 1, 0.2)
@@ -1707,28 +1664,28 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
             self.graph.addCurve("<b>" + self.data.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.NoSymbol, enableLegend = 1)
             for i,val in enumerate(classVariableValues):
                 self.graph.addCurve(val, classColors[i], classColors[i], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
+
+        self.selectedRectangle = RectangleCurve(brush = QBrush(Qt.NoBrush))
+        self.selectedRectangle.attach(self.graph)
+
         self.graph.replot()
 
     def graphOnMouseMoved(self, e):
-        import math
-        if getattr(self, "selectedRectangle", None) != None:
-            self.selectedRectangle.detach()
-            self.selectedRectangle = None
-
-        y = int(math.floor(self.graph.invTransform(QwtPlot.yLeft, e.y())))
+        y = int(self.graph.invTransform(QwtPlot.yLeft, e.y()))
         if self.showClickedProjection and y >= 0 and y < len(self.projectionIndices):
             diff  = 0.005
-            self.selectedRectangle = RectangleCurve(self.graph, brush = QBrush(Qt.NoBrush), xData = [0-diff, 1+diff, 1+diff, 0-diff], yData = [y-diff, y-diff, y+1+diff, y+1+diff])
-            self.selectedRectangle.attach(self.graph)
-            self.graph.replot()
+            self.selectedRectangle.setData([0-diff, 1+diff, 1+diff, 0-diff], [y-diff, y-diff, y+1+diff, y+1+diff])
+        else:
+            self.selectedRectangle.setData([], [])
+        self.graph.replot()
+        return 1
 
     def graphOnMousePressed(self, e):
         if self.showClickedProjection:
-            import math
-            y = int(math.floor(self.graph.invTransform(QwtPlot.yLeft, e.y())))
+            y = int(self.graph.invTransform(QwtPlot.yLeft, e.y()))
             if y >= len(self.projectionIndices): return
             projIndex = self.projectionIndices[y]
-            self.vizrank.resultList.item(projIndex).setSelected(1)
+            self.vizrank.resultList.setCurrentItem(self.vizrank.resultList.item(projIndex))
 
             if self.dialogType == VIZRANK_POINT:
                 attrs = self.parent.shownResults[projIndex][self.ATTR_LIST]
@@ -1736,6 +1693,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
                 insideColors = numpy.zeros(len(self.data))
                 insideColors[self.selectedExampleIndex] = 1
                 self.widget.updateGraph(attrs, setAnchors = 1, insideColors = (numpy.compress(valid, insideColors), "Focused example: %d"))
+        return 1
 
 
 def getGeneSet(geneset, gene):

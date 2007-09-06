@@ -69,7 +69,8 @@ class OWVisWidget(OWWidget):
 
         self.sendShownAttributes()
         self.graph.potentialsBmp = None
-        if self.updateCallbackFunction: self.updateCallbackFunction()
+        if self.updateCallbackFunction:
+            self.updateCallbackFunction()
         self.graph.removeAllSelections()
 
     # move selected attribute in "Attribute Order" list one place up
@@ -100,7 +101,7 @@ class OWVisWidget(OWWidget):
         self.resetAttrManipulation()
 
         if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+            self.graph.rescaleAttributesGlobaly(self.getShownAttributeList())
 
         self.sendShownAttributes()
         if self.updateCallbackFunction: self.updateCallbackFunction()
@@ -118,7 +119,7 @@ class OWVisWidget(OWWidget):
         self.setShownAttributeList(self.data, newShown)
 
         if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+            self.graph.rescaleAttributesGlobaly(self.getShownAttributeList())
         self.sendShownAttributes()
         if self.updateCallbackFunction: self.updateCallbackFunction()
         self.graph.replot()

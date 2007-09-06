@@ -75,9 +75,9 @@ class OWSieveMultigram(OWVisWidget):
     # #########################
     def activateLoadedSettings(self):
         # set loaded options settings
-        self.SettingsTab.lineCombo.setCurrentItem(self.maxLineWidth-1)
+        self.SettingsTab.lineCombo.setCurrentIndex(self.maxLineWidth-1)
         index = self.SettingsTab.pearsonMaxNums.index(self.pearsonMaxRes)
-        self.SettingsTab.pearsonMaxResCombo.setCurrentItem(index)
+        self.SettingsTab.pearsonMaxResCombo.setCurrentIndex(index)
         self.SettingsTab.minResidualEdit.setText(str(self.pearsonMinRes))
         self.cbShowAllAttributes()
 
@@ -138,7 +138,7 @@ class OWSieveMultigram(OWVisWidget):
             if attr not in interestingList:
                 index = self.shownAttribsLB.index(self.shownAttribsLB.findItems(attr)[0])
                 self.shownAttribsLB.takeItem(index)
-                self.hiddenAttribsLB.insertItem(attr)
+                self.hiddenAttribsLB.addItem(attr)
         self.updateGraph()
 
     def computeProbabilities(self):
@@ -202,14 +202,13 @@ class OWSieveMultigram(OWVisWidget):
         if self.data == None: return
 
         if self.data.domain.classVar.name not in list:
-            self.hiddenAttribsLB.insertItem(self.data.domain.classVar.name)
+            self.hiddenAttribsLB.addItem(self.data.domain.classVar.name)
 
-        for attr in list:
-            self.shownAttribsLB.insertItem(attr)
+        self.shownAttribsLB.addItems(list)
 
         for attr in self.data.domain:
             if attr.name not in list:
-                self.hiddenAttribsLB.insertItem(attr.name)
+                self.hiddenAttribsLB.addItem(attr.name)
 
         self.updateGraph()
     #################################################
@@ -245,10 +244,10 @@ class OWSieveMultigramOptions(QVGroupBox):
 
     def initSettings(self):
         # line width combo values
-        for i in range(1,10): self.lineCombo.insertItem(str(i))
+        self.lineCombo.addItems([str(i) for i in range(1,10)])
 
         # max residual combo values
-        for item in self.pearsonMaxList: self.pearsonMaxResCombo.insertItem(item)
+        self.pearsonMaxResCombo.addItems(self.pearsonMaxList)
 
 
 #test widget appearance

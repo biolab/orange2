@@ -703,11 +703,11 @@ class OWSOMVisualizer(OWWidget):
         self.canvas.component=0
         self.attribute=0
         for v in somMap.examples.domain.attributes:
-            self.componentCombo.insertItem(v.name)
+            self.componentCombo.addItem(v.name)
         for v in somMap.examples.domain.variables:
-            self.attributeCombo.insertItem(v.name)
+            self.attributeCombo.addItem(v.name)
         #for v in somMap.examples.domain.attributes[self.attribute].values:
-        #    self.targetValueCombo.insertItem(str(v))
+        #    self.targetValueCombo.addItem(str(v))
 
         self.setDiscCont()
 ##        if self.somMap.examples.domain.variables[self.attribute].varType==orange.VarTypes.Discrete:

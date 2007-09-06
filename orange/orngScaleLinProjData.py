@@ -87,8 +87,8 @@ class orngScaleLinProjData(orngScaleData):
 
     # create the projection of attribute indices given in attrIndices and create an example table with it.
     def createProjectionAsExampleTable(self, attrIndices, **settingsDict):
-        if self.rawdata.domain.classVar:
-            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        if self.rawData.domain.classVar:
+            domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawData.domain.classVar])
         else:
             domain = settingsDict.get("domain") or orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar")])
         data = self.createProjectionAsNumericArray(attrIndices, **settingsDict)
@@ -110,6 +110,7 @@ class orngScaleLinProjData(orngScaleData):
         jitterSize = settingsDict.get("jitterSize", 0.0)
         useAnchorData = settingsDict.get("useAnchorData", 0)
         removeMissingData = settingsDict.get("removeMissingData", 1)
+        useSubsetData = settingsDict.get("useSubsetData", 0)        # use the data or subsetData?
         #minmaxVals = settingsDict.get("minmaxVals", None)
 
         # if we want to use anchor data we can get attrIndices from the anchorData
@@ -117,36 +118,28 @@ class orngScaleLinProjData(orngScaleData):
             attrIndices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
 
         if validData == None:
-            validData = self.getValidList(attrIndices)
+            if useSubsetData: validData = self.getValidSubsetList(attrIndices)
+            else:             validData = self.getValidList(attrIndices)
         if sum(validData) == 0:
             return None
 
-        if classList == None and self.rawdata.domain.classVar:
-            classList = numpy.transpose(self.rawdata.toNumpy("c")[0])[0]
+        if classList == None and self.rawData.domain.classVar:
+            if useSubsetData: classList = numpy.transpose(self.rawSubsetData.toNumpy("c")[0])[0]
+            else:             classList = numpy.transpose(self.rawData.toNumpy("c")[0])[0]
 
         # if jitterSize is set below zero we use scaledData that has already jittered data
-        if jitterSize < 0.0: data = self.scaledData
-        else:                data = self.noJitteringScaledData
+        if useSubsetData:
+            if jitterSize < 0.0: data = self.scaledSubsetData
+            else:                data = self.noJitteringScaledSubsetData
+        else:
+            if jitterSize < 0.0: data = self.scaledData
+            else:                data = self.noJitteringScaledData
 
         selectedData = numpy.take(data, attrIndices, axis = 0)
         if removeMissingData:
             selectedData = numpy.compress(validData, selectedData, axis = 1)
             if classList != None and len(classList) != numpy.shape(selectedData)[1]:
                 classList = numpy.compress(validData, classList)
-
-        """
-        if minmaxVals:
-            for i in range(len(minmaxVals)):
-                m, M = minmaxVals[i]
-                if m == 0.0 and M == 1.0: continue
-                selectedData[i] = (selectedData[i] - m) / float(M-m)
-        """
-        if self.subsetData:
-            for i in range(len(attrIndices)):
-                if not self.subDataMinMaxDict.has_key(self.rawdata.domain[attrIndices[i]].name):
-                    continue
-                m, M = self.subDataMinMaxDict[self.rawdata.domain[attrIndices[i]].name]
-                selectedData[i] = (selectedData[i] - m) / float(max(M-m, 1e-10))
 
         if useAnchorData and self.anchorData:
             XAnchors = numpy.array([val[0] for val in self.anchorData])
@@ -174,8 +167,14 @@ class orngScaleLinProjData(orngScaleData):
             self.trueScaleFactor = scaleFactor
         else:
             if not removeMissingData:
-                x_validData = numpy.compress(validData, x_positions)
-                y_validData = numpy.compress(validData, y_positions)
+                try:
+                    x_validData = numpy.compress(validData, x_positions)
+                    y_validData = numpy.compress(validData, y_positions)
+                except:
+                    print validData
+                    print x_positions
+                    print numpy.shape(validData)
+                    print numpy.shape(x_positions)
             else:
                 x_validData = x_positions
                 y_validData = y_positions

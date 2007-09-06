@@ -181,11 +181,11 @@ def spin(widget, master, value, min, max, step=1,
 
     if callback and callbackOnReturn:
         wa.enterButton, wa.placeHolder = enterButton(bi, wa.sizeHint().height())
-        master.connect(wa.editor(), SIGNAL("textChanged(const QString &)"), wa.onChange)
-        master.connect(wa.editor(), SIGNAL("returnPressed()"), wa.onEnter)
+        master.connect(wa, SIGNAL("valueChanged(const QString &)"), wa.onChange)
+        master.connect(wa, SIGNAL("editingFinished()"), wa.onEnter)
         master.connect(wa.enterButton, SIGNAL("clicked()"), wa.onEnter)
-        master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
-        master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+        #master.connect(wa.upButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
+        #master.connect(wa.downButton(), SIGNAL("clicked()"), lambda c=wa.editor(): c.setFocus())
 
     if posttext:
         widgetLabel(bi, posttext)
@@ -487,8 +487,10 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
     return w
 
 
-def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False, createLabel = 1):
+def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, label=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False, createLabel = 1, tooltip = None):
     sliderBox = widgetBox(widget, box, orientation = "horizontal")
+    if label:
+        lbl = widgetLabel(sliderBox, label)
 
     if vertical:
         sliderOrient = Qt.Vertical
@@ -498,8 +500,12 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     slider = QSlider(sliderOrient, sliderBox)
     slider.setRange(minValue, maxValue)
     slider.setSingleStep(step)
+    slider.setPageStep(step)
     slider.setTickInterval(step)
     slider.setValue(getdeepattr(master, value))
+
+    if tooltip:
+        slider.setToolTip(tooltip)
 
     if sliderBox.layout(): sliderBox.layout().addWidget(slider)
 
@@ -599,7 +605,7 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
     if hb.layout(): hb.layout().addWidget(combo)
 
     if items:
-        combo.insertItems(combo.count(), [unicode(i) for i in items])
+        combo.addItems([unicode(i) for i in items])
         if len(items)>0 and value != None:
             if sendSelectedValue and getdeepattr(master, value) in items: combo.setCurrentIndex(items.index(getdeepattr(master, value)))
             elif not sendSelectedValue:
@@ -1179,15 +1185,17 @@ class tableItem(QTableWidgetItem):
         if pixmap:
             QTableWidgetItem.__init__(self, QIcon(pixmap), text)
         else:
-            QTableWidgetItem.__init__(self, None, text)
-        self.setFlags(self.flags() + editType)
+            QTableWidgetItem.__init__(self, text)
+        if not editType == Qt.ItemIsEditable:
+            self.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable)
         table.setItem(x, y, self)
         self.sortingKey = sortingKey
+        self.setBackground(QBrush(background))
 
-    def paint(self, painter, colorgroup, rect, selected):
-        g = QColorGroup(colorgroup)
-        g.setColor(QColorGroup.Base, self.background)
-        QTableItem.paint(self, painter, g, rect, selected)
+#    def paint(self, painter, colorgroup, rect, selected):
+#        g = QColorGroup(colorgroup)
+#        g.setColor(QColorGroup.Base, self.background)
+#        QTableItem.paint(self, painter, g, rect, selected)
 
     def key(self):
         if self.sortingKey:
@@ -1246,10 +1254,11 @@ def tabWidget(widget):
         widget.layout().addWidget(w)
     return w
 
-def createTabPage(widget, name):
-    w = widgetBox(widget, addToLayout = 0, margin = 1)
-    widget.addTab(w, name)
-    return w
+def createTabPage(tabWidget, name, widgetToAdd = None):
+    if widgetToAdd == None:
+        widgetToAdd = widgetBox(tabWidget, addToLayout = 0, margin = 1)
+    tabWidget.addTab(widgetToAdd, name)
+    return widgetToAdd
 
 def table(widget, rows = 0, columns = 0, selectionMode = -1, addToLayout = 1):
     w = QTableWidget(rows, columns, widget)

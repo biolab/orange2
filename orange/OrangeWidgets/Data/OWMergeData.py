@@ -136,7 +136,7 @@ class OWMergeData(OWWidget):
         # update attribute B listbox
         self.lbAttrB.clear()
         for var in self.varListB:
-            self.lbAttrB.insertItem(self.icons[var.varType], var.name)
+            self.lbAttrB.addItem(QListWidgetItem(self.icons[var.varType], var.name))
         self.sendData()
 
 

@@ -39,8 +39,8 @@ class TempCanvasLine(QGraphicsLineItem):
 ##    def repaintLine(self, canvasView):
 ##        p1 = self.startPoint()
 ##        p2 = self.endPoint()
-##        #canvasView.repaintContents(QRect(min(p1.x(), p2.x())-5, min(p1.y(), p2.y())-5, abs(p1.x()-p2.x())+10,abs(p1.y()-p2.y())+10))
-##        #canvasView.repaintContents(QRect(min(p1.x(), p2.x()), min(p1.y(), p2.y()), abs(p1.x()-p2.x()),abs(p1.y()-p2.y())))
+##        #canvasView.repaint(QRect(min(p1.x(), p2.x())-5, min(p1.y(), p2.y())-5, abs(p1.x()-p2.x())+10,abs(p1.y()-p2.y())+10))
+##        #canvasView.repaint(QRect(min(p1.x(), p2.x()), min(p1.y(), p2.y()), abs(p1.x()-p2.x()),abs(p1.y()-p2.y())))
 
 # #######################################
 # # CANVAS LINE
@@ -66,7 +66,7 @@ class CanvasLine(QGraphicsLineItem):
     def remove(self):
         self.hide()
         self.setToolTip("")
-        #self.view.repaintContents(QRect(min(self.startPoint().x(), self.endPoint().x())-55, min(self.startPoint().y(), self.endPoint().y())-55, abs(self.startPoint().x()-self.endPoint().x())+100,abs(self.startPoint().y()-self.endPoint().y())+100))
+        #self.view.repaint(QRect(min(self.startPoint().x(), self.endPoint().x())-55, min(self.startPoint().y(), self.endPoint().y())-55, abs(self.startPoint().x()-self.endPoint().x())+100,abs(self.startPoint().y()-self.endPoint().y())+100))
 
     def getEnabled(self):
         signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
@@ -85,7 +85,6 @@ class CanvasLine(QGraphicsLineItem):
         return signals
 
     def paint(self, painter, option, widget = None):
-        painter.resetMatrix()
         x1, x2 = self.line().x1(), self.line().x2()
         y1, y2 = self.line().y1(), self.line().y2()
 
@@ -123,69 +122,6 @@ class CanvasLine(QGraphicsLineItem):
         self.update(min(l.x1(), l.x2())-40, min(l.y1(),l.y2())-40, abs(l.x1()-l.x2())+80, abs(l.y1()-l.y2())+80)
 
 
-class CanvasWidgetState(QGraphicsRectItem):
-    def __init__(self, parent, canvas, view, widgetIcons):
-        QGraphicsRectItem.__init__(self, None, canvas)
-        self.widgetIcons = widgetIcons
-        self.view = view
-        self.parent = parent
-
-        self.infoTexts = []
-        self.warningTexts = []
-        self.errorTexts = []
-        self.activeItems = []
-        self.showIcons = 1
-        self.showInfo = 1
-        self.showWarning = 1
-        self.showError = 1
-
-    def updateState(self, widgetState):
-        self.infoTexts = widgetState["Info"].values()
-        self.warningTexts = widgetState["Warning"].values()
-        self.errorTexts = widgetState["Error"].values()
-        self.updateWidgetState()
-
-    def drawShape(self, painter):
-        for (x,y,rect, pixmap, text) in self.activeItems:
-            painter.drawPixmap(x, y, pixmap)
-
-    def addWidgetIcon(self, x, y, texts, iconName):
-        if not texts:
-            return 0
-        pixmap = self.widgetIcons[iconName]
-        rect = QRect(x, y, pixmap.width(), pixmap.height())
-        text = reduce(lambda x,y: x+'<br>'+y, texts)
-        QToolTip.add(self.view, rect, text)
-        self.activeItems.append((x, y, rect, pixmap, text))
-        return pixmap.width()
-
-    def removeTooltips(self):
-        for (x,y,rect, pixmap, text) in self.activeItems:
-            QToolTip.remove(self.view, rect)
-
-    def updateWidgetState(self):
-        self.removeTooltips()
-        self.activeItems = []
-        if not self.showIcons or not self.widgetIcons: return
-
-        count = int(self.infoTexts != []) + int(self.warningTexts != []) + int(self.errorTexts != [])
-        startX = self.parent.x() + (self.parent.width()/2) - (count*self.widgetIcons["Info"].width()/2)
-        y = self.parent.y() - 25
-        self.move(startX, y)
-
-        if count == 0:
-            self.view.repaintContents(QRect(startX, y, 100, 40))
-            return
-
-        off  = 0
-        if self.showInfo:
-            off  = self.addWidgetIcon(startX, y, self.infoTexts, "Info")
-        if self.showWarning:
-            off += self.addWidgetIcon(startX+off, y, self.warningTexts, "Warning")
-        if self.showError:
-            off += self.addWidgetIcon(startX+off, y, self.errorTexts, "Error")
-        self.view.repaintContents(QRect(startX, y, 100, 40))
-
 
 # #######################################
 # # CANVAS WIDGET
@@ -197,7 +133,7 @@ class CanvasWidget(QGraphicsRectItem):
         self.instance = eval(compile(widget.getFileName() + "." + widget.getFileName() + "(signalManager = signalManager)", ".", "eval"))
         self.instance.setProgressBarHandler(view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(view.processingHandler)
-        self.instance.setWidgetStateHandler(self.refreshWidgetState)
+        self.instance.setWidgetStateHandler(self.updateWidgetState)
         self.instance._owInfo = canvasDlg.settings["owInfo"]
         self.instance._owWarning = canvasDlg.settings["owWarning"]
         self.instance._owError = canvasDlg.settings["owError"]
@@ -232,8 +168,13 @@ class CanvasWidget(QGraphicsRectItem):
         self.viewYPos = 0 # tooltip placement inside canvasView
         self.lastRect = QRect(0,0,0,0)
         self.isProcessing = 0   # is this widget currently processing signals
-        self.widgetStateRect = CanvasWidgetState(self, canvas, view, self.canvasDlg.widgetIcons)
-        self.widgetStateRect.show()
+        self.widgetState = {}
+        self.infoIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Info"], None, canvas)
+        self.warningIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Warning"], None, canvas)
+        self.errorIcon = QGraphicsPixmapItem(self.canvasDlg.widgetIcons["Error"], None, canvas)
+        self.infoIcon.hide()
+        self.warningIcon.hide()
+        self.errorIcon.hide()
 
         # do we want to restore last position and size of the widget
         if self.canvasDlg.settings["saveWidgetsPosition"]:
@@ -248,17 +189,6 @@ class CanvasWidget(QGraphicsRectItem):
             self.instance.setWidgetIcon(os.path.join(canvasDlg.picsDir, widget.getIconName()))
         else:
             self.instance.setWidgetIcon(defaultPic)
-
-    # read the settings if we want to show icons for info, warning, error
-    def updateSettings(self):
-        self.widgetStateRect.showIcons = self.canvasDlg.settings["ocShow"]
-        self.widgetStateRect.showInfo = self.canvasDlg.settings["ocInfo"]
-        self.widgetStateRect.showWarning = self.canvasDlg.settings["ocWarning"]
-        self.widgetStateRect.showError = self.canvasDlg.settings["ocError"]
-        self.refreshWidgetState()
-
-    def refreshWidgetState(self):
-        self.widgetStateRect.updateState(self.instance.widgetState)
 
     # get the list of connected signal names
     def getInConnectedSignalNames(self):
@@ -277,7 +207,6 @@ class CanvasWidget(QGraphicsRectItem):
         return signals
 
     def remove(self):
-        self.widgetStateRect.hide()
         self.hide()
 
         # save settings
@@ -301,6 +230,34 @@ class CanvasWidget(QGraphicsRectItem):
         for line in self.inLines: line.updateLinePos()
         for line in self.outLines: line.updateLinePos()
 
+    def updateWidgetState(self):
+        widgetState = self.instance.widgetState
+
+        self.infoIcon.hide()
+        self.warningIcon.hide()
+        self.errorIcon.hide()
+
+        yPos = self.y() - 27 - self.progressBarShown * 20
+        iconNum = sum([widgetState.get("Info", {}).values() != [],  widgetState.get("Warning", {}).values() != [], widgetState.get("Error", {}).values() != []])
+
+        if self.canvasDlg.settings["ocShow"]:        # if show icons is enabled in canvas options dialog
+            startX = self.x() + (self.rect().width()/2) - (iconNum*self.canvasDlg.widgetIcons["Info"].width()/2)
+            off  = 0
+            if len(widgetState.get("Info", {}).values()) > 0 and self.canvasDlg.settings["ocInfo"]:
+                off  = self.updateWidgetStateIcon(self.infoIcon, startX, yPos, widgetState["Info"])
+            if len(widgetState.get("Warning", {}).values()) > 0 and self.canvasDlg.settings["ocWarning"]:
+                off += self.updateWidgetStateIcon(self.warningIcon, startX+off, yPos, widgetState["Warning"])
+            if len(widgetState.get("Error", {}).values()) > 0 and self.canvasDlg.settings["ocError"]:
+                off += self.updateWidgetStateIcon(self.errorIcon, startX+off, yPos, widgetState["Error"])
+
+
+    def updateWidgetStateIcon(self, icon, x, y, stateDict):
+        icon.setPos(x,y)
+        icon.show()
+        icon.setToolTip(reduce(lambda x,y: x+'<br>'+y, stateDict.values()))
+        return icon.pixmap().width()
+
+
     def setSelected(self, selected):
         self.selected = selected
         #self.repaintWidget()
@@ -311,17 +268,12 @@ class CanvasWidget(QGraphicsRectItem):
         if y > 0 and y < self.canvas.height() - 60: self.yPos = y
         self.setPos(self.xPos, self.yPos)
         self.updateLinePosition()
+        self.updateWidgetState()
 
-    def move(self, x, y):
-        QGraphicsRectItem.setPos(self, x, y)
-        self.widgetStateRect.updatePosition()
 
     # move existing coorinates by dx, dy
     def setCoordsBy(self, dx, dy):
-        if self.xPos + dx > 0 and self.xPos + dx < self.canvas.width(): self.xPos = self.xPos + dx
-        if self.yPos + dy > 0 and self.yPos + dy < self.canvas.height() - 60: self.yPos = self.yPos + dy
-        self.setPos(self.xPos, self.yPos)
-        self.updateLinePosition()
+        self.setCoords(self.xPos + dx, self.yPos + dy)
 
     def moveToGrid(self):
         (x,y) = (self.xPos, self.yPos)
@@ -365,41 +317,42 @@ class CanvasWidget(QGraphicsRectItem):
 
     # draw the widget
     def paint(self, painter, option, widget = None):
-        painter.resetMatrix()
         if self.isProcessing:
             painter.setPen(QPen(self.canvasDlg.widgetActiveColor))
             painter.setBrush(QBrush(self.canvasDlg.widgetActiveColor))
-            #painter.drawRect(self.x()+8, self.y(), 52, 52)
-            painter.drawRect(self.x()+7, self.y(), 54, 54)
+            #painter.drawRect(8, 0, 52, 52)
+            painter.drawRect(7, 0, 54, 54)
         elif self.selected:
             if self.invalidPosition: color = Qt.red
             else:                    color = self.canvasDlg.widgetSelectedColor
             painter.setPen(QPen(color))
             painter.setBrush(QBrush(color))
-            painter.drawRect(self.x()+7, self.y(), 54, 54)
+            painter.drawRect(7, 0, 54, 54)
 
-        painter.drawPixmap(self.x()+2+8, self.y()+3, self.image)
+        painter.drawPixmap(2+8, 3, self.image)
 
         if self.imageEdge != None:
-            if self.widget.getInputs() != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
-            if self.widget.getOutputs() != []:   painter.drawPixmap(self.x()+widgetWidth-8, self.y() + 18, self.imageEdge)
+            if self.widget.getInputs() != []:    painter.drawPixmap(0, 18, self.imageEdge)
+            if self.widget.getOutputs() != []:   painter.drawPixmap(widgetWidth-8, 18, self.imageEdge)
         else:
             painter.setBrush(QBrush(self.blue))
-            if self.widget.getInputs() != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
-            if self.widget.getOutputs() != []:   painter.drawRect(self.x()+widgetWidth-8, self.y() + 18, 8, 16)
+            if self.widget.getInputs() != []:    painter.drawRect(0, 18, 8, 16)
+            if self.widget.getOutputs() != []:   painter.drawRect(widgetWidth-8, 18, 8, 16)
 
         # draw the label
         painter.setPen(QPen(Qt.black))
-        midX, midY = self.x()+widgetWidth/2., self.y()+self.image.height()+7
+        midX, midY = widgetWidth/2., self.image.height()+7
         painter.drawText(midX-200/2, midY, 200, 20, Qt.AlignTop | Qt.AlignHCenter, self.caption)
 
+        yPos = -20
         if self.progressBarShown:
-            rect = QRectF(self.x()+8, self.y()-20, widgetWidth-16, 16)
-            painter.setBrush(QBrush(QColor(0,0,0)))
+            rect = QRectF(8, yPos, widgetWidth-16, 16)
+            painter.setPen(QPen(QColor(0,0,0)))
+            painter.setBrush(QBrush(QColor(255,255,255)))
             painter.drawRect(rect)
-            painter.setBrush(QBrush(QColor(0,128,255)))
 
-            painter.drawRect(QRectF(self.x()+8, self.y()-20, (widgetWidth-16)*self.progressBarValue/100., 16))
+            painter.setBrush(QBrush(QColor(0,128,255)))
+            painter.drawRect(QRectF(8, -20, (widgetWidth-16)*self.progressBarValue/100., 16))
             painter.drawText(rect, Qt.AlignCenter, "%d %%" % (self.progressBarValue))
 
 
@@ -434,7 +387,7 @@ class CanvasWidget(QGraphicsRectItem):
 
 ##    def repaintWidget(self):
 ##        (x,y,w,h) = ( self.x(), self.y(), self.rect().width(), self.rect().height() )
-##        self.view.repaintContents(QRect(x-20,y-20,w+40,h+40))
+##        self.view.repaint(x-20, y-20, w+40,h+40)
 
 ##    def repaintAllLines(self):
 ##        for line in self.inLines:
@@ -476,10 +429,12 @@ class CanvasWidget(QGraphicsRectItem):
     def showProgressBar(self):
         self.progressBarShown = 1
         self.progressBarValue = 0
+        self.updateWidgetState()
         self.canvas.update()
 
     def hideProgressBar(self):
         self.progressBarShown = 0
+        self.updateWidgetState()
         self.canvas.update()
 
     def setProgressBarValue(self, value):
@@ -489,5 +444,6 @@ class CanvasWidget(QGraphicsRectItem):
     def setProcessing(self, value):
         self.isProcessing = value
         self.canvas.update()
+        qApp.processEvents()
 ##        self.repaintWidget()
 

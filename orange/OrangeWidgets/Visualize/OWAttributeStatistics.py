@@ -74,6 +74,7 @@ class OWAttributeStatistics(OWWidget):
             #self.canvas.update()
 
     def attributeHighlighted(self):
+        if self.attributes.selectedItems() == []: return
         self.HighlightedAttribute = self.attributes.row(self.attributes.selectedItems()[0])
         self.ch = self.height()-self.chbias
         #self.canvas = DisplayStatistics (self.cw, self.ch)
@@ -341,18 +342,10 @@ class DisplayStatistics (QGraphicsScene):
                 if val != q1vTextPos:
                     crq1tR.setPos (self.hbias+self.bar_width_pixels+textoffset, val)
                     crq1tL.setPos (self.hbias-textoffset, val)
-                    OWQCanvasFuncts.OWCanvasLine(self, )
-                    l.setPoints (self.hbias+self.bar_width_pixels+5, q1line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
-                    l.show()
-                    OWQCanvasFuncts.OWCanvasLine(self, )
-                    l.setPoints (self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
-                    l.show()
-                    OWQCanvasFuncts.OWCanvasLine(self, )
-                    l.setPoints (self.hbias-5, q1line, self.hbias-10, val+self.textHeight*0.5)
-                    l.show()
-                    OWQCanvasFuncts.OWCanvasLine(self, )
-                    l.setPoints (self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
-                    l.show()
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+5, q1line, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias+self.bar_width_pixels+10, val+self.textHeight*0.5, self.hbias+self.bar_width_pixels+12, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-5, q1line, self.hbias-10, val+self.textHeight*0.5)
+                    OWQCanvasFuncts.OWCanvasLine(self, self.hbias-10, val+self.textHeight*0.5, self.hbias-12, val+self.textHeight*0.5)
         for i in range(1,len(below)):
             val, lab = below[i][0], below[i][1]
             if lab == 'min':

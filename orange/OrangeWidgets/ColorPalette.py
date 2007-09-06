@@ -121,7 +121,7 @@ class ColorPalette(QWidget):
                                                                self.getCurrentColorSchema().getPalette(),
                                                                self.getCurrentColorSchema().getAdditionalColors(),
                                                                self.getCurrentColorSchema().getPassThroughBlack())
-                    self.schemaCombo.insertItem(self.schemaCombo.count(), s[0])
+                    self.schemaCombo.addItem(s[0])
                     self.schemaCombo.setCurrentIndex(self.schemaCombo.count()-1)
             self.deleteButton.setEnabled(self.schemaCombo.count()>1)
 
@@ -146,7 +146,7 @@ class ColorPalette(QWidget):
     def setColorSchemas(self, schemas):
         self.colorSchemas = schemas
         self.schemaCombo.clear()
-        self.schemaCombo.insertItems(0, schemas)
+        self.schemaCombo.addItems(schemas)
         self.paletteSelected()
 
     def createPalette(self,color1,color2, passThroughBlack):
@@ -229,17 +229,17 @@ class ColorPalette(QWidget):
             additionalColors[buttonName] = gray
 
 
-        self.schemaCombo.insertItem(self.schemaCombo.count(), "Blue - Yellow")
+        self.schemaCombo.addItem("Blue - Yellow")
         palette = self.createPalette(QColor(0,0,255), QColor(255,255,0),FALSE)
         palette += [white]*3 + [qRgb(0., 0., 255.), qRgb(255., 255., 0.), gray]
         self.colorSchemas["Blue - Yellow"] = ColorSchema("Blue - Yellow", palette, additionalColors, FALSE)
 
-        self.schemaCombo.insertItem(self.schemaCombo.count(), "Black - Red")
+        self.schemaCombo.addItem("Black - Red")
         palette = self.createPalette(QColor(0,0,0), QColor(255,0,0),FALSE)
         palette += [white]*3 + [qRgb(0., 0, 0), qRgb(255., 0, 0), gray]
         self.colorSchemas["Black - Red"] = ColorSchema("Black - Red", palette, additionalColors, FALSE)
 
-        self.schemaCombo.insertItem(self.schemaCombo.count(), "Green - Black - Red")
+        self.schemaCombo.addItem("Green - Black - Red")
         palette = self.createPalette(QColor(0,255,0), QColor(255,0,0),TRUE)
         palette += [white]*3 + [qRgb(0, 255., 0), qRgb(255., 0, 0), gray]
         self.colorSchemas["Green - Black - Red"] = ColorSchema("Green - Black - Red", palette, additionalColors, TRUE)

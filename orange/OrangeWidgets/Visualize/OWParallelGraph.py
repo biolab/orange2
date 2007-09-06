@@ -1,7 +1,6 @@
 #
 # OWParallelGraph.py
 #
-
 from OWGraph import *
 from OWDistributions import *
 from orngScaleData import *
@@ -18,7 +17,6 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
         self.parallelDlg = parallelDlg
         self.showDistributions = 0
-        self.hidePureExamples = 1
         self.toolInfo = []
         self.toolRects = []
         self.useSplines = 0
@@ -30,14 +28,17 @@ class OWParallelGraph(OWGraph, orngScaleData):
         self.nonDataCurves = []
         self.enableGridXB(0)
         self.enableGridYL(0)
+        self.domainContingency = None
+        self.useAntiAliasing = 0
 
-    def setData(self, data):
+    def setData(self, data, subsetData = None, **args):
         OWGraph.setData(self, data)
-        orngScaleData.setData(self, data)
+        orngScaleData.setData(self, data, subsetData, **args)
+        self.domainContingency = None
 
 
     # update shown data. Set attributes, coloring by className ....
-    def updateData(self, attributes, targetValue, midLabels = None, startIndex = 0, stopIndex = 0):
+    def updateData(self, attributes, midLabels = None, startIndex = 0, stopIndex = 0):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeTooltips()
         self.removeMarkers()
@@ -50,7 +51,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if self.scaledData == None:  return
         if len(attributes) == 0: return
 
-        if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete:
+        if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawData.domain[attributes[-1]].varType == orange.VarTypes.Discrete:
             self.setAxisScale(QwtPlot.xBottom, startIndex, stopIndex-1, 1)   # changed because of qwtplot's bug. only every second attribute label was shown if -0.5 was used
         else:
             self.setAxisScale(QwtPlot.xBottom, startIndex, stopIndex-1, 1)
@@ -70,60 +71,19 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
         classNameIndex = -1
         continuousClass = 0
-        if self.rawdata.domain.classVar:
-            classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
-            continuousClass = self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous
+        if self.rawData.domain.classVar:
+            classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
+            continuousClass = self.rawData.domain.classVar.varType == orange.VarTypes.Continuous
 
-        haveSubsetData = self.subsetData and self.rawdata and self.subsetData.domain.checksum() == self.rawdata.domain.checksum()
+        haveSubsetData = self.rawSubsetData != None
 
         length = len(attributes)
         indices = [self.attributeNameIndex[label] for label in attributes]
         xs = range(length)
         dataSize = len(self.scaledData[0])
 
-        if self.rawdata.domain.classVar and not continuousClass:
-            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
-
-        # ############################################
-        # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
-        # we do this by adding a integer meta attribute, that for each example stores attribute index, where we stop drawing lines
-        # ############################################
-        lastIndex = indices[-1]
-        dataStop = None
-        if self.hidePureExamples == 1 and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            # add a meta attribute if it doesn't exist yet
-            dataStop = dataSize * [lastIndex]  # array where we store index value for each data value where to stop drawing
-            metaid = orange.newmetaid()
-            self.rawdata.domain.addmeta(metaid, orange.IntVariable("ItemIndex"))
-            for i in range(dataSize): self.rawdata[i].setmeta(metaid, i)
-
-            for i in range(length):
-                if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Discrete or attributes[i] == self.rawdata.domain.classVar.name: continue
-
-                attr = self.rawdata.domain[indices[i]]
-                for attrVal in attr.values:
-                    tempData = self.rawdata.select({attr.name:attrVal})
-
-                    ind = 0
-                    while ind < len(tempData):
-                        if dataStop[int(tempData[ind].getmeta(metaid))] == lastIndex:
-                            val = tempData[ind][classNameIndex]
-                            break
-                        ind += 1
-
-                    # do all instances belong to the same class?
-                    while ind < len(tempData):
-                        if dataStop[int(tempData[ind].getmeta(metaid))] != lastIndex: ind += 1; continue
-                        if val != tempData[ind][classNameIndex]: break
-                        ind += 1
-
-                    # if all examples belong to one class we repair the meta variable values
-                    if ind >= len(tempData):
-                        for item in tempData:
-                            index = int(item.getmeta(metaid))
-                            if dataStop[index] == lastIndex:
-                                dataStop[index] = indices[i]
-            self.rawdata.domain.removemeta(metaid)
+        if self.rawData.domain.classVar and not continuousClass:
+            classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)
 
         # first create all curves
         curves = [[],[]]
@@ -131,9 +91,11 @@ class OWParallelGraph(OWGraph, orngScaleData):
         # ############################################
         # draw the data
         # ############################################
-        if not haveSubsetData: subsetReferencesToDraw = []
-        else:                  subsetReferencesToDraw = [self.subsetData[i].reference() for i in self.getValidSubIndices(indices)]
+        subsetReferencesToDraw = haveSubsetData and [self.rawSubsetData[i].reference() for i in self.getValidSubsetIndices(indices)] or []
         validData = self.getValidList(indices)
+        xPointsToAdd = {}
+        yPointsToAdd = {}
+
         for i in range(dataSize):
             if not validData[i]:
                 self.curvePoints.append([]) # add an empty list
@@ -141,36 +103,32 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
             curve = QwtPlotCurve("")
             curve.setItemAttribute(QwtPlotItem.Legend, 0)
-            if targetValue != None:
-                if self.rawdata[i].getclass().value == targetValue:
-                    newColor = self.colorTargetValue
-                    curves[1].append(curve)
-                else:
-                    newColor = self.colorNonTargetValue
-                    curves[0].append(curve)
-            else:
-                if not self.rawdata.domain.classVar: newColor = blackColor
-                elif continuousClass:
-                    newColor = self.contPalette[self.noJitteringScaledData[classNameIndex][i]]
-                else:
-                    newColor = self.discPalette[classValueIndices[self.rawdata[i].getclass().value]]
+            if self.useAntiAliasing:
+                curve.setRenderHint(QwtPlotItem.RenderAntialiased)
 
-                if haveSubsetData and self.rawdata[i].reference() not in subsetReferencesToDraw:
-                    newColor.setHsv(newColor.hsv()[0], 50, newColor.hsv()[2])
+            if not self.rawData.domain.classVar:
+                newColor = QColor(blackColor)
+            elif continuousClass:
+                newColor = QColor(self.contPalette[self.noJitteringScaledData[classNameIndex][i]])
+            else:
+                newColor = QColor(self.discPalette[classValueIndices[self.rawData[i].getclass().value]])
+
+            # if we have subset data then use alpha2 for main data and alpha for subset data
+            if haveSubsetData:
+                if self.rawData[i].reference() not in subsetReferencesToDraw:
+                    newColor.setAlpha(self.alphaValue2)
                     curves[0].append(curve)
                 else:
+                    newColor.setAlpha(self.alphaValue)
                     curves[1].append(curve)
                     if subsetReferencesToDraw:
-                        subsetReferencesToDraw.remove(self.rawdata[i].reference())
+                        subsetReferencesToDraw.remove(self.rawData[i].reference())
+            else:
+                curves[1].append(curve)
 
             curve.setPen(QPen(newColor, 1))
-            if not dataStop:
-                ys = [self.scaledData[index][i] for index in indices]
-            else:
-                ys = []
-                for index in indices:
-                    ys.append(self.scaledData[index][i])
-                    if index == dataStop[i]: break
+            ys = [self.scaledData[index][i] for index in indices]
+
             curve.setData(xs, ys)
             self.curvePoints.append(ys)  # save curve points
             if self.useSplines:
@@ -178,72 +136,57 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
         # if we have a data subset that contains examples that don't exist in the original dataset we show them here
         if subsetReferencesToDraw != []:
-            subData = numpy.zeros([len(indices), len(self.subsetData)])
-            for i in range(len(indices)):
-                subData[i] = self.scaleData(self.subsetData, indices[i])[0]
-            subData = subData.transpose()
+            validSubsetData = self.getValidSubsetList(indices)
 
-            for i in range(len(self.subsetData)):
-                if not self.subsetData[i].reference() in subsetReferencesToDraw: continue
-                subsetReferencesToDraw.remove(self.subsetData[i].reference())
+            for i in range(len(self.rawSubsetData)):
+                if not validSubsetData[i]: continue
+                if not self.rawSubsetData[i].reference() in subsetReferencesToDraw: continue
+                subsetReferencesToDraw.remove(self.rawSubsetData[i].reference())
 
-                # check if has missing values
-                if 1 in [self.subsetData[i][ind].isSpecial() for ind in indices]: continue
-
-                curve = QwtPlotCurve(self)
-                if targetValue != None:
-                    if self.subsetData[i].getclass().value == targetValue:
-                        newColor = self.colorTargetValue
-                        curves[1].append(curve)
-                    else:
-                        newColor = self.colorNonTargetValue
-                        curves[0].append(curve)
+                curve = QwtPlotCurve("")
+                curve.setItemAttribute(QwtPlotItem.Legend, 0)
+                if self.useAntiAliasing:
+                    curve.setRenderHint(QwtPlotItem.RenderAntialiased)
+                if not self.rawSubsetData.domain.classVar or self.rawSubsetData[i].getclass().isSpecial():
+                    newColor = QColor(blackColor)
+                elif continuousClass:
+                    newColor = QColor(self.contPalette[self.scaleExampleValue(self.rawSubsetData[i], classNameIndex)])
                 else:
-                    if not self.subsetData.domain.classVar or self.subsetData[i].getclass().isSpecial():
-                        newColor = blackColor
-                    elif continuousClass:
-                        newColor = self.contPalette[self.scaleExampleValue(self.subsetData[i], classNameIndex)]
-                    else:
-                        newColor = self.discPalette[classValueIndices[self.subsetData[i].getclass().value]]
-                    curves[1].append(curve)
+                    newColor = QColor(self.discPalette[classValueIndices[self.rawSubsetData[i].getclass().value]])
+                curves[1].append(curve)
 
+                newColor.setAlpha(self.alphaValue)
                 curve.setPen(QPen(newColor, 1))
-                curve.setData(xs, subData[i].tolist())
-                if self.useSplines:
-                    curve.setStyle(QwtPlotCurve.Spline)
+                curve.setData(xs, [self.scaledSubsetData[index][i] for index in indices])
 
-        # now add all curves. First add the gray curves (they will be shown in the back) and then the blue (target value) curves (shown in front)
+                if self.useSplines:
+                    curve.setCurveAttribute(QwtPlotCurve.Fitted)
+
+        # now add all curves. First add the main data curves and then the subset data curves (shown in front)
         for curve in curves[0]: curve.attach(self)
         for curve in curves[1]: curve.attach(self)
 
         # ############################################
         # do we want to show distributions with discrete attributes
-        if self.showDistributions and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            self.showDistributionValues(targetValue, validData, indices, dataStop)
+        if self.showDistributions and self.rawData.domain.classVar and self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
+            self.showDistributionValues(validData, indices)
 
         # ############################################
         # draw vertical lines that represent attributes
         for i in range(len(attributes)):
             self.nonDataCurves.append(self.addCurve("", lineWidth = 2, style = QwtPlotCurve.Lines, symbol = QwtSymbol.NoSymbol, xData = [i,i], yData = [0,1]))
             if self.showAttrValues == 1:
-                attr = self.rawdata.domain[attributes[i]]
+                attr = self.rawData.domain[attributes[i]]
                 if attr.varType == orange.VarTypes.Continuous:
                     strVal1 = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][0])
                     strVal2 = "%%.%df" % (attr.numberOfDecimals) % (self.attrValues[attr.name][1])
-                    if i == 0:
-                        align1 = Qt.AlignRight + Qt.AlignBottom
-                        align2 = Qt.AlignRight + Qt.AlignTop
-                    elif i == len(attributes)-1:
-                        align1 = Qt.AlignLeft + Qt.AlignBottom
-                        align2 = Qt.AlignLeft + Qt.AlignTop
-                    else:
-                        align1 = Qt.AlignHCenter + Qt.AlignBottom
-                        align2 = Qt.AlignHCenter + Qt.AlignTop
+                    align1 = i == 0 and Qt.AlignRight | Qt.AlignBottom or i == len(attributes)-1 and Qt.AlignLeft | Qt.AlignBottom or Qt.AlignHCenter | Qt.AlignBottom
+                    align2 = i == 0 and Qt.AlignRight | Qt.AlignTop or i == len(attributes)-1 and Qt.AlignLeft | Qt.AlignTop or Qt.AlignHCenter | Qt.AlignTop
                     self.addMarker(strVal1, i, 0.0-0.01, alignment = align1)
                     self.addMarker(strVal2, i, 1.0+0.01, alignment = align2)
 
                 elif attr.varType == orange.VarTypes.Discrete:
-                    attrVals = getVariableValuesSorted(self.rawdata, attributes[i])
+                    attrVals = getVariableValuesSorted(self.rawData, attributes[i])
                     valsLen = len(attrVals)
                     for pos in range(len(attrVals)):
                         # show a rectangle behind the marker
@@ -255,7 +198,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
         if self.showStatistics:
             data = []
             for i in range(length):
-                if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Continuous:
+                if self.rawData.domain[indices[i]].varType != orange.VarTypes.Continuous:
                     data.append([()])
                     continue  # only for continuous attributes
                 array = numpy.compress(numpy.equal(self.validDataArray[indices[i]], 1), self.scaledData[indices[i]])  # remove missing values
@@ -273,7 +216,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
                             data.append([(0,0,0)])
                 else:
                     curr = []
-                    classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                    classValues = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
                     for c in range(len(classValues)):
                         scaledVal = ((classValueIndices[classValues[c]] * 2) + 1) / float(2*len(classValueIndices))
                         nonMissingValues = numpy.compress(numpy.equal(self.validDataArray[indices[i]], 1), self.noJitteringScaledData[classNameIndex])  # remove missing values
@@ -294,7 +237,8 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 for c in range(len(data[i])):
                     if data[i][c] == (): continue
                     x = i - 0.03*(len(data[i])-1)/2.0 + c*0.03
-                    col = self.discPalette[c]
+                    col = QColor(self.discPalette[c])
+                    col.setAlpha(self.alphaValue2)
                     self.nonDataCurves.append(self.addCurve("", col, col, 3, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [x,x,x], yData = [data[i][c][0], data[i][c][1], data[i][c][2]], lineWidth = 4))
                     self.nonDataCurves.append(self.addCurve("", col, col, 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [x-0.03, x+0.03], yData = [data[i][c][0], data[i][c][0]], lineWidth = 4))
                     self.nonDataCurves.append(self.addCurve("", col, col, 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = [x-0.03, x+0.03], yData = [data[i][c][1], data[i][c][1]], lineWidth = 4))
@@ -303,7 +247,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
             # draw lines with mean/median values
             classCount = 1
             if classNameIndex == -1 or continuousClass:    classCount = 1 # no class
-            else: classCount = len(self.rawdata.domain.classVar.values)
+            else: classCount = len(self.rawData.domain.classVar.values)
             for c in range(classCount):
                 diff = - 0.03*(classCount-1)/2.0 + c*0.03
                 ys = []
@@ -311,9 +255,14 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 for i in range(len(data)):
                     if data[i] != [()]: ys.append(data[i][c][1]); xs.append(i+diff)
                     else:
-                        if len(xs) > 1: self.nonDataCurves.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = xs, yData = ys, lineWidth = 4))
+                        if len(xs) > 1:
+                            col = QColor(self.discPalette[c])
+                            col.setAlpha(self.alphaValue2)
+                            self.nonDataCurves.append(self.addCurve("", col, col, 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = xs, yData = ys, lineWidth = 4))
                         xs = []; ys = []
-                self.nonDataCurves.append(self.addCurve("", self.discPalette[c], self.discPalette[c], 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = xs, yData = ys, lineWidth = 4))
+                col = QColor(self.discPalette[c])
+                col.setAlpha(self.alphaValue2)
+                self.nonDataCurves.append(self.addCurve("", col, col, 1, QwtPlotCurve.Lines, QwtSymbol.NoSymbol, xData = xs, yData = ys, lineWidth = 4))
 
 
         # ##################################################
@@ -323,10 +272,10 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 self.addMarker(midLabels[j], j+0.5, 1.0, alignment = Qt.AlignCenter | Qt.AlignTop)
 
         # show the legend
-        if self.enabledLegend == 1 and self.rawdata.domain.classVar:
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-                varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-                self.addCurve("<b>" + self.rawdata.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.NoSymbol, enableLegend = 1)
+        if self.enabledLegend == 1 and self.rawData.domain.classVar:
+            if self.rawData.domain.classVar.varType == orange.VarTypes.Discrete:
+                varValues = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
+                self.addCurve("<b>" + self.rawData.domain.classVar.name + ":</b>", QColor(0,0,0), QColor(0,0,0), 0, symbol = QwtSymbol.NoSymbol, enableLegend = 1)
                 for ind in range(len(varValues)):
                     self.addCurve(varValues[ind], self.discPalette[ind], self.discPalette[ind], 15, symbol = QwtSymbol.Rect, enableLegend = 1)
             else:
@@ -336,13 +285,13 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 for i in range(count):
                     y = i/float(count)
                     col = self.contPalette[y]
-                    curve = PolygonCurve(self, QPen(col), QBrush(col), xData = xs, yData = [y,y, y+height, y+height])
+                    curve = PolygonCurve(QPen(col), QBrush(col), xData = xs, yData = [y,y, y+height, y+height])
                     curve.attach(self)
                     self.nonDataCurves.append(curve)
 
                 # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
-                decimals = self.rawdata.domain.classVar.numberOfDecimals
+                [minVal, maxVal] = self.attrValues[self.rawData.domain.classVar.name]
+                decimals = self.rawData.domain.classVar.numberOfDecimals
                 self.addMarker("%%.%df" % (decimals) % (minVal), xs[0] - l*0.02, 0.04, Qt.AlignLeft)
                 self.addMarker("%%.%df" % (decimals) % (maxVal), xs[0] - l*0.02, 1.0 - 0.04, Qt.AlignLeft)
 
@@ -351,85 +300,76 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
     # ##########################################
     # SHOW DISTRIBUTION BAR GRAPH
-    def showDistributionValues(self, targetValue, validData, indices, dataStop):
+    def showDistributionValues(self, validData, indices):
         # get index of class
-        classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
+        classNameIndex = self.attributeNameIndex[self.rawData.domain.classVar.name]
 
         # create color table
-        count = len(self.rawdata.domain.classVar.values)
-        #if count < 1: count = 1.0
+        clsCount = len(self.rawData.domain.classVar.values)
+        #if clsCount < 1: clsCount = 1.0
 
         # we create a hash table of possible class values (happens only if we have a discrete class)
-        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
-        classValueSorted  = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+        classValueIndices = getVariableValueIndices(self.rawData, self.rawData.domain.classVar.name)
+        classValueSorted  = getVariableValuesSorted(self.rawData, self.rawData.domain.classVar.name)
+        if self.domainContingency == None:
+            self.domainContingency = orange.DomainContingency(self.rawData)
 
         self.toolInfo = []
         for graphAttrIndex in range(len(indices)):
             index = indices[graphAttrIndex]
-            if self.rawdata.domain[index].varType != orange.VarTypes.Discrete: continue
-            attr = self.rawdata.domain[index]
+            if self.rawData.domain[index].varType != orange.VarTypes.Discrete: continue
+            attr = self.rawData.domain[index]
             attrLen = len(attr.values)
 
-            values = []
-            totals = [0] * attrLen
-
             # we create a hash table of variable values and their indices
-            variableValueIndices = getVariableValueIndices(self.rawdata, index)
-            variableValueSorted = getVariableValuesSorted(self.rawdata, index)
+            variableValueIndices = getVariableValueIndices(self.rawData, index)
+            variableValueSorted = getVariableValuesSorted(self.rawData, index)
+            attrCont = self.domainContingency[indices[graphAttrIndex]]
 
-            for i in range(count):
+            values = []
+            totals = []
+            for i in range(clsCount):
                 values.append([0] * attrLen)
 
-            stop = indices[:graphAttrIndex]
-            for i in range(len(self.rawdata)):
-                if dataStop and self.hidePureExamples == 1 and dataStop[i] in stop: continue
-                if validData[i] == 0: continue
-                # processing for distributions
-                attrIndex = variableValueIndices[self.rawdata[i][index].value]
-                classIndex = classValueIndices[self.rawdata[i][classNameIndex].value]
-                totals[attrIndex] += 1
-                values[classIndex][attrIndex] += 1
+            for attrVal in self.rawData.domain[index].values:
+                attrIndex = variableValueIndices[attrVal]
+                for clsVal in self.rawData.domain.classVar.values:
+                    classIndex = classValueIndices[clsVal]
+                    values[classIndex][attrIndex] = attrCont[attrVal][clsVal]
+                totals.append(sum(attrCont[attrVal]))
 
-            # calculate maximum value of all values - needed for scaling
-            maximum = 1
-            for i in range(len(values)):
-                for j in range(len(values[i])):
-                    if values[i][j] > maximum: maximum = values[i][j]
-
-            # calculate the sum of totals - needed for tooltips
-            sumTotals = 0
-            for val in totals: sumTotals += val
+            maximum = max(max(values))    # calculate maximum value of all values - needed for scaling
+            if maximum == 0: maximum = 1
+            sumTotals = sum(totals)       # calculate the sum of totals - needed for tooltips
 
             # save info for tooltips
             for i in range(attrLen):
                 list= []
-                for j in range(count):
+                for j in range(clsCount)[::-1]:
                     list.append((classValueSorted[j], values[j][i]))
-                list.reverse()
-                y_start = float(i+1)/float(attrLen); y_end = float(i)/float(attrLen)
-                x_start = float(graphAttrIndex) - 0.45; x_end = float(graphAttrIndex) + 0.45
-                item = (self.rawdata.domain[index].name, variableValueSorted[i], totals[i], sumTotals, list, (x_start,x_end), (y_start, y_end))
+                y_start = (i+1)/float(attrLen)
+                y_end = i/float(attrLen)
+                x_start = float(graphAttrIndex) - 0.45
+                x_end = float(graphAttrIndex) + 0.45
+                item = (self.rawData.domain[index].name, variableValueSorted[i], totals[i], sumTotals, list, (x_start,x_end), (y_start, y_end))
                 self.toolInfo.append(item)
 
             # create bar curve
-            for i in range(count):
-                if targetValue != None:
-                    if classValueSorted[i] == targetValue: newColor = self.colorTargetValue
-                    else: newColor = self.colorNonTargetValue
-                else:
-                    newColor = self.discPalette[i]
+            for i in range(clsCount):
+                newColor = QColor(self.discPalette[i])
+                newColor.setAlpha(self.alphaValue2)
 
                 for j in range(attrLen):
                     width = float(values[i][j]*0.5) / float(maximum)
                     interval = 1.0/float(2*attrLen)
                     yOff = float(1.0 + 2.0*j)/float(2*attrLen)
-                    height = 0.7/float(count*attrLen)
+                    height = 0.7/float(clsCount*attrLen)
 
-                    yLowBott = yOff - float(count*height)/2.0 + i*height
-                    curve = PolygonCurve(self, pen = QPen(newColor), brush = QBrush(newColor), xData = [graphAttrIndex, graphAttrIndex + width, graphAttrIndex + width, graphAttrIndex], yData = [yLowBott, yLowBott, yLowBott + height, yLowBott + height])
+                    yLowBott = yOff - float(clsCount*height)/2.0 + i*height
+                    curve = PolygonCurve(QPen(newColor), QBrush(newColor), xData = [graphAttrIndex, graphAttrIndex + width, graphAttrIndex + width, graphAttrIndex], yData = [yLowBott, yLowBott, yLowBott + height, yLowBott + height])
                     curve.attach(self)
                     self.nonDataCurves.append(curve)
-        #self.addTooltips()
+        self.addTooltips()
 
     def addTooltips(self):
         return
@@ -465,8 +405,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
     def updateLayout(self):
         OWGraph.updateLayout(self)
-        self.removeTooltips()
-        self.addTooltips()
+        self.updateTooltips()
 
     """
     def updateAxes(self):
@@ -502,26 +441,25 @@ class OWParallelGraph(OWGraph, orngScaleData):
                 self.replot()
         OWGraph.mouseMoveEvent(self, e)
 
-    def getSelectionsAsExampleTables(self, targetValue = None):
-        if not self.rawdata:
+    def getSelectionsAsExampleTables(self):
+        if not self.rawData:
             return (None, None)
         if self.selectionCurveList == []:
-            return (None, self.rawdata)
+            return (None, self.rawData)
 
         selIndices = []
-        unselIndices = range(len(self.rawdata))
+        unselIndices = range(len(self.rawData))
 
         for i in range(len(self.curvePoints))[::-1]:
             for j in range(len(self.curvePoints[i])):
                 if self.isPointSelected(j, self.curvePoints[i][j]):
-                    if targetValue and targetValue != int(self.rawdata[i].getclass()): continue
                     selIndices.append(i)
                     unselIndices.pop(i)
                     break
 
         selIndices.reverse()
-        selected = self.rawdata.getitemsref(selIndices)
-        unselected = self.rawdata.getitemsref(unselIndices)
+        selected = self.rawData.getitemsref(selIndices)
+        unselected = self.rawData.getitemsref(unselIndices)
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None

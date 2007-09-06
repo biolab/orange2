@@ -76,7 +76,7 @@ class ClusterOptimization(OWBaseWidget):
         self.lastSaveDirName = os.getcwd() + "/"
         self.attrCont = 1
         self.attrDisc = 1
-        self.rawdata = None
+        self.rawData = None
         self.subsetdata = None
         self.arguments = []
         self.selectedClasses = []
@@ -413,8 +413,8 @@ class ClusterOptimization(OWBaseWidget):
     # for each point then return a float between 0 and 1
     def evaluatePointsInClusters(self):
         if self.clusterStabilityButton.isChecked():
-            self.pointStability = numpy.zeros(len(self.rawdata), numpy.float)
-            self.pointStabilityCount = [0 for i in range(len(self.rawdata.domain.classVar.values))]       # for each class value create a counter that will count the number of clusters for it
+            self.pointStability = numpy.zeros(len(self.rawData), numpy.float)
+            self.pointStabilityCount = [0 for i in range(len(self.rawData.domain.classVar.values))]       # for each class value create a counter that will count the number of clusters for it
 
             if (int(qVersion()[0]) >= 3):
                 (text, ok) = QInputDialog.getText('Projection count', 'How many of the best projections do you want to consider?')
@@ -428,22 +428,22 @@ class ClusterOptimization(OWBaseWidget):
                 if considered > nrOfProjections: break
                 if type(self.allResults[i][CLASS]) != dict: continue    # ignore all projections except the ones that show all clusters in the picture
                 considered += 1
-                clusterClasses = [0 for j in range(len(self.rawdata.domain.classVar.values))]
+                clusterClasses = [0 for j in range(len(self.rawData.domain.classVar.values))]
                 for key in self.allResults[i][VERTICES].keys():
                     clusterClasses[self.allResults[i][CLASS][key]] = 1
                     vertices = self.allResults[i][VERTICES][key]
                     validData = self.graph.getValidList([self.graph.attributeNameIndex[self.allResults[i][ATTR_LIST][0]], self.graph.attributeNameIndex[self.allResults[i][ATTR_LIST][1]]])
-                    indices = numpy.compress(validData, numpy.array(range(len(self.rawdata))), axis = 1)
+                    indices = numpy.compress(validData, numpy.array(range(len(self.rawData))), axis = 1)
                     indicesToOriginalTable = numpy.take(indices, vertices)
-                    tempArray = numpy.zeros(len(self.rawdata))
+                    tempArray = numpy.zeros(len(self.rawData))
                     numpy.put(tempArray, indicesToOriginalTable, numpy.ones(len(indicesToOriginalTable)))
                     self.pointStability += tempArray
                 for j in range(len(clusterClasses)):        # some projections may contain more clusters of the same class. we make sure we don't process this wrong
                     self.pointStabilityCount[j] += clusterClasses[j]
 
-            for i in range(len(self.rawdata)):
-                if self.pointStabilityCount[int(self.rawdata[i].getclass())] != 0:
-                    self.pointStability[i] /= float(self.pointStabilityCount[int(self.rawdata[i].getclass())])
+            for i in range(len(self.rawData)):
+                if self.pointStabilityCount[int(self.rawData[i].getclass())] != 0:
+                    self.pointStability[i] /= float(self.pointStabilityCount[int(self.rawData[i].getclass())])
 
         #self.pointStability = [1.0 - val for val in self.pointStability]
         if self.parentWidget: self.parentWidget.showSelectedCluster()
@@ -467,10 +467,10 @@ class ClusterOptimization(OWBaseWidget):
             if self.allResults[i][STR_LIST] != "": string += self.allResults[i][STR_LIST]
             else: string += self.buildAttrString(self.allResults[i][ATTR_LIST])
 
-            self.resultList.insertItem(string)
+            self.resultList.addItem(string)
             self.shownResults.append(self.allResults[i])
             i+=1
-        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)
+        if self.resultList.count() > 0: self.resultList.setCurrentItem(self.resultList.item(0))
 
 
     # save input dataset, get possible class values, ...
@@ -478,8 +478,8 @@ class ClusterOptimization(OWBaseWidget):
         if hasattr(data, "name"): self.datasetName = data.name
         else: self.datasetName = ""
         sameDomain = 0
-        if not clearResults and self.rawdata and data and self.rawdata.domain == data.domain: sameDomain = 1
-        self.rawdata = data
+        if not clearResults and self.rawData and data and self.rawData.domain == data.domain: sameDomain = 1
+        self.rawData = data
         self.clearArguments()
         if not sameDomain: self.clearResults()
 
@@ -496,11 +496,11 @@ class ClusterOptimization(OWBaseWidget):
 
             # add class values
             for i in range(len(data.domain.classVar.values)):
-                self.classesList.insertItem(data.domain.classVar.values[i])
-                self.classValueList.insertItem(data.domain.classVar.values[i])
-            self.classesList.insertItem("All clusters")
+                self.classesList.addItem(data.domain.classVar.values[i])
+                self.classValueList.addItem(data.domain.classVar.values[i])
+            self.classesList.addItem("All clusters")
             self.classesList.selectAll()
-            if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
+            if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentIndex(0)
 
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
@@ -569,10 +569,10 @@ class ClusterOptimization(OWBaseWidget):
         if maxLen == 2: vals = [2]
         else: vals = range(3, maxLen+1)
         for val in vals:
-            self.attrLenList.insertItem(str(val))
+            self.attrLenList.addItem(str(val))
             self.attrLenDict[val] = 1
         self.attrLenList.selectAll()
-        self.resultList.setCurrentItem(0)
+        self.resultList.setCurrentItem(self.resultList.item(0))
 
 
     # ##############################################################
@@ -607,7 +607,7 @@ class ClusterOptimization(OWBaseWidget):
         for attr in attrs: Dict[attr] = self.__dict__[attr]
         file.write("%s\n" % (str(Dict)))
         file.write("%s\n" % str(self.selectedClasses))
-        file.write("%d\n" % self.rawdata.checksum())
+        file.write("%d\n" % self.rawData.checksum())
         for (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) in self.shownResults:
             if type(classValue) != dict: continue
             s = "(%s, %s, %s, %s, %s, %s, %s, '%s')\n" % (str(value), str(closure), str(vertices), str(attrList), str(classValue), str(enlargedClosure), str(other), strList)
@@ -620,7 +620,7 @@ class ClusterOptimization(OWBaseWidget):
     def load(self):
         self.clearResults()
         self.clearArguments()
-        if self.rawdata == None:
+        if self.rawData == None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load a cluster file',QMessageBox.Ok)
             return
 
@@ -642,11 +642,11 @@ class ClusterOptimization(OWBaseWidget):
 
         # find if it was computed for specific class values
         selectedClasses = eval(file.readline()[:-1])
-        for i in range(len(self.rawdata.domain.classVar.values)):
+        for i in range(len(self.rawData.domain.classVar.values)):
             self.classesList.item(i).setSelected(i in selectedClasses)
         if -1 in selectedClasses: self.classesList.item(self.classesList.count()-1).setSelected(1)
         checksum = eval(file.readline()[:-1])
-        if self.rawdata and self.rawdata.checksum() != checksum:
+        if self.rawData and self.rawData.checksum() != checksum:
             cancel = QMessageBox.critical(None, "Load", "Currently loaded data set is different than the data set that was used for computing these projections. \nThere may be differences in the number of examples or in actual data values. \nThe shown clusters will therefore most likely show incorrect information. \nAre you sure you want to continue with loading?", 'Yes','No', '', 1,0)
             if cancel: return
 
@@ -807,7 +807,7 @@ class ClusterOptimization(OWBaseWidget):
         # this way, we don't care if clusters of one class value have much higher values than clusters of another class.
         # NOTE: argumentCount in this case represents the number of evaluated clusters and not the number of clusters where the point actually lies inside
         if self.argumentationType == BEST_GROUPS_IN_EACH_CLASS:
-            classIndices = [0 for i in range(len(self.rawdata.domain.classVar.values))]
+            classIndices = [0 for i in range(len(self.rawData.domain.classVar.values))]
             canFinish = 0
             while not canFinish:
                 for cls in range(len(classIndices)):
@@ -826,7 +826,7 @@ class ClusterOptimization(OWBaseWidget):
 
                         self.arguments[classValue].append((None, value, attrList, startingIndex+index))
                         if classValue == self.classValueList.currentItem():
-                            self.argumentList.insertItem("%.2f - %s" %(value, attrList))
+                            self.argumentList.addItem("%.2f - %s" %(value, attrList))
                     if classIndices[cls] == startingIndex: classIndices[cls] = len(self.allResults)+1
 
                 foundArguments += 1
@@ -859,16 +859,16 @@ class ClusterOptimization(OWBaseWidget):
 
                 self.arguments[classValue].append((None, value, attrList, index))
                 if classValue == self.classValueList.currentItem():
-                    self.argumentList.insertItem("%.2f - %s" %(value, attrList))
+                    self.argumentList.addItem("%.2f - %s" %(value, attrList))
 
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
-        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
+        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(self.argumentList.item(0))
         if foundArguments == 0: return (None, None)
 
         suma = sum(vals)
-        dist = orange.DiscDistribution([val/float(suma) for val in vals]);  dist.variable = self.rawdata.domain.classVar
-        classValue = self.rawdata.domain.classVar[vals.index(max(vals))]
+        dist = orange.DiscDistribution([val/float(suma) for val in vals]);  dist.variable = self.rawData.domain.classVar
+        classValue = self.rawData.domain.classVar[vals.index(max(vals))]
 
         # show classification results
         s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
@@ -938,7 +938,7 @@ class ClusterOptimization(OWBaseWidget):
         for i in range(len(self.arguments[ind])):
             val = self.arguments[ind][i]
             if val[0] != None:  self.argumentList.insertItem(val[0], "%.2f - %s" %(val[1], val[2]))
-            else:               self.argumentList.insertItem("%.2f - %s" %(val[1], val[2]))
+            else:               self.argumentList.addItem("%.2f - %s" %(val[1], val[2]))
 
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
@@ -985,8 +985,8 @@ class clusterClassifier(orange.Classifier):
         argumentValues = []
         allowedArguments = self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]
 
-        classProjectionVals = [0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
-        classIndices = [0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
+        classProjectionVals = [0 for i in range(len(self.clusterOptimizationDlg.rawData.domain.classVar.values))]
+        classIndices = [0 for i in range(len(self.clusterOptimizationDlg.rawData.domain.classVar.values))]
         if self.clusterOptimizationDlg.argumentationType == BEST_GROUPS_IN_EACH_CLASS:
             canFinish = 0
             while not canFinish:
@@ -1020,14 +1020,14 @@ class clusterClassifier(orange.Classifier):
 
             if max(classProjectionVals) == 0:
                 print "there are no arguments for this example in the current projection list."
-                dist = orange.DiscDistribution([1/float(len(classProjectionVals)) for i in classProjectionVals]); dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
-                return (self.clusterOptimizationDlg.rawdata.domain.classVar[0], dist)
+                dist = orange.DiscDistribution([1/float(len(classProjectionVals)) for i in classProjectionVals]); dist.variable = self.clusterOptimizationDlg.rawData.domain.classVar
+                return (self.clusterOptimizationDlg.rawData.domain.classVar[0], dist)
 
             ind = classProjectionVals.index(max(classProjectionVals))
             s = sum(classProjectionVals)
-            dist = orange.DiscDistribution([val/float(s) for val in classProjectionVals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+            dist = orange.DiscDistribution([val/float(s) for val in classProjectionVals]);  dist.variable = self.clusterOptimizationDlg.rawData.domain.classVar
 
-            classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
+            classValue = self.clusterOptimizationDlg.rawData.domain.classVar[ind]
             s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
             for key in dist.keys():
                 s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
@@ -1058,7 +1058,7 @@ class clusterClassifier(orange.Classifier):
                 # find 10 more arguments than it is necessary - this is because with a different fold of data the clusters can be differently evaluated
                 if argumentCount >= self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]:
                     argumentValues.sort(); argumentValues.reverse()
-                    vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
+                    vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawData.domain.classVar.values))]
                     neededArguments = self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]
                     sufficient = 0; consideredArguments = 0
                     for (val, c) in argumentValues:
@@ -1073,9 +1073,9 @@ class clusterClassifier(orange.Classifier):
                     if sufficient:
                         ind = vals.index(max(vals))
                         s = sum(vals)
-                        dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+                        dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawData.domain.classVar
 
-                        classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
+                        classValue = self.clusterOptimizationDlg.rawData.domain.classVar[ind]
                         s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
                         for key in dist.keys():
                             s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
@@ -1086,7 +1086,7 @@ class clusterClassifier(orange.Classifier):
                         return (classValue, dist)
 
             # if we ran out of projections before we could get a reliable prediction use what we have
-            vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
+            vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawData.domain.classVar.values))]
             argumentValues.sort(); argumentValues.reverse()
             for (val, c) in argumentValues:
                 if self.clusterOptimizationDlg.useProjectionValue:  vals[c] += val
@@ -1094,14 +1094,14 @@ class clusterClassifier(orange.Classifier):
 
             if max(vals) == 0.0:
                 print "there are no arguments for this example in the current projection list."
-                dist = orange.DiscDistribution([1/float(len(vals)) for i in range(len(vals))]); dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
-                return (self.clusterOptimizationDlg.rawdata.domain.classVar[0], dist)
+                dist = orange.DiscDistribution([1/float(len(vals)) for i in range(len(vals))]); dist.variable = self.clusterOptimizationDlg.rawData.domain.classVar
+                return (self.clusterOptimizationDlg.rawData.domain.classVar[0], dist)
 
             ind = vals.index(max(vals))
             s = sum(vals)
-            dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+            dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawData.domain.classVar
 
-            classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
+            classValue = self.clusterOptimizationDlg.rawData.domain.classVar[ind]
             s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
             for key in dist.keys():
                 s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)

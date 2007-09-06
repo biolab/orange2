@@ -2,7 +2,7 @@
 <name>Word n-Grams</name>
 <description>Computes the word ngram representation.</description>
 <icon>icons/WordNgram.png</icon>
-<contact>Sasa Petrovic</contact> 
+<contact>Sasa Petrovic</contact>
 <priority>1410</priority>
 """
 
@@ -28,7 +28,7 @@ class OWWordNgram(OWWidget):
         self.data = None
         self.measureDict = {0: 'FREQ', 1: 'MI', 2: 'DICE', 3: 'CHI', 4: 'LL'}
 
-        #GUI        
+        #GUI
         optionBox = QHGroupBox('', self.controlArea)
         OWGUI.radioButtonsInBox(optionBox, self, "size", box = "No. of words", btnLabels = ["2", "3", "4", "Named entities"], addSpace = True, callback = self.radioChanged)
         self.ambox = OWGUI.radioButtonsInBox(optionBox, self, "measure", box = "Association measure", btnLabels = ["Frequency", "Mutual information", "Dice coefficient", "Chi square", "Log likelihood"], addSpace = True)
@@ -63,7 +63,7 @@ class OWWordNgram(OWWidget):
         fn = str(QFileDialog.getOpenFileName(lastPath, "Text files (*.*)", None, "Open Text Files"))
         if not fn:
             return
-        
+
         fn = os.path.abspath(fn)
         if fn in self.recentFiles: # if already in list, remove it
             self.recentFiles.remove(fn)
@@ -83,22 +83,21 @@ class OWWordNgram(OWWidget):
 
         self.filecombo.clear()
         for file in self.recentFiles:
-            self.filecombo.insertItem(os.path.split(file)[1])
-        self.filecombo.updateGeometry()
+            self.filecombo.addItem(os.path.split(file)[1])
 
         self.error()
         try:
             self.stopwords = orngText.loadWordSet(fn)
         except:
             self.error("Cannot read the file")
-        
+
 
     def dataset(self, data):
         if data:
             self.data = orange.ExampleTable(orange.Domain(data.domain), data)
             self.tmpData = orange.ExampleTable(data)
-            self.tmpDom = orange.Domain(data.domain)            
-            
+            self.tmpDom = orange.Domain(data.domain)
+
             self.data.domain = orange.Domain(data.domain)
             #self.apply()
 
@@ -115,7 +114,7 @@ class OWWordNgram(OWWidget):
             self.send("Example Table", None)
 
 
-            
+
 
 if __name__ == "__main__":
     t = orngText.loadFromXML(r'c:\test\msnbc.xml')
@@ -124,4 +123,4 @@ if __name__ == "__main__":
     ow.data = t
     a.setMainWidget(ow)
     ow.show()
-    a.exec_loop()        
+    a.exec_loop()

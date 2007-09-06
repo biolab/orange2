@@ -2,7 +2,7 @@
 <name>Network File</name>
 <description>Reads data from a graf file (Pajek networks (.net) files).</description>
 <icon>icons/NetworkFile.png</icon>
-<contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
+<contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
 <priority>2010</priority>
 """
 
@@ -21,21 +21,21 @@ from orange import GraphAsList
 from orange import ExampleTable
 
 class OWNetworkFile(OWWidget):
-    
+
     settingsList=["recentFiles"]
-    
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Network File")
 
         self.inputs = []
         self.outputs = [("Graph with ExampleTable", Graph)]
-    
+
         #set default settings
         self.recentFiles=["(none)"]
         self.domain = None
         #get settings from the ini file, if they exist
         self.loadSettings()
-        
+
         #GUI
         self.box = QHGroupBox("Data File", self.controlArea)
         self.filecombo = QComboBox(self.box)
@@ -46,32 +46,30 @@ class OWNetworkFile(OWWidget):
         # info
         box = QVGroupBox("Info", self.controlArea)
         self.infoa = QLabel('No data loaded.', box)
-        self.infob = QLabel('', box)     
-        
+        self.infob = QLabel('', box)
+
         self.resize(150,100)
-         
+
         # set the file combo box
     def setFileList(self):
         self.filecombo.clear()
         if not self.recentFiles:
-            self.filecombo.insertItem("(none)")
+            self.filecombo.addItem("(none)")
         for file in self.recentFiles:
             if file == "(none)":
-                self.filecombo.insertItem("(none)")
+                self.filecombo.addItem("(none)")
             else:
-                self.filecombo.insertItem(os.path.split(file)[1])
+                self.filecombo.addItem(os.path.split(file)[1])
         #self.filecombo.insertItem("Browse documentation data sets...")
-        #self.filecombo.adjustSize() #doesn't work properly :(
-        self.filecombo.updateGeometry()
-     
+
     def activateLoadedSettings(self):
         # remove missing data set names
         self.recentFiles=filter(os.path.exists,self.recentFiles)
         self.setFileList()
-        
+
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
             self.openFile(self.recentFiles[0])
-            
+
         # connecting GUI to code
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
 
@@ -85,8 +83,8 @@ class OWNetworkFile(OWWidget):
         if len(self.recentFiles) > 0:
             self.setFileList()
             self.openFile(self.recentFiles[0])
-    
-    
+
+
     def openFile(self,fn):
         self.openFileBase(fn)
 
@@ -100,9 +98,9 @@ class OWNetworkFile(OWWidget):
                 startfile="."
         else:
             startfile=self.recentFiles[0]
-                
+
         filename = str(QFileDialog.getOpenFileName(startfile, 'Pajek files (*.net)\nAll files(*.*)', None,'Open a Graph File'))
-    
+
         if filename == "": return
         if filename in self.recentFiles: self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
@@ -111,7 +109,7 @@ class OWNetworkFile(OWWidget):
 
     def setInfo(self, info):
         for (i, s) in enumerate(info):
-            self.info[i].setText(s)            
+            self.info[i].setText(s)
 
      # Open a file, create data from it and send it over the data channel
     def openFileBase(self, fn):
@@ -125,19 +123,19 @@ class OWNetworkFile(OWWidget):
             data = self.readNetFile(fn)
 
             self.infoa.setText("%d nodes" % data.nVertices)
-            
+
             if data.directed:
                 self.infob.setText("Directed graph")
             else:
                 self.infob.setText("Undirected graph")
-            
+
             # make new data and send it
             fName = os.path.split(fn)[1]
             if "." in fName:
                 data.name = string.join(string.split(fName, '.')[:-1], '.')
             else:
                 data.name = fName
-                
+
             #print "nVertices graph: " + str(data.nVertices)
             self.graph = data
             self.send("Graph with ExampleTable", data)
@@ -153,10 +151,10 @@ class OWNetworkFile(OWWidget):
         WHITESPACE=['\t','\n','\r','\f','\v',' ']
         words=[]
         word=''
-    
+
         if line=='':          #ce je konec datoteke
             return ''  #words
-    
+
         i=0
         done=False
         while not done:
@@ -169,10 +167,10 @@ class OWNetworkFile(OWWidget):
                         i=i+1
             except IndexError:
                 return 'EOF'           #vrnemo tak niz, da bo v nadrejeni proceduri napaka
-    
+
             if done==True:
                 break
-    
+
             if line[i]!='\"' and line[i]!='\'':              #obicajne besede
                 try:
                     while line[i] not in WHITESPACE:
@@ -193,7 +191,7 @@ class OWNetworkFile(OWWidget):
                 i=i+1
                 words.append(word)
                 word=''
-    
+
         return words
 
     def readNetFile(self, fn):
@@ -208,7 +206,7 @@ class OWNetworkFile(OWWidget):
         #print "prebral"
         return graph
 
-    
+
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owf=OWNetworkFile()
