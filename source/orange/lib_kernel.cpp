@@ -2554,8 +2554,21 @@ TExampleTable *readListOfExamples(PyObject *args)
 
 TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMetas)
 { 
+  PyArrayObject *array = NULL, *mask = NULL;
+  
   if (isSomeNumeric_wPrecheck(args)) {
-      PyArrayObject *array = (PyArrayObject *)(args);
+    array = (PyArrayObject *)(args);
+  }
+  else if (isSomeMaskedNumeric_wPrecheck(args)) {
+    array = (PyArrayObject *)(args);
+    mask = (PyArrayObject *)PyObject_GetAttrString(args, "mask");
+    if (PyBool_Check((PyObject *)mask)) {
+      Py_DECREF((PyObject *)mask);
+      mask = NULL;
+    }
+  }
+    
+  if (array) {  
       if (array->nd != 2)
         PYERROR(PyExc_AttributeError, "two-dimensional array expected for an ExampleTable", NULL);
 
@@ -2597,21 +2610,27 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
 
       const int &strideRow = array->strides[0];
       const int &strideCol = array->strides[1];
+      
+      // If there's no mask, the mask pointers will equal the data pointer to avoid too many if's
+      const int &strideMaskRow = mask ? mask->strides[0] : strideRow;
+      const int &strideMaskCol = mask ? mask->strides[1] : strideCol;
 
       try {
         TExample::iterator ei;
         char *rowPtr = array->data;
+        char *maskRowPtr = mask ? mask->data : array->data;
 
-        for(int row = 0, rowe = array->dimensions[0]; row < rowe; row++, rowPtr += strideRow) {
+        for(int row = 0, rowe = array->dimensions[0]; row < rowe; row++, rowPtr += strideRow, maskRowPtr += strideMaskRow) {
           char *elPtr = rowPtr;
+          char *maskPtr = maskRowPtr;
           TExample *nex = mlnew TExample(domain);
 
           #define ARRAYTYPE(TYPE) \
-            for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol) \
+            for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol) \
               if ((*vi)->varType == TValue::INTVAR) \
-                intValInit(*ei, *(TYPE *)elPtr); \
+                intValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
               else \
-                floatValInit(*ei, *(TYPE *)elPtr); \
+                floatValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
             break;
 
           switch (arrayType) {
@@ -2626,19 +2645,19 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
             case 'L': ARRAYTYPE(unsigned long)
 
             case 'f':
-              for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
+              for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
                 if ((*vi)->varType == TValue::INTVAR)
-                  intValInit(*ei, int(floor(0.5 + *(float *)elPtr)));
+                  intValInit(*ei, int(floor(0.5 + *(float *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
                 else
-                  floatValInit(*ei, *(float *)elPtr);
+                  floatValInit(*ei, *(float *)elPtr, mask && !*maskPtr ? valueDK : valueRegular);
               break;
 
             case 'd':
-              for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
+              for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
                 if ((*vi)->varType == TValue::INTVAR)
-                  intValInit(*ei, int(floor(0.5 + *(double *)elPtr)));
+                  intValInit(*ei, int(floor(0.5 + *(double *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
                 else
-                  floatValInit(*ei, *(double *)elPtr);
+                  floatValInit(*ei, *(double *)elPtr, mask && !*maskPtr ? valueDK : valueRegular);
               break;
 
           }

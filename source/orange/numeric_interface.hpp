@@ -41,9 +41,11 @@ extern PyObject *numericMaskedArray, *numarrayMaskedArray, *numpyMaskedArray;
 extern bool importarray_called;
 
 bool isSomeNumeric(PyObject *);
+bool isSomeMaskedNumeric(PyObject *);
 
 // avoids unnecessarily importing the numeric modules
 bool isSomeNumeric_wPrecheck(PyObject *args);
+bool isSomeMaskedNumeric_wPrecheck(PyObject *);
 
 
 void initializeNumTypes();

@@ -262,19 +262,19 @@ public:
 };
 
 
-inline void intValInit(TValue &val, const int &i)
+inline void intValInit(TValue &val, const int &i, const int &vt = valueRegular)
 { 
   val.varType = TValue::INTVAR;
-  val.valueType = valueRegular;
+  val.valueType = vt;
   val.intV = i;
   val.svalV = PSomeValue();
 }
 
 
-inline void floatValInit(TValue &val, const float &f)
+inline void floatValInit(TValue &val, const float &f, const int &vt = valueRegular)
 { 
   val.varType = TValue::FLOATVAR;
-  val.valueType = valueRegular;
+  val.valueType = vt;
   val.floatV = f;
   val.svalV = PSomeValue();
 }

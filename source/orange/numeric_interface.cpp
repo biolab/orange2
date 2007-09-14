@@ -91,6 +91,24 @@ bool isSomeNumeric(PyObject *obj)
           || PyNumpyArrayType && PyType_IsSubtype(obj->ob_type, PyNumpyArrayType);
 }
   
+bool isSomeMaskedNumeric_wPrecheck(PyObject *args) {
+  static char *numericNames[] = {"numpy.core.ma.MaskedArray", "numarray.ma.MA.MaskedArray", 0};
+  for(char **nni = numericNames; *nni; nni++)
+    if (!strcmp(args->ob_type->tp_name, *nni))
+      return isSomeMaskedNumeric(args);
+  return false;
+}
+
+
+bool isSomeMaskedNumeric(PyObject *obj)
+{
+  if (!importarray_called)
+    initializeNumTypes();
+    
+  return     numarrayMaskedArray && PyType_IsSubtype(obj->ob_type, (PyTypeObject *)numarrayMaskedArray)
+          || numpyMaskedArray && PyType_IsSubtype(obj->ob_type, (PyTypeObject *)numpyMaskedArray);
+}
+  
 
 char getArrayType(PyObject *args)
 {
