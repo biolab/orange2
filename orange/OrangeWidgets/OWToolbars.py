@@ -74,12 +74,12 @@ class ZoomSelectToolbar(QHButtonGroup):
         #else:
         #    getattr(self.widget, f[2])()
         
-        # why doesn't this work?
-        cursor = f[4]
-        if not cursor is None:
-            self.graph.canvas().setCursor(cursor)
-            if self.widget:
-                self.widget.setCursor(cursor)
+#        # why doesn't this work?
+#        cursor = f[4]
+#        if not cursor is None:
+#            self.graph.canvas().setCursor(cursor)
+#            if self.widget:
+#                self.widget.setCursor(cursor)
             
         
     # for backward compatibility with a previous version of this class
