@@ -255,5 +255,16 @@ DL.attributes P { margin-top: 0pt; margin-bottom: 0pt}
 DL.attributes DT.notcode { font-family: }
 DL.attributes P.header { margin-bottom: 0mm; margin-top: 1em}
 P.header { margin-bottom: 0mm; margin-top: 1em}
-XMP.code { background-color: #FCD179; margin-top: 3px; padding-left: 6px}
+
+/*XMP.code { background-color: #FCD179; margin-top: 3px; padding-left: 6px}
 PRE.code { background-color: #FCD179; margin-top: 3px}
+*/
+
+XMP.code, PRE.code {
+/*    background-color: #fdf2b4; */
+    background-color: #FCD179;
+    margin-top: 3px;
+    padding: 6px;
+    padding-left: 12px;
+    border: #ebe1a7 thin dotted;
+} 
