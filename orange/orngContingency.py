@@ -308,9 +308,16 @@ def get2Int(t,a,b,wid=None,prior=0):
     return c
 
 def getPvalue(lim,table):
-    import statisticsc
-    return 1-statisticsc.chi_squared(table.dof,2.0*lim*table.total*_log2e)
+    # import statistics
+    # return 1-statisticsc.chi_squared(table.dof, 2.0*lim*table.total*_log2e)
+    import statc
+#    print 2.0*lim*table.total*_log2e, table.dof
+    if 2.0*lim*table.total*_log2e <= 0.0:
+        return 1.0 - statc.chisqprob(1.e-10, table.dof)
+    return 1.0 - statc.chisqprob(2.0*lim*table.total*_log2e, table.dof)
 
 def getPvalueDOF(lim,table,dof):
-    import statisticsc
-    return 1-statisticsc.chi_squared(dof,2.0*lim*table.total*_log2e)
+    # import statisticsc
+    # return 1-statisticsc.chi_squared(dof,2.0*lim*table.total*_log2e)
+    import statc
+    return 1.0 - statc.chisqprob(2.0*lim*table.total*_log2e, dof)
