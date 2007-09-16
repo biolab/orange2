@@ -260,6 +260,19 @@ P.header { margin-bottom: 0mm; margin-top: 1em}
 PRE.code { background-color: #FCD179; margin-top: 3px}
 */
 
+.schema {
+	border:2;
+	border-color: #777777;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+.snapshot {
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+
 XMP.code, PRE.code {
 /*    background-color: #fdf2b4; */
     background-color: #FCD179;
@@ -267,4 +280,4 @@ XMP.code, PRE.code {
     padding: 6px;
     padding-left: 12px;
     border: #ebe1a7 thin dotted;
-} 
+}
