@@ -51,7 +51,7 @@ class OWMDS(OWWidget):
         self.ReDraw=1
         self.NumIter=1
         self.RefreshMode=0
-        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix)]
+        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Selected Examples", ExampleTable, self.cselected)]
         self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.stressFunc=[("Kruskal stress", orngMDS.KruskalStress),
@@ -118,6 +118,9 @@ class OWMDS(OWWidget):
         self.resize(900,700)
 
         self.done=True
+        self.data=None
+        self.selectedInputExamples=[]
+        self.selectedInput=[]
 
     def cmatrix(self, matrix=None):
         self.closeContext()
@@ -144,9 +147,15 @@ class OWMDS(OWWidget):
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
             if data and type(data) == orange.ExampleTable:
                 self.openContext("",self.data)
-            self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names)
+            self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names, self.selectedInput)
         else:
             self.graph.clear()
+
+    def cselected(self, selected=[]):
+        self.selectedInputExamples=selected and selected or[]
+        if self.data and type(self.data)==orange.ExampleTable:
+            self.setExampleTable(self.data)
+            self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names, self.selectedInput)
 
     def setExampleTable(self, data):
         self.colorCombo.clear()
@@ -174,12 +183,14 @@ class OWMDS(OWWidget):
         self.shapes=[[QwtSymbol.Ellipse]*(len(discAttributes)+1) for i in range(len(data))]
         self.sizes=[[5]*(len(contAttributes)+1) for i in range(len(data))]
         self.names=[[""]*(len(attributes)+1) for i in range(len(data))]
+        self.selectedInput=map(lambda d:d in self.selectedInputExamples, data)
         contI=discI=attrI=1
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
                 c=OWGraphTools.ColorPaletteHSV(len(attr.values))
                 for i in range(len(data)):
                     self.colors[i][attrI]= data[i][attr].isSpecial()  and Qt.black or c[int(data[i][attr])]
+##                    self.shapes[i][discI]= data[i][attr].isSpecial() and self.graph.shapeList[0] or self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
                     self.shapes[i][discI]= data[i][attr].isSpecial() and self.graph.shapeList[0] or self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
                     self.names[i][attrI]=" "+str(data[i][attr])
                     #self.sizes[i][contI]=5
@@ -218,6 +229,7 @@ class OWMDS(OWWidget):
         self.colors=[[Qt.black]*3 for i in range(len(data))]
         self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
         self.sizes=[[5] for i in range(len(data))]
+        self.selectedInput=[False]*len(data)
 
         if type(data[0]) in [str, unicode]:
             self.names = [("", di, "", "") for di in data]
@@ -247,6 +259,7 @@ class OWMDS(OWWidget):
         self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
         self.sizes=[[5] for i in range(len(data))]
         self.names=[[""]*4 for i in range(len(data))]
+        self.selectedInput=[False]*len(data)
         try:
             c=OWGraphTools.ColorPaletteHSV(len(data))
             for i, d in enumerate(data):
@@ -503,7 +516,7 @@ class MDSGraph(OWGraph):
                                 QwtSymbol.Cross, 
                                 QwtSymbol.XCross ]
 
-    def setData(self, mds, colors, sizes, shapes, names):
+    def setData(self, mds, colors, sizes, shapes, names, showFilled):
         if 1:
 #        if mds:
             self.mds=mds
@@ -512,7 +525,7 @@ class MDSGraph(OWGraph):
             self.sizes=sizes
             self.shapes=shapes
             self.names=names
-            
+            self.showFilled=map(lambda t:False if t else True, showFilled)
             self.updateData()
                 
     def updateData(self):
@@ -568,19 +581,24 @@ class MDSGraph(OWGraph):
             dict={}
             for i in range(len(self.colors)):
                 c=self.colors[i][self.ColorAttr]
-                if dict.has_key(c.hsv()):
-                    dict[c.hsv()].append(i)
+                key=c.hsv()
+                if dict.has_key(key):
+                    dict[key].append(i)
                 else:
-                    dict[c.hsv()]=[i]
+                    dict[key]=[i]
             for color in set:
                 #print len(dict[color.hsv()]), color.name()
-                X=[self.mds.points[i][0] for i in dict[color.hsv()]]
-                Y=[self.mds.points[i][1] for i in dict[color.hsv()]]
+                X=[self.mds.points[i][0] for i in dict[color.hsv()] if self.showFilled[i]]
+                Y=[self.mds.points[i][1] for i in dict[color.hsv()] if self.showFilled[i]]
                 self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y)
+                
+                X=[self.mds.points[i][0] for i in dict[color.hsv()] if not self.showFilled[i]]
+                Y=[self.mds.points[i][1] for i in dict[color.hsv()] if not self.showFilled[i]]
+                self.addCurve("A", color, color, self.PointSize, symbol=QwtSymbol.Ellipse, xData=X, yData=Y, showFilledSymbols=False)
             return 
         for i in range(len(self.colors)):
             self.addCurve("a", self.colors[i][self.ColorAttr], self.colors[i][self.ColorAttr], self.sizes[i][self.SizeAttr]*1.0/5*self.PointSize,
-                          symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]])
+                          symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.points[i][0]],yData=[self.mds.points[i][1]], showFilledSymbols=self.showFilled[i])
             if self.NameAttr!=0:
                 self.addMarker(self.names[i][self.NameAttr], self.mds.points[i][0], self.mds.points[i][1], Qt.AlignRight)
         self.update()
