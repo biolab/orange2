@@ -281,7 +281,7 @@ class InteractionMatrix:
                 (ig,i,j) = y[1] 
                 if self.plut[(i,j,-1)] < pcutoff:
                     ins.append(y)
-
+        
         ints = []
         max_igain = -1e6
         min_gain = 1e6 # lowest information gain of involved attributes

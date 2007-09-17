@@ -374,7 +374,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
             classifiers = [None]*nLrn
             for i in range(nLrn):
                 if not cache or not testResults.loaded[i]:
-                   classifiers[i] = learners[i](learnset, weight)
+                    classifiers[i] = learners[i](learnset, weight)
             if storeclassifiers:    
                 testResults.classifiers.append(classifiers)
 
@@ -388,7 +388,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
                     tcn += 1
                     for cl in range(nLrn):
                         if not cache or not testResults.loaded[cl]:
-                            cr = classifiers[cl](ex, orange.GetBoth)
+                            cr = classifiers[cl](ex, orange.GetBoth)                                      
                             if cr[0].isSpecial():
                                 raise "Classifier %s returned unknown value" % (classifiers[cl].name or ("#%i" % cl))
                             testResults.results[i].setResult(cl, cr[0], cr[1])
@@ -476,7 +476,7 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argk
     conv = testset.domain.classVar.varType == orange.VarTypes.Discrete and int or float
     for ex in testset:
         te = TestedExample(iterationNumber, conv(ex.getclass()), 0, ex.getweight(testweight))
-        
+
         for classifier in classifiers:
             # This is to prevent cheating:
             ex2 = orange.Example(ex)
