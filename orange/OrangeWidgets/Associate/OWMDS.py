@@ -51,7 +51,7 @@ class OWMDS(OWWidget):
         self.ReDraw=1
         self.NumIter=1
         self.RefreshMode=0
-        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Selected Examples", ExampleTable, self.cselected)]
+        self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Example Subset", ExampleTable, self.cselected)]
         self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.stressFunc=[("Kruskal stress", orngMDS.KruskalStress),
