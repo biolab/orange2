@@ -183,7 +183,11 @@ class OWMDS(OWWidget):
         self.shapes=[[QwtSymbol.Ellipse]*(len(discAttributes)+1) for i in range(len(data))]
         self.sizes=[[5]*(len(contAttributes)+1) for i in range(len(data))]
         self.names=[[""]*(len(attributes)+1) for i in range(len(data))]
-        self.selectedInput=map(lambda d:d in self.selectedInputExamples, data)
+        try:
+            selectedInput=self.selectedInputExamples.select(data.domain)
+        except:
+            selectedInput=[]
+        self.selectedInput=map(lambda d:d in selectedInput, data)
         contI=discI=attrI=1
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
