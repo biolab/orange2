@@ -187,7 +187,7 @@ class OWMDS(OWWidget):
             selectedInput=self.selectedInputExamples.select(data.domain)
         except:
             selectedInput=[]
-        self.selectedInput=map(lambda d:d in selectedInput, data)
+        self.selectedInput=map(lambda d:not d in selectedInput if selectedInput else False, data)
         contI=discI=attrI=1
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
