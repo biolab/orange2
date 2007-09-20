@@ -54,7 +54,8 @@ class OWNetworkFile(OWWidget):
         # info
         box = QVGroupBox("Info", self.controlArea)
         self.infoa = QLabel('No graph loaded.', box)
-        self.infob = QLabel('', box)     
+        self.infob = QLabel('', box)
+        self.infoc = QLabel('', box)          
         
         self.resize(150,100)
          
@@ -135,6 +136,8 @@ class OWNetworkFile(OWWidget):
         table = ExampleTable(fn)
         
         if len(table) != self.graph.nVertices:
+            self.infoc.setText("Data length does not match number of vertices.")
+            
             if '(none)' in self.recentDataFiles: 
                 self.recentDataFiles.remove('(none)')
                 
@@ -143,6 +146,7 @@ class OWNetworkFile(OWWidget):
             return
         
         self.graph.setattr("items", table)
+        self.infoc.setText("Data file added.")
         self.send("Graph with ExampleTable", self.graph)
         
     def browseDataFile(self, inDemos=0):
@@ -228,6 +232,7 @@ class OWNetworkFile(OWWidget):
         graph, table = readNetwork(fn)
         #print "table: " + str(len(table))
         graph.setattr("items", table)
+        self.infoc.setText("Data generated and added automatically.")
         #print "prebral"
         return graph
 
