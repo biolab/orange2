@@ -1,8 +1,6 @@
 import orange
 import orngCI
 import math, os
-from Numeric import *
-from LinearAlgebra import *
 
 
 #######################
