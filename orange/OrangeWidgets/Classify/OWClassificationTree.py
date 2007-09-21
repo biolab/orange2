@@ -76,6 +76,7 @@ class OWClassificationTree(OWWidget):
 
         OWGUI.separator(self.controlArea)
         self.btnApply = OWGUI.button(self.controlArea, self, "&Apply", callback = self.setLearner, disabled=0)
+        self.resize(200,200)
 
     def setLearner(self):
         if hasattr(self, "btnApply"):
