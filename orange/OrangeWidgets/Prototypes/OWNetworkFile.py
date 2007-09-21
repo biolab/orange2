@@ -22,7 +22,7 @@ from orange import ExampleTable
 
 class OWNetworkFile(OWWidget):
     
-    settingsList=["recentFiles, recentDataFiles"]
+    settingsList=["recentFiles", "recentDataFiles"]
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Network File")
@@ -37,6 +37,7 @@ class OWNetworkFile(OWWidget):
         self.graph = None
         #get settings from the ini file, if they exist
         self.loadSettings()
+        print self.recentFiles
         
         #GUI
         self.box = QHGroupBox("Graph File", self.controlArea)
@@ -58,6 +59,7 @@ class OWNetworkFile(OWWidget):
         self.infoc = QLabel('', box)          
         
         self.resize(150,100)
+        self.activateLoadedSettings()
          
         # set the file combo box
     def setFileList(self):
