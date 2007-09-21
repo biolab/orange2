@@ -13,7 +13,62 @@
 import OWGUI
 from OWWidget import *
 from orange import Graph
+from OWGraph import *
+from OWNetworkCanvas import *
 
+class Hist(OWGraph):
+    def __init__(self, master, parent = None):
+        OWGraph.__init__(self, parent, "Histogram")
+        self.master = master
+        self.parent = parent
+
+        self.enableXaxis(1)
+        self.enableYLaxis(1)
+        self.state = NOTHING  #default je rocno premikanje
+        
+        self.xData = []
+        self.yData = []
+
+    def setValues(self, values):
+        maxValue = max(values)
+        minValue = min(values)
+        
+        boxes = 100
+        box_size = (maxValue - minValue) / boxes
+        
+        if box_size > 0:
+            self.xData = []
+            self.yData = [0] * boxes
+            for i in range(boxes):
+                self.xData.append(minValue + i * box_size + box_size / 2)
+                 
+            for value in values:
+                box = int((value - minValue) / box_size)
+                if box >= len(self.yData):
+                    box = boxes - 1
+                n = self.yData[box]
+                self.yData[box] = n + 1
+                
+            #print values
+            #print self.xData
+            #print self.yData 
+            
+        self.updateData()
+        self.replot()   
+            
+    def updateData(self):
+        self.removeDrawingCurves(removeLegendItems = 0)
+
+        fillColor = Qt.blue
+        edgeColor = Qt.blue
+        
+        # draw hist
+        for i in range(len(self.xData)):
+            x1 = self.xData[i]
+            y1 = self.yData[i]
+            
+            key = self.addCurve(str(i), fillColor, edgeColor, 6, xData = [x1], yData = [y1], showFilledSymbols = False)
+            
 class OWSimilarityNetwork(OWWidget):
     settingsList=["threshold"]
     
@@ -28,9 +83,25 @@ class OWSimilarityNetwork(OWWidget):
         self.spinUpperThreshold = 0
         self.spinUpperChecked = False
     
+        # set default settings
+        self.data = None
+        self.threshold = 0.2
+        # get settings from the ini file, if they exist
+        self.loadSettings()
+        
         # GUI
         # general settings
-        boxGeneral = QVGroupBox("Set limits", self.controlArea)
+#        boxHistogram = QVGroupBox("Distance histogram", self.mainArea)
+#        self.histogram = Hist(self, boxHistogram)      
+#        self.box = QVBoxLayout(boxHistogram)
+#        self.box.addWidget(self.histogram)
+        boxHistogram = QVGroupBox("Distance histogram", self.mainArea)
+        self.histogram = Hist(self, boxHistogram)      
+        self.box = QVBoxLayout(boxHistogram)
+        self.box.addWidget(self.histogram)
+        
+        boxGeneral = QVGroupBox("Distance boundaries", self.controlArea)
+        OWGUI.separator(self.controlArea)
         #cb, self.spinLower = OWGUI.checkWithSpin(boxGeneral, self, "Lower:", 0, 100000, "spinLowerChecked", "spinLowerThreshold", step=0.01, spinCallback=self.changeSpin)
         #cb, self.spinUpper = OWGUI.checkWithSpin(boxGeneral, self, "Upper:", 0, 100000, "spinUpperChecked", "spinUpperThreshold", step=0.01, spinCallback=self.changeSpin)
         
@@ -38,18 +109,12 @@ class OWSimilarityNetwork(OWWidget):
         OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeSpin, valueType=float)
         
         # info
-        boxInfo = QVGroupBox("Info", self.controlArea)
+        boxInfo = QVGroupBox("Network info", self.controlArea)
         self.infoa = QLabel("No data loaded.", boxInfo)
         self.infob = QLabel('', boxInfo)
         
-        self.resize(230,80)
+        self.resize(400, 200)
 
-        # set default settings
-        self.data = None
-        self.threshold = 0.2
-        # get settings from the ini file, if they exist
-        self.loadSettings()
-        
     def cdata(self, data):
         if data == None:
             return
@@ -62,28 +127,7 @@ class OWSimilarityNetwork(OWWidget):
             for j in range(i):
                 values.append(data[i][j])
         
-        maxValue = max(values)
-        minValue = min(values)
-        
-        boxes = 100
-        box_size = (maxValue - minValue) / boxes
-        
-        if box_size > 0:
-            xData = []
-            yData = [0] * boxes
-            for i in range(boxes):
-                xData.append(minValue + i * box_size + box_size / 2)
-                 
-            for value in values:
-                box = int((value - minValue) / box_size)
-                if box >= len(yData):
-                    box = boxes - 1
-                n = yData[box]
-                yData[box] = n + 1
-                
-            #print values
-            print xData
-            print yData        
+        self.histogram.setValues(values)
         #print maxValue
         #self.spinLower.setMaxValue(maxValue)
         #self.spinUpper.setMaxValue(maxValue)
