@@ -12,7 +12,6 @@ from OWGraph import *
 from qt import *
 from qtcanvas import *
 import OWGUI, OWGraphTools
-import Numeric
 
 def frange(low, up, steps):
     inc=(up-low)/steps
