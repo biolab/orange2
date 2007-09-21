@@ -271,10 +271,11 @@ class OWDistributionGraph(OWGraph):
         for oi in range(len(self.visibleOutcomes)):
             if self.visibleOutcomes[oi] == 1:
                 #for all bars insert curve and
-                cn = 0
-                for key in keys:
+                for cn, key in enumerate(keys):
                     subBarHeight = self.hdata[key][oi]
-                    curve = PolygonCurve(self, pen = QPen(Qt.black), brush = QBrush(self.discPalette[oi]))
+                    if not subBarHeight:
+                        continue
+                    curve = PolygonCurve(self, pen = QPen(self.discPalette[oi]), brush = QBrush(self.discPalette[oi]))
                     ckey = self.insertCurve(curve)
                     if self.variableContinuous:
                         self.setCurveData(ckey, [key, key + self.subIntervalStep, key + self.subIntervalStep, key], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
@@ -283,7 +284,6 @@ class OWDistributionGraph(OWGraph):
                         tmpx2 = cn + (self.barSize/2.0)/100.0
                         self.setCurveData(ckey, [tmpx, tmpx2, tmpx2, tmpx], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
                     currentBarsHeight[cn] += subBarHeight
-                    cn += 1
 
         curve = distribErrorBarQwtPlotCurve(self, '')
         self.probCurveKey = self.insertCurve(curve)
