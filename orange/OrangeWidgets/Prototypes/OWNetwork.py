@@ -285,8 +285,15 @@ class OWNetwork(OWWidget):
         self.nVertices = len(graph)
         self.nShown = len(graph)
         self.nEdges = len(graph.getEdges())
-        self.verticesPerEdge = float(self.nVertices) / float(self.nEdges)
-        self.edgesPerVertex = float(self.nEdges) / float(self.nVertices)
+        if self.nEdges > 0:
+            self.verticesPerEdge = float(self.nVertices) / float(self.nEdges)
+        else:
+            self.verticesPerEdge = 0
+            
+        if self.nVertices > 0:
+            self.edgesPerVertex = float(self.nEdges) / float(self.nVertices)
+        else:
+            self.edgesPerVertex = 0
         self.diameter = graph.getDiameter()
         #print "done."
         vars = self.visualize.getVars()
