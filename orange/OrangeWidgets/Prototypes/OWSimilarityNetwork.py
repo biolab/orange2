@@ -28,22 +28,29 @@ class Hist(OWGraph):
         
         self.xData = []
         self.yData = []
+        
+        self.minValue = 0
+        self.maxValue = 0
+        self.lowerBoundary = 0
+        self.upperBoundary = 0
+        self.lowerBoundaryKey = None
+        self.upperBoundaryKey = None
 
     def setValues(self, values):
-        maxValue = max(values)
-        minValue = min(values)
+        self.minValue = min(values)
+        self.maxValue = max(values)
         
         boxes = 100
-        box_size = (maxValue - minValue) / boxes
+        box_size = (self.maxValue - self.minValue) / boxes
         
         if box_size > 0:
             self.xData = []
             self.yData = [0] * boxes
             for i in range(boxes):
-                self.xData.append(minValue + i * box_size + box_size / 2)
+                self.xData.append(self.minValue + i * box_size + box_size / 2)
                  
             for value in values:
-                box = int((value - minValue) / box_size)
+                box = int((value - self.minValue) / box_size)
                 if box >= len(self.yData):
                     box = boxes - 1
                 n = self.yData[box]
@@ -54,20 +61,29 @@ class Hist(OWGraph):
             #print self.yData 
             
         self.updateData()
-        self.replot()   
+        self.replot()
+        
+    def setBoundary(self, lower, upper):
+        self.lowerBoundary = lower
+        self.upperBoundary = upper
+        maxy = max(self.yData)
+        
+        self.setCurveData(self.lowerBoundaryKey, [self.lowerBoundary, self.lowerBoundary], [0, maxy])
+        self.setCurveData(self.upperBoundaryKey, [self.upperBoundary, self.upperBoundary], [0, maxy])
+        self.replot()
             
     def updateData(self):
         self.removeDrawingCurves(removeLegendItems = 0)
-
-        fillColor = Qt.blue
-        edgeColor = Qt.blue
+                    
+        key = self.addCurve("histogramCurve", Qt.blue, Qt.blue, 6, style = QwtCurve.Steps, symbol = QwtSymbol.None, xData = self.xData, yData = self.yData, showFilledSymbols = False)
         
-        # draw hist
-        for i in range(len(self.xData)):
-            x1 = self.xData[i]
-            y1 = self.yData[i]
-            
-            key = self.addCurve(str(i), fillColor, edgeColor, 6, xData = [x1], yData = [y1], showFilledSymbols = False)
+        maxy = max(self.yData)
+        self.lowerBoundaryKey = self.addCurve("lowerBoundaryCurve", Qt.red, Qt.red, 6, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [self.lowerBoundary, self.lowerBoundary], yData = [0, maxy], showFilledSymbols = False)
+        self.upperBoundaryKey = self.addCurve("upperBoundaryCurve", Qt.red, Qt.red, 6, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [self.upperBoundary, self.upperBoundary], yData = [0, maxy], showFilledSymbols = False)
+
+#    def setAxisAutoScaled(self):
+#        self.setAxisAutoScale(self.xBottom)
+#        self.setAxisAutoScale(self.yLeft)
             
 class OWSimilarityNetwork(OWWidget):
     settingsList=["threshold"]
@@ -95,25 +111,35 @@ class OWSimilarityNetwork(OWWidget):
 #        self.histogram = Hist(self, boxHistogram)      
 #        self.box = QVBoxLayout(boxHistogram)
 #        self.box.addWidget(self.histogram)
+
         boxHistogram = QVGroupBox("Distance histogram", self.mainArea)
         self.histogram = Hist(self, boxHistogram)      
         self.box = QVBoxLayout(boxHistogram)
         self.box.addWidget(self.histogram)
+        boxHistogram.setMinimumWidth(500)
+        boxHistogram.setMinimumHeight(300)
         
         boxGeneral = QVGroupBox("Distance boundaries", self.controlArea)
         OWGUI.separator(self.controlArea)
         #cb, self.spinLower = OWGUI.checkWithSpin(boxGeneral, self, "Lower:", 0, 100000, "spinLowerChecked", "spinLowerThreshold", step=0.01, spinCallback=self.changeSpin)
         #cb, self.spinUpper = OWGUI.checkWithSpin(boxGeneral, self, "Upper:", 0, 100000, "spinUpperChecked", "spinUpperThreshold", step=0.01, spinCallback=self.changeSpin)
         
-        OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", callback=self.changeSpin, valueType=float)
-        OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeSpin, valueType=float)
+        OWGUI.lineEdit(boxGeneral, self, "spinLowerThreshold", "Lower:", callback=self.changeLowerSpin, valueType=float)
+        OWGUI.lineEdit(boxGeneral, self, "spinUpperThreshold", "Upper:", callback=self.changeUpperSpin, valueType=float)
         
+        # options
+        boxOptions = QVGroupBox("Options", self.controlArea)
+        self.includeNotConnected = 0
+        self.attrColor = ""
+        #box = OWGUI.widgetBox(self.GeneralTab, " Color Attribute")
+        OWGUI.checkBox(boxOptions, self, 'includeNotConnected', 'Include not connected nodes', disabled = 1)#, callback = self.updateGraph)
         # info
         boxInfo = QVGroupBox("Network info", self.controlArea)
         self.infoa = QLabel("No data loaded.", boxInfo)
         self.infob = QLabel('', boxInfo)
+        self.infoc = QLabel('', boxInfo)
         
-        self.resize(400, 200)
+        self.resize(700, 322)
 
     def cdata(self, data):
         if data == None:
@@ -134,7 +160,20 @@ class OWSimilarityNetwork(OWWidget):
         
         self.generateGraph()
         
-    def changeSpin(self):
+    def changeLowerSpin(self):
+        if self.spinLowerThreshold >= self.spinUpperThreshold:
+            self.spinLowerThreshold = self.spinUpperThreshold
+            self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
+            return
+        
+        self.generateGraph()
+        
+    def changeUpperSpin(self):
+        if self.spinUpperThreshold <= self.spinLowerThreshold:
+            self.spinUpperThreshold = self.spinLowerThreshold
+            self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
+            return
+        
         self.generateGraph()
         
     def generateGraph(self):
@@ -162,10 +201,12 @@ class OWSimilarityNetwork(OWWidget):
                 nedges += 1
           
         self.graph = graph
-        self.infoa.setText("%d vertices, " % self.data.dim + "%d (%3.2f) connected" % (nedges, nedges / float(self.data.dim)))
-        self.infob.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
+        self.infoa.setText("%d vertices" % self.data.dim)
+        self.infob.setText("%d connected (%3.1f%%)" % (nedges, nedges / float(self.data.dim) * 100))
+        self.infoc.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
         self.send("Graph with ExampleTable", graph)
         self.send("Examples", graph.items)
+        self.histogram.setBoundary(self.spinLowerThreshold, self.spinUpperThreshold)
     
 if __name__ == "__main__":
     a=QApplication(sys.argv)
