@@ -117,7 +117,7 @@ class OWAssociationRulesTreeViewer(OWWidget):
         
     def buildLayer(self, parent, rulesLC, n):
         if n==0:
-           self.printRules(parent, rulesLC)
+            self.printRules(parent, rulesLC)
         elif n>0:
             children = []
             for rule in rulesLC:                                 # for every rule

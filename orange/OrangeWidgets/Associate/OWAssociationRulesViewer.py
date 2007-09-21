@@ -88,10 +88,10 @@ class AssociationRulesViewerView(QCanvasView):
         self.sel_startX = ev.pos().x()
         self.sel_startY = ev.pos().y()
         master = self.master
-        self.master.sel_colmin = self.master.sel_colmax = self.sel_startX / self.master.cellwidth
-        self.master.sel_rowmin = self.master.sel_rowmax = self.sel_startY / self.master.cellheight
+        master.sel_colmin = master.sel_colmax = self.sel_startX / master.cellwidth
+        master.sel_rowmin = master.sel_rowmax = self.sel_startY / master.cellheight
         self.canvas.draw()
-        self.master.updateRuleList()
+        master.updateRuleList()
 
     def contentsMouseMoveEvent(self, ev):
         self.sel_endX = ev.pos().x()
@@ -149,7 +149,7 @@ class OWAssociationRulesViewer(OWWidget):
         self.mainLayout = QHBoxLayout(self.mainArea)
         self.mainLayout.setAutoAdd(True)
         mainLeft = OWGUI.widgetBox(self.mainArea, "Filter")
-        sep = OWGUI.separator(self.mainArea, 16, 0)
+        OWGUI.separator(self.mainArea, 16, 0)
         mainRight = OWGUI.widgetBox(self.mainArea, "Rules")
         mainRight.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
