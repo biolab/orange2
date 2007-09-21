@@ -598,7 +598,7 @@ class QCustomCanvasText(QCanvasRectangle):
         self.setSize(xsize, ysize)
 
     def setAngle(self, angle):
-        self.rotateAngle = rotateAngle
+        self.rotateAngle = angle
 
     def draw(self, painter):
         pixmap = QPixmap()
