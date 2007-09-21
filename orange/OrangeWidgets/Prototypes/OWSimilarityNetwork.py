@@ -30,7 +30,7 @@ class OWSimilarityNetwork(OWWidget):
     
         # GUI
         # general settings
-        boxGeneral = QVGroupBox("Thresholding", self.controlArea)
+        boxGeneral = QVGroupBox("Set limits", self.controlArea)
         #cb, self.spinLower = OWGUI.checkWithSpin(boxGeneral, self, "Lower:", 0, 100000, "spinLowerChecked", "spinLowerThreshold", step=0.01, spinCallback=self.changeSpin)
         #cb, self.spinUpper = OWGUI.checkWithSpin(boxGeneral, self, "Upper:", 0, 100000, "spinUpperChecked", "spinUpperThreshold", step=0.01, spinCallback=self.changeSpin)
         
@@ -51,9 +51,39 @@ class OWSimilarityNetwork(OWWidget):
         self.loadSettings()
         
     def cdata(self, data):
+        if data == None:
+            return
+        
         self.data = data
         
-        maxValue = max([max(r) for r in data])
+        # draw histogram
+        values = []
+        for i in range(data.dim):
+            for j in range(i):
+                values.append(data[i][j])
+        
+        maxValue = max(values)
+        minValue = min(values)
+        
+        boxes = 100
+        box_size = (maxValue - minValue) / boxes
+        
+        if box_size > 0:
+            xData = []
+            yData = [0] * boxes
+            for i in range(boxes):
+                xData.append(minValue + i * box_size + box_size / 2)
+                 
+            for value in values:
+                box = int((value - minValue) / box_size)
+                if box >= len(yData):
+                    box = boxes - 1
+                n = yData[box]
+                yData[box] = n + 1
+                
+            #print values
+            print xData
+            print yData        
         #print maxValue
         #self.spinLower.setMaxValue(maxValue)
         #self.spinUpper.setMaxValue(maxValue)
@@ -88,8 +118,8 @@ class OWSimilarityNetwork(OWWidget):
                 nedges += 1
           
         self.graph = graph
-        self.infoa.setText("%d vertices, " % self.data.dim + "%d (%3.2f) not connected" % (nedges, nedges/float(self.data.dim)))
-        self.infob.setText("%d edges (%d average)" % (n, n/float(self.data.dim)))
+        self.infoa.setText("%d vertices, " % self.data.dim + "%d (%3.2f) connected" % (nedges, nedges / float(self.data.dim)))
+        self.infob.setText("%d edges (%d average)" % (n, n / float(self.data.dim)))
         self.send("Graph with ExampleTable", graph)
         self.send("Examples", graph.items)
     
