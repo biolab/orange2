@@ -1782,7 +1782,7 @@ class Mapper_Linear_Left:
         else:
             conv = lambda x:x
 
-        k = self.max_difference/self.maxLinearValue        
+        k = self.max_difference/(self.maxLinearValue or 1)        
 
         headerLine = AttrLine("", canvas)
         for at in range(len(dSum)):
