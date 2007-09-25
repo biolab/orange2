@@ -190,7 +190,7 @@ static PyObject *PyOrange_DictProxy_items(TPyOrange_DictProxy *mp)
 static PyObject *PyOrange_DictProxy_update(TPyOrange_DictProxy *mp, PyObject *seq2)
 {
   PyObject *key, *value;
-  int pos = 0;
+  Py_ssize_t pos = 0;
 
   while (PyDict_Next(seq2, &pos, &key, &value)) {
     if (!PyString_Check(key))
@@ -504,8 +504,8 @@ public:
   const TPropertyDescription *pd;
 
   // ...and that's for the dictionary
-	int di_used;
-	int di_pos;
+	Py_ssize_t di_used;
+	Py_ssize_t di_pos;
 };
 
 

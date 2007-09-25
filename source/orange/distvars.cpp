@@ -1393,9 +1393,17 @@ TDomainDistributions::TDomainDistributions()
 TDomainDistributions::TDomainDistributions(PExampleGenerator gen, const long weightID, bool skipDiscrete, bool skipContinuous)
 {
   reserve(gen->domain->variables->size());
-  PITERATE(TVarList, vi, gen->domain->variables)
-    push_back(   skipDiscrete && ((*vi)->varType == TValue::INTVAR)
-              || skipContinuous && ((*vi)->varType == TValue::FLOATVAR) ? PDistribution() : TDistribution::create(*vi));
+  PITERATE(TVarList, vi, gen->domain->variables) {
+    bool compute;
+    if ((*vi)->varType == TValue::INTVAR)
+      compute = !skipDiscrete;
+    else if ((*vi)->varType == TValue::FLOATVAR)
+      compute = !skipContinuous;
+    else
+      compute = false;
+    
+    push_back(compute ? TDistribution::create(*vi) : PDistribution());
+  }
 
   for(TExampleIterator fi(gen->begin()); fi; ++fi) {
     TExample::iterator ei=(*fi).begin();

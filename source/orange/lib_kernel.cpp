@@ -502,7 +502,7 @@ PyObject *__pickleLoaderEnumVariable(PyObject *, PyObject *args) PYARGS(METH_VAR
     PyObject *pyvar = WrapOrange(pvar);
 
     PyObject *d_key, *d_value;
-    int i = 0;
+    Py_ssize_t i = 0;
     while (PyDict_Next(dict, &i, &d_key, &d_value)) {
       if (   strcmp("values", PyString_AsString(d_key))
           && Orange_setattrLow((TPyOrange *)pyvar, d_key, d_value, false) < 0
@@ -1086,7 +1086,7 @@ PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "
 
 bool convertMetasFromPython(PyObject *dict, TMetaVector &metas)
 {
-  int pos = 0;
+  Py_ssize_t pos = 0;
   PyObject *pykey, *pyvalue;
   while (PyDict_Next(dict, &pos, &pykey, &pyvalue)) {
     if (!PyOrVariable_Check(pyvalue)) {
@@ -1164,7 +1164,7 @@ PyObject *Domain_removemeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "({id
     CAST_TO(TDomain, domain);
 
     if (PyDict_Check(rar)) {
-      int pos=0;
+      Py_ssize_t pos=0;
       PyObject *key, *value;
       TMetaVector newMetas=domain->metas;
       TMetaVector::iterator mve=domain->metas.end();
@@ -2079,7 +2079,7 @@ inline PVariableFilterMap sameValuesMap(PyObject *dict, PDomain dom)
 { TVariableFilterMap *vfm = mlnew TVariableFilterMap;
   PVariableFilterMap wvfm = vfm;
 
-  int pos=0;
+  Py_ssize_t pos=0;
   PyObject *pykey, *pyvalue;
   while (PyDict_Next(dict, &pos, &pykey, &pyvalue)) {
     PVariable var = varFromArg_byDomain(pykey, dom, true);
@@ -4461,7 +4461,7 @@ PyObject *ContDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) 
         TContDistribution *udist = mlnew TContDistribution();
         PContDistribution cont = PDistribution(udist);
         PyObject *key, *value;
-        int pos = 0;
+        Py_ssize_t pos = 0;
         while (PyDict_Next(args, &pos, &key, &value)) {
           PyObject *flt = PyNumber_Float(key);
           if (!flt) {

@@ -43,6 +43,7 @@ public:
 
 #include <vector>
 
+
 class TCharBuffer {
 public:
   char *buf, *bufe;
@@ -72,14 +73,15 @@ public:
       free(buf);
   }
 
-  inline int length()
+  inline Py_ssize_t length()
   { return bufptr - buf; }
 
-  inline void ensure(const int &size)
+  inline void ensure(const Py_ssize_t &size)
   { 
     if (!buf) {
-       buf = bufptr = (char *)malloc(1024);
-       bufe = buf + 1024;
+       Py_ssize_t rsize = size > 1024 ? size : 1024;
+       buf = bufptr = (char *)malloc(rsize);
+       bufe = buf + rsize;
     }
 
     else if (bufe - bufptr < size) {

@@ -585,7 +585,7 @@ PyObject *__pickleLoaderContingencyCommon(TContingency *cont, PyObject *args)
 
 	if (packedF) {
 		char *pbuf;
-		int bufSize;
+		Py_ssize_t bufSize;
 		if (PyString_AsStringAndSize(packedF, &pbuf, &bufSize) == -1) {
 			delete cont;
 			return NULL;
@@ -3456,7 +3456,7 @@ PyObject *DistanceMapConstructor_getLegend(PyObject *self, PyObject *args) PYARG
 
 	int size;
 	unsigned char *bitmap = SELF_AS(TDistanceMapConstructor).getLegend(width, height, gamma, size);
-	PyObject *res = PyString_FromStringAndSize((const char *)bitmap, size);
+	PyObject *res = PyString_FromStringAndSize((const char *)bitmap, (Py_ssize_t)size);
 	delete bitmap;
 	return res;
 	PyCATCH
@@ -4062,7 +4062,7 @@ PyObject *Graph_nodesToObjects(TGraph *graph, const vector<int> &neighbours)
 					// This is slow, but can't help...
 					int el = 0;
 					PyObject *key, *value;
-					int pos = 0;
+					Py_ssize_t pos = 0;
 
 					while (PyDict_Next(objs, &pos, &key, &value))
 						if (!PyInt_Check(value)) {

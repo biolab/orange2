@@ -122,7 +122,7 @@ public:
   static bool updateLow(_MapType *uMap, PyObject *arg)
   {
     if (PyDict_Check(arg)) {
-      int pos=0;
+      Py_ssize_t pos=0;
       PyObject *pykey, *pyvalue;
       while (PyDict_Next(arg, &pos, &pykey, &pyvalue)) {
         if (_setitemlow(uMap, pykey, pyvalue)<0)

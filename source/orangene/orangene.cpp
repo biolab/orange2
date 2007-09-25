@@ -110,7 +110,7 @@ PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(ME
 
     int size;
     unsigned char *bitmap = SELF_AS(THeatmapConstructor).getLegend(width, height, gamma, size);
-    PyObject *res = PyString_FromStringAndSize((const char *)bitmap, size);
+    PyObject *res = PyString_FromStringAndSize((const char *)bitmap, (Py_ssize_t)size);
     delete bitmap;
     return res;
   PyCATCH

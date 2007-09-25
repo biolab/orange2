@@ -212,7 +212,7 @@ PyObject *WrapWrappedOrange(TWrapped *obj)
 bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit)
 {
   if (dict) {
-    int pos = 0;
+    Py_ssize_t pos = 0;
     PyObject *key, *value;
     char **kc = fromInit ? ((TOrangeType *)(self->ob_type))->ot_constructorkeywords : NULL;
     while (PyDict_Next(dict, &pos, &key, &value)) {
