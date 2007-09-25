@@ -1,5 +1,5 @@
 """
-<name>Similarity Network</name>
+<name>Network from Distances</name>
 <description>Costructs Graph object by connecting nodes from ExampleTable where distance between them is between given threshold.</description>
 <icon>icons/Outlier.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
@@ -7,7 +7,7 @@
 """
 
 #
-# OWSimilarityNetwork.py
+# OWNetworkFromDistances.py
 #
 
 import OWGUI
@@ -87,11 +87,11 @@ class Hist(OWGraph):
 #        self.setAxisAutoScale(self.xBottom)
 #        self.setAxisAutoScale(self.yLeft)
             
-class OWSimilarityNetwork(OWWidget):
+class OWNetworkFromDistances(OWWidget):
     settingsList=["threshold"]
     
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, "Similarity Network")
+        OWWidget.__init__(self, parent, signalManager, "Network from Distances")
         
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.cdata, Default)]
         self.outputs = [("Graph with ExampleTable", Graph), ("Examples", ExampleTable)]
@@ -216,7 +216,7 @@ class OWSimilarityNetwork(OWWidget):
     
 if __name__ == "__main__":
     a=QApplication(sys.argv)
-    owf=OWSimilarityNetwork()
+    owf=OWNetworkFromDistances()
     owf.activateLoadedSettings()
     a.setMainWidget(owf)
     owf.show()
