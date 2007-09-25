@@ -106,7 +106,7 @@ class OWLogisticRegression(OWWidget):
 
 
     def setData(self, data):
-        self.data = data
+        self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         self.applyData()
 
 
