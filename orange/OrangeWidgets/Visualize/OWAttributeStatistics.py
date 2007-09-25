@@ -24,7 +24,7 @@ class OWAttributeStatistics(OWWidget):
         self.callbackDeposit = []
 
         #set default settings
-        self.cwbias = 300 # canvas_width = widget_width - 300 pixels
+        self.cwbias = 250 # canvas_width = widget_width - 300 pixels
         self.chbias = 30
 
         self.cw = self.width()-self.cwbias
@@ -128,6 +128,16 @@ class DisplayStatistics (QCanvas):
         attr_name = QCanvasText (attr.name, self)
         attr_name.move(10, 10)
         attr_name.show()
+
+        if not dist[ind] or not dist[ind].items():
+            if not dist[ind]:
+                msg = QCanvasText("The widget cannot show distributions for attributes of this type.", self)
+            else:
+                msg = QCanvasText("This attribute has no defined values.", self)
+            msg.move(20, 50)
+            msg.show()
+            return
+        
         title_str = "Category"
         if attr.varType == orange.VarTypes.Continuous:
             title_str = "Values"
@@ -136,9 +146,6 @@ class DisplayStatistics (QCanvas):
         category.setTextFlags(Qt.AlignRight)
         category.show()
 
-        if dist[ind].items() == []:
-            return
-        
         if attr.varType == orange.VarTypes.Discrete:
             totalvalues = QCanvasText ("Total Values", self)
             totalvalues.move(self.hbias+30, 30)
@@ -159,7 +166,7 @@ class DisplayStatistics (QCanvas):
                     r.setPen (QPen(Qt.NoPen))
                     r.setBrush (QBrush(QColor(0,0,254)))
                     r.show()
-                    t1 = QCanvasText (str(dist[ind][v]), self)
+                    t1 = QCanvasText ("%i   (%2.1f %%)" % (dist[ind][v], 100*dist[ind][v]/(len(data) or 1)), self)
                     t1.move(self.hbias+dist[ind][v]*rect_len/max(dist[ind])+10, self.vbias)
                     t1.show()
                     self.vbias+=rect_width
