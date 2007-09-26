@@ -814,7 +814,7 @@ class OWDiscretize(OWWidget):
         idx = self.continuousIndices[self.selectedAttr]
         le = self.customLineEdits[which]
 
-        content = str(le.text()).replace(":", " ").replace(",", " ").replace("-", " ").split()
+        content = str(le.text()).replace(":", " ").replace(",", " ").split()
         content = dict.fromkeys(content).keys()  # remove duplicates (except 8.0, 8.000 ...)
         try:
             content.sort(lambda x, y:cmp(float(x), float(y)))
