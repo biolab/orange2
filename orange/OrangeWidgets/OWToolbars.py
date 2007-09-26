@@ -34,16 +34,24 @@ class ZoomSelectToolbar(QHButtonGroup):
                  ("Polygon selection", "buttonSelectPoly", "activatePolygonSelection", QPixmap(dlg_poly), Qt.arrowCursor, 1), 
                  ("Remove last selection", "buttonRemoveLastSelection", "removeLastSelection", QPixmap(dlg_undo), None, 0), 
                  ("Remove all selections", "buttonRemoveAllSelections", "removeAllSelections", QPixmap(dlg_clear), None, 0), 
-                 ("Send selections", "buttonSendSelections", "sendData", QPixmap(dlg_send), None, 0)
+                 ("Send selections", "buttonSendSelections", "sendData", QPixmap(dlg_send), None, 0),
+                 ("Zoom to extent", "buttonZoomExtent", "zoomExtent", QPixmap(dlg_zoom_extent), None, 0),
+                 ("Zoom selection", "buttonZoomSelection", "zoomSelection", QPixmap(dlg_zoom_selection), None, 0)
                 )
                  
-    IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection = range(9)
+    IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent, IconZoomSelection = range(11)
 
-    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8)):
-        QHButtonGroup.__init__(self, "Zoom / Select", parent)
+    DefaultButtons = 1, 4, 5, 0, 6, 7, 8
+    SelectButtons = 3, 4, 5, 0, 6, 7, 8
+    NavigateButtons = 1, 9, 10, 0, 2
+
+    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8), name = "Zoom / Select", exclusiveList = "__toolbars"):
+        QHButtonGroup.__init__(self, name, parent)
         
         self.graph = graph # save graph. used to send signals
+        self.exclusiveList = exclusiveList
         
+        self.widget = None
         self.functions = [type(f) == int and self.builtinFunctions[f] or f for f in buttons]
         for b, f in enumerate(self.functions):
             if not f:
@@ -54,6 +62,11 @@ class ZoomSelectToolbar(QHButtonGroup):
                 if f[1] == "buttonSendSelections":
                     button.setEnabled(not autoSend)
 
+        if not hasattr(widget, exclusiveList):
+            setattr(widget, exclusiveList, [self])
+        else:
+            getattr(widget, exclusiveList).append(self)
+            
         self.widget = widget    # we set widget here so that it doesn't affect the value of self.widget.toolbarSelection
         self.action(0)
         
@@ -66,9 +79,10 @@ class ZoomSelectToolbar(QHButtonGroup):
         if f[5]:
             if hasattr(self.widget, "toolbarSelection"):
                 self.widget.toolbarSelection = b
-            for fi, ff in enumerate(self.functions):
-                if ff and ff[5]:
-                    getattr(self, ff[1]).setOn(fi == b)
+            for tbar in getattr(self.widget, self.exclusiveList):
+                for fi, ff in enumerate(tbar.functions):
+                    if ff and ff[5]:
+                        getattr(tbar, ff[1]).setOn(self == tbar and fi == b)
             
         getattr(self.graph, f[2])()
         #else:
