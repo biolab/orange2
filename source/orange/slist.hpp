@@ -42,7 +42,7 @@ public:
 };
 
 #include <vector>
-
+#include "c2py.hpp"
 
 class TCharBuffer {
 public:
