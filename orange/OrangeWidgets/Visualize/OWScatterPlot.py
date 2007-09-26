@@ -30,7 +30,7 @@ class OWScatterPlot(OWWidget):
                     "colorSettings", "selectedSchemaIndex", "VizRankLearnerName", "showProbabilitiesDetails"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
-    contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY", (["attrLabel", "attrShape", "attrSize"], DomainContextHandler.Optional)])}
+    contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY", (["attrColor", "attrLabel", "attrShape", "attrSize"], DomainContextHandler.Optional)])}
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
