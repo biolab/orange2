@@ -187,8 +187,12 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
             for (z, item) in sortedList:
                 # a little compatibility for QT 3.3 (on Mac at least)
-                if (hasattr(item, "isVisible") and item.isVisible()) or (not hasattr(item, "isVisible") and item.visible()):
-                    item.moveBy(-minx, -miny)
+                if (hasattr(item, "isVisible") and item.isVisible()) or (hasattr(item, "visible") and item.visible()):
+                    if isinstance(item, QCanvasLine):
+                        item.setPoints(item.startPoint().x()-minx, item.startPoint().y()-miny, item.endPoint().x()-minx, item.endPoint().y()-miny)
+                    else:
+                        item.moveBy(-minx, -miny)
+
                     if isinstance(item, QCanvasText):
                         rect = item.boundingRect()
                         x,y,w,h = int(rect.x()*scale), int(rect.y()*scale), int(rect.width()*scale), int(rect.height()*scale)
@@ -206,7 +210,11 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                         p.setWidth(oldSize)
                         item.setPen(p)
                         painter.scale(1.0/scale, 1.0/scale)
-                    item.moveBy(minx, miny)
+
+                    if isinstance(item, QCanvasLine):
+                        item.setPoints(item.startPoint().x()+minx, item.startPoint().y()+miny, item.endPoint().x()+minx, item.endPoint().y()+miny)
+                    else:
+                        item.moveBy(minx, miny)
 
             # draw foreground
             self.graph.drawForeground(painter, rect)
@@ -529,7 +537,7 @@ class ColorPalette(OWBaseWidget):
     def rgbToQColor(self, rgb):
         # we could also use QColor(positiveColor(rgb), 0xFFFFFFFF) but there is probably a reason
         # why this was not used before so I am leaving it as it is
-        
+
         return QColor(qRed(positiveColor(rgb)), qGreen(positiveColor(rgb)), qBlue(positiveColor(rgb))) # on Mac color cannot be negative number in this case so we convert it manually
 
     def qRgbFromQColor(self, qcolor):
