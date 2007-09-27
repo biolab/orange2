@@ -14,7 +14,7 @@
 import OWGUI, string, os.path, user, sys
 
 from OWWidget import *
-from orangeom import *
+from orngNetwork import *
 
 from orange import Graph
 from orange import GraphAsList
@@ -231,11 +231,10 @@ class OWNetworkFile(OWWidget):
             self.send("Graph with ExampleTable", None)
 
     def readNetFile(self, fn):
-        graph, table = readNetwork(fn)
-        #print "table: " + str(len(table))
-        graph.setattr("items", table)
+        network = NetworkOptimization()
+        graph, table = network.readNetwork(fn)
+        
         self.infoc.setText("Data generated and added automatically.")
-        #print "prebral"
         return graph
 
 if __name__ == "__main__":
