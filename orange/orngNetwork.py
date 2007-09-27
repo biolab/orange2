@@ -1,26 +1,25 @@
 import math
+import random
+
+import numpy
+
 import orange
 import orangeom
 
-from random import *
-from numpy import *
-
 class NetworkOptimization(orangeom.NetworkOptimization):
-    def __init__(self, graph, parent = None, name = "None"):
-        
-        #print "orngNetwork/init: setGraph..."
+    def __init__(self, graph=None, parent=None, name="None"):
+        if graph is None:
+            graph = orange.GraphAsList(2, 0)
+            
         self.setGraph(graph)
-        #print "orngNetwork/init: getCoors..."
-        #self.coors = self.getCoors()
         self.graph = graph
-
         self.parent = parent
         self.maxWidth  = 1000
         self.maxHeight = 1000
         
         self.attributeList = {}
         self.attributeValues = {}
-    
+        
     def getVars(self):
         vars = []
         if (self.graph != None):
@@ -150,8 +149,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             if len(self.graph[i,j]) > 0:
                 graphFile.write('% 8d % 8d %d' % (i+1, j+1, int(self.graph[i,j][0])))
                 graphFile.write('\n')
-#                    
-        #self.graph.
+
 #        for v1 in edgesParms.keys():
 #            for v2 in edgesParms[v1].keys():
 #                if edgesParms[v1][v2].type==UNDIRECTED:
@@ -181,4 +179,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         graphFile.write('\n')
         graphFile.close()
 
-        return 0  #uspesen konec
+        return 0
+    
+    def readNetwork(self, fn):
+        graph, table = orangeom.NetworkOptimization.readNetwork(self, fn)
+        graph.setattr("items", table)
+        self.setGraph(graph)
+        self.graph = graph
+        return graph, table
+    
