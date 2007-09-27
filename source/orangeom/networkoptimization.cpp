@@ -751,7 +751,7 @@ PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *
 {
   PyTRY
 	PyObject *pygraph;
-	
+
 	if (PyArg_ParseTuple(args, "O:GraphOptimization", &pygraph))
 	{
 		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
@@ -862,6 +862,75 @@ bool hasVertex(int vertex, vector<int> list)
 	}
 
 	return false;
+}
+
+PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
+{
+  PyTRY
+	CAST_TO(TNetworkOptimization, graph);
+
+	graph->random();
+	
+	RETURN_NONE;
+  PyCATCH
+}
+
+PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, hiddenNodes) -> temperature")
+{
+  PyTRY
+	int steps;
+	double temperature = 0;
+	PyObject* hiddenNodes;
+
+	if (!PyArg_ParseTuple(args, "id|O:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &hiddenNodes))
+		return NULL;
+
+	int size = PyList_Size(hiddenNodes);
+
+	CAST_TO(TNetworkOptimization, graph);
+
+	// remove links for hidden nodes
+	vector<int> removedLinks[2];
+	int i, j;
+	for (i = 0; i < size; i++)
+	{
+		int node = PyInt_AsLong(PyList_GetItem(hiddenNodes, i));
+		
+		//cout <<"size: " << graph->links1->size() << endl;
+		for (j = graph->links[0].size() - 1; j >= 0; j--)
+		{
+			if (graph->links[0][j] == node || graph->links[1][j] == node)
+			{
+				//cout << "j: " << j << " u: " << graph->links1[0][j] << " v: " << graph->links1[1][j] << endl;
+				removedLinks[0].push_back(graph->links[0][j]);
+				removedLinks[1].push_back(graph->links[1][j]);
+
+				graph->links[0].erase(graph->links[0].begin() + j);
+				graph->links[1].erase(graph->links[1].begin() + j);
+			}
+		}
+	}
+	graph->nLinks = graph->links[0].size();
+
+	graph->temperature = temperature;
+	graph->coolFactor = exp(log(10.0/10000.0) / steps);
+	
+	if (graph->fruchtermanReingold(steps) > 0)
+	{
+		PYERROR(PyExc_SystemError, "fruchtermanReingold failed", NULL);
+	}
+
+	// adds back removed links
+	for (i = 0; i < removedLinks[0].size(); i++)
+	{
+		graph->links[0].push_back(removedLinks[0][i]);
+		graph->links[1].push_back(removedLinks[1][i]);
+	}
+
+	graph->nLinks = graph->links[0].size();
+	
+	return Py_BuildValue("d", graph->temperature);
+  PyCATCH
 }
 
 PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(center, steps, temperature) -> temperature")
@@ -1050,64 +1119,6 @@ PyObject *NetworkOptimization_circularCrossingReduction(PyObject *self, PyObject
 	RETURN_NONE;
   PyCATCH
 }
-PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, hiddenNodes) -> temperature")
-{
-  PyTRY
-	int steps;
-	double temperature = 0;
-	PyObject* hiddenNodes;
-
-	if (!PyArg_ParseTuple(args, "id|O:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &hiddenNodes))
-		return NULL;
-
-	int size = PyList_Size(hiddenNodes);
-
-	CAST_TO(TNetworkOptimization, graph);
-
-	// remove links for hidden nodes
-	vector<int> removedLinks[2];
-	int i, j;
-	for (i = 0; i < size; i++)
-	{
-		int node = PyInt_AsLong(PyList_GetItem(hiddenNodes, i));
-		
-		//cout <<"size: " << graph->links1->size() << endl;
-		for (j = graph->links[0].size() - 1; j >= 0; j--)
-		{
-			if (graph->links[0][j] == node || graph->links[1][j] == node)
-			{
-				//cout << "j: " << j << " u: " << graph->links1[0][j] << " v: " << graph->links1[1][j] << endl;
-				removedLinks[0].push_back(graph->links[0][j]);
-				removedLinks[1].push_back(graph->links[1][j]);
-
-				graph->links[0].erase(graph->links[0].begin() + j);
-				graph->links[1].erase(graph->links[1].begin() + j);
-			}
-		}
-	}
-	graph->nLinks = graph->links[0].size();
-
-	graph->temperature = temperature;
-	graph->coolFactor = exp(log(10.0/10000.0) / steps);
-	
-	if (graph->fruchtermanReingold(steps) > 0)
-	{
-		PYERROR(PyExc_SystemError, "fruchtermanReingold failed", NULL);
-	}
-
-	// adds back removed links
-	for (i = 0; i < removedLinks[0].size(); i++)
-	{
-		graph->links[0].push_back(removedLinks[0][i]);
-		graph->links[1].push_back(removedLinks[1][i]);
-	}
-
-	graph->nLinks = graph->links[0].size();
-	
-	return Py_BuildValue("d", graph->temperature);
-  PyCATCH
-}
-
 PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> Coors")*/
 {
   PyTRY
@@ -1149,45 +1160,6 @@ PyObject *NetworkOptimization_getVertexPowers(PyObject *self, PyObject *) PYARGS
   PyCATCH;
 }
 
-PyObject *NetworkOptimization_getHubs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(n) -> HubList")
-{
-  PyTRY
-	int n;
-
-	if (!PyArg_ParseTuple(args, "n:NetworkOptimization.getHubs", &n))
-		return NULL;
-
-	CAST_TO(TNetworkOptimization, graph);
-
-  int i;
-  int *vertexPower = getVertexPowers(graph);
-  
-	PyObject* hubList = PyList_New(n);
-	
-	for (i=0; i < n; i++)
-	{
-		int j;
-		int ndx_max = -1;
-		int max = 0;
-		for (j=0; j < graph->nVertices; j++)
-		{
-			if (vertexPower[j] > max)
-			{
-				ndx_max = j;
-				max = vertexPower[j];
-			}
-		}
-		//cout << "pow: " << vertexPower[ndx_max] << " ndx: " << ndx_max << endl;
-
-		vertexPower[ndx_max] = -2;
-		PyList_SetItem(hubList, i, PyInt_FromLong(ndx_max));
-	}
-
-	delete [] vertexPower;
-	return hubList;
-  PyCATCH
-}
-
 PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x, y) -> Ndx")
 {
   PyTRY
@@ -1219,20 +1191,9 @@ PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYAR
   PyCATCH
 }
 
-PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
-{
-  PyTRY
-	CAST_TO(TNetworkOptimization, graph);
-
-	graph->random();
-	
-	RETURN_NONE;
-  PyCATCH
-}
-
 WRAPPER(ExampleTable)
 
-PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Graph")
+PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Graph")
 {
   PyTRY
 	TGraph *graph;
@@ -1245,7 +1206,7 @@ PyObject *readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> 
 	//cout << "readNetwork" << endl;
 	char *fn;
 
-	if (!PyArg_ParseTuple(args, "s:orangeom.readNetwork", &fn))
+	if (!PyArg_ParseTuple(args, "s:NetworkOptimization.readNetwork", &fn))
 		return NULL;
 
 	//cout << "File: " << fn << endl;
