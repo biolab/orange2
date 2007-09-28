@@ -296,7 +296,7 @@ def lineEdit(widget, master, value,
         if not hasHBox:
             bi = widgetBox(b, "", 0)
         else:
-            bi = box
+            bi = b
         wa = LineEditWFocusOut(bi, master, callback, focusInCallback)
     else:
         wa = QLineEdit(b)
@@ -882,7 +882,7 @@ class ControlledList(list):
         list.__setitem__(self, index, item)
 
     def __delitem__(self, index):
-        self.listBox.setSelected(__getitem__(self, index), 0)
+        self.listBox.setSelected(list.__getitem__(self, index), 0)
         list.__delitem__(self, index)
 
     def __setslice__(self, start, end, slice):
@@ -1016,7 +1016,7 @@ class ValueCallbackLineEdit(ControlledCallback):
         if value is not None:
             try:
                 pos = self.control.cursorPosition()
-                acyclic_setattr(value)
+                self.acyclic_setattr(value)
                 self.control.setCursorPosition(pos)
             except:
                 print "invalid value ", value, type(value)
@@ -1183,9 +1183,9 @@ class CallFront_ListBox(ControlledCallFront):
             if not isinstance(value, ControlledList):
                 setattr(self.control.ogMaster, self.control.ogValue, ControlledList(value, self.control))
             for i in range(self.control.count()):
-                self.control.setSelected(i, 0)
-            for i in value:
-                self.control.setSelected(i, 1)
+                shouldBe = i in value
+                if shouldBe != self.control.isSelected(i):
+                    self.control.setSelected(i, shouldBe)
 
 
 class CallFront_ListBoxLabels(ControlledCallFront):
