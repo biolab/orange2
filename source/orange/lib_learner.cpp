@@ -1038,7 +1038,7 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 #include "svm.hpp"
 C_CALL(SVMLearner, Learner, "([examples] -/-> Classifier)")
 C_CALL(SVMLearnerSparse, SVMLearner, "([examples] -/-> Classifier)")
-C_NAMED(SVMClassifier, Classifier," ")
+C_NAMED(SVMClassifier, ClassifierFD," ")
 C_NAMED(SVMClassifierSparse, SVMClassifier," ")
 //N O _PICKLE(SVMClassifier)
 

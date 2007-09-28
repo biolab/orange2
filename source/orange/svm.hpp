@@ -212,11 +212,11 @@ protected:
 };
 
 
-class ORANGE_API TSVMClassifier : public TClassifier{
+class ORANGE_API TSVMClassifier : public TClassifierFD{
 public:
 	__REGISTER_CLASS
 		TSVMClassifier(){};
-	TSVMClassifier(PVariable, PExampleTable, svm_model*, svm_node*);
+	TSVMClassifier(const PVariable & , PExampleTable, svm_model*, svm_node*);
 	~TSVMClassifier();
 
 	TValue operator()(const TExample&);

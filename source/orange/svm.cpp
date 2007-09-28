@@ -3685,10 +3685,12 @@ TSVMClassifier* TSVMLearnerSparse::createClassifier(PVariable var, PExampleTable
 	return mlnew TSVMClassifierSparse(var, ex, model, x_space, useNonMeta);
 }
 
-TSVMClassifier::TSVMClassifier(PVariable var, PExampleTable _examples, svm_model* _model=NULL, svm_node* _x_space=NULL):TClassifier(var){
+TSVMClassifier::TSVMClassifier(const PVariable &var, PExampleTable _examples, svm_model* _model=NULL, svm_node* _x_space=NULL){
+	classVar=var;
 	model=_model;
 	x_space=_x_space;
 	examples=_examples;
+	domain=_examples->domain;
 	model->param.classifier=this;
     if (model->param.learner) // if the model not constructed at unpickling 
 	    kernelFunc=model->param.learner->kernelFunc;
