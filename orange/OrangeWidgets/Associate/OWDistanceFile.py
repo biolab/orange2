@@ -90,7 +90,7 @@ class OWDistanceFile(OWWidget):
 
             self.relabel()
         except:
-            self.error("cannot read the file")
+            self.error("Error while reading the file")
 
     def relabel(self):
         self.error()
