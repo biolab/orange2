@@ -84,10 +84,11 @@ class OWDataTable(OWWidget):
             table.setSelectionMode(QTable.NoSelection)
             self.id2table[id] = table
             self.table2id[table] = id
-            tabName = data.name
-            if not tabName:
-                tabName = "(Unnamed)"
-            tabName += " (" + str(id[1]) + ")"
+            if data.name:
+                tabName = "%s " % data.name
+            else:
+                tabName = ""
+            tabName += "(" + str(id[1]) + ")"
             if id[2] != None:
                 tabName += " [" + str(id[2]) + "]"
 ##            tabName = data.name + " "+str(id)
