@@ -20,7 +20,7 @@ class OWOutliers(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name)
 
         self.inputs = [("Examples", ExampleTable, self.cdata),("Distance matrix", orange.SymMatrix, self.cdistance)]
-        self.outputs = [("Outliers", ExampleTable),("Examples with Z-scores", ExampleTable)]
+        self.outputs = [("Outliers", ExampleTable), ("Inliers", ExampleTable), ("Examples with Z-scores", ExampleTable)]
                
         # Settings
         self.zscore = '4.0'
@@ -49,21 +49,20 @@ class OWOutliers(OWWidget):
                        callback=self.dataChange)
 
         OWGUI.comboBox(self.controlArea, self, "k", box="Nearest Neighbours", items=itemsk,
-                       tooltip="Number of neighbours to considered when computing the distance",
+                       tooltip="Neighbours considered when computing the distance.",
                        callback=self.applySettings)
 
         OWGUI.separator(self.controlArea)
         box = OWGUI.widgetBox(self.controlArea, "Settings")
         OWGUI.lineEdit(box, self, 'zscore',
                        label = 'Outlier Z:', labelWidth=80,
-                       orientation='horizontal', # box=None, 
+                       orientation='horizontal', # box=None,
                        validator = kernelSizeValid,
-                       tooltip="Minimum Z score of an outlier")
-                       
+                       tooltip="Minimum Z-score of an outlier.",
+                       callback=self.applySettings)
+
         OWGUI.separator(self.controlArea)
    	  
-        self.applyBtn = OWGUI.button(self.controlArea, self, "&Apply", callback=self.applySettings)
-        
         self.resize(100,100)
         self.applySettings()
 
@@ -84,17 +83,23 @@ class OWOutliers(OWWidget):
             zv = outlier.zValues()
             for i, el in enumerate(zv):
                 self.newdata[i]["Z score"] = el            
-            
+
             self.send("Examples with Z-scores", self.newdata)
             
-            filter = orange.Filter_values(domain=self.newdata.domain)
-            filter["Z score"] = (orange.Filter_values.Greater, eval(self.zscore))
-            self.outliers = filter(self.newdata)
+            filterout = orange.Filter_values(domain=self.newdata.domain)
+            filterout["Z score"] = (orange.Filter_values.Greater, eval(self.zscore))
+            outliers = filterout(self.newdata)
+
+            filterin = orange.Filter_values(domain=self.newdata.domain)
+            filterin["Z score"] = (orange.Filter_values.LessEqual, eval(self.zscore))
+            inliers = filterin(self.newdata)
             
-            self.send("Outliers", self.outliers)
+            self.send("Outliers", outliers)
+            self.send("Inliers", inliers)
         else:
             self.send("Examples with Z-scores", None)
             self.send("Outliers", None)
+            self.send("Inliers", None)
   
     def cdata(self, data):
         """handles examples input signal"""
