@@ -88,6 +88,10 @@ class OWNetwork(OWWidget):
         self.attListBox = OWGUI.listBox(self.displayTab, self, "markerAttributes", "attributes", box = "Labels", selectionMode=QListBox.Multi, callback=self.clickedAttLstBox)
         
         self.tooltipBox = OWGUI.widgetBox(self.mainTab, "Tooltips", addSpace = True)
+        
+        self.labelsOnMarkedOnly = 0
+        OWGUI.checkBox(self.mainTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
+        
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListBox.Multi, callback=self.clickedTooltipLstBox)
 
         OWGUI.button(self.mainTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
@@ -158,6 +162,11 @@ class OWNetwork(OWWidget):
         self.setHubs()
         
         self.resize(850, 700)    
+        
+    def labelsOnMarked(self):
+        self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
+        self.graph.updateData()
+        self.graph.replot()
     
     def setSearchStringTimer(self):
         self.hubs = 1

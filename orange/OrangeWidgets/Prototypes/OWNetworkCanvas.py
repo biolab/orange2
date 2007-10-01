@@ -47,7 +47,7 @@ class OWNetworkCanvas(OWGraph):
         self.tooltipNeighbours = 2
         self.selectionNeighbours = 2
         self.freezeNeighbours = False
-        
+        self.labelsOnMarkedOnly = 0
         self.enableWheelZoom = 1
 
         
@@ -343,6 +343,7 @@ class OWNetworkCanvas(OWGraph):
     
         self.markedNodes = marked
         self.master.nMarked = len(self.markedNodes)
+        self.drawLabels()
         self.replot()
         
         
@@ -424,7 +425,6 @@ class OWNetworkCanvas(OWGraph):
     def updateData(self):
         #print "OWGraphDrawerCanvas/updateData..."
         self.removeDrawingCurves(removeLegendItems = 0)
-        self.removeMarkers()
         self.tips.removeAll()
   
         edgesCount = 0
@@ -532,26 +532,12 @@ class OWNetworkCanvas(OWGraph):
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
             self.setCurveSymbol(key, newSymbol)        
         
-        # draw markers
-        if len(self.labelText) > 0:
-            for v in range(self.nVertices):
-                if v in self.hiddenNodes:
-                    continue
-                
-                x1 = self.visualizer.coors[v][0]
-                y1 = self.visualizer.coors[v][1]
-                lbl = ""
-                values = self.visualizer.graph.items[v]
-                lbl = " ".join([str(values[ndx]) for ndx in self.labelText])
-                if lbl:
-                    mkey = self.insertMarker(lbl)
-                    self.marker(mkey).setXValue(float(x1))
-                    self.marker(mkey).setYValue(float(y1))
-                    self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
-                    self.markerKeys[v] = mkey          
+        # draw labels
+        self.drawLabels()
         
         # add ToolTips
         self.tooltipData = []
+        self.tooltipKeys = {}
         self.tips.removeAll()
         if len(self.tooltipText) > 0:
             for v in range(self.nVertices):
@@ -569,6 +555,29 @@ class OWNetworkCanvas(OWGraph):
                     lbl = lbl[:-1]
                     self.tips.addToolTip(x1, y1, lbl)
                     self.tooltipKeys[v] = len(self.tips.texts) - 1
+                    
+    def drawLabels(self):
+        self.removeMarkers()
+        self.markerKeys = {}
+        if len(self.labelText) > 0:
+            for v in range(self.nVertices):
+                if v in self.hiddenNodes:
+                    continue
+                
+                if self.labelsOnMarkedOnly and not (v in self.markedNodes or v in self.selection):
+                    continue
+                                  
+                x1 = self.visualizer.coors[v][0]
+                y1 = self.visualizer.coors[v][1]
+                lbl = ""
+                values = self.visualizer.graph.items[v]
+                lbl = " ".join([str(values[ndx]) for ndx in self.labelText])
+                if lbl:
+                    mkey = self.insertMarker(lbl)
+                    self.marker(mkey).setXValue(float(x1))
+                    self.marker(mkey).setYValue(float(y1))
+                    self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+                    self.markerKeys[v] = mkey     
             
     def setVertexColor(self, attribute):
         if attribute == "(one color)":
