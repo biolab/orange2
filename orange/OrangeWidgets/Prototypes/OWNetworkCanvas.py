@@ -504,7 +504,8 @@ class OWNetworkCanvas(OWGraph):
             if v in self.selection:
                 #print "sel: " + str(v)
 #                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(fillColor), QPen(Qt.yellow, 3), QSize(10, 10))
-                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(Qt.yellow, 3), QSize(10, 10))
+
+                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(10, 10))
                 self.setCurveSymbol(key, newSymbol)
             
             (tmp, neighbours) = self.vertices[v]
@@ -513,6 +514,14 @@ class OWNetworkCanvas(OWGraph):
         
         #self.addCurve('vertices', fillColor, edgeColor, 6, xData=selectionX, yData=selectionY)
         
+        # mark nodes
+        redColor = self.markWithRed and Qt.red
+        markedSize = self.markWithRed and 9 or 6
+
+        for m in self.markedNodes:
+            (key, neighbours) = self.vertices[m]
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
+            self.setCurveSymbol(key, newSymbol)
             
 #        selectionX = []
 #        selectionY = []
@@ -568,6 +577,8 @@ class OWNetworkCanvas(OWGraph):
                     lbl = lbl[:-1]
                     self.tips.addToolTip(x1, y1, lbl)
         
+        print self.markedNodes
+        #self.setMarkedNodes([])
         #print "done."
             
     def setVertexColor(self, attribute):
