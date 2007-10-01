@@ -22,11 +22,13 @@ class OWNetworkCanvas(OWGraph):
         self.parent = parent
         self.labelText = []
         self.tooltipText = []
-        self.vertices = {}         # slovar vozlisc oblike  orngIndex: vertex_objekt
-        self.edges = {}            # slovar povezav oblike  curveKey: edge_objekt
-        self.indexPairs = {}       # slovar oblike CurveKey: orngIndex   (za vozlisca)
-        self.selection = []        # seznam izbranih vozlisc (njihovih indeksov)
-        self.selectionStyles = {}  # slovar stilov izbranih vozlisc
+        self.vertices = {}         # distionary of nodes (orngIndex: vertex_objekt)
+        self.edges = {}            # distionary of edges (curveKey: edge_objekt)
+        self.indexPairs = {}       # distionary of type CurveKey: orngIndex   (for nodes)
+        self.selection = []        # list of selected nodes (indices)
+        self.selectionStyles = {}  # dictionary of styles of selected nodes
+        self.markerKeys = {}       # dictionary of type NodeNdx : markerCurveKey
+        self.tooltipKeys = {}      # dictionary of type NodeNdx : tooltipCurveKey
         self.colorIndex = -1
         self.visualizer = None
         self.selectedCurve = None
@@ -230,6 +232,16 @@ class OWNetworkCanvas(OWGraph):
                 edgesCurve.yData[e*2 + 1] = newY
    
         self.setCurveData(self.edgesKey, edgesCurve.xData, edgesCurve.yData)
+        
+        if self.selectedVertex in self.markerKeys:
+            mkey = self.markerKeys[self.selectedVertex]
+            self.marker(mkey).setXValue(float(newX))
+            self.marker(mkey).setYValue(float(newY))
+            self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+        
+        if self.selectedVertex in self.tooltipKeys:
+            tkey = self.tooltipKeys[self.selectedVertex]
+            self.tips.positions[tkey] = (newX, newY, 0, 0)
     
     def getNeighboursUpTo(self, ndx, dist):
         newNeighbours = neighbours = set([ndx])
@@ -535,7 +547,8 @@ class OWNetworkCanvas(OWGraph):
                     mkey = self.insertMarker(lbl)
                     self.marker(mkey).setXValue(float(x1))
                     self.marker(mkey).setYValue(float(y1))
-                    self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)            
+                    self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+                    self.markerKeys[v] = mkey          
         
         # add ToolTips
         self.tooltipData = []
@@ -555,6 +568,7 @@ class OWNetworkCanvas(OWGraph):
                 if lbl != '':
                     lbl = lbl[:-1]
                     self.tips.addToolTip(x1, y1, lbl)
+                    self.tooltipKeys[v] = len(self.tips.texts) - 1
             
     def setVertexColor(self, attribute):
         if attribute == "(one color)":
