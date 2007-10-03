@@ -49,13 +49,14 @@ class OWNetworkCanvas(OWGraph):
         self.freezeNeighbours = False
         self.labelsOnMarkedOnly = 0
         self.enableWheelZoom = 1
-
+        self.smoothOptimization = 0
+        self.optimizing = 0
+        self.stopOptimizing = 0
         
     def setHiddenNodes(self, nodes):
         self.hiddenNodes = nodes
         self.updateData()
         self.updateCanvas()
-        
        
     def addSelection(self, ndx, replot = True):
         #print("add selection")
@@ -88,7 +89,6 @@ class OWNetworkCanvas(OWGraph):
         
         self.master.nSelected = len(self.selection)
         return change
-
         
     def removeVertex(self, v):
         if v in self.selection:
@@ -131,7 +131,6 @@ class OWNetworkCanvas(OWGraph):
             
         self.master.nSelected = len(self.selection)
         
-            
     def selectConnectedNodes(self, distance):
         if distance <= 0:
             return
@@ -199,8 +198,7 @@ class OWNetworkCanvas(OWGraph):
             graph.setattr("items", self.visualizer.graph.items.select(indeces))
             
         return graph
-
-            
+ 
     def moveVertex(self, pos):
         # ce ni nic izbrano
         if self.selectedCurve == None:
@@ -300,7 +298,7 @@ class OWNetworkCanvas(OWGraph):
                 self.replot()
         else:
             OWGraph.onMouseMoved(self, event)
-
+                
         if not self.freezeNeighbours and self.tooltipNeighbours:
             px = self.invTransform(2, event.x())
             py = self.invTransform(0, event.y())   
@@ -311,8 +309,30 @@ class OWNetworkCanvas(OWGraph):
                 self.setMarkedNodes(toMark)
             else:
                 self.setMarkedNodes([])
-        
-        
+                       
+        if self.smoothOptimization:
+            px = self.invTransform(2, event.x())
+            py = self.invTransform(0, event.y())   
+            ndx, mind = self.visualizer.closestVertex(px, py)
+            if ndx != -1 and mind < 30:
+                if not self.optimizing:
+                    self.optimizing = 1
+                    initTemp = 1000
+                    coolFactor = exp(log(10.0/10000.0) / 500)
+                    from qt import qApp
+                    for i in range(10):
+                        if self.stopOptimizing:
+                            self.stopOptimizing = 0
+                            break
+                        initTemp = self.visualizer.smoothFruchtermanReingold(ndx, 50, initTemp, coolFactor)
+                        qApp.processEvents()
+                        self.updateData()
+                        self.replot()
+                    
+                    self.optimizing = 0
+            else:
+                self.stopOptimizing = 1
+
     def markSelectionNeighbours(self):
         if not self.freezeNeighbours and self.selectionNeighbours:
             toMark = set()
@@ -346,10 +366,8 @@ class OWNetworkCanvas(OWGraph):
         self.drawLabels()
         self.replot()
         
-        
     def activateMoveSelection(self):
         self.state = MOVE_SELECTION
-
 
     def onMousePressed(self, event):
         if self.state == MOVE_SELECTION:
@@ -365,7 +383,6 @@ class OWNetworkCanvas(OWGraph):
             #self.selectionCurveKeyList=[]
         else:
             OWGraph.onMousePressed(self, event)     
-
 
     def onMouseReleased(self, event):  
         if self.state == MOVE_SELECTION:
@@ -389,7 +406,6 @@ class OWNetworkCanvas(OWGraph):
         else:
             OWGraph.onMouseReleased(self, event)
         
-    
     def selectVertices(self):
         #print "selecting vertices.."
         for vertexKey in self.indexPairs.keys():
@@ -417,7 +433,6 @@ class OWNetworkCanvas(OWGraph):
             self.addSelection(ndx) # do not replot if we replot later anyway
         else:
             self.removeSelection()
-            
                 
     def dist(self, s1, s2):
         return math.sqrt((s1[0]-s2[0])**2 + (s1[1]-s2[1])**2)
@@ -616,7 +631,6 @@ class OWNetworkCanvas(OWGraph):
                 if self.visualizer.graph.items.domain.hasmeta(att):
                         self.tooltipText.append(self.visualizer.graph.items.domain.metaid(att))
         
-                            
     def edgesContainsEdge(self, i, j):
         for e in range(self.nEdges):
             (key,iTmp,jTmp) = self.edges[e]
@@ -693,7 +707,6 @@ class OWNetworkCanvas(OWGraph):
             getattr(self.master, "sendData")()
         except AttributeError:
             print "Attribute not foud in self.master"
-    
     
     def zoomExtent(self):
         self.setAxisAutoScaled()

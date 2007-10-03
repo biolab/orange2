@@ -44,6 +44,7 @@ class OWNetwork(OWWidget):
         self.color = 0
         self.nVertices = self.nMarked = self.nSelected = self.nHidden = self.nShown = self.nEdges = self.verticesPerEdge = self.edgesPerVertex = self.diameter = 0
         self.optimizeWhat = 1
+        self.stopOptimization = 0
         
         self.loadSettings()
 
@@ -70,7 +71,7 @@ class OWNetwork(OWWidget):
 
         self.optimizeBox = OWGUI.radioButtonsInBox(self.mainTab, self, "optimizeWhat", [], "Optimize", addSpace=True)
         OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
-        OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr)
+        self.frButton = OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr, toggleButton=1)
         OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
         OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
         OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
@@ -390,15 +391,55 @@ class OWNetwork(OWWidget):
         #print "done."
         
     def fr(self):
-        #print "OWNetwork/ff..."
+        from qt import qApp
         if self.visualize == None:   #grafa se ni
             return
               
+        if not self.frButton.isOn():
+            self.stopOptimization = 1
+            self.frButton.setOn(0)
+            self.frButton.setText("Fruchterman Reingold")
+            return
+        
+        self.frButton.setText("Stop")
+        qApp.processEvents()
+        self.stopOptimization = 0
         tolerance = 5
         initTemp = 1000
-        initTemp = self.visualize.fruchtermanReingold(self.frSteps, initTemp, self.graph.hiddenNodes)
-        self.updateCanvas()
-        #print "done."
+        breakpoints = 6
+        k = int(self.frSteps / breakpoints)
+        o = self.frSteps % breakpoints
+        iteration = 0
+        coolFactor = exp(log(10.0/10000.0) / self.frSteps)
+
+        if k > 0:
+            while iteration < breakpoints:
+                #print "iteration, initTemp: " + str(initTemp)
+                if self.stopOptimization:
+                    return
+                initTemp = self.visualize.fruchtermanReingold(k, initTemp, coolFactor, self.graph.hiddenNodes)
+                iteration += 1
+                qApp.processEvents()
+                self.updateCanvas()
+            
+            #print "ostanek: " + str(o) + ", initTemp: " + str(initTemp)
+            if self.stopOptimization:
+                    return
+            initTemp = self.visualize.fruchtermanReingold(o, initTemp, coolFactor, self.graph.hiddenNodes)
+            qApp.processEvents()
+            self.updateCanvas()
+        else:
+            while iteration < o:
+                #print "iteration ostanek, initTemp: " + str(initTemp)
+                if self.stopOptimization:
+                    return
+                initTemp = self.visualize.fruchtermanReingold(1, initTemp, coolFactor, self.graph.hiddenNodes)
+                iteration += 1
+                qApp.processEvents()
+                self.updateCanvas()
+                
+        self.frButton.setOn(0)
+        self.frButton.setText("Fruchterman Reingold")
         
     def frRadial(self):
         #print "F-R Radial"
