@@ -516,8 +516,7 @@ class Fragment(Molecule):
             atom.SetAtomicNum(sourceAtom.GetAtomicNum())
             if sourceAtom.IsAromatic():
                 atom.SetAromatic()
-            else:
-                atom.UnsetAromatic()
+##                atom.SetSpinMultiplicity(2)
             atomCache[sourceAtom]=atom
         for sourceBond in self.bonds:
             mol.AddBond(atomCache[sourceBond.atom1].GetIdx(), atomCache[sourceBond.atom2].GetIdx(), sourceBond.GetBondOrder())
@@ -529,9 +528,20 @@ class Fragment(Molecule):
         return writer.WriteString(self.ToOBMol()).strip()
     
     def ToCannonicalSmiles(self):
+        atomCache={}
+        mol=OBMol()
+        for sourceAtom in self.atoms:
+            atom=mol.NewAtom()
+            atom.SetAtomicNum(sourceAtom.GetAtomicNum())
+            if sourceAtom.IsAromatic():
+                atom.SetAromatic()
+                atom.SetSpinMultiplicity(2)
+            atomCache[sourceAtom]=atom
+        for sourceBond in self.bonds:
+            mol.AddBond(atomCache[sourceBond.atom1].GetIdx(), atomCache[sourceBond.atom2].GetIdx(), sourceBond.GetBondOrder())
         writer=OBConversion()
         writer.SetInAndOutFormats("smi", "can")
-        return writer.WriteString(self.ToOBMol()).strip()
+        return writer.WriteString(mol).strip()
 
     def Support(self, activeSet=None):
         activeSet=self.miner.activeSet if activeSet==None else activeSet
@@ -539,6 +549,14 @@ class Fragment(Molecule):
         for embeding in self.embedings:
             if embeding.molecule in activeSet:
                 uniqueMolecules.add(embeding.molecule)
+##        s=set(filter(lambda mol:self.ContainedIn(mol), self.miner.GetAllMolecules()))
+##        if len(s) != len(uniqueMolecules):
+##            writer=OBConversion()
+##            writer.SetInAndOutFormats("smi", "smi")
+##            print "\n",self.ToSmiles()
+##            for m in uniqueMolecules: print writer.WriteString(m).strip()
+##            for m in s: print writer.WriteString(m).strip()
+        
         return float(len(uniqueMolecules))/float(len(activeSet) or 1)
 
     def OcurrencesIn(self, molecule):    
@@ -609,7 +627,7 @@ class FragmentMiner(object):
                 if not (atom.GetAtomicNum()==6 and atom.IsInRing()):
                     candidates.append(FragmentExtensionByAtom(atom.GetAtomicNum(), atom.IsAromatic(), [atom.GetIdx()], [Embeding(molecule=mol)]))
         groups=[]
-        candidates.sort(lambda a,b: cmp(self.atomCount[a.atomicNum], self.atomCount[a.atomicNum]))
+        candidates.sort(lambda a,b: cmp(self.atomCount[a.atomicNum], self.atomCount[b.atomicNum]))
         for extension in candidates:
             for ext in groups:
                 if type(ext)==type(extension) and ext.IsEquivalent(extension):
@@ -661,6 +679,7 @@ class FragmentMiner(object):
     def Search(self):
         """Runs the search and returns the found fragments"""
         self.Initialize()
+##        set_trace()
         self.foundFragments=[]
         for fragment in self.initialFragments:
             self.TraverseTree(fragment)
@@ -707,7 +726,6 @@ class Fragmenter(object):
         inactive=filter(lambda s:s, [str(e[smilesAttr]) for e in data if not activeFunc(e)])
         
         miner=FragmentMiner(active, inactive, self.minSupport, self.maxSupport, canonicalPruning=self.canonicalPruning, findClosed=self.findClosed)
-        miner.Initialize()
         self.fragments=fragments=miner.Search()
         fragVars=[orange.FloatVariable(frag.ToSmiles(), numberOfDecimals=0) for frag in fragments]
         smilesInFragments=dict([(fragment, set([embeding.molecule.smilesCode for embeding in fragment.embedings]) ) for fragment in fragments])
@@ -780,7 +798,19 @@ class FragmentBasedClassifier(object):
     def __call__(self, example, getBoth=orange.GetValue):
         example=orange.Example(self.domain, example)
         return self.classifier(example, getBoth)
-    
+
+def Count(smiles, fragment):
+    mols=filter(lambda m:m, map(LoadMolFromSmiles, smiles))
+    for mol in mols: mol.StripSalts()
+    pattern=OBSmartsPattern()
+    pattern.Init(fragment)
+    return len(filter(lambda m:pattern.Match(m, True), mols))
+
+def ContaindIn(smiles, fragment):
+    mol=LoadMolFromSmiles(smiles)
+    pattern=OBSmartsPattern()
+    pattern.Init(fragment)
+    return bool(pattern.Match(mol))
     
 def test():
     import orange
@@ -812,7 +842,8 @@ def test():
 def test1():
     import orange
     data=orange.ExampleTable("E:\chem\mutagen_raw.tab")
-    fragmenter=Fragmenter(minSupport=0.1, maxSupport=0.1, canonicalPruning=True)
+    data=orange.ExampleTable("E:\chem\smiles.tab")
+    fragmenter=Fragmenter(minSupport=0.02, maxSupport=0.1, canonicalPruning=True)
 ##    set_trace()
     data, fragments1=fragmenter(data, "SMILES") #, lambda e:str(e[-1])=="1")
 ##    data, fragments2=fragmenter(data, "SMILES", lambda e:str(e[-1])=="0")
@@ -821,6 +852,6 @@ def test1():
 if __name__=="__main__":
     import time
     sTime=time.clock()
-    test()
+    test1()
     print time.clock()-sTime
 
