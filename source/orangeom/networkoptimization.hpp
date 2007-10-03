@@ -70,6 +70,7 @@ public:
 	void random();
 	int fruchtermanReingold(int steps);
 	int radialFruchtermanReingold(int steps, int nCircles);
+	int smoothFruchtermanReingold(int steps, int center);
 	int circular(int type);
 	int circularCrossingReduction();
 	//int circularRandom();

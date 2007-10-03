@@ -647,6 +647,155 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 
 
 
+int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
+{ 
+	/*
+	cout << "nVertices: " << nVertices << endl << endl;
+	dumpCoordinates();
+	/**/
+	double **disp = (double**)malloc(nVertices * sizeof (double));
+	int i = 0;
+	for (i = 0; i < nVertices; i++)
+	{
+		disp[i] = (double *)calloc(2, sizeof(double));
+
+		if (disp[i] == NULL)
+		{
+			cerr << "Couldn't allocate memory (disp[])\n";
+			return 1;
+		}
+	}
+
+	int count = 0;
+	double kk = 1;
+	double localTemparature = 5;
+	double area = width * height;
+
+	k2 = area / nVertices;
+	k = sqrt(k2);
+	kk = 2 * k;
+	double kk2 = kk * kk;
+
+	// iterations
+	for (i = 0; i < steps; i++)
+	{
+		//cout << "iteration: " << i << endl;
+		// reset disp
+		int j = 0;
+		for (j = 0; j < nVertices; j++)
+		{
+			disp[j][0] = 0;
+			disp[j][1] = 0;
+		}
+
+		int v = 0;
+		// calculate repulsive force
+		//cout << "repulsive" << endl;
+		for (v = 0; v < nVertices - 1; v++)
+		{
+			for (int u = v + 1; u < nVertices; u++)
+			{
+				if (level[u] == level[v])
+					if (level[u] == 0)
+						k = kVector[0];
+					else
+						k = kVector[1];
+				else
+					k = kVector[2]; 
+
+				k2 = k * k;
+				kk2 = 4 * k2;
+
+				double difX = pos[v][0] - pos[u][0];
+				double difY = pos[v][1] - pos[u][1];
+
+				double dif2 = difX * difX + difY * difY; 
+
+				if (dif2 < kk2)
+				{
+					if (dif2 == 0)
+						dif2 = 1;
+
+					double dX = difX * k2 / dif2;
+					double dY = difY * k2 / dif2;
+
+					disp[v][0] = disp[v][0] + dX;
+					disp[v][1] = disp[v][1] + dY;
+
+					disp[u][0] = disp[u][0] - dX;
+					disp[u][1] = disp[u][1] - dY;
+				}
+			}
+		}
+		// calculate attractive forces
+		//cout << "attractive" << endl;
+		for (j = 0; j < nLinks; j++)
+		{
+			int v = links[0][j];
+			int u = links[1][j];
+
+			if (level[u] == level[v])
+				if (level[u] == 0)
+					k = kVector[0];
+				else
+					k = kVector[1];
+			else
+				k = kVector[2]; 
+
+			k2 = k * k;
+			kk = 2 * k;
+
+			double difX = pos[v][0] - pos[u][0];
+			double difY = pos[v][1] - pos[u][1];
+
+			double dif = sqrt(difX * difX + difY * difY);
+
+			double dX = difX * dif / k;
+			double dY = difY * dif / k;
+
+			disp[v][0] = disp[v][0] - dX;
+			disp[v][1] = disp[v][1] - dY;
+
+			disp[u][0] = disp[u][0] + dX;
+			disp[u][1] = disp[u][1] + dY;
+		}
+		//cout << "limit" << endl;
+		// limit the maximum displacement to the temperature t
+		// and then prevent from being displaced outside frame
+		for (v = 0; v < nVertices; v++)
+		{
+			double dif = sqrt(disp[v][0] * disp[v][0] + disp[v][1] * disp[v][1]);
+
+			if (dif == 0)
+				dif = 1;
+
+			if (v != center)
+			{
+				pos[v][0] = pos[v][0] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
+				pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
+			}
+		}
+		//cout << temperature << ", ";
+		temperature = temperature * coolFactor;
+	}
+
+	//cout << "end coors: " << endl;
+	//dumpCoordinates();
+
+	// free space
+	for (i = 0; i < nVertices; i++)
+	{
+		free(disp[i]);
+		disp[i] = NULL;
+	}
+	//cout << endl;
+	free(disp);
+	disp = NULL;
+	
+	return 0;
+}
+
+
 /* ==== Free a double *vector (vec of pointers) ========================== */ 
 void TNetworkOptimization::free_Carrayptrs(double **v)  {
 
@@ -875,14 +1024,15 @@ PyObject *NetworkOptimization_random(PyObject *self, PyObject *args) PYARGS(METH
   PyCATCH
 }
 
-PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, hiddenNodes) -> temperature")
+PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(steps, temperature, coolFactor, hiddenNodes) -> temperature")
 {
   PyTRY
 	int steps;
 	double temperature = 0;
+	double coolFactor = 0;
 	PyObject* hiddenNodes;
 
-	if (!PyArg_ParseTuple(args, "id|O:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &hiddenNodes))
+	if (!PyArg_ParseTuple(args, "id|dO:NetworkOptimization.fruchtermanReingold", &steps, &temperature, &coolFactor, &hiddenNodes))
 		return NULL;
 
 	int size = PyList_Size(hiddenNodes);
@@ -913,7 +1063,11 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 	graph->nLinks = graph->links[0].size();
 
 	graph->temperature = temperature;
-	graph->coolFactor = exp(log(10.0/10000.0) / steps);
+
+	if (coolFactor == 0)
+		graph->coolFactor = exp(log(10.0/10000.0) / steps);
+	else
+		graph->coolFactor = coolFactor;
 	
 	if (graph->fruchtermanReingold(steps) > 0)
 	{
@@ -1090,6 +1244,66 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 	return Py_BuildValue("d", graph->temperature);
   PyCATCH
 }
+
+
+
+PyObject *NetworkOptimization_smoothFruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(center, steps, temperature, coolFactor) -> temperature")
+{
+  PyTRY
+	int steps, center;
+	double temperature = 0;
+	double coolFactor = 0;
+	if (!PyArg_ParseTuple(args, "iid|d:NetworkOptimization.smoothFruchtermanReingold", &center, &steps, &temperature, &coolFactor))
+		return NULL;
+
+	CAST_TO(TNetworkOptimization, graph);
+
+	if (coolFactor == 0)
+		graph->coolFactor = exp(log(10.0/10000.0) / steps);
+	else
+		graph->coolFactor = coolFactor;
+
+	graph->level = new int[graph->nVertices];
+	graph->kVector = new double[3];
+
+	int i;
+	for (i = 0; i < graph->nVertices; i++)
+		graph->level[i] = 1;
+
+	vector<int> neighbours;
+	graph->graphStructure->getNeighbours(center, neighbours);
+	int nNeighbours = neighbours.size();
+
+	ITERATE(vector<int>, ni, neighbours)
+	{
+		graph->level[*ni] = 0;
+	}
+
+	graph->level[center] = 0;
+
+	double area = graph->width * graph->height;
+	double k2 = area / graph->nVertices;
+	
+	graph->kVector[0] = sqrt(PI * 9 * k2 / nNeighbours) / 2;
+	graph->kVector[1] = sqrt(k2);
+	graph->kVector[2] = 3 * sqrt(k2);
+
+	
+	graph->temperature = temperature;
+	
+	if (graph->smoothFruchtermanReingold(steps, center) > 0)
+	{
+		delete[] graph->level;
+		delete[] graph->kVector;
+		PYERROR(PyExc_SystemError, "smoothFruchtermanReingold failed", NULL);
+	}
+
+	delete[] graph->level;
+	delete[] graph->kVector;
+	return Py_BuildValue("d", graph->temperature);
+  PyCATCH
+}
+
 
 
 PyObject *NetworkOptimization_circularOriginal(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
