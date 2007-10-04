@@ -26,8 +26,8 @@ class OWFile(OWWidget):
 
         #set default settings
         self.recentFiles=["(none)"]
-        self.symbolDC = ""
-        self.symbolDK = ""
+        self.symbolDC = "?"
+        self.symbolDK = "~"
         self.createNewOn = orange.Variable.MakeStatus.NoRecognizedValues
         self.domain = None
         #get settings from the ini file, if they exist
@@ -45,12 +45,10 @@ class OWFile(OWWidget):
 
         box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=1)
         OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
-        hbox = OWGUI.indentedBox(box, addSpace=True, orientation=False)
-        le = OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
-        le.setMaximumWidth(48)
+        hbox = OWGUI.indentedBox(box, addSpace=True)
+        le = OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
         OWGUI.separator(hbox, 16, 0)
-        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
-        le.setMaximumWidth(48)
+        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
         OWGUI.radioButtonsInBox(self.controlArea, self, "createNewOn", box="Advanced", addSpace=True,
                        label = "Create a new attribute when existing attribute(s) ...", 
                        btnLabels = ["Have mismatching order of values",
@@ -84,7 +82,7 @@ class OWFile(OWWidget):
 
     def reload(self):
         if self.recentFiles:
-            return self.openFile(self.recentFiles[0], 1)
+            return self.openFile(self.recentFiles[0], 1, self.symbolDK, self.symbolDC)
 
     def activateLoadedSettings(self):
         # remove missing data set names
@@ -92,7 +90,7 @@ class OWFile(OWWidget):
         self.setFileList()
 
         if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
-            self.openFile(self.recentFiles[0])
+            self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
         # connecting GUI to code
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
@@ -108,7 +106,7 @@ class OWFile(OWWidget):
 
         if len(self.recentFiles) > 0:
             self.setFileList()
-            self.openFile(self.recentFiles[0])
+            self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
     # user pressed the "..." button to manually select a file to load
     def browseFile(self, inDemos=0):
@@ -159,11 +157,11 @@ class OWFile(OWWidget):
         if filename in self.recentFiles: self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
         self.setFileList()
-        self.openFile(self.recentFiles[0])
+        self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
 
     # Open a file, create data from it and send it over the data channel
-    def openFile(self, fn, throughReload=0, DK=None, DC=None):
+    def openFile(self, fn, throughReload, DK=None, DC=None):
         self.error()
         self.warning()
 
@@ -177,9 +175,9 @@ class OWFile(OWWidget):
             
         argdict = {"createNewOn": 3-self.createNewOn}
         if DK:
-            argdict["DK"] = DK
+            argdict["DK"] = str(DK)
         if DC:
-            argdict["DC"] = DC
+            argdict["DC"] = str(DC)
 
         data = None
         try:
@@ -197,7 +195,7 @@ class OWFile(OWWidget):
                 self.infoa.setText('No data loaded due to an error')
                 self.infob.setText("")
                 self.warnings.setText("")
-                return
+                ##raise
                         
         self.dataDomain = data.domain
 
@@ -261,4 +259,5 @@ if __name__ == "__main__":
     a.setMainWidget(owf)
     owf.show()
     a.exec_loop()
+##    owf.openFile(r"c:\Documents and Settings\peterjuv\My Documents\STEROLTALK\Sterolgene v.0 mouse\Natasa Debeljak\12631098-A2flipped.txt", 1)
     owf.saveSettings()
