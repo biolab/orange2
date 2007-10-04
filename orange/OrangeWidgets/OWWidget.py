@@ -39,10 +39,10 @@ class OWWidget(OWBaseWidget):
 
         if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
 
-        self.reportData = None
-        if hasattr(self, "sendReport") and not noReport:
-            self.reportButton = QPushButton("&Report", self.buttonBackground)
-            self.connect(self.reportButton, SIGNAL("clicked()"), self.sendReport)
+#        self.reportData = None
+#        if hasattr(self, "sendReport") and not noReport:
+#            self.reportButton = QPushButton("&Report", self.buttonBackground)
+#            self.connect(self.reportButton, SIGNAL("clicked()"), self.sendReport)
 
         self.widgetStatusArea = QHBox(self)
         #self.widgetStatusArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
