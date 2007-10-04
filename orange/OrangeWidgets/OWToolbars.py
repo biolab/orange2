@@ -25,8 +25,16 @@ def createButton(parent, text, action = None, icon = None, toggle = 0):
     return btn
     
 class ZoomSelectToolbar(QHButtonGroup):
-#                (tooltip, attribute containing the button, callback function, button icon, button cursor, toggle)
-    builtinFunctions = (None,
+#                (tooltip, attribute containing the button, callback function, button icon, button cursor, toggle)                 
+    IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent, IconZoomSelection = range(11)
+
+    DefaultButtons = 1, 4, 5, 0, 6, 7, 8
+    SelectButtons = 3, 4, 5, 0, 6, 7, 8
+    NavigateButtons = 1, 9, 10, 0, 2
+
+    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8), name = "Zoom / Select", exclusiveList = "__toolbars"):
+        if not hasattr(ZoomSelectToolbar, "builtinFunctions"):
+            ZoomSelectToolbar.builtinFunctions = (None,
                  ("Zooming", "buttonZoom", "activateZooming", QPixmap(dlg_zoom), Qt.sizeAllCursor, 1), 
                  ("Panning", "buttonPan", "activatePanning", QPixmap(dlg_pan), Qt.pointingHandCursor, 1), 
                  ("Selection", "buttonSelect", "activateSelection", QPixmap(dlg_select), Qt.arrowCursor, 1), 
@@ -38,14 +46,7 @@ class ZoomSelectToolbar(QHButtonGroup):
                  ("Zoom to extent", "buttonZoomExtent", "zoomExtent", QPixmap(dlg_zoom_extent), None, 0),
                  ("Zoom selection", "buttonZoomSelection", "zoomSelection", QPixmap(dlg_zoom_selection), None, 0)
                 )
-                 
-    IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent, IconZoomSelection = range(11)
 
-    DefaultButtons = 1, 4, 5, 0, 6, 7, 8
-    SelectButtons = 3, 4, 5, 0, 6, 7, 8
-    NavigateButtons = 1, 9, 10, 0, 2
-
-    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8), name = "Zoom / Select", exclusiveList = "__toolbars"):
         QHButtonGroup.__init__(self, name, parent)
         
         self.graph = graph # save graph. used to send signals
@@ -104,7 +105,12 @@ class ZoomSelectToolbar(QHButtonGroup):
     
 class NavigateSelectToolbar(QVBox):
 #                (tooltip, attribute containing the button, callback function, button icon, button cursor, toggle)
-    builtinFunctions = (None,
+                 
+    IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent, IconZoomSelection = range(11)
+
+    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8)):
+        if not hasattr(NavigateSelectToolbar, "builtinFunctions"):
+            NavigateSelectToolbar.builtinFunctions = (None,
                  ("Zooming", "buttonZoom", "activateZooming", QPixmap(dlg_zoom), Qt.crossCursor, 1, "navigate"), 
                  ("Panning", "buttonPan", "activatePanning", QPixmap(dlg_pan), Qt.pointingHandCursor, 1, "navigate"), 
                  ("Selection", "buttonSelect", "activateSelection", QPixmap(dlg_select), Qt.arrowCursor, 1, "select"), 
@@ -116,10 +122,7 @@ class NavigateSelectToolbar(QVBox):
                  ("Zoom to extent", "buttonZoomExtent", "zoomExtent", QPixmap(dlg_zoom_extent), None, 0, "navigate"),
                  ("Zoom selection", "buttonZoomSelection", "zoomSelection", QPixmap(dlg_zoom_selection), None, 0, "navigate")
                 )
-                 
-    IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent, IconZoomSelection = range(11)
 
-    def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8)):
         #QHButtonGroup.__init__(self, "Zoom / Select", parent)
         QVBox.__init__(self, parent, "NavigateSelect")
         
