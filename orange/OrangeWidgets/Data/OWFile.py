@@ -43,13 +43,14 @@ class OWFile(OWWidget):
 #        OWGUI.rubber(self.controlArea)
         
 
-#        OWGUI.widgetLabel(box, "Undefineds in tab-delimited files (besides default ones)")
-#        hbox = OWGUI.indentedBox(box, addSpace=True, orientation=False)
-#        le = OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
-#        le.setMaximumWidth(48)
-#        OWGUI.separator(hbox, 16, 0)
-#        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
-#        le.setMaximumWidth(48)
+        box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=1)
+        OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
+        hbox = OWGUI.indentedBox(box, addSpace=True, orientation=False)
+        le = OWGUI.lineEdit(hbox, self, "symbolDC", "Don't care:  ", orientation="horizontal", tooltip="Default values: empty fields (space), '?' or 'NA'")
+        le.setMaximumWidth(48)
+        OWGUI.separator(hbox, 16, 0)
+        le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", orientation="horizontal", tooltip="Default values: '~' or '*'")
+        le.setMaximumWidth(48)
         OWGUI.radioButtonsInBox(self.controlArea, self, "createNewOn", box="Advanced", addSpace=True,
                        label = "Create a new attribute when existing attribute(s) ...", 
                        btnLabels = ["Have mismatching order of values",
