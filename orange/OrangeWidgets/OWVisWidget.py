@@ -13,7 +13,7 @@ class OWVisWidget(OWWidget):
         self.selectedShown = []
         self.hiddenAttributes = []
         self.selectedHidden = []
-        
+
         self.shownAttribsGroup = OWGUI.widgetBox(placementTab, " Shown attributes " )
         self.addRemoveGroup = OWGUI.widgetBox(placementTab, 1, orientation = "horizontal" )
         self.hiddenAttribsGroup = OWGUI.widgetBox(placementTab, " Hidden attributes ")
@@ -35,7 +35,7 @@ class OWVisWidget(OWWidget):
         self.attrAddButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_up2.png")))
         self.attrRemoveButton = OWGUI.button(self.addRemoveGroup, self, "", callback = self.removeAttribute, tooltip="Remove (hide) selected attributes")
         self.attrRemoveButton.setPixmap(QPixmap(os.path.join(self.widgetDir, r"icons\Dlg_down2.png")))
-        self.showAllCB = OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes) 
+        self.showAllCB = OWGUI.checkBox(self.addRemoveGroup, self, "showAllAttributes", "Show all", callback = self.cbShowAllAttributes)
 
         self.hiddenAttribsLB = OWGUI.listBox(self.hiddenAttribsGroup, self, "selectedHidden", "hiddenAttributes", callback = self.resetAttrManipulation, selectionMode = QListBox.Extended)
 
@@ -50,11 +50,12 @@ class OWVisWidget(OWWidget):
         self.attrRemoveButton.setDisabled(not self.selectedShown or self.showAllAttributes)
         if self.data and self.hiddenAttributes and self.data.domain.classVar and self.hiddenAttributes[0][0] != self.data.domain.classVar.name:
             self.showAllCB.setChecked(0)
-        
+
+
     def moveAttrSelection(self, labels, selection, dir):
         self.graph.insideColors = None
         self.graph.clusterClosure = None
-        
+
         labs = getattr(self, labels)
         sel = getattr(self, selection)
         mini, maxi = min(sel), max(sel)+1
@@ -64,6 +65,7 @@ class OWVisWidget(OWWidget):
             setattr(self, labels, labs[:mini] + [labs[maxi]] + labs[mini:maxi] + labs[maxi+1:])
         setattr(self, selection, map(lambda x:x+dir, sel))
 
+        self.resetAttrManipulation()
         self.sendShownAttributes()
         self.graph.potentialsBmp = None
         if self.updateCallbackFunction: self.updateCallbackFunction()
@@ -73,7 +75,7 @@ class OWVisWidget(OWWidget):
     def moveAttrUP(self):
         self.moveAttrSelection("shownAttributes", "selectedShown", -1)
 
-    # move selected attribute in "Attribute Order" list one place down  
+    # move selected attribute in "Attribute Order" list one place down
     def moveAttrDOWN(self):
         self.moveAttrSelection("shownAttributes", "selectedShown", 1)
 
@@ -95,7 +97,7 @@ class OWVisWidget(OWWidget):
         self.selectedHidden = []
         self.selectedShown = []
         self.resetAttrManipulation()
-                
+
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
 
@@ -113,7 +115,7 @@ class OWVisWidget(OWWidget):
         for i in self.selectedShown:
             del newShown[i]
         self.setShownAttributeList(self.data, newShown)
-                
+
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.sendShownAttributes()
