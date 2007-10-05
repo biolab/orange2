@@ -1,6 +1,8 @@
 import time, copy, orange
 from string import *
 
+contextStructureVersion = 100
+
 class Context:
     def __init__(self, **argkw):
         self.time = time.time()
@@ -17,10 +19,11 @@ class Context:
 class ContextHandler:
     maxSavedContexts = 50
     
-    def __init__(self, contextName = "", cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, **args):
+    def __init__(self, contextName = "", cloneIfImperfect = True, findImperfect = True, syncWithGlobal = True, contextDataVersion = 0, **args):
         self.contextName = contextName
         self.localContextName = "localContexts"+contextName
-        self.cloneIfImperfect, self.loadImperfect, self.findImperfect = cloneIfImperfect, loadImperfect, findImperfect
+        self.cloneIfImperfect, self.findImperfect = cloneIfImperfect, findImperfect
+        self.contextDataVersion = contextDataVersion
         self.syncWithGlobal = syncWithGlobal
         self.globalContexts = []
         self.__dict__.update(args)
@@ -45,7 +48,7 @@ class ContextHandler:
                 setattr(widget, self.localContextName, copy.deepcopy(self.globalContexts))
         
     def findOrCreateContext(self, widget, *arg, **argkw):        
-        index, context, score = self.findMatch(widget, self.findImperfect and self.loadImperfect, *arg, **argkw)
+        index, context, score = self.findMatch(widget, self.findImperfect, *arg, **argkw)
         if context:
             if index < 0:
                 self.addContext(widget, context)
@@ -60,7 +63,7 @@ class ContextHandler:
     def closeContext(self, widget, context):
         self.settingsFromWidget(widget, context)
 
-    def fastSave(self, context, widget, name):
+    def fastSave(self, context, widget, name, value):
         pass
 
     def settingsToWidget(self, widget, context):
@@ -84,7 +87,6 @@ class ContextHandler:
             if hasattr(self, "cloneContext"):
                 bestContext = self.cloneContext(bestContext, *arg, **argkw)
             else:
-                import copy
                 bestContext = copy.deepcopy(bestContext)
             bestI = -1
                 
@@ -115,18 +117,6 @@ class ContextField:
         self.__dict__.update(argkw)
     
 
-class ControlledAttributesDict(dict):
-    def __init__(self, master):
-        self.master = master
-
-    def __setitem__(self, key, value):
-        if not self.has_key(key):
-            dict.__setitem__(self, key, [value])
-        else:
-            dict.__getitem__(self, key).append(value)
-        self.master.setControllers(self.master, key, self.master, "")
-        
-        
 class DomainContextHandler(ContextHandler):
     Optional, SelectedRequired, Required = range(3)
     RequirementMask = 3
@@ -134,81 +124,124 @@ class DomainContextHandler(ContextHandler):
     List = 8
     RequiredList = Required + List
     SelectedRequiredList = SelectedRequired + List
+    ExcludeOrdinaryAttributes, IncludeMetaAttributes = 16, 32
 
     MatchValuesNo, MatchValuesClass, MatchValuesAttributes = range(3)
     
     def __init__(self, contextName, fields = [],
-                 cloneIfImperfect = True, loadImperfect = True, findImperfect = True, syncWithGlobal = True, maxAttributesToPickle = 100, matchValues = 0, **args):
-        ContextHandler.__init__(self, contextName, cloneIfImperfect, loadImperfect, findImperfect, syncWithGlobal, **args)
+                 cloneIfImperfect = True, findImperfect = True, syncWithGlobal = True,
+                 maxAttributesToPickle = 100, matchValues = 0, 
+                 forceOrdinaryAttributes = False, forceMetaAttributes = False, contextDataVersion = 0, **args):
+        ContextHandler.__init__(self, contextName, cloneIfImperfect, findImperfect, syncWithGlobal, contextDataVersion = contextDataVersion, **args)
         self.maxAttributesToPickle = maxAttributesToPickle
         self.matchValues = matchValues
         self.fields = []
+        hasMetaAttributes = hasOrdinaryAttributes = False
+
         for field in fields:
             if isinstance(field, ContextField):
                 self.fields.append(field)
+                if not field.flags & self.NotAttribute:
+                    hasOrdinaryAttributes = hasOrdinaryAttributes or not field.flags & self.ExcludeOrdinaryAttributes
+                    hasMetaAttributes = hasMetaAttributes or field.flags & self.IncludeMetaAttributes
             elif type(field)==str:
                 self.fields.append(ContextField(field, self.Required))
+                hasOrdinaryAttributes = True
             # else it's a tuple
             else:
                 flags = field[1]
-                if type(field[0]) == list:
+                if isinstance(field[0], list):
                     self.fields.extend([ContextField(x, flags) for x in field[0]])
                 else:
                     self.fields.append(ContextField(field[0], flags))
+                if not flags & self.NotAttribute:
+                    hasOrdinaryAttributes = hasOrdinaryAttributes or not flags & self.ExcludeOrdinaryAttributes
+                    hasMetaAttributes = hasMetaAttributes or flags & self.IncludeMetaAttributes
+                    
+        self.hasOrdinaryAttributes, self.hasMetaAttributes = hasOrdinaryAttributes, hasMetaAttributes
         
     def encodeDomain(self, domain):
         if self.matchValues == 2:
-            d = dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
-                         for attr in domain])
-            d.update(dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
-                         for attr in domain.getmetas().values()]))
+            attributes = self.hasOrdinaryAttributes and \
+                         dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
+                                for attr in domain])
+            metas = self.hasMetaAttributes and \
+                         dict([(attr.name, attr.varType != orange.VarTypes.Discrete and attr.varType or attr.values)
+                                for attr in domain.getmetas().values()])
         else:
-            d = dict([(attr.name, attr.varType) for attr in domain.attributes])
-            classVar = domain.classVar
-            if classVar:
-                if self.matchValues and classVar.varType == orange.VarTypes.Discrete:
-                    d[classVar.name] = classVar.values
-                else:
-                    d[classVar.name] = classVar.varType
+            if self.hasOrdinaryAttributes:
+                attributes = dict([(attr.name, attr.varType) for attr in domain.attributes])
+                classVar = domain.classVar
+                if classVar:
+                    if self.matchValues and classVar.varType == orange.VarTypes.Discrete:
+                        attributes[classVar.name] = classVar.values
+                    else:
+                        attributes[classVar.name] = classVar.varType
+            else:
+                attributes = False
 
-            d.update(dict([(attr.name, attr.varType) for attr in domain.getmetas().values()]))
+            metas = self.hasMetaAttributes and dict([(attr.name, attr.varType) for attr in domain.getmetas().values()])
 
-        return d
+        return attributes, metas
     
     def findOrCreateContext(self, widget, domain):
         if not domain:
             return None, False
-        if type(domain) != orange.Domain:
+        
+        if not isinstance(domain, orange.Domain):
             domain = domain.domain
             
         encodedDomain = self.encodeDomain(domain)
-        context, isNew = ContextHandler.findOrCreateContext(self, widget, domain, encodedDomain)
+        context, isNew = ContextHandler.findOrCreateContext(self, widget, domain, *encodedDomain)
         if not context:
             return None, False
         
-        context.encodedDomain = encodedDomain
+        if len(encodedDomain) == 2:
+            context.attributes, context.metas = encodedDomain
+        else:
+            context.attributes, context.classVar, context.metas = encodedDomain
 
         metaIds = domain.getmetas().keys()
         metaIds.sort()
-        context.orderedDomain = [(attr.name, attr.varType) for attr in domain] + [(domain[i].name, domain[i].varType) for i in metaIds]
+        context.orderedDomain = []
+        if self.hasOrdinaryAttributes:
+            context.orderedDomain.extend([(attr.name, attr.varType) for attr in domain])
+        if self.hasMetaAttributes:
+            context.orderedDomain.extend([(domain[i].name, domain[i].varType) for i in metaIds])
 
         if isNew:
             context.values = {}
             context.noCopy = ["orderedDomain"]
         return context, isNew
 
+#    def exists(self, field, value, context):
+#        for check, what in ((not field.flags & self.ExcludeOrdinaryAttributes, context.attributes),
+#                            (field.flags & self.IncludeMetaAttributes, context.metas)):
+#            if check:
+#                inDomainType = context.attributes.get(value[0])
+#                if isinstance(savedType, list):
+#                    if what.get(value[0], False) == savedType 
+#                                f
+#                    if saved
+             
     def settingsToWidget(self, widget, context):
         ContextHandler.settingsToWidget(self, widget, context)
         excluded = {}
+        addOrdinaryTo = []
+        addMetaTo = []
         for field in self.fields:
             name, flags = field.name, field.flags
 
             excludes = getattr(field, "reservoir", [])
             if excludes:
-                if type(excludes) != list:
+                if not isinstance(excludes, list):
                     excludes = [excludes]
                 for exclude in excludes:
                     excluded.setdefault(exclude, [])
+                    if not (flags & self.NotAttribute + self.ExcludeOrdinaryAttributes):
+                        addOrdinaryTo.append(exclude)
+                    if flags & self.IncludeMetaAttributes:
+                        addMetaTo.append(exclude)                    
 
             if not context.values.has_key(name):
                 continue
@@ -216,6 +249,8 @@ class DomainContextHandler(ContextHandler):
             value = context.values[name]
 
             if not flags & self.List:
+# TODO: is setattr supposed to check that we do not assign values that are optional and do not exist?
+# is context cloning's filter enough to get rid of such attributes?
                 setattr(widget, name, value[0])
                 for exclude in excludes:
                     excluded[exclude].append(value)
@@ -224,7 +259,8 @@ class DomainContextHandler(ContextHandler):
                 newLabels, newSelected = [], []
                 oldSelected = hasattr(field, "selected") and context.values.get(field.selected, []) or []
                 for i, saved in enumerate(value):
-                    if saved in context.orderedDomain:
+                    if not flags & self.ExcludeOrdinaryAttributes and saved in context.attributes \
+                       or flags & self.IncludeMetaAttributes and saved in context.metas:
                         if i in oldSelected:
                             newSelected.append(len(newLabels))
                         newLabels.append(saved)
@@ -240,7 +276,8 @@ class DomainContextHandler(ContextHandler):
                     excluded[exclude].extend(value)
 
         for name, values in excluded.items():
-            ll = filter(lambda a: a not in values, context.orderedDomain)
+            addOrd, addMeta = name in addOrdinaryTo, name in addMetaTo
+            ll = [a for a in context.orderedDomain if a not in values and (addOrd or a in context.metas) and (addMeta or a in contex.attributes)]
             setattr(widget, name, ll)
             
 
@@ -249,7 +286,7 @@ class DomainContextHandler(ContextHandler):
         context.values = {}
         for field in self.fields:
             if not field.flags & self.List:
-                self.saveLow(context, widget, field.name, widget.getdeepattr(field.name))
+                self.saveLow(context, widget, field.name, widget.getdeepattr(field.name), field.flags)
             else:
                 context.values[field.name] = widget.getdeepattr(field.name)
                 if hasattr(field, "selected"):
@@ -262,39 +299,51 @@ class DomainContextHandler(ContextHandler):
                     if field.flags & self.List:
                         context.values[field.name] = value
                     else:
-                        self.saveLow(context, widget, name, value)
+                        self.saveLow(context, widget, name, value, field.flags)
                     return
                 if name == getattr(field, "selected", None):
                     context.values[field.selected] = list(value)
                     return
 
-    def saveLow(self, context, widget, field, value):
-        if type(value) == str:
-            context.values[field] = value, context.encodedDomain.get(value, -1) # -1 means it's not an attribute
+    def saveLow(self, context, widget, field, value, flags):
+        if isinstance(value, str):
+            valtype = not flags & self.ExcludeOrdinaryAttributes and context.attributes.get(value, -1)
+            if valtype == -1:
+                valtype = flags & self.IncludeMetaAttributes and context.attributes.get(value, -1)
+            context.values[field] = value, valtype # -1 means it's not an attribute
         else:
             context.values[field] = value, -2
 
-    def match(self, context, imperfect, domain, encodedDomain):
-        if encodedDomain == context.encodedDomain:
+    def attributeExists(self, value, flags, attributes, metas):
+        return not flags & self.ExcludeOrdinaryAttributes and attributes.get(value[0], -1) == value[1] \
+                or flags & self.IncludeMetaAttributes and metas.get(value[0], -1) == value[1]
+    
+    def match(self, context, imperfect, domain, attributes, metas):
+        if (attributes, metas) == (context.attributes, context.metas):
             return 2
         if not imperfect:
             return 0
 
         filled = potentiallyFilled = 0
         for field in self.fields:
+            flags = field.flags
             value = context.values.get(field.name, None)
             if value:
-                if field.flags & self.List:
-                    potentiallyFilled += len(value)
-                    if field.flags & self.RequirementMask == self.Required:
+                if flags & self.List:
+                    if flags & self.RequirementMask == self.Required:
+                        potentiallyFilled += len(value)
                         filled += len(value)
                         for item in value:
-                            if encodedDomain.get(item[0], None) != item[1]:
+                            if not self.attributeExists(item, flags, attributes, metas): 
                                 return 0
                     else:
                         selectedRequired = field.flags & self.RequirementMask == self.SelectedRequired
-                        for i in context.values.get(field.selected, []):
-                            if value[i] in encodedDomain:
+                        selected = context.values.get(field.selected, [])
+                        potentiallyFilled += len(selected) 
+                        for i in selected:
+                            # TODO: shouldn't we check the attribute type here, too? or should we change self.saveLow for these field types then?
+                            if (not flags & self.ExcludeOrdinaryAttributes and value[i] in attributes
+                                 or flags & self.IncludeMetaAttributes and value[i] in metas): 
                                 filled += 1
                             else:
                                 if selectedRequired:
@@ -302,10 +351,11 @@ class DomainContextHandler(ContextHandler):
                 else:
                     potentiallyFilled += 1
                     if value[1] >= 0:
-                        if encodedDomain.get(value[0], None) == value[1]:
+                        if (not flags & self.ExcludeOrdinaryAttributes and attributes.get(value[0], None) == value[1]
+                             or flags & self.IncludeMetaAttributes and metas.get(value[0], None) == value[1]): 
                             filled += 1
                         else:
-                            if field.flags & self.Required:
+                            if flags & self.Required:
                                 return 0
 
             if not potentiallyFilled:
@@ -313,7 +363,7 @@ class DomainContextHandler(ContextHandler):
             else:
                 return filled / float(potentiallyFilled)
 
-    def cloneContext(self, context, domain, encodedDomain):
+    def cloneContext(self, context, domain, attributes, metas):
         import copy
         context = copy.deepcopy(context)
         
@@ -326,7 +376,7 @@ class DomainContextHandler(ContextHandler):
                     selected.sort()
                     nextSel = selected and selected[0] or None
                     while i < len(value):
-                        if encodedDomain.get(value[i][0], None) != value[i][1]:
+                        if not self.attributeExists(value[i], field.flags, attributes, metas):
                             del value[i]
                             if nextSel == realI:
                                 del selected[j]
@@ -341,10 +391,10 @@ class DomainContextHandler(ContextHandler):
                     if hasattr(field, "selected"):
                         context.values[field.selected] = selected[:j]
                 else:
-                    if value[1] >= 0 and encodedDomain.get(value[0], None) != value[1]:
+                    if value[1] >= 0 and not self.attributeExists(value, field.flags, attributes, metas):
                         del context.values[field.name]
                         
-        context.encodedDomain = encodedDomain
+        context.attributes, context.metas = attributes, metas
         context.orderedDomain = [(attr.name, attr.varType) for attr in domain]
         return context
 
@@ -353,14 +403,14 @@ class DomainContextHandler(ContextHandler):
         if not self.syncWithGlobal:
             self.globalContexts.extend(getattr(widget, self.localContextName))
         mp = self.maxAttributesToPickle
-        self.globalContexts = filter(lambda c: len(c.encodedDomain) < mp, self.globalContexts)
+        self.globalContexts = filter(lambda c: (c.attributes and len(c.attributes)) + (c.metas and len(c.metas)) < mp, self.globalContexts)
         self.globalContexts.sort(lambda c1,c2: -cmp(c1.time, c2.time))
         self.globalContexts = self.globalContexts[:self.maxSavedContexts]
 
     
 class ClassValuesContextHandler(ContextHandler):
-    def __init__(self, contextName, fields = [], syncWithGlobal = True, **args):
-        ContextHandler.__init__(self, contextName, False, False, False, syncWithGlobal, **args)
+    def __init__(self, contextName, fields = [], syncWithGlobal = True, contextDataVersion = 0, **args):
+        ContextHandler.__init__(self, contextName, False, False, syncWithGlobal, contextDataVersion = contextDataVersion, **args)
         if isinstance(fields, list):
             self.fields = fields
         else:
@@ -406,10 +456,12 @@ class ClassValuesContextHandler(ContextHandler):
 ### Due to different encoding, it also needs to overload saveLow and cloneContext
 ### (the latter gets really simple now).
 ### We could simplify some other methods, but prefer not to replicate the code
+###
+### Note that forceOrdinaryAttributes is here True by default!
 class PerfectDomainContextHandler(DomainContextHandler):
     def __init__(self, contextName = "", fields = [],
-                 syncWithGlobal = True, maxAttributesToPickle = 100, matchValues = 0, **args):
-        DomainContextHandler.__init__(self, contextName, fields, False, False, False, syncWithGlobal, maxAttributesToPickle = maxAttributesToPickle, matchValues = matchValues, **args)
+                 syncWithGlobal = True, **args):
+            DomainContextHandler.__init__(self, contextName, fields, False, False, False, syncWithGlobal, **args)
 
         
     def encodeDomain(self, domain):
@@ -431,14 +483,23 @@ class PerfectDomainContextHandler(DomainContextHandler):
     
 
 
-    def match(self, context, imperfect, domain, encodedDomain):
-        return encodedDomain == context.encodedDomain and 2
+    def match(self, context, imperfect, domain, attributes, classVar, metas):
+        return (attributes, classVar, metas) == (context.attributes, context.classVar, context.metas) and 2
 
 
-    def saveLow(self, context, widget, field, value):
-        if type(value) == str:
-            atts = [x for x in context.encodedDomain if x[0] == value]
-            context.values[field] = value, (atts and atts[1] or -1) # -1 means it's not an attribute
+    def saveLow(self, context, widget, field, value, flags):
+        if isinstance(value, str):
+            if not flags & self.ExcludeOrdinaryAttributes:
+                attr = [x[1] for x in context.attributes if x[0] == value]
+            if not attr and context.classVar and context.classVar[0] == value:
+                attr = [context.classVar[1]]
+            if not attr and flags & self.IncludeMetaAttributes:
+                attr = [x[1] for x in context.metas if x[0] == value]
+
+            if attr:
+                context.values[field] = value, attr[0]
+            else:
+                context.values[field] = value, -1
         else:
             context.values[field] = value, -2
 
