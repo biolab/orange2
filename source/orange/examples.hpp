@@ -152,8 +152,8 @@ public:
   int  compare(const TExample &other, const bool ignoreClass = false) const;
   bool compatible(const TExample &other, const bool ignoreClass = false) const;
 
-  void addToCRC(unsigned long &crc) const;
-  int sumValues() const;
+  void addToCRC(unsigned long &crc, const bool includeMetas = false) const;
+  int sumValues(const bool includeMetas = false) const;
   
   bool hasMissing() const
   {

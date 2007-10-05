@@ -336,23 +336,48 @@ bool TExample::compatible(const TExample &other, const bool ignoreClass) const
 }
 
 
-void TExample::addToCRC(unsigned long &crc) const
+#include "stringvars.hpp"
+
+void TExample::addToCRC(unsigned long &crc, const bool includeMetas) const
 {
   TValue *vli = values;
   const_PITERATE(TVarList, vi, domain->variables) {
     if ((*vi)->varType == TValue::INTVAR)
-      add_CRC((const unsigned char)(vli->isSpecial() ? ((*vi)->noOfValues()) : vli->intV), crc);
-    else if (((*vi)->varType == TValue::FLOATVAR) && !vli->isSpecial())
-      add_CRC(vli->floatV, crc);
+      add_CRC((const unsigned long)(vli->isSpecial() ? ILLEGAL_INT : vli->intV), crc);
+    else if (((*vi)->varType == TValue::FLOATVAR))
+      add_CRC(vli->isSpecial() ? ILLEGAL_FLOAT : vli->floatV, crc);
+    else if ((*vi)->varType == STRINGVAR) {
+      if (vli->isSpecial() || !vli->svalV)
+        add_CRC((const unsigned long)ILLEGAL_INT, crc);
+      else
+        add_CRC(vli->svalV.AS(TStringValue)->value.c_str(), crc);
+    }
     vli++;
+  }
+  
+  if (includeMetas) {
+    const_ITERATE(TMetaValues, mi, meta) {
+      add_CRC((const unsigned long)(mi->first), crc);
+      const TValue &val = mi->second;
+      if (val.varType == TValue::INTVAR)
+        add_CRC((const unsigned long)(val.isSpecial() ? ILLEGAL_INT : val.intV), crc);
+      else if (val.varType == TValue::INTVAR)
+        add_CRC(val.isSpecial() ? ILLEGAL_FLOAT: val.floatV, crc);
+      else if (val.varType == STRINGVAR) {
+        if (val.isSpecial()  || !vli->svalV)
+          add_CRC((const unsigned long)ILLEGAL_INT, crc);
+        else
+          add_CRC(val.svalV.AS(TStringValue)->value.c_str(), crc);
+      }
+    }
   }
 }
 
 
-int TExample::sumValues() const
+int TExample::sumValues(const bool includeMetas) const
 { unsigned long crc;
   INIT_CRC(crc);
-  addToCRC(crc);
+  addToCRC(crc, includeMetas);
   FINISH_CRC(crc);
   return int(crc & 0x7fffffff);
 }
