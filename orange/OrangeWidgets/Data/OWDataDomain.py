@@ -13,15 +13,15 @@ import OWGUI
 
 class OWDataDomain(OWWidget):
     contextHandlers = {"": DomainContextHandler("", [ContextField("chosenAttributes",
-                                                                  DomainContextHandler.RequiredList,
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
                                                                   selected="selectedChosen", reservoir="inputAttributes"),
                                                      ContextField("classAttribute",
-                                                                  DomainContextHandler.RequiredList,
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
                                                                   selected="selectedClass", reservoir="inputAttributes"),
                                                      ContextField("metaAttributes",
-                                                                  DomainContextHandler.RequiredList,
+                                                                  DomainContextHandler.RequiredList + DomainContextHandler.IncludeMetaAttributes,
                                                                   selected="selectedMeta", reservoir="inputAttributes")
-                                                     ])}
+                                                     ], syncWithGlobal = False)}
 
 
     def __init__(self,parent = None, signalManager = None):
