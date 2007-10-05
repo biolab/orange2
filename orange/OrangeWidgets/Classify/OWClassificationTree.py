@@ -10,6 +10,11 @@ from OWWidget import *
 import orngTree, OWGUI
 from exceptions import Exception
 
+import warnings
+warnings.filterwarnings("ignore", ".*this class is not optimized for 'candidates' list and can be very slow.*", orange.KernelWarning, ".*orngTree", 34)
+
+
+
 class OWClassificationTree(OWWidget):
     settingsList = ["name",
                     "estim", "relK", "relM",
