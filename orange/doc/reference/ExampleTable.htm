@@ -15,6 +15,8 @@ list and this is what it basically is: an ordered sequence of
 examples, supporting the usual Python procedures for lists, including
 the more advanced operations such as slicing and sorting.</P>
 
+<small>This is a bit advanced, but we should write it here so nobody overlooks it: if <code>data</code> is an instance of <code>ExampleTable</code>, <code>data[0]</code> is not a <em>reference</em> to the first element but the first element itself. About the only case in which this is important is when we try to swap two elements, either like <code>data[0], data[1] = data[1], data[0]</code> or with an intermediate variable: it won't work. For the same reason: <b>random.shuffle</b> doesn't work on <code>ExampleTable</code> (as it doesn't on numpy, by the way). Use <code>ExampleTable</code>'s own <code>shuffle</code> method instead.</small>
+
 <P><CODE>ExampleTable</CODE> is derived from a more general abstract class <CODE>ExampleGenerator</CODE>. </P>
 
 <p class=section>Attributes</p>
@@ -448,6 +450,9 @@ data.randomGenerator = random.randint(0, 10000)
 <DD>Sorts examples by attribute values. The order of attributes can be given, beginning with the most important attribute. Note that the ordering is not given by symbolic names (such as "young", "psby"...) but by the order in which values are listed in <CODE>values</CODE> table (see documentation on <a href="Variable.htm"><CODE>Variable</CODE></A>).
 
 <P>Examples in dataset "bridges" can be sorted by lengths and years they were erected by <CODE>data.sort("LENGTH", "ERECTED")</CODE>.</P>
+
+<DT>shuffle()</DT>
+<DD>Randomly shuffles the examples in the table. This function should always be used instead of <code>random.shuffle</code>, which does not work for <code>ExampleTable</code>.</DD>
 
 <DT>changeDomain(domain)</DT>
 <DD>Changes the table's domain, converting all examples in place. Returns <CODE>None</CODE>. This function is not available for tables that contain references to examples.</P>
