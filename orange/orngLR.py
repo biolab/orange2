@@ -56,15 +56,21 @@ class LogRegLearnerClass:
             examples = orange.Preprocessor_dropMissing(examples)
 ##        if hasDiscreteValues(examples.domain):
 ##            examples = createNoDiscTable(examples)
+        if not len(examples):
+            return None
         if getattr(self, "stepwiseLR", 0):
             addCrit = getattr(self, "addCrit", 0.2)
             removeCrit = getattr(self, "removeCrit", 0.3)
             numAttr = getattr(self, "numAttr", -1)
             attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer, numAttr = numAttr)
-            examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
+            try:
+                examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
+            except:
+                print list(attributes)
         learner = orange.LogRegLearner()
         learner.imputerConstructor = imputer
-        examples = self.imputer(examples)(examples)
+        if imputer:
+            examples = self.imputer(examples)(examples)
         examples = orange.Preprocessor_dropMissing(examples)
         if self.fitter:
             learner.fitter = self.fitter
@@ -594,7 +600,7 @@ def StepWiseFSS(examples = None, **kwds):
     """
 
     fss = apply(StepWiseFSS_class, (), kwds)
-    if examples:
+    if examples is not None:
         return fss(examples)
     else:
         return fss
@@ -740,7 +746,7 @@ def StepWiseFSS_Filter(examples = None, **kwds):
     """
 
     filter = apply(StepWiseFSS_Filter_class, (), kwds)
-    if examples:
+    if examples is not None:
         return filter(examples)
     else:
         return filter
