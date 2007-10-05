@@ -66,6 +66,19 @@ def unisetattr(self, name, value, grandparent):
 
 
 
+class ControlledAttributesDict(dict):
+    def __init__(self, master):
+        self.master = master
+
+    def __setitem__(self, key, value):
+        if not self.has_key(key):
+            dict.__setitem__(self, key, [value])
+        else:
+            dict.__getitem__(self, key).append(value)
+        self.master.setControllers(self.master, key, self.master, "")
+        
+        
+
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
 class ExampleTable(orange.ExampleTable):
@@ -126,8 +139,6 @@ class OWBaseWidget(QDialog):
         if not os.path.exists(self.outputDir):
             try: os.mkdir(self.outputDir)            # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
             except: pass
-
-        self.loadContextSettings()
 
         self.captionTitle = title.replace("&","")     # used for widget caption
 
@@ -341,31 +352,22 @@ class OWBaseWidget(QDialog):
 
                 contextHandlers = getattr(self, "contextHandlers", {})
                 for contextHandler in contextHandlers.values():
+                    localName = contextHandler.localContextName
+                    
+                    structureVersion, dataVersion = settings.get(localName+"Version", (0, 0))
+                    if (structureVersion < contextStructureVersion or dataVersion < contextHandler.contextDataVersion) \
+                       and settings.has_key(localName):
+                        del settings[localName]
+                        delattr(self, localName)
+                        contextHandler.initLocalContext(self)
+
                     if not getattr(contextHandler, "globalContexts", False): # don't have it or empty
-                        contexts = settings.get(contextHandler.localContextName, False)
+                        contexts = settings.get(localName, False)
                         if contexts != False:
                             contextHandler.globalContexts = contexts
                     else:
                         if contextHandler.syncWithGlobal:
-                            setattr(self, contextHandler.localContextName, contextHandler.globalContexts)
-
-
-    def loadContextSettings(self, file = None):
-        if not hasattr(self.__class__, "savedContextSettings"):
-            file = self.getSettingsFile(file)
-            if file:
-                try:
-                    settings = cPickle.load(file)
-                except:
-                    settings = None
-
-                # can't close everything into one big try-except since this would mask all errors in the below code
-                if settings:
-                    if settings.has_key("savedContextSettings"):
-                        self.__class__.savedContextSettings = settings["savedContextSettings"]
-                        return
-
-            self.__class__.savedContextSettings = {}
+                            setattr(self, localName, contextHandler.globalContexts)
 
 
     def saveSettings(self, file = None):
@@ -375,6 +377,7 @@ class OWBaseWidget(QDialog):
         for contextHandler in contextHandlers.values():
             contextHandler.mergeBack(self)
             settings[contextHandler.localContextName] = contextHandler.globalContexts
+            settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
 
         if settings:
             if file==None:
@@ -393,8 +396,15 @@ class OWBaseWidget(QDialog):
 
         contextHandlers = getattr(self, "contextHandlers", {})
         for contextHandler in contextHandlers.values():
-            if settings.has_key(contextHandler.localContextName):
-                setattr(self, contextHandler.localContextName, settings[contextHandler.localContextName])
+            localName = contextHandler.localContextName
+            if settings.has_key(localName):
+                structureVersion, dataVersion = settings.get(localName+"Version", (0, 0))
+                if structureVersion < contextStructureVersion or dataVersion < contextHandler.contextDataVersion:
+                    del settings[localName]
+                    delattr(self, localName)
+                    contextHandler.initLocalContext(self)
+                else:
+                    setattr(self, localName, settings[localName])
 
     # return settings in string format compatible with cPickle
     def saveSettingsStr(self):
@@ -404,6 +414,7 @@ class OWBaseWidget(QDialog):
         contextHandlers = getattr(self, "contextHandlers", {})
         for contextHandler in contextHandlers.values():
             settings[contextHandler.localContextName] = getattr(self, contextHandler.localContextName)
+            settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
 
         return cPickle.dumps(settings)
 
