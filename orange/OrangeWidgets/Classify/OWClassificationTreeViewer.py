@@ -25,7 +25,7 @@ class ColumnCallback:
 
 def checkColumn(widget, master, text, value):
     wa = QCheckBox(text, widget)
-    wa.setChecked(getattr(master,value))
+    wa.setChecked(getattr(master, value))
     master.connect(wa, SIGNAL("toggled(bool)"), ColumnCallback(master, value))
     return wa
 
@@ -35,11 +35,11 @@ class OWClassificationTreeViewer(OWWidget):
     def __init__(self, parent=None, signalManager = None, name='Classification Tree Viewer'):
         OWWidget.__init__(self, parent, signalManager, name)
 
-        self.dataLabels = (('Majority class', 'Class'),
-                  ('Probability of majority class', 'P(Class)'),
-                  ('Probability of target class', 'P(Target)'),
-                  ('Number of instances', '#Inst'),
-                  ('Relative distribution', 'Rel. distr.'),
+        self.dataLabels = (('Majority class', 'Class'), 
+                  ('Probability of majority class', 'P(Class)'), 
+                  ('Probability of target class', 'P(Target)'), 
+                  ('Number of instances', '#Inst'), 
+                  ('Relative distribution', 'Rel. distr.'), 
                   ('Absolute distribution', 'Abs. distr.'))
 
         self.callbackDeposit = []
@@ -64,14 +64,14 @@ class OWClassificationTreeViewer(OWWidget):
 
         self.dBox = QVGroupBox(self.controlArea)
         self.dBox.setTitle('Show Data')
-        self.dBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        self.dBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed))
         for i in range(len(self.dataLabels)):
             checkColumn(self.dBox, self, self.dataLabels[i][0], self.settingsList[i])
 
         OWGUI.separator(self.controlArea)
 
         self.expBox = QHGroupBox(self.controlArea)
-        self.expBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        self.expBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed))
         self.expBox.setTitle('Expand/Shrink to Level')
         self.slider = QSlider(1, 9, 1, self.expslider, QSlider.Horizontal, self.expBox)
         self.sliderlabel = QLabel("%2i" % self.expslider, self.expBox)
@@ -79,7 +79,7 @@ class OWClassificationTreeViewer(OWWidget):
         OWGUI.separator(self.controlArea)
 
         self.infBox = QVGroupBox(self.controlArea)
-        self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed))
         self.infBox.setTitle('Tree Size Info')
         self.infoa = QLabel('No tree.', self.infBox)
         self.infob = QLabel('', self.infBox)
@@ -105,7 +105,7 @@ class OWClassificationTreeViewer(OWWidget):
 
         self.splitter.show()
 
-        self.resize(800,400)
+        self.resize(800, 400)
 
         self.connect(self.v, SIGNAL("selectionChanged(QListViewItem *)"), self.viewSelectionChanged)
         self.connect(self.slider, SIGNAL("valueChanged(int)"), self.sliderChanged)
@@ -124,6 +124,8 @@ class OWClassificationTreeViewer(OWWidget):
             ncl = node.nodeClassifier
             dist = node.distribution
             a = dist.abs/100
+            if a < 1e-20:
+                a = 1
             try:
                 p_majclass = f % dist[int(ncl.defaultVal)]/a
             except:
@@ -133,12 +135,12 @@ class OWClassificationTreeViewer(OWWidget):
             except:
                 p_tarclass = "NA"
             
-            colf = (str(ncl.defaultValue),
-                    p_majclass,
-                    p_tarclass,
-                    f % dist.cases,
-                    len(dist) and reduce(lambda x,y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "NA",
-                    len(dist) and reduce(lambda x,y: x+':'+y, [self.precFrmt % x for x in dist]) or "NA"
+            colf = (str(ncl.defaultValue), 
+                    p_majclass, 
+                    p_tarclass, 
+                    f % dist.cases, 
+                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % (x/a) for x in dist]) or "NA", 
+                    len(dist) and reduce(lambda x, y: x+':'+y, [self.precFrmt % x for x in dist]) or "NA"
                    )
 
             col = 1
@@ -235,6 +237,8 @@ class OWClassificationTreeViewer(OWWidget):
 
     def expandTree(self, lev):
         def expandTree0(listviewitem, lev):
+            if not listviewitem:
+                return
             if not lev:
                 listviewitem.setOpen(0)
             else:
