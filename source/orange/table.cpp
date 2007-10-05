@@ -792,12 +792,27 @@ void TExampleTable::sort(vector<int> &sortOrder)
   examplesHaveChanged();
 }
 
+void TExampleTable::shuffle()
+{
+  if (size() <= 1)
+    return;
 
-int TExampleTable::checkSum() const
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator();
+   
+  for(TExample **ei = examples+1; ei != _Last; ei++) {
+    const int st = randomGenerator->randint(ei - examples);
+    TExample *s = *ei;
+    *ei = examples[st];
+    examples[st] = s;
+  }
+}
+
+int TExampleTable::checkSum(const bool includeMetas) const
 { unsigned long crc;
   INIT_CRC(crc);
 
-  for(TExample **ei = examples, **ee = _Last; ei!=ee; (*ei++)->addToCRC(crc));
+  for(TExample **ei = examples, **ee = _Last; ei!=ee; (*ei++)->addToCRC(crc, includeMetas));
 
   FINISH_CRC(crc);
   return int(crc & 0x7fffffff);

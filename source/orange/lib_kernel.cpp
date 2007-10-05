@@ -3791,6 +3791,14 @@ PyObject *ExampleTable_removeDuplicates(TPyOrange *self, PyObject *args) PYARGS(
 }
 
 
+PyObject *ExampleTable_shuffle(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None")
+{
+  PyTRY
+    SELF_AS(TExampleTable).shuffle();
+    RETURN_NONE;
+  PyCATCH
+}
+
 PyObject *ExampleTable_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
 { PyTRY
     CAST_TO(TExampleTable, table);
