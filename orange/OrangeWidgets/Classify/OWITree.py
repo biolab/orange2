@@ -90,9 +90,9 @@ class OWITree(OWClassificationTreeViewer):
         sitem = self.v.selectedItem()
         if not sitem and (1 or exhaustively):
             sitem = self.v.currentItem() or (self.v.childCount() == 1 and self.v.firstChild())
-            if sitem.childCount():
+            if not sitem or sitem.childCount():
                 return
-        return sitem and self.nodeClassDict[sitem]
+        return sitem and self.nodeClassDict.get(sitem, None)
 
     def btnSplitClicked(self):
         node = self.findCurrentNode(1)
@@ -125,15 +125,22 @@ class OWITree(OWClassificationTreeViewer):
         self.updateTree()
 
     def btnPruneClicked(self):
-        self.cutNode(node = self.findCurrentNode())
-        self.updateTree()
+        node = self.findCurrentNode()
+        if node:
+            self.cutNode(node)
+            self.updateTree()
 
     def btnBuildClicked(self):
         node = self.findCurrentNode()
-        if not node:
+        if not node or not len(node.examples):
             return
 
-        newtree = (self.treeLearner or orngTree.TreeLearner(storeExamples = 1))(node.examples)
+        try:
+            newtree = (self.treeLearner or orngTree.TreeLearner(storeExamples = 1))(node.examples)
+
+        except:
+            return
+        
         if not hasattr(newtree, "tree"):
             QMessageBox.critical( None, "Invalid Learner", "The learner on the input built a classifier which is not a tree.", QMessageBox.Ok)
 
