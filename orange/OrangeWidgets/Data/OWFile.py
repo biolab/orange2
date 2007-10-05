@@ -267,7 +267,7 @@ class OWFile(OWWidget):
         # make new data and send it
         fName = os.path.split(fn)[1]
         if "." in fName:
-            data.name = data.name[:data.name.rfind('.')]
+            data.name = fName[:fName.rfind('.')]
         else:
             data.name = fName
             
