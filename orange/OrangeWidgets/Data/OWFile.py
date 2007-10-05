@@ -16,8 +16,15 @@ import OWGUI, string, os.path, user, sys, warnings
 warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
 
 
+class FileNameContextHandler(ContextHandler):
+    def match(self, context, imperfect, filename):
+        return context.filename == filename and 2
+        
+
 class OWFile(OWWidget):
-    settingsList=["recentFiles", "symbolDC", "symbolDK", "createNewOn"]
+    settingsList=["recentFiles", "createNewOn"]
+    contextHandlers = {"": FileNameContextHandler()}
+
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "File")
 
@@ -30,6 +37,7 @@ class OWFile(OWWidget):
         self.symbolDK = "~"
         self.createNewOn = orange.Variable.MakeStatus.NoRecognizedValues
         self.domain = None
+        self.loadedFile = ""
         #get settings from the ini file, if they exist
         self.loadSettings()
 
@@ -95,6 +103,13 @@ class OWFile(OWWidget):
         # connecting GUI to code
         self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
 
+    def settingsFromWidgetCallback(self, handler, context):
+        context.filename = self.loadedFile
+        context.symbolDC, context.symbolDK = self.symbolDC, self.symbolDK
+
+    def settingsToWidgetCallback(self, handler, context):
+        self.symbolDC, self.symbolDK = context.symbolDC, context.symbolDK
+
     # user selected a file from the combo box
     def selectFile(self, n):
         if n < len(self.recentFiles) :
@@ -157,6 +172,7 @@ class OWFile(OWWidget):
         if filename in self.recentFiles: self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
         self.setFileList()
+
         self.openFile(self.recentFiles[0], 0, self.symbolDK, self.symbolDC)
 
 
@@ -165,6 +181,9 @@ class OWFile(OWWidget):
         self.error()
         self.warning()
 
+        self.closeContext()
+        self.loadedFile = ""
+        
         if fn == "(none)":
             self.send("Examples", None)
             self.send("Attribute Definitions", None)
@@ -173,6 +192,11 @@ class OWFile(OWWidget):
             self.warnings.setText("")
             return
             
+        self.symbolDK = self.symbolDC = ""
+        self.openContext("", fn)
+
+        self.loadedFile = ""
+
         argdict = {"createNewOn": 3-self.createNewOn}
         if DK:
             argdict["DK"] = str(DK)
@@ -182,6 +206,7 @@ class OWFile(OWWidget):
         data = None
         try:
             data = call(orange.ExampleTable, fn, **argdict)
+            self.loadedFile = fn
         except Exception, (errValue):
             if "is being loaded as" in str(errValue):
                 try:
