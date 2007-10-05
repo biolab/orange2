@@ -18,6 +18,7 @@ import random
 
 class OWExampleDistance(OWWidget):	
     settingsList = ["Metrics"]
+    contextHandlers = {"": DomainContextHandler("", ["Label"])}
 
     def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
