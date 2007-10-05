@@ -388,10 +388,10 @@ class ListItemWithLabel(QListBoxPixmap):
 
 class OWDiscretize(OWWidget):
     settingsList=["autoApply", "measure", "showBaseLine", "showLookaheadLine", "showTargetClassProb", "showRug", "snap", "autoSynchronize"]
-    contextHandlers = {"": DomainContextHandler("", ["targetClass", "discretization", "classDiscretization",
+    contextHandlers = {"": PerfectDomainContextHandler("", ["targetClass", "discretization", "classDiscretization",
                                                      "indiDiscretization", "intervals", "classIntervals", "indiIntervals",
                                                      "outputOriginalClass", "indiData", "indiLabels", "resetIndividuals",
-                                                     "selectedAttr", "customSplits", "customClassSplits"], False, False, False, False)}
+                                                     "selectedAttr", "customSplits", "customClassSplits"])}
 
     callbackDeposit=[]
 

@@ -40,7 +40,7 @@ class ImputeListboxItem(QListBoxPixmap):
 
 class OWImpute(OWWidget):
     settingsList = ["defaultMethod", "imputeClass", "selectedAttr", "autosend"]
-    contextHandlers = {"": DomainContextHandler("", ["methods"], False, False, False, False, matchValues = DomainContextHandler.MatchValuesAttributes)}
+    contextHandlers = {"": PerfectDomainContextHandler("", ["methods"], matchValues = DomainContextHandler.MatchValuesAttributes)}
     indiShorts = ["", "leave", "avg", "model", "random", ""]
 
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
