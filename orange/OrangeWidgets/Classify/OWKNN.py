@@ -31,7 +31,8 @@ class OWKNN(OWWidget):
         # Settings
         self.name = 'kNN'
         self.k = 5;  self.metrics = 0; self.ranks = 0
-        self.ignoreUnknowns = 0; self.normalize = 1
+        self.ignoreUnknowns = 0
+        self.normalize = self.oldNormalize = 1
         self.loadSettings()
 
         self.data = None                    # input data set
@@ -51,9 +52,10 @@ class OWKNN(OWWidget):
         OWGUI.separator(self.controlArea)
 
         wbM = OWGUI.widgetBox(self.controlArea, "Metrics")
-        OWGUI.comboBox(wbM, self, "metrics", items = [x[0] for x in self.metricsList], valueType = int)
-        OWGUI.checkBox(wbM, self, "normalize", "Normalize continuous attributes")
+        OWGUI.comboBox(wbM, self, "metrics", items = [x[0] for x in self.metricsList], valueType = int, callback = self.metricsChanged)
+        self.cbNormalize = OWGUI.checkBox(wbM, self, "normalize", "Normalize continuous attributes")
         OWGUI.checkBox(wbM, self, "ignoreUnknowns", "Ignore unknown values")
+        self.metricsChanged()
 
         OWGUI.separator(self.controlArea)
 
@@ -62,6 +64,15 @@ class OWKNN(OWWidget):
         self.resize(100,250)
 
 
+    def metricsChanged(self):
+        if not self.metrics and not self.cbNormalize.isEnabled():
+            self.normalize = self.oldNormalize
+            self.cbNormalize.setEnabled(True)
+        elif self.metrics and self.cbNormalize.isEnabled():
+            self.oldNormalize = self.normalize
+            self.normalize = False
+            self.cbNormalize.setEnabled(False)
+            
     def setData(self,data):
         self.data = self.isDataWithClass(data, orange.VarTypes.Discrete) and data or None
         self.setLearner()
