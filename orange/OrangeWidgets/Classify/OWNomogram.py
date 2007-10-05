@@ -313,67 +313,68 @@ class OWNomogram(OWWidget):
         except:
             aprox_prior_error = 0
 
-        for at in cl.continuizedDomain.attributes:
-            at.setattr("visited",0)
+        if cl.continuizedDomain:
+            for at in cl.continuizedDomain.attributes:
+                at.setattr("visited",0)
 
-        for at in cl.continuizedDomain.attributes:
-            if at.getValueFrom and at.visited==0:
-                name = at.getValueFrom.variable.name
-                var = at.getValueFrom.variable
-                if var.ordered:
-                    a = AttrLineOrdered(name, self.bnomogram)
-                else:
-                    a = AttrLine(name, self.bnomogram)
-                listOfExcludedValues = []
-                for val in var.values:
-                    foundValue = False
-                    for same in cl.continuizedDomain.attributes:
-                        if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
-                            same.setattr("visited",1)
-                            a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
-                            foundValue = True
-                    if not foundValue:
-                        listOfExcludedValues.append(val)
-                if len(listOfExcludedValues) == 1:
-                    a.addAttValue(AttValue(listOfExcludedValues[0], 0, error = aprox_prior_error))
-                elif len(listOfExcludedValues) == 2:
-                    a.addAttValue(AttValue("("+listOfExcludedValues[0]+","+listOfExcludedValues[1]+")", 0, error = aprox_prior_error))
-                elif len(listOfExcludedValues) > 2:
-                    a.addAttValue(AttValue("Other", 0, error = aprox_prior_error))
-                # if there are more than 1 value in the attribute, add it to the nomogram
-                if len(a.attValues)>1:
-                    self.bnomogram.addAttribute(a)
-
-
-            elif at.visited==0:
-                name = at.name
-                var = at
-                a = AttrLineCont(name, self.bnomogram)
-                if self.data:
-                    bas = orange.DomainBasicAttrStat(self.data)
-                    maxAtValue = bas[var].max
-                    minAtValue = bas[var].min
-                else:
-                    maxAtValue = 1.
-                    minAtValue = -1.
-                numOfPartitions = 50.
-                d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
-
-                # get curr_num = starting point for continuous att. sampling
-                curr_num = getStartingPoint(d, minAtValue)
-                rndFac = getRounding(d)
-
-                while curr_num<maxAtValue+d:
-                    if abs(mult*curr_num*cl.beta[at])<aproxZero:
-                        a.addAttValue(AttValue("0.0", 0))
+            for at in cl.continuizedDomain.attributes:
+                if at.getValueFrom and at.visited==0:
+                    name = at.getValueFrom.variable.name
+                    var = at.getValueFrom.variable
+                    if var.ordered:
+                        a = AttrLineOrdered(name, self.bnomogram)
                     else:
-                        a.addAttValue(AttValue(str(curr_num), mult*curr_num*cl.beta[at]))
-                    curr_num += d
-                a.continuous = True
-                at.setattr("visited", 1)
-                # if there are more than 1 value in the attribute, add it to the nomogram
-                if len(a.attValues)>1:
-                    self.bnomogram.addAttribute(a)
+                        a = AttrLine(name, self.bnomogram)
+                    listOfExcludedValues = []
+                    for val in var.values:
+                        foundValue = False
+                        for same in cl.continuizedDomain.attributes:
+                            if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
+                                same.setattr("visited",1)
+                                a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
+                                foundValue = True
+                        if not foundValue:
+                            listOfExcludedValues.append(val)
+                    if len(listOfExcludedValues) == 1:
+                        a.addAttValue(AttValue(listOfExcludedValues[0], 0, error = aprox_prior_error))
+                    elif len(listOfExcludedValues) == 2:
+                        a.addAttValue(AttValue("("+listOfExcludedValues[0]+","+listOfExcludedValues[1]+")", 0, error = aprox_prior_error))
+                    elif len(listOfExcludedValues) > 2:
+                        a.addAttValue(AttValue("Other", 0, error = aprox_prior_error))
+                    # if there are more than 1 value in the attribute, add it to the nomogram
+                    if len(a.attValues)>1:
+                        self.bnomogram.addAttribute(a)
+
+
+                elif at.visited==0:
+                    name = at.name
+                    var = at
+                    a = AttrLineCont(name, self.bnomogram)
+                    if self.data:
+                        bas = orange.DomainBasicAttrStat(self.data)
+                        maxAtValue = bas[var].max
+                        minAtValue = bas[var].min
+                    else:
+                        maxAtValue = 1.
+                        minAtValue = -1.
+                    numOfPartitions = 50.
+                    d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
+    
+                    # get curr_num = starting point for continuous att. sampling
+                    curr_num = getStartingPoint(d, minAtValue)
+                    rndFac = getRounding(d)
+    
+                    while curr_num<maxAtValue+d:
+                        if abs(mult*curr_num*cl.beta[at])<aproxZero:
+                            a.addAttValue(AttValue("0.0", 0))
+                        else:
+                            a.addAttValue(AttValue(str(curr_num), mult*curr_num*cl.beta[at]))
+                        curr_num += d
+                    a.continuous = True
+                    at.setattr("visited", 1)
+                    # if there are more than 1 value in the attribute, add it to the nomogram
+                    if len(a.attValues)>1:
+                        self.bnomogram.addAttribute(a)
 
 
 
@@ -599,9 +600,10 @@ class OWNomogram(OWWidget):
         elif type(self.cl) == orange.LogRegClassifier:
             # get if there are any continuous attributes in data -> then we need data to compute margins
             cont = False
-            for at in self.cl.continuizedDomain.attributes:
-                if not at.getValueFrom:
-                    cont = True
+            if self.cl.continuizedDomain:
+                for at in self.cl.continuizedDomain.attributes:
+                    if not at.getValueFrom:
+                        cont = True
             if self.data or not cont:
                 self.lrClassifier(self.cl)
             else:
