@@ -16,7 +16,7 @@ from OWGUI import *
 from OWDlgs import OWChooseImageSizeDlg
 
 class OWAttributeStatistics(OWWidget):
-    contextHandlers = {"": DomainContextHandler("", ["HighlightedAttribute"], findImperfect = True)}
+    contextHandlers = {"": DomainContextHandler("", ["HighlightedAttribute"])}
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "AttributeStatistics", TRUE)
