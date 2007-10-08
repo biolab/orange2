@@ -511,6 +511,7 @@ class Fragment(Molecule):
     def ToOBMol(self):
         atomCache={}
         mol=OBMol()
+        mol.BeginModify()
         for sourceAtom in self.atoms:
             atom=mol.NewAtom()
             atom.SetAtomicNum(sourceAtom.GetAtomicNum())
@@ -520,6 +521,10 @@ class Fragment(Molecule):
             atomCache[sourceAtom]=atom
         for sourceBond in self.bonds:
             mol.AddBond(atomCache[sourceBond.atom1].GetIdx(), atomCache[sourceBond.atom2].GetIdx(), sourceBond.GetBondOrder())
+##        mol.SetAromaticPerceived()
+        mol.AssignSpinMultiplicity()
+##        mol.UnsetAromaticPerceived()
+        mol.EndModify()
         return mol
 
     def ToSmiles(self):
@@ -744,6 +749,8 @@ class Fragmenter(object):
             vals=[e[attr] for attr in data.domain.attributes]+[1 if str(e[smilesAttr]) in smilesInFragments[fragment] else 0 for fragment in fragments]
             vals=vals + [e.getclass()] if data.domain.classVar else vals
             ex=orange.Example(domain, vals)
+            for key, val in e.getmetas().items():
+                ex[key]=val
             table.append(ex)
         return table, fragments
     def FindSmilesAttr(self, data):
@@ -842,7 +849,7 @@ def test():
 def test1():
     import orange
     data=orange.ExampleTable("E:\chem\mutagen_raw.tab")
-    data=orange.ExampleTable("E:\chem\smiles.tab")
+##    data=orange.ExampleTable("E:\chem\smiles.tab")
     fragmenter=Fragmenter(minSupport=0.02, maxSupport=0.1, canonicalPruning=True)
 ##    set_trace()
     data, fragments1=fragmenter(data, "SMILES") #, lambda e:str(e[-1])=="1")
