@@ -24,7 +24,7 @@ class OWWidget(OWBaseWidget):
         #self.controlArea.setMaximumWidth(250)
         #self.space=QVBox(self)
         #self.grid=QGridLayout(self,2,2,5)
-        self.grid=QGridLayout(self,3,2,5)
+        self.grid=QGridLayout(self, wantStatusBar and 3 or 2, 2, 5)
         self.grid.addWidget(self.controlArea,0,0)
         #self.grid.addWidget(self.space,1,0)
         self.grid.addWidget(self.buttonBackground,1,0)
@@ -44,32 +44,30 @@ class OWWidget(OWBaseWidget):
             self.reportButton = QPushButton("&Report", self.buttonBackground)
             self.connect(self.reportButton, SIGNAL("clicked()"), self.sendReport)
 
-        self.widgetStatusArea = QHBox(self)
-        #self.widgetStatusArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
-        self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
-        #self.statusBar = QStatusBar(self.widgetStatusArea)
-        #self.statusBar.setSizeGripEnabled(0)
-        self.statusBarIconArea = QHBox(self.widgetStatusArea)
-        self.statusBarTextArea = QLabel("", self.widgetStatusArea)
-        self.statusBarIconArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
-        self.statusBarTextArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
-        self.statusBarTextArea.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
-        #self.statusBar.addWidget(self.statusBarIconArea, 0)
-        #self.statusBar.addWidget(self.statusBarTextArea, 1)
-        #self.statusBarIconArea.setMinimumSize(16*3,16)
-        #self.statusBarIconArea.setMaximumSize(16*3,16)
-        self.statusBarIconArea.setMinimumSize(16*2,18)
-        self.statusBarIconArea.setMaximumSize(16*2,18)
+        if wantStatusBar:
+            self.widgetStatusArea = QHBox(self)
+            #self.widgetStatusArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
+            self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
+            #self.statusBar = QStatusBar(self.widgetStatusArea)
+            #self.statusBar.setSizeGripEnabled(0)
+            self.statusBarIconArea = QHBox(self.widgetStatusArea)
+            self.statusBarTextArea = QLabel("", self.widgetStatusArea)
+            self.statusBarIconArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
+            self.statusBarTextArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
+            self.statusBarTextArea.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
+            #self.statusBar.addWidget(self.statusBarIconArea, 0)
+            #self.statusBar.addWidget(self.statusBarTextArea, 1)
+            #self.statusBarIconArea.setMinimumSize(16*3,16)
+            #self.statusBarIconArea.setMaximumSize(16*3,16)
+            self.statusBarIconArea.setMinimumSize(16*2,18)
+            self.statusBarIconArea.setMaximumSize(16*2,18)
 
-        # create pixmaps used in statusbar to show info, warning and error messages
-        #self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-blue.png")
-        self._warningWidget, self._warningPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
-        self._errorWidget, self._errorPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-red.png")
-##        spacer = QWidget(self.statusBarIconArea)
-##        spacer.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
-
-        if wantStatusBar == 0:
-            self.widgetStatusArea.hide()
+            # create pixmaps used in statusbar to show info, warning and error messages
+            #self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-blue.png")
+            self._warningWidget, self._warningPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
+            self._errorWidget, self._errorPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-red.png")
+    ##        spacer = QWidget(self.statusBarIconArea)
+    ##        spacer.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
         self.resize(640,480)
 
@@ -86,7 +84,7 @@ class OWWidget(OWBaseWidget):
 
     def setState(self, stateType, id, text):
         stateChanged = OWBaseWidget.setState(self, stateType, id, text)
-        if not stateChanged:
+        if not stateChanged or not hasattr(self, "widgetStatusArea"):
             return
 
         #for state, widget, icon, use in [("Info", self._infoWidget, self._infoPixmap, self._owInfo), ("Warning", self._warningWidget, self._warningPixmap, self._owWarning), ("Error", self._errorWidget, self._errorPixmap, self._owError)]:

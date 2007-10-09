@@ -49,7 +49,7 @@ class OWFile(OWWidget):
         button.setMaximumWidth(25)
 
 #        OWGUI.rubber(self.controlArea)
-        
+
 
         box = OWGUI.widgetBox(self.controlArea, "Data File", addSpace = True, orientation=1)
         OWGUI.widgetLabel(box, "Symbols for missing values in tab-delimited files (besides default ones)")
@@ -58,18 +58,17 @@ class OWFile(OWWidget):
         OWGUI.separator(hbox, 16, 0)
         le = OWGUI.lineEdit(hbox, self, "symbolDK", "Don't know:  ", labelWidth=70, orientation="horizontal", tooltip="Default values: '~' or '*'")
         OWGUI.radioButtonsInBox(self.controlArea, self, "createNewOn", box="Advanced", addSpace=True,
-                       label = "Create a new attribute when existing attribute(s) ...", 
+                       label = "Create a new attribute when existing attribute(s) ...",
                        btnLabels = ["Have mismatching order of values",
-                                    "Have no common values with the new (recommended)", 
-                                    "Miss some values of the new attribute", 
+                                    "Have no common values with the new (recommended)",
+                                    "Miss some values of the new attribute",
                                     "... Always create a new attribute"
                                ])
-        
+
         box = OWGUI.widgetBox(self.controlArea, "Info")
         self.infoa = OWGUI.widgetLabel(box, 'No data loaded.')
         self.infob = OWGUI.widgetLabel(box, '')
         self.warnings = OWGUI.widgetLabel(box, '')
-
 
         self.adjustSize()
 
@@ -220,7 +219,7 @@ class OWFile(OWWidget):
                 self.infoa.setText('No data loaded due to an error')
                 self.infob.setText("")
                 self.warnings.setText("")
-                ##raise
+                return
                         
         self.dataDomain = data.domain
 
@@ -235,7 +234,7 @@ class OWFile(OWWidget):
                 self.infob.setText("Class neither descrete nor continuous.")
         else:
             self.infob.setText("Data without a dependent variable.")
-        
+
         warnings = ""
         metas = data.domain.getmetas()
         for status, messageUsed, messageNotUsed in [
@@ -245,7 +244,7 @@ class OWFile(OWWidget):
                                 (orange.Variable.MakeStatus.NoRecognizedValues,
                                  "The following attributes were reused although they share no common values with the existing attribute of the same names",
                                  "The following attributes were not reused since they share no common values with the existing attribute of the same names"),
-                                (orange.Variable.MakeStatus.MissingValues, 
+                                (orange.Variable.MakeStatus.MissingValues,
                                  "The following attribute(s) were reused although some values needed to be added",
                                  "The following attribute(s) were not reused since they miss some values")
                                 ]:
@@ -270,7 +269,7 @@ class OWFile(OWWidget):
             data.name = fName[:fName.rfind('.')]
         else:
             data.name = fName
-            
+
         self.send("Examples", data)
         self.send("Attribute Definitions", data.domain)
 
