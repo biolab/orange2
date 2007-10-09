@@ -111,17 +111,6 @@ class orngScaleData:
         self.attrSubValues = {}
         self.normalizers = []
 
-
-    # Converts orange.ExampleTable to numpy.array based on the attribute values.
-    # rows correspond to examples, columns correspond to attributes, class values are left out
-    # missing values and attributes of types other than orange.FloatVariable are masked
-    def orng2Numeric(exampleTable):
-        vals = exampleTable.native(0, substituteDK = "?", substituteDC = "?", substituteOther = "?")
-        array = numpy.array(vals, numpy.object)
-        mask = numpy.where(numpy.equal(array, "?"), 1, 0)
-        numpy.putmask(array, mask, 1e20)
-        return array.astype(numpy.float), mask
-
     # ####################################################################
     # ####################################################################
     # set new data and scale its values to the 0-1 interval or normalize it by subtracting the mean and dividing by the deviation
@@ -179,7 +168,7 @@ class orngScaleData:
                 self.offsets.append(0.0)
                 self.normalizers.append(count-1)
                 self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*max(1,count)))*(numpy.random.random(len(data)) - 0.5)
-            else:
+            elif attr.varType == orange.VarTypes.Continuous:
                 if self.scalingByVariance:
                     self.offsets.append(self.domainDataStat[index].avg)
                     self.normalizers.append(max(1e-5, self.domainDataStat[index].dev))
@@ -205,6 +194,10 @@ class orngScaleData:
                     self.scaledData[index] = line
                 else:
                     self.scaledData[index] = arr[index]
+            else:
+                self.attrValues[attr.name] = [0, 1]
+                self.offsets.append(0.0)
+                self.normalizers.append(1)
 
         self.noJitteringScaledData = arr
 
@@ -374,7 +367,11 @@ class orngScaleData:
     def getValidList(self, indices):
         if self.validDataArray == None:
             return numpy.array([], numpy.bool)
-        selectedArray = numpy.take(self.validDataArray, indices, axis = 0)
+        try:
+            selectedArray = numpy.take(self.validDataArray, indices, axis = 0)
+        except:
+            print indices
+            print self.validDataArray
         arr = numpy.add.reduce(selectedArray)
         return numpy.equal(arr, len(indices))
 
