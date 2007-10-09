@@ -24,7 +24,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
     settingsList = ["optimizationType", "attributeCount", "attrDisc", "qualityMeasure", "percentDataUsed", "ignoreTooSmallCells",
                     "timeLimit", "useTimeLimit", "VizRankClassifierName", "mValue", "probabilityEstimation",
                     "optimizeAttributeOrder", "optimizeAttributeValueOrder", "attributeOrderTestingMethod",
-                    "classificationMethod", "classConfidence", "lastSaveDirName"]
+                    "classificationMethod", "classConfidence", "lastSaveDirName",
+                    "projectionLimit", "useProjectionLimit"]
 
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     #evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 30, 40, 60, 80, 120]
@@ -47,6 +48,8 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.optimizeAttributeOrder = 0
         self.optimizeAttributeValueOrder = 0
         self.VizRankClassifierName = "Mosaic Learner"
+        self.useTimeLimit = 0
+        self.useProjectionLimit = 0
 
         self.lastSaveDirName = os.getcwd()
         self.selectedClasses = []
@@ -126,6 +129,10 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         OWGUI.comboBox(self.SettingsTab, self, "attrDisc", box = "Measure for ranking attributes", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
         self.testingCombo2 = OWGUI.comboBox(self.SettingsTab, self, "attributeOrderTestingMethod", box = "Testing method used for optimizing attribute orders", items = ["10 fold cross validation", "Learn and test on learn data"], tooltip = "Method used when evaluating different attribute orders.")
+
+        self.stopOptimizationBox = OWGUI.widgetBox(self.SettingsTab, "When to stop evaluation or optimization?")
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Time limit:                     ", 1, 1000, "useTimeLimit", "timeLimit", "  (minutes)", debuggingEnabled = 0)      # disable debugging. we always set this to 1 minute
+        OWGUI.checkWithSpin(self.stopOptimizationBox, self, "Use projection count limit:  ", 1, 1000000, "useProjectionLimit", "projectionLimit", "  (projections)", debuggingEnabled = 0)
 
         # ##########################
         # ARGUMENTATION TAB
@@ -291,7 +298,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
 
     def optimizeCurrentAttributeOrder(self, attrs = None, updateGraph = 1):
         if str(self.optimizeOrderButton.text()) == "Optimize Current Attribute Order":
-            self.stopOptimization = 0
+            self.cancelOptimization = 0
             self.optimizeOrderButton.setText("Stop Optimization")
 
             if not attrs:
@@ -307,7 +314,7 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
             self.optimizeOrderButton.setText("Optimize Current Attribute Order")
             return bestPlacements
         else:
-            self.stopOptimization = 1
+            self.cancelOptimization = 1
             return []
 
 

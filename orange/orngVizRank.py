@@ -198,7 +198,7 @@ class VizRank:
         for i in range(index):
             attrs = self.results[i][ATTR_LIST]
             equalAttrs = [attr in attrs for attr in testAttrs]
-            if 100*sum(equalAttrs)/float(len(testAttrs)) > allowedPercentOfEqualAttributes:
+            if 100*sum(equalAttrs) > allowedPercentOfEqualAttributes * float(len(testAttrs)):
                 return 1
         return 0
 
@@ -208,7 +208,7 @@ class VizRank:
         if kValueFormula == 0 or not self.data.domain.classVar or self.data.domain.classVar.varType != orange.VarTypes.Discrete:
             kValue = int(sqrt(len(self.data)))
         else:
-            kValue = int(len(self.data) / len(self.data.domain.classVar.values))    # k = N / c (c = # of class values)
+            kValue = int(len(self.data) / max(1, len(self.data.domain.classVar.values)))    # k = N / c (c = # of class values)
         return kValue
 
     def createkNNLearner(self, k = -1, kValueFormula = -1):
@@ -231,6 +231,8 @@ class VizRank:
 
         self.clearResults()
         self.clearArguments()
+        self.evaluationData = {}    # clear all previous data about tested permutations and stuff
+        self.evaluationData["triedCombinations"] = {}
         self.graph.setData(data)
 
         hasDiscreteClass = self.data != None and len(self.data) > 0 and self.data.domain.classVar != None and self.data.domain.classVar.varType == orange.VarTypes.Discrete
@@ -243,7 +245,7 @@ class VizRank:
             if self.kValueFormula == 0 or not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous:
                 self.kValue = int(sqrt(len(data)))                                 # k = sqrt(N)
             elif self.kValueFormula == 1:
-                self.kValue = int(len(data) / len(data.domain.classVar.values))    # k = N / c (c = # of class values)
+                self.kValue = int(len(data) / max(1, len(data.domain.classVar.values)))    # k = N / c (c = # of class values)
 
         self.attributeNameIndex = self.graph.attributeNameIndex
         self.correctSettingsIfNecessary()
@@ -371,7 +373,7 @@ class VizRank:
 
         if table.domain.classVar.varType == orange.VarTypes.Discrete:
             probabilities = numpy.zeros((len(table), len(table.domain.classVar.values)), numpy.float)
-            lenClassValues = len(list(table.domain.classVar.values))
+            lenClassValues = max(1, len(list(table.domain.classVar.values)))
             if self.qualityMeasure in [AVERAGE_CORRECT, AUC]:       # for AUC we have no way of computing the prediction accuracy for each example
                 for i in range(len(results.results)):
                     res = results.results[i]
@@ -429,7 +431,7 @@ class VizRank:
                 val = 0.0
                 if not results.results or not results.results[0].probabilities[0]: return 0, 0
                 for res in results.results:  val += res.probabilities[0].density(res.actualClass)
-                val/= float(len(results.results))
+                if len(results.results) > 0: val/= float(len(results.results))
                 return 100.0*val, (100.0*val)
 
         # ###############################
@@ -448,7 +450,7 @@ class VizRank:
             # create a new attribute that is a cartesian product of the two visualized attributes
             nattr = orange.EnumVariable(values=[str(i) for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS)])
             nattr.getValueFrom = orange.ClassifierByLookupTable2(nattr, testTable.domain[0], testTable.domain[1])
-            for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS): nattr.getValueFrom.lookupTable[i] = i
+            for i in range(len(nattr.getValueFrom.lookupTable)): nattr.getValueFrom.lookupTable[i] = i
 
             for dist in orange.ContingencyAttrClass(nattr, testTable):
                 dist = list(dist)
@@ -839,7 +841,7 @@ class VizRank:
 
                     if self.__class__.__name__ == "OWVizRank":
                         self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(self.evaluatedProjectionsCount), strCount))
-                        self.parentWidget.progressBarSet(100.0*self.evaluatedProjectionsCount/float(count))
+                        self.parentWidget.progressBarSet(100.0*self.evaluatedProjectionsCount/max(1,float(count)))
 
         # #################### RADVIZ, LINEAR_PROJECTION  ################################
         elif self.visualizationMethod in (RADVIZ, LINEAR_PROJECTION, POLYVIZ, KNN_IN_ORIGINAL_SPACE):
@@ -1002,7 +1004,7 @@ class VizRank:
                             self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in testProj], projIndex)
                             self.insertTempProjection(projections, acc, testProj)
                             tempDict[tuple(testProj)] = 1
-                            if min(acc, accuracy) != 0 and max(acc, accuracy)/min(acc, accuracy) > 1.005:  significantImprovement = 1
+                            if min(acc, accuracy) != 0 and max(acc, accuracy) > 1.005 *min(acc, accuracy):  significantImprovement = 1
 
                         self.optimizedProjectionsCount += 1
                         if self.__class__ != VizRank: qApp.processEvents()        # allow processing of other events
@@ -1055,7 +1057,7 @@ class VizRank:
                                 bestAccuracy = acc
                                 bestProjection = newProj
                                 #self.addResult(acc, other_results, len(table), [self.graph.attributeNames[i] for i in newProj], -1, {})
-                            if acc > tempAccuracy or acc / tempAccuracy > 0.99:
+                            if acc > tempAccuracy or acc > 0.99 * tempAccuracy:
                                 tempProjection = newProj
                                 tempAccuracy = acc
                     projection = bestProjection
@@ -1134,11 +1136,11 @@ class VizRank:
                         # return only the best attribute placements
                         if len(tempList) == 0: continue     # can happen if the newProjDict already had all the projections that we tried
                         (acc, other_results, lenTable, attrList, generalDict) = maxFunct(tempList)
-                        if acc/accuracy > 1.005:
+                        if acc > 1.005*accuracy:
                             self.insertTempProjection(projections, acc, attrList)
                             self.addResult(acc, other_results, lenTable, [self.graph.attributeNames[i] for i in attrList], projIndex , generalDict)
                             if hasattr(self, "setStatusBarText"): self.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                        if accuracy != 0 and acc/accuracy > 1.01:  significantImprovement = 1
+                        if accuracy != 0 and acc > 1.01 * accuracy:  significantImprovement = 1
 
         else:
             print "unknown visualization method"
@@ -1300,7 +1302,7 @@ class VizRankOutliers:
         if not self.results or not self.data: return
 
         projCount = min(int(self.projectionCount), len(self.results))
-        classCount = len(self.data.domain.classVar.values)
+        classCount = max(len(self.data.domain.classVar.values), 1)
         existing = 0
         if self.matrixOfPredictions != None:
             existing = numpy.shape(self.matrixOfPredictions)[0]/classCount
@@ -1335,7 +1337,7 @@ class VizRankOutliers:
                     try:
                         prob = dist[ex[0]]
                         for j in range(clsVals):
-                            probabilities[i][j] = prob[j] / float(sum(prob.values()))
+                            probabilities[i][j] = prob[j] / max(1, float(sum(prob.values())))
                     except:
                         validDataIndices.remove(i)
 
@@ -1347,7 +1349,7 @@ class VizRankOutliers:
             index += 1
             if hasattr(self, "setStatusBarText"):
                 self.setStatusBarText("Evaluated %s/%s projections..." % (orngVisFuncts.createStringFromNumber(existing + index), orngVisFuncts.createStringFromNumber(projCount)))
-                self.widget.progressBarSet(100.0*(index)/float(projCount-existing))
+                self.widget.progressBarSet(100.0*(index)/max(1, float(projCount-existing)))
             if qApp:
                 qApp.processEvents()
 

@@ -128,12 +128,12 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         # SUPERVISED PCA TAB
         if parentName.lower() != "radviz":
             pcaBox = OWGUI.widgetBox(self.LinearTransformationTab, "Principal Component Analysis")
-            OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
+            #OWGUI.button(pcaBox, self, "Principal component analysis", callback = self.findPCAProjection)
             OWGUI.button(pcaBox, self, "Supervised principal component analysis", callback = self.findSPCAProjection)
             OWGUI.checkBox(pcaBox, self, "useGeneralizedEigenvectors", "Merge examples with same class value")
             plsBox = OWGUI.widgetBox(self.LinearTransformationTab, "Partial Least Squares")
             OWGUI.button(plsBox, self, "Partial least squares", callback = self.findPLSProjection)
-            
+
 
         # ###########################
         self.statusBar = QStatusBar(self)
@@ -290,13 +290,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.repaint()
 
     def findPCAProjection(self):
-        self.findProjection(DR_PCA)
+        self.findProjection(DR_PCA, setAnchors = 1)
 
     def findSPCAProjection(self):
-        self.findProjection(DR_SPCA)
+        self.findProjection(DR_SPCA, setAnchors = 1)
 
     def findPLSProjection(self):
-        self.findProjection(DR_PLS)
+        self.findProjection(DR_PLS, setAnchors = 1)
 
     def setStatusBarText(self, text):
         self.statusBar.message(text)
