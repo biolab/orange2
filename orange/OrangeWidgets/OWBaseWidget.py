@@ -76,8 +76,8 @@ class ControlledAttributesDict(dict):
         else:
             dict.__getitem__(self, key).append(value)
         self.master.setControllers(self.master, key, self.master, "")
-        
-        
+
+
 
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
@@ -353,7 +353,7 @@ class OWBaseWidget(QDialog):
                 contextHandlers = getattr(self, "contextHandlers", {})
                 for contextHandler in contextHandlers.values():
                     localName = contextHandler.localContextName
-                    
+
                     structureVersion, dataVersion = settings.get(localName+"Version", (0, 0))
                     if (structureVersion < contextStructureVersion or dataVersion < contextHandler.contextDataVersion) \
                        and settings.has_key(localName):
@@ -735,17 +735,27 @@ class OWBaseWidget(QDialog):
         if len(self._guiElements) == 0: return
 
         try:
-            index = random.randint(0, len(self._guiElements)-1)
-            elementType, widget = self._guiElements[index][0], self._guiElements[index][1]
-
-            if elementType == "qwtPlot":
-                widget.randomChange()
-                return
-
-            if not widget.isEnabled(): return
             newValue = ""
             callback = None
-            if elementType == "checkBox":
+
+            #index = random.randint(0, len(self._guiElements)-1)
+            index = random.randint(0, len(self._guiElements))
+            if index == len(self._guiElements):
+                elementType = "signalChange"
+                widget = None
+            else:
+                elementType, widget = self._guiElements[index][0], self._guiElements[index][1]
+                if not widget.isEnabled(): return
+
+            if elementType == "signalChange":
+                if len(self.outputs) > 0:
+                    output = self.outputs[random.randint(0, len(self.outputs)-1)][0]
+                    self.send(output, None)
+                    newValue = "Sending None to output signal " + output
+            elif elementType == "qwtPlot":
+                widget.randomChange()
+                newValue = "Random change in qwtPlot"
+            elif elementType == "checkBox":
                 elementType, widget, value, callback = self._guiElements[index]
                 newValue = "Changing checkbox %s to %s" % (value, not self.getdeepattr(value))
                 setattr(self, value, not self.getdeepattr(value))
