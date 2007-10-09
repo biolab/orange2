@@ -277,7 +277,7 @@ class DomainContextHandler(ContextHandler):
 
         for name, values in excluded.items():
             addOrd, addMeta = name in addOrdinaryTo, name in addMetaTo
-            ll = [a for a in context.orderedDomain if a not in values and (addOrd or a in context.metas) and (addMeta or a in contex.attributes)]
+            ll = [a for a in context.orderedDomain if a not in values and (addOrd or a in context.metas) and (addMeta or a in context.attributes)]
             setattr(widget, name, ll)
             
 
