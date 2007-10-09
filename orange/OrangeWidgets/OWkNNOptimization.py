@@ -1519,7 +1519,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
 
         b2 = OWGUI.widgetBox(self.controlArea, 'Example index', orientation="horizontal")
         self.selectedExampleCombo = OWGUI.comboBox(b2, self, "selectedExampleIndex", tooltip = "Select the index of the example whose predictions you wish to analyse in the graph", callback = self.selectedExampleChanged, sendSelectedValue = 1, valueType = int)
-        butt = OWGUI.button(b2, self, "Get from projection", self.updateIndexFromGraph, tooltip = "Use the index of the example that is selected in the projections")
+        butt = OWGUI.button(b2, self, "Get From Projection", self.updateIndexFromGraph, tooltip = "Use the index of the example that is selected in the projections")
 ##        butt.setMaximumWidth(60)
 
         b3 = OWGUI.widgetBox(self.controlArea, 'Graph settings')
@@ -1533,6 +1533,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
         self.exampleList = QListBox(b6)
         QToolTip.add(self.exampleList, "Average probabilities of correct classification and indices of corresponding examples")
         self.connect(self.exampleList, SIGNAL("selectionChanged()"),self.exampleListSelectionChanged)
+        OWGUI.button(b6, self, "Change Class Values", self.changeClassToMostProbable, tooltip = "Change class value to value that is most probable based on the top evaluated projections")
 
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWGraph(self.mainArea)
@@ -1596,6 +1597,12 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
             self.projectionCount = int(self.projectionCountStr)
         self.evaluateProjections()
         self.selectedExampleChanged()
+
+    # change class label to most probable and update widget with new data
+    def changeClassToMostProbable(self):
+        VizRankOutliers.changeClassToMostProbable(self)
+        self.widget.setData(self.data)
+        self.widget.handleNewSignals()
 
     def evaluateProjections(self):
         if not self.results or not self.data: return

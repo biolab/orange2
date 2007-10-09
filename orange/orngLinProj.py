@@ -124,13 +124,13 @@ class FreeViz:
         if self.rawData.domain.classVar.varType != orange.VarTypes.Discrete:
             return
 
+        if self.__class__ != FreeViz: from qt import qApp
         if singleStep: steps = 1
         if self.implementation == SLOW_IMPLEMENTATION:  impl = self.optimize_SLOW_Separation
         elif self.implementation == LDA_IMPLEMENTATION: impl = self.optimize_LDA_Separation
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
         XAnchors = None; YAnchors = None
-        if self.__class__ != FreeViz: from qt import qApp
 
         for c in range((singleStep and 1) or 50):
             for i in range(steps):
