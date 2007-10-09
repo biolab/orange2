@@ -134,7 +134,7 @@ class OWBaseWidget(QDialog):
         if not os.path.exists(self.outputDir):
             try: os.mkdir(self.outputDir)            # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
             except: pass
-            
+
         self.outputDir = os.path.join(self.outputDir, "widgetSettings")
         if not os.path.exists(self.outputDir):
             try: os.mkdir(self.outputDir)            # Vista has roaming profiles that will say that this folder does not exist and will then fail to create it, because it exists...
@@ -803,14 +803,20 @@ class OWBaseWidget(QDialog):
                 else:
                     callback()
         except:
-            sys.stderr.write("------------------\n")
-            if newValue != "":
-                sys.stderr.write("Widget %s. %s\n" % (str(self.caption()), newValue))
-            eType, val, traceback = sys.exc_info()
-            sys.excepthook(eType, val, traceback)  # print the exception
-            sys.stderr.write("Widget settings are:\n")
-            for i, setting in enumerate(getattr(self, "settingsList", [])):
-                sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
+            import traceback
+            if not hasattr(self, "_seenExceptions"):
+                self._seenExceptions = {}
+            eType, val, tb = sys.exc_info()
+            eStr = "".join(traceback.format_exception(eType, val, tb))
+            if not self._seenExceptions.has_key(eStr):      # don't repeat writing the already seen exceptions to the output
+                self._seenExceptions[eStr] = 1
+                sys.stderr.write("------------------\n")
+                if newValue != "":
+                    sys.stderr.write("Widget %s. %s\n" % (str(self.caption()), newValue))
+                sys.excepthook(eType, val, tb)  # print the exception
+                sys.stderr.write("Widget settings are:\n")
+                for i, setting in enumerate(getattr(self, "settingsList", [])):
+                    sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
 
 
 if __name__ == "__main__":
