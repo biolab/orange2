@@ -2,7 +2,7 @@
 <name>Data Sampler</name>
 <description>Selects a subset of instances from the data set.</description>
 <icon>icons/DataSampler.png</icon>
-<contact>Aleksander Sadikov (aleksander.sadikov(@at@)fri.uni-lj.si)</contact> 
+<contact>Aleksander Sadikov (aleksander.sadikov(@at@)fri.uni-lj.si)</contact>
 <priority>1125</priority>
 """
 from OWWidget import *
@@ -10,9 +10,12 @@ import OWGUI
 import random
 
 class OWDataSampler(OWWidget):
+    settingsList=["Stratified", "Repeat", "UseSpecificSeed", "RandomSeed",
+    "GroupSeed", "outFold", "Folds", "SelectType", "useCases", "nCases", "selPercentage", "LOO",
+    "CVFolds", "CVFoldsInternal", "nGroups", "pGroups", "GroupText"]
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'SampleData')
-        
+
         self.inputs = [("Data", ExampleTable, self.setData)]
         self.outputs = [("Examples", ExampleTable), ("Remaining Examples", ExampleTable)]
 
@@ -20,7 +23,7 @@ class OWDataSampler(OWWidget):
         self.data = None                        # dataset (incoming stream)
         self.indices = None                     # indices that control sampling
         self.ind = None                         # indices that control sampling
-        
+
         self.Stratified = 1                     # use stratified sampling if possible?
         self.Repeat = 0                         # can elements repeat in a sample?
         self.UseSpecificSeed = 0                # use a specific random seed?
@@ -39,7 +42,7 @@ class OWDataSampler(OWWidget):
         self.nGroups = 3                        # number of groups
         self.pGroups = [0.1,0.25,0.5]           # sizes of groups
         self.GroupText = '0.1,0.25,0.5'         # assigned to Groups Control (for internal use)
- 
+
         # GUI
         # Info Box
         box1 = QVGroupBox("Information", self.controlArea)
@@ -56,7 +59,7 @@ class OWDataSampler(OWWidget):
 
         # Sampling Type Box
         self.s = [None, None, None, None]
-        self.sBox = QVButtonGroup("Sampling Type", self.controlArea)        
+        self.sBox = QVButtonGroup("Sampling Type", self.controlArea)
 
         # Random Sampling
         self.s[0] = QRadioButton('Random sampling', self.sBox)
@@ -74,8 +77,8 @@ class OWDataSampler(OWWidget):
         QLabel("Sample size:", self.h3Box)
         self.slidebox = QHBox(self.sBox)
         QWidget(self.slidebox).setFixedSize(19, 8)
-        OWGUI.hSlider(self.slidebox, self, 'selPercentage', minValue=1, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")        
-        
+        OWGUI.hSlider(self.slidebox, self, 'selPercentage', minValue=1, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")
+
         # Cross Validation
         self.s[1] = QRadioButton('Cross validation', self.sBox)
         box = QHBox(self.sBox)
@@ -86,7 +89,7 @@ class OWDataSampler(OWWidget):
         self.s[2] = QRadioButton('Leave-one-out', self.sBox)
 
         # Multiple Groups
-        self.s[3] = QRadioButton('Multiple subsets', self.sBox)        
+        self.s[3] = QRadioButton('Multiple subsets', self.sBox)
         gbox = QHBox(self.sBox)
         QWidget(gbox).setFixedSize(19, 8)
         OWGUI.lineEdit(gbox, self, 'GroupText', label='Subset sizes (e.g. "0.1, 0.2, 0.5"):', callback=self.multipleChanged)
@@ -101,13 +104,13 @@ class OWDataSampler(OWWidget):
         for x in range(100):
             self.foldcombo.insertItem(str(x+1))
         self.foldBox.setEnabled(False)
-        
+
         # Select Data Button
         OWGUI.separator(self.controlArea)
         OWGUI.button(self.controlArea, self, 'Sample &Data', callback = self.process)
         self.s[self.SelectType].setChecked(True)    # set initial radio button on (default sample type)
 
-        # CONNECTIONS        
+        # CONNECTIONS
         # set connections for RadioButton (SelectType)
         self.dummy1 = [None]*len(self.s)
         for i in range(len(self.s)):
@@ -116,7 +119,7 @@ class OWDataSampler(OWWidget):
 
         # set connection for ComboBox (fold to output)
         self.connect(self.foldcombo, SIGNAL('activated(int)'), self.foldChanged)
-        
+
         # final touch
         self.resize(200, 275)
 
@@ -150,7 +153,7 @@ class OWDataSampler(OWWidget):
         self.foldcombo.clear()
         for x in range(self.Folds):
             self.foldcombo.insertItem(str(x+1))
-     
+
     # triggered on change in output fold combobox
     def foldChanged(self, ix):
         self.outFold = int(ix+1)
@@ -190,7 +193,7 @@ class OWDataSampler(OWWidget):
                     sample.append(self.data[random.randint(0,len(self.data)-1)])
                 remainder = None
                 self.infob.setText('Random sampling with repetitions, %d instances.' % self.nCases)
-            else:                
+            else:
                 sample = self.data.select(self.ind, 0)
                 remainder = self.data.select(self.ind, 1)
             self.infoc.setText('Output: %d instances.' % len(sample))
@@ -218,7 +221,7 @@ class OWDataSampler(OWWidget):
         # reset errors, fold selected
         self.error(0)
         self.outFold = 1
-        
+
         # check for data
         if self.data == None:
             return
@@ -232,7 +235,7 @@ class OWDataSampler(OWWidget):
             if self.useCases == 1 and self.Repeat != 1:
                 if self.nCases > len(self.data):
                     self.error(0, "Sample size (w/o repetitions) larger than dataset.")
-                    return                    
+                    return
                 self.indices = orange.MakeRandomIndices2(p0=int(self.nCases))
                 self.infob.setText('Random sampling, using exactly %d instances.' % self.nCases)
             else:
@@ -244,12 +247,12 @@ class OWDataSampler(OWWidget):
             if self.Stratified == 1: self.indices.stratified = self.indices.StratifiedIfPossible
             else:                    self.indices.stratified = self.indices.NotStratified
             if self.UseSpecificSeed == 1: self.indices.randseed = self.RandomSeed
-            else:                         self.indices.randomGenerator = orange.RandomGenerator(random.randint(0,65536))    
-            
+            else:                         self.indices.randomGenerator = orange.RandomGenerator(random.randint(0,65536))
+
             # call output stream handler to send data
             self.ind = self.indices(self.data)
 
-        # Cross Validation / LOO            
+        # Cross Validation / LOO
         elif self.SelectType == 1 or self.SelectType == 2:
             # apply selected options
             if self.SelectType == 2:
@@ -280,10 +283,10 @@ class OWDataSampler(OWWidget):
 
             #prepare indices generator
             self.indices = orange.MakeRandomIndices2()
-            if self.Stratified == 1: self.indices.stratified = self.indices.StratifiedIfPossible  
+            if self.Stratified == 1: self.indices.stratified = self.indices.StratifiedIfPossible
             else:                    self.indices.stratified = self.indices.NotStratified
             if self.UseSpecificSeed == 1: self.indices.randseed = self.RandomSeed
-            else:                         self.indices.randomGenerator = orange.RandomGenerator(random.randint(0,65536))    
+            else:                         self.indices.randomGenerator = orange.RandomGenerator(random.randint(0,65536))
 
         # enable fold selection and fill combobox if applicable
         if self.SelectType == 0:
@@ -292,7 +295,7 @@ class OWDataSampler(OWWidget):
             self.foldBox.setEnabled(True)
             self.changeCombo()
 
-        # call data output routine        
+        # call data output routine
         self.sdata()
 
 ##############################################################################
