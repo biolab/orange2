@@ -10,13 +10,14 @@ import sys, os
 from openeye.oechem import *
 
 class DrawContext:
-    def __init__(self, molecule="", fragment="", size=200, imageprefix="", imagename="", title=""):
+    def __init__(self, molecule="", fragment="", size=200, imageprefix="", imagename="", title="", grayedBackground=False):
         self.molecule=molecule
         self.fragment=fragment
         self.size=size
         self.imageprefix=imageprefix
         self.imagename=imagename
         self.title=title
+        self.grayedBackground=grayedBackground
 
 class BigImage(QDialog):
     def __init__(self, context, *args):
@@ -29,9 +30,9 @@ class BigImage(QDialog):
 
     def renderImage(self):
         if self.context.fragment:
-            orngChem.moleculeFragment2BMP(self.context.molecule, self.context.fragment, self.imagename, self.imageSize, self.context.title)
+            orngChem.moleculeFragment2BMP(self.context.molecule, self.context.fragment, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
         else:
-            orngChem.molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title)
+            orngChem.molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
         pix=QPixmap()
         pix.load(self.imagename)
         self.label.setPixmap(pix)
@@ -51,9 +52,9 @@ class MolImage(QLabel):
         self.master=master
         imagename=context.imagename or context.imageprefix+".bmp"
         if context.fragment:
-            orngChem.moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, context.title)
+            orngChem.moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, context.title, context.grayedBackground)
         else:
-            orngChem.molecule2BMP(context.molecule, imagename, context.size, context.title)
+            orngChem.molecule2BMP(context.molecule, imagename, context.size, context.title, context.grayedBackground)
         self.load(imagename)
         self.selected=False
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)
@@ -102,7 +103,7 @@ class OWMoleculeVisualizer(OWWidget):
     settingsList=["colorFragmets","showFragments"]
     def __init__(self, parent=None, signalManager=None, name="Molecule visualizer"):
         apply(OWWidget.__init__,(self, parent, signalManager, name))
-        self.inputs=[("Molecules", ExampleTable, self.setMoleculeTable), ("Fragments", ExampleTable, self.setFragmentTable)]
+        self.inputs=[("Molecules", ExampleTable, self.setMoleculeTable), ("Molecule subset", ExampleTable, self.setMoleculeSubset), ("Fragments", ExampleTable, self.setFragmentTable)]
         self.outputs=[("Selected Molecules", ExampleTable)]
         self.colorFragments=1
         self.showFragments=0
@@ -118,19 +119,26 @@ class OWMoleculeVisualizer(OWWidget):
         self.commitOnChange=0
         ##GUI
         box=OWGUI.radioButtonsInBox(self.controlArea, self, "showFragments", ["Show molecules", "Show fragments"], "Show", callback=self.showImages)
-        OWGUI.checkBox(box, self, "colorFragments", "Mark fragments", callback=self.redrawImages)
+        self.showFragmentsRadioButton=box.buttons[-1]
+        self.markFragmentsCheckBox=OWGUI.checkBox(box, self, "colorFragments", "Mark fragments", callback=self.redrawImages)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
+        OWGUI.separator(self.controlArea)
         self.moleculeSmilesCombo=OWGUI.comboBox(self.controlArea, self, "moleculeSmilesAttr", "Molecule SMILES attribute",callback=self.showImages)
         self.moleculeSmilesCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
+        OWGUI.separator(self.controlArea)
         self.moleculeTitleCombo=OWGUI.comboBox(self.controlArea, self, "moleculeTitleAttr", "Molecule title attribute", callback=self.redrawImages)
+        OWGUI.separator(self.controlArea)
         self.moleculeTitleCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
+        OWGUI.separator(self.controlArea)
         self.fragmentSmilesCombo=OWGUI.comboBox(self.controlArea, self, "fragmentSmilesAttr", "Fragment SMILES attribute", callback=self.updateFragmentsListBox)
         self.fragmentSmilesCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
+        OWGUI.separator(self.controlArea)
         box=OWGUI.spin(self.controlArea, self, "imageSize", 50, 500, 50, box="Image size", callback=self.redrawImages)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
+        OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Selection")
         OWGUI.checkBox(box, self, "commitOnChange", "Commit on change")
-        OWGUI.button(box, self, "&Select marked molecules", self.selectMarked)
+        self.selectMarkedMoleculesButton=OWGUI.button(box, self, "&Select matched molecules", self.selectMarked)
         OWGUI.button(box, self, "&Commit", callback=self.commit)
         OWGUI.rubber(self.controlArea)
         
@@ -157,10 +165,15 @@ class OWMoleculeVisualizer(OWWidget):
         self.candidateMolTitleAttr=[None]
         self.candidateFragSmilesAttr=[None]
         self.molData=None
+        self.molSubset=[]
         self.fragData=None
         self.ctrlPressed=FALSE
         self.resize(600,600)
         self.listBox.setMaximumHeight(150)
+        self.fragmentSmilesCombo.setDisabled(True)
+        self.selectMarkedMoleculesButton.setDisabled(True)
+        self.markFragmentsCheckBox.setDisabled(True)
+        self.showFragmentsRadioButton.setDisabled(True)
         
     def setMoleculeTable(self, data):
         self.molData=data
@@ -169,6 +182,12 @@ class OWMoleculeVisualizer(OWWidget):
             self.setMoleculeTitleCombo()
             self.setFragmentSmilesCombo()
             self.updateFragmentsListBox()
+            if self.molSubset:
+                try:
+                    self.molSubset=self.molSubset.select(self.molData.domain)
+                except:
+                    self.molSubset=[]
+                
             self.showImages()
         else:
             self.moleculeSmilesCombo.clear()
@@ -178,6 +197,14 @@ class OWMoleculeVisualizer(OWWidget):
                 self.listBox.clear()
             self.destroyImageWidgets()
             self.send("Selected Molecules", None)
+
+    def setMoleculeSubset(self, data):
+        self.molSubset=data
+        try:
+            self.molSubset=self.molSubset.select(self.molData.domain)
+        except:
+            self.molSubset=[]
+        self.showImages()
             
     def setFragmentTable(self, data):
         self.fragData=data
@@ -192,20 +219,35 @@ class OWMoleculeVisualizer(OWWidget):
             self.updateFragmentsListBox()
             if self.showFragments:
                 self.destroyImageWidgets()
+        self.fragmentSmilesCombo.setDisabled(bool(data))
 
     def filterSmilesVariables(self, data):
         candidates=data.domain.variables+data.domain.getmetas().values()
-        candidates=filter(lambda v:v.varType==orange.VarTypes.Discrete or v.varType==orange.VarTypes.String, candidates)        
+        candidates=filter(lambda v:v.varType==orange.VarTypes.Discrete or v.varType==orange.VarTypes.String, candidates)
+        data=data.select(orange.MakeRandomIndices2(data, min(20, len(data))))
         vars=[]
+        import os
+        tmpFd1=os.dup(1)
+        tmpFd2=os.dup(2)
+        fd=os.open("log.txt",os.O_APPEND)
+##        os.close(1)
+        os.dup2(fd, 1)
+        os.dup2(fd, 2)
+##        os.close(fd)
         for var in candidates:
             count=0
             for e in data:
                 if OEParseSmiles(OEGraphMol(), str(e[var])):
                     count+=1
             if float(count)/float(len(data))>0.5:
-                vars.append(var)
+                vars.append(var)        
         names=[v.name for v in data.domain.variables+data.domain.getmetas().values()]
         names=filter(lambda n:OEParseSmiles(OEGraphMol(), n), names)
+##        os.close(1)
+        os.dup2(tmpFd1, 1)
+        os.dup2(tmpFd2, 2)
+##        os.close(tmpFd)
+        print "bla bla"
         return vars, names
         
     def setMoleculeSmilesCombo(self):
@@ -243,9 +285,14 @@ class OWMoleculeVisualizer(OWWidget):
             self.fragmentSmiles=[""]+self.defFragmentSmiles
         self.listBox.clear()
         self.listBox.insertStrList(self.fragmentSmiles)
+        self.showFragmentsRadioButton.setDisabled(len(self.fragmentSmiles)==1)
+        self.markFragmentsCheckBox.setDisabled(len(self.fragmentSmiles)==1)
+        self.selectMarkedMoleculesButton.setDisabled(True)
         
     def fragmentSelection(self, index):
         self.selectedFragment=self.fragmentSmiles[index]
+        self.selectMarkedMoleculesButton.setEnabled(bool(self.selectedFragment))
+        self.markFragmentsCheckBox.setEnabled(bool(self.selectedFragment))
         if not self.showFragments and self.colorFragments:
             self.redrawImages()
         
@@ -267,14 +314,14 @@ class OWMoleculeVisualizer(OWWidget):
                 titleList=[]
                 if not sAttr:
                     return
-            molSmiles=[str(e[sAttr]) for e in self.molData if not e[sAttr].isSpecial()]
-            for i,(molecule, title) in enumerate(zip(molSmiles, titleList or [""]*len(molSmiles))):
+            molSmiles=[(str(e[sAttr]), e) for e in self.molData if not e[sAttr].isSpecial()]
+            for i,((molecule, example), title) in enumerate(zip(molSmiles, titleList or [""]*len(molSmiles))):
                 imagename=self.imageprefix+str(i)+".bmp"
                 if self.colorFragments:
-                    context=DrawContext(molecule=molecule, fragment=self.selectedFragment, imagename=imagename, size=self.imageSize, title=title)
+                    context=DrawContext(molecule=molecule, fragment=self.selectedFragment, imagename=imagename, size=self.imageSize, title=title, grayedBackground=example in self.molSubset)
                     #vis.moleculeFragment2BMP(molecule, self.selectedFragment, imagename, self.imageSize)
                 else:
-                    context=DrawContext(molecule=molecule, imagename=imagename, size=self.imageSize, title=title)
+                    context=DrawContext(molecule=molecule, imagename=imagename, size=self.imageSize, title=title, grayedBackground=example in self.molSubset)
                     #vis.molecule2BMP(molecule, imagename, self.imageSize)
                 image=MolImage(self, self.molWidget, context)
                 self.gridLayout.addWidget(image, i/self.numColumns, i%self.numColumns)

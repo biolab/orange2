@@ -187,7 +187,7 @@ class OWMDS(OWWidget):
             selectedInput=self.selectedInputExamples.select(data.domain)
         except:
             selectedInput=[]
-        self.selectedInput=map(lambda d:not d in selectedInput if selectedInput else False, data)
+        self.selectedInput=map(lambda d: selectedInput and (d in selectedInput) or not selectedInput, data)
         contI=discI=attrI=1
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
@@ -529,7 +529,7 @@ class MDSGraph(OWGraph):
             self.sizes=sizes
             self.shapes=shapes
             self.names=names
-            self.showFilled=map(lambda t:False if t else True, showFilled)
+            self.showFilled=showFilled #map(lambda d: not d, showFilled)
             self.updateData()
                 
     def updateData(self):

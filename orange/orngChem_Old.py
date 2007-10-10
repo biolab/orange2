@@ -486,7 +486,7 @@ def testAcc(data):
 ##Visualization
 ########################################################
 
-def moleculeFragment2BMP(molSmiles, fragSmiles, filename, size=200, title=""):
+def moleculeFragment2BMP(molSmiles, fragSmiles, filename, size=200, title="", grayedBackground=False):
     """given smiles codes of molecle and a fragment will draw the molecule and save it
     to a file"""
     mol=OEGraphMol()
@@ -496,9 +496,11 @@ def moleculeFragment2BMP(molSmiles, fragSmiles, filename, size=200, title=""):
     match=subsetSearch(mol, fragSmiles)
     view=createMolView(mol, size)
     colorSubset(view, mol, match)
+    if grayedBackground:
+        view.SetBackColor(245,245,245)
     renderImage(view, filename)
 
-def molecule2BMP(molSmiles, filename, size=200, title=""):
+def molecule2BMP(molSmiles, filename, size=200, title="", grayedBackground=False):
     """given smiles code of a molecule will draw the molecule and save it
     to a file"""
     mol=OEGraphMol()
@@ -506,6 +508,8 @@ def molecule2BMP(molSmiles, filename, size=200, title=""):
     mol.SetTitle(title)
     depict(mol)
     view=createMolView(mol, size)
+    if grayedBackground:
+        view.SetBackColor(245,245,245)
     renderImage(view, filename)
 
 def depict(mol):
