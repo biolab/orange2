@@ -8,6 +8,7 @@ import OWGUI
 import sys, os
 #import vis
 from openeye.oechem import *
+from openeye.oedepict import *
 
 class DrawContext:
     def __init__(self, molecule="", fragment="", size=200, imageprefix="", imagename="", title="", grayedBackground=False):
@@ -30,9 +31,9 @@ class BigImage(QDialog):
 
     def renderImage(self):
         if self.context.fragment:
-            orngChem.moleculeFragment2BMP(self.context.molecule, self.context.fragment, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
+            moleculeFragment2BMP(self.context.molecule, self.context.fragment, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
         else:
-            orngChem.molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
+            molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
         pix=QPixmap()
         pix.load(self.imagename)
         self.label.setPixmap(pix)
@@ -52,9 +53,9 @@ class MolImage(QLabel):
         self.master=master
         imagename=context.imagename or context.imageprefix+".bmp"
         if context.fragment:
-            orngChem.moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, context.title, context.grayedBackground)
+            moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, context.title, context.grayedBackground)
         else:
-            orngChem.molecule2BMP(context.molecule, imagename, context.size, context.title, context.grayedBackground)
+            molecule2BMP(context.molecule, imagename, context.size, context.title, context.grayedBackground)
         self.load(imagename)
         self.selected=False
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)
@@ -154,6 +155,8 @@ class OWMoleculeVisualizer(OWWidget):
         self.gridLayout.setAutoAdd(False)
         self.listBox=QListBox(spliter)
         self.connect(self.listBox, SIGNAL("highlighted(int)"), self.fragmentSelection)
+        self.scrollView.setFocusPolicy(QWidget.StrongFocus)
+        self.listBox.setFocusPolicy(QWidget.NoFocus)
 
         self.imageprefix=os.path.split(__file__)[0]
         if self.imageprefix:
@@ -229,7 +232,7 @@ class OWMoleculeVisualizer(OWWidget):
         import os
         tmpFd1=os.dup(1)
         tmpFd2=os.dup(2)
-        fd=os.open("log.txt",os.O_APPEND)
+        fd=os.open(os.devnull, os.O_APPEND)
 ##        os.close(1)
         os.dup2(fd, 1)
         os.dup2(fd, 2)
@@ -247,7 +250,6 @@ class OWMoleculeVisualizer(OWWidget):
         os.dup2(tmpFd1, 1)
         os.dup2(tmpFd2, 2)
 ##        os.close(tmpFd)
-        print "bla bla"
         return vars, names
         
     def setMoleculeSmilesCombo(self):
@@ -305,7 +307,7 @@ class OWMoleculeVisualizer(OWWidget):
                 image=MolImage(self, self.molWidget, DrawContext(molecule=fragment, imagename=imagename, size=self.imageSize))
                 self.gridLayout.addWidget(image, i/self.numColumns, i%self.numColumns)
                 self.imageWidgets.append(image)
-        elif self.molData:
+        elif self.molData and self.candidateMolSmilesAttr:
             sAttr=self.candidateMolSmilesAttr[min(self.moleculeSmilesAttr, len(self.candidateMolSmilesAttr)-1)]
             tAttr=self.candidateMolTitleAttr[min(self.moleculeTitleAttr, len(self.candidateMolTitleAttr)-1)]
             if self.moleculeTitleAttr:
@@ -380,14 +382,20 @@ class OWMoleculeVisualizer(OWWidget):
             fragmap=orngChem.map_fragments(fragments, molecules)
             match=filter(lambda m:max(fragmap[m].values()), molecules)
             examples=[e for e in self.molData if str(e[sAttr]) in match]
-            table=orange.ExampleTable(examples)
-            self.send("Selected Molecules", table)
+            if examples:
+                table=orange.ExampleTable(examples)
+                self.send("Selected Molecules", table)
+            else:
+                self.send("Selected Molecules", None)                
         else:
             mols=[i.context.molecule for i in self.imageWidgets if i.selected]
             sAttr=self.candidateMolSmilesAttr[self.moleculeSmilesAttr]
             examples=[e for e in self.molData if str(e[sAttr]) in mols]
-            table=orange.ExampleTable(examples)
-            self.send("Selected Molecules", table)
+            if examples:
+                table=orange.ExampleTable(examples)
+                self.send("Selected Molecules", table)
+            else:
+                self.send("Selected Molecules", None)
 
     def keyPressEvent(self, key):
         if key.key()==Qt.Key_Control:
@@ -400,6 +408,89 @@ class OWMoleculeVisualizer(OWWidget):
             self.ctrlPressed=FALSE
         else:
             OWWidget.keyReleaseEvent(self, key)
+
+def moleculeFragment2BMP(molSmiles, fragSmiles, filename, size=200, title="", grayedBackground=False):
+    """given smiles codes of molecle and a fragment will draw the molecule and save it
+    to a file"""
+    mol=OEGraphMol()
+    OEParseSmiles(mol, molSmiles)
+    depict(mol)
+    mol.SetTitle(title)
+    match=subsetSearch(mol, fragSmiles)
+    view=createMolView(mol, size)
+    colorSubset(view, mol, match)
+    if grayedBackground:
+        view.SetBackColor(245,245,245)
+    renderImage(view, filename)
+
+def molecule2BMP(molSmiles, filename, size=200, title="", grayedBackground=False):
+    """given smiles code of a molecule will draw the molecule and save it
+    to a file"""
+    mol=OEGraphMol()
+    OEParseSmiles(mol, molSmiles)
+    mol.SetTitle(title)
+    depict(mol)
+    view=createMolView(mol, size)
+    if grayedBackground:
+        view.SetBackColor(240,240,240)
+    renderImage(view, filename)
+
+def depict(mol):
+    """depict a molecule - i.e assign 2D coordinates to atoms"""
+    if mol.GetDimension()==3:
+        OEPerceiveChiral(mol)
+        OE3DToBondStereo(mol)
+        OE3DToAtomStereo(mol)
+    OEAddDepictionHydrogens(mol)
+    OEDepictCoordinates(mol)
+    OEMDLPerceiveBondStereo(mol)
+    OEAssignAromaticFlags(mol)
+
+def subsetSearch(mol, pattern):
+    """finds the matches of pattern in mol"""
+    pat=OESubSearch()
+    pat.Init(pattern)
+    return pat.Match(mol,1)
+
+def createMolView(mol, size=200, title=""):
+    """creates a view for the molecule mol"""
+    view=OEDepictView()
+    view.SetMolecule(mol)
+    view.SetLogo(False)
+    view.SetTitleSize(12)
+    view.AdjustView(size, size)
+    return view
+
+def colorSubset(view, mol, match):
+    """assigns a differnet color to atoms and bonds of mol in view that are present in match"""
+    for matchbase in match:
+        for mpair in matchbase.GetAtoms():
+            style=view.AStyle(mpair.target.GetIdx())
+            #set style
+            style.r=255
+            style.g=0
+            style.b=0
+
+    for matchbasem in match:
+        for mpair in matchbase.GetBonds():
+            style=view.BStyle(mpair.target.GetIdx())            
+            #set style
+            style.r=255
+            style.g=0
+            style.b=0
+
+def renderImage(view, filename):
+    """renders the view to a filename"""
+    img=OE8BitImage(view.XRange(), view.YRange())
+    view.RenderImage(img)
+    ofs=oeofstream(filename)
+    OEWriteBMP(ofs, img)
+
+def render2OE8BitImage(view):
+    """renders the view to a OE8BitImage"""
+    img=OE8BitImage(view.XRange(), view.YRange())
+    view.RenderImage(img)
+    return view            
 
 if __name__=="__main__":
     app=QApplication(sys.argv)
