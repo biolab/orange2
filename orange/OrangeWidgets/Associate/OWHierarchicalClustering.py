@@ -112,12 +112,12 @@ class OWHierarchicalClustering(OWWidget):
               callback=self.updateCutOffLine)
         self.classificationBox=QVGroupBox(self.selectionTab)
         #self.classificationBox.setTitle("Classification")
-        OWGUI.checkBox(self.classificationBox, self, "ClassifySelected","Classify selected examples")
-        OWGUI.lineEdit(self.classificationBox, self, "ClassifyName", "Class name")
+        OWGUI.checkBox(self.classificationBox, self, "ClassifySelected", "Classify selected examples", callback=self.selectionChange)
+        OWGUI.lineEdit(self.classificationBox, self, "ClassifyName", "Class name", callback=self.selectionChange)
         #selectionBox=QVGroupBox(self.selectionTab)
         commitBox=QVGroupBox(self.selectionTab)
         commitBox.setTitle("Commit settings")
-        OWGUI.checkBox(commitBox, self, "CommitOnChange", "Commit on change")
+        OWGUI.checkBox(commitBox, self, "CommitOnChange", "Commit on change", callback=self.selectionChange)
         OWGUI.button(commitBox, self, "&Commit", self.commitData)
         OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
         OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
@@ -256,7 +256,7 @@ class OWHierarchicalClustering(OWWidget):
         if self.SelectionMode:
             self.dendogram.cutOffLine.show()
             self.footerView.canvas().marker.show()
-    	else:
+        else:
             self.dendogram.cutOffLine.hide()
             self.footerView.canvas().marker.hide()
         self.dendogram.update()
@@ -267,6 +267,10 @@ class OWHierarchicalClustering(OWWidget):
             return
         self.selectionList=selection
         if self.CommitOnChange and self.dendogram.cutOffLineDragged==False:
+            self.commitData()
+
+    def selectionChange(self):
+        if self.CommitOnChange:
             self.commitData()
 
     def commitData(self):
@@ -281,11 +285,11 @@ class OWHierarchicalClustering(OWWidget):
             return
         if self.matrixSource=="Example Distance":
             if self.ClassifySelected:
-                classVar=orange.EnumVariable(self.ClassifyName ,
+                classVar=orange.EnumVariable(str(self.ClassifyName) ,
                             values=[str(i) for i in range(len(maps))])
                 domain=orange.Domain(self.matrix.items.domain.attributes,classVar)
+                domain.addmetas(self.matrix.items.domain.getmetas())
                 if self.matrix.items.domain.classVar:
-                    domain.addmetas(self.matrix.items.domain.getmetas())
                     id=orange.newmetaid()
                     domain.addmeta(id, self.matrix.items.domain.classVar)
                 table1=orange.ExampleTable(domain) #orange.Domain(self.matrix.items.domain, classVar))
