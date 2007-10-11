@@ -21,13 +21,14 @@ class OWExampleDistance(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["Label"])}
 
     def __init__(self, parent=None, signalManager = None):
-        self.callbackDeposit = [] # deposit for OWGUI callback functions
+##        self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, 'ExampleDistance') 
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
         self.Metrics = 0
+        self.Label = ""
         self.loadSettings()
         self.data = None
 
@@ -38,7 +39,7 @@ class OWExampleDistance(OWWidget):
 
         cb = OWGUI.comboBox(self.controlArea, self, "Metrics", box="Distance Metrics", items=[x[0] for x in self.metrics],
             tooltip="Choose metrics to measure pairwise distance between examples.",
-            callback=self.computeMatrix)
+            callback=self.computeMatrix, valueType=str)
         cb.setMinimumWidth(170)
         cb.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))
 
@@ -68,7 +69,7 @@ class OWExampleDistance(OWWidget):
 
     def setLabel(self):
         for e in self.data:
-            e.name = str(e[self.Label])
+            e.name = str(e[str(self.Label)])
 
     ##############################################################################
     # input signal management
