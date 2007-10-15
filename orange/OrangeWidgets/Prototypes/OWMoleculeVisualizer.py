@@ -139,8 +139,10 @@ class OWMoleculeVisualizer(OWWidget):
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Selection")
         OWGUI.checkBox(box, self, "commitOnChange", "Commit on change")
-        self.selectMarkedMoleculesButton=OWGUI.button(box, self, "&Select matched molecules", self.selectMarked)
+        self.selectMarkedMoleculesButton=OWGUI.button(box, self, "Select &matched molecules", self.selectMarked)
         OWGUI.button(box, self, "&Commit", callback=self.commit)
+        OWGUI.separator(self.controlArea)
+        OWGUI.button(self.controlArea, self, "&Save to HTML", self.saveToHTML)
         OWGUI.rubber(self.controlArea)
         
         self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom)
@@ -409,6 +411,44 @@ class OWMoleculeVisualizer(OWWidget):
         else:
             OWWidget.keyReleaseEvent(self, key)
 
+    def saveToHTML(self):
+        fileName=str(QFileDialog.getSaveFileName("index.html","HTML (.html)", None, "Save to.."))
+        if not fileName:
+            return
+        else:
+            file=open(fileName, "w")
+        import os
+        path, _ =os.path.split(fileName)
+        if "molimages" not in os.listdir(path):
+            os.mkdir(path+"/molimages")
+        title="Molekule"
+        file.write("<html><title>"+title+"</title>\n")
+        file.write("<body> <table border=\"1\">\n")
+        i=0
+        try:
+            import Image
+        except:
+            pass
+        for row in range(len(self.imageWidgets)/self.numColumns+1):
+            file.write("<tr>\n")
+            for col in range(self.numColumns):
+                try:
+                    im=Image.open(self.imageprefix+str(i)+".bmp")
+                    if im.mode!="RGB":
+                        im=im.convert("RGB")
+                    im.save(path+"/molimages/image"+str(i)+".gif", "GIF")
+                    file.write("<td><img src=\"./molimages/image"+str(i)+".gif\"></td>\n")
+                except:
+                    from shutil import copy
+                    copy(self.imageprefix+str(i)+".bmp", path+"/molimages/")
+                    file.write("<td><img src=\"./molimages/image"+str(i)+".bmp\"></td>\n")
+                i+=1
+                if i>=len(self.imageWidgets):
+                    break
+            file.write("</tr>\n")
+        file.write("</table></body></html>")
+        file.close()
+        
 def moleculeFragment2BMP(molSmiles, fragSmiles, filename, size=200, title="", grayedBackground=False):
     """given smiles codes of molecle and a fragment will draw the molecule and save it
     to a file"""
@@ -497,8 +537,8 @@ if __name__=="__main__":
     w=OWMoleculeVisualizer()
     app.setMainWidget(w)
     w.show()
-    data=orange.ExampleTable("E://fragG.tab")
+    data=orange.ExampleTable("E://chem/chemdata/BCMData_growth_frag.tab")
     w.setMoleculeTable(data)
-    data=orange.ExampleTable("E://chem//new//sf.tab")
-    w.setFragmentTable(data)
+##    data=orange.ExampleTable("E://chem//new//sf.tab")
+##    w.setFragmentTable(data)
     app.exec_loop()
