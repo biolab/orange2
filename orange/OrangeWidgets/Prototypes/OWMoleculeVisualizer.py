@@ -77,6 +77,7 @@ class MolImage(QLabel):
 
     def mousePressEvent(self, event):
         self.master.mouseAction(self, event)
+##        print self.x(), self.y(), event.pos().x(), event.pos().y()
 
     def mouseDoubleClickEvent(self, event):
         d=BigImage(self.context, self)
@@ -98,6 +99,7 @@ class ScrollView(QScrollView):
         if numColumns!=oldNumColumns:
             self.master.numColumns=numColumns
             self.master.redrawImages()
+##        print self.maximumSize().height(), self.viewport().maximumSize().height()
         
 
 class OWMoleculeVisualizer(OWWidget):
@@ -229,7 +231,8 @@ class OWMoleculeVisualizer(OWWidget):
     def filterSmilesVariables(self, data):
         candidates=data.domain.variables+data.domain.getmetas().values()
         candidates=filter(lambda v:v.varType==orange.VarTypes.Discrete or v.varType==orange.VarTypes.String, candidates)
-        data=data.select(orange.MakeRandomIndices2(data, min(20, len(data))))
+        if len(data)>20:
+            data=data.select(orange.MakeRandomIndices2(data, 20))
         vars=[]
         import os
         tmpFd1=os.dup(1)
@@ -301,13 +304,19 @@ class OWMoleculeVisualizer(OWWidget):
             self.redrawImages()
         
     def renderImages(self):
+        def fixNumColumns(numItems, numColumns):
+            if self.imageSize*(numItems/numColumns+1)>30000:
+                return numItems/(30000/(self.imageSize+10))
+            else:
+                return numColumns
         self.imageWidgets=[]
         if self.showFragments and self.fragmentSmiles:
+            correctedNumColumns=fixNumColumns(len(self.fragmentSmiles[1:]), self.numColumns)
             for i,fragment in enumerate(self.fragmentSmiles[1:]):
                 imagename=self.imageprefix+str(i)+".bmp"
                 #vis.molecule2BMP(fragment, imagename, self.imageSize)
                 image=MolImage(self, self.molWidget, DrawContext(molecule=fragment, imagename=imagename, size=self.imageSize))
-                self.gridLayout.addWidget(image, i/self.numColumns, i%self.numColumns)
+                self.gridLayout.addWidget(image, i/correctedNumColumns, i%correctedNumColumns)
                 self.imageWidgets.append(image)
         elif self.molData and self.candidateMolSmilesAttr:
             sAttr=self.candidateMolSmilesAttr[min(self.moleculeSmilesAttr, len(self.candidateMolSmilesAttr)-1)]
@@ -319,6 +328,7 @@ class OWMoleculeVisualizer(OWWidget):
                 if not sAttr:
                     return
             molSmiles=[(str(e[sAttr]), e) for e in self.molData if not e[sAttr].isSpecial()]
+            correctedNumColumns=fixNumColumns(len(molSmiles), self.numColumns)
             for i,((molecule, example), title) in enumerate(zip(molSmiles, titleList or [""]*len(molSmiles))):
                 imagename=self.imageprefix+str(i)+".bmp"
                 if self.colorFragments:
@@ -328,11 +338,14 @@ class OWMoleculeVisualizer(OWWidget):
                     context=DrawContext(molecule=molecule, imagename=imagename, size=self.imageSize, title=title, grayedBackground=example in self.molSubset)
                     #vis.molecule2BMP(molecule, imagename, self.imageSize)
                 image=MolImage(self, self.molWidget, context)
-                self.gridLayout.addWidget(image, i/self.numColumns, i%self.numColumns)
+                self.gridLayout.addWidget(image, i/correctedNumColumns, i%correctedNumColumns)
                 self.imageWidgets.append(image)
         #print "done drawing"
         for w in self.imageWidgets:
             w.show()
+##        if self.imageWidgets:
+##            self.scrollView.viewport().setMaximumHeight(self.imageSize*(len(self.imageWidgets)/self.numColumns+1))
+##            print self.imageWidgets[-1].y()+self.imageWidgets[-1].height(), viewportHeight
 
     def destroyImageWidgets(self):
         for w in self.imageWidgets:
@@ -432,6 +445,8 @@ class OWMoleculeVisualizer(OWWidget):
         for row in range(len(self.imageWidgets)/self.numColumns+1):
             file.write("<tr>\n")
             for col in range(self.numColumns):
+                if i>=len(self.imageWidgets):
+                    break
                 try:
                     im=Image.open(self.imageprefix+str(i)+".bmp")
                     if im.mode!="RGB":
@@ -443,8 +458,6 @@ class OWMoleculeVisualizer(OWWidget):
                     copy(self.imageprefix+str(i)+".bmp", path+"/molimages/")
                     file.write("<td><img src=\"./molimages/image"+str(i)+".bmp\"></td>\n")
                 i+=1
-                if i>=len(self.imageWidgets):
-                    break
             file.write("</tr>\n")
         file.write("</table></body></html>")
         file.close()
