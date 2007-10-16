@@ -44,7 +44,24 @@ class BigImage(QDialog):
         self.imageSize=min(event.size().width(), event.size().height())
         self.renderImage()
         
-    
+class MolWidget(QVBox):
+    def __init__(self, master, parent, context):
+        apply(QVBox.__init__, (self, parent))
+        self.master=master
+        self.context=context
+        self.label=QLabel(self)
+        self.image=MolImage(master, self, context)
+        self.show()
+        self.selected=False
+        self.label.setText(context.title)
+        self.label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        self.label.setMaximumWidth(context.size)
+
+    def repaint(self):
+        apply(QVBox.repaint,(self, ))
+        self.label.repaint()
+        self.image.repaint()
+        
 class MolImage(QLabel):
     def __init__(self, master, parent, context):
         apply(QLabel.__init__,(self, parent))
@@ -53,12 +70,13 @@ class MolImage(QLabel):
         self.master=master
         imagename=context.imagename or context.imageprefix+".bmp"
         if context.fragment:
-            moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, context.title, context.grayedBackground)
+            moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, grayedBackground=context.grayedBackground)
         else:
-            molecule2BMP(context.molecule, imagename, context.size, context.title, context.grayedBackground)
+            molecule2BMP(context.molecule, imagename, context.size, grayedBackground=context.grayedBackground)
         self.load(imagename)
         self.selected=False
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)
+        self.show()
         
     def load(self, filename):
         self.pix=QPixmap()
@@ -70,14 +88,15 @@ class MolImage(QLabel):
 
     def paintEvent(self, event):
         apply(QLabel.paintEvent,(self, event))
-        if self.selected:
+        if self.parent().selected:
             painter=QPainter(self)
             painter.setPen(QPen(Qt.red, 2))
             painter.drawRect(2, 2, self.width()-3, self.height()-3)
 
     def mousePressEvent(self, event):
-        self.master.mouseAction(self, event)
+        self.master.mouseAction(self.parent(), event)
 ##        print self.x(), self.y(), event.pos().x(), event.pos().y()
+        self.update()
 
     def mouseDoubleClickEvent(self, event):
         d=BigImage(self.context, self)
@@ -95,7 +114,7 @@ class ScrollView(QScrollView):
         size=event.size()
         w,h=size.width(), size.height()
         oldNumColumns=self.master.numColumns
-        numColumns=min(w/self.master.imageSize or 1, 100)
+        numColumns=min(w/(self.master.imageSize) or 1, 100)
         if numColumns!=oldNumColumns:
             self.master.numColumns=numColumns
             self.master.redrawImages()
@@ -129,14 +148,19 @@ class OWMoleculeVisualizer(OWWidget):
         self.moleculeSmilesCombo=OWGUI.comboBox(self.controlArea, self, "moleculeSmilesAttr", "Molecule SMILES attribute",callback=self.showImages)
         self.moleculeSmilesCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
         OWGUI.separator(self.controlArea)
-        self.moleculeTitleCombo=OWGUI.comboBox(self.controlArea, self, "moleculeTitleAttr", "Molecule title attribute", callback=self.redrawImages)
-        OWGUI.separator(self.controlArea)
-        self.moleculeTitleCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
+##        self.moleculeTitleCombo=OWGUI.comboBox(self.controlArea, self, "moleculeTitleAttr", "Molecule title attribute", callback=self.redrawImages)
+        box=OWGUI.widgetBox(self.controlArea, "Molecule title attributes")
+        self.moleculeTitleListBox=QListBox(box)
+        self.moleculeTitleListBox.setSelectionMode(QListBox.Extended)
+        self.moleculeTitleListBox.setMinimumHeight(100)
+        self.connect(self.moleculeTitleListBox, SIGNAL("selectionChanged()"), self.updateTitles)
+##        OWGUI.separator(self.controlArea)
+##        self.moleculeTitleCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
         OWGUI.separator(self.controlArea)
         self.fragmentSmilesCombo=OWGUI.comboBox(self.controlArea, self, "fragmentSmilesAttr", "Fragment SMILES attribute", callback=self.updateFragmentsListBox)
         self.fragmentSmilesCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
         OWGUI.separator(self.controlArea)
-        box=OWGUI.spin(self.controlArea, self, "imageSize", 50, 500, 50, box="Image size", callback=self.redrawImages)
+        box=OWGUI.spin(self.controlArea, self, "imageSize", 50, 500, 50, box="Image size", callback=self.redrawImages, callbackOnReturn = True)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
         OWGUI.separator(self.controlArea)
         box=OWGUI.widgetBox(self.controlArea,"Selection")
@@ -155,7 +179,7 @@ class OWMoleculeVisualizer(OWWidget):
         self.molWidget=QWidget(self.scrollView.viewport())
         self.scrollView.addChild(self.molWidget)
         self.mainAreaLayout.addWidget(spliter)
-        self.gridLayout=QGridLayout(self.molWidget,10,100,2,2)
+        self.gridLayout=QGridLayout(self.molWidget,100,100,2,2)
         self.gridLayout.setAutoAdd(False)
         self.listBox=QListBox(spliter)
         self.connect(self.listBox, SIGNAL("highlighted(int)"), self.fragmentSelection)
@@ -163,6 +187,11 @@ class OWMoleculeVisualizer(OWWidget):
         self.listBox.setFocusPolicy(QWidget.NoFocus)
 
         self.imageprefix=os.path.split(__file__)[0]
+        if "molimages" not in os.listdir(self.imageprefix):
+            try:
+                os.mkdir(self.imageprefix and self.imageprefix+"/molimages" or "molimages")
+            except:
+                pass
         if self.imageprefix:
             self.imageprefix+="\molimages\image"
         else:
@@ -186,7 +215,7 @@ class OWMoleculeVisualizer(OWWidget):
         self.molData=data
         if data:
             self.setMoleculeSmilesCombo()
-            self.setMoleculeTitleCombo()
+            self.setMoleculeTitleListBox()
             self.setFragmentSmilesCombo()
             self.updateFragmentsListBox()
             if self.molSubset:
@@ -198,7 +227,7 @@ class OWMoleculeVisualizer(OWWidget):
             self.showImages()
         else:
             self.moleculeSmilesCombo.clear()
-            self.moleculeTitleCombo.clear()
+            self.moleculeTitleListBox.clear()
             self.defFragmentSmiles=[]
             if not self.fragmentSmilesAttr:
                 self.listBox.clear()
@@ -265,13 +294,24 @@ class OWMoleculeVisualizer(OWWidget):
         if self.moleculeSmilesAttr>=len(candidates):
             self.moleculeSmilesAttr=0
 
-    def setMoleculeTitleCombo(self):
+    def setMoleculeTitleListBox(self):
         vars=self.molData.domain.variables+self.molData.domain.getmetas().values()
-        self.moleculeTitleCombo.clear()
-        self.moleculeTitleCombo.insertStrList(["None"]+[v.name for v in vars])
+##        self.moleculeTitleCombo.clear()
+##        self.moleculeTitleCombo.insertStrList(["None"]+[v.name for v in vars])
+        self.moleculeTitleListBox.clear()
+        self.moleculeTitleListBox.insertStrList(["None"]+[v.name for v in vars])
         if self.moleculeTitleAttr>len(vars):
             self.moleculeTitleAttr=0
         self.candidateMolTitleAttr=[None]+[v for v in vars]
+
+    def updateTitles(self):
+        if not self.molData:
+            return
+        selected=filter(lambda (i,attr):self.moleculeTitleListBox.isSelected(i), list(enumerate(self.candidateMolTitleAttr))[1:])
+        smilesAttr=self.candidateMolSmilesAttr[min(self.moleculeSmilesAttr, len(self.candidateMolSmilesAttr)-1)]
+        for widget, example in zip(self.imageWidgets, filter(lambda e:not e[smilesAttr].isSpecial(),self.molData)):
+            text=" / ".join(map(str, [example[attr] for i, attr in selected]))
+            widget.label.setText(text)
 
     def setFragmentSmilesCombo(self):
         if self.fragData:
@@ -306,7 +346,7 @@ class OWMoleculeVisualizer(OWWidget):
     def renderImages(self):
         def fixNumColumns(numItems, numColumns):
             if self.imageSize*(numItems/numColumns+1)>30000:
-                return numItems/(30000/(self.imageSize+10))
+                return numItems/(30000/(self.imageSize))
             else:
                 return numColumns
         self.imageWidgets=[]
@@ -315,7 +355,8 @@ class OWMoleculeVisualizer(OWWidget):
             for i,fragment in enumerate(self.fragmentSmiles[1:]):
                 imagename=self.imageprefix+str(i)+".bmp"
                 #vis.molecule2BMP(fragment, imagename, self.imageSize)
-                image=MolImage(self, self.molWidget, DrawContext(molecule=fragment, imagename=imagename, size=self.imageSize))
+##                image=MolImage(self,  self.molWidget, DrawContext(molecule=fragment, imagename=imagename, size=self.imageSize))
+                image=MolWidget(self, self.molWidget, DrawContext(molecule=fragment, imagename=imagename, size=self.imageSize))
                 self.gridLayout.addWidget(image, i/correctedNumColumns, i%correctedNumColumns)
                 self.imageWidgets.append(image)
         elif self.molData and self.candidateMolSmilesAttr:
@@ -337,9 +378,11 @@ class OWMoleculeVisualizer(OWWidget):
                 else:
                     context=DrawContext(molecule=molecule, imagename=imagename, size=self.imageSize, title=title, grayedBackground=example in self.molSubset)
                     #vis.molecule2BMP(molecule, imagename, self.imageSize)
-                image=MolImage(self, self.molWidget, context)
+##                image=MolImage(self, self.molWidget, context)
+                image=MolWidget(self, self.molWidget, context)
                 self.gridLayout.addWidget(image, i/correctedNumColumns, i%correctedNumColumns)
                 self.imageWidgets.append(image)
+            self.updateTitles()
         #print "done drawing"
         for w in self.imageWidgets:
             w.show()
@@ -452,11 +495,11 @@ class OWMoleculeVisualizer(OWWidget):
                     if im.mode!="RGB":
                         im=im.convert("RGB")
                     im.save(path+"/molimages/image"+str(i)+".gif", "GIF")
-                    file.write("<td><img src=\"./molimages/image"+str(i)+".gif\"></td>\n")
+                    file.write("<td><p>"+str(self.imageWidgets[i].label.text())+"</p><img src=\"./molimages/image"+str(i)+".gif\"></td>\n")
                 except:
                     from shutil import copy
                     copy(self.imageprefix+str(i)+".bmp", path+"/molimages/")
-                    file.write("<td><img src=\"./molimages/image"+str(i)+".bmp\"></td>\n")
+                    file.write("<td><p>"+str(self.imageWidgets[i].label.text())+"</p><img src=\"./molimages/image"+str(i)+".bmp\"></td>\n")
                 i+=1
             file.write("</tr>\n")
         file.write("</table></body></html>")
