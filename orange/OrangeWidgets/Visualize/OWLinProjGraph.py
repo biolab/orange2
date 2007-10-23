@@ -98,7 +98,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.removeMarkers()
 
         self.__dict__.update(args)
-        if not labels: labels = [anchor[2] for anchor in self.anchorData]
+        if labels == None: labels = [anchor[2] for anchor in self.anchorData]
         self.shownAttributes = labels
         self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
         self.valueLineCurves = [{}, {}]    # dicts for x and y set of coordinates for unconnected lines
