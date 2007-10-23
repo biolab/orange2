@@ -117,6 +117,8 @@ class OWWidget(OWBaseWidget):
         #qApp.processEvents()
 
     def updateStatusBarState(self):
+        if not hasattr(self, "widgetStatusArea"):
+            return
         if self._owShowStatus and (self.widgetState["Warning"] != {} or self.widgetState["Error"] != {}):
             self.widgetStatusArea.show()
         else:
