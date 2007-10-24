@@ -49,7 +49,7 @@ class OWNetworkCanvas(OWGraph):
         self.freezeNeighbours = False
         self.labelsOnMarkedOnly = 0
         self.enableWheelZoom = 1
-        self.smoothOptimization = 0
+        self.smoothOptimization = 1
         self.optimizing = 0
         self.stopOptimizing = 0
         
