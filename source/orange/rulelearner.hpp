@@ -47,6 +47,7 @@ public:
   __REGISTER_CLASS
 
   PFilter filter; //P stored filter for this rule
+  PFilter valuesFilter; //P Filter_values representation of main filter (sometimes needed)
   PClassifier classifier; //P classifies an example
   PLearner learner; //P learns a classifier from data
   PRule parentRule; //P
@@ -58,6 +59,7 @@ public:
   float quality; //P some measure of rule quality
   float complexity; //P
   float chi; //P 
+  int requiredConditions; //P conditions that are mandatory in rule - rule attribute significance avoids these
 
   int *coveredExamples;
   int coveredExamplesLength;
@@ -192,7 +194,7 @@ public:
 
 class DiffFunc {
 public:
-  virtual double operator()(float) const = 0;
+  virtual double operator()(float) = 0;
 };
 
 class LNLNChiSq: public DiffFunc {
@@ -202,15 +204,20 @@ public:
   double extremeAlpha;
 
   LNLNChiSq(PEVCDist evc, const float & chi);
-  double operator()(float chix) const;
+  double operator()(float chix);
 };
 
 class LRInv: public DiffFunc {
 public:
-  float pn, P, N, chiCorrected;
+  PExampleTable examples;
+  int weightID, targetClass;
+  PDistribution apriori;
+  PRule tempRule;
+  PChiFunction chiFunction;
+  float nonOptimistic_Chi, chiCorrected, N;
 
-  LRInv(const float & pn, const float & P, const float & PN, const float & chiCorrected);
-  double operator()(float p) const;
+  LRInv(PRule, PExampleTable, const int &, const int & targetClass, PDistribution apriori, PChiFunction, float);
+  double operator()(float p);
 };
 
 
@@ -467,7 +474,31 @@ public:
   virtual PDistribution classDistribution(const TExample &ex);
 };
 
-// Logit rule based classifier;
+WRAPPER(LogitClassifierState)
+class ORANGE_API TLogitClassifierState : public TOrange {
+public:
+  __REGISTER_CLASS
+
+  PRuleList rules;
+  PExampleTable examples;
+  int weightID;
+
+  float eval, **f, **p, *betas, *priorBetas;
+  PFloatList avgProb, avgPriorProb;
+  PIntList *ruleIndices;
+
+  TLogitClassifierState(PRuleList, PExampleTable, const int &);
+  TLogitClassifierState(PRuleList,const PDistributionList &,PExampleTable,const int &);
+  ~TLogitClassifierState();
+  void updateExampleP(int);
+  void computePs(int);
+  void computeAvgProbs();
+  void computePriorProbs();
+  void clone(PLogitClassifierState &);
+  void newBeta(int, float);
+  void newPriorBeta(int, float);
+};
+
 class ORANGE_API TRuleClassifier_logit : public TRuleClassifier {
 public:
   __REGISTER_CLASS
@@ -476,38 +507,27 @@ public:
   PDomain domain; //P Domain
   PFloatList ruleBetas; //P Rule betas
   PFloatList priorProbBetas; //P Prior probabilitiy betas
+  float minStep; //P minimal step value
 
-  float eval, **f, **p, **tempP, **tempF, *betas, *priorBetas, *minbetas;
-  PFloatList wavgCov, wavgCovPrior, wsd, wsdPrior, wpriorProb, wavgProb;
-  PIntList *ruleIndices, **coveredRules;
-  int psize,fsize;
-  bool useBestRuleOnly;
   float minBeta; //P minimum beta value of a rule, if lower, rule is set to have beta 0. 
-
   PClassifier priorClassifier;
+  PLogitClassifierState currentState, tempState, oldState;
+  PFloatList wsd, wavgCov; // standard deviations of rule quality
 
   TRuleClassifier_logit();
-  TRuleClassifier_logit(PRuleList rules, const float &minBeta, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL, const bool &useBestRuleOnly = false);
-  ~TRuleClassifier_logit();
+  TRuleClassifier_logit(PRuleList rules, const float &minBeta, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL);
 
   void initialize(const PDistributionList &);
-  void updateRuleBetas(float step);
-  float cutOptimisticBetas(float step, float curr_eval);
-  void correctPriorBetas(float step);
-  void distortPriorBetas(float step);
-  float findMax(int clIndex, int exIndex);
-  float compPotEval(int ruleIndex, int classIndex, float newBeta, float **tempF, float **tempP, PFloatList &wavgProb, PFloatList &wpriorProb);
-  int getClassIndex(PRule r);
+  void updateRuleBetas(float & step);
+  void evaluate(PLogitClassifierState &);
+  void distortPriorBetas(float & step);
+  void correctPriorBetas(float & step);
+  void cutOptimisticBetasAndEvaluate(float & step);
+  bool acceptedImprovement(PLogitClassifierState & oldState, PLogitClassifierState & newState);
+  float getRuleLoss(int &);
+  
   void addPriorClassifier(const TExample &, double *);
   virtual PDistribution classDistribution(const TExample &ex);
-};
-
-class ORANGE_API TRuleClassifier_logit_bestRule : public TRuleClassifier_logit {
-public:
-  __REGISTER_CLASS
-
-  TRuleClassifier_logit_bestRule();
-  TRuleClassifier_logit_bestRule(PRuleList rules, const float &minBeta, PExampleTable examples, const int &weightID = 0, const PClassifier &classifer = NULL, const PDistributionList &probList = NULL);
 };
 
 #endif
