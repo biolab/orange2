@@ -1263,7 +1263,7 @@ C_NAMED(RuleValidator_LRS, RuleValidator, "([alpha=0.05,min_coverage=0,max_rule_
 C_NAMED(RuleEvaluator_Entropy, RuleEvaluator, "()")
 C_NAMED(RuleEvaluator_Laplace, RuleEvaluator, "()")
 C_NAMED(RuleEvaluator_LRS, RuleEvaluator, "()")
-C_NAMED(RuleEvaluator_mEVC, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_mEVC, RuleEvaluator, "(ruleAlpha=1.0,attributeAlpha=1.0)")
 
 C_NAMED(EVCDist, Orange, "()")
 C_NAMED(ChiFunction_2LOGLR, ChiFunction, "()")
@@ -1289,7 +1289,6 @@ C_CALL(RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
 ABSTRACT(RuleClassifier, Classifier)
 C_NAMED(RuleClassifier_firstRule, RuleClassifier, "([rules,examples[,weightID]])")
 C_NAMED(RuleClassifier_logit, RuleClassifier, "([rules,examples[,weightID]])")
-C_NAMED(RuleClassifier_logit_bestRule, RuleClassifier_logit, "([rules,examples[,weightID]])")
 
 PyObject *Rule_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
@@ -1780,33 +1779,6 @@ PyObject *RuleClassifier_logit_new(PyObject *self, PyObject *args, PyObject *key
       return PYNULL;
 
     TRuleClassifier *rc = new TRuleClassifier_logit(rules, minBeta, gen, weightID, classifier, probList);
-    PRuleClassifier ruleClassifier = rc;
-//    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
-    return WrapOrange(ruleClassifier);
-  PyCATCH
-}
-
-PyObject *RuleClassifier_logit_bestRule_new(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, examples[, weight])")
-{ 
-  PyTRY
-    NO_KEYWORDS
-
-    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrRuleClassifier_Type) {
-      PyErr_Format(PyExc_SystemError, "RuleClassifier.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
-      return PYNULL;
-    }
-
-    PExampleGenerator gen;
-    int weightID = 0;
-    float minBeta = 0.0;
-    PRuleList rules;
-    PDistributionList probList;
-    PClassifier classifier;
-
-    if (!PyArg_ParseTuple(args, "O&fO&|O&O&O&:RuleClassifier.call", cc_RuleList, &rules, &minBeta, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, cc_Classifier, &classifier, cc_DistributionList, &probList))
-      return PYNULL;
-
-    TRuleClassifier *rc = new TRuleClassifier_logit_bestRule(rules, minBeta, gen, weightID, classifier, probList);
     PRuleClassifier ruleClassifier = rc;
 //    ruleClassifier = new SELF_AS(TRuleClassifier)(rules, gen, weightID);
     return WrapOrange(ruleClassifier);
