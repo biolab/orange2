@@ -1,0 +1,28 @@
+pushd
+cdd %WEBDIR
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -A -- orngText
+
+cd source
+
+set PATH=%PATH;c:\MinGW\bin
+set SWIGLIB=C:\swigwin-1.3.31\Lib
+
+cdd E:\orange\orngText
+
+for %ver in (23 24 25) (
+  set PYTHON=%pythonbase%%ver
+  set COMPILELOG=%WEBDOWNLOAD\regressionResults\win-compile-textmining-%ver.log
+
+  pushd
+  echo *** Compiling module orngText %ver
+  if exist %COMPILELOG del %COMPILELOG
+  del /sye %SNAPSHOTDIR\%ver
+  %PYTHON\python setup.py build -c mingw32
+  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
+  popd
+
+  flag_on_error
+)
+
+popd
+

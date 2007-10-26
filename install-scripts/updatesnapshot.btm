@@ -2,7 +2,9 @@
 
 call updateSetConstants__.btm
 
-call winCompile.btm
+rem call winCompile.btm
+
+call winCompileAddOns.btm
 
 cdd %SNAPSHOTDIR
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -r HEAD orange
@@ -36,6 +38,7 @@ for %pyver in (%PYTHONVERSIONS) do (
     echo FileWrite $WhatsDownFile "%fle=1.0:%MD5%$\r$\n" >> %SCRIPTDIR\snapshotfiles_binaries.inc
   )
 
+  REM ### BASE
   cdd %SCRIPTDIR
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
   set COMMON_NSI_OPTIONS=/DORANGEDIR=%SNAPSHOTDIR\orange  /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles /DPYVER=%pyver /DNPYVER=%npver install3.nsi
@@ -48,6 +51,7 @@ for %pyver in (%PYTHONVERSIONS) do (
     except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-????-??-??-py%npver.exe
   )
 
+  REM ### GENOMICS
   set OUTNAME="%WEBDOWNLOAD\%WIN_GENOMICS_SNAPSHOT-py%npver.exe"
   nsis /O%WEBDOWNLOAD\regressionResults\nsis_genomics_%pyver.log /DINCLUDEGENOMICS /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
   if %errorlevel != 0 (
@@ -55,6 +59,16 @@ for %pyver in (%PYTHONVERSIONS) do (
     ren %WEBDOWNLOAD\orange-snapshot-genomics-????-??-??-py%npver.exe %OUTNAME
   ) else (
     except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-genomics-????-??-??-py%npver.exe
+  )
+
+  REM ### TEXT MINING
+  set OUTNAME="%WEBDOWNLOAD\%WIN_TEXTMINING_SNAPSHOT-py%npver.exe"
+  nsis /O%WEBDOWNLOAD\regressionResults\nsis_textmining_%pyver.log /DINCLUDETEXTMINING /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
+  if %errorlevel != 0 (
+    set ERRORS=%errorlevel
+    ren %WEBDOWNLOAD\orange-snapshot-textmining-????-??-??-py%npver.exe %OUTNAME
+  ) else (
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-textmining-????-??-??-py%npver.exe
   )
 )
 del /qke snapshotfiles_*.inc

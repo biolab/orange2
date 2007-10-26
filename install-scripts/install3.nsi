@@ -243,6 +243,11 @@ Section ""
 		File various\bi-visprog\*.ows
 	!endif
 
+	!ifdef INCLUDETEXTMINING
+		SetOutPath $PythonDir\lib\site-packages
+		File /r E:\orange\download\snapshot\${PYVER}\lib\site-packages\orngText
+	!endif
+
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange White Paper.lnk" "$INSTDIR\doc\Orange White Paper.pdf"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets White Paper.lnk" "$INSTDIR\doc\Orange Widgets White Paper.pdf"
@@ -268,6 +273,11 @@ Section ""
 	WriteUninstaller "$INSTDIR\uninst.exe"
 
 	FileClose $WhatsDownFile
+
+	!ifdef INCLUDETEXTMINING
+             Exec '"$PythonDir\python" -c ""import orngRegistry; orngRegistry.addWidgetCategory("Text Mining", "$PythonDir\lib\site-packages\orngText")"" '
+	!endif
+
 SectionEnd	
 
 Function .onInit
