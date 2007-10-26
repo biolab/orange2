@@ -245,7 +245,9 @@ Section ""
 
 	!ifdef INCLUDETEXTMINING
 		SetOutPath $PythonDir\lib\site-packages
+		File E:\orange\download\snapshot\${PYVER}\lib\site-packages\orngText.pth
 		File /r E:\orange\download\snapshot\${PYVER}\lib\site-packages\orngText
+
 	!endif
 
 	CreateDirectory "$SMPROGRAMS\Orange"
@@ -275,7 +277,7 @@ Section ""
 	FileClose $WhatsDownFile
 
 	!ifdef INCLUDETEXTMINING
-             Exec '"$PythonDir\python" -c ""import orngRegistry; orngRegistry.addWidgetCategory("Text Mining", "$PythonDir\lib\site-packages\orngText")"" '
+             Exec '"$PythonDir\python" -c ""import orngRegistry; orngRegistry.addWidgetCategory("Text Mining", "$PythonDir\lib\site-packages\orngText\widgets")"" '
 	!endif
 
 SectionEnd	

@@ -1,6 +1,6 @@
 pushd
 cdd %WEBDIR
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -d -A -- orngText
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- orngText
 
 cd source
 
