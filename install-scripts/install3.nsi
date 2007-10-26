@@ -277,7 +277,7 @@ Section ""
 	FileClose $WhatsDownFile
 
 	!ifdef INCLUDETEXTMINING
-             Exec '"$PythonDir\python" -c ""import orngRegistry; orngRegistry.addWidgetCategory("Text Mining", "$PythonDir\lib\site-packages\orngText\widgets")"" '
+             ExecWait '"$PythonDir\python" -c $\"import orngRegistry; orngRegistry.addWidgetCategory($\"Text Mining$\", $\"$PythonDir\lib\site-packages\orngText\widgets$\")$\" '
 	!endif
 
 SectionEnd	
