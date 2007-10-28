@@ -36,16 +36,16 @@ using namespace std;
 
 /* *********** EXCEPTION CATCHING ETC. ************/
 
-
+ 
 #undef min
 #undef max
-
+ 
 #define PyTRY try {
-
+ 
 #define PYNULL ((PyObject *)NULL)
 #define PyCATCH   PyCATCH_r(PYNULL)
 #define PyCATCH_1 PyCATCH_r(-1)
-
+ 
 #define PyCATCH_r(r) \
   } \
 catch (pyexception err)   { err.restore(); return r; } \
