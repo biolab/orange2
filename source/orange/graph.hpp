@@ -76,10 +76,11 @@ public:
   virtual void getNeighboursFrom_Single(const int &v, vector<int> &) = 0;
   virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &) = 0;
 
-	int findPath(int &u, int &v, int level, int &maxLevel, vector<int> &path);
-	vector<int> getShortestPaths(int &u, int &v);
-	set<int> getConnectedComponent(int &u);
-	int getDiameter();
+  int findPath(int &u, int &v, int level, int &maxLevel, vector<int> &path);
+  vector<int> getShortestPaths(int &u, int &v);
+  set<int> getConnectedComponent(int &u);
+  int getDiameter();
+  void getClusters();
 };
 
 WRAPPER(Graph)

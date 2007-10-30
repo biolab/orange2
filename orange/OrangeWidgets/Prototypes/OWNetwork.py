@@ -73,6 +73,7 @@ class OWNetwork(OWWidget):
         OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
         self.frButton = OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr, toggleButton=1)
         OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
+        #OWGUI.button(self.optimizeBox, self, "F-R Special", callback=self.frSpecial)
         OWGUI.button(self.optimizeBox, self, "F-R Radial", callback=self.frRadial)
         OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
         OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
@@ -82,6 +83,12 @@ class OWNetwork(OWWidget):
         ib = OWGUI.indentedBox(self.optimizeBox)
         for wh in ("All points", "Shown points", "Selected points"):
             OWGUI.appendRadioButton(self.optimizeBox, self, "optimizeWhat", wh, insertInto=ib)
+        
+        #OWGUI.button(self.mainTab, self, "Clustering", callback=self.clustering)
+        self.insideView = 0
+        self.insideViewNeighbours = 2
+        #OWGUI.checkBox(self.optimizeBox, self, 'insideView', 'Inside view', callback = self.insideview)
+        OWGUI.spin(self.optimizeBox, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
         
         self.colorCombo = OWGUI.comboBox(self.displayTab, self, "color", box = "Color attribute", callback=self.setVertexColor)
         self.colorCombo.insertItem("(none)")
@@ -163,6 +170,32 @@ class OWNetwork(OWWidget):
         self.setHubs()
         
         self.resize(850, 700)    
+        
+    def clustering(self):
+        print "clustering"
+        self.visualize.graph.getClusters()
+        
+    def insideviewneighbours(self):
+        if self.graph.insideview == 1:
+            self.graph.insideviewNeighbours = self.insideViewNeighbours
+            self.frButton.setOn(True)
+            self.fr()
+        
+    def insideview(self):
+        if len(self.graph.selection) == 1:
+            if self.graph.insideview == 1:
+                self.graph.insideview = 0
+                self.graph.hiddenNodes = []
+                self.updateCanvas()
+            else:
+                self.graph.insideview = 1
+                self.graph.insideviewNeighbors = self.insideViewNeighbours
+                self.frButton.setOn(True)
+                self.fr()
+    
+        else:
+            print "One node must be selected!"
+            
         
     def labelsOnMarked(self):
         self.graph.labelsOnMarkedOnly = self.labelsOnMarkedOnly
@@ -440,6 +473,20 @@ class OWNetwork(OWWidget):
                 
         self.frButton.setOn(0)
         self.frButton.setText("Fruchterman Reingold")
+        
+    def frSpecial(self):
+        steps = 100
+        initTemp = 1000
+        coolFactor = exp(log(10.0/10000.0) / steps)
+        oldXY = []
+        for rec in self.visualize.coors:
+            oldXY.append([rec[0], rec[1]])
+        #print oldXY
+        initTemp = self.visualize.fruchtermanReingold(steps, initTemp, coolFactor, self.graph.hiddenNodes)
+        #print oldXY
+        self.graph.updateDataSpecial(oldXY)
+        self.graph.replot()
+        
         
     def frRadial(self):
         #print "F-R Radial"

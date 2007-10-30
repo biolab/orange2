@@ -4710,10 +4710,25 @@ PyObject *Graph_getDiameter(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 	PyTRY
 		CAST_TO(TGraph, graph);
 
-	return Py_BuildValue("i", graph->getDiameter());
+	  return Py_BuildValue("i", graph->getDiameter());
 	PyCATCH
 }
 
+PyObject *Graph_getClusters(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "None -> list of clusters")
+{
+  PyTRY
+    cout << "clustering C++" << endl;
+	  /*
+	  if (!PyArg_ParseTuple(args, ":NetworkOptimization.getClusters", ))
+		  return NULL;
+	  */
+	  CAST_TO(TGraph, graph);
+
+	  graph->getClusters();
+	  //return Py_BuildValue("id", ndx, sqrt(min));
+	  RETURN_NONE;
+  PyCATCH
+}
 int Graph_len(PyObject *self)
 {
   return SELF_AS(TGraph).nVertices;

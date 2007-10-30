@@ -248,6 +248,45 @@ vector<int> TGraph::getShortestPaths(int &u, int &v)
 	return path;
 }
 
+bool lessCommonNeigbours(const vector<int> &v1, const vector<int> &v2)
+{
+	return v1[2] > v2[2];
+}
+void TGraph::getClusters()
+{
+	vector<vector<int> > commonNeighbours;
+
+  vector<int> neighbours;
+  vector<int> uNeighbours;
+  vector<int> vNeighbours;
+
+	for(int v1 = 0; v1 < nVertices; v1++) {
+	  getNeighboursFrom_Single(v1, neighbours);
+
+    for(vector<int>::iterator ni = neighbours.begin(); ni != neighbours.end(); ni++) {
+      getNeighbours(v1, uNeighbours);
+      getNeighbours(*ni, vNeighbours);
+
+      vector<int> res;
+      set_intersection(uNeighbours.begin(), uNeighbours.end(), vNeighbours.begin(), vNeighbours.end(), back_inserter(res));
+
+      vector<int> rec(3);
+      rec[0] = v1;
+      rec[1] = *ni;
+      rec[2] = res.size();
+ 
+      commonNeighbours.push_back(rec);
+      cout << v1 << " " << *ni << " " << res.size() << endl;
+    }
+	}
+  cout << endl;
+  sort(commonNeighbours.begin(), commonNeighbours.end(), lessCommonNeigbours);
+  for(vector<vector<int> >::iterator ni = commonNeighbours.begin(); ni != commonNeighbours.end(); ni++) {
+    vector<int> vec = *ni;
+    cout << vec[0] << " " << vec[1] << " " << vec[2] << endl;
+  }
+}
+
 TGraphAsMatrix::TGraphAsMatrix(const int &nVert, const int &nTypes, const bool dir)
 : TGraph(nVert, nTypes, dir),
   msize(nEdgeTypes * (directed ? nVertices * nVertices : (nVertices*(nVertices+1)) >> 1))
