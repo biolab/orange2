@@ -655,6 +655,7 @@ void TTabDelimExampleGenerator::readTabHeader(const string &stem, TDomainDepot::
       if (!(tid->matchRoot ? strncmp(tid->identifier, (*ti).c_str(), tid->matchRoot)
                            : strcmp(tid->identifier, (*ti).c_str()))) {
         desc.varType = tid->varType;
+        desc.typeDeclaration = *ti;
         break;
       }
       
