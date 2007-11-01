@@ -139,7 +139,9 @@ class InteractionMatrix:
         NA = len(t.domain.attributes)
 
         self.names = []
-        self.labelname = t.domain.classVar.name
+        self.labelname = ""
+        if t.domain.classVar:
+            self.labelname = t.domain.classVar.name
         self.gains = []
         self.freqs = []
         self.way2 = {}
