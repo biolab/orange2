@@ -39,7 +39,7 @@ def getDiff(d):
     else:
         mnum = d
         
-    if d==0:
+    if d<1e-6:
         return 0
     if str(mnum)[0]>'4':
         return math.pow(10,math.floor(math.log10(d))+1)
@@ -999,7 +999,7 @@ class BasicNomogramFooter(QCanvas):
         self.initVars(nomogram, parent)
 
     def logit(self, val):
-        return math.exp(val)/(1+math.exp(val))
+            return math.exp(val)/(1+math.exp(val))
     
     def invLogit(self, p):    
         return math.log(p/max(1-p,aproxZero))

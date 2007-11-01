@@ -21,7 +21,6 @@ class OWExampleDistance(OWWidget):
     contextHandlers = {"": DomainContextHandler("", ["Label"])}
 
     def __init__(self, parent=None, signalManager = None):
-##        self.callbackDeposit = [] # deposit for OWGUI callback functions
         OWWidget.__init__(self, parent, signalManager, 'ExampleDistance') 
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
