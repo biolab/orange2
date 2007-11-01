@@ -402,6 +402,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
 
 def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterationNumber=0, pps=[], **argkw):
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
+    storeExamples = argkw.get("storeExamples", 0)
 
     learnset, learnweight = demangleExamples(learnset)
     testset, testweight = demangleExamples(testset)
@@ -422,7 +423,7 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
             
     classifiers = [learner(learnset, learnweight) for learner in learners]
     for i in range(len(learners)): classifiers[i].name = getattr(learners[i], 'name', 'noname')
-    testResults = testOnData(classifiers, (testset, testweight), testResults, iterationNumber)
+    testResults = testOnData(classifiers, (testset, testweight), testResults, iterationNumber, storeExamples)
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
     return testResults
@@ -430,6 +431,7 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
 
 def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumber=0, pps=[], **argkw):
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
+    storeExamples = argkw.get("storeExamples", 0)
 
     learnset, learnweight = demangleExamples(learnset)
 
@@ -454,13 +456,13 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
 
     classifiers = [learner(learnset, learnweight) for learner in learners]
     for i in range(len(learners)): classifiers[i].name = getattr(learners[i], "name", "noname")
-    testResults = testOnData(classifiers, (testset, learnweight), testResults, iterationNumber)
+    testResults = testOnData(classifiers, (testset, learnweight), testResults, iterationNumber, storeExamples)
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
     return testResults
 
 
-def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argkw):
+def testOnData(classifiers, testset, testResults=None, iterationNumber=0, storeExamples = False, **argkw):
     testset, testweight = demangleExamples(testset)
 
     if not testResults:
@@ -473,6 +475,18 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argk
             baseValue = -1
         testResults=ExperimentResults(1, [l.name for l in classifiers], values, testweight!=0, baseValue)
 
+    examples = getattr(testResults, "examples", False)
+    if examples and len(examples):
+        # We must not modify an example table we do not own, so we clone it the
+        # first time we have to add to it
+        if not getattr(testResults, "examplesCloned", False):
+            testResults.examples = orange.ExampleTable(testResults.examples)
+            testResults.examplesCloned = True
+        testResults.examples.extend(testset)
+    else:
+        # We do not clone at the first iteration - cloning might never be needed at all...
+        testResults.examples = testset
+    
     conv = testset.domain.classVar.varType == orange.VarTypes.Discrete and int or float
     for ex in testset:
         te = TestedExample(iterationNumber, conv(ex.getclass()), 0, ex.getweight(testweight))
