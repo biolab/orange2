@@ -249,16 +249,16 @@ class OWTestLearners(OWWidget):
         elif self.sampleMethod==2:
             pb = OWGUI.ProgressBar(self, iterations=self.pRepeat)
             res = orngTest.proportionTest(learners, self.data, self.pLearning/100.,
-                                          times=self.pRepeat, callback=pb.advance)
+                                          times=self.pRepeat, callback=pb.advance, storeExamples = True)
             pb.finish()
         elif self.sampleMethod==3:
-            res = orngTest.learnAndTestOnLearnData(learners, self.data)
+            res = orngTest.learnAndTestOnLearnData(learners, self.data, storeExamples = True)
         elif self.sampleMethod==4:
             if not self.testdata:
                 for l in self.learners.values():
                     l.scores = []
                 return
-            res = orngTest.learnAndTestOnTestData(learners, self.data, self.testdata)
+            res = orngTest.learnAndTestOnTestData(learners, self.data, self.testdata, storeExamples = True)
         if self.isclassification():
             cm = orngStat.computeConfusionMatrices(res, classIndex = self.targetClass)
 
