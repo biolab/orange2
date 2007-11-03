@@ -20,7 +20,7 @@
 */
 
 #include "filter.hpp"
-#include "table.hpp"
+#include "table.hpp"    
 #include "stat.hpp"
 #include "measures.hpp"
 #include "discretize.hpp"
@@ -76,7 +76,8 @@ TRule::TRule(const TRule &other, bool copyData)
   coveredExamples(copyData && other.coveredExamples && (other.coveredExamplesLength >= 0) ? (int *)memcpy(new int[other.coveredExamplesLength], other.coveredExamples, other.coveredExamplesLength) : NULL),
   coveredExamplesLength(copyData ? other.coveredExamplesLength : -1),
   parentRule(other.parentRule),
-  chi(other.chi)
+  chi(other.chi),
+  requiredConditions(other.requiredConditions)
 {}
 
 
@@ -498,11 +499,11 @@ double TEVCDist::getProb(const float & chi)
   if (chi < percentiles->at(0))
     return 1.0;
   TFloatList::const_iterator pi(percentiles->begin()), pe(percentiles->end());
-  for (; (pi+1)!=pe; pi++) {
+  for (int i=0; (pi+1)!=pe; pi++,i++) {
     float a = *pi;
     float b = *(pi+1);
     if (chi>=a && chi <=b)
-      return (chi-a)/(b-a);
+      return (0.95-i*0.1)-0.1*(chi-a)/(b-a);
   }
   return 1.0;
 }
@@ -653,9 +654,9 @@ float brent(const float & minv, const float & maxv, const int & maxsteps, DiffFu
     float b = maxv;
     float fa = func->call(a);
     float fb = func->call(b);
-    if (fb>0 && fa>0 && fb>fa || fb<0 && fa<0 && fb<fa)
+	if (fb>0 && fa>0 && fb>fa || fb<0 && fa<0 && fb<fa)
         return a;
-    if (fb>0 && fa>0 && fb<fa || fb<0 && fa<0 && fb>fa)
+	if (fb>0 && fa>0 && fb<fa || fb<0 && fa<0 && fb>fa)
         return b;
 
     float c = a; // c is previous value of b
@@ -731,6 +732,7 @@ bool TRuleEvaluator_mEVC::ruleAttSignificant(PRule rule, PExampleTable examples,
         if (j!=i)
           newfilter->conditions->push_back(filter->conditions->at(j));
       wnewRule->filterAndStore(examples, weightID, targetClass);
+
       // compute lrs of rule vs new rule (without one condtion)
       if (!rule->classDistribution->abs || wnewRule->classDistribution->abs == rule->classDistribution->abs)
         return false;
@@ -741,7 +743,7 @@ bool TRuleEvaluator_mEVC::ruleAttSignificant(PRule rule, PExampleTable examples,
       // correct lrs with evc
       if (!useClassicLRS) {
         LNLNChiSq *diffFunc = new LNLNChiSq(evc,chi);
-        chi = brent(0.0,chi,100, diffFunc);
+		chi = brent(0.0,chi,100, diffFunc);
         delete diffFunc;
       }
       // check significance
@@ -1485,11 +1487,13 @@ int LinearEquationsSolving(int nDim, double* pfMatr, double* pfVect, double* pfS
   return 0;
 }
 
+// extracts class value index from target in rule
 int getClassIndex(PRule r) {
   const TDefaultClassifier &cl = dynamic_cast<const TDefaultClassifier &>(r->classifier.getReference());
   return cl.defaultVal.intV;
 }
 
+// constructor 1
 TLogitClassifierState::TLogitClassifierState(PRuleList arules, PExampleTable anexamples, const int &aweightID)
 : rules(arules),
   examples(anexamples),
@@ -1509,6 +1513,7 @@ TLogitClassifierState::TLogitClassifierState(PRuleList arules, PExampleTable ane
   priorBetas = new float[examples->domain->classVar->noOfValues()];
 }
 
+// constructor 2
 TLogitClassifierState::TLogitClassifierState(PRuleList arules, const PDistributionList &probList, PExampleTable anexamples, const int &aweightID)
 : rules(arules),
   examples(anexamples),
@@ -1758,8 +1763,9 @@ TRuleClassifier_logit::TRuleClassifier_logit(PRuleList arules, const float &minB
     step /= 2.0;
     correctPriorBetas(step);
   }
-  cutOptimisticBetasAndEvaluate(step);
+  cutOptimisticBetasAndEvaluate(step,-1);
 
+  // optimize betas
   step = 2.0;
   while (step > minStep)
   {
@@ -1813,11 +1819,14 @@ void TRuleClassifier_logit::initialize(const PDistributionList &probList)
   TFloatList *sd = new TFloatList(); 
   wsd = sd;
   PITERATE(TRuleList, ri, rules) {
-    float n = (*ri)->examples->numberOfExamples();
+	float maxDiff = (*ri)->classDistribution->atint(getClassIndex(*ri))/(*ri)->classDistribution->abs;
+	maxDiff -= (*ri)->quality;
+	wsd->push_back(maxDiff);
+/*    float n = (*ri)->examples->numberOfExamples();
     float a = n*(*ri)->quality;
     float b = n*(1.0-(*ri)->quality);
     float expab = log(a)+log(b)-2*log(a+b)-log(a+b+1);
-    wsd->push_back(exp(0.5*expab));
+    wsd->push_back(exp(0.5*expab)); */
   }
 
   // Compute average example coverage and set index of examples covered by rule
@@ -1881,42 +1890,63 @@ void TRuleClassifier_logit::updateRuleBetas(float & step)
     changed = false; 
 
     for (int i=0; i<rules->size(); i++) {
-      if (currentState->avgProb->at(i) <= rules->at(i)->quality) {
-        if ((currentState->betas[i]+step*wsd->at(i)) < minBeta)
+//		if (currentState->avgProb->at(i) <= 2.) { //rules->at(i)->quality) {
+        if ((currentState->betas[i]+step) < minBeta) // *wsd->at(i)
           currentState->newBeta(i,minBeta);
         else
-          currentState->newBeta(i,currentState->betas[i]+step*wsd->at(i));
-        cutOptimisticBetasAndEvaluate(step);
-        if (currentState->eval > tempState->eval && acceptedImprovement(tempState, currentState)) {//currentState->eval > tempState->eval && acceptedImprovement(tempState, currentState)) { //  
+          currentState->newBeta(i,currentState->betas[i]+step); // *wsd->at(i)
+        cutOptimisticBetasAndEvaluate(step,i);
+		if (currentState->avgProb->at(i) <= rules->at(i)->quality && currentState->eval > tempState->eval && selectiveOptimism(i) <= 0.0) { //acceptedImprovement(tempState, currentState)) {//currentState->eval > tempState->eval && acceptedImprovement(tempState, currentState)) { //  
             currentState->clone(tempState);
             changed = true;
         }
         else
           tempState->clone(currentState);
-      }
+//      }
     }
 	}
 }
 
 // If average predicted probability > then its quality and beta > 0 then decrease beta
-void TRuleClassifier_logit::cutOptimisticBetasAndEvaluate(float & step)
+void TRuleClassifier_logit::cutOptimisticBetasAndEvaluate(float & step, int rule_index)
 {
   evaluate(currentState);
   bool changedOptimistic = true;
   while (changedOptimistic) {
     changedOptimistic = false;
     for (int i=0; i<rules->size(); i++) {
-      // if optimistic, always decrease
-      if ((currentState->avgProb->at(i) > rules->at(i)->quality) && (currentState->betas[i]-step*wsd->at(i))>=0.0) {
-        if (currentState->betas[i]-step*wsd->at(i)<minBeta)
+		if (i == rule_index)
+			continue;
+      // if optimistic, always decrease selectiveOptimism(i) > 0.0 || 
+      if ((currentState->avgProb->at(i) > rules->at(i)->quality)
+		   && (currentState->betas[i]-step)>=0.0) { // *wsd->at(i)
+        if (currentState->betas[i]-step<minBeta) // *wsd->at(i)
           currentState->newBeta(i,0.0);
         else
-          currentState->newBeta(i,currentState->betas[i]-step*wsd->at(i));
+          currentState->newBeta(i,currentState->betas[i]-step); // *wsd->at(i)
         evaluate(currentState);
         changedOptimistic = true;
       }
     }
   }
+/*bool allZero = false;
+  while (!allZero && rule_index >= 0 && currentState->avgProb->at(rule_index) > rules->at(rule_index)->quality) {
+	  allZero = true;
+    for (int i=0; i<rules->size(); i++) {
+		if (i == rule_index)
+			continue;
+  	    if (currentState->betas[i]-step>=0.0) { // *wsd->at(i)
+			if (currentState->betas[i]-step<minBeta) // *wsd->at(i)
+			  currentState->newBeta(i,0.0);
+			else
+			  currentState->newBeta(i,currentState->betas[i]-step); // *wsd->at(i)
+			evaluate(currentState);
+			allZero = false;
+		}
+	 }
+	if (allZero)
+		break;
+  }*/
 }
 
 // Correct prior probabilities by setting prior betas.
@@ -1935,8 +1965,8 @@ void TRuleClassifier_logit::correctPriorBetas(float & step)
           currentState->newPriorBeta(i,currentState->priorBetas[i]+step);
         else // negative update of prior
           currentState->newPriorBeta(i,currentState->priorBetas[i]-step);
-        cutOptimisticBetasAndEvaluate(step);
-        if (currentState->eval > tempState->eval && acceptedImprovement(tempState, currentState)) {
+        cutOptimisticBetasAndEvaluate(step,-1);
+		if (currentState->eval > tempState->eval) { // && acceptedImprovement(tempState, currentState)) {
           currentState->clone(tempState);
           improve = true;
 			    changed = true;
@@ -1982,7 +2012,7 @@ void TRuleClassifier_logit::distortPriorBetas(float & step)
     currentState->newPriorBeta(worstClassInd, currentState->priorBetas[worstClassInd]+step);
   else
     currentState->newPriorBeta(worstClassInd, currentState->priorBetas[worstClassInd]-step);
-  cutOptimisticBetasAndEvaluate(step);
+  cutOptimisticBetasAndEvaluate(step,-1);
   delete [] compPriors;
 }
 
@@ -1990,13 +2020,16 @@ void TRuleClassifier_logit::distortPriorBetas(float & step)
 void TRuleClassifier_logit::evaluate(PLogitClassifierState & state)
 {
   // new evaluation
-/*  currentState->eval = 0.0;
+  currentState->eval = 0.0;
   for (int ei=0; ei<examples->numberOfExamples(); ei++) {
     currentState->eval += currentState->p[examples->at(ei).getClass().intV][ei]>0.0 ? log(currentState->p[examples->at(ei).getClass().intV][ei]) : -1e+6;
   } 
-  currentState->eval /= examples->numberOfExamples(); */
+  /* for (int i=0; i<rules->size(); i++) 
+	  currentState->eval -= pow(currentState->betas[i],2);*/
 
-  float qSum = 0.0;
+//  currentState->eval /= examples->numberOfExamples(); */
+
+/*  float qSum = 0.0;
   float relFreq;
   for (int i=0; i<rules->size(); i++) {
     relFreq = rules->at(i)->classDistribution->atint(getClassIndex(rules->at(i)))/rules->at(i)->classDistribution->abs;
@@ -2005,19 +2038,44 @@ void TRuleClassifier_logit::evaluate(PLogitClassifierState & state)
 
     qSum -= pow(currentState->avgProb->at(i)-rules->at(i)->quality,2)/relFreq/wsd->at(i)/wavgCov->at(i);
   }
-  currentState->eval = qSum/rules->size();
+  currentState->eval = qSum/rules->size();*/
 }
 
 bool TRuleClassifier_logit::acceptedImprovement(PLogitClassifierState & oldState, PLogitClassifierState & newState)
 {
-  float oldEval = 0.0, newEval = 0.0;
+/*  float oldEval = 0.0, newEval = 0.0;
   for (int ei=0; ei<examples->numberOfExamples(); ei++) {
     oldEval += oldState->p[examples->at(ei).getClass().intV][ei]>0.0 ? log(oldState->p[examples->at(ei).getClass().intV][ei]) : -1e+6;
     newEval += newState->p[examples->at(ei).getClass().intV][ei]>0.0 ? log(newState->p[examples->at(ei).getClass().intV][ei]) : -1e+6;
   } 
-  return oldEval <= newEval;
+  return oldEval <= newEval; */
+  return true;
 }
 
+// computes optimism of rules that have maximum difference between relative frequency and 
+// estimated probability maxDiff
+float TRuleClassifier_logit::selectiveOptimism(int rule_index)
+{
+	//return -1.0;
+	float diff = 0.0;
+	float ruleDiff;
+	float maxDiff = wsd->at(rule_index);
+/*		rules->at(rule_index)->classDistribution->atint(getClassIndex(rules->at(rule_index)))/rules->at(rule_index)->classDistribution->abs;
+	maxDiff -= rules->at(rule_index)->quality; */
+
+	for (int i=0; i<rules->size(); i++) {
+		// rules for other class are irrelevant
+		if (getClassIndex(rules->at(rule_index)) != getClassIndex(rules->at(i)))
+			continue;
+//		relFreq = rules->at(i)->classDistribution->atint(getClassIndex(rules->at(i)))/rules->at(i)->classDistribution->abs;
+//		if (relFreq-rules->at(i)->quality <= maxDiff) {
+		if (wsd->at(i) <= maxDiff) {
+			ruleDiff = pow(currentState->avgProb->at(i)-rules->at(i)->quality,2);
+			diff += currentState->avgProb->at(i)>rules->at(i)->quality ? ruleDiff : -ruleDiff;
+		}
+	}
+	return diff;
+}
 
 void TRuleClassifier_logit::addPriorClassifier(const TExample &ex, double * priorFs) {
   // initialize variables

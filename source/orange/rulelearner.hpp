@@ -522,9 +522,10 @@ public:
   void evaluate(PLogitClassifierState &);
   void distortPriorBetas(float & step);
   void correctPriorBetas(float & step);
-  void cutOptimisticBetasAndEvaluate(float & step);
+  void cutOptimisticBetasAndEvaluate(float & step, int rule_index);
   bool acceptedImprovement(PLogitClassifierState & oldState, PLogitClassifierState & newState);
   float getRuleLoss(int &);
+  float selectiveOptimism(int rule_index);
   
   void addPriorClassifier(const TExample &, double *);
   virtual PDistribution classDistribution(const TExample &ex);
