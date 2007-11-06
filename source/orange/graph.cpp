@@ -248,6 +248,61 @@ vector<int> TGraph::getShortestPaths(int &u, int &v)
 	return path;
 }
 
+vector<int> TGraph::getLargestFullGraphs(vector<int> nodes, vector<int> candidates)
+{
+  vector<int> fullgraph; 
+
+  //for(vector<int>::iterator ni = candidates.begin(); ni != candidates.end(); ni++)
+	
+  while (candidates.size() > 0)
+  {
+    int c = candidates.back();
+    candidates.pop_back();
+    nodes.push_back(c);
+    vector<int> neighbours;
+    getNeighbours(c, neighbours);
+    
+    vector<int> diff;
+		insert_iterator<vector<int> > diff_it(diff, diff.begin());
+		set_difference(neighbours.begin(), neighbours.end(), nodes.begin(), nodes.end(), diff_it);
+    
+    vector<int> isec;
+		insert_iterator<vector<int> > isec_it(isec, isec.begin());
+		set_intersection(diff.begin(), diff.end(), candidates.begin(), candidates.end(), isec_it);
+    
+    if (isec.size() > 0)
+    {
+      vector<int> rgraph = getLargestFullGraphs(nodes, isec);
+
+      if (rgraph.size() > fullgraph.size())
+      {
+        fullgraph = rgraph;
+      }
+    }
+    else
+    {
+      /*
+      cout << "konec veje: ";
+      int i;
+      for (i = 0; i < nodes.size(); i++)
+      {
+        cout << nodes[i] << " ";
+      }
+
+      cout << endl;
+      /**/
+      if (nodes.size() > fullgraph.size())
+      {
+        fullgraph = nodes;
+      }
+    }
+
+    nodes.pop_back();
+  }
+	
+	return fullgraph;
+}
+
 bool lessCommonNeigbours(const vector<int> &v1, const vector<int> &v2)
 {
 	return v1[2] > v2[2];

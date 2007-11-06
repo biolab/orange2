@@ -81,6 +81,7 @@ public:
   set<int> getConnectedComponent(int &u);
   int getDiameter();
   void getClusters();
+  vector<int> getLargestFullGraphs(vector<int> nodes, vector<int> candidates);
 };
 
 WRAPPER(Graph)

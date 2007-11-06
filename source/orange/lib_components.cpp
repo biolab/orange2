@@ -4549,6 +4549,215 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 }
 
 
+PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertices) -> list of [v1, v2, ..., vn]")
+{
+	PyTRY
+		CAST_TO(TGraph, graph);
+
+		PyObject *verticesWithout;
+		PyObject *vertices = PyList_New(0);
+
+		if (!PyArg_ParseTuple(args, "O:Graph.getSubGraphMergeCluster", &verticesWithout))
+			return PYNULL;
+
+    int i;
+    int special = -1;
+    for (i = 0; i < graph->nVertices; i++)
+		{
+      if (PySequence_Contains(verticesWithout, PyInt_FromLong(i)) == 0)
+			{
+        PyObject *nel = Py_BuildValue("i", i);
+			  PyList_Append(vertices, nel);
+			  Py_DECREF(nel);
+      }
+      else if (special == -1)
+      {
+        special = i;
+      }
+    }
+
+		int size = PyList_Size(vertices);
+		PyList_Sort(vertices);
+
+		TGraph *subgraph = new TGraphAsList(size + 1, graph->nEdgeTypes, graph->directed);
+		PGraph wsubgraph = subgraph;
+
+		vector<int> neighbours;
+		for (i = 0; i < size; i++)
+		{
+			int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
+
+			graph->getNeighboursFrom_Single(vertex, neighbours);
+			ITERATE(vector<int>, ni, neighbours)
+			{
+				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
+				{
+					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
+					
+					if (index != -1)
+					{
+						double* w = subgraph->getOrCreateEdge(i, index);
+						*w = 1.0;
+					}
+				}
+			}
+		}
+
+    /*
+    if (special > -1)
+    {
+      vector<int> uneigh;
+      insert_iterator<vector<int> > uneigh_it(uneigh, uneigh.begin());
+
+      int sizeWithout = PyList_Size(verticesWithout);
+
+      for (i = 0; i < sizeWithout; i++)
+      {
+        int ni = PyInt_AsLong(PyList_GetItem(verticesWithout, i));
+        graph->getNeighbours(ni, neighbours);
+
+        set_union(neighbours.begin(), neighbours.end(), uneigh.begin(), uneigh.end(), uneigh_it);
+      }
+      cout << "special: ";
+      ITERATE(vector<int>, ni, uneigh)
+			{
+          cout << *ni << " ";
+      }
+      cout << endl;
+
+      ITERATE(vector<int>, ni, uneigh)
+			{
+				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
+				{
+					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
+					
+					if (index != -1)
+					{
+						double* w = subgraph->getOrCreateEdge(special, index);
+						*w = 1.0;
+					}
+				}
+			}
+    }
+    */
+
+		// set graphs attribut items of type ExampleTable to subgraph
+		/*
+		TExampleTable *table;
+		PExampleTable wtable;
+
+		if (PyObject_HasAttr(self, PyString_FromString("items")) == 1)
+		{
+			PyObject* items = PyObject_GetAttr(self, PyString_FromString("items"));
+
+			PExampleTable graph_table;
+			if (PyArg_ParseTuple(PyTuple_Pack(1,items), "O", &graph_table))
+			{
+
+				table = new TExampleTable(graph_table->domain);
+				wtable = table;
+				
+				for (i = 0; i < size; i++)
+				{
+					int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
+
+					graph_table.
+				}
+
+				//PyObject_SetAttr((PyObject *)subgraph, PyString_FromString("items"), Py_BuildValue("N", WrapOrange(wtable)));
+			}
+		}
+	
+		return Py_BuildValue("NN", WrapOrange(wsubgraph), WrapOrange(wtable));
+		/**/
+		return Py_BuildValue("N", WrapOrange(wsubgraph));
+	PyCATCH
+}
+
+
+PyObject *Graph_getSubGraphWithout(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertices) -> list of [v1, v2, ..., vn]")
+{
+	PyTRY
+		CAST_TO(TGraph, graph);
+
+		PyObject *verticesWithout;
+		PyObject *vertices = PyList_New(0);
+
+		if (!PyArg_ParseTuple(args, "O:Graph.getSubGraphWithout", &verticesWithout))
+			return PYNULL;
+
+    int i;
+    for (i = 0; i < graph->nVertices; i++)
+		{
+      if (PySequence_Contains(verticesWithout, PyInt_FromLong(i)) == 0)
+			{
+        PyObject *nel = Py_BuildValue("i", i);
+			  PyList_Append(vertices, nel);
+			  Py_DECREF(nel);
+      }
+    }
+
+		int size = PyList_Size(vertices);
+		PyList_Sort(vertices);
+
+		TGraph *subgraph = new TGraphAsList(size, graph->nEdgeTypes, graph->directed);
+		PGraph wsubgraph = subgraph;
+
+		vector<int> neighbours;
+		for (i = 0; i < size; i++)
+		{
+			int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
+
+			graph->getNeighboursFrom_Single(vertex, neighbours);
+			ITERATE(vector<int>, ni, neighbours)
+			{
+				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
+				{
+					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
+					
+					if (index != -1)
+					{
+						double* w = subgraph->getOrCreateEdge(i, index);
+						*w = 1.0;
+					}
+				}
+			}
+		}
+
+		// set graphs attribut items of type ExampleTable to subgraph
+		/*
+		TExampleTable *table;
+		PExampleTable wtable;
+
+		if (PyObject_HasAttr(self, PyString_FromString("items")) == 1)
+		{
+			PyObject* items = PyObject_GetAttr(self, PyString_FromString("items"));
+
+			PExampleTable graph_table;
+			if (PyArg_ParseTuple(PyTuple_Pack(1,items), "O", &graph_table))
+			{
+
+				table = new TExampleTable(graph_table->domain);
+				wtable = table;
+				
+				for (i = 0; i < size; i++)
+				{
+					int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
+
+					graph_table.
+				}
+
+				//PyObject_SetAttr((PyObject *)subgraph, PyString_FromString("items"), Py_BuildValue("N", WrapOrange(wtable)));
+			}
+		}
+	
+		return Py_BuildValue("NN", WrapOrange(wsubgraph), WrapOrange(wtable));
+		/**/
+		return Py_BuildValue("N", WrapOrange(wsubgraph));
+	PyCATCH
+}
+
+
 PyObject *Graph_getHubs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(n) -> HubList")
 {
   PyTRY
@@ -4664,6 +4873,33 @@ PyObject *Graph_getEdges(PyObject *self, PyObject *args, PyObject *) PYARGS(METH
 	PyCATCH
 }
 
+PyObject *Graph_getNodes(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "neighbours -> list of (v1, v2, weights)")
+{
+	PyTRY
+		CAST_TO(TGraph, graph);
+
+	int noOfNeighbours = -1;
+	if (!PyArg_ParseTuple(args, "i:Graph.getNodes", &noOfNeighbours))
+		return PYNULL;
+
+	PyObject *res = PyList_New(0);
+	vector<int> neighbours;
+
+	for(int v1 = 0; v1 < graph->nVertices; v1++) {
+			graph->getNeighbours(v1, neighbours);
+
+      if (neighbours.size() == noOfNeighbours)
+      {
+			  PyObject *nel = Py_BuildValue("i", v1);
+			  PyList_Append(res, nel);
+			  Py_DECREF(nel);
+		  }
+	}
+
+	return res;
+	PyCATCH
+}
+
 PyObject *Graph_getShortestPaths(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(u, v) -> list of [v1, v2, ..., vn]")
 {
 	PyTRY
@@ -4727,6 +4963,42 @@ PyObject *Graph_getClusters(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 	  graph->getClusters();
 	  //return Py_BuildValue("id", ndx, sqrt(min));
 	  RETURN_NONE;
+  PyCATCH
+}
+PyObject *Graph_getLargestFullGraphs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "None -> list of subgraphs")
+{
+  PyTRY
+    //cout << "full graphs C++" << endl;
+	  /*
+	  if (!PyArg_ParseTuple(args, ":NetworkOptimization.getClusters", ))
+		  return NULL;
+	  */
+	  CAST_TO(TGraph, graph);
+    int i;
+    vector<int> largestFullgraph;
+    for (i = 0; i < graph->nVertices; i++)
+    {
+      vector<int> nodes;
+      vector<int> neighbours;
+      nodes.push_back(i);
+      graph->getNeighbours(i, neighbours);
+	    vector<int> fullgraph = graph->getLargestFullGraphs(nodes, neighbours);
+
+      if (largestFullgraph.size() < fullgraph.size())
+      {
+        largestFullgraph = fullgraph;
+      }
+    }
+
+    PyObject *res = PyList_New(0);
+
+    ITERATE(vector<int>, ni, largestFullgraph) {
+		  PyObject *nel = Py_BuildValue("i", *ni);
+		  PyList_Append(res, nel);
+		  Py_DECREF(nel);
+	  }
+
+	  return res;
   PyCATCH
 }
 int Graph_len(PyObject *self)

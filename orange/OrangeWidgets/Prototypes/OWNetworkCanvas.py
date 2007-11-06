@@ -93,8 +93,9 @@ class OWNetworkCanvas(OWGraph):
         if hasattr(ndx, "__iter__"):
             for v in ndx:
                 if not v in self.selection and not v in self.hiddenNodes:
-                    (key, neighbours) = self.vertices[v]
-                    self.selectionStyles[v] = self.curve(key).symbol().brush().color().name()
+                    (key, neighbours) = self.vertices[int(v)]
+                    color = self.curve(key).symbol().pen().color().name()
+                    self.selectionStyles[int(v)] = color
                     newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(10, 10))
                     self.setCurveSymbol(key, newSymbol)
                     self.selection.append(v);
@@ -819,7 +820,7 @@ class OWNetworkCanvas(OWGraph):
         self.nEdges = 0
         
         for (i,j) in visualizer.graph.getEdges():
-            self.edges[self.nEdges] = (None,i,j)
+            self.edges[self.nEdges] = (None, i, j)
             
 #            (key, neighbours) = self.vertices[i]
 #            neighbours.append(j)

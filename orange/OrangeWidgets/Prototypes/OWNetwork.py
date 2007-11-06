@@ -85,6 +85,7 @@ class OWNetwork(OWWidget):
             OWGUI.appendRadioButton(self.optimizeBox, self, "optimizeWhat", wh, insertInto=ib)
         
         #OWGUI.button(self.mainTab, self, "Clustering", callback=self.clustering)
+        OWGUI.button(self.mainTab, self, "Collapse", callback=self.collapse)
         self.insideView = 0
         self.insideViewNeighbours = 2
         #OWGUI.checkBox(self.optimizeBox, self, 'insideView', 'Inside view', callback = self.insideview)
@@ -170,6 +171,15 @@ class OWNetwork(OWWidget):
         self.setHubs()
         
         self.resize(850, 700)    
+
+    def collapse(self):
+        print "collapse"
+        self.visualize.collapse()
+        self.graph.addVisualizer(self.visualize)
+        #if not nodes is None:
+        #    self.graph.updateData()
+        #    self.graph.addSelection(nodes, False)
+        self.updateCanvas()
         
     def clustering(self):
         print "clustering"
