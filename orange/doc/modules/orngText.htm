@@ -1,0 +1,348 @@
+<html><head><title>AiLab.si</title><!--<BASE HREF="http://www.ailab.si/orange/doc/modules/">-->
+
+<h1>orngText</h1>
+
+<index name="modules+Textmining">
+
+</index><p>The orngText module provides the functionality for performing textual
+analysis.</p>
+
+<h2>DocumentSetHandler</h2>
+
+<p><index name="classes/DocumentSetHandler (in orngText)">DocumentSetHandler
+is the handler class for DocumentSet type of XML.</index></p>
+<p class="section">Methods</p>
+<dl class="attributes">
+<dt>DocumentSetHandler(tags = None, doNotParse = [])</dt>
+<dd>Constructor takes three optional arguments. <code>tags</code> is a dictionary
+that can be used to change the standard names of tags whose keys can be either <code>
+'document'</code>, <code>'category'</code>, <code>'categories'</code>, or <code>
+'content'</code>. Value for each key indicates what will be the name for that tag.
+The argument <code>doNotParse</code> contains the list of tags which should not
+be parsed. By default, all tags will be parsed.</dd>
+<dt>startElement(name, attrs)</dt>
+<dt>endElement(name)</dt>
+<dt>characters(chrs)</dt>
+<dt>doDocument(attrs)</dt>
+<dt>doContent(attrs)</dt>
+<dt>doCategory(attrs)</dt>
+<dt>doCategories(attrs)</dt>
+<dd>These methods are used by <code>handler.ContentHandler</code> class for parsing
+the XML and should not be used directly.</dd>
+</dl>
+
+<h2>DocumentSetRetriever</h2>
+
+<p><index name="classes/DocumentSetRetriever (in orngText)">DocumentSetRetriever
+is the main class for loading XML documents of DocumentSet type.</index></p>
+<p class="section">Methods</p>
+<dl class="attributes">
+<dt>DocumentSetRetriever(source, tags = None, doNotParse = [])</dt>
+<dd>Constructor takes a data source to read from. Arguments <code>tags</code> and
+<code>doNotParse,</code> are simply passed to the constructor of DocumentSetHandler
+class, so they have the same meaning as above.</dd>
+<dt>getNextDocument()</dt>
+<dd>Returns the next document in the collection.</dd>
+</dl>
+
+<h2>Preprocess</h2>
+
+<p><index name="classes/Preprocess (in orngText)">Preprocess is the main class
+for performing preprocessing of text.</index></p>
+<p class="section">Attributes</p>
+<dl class="attributes">
+<dt>langData</dt>
+<dd>A dictionary containing language name-language resource mapping. Keys are two
+character strings indicating the language, and the values are tuples where the first
+item is the function for lemmatizing, second item is the set of stopwords, and the
+optional third item is the function for stemming. The following languages are supported:
+<ul>
+<li>bg - Bulgarian</li>
+<li>cs - Czech</li>
+<li>en - English</li>
+<li>es - Spanish</li>
+<li>et - Estonian</li>
+<li>fr - French</li>
+<li>ge - German</li>
+<li>hr - Croatian</li>
+<li>hu - Hungarian</li>
+<li>it - Italian</li>
+<li>ro - Romanian</li>
+<li>sl - Slovenian</li>
+<li>sr - Serbian</li>
+</ul>
+</dd>
+</dl>
+
+<p class="section">Methods</p>
+<dl class="attributes">
+<dt>Preprocess(language=None, inputEncoding='utf-8', outputEncoding='utf-8', normType = 'lemmatize')</dt>
+<dd>The constructor takes five string arguments, all optional. <code>language</code>
+is a string indicating the language of the text to be processed, and it affects
+the choice of stoplist and lemmatizer. List of languages supported is given in
+the description for <code>langData</code> attribute. The default language is English.
+<code>inputEncoding</code> and <code>outputEncoding</code> indicate the encoding
+in which the source text was written, and the encoding in which the user wants to receive the
+output, respectively. Both default to UTF 8. <code>normType</code> is used to choose
+the type of normalization performed. It default to <code>'lemmatize'</code>, meaning
+that lemmatization is used. If <code>'stem'</code> is chosen, then stemming is used
+instead. For now, stemming is only supported for English. Returns a new Preprocess
+object.
+</dd>
+<dt>doOnExampleTable(data, textAttributePos, meth)</dt>
+<dd>Takes an ExampleTable <code>data</code>, position of the text attribute, and
+a function to performed for all documents in <code>data</code>. Text attribute is
+the last string attribute of ExampleTable. For example,
+lemmatizing all documents in an ExampleTable <code>data</code> containing documents
+in Slovenian is done with
+<xmp class="code">
+>>> data
+<ExampleTable instance at 0x00C9AE68>
+>>> p = orngText.Preprocess(language='sl')
+>>> t = p.doOnExampleTable(data, len(data.domain.attributes) - 1, p.lemmatize)
+</xmp>
+After this, <code>t</code> holds an ExampleTable of documents lemmatized with a
+Slovenian lemmatizer. In the example above we assumed that text attribute is the
+last attribute in the table, which may not be the case in general.
+</dd>
+<dt>lemmatizeExampleTable(data, textAttributePos)</dt>
+<dd>Lemmatizes documents in ExampleTable <code>data</code>. <code>textAttributePos</code>
+is the position of text attribute.</dd>
+<dt>removeStopwordsFromExampleTable(data, textAttributePos)</dt>
+<dd>Removes stopwords from ExampleTable <code>data</code>. <code>textAttributePos</code>
+is the position of text attribute.</dd>
+<dt>lemmatize(text)</dt>
+<dd>Lemmatizes <code>text</code> using the lemmatizer for the selected language.
+If <code>text</code> is string, the text will be tokenized into words, each word
+lemmatized, and then pasted back together. If <code>text</code> is a list of strings,
+then each word in the list will be lemmatized.</dd>
+<dt>lowercase(text)</dt>
+<dd>Converts <code>text</code>to lowercase. <code>text</code> is a string in which
+each word will be replaced with its lowercase variant.</dd>
+<dt>removeStopwords(text)</dt>
+<dd>Removes stopwords from <code>text</code> using the list of stopwords for the
+selected language. If <code>text</code> is a string, all stopwords in <code>text</code>
+will be replaced with an empty string. If <code>text</code> is a list of strings,
+then those elements from <code>text</code> that are stopwords will be removed.</dd>
+</dl>
+
+<h2>PreprocessorConstructor_tfidf</h2>
+
+<p><index name="classes/PreprocessorConstructor_tfidf (in orngText)">This is the
+constructor class for the Preprocessor_tfidf class.</index></p>
+<p class="section">Methods</p>
+<dl class="attributes">
+<dt>__call__(data)</dt>
+<dd>Calling this class with an ExampleTable as argument returns a Preprocess_tfidf
+object that can be called to perform the TFIDF normalization. For example,
+after executing <code>t = orngText.PreprocessorConstructor_tfidf()(data)</code>,
+<code>t</code> will be a Preprocessor_tfidf object.</dd>
+</dl>
+
+
+<h2>Preprocessor_norm</h2>
+
+<p><index name="classes/Preprocessor_norm (in orngText)">This is the class for
+normalizing the length of documents in a collection.</index></p>
+<p class="section">Methods</p>
+<dl class="attributes">
+<dt>__call__(data, LNorm = 2)</dt>
+<dd>This class is callable. Calling it will cause the lengths of documents in a collection
+to be normalized. <code>data</code> is an ExampleTable we wish to normalize, and
+<code>LNorm</code> is the norm to be used in normalization. <code>LNorm</code>
+defaults to 2, which means Euclidean distance is used. Any integer value can be
+given for <code>LNorm</code>. Value of 0 indicates that Chebyshev distance is to
+be used. Returns the new ExampleTable with the length of documents normalized using
+the chosen distance. For example, normalizing lengths of documents in an ExampleTable
+<code>data</code> using Manhattan distance (L1 norm) is done by
+<code>t = orngText.Preprocessor_norm()(data, 1)</code>. <code>t</code> will contain
+the new ExampleTable.</dd>
+</dl>
+
+<h2>Preprocessor_tfidf</h2>
+
+<p><index name="classes/Preprocessor_tfidf (in orngText)">This is the class for
+performing TFIDF normalization.</index></p>
+<p class="section">Methods</p>
+<dl class="attributes">
+<dt>Preprocessor_tfidf(termNormalizers)</dt>
+<dd>Constructor for the class. <code>termNormalizers</code> is a dictionary where
+the keys are ids of metaatributes and the values are real numbers. This class is
+usually constructed through PreprocessorConstructor_tfidf class that makes sure
+that proper termNormalizers are passed to the constructor.</dd>
+<dt>__call__(data)</dt>
+<dd>Calling an object of this class will cause it to construct new ExampleTable
+with the terms normalized. Each metaatribute in <code>data</code> is multiplied
+by the value from <code>termNormalizers</code> that has the same key as the metaatribute's
+id. Returns the new ExampleTable.</dd>
+</dl>
+
+
+
+<h2>Functions</h2>
+
+
+<dl class="attributes">
+
+<dt><index>bagOfWords(exampleTable, preprocessor=None, textAtribute=None, stopwords=None)</index></dt>
+
+<dt><index>cos(data, normalize=False)</index></dt>
+<dd>Take an ExampleTable <code>data</code> and return an <code>orange.SymMatrix</code>
+that is the distance matrix of the documents in <code>data</code>. Their distance
+is computed as the cosine of the angle between the two vectors representing the
+documents. If <code>normalize</code> is <code>True</code>, the documents are
+first normalized to unit length before computing the distance (this is useful when
+there are documents of very different length in the data).
+</dd>
+
+<dt><index>loadFromListWithCategories(fileName)</index></dt>
+
+<dt><index>loadFromXML(fileName, tags={}, doNotParse=[])</index></dt>
+<dd>Load textual data from XML file <code>fileName</code> into an ExampleTable
+and return that table. XML should be of DocumentSet type (see DTD for DocumentSet). If provided,
+the dictionary <code>tags</code> changes the standard names of tags. For example,
+to change the tag for the begining of a new document from <code>'document'</code>
+to <code>'doc'</code>, and leave the other tags intact, simply put <code>tags =
+{'document': 'doc'}</code>. Tags provided in the list <code>doNotParse</code>
+will be ignored.
+</dd>
+
+<dt><index>loadReuters(dirName)</index></dt>
+<dd>Load all .sgm files from directory <code>dirName</code> into an ExampleTable
+and then return it.
+</dd>
+
+<dt><index>loadWordSet(f)</index></dt>
+<dd>Take a file name <code>f</code> and load each line of the file into a set.
+Return the set.
+</dd>
+
+<dt><index>FSS(table, funcName, operator, threshold, perc = True)</index></dt>
+<dd>Remove text features from <code>table</code>, using function <code>funcName</code>,
+operator <code>operator</code>, and the threshold <code>threshold</code>. If
+<code>perc</code> is <code>True</code>, then the number <code>threshold</code>
+is the percentage of features to be removed, otherwise it is regarded as a threshold
+and all features having value of <code>funcName</code> below (or above) <code>threshold</code>
+are removed. <code>funcName</code> can be one of the following: <code>'TF'</code>, <code>'TDF'</code>, and <code>'RAND'</code>.
+<code>'TF'</code>(term frequency) is a function that returns the number of times a
+feature (term) appears in the data. <code>'TDF'</code>(term document frequency) is a function that returns
+the number of documents a feature appears in, while <code>'RAND'</code> gives a random value to
+each feature. <code>operator</code> can be <code>'MIN'</code> or <code>'MAX'</code>.
+With <code>'MIN'</code> specified as the operator, this function will remove the features with
+value of <code>funcName</code> less than <code>threshold</code> (or the <code>threshold</code>
+percent of features with the lowest values, in case <code>perc</code> is <code>True</code>).
+Specifying <code>'MAX'</code> will do the opposite.
+
+Keeping only the most frequent 10% of features is done by
+
+<xmp class="code">res = orngText.FSS(data, 'TF', 'MIN', 0.9, True)
+</xmp>
+
+Removing the features that appear in more than 50 documents is done by
+<xmp class="code">res = orngText.FSS(data, 'TDF', 'MAX', 50, False)
+</xmp>
+</p></dd>
+
+<dt><index>FSMTF</index>(table, perc = True)</dt>
+<dd>Implementation of the <code>TF</code> function for feature subset selection(<code>FSS</code>
+function). Return a dictionary where keys are features and values are their frequencies
+in the data. Should not be used itself, but rather through <code>FSS</code> function.</dd>
+
+<dt><index>FSMTDF</index>(table, perc = True)</dt>
+<dd>Implementation of the <code>TDF</code> function for feature subset selection(<code>FSS</code>
+function). Return a dictionary where keys are features and values are the number
+of documents they appear in. Should not be used itself, but rather through <code>FSS</code> function.</dd>
+
+<dt><index>FSMRandom</index>(table, perc = True)</dt>
+<dd>Implementation of the <code>RAND</code> function for feature subset selection(<code>FSS</code>
+function). Return a dictionary where keys are features and values are random.
+Should not be used itself, but rather through <code>FSS</code> function.</dd>
+
+<dt><index>FSMMin</index>(table, threshold, perc = True)</dt>
+<dd>Implementation of the <code>MIN</code> operator for feature subset selection
+(<code>FSS</code>).
+Should not be used itself, but rather through <code>FSS</code> function.</dd>
+
+<dt><index>FSMMax</index>(table, threshold, perc = True)</dt>
+<dd>Implementation of the <code>MAX</code> operator for feature subset selection
+(<code>FSS</code>).
+Should not be used itself, but rather through <code>FSS</code> function.</dd>
+
+<dt><index>DSS(table, funcName, operator, threshold)</index></dt>
+<dd>Function for document subset selection. Take ExampleTable <code>table</code>,
+function <code>funcName</code>, operator <code>operator</code>, and a number
+<code>threshold</code> and remove all the documents that have the value of <code>funcName</code>
+below (or above) <code>threshold</code>. <code>funcName</code> can be <code>'WF'</code>
+or <code>'NF'</code>. <code>'WF'</code>(word frequency) is a function that returns the
+number of words a document has. <code>'NF'</code>(number of features) is a function
+that returns the number of different features a document has. For example, if a
+document would consist only of the sentence "Mary also loves her mother, which
+is also named Mary.", its <code>'WF'</code> would be 10, and its <code>'NF'</code>
+would be 8. <code>operator</code> can be either <code>'MIN'</code> or <code>'MAX'</code>.
+If <code>'MIN'</code> is chosen, the function will remove all documents having the
+value of <code>funcName</code> less than <code>threshold</code>. <code>'MAX'</code>
+behaves the opposite. Removing all documents that have less than 10 features is done by
+<xmp class="code">res = orngText.DSS(data, 'WF', 'MIN', 10)
+</xmp>
+</dd>
+
+<dt><index>extractLetterNGram(table, n=2)</index></dt>
+<dd>Add letter n-grams as features to ExampleTable <code>table</code>. <code>n</code>
+is the length of n-grams to be added. Consider the following example
+
+<xmp class="code">
+>>> data
+<ExampleTable instance at 0x00C9AE68>
+>>> data[0]
+['', '', '', 'Mary had a little lamb.']
+>>> res = orngText.extractLetterNGram(data, 2)
+>>> res[0]
+['', '', '', 'Mary had a little lamb.'], {"a ":1.000, "e ":1.000, " a":1.
+000, "Ma":1.000, "ad":1.000, "la":1.000, "y ":1.000, " h":1.000, "mb":1.000, "am
+":1.000, "ry":1.000, "d ":1.000, "li":1.000, "le":1.000, "tl":1.000, "ar":1.000,
+ " l":2.000, "it":1.000, "ha":1.000, "tt":1.000}
+</xmp>
+</dd>
+
+<dt><index>extractWordNGram(table, preprocessor = None, n = 2, stopwords = None, threshold = 4, measure = 'FREQ')</index></dt>
+<dd>
+Add word n-grams as features to ExampleTable <code>table</code>. If provided,
+<code>preprocessor</code> will preprocess the text in the desired manner before
+adding the features. <code>n</code> is the number of words in the n-gram, and it
+defaults to 2. List of words provided as <code>stopwords</code> will greatly improve
+the quality of word n-grams, but this argument is optional. All n-grams having
+value of the given <code>measure</code> above <code>threshold</code> will be kept
+as features, while others will be discarded. <code>measure</code> is a function
+that indicates how strongly the words in the n-gram are associated. The higher
+this value, the stronger the association. <code>measure</code> can have the following
+values: <code>'FREQ'</code>, <code>'CHI'</code>, <code>'DICE'</code>, <code>'LL'</code>,
+and <code>'MI'</code>. <code>'FREQ'</code> will assign each n-gram its frequency in
+the data. <code>'CHI'</code>, <code>'DICE'</code>, <code>'LL'</code>, and <code>'MI'</code>
+will compute for each n-gram its chi-squared value, Dice coefficient, log-likelihood value,
+and mutual information, respectively.
+</dd>
+
+<dt><index>extractNames(text)</index></dt>
+<dd>Return a list of named entities from string <code>text</code>. Named entities
+are extracted based on word capitalisation. This function is called by <code>extractNamedEntities</code>.
+For example,
+<xmp class="code">
+>>> t = "He works for Bill Gates, and his wife Jude works for Amazon."
+>>> names = orngText.extractNames(t)
+>>> names
+['Bill Gates', 'Jude', 'Amazon']
+</xmp>
+Notice that the first word in the sentence (<code>'He'</code>) is not taken as a name, even
+though it is capitalised.
+</dd>
+
+<dt><index>extractNamedEntities(table, preprocessor = None, stopwords = None)</index></dt>
+<dd>Add named entities as features ti ExampleTable <code>table</code>. If provided,
+<code>preprocessor</code> will preprocess the text in the desired manner before
+adding the features. Features given in the list <code>stopwords</code> will not
+be added to the table.
+</dd>
+
+</dl>
+
+
