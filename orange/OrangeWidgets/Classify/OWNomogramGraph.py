@@ -1,8 +1,7 @@
 # Nomogram visualization widget. It is used together with OWNomogram
 
 from OWWidget import *
-#from Numeric import *
-import Numeric
+import numpy
 import math
 from qtcanvas import *
 import time, statc
@@ -544,7 +543,7 @@ class AttrLine:
             
         atLine = AttrLine("marker", canvas)
         d = 5*(self.maxValue-self.minValue)/max((max_mapped-min_mapped),aproxZero)
-        for xc in Numeric.arange(self.minValue, self.maxValue+d, d):
+        for xc in numpy.arange(self.minValue, self.maxValue+d, d):
             atLine.addAttValue(AttValue("", xc))
         
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -684,7 +683,7 @@ class AttrLineCont(AttrLine):
 
         atLine = AttrLine("marker", canvas)
         d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/max(max_mapped-min_mapped,aproxZero)
-        for xc in Numeric.arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
+        for xc in numpy.arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
             atLine.addAttValue(AttValue("", xc))
         
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -1009,7 +1008,7 @@ class BasicNomogramFooter(QCanvas):
         maxPercent = self.linkFunc(atLine.maxValue)#math.exp(atLine.maxValue)/(1+math.exp(atLine.maxValue))
 
         percentLine = AttrLine(atLine.name, self)
-        percentList = filter(lambda x:x>minPercent and x<maxPercent,Numeric.arange(0, maxPercent+0.1, 0.05))
+        percentList = filter(lambda x:x>minPercent and x<maxPercent,numpy.arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
             if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
                 percentLine.addAttValue(AttValue(" "+str(p)+" ", self.invLinkFunc(p), markerWidth = 1, enable = False))
@@ -1480,7 +1479,7 @@ def createSetOfVisibleValues(min, max, dif):
 #    add = round((min-dif)/dif)*dif
     add = math.ceil((min-0.9*dif)/dif)*dif
         
-    dSum = Numeric.arange(0, upper, dif)
+    dSum = numpy.arange(0, upper, dif)
     dSum = map(lambda x:x+add, dSum)
     return dSum    
 
@@ -1773,9 +1772,9 @@ class Mapper_Linear_Left:
         d = self.maxLinearValue/maxnum
         dif = max(getDiff(d),10e-6)
         dSum = []
-        dSum = Numeric.arange(0, self.maxLinearValue+dif, dif)
+        dSum = numpy.arange(0, self.maxLinearValue+dif, dif)
         if len(dSum)<1:
-            dSum = Numeric.arange(0, self.maxLinearValue+dif, dif/2.)
+            dSum = numpy.arange(0, self.maxLinearValue+dif, dif/2.)
         dSum = map(lambda x:x, dSum)
         if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
             conv = int
