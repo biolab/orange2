@@ -25,14 +25,14 @@ technique as well.<HR>
 <H2>Functions</H2>
 <DL>
 
-<DT><B>LogisticLearner</B>([<EM>examples=None, weightID=0, removeSingular=0</EM>])
+<DT><B>LogRegLearner</B>([<EM>examples=None, weightID=0, removeSingular=0, fitter = None, stepwiseLR = 0, addCrit=0.2, deleteCrit=0.3, numAttr=-1</EM>])
 <DD class=ddfun>
 Returns a LogisticClassifier if examples are given. If <code>examples</code> are
 not specified, an instance of object LogisticLearner with its parameters
 appropriately initialized is returned.&nbsp; Parameter <code>weightID</code>
-defines the ID of the weight meta attribute. Set parameter <code>removeSingular</code> to 1,
-if you want automatic removal of disturbing attributes, such as constants and
-singularities. Examples can contain discrete and continuous attributes.<dt>&nbsp;</dt>
+defines the ID of the weight meta attribute. Set parameter <code>removeSingular</code> to 1,if you want automatic removal of disturbing attributes, such as constants and
+singularities. Examples can contain discrete and continuous attributes.<dt>&nbsp;</dt> 
+Parameter <code>fitter</code> is used to alternate fitting algorithm. Currently a Newton-Raphson fitting algorithm is used, however you can change it to something else. You can find <code>bayesianFitter</code> in orngLR to test it out. The last three parameters <code>addCrit, deleteCrit, numAttr</code> are used to set parameters for stepwise attribute selection (see next method). If you wish to use stepwise within LogRegLearner, <code>stpewiseLR</code> must be set as 1.
 </dd>
 <DT><B>stepWiseFSS</B>([<em>examples=None, addCrit=0.2, deleteCrit=0.3, numAttr=-1</em>])
 <DD class=ddfun>
