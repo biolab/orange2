@@ -28,7 +28,7 @@ def printOUT(classifier):
     print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
     for i in range(len(classifier.continuizedDomain.attributes)):
-        print formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), exp(classifier.beta[i+1]))
+        print formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1]))
         
 
 def hasDiscreteValues(domain):
@@ -63,10 +63,9 @@ class LogRegLearnerClass:
             removeCrit = getattr(self, "removeCrit", 0.3)
             numAttr = getattr(self, "numAttr", -1)
             attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer, numAttr = numAttr)
-            try:
-                examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
-            except:
-                print list(attributes)
+            tmpDomain = orange.Domain(attributes, examples.domain.classVar)
+            tmpDomain.addmetas(examples.domain.getmetas())
+            examples = examples.select(tmpDomain)
         learner = orange.LogRegLearner()
         learner.imputerConstructor = imputer
         if imputer:
@@ -658,6 +657,7 @@ class StepWiseFSS_class:
 
                 tempAttr = filter(lambda x: x!=at, attr)
                 tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
+                tempDomain.addmetas(examples.domain.getmetas())
                 # domain, calculate P for LL improvement.
                 tempDomain  = continuizer(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
                 tempData = orange.Preprocessor_dropMissing(examples.select(tempDomain))
@@ -704,6 +704,7 @@ class StepWiseFSS_class:
         for at in remain_attr:
             tempAttr = attr + [at]
             tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
+            tempDomain.addmetas(examples.domain.getmetas())
             # domain, calculate P for LL improvement.
             tempDomain  = continuizer(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
             tempData = orange.Preprocessor_dropMissing(examples.select(tempDomain))
