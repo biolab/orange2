@@ -26,13 +26,13 @@ aproxZero = 0.0001
 
 def getStartingPoint(d, min):
     if min<0:
-        curr_num = Numeric.arange(-min+d, step=d)
+        curr_num = numpy.arange(-min+d, step=d)
         curr_num = curr_num[len(curr_num)-1]
         curr_num = -curr_num
     elif min - d <= 0:
         curr_num = 0
     else:
-        curr_num = Numeric.arange(min-d, step=d)
+        curr_num = numpy.arange(min-d, step=d)
         curr_num = curr_num[len(curr_num)-1]
     return curr_num
 
@@ -386,7 +386,6 @@ class OWNomogram(OWWidget):
     def svmClassifier(self, cl):
         import orngLR_Jakulin
 
-        import Numeric
         import orngLinVis
 
         self.error(0)
@@ -411,8 +410,8 @@ class OWNomogram(OWWidget):
             self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/min(max(visualizer.probfunc(0.0),aproxZero),0.9999))-1), 0))
 
         # get maximum and minimum values in visualizer.m
-        maxMap = reduce(Numeric.maximum, visualizer.m)
-        minMap = reduce(Numeric.minimum, visualizer.m)
+        maxMap = reduce(numpy.maximum, visualizer.m)
+        minMap = reduce(numpy.minimum, visualizer.m)
 
         coeff = 0 #
         at_num = 1
