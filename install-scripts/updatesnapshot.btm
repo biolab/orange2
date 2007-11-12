@@ -61,16 +61,16 @@ for %pyver in (%PYTHONVERSIONS) do (
     except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-genomics-????-??-??-py%npver.exe
   )
 
-  REM ### TEXT MINING
+  REM ### TEXT MINING ADDON
   set OUTNAME="%WEBDOWNLOAD\%WIN_TEXTMINING_SNAPSHOT-py%npver.exe"
-  nsis /O%WEBDOWNLOAD\regressionResults\nsis_textmining_%pyver.log /DINCLUDETEXTMINING /DOUTFILENAME=%OUTNAME %COMMON_NSI_OPTIONS
+  ren %WEBDIR\orngText\dist\orngText-*.win32-py%npver.exe %OUTNAME
   if %errorlevel != 0 (
     set ERRORS=%errorlevel
-    ren %WEBDOWNLOAD\orange-snapshot-textmining-????-??-??-py%npver.exe %OUTNAME
   ) else (
-    except (%OUTNAME) del /ke %WEBDOWNLOAD\orange-snapshot-textmining-????-??-??-py%npver.exe
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\orangeAddOn-snapshot-textmining-????-??-??-py%npver.exe
   )
 )
+
 del /qke snapshotfiles_*.inc
 
 cdd %SCRIPTDIR/doc
