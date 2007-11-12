@@ -7,8 +7,7 @@
 <h1>orngLR: Orange&nbsp;Logistic Regression&nbsp;Module</h1>
 <index name="modules/logistic regression">
 <index name="classifiers+logistic regression">
-<index name="classes/LogisticLearner (in orngLR)">
-<index name="classes/LogisticClassifier (in orngLR)">
+<index name="classes/LogRegLearner (in orngLR)">
 
 <P>Module orngLR is a set of wrappers around classes LogisticLearner and
 LogisticClassifier, that are implemented in core Orange. This module expanses
@@ -72,7 +71,7 @@ First example shows a very simple induction of a logistic regression classifier.
 <XMP class=code>import orange, orngLR
 data = orange.ExampleTable("titanic")
 
-lr = orngLR.LogisticLearner(data)
+lr = orngLR.LogRegLearner(data)
 
 # compute classification accuracy
 correct = 0.0
@@ -103,7 +102,7 @@ status=second       1.02       0.20       5.13       0.00
 Next examples shows how to handle singularities in data sets.
 <XMP class=code>import orange, orngLR
 data = orange.ExampleTable("adult_sample.tab")
-lr = orngLR.LogisticLearner(data, removeSingular = 1)
+lr = orngLR.LogRegLearner(data, removeSingular = 1)
 
 for ex in data[:5]:
     print ex.getclass(), lr(ex)
@@ -237,7 +236,7 @@ native-country=Outlying-US(Guam-USVI-etc)       0.95       4.78       0.20      
 KernelException: 'orange.LogisticFitterMinimization': singularity in education=Preschool
 </XMP>
 
-<p>We can see that attribute <code>education=Preschool</code> is causeing singularity. The issue of this is that we should remove <code>Preschool</code> manually or leave it to function <code>LogisticLearner</code> to remove it automatically. In the last example it is shown, how the use of stepwise logistic regression can help us in achieving better classification.
+<p>We can see that attribute <code>education=Preschool</code> is causeing singularity. The issue of this is that we should remove <code>Preschool</code> manually or leave it to function <code>LogRegLearner</code> to remove it automatically. In the last example it is shown, how the use of stepwise logistic regression can help us in achieving better classification.
 
 <XMP class=code>import orange, orngFSS, orngTest, orngStat, orngLR
 
@@ -265,8 +264,8 @@ class StepWiseFSS_Filter_class:
 
 data = orange.ExampleTable("d:\\data\\ionosphere.tab")
 
-lr = orngLR.LogisticLearner(removeSingular=1)
-learners = (orngLR.LogisticLearner(name='logistic', removeSingular=1),
+lr = orngLR.LogRegLearner(removeSingular=1)
+learners = (orngLR.LogRegLearner(name='logistic', removeSingular=1),
             orngFSS.FilteredLearner(lr, filter=StepWiseFSS_Filter(addCrit=0.05, deleteCrit=0.9), name='filtered'))
 results = orngTest.crossValidation(learners, data, storeClassifiers=1)
 
