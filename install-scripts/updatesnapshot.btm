@@ -63,7 +63,7 @@ for %pyver in (%PYTHONVERSIONS) do (
 
   REM ### TEXT MINING ADDON
   set OUTNAME="%WEBDOWNLOAD\%WIN_TEXTMINING_SNAPSHOT-py%npver.exe"
-  ren %WEBDIR\orngText\dist\orngText-*.win32-py%npver.exe %OUTNAME
+  move /r %WEBDIR\orngText\dist\orngText-*.win32-py%npver.exe %OUTNAME
   if %errorlevel != 0 (
     set ERRORS=%errorlevel
   ) else (
