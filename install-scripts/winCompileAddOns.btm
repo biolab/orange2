@@ -20,7 +20,7 @@ for %ver in (23 24 25) (
   echo *** Compiling module orngText %ver
   if exist %COMPILELOG del %COMPILELOG
   del /sye %SNAPSHOTDIR\%ver
-  %PYTHON\python setup.py build -c mingw32 bdist_wininst > COMPILELOG
+  %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=registerWidgets.py > COMPILELOG
   rem  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
   popd
 )
