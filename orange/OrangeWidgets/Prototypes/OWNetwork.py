@@ -116,7 +116,7 @@ class OWNetwork(OWWidget):
         
         ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setHubs, addSpace = True)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal")
-        #OWGUI.separator(ribg)
+        #OWGUI.separator(ribg) 
         OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain")
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
