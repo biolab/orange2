@@ -298,10 +298,10 @@ class CovererAndRemover_multWeights(orange.RuleCovererAndRemover):
         if not weights:
             weights = orange.newmetaid()
             examples.addMetaAttribute(weights,1.)
-            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)))
+            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
         newWeightsID = orange.newmetaid()
         examples.addMetaAttribute(newWeightsID,1.)
-        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)))
+        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
         for example in examples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 example[newWeightsID]=example[weights]*self.mult
@@ -314,16 +314,16 @@ class CovererAndRemover_addWeights(orange.RuleCovererAndRemover):
         if not weights:
             weights = orange.newmetaid()
             examples.addMetaAttribute(weights,1.)
-            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)))
+            examples.domain.addmeta(weights, orange.FloatVariable("weights-"+str(weights)), True)
         try:
             coverage = examples.domain.getmeta("Coverage")
         except:
             coverage = orange.FloatVariable("Coverage")
-            examples.domain.addmeta(orange.newmetaid(),coverage)
+            examples.domain.addmeta(orange.newmetaid(),coverage, True)
             examples.addMetaAttribute(coverage,0.0)
         newWeightsID = orange.newmetaid()
         examples.addMetaAttribute(newWeightsID,1.)
-        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)))
+        examples.domain.addmeta(newWeightsID, orange.FloatVariable("weights-"+str(newWeightsID)), True)
         for example in examples:
             if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 try:
