@@ -96,23 +96,23 @@ class OWNetwork(OWWidget):
         self.colorCombo = OWGUI.comboBox(self.displayTab, self, "color", box = "Color attribute", callback=self.setVertexColor)
         self.colorCombo.insertItem("(none)")
         
-        self.attListBox = OWGUI.listBox(self.displayTab, self, "markerAttributes", "attributes", box = "Labels", selectionMode=QListBox.Multi, callback=self.clickedAttLstBox)
+        self.attBox = OWGUI.widgetBox(self.mainTab, "Labels", addSpace = False)
+        self.attListBox = OWGUI.listBox(self.attBox, self, "markerAttributes", "attributes", selectionMode=QListBox.Multi, callback=self.clickedAttLstBox)
         
-        self.tooltipBox = OWGUI.widgetBox(self.mainTab, "Tooltips", addSpace = True)
+        self.tooltipBox = OWGUI.widgetBox(self.mainTab, "Tooltips", addSpace = False)  
+        self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListBox.Multi, callback=self.clickedTooltipLstBox)
         
         self.labelsOnMarkedOnly = 0
         OWGUI.checkBox(self.mainTab, self, 'labelsOnMarkedOnly', 'Show labels on marked nodes only', callback = self.labelsOnMarked)
         
-        self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListBox.Multi, callback=self.clickedTooltipLstBox)
+        OWGUI.separator(self.mainTab)
 
         OWGUI.button(self.mainTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
         OWGUI.button(self.mainTab, self, "Save network", callback=self.saveNetwork)
         
         ib = OWGUI.widgetBox(self.markTab, "Info", addSpace = True)
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(nVertices)i (%(nShown)i/%(nHidden)i)")
-        #OWGUI.label(ib, self, "Shown/Hidden vertices: %(nShown)i/%(nHidden)i")
         OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
-        #OWGUI.label(ib, self, "Marked vertices: %(nMarked)i")
         
         ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setHubs, addSpace = True)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal")
