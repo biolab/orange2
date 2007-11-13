@@ -16,6 +16,13 @@ from time import *
 import OWToolbars
 from statc import mean
 
+dir = os.path.dirname(__file__) + "/../icons/"
+dlg_mark2sel = dir + "Dlg_Mark2Sel.png"
+dlg_sel2mark = dir + "Dlg_Sel2Mark.png"
+dlg_selIsmark = dir + "Dlg_SelisMark.png"
+dlg_selected = dir + "Dlg_SelectedNodes.png"
+dlg_unselected = dir + "Dlg_UnselectedNodes.png"
+
 class OWNetwork(OWWidget):
     settingsList=["autoSendSelection", "spinExplicit", "spinPercentage"]
     contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"),
@@ -62,14 +69,16 @@ class OWNetwork(OWWidget):
         self.mainTab = self.displayTab
         self.markTab = QVGroupBox(self)
         self.infoTab = QVGroupBox(self)
+        self.protoTab = QVGroupBox(self)
 #        self.tabs.insertTab(self.mainTab, "Main")
         self.tabs.insertTab(self.displayTab, "Display")
         self.tabs.insertTab(self.markTab, "Mark")
         self.tabs.insertTab(self.infoTab, "Info")
+        self.tabs.insertTab(self.protoTab, "Prototypes")
         OWGUI.separator(self.controlArea)
 
 
-        self.optimizeBox = OWGUI.radioButtonsInBox(self.mainTab, self, "optimizeWhat", [], "Optimize", addSpace=True)
+        self.optimizeBox = OWGUI.radioButtonsInBox(self.mainTab, self, "optimizeWhat", [], "Optimize", addSpace=False)
         OWGUI.button(self.optimizeBox, self, "Random", callback=self.random)
         self.frButton = OWGUI.button(self.optimizeBox, self, "Fruchterman Reingold", callback=self.fr, toggleButton=1)
         OWGUI.spin(self.optimizeBox, self, "frSteps", 1, 10000, 1, label="Iterations: ")
@@ -78,18 +87,11 @@ class OWNetwork(OWWidget):
         OWGUI.button(self.optimizeBox, self, "Circular Original", callback=self.circularOriginal)
         OWGUI.button(self.optimizeBox, self, "Circular Random", callback=self.circularRandom)
         OWGUI.button(self.optimizeBox, self, "Circular Crossing Reduction", callback=self.circularCrossingReduction)
-        OWGUI.separator(self.optimizeBox)
-        OWGUI.widgetLabel("Optimize")
-        ib = OWGUI.indentedBox(self.optimizeBox)
-        for wh in ("All points", "Shown points", "Selected points"):
-            OWGUI.appendRadioButton(self.optimizeBox, self, "optimizeWhat", wh, insertInto=ib)
-        
-        #OWGUI.button(self.mainTab, self, "Clustering", callback=self.clustering)
-        OWGUI.button(self.mainTab, self, "Collapse", callback=self.collapse)
-        self.insideView = 0
-        self.insideViewNeighbours = 2
-        #OWGUI.checkBox(self.optimizeBox, self, 'insideView', 'Inside view', callback = self.insideview)
-        OWGUI.spin(self.optimizeBox, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
+        #OWGUI.separator(self.optimizeBox)
+        #OWGUI.widgetLabel("Optimize")
+        #ib = OWGUI.indentedBox(self.optimizeBox)
+        #for wh in ("All points", "Shown points", "Selected points"):
+        #    OWGUI.appendRadioButton(self.optimizeBox, self, "optimizeWhat", wh, insertInto=ib)
         
         self.colorCombo = OWGUI.comboBox(self.displayTab, self, "color", box = "Color attribute", callback=self.setVertexColor)
         self.colorCombo.insertItem("(none)")
@@ -104,51 +106,63 @@ class OWNetwork(OWWidget):
         self.tooltipListBox = OWGUI.listBox(self.tooltipBox, self, "tooltipAttributes", "attributes", selectionMode=QListBox.Multi, callback=self.clickedTooltipLstBox)
 
         OWGUI.button(self.mainTab, self, "Show degree distribution", callback=self.showDegreeDistribution)
+        OWGUI.button(self.mainTab, self, "Save network", callback=self.saveNetwork)
         
         ib = OWGUI.widgetBox(self.markTab, "Info", addSpace = True)
-        OWGUI.label(ib, self, "Number of vertices: %(nVertices)i")
-        OWGUI.label(ib, self, "Shown/Hidden vertices: %(nShown)i/%(nHidden)i")
-        OWGUI.label(ib, self, "Selected vertices: %(nSelected)i")
-        OWGUI.label(ib, self, "Marked vertices: %(nMarked)i")
+        OWGUI.label(ib, self, "Vertices (shown/hidden): %(nVertices)i (%(nShown)i/%(nHidden)i)")
+        #OWGUI.label(ib, self, "Shown/Hidden vertices: %(nShown)i/%(nHidden)i")
+        OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
+        #OWGUI.label(ib, self, "Marked vertices: %(nMarked)i")
         
         ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setHubs, addSpace = True)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal")
-        OWGUI.separator(ribg)
+        #OWGUI.separator(ribg)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain")
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
         self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.setHubs)
         
-        OWGUI.separator(ribg)
+        #OWGUI.separator(ribg)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertex")
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices")
         ib = OWGUI.indentedBox(ribg, orientation = 0)
         self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setHubs(h)))
-        OWGUI.separator(ib, 4, 4)
+        #OWGUI.separator(ib, 4, 4)
         self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
-        OWGUI.separator(ribg)
+        #OWGUI.separator(ribg)
         OWGUI.widgetLabel(ribg, "Mark  vertices with ...")
         OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections")
         OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections")
         self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.setHubs(h)))
-        OWGUI.separator(ribg)
+        #OWGUI.separator(ribg)
         OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than any neighbour")
         OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour")
-        OWGUI.separator(ribg)
+        #OWGUI.separator(ribg)
         OWGUI.appendRadioButton(ribg, self, "hubs", "most connections")
         ib = OWGUI.indentedBox(ribg)
         self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.setHubs(h)))
         OWGUI.widgetLabel(ib, "(More vertices are marked in case of ties)")
 #        self.ctrlMarkProportion = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markProportion", 0, 100, 1, label="Percentage" + ": ", callback=self.setHubs)
         
-        ib = OWGUI.widgetBox(self.markTab, "Selection", addSpace = True)
-        OWGUI.button(ib, self, "Add Marked to Selection", callback = self.markedToSelection)
-        OWGUI.button(ib, self, "Remove Marked from Selection",callback = self.markedFromSelection)
-        OWGUI.button(ib, self, "Set Selection to Marked", callback = self.setSelectionToMarked)
-
-        self.hideBox = QHGroupBox("Hide", self.markTab)
-        OWGUI.button(self.hideBox, self, "Selected", callback=self.hideSelected)
-        OWGUI.button(self.hideBox, self, "Unselected", callback=self.hideAllButSelected)
+        #ib = OWGUI.widgetBox(self.markTab, "Selection", addSpace = True)
+        ib = QHGroupBox("Selection", self.markTab)
+        btnM2S = OWGUI.button(ib, self, "", callback = self.markedToSelection)
+        btnM2S.setPixmap(QPixmap(dlg_mark2sel))
+        QToolTip.add(btnM2S, "Add Marked to Selection")
+        btnS2M = OWGUI.button(ib, self, "",callback = self.markedFromSelection)
+        btnS2M.setPixmap(QPixmap(dlg_sel2mark))
+        QToolTip.add(btnS2M, "Remove Marked from Selection")
+        btnSIM = OWGUI.button(ib, self, "", callback = self.setSelectionToMarked)
+        btnSIM.setPixmap(QPixmap(dlg_selIsmark))
+        QToolTip.add(btnSIM, "Set Selection to Marked")
+        
+        self.hideBox = QHGroupBox("Hide vertices", self.markTab)
+        btnSEL = OWGUI.button(self.hideBox, self, "", callback=self.hideSelected)
+        btnSEL.setPixmap(QPixmap(dlg_selected))
+        QToolTip.add(btnSEL, "Selected")
+        btnUN = OWGUI.button(self.hideBox, self, "", callback=self.hideAllButSelected)
+        btnUN.setPixmap(QPixmap(dlg_unselected))
+        QToolTip.add(btnUN, "Unselected")
         OWGUI.button(self.hideBox, self, "Show", callback=self.showAllNodes)
                 
         T = OWToolbars.NavigateSelectToolbar
@@ -157,7 +171,6 @@ class OWNetwork(OWWidget):
                                                                          ("Move selection", "buttonMoveSelection", "activateMoveSelection", QPixmap(OWToolbars.dlg_select), Qt.arrowCursor, 1, "select"),
                                                                          T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
         
-        OWGUI.button(self.controlArea, self, "Save network", callback=self.saveNetwork)
         #OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
         
         ib = OWGUI.widgetBox(self.infoTab, "General", addSpace = True)
@@ -166,7 +179,13 @@ class OWNetwork(OWWidget):
         OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
         OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
         OWGUI.label(ib, self, "Diameter: %(diameter)i")
-
+        
+        self.insideView = 0
+        self.insideViewNeighbours = 2
+        OWGUI.spin(self.protoTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
+        #OWGUI.button(self.protoTab, self, "Clustering", callback=self.clustering)
+        OWGUI.button(self.protoTab, self, "Collapse", callback=self.collapse)
+        
         self.icons = self.createAttributeIconDict()
         self.setHubs()
         
