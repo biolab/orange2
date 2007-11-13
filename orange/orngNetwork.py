@@ -20,6 +20,37 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         self.attributeList = {}
         self.attributeValues = {}
         
+    def collapse(self):
+        if len(self.graph.getNodes(1)) > 0:
+            nodes = list(set(range(self.graph.nVertices)) - set(self.graph.getNodes(1)))
+                
+            if len(nodes) > 0:
+                subgraph = self.graph.getSubGraph(nodes)
+                subgraph.setattr("items", self.graph.items.getitems(nodes))
+                oldcoors = self.coors
+                self.setGraph(subgraph)
+                self.graph = subgraph
+                    
+                for i in range(len(nodes)):
+                    self.coors[i][0] = oldcoors[nodes[i]][0]
+                    self.coors[i][1] = oldcoors[nodes[i]][1]
+
+        else:
+            nodes = self.graph.getLargestFullGraphs()
+            
+            if len(nodes) > 0:
+                nodescomp = list(set(range(self.graph.nVertices)) - set(nodes))
+                subgraph = self.graph.getSubGraphMergeCluster(nodes)
+                subgraph.setattr("items", self.graph.items.getitems(nodes))
+                oldcoors = self.coors
+                self.setGraph(subgraph)
+                self.graph = subgraph
+                    
+                #for i in range(len(nodescomp)):
+                #    print i
+                #    self.coors[i][0] = oldcoors[nodescomp[i]][0]
+                #    self.coors[i][1] = oldcoors[nodescomp[i]][1]
+            
     def getVars(self):
         vars = []
         if (self.graph != None):
