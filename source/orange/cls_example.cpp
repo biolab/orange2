@@ -628,6 +628,12 @@ PyObject *Example_getitem(TPyExample *pex, PyObject *vara)
     if (ind==ILLEGAL_INT)
       return PYNULL;
 
+    if ((ind < 0) && !example->hasMeta(ind)) {
+      TMetaDescriptor *metadesc = example->domain->metas[ind];
+      if (metadesc && metadesc->optional)
+        return Value_FromVariableValue(metadesc->variable, metadesc->variable->DK());
+    }
+    
     /* getVar will return NULL if ind is meta-attribute not registered with the domain.
        That's OK - we don't need PVariable (Value_FromValue would do exactly the same).
        operator[] will raise an exception if meta-value is requested and the example
