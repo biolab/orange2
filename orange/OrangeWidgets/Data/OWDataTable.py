@@ -126,7 +126,7 @@ class OWDataTable(OWWidget):
         id = self.table2id.get(table, None)
         if self.showMetas.has_key(id):
             show,col = self.showMetas[id]
-            self.showMetas[id] = (not(show),col)
+            self.showMetas[id] = (not show,col)
         if show:
             for c in col:
                 table.hideColumn(c)
@@ -192,12 +192,20 @@ class OWDataTable(OWWidget):
         if data==None:
             return
         vars = data.domain.variables
-        m = data.domain.getmetas() # getmetas returns a dictionary
+        m = data.domain.getmetas(False)
         ml = [(k, m[k]) for k in m]
         ml.sort(lambda x,y: cmp(y[0], x[0]))
         metas = [x[1] for x in ml]
         metaKeys = [x[0] for x in ml]
+  
+        mo = data.domain.getmetas(True).items()
+        if mo:
+            mo.sort(lambda x,y: cmp(x[1].name.lower(),y[1].name.lower()))
+            metas.append(None)
+            metaKeys.append(None)
+            
         varsMetas = vars + metas
+        
         numVars = len(data.domain.variables)
         numMetas = len(metas)
         numVarsMetas = numVars + numMetas
@@ -206,12 +214,15 @@ class OWDataTable(OWWidget):
 
         table.setNumCols(numVarsMetas+1)
         table.setNumRows(numEx)
-        id = self.table2id.get(table,None)
+        id = self.table2id.get(table, None)
 
         # set the header (attribute names)
         hheader=table.horizontalHeader()
         for i,var in enumerate(varsMetas):
-            hheader.setLabel(i, var.name)
+            if var is None:
+                hheader.setLabel(i, "other meta attrs")
+            else:
+                hheader.setLabel(i, var.name)
         hheader.setLabel(numVarsMetas, "")
         
         # set the contents of the table (values of attributes)
@@ -220,6 +231,7 @@ class OWDataTable(OWWidget):
         table.hide()
         table.ranks={}
         table.values={}
+        table.align={}
         table.setDelayColumnAdjust(numVarsMetas>200)
         for j,(key,attr) in enumerate(zip(range(numVars) + metaKeys, varsMetas)):
             #table.setNumCols(j+1)
@@ -227,19 +239,26 @@ class OWDataTable(OWWidget):
             self.progressBarSet(j*100.0/numVarsMetas)
             if attr == data.domain.classVar:
                 bgColor = QColor(160,160,160)
-            elif attr in metas:
+            elif attr in metas or attr is None:
                 bgColor = QColor(220,220,200)
                 self.showMetas[id][1].append(j) # store indices of meta attributes
             else:
                 bgColor = Qt.white
             # generate list of tuples (attribute value, instance index) and sort by attrVal
-            valIdx = [(str(ex[key]),idx) for idx,ex in enumerate(data)]
-            table.values[j]=[v[0]+" " for v in valIdx]
+            if key is None:
+                valIdx = [(", ".join(["%s=%s" % (a.name or k, ex[k]) for k, a in mo if ex.hasmeta(k)]), idx) for idx,ex in enumerate(data)]
+            else:
+                valIdx = [(str(ex[key]),idx) for idx,ex in enumerate(data)]
+            table.values[j]=[" "+v[0]+" " for v in valIdx]
             valIdx.sort()
             # generate a dictionary where key: instance index, value: rank
             idx2rankDict = dict(zip([x[1] for x in valIdx], range(numEx)))
             table.ranks[j]=dict(zip(range(numEx), [x[1] for x in valIdx]))
             table.columnColor[j]=bgColor
+            if key is None or attr.varType == orange.VarTypes.String:
+                table.align[j] = Qt.AlignLeft
+            else:
+                table.align[j] = Qt.AlignRight 
             for i in range(numEx):
                 # set sorting key to ranks
                 pass
@@ -259,6 +278,7 @@ class OWDataTable(OWWidget):
         #    OWGUI.tableItem(table, i, numVarsMetas, "", editType=QTableItem.Never, sortingKey=self.sortingKey(i, numSpaces))
         table.ranks[table.numCols()-1]=dict([(i,i) for i in range(numEx)])
         table.values[table.numCols()-1]=["" for i in range(numEx)]
+        table.align[table.numCols()-1] = Qt.AlignRight
         table.columnColor[table.numCols()-1]=QColor(0,0,0)
         table.disableUpdate=False
         table.hideColumn(numVarsMetas)
@@ -401,7 +421,7 @@ class MyTable(QTable):
         else:
             numAll=self.numRows()
             text=self.values[col][self.ranks[self.sortingColumn][numAll-1-row]]
-        painter.drawText(cr, Qt.AlignRight|Qt.AlignVCenter, text)
+        painter.drawText(cr, self.align[col] | Qt.AlignVCenter, text)
         #except:
         #    pass
 
