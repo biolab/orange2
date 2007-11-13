@@ -255,7 +255,7 @@ class OWFile(OWWidget):
             if not message:
                 continue
             attrs = [attr.name for attr, stat in zip(data.domain, data.attributeLoadStatus) if stat == status] \
-                  + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus[id] == status]
+                  + [attr.name for id, attr in metas.items() if data.metaAttributeLoadStatus.get(id, -99) == status]
             if attrs:
                 warnings += "<li>%s: %s</li>" % (message, ", ".join(attrs))
 
