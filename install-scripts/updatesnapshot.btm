@@ -65,7 +65,8 @@ for %pyver in (%PYTHONVERSIONS) do (
   set OUTNAME="%WEBDOWNLOAD\%WIN_TEXTMINING_SNAPSHOT-py%npver.exe"
   move /Z %WEBDIR\orngText\dist\orngText-*.win32-py%npver.exe %OUTNAME
   if %errorlevel != 0 (
-    set ERRORS=%errorlevel
+REM    set ERRORS=%errorlevel
+    echo "ignore error"
   ) else (
     except (%OUTNAME) del /ke %WEBDOWNLOAD\orangeAddOn-snapshot-textmining-????-??-??-py%npver.exe
   )
