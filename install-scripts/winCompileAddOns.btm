@@ -12,7 +12,7 @@ cdd %WEBDIR\orngText
 del /sye dist 
 del /sye build
 
-for %ver in (23 24 25) (
+for %ver in (%PYTHONVERSIONS) (
   set PYTHON=%pythonbase%%ver
   set COMPILELOG=%WEBDOWNLOAD\regressionResults\win-compile-textmining-%ver.log
 
