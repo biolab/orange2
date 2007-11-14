@@ -213,6 +213,8 @@ class OWTestLearners(OWWidget):
     def score(self, ids):
         """compute scores for the list of learners"""
         if (not self.data):
+            for id in ids:
+                self.learners[id].results = None
             return
         # test which learners can accept the given data set
         # e.g., regressions can't deal with classification data
@@ -357,16 +359,17 @@ class OWTestLearners(OWWidget):
     def setLearner(self, learner, id=None):
         """add/remove a learner"""
         if learner: # a new or updated learner
-            if id in self.learners:
-                self.learners[id].learner = learner
-                self.learners[id].name = learner.name
+            if id in self.learners: # updated learner
+                time = self.learners[id].time
+                self.learners[id] = Learner(learner, id)
+                self.learners[id].time = time
             else: # new learner
                 self.learners[id] = Learner(learner, id)
             self.score([id])
         else: # remove a learner and corresponding results
             if id in self.learners:
                 res = self.learners[id].results
-                if res.numberOfLearners > 1:
+                if res and res.numberOfLearners > 1:
                     indx = [l.id for l in res.learners].index(id)
                     res.remove(indx)
                     del res.learners[indx]
@@ -378,17 +381,23 @@ class OWTestLearners(OWWidget):
 
     def sendResults(self):
         """commit evaluation results"""
+        # for each learner, we first find a list where a result is stored
+        # and remember the corresponding index
         valid = [(l.results, [x.id for x in l.results.learners].index(l.id))
                  for l in self.learners.values() if l.scores]
         if not (self.data and len(valid)):
             self.send("Evaluation Results", None)
             return
-            
+
+        # find the result set for a largest number of learners
+        # and remove this set from the list of result sets
         rlist = dict([(l.results,1) for l in self.learners.values() if l.scores]).keys()
         rlen = [r.numberOfLearners for r in rlist]
         results = rlist.pop(rlen.index(max(rlen)))
+        
         for (i, l) in enumerate(results.learners):
-            if not self.learners[l.id]:
+            print "xxx %s" % str(l.id)
+            if not l.id in self.learners:
                 results.remove(i)
                 del results.learners[i]
         for r in rlist:
@@ -467,7 +476,7 @@ if __name__=="__main__":
     import orngRegression as r
     r5 = r.LinearRegressionLearner(name="0 - lin reg")
 
-    testcase = 0
+    testcase = 1
 
     if testcase == 0: # 1(UPD), 3, 4
         ow.setData(data2)
@@ -485,9 +494,10 @@ if __name__=="__main__":
     if testcase == 1: # data, but all learners removed
         ow.setLearner(l1, 1)
         ow.setLearner(l2, 2)
+        ow.setLearner(l1, 1)
         ow.setLearner(None, 2)
+        ow.setData(data2)
         ow.setLearner(None, 1)
-        ow.setData(data)
     if testcase == 2: # sends data, then learner, then removes the learner
         ow.setData(data2)
         ow.setLearner(l1, 1)
