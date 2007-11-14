@@ -4560,9 +4560,10 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
 		if (!PyArg_ParseTuple(args, "O:Graph.getSubGraphMergeCluster", &verticesWithout))
 			return PYNULL;
 
-    int i;
-    int special = -1;
-    for (i = 0; i < graph->nVertices; i++)
+		// create an array of vertices to be in a new graph
+		int i;
+		vector<int> neighbours;
+		for (i = 0; i < graph->nVertices; i++)
 		{
       if (PySequence_Contains(verticesWithout, PyInt_FromLong(i)) == 0)
 			{
@@ -4570,19 +4571,15 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
 			  PyList_Append(vertices, nel);
 			  Py_DECREF(nel);
       }
-      else if (special == -1)
-      {
-        special = i;
-      }
     }
 
+		// create new graph without cluster
 		int size = PyList_Size(vertices);
 		PyList_Sort(vertices);
 
 		TGraph *subgraph = new TGraphAsList(size + 1, graph->nEdgeTypes, graph->directed);
 		PGraph wsubgraph = subgraph;
 
-		vector<int> neighbours;
 		for (i = 0; i < size; i++)
 		{
 			int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
@@ -4602,30 +4599,14 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
 				}
 			}
 		}
+		// connect new meta-node with all verties
+		int sizeWithout = PyList_Size(verticesWithout);
+		for (i = 0; i < sizeWithout; i++)
+		{
+			int vertex = PyInt_AsLong(PyList_GetItem(verticesWithout, i));
 
-    /*
-    if (special > -1)
-    {
-      vector<int> uneigh;
-      insert_iterator<vector<int> > uneigh_it(uneigh, uneigh.begin());
-
-      int sizeWithout = PyList_Size(verticesWithout);
-
-      for (i = 0; i < sizeWithout; i++)
-      {
-        int ni = PyInt_AsLong(PyList_GetItem(verticesWithout, i));
-        graph->getNeighbours(ni, neighbours);
-
-        set_union(neighbours.begin(), neighbours.end(), uneigh.begin(), uneigh.end(), uneigh_it);
-      }
-      cout << "special: ";
-      ITERATE(vector<int>, ni, uneigh)
-			{
-          cout << *ni << " ";
-      }
-      cout << endl;
-
-      ITERATE(vector<int>, ni, uneigh)
+			graph->getNeighbours(vertex, neighbours);
+			ITERATE(vector<int>, ni, neighbours)
 			{
 				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
 				{
@@ -4633,13 +4614,12 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
 					
 					if (index != -1)
 					{
-						double* w = subgraph->getOrCreateEdge(special, index);
+						double* w = subgraph->getOrCreateEdge(size, index);
 						*w = 1.0;
 					}
 				}
 			}
-    }
-    */
+		}
 
 		// set graphs attribut items of type ExampleTable to subgraph
 		/*
