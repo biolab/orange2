@@ -51,6 +51,8 @@ class OWTestLearners(OWWidget):
         ('Area under ROC curve', 'AUC', 'AUC(res)', True),
         ('Information score', 'IS', 'IS(res)', False),
         ('F-measure', 'F1', 'F1(cm)', False, True),
+        ('Precision', 'Prec', 'precision(cm)', False, True),
+        ('Recall', 'Recall', 'recall(cm)', False, True),
         ('Brier score', 'Brier', 'BrierScore(res)', True)]]
 
     rStatistics = [apply(Score,s) for s in [\
