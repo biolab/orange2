@@ -396,7 +396,6 @@ class OWTestLearners(OWWidget):
         results = rlist.pop(rlen.index(max(rlen)))
         
         for (i, l) in enumerate(results.learners):
-            print "xxx %s" % str(l.id)
             if not l.id in self.learners:
                 results.remove(i)
                 del results.learners[i]
