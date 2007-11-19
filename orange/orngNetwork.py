@@ -36,13 +36,21 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                     self.coors[i][1] = oldcoors[nodes[i]][1]
 
         else:
-            nodes = self.graph.getLargestFullGraphs()
-        
-            if len(nodes) > 0:
-                nodescomp = list(set(range(self.graph.nVertices)) - set(nodes))
-                subgraph = self.graph.getSubGraphMergeCluster(nodes)
-                subgraph.setattr("items", self.graph.items.getitems(nodescomp))
-                subgraph.items.append(self.graph.items[0])
+            fullgraphs = self.graph.getLargestFullGraphs()
+            subgraph = self.graph
+            
+            if len(fullgraphs) > 0:
+                used = set()
+                for fullgraph in fullgraphs:
+                    fullgraph_set = set(fullgraph)
+                    if len(used & fullgraph_set) == 0:
+                        subgraph = subgraph.getSubGraphMergeCluster(fullgraph)
+                        used |= fullgraph_set
+                                   
+                nodescomp = list(set(range(self.graph.nVertices)) - used)
+                
+                #subgraph.setattr("items", self.graph.items.getitems(nodescomp))
+                #subgraph.items.append(self.graph.items[0])
                 oldcoors = self.coors
                 self.setGraph(subgraph)
                 self.graph = subgraph
@@ -52,12 +60,12 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                     
                 # place meta vertex in center of cluster    
                 x, y = 0, 0
-                for node in nodes:
+                for node in used:
                     x += oldcoors[node][0]
                     y += oldcoors[node][1]
                     
-                x = x / len(nodes)
-                y = y / len(nodes)
+                x = x / len(used)
+                y = y / len(used)
                 
                 self.coors[len(nodescomp)][0] = x
                 self.coors[len(nodescomp)][1] = y

@@ -4477,6 +4477,8 @@ PyObject *Graph_getDegrees(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 	PyCATCH
 }
 
+
+PyObject *multipleSelectLow(TPyOrange *self, PyObject *pylist, bool reference);
 PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertices) -> list of [v1, v2, ..., vn]")
 {
 	PyTRY
@@ -4514,37 +4516,23 @@ PyObject *Graph_getSubGraph(PyObject *self, PyObject *args, PyObject *) PYARGS(M
 				}
 			}
 		}
+ 
+    PyObject *pysubgraph = WrapOrange(wsubgraph);
 
 		// set graphs attribut items of type ExampleTable to subgraph
-		/*
-		TExampleTable *table;
-		PExampleTable wtable;
+    PyObject *strItems = PyString_FromString("items");
 
-		if (PyObject_HasAttr(self, PyString_FromString("items")) == 1)
+		if (PyObject_HasAttr(self, strItems) == 1)
 		{
-			PyObject* items = PyObject_GetAttr(self, PyString_FromString("items"));
+			PyObject* items = PyObject_GetAttr(self, strItems);
+      PyObject* selection = multipleSelectLow((TPyOrange *)items, vertices, false);
 
-			PExampleTable graph_table;
-			if (PyArg_ParseTuple(PyTuple_Pack(1,items), "O", &graph_table))
-			{
+      Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
+    }
 
-				table = new TExampleTable(graph_table->domain);
-				wtable = table;
-				
-				for (i = 0; i < size; i++)
-				{
-					int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
+	  Py_DECREF(strItems);
 
-					graph_table.
-				}
-
-				//PyObject_SetAttr((PyObject *)subgraph, PyString_FromString("items"), Py_BuildValue("N", WrapOrange(wtable)));
-			}
-		}
-	
-		return Py_BuildValue("NN", WrapOrange(wsubgraph), WrapOrange(wtable));
-		/**/
-		return Py_BuildValue("N", WrapOrange(wsubgraph));
+		return pysubgraph;
 	PyCATCH
 }
 
@@ -4621,36 +4609,25 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
 			}
 		}
 
+		PyObject *pysubgraph = WrapOrange(wsubgraph);
+
 		// set graphs attribut items of type ExampleTable to subgraph
-		/*
-		TExampleTable *table;
-		PExampleTable wtable;
+    PyObject *strItems = PyString_FromString("items");
 
-		if (PyObject_HasAttr(self, PyString_FromString("items")) == 1)
+		if (PyObject_HasAttr(self, strItems) == 1)
 		{
-			PyObject* items = PyObject_GetAttr(self, PyString_FromString("items"));
+			PyObject* items = PyObject_GetAttr(self, strItems);
+      PyObject* selection = multipleSelectLow((TPyOrange *)items, vertices, false);
 
-			PExampleTable graph_table;
-			if (PyArg_ParseTuple(PyTuple_Pack(1,items), "O", &graph_table))
-			{
+      PExampleTable graph_table = PyOrange_AsExampleTable(selection);
+      TExample *example = new TExample(graph_table->domain, true);
+      graph_table->push_back(example);
+      Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
+    }
 
-				table = new TExampleTable(graph_table->domain);
-				wtable = table;
-				
-				for (i = 0; i < size; i++)
-				{
-					int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
+	  Py_DECREF(strItems);
 
-					graph_table.
-				}
-
-				//PyObject_SetAttr((PyObject *)subgraph, PyString_FromString("items"), Py_BuildValue("N", WrapOrange(wtable)));
-			}
-		}
-	
-		return Py_BuildValue("NN", WrapOrange(wsubgraph), WrapOrange(wtable));
-		/**/
-		return Py_BuildValue("N", WrapOrange(wsubgraph));
+		return pysubgraph;
 	PyCATCH
 }
 
@@ -4948,14 +4925,10 @@ PyObject *Graph_getClusters(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 PyObject *Graph_getLargestFullGraphs(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "None -> list of subgraphs")
 {
   PyTRY
-    //cout << "full graphs C++" << endl;
-	  /*
-	  if (!PyArg_ParseTuple(args, ":NetworkOptimization.getClusters", ))
-		  return NULL;
-	  */
 	  CAST_TO(TGraph, graph);
     int i;
     vector<int> largestFullgraph;
+    PyObject *fullgraphs = PyList_New(0);
     for (i = 0; i < graph->nVertices; i++)
     {
       vector<int> nodes;
@@ -4968,6 +4941,19 @@ PyObject *Graph_getLargestFullGraphs(PyObject *self, PyObject *args) PYARGS(METH
       {
         largestFullgraph = fullgraph;
       }
+
+      if (fullgraph.size() > 3)
+      {
+        PyObject *pyFullgraph = PyList_New(0);
+
+        ITERATE(vector<int>, ni, fullgraph) {
+		      PyObject *nel = Py_BuildValue("i", *ni);
+		      PyList_Append(pyFullgraph, nel);
+		      Py_DECREF(nel);
+	      }
+
+        Py_DECREF(pyFullgraph);
+      }
     }
 
     PyObject *res = PyList_New(0);
@@ -4978,7 +4964,16 @@ PyObject *Graph_getLargestFullGraphs(PyObject *self, PyObject *args) PYARGS(METH
 		  Py_DECREF(nel);
 	  }
 
-	  return res;
+    if (PyList_Size(fullgraphs) > 0)
+    {
+      Py_DECREF(res);
+	    return fullgraphs;
+    }
+    else
+    {
+      Py_DECREF(fullgraphs);
+      return res;
+    }
   PyCATCH
 }
 int Graph_len(PyObject *self)
