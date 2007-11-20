@@ -280,7 +280,7 @@ const TValue &TExample::missingMeta(const int &i) const
       return md->variable->DK();
     else
       if (md->variable->name.size())
-        raiseError("the value of meta attribute '%s' is missing");
+        raiseError("the value of meta attribute '%s' is missing", md->variable->name.c_str());
 
   // no descriptor or no name
   raiseError("meta value with id %i is missing", i);
