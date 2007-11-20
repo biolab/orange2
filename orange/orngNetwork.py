@@ -41,11 +41,18 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             
             if len(fullgraphs) > 0:
                 used = set()
+                graphstomerge = list()
+                print fullgraphs
                 for fullgraph in fullgraphs:
+                    print fullgraph
                     fullgraph_set = set(fullgraph)
                     if len(used & fullgraph_set) == 0:
-                        subgraph = subgraph.getSubGraphMergeCluster(fullgraph)
+                        graphstomerge.append(fullgraph)
                         used |= fullgraph_set
+                        
+                print graphstomerge
+                print used
+                subgraph = subgraph.getSubGraphMergeClusters(graphstomerge)
                                    
                 nodescomp = list(set(range(self.graph.nVertices)) - used)
                 

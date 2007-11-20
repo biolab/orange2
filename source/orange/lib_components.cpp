@@ -4374,6 +4374,11 @@ bool lessLength (const set<int>& s1, const set<int>& s2)
 	return s1.size() > s2.size();
 }
 
+bool moreLength (const vector<int>& s1, const vector<int>& s2)
+{
+	return s1.size() > s2.size();
+}
+
 PyObject *Graph_getConnectedComponents(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "None -> list of [nodes]")
 {
 	PyTRY
@@ -4622,6 +4627,147 @@ PyObject *Graph_getSubGraphMergeCluster(PyObject *self, PyObject *args, PyObject
       PExampleTable graph_table = PyOrange_AsExampleTable(selection);
       TExample *example = new TExample(graph_table->domain, true);
       graph_table->push_back(example);
+      Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
+    }
+
+	  Py_DECREF(strItems);
+
+		return pysubgraph;
+	PyCATCH
+}
+
+
+PyObject *Graph_getSubGraphMergeClusters(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "List of (vertices) -> list of [v1, v2, ..., vn]")
+{
+	PyTRY
+		CAST_TO(TGraph, graph);
+
+		set<int> verticesWithout;
+		PyObject *fullGraphs;
+		PyObject *vertices = PyList_New(0);
+
+		if (!PyArg_ParseTuple(args, "O:Graph.getSubGraphMergeClusters", &fullGraphs))
+			return PYNULL;
+
+		// create an array of vertices to remove from the graph
+		int sizeFullGraphs = PyList_Size(fullGraphs);
+		int i;
+		for (i = 0; i < sizeFullGraphs; i++)
+		{
+			PyObject *fullGraph = PyList_GetItem(fullGraphs, i);
+			int sizeFullGraph = PyList_Size(fullGraph);
+
+			int j;
+			for (j = 0; j < sizeFullGraph; j++)
+			{
+				int vertex = PyInt_AsLong(PyList_GetItem(fullGraph, j));
+				verticesWithout.insert(vertex);
+			}
+		}
+
+		vector<int> neighbours;
+		// create an array of vertices to be in a new graph
+		for (i = 0; i < graph->nVertices; i++)
+		{
+			set<int>::iterator it = verticesWithout.find(i);
+			if (it == verticesWithout.end())
+			{
+        PyObject *nel = Py_BuildValue("i", i);
+			  PyList_Append(vertices, nel);
+			  Py_DECREF(nel);
+      }
+    }
+
+		// create new graph without cluster
+		int size = PyList_Size(vertices);
+		PyList_Sort(vertices);
+
+		TGraph *subgraph = new TGraphAsList(size + sizeFullGraphs, graph->nEdgeTypes, graph->directed);
+		PGraph wsubgraph = subgraph;
+
+		for (i = 0; i < size; i++)
+		{
+			int vertex = PyInt_AsLong(PyList_GetItem(vertices, i));
+
+			graph->getNeighboursFrom_Single(vertex, neighbours);
+			ITERATE(vector<int>, ni, neighbours)
+			{
+				if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
+				{
+					int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
+					
+					if (index != -1)
+					{
+						double* w = subgraph->getOrCreateEdge(i, index);
+						*w = 1.0;
+					}
+				}
+			}
+		}
+		// connect new meta-node with all verties
+		for (i = 0; i < sizeFullGraphs; i++)
+		{
+			PyObject *fullGraph = PyList_GetItem(fullGraphs, i);
+			int sizeFullGraph = PyList_Size(fullGraph);
+			int j;
+			for (j = 0; j < sizeFullGraph; j++)
+			{
+				int vertex = PyInt_AsLong(PyList_GetItem(fullGraph, j));
+				graph->getNeighbours(vertex, neighbours);
+
+				// connect with old neighbours
+				ITERATE(vector<int>, ni, neighbours)
+				{
+					if (PySequence_Contains(vertices, PyInt_FromLong(*ni)) == 1)
+					{
+						// vertex to connect with is in new graph
+						int index = PySequence_Index(vertices, PyInt_FromLong(*ni));
+						
+						if (index != -1)
+						{
+							double* w = subgraph->getOrCreateEdge(size + i, index);
+							*w = 1.0;
+						}
+					}
+					else
+					{
+						// vertex to connect with is a new meta node
+						int k;
+						for (k = 0; k < sizeFullGraphs; k++)
+						{
+							PyObject *fullGraph = PyList_GetItem(fullGraphs, k);
+
+							if (PySequence_Contains(fullGraph, PyInt_FromLong(*ni)) == 1)
+							{
+								if (k != i)
+								{
+									double* w = subgraph->getOrCreateEdge(size + i, size + k);
+									*w = 1.0;
+								}
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		PyObject *pysubgraph = WrapOrange(wsubgraph);
+
+		// set graphs attribut items of type ExampleTable to subgraph
+    PyObject *strItems = PyString_FromString("items");
+
+		if (PyObject_HasAttr(self, strItems) == 1)
+		{
+			PyObject* items = PyObject_GetAttr(self, strItems);
+      PyObject* selection = multipleSelectLow((TPyOrange *)items, vertices, false);
+
+      PExampleTable graph_table = PyOrange_AsExampleTable(selection);
+			for (i = 0; i < sizeFullGraphs; i++)
+			{
+				TExample *example = new TExample(graph_table->domain, true);
+				graph_table->push_back(example);
+			}
       Orange_setattrDictionary((TPyOrange *)pysubgraph, strItems, selection, false);
     }
 
@@ -4928,7 +5074,7 @@ PyObject *Graph_getLargestFullGraphs(PyObject *self, PyObject *args) PYARGS(METH
 	  CAST_TO(TGraph, graph);
     int i;
     vector<int> largestFullgraph;
-    PyObject *fullgraphs = PyList_New(0);
+		vector<vector<int> > fullgraphs;
     for (i = 0; i < graph->nVertices; i++)
     {
       vector<int> nodes;
@@ -4944,36 +5090,32 @@ PyObject *Graph_getLargestFullGraphs(PyObject *self, PyObject *args) PYARGS(METH
 
       if (fullgraph.size() > 3)
       {
-        PyObject *pyFullgraph = PyList_New(0);
-
-        ITERATE(vector<int>, ni, fullgraph) {
-		      PyObject *nel = Py_BuildValue("i", *ni);
-		      PyList_Append(pyFullgraph, nel);
-		      Py_DECREF(nel);
-	      }
-
-        Py_DECREF(pyFullgraph);
+				fullgraphs.push_back(fullgraph);
       }
     }
 
-    PyObject *res = PyList_New(0);
+		if (fullgraphs.size() == 0)
+		{
+			fullgraphs.push_back(largestFullgraph);
+		}
 
-    ITERATE(vector<int>, ni, largestFullgraph) {
-		  PyObject *nel = Py_BuildValue("i", *ni);
-		  PyList_Append(res, nel);
-		  Py_DECREF(nel);
+		sort(fullgraphs.begin(), fullgraphs.end(), moreLength);
+
+		PyObject *pyFullgraphs = PyList_New(0);
+    ITERATE(vector<vector<int> >, fg, fullgraphs) {
+			PyObject *pyFullgraph = PyList_New(0);
+			
+			ITERATE(vector<int>, node, *fg) {
+				PyObject *nel = Py_BuildValue("i", *node);
+				PyList_Append(pyFullgraph, nel);
+				Py_DECREF(nel);
+			}
+
+			PyList_Append(pyFullgraphs, pyFullgraph);
+		  Py_DECREF(pyFullgraph);
 	  }
 
-    if (PyList_Size(fullgraphs) > 0)
-    {
-      Py_DECREF(res);
-	    return fullgraphs;
-    }
-    else
-    {
-      Py_DECREF(fullgraphs);
-      return res;
-    }
+	  return pyFullgraphs;
   PyCATCH
 }
 int Graph_len(PyObject *self)
