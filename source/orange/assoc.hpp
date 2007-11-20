@@ -15,10 +15,9 @@
     along with Orange; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    Authors: Janez Demsar, Blaz Zupan, 1996--2002
+    Authors: Matjaz Jursic, Janez Demsar, Blaz Zupan, 1996--2002
     Contact: janez.demsar@fri.uni-lj.si
 
-    Classes for association rules from sparse data were written by Matjaz Jursic.
 */
 
 
@@ -126,6 +125,69 @@ public:
 WRAPPER(AssociationRulesInducer)
 
 
+
+
+class TSparseExample{
+public:
+	float weight;			// weight of thi example
+	long *itemset;		// vector storing just items that have some value in original example
+	int	length;
+
+	TSparseExample(TExample *example, int weightID);
+};
+
+
+class TSparseExamples{
+public:
+	float fullWeight;					// weight of all examples
+	vector<TSparseExample*> transaction;	// vector storing all sparse examples
+	PDomain domain;						// domain of original example or exampleGenerator
+	vector<long> intDomain;				// domain mapped longint values
+
+	TSparseExamples(PExampleGenerator examples, int weightID);
+};
+
+
+class TSparseItemsetNode;
+typedef map<long, TSparseItemsetNode *> TSparseISubNodes;
+
+class TSparseItemsetNode{							//item node used in TSparseItemsetTree
+public:
+	float weiSupp;							//support of itemset consisting node and all of its parents
+	long value;								//value of this node
+	TSparseItemsetNode *parent;					//pointer to parent node
+	TSparseISubNodes subNode;				//children items
+	
+	TSparseItemsetNode(long avalue = -1);			//constructor
+
+    TSparseItemsetNode *operator[] (long avalue);	//directly gets subnode
+
+	TSparseItemsetNode* addNode(long avalue);		//adds new subnode
+	bool hasNode(long avalue);				//returns true if has subnode with given value
+};
+
+
+class TSparseItemsetTree : TOrange {							//item node used in TSparseItemsetTree
+public:
+	TSparseItemsetTree(TSparseExamples examples);			//constructor
+
+	int buildLevelOne(vector<long> intDomain);
+	long extendNextLevel(int maxDepth, long maxCount);
+	bool allowExtend(long itemset[], int iLength);
+	long countLeafNodes();
+	void considerItemset(long itemset[], int iLength, float weight, int aimLength);
+	void considerExamples(TSparseExamples *examples, int aimLength);
+	void delLeafSmall(float minSupport);
+	PAssociationRules genRules(int maxDepth, float minConf, float nOfExamples);
+	long getItemsetRules(long itemset[], int iLength, float minConf, 
+						 float nAppliesBoth, float nOfExamples, PAssociationRules rules);
+	PDomain domain;
+
+//private:
+	TSparseItemsetNode *root;
+};
+
+
 class ORANGE_API TAssociationRulesSparseInducer : public TOrange {
 public:
   __REGISTER_CLASS
@@ -143,6 +205,23 @@ private:
 };
 
 WRAPPER(AssociationRulesSparseInducer)
+
+
+WRAPPER(SparseItemsetTree)
+
+class ORANGE_API TItemsetsSparseInducer : public TOrange {
+public:
+  __REGISTER_CLASS
+
+  int maxItemSets; //P maximal number of itemsets (increase if you want)
+  float support; //P required support
+
+  TItemsetsSparseInducer(float asupp=0.1, int awei=0);
+  PSparseItemsetTree operator()(PExampleGenerator, const int &weightID);
+
+private:
+  float nOfExamples;
+};
 
 
 class ORANGE_API TAssociationLearner : public TLearner {

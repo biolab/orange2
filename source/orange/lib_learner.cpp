@@ -77,7 +77,9 @@ C_CALL(AssociationLearner, Learner, "([examples] [, weight=, conf=, supp=, voteW
 C_NAMED(AssociationClassifier, ClassifierFD, "([rules=, voteWeight=])")
 C_CALL3(AssociationRulesInducer, AssociationRulesInducer, Orange, "([examples[, weightID]], confidence=, support=]) -/-> AssociationRules")
 C_CALL3(AssociationRulesSparseInducer, AssociationRulesSparseInducer, Orange, "([examples[, weightID]], confidence=, support=]) -/-> AssociationRules")
+C_CALL3(ItemsetsSparseInducer, ItemsetsSparseInducer, Orange, "([examples[, weightID]], support=]) -/-> AssociationRules")
 
+BASED_ON(ItemsetNodeProxy, Orange)
 
 bool operator < (const TAssociationRule &, const TAssociationRule &) { return false; }
 bool operator > (const TAssociationRule &, const TAssociationRule &) { return false; }
@@ -111,6 +113,40 @@ PyObject *AssociationRulesSparseInducer_call(PyObject *self, PyObject *args, PyO
   PyCATCH
 }
 
+class TItemsetNodeProxy : public TOrange {
+public:
+    const TSparseItemsetNode *node;
+    
+    TItemsetNodeProxy(const TSparseItemsetNode *n)
+    : node(n)
+    {}
+};
+
+PyObject *ItemsetsSparseInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> AssociationRules")
+{
+  PyTRY
+    NO_KEYWORDS
+
+    int weightID = 0;
+    PExampleGenerator egen =  exampleGenFromArgs(args, weightID);
+    if (!egen)
+      return PYNULL;
+
+    PSparseItemsetTree tree = SELF_AS(TItemsetsSparseInducer)(egen, weightID);
+    return WrapOrange(POrange(new TItemsetNodeProxy(tree->root)));
+  PyCATCH
+}
+
+PyObject *ItemsetNodeProxy_get_children(PyObject *self)
+{
+  PyTRY
+    const TSparseItemsetNode *me = SELF_AS(TItemsetNodeProxy).node;
+    PyObject *children = PyDict_New();
+    const_ITERATE(TSparseISubNodes, ci, me->subNode)
+      PyDict_SetItem(children, PyInt_FromLong(ci->first), WrapOrange(POrange(new TItemsetNodeProxy(ci->second))));
+    return children;
+  PyCATCH
+}
 
 bool convertFromPython(PyObject *, PAssociationRule &);
 

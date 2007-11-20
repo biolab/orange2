@@ -23,79 +23,6 @@
 #include "assoc.hpp"
 #include "examplegen.hpp"
 
-/****************************************************************************************
-TSparseExample
-*****************************************************************************************/
-
-class TSparseExample{
-public:
-	float weight;			// weight of thi example
-	long *itemset;		// vector storing just items that have some value in original example
-	int	length;
-
-	TSparseExample(TExample *example, int weightID);
-};
-
-/****************************************************************************************
-TSparseExamples
-*****************************************************************************************/
-
-class TSparseExamples{
-public:
-	float fullWeight;					// weight of all examples
-	vector<TSparseExample*> transaction;	// vector storing all sparse examples
-	PDomain domain;						// domain of original example or exampleGenerator
-	vector<long> intDomain;				// domain mapped longint values
-
-	TSparseExamples(PExampleGenerator examples, int weightID);
-};
-
-/****************************************************************************************
-TSparseINode
-*****************************************************************************************/
-
-class TSparseINode;
-typedef map<long, TSparseINode *> TSparseISubNodes;
-
-class TSparseINode{							//item node used in TSparseITree
-public:
-	float weiSupp;							//support of itemset consisting node and all of its parents
-	long value;								//value of this node
-	TSparseINode *parent;					//pointer to parent node
-	TSparseISubNodes subNode;				//children items
-	
-	TSparseINode(long avalue = -1);			//constructor
-
-    TSparseINode *operator[] (long avalue);	//directly gets subnode
-
-	TSparseINode* addNode(long avalue);		//adds new subnode
-	bool hasNode(long avalue);				//returns true if has subnode with given value
-};
-
-/****************************************************************************************
-TSparseITree
-*****************************************************************************************/
-
-class TSparseITree{							//item node used in TSparseITree
-public:
-	TSparseITree(TSparseExamples examples);			//constructor
-
-	int buildLevelOne(vector<long> intDomain);
-	long extendNextLevel(int maxDepth, long maxCount);
-	bool allowExtend(long itemset[], int iLength);
-	long countLeafNodes();
-	void considerItemset(long itemset[], int iLength, float weight, int aimLength);
-	void considerExamples(TSparseExamples *examples, int aimLength);
-	void delLeafSmall(float minSupport);
-	PAssociationRules genRules(int maxDepth, float minConf, float nOfExamples);
-	long getItemsetRules(long itemset[], int iLength, float minConf, 
-						 float nAppliesBoth, float nOfExamples, PAssociationRules rules);
-	PDomain domain;
-
-private:
-	TSparseINode *root;
-};
-
 
 
 /****************************************************************************************
@@ -165,44 +92,44 @@ TSparseExamples::TSparseExamples(PExampleGenerator examples, int weightID){
 }
 
 /****************************************************************************************
-TSparseINode
+TSparseItemsetNode
 *****************************************************************************************/
 
-TSparseINode::TSparseINode(long avalue) {
+TSparseItemsetNode::TSparseItemsetNode(long avalue) {
 	weiSupp = 0.0;
 	value = avalue;
 };
 
-TSparseINode *TSparseINode::operator[] (long avalue) {
+TSparseItemsetNode *TSparseItemsetNode::operator[] (long avalue) {
 	return subNode[avalue];
 };
 
 //if no subNode with that key exists add new
-TSparseINode* TSparseINode::addNode(long avalue) {
+TSparseItemsetNode* TSparseItemsetNode::addNode(long avalue) {
 	if (subNode.find(avalue)==subNode.end()) {
-		subNode[avalue] = new TSparseINode(avalue);
+		subNode[avalue] = new TSparseItemsetNode(avalue);
 		subNode[avalue]->parent = this;
 	} 
 	//returns new node
 	return subNode[avalue];
 };
 
-bool TSparseINode::hasNode(long avalue) {
+bool TSparseItemsetNode::hasNode(long avalue) {
 	return (subNode.find(avalue)!=subNode.end());
 };
 
 /****************************************************************************************
-TSparseITree
+TSparseItemsetTree
 *****************************************************************************************/
 
 // constructor
-TSparseITree::TSparseITree(TSparseExamples examples){
-	root = new TSparseINode();
+TSparseItemsetTree::TSparseItemsetTree(TSparseExamples examples){
+	root = new TSparseItemsetNode();
 	domain = examples.domain;
 };
 
 // generates all itemsets with one element
-int TSparseITree::buildLevelOne(vector<long> intDomain) {
+int TSparseItemsetTree::buildLevelOne(vector<long> intDomain) {
 	int count = 0;
 	
 	ITERATE(vector<long>,idi,intDomain) {
@@ -214,15 +141,15 @@ int TSparseITree::buildLevelOne(vector<long> intDomain) {
 };
 
 // generates candiate itemsets of size k from large itemsets of size k-1
-long TSparseITree::extendNextLevel(int maxDepth, long maxCount) {
-	typedef pair<TSparseINode *,int> NodeDepth; //<node,depth>
+long TSparseItemsetTree::extendNextLevel(int maxDepth, long maxCount) {
+	typedef pair<TSparseItemsetNode *,int> NodeDepth; //<node,depth>
 
 	long count = 0;
 	vector<NodeDepth> nodeQue;
 	
 	long *cItemset = new long[maxDepth +1];
 	int currDepth;
-	TSparseINode *currNode; 
+	TSparseItemsetNode *currNode; 
 
 	nodeQue.push_back(NodeDepth(root,0)); // put root in que
 
@@ -256,15 +183,15 @@ long TSparseITree::extendNextLevel(int maxDepth, long maxCount) {
 
 
 // tests if some candidate itemset can be extended to large itemset 
-bool TSparseITree::allowExtend(long itemset[], int iLength) {	
+bool TSparseItemsetTree::allowExtend(long itemset[], int iLength) {	
 	typedef pair<int,int> IntPair; // <parent node index, depth>
-	typedef pair<TSparseINode *,IntPair> NodeDepth;
+	typedef pair<TSparseItemsetNode *,IntPair> NodeDepth;
 
 	vector<NodeDepth> nodeQue;
 	
 	int currDepth;
 	int currPrIndex;								//parent index
-	TSparseINode *currNode; 
+	TSparseItemsetNode *currNode; 
 	int i;
 	
 	nodeQue.push_back(NodeDepth(root,IntPair(-1,1))); // put root in que
@@ -288,10 +215,10 @@ bool TSparseITree::allowExtend(long itemset[], int iLength) {
 
 
 // counts number of leaf nodes not using any recursion
-long TSparseITree::countLeafNodes() {	
+long TSparseItemsetTree::countLeafNodes() {	
 	long countLeaf = 0;
-	vector<TSparseINode *> nodeQue;
-	TSparseINode *currNode;
+	vector<TSparseItemsetNode *> nodeQue;
+	TSparseItemsetNode *currNode;
 
 	nodeQue.push_back(root);
 
@@ -310,15 +237,15 @@ long TSparseITree::countLeafNodes() {
 
 
 // counts supports of all aimLength long branches in tree using one example (itemset) data
-void TSparseITree::considerItemset(long itemset[], int iLength, float weight, int aimLength) {	
+void TSparseItemsetTree::considerItemset(long itemset[], int iLength, float weight, int aimLength) {	
 	typedef pair<int,int> IntPair; // <parent node index, depth>
-	typedef pair<TSparseINode *,IntPair> NodeDepth;
+	typedef pair<TSparseItemsetNode *,IntPair> NodeDepth;
 
 	vector<NodeDepth> nodeQue;
 	
 	int currDepth;
 	int currPrIndex;								//parent index
-	TSparseINode *currNode; 
+	TSparseItemsetNode *currNode; 
 	int i, end = iLength - aimLength;
 
 	nodeQue.push_back(NodeDepth(root,IntPair(-1,0))); // put root in que
@@ -340,7 +267,7 @@ void TSparseITree::considerItemset(long itemset[], int iLength, float weight, in
 };
 
 // counts supports of all aimLength long branches in tree using examples data
-void TSparseITree::considerExamples(TSparseExamples *examples, int aimLength) {	
+void TSparseItemsetTree::considerExamples(TSparseExamples *examples, int aimLength) {	
 		ITERATE(vector<TSparseExample*>,ei,examples->transaction)
 			if (aimLength <= (*ei)->length)
 				considerItemset((*ei)->itemset, (*ei)->length, (*ei)->weight, aimLength);
@@ -348,10 +275,10 @@ void TSparseITree::considerExamples(TSparseExamples *examples, int aimLength) {
 
 
 // deletes all leaves that have weiSupp smaler than given minSupp;
-void TSparseITree::delLeafSmall(float minSupp) {	
+void TSparseItemsetTree::delLeafSmall(float minSupp) {	
 	long countLeaf = 0;
-	vector<TSparseINode *> nodeQue;
-	TSparseINode *currNode;
+	vector<TSparseItemsetNode *> nodeQue;
+	TSparseItemsetNode *currNode;
 
 	nodeQue.push_back(root);
 
@@ -372,8 +299,8 @@ void TSparseITree::delLeafSmall(float minSupp) {
 
 
 // generates all posible association rules from tree using given confidence
-PAssociationRules TSparseITree::genRules(int maxDepth, float minConf, float nOfExamples) {
-	typedef pair<TSparseINode *,int> NodeDepth; //<node,depth>
+PAssociationRules TSparseItemsetTree::genRules(int maxDepth, float minConf, float nOfExamples) {
+	typedef pair<TSparseItemsetNode *,int> NodeDepth; //<node,depth>
 
 	int count=0;
 	vector<NodeDepth> nodeQue;
@@ -382,7 +309,7 @@ PAssociationRules TSparseITree::genRules(int maxDepth, float minConf, float nOfE
 	
 	long *itemset = new long[maxDepth];
 	int currDepth;
-	TSparseINode *currNode; 
+	TSparseItemsetNode *currNode; 
 
 	nodeQue.push_back(NodeDepth(root,0)); // put root in que
 
@@ -405,7 +332,7 @@ PAssociationRules TSparseITree::genRules(int maxDepth, float minConf, float nOfE
 };
 
 // checks if itemset generates some rules with enough confidence and adds these rules to resultset
-long TSparseITree::getItemsetRules(long itemset[], int iLength, float minConf, 
+long TSparseItemsetTree::getItemsetRules(long itemset[], int iLength, float minConf, 
 								   float nAppliesBoth, float nOfExamples, 
 								   PAssociationRules rules) {
 	
@@ -419,13 +346,13 @@ long TSparseITree::getItemsetRules(long itemset[], int iLength, float minConf,
 	nAppliesRight=nAppliesBoth;
 	
 	typedef pair<int,int> IntPair; // <parent node index, depth>
-	typedef pair<TSparseINode *,IntPair> NodeDepth;
+	typedef pair<TSparseItemsetNode *,IntPair> NodeDepth;
 
 	vector<NodeDepth> nodeQue;
 	
 	int currDepth, i, j;
 	int currPrIndex; //parent index
-	TSparseINode *currNode, *tempNode;
+	TSparseItemsetNode *currNode, *tempNode;
 	
 	long *leftItemset = new long[iLength - 1];
 	float thisConf;
@@ -549,7 +476,7 @@ PAssociationRules TAssociationRulesSparseInducer::operator()(PExampleGenerator e
 	TSparseExamples sparseExm(examples, weightID);
 
 	// build first level of tree
-	TSparseITree *tree = new TSparseITree(sparseExm);
+	TSparseItemsetTree *tree = new TSparseItemsetTree(sparseExm);
 	newItemSets = tree->buildLevelOne(sparseExm.intDomain);	
 
 	nMinSupp = support * sparseExm.fullWeight;
@@ -571,4 +498,48 @@ PAssociationRules TAssociationRulesSparseInducer::operator()(PExampleGenerator e
 	}
 	
 	return tree->genRules(i, confidence, sparseExm.fullWeight);
+}
+
+
+
+/****************************************************************************************
+TItemsetsSparseInducer
+*****************************************************************************************/
+
+TItemsetsSparseInducer::TItemsetsSparseInducer(float asupp, int awei)
+: maxItemSets(15000),
+  support(asupp),
+  nOfExamples(0.0)
+{}
+
+PSparseItemsetTree TItemsetsSparseInducer::operator()(PExampleGenerator examples, const int &weightID)
+{	float nMinSupp;
+	long currItemSets, i,newItemSets;
+
+	// reformat examples in sparseExm for better efficacy
+	TSparseExamples sparseExm(examples, weightID);
+
+	// build first level of tree
+	TSparseItemsetTree *tree = new TSparseItemsetTree(sparseExm);
+	newItemSets = tree->buildLevelOne(sparseExm.intDomain);	
+
+	nMinSupp = support * sparseExm.fullWeight;
+	
+	//while it is posible to extend tree repeat...
+	for(i=1;newItemSets;i++) {
+		tree->considerExamples(&sparseExm,i);
+		tree->delLeafSmall(nMinSupp);
+		
+		currItemSets = tree->countLeafNodes();
+
+		newItemSets = tree->extendNextLevel(i, maxItemSets - currItemSets);
+
+		//test if tree is too large
+		if (newItemSets + currItemSets >= maxItemSets) {
+			raiseError("too many itemsets (%i); increase 'maxItemSets'", maxItemSets);
+			newItemSets = 0;
+		}
+	}
+
+	return tree;
 }
