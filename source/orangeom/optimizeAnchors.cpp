@@ -884,7 +884,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
       double scaling = 1e10;
       for(anci = anc, dri = dr; dri != dre; anci++, dri++) {
         double maxdr = 0.1 * sqrt(sqr(anci->x) + sqr(anci->y));
-        if ((maxdr > 1e-5) && (*dri > 1e-5)) {
+        if ((maxdr > 1e-5) && (fabs(*dri) > 1e-5)) {
           if (scaling * *dri > maxdr)
             scaling = maxdr / *dri;
         }
