@@ -9,7 +9,7 @@ import orangeom
 class NetworkOptimization(orangeom.NetworkOptimization):
     def __init__(self, graph=None, parent=None, name="None"):
         if graph is None:
-            graph = orange.GraphAsList(2, 0)
+            graph = orangeom.Network(2, 0)
             
         self.setGraph(graph)
         self.graph = graph
@@ -42,16 +42,16 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             if len(fullgraphs) > 0:
                 used = set()
                 graphstomerge = list()
-                print fullgraphs
+                #print fullgraphs
                 for fullgraph in fullgraphs:
-                    print fullgraph
+                    #print fullgraph
                     fullgraph_set = set(fullgraph)
                     if len(used & fullgraph_set) == 0:
                         graphstomerge.append(fullgraph)
                         used |= fullgraph_set
                         
-                print graphstomerge
-                print used
+                #print graphstomerge
+                #print used
                 subgraph = subgraph.getSubGraphMergeClusters(graphstomerge)
                                    
                 nodescomp = list(set(range(self.graph.nVertices)) - used)
@@ -239,9 +239,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
         return 0
     
     def readNetwork(self, fn):
-        graph, table = orangeom.NetworkOptimization.readNetwork(self, fn)
-        graph.setattr("items", table)
+        graph = orangeom.NetworkOptimization.readNetwork(self, fn)
         self.setGraph(graph)
         self.graph = graph
-        return graph, table
+        return graph
     
