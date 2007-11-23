@@ -35,6 +35,7 @@ TNetworkOptimization::TNetworkOptimization()
 	width = 10000;
 	height = 10000;
 	pos = NULL;
+  tree = NULL;
 	temperature = sqrt(width*width + height*height) / 10;
 	coolFactor = 0.96;
 }
@@ -843,14 +844,14 @@ bool *TNetworkOptimization::pyvector_to_Carrayptrs(PyArrayObject *arrayin)  {
 	return (bool *) arrayin->data;  /* pointer to arrayin data as double */
 }
 
-int TNetworkOptimization::setGraph(TGraphAsList *graph)
+int TNetworkOptimization::setNetwork(TNetwork *network)
 {
 	//cout << "-1" << endl;
 	links[0].clear();
 	links[1].clear();
 	free_Carrayptrs(pos);
 
-	nVertices = graph->nVertices;
+	nVertices = network->nVertices;
 	int dims[2];
 	dims[0] = nVertices;
 	dims[1] = 2;
@@ -863,9 +864,9 @@ int TNetworkOptimization::setGraph(TGraphAsList *graph)
 	//dumpCoordinates();
 	nLinks = 0;
 	int v;
-	for (v = 0; v < graph->nVertices; v++)
+	for (v = 0; v < network->nVertices; v++)
 	{
-		TGraphAsList::TEdge *edge = graph->edges[v];
+		TNetwork::TEdge *edge = network->edges[v];
 
 		if (edge != NULL)
 		{
@@ -875,7 +876,7 @@ int TNetworkOptimization::setGraph(TGraphAsList *graph)
 			links[1].push_back(u);
 			nLinks++;
 
-			TGraphAsList::TEdge *next = edge->next;
+			TNetwork::TEdge *next = edge->next;
 			while (next != NULL)
 			{
 				int u = next->vertex;
@@ -887,7 +888,11 @@ int TNetworkOptimization::setGraph(TGraphAsList *graph)
 				next = next->next;
 			}
 		}
+
+    vertices.insert(v);
 	}
+
+
 	//cout << "5" << endl;
 	return 0;
 }
@@ -901,7 +906,7 @@ PyObject *NetworkOptimization_new(PyTypeObject *type, PyObject *args, PyObject *
   PyTRY
 	PyObject *pygraph;
 
-	if (PyArg_ParseTuple(args, "O:GraphOptimization", &pygraph))
+	if (PyArg_ParseTuple(args, "O:NetworkOptimization", &pygraph))
 	{
 		TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
 
@@ -986,16 +991,14 @@ PyObject *NetworkOptimization_setGraph(PyObject *self, PyObject *args) PYARGS(ME
 	if (!PyArg_ParseTuple(args, "O:NetworkOptimization.setGraph", &pygraph))
 		return NULL;
 
-	TGraphAsList *graph = &dynamic_cast<TGraphAsList &>(PyOrange_AsOrange(pygraph).getReference());
+	TNetwork *graph = &dynamic_cast<TNetwork &>(PyOrange_AsOrange(pygraph).getReference());
 
-	CAST_TO(TNetworkOptimization, graphOpt);
-	//cout << "networkoptimization.cpp/setGraph: setting graph..." << endl;
-	if (graphOpt->setGraph(graph) > 0)
+	CAST_TO(TNetworkOptimization, netOptimization);
+
+	if (netOptimization->setNetwork(graph) > 0)
 		PYERROR(PyExc_SystemError, "setGraph failed", NULL);
 	
-	graphOpt->graphStructure = graph;
-
-	//cout << "done." << endl;
+	netOptimization->graphStructure = graph;
 	RETURN_NONE;
   PyCATCH
 }
@@ -1090,6 +1093,7 @@ PyObject *NetworkOptimization_fruchtermanReingold(PyObject *self, PyObject *args
 PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(center, steps, temperature) -> temperature")
 {
   PyTRY
+
 	int steps, center;
 	double temperature = 0;
 
@@ -1406,12 +1410,13 @@ PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYAR
 }
 
 WRAPPER(ExampleTable)
-
-PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Graph")
+PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fn) -> Network")
 {
+
   PyTRY
-	TGraph *graph;
-	PGraph wgraph;
+    
+	TNetwork *graph;
+	PNetwork wgraph;
 	TDomain *domain = new TDomain();
 	PDomain wdomain = domain;
 	TExampleTable *table;
@@ -1480,10 +1485,11 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 				}
 			}
 		}
-		graph = new TGraphAsList(nVertices, 0, false);
+
+		graph = new TNetwork(nVertices, 0, false);
 		wgraph = graph;
 
-		domain->addVariable(new TIntVariable("index"));
+    domain->addVariable(new TIntVariable("index"));
 		domain->addVariable(new TStringVariable("label"));
 		domain->addVariable(new TFloatVariable("x"));
 		domain->addVariable(new TFloatVariable("y"));
@@ -1681,10 +1687,10 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 	  PyErr_Format(PyExc_SystemError, "unable to open file '%s'", fn);
 	  return NULL;
 	}
-	
-	//graph->setProperty("items", wtable);
 
-	return Py_BuildValue("NN", WrapOrange(wgraph), WrapOrange(wtable));
+  graph->items = wtable;
+	return WrapOrange(wgraph);
+
   PyCATCH
 }
 

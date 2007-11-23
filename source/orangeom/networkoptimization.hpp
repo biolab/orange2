@@ -39,6 +39,8 @@
 #include <fstream>
 #include <string>
 #include <time.h>
+#include <queue>
+
 #ifdef DARWIN
 #include <strings.h>
 #endif
@@ -46,9 +48,8 @@
 #include "px/orangeom_globals.hpp"
 #include "root.hpp"
 #include "numeric_interface.hpp"
-#include "graph.hpp"
+#include "network.hpp"
 #include "stringvars.hpp"
-#include <queue>
 
 using namespace std;
 
@@ -76,7 +77,7 @@ public:
 	//int circularRandom();
 	double getTemperature() {return temperature;}
 	void setTemperature(double t) {temperature = t;}
-	int setGraph(TGraphAsList *graph);
+	int setNetwork(TNetwork *network);
 	void dumpCoordinates();
 
 	double **ptrvector(double n);
@@ -91,16 +92,19 @@ public:
 	double width; 
 	double height; 
 	PyArrayObject *coors;
-	TGraph *graphStructure;
+	TNetwork *graphStructure;
 
 	int nLinks;
 	int nVertices;
 	vector<int> links[2];
+  set<int> vertices;
 	double **pos;
 	int *level;
 	double *kVector;
 	double *levelMin;
 	double *levelMax;
+  TGraphAsTree *tree;
+  
 };
 
 
