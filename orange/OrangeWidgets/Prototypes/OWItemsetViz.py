@@ -67,7 +67,7 @@ class OWIntemsetCanvas(OWNetworkCanvas):
         OWNetworkCanvas.__init__(self, master, parent, name)
         
     def countWords(self, index):
-        label = str(self.visualizer.graph.items[index]['label'])
+        label = str(self.visualizer.graph.items[index]['name'])
         #print len(label.split(' '))
         #print label
         return len(label.split(' '))
@@ -477,7 +477,7 @@ class OWItemsetViz(OWWidget):
             
     def showLabelsClick(self):
         if self.showLabels:
-            self.graph.setLabelText(['label'])
+            self.graph.setLabelText(['name','support'])
             self.graph.updateData()
             self.graph.replot()
         else:
@@ -545,7 +545,7 @@ class OWItemsetViz(OWWidget):
         self.attributes = [(var.name, var.varType) for var in vars]
         
         self.graph.addVisualizer(self.visualize)
-        self.graph.setTooltipText(['label'])
+        self.graph.setTooltipText(['name', 'support'])
         
         k = 1.13850193174e-008
         nodes = self.visualize.nVertices()
