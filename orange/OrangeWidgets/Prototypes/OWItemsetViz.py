@@ -25,7 +25,7 @@ dlg_unselected = dir + "Dlg_UnselectedNodes.png"
 
 class UnconnectedArrowsCurve(UnconnectedLinesCurve):
     def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
-        UnconnectedLinesCurve.__init__(self, parent, pen, xData, yData)
+        UnconnectedLinesCurve.__init__(self, parent, pen, xData, yData)  
 
     def toPolar(self, x, y):
         if x > 0 and y >= 0:
@@ -42,9 +42,21 @@ class UnconnectedArrowsCurve(UnconnectedLinesCurve):
             return None
         
     def drawCurve(self, painter, style, xMap, yMap, start, stop):
-        UnconnectedLinesCurve.drawCurve(self, painter, style, xMap, yMap, start, stop)
-        painter.setBrush(self.Pen.color())
         
+        self.Pen.setWidth(2)
+        painter.setPen(self.Pen)
+        
+        start = max(start + start%2, 0)
+        if stop == -1:
+            stop = self.dataSize()
+        for i in range(start, stop, 2):
+            
+            
+            QwtPlotCurve.drawLines(self, painter, xMap, yMap, i, i+1)
+        
+        painter.setBrush(self.Pen.color())
+        self.Pen.setWidth(1)
+        painter.setPen(self.Pen)
         d = 12
 
         start = max(start + start%2, 0)
@@ -365,7 +377,7 @@ class OWItemsetViz(OWWidget):
         
         self.insideView = 0
         self.insideViewNeighbours = 2
-        OWGUI.spin(self.protoTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
+        self.insideSpin = OWGUI.spin(self.protoTab, self, "insideViewNeighbours", 1, 6, 1, label="Inside view (neighbours): ", checked = "insideView", checkCallback = self.insideview, callback = self.insideviewneighbours)
         #OWGUI.button(self.protoTab, self, "Clustering", callback=self.clustering)
         OWGUI.button(self.protoTab, self, "Collapse", callback=self.collapse)
         
@@ -406,6 +418,11 @@ class OWItemsetViz(OWWidget):
                 self.fr()
     
         else:
+            self.graph.insideview = 0
+            check, spin = self.insideSpin
+            print check
+            
+            check.setCheckable(False)
             print "One node must be selected!"     
         
     def labelsOnMarked(self):
