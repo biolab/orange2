@@ -343,7 +343,7 @@ class OWCorrAnalysis(OWWidget):
                 cur = [0] * lenMetas
                 for i, m in zip(range(lenMetas), metas.keys()):
                     try:
-                        cur[i] = ex[m].native()
+                        cur[i] = float(ex[m].native())
                     except:
                         cur[i] = 0
                 caList.append(cur)
