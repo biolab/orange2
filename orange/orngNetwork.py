@@ -25,8 +25,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             nodes = list(set(range(self.graph.nVertices)) - set(self.graph.getNodes(1)))
                 
             if len(nodes) > 0:
-                subgraph = self.graph.getSubGraph(nodes)
-                subgraph.setattr("items", self.graph.items.getitems(nodes))
+                subgraph = orangeom.Network(self.graph.getSubGraph(nodes))
                 oldcoors = self.coors
                 self.setGraph(subgraph)
                 self.graph = subgraph
@@ -52,7 +51,7 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                         
                 #print graphstomerge
                 #print used
-                subgraph = subgraph.getSubGraphMergeClusters(graphstomerge)
+                subgraph = orangeom.Network(subgraph.getSubGraphMergeClusters(graphstomerge))
                                    
                 nodescomp = list(set(range(self.graph.nVertices)) - used)
                 
@@ -238,8 +237,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 
         return 0
     
-    def readNetwork(self, fn):
-        graph = orangeom.NetworkOptimization.readNetwork(self, fn)
+    def readNetwork(self, fn, directed=0):
+        graph = orangeom.NetworkOptimization.readNetwork(self, fn, directed)
         self.setGraph(graph)
         self.graph = graph
         return graph

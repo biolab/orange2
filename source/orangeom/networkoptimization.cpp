@@ -1421,11 +1421,11 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 	PDomain wdomain = domain;
 	TExampleTable *table;
 	PExampleTable wtable;
-
+  int directed = 0;
 	//cout << "readNetwork" << endl;
 	char *fn;
 
-	if (!PyArg_ParseTuple(args, "s:NetworkOptimization.readNetwork", &fn))
+	if (!PyArg_ParseTuple(args, "s|i:NetworkOptimization.readNetwork", &fn, &directed))
 		return NULL;
 
 	//cout << "File: " << fn << endl;
@@ -1486,7 +1486,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 			}
 		}
 
-		graph = new TNetwork(nVertices, 0, false);
+		graph = new TNetwork(nVertices, 0, directed == 1);
 		wgraph = graph;
 
     domain->addVariable(new TIntVariable("index"));
@@ -1674,7 +1674,7 @@ PyObject *NetworkOptimization_readNetwork(PyObject *, PyObject *args) PYARGS(MET
 							continue;
 
 						*graph->getOrCreateEdge(i1 - 1, i2 - 1) = 1;
-						*graph->getOrCreateEdge(i2 - 1, i1 - 1) = 1;
+						/**graph->getOrCreateEdge(i2 - 1, i1 - 1) = 1;*/
 					}
 				}
 			}
