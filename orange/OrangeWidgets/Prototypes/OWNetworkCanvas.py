@@ -35,7 +35,7 @@ class OWNetworkCanvas(OWGraph):
         self.selectedVertex = None
         self.vertexDegree = []     # seznam vozlisc oblike (vozlisce, stevilo povezav), sortiran po stevilu povezav
         self.edgesKey = -1
-        self.vertexSize = 6
+        #self.vertexSize = 6
         self.nVertices = 0
         self.enableXaxis(0)
         self.enableYLaxis(0)
@@ -54,6 +54,9 @@ class OWNetworkCanvas(OWGraph):
         self.stopOptimizing = 0
         self.insideview = 0
         self.insideviewNeighbours = 2
+        
+    def getVertexSize(self, index):
+        return 6
         
     def setHiddenNodes(self, nodes):
         self.hiddenNodes = nodes
@@ -96,7 +99,7 @@ class OWNetworkCanvas(OWGraph):
                     (key, neighbours) = self.vertices[int(v)]
                     color = self.curve(key).symbol().pen().color().name()
                     self.selectionStyles[int(v)] = color
-                    newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(10, 10))
+                    newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[v])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.vertexSize + 4))
                     self.setCurveSymbol(key, newSymbol)
                     self.selection.append(v);
                     change = True
@@ -108,7 +111,7 @@ class OWNetworkCanvas(OWGraph):
                 (key, neighbours) = self.vertices[ndx]
                 color = self.curve(key).symbol().pen().color().name()
                 self.selectionStyles[int(ndx)] = color
-                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
+                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(ndx) + 4, self.getVertexSize(ndx) + 4))
                 self.setCurveSymbol(key, newSymbol)
                 self.selection.append(ndx);
                 #self.visualizer.filter[ndx] = True
@@ -128,7 +131,7 @@ class OWNetworkCanvas(OWGraph):
     def removeVertex(self, v):
         if v in self.selection:
             (key, neighbours) = self.vertices[v]
-            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(self.selectionStyles[v])), QSize(6, 6))
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(self.selectionStyles[v])), QSize(self.getVertexSize(v), self.getVertexSize(v)))
             self.setCurveSymbol(key, newSymbol)
             selection.remove(v)
             del self.selectionStyles[v]
@@ -143,7 +146,7 @@ class OWNetworkCanvas(OWGraph):
                 (key, neighbours) = self.vertices[v]
                 color = self.selectionStyles[v]
                 #print color
-                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(color)), QSize(6, 6))
+                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(color)), QSize(self.getVertexSize(v), self.getVertexSize(v)))
                 self.setCurveSymbol(key, newSymbol)
             
             self.selection = []
@@ -181,7 +184,7 @@ class OWNetworkCanvas(OWGraph):
         for ndx in sel:
             (key, neighbours) = self.vertices[ndx]
             self.selectionStyles[ndx] = self.curve(key).symbol().brush().color().name()
-            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(10, 10))
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(self.selectionStyles[ndx])), QPen(Qt.yellow, 3), QSize(self.getVertexSize(ndx) + 4,  self.getVertexSize(ndx) + 4))
             self.setCurveSymbol(key, newSymbol)
             self.selection.append(ndx);
         
@@ -289,7 +292,7 @@ class OWNetworkCanvas(OWGraph):
     def onMouseMoved(self, event):
         if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
             if len(self.selection) > 0:
-                border = self.vertexSize / 2
+                border = 6 / 2
                 maxx = max(take(self.visualizer.coors[:,0], self.selection))
                 maxy = max(take(self.visualizer.coors[:,1], self.selection))
                 minx = min(take(self.visualizer.coors[:,0], self.selection))
@@ -383,17 +386,17 @@ class OWNetworkCanvas(OWGraph):
             return
 
         redColor = self.markWithRed and Qt.red
-        markedSize = self.markWithRed and 9 or 6
-        # mark
+        # mark 
         for m in marked - self.markedNodes:
             (key, neighbours) = self.vertices[m]
+            markedSize = self.markWithRed and self.getVertexSize(m) + 3 or self.getVertexSize(m)
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
             self.setCurveSymbol(key, newSymbol)
 #            self.curve(key).setBrush(QBrush(redColor or self.nodeColor[m]))
         # unmark
         for m in self.markedNodes - marked - set(self.selection):
             (key, neighbours) = self.vertices[m]
-            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(self.nodeColor[m]), QSize(6, 6))
+            newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(self.nodeColor[m]), QSize(self.getVertexSize(m), self.getVertexSize(m)))
             self.setCurveSymbol(key, newSymbol)
     
         self.markedNodes = marked
@@ -573,14 +576,14 @@ class OWNetworkCanvas(OWGraph):
             
             selectionX.append(x1)
             selectionY.append(y1)
-            key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1], showFilledSymbols = False)
+            key = self.addCurve(str(v), fillColor, edgeColor, self.getVertexSize(v), xData = [x1], yData = [y1], showFilledSymbols = False)
             
             if v in self.selection:
                 if self.insideview and len(self.selection) == 1:
                     self.selectionStyles[v] = str(newcolor.name())
                     
                 selColor = QColor(self.selectionStyles[v])
-                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(selColor), QPen(Qt.yellow, 3), QSize(10, 10))
+                newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(selColor), QPen(Qt.yellow, 3), QSize(self.getVertexSize(v) + 4, self.getVertexSize(v) + 4))
                 self.setCurveSymbol(key, newSymbol)
             
             (tmp, neighbours) = self.vertices[v]
@@ -591,10 +594,10 @@ class OWNetworkCanvas(OWGraph):
         
         # mark nodes
         redColor = self.markWithRed and Qt.red
-        markedSize = self.markWithRed and 9 or 6
-
+        
         for m in self.markedNodes:
             (key, neighbours) = self.vertices[m]
+            markedSize = self.markWithRed and self.getVertexSize(v) + 3 or self.getVertexSize(v)
             newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
             self.setCurveSymbol(key, newSymbol)        
         

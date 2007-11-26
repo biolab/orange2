@@ -1,9 +1,9 @@
 """
-<name>Network</name>
-<description>Network Widget visualizes graphs.</description>
+<name>Itemset visualizer</name>
+<description>Itemset visualizer Widget visualizes itemsets.</description>
 <icon>icons/Network.png</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
-<priority>2040</priority>
+<priority>2050</priority>
 """
 import OWGUI
 
@@ -66,6 +66,15 @@ class OWIntemsetCanvas(OWNetworkCanvas):
     def __init__(self, master, parent = None, name = "None"):
         OWNetworkCanvas.__init__(self, master, parent, name)
         
+    def countWords(self, index):
+        label = str(self.visualizer.graph.items[index]['label'])
+        #print len(label.split(' '))
+        #print label
+        return len(label.split(' '))
+    
+    def getVertexSize(self, index):
+        return self.countWords(index) + 5
+    
     def updateData(self):
         #print "OWGraphDrawerCanvas/updateData..."
         self.removeDrawingCurves(removeLegendItems = 0)
@@ -167,7 +176,8 @@ class OWIntemsetCanvas(OWNetworkCanvas):
             
             selectionX.append(x1)
             selectionY.append(y1)
-            key = self.addCurve(str(v), fillColor, edgeColor, 6, xData = [x1], yData = [y1], showFilledSymbols = False)
+            
+            key = self.addCurve(str(v), fillColor, edgeColor, self.getVertexSize(v), xData = [x1], yData = [y1], showFilledSymbols = False)
             
             if v in self.selection:
                 if self.insideview and len(self.selection) == 1:
@@ -218,9 +228,7 @@ class OWIntemsetCanvas(OWNetworkCanvas):
 
 class OWItemsetViz(OWWidget):
     settingsList=["autoSendSelection", "spinExplicit", "spinPercentage"]
-    contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"),
-                                                     ContextField("attributes", selected="tooltipAttributes"),
-                                                     "color"])}
+    contextHandlers = {"": DomainContextHandler("", [])}
 
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Itemset visualizer')
