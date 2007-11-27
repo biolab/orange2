@@ -349,9 +349,14 @@ class OWCorrAnalysis(OWWidget):
                 caList.append(cur)
             if not self.CAloaded:
                 self.CA = orngCA.CA(caList)
+            hasNameAttribute = 'name' in [i.name for i in data.domain.attributes]
             try:
-                self.tipsR = [ex['name'].native() for ex in data]
-                self.rowCategories = [(ex['name'].native(), ex['category'].native()) for ex in data]
+                if not hasNameAttribute:
+                    self.tipsR = [ex['text'].value[:20] for ex in data]
+                    self.rowCategories = [(ex['text'].value[:20], ex['category'].native()) for ex in data]
+                else:
+                    self.tipsR = [ex['name'].native() for ex in data]
+                    self.rowCategories = [(ex['name'].native(), ex['category'].native()) for ex in data]
                 self.catColors = {}
                 col = 0
                 colors = [0, 2, 3, 5, 6, 12]
@@ -360,8 +365,12 @@ class OWCorrAnalysis(OWWidget):
                         self.catColors[ex['category'].native()] = colors[col]
                         col = (col + 1) % len(colors)
             except:
-                self.tipsR = [ex.name for ex in data]
-                self.rowCategories = [(ex.name, ex[-1].native()) for ex in data]
+                if not hasNameAttribute:
+                    self.tipsR = [ex['text'].value[:20] for ex in data]
+                    self.rowCategories = [(ex['text'].value[:20], ex[-1].native()) for ex in data]
+                else:
+                    self.tipsR = [ex.name for ex in data]
+                    self.rowCategories = [(ex.name, ex[-1].native()) for ex in data]
                 self.catColors = {}
                 col = 0
                 colors = [0, 2, 3, 5, 6, 12]
@@ -451,6 +460,7 @@ class OWCorrAnalysis(OWWidget):
         numCor = int(self.percRow)
         indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
+        print self.tipsR
         tipsR = [self.tipsR[i] + 'R' for i in indices]
         #if not self.graph.showRowLabels: tipsR = ['' for i in indices]
         labelDict = dict(zip(tipsR, cor))
