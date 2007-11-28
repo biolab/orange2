@@ -214,6 +214,10 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.canvas.update()
         self.treeNav.leech()
 
+    def ctree(self, tree=None):
+        self.send("Examples", None)
+        OWTreeViewer2D.ctree(self, tree)
+
     def walkcreate(self, tree, parent=None, level=0, attrVal=""):
         node=RegressionNode(attrVal, tree, parent or self.canvas, self.canvas)
         if tree.branches:

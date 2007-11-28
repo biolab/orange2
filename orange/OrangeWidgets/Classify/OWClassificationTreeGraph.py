@@ -292,6 +292,7 @@ class OWClassificationTreeGraph(OWTreeViewer2D):
         self.canvas.update()
 
     def ctree(self, tree=None):
+        self.send("Examples", None)
         self.closeContext()
         self.targetCombo.clear()
         if tree:
