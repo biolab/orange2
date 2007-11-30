@@ -189,34 +189,42 @@ class OWMDS(OWWidget):
             selectedInput=[]
         self.selectedInput=map(lambda d: selectedInput and (d in selectedInput) or not selectedInput, data)
         contI=discI=attrI=1
+        def check(ex, a):
+            try:
+                ex[a]
+            except:
+                return False
+            return not ex[a].isSpecial()
+        
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
                 c=OWGraphTools.ColorPaletteHSV(len(attr.values))
                 for i in range(len(data)):
-                    self.colors[i][attrI]= data[i][attr].isSpecial()  and Qt.black or c[int(data[i][attr])]
+                    self.colors[i][attrI]= check(data[i],attr)  and c[int(data[i][attr])] or Qt.black
 ##                    self.shapes[i][discI]= data[i][attr].isSpecial() and self.graph.shapeList[0] or self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
-                    self.shapes[i][discI]= data[i][attr].isSpecial() and self.graph.shapeList[0] or self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
-                    self.names[i][attrI]=" "+str(data[i][attr])
+                    self.shapes[i][discI]= check(data[i],attr) and self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)] or self.graph.shapeList[0]
+                    self.names[i][attrI]= check(data[i],attr) and " "+str(data[i][attr]) or ""
                     #self.sizes[i][contI]=5
                 attrI+=1
                 discI+=1
             elif attr.varType==orange.VarTypes.Continuous:
-                c=OWGraphTools.ColorPaletteHSV(-1)
-                val=[e[j] for e in data if not e[j].isSpecial()]
-                minVal=min(val)
-                maxVal=max(val)
+                c=OWGraphTools.ColorPaletteHSV(-1)                
+                #val=[e[attr] for e in data if not e[attr].isSpecial()]
+                val=[e[attr] for e in data if check(e, attr)]
+                minVal=min(val or [0])
+                maxVal=max(val or [1])
                 for i in range(len(data)):
-                    self.colors[i][attrI]=data[i][attr].isSpecial() and Qt.black or c.getColor((data[i][attr]-minVal)/max(maxVal-minVal, 1e-6))
+                    self.colors[i][attrI]=check(data[i],attr) and c.getColor((data[i][attr]-minVal)/max(maxVal-minVal, 1e-6)) or Qt.black 
                     #self.shapes[i][discI]=self.graph.shapeList[0]
-                    self.names[i][attrI]=" "+str(data[i][attr])
-                    self.sizes[i][contI]=data[i][attr].isSpecial() and 5 or int(self.data[i][attr]/maxVal*9)+1
+                    self.names[i][attrI]=check(data[i],attr) and " "+str(data[i][attr]) or ""
+                    self.sizes[i][contI]=check(data[i],attr) and int(self.data[i][attr]/maxVal*9)+1 or 5
                 contI+=1
                 attrI+=1
             else:
                 for i in range(len(data)):
                     self.colors[i][attrI]=Qt.black
                     #self.shapes[i][j+1]=self.graph.shapeList[0]
-                    self.names[i][attrI]=" "+str(data[i][attr])
+                    self.names[i][attrI]= check(data[i],attr) and " "+str(data[i][attr]) or ""
                     #self.sizes[i][j+1]=5
                 attrI+=1
 
@@ -501,7 +509,7 @@ class MDSGraph(OWGraph):
         self.ShowStress=False
         self.NumStressLines=10
         self.ShowName=True
-        self.curveKeys=[]
+        #self.curveKeys=[]
         self.pointKeys=[]
         self.points=[]
         self.lines=[]
