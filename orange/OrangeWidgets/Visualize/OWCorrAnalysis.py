@@ -350,34 +350,46 @@ class OWCorrAnalysis(OWWidget):
             if not self.CAloaded:
                 self.CA = orngCA.CA(caList)
             hasNameAttribute = 'name' in [i.name for i in data.domain.attributes]
-            try:
+            hasCategoryAttribute = 'category' in [i.name for i in data.domain.attributes]
+            if not hasCategoryAttribute:
                 if not hasNameAttribute:
-                    self.tipsR = [ex['text'].value[:20] for ex in data]
-                    self.rowCategories = [(ex['text'].value[:20], ex['category'].native()) for ex in data]
+                    self.tipsR = [ex['text'].value[:35] for ex in data]
+                    self.rowCategories = [(ex['text'].value[:35], "Row points") for ex in data] 
+                    self.catColors = {"Row points": 0}
                 else:
                     self.tipsR = [ex['name'].native() for ex in data]
-                    self.rowCategories = [(ex['name'].native(), ex['category'].native()) for ex in data]
-                self.catColors = {}
-                col = 0
-                colors = [0, 2, 3, 5, 6, 12]
-                for ex in data:
-                    if ex['category'].native() not in self.catColors.keys():
-                        self.catColors[ex['category'].native()] = colors[col]
-                        col = (col + 1) % len(colors)
+                    self.rowCategories = [(ex['name'].native(), "Row points") for ex in data]
+                    self.catColors = {"Row points": 0}
+            try:
+                if hasCategoryAttribute:
+                    if not hasNameAttribute:
+                        self.tipsR = [ex['text'].value[:35] for ex in data]
+                        self.rowCategories = [(ex['text'].value[:35], ex['category'].native()) for ex in data]
+                    else:
+                        self.tipsR = [ex['name'].native() for ex in data]
+                        self.rowCategories = [(ex['name'].native(), ex['category'].native()) for ex in data]
+                    self.catColors = {}
+                    col = 0
+                    colors = [0, 2, 3, 5, 6, 12]
+                    for ex in data:
+                        if ex['category'].native() not in self.catColors.keys():
+                            self.catColors[ex['category'].native()] = colors[col]
+                            col = (col + 1) % len(colors)
             except:
-                if not hasNameAttribute:
-                    self.tipsR = [ex['text'].value[:20] for ex in data]
-                    self.rowCategories = [(ex['text'].value[:20], ex[-1].native()) for ex in data]
-                else:
-                    self.tipsR = [ex.name for ex in data]
-                    self.rowCategories = [(ex.name, ex[-1].native()) for ex in data]
-                self.catColors = {}
-                col = 0
-                colors = [0, 2, 3, 5, 6, 12]
-                for ex in data:
-                    if ex['category'].native() not in self.catColors.keys():
-                        self.catColors[ex['category'].native()] = colors[col]
-                        col = (col + 1) % len(colors)
+                if hasCategoryAttribute:
+                    if not hasNameAttribute:
+                        self.tipsR = [ex['text'].value[:35] for ex in data]
+                        self.rowCategories = [(ex['text'].value[:35], ex[-1].native()) for ex in data]
+                    else:
+                        self.tipsR = [ex.name for ex in data]
+                        self.rowCategories = [(ex.name, ex[-1].native()) for ex in data]
+                    self.catColors = {}
+                    col = 0
+                    colors = [0, 2, 3, 5, 6, 12]
+                    for ex in data:
+                        if ex['category'].native() not in self.catColors.keys():
+                            self.catColors[ex['category'].native()] = colors[col]
+                            col = (col + 1) % len(colors)
             self.tipsC = [a.name for a in data.domain.getmetas().values()]
         else:            
             ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
@@ -437,6 +449,7 @@ class OWCorrAnalysis(OWWidget):
         self.zoomSelectToolbar.buttonZoom.setOn(1)
         self.updateGraph()
         self.apply = False
+
     def updateGraph(self):
         self.graph.zoomStack = []
         if not self.data:
@@ -460,7 +473,6 @@ class OWCorrAnalysis(OWWidget):
         numCor = int(self.percRow)
         indices = self.CA.PointsWithMostInertia(rowColumn = 0, axis = (int(self.attrX)-1, int(self.attrY)-1))[:numCor]
         cor = [cor[i] for i in indices]
-        print self.tipsR
         tipsR = [self.tipsR[i] + 'R' for i in indices]
         #if not self.graph.showRowLabels: tipsR = ['' for i in indices]
         labelDict = dict(zip(tipsR, cor))
