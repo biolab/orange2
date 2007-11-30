@@ -323,15 +323,45 @@ PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc) con
 }
 
 
-long TDomain::getMetaNum(const string &wname, bool throwExc) const
+const TMetaDescriptor *TDomain::getMetaDescriptor(const string &wname, bool throwExc) const
 { const_ITERATE(TMetaVector, mi, metas)
     if ((*mi).variable->name==wname)
-      return (*mi).id;
+      return &*mi;
 
   if (throwExc)
     raiseError("meta attribute '%s' not found", wname.c_str());
+  
+  return NULL;
+}
 
-  return ILLEGAL_INT;
+const TMetaDescriptor *TDomain::getMetaDescriptor(PVariable var, bool throwExc) const
+{ const_ITERATE(TMetaVector, mi, metas)
+    if ((*mi).variable==var)
+      return &*mi;
+
+  if (throwExc)
+    raiseError("meta attribute '%s' not found", var->name.c_str());
+  
+  return NULL;
+}
+
+
+const TMetaDescriptor *TDomain::getMetaDescriptor(const int &idx, bool throwExc) const
+{ const_ITERATE(TMetaVector, mi, metas)
+    if ((*mi).id==idx)
+      return &*mi;
+
+  if (throwExc)
+    raiseError("meta attribute with index %i not found", idx);
+  
+  return NULL;
+}
+
+
+
+long TDomain::getMetaNum(const string &wname, bool throwExc) const
+{ const TMetaDescriptor *mi = getMetaDescriptor(wname, throwExc);
+  return mi ? mi->id : ILLEGAL_INT;
 }
 
 

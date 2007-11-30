@@ -40,11 +40,11 @@ long getMetaID(PVariable var)
 
 TMetaDescriptor::TMetaDescriptor()
 : id(ILLEGAL_INT),
-  optional(false)
+  optional(0)
 {}
 
 
-TMetaDescriptor::TMetaDescriptor(const long &ai, const PVariable &avar, const bool opt)
+TMetaDescriptor::TMetaDescriptor(const long &ai, const PVariable &avar, const int opt)
 : id(ai),
   variable(avar),
   optional(opt)

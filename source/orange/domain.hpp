@@ -134,6 +134,10 @@ public:
   PVariable getMetaVar(const string &wname, bool throwExc=true);
   PVariable getMetaVar(const string &wname, bool throwExc=true) const;
 
+  const TMetaDescriptor *getMetaDescriptor(const int &idx, bool throwExc=true) const;
+  const TMetaDescriptor *getMetaDescriptor(const string &wname, bool throwExc=true) const;
+  const TMetaDescriptor *getMetaDescriptor(const PVariable var, bool throwExc=true) const;
+
   PVariable operator[](const string &name);
   PVariable operator[](const string &name) const;
 

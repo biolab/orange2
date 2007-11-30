@@ -1042,7 +1042,7 @@ PyObject *Domain_getmetasLow(const TDomain &domain)
 }
 
 
-PyObject *Domain_getmetasLow(const TDomain &domain, const bool optional)
+PyObject *Domain_getmetasLow(const TDomain &domain, const int optional)
 {
   PyObject *dict = PyDict_New();
   const_ITERATE(TMetaVector, mi, domain.metas)
@@ -1054,9 +1054,9 @@ PyObject *Domain_getmetasLow(const TDomain &domain, const bool optional)
 
 PyObject *Domain_getmetas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([optional]) -> {int: Variable}")
 { PyTRY
-    if (PyTuple_Size(args)) {
-      bool opt;
-      if (!PyArg_ParseTuple(args, "O&:Domain.getmetas", &getBool, &opt))
+    if (PyTuple_Size(args) && (PyTuple_GET_ITEM(args, 0) != Py_None)) {
+      int opt;
+      if (!PyArg_ParseTuple(args, "i:Domain.getmetas", &opt))
         return NULL;
 
       return Domain_getmetasLow(SELF_AS(TDomain), opt);
@@ -1073,8 +1073,8 @@ PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "
 
     int id;
     PVariable var;
-    bool opt = false;
-    if (!PyArg_ParseTuple(args, "iO&|O&", &id, cc_Variable, &var, &getBool, &opt))
+    int opt = 0;
+    if (!PyArg_ParseTuple(args, "iO&|i", &id, cc_Variable, &var, &opt))
       return PYNULL;
 
     domain->metas.push_back(TMetaDescriptor(id, var, opt));
@@ -1103,7 +1103,7 @@ bool convertMetasFromPython(PyObject *dict, TMetaVector &metas)
 }
 
 
-PyObject *Domain_addmetasLow(TDomain &domain, PyObject *dict, const bool opt = false)
+PyObject *Domain_addmetasLow(TDomain &domain, PyObject *dict, const int opt = 0)
 {
   TMetaVector metas;
   if (!convertMetasFromPython(dict, metas))
@@ -1123,9 +1123,9 @@ PyObject *Domain_addmetasLow(TDomain &domain, PyObject *dict, const bool opt = f
 PyObject *Domain_addmetas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "({id: descriptor, id: descriptor, ...}[, optional]) -> None")
 { PyTRY
     PyObject *pymetadict;
-    bool opt = false;
+    int opt = 0;
     if (!PyArg_ParseTuple(args, "O|O&", &pymetadict, &getBool, &opt))
-      PYERROR(PyExc_AttributeError, "Domain.addmetas expects a dictionary with id's and descriptors, optionally follow by a boolean flag 'optional'", PYNULL);
+      PYERROR(PyExc_AttributeError, "Domain.addmetas expects a dictionary with id's and descriptors, optionally follow by an int flag 'optional'", PYNULL);
 
     return Domain_addmetasLow(SELF_AS(TDomain), pymetadict, opt);
   PyCATCH

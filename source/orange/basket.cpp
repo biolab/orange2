@@ -82,7 +82,7 @@ void TBasketFeeder::addItem(TExample &example, const string &atom2, const int &l
       if (md) {
         id = md->id;
 
-        TMetaDescriptor nmd(id, md->variable, true); // optional meta!
+        TMetaDescriptor nmd(id, md->variable, 1); // optional meta!
 
         // store to global cache, if allowed and if sth with that name is not already there
         if (!dontStore) {

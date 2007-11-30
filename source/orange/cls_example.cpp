@@ -382,7 +382,8 @@ PyObject *Example_getmetas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS,
 {
   PyTRY
     PyTypeObject *keytype = &PyInt_Type;
-    if (!PyArg_ParseTuple(args, "|O:Example.getmetas", &keytype))
+    int optional = ILLEGAL_INT;
+    if (!PyArg_ParseTuple(args, "|iO:Example.getmetas", &optional, &keytype))
       return NULL;
 
     if ((keytype != &PyInt_Type) && (keytype != &PyString_Type) && (keytype != (PyTypeObject *)&PyOrVariable_Type))
@@ -395,9 +396,14 @@ PyObject *Example_getmetas(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS,
 
     try {
       const_ITERATE(TMetaValues, mi, ex->meta) {
+        const TMetaDescriptor *md = dom.getMetaDescriptor(mi->first, false);
+        
+        if ((optional != ILLEGAL_INT) && (!md || (md->optional != optional)))
+          continue;
+        
         PyObject *key;
-        PVariable variable = dom.getMetaVar(mi->first, false);
-
+        PVariable variable = md ? md->variable : PVariable();
+        
         if (keytype == &PyInt_Type)
           key = PyInt_FromLong(mi->first);
         else {
