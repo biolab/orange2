@@ -148,6 +148,22 @@ PyObject *ItemsetNodeProxy_get_children(PyObject *self)
   PyCATCH
 }
 
+PyObject *ItemsetNodeProxy_get_support(PyObject *self)
+{
+  PyTRY
+    return PyFloat_FromDouble(SELF_AS(TItemsetNodeProxy).node->weiSupp);
+  PyCATCH
+}
+
+PyObject *ItemsetNodeProxy_get_itemId(PyObject *self)
+{
+  PyTRY
+    return PyInt_FromLong(SELF_AS(TItemsetNodeProxy).node->value);
+  PyCATCH
+}
+
+
+
 bool convertFromPython(PyObject *, PAssociationRule &);
 
 PyObject *AssociationRule_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(left, right, support, confidence)")
