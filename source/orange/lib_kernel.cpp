@@ -1124,7 +1124,7 @@ PyObject *Domain_addmetas(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, 
 { PyTRY
     PyObject *pymetadict;
     int opt = 0;
-    if (!PyArg_ParseTuple(args, "O|O&", &pymetadict, &getBool, &opt))
+    if (!PyArg_ParseTuple(args, "O|i", &pymetadict, &opt))
       PYERROR(PyExc_AttributeError, "Domain.addmetas expects a dictionary with id's and descriptors, optionally follow by an int flag 'optional'", PYNULL);
 
     return Domain_addmetasLow(SELF_AS(TDomain), pymetadict, opt);
