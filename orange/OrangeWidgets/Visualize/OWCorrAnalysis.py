@@ -14,6 +14,7 @@ import OWGUI, OWToolbars, OWDlgs
 import orngCA
 from numpy import *
 from OWToolbars import ZoomSelectToolbar
+import orngText
 
 textCorpusModul = 1
 
@@ -29,9 +30,9 @@ def checkFromText(data):
 
     if not isinstance(data, orange.ExampleTable):
         return False        
-    if len(data.domain.attributes) < 10 and len(data.domain.getmetas()) > 15:
+    if len(data.domain.attributes) < 10 and len(data.domain.getmetas(orngText.TEXTMETAID)) > 15:
         return True
-    elif len(data.domain.attributes) * 2 < len(data.domain.getmetas()):
+    elif len(data.domain.attributes) * 2 < len(data.domain.getmetas(orngText.TEXTMETAID)):
         return True
     return False
 
@@ -47,7 +48,7 @@ class OWCorrAnalysis(OWWidget):
         self.callbackDeposit = []
 
         self.inputs = [("Data", ExampleTable, self.dataset)]
-        self.outputs = []
+        self.outputs = [("Selected data", ExampleTable)]
         self.recentFiles=[]
         
         self.data = None
@@ -251,7 +252,7 @@ class OWCorrAnalysis(OWWidget):
         for fn in self.chosenFeature:
             f.write(self.features[fn]+'\n')
         f.close()
-        
+
 
     def reconstruct(self):
         if self.textData:
@@ -336,7 +337,7 @@ class OWCorrAnalysis(OWWidget):
               data = (self.attrRow == 'document' and [self.data] or [CategoryDocument(self.data).dataCD])[0]
             else:
               data = self.data
-            metas = data.domain.getmetas()
+            metas = data.domain.getmetas(orngText.TEXTMETAID)
             lenMetas = len(metas)
             caList = []
             for ex in data:
@@ -390,7 +391,7 @@ class OWCorrAnalysis(OWWidget):
                         if ex['category'].native() not in self.catColors.keys():
                             self.catColors[ex['category'].native()] = colors[col]
                             col = (col + 1) % len(colors)
-            self.tipsC = [a.name for a in data.domain.getmetas().values()]
+            self.tipsC = [a.name for a in data.domain.getmetas(orngText.TEXTMETAID).values()]
         else:            
             ca = orange.ContingencyAttrAttr(self.attrRow, self.attrCol, self.data)
             caList = [[col for col in row] for row in ca]
@@ -510,8 +511,26 @@ class OWCorrAnalysis(OWWidget):
     def sendSelections(self, e):
         self.docs = self.graph.docs
         self.features = self.graph.features
-        
-        
+        hasNameAttribute = 'name' in [i.name for i in self.data.domain.attributes]
+        examples = []
+        if not hasNameAttribute:
+            for ex in self.data:
+                if ex['text'].value[:35] in self.docs:
+                    examples.append(ex)
+        else:
+            for ex in self.data:
+                if ex['name'].native() in self.docs:
+                    examples.append(ex)
+        newMetas = {}
+        for ex in examples:
+            for k, v in ex.getmetas(orngText.TEXTMETAID).items():
+                if k not in newMetas.keys():
+                    newMetas[k] = self.data.domain[k]
+        newDomain = orange.Domain(self.data.domain.attributes, 0)
+        newDomain.addmetas(newMetas, orngText.TEXTMETAID)
+        newdata = orange.ExampleTable(newDomain, examples)
+        self.send("Selected data", newdata)
+
     def replotCurves(self):
         for key in self.graph.curveKeys():
             symbol = self.graph.curveSymbol(key)
@@ -620,7 +639,7 @@ if __name__=="__main__":
     #t1 = orngText.extractWordNGram(t1, stopwords = stop, measure = 'MI', threshold = 10, n=3)
     #t1 = orngText.extractNamedEntities(t, stopwords = stop)
     #t1 = orngText.bagOfWords(t1, stopwords = stop)
-    print len(t1.domain.getmetas())
+    print len(t1.domain.getmetas(orngText.TEXTMETAID))
     print 'Done with extracting'
     #t2 = orngText.FSS(t1, 'TF', 'MIN', 0.98)
     #print len(t2.domain.getmetas())
