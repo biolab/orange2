@@ -457,9 +457,17 @@ class OWBaseWidget(QDialog):
         #QWidget.connect(control, signal, method)        # ordinary connection useful for dialogs and windows that don't send signals to other widgets
 
 
-    def disconnect(self, control, signal, method):
+    def disconnect(self, control, signal, method=None):
         wrapper = self.connections[(control, signal)]
         QDialog.disconnect(control, signal, wrapper)
+
+
+    def getConnectionMethod(self, control, signal):
+        if (control, signal) in self.connections:
+            wrapper = self.connections[(control, signal)]
+            return wrapper.method
+        else:
+            return None
 
 
     def signalIsOnlySingleConnection(self, signalName):
