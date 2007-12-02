@@ -9,7 +9,7 @@
 from OWWidget import *
 from qttable import *
 from qt import *
-from orngMesh import *
+from orngMeSH import *
 import OWGUI
 
 class ListViewToolTip(QToolTip):
@@ -136,7 +136,6 @@ class OWMeshBrowser(OWWidget):
                    
         self.connect(self.sigTermsTable, SIGNAL("selectionChanged()"), self.tableSelectionChanged)  
         self.optionsBox.setDisabled(1)
-
 
     def download(self):
         self.mesh.downloadOntology()
@@ -267,39 +266,44 @@ class OWMeshBrowser(OWWidget):
             self.maxp.setDisabled(1)
             self.minf.setDisabled(0)
             for i in range(2,len(self.columns)):
-                self.meshLV.hideColumn(i)
-                self.sigTermsTable.hideColumn(i)
+                #self.meshLV.hideColumn(i)
+                self.meshLV.setColumnWidth(i,0)                
+                #self.sigTermsTable.hideColumn(i)
+                self.sigTermsTable.setColumnWidth(i,0)
+            
             self.header.setLabel(1, "frequency")
             self.meshLV.setColumnText(1,"frequency")
+            self.ratio.setText("")
         else:
             self.maxp.setDisabled(0)
             self.minf.setDisabled(1)
             for i in range(2,len(self.columns)):
                 self.meshLV.setColumnWidth(i,self.col_size[i])
-                self.sigTermsTable.showColumn(i)
+                self.sigTermsTable.setColumnWidth(i, self.col_size[i])
             self.header.setLabel(1, self.columns[1])
             self.meshLV.setColumnText(1,self.columns[1])
-                        
+            self.ratio.setText("ratio = %.4g" % self.mesh.ratio)
 
     def getReferenceData(self,data):
         if data:
-            if not data.domain.hasmeta("mesh"):
-                QMessageBox.warning( None, "Wrong dataset?", "Reference dataset doesn't have meta attribute named 'mesh'." , QMessageBox.Ok)
-                return
+            #if not data.domain.hasmeta("mesh"):
+            #    QMessageBox.warning( None, "Wrong dataset?", "Reference dataset doesn't have meta attribute named 'mesh'." , QMessageBox.Ok)
+            #    return
             self.reference = data
             self.infoa.setText('%d reference instances' % len(data))
         else:
             self.reference = None
             self.infoa.setText('No reference data.')
+
         if self.reference or self.cluster:        
             self.__switchGUI__() 
             self.__updateData__()
 
     def getClusterData(self,data):
         if data:
-            if not data.domain.hasmeta("mesh"):
-                QMessageBox.warning( None, "Wrong dataset?", "Cluster dataset doesn't have meta attribute named 'mesh'." , QMessageBox.Ok)
-                return
+            #if not data.domain.hasmeta("mesh"):
+            #    QMessageBox.warning( None, "Wrong dataset?", "Cluster dataset doesn't have meta attribute named 'mesh'." , QMessageBox.Ok)
+            #    return
             self.cluster = data
             self.infob.setText('%d cluster instances' % len(data))
         else:
