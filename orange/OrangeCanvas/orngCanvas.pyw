@@ -1,4 +1,4 @@
-# Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
+    # Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
 # Description:
 #    main file, that creates the MDI environment
 
@@ -65,6 +65,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.rebuildSignals()    # coloring of signals - unused!
         self.useLargeIcons = False
         self.snapToGrid = True
+        self.menuSaveSettingsID = -1
+        self.menuSaveSettings = 1
 
         self.loadSettings()
 
@@ -142,10 +144,30 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.show()
 
-        # create new schema
-        win = self.menuItemNewSchema()
-        if len(sys.argv) > 1 and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
-            win.loadDocument(sys.argv[-1])
+
+
+        # did Orange crash the last time we used it? If yes, you will find a TempSchemaX.ows file
+        tempSchemaNames = []
+        loadedTempSchemas = False
+        for fname in os.listdir(self.outputDir):
+            if "TempSchema " in fname:
+                tempSchemaNames.append(os.path.join(self.outputDir, fname))
+        if tempSchemaNames != [] and QMessageBox.information(self,'Orange Canvas',"Your previous Orange Canvas session was not closed successfully.\nYou can choose to reload your unsaved work or start a new session.\n\nIf you choose 'Reload', the links will be disabled to prevent reoccurence of the crash.\nYou can enable them by clicking Options/Enable all links.", 'Reload','New session', QString.null, 0, 1) == 0:
+            loadedTempSchemas = True
+            for fname in tempSchemaNames:
+                win = self.menuItemNewSchema()
+                win.loadDocument(fname, freeze = 1, isTempSchema = 1)
+        else:
+            # first remove old temp schemas if they exist
+            for fname in tempSchemaNames:
+                os.remove(fname)
+
+            # if not temp schemas were loaded create a new schema
+            # in case we also received a schema's name as the argument, we load it
+            win = self.menuItemNewSchema()
+            if len(sys.argv) > 1 and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
+                win.loadDocument(sys.argv[-1])
+
         self.workspace.cascade()
 
         # show message box if no numpy
@@ -219,6 +241,7 @@ class OrangeCanvasDlg(QMainWindow):
         #self.menuFile.insertItem( "New from template",  self.menuItemNewFromTemplate)
         #self.menuFile.insertItem( "New from wizard",  self.menuItemNewWizard)
         self.menuFile.insertItem(QIconSet(QPixmap(self.file_open)), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
+        self.menuFile.insertItem(QIconSet(QPixmap(self.file_open)), "&Open and Freeze...", self.menuItemOpenFreeze)
         if os.path.exists(os.path.join(self.outputDir, "_lastSchema.ows")):
             self.menuFile.insertItem("&Reload Last Schema", self.menuItemOpenLastSchema, Qt.CTRL + Qt.Key_R)
         self.menuFile.insertItem( "Close", self.menuItemClose )
@@ -257,6 +280,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.insertSeparator()
         #self.menuOptions.insertItem( "Channel preferences",  self.menuItemPreferences)
         #self.menuOptions.insertSeparator()
+        self.menuSaveSettingsID = self.menuOptions.insertItem( "Save Widget Settings On Exit", self.menuItemSaveSettings)
+        self.menuOptions.setItemChecked(self.menuSaveSettingsID, 1)
         self.menuOptions.insertItem( "&Rebuild Widget Registry",  self.menuItemRebuildWidgetRegistry)
         self.menuOptions.insertItem( "&Customize Shortcuts",  self.menuItemEditWidgetShortcuts)
         self.menuOptions.insertItem( "&Delete Widget Settings",  self.menuItemDeleteWidgetSettings)
@@ -353,13 +378,16 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemNewWizard(self):
         return
 
-    def menuItemOpen(self):
+    def menuItemOpen(self, freeze = 0):
         name = QFileDialog.getOpenFileName( self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)", self, "", "Open File")
         if name.isEmpty():
             return
         win = self.menuItemNewSchema(0)
-        win.loadDocument(str(name))
+        win.loadDocument(str(name), freeze = freeze)
         self.addToRecentMenu(str(name))
+
+    def menuItemOpenFreeze(self):
+        self.menuItemOpen(freeze = 1)
 
     def menuItemOpenLastSchema(self):
         if os.path.exists(os.path.join(self.outputDir, "_lastSchema.ows")):
@@ -513,6 +541,10 @@ class OrangeCanvasDlg(QMainWindow):
         if isinstance(win, orngDoc.SchemaDoc):
             win.disableAllLines()
 
+    def menuItemSaveSettings(self):
+        self.menuSaveSettings = not self.menuSaveSettings
+        self.menuOptions.setItemChecked(self.menuSaveSettingsID, self.menuSaveSettings)
+
     def menuItemClearWidgets(self):
         win = self.workspace.activeWindow()
         if win != None:
@@ -655,7 +687,7 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
         dlg.dontAskBeforeCloseCB.setChecked(self.settings["dontAskBeforeClose"])
-        dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
+        #dlg.autoSaveSchemasOnCloseCB.setChecked(self.settings["autoSaveSchemasOnClose"])
         dlg.saveWidgetsPositionCB.setChecked(self.settings["saveWidgetsPosition"])
         dlg.useContextsCB.setChecked(self.settings["useContexts"])
 ##        dlg.autoLoadSchemasOnStartCB.setChecked(self.settings["autoLoadSchemasOnStart"])
@@ -689,7 +721,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         dlg.exec_loop()
         if dlg.result() == QDialog.Accepted:
-            h = int(str(dlg.heightEdit.text()));
+            h = int(str(dlg.heightEdit.text()))
             w = int(str(dlg.widthEdit.text()))
 
             # save general settings
@@ -725,7 +757,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["canvasWidth"] =  int(str(dlg.widthEdit.text()))
             self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
             self.settings["dontAskBeforeClose"] = dlg.dontAskBeforeCloseCB.isChecked()
-            self.settings["autoSaveSchemasOnClose"] = dlg.autoSaveSchemasOnCloseCB.isChecked()
+            #self.settings["autoSaveSchemasOnClose"] = dlg.autoSaveSchemasOnCloseCB.isChecked()
             self.settings["saveWidgetsPosition"] = dlg.saveWidgetsPositionCB.isChecked()
             self.settings["useContexts"] = dlg.useContextsCB.isChecked()
 ##            self.settings["autoLoadSchemasOnStart"] = dlg.autoLoadSchemasOnStartCB.isChecked()
@@ -767,7 +799,6 @@ class OrangeCanvasDlg(QMainWindow):
             self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
             self.output.setWriteLogFile(self.settings["writeLogFile"])
             self.output.setVerbosity(self.settings["outputVerbosity"])
-
 
             for toRemove in dlg.removeTabs:
                 orngRegistry.addWidgetCategory(toRemove, "", False)
@@ -811,7 +842,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings.setdefault("snapToGrid", 1)
         self.settings.setdefault("writeLogFile", 1)
         self.settings.setdefault("dontAskBeforeClose", 0)
-        self.settings.setdefault("autoSaveSchemasOnClose", 0)
+        #self.settings.setdefault("autoSaveSchemasOnClose", 0)
         self.settings.setdefault("saveWidgetsPosition", 0)
 ##        self.settings.setdefault("autoLoadSchemasOnStart", 0)
 

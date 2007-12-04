@@ -372,8 +372,9 @@ class CanvasWidget(QCanvasRectangle):
 
         # save settings
         if (self.instance != None):
-            try:    self.instance.saveSettings()
-            except: print "Unable to save settings for %s widget" % (self.instance.title)
+            if self.canvasDlg.menuSaveSettings == 1:        # save settings only if checked in the main menu
+                try:    self.instance.saveSettings()
+                except: print "Unable to save settings for %s widget" % (self.instance.title)
             self.instance.hide()
             del self.instance
         self.removeTooltip()

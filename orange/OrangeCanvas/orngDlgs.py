@@ -355,7 +355,7 @@ class SignalDialog(QDialog):
         inConnected = self.inWidget.getInConnectedSignalNames()
         outConnected = self.outWidget.getOutConnectedSignalNames()
 
-        # input connections that can be simultaneously connected to multiple outputs are not to be considered as already connected 
+        # input connections that can be simultaneously connected to multiple outputs are not to be considered as already connected
         for i in inConnected[::-1]:
             if not self.inWidget.instance.signalIsOnlySingleConnection(i):
                 inConnected.remove(i)
@@ -376,7 +376,7 @@ class SignalDialog(QDialog):
         all = pl1 + pl2 + pl3 + pl4
 
         if not all: return 0
-        
+
         # try to find a link to any inputs that hasn't been previously connected
         self.allSignalsTaken = 1
         for (o,i) in all:
@@ -390,7 +390,7 @@ class SignalDialog(QDialog):
         # there are multiple possible connections if we have in the same priority class more than one possible unconnected link
         for pl in [pl1, pl2, pl3, pl4]:
             #if len(pl) > 1 and sum([i not in inConnected for (o,i) in pl]) > 1: # if we have more than one valid
-            if len(pl) > 1:     # if we have more than one valid 
+            if len(pl) > 1:     # if we have more than one valid
                 self.multiplePossibleConnections = 1
             if len(pl) > 0:     # when we find a first non-empty list we stop searching
                 break
@@ -483,7 +483,7 @@ class CanvasOptionsDlg(QDialog):
         self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", generalBox)
         self.showSignalNamesCB = QCheckBox("Show signal names between widgets", generalBox)
         self.dontAskBeforeCloseCB= QCheckBox("Don't ask to save schema before closing", generalBox)
-        self.autoSaveSchemasOnCloseCB = QCheckBox("Automatically save temporary schemas on close", generalBox)
+        #self.autoSaveSchemasOnCloseCB = QCheckBox("Automatically save temporary schemas on close", generalBox)
         self.saveWidgetsPositionCB = QCheckBox("Save size and position of widgets", generalBox)
         self.useContextsCB = QCheckBox("Use context settings", generalBox)
 ##        hb = QHBox(generalBox)
@@ -519,7 +519,7 @@ class CanvasOptionsDlg(QDialog):
 
         lineBox = QHBox(colorsBox)
         self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
-        lineLabel = QLabel(" Connections", lineBox)
+        lineLabel = QLabel(" Lines", lineBox)
 
 
         # #################################################################
