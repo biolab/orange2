@@ -20,6 +20,7 @@ class SchemaDoc(QMainWindow):
         self.resize(700,500)
         self.showNormal()
         self.setWindowTitle("Schema " + str(self.canvasDlg.iDocIndex))
+        self.autoSaveName = os.path.join(self.canvasDlg.canvasSettingsDir, "TempSchema "+ str(self.canvasDlg.iDocIndex) + ".ows")
         self.canvasDlg.iDocIndex = self.canvasDlg.iDocIndex + 1
         self.ctrlPressed = 0
 
@@ -30,10 +31,9 @@ class SchemaDoc(QMainWindow):
         self.signalManager = SignalManager()    # signal manager to correctly process signals
 
         self.documentpath = canvasDlg.settings["saveSchemaDir"]
-        self.documentname = str(self.windowTitle())
+        self.documentname = ""
         self.applicationpath = canvasDlg.settings["saveApplicationDir"]
         self.applicationname = str(self.windowTitle())
-        self.documentnameValid = False
         self.loadedSettingsDict = {}
         self.canvas = QGraphicsScene(0,0,2000,2000)
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
@@ -42,13 +42,14 @@ class SchemaDoc(QMainWindow):
 
 
     # we are about to close document
-    # ask user if he is sure
+    # ask the user if he is sure
     def closeEvent(self,ce):
         newSettings = self.loadedSettingsDict and self.loadedSettingsDict != dict([(widget.caption, widget.instance.saveSettingsStr()) for widget in self.widgets])
         self.canSave = self.canSave or newSettings
 
         self.synchronizeContexts()
-        if self.canvasDlg.settings["autoSaveSchemasOnClose"] and self.widgets != []:
+        #if self.canvasDlg.settings["autoSaveSchemasOnClose"] and self.widgets != []:
+        if self.widgets != []:
             self.save(os.path.join(self.canvasDlg.canvasSettingsDir, "_lastSchema.ows"))
 
         if not self.canSave or self.canvasDlg.settings["dontAskBeforeClose"]:
@@ -56,22 +57,30 @@ class SchemaDoc(QMainWindow):
                 self.saveDocument()
             self.clear()
             ce.accept()
-            QMainWindow.closeEvent(self, ce)
-            return
-
-        #QMainWindow.closeEvent(self, ce)
-        res = QMessageBox.question(self, 'Orange Canvas','Do you want to save changes made to schema?', QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
-        if res == QMessageBox.Yes:
-            self.saveDocument()
-            ce.accept()
-            self.clear()
-        elif res == QMessageBox.No:
-            self.clear()
-            ce.accept()
         else:
-            ce.ignore()
-            return
+            res = QMessageBox.question(self, 'Orange Canvas','Do you want to save changes made to schema?', QMessageBox.Yes, QMessageBox.No, QMessageBox.Cancel)
+            if res == QMessageBox.Yes:
+                self.saveDocument()
+                ce.accept()
+                self.clear()
+            elif res == QMessageBox.No:
+                self.clear()
+                ce.accept()
+            else:
+                ce.ignore()
+                return
+
         QMainWindow.closeEvent(self, ce)
+
+        # remove the temporary file if it exists
+        if os.path.exists(self.autoSaveName):
+            os.remove(self.autoSaveName)
+
+
+    # save a temp document whenever anything changes. this doc is deleted on closeEvent
+    # in case that Orange crashes, Canvas on the next start offers an option to reload the crashed schema with links frozen
+    def saveTempDoc(self):
+        self.save(self.autoSaveName)
 
     def enableSave(self, enable):
         self.canSave = enable
@@ -135,9 +144,10 @@ class SchemaDoc(QMainWindow):
             inWidget.updateTooltip()
 
         self.enableSave(True)
+        self.saveTempDoc()
         return line
 
-    # ####################################
+
     # reset signals of an already created line
     def resetActiveSignals(self, outWidget, inWidget, newSignals = None, enabled = 1):
         #print "<extra>orngDoc.py - resetActiveSignals() - ", outWidget, inWidget, newSignals
@@ -176,7 +186,7 @@ class SchemaDoc(QMainWindow):
         self.enableSave(True)
 
 
-    # #####################################
+
     # add one link (signal) from outWidget to inWidget. if line doesn't exist yet, we create it
     def addLink(self, outWidget, inWidget, outSignalName, inSignalName, enabled = 1):
         #print "<extra>orngDoc - addLink() - ", outWidget, inWidget, outSignalName, inSignalName
@@ -211,10 +221,11 @@ class SchemaDoc(QMainWindow):
             self.removeLink(outWidget, inWidget, outSignalName, inSignalName)
             QMessageBox.warning( None, "Orange Canvas", "Unable to add link. Please rebuild widget registry and restart Orange Canvas for changes to take effect.", QMessageBox.Ok + QMessageBox.Default )
             return 0
+
         line.updateTooltip()
         return 1
 
-    # ####################################
+
     # remove only one signal from connected two widgets. If no signals are left, delete the line
     def removeLink(self, outWidget, inWidget, outSignalName, inSignalName):
         #print "<extra> orngDoc.py - removeLink() - ", outWidget, inWidget, outSignalName, inSignalName
@@ -229,8 +240,9 @@ class SchemaDoc(QMainWindow):
             self.removeLine(outWidget, inWidget)
 
         self.enableSave(True)
+        self.saveTempDoc()
 
-    # ####################################
+
     # remove line line
     def removeLine1(self, line):
         for (outName, inName) in line.getSignals():
@@ -244,15 +256,15 @@ class SchemaDoc(QMainWindow):
         line.hide()
         line.remove()
         self.enableSave(True)
+        self.saveTempDoc()
 
-    # ####################################
     # remove line, connecting two widgets
     def removeLine(self, outWidget, inWidget):
         #print "<extra> orngDoc.py - removeLine() - ", outWidget, inWidget
         line = self.getLine(outWidget, inWidget)
-        if line: self.removeLine1(line)
+        if line:
+            self.removeLine1(line)
 
-    # ####################################
     # add new widget
     def addWidget(self, widget, x= -1, y=-1, caption = "", activateSettings = 1):
         qApp.setOverrideCursor(Qt.WaitCursor)
@@ -285,6 +297,11 @@ class SchemaDoc(QMainWindow):
         newwidget.updateText(caption)
         newwidget.instance.setWindowTitle(caption)
 
+        self.widgets.append(newwidget)
+        self.enableSave(True)
+        self.saveTempDoc()
+        self.canvas.update()
+
         # show the widget and activate the settings
         qApp.setOverrideCursor(Qt.WaitCursor)
         try:
@@ -302,12 +319,8 @@ class SchemaDoc(QMainWindow):
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
         qApp.restoreOverrideCursor()
 
-        self.widgets.append(newwidget)
-        self.enableSave(True)
-        self.canvas.update()
         return newwidget
 
-    # ####################################
     # remove widget
     def removeWidget(self, widget):
         if not widget:
@@ -319,10 +332,12 @@ class SchemaDoc(QMainWindow):
         self.widgets.remove(widget)
         widget.remove()
         self.enableSave(True)
+        self.saveTempDoc()
 
     def clear(self):
         for widget in self.widgets[::-1]:   self.removeWidget(widget)   # remove widgets from last to first
         self.canvas.update()
+        self.saveTempDoc()
 
     def enableAllLines(self):
         for line in self.lines:
@@ -361,7 +376,7 @@ class SchemaDoc(QMainWindow):
         print "Error. Invalid widget instance : ", widgetInstance
         return ""
 
-    # ####################################
+
     # get line from outWidget to inWidget
     def getLine(self, outWidget, inWidget):
         for line in self.lines:
@@ -369,7 +384,7 @@ class SchemaDoc(QMainWindow):
                 return line
         return None
 
-    # ####################################
+
     # find orngCanvasItems.CanvasWidget from widget instance
     def findWidgetFromInstance(self, widgetInstance):
         for widget in self.widgets:
@@ -381,7 +396,7 @@ class SchemaDoc(QMainWindow):
     # SAVING, LOADING, ....
     # ###########################################
     def saveDocument(self):
-        if not self.documentnameValid:
+        if self.documentname == "":
             self.saveDocumentAs()
         else:
             self.save()
@@ -396,13 +411,12 @@ class SchemaDoc(QMainWindow):
         self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
         self.applicationname = os.path.splitext(os.path.split(name)[1])[0] + ".py"
         self.setWindowTitle(self.documentname)
-        self.documentnameValid = True
         self.save()
 
-    # ####################################
     # save the file
     def save(self, filename = None):
-        self.enableSave(False)
+        if filename == None:
+            self.enableSave(False)
 
         # create xml document
         doc = Document()
@@ -443,29 +457,15 @@ class SchemaDoc(QMainWindow):
             file = open(filename, "wt")
         else:
             file = open(os.path.join(self.documentpath, self.documentname), "wt")
+            self.canvasDlg.addToRecentMenu(os.path.join(self.documentpath, self.documentname))
 
         file.write(xmlText)
-        file.flush()
         file.close()
         doc.unlink()
 
-        #self.saveWidgetSettings(os.path.join(self.documentpath, os.path.splitext(self.documentname)[0]) + ".sav")
-        if not filename:
-            self.canvasDlg.addToRecentMenu(os.path.join(self.documentpath, self.documentname))
 
-    def saveWidgetSettings(self, filename):
-        list = {}
-        for widget in self.widgets:
-            list[widget.caption] = widget.instance.saveSettingsStr()
-
-        file = open(filename, "wt")
-        cPickle.dump(list, file)
-        file.close()
-
-
-    # ####################################
     # load a scheme with name "filename"
-    def loadDocument(self, filename, caption = None):
+    def loadDocument(self, filename, caption = None, freeze = 0, isTempSchema = 0):
         if not os.path.exists(filename):
             self.close()
             QMessageBox.critical(self, 'Orange Canvas', 'Unable to find file "'+ filename,  QMessageBox.Ok + QMessageBox.Default)
@@ -475,21 +475,20 @@ class SchemaDoc(QMainWindow):
         qApp.setOverrideCursor(Qt.WaitCursor)
 
         try:
-            # ##################
             #load the data ...
             doc = parse(str(filename))
             schema = doc.firstChild
             widgets = schema.getElementsByTagName("widgets")[0]
             lines = schema.getElementsByTagName("channels")[0]
             settings = schema.getElementsByTagName("settings")
-
-            (self.documentpath, self.documentname) = os.path.split(filename)
-            (self.applicationpath, self.applicationname) = os.path.split(filename)
-            self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
             settingsDict = eval(str(settings[0].getAttribute("settingsDictionary")))
-            self.loadedSettingsDict = settingsDict
-            self.canvasDlg.settings["saveApplicationDir"] = self.applicationpath
-            failureText = ""
+
+            if not isTempSchema:
+                (self.documentpath, self.documentname) = os.path.split(filename)
+                (self.applicationpath, self.applicationname) = os.path.split(filename)
+                self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
+                self.canvasDlg.settings["saveApplicationDir"] = self.applicationpath
+                self.loadedSettingsDict = settingsDict
 
             # read widgets
             loadedOk = 1
@@ -511,7 +510,8 @@ class SchemaDoc(QMainWindow):
             for line in lineList:
                 inCaption = line.getAttribute("inWidgetCaption")
                 outCaption = line.getAttribute("outWidgetCaption")
-                Enabled = int(line.getAttribute("enabled"))
+                if freeze: enabled = 0
+                else:      enabled = int(line.getAttribute("enabled"))
                 signals = line.getAttribute("signals")
                 inWidget = self.getWidgetByCaption(inCaption)
                 outWidget = self.getWidgetByCaption(outCaption)
@@ -522,19 +522,23 @@ class SchemaDoc(QMainWindow):
 
                 signalList = eval(signals)
                 for (outName, inName) in signalList:
-                    self.addLink(outWidget, inWidget, outName, inName, Enabled)
-                    #qApp.processEvents()
+                    self.addLink(outWidget, inWidget, outName, inName, enabled)
+                #qApp.processEvents()
 
             for widget in self.widgets: widget.updateTooltip()
             self.canvas.update()
-            self.enableSave(False)
 
-            if caption != None: self.setWindowTitle(caption)
-            else:               self.setWindowTitle(self.documentname)
-            if loadedOk:
-                self.documentnameValid = True
+            if isTempSchema:
+                self.autoSaveName = filename
             else:
+                self.enableSave(False)
+                if caption != None: self.setWindowTitle(caption)
+                else:               self.setWindowTitle(self.documentname)
+            self.saveTempDoc()
+
+            if not loadedOk:
                 QMessageBox.information(self, 'Schema Loading Failed', 'The following errors occured while loading the schema: <br><br>' + failureText,  QMessageBox.Ok + QMessageBox.Default)
+
 
             if self.widgets:
                 self.signalManager.processNewSignals(self.widgets[0].instance)
@@ -548,9 +552,8 @@ class SchemaDoc(QMainWindow):
             qApp.restoreOverrideCursor()
 
 
-    # ###########################################
+
     # save document as application
-    # ###########################################
     def saveDocumentAsApp(self, asTabs = 1):
         # get filename
         extension = sys.platform == "win32" and ".pyw" or ".py"
@@ -732,8 +735,14 @@ class GUIApplication(OWBaseWidget):
         fileApp.write(whole)
         fileApp.close()
 
-        # save settings
-        self.saveWidgetSettings(os.path.join(self.applicationpath, fileName) + ".sav")
+        # save widget settings
+        list = {}
+        for widget in self.widgets:
+            list[widget.caption] = widget.instance.saveSettingsStr()
+
+        file = open(os.path.join(self.applicationpath, fileName) + ".sav", "wt")
+        cPickle.dump(list, file)
+        file.close()
 
     def dumpWidgetVariables(self):
         for widget in self.widgets:

@@ -429,7 +429,7 @@ class CanvasOptionsDlg(QDialog):
         self.writeLogFileCB  = orngGui.checkBox(generalBox, "Write content of Output window to log file")
         self.showSignalNamesCB = orngGui.checkBox(generalBox, "Show signal names between widgets")
         self.dontAskBeforeCloseCB= orngGui.checkBox(generalBox, "Don't ask to save schema before closing")
-        self.autoSaveSchemasOnCloseCB = orngGui.checkBox(generalBox, "Automatically save temporary schemas on close")
+        #self.autoSaveSchemasOnCloseCB = orngGui.checkBox(generalBox, "Automatically save temporary schemas on close")
         self.saveWidgetsPositionCB = orngGui.checkBox(generalBox, "Save size and position of widgets")
         self.useContextsCB = orngGui.checkBox(generalBox, "Use context settings")
 
@@ -445,12 +445,12 @@ class CanvasOptionsDlg(QDialog):
             selectedWidgetBox = orngGui.widgetBox(colorsBox, orientation = "horizontal")
             self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)
             selectedWidgetBox.layout().addWidget(self.selectedWidgetIcon)
-            selectedWidgetLabel = orngGui.widgetLabel(selectedWidgetBox, " Selected Widget")
+            selectedWidgetLabel = orngGui.widgetLabel(selectedWidgetBox, " Selected widget")
 
             activeWidgetBox = orngGui.widgetBox(colorsBox, orientation = "horizontal")
             self.activeWidgetIcon = ColorIcon(activeWidgetBox, canvasDlg.widgetActiveColor)
             activeWidgetBox.layout().addWidget(self.activeWidgetIcon)
-            selectedWidgetLabel = orngGui.widgetLabel(activeWidgetBox, " Active Widget")
+            selectedWidgetLabel = orngGui.widgetLabel(activeWidgetBox, " Active widget")
 
             lineBox = orngGui.widgetBox(colorsBox, orientation = "horizontal")
             self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
@@ -574,7 +574,7 @@ class KeyEdit(QLineEdit):
         if assigned == self:
             return
 
-        if assigned and QMessageBox.question(self, "Confirmation", "'%s' is already assigned to '%s'. Override?" % (pressed, assigned.widget.nameKey), QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape) == QMessageBox.No:
+        if assigned and QMessageBox.question(self, "Confirmation", "'%(pressed)s' is already assigned to '%(assigned)s'. Override?" % {"pressed": pressed, "assigned": assigned.widget.nameKey}, QMessageBox.Yes | QMessageBox.Default, QMessageBox.No | QMessageBox.Escape) == QMessageBox.No:
             return
 
         self.setText(pressed)
@@ -692,9 +692,9 @@ class PreferencesDlg(QDialog):
         groupBox.setMinimumSize(180,150)
         groupBox.setMaximumSize(180,150)
 
-        saveButton = QPushButton("Save changes", groupBox)
-        addButton = QPushButton("Add new channel name", self)
-        removeButton = QPushButton("Remove selected name", self)
+        saveButton = QPushButton("Save Changes", groupBox)
+        addButton = QPushButton("Add New Channel Name", self)
+        removeButton = QPushButton("Remove Selected Name", self)
         closeButton = QPushButton("Close",self)
         self.channelList = QListWidget(self)
         self.channelList.setMinimumHeight(200)
@@ -808,7 +808,7 @@ class saveApplicationDlg(QDialog):
         w.layout().addStretch(1)
 
         hbox = orngGui.widgetBox(self, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
-        orngGui.button(hbox, self, "Add separator", callback = self.insertSeparator)
+        orngGui.button(hbox, self, "Add Separator", callback = self.insertSeparator)
         hbox.layout().addStretch(1)
         orngGui.button(hbox, self, "&OK", callback = self.accept)
         orngGui.button(hbox, self, "&Cancel", callback = self.reject)
