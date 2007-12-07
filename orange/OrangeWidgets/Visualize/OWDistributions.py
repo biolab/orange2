@@ -44,7 +44,6 @@ class distribErrorBarQwtPlotCurve(QwtPlotCurve):
         else:
             QwtPlotCurve.draw(self, p, xMap, yMap, f, t)
 
-
 class OWDistributionGraph(OWGraph):
     def __init__(self, settingsWidget = None, parent = None, name = None):
         OWGraph.__init__(self, parent, name)
@@ -80,6 +79,8 @@ class OWDistributionGraph(OWGraph):
         self.curve(self.probCurveKey).setEnabled(FALSE)
         self.curve(self.probCurveUpperCIKey).setEnabled(FALSE)
         self.curve(self.probCurveLowerCIKey).setEnabled(FALSE)
+
+        self.tooltipManager = TooltipManager(self)
 
     def sizeHint(self):
         return QSize(500, 500)
@@ -213,16 +214,23 @@ class OWDistributionGraph(OWGraph):
         if self.variableContinuous:
             keys.sort()
         self.removeCurves()
+        self.tips.removeAll()
         cn=0
         for key in keys:
             curve=PolygonCurve(self, pen=QPen(Qt.black), brush=QBrush(Qt.gray))
             ckey=self.insertCurve(curve)
             if self.variableContinuous:
                 self.setCurveData(ckey, [key, key + self.subIntervalStep, key + self.subIntervalStep, key],[0, 0, self.hdata[key], self.hdata[key]])
+                ff="%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
+                text = "N(%s in ("+ff+","+ff+"])=<b>%i</b>"
+                text = text%(str(self.attributeName), key, key+self.subIntervalStep, self.hdata[key])
+                self.tips.addToolTip(key+self.subIntervalStep/2.0, self.hdata[key]/2.0, text, self.subIntervalStep/2.0, self.hdata[key]/2.0)
             else:
                 tmpx = cn - (self.barSize/2.0)/100.0
                 tmpx2 = cn + (self.barSize/2.0)/100.0
                 self.setCurveData(ckey, [tmpx, tmpx2, tmpx2, tmpx], [0, 0, self.hdata[key], self.hdata[key]])
+                text = "N(%s=%s)=<b>%i</b>"%(str(self.attributeName), str(key), self.hdata[key])
+                self.tips.addToolTip(cn, self.hdata[key]/2.0, text, (self.barSize/2.0)/100.0, self.hdata[key]/2.0)
                 cn+=1
         
         if self.dataHasClass and not self.dataHasDiscreteClass and self.showContinuousClassGraph:
@@ -255,6 +263,7 @@ class OWDistributionGraph(OWGraph):
         
     def refreshVisibleOutcomes(self):
         if not self.data or not self.visibleOutcomes: return
+        self.tips.removeAll()
         if self.pureHistogram:
             self.refreshPureVisibleOutcomes()
             return
@@ -279,10 +288,19 @@ class OWDistributionGraph(OWGraph):
                     ckey = self.insertCurve(curve)
                     if self.variableContinuous:
                         self.setCurveData(ckey, [key, key + self.subIntervalStep, key + self.subIntervalStep, key], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
+                        ff = "%."+self.data.domain[self.attributeName].numberOfDecimals+1+"f"
+                        text = "N(%s=%s|%s in ("+ff+","+ff+"])=<b>%i</b><br>P(%s=%s|%s in ("+ff+","+ff+"])=<b>%.3f</b><br>"
+                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key,key+self.subIntervalStep, subBarHeight,
+                                     str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key,key+self.subIntervalStep, self.probGraphValues[cn][1][oi])
+                        self.tips.addToolTip(key+self.subIntervalStep/2.0, self.hdata[key]/2.0, text, self.subIntervalStep/2.0, self.hdata[key]/2.0)
                     else:
                         tmpx = cn - (self.barSize/2.0)/100.0
                         tmpx2 = cn + (self.barSize/2.0)/100.0
                         self.setCurveData(ckey, [tmpx, tmpx2, tmpx2, tmpx], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
+                        text = "N(%s=%s|%s=%s)=<b>%i</b><br>P(%s=%s|%s=%s)=<b>%.3f</b>"
+                        text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), subBarHeight,
+                                     str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), float(subBarHeight/sum(self.hdata[key])))
+                        self.tips.addToolTip(cn, currentBarsHeight[cn]+float(subBarHeight)/2, text, (self.barSize/2.0)/100.0, float(subBarHeight)/2.0)
                     currentBarsHeight[cn] += subBarHeight
 
         curve = distribErrorBarQwtPlotCurve(self, '')
@@ -356,9 +374,7 @@ class OWDistributionGraph(OWGraph):
         enableIfExists(self.probCurveKey, self.showProbabilities)
         enableIfExists(self.probCurveUpperCIKey, self.showConfidenceIntervals and self.showProbabilities)
         enableIfExists(self.probCurveLowerCIKey, self.showConfidenceIntervals and self.showProbabilities)
-        self.repaint()
-
-        
+        self.repaint()        
         
 class OWDistributions(OWWidget):
     settingsList = ["numberOfBars", "barSize", "showContinuousClassGraph", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
@@ -646,7 +662,7 @@ if __name__ == "__main__":
     owd = OWDistributions()
     a.setMainWidget(owd)
     owd.show()
-    data=orange.ExampleTable("../../doc/datasets/iris.tab")
+    data=orange.ExampleTable("../../doc/datasets/titanic.tab")
     owd.setData(data)
     a.exec_loop()
     owd.saveSettings()
