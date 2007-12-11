@@ -288,11 +288,11 @@ class OWDistributionGraph(OWGraph):
                     ckey = self.insertCurve(curve)
                     if self.variableContinuous:
                         self.setCurveData(ckey, [key, key + self.subIntervalStep, key + self.subIntervalStep, key], [currentBarsHeight[cn], currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight, currentBarsHeight[cn] + subBarHeight])
-                        ff = "%."+self.data.domain[self.attributeName].numberOfDecimals+1+"f"
+                        ff = "%."+str(self.data.domain[self.attributeName].numberOfDecimals+1)+"f"
                         text = "N(%s=%s|%s in ("+ff+","+ff+"])=<b>%i</b><br>P(%s=%s|%s in ("+ff+","+ff+"])=<b>%.3f</b><br>"
                         text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key,key+self.subIntervalStep, subBarHeight,
-                                     str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key,key+self.subIntervalStep, self.probGraphValues[cn][1][oi])
-                        self.tips.addToolTip(key+self.subIntervalStep/2.0, self.hdata[key]/2.0, text, self.subIntervalStep/2.0, self.hdata[key]/2.0)
+                                     str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), key,key+self.subIntervalStep, float(subBarHeight/sum(self.hdata[key]))) #self.probGraphValues[cn][1][oi])
+                        self.tips.addToolTip(key+self.subIntervalStep/2.0, currentBarsHeight[cn] + subBarHeight/2.0, text, self.subIntervalStep/2.0, subBarHeight/2.0)
                     else:
                         tmpx = cn - (self.barSize/2.0)/100.0
                         tmpx2 = cn + (self.barSize/2.0)/100.0
@@ -300,7 +300,7 @@ class OWDistributionGraph(OWGraph):
                         text = "N(%s=%s|%s=%s)=<b>%i</b><br>P(%s=%s|%s=%s)=<b>%.3f</b>"
                         text = text%(str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), subBarHeight,
                                      str(self.data.domain.classVar.name), str(self.data.domain.classVar[oi]), str(self.attributeName), str(key), float(subBarHeight/sum(self.hdata[key])))
-                        self.tips.addToolTip(cn, currentBarsHeight[cn]+float(subBarHeight)/2, text, (self.barSize/2.0)/100.0, float(subBarHeight)/2.0)
+                        self.tips.addToolTip(cn, currentBarsHeight[cn]+subBarHeight/2.0, text, (self.barSize/2.0)/100.0, subBarHeight/2.0)
                     currentBarsHeight[cn] += subBarHeight
 
         curve = distribErrorBarQwtPlotCurve(self, '')
