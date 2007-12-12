@@ -305,11 +305,13 @@ class OWTestLearners(OWWidget):
         self.closeContext()
         self.data = data
         self.fillClassCombo()
-        if not self.data: # remove data
+        if not self.data:
+            # data was removed, remove the scores
             for l in self.learners.values():
                 l.scores = []
             self.send("Evaluation Results", None)
         else:
+            # new data has arrived
             self.data = orange.Filter_hasClassValue(self.data)
             if self.isclassification():
                 self.rstatLB.box.hide()
@@ -328,23 +330,24 @@ class OWTestLearners(OWWidget):
     def setTestData(self, data):
         """handle test data set"""
         self.testdata = data
+        self.testDataBtn.setEnabled(self.testdata <> None)
         if self.testdata:
             if self.sampleMethod == 4:
-                if testdata:
-                    self.score()
+                if self.data:
+                    self.score([l.id for l in self.learners.values()])
                 else:
                     for l in self.learners.values():
                         l.scores = []
                 self.paintscores()
-        else:
-            self.testDataBtn.setDisabled(True)
-            if self.sampleMethod == 4:
-                self.sampleMethod = 1
-                self.s[0].setChecked(True)
-                self.s[4].setChecked(False)
-                self.recompute()
+        elif self.sampleMethod == 4 and self.data:
+            # test data removed, switch to testing on train data
+            self.sampleMethod = 3
+            self.s[3].setChecked(True)
+            self.s[4].setChecked(False)
+            self.recompute()
 
     def fillClassCombo(self):
+        """upon arrival of new data appropriately set the target class combo"""
         self.targetCombo.clear()
         if not self.data or not self.data.domain.classVar or not self.isclassification():
             return
@@ -459,7 +462,8 @@ if __name__=="__main__":
     data1 = orange.ExampleTable('voting')
     data2 = orange.ExampleTable('golf')
     datar = orange.ExampleTable("auto-mpg")
-#    datar = orange.ExampleTable("housing")
+    data3 = orange.ExampleTable("sailing-big")
+    data4 = orange.ExampleTable("sailing-test")
 
     l1 = orange.MajorityLearner(); l1.name = '1 - Majority'
 
@@ -477,7 +481,7 @@ if __name__=="__main__":
     import orngRegression as r
     r5 = r.LinearRegressionLearner(name="0 - lin reg")
 
-    testcase = 1
+    testcase = 4
 
     if testcase == 0: # 1(UPD), 3, 4
         ow.setData(data2)
@@ -503,9 +507,14 @@ if __name__=="__main__":
         ow.setData(data2)
         ow.setLearner(l1, 1)
         ow.setLearner(None, 1)
-    if testcase == 3: # regression firs
+    if testcase == 3: # regression first
         ow.setData(datar)
         ow.setLearner(r5, 5)
+    if testcase == 4: # separate train and test data
+        ow.setData(data3)
+        ow.setTestData(data4)
+        ow.setLearner(l2, 5)
+        ow.setTestData(None)
 
     ow.show()
     a.exec_loop()
