@@ -39,8 +39,9 @@ class Score:
         self.cmBased = cmBased
 
 class OWTestLearners(OWWidget):
-    settingsList = ["sampleMethod", "nFolds", "pLearning", "pRepeat", "precision",
-                    "selectedCScores", "selectedRScores", "applyOnAnyChange"]
+    settingsList = ["nFolds", "pLearning", "pRepeat", "precision",
+                    "selectedCScores", "selectedRScores", "applyOnAnyChange",
+                    "resampling"]
     contextHandlers = {"": DomainContextHandler("", ["targetClass"])}
     callbackDeposit = []
 
@@ -64,6 +65,9 @@ class OWTestLearners(OWWidget):
         ("Relative absolute error", "RAE", "RAE(res)", False),
         ("R-squared", "R2", "R2(res)")]]
 
+    resamplingMethods = ["Cross-validation", "Leave-one-out", "Random sampling",
+                         "Test on train data", "Test on test data"]
+
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "TestLearners")
 
@@ -71,7 +75,7 @@ class OWTestLearners(OWWidget):
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 
         # Settings
-        self.sampleMethod = 0           # cross validation
+        self.resampling = 0             # cross-validation
         self.nFolds = 5                 # cross validation folds
         self.pLearning = 70   # size of learning set when sampling [%]
         self.pRepeat = 10
@@ -79,8 +83,9 @@ class OWTestLearners(OWWidget):
         self.applyOnAnyChange = True
         self.selectedCScores = [i for (i,s) in enumerate(self.cStatistics) if s.show]
         self.selectedRScores = [i for (i,s) in enumerate(self.rStatistics) if s.show]
-        self.targetClass=0
+        self.targetClass = 0
         self.loadSettings()
+        self.resampling = 0             # cross-validation
 
         self.stat = self.cStatistics
 
@@ -90,45 +95,43 @@ class OWTestLearners(OWWidget):
         self.results = None             # from orngTest
 
         # GUI
-        self.s = [None] * 5
-        self.sBox = QVButtonGroup("Sampling", self.controlArea)
-        self.s[0] = QRadioButton('Cross validation', self.sBox)
+        self.sBtns = OWGUI.radioButtonsInBox(self.controlArea, self, "resampling", box="Sampling",
+                                             btnLabels=self.resamplingMethods[:1],
+                                             callback=self.newsampling)
+        ibox = OWGUI.widgetBox(OWGUI.indentedBox(self.sBtns))
+        OWGUI.spin(ibox, self, 'nFolds', 2, 100, step=1, label='Number of folds:  ',
+                   callback=lambda p=0: self.conditionalRecompute(p))
 
-        box = QHBox(self.sBox)
-        QWidget(box).setFixedSize(19, 8)
-        OWGUI.spin(box, self, 'nFolds', 2, 100, step=1,
-                   label='Number of folds:  ')
+        for i in range(1,3):
+            OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[i])
+        ibox = OWGUI.widgetBox(OWGUI.indentedBox(self.sBtns))
+        OWGUI.spin(ibox, self, 'pRepeat', 1, 100, step=1,
+                   label='Repeat train/test:  ',
+                   callback=lambda p=2: self.conditionalRecompute(p))
+        OWGUI.separator(ibox)
+        QLabel("Relative training set size:", ibox)
+        OWGUI.separator(ibox)
+        OWGUI.hSlider(ibox, self, 'pLearning', minValue=10, maxValue=100,
+                      step=1, ticks=10, labelFormat="   %d%%",
+                      callback=lambda p=2: self.conditionalRecompute(p))
+        for i in range(3,5):
+            OWGUI.appendRadioButton(self.sBtns, self, "resampling", self.resamplingMethods[i])
 
-        self.s[1] = QRadioButton('Leave one out', self.sBox)
-        self.s[2] = QRadioButton('Random sampling', self.sBox)
-
-        box = QHBox(self.sBox)
-        QWidget(box).setFixedSize(19, 8)
-        OWGUI.spin(box, self, 'pRepeat', 1, 100, step=1,
-                   label='Repeat train/test:  ')
-
-        self.h2Box = QHBox(self.sBox)
-        QWidget(self.h2Box).setFixedSize(19, 8)
-        QLabel("Relative training set size:", self.h2Box)
-        box = QHBox(self.sBox)
-        QWidget(box).setFixedSize(19, 8)
-        OWGUI.hSlider(box, self, 'pLearning', minValue=10, maxValue=100,
-                      step=1, ticks=10, labelFormat="   %d%%")
-
-        self.s[3] = QRadioButton('Test on train data', self.sBox)
-        self.s[4] = self.testDataBtn = QRadioButton('Test on test data', self.sBox)
+        self.trainDataBtn = self.sBtns.buttons[-2]
+        self.testDataBtn = self.sBtns.buttons[-1]
         self.testDataBtn.setDisabled(True)
 
-        OWGUI.separator(self.sBox)
-        OWGUI.checkBox(self.sBox, self, 'applyOnAnyChange',
+        box = OWGUI.widgetBox(self.sBtns, orientation='vertical', addSpace=False)
+        OWGUI.separator(box)
+        OWGUI.checkBox(box, self, 'applyOnAnyChange',
                        label="Apply on any change", callback=self.applyChange)
-        self.applyBtn = OWGUI.button(self.sBox, self, "&Apply",
+        self.applyBtn = OWGUI.button(box, self, "&Apply",
                                      callback=lambda f=True: self.recompute(f))
         self.applyBtn.setDisabled(True)
 
-        if self.sampleMethod == 4:
-            self.sampleMethod = 0
-        self.s[self.sampleMethod].setChecked(True)
+        if self.resampling == 4:
+            self.resampling = 3
+
         OWGUI.separator(self.controlArea)
 
         # statistics
@@ -162,13 +165,7 @@ class OWTestLearners(OWWidget):
 
         self.lab = QLabel(self.g)
 
-        # signals - change of sampling technique
-        self.dummy1 = [None]*len(self.s)
-        for i in range(len(self.s)):
-            self.dummy1[i] = lambda x, v=i: self.newsampling(x, v)
-            self.connect(self.s[i], SIGNAL("toggled(bool)"), self.dummy1[i])
-
-        self.resize(600,470)
+        self.resize(680,470)
 
     # scoring and painting of score table
     def isclassification(self):
@@ -239,25 +236,25 @@ class OWTestLearners(OWWidget):
 
         # computation of results (res, and cm if classification)
         pb = None
-        if self.sampleMethod==0:
+        if self.resampling==0:
             pb = OWGUI.ProgressBar(self, iterations=self.nFolds)
             res = orngTest.crossValidation(learners, self.data, folds=self.nFolds,
                                            strat=orange.MakeRandomIndices.StratifiedIfPossible,
                                            callback=pb.advance, storeExamples = True)
             pb.finish()
-        elif self.sampleMethod==1:
+        elif self.resampling==1:
             pb = OWGUI.ProgressBar(self, iterations=len(self.data))
             res = orngTest.leaveOneOut(learners, self.data,
                                        callback=pb.advance, storeExamples = True)
             pb.finish()
-        elif self.sampleMethod==2:
+        elif self.resampling==2:
             pb = OWGUI.ProgressBar(self, iterations=self.pRepeat)
             res = orngTest.proportionTest(learners, self.data, self.pLearning/100.,
                                           times=self.pRepeat, callback=pb.advance, storeExamples = True)
             pb.finish()
-        elif self.sampleMethod==3:
+        elif self.resampling==3:
             res = orngTest.learnAndTestOnLearnData(learners, self.data, storeExamples = True)
-        elif self.sampleMethod==4:
+        elif self.resampling==4:
             if not self.testdata:
                 for l in self.learners.values():
                     l.scores = []
@@ -283,10 +280,6 @@ class OWTestLearners(OWWidget):
                        " ".join([l.name for l in learners]))
 
         self.sendResults()
-
-        #print "SCORES:"
-        #for l in [self.learners[id] for id in ids]:
-        #    print "%-20s" % l.name + " ".join(["%6.3f" % s for s in l.scores])
 
     def recomputeCM(self):
         cm = orngStat.computeConfusionMatrices(self.results, classIndex = self.targetClass)
@@ -332,18 +325,16 @@ class OWTestLearners(OWWidget):
         self.testdata = data
         self.testDataBtn.setEnabled(self.testdata <> None)
         if self.testdata:
-            if self.sampleMethod == 4:
+            if self.resampling == 4:
                 if self.data:
                     self.score([l.id for l in self.learners.values()])
                 else:
                     for l in self.learners.values():
                         l.scores = []
                 self.paintscores()
-        elif self.sampleMethod == 4 and self.data:
+        elif self.resampling == 4 and self.data:
             # test data removed, switch to testing on train data
-            self.sampleMethod = 3
-            self.s[3].setChecked(True)
-            self.s[4].setChecked(False)
+            self.resampling = 3
             self.recompute()
 
     def fillClassCombo(self):
@@ -370,7 +361,10 @@ class OWTestLearners(OWWidget):
                 self.learners[id].time = time
             else: # new learner
                 self.learners[id] = Learner(learner, id)
-            self.score([id])
+            if self.applyBtn.isEnabled():
+                self.recompute(True)
+            else:
+                self.score([id])
         else: # remove a learner and corresponding results
             if id in self.learners:
                 res = self.learners[id].results
@@ -415,15 +409,13 @@ class OWTestLearners(OWWidget):
 
     # signal processing
 
-    def newsampling(self, value, id):
+    def newsampling(self):
         """handle change of evaluation method"""
         if not self.applyOnAnyChange:
             self.applyBtn.setDisabled(self.applyOnAnyChange)
         else:
-            if self.sampleMethod <> id:
-                self.sampleMethod = id
-                if self.learners:
-                    self.recompute()
+            if self.learners:
+                self.recompute()
 
     def newscoreselection(self):
         """handle change in set of scores to be displayed"""
@@ -436,13 +428,19 @@ class OWTestLearners(OWWidget):
                 self.tab.hideColumn(i+1)
 
     def recompute(self, forced=False):
-        """recompute the scores for all learners"""
+        """recompute the scores for all learners,
+           if not forced, will do nothing but enable the Apply button"""
         if self.applyOnAnyChange or forced:
             self.score([l.id for l in self.learners.values()])
             self.paintscores()
             self.applyBtn.setDisabled(True)
-        if not self.applyOnAnyChange:
-            self.applyBtn.setDisabled(False)
+        else:
+            self.applyBtn.setEnabled(True)
+
+    def conditionalRecompute(self, option):
+        """calls recompute only if specific sampling option enabled"""
+        if self.resampling == option:
+            self.recompute(False)
 
     def applyChange(self):
         if self.applyOnAnyChange:
