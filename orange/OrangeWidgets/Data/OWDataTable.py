@@ -248,8 +248,8 @@ class OWDataTable(OWWidget):
             if key is None:
                 valIdx = [(", ".join(["%s=%s" % (a.name or k, ex[k]) for k, a in mo if ex.hasmeta(k)]), idx) for idx,ex in enumerate(data)]
             else:
-                valIdx = [(str(ex[key]),idx) for idx,ex in enumerate(data)]
-            table.values[j]=[" "+v[0]+" " for v in valIdx]
+                valIdx = [(ex[key].varType==orange.VarTypes.Continuous and ex[key] or str(ex[key]),idx) for idx,ex in enumerate(data)]
+            table.values[j]=[" "+str(v[0])+" " for v in valIdx]
             valIdx.sort()
             # generate a dictionary where key: instance index, value: rank
             idx2rankDict = dict(zip([x[1] for x in valIdx], range(numEx)))
