@@ -3,7 +3,7 @@ from math import log,exp
 from urllib import urlopen
 import os.path
 
-class orngMesh(object):
+class orngMeSH(object):
     def __init__(self):
         self.path = "data"
         self.reference = None
@@ -27,7 +27,7 @@ class orngMesh(object):
         This influences downloadGO() and downloadAnnotation(...). above directory also buffers compound annotation"""
         return self.path
 
-    def downloadOntology(self):
+    def downloadOntology(self,callback=None):
         # ftp://nlmpubs.nlm.nih.gov/online/mesh/.meshtrees/mtrees2008.bin
         # ftp://nlmpubs.nlm.nih.gov/online/mesh/.asciimesh/d2008.bin
         ontology = urlopen("ftp://nlmpubs.nlm.nih.gov/online/mesh/.asciimesh/d2008.bin")
@@ -45,6 +45,8 @@ class orngMesh(object):
                 else:
                     results.append(["",[],"No description."])	
                 if(len(results)%400 == 0):
+                    if not callback:
+                        callback(int(rsize*100/size))
                     print "remaining " + str(rsize*100/size) + "%."			
 	
             parts = line.split(" = ")
@@ -79,32 +81,73 @@ class orngMesh(object):
         output.close()
         self.__loadOntologyFromDisk()
         print "Ontology database has been updated."
-	
-    def findTerms(self,CIDs):
-        """ returns a nested list (?) or a graph (?) or better a dictionary (?) with terms that apply to CIDs.
-        term in this structure could probably be an object that holds its name, id, description(?) or alternatively just
-        an termID (probably better). If the later, than dictionary should be available for mapping of termID to name (termID2name)
-        and termID to description (termID2description), and also for mapping of name to ID (name2termID). """
+
+    def findSubset(self,examples,meshTerms, callback= None):
+        """ function examples which have at least one node on their path from list meshTerms
+            findSubset(all,['Aspirine']) will return a dataset with examples are annotated as Aspirine """
+        # clone        
+        newdata = orange.ExampleTable(examples.domain)
+        att = self.__findMeshAttribute(examples)
+        ids = list()
+        
+        for i in meshTerms:
+            ids.extend(self.toID[i])
+
+        for e in examples:
+            try:
+                ends = eval(e[att].value)
+            except SyntaxError:
+                print "Error in parsing ", e[att].value
+                continue
+            endids = list()
+            for i in ends:
+                if self.toID.has_key(i):
+                    endids.extend(self.toID[i])
+            allnodes = self.__findParents(endids)
+            
+            # calculate intersection            
+            isOk = False            
+            for i in allnodes:
+                if ids.count(i) > 0:
+                    isOk = True
+                    break
+
+            if isOk:      # intersection between example mesh terms and observed term group is None
+                newdata.append(e)
+
+        return newdata	
+
+#    def findTerms(self,CIDs):
+#        """ returns a nested list (?) or a graph (?) or better a dictionary (?) with terms that apply to CIDs.
+#        term in this structure could probably be an object that holds its name, id, description(?) or alternatively just
+#        an termID (probably better). If the later, than dictionary should be available for mapping of termID to name (termID2name)
+#        and termID to description (termID2description), and also for mapping of name to ID (name2termID). """
 
         # at the moment it returns just a list of mesh terms
-        ret = dict()
-        if(not self.dataLoaded):
-            print "Annotation and ontology has never been loaded! Use function setDataDir(path) to fix the problem."
-            return ret
+#        ret = dict()
+#        if(not self.dataLoaded):
+#            print "Annotation and ontology has never been loaded! Use function setDataDir(path) to fix the problem."
+#            return ret
 
-        for i in CIDs:
-            if(self.fromCID.has_key(i)):
-                ret[i] = self.fromCID[i]
-        return ret
+#        for i in CIDs:
+#            if(self.fromCID.has_key(i)):
+#                ret[i] = self.fromCID[i]
+#        return ret
+#
     
-    def findFrequentTerms(self,data,minSizeInTerm, treeData = False):
+    def findFrequentTerms(self,data,minSizeInTerm, treeData = False, callback=False):
         """ Function iterates thru examples in data. For each example it computes a list of associated terms. At the end we get (for each term) number of examples which have this term. """
         # we build a dictionary 		meshID -> [description, noReference, [cids] ]
         self.statistics = dict()
         self.calculated = False
+        att = self.__findMeshAttribute(data)
         # plain frequency
         for i in data:
-            endNodes = eval(i["mesh"].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
+            try:
+                endNodes = eval(i[att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
+            except SyntaxError:
+                print "Error in parsing ",i[att].value
+                continue
             # we find ID of end nodes
             endIDs = []
             for k in endNodes:
@@ -167,7 +210,7 @@ class orngMesh(object):
         return ret
         
 
-    def findEnrichedTerms(self,reference, cluster, pThreshold=0.05, treeData = False):
+    def findEnrichedTerms(self,reference, cluster, pThreshold=0.05, treeData = False, callback=False):
         """ like above, but only includes enriched terms (with p value equal or less than pThreshold). Returns a list of (term_id,  term_description, countRef, countCluster, p-value,	enrichment/deprivement, list of corrensponding cids ... anything else necessary). It printOrder is true function returns results in nested lists. This means that at printing time we know if there is any relationship betwen terms"""
 		
         if(not self.calculated or self.reference != reference or self.cluster != cluster):	# Do have new data? Then we have to recalculate everything.
@@ -256,11 +299,16 @@ class orngMesh(object):
         self.statistics = dict()
         n = len(self.reference) 										# reference size
         cln = len(self.cluster)											# cluster size
-        self.ratio = float(cln)/float(n)
+        att = self.__findMeshAttribute(self.reference)
         # frequency from reference list
         for i in self.reference:
-            endNodes = eval(i["mesh"].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
-            # we find ID of end nodes
+            try:
+                endNodes = eval(i[att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
+            except SyntaxError:                     # where was a parse error
+                print "Error in parsing ",i[att].value
+                n=n-1
+                continue
+            #we find ID of end nodes
             endIDs = []
             for k in endNodes:
                 if(self.toID.has_key(k)):					# this should be always true, but anyway ...
@@ -277,9 +325,14 @@ class orngMesh(object):
                 self.statistics[k][1] += 1				    # increased noReference
 		
         # frequency from cluster list
+        att = self.__findMeshAttribute(self.cluster)
         for i in self.cluster:
-            endNodes = eval(i["mesh"].value) # for every example we look up for end nodes in mesh. for every end node we have to find its ID
-
+            try:
+                endNodes = eval(i[att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
+            except SyntaxError:
+                print "Error in parsing ",i[att].value
+                cln = cln - 1
+                continue
             # we find ID of end nodes
             endIDs = []
             for k in endNodes:
@@ -295,11 +348,11 @@ class orngMesh(object):
 
         #        print "processing complete ", n, " ", cln
 
-        # enrichment and deprivment
-        r=1
+
+        self.ratio = float(cln)/float(n)
+        
+        # enrichment
         for i in self.statistics.iterkeys():
-            #print r
-            r += 1
             self.statistics[i][3] = self.__calcEnrichment(n,cln,self.statistics[i][1],self.statistics[i][2])    # p enrichment
             self.statistics[i][4] = float(self.statistics[i][2]) / float(self.statistics[i][1] ) / self.ratio   # fold enrichment
 
