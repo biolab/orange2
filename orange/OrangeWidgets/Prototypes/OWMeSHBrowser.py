@@ -1,9 +1,9 @@
 """
 <name>MeSH Term Browser</name>
 <description>Browser over MeSH ontology</description>
-<icon>icons/mesh.png</icon>
+<icon>icons/Mesh.png</icon>
 <contact>Crt Gorup (crt.gorup@gmail.com)</contact> 
-<priority>5016</priority>
+<priority>2016</priority>
 """
 
 from OWWidget import *
@@ -11,6 +11,31 @@ from qttable import *
 from qt import *
 from orngMeSH import *
 import OWGUI
+
+class MyQTableItem(QTableItem):
+    """ Our implementation of QTable item allowing numerical sorting.  """
+    def __init__(self,table,text):
+        QTableItem.__init__(self,table,QTableItem.Never,text)
+        self.data = text
+        
+    def key(self):      # additional setting to correctly handle text and numerical sorting
+        try:                    # sorting numerical column
+            e = float(self.data)
+            tdata = pval = "%.4g" % e
+            l = len(self.data)
+            pre = ""
+            
+            offset = 0          # additional parameter to hadle exponent '2e-14' float format
+            if(tdata.count('e')>0 or tdata.count('E')>0):
+                pre="*"
+                offset = 1
+                
+            for i in range(0,40-l-offset):
+                pre = pre + "0"
+            return pre + tdata
+        except ValueError:      # sorting text column
+            return self.data
+
 
 class ListViewToolTip(QToolTip):
     """brief A class to allow tooltips in a listview."""
@@ -60,7 +85,7 @@ class OWMeshBrowser(OWWidget):
     def __init__(self,parent=None,signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"MeshBrowser")
         self.inputs = [("Reference data", ExampleTable, self.getReferenceData),("Cluster data", ExampleTable, self.getClusterData) ]
-        self.outputs = [("Subset data", ExampleTable)]
+        self.outputs = [("Selected examples", ExampleTable)]
 
         # widget variables
         self.loadedRef = 0
@@ -71,7 +96,7 @@ class OWMeshBrowser(OWWidget):
         self.reference = None
         self.cluster = None
         self.loadSettings()        
-        self.mesh = orngMesh()          # main object is created
+        self.mesh = orngMeSH()          # main object is created
         self.dataLoaded = self.mesh.dataLoaded
 
         # left pane
@@ -86,7 +111,6 @@ class OWMeshBrowser(OWWidget):
 
         OWGUI.separator(self.controlArea)
         self.optionsBox = QVGroupBox("Options", self.controlArea)
-        #OWGUI.spin(self.optionsBox,self,'maxPValue',min=0.0,max=1.0,step=0.01,label='max p value to display:',callback=[self.selection, self.checkCommit])
         self.maxp = OWGUI.lineEdit(self.optionsBox, self, "maxPValue", label="threshold:", orientation="horizontal", labelWidth=120, valueType=float)
         self.minf = OWGUI.lineEdit(self.optionsBox, self, "minExamplesInTerm", label="min. frequency:", orientation="horizontal", labelWidth=120, valueType=int)        
         #OWGUI.checkBox(self.optionsBox, self, 'showAll', 'Display full ontology path?')
@@ -95,6 +119,8 @@ class OWMeshBrowser(OWWidget):
 
         # right pane
         self.col_size = [300,84,84,100,120]
+        self.sort_col = 0
+        self.sort_dir = True
         self.columns = ['MeSH term', '# reference', '# cluster', 'p value','fold enrichment'] # both datasets
         layout=QVBoxLayout(self.mainArea)
         splitter = QSplitter(QSplitter.Vertical, self.mainArea)
@@ -134,28 +160,53 @@ class OWMeshBrowser(OWWidget):
             self.header.setLabel(i, self.columns[i])
 
                    
-        self.connect(self.sigTermsTable, SIGNAL("selectionChanged()"), self.tableSelectionChanged)  
+        self.connect(self.sigTermsTable, SIGNAL("selectionChanged()"), self.tableSelectionChanged) 
+        self.connect(self.sigTermsTable, SIGNAL("clicked(int,int,int,const QPoint&)"), self.tableClicked)  
         self.optionsBox.setDisabled(1)
 
     def download(self):
-        self.mesh.downloadOntology()
+        pb = OWGUI.ProgressBar(self, iterations=100)
+        self.mesh.downloadOntology(callback=pb.advance)
+        pb.finish()
 
     def tableSelectionChanged(self):
         return True
 
+    def tableClicked(self,row,col,button, point):
+        if self.sort_col == col:
+            self.sort_dir = not self.sort_dir
+        else:
+            self.sort_col = col
+            self.sort_dir = True
+            
+        self.sigTermsTable.sortColumn(self.sort_col,self.sort_dir,True)
+        #print "sortiram ", col, " ",row
+
     def viewSelectionChanged(self):
-        return True
+        items = list()
+        for i in self.lvItem2Mesh.iterkeys():
+            if i.isSelected():
+                items.append(self.lvItem2Mesh[i])
+        
+        if self.reference:
+            data=self.mesh.findSubset(self.reference, items)
+        else:
+            data=self.mesh.findSubset(self.cluster, items)
+        
+        #print items
+        self.send("Selected examples", data)
 
     def __updateData__(self):
+        self.lvItem2Mesh = dict()
+        
         if(self.reference and self.cluster):
-            #if(len(self.cluster) > len(self.reference)):
-            #    self.optionsBox.setDisabled(1)
-            #    QMessageBox.warning( None, "Invalid data size", "Cluster data in smaller than reference data. You shoulc check if signals are conected to correct input." , QMessageBox.Ok)
-            #    return False
+            if(len(self.cluster) > len(self.reference)):
+                self.optionsBox.setDisabled(1)
+                QMessageBox.warning( None, "Invalid dataset length", "Cluster dataset is shorter than reference dataset. You should check if signals are connected to correct inputs." , QMessageBox.Ok)
+                return False
 
             # everything is ok, now we can calculate enrichment and update labels, tree view and table data
-
-            #self.optionsBox.setDisabled(0)
+            self.optionsBox.setDisabled(0)
 
             self.treeInfo, self.results = self.mesh.findEnrichedTerms(self.reference,self.cluster,self.maxPValue, treeData= True)
             self.ratio.setText("ratio = %.4g" % self.mesh.ratio)
@@ -174,8 +225,13 @@ class OWMeshBrowser(OWWidget):
                 fold = "%.4g" % fold
                 vals = [mID ,rF,cF, pval, fold]
                 for j in range(len(vals)):
-                    self.sigTermsTable.setText(index, j, str(vals[j]))
+                    self.sigTermsTable.setItem(index,j, MyQTableItem(self.sigTermsTable, str(vals[j])))
                 index = index + 1
+
+            # initial sorting - p value
+            self.sort_col = 3
+            self.sort_dir = True
+            self.sigTermsTable.sortColumn(self.sort_col, self.sort_dir,True)
 
             # tree view update - The most beautiful part of this widget!
             starters = self.treeInfo["tops"]       # we get a list of possible top nodes            
@@ -188,10 +244,12 @@ class OWMeshBrowser(OWWidget):
                 fold = "%.4g" % self.results[e][4]
                 rfr = str(self.results[e][1])
                 cfr = str(self.results[e][2])
+                self.lvItem2Mesh[f] = self.mesh.toName[e]
                 data = [self.mesh.toName[e], rfr, cfr, pval, fold]
                 for t in range(len(data)):
                     f.setText(t,data[t])
                 self.__treeViewMaker__(f, e, False)
+
 
         elif self.reference or self.cluster:
             if self.reference:
@@ -199,47 +257,57 @@ class OWMeshBrowser(OWWidget):
             else:
                 current_data = self.cluster
 
+            self.optionsBox.setDisabled(0)
+
             self.treeInfo, self.results = self.mesh.findFrequentTerms(current_data,self.minExamplesInTerm, treeData= True)
 
             # table data update
             self.sigTermsTable.setNumRows(len(self.results))
             index = 0
-            for i in self.results.iterkeys(): ## sorted by the p value
+            for i in self.results.iterkeys(): 
                 mID = self.mesh.toName[i] + " (" + i + ")"
                 rF = self.results[i][1]
                 vals = [mID ,rF]
                 for j in range(len(vals)):
-                    self.sigTermsTable.setText(index, j, str(vals[j]))
+                    self.sigTermsTable.setItem(index,j, MyQTableItem(self.sigTermsTable, str(vals[j])))
+                    #self.sigTermsTable.setText(index, j, str(vals[j]))
                 index = index + 1
+
+            # initial sorting - frequency
+            self.sort_col = 1
+            self.sort_dir = True
+            self.sigTermsTable.sortColumn(self.sort_col, self.sort_dir,True)
 
             # tree view update - The most beautiful part of this widget!
             starters = self.treeInfo["tops"]       # we get a list of possible top nodes
             self.meshLV.clear()
-
+            
             for e in starters:      # we manualy create top nodes
                 f = QListViewItem(self.meshLV);
                 f.setOpen(1)
+                self.lvItem2Mesh[f] = self.mesh.toName[e]
                 rfr = str(self.results[e][1])
                 data = [self.mesh.toName[e], rfr]
                 for t in range(len(data)):
                     f.setText(t,data[t])
                 self.__treeViewMaker__(f, e, True)
             
-
     def __treeViewMaker__(self,parentLVI, parentID, soloMode):
         """ Function builds tree in treeListView. If soloMode = True function only display first two columns in tree view. (suitable when only one dataset is present) """
         for i in self.treeInfo[parentID]:   # for each succesor
             f = QListViewItem(parentLVI);
             f.setOpen(1)
-            if soloMode:
-                rfr = str(self.results[i][1])
-                data = [self.mesh.toName[i],rfr]
-            else:            
+            
+            rfr = str(self.results[i][1])
+            data = [self.mesh.toName[i],rfr]
+            
+            if not soloMode:           # when we have referece and cluster dataset we have to print additional info
                 pval = "%.4g" % self.results[i][3]
                 fold = "%.4g" % self.results[i][4]
-                rfr = str(self.results[i][1])
                 cfr = str(self.results[i][2])
-                data = [self.mesh.toName[i],rfr, cfr, pval, fold]
+                data.extend([cfr, pval, fold])
+
+            self.lvItem2Mesh[f]=data[0]         # mapping   QListViewItem <-> mesh id
 
             for t in range(len(data)):
                 f.setText(t,data[t])
@@ -250,6 +318,11 @@ class OWMeshBrowser(OWWidget):
         if self.reference or self.cluster:        
             self.__switchGUI__() 
             self.__updateData__()
+
+    def __clearGUI__(self):
+        """ Function clears updates tree view, table and labels to theis default value """
+        self.meshLV.clear()
+        self.sigTermsTable.setNumRows(0)
 
     def __switchGUI__(self):
         """ Function updates GUI for one or two datasets. """
@@ -298,6 +371,8 @@ class OWMeshBrowser(OWWidget):
         if self.reference or self.cluster:        
             self.__switchGUI__() 
             self.__updateData__()
+        else:
+            self.__clearGUI__()
 
     def getClusterData(self,data):
         if data:
@@ -313,4 +388,5 @@ class OWMeshBrowser(OWWidget):
         if self.reference or self.cluster:        
             self.__switchGUI__() 
             self.__updateData__()
-
+        else:
+            self.__clearGUI__()
