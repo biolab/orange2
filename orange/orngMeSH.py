@@ -11,6 +11,10 @@ class orngMeSH(object):
         self.ratio = 1
         self.statistics = None
         self.calculated = False
+        
+        self.ref_att = "Unknown"
+        self.clu_att = "Unknown"
+        self.solo_att = "Unknown"
 		
         #we calculate log(i!)
         self.lookup = [0]
@@ -82,22 +86,26 @@ class orngMeSH(object):
         self.__loadOntologyFromDisk()
         print "Ontology database has been updated."
 
-    def findSubset(self,examples,meshTerms, callback= None):
+    def findSubset(self,examples,meshTerms, callback = None):
         """ function examples which have at least one node on their path from list meshTerms
             findSubset(all,['Aspirine']) will return a dataset with examples are annotated as Aspirine """
         # clone        
         newdata = orange.ExampleTable(examples.domain)
-        att = self.__findMeshAttribute(examples)
+        self.solo_att = self.__findMeshAttribute(examples)
         ids = list()
+        
+        # we couldn't find any mesh attribute
+        if self.solo_att == "Unknown":
+            return newdata
         
         for i in meshTerms:
             ids.extend(self.toID[i])
 
         for e in examples:
             try:
-                ends = eval(e[att].value)
+                ends = eval(e[self.solo_att].value)
             except SyntaxError:
-                print "Error in parsing ", e[att].value
+                print "Error in parsing ", e[self.solo_att].value
                 continue
             endids = list()
             for i in ends:
@@ -140,13 +148,27 @@ class orngMeSH(object):
         # we build a dictionary 		meshID -> [description, noReference, [cids] ]
         self.statistics = dict()
         self.calculated = False
-        att = self.__findMeshAttribute(data)
+        self.solo_att = self.__findMeshAttribute(data)
+
+        # post processing variables
+        ret = dict()
+        ids = []
+        succesors = dict()		# for each term id -> list of succesors
+        succesors["tops"] = []
+        
+        # if we can't identify mesh attribute we return empty data structures
+        if self.solo_att == "Unknown":
+            if treeData:
+                return succesors, tops
+            else:
+                return ret
+
         # plain frequency
         for i in data:
             try:
-                endNodes = eval(i[att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
+                endNodes = eval(i[self.solo_att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
             except SyntaxError:
-                print "Error in parsing ",i[att].value
+                print "Error in parsing ",i[self.solo_att].value
                 continue
             # we find ID of end nodes
             endIDs = []
@@ -165,15 +187,12 @@ class orngMeSH(object):
                 self.statistics[k][1] += 1				    # counter increased
 
         # post processing
-        ret = dict()
-        ids = []
         for i in self.statistics.iterkeys():
             if(self.statistics[i][1] >= minSizeInTerm ) : 
                 ret[i] = [self.statistics[i][0],self.statistics[i][1],self.statistics[i][2]]
                 ids.append(i)
 
         # very nice print and additional info (top terms in tree, succesors) for printing tree in widget
-        succesors = dict()		# for each term id -> list of succesors
         if treeData: # we have to reorder results
             # we build a list of succesors. for each node we know which are its succesors in mesh ontology
             for i in ids:
@@ -212,21 +231,34 @@ class orngMeSH(object):
 
     def findEnrichedTerms(self,reference, cluster, pThreshold=0.05, treeData = False, callback=False):
         """ like above, but only includes enriched terms (with p value equal or less than pThreshold). Returns a list of (term_id,  term_description, countRef, countCluster, p-value,	enrichment/deprivement, list of corrensponding cids ... anything else necessary). It printOrder is true function returns results in nested lists. This means that at printing time we know if there is any relationship betwen terms"""
-		
-        if(not self.calculated or self.reference != reference or self.cluster != cluster):	# Do have new data? Then we have to recalculate everything.
+
+        self.clu_att = self.__findMeshAttribute(cluster)
+        self.ref_att = self.__findMeshAttribute(reference)
+	
+        if((not self.calculated or self.reference != reference or self.cluster != cluster) and self.ref_att != "Unknown" and self.clu_att != "Unknown"):	# Do have new data? Then we have to recalculate everything.
             self.reference = reference
             self.cluster = cluster			
             self.__calculateAll()
 
+        # declarations
         ret = dict()
         ids = []
+        succesors = dict()		# for each term id -> list of succesors
+        succesors["tops"] = []
+        
+        # if some attributes were unknown
+        if (self.clu_att == "Unknown" or self.ref_att == "Unknown"):
+            if treeData:
+                return ret
+            else:
+                return succesors, ret
+
         for i in self.statistics.iterkeys():
             if(self.statistics[i][3] <= pThreshold ) :#or self.statistics[i][4] <= pThreshold ): # 
                 ret[i] = [self.statistics[i][0],self.statistics[i][1],self.statistics[i][2],self.statistics[i][3],self.statistics[i][4]]
                 ids.append(i)
         
         # very nice print and additional info (top terms in tree, succesors) for printing tree in widget
-        succesors = dict()		# for each term id -> list of succesors
         if treeData: # we have to reorder results
             # we build a list of succesors. for each node we know which are its succesors in mesh ontology
             for i in ids:
@@ -280,12 +312,26 @@ class orngMeSH(object):
         return res
 
     def __findMeshAttribute(self,data):
-        """ TO DO """
-        return "mesh"
-
-    def __findIDAttribute(self,data):
-        """ TO DO """
-        return "cid"	
+        """ function tries to find attribute which contains list os mesh terms """
+        # we get a list of attributes
+        dom = data.domain.attributes
+        for k in data:              # for each example
+            for i in dom:           # for each attribute
+                att = str(i.name)
+                try:                                         # we try to use eval()
+                    r = eval(str(k[att].value))        
+                    if type(r) == list:         # attribute type should be list
+                        if self.dataLoaded:         # if ontology is loaded we perform additional test
+                            for i in r:
+                                if self.toID.has_key(i): return att
+                        else:               # otherwise we return list attribute
+                            return att
+                except SyntaxError:
+                    continue
+                except NameError:
+                    continue   
+        print "Program was unable to determinate MeSH attribute."
+        return "Unknown"
 
     def __isPrecedesor(self,a,b):
         """ function returns true if in Mesh ontology exists path from term id a to term id b """
@@ -299,13 +345,12 @@ class orngMeSH(object):
         self.statistics = dict()
         n = len(self.reference) 										# reference size
         cln = len(self.cluster)											# cluster size
-        att = self.__findMeshAttribute(self.reference)
         # frequency from reference list
         for i in self.reference:
             try:
-                endNodes = eval(i[att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
+                endNodes = eval(i[self.ref_att].value)	    # for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
             except SyntaxError:                     # where was a parse error
-                print "Error in parsing ",i[att].value
+                print "Error in parsing ",i[self.ref_att].value
                 n=n-1
                 continue
             #we find ID of end nodes
@@ -316,6 +361,11 @@ class orngMeSH(object):
                 else:
                     print "Current ontology does not contain MeSH term ", k, "." 
 
+            # endIDs may be empty > in this case we can skip this example
+            if len(endIDs) == 0:
+                n = n-1
+                continue
+
             # we find id of all parents
             allIDs = self.__findParents(endIDs)
 			
@@ -325,12 +375,11 @@ class orngMeSH(object):
                 self.statistics[k][1] += 1				    # increased noReference
 		
         # frequency from cluster list
-        att = self.__findMeshAttribute(self.cluster)
         for i in self.cluster:
             try:
-                endNodes = eval(i[att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
+                endNodes = eval(i[self.clu_att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
             except SyntaxError:
-                print "Error in parsing ",i[att].value
+                print "Error in parsing ",i[self.clu_att].value
                 cln = cln - 1
                 continue
             # we find ID of end nodes
@@ -339,15 +388,16 @@ class orngMeSH(object):
                 if(self.toID.has_key(k)):				
                     endIDs.extend(self.toID[k])	# for every endNode we add all corensponding meshIDs
 					
+            # endIDs may be empty > in this case we can skip this example
+            if len(endIDs) == 0:
+                cln = cln-1
+                continue
+					
             # we find id of all parents
             allIDs = self.__findParents(endIDs)								
 
             for k in allIDs:						# for every meshID we update statistics dictionary
                 self.statistics[k][2] += 1				# increased noCluster 
-                #	self.statistics[k][5].append(i["cid"])		# CID added to meshID
-
-        #        print "processing complete ", n, " ", cln
-
 
         self.ratio = float(cln)/float(n)
         

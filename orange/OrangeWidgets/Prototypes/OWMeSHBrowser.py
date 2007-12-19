@@ -36,7 +36,6 @@ class MyQTableItem(QTableItem):
         except ValueError:      # sorting text column
             return self.data
 
-
 class ListViewToolTip(QToolTip):
     """brief A class to allow tooltips in a listview."""
     def __init__(self, view, column, data):
@@ -104,9 +103,8 @@ class OWMeshBrowser(OWWidget):
         self.infoa = QLabel("No reference data.", box)
         self.infob = QLabel("No cluster data.", box)
         self.ratio = QLabel("", box)
-        self.infoc = QLabel("", box)
-        self.infod = QLabel("", box)
-        self.infoe = QLabel("", box)
+        self.ref_att = QLabel("", box)
+        self.clu_att = QLabel("", box)
         self.resize(930,600)
 
         OWGUI.separator(self.controlArea)
@@ -209,7 +207,10 @@ class OWMeshBrowser(OWWidget):
             self.optionsBox.setDisabled(0)
 
             self.treeInfo, self.results = self.mesh.findEnrichedTerms(self.reference,self.cluster,self.maxPValue, treeData= True)
+            
             self.ratio.setText("ratio = %.4g" % self.mesh.ratio)
+            self.clu_att.setText("cluster MeSH att: " + self.mesh.clu_att)
+            self.ref_att.setText("reference MeSH att: " + self.mesh.ref_att)
 
             # table data update
             self.sigTermsTable.setNumRows(len(self.results))
@@ -260,6 +261,11 @@ class OWMeshBrowser(OWWidget):
             self.optionsBox.setDisabled(0)
 
             self.treeInfo, self.results = self.mesh.findFrequentTerms(current_data,self.minExamplesInTerm, treeData= True)
+            
+            if self.reference:
+                self.ref_att.setText("reference MeSH att: " + self.mesh.solo_att)
+            else:
+                self.clu_att.setText("cluster MeSH att: " + self.mesh.solo_att)
 
             # table data update
             self.sigTermsTable.setNumRows(len(self.results))
@@ -359,14 +365,12 @@ class OWMeshBrowser(OWWidget):
 
     def getReferenceData(self,data):
         if data:
-            #if not data.domain.hasmeta("mesh"):
-            #    QMessageBox.warning( None, "Wrong dataset?", "Reference dataset doesn't have meta attribute named 'mesh'." , QMessageBox.Ok)
-            #    return
             self.reference = data
             self.infoa.setText('%d reference instances' % len(data))
         else:
             self.reference = None
             self.infoa.setText('No reference data.')
+            self.ref_att.setText('')
 
         if self.reference or self.cluster:        
             self.__switchGUI__() 
@@ -376,14 +380,12 @@ class OWMeshBrowser(OWWidget):
 
     def getClusterData(self,data):
         if data:
-            #if not data.domain.hasmeta("mesh"):
-            #    QMessageBox.warning( None, "Wrong dataset?", "Cluster dataset doesn't have meta attribute named 'mesh'." , QMessageBox.Ok)
-            #    return
             self.cluster = data
             self.infob.setText('%d cluster instances' % len(data))
         else:
             self.cluster = None
             self.infob.setText('No cluster data.')
+            self.clu_att.setText('')
         
         if self.reference or self.cluster:        
             self.__switchGUI__() 
