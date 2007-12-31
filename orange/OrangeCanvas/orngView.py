@@ -80,7 +80,7 @@ class SchemaView(QCanvasView):
             self.tempWidget.updateText(newName)
             self.tempWidget.updateTooltip()
             self.tempWidget.updateLinePosition()
-            if (int(qVersion()[0]) < 3) and len(newName) < 3 or newName[:2].lower() != "qt":
+            if (int(qVersion()[0]) < 3) and (len(newName) < 3 or newName[:2].lower() != "qt"):
                 newName = "Qt " + newName
             self.tempWidget.instance.setCaption(newName)
             self.doc.enableSave(True)
