@@ -68,7 +68,7 @@ class SchemaView(QCanvasView):
             return
         exName = str(self.tempWidget.caption)
         if (int(qVersion()[0]) >= 3):
-            (newName ,ok) = QInputDialog.getText("Rename Widget", 'Enter new name for the widget "%s": ' % exName, QLineEdit.normal, exName)
+            (newName ,ok) = QInputDialog.getText("Rename Widget", 'Enter new name for the widget "%s": ' % exName, QLineEdit.Normal, exName)
         else:
             (newName ,ok) = QInputDialog.getText("Qt Rename Widget", 'Enter new name for the widget "%s": ' % exName, exName)
         newName = str(newName)
