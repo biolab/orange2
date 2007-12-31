@@ -122,8 +122,15 @@ class OrangeCanvasDlg(QMainWindow):
         self.resize(width, height)
 
         # center window in the desktop
-        deskH = app.desktop().height()
-        deskW = app.desktop().width()
+        # in newer versions of Qt we can also find the center of a primary screen
+        # on multiheaded desktops
+        if (int(qVersion()[0]) >= 3):
+            desktop = app.desktop()
+            deskH = desktop.screenGeometry(desktop.primaryScreen()).height()
+            deskW = desktop.screenGeometry(desktop.primaryScreen()).width()
+        else:
+            deskH = app.desktop().height()
+            deskW = app.desktop().width()
         h = max(0, deskH/2 - height/2)  # if the window is too small, resize the window to desktop size
         w = max(0, deskW/2 - width/2)
         self.move(w,h)
