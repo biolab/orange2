@@ -155,7 +155,10 @@ class NetworkOptimization(orangeom.NetworkOptimization):
 
         graphFile.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
         if name == '':
-            graphFile.write('*Network ' + '"Qt network" \n\n')
+            if (int(qVersion()[0]) >= 3):
+                graphFile.write('*Network ' + '"network" \n\n')
+            else:
+                graphFile.write('*Network ' + '"Qt network" \n\n')
         else:
             graphFile.write('*Network ' + str(name) + ' \n\n')
 
