@@ -32,7 +32,7 @@ class OWChipQuery(OWWidget):
         self.aggregation = 0
         self.timeSeries = 1
         
-        self.serverURL = "212.235.189.61/index.php"
+        self.serverURL = "212.235.189.54/index.php"
         self.loadSettings()
 
         self.potentialGroups = self.timeSeries and self.allGroups[:-1] or self.allGroups
