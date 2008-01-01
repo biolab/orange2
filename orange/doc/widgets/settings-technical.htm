@@ -1,6 +1,8 @@
 <html>
 <head>
 <title>Orange Widgets Reference Guide for Developers</title>
+<link rel=stylesheet HREF="../style.css" type="text/css">
+<link rel=stylesheet href="style-print.css" type="text/css" media=print>
 </head>
 <body>
 <h1>Orange Widgets Reference Guide for Developers: Settings</h1>
@@ -11,44 +13,45 @@ selections in their combo boxes and similar. These settings are even
 maintained across sessions. This document describes the Orange's
 methods that take care of that.</P>
 
-<P>Orange doesn't really save the state of the controls but the
-corresponding attributes. For a check box there should be a
-corresponding widget's attribute recording the check box's state so
-that when the user changes a check box, the attribute changes and
-vice-versa. Although you can create such a link manually, you should
-always use the module <code>OWGUI</code> instead; for instance, for a
-check box, use <code>OWGUI.checkBox</code> and not simply the Qt's
-<code>QCheckBox</code>.</P>
+<P>Orange doesn't really save the state of the controls but instead
+saves the value of the corresponding attributes. For a check box there
+should be a corresponding widget's attribute recording the check box's
+state so that when the user changes a check box, the attribute changes
+and vice-versa. Although you can create such a link manually, you
+should always use the module <a href="owgui.htm">OWGUI</a> instead;
+for instance, for a check box, use <code>OWGUI.checkBox</code> and not
+simply the Qt's <code>QCheckBox</code>.</P>
 
 <P>The settings fall into two groups. Some of them do not depend on
 the data, while other are context-dependent. For the first to be saved
 properly, you only need to list them in the <code>settingsList</code>
-in the widget definition, as already described elsewhere.</P>
-
+in the widget definition, as already described <a
+href="settings.htm">elsewhere</a>.</P>
 
 <h2>Context dependent settings</h2>
 
 <P>Context dependent settings usually depend upon the attributes that
-are present in the domain. For instance, the scatter plot widget
-contains settings that specify the attributes for x and y axis, and
-the settings that define the color, shape and size of the examples in
-the graph. An even more complicated case is the widget for data
+are present in the data set domain. For instance, the scatter plot
+widget contains settings that specify the attributes for x and y axis,
+and the settings that define the color, shape and size of the examples
+in the graph. An even more complicated case is the widget for data
 selection with which one can select the examples based on values of
 certain attributes. Before applying the saved settings, these widgets
-needs to check their compliance with the domain of the actual
-data. And, for maintaining the settings across the session to be truly
-useful, they need to save separate settings configuration for various
-domain and, when given a particular data set, select the saved
-settings that are applicable and match the data the best.</P>
+needs to check their compliance with the domain of the actual data
+set. To be truly useful, context dependent settings needs to save a
+setting configuration for each particular data set used. That is, when
+given a particular data set, it has to select the saved settings that
+is applicable and matches best currently used data set.</P>
 
 <P>Saving, loading and matching contexts is taken care of by context
-handlers. There are classes of context handlers at the moment. One is
-the abstract <code>ContextHandler</code> and the other is
-<code>DomainContextHandler</code> in which the context is defined by
-the domain and the settings contain attribute names. The latter should
-cover most of your needs, while for more complicated widgets you will
-need to derive a new classes from it. There may even be some cases in
-which the context is not defined by the domain, in which case the
+handlers. Currently, there are only two classes of context handlers
+implemented. The first one is the abstract <code>ContextHandler</code>
+and the second one is <code>DomainContextHandler</code> in which the
+context is defined by the data set domain and where the settings
+contain attribute names. The latter should cover most of your needs,
+while for more complicated widgets you will need to derive a new
+classes from it. There may even be some cases in which the context is
+not defined by the domain, in which case the
 <code>ContextHandler</code> will be used as a base for your new
 handler.</P>
 
