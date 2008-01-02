@@ -365,6 +365,7 @@ class OWPredictions(OWWidget):
             metas.extend(mc)
 
         domain = orange.Domain(self.data.domain.attributes + [self.data.domain.classVar])
+        domain.addmetas(self.data.domain.getmetas())
         for m in metas:
             domain.addmeta(orange.newmetaid(), m)
         predictions = orange.ExampleTable(domain, self.data)
