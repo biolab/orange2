@@ -1,0 +1,115 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css">
+<LINK REL=StyleSheet HREF="../style-print.css" TYPE="text/css" MEDIA=print></LINK>
+</HEAD>
+
+<BODY>
+<h1>orngMeSH</h1>
+
+<index name="modules+multidimensional scaling">
+
+<p>The orngMeSH module provides the functionality to calculate <a href="http://www.nlm.nih.gov/bsd/disted/mesh/">MeSH</a> term enrichment and to annotate (MeSH ontology) supported examples (chemical compounds with CID, medical articles with PMID).</p>
+
+<h2>orngMesh</h2>
+
+<p><INDEX name="classes/orngMesh (in orngMeSH)">orngMeSH is the main class for all task related to MeSH ontology</p>
+
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>orngMeSH()</DT>
+<DD>Constructor has no arguments.</DD>
+
+<DT>setDataDir(path)</DT>
+<DD>Sets path to directory containing MeSH ontology, CID and PMID annotation.</DD>
+
+<DT>getDataDir</DT>
+<DD>Returns current data directory path.</DD>
+
+<DT>downloadOntology(callback=None)</DT>
+<DD>Function downloads new MeSH ontology from the internet. Since MeSH ontology is quite large (about 60Mb) it may take a while.</DD>
+
+<DT>findFrequentTerms(data, minSizeInTerm, callback=None)</DT>
+<DD>Function returns a dictionary where keys are MeSH terms ids and values are integers representing number of examples annotated with corresponding MeSH term. Data has to be instance of <code>ExampleTable</code>. With argument <code>minSizeInTerm</code> you can select only MeSH terms that have at least <code>minSizeInTerm</code> annotated examples.</DD>
+
+<DT>findEnrichedTerms(reference, cluster, pThreshold=0.05, callback=None)</DT>
+<DD>Function returns a dictionary where keys are MeSH terms and values are lists of four integers (number of annotated reference examples, number of annotated cluster examples, MeSH term enrichment, fold enrichment). With attribute <code>pThreshold</code> you can limit MeSH terms in returned dictionary to terms with enrichment less or equal to defined constant. Data sets (<code>reference</code> and <code>cluster</code>) have to be instances of <code>ExampleTable</code></DD>
+
+<DT>printMeSH(data, selection = ["term","r","c", "p"])</DT>
+<DD>Function performs a pretty print of a dictionary returned by function <code>findFrequentTerms</code> or <code>findEnrichedTerms</code>. When you are printing a dictionary of enriched MeSH terms (returned by <code>findEnrichedTerms</code>) you can also specify their properties and their order to print. At the moment you can choose among "term" (MeSH term name), "desc" (MeSH term description), "r" (number of examples from reference), "c" (number of examples from cluster), "p" (MeSH term enrichment) and "fold" (fold enrichment). </DD>
+<DT>
+	
+<DT>findTerms(ids, idType="cid")</DT>
+<DD>Function returns a dictionary where keys are members of the list <code>ids</code> and values are lists of MeSH terms that apply to a key. With <code>idType</code> you can choose annotation ("cid" or TODO!!! "pmid").  </DD><DT>
+		
+<DT>parsePubMed(filename, attributes = ["pmid", "title","abstract","mesh"], skipExamplesWithout = ["mesh"])</DT>
+<DD>Function parses <a href="http>//www.pubmed.gov">PubMed</a> XML file (search results saved in XML format) into Oranges <code>ExampleTable</code>. Of course you can select only certain attributes. At the moment supported attributes are "pmid" (PubMed ID), "title" (article title), "abstract" (article abstract), "mesh" (MeSH terms) and "affilation". </DD><DT>
+	
+<DT>findSubset(examples, meshTerms, callback = None)</DT>
+<DD>Function return a new dataset (subset of <code>examples</code>) with examples that apply to one or more MeSH terms from the list <code>meshTerms</code>. Argument <code>examples</code> has to be instance of <code>ExampleTable</code>. </DD><DT>
+	
+
+<p class=section>Attributes</p>
+<DL class =attributes></DL>
+	
+<DT>toID</DT>
+<DD>Dictionary <code>toID</code> provides mapping between MeSH term and MeSH term ids. Please note that some MeSH terms have more than one MeSH term id (one to many relation).  </DD>
+
+<DT>toName</DT>
+<DD>Dictionary <code>toName</code> provides mapping between MeSH term id and MeSH term. </DD>
+
+<DT>toDesc<DT>
+<DD>Dictionary <code>toName</code> provides mapping between MeSH term and MeSH term description.</code>
+
+<DT>fromCID</DT>
+<DD>Dictionary <code>fromCID</code> provides mapping between CID (compound id) and a list of MeSH terms.</DD>
+
+<DT>fromPMID<DT>
+<DD>Dictionary <code>fromPMID</code> provides mapping between PMID (PubMed id) and a list of MeSH terms.</DD>
+
+
+
+
+<h2>Examples</h2>
+
+<h3>Basic operations on MeSH ontology</h3>
+
+<p>In our first example, we will show how to manipulate with MeSH ontology. Let's start with simple mapping between MeSH terms and their ids. This is done by the following code:</p>
+
+<p class="header">part of <a href="mesh1.py">mesh1.py</a> </p>
+<xmp class=code>import orange
+import orngMeSH
+
+
+</xmp>
+
+
+
+
+
+<h3>Calculating MeSH term frequency and MeSH term enrichment</h3>
+<p>asdf</p>
+
+<h3>Parsing PubMed XML data</h3>
+<p>asdf</p>
+
+<h3>Advanced: using MeSH terms relationship data</h3>
+<p>asdf</p>
+ 
+
+<p class="header"><a href="mds3.py">mds3.py</a> (uses <a href="reference.tab">reference.tab</a> and <a href="cluster.tab">cluster.tab</a>)</p>
+<XMP class= code>import orange
+import orngMeSH
+
+
+</XMP>
+
+<XMP class= code>i=0 while 100>i:
+    i+=1
+</XMP>
+
+</body>
+</html>
+
+
