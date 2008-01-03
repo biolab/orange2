@@ -1,4 +1,9 @@
+# todo
+# 
+
 import orange
+from xml.sax import make_parser
+from xml.sax.handler import ContentHandler
 from math import log,exp
 from urllib import urlopen
 import os.path
@@ -51,7 +56,8 @@ class orngMeSH(object):
                 if(len(results)%400 == 0):
                     if not callback:
                         callback(int(rsize*100/size))
-                    print "remaining " + str(rsize*100/size) + "%."			
+                    if not self.widgetMode:
+                        print "remaining " + str(rsize*100/size) + "%."			
 	
             parts = line.split(" = ")
             if(len(parts) == 2 and len(results)>0):
@@ -88,7 +94,7 @@ class orngMeSH(object):
 
     def findSubset(self,examples,meshTerms, callback = None):
         """ function examples which have at least one node on their path from list meshTerms
-            findSubset(all,['Aspirine']) will return a dataset with examples are annotated as Aspirine """
+            findSubset(all,['Aspirine']) will return a dataset with examples annotated as Aspirine """
         # clone        
         newdata = orange.ExampleTable(examples.domain)
         self.solo_att = self.__findMeshAttribute(examples)
@@ -125,25 +131,28 @@ class orngMeSH(object):
 
         return newdata	
 
-#    def findTerms(self,CIDs):
-#        """ returns a nested list (?) or a graph (?) or better a dictionary (?) with terms that apply to CIDs.
-#        term in this structure could probably be an object that holds its name, id, description(?) or alternatively just
-#        an termID (probably better). If the later, than dictionary should be available for mapping of termID to name (termID2name)
-#        and termID to description (termID2description), and also for mapping of name to ID (name2termID). """
+    def findTerms(self,ids, idType="cid"):
+        """ returns a dictionary with terms (term id) that apply to ids (cids or pmids). """
 
-        # at the moment it returns just a list of mesh terms
-#        ret = dict()
-#        if(not self.dataLoaded):
-#            print "Annotation and ontology has never been loaded! Use function setDataDir(path) to fix the problem."
-#            return ret
+        ret = dict()
+        if(not self.dataLoaded):
+            print "Annotation and ontology has never been loaded! Use function setDataDir(path) to fix the problem."
+            return ret
 
-#        for i in CIDs:
-#            if(self.fromCID.has_key(i)):
-#                ret[i] = self.fromCID[i]
-#        return ret
-#
+        if idType=="cid": 
+            database = self.fromCID
+        elif idType == "pmid":
+            database = self.fromPMID
+        else:
+            return ret
+        
+        for i in ids:
+            if(database.has_key(int(i))):
+                ret[i] = database[int(i)]
+        return ret
+
     
-    def findFrequentTerms(self,data,minSizeInTerm, treeData = False, callback=False):
+    def findFrequentTerms(self,data,minSizeInTerm, treeData = False, callback=None):
         """ Function iterates thru examples in data. For each example it computes a list of associated terms. At the end we get (for each term) number of examples which have this term. """
         # we build a dictionary 		meshID -> [description, noReference, [cids] ]
         self.statistics = dict()
@@ -183,53 +192,53 @@ class orngMeSH(object):
 			
             for k in allIDs:						        # for every meshID we update statistics dictionary
                 if(not self.statistics.has_key(k)):		    # first time meshID
-                    self.statistics[k] = [self.toDesc[self.toName[k]], 0, [] ]
-                self.statistics[k][1] += 1				    # counter increased
+                    self.statistics[k] = 0
+                self.statistics[k] += 1				    # counter increased
 
         # post processing
         for i in self.statistics.iterkeys():
-            if(self.statistics[i][1] >= minSizeInTerm ) : 
-                ret[i] = [self.statistics[i][0],self.statistics[i][1],self.statistics[i][2]]
+            if(self.statistics[i] >= minSizeInTerm ) : 
+                ret[i] = self.statistics[i]
                 ids.append(i)
 
-        # very nice print and additional info (top terms in tree, succesors) for printing tree in widget
-        if treeData: # we have to reorder results
-            # we build a list of succesors. for each node we know which are its succesors in mesh ontology
-            for i in ids:
-                succesors[i] = []
-                for j in ids:
-                    if(i != j and self.__isPrecedesor(i,j)):
-                        succesors[i].append(j)
-            
-            # for each node from list above we remove its indirect succesors
-            # only  i -1-> j   remain
-            for i in succesors.iterkeys():
-                #print  "obdelujemo ", i
-                succs = succesors[i]
-                #print "nasl ", succs
-                second_level_succs = []
-                for k in succs:     
-                    second_level_succs.extend(succesors[k])
-                #print "nivo 2 ", second_level_succs
-                for m in second_level_succs:
-                    #print i, " ", m 
-                    if succesors[i].count(m)>0:
-                        succesors[i].remove(m)
-			
-            # we make a list of top nodes
-            tops = list(ids)
-            for i in ids:
-                for j in succesors[i]:
-                    tops.remove(j)
-
-            # we pack tops table and succesors hash
-            succesors["tops"] = tops
-            return succesors,ret 
-            
-        return ret
+        # we can also return tree data
+        if treeData: #we return also compulsory data for tree printing 
+            return self.__treeData(ids), ret 
+        else:
+            return ret
+    
+    def __treeData(self,ids):
+        succesors = dict()
+        succesors["tops"]= []
+        # we build a list of succesors. for each node we know which are its succesors in mesh ontology
+        for i in ids:
+            succesors[i] = []
+            for j in ids:
+                if(i != j and self.__isPrecedesor(i,j)):
+                    succesors[i].append(j)
         
+        # for each node from list above we remove its indirect succesors
+        # only  i -1-> j   remain
+        for i in succesors.iterkeys():
+            succs = succesors[i]
+            second_level_succs = []
+            for k in succs:     
+                second_level_succs.extend(succesors[k])
+            for m in second_level_succs:
+                if succesors[i].count(m)>0:
+                    succesors[i].remove(m)
+		
+        # we make a list of top nodes
+        tops = list(ids)
+        for i in ids:
+            for j in succesors[i]:
+                tops.remove(j)
 
-    def findEnrichedTerms(self,reference, cluster, pThreshold=0.05, treeData = False, callback=False):
+        # we pack tops table and succesors hash
+        succesors["tops"] = tops
+        return succesors  
+        
+    def findEnrichedTerms(self,reference, cluster, pThreshold=0.05, treeData = False, callback=None):
         """ like above, but only includes enriched terms (with p value equal or less than pThreshold). Returns a list of (term_id,  term_description, countRef, countCluster, p-value,	enrichment/deprivement, list of corrensponding cids ... anything else necessary). It printOrder is true function returns results in nested lists. This means that at printing time we know if there is any relationship betwen terms"""
 
         self.clu_att = self.__findMeshAttribute(cluster)
@@ -254,50 +263,105 @@ class orngMeSH(object):
                 return succesors, ret
 
         for i in self.statistics.iterkeys():
-            if(self.statistics[i][3] <= pThreshold ) :#or self.statistics[i][4] <= pThreshold ): # 
-                ret[i] = [self.statistics[i][0],self.statistics[i][1],self.statistics[i][2],self.statistics[i][3],self.statistics[i][4]]
+            if(self.statistics[i][2] <= pThreshold ) :#or self.statistics[i][4] <= pThreshold ): # 
+                ret[i] = self.statistics[i]
                 ids.append(i)
         
-        # very nice print and additional info (top terms in tree, succesors) for printing tree in widget
-        if treeData: # we have to reorder results
-            # we build a list of succesors. for each node we know which are its succesors in mesh ontology
-            for i in ids:
-                succesors[i] = []
-                for j in ids:
-                    if(i != j and self.__isPrecedesor(i,j)):
-                        succesors[i].append(j)
-            
-            # for each node from list above we remove its indirect succesors
-            # only  i -1-> j   remain
-            for i in succesors.iterkeys():
-                succs = succesors[i]
-                second_level_succs = []
-                for k in succs:     
-                    second_level_succs.extend(succesors[k])
-                for m in second_level_succs:
-                    if succesors[i].count(m)>0:
-                        succesors[i].remove(m)
-			
-            # we make a list of top nodes
-            tops = list(ids)
-            for i in ids:
-                for j in succesors[i]:
-                    tops.remove(j)
+        """for i in ids:
+            succesors[i] = []
+            for j in ids:
+                if(i != j and self.__isPrecedesor(i,j)):
+                    succesors[i].append(j)
+        
+        # for each node from list above we remove its indirect succesors
+        # only  i -1-> j   remain
+        for i in succesors.iterkeys():
+            succs = succesors[i]
+            second_level_succs = []
+            for k in succs:     
+                second_level_succs.extend(succesors[k])
+            for m in second_level_succs:
+                if succesors[i].count(m)>0:
+                    succesors[i].remove(m)
+		
+        # we make a list of top nodes
+        tops = list(ids)
+        for i in ids:
+            for j in succesors[i]:
+                tops.remove(j)
 
-            # we pack tops table and succesors hash
-            succesors["tops"] = tops
-            return succesors,ret 
-            
-        return ret
+        # we pack tops table and succesors hash
+        succesors["tops"] = tops """
+    
+        if treeData:
+            return self.__treeData(ids),ret 
+        else:
+            return ret
 
-    def printMeSH(self,terms):
-        """for a structured list of terms prints a MeSH ontology. Together with ontology should print things like number
-        of compounds, p-values (enrichment), cids, ... see Printing the Tree in orngTree documentation for example of such
+    def printMeSH(self,data, selection = ["term","r","c", "p"]):
+        """for a dictinary of terms prints a MeSH ontology. Together with ontology should print things like number
+        of compounds, p-values (enrichment), ... see Printing the Tree in orngTree documentation for example of such
         an implementation. The idea is to have only function for printing out the nested list of terms. """
+        # first we calculate additional info for printing MeSH ontology
+        info = self.__treeData(data.keys())
+        for i in info["tops"]:
+            self.__pp(0,i,info,data, selection)
+            
+    def __pp(self, offset, item, relations, data, selection):
+        mapping = {"term":0,"desc":1,"r":2,"c":3, "p":4, "fold":5} 
+        for i in range(0,offset):
+            print " ",
+
+        if type(data[item]) == list:
+            pval = "%.4g" % data[item][2]
+            fold = "%.4g" % data[item][3]
+            print_data = [self.toName[item], self.toDesc[self.toName[item]], str(data[item][0]), str(data[item][1]), str(pval), str(fold)]
+            for i in selection:
+                if i != "term":
+                    print i + "=" + print_data[mapping[i]],
+                else:
+                    print print_data[mapping[i]],
+
+            #print self.toName[item], " r=" + str(data[item][1])  +" c="+ str(data[item][2])  ," p=" + str(pval) + " fold=" + str(fold)
+            print ""
+        else:
+            print self.toName[item], " freq=" + str(data[item])
+
+
+        for i in relations[item]:
+            self.__pp(offset + 2, i, relations, data, selection) 
         
     def findCompounds(self,terms, CIDs):
         """from CIDs found those compounds that match terms from the list"""
         # why do we need such a specialized function?
+        
+    def parsePubMed(self,filename, attributes = ["pmid", "title","abstract","mesh"], skipExamplesWithout = ["mesh"]):
+        parser = make_parser()
+        handler = pubMedHandler()
+        parser.setContentHandler(handler)
+        
+        parser.parse(open(filename))
+
+        atts = []
+        for i in attributes:
+            atts.append(orange.StringVariable(i))
+        
+        domain = orange.Domain(atts,0)
+        data = orange.ExampleTable(domain)
+        print data.domain.attributes
+        mapping = {"pmid":0, "title":1, "abstract":2, "mesh":3, "affilation":4}
+        
+        for i in handler.articles:
+            r=[]
+            skip = False
+            for f in attributes:
+                if skipExamplesWithout.count(f) > 0:
+                    if (f == "mesh" and len(i[mapping[f]]) == 0) or str(i[mapping[f]]) == "":
+                        skip = True
+                r.append(str(i[mapping[f]]))
+            if not skip:
+                data.append(r)
+        return data       
 
     def __findParents(self,endNodes):
         """for each end node in endNodes function finds all nodes on the way up to the root"""		
@@ -319,7 +383,7 @@ class orngMeSH(object):
             for i in dom:           # for each attribute
                 att = str(i.name)
                 try:                                         # we try to use eval()
-                    r = eval(str(k[att].value))        
+                    r = eval(str(k[att].value))
                     if type(r) == list:         # attribute type should be list
                         if self.dataLoaded:         # if ontology is loaded we perform additional test
                             for i in r:
@@ -371,8 +435,8 @@ class orngMeSH(object):
 			
             for k in allIDs:						        # for every meshID we update statistics dictionary
                 if(not self.statistics.has_key(k)):		    # first time meshID
-                    self.statistics[k] = [self.toDesc[self.toName[k]], 0, 0, 0.0, 0.0, [] ]
-                self.statistics[k][1] += 1				    # increased noReference
+                    self.statistics[k] = [ 0, 0, 0.0, 0.0 ]
+                self.statistics[k][0] += 1				    # increased noReference
 		
         # frequency from cluster list
         for i in self.cluster:
@@ -397,14 +461,14 @@ class orngMeSH(object):
             allIDs = self.__findParents(endIDs)								
 
             for k in allIDs:						# for every meshID we update statistics dictionary
-                self.statistics[k][2] += 1				# increased noCluster 
+                self.statistics[k][1] += 1				# increased noCluster 
 
         self.ratio = float(cln)/float(n)
         
         # enrichment
         for i in self.statistics.iterkeys():
-            self.statistics[i][3] = self.__calcEnrichment(n,cln,self.statistics[i][1],self.statistics[i][2])    # p enrichment
-            self.statistics[i][4] = float(self.statistics[i][2]) / float(self.statistics[i][1] ) / self.ratio   # fold enrichment
+            self.statistics[i][2] = self.__calcEnrichment(n,cln,self.statistics[i][0],self.statistics[i][1])    # p enrichment
+            self.statistics[i][3] = float(self.statistics[i][1]) / float(self.statistics[i][0] ) / self.ratio   # fold enrichment
 
         self.calculated = True		
 
@@ -425,9 +489,11 @@ class orngMeSH(object):
 
     def __loadOntologyFromDisk(self):
         """ Function loads MeSH ontology (pair cid & MeSH term) and MeSH graph data (graph structure) """
-        self.toID = dict()  				#   name -> [ID] be careful !!! One name can match multiple IDs!
+        self.toID = dict()  				#   name -> [IDs] Be careful !!! One name can match many IDs!
         self.toName = dict()				#   ID -> name
-        self.toDesc = dict()				# 	 name -> description		
+        self.toDesc = dict()				# 	name -> description
+        self.fromCID = dict()               #   cid -> term id
+        self.fromPMID = dict()              #   pmid -> term id
 
         __dataPath = os.path.join(os.path.dirname(__file__), self.path)
 		
@@ -437,6 +503,20 @@ class orngMeSH(object):
         except IOError:
             print os.path.join(__dataPath,'mesh-ontology.dat') + " does not exist! Please use function setDataDir(path) to fix this problem."
             return False
+            
+        try:		
+            # reading cid annotation from file
+            f = file(os.path.join(__dataPath,'cid-annotation.dat'))
+        except IOError:
+            print os.path.join(__dataPath,'cid-annotation.dat') + " does not exist! Please use function setDataDir(path) to fix this problem."
+            #return False
+            
+        try:		
+            # reading pmid annotation from file
+            g = file(os.path.join(__dataPath,'pmid-annotation.dat'))
+        except IOError:
+            print os.path.join(__dataPath,'pmid-annotation.dat') + " does not exist! Please use function setDataDir(path) to fix this problem."
+            #return False
 			
         # loading ontology graph
         t=0
@@ -454,9 +534,60 @@ class orngMeSH(object):
 			
             for r in ids:
                 self.toName[r] = parts[0]
+        
+        # loading cid -> mesh
+        
+        # loading pmid -> mesh
 				
         print "Current MeSH ontology contains ", t, " mesh terms."
         return True
+
+class pubMedHandler(ContentHandler):
+	def __init__(self):
+		self.state = 0 		# 		0 start state, 1 pmid, 2 title, 3 abstract, 4 mesh 
+		self.articles = []
+ 		self.pmid = "0"
+		self.title = ""
+		self.mesh = list()
+		self.abstract = ""
+		self.affiliation = ""
+
+	def startElement(self, name, attributes):
+		# print "parsam ", name
+		if name == "PubmedArticle":
+			self.pmid = ""
+			self.abstract = ""
+			self.title = ""
+			self.mesh = []
+		if name == "PMID":
+			self.state = 1
+		if name == "ArticleTitle":
+			self.state = 2
+		if name == "AbstractText":
+			self.state = 3
+		if name == "DescriptorName":
+			self.state = 4
+			self.mesh.append("")
+		if name == "Affiliation":
+		    self.state = 5
+
+	def characters(self, data):
+		if self.state == 1:
+			self.pmid += data
+		if self.state == 2:
+			self.title += data.encode("utf-8")
+		if self.state == 3:
+			self.abstract += data.encode("utf-8")
+		if self.state == 4:
+			self.mesh[-1] += data.encode("utf-8")
+		if self.state == 5:
+		    self.affiliation += data.encode("utf-8")
+
+	def endElement(self, name):
+		#print "   koncujem ", name
+		self.state = 0
+		if name == "PubmedArticle":
+			self.articles.append([self.pmid,self.title,self.abstract,self.mesh, self.affiliation])
 
 #load data
 #reference_data = orange.ExampleTable("data/D06-reference.tab")

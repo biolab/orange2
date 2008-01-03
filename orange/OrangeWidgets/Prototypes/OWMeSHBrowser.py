@@ -28,6 +28,8 @@ class MyQTableItem(QTableItem):
             offset = 0          # additional parameter to hadle exponent '2e-14' float format
             if(tdata.count('e')>0 or tdata.count('E')>0):
                 pre="*"
+                print e
+                print tdata
                 offset = 1
                 
             for i in range(0,40-l-offset):
@@ -218,10 +220,10 @@ class OWMeshBrowser(OWWidget):
             for i in self.results.iterkeys(): ## sorted by the p value
                # mTerm = i[0]
                 mID = self.mesh.toName[i] + " (" + i + ")"
-                rF = self.results[i][1]
-                cF = self.results[i][2]
-                pval = self.results[i][3]
-                fold = self.results[i][4]
+                rF = self.results[i][0]
+                cF = self.results[i][1]
+                pval = self.results[i][2]
+                fold = self.results[i][3]
                 pval = "%.4g" % pval
                 fold = "%.4g" % fold
                 vals = [mID ,rF,cF, pval, fold]
@@ -241,10 +243,10 @@ class OWMeshBrowser(OWWidget):
             for e in starters:      # we manualy create top nodes
                 f = QListViewItem(self.meshLV);
                 f.setOpen(1)
-                pval = "%.4g" % self.results[e][3]
-                fold = "%.4g" % self.results[e][4]
-                rfr = str(self.results[e][1])
-                cfr = str(self.results[e][2])
+                rfr = str(self.results[e][0])
+                cfr = str(self.results[e][1])
+                pval = "%.4g" % self.results[e][2]
+                fold = "%.4g" % self.results[e][3]
                 self.lvItem2Mesh[f] = self.mesh.toName[e]
                 data = [self.mesh.toName[e], rfr, cfr, pval, fold]
                 for t in range(len(data)):
@@ -272,7 +274,7 @@ class OWMeshBrowser(OWWidget):
             index = 0
             for i in self.results.iterkeys(): 
                 mID = self.mesh.toName[i] + " (" + i + ")"
-                rF = self.results[i][1]
+                rF = self.results[i]
                 vals = [mID ,rF]
                 for j in range(len(vals)):
                     self.sigTermsTable.setItem(index,j, MyQTableItem(self.sigTermsTable, str(vals[j])))
@@ -292,7 +294,7 @@ class OWMeshBrowser(OWWidget):
                 f = QListViewItem(self.meshLV);
                 f.setOpen(1)
                 self.lvItem2Mesh[f] = self.mesh.toName[e]
-                rfr = str(self.results[e][1])
+                rfr = str(self.results[e])
                 data = [self.mesh.toName[e], rfr]
                 for t in range(len(data)):
                     f.setText(t,data[t])
@@ -304,14 +306,16 @@ class OWMeshBrowser(OWWidget):
             f = QListViewItem(parentLVI);
             f.setOpen(1)
             
-            rfr = str(self.results[i][1])
-            data = [self.mesh.toName[i],rfr]
-            
-            if not soloMode:           # when we have referece and cluster dataset we have to print additional info
-                pval = "%.4g" % self.results[i][3]
-                fold = "%.4g" % self.results[i][4]
-                cfr = str(self.results[i][2])
-                data.extend([cfr, pval, fold])
+            data = [self.mesh.toName[i]]
+            if soloMode:
+                rfr = str(self.results[i])
+                data.append(rfr)
+            else:           # when we have referece and cluster dataset we have to print additional info
+                rfr = str(self.results[i][0])
+                cfr = str(self.results[i][1])
+                pval = "%.4g" % self.results[i][2]
+                fold = "%.4g" % self.results[i][3]
+                data.extend([rfr, cfr, pval, fold])
 
             self.lvItem2Mesh[f]=data[0]         # mapping   QListViewItem <-> mesh id
 
