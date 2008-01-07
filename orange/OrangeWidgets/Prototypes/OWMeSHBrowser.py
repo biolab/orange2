@@ -1,7 +1,7 @@
 """
 <name>MeSH Term Browser</name>
 <description>Browser over MeSH ontology</description>
-<icon>icons/Mesh.png</icon>
+<icon>icons/MeSH.png</icon>
 <contact>Crt Gorup (crt.gorup@gmail.com)</contact> 
 <priority>2016</priority>
 """
