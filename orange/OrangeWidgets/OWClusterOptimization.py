@@ -72,7 +72,6 @@ class ClusterOptimization(OWBaseWidget):
         self.resultListLen = 1000
         self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
         self.onlyOnePerSubset = 1    # used in radviz and polyviz
-        self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
         self.lastSaveDirName = os.getcwd() + "/"
         self.attrCont = 1
         self.attrDisc = 1
