@@ -536,7 +536,19 @@ class orngMeSH(object):
                 self.toName[r] = parts[0]
         
         # loading cid -> mesh
-        
+        for i in f:
+            parts = i.split(";")		# delimiters are tabs
+            if(len(parts) != 2):
+                print "error reading ontology ", parts[0]
+
+            parts[1] = parts[1].rstrip("\n\r")
+            cid = int(parts[0])
+            
+            if self.fromCID.has_key(cid):
+                self.fromCID[cid].append(parts[1])
+            else:
+                self.fromCID[cid] = [parts[1]]
+			                        
         # loading pmid -> mesh
 				
         print "Current MeSH ontology contains ", t, " mesh terms."
