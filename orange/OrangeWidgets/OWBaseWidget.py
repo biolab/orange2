@@ -153,13 +153,15 @@ class OWBaseWidget(QDialog):
 
     def setWidgetIcon(self, iconName):
         if os.path.exists(iconName):
-            self.setWindowIcon(QIcon(iconName))
-        elif os.path.exists(self.widgetDir + iconName):
-            self.setWindowIcon(QIcon(self.widgetDir + iconName))
-        elif os.path.exists(self.widgetDir + "icons/" + iconName):
-            self.setWindowIcon(QIon(self.widgetDir + "icons/" + iconName))
-        elif os.path.exists(self.widgetDir + "icons/Unknown.png"):
-            self.setWindowIcon(QIcon(self.widgetDir + "icons/Unknown.png"))
+            QDialog.setIcon(self, QPixmap(iconName))
+        elif os.path.exists(os.path.join(self.widgetDir, iconName)):
+            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, iconName)))
+        elif os.path.exists(os.path.join(self.widgetDir, "icons/" + iconName)):
+            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, "icons/" + iconName)))
+        elif os.path.exists(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)):        # search for icons also in the folder where the module is
+            QDialog.setIcon(self, QPixmap(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)))
+        elif os.path.exists(os.path.join(self.widgetDir, "icons/Unknown.png")):
+            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, "icons/Unknown.png")))
 
     # ##############################################
     def createAttributeIconDict(self):
@@ -224,6 +226,13 @@ class OWBaseWidget(QDialog):
         QDialog.hideEvent(self, ev)
         if self.savePosition:
             self.widgetShown = 0
+
+    # override the default show function. 
+    # after show() we must call processEvents because show puts some LayoutRequests in queue
+    # and we must process them immediately otherwise the width(), height(), ... of elements in the widget will be wrong
+    def show(self):
+        QDialog.show(self)
+        qApp.processEvents()
 
     # set widget state to shown
     def showEvent(self, ev):
