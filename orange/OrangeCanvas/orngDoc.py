@@ -492,7 +492,7 @@ class SchemaDoc(QMainWindow):
                 (self.documentpath, self.documentname) = os.path.split(filename)
                 (self.applicationpath, self.applicationname) = os.path.split(filename)
                 self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
-                self.canvasDlg.settings["saveApplicationDir"] = self.applicationpath
+                self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
                 self.loadedSettingsDict = settingsDict
 
             # read widgets
@@ -581,7 +581,7 @@ class SchemaDoc(QMainWindow):
         t = "    "  # instead of tab
         n = "\n"
         imports = """import sys, os, cPickle, orange, orngSignalManager, orngRegistry
-DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput.txt'
+import orngDebugging
 orngRegistry.addWidgetDirectories()\n"""
 
         captions = "# set widget captions\n" +t+t
@@ -614,13 +614,13 @@ orngRegistry.addWidgetDirectories()\n"""
                 instancesB += "self.ow%s = %s(signalManager = self.signalManager)\n" %(name, widget.widget.getFileName()) +t+t
                 signals += "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
                 icons += "self.ow%s.setWidgetIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
-                captions += "if (int(qVersion()[0]) >= 3):\n" +t+t+t + "self.ow%s.setCaptionTitle('%s')\n" %(name, widget.caption) +t+t + "else:\n" +t+t+t + "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
+                captions += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "self.signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 tabs += "self.ow%s.captionTitle = '%s'\n" % (name, widget.caption)+t+t
                 tabs += "self.ow%s.setCaption(self.ow%s.captionTitle)\n" % (name, name) +t+t
                 buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
-                buttonsConnect += """self.connect(owButton%s ,SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t
+                buttonsConnect += """self.connect(owButton%s, SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t
                 loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
                 loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
                 saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
@@ -669,15 +669,10 @@ orngRegistry.addWidgetDirectories()\n"""
         buttons += "exitButton = QPushButton(\"E&xit\",self)\n"+t+t + "self.connect(exitButton,SIGNAL(\"clicked()\"), application, SLOT(\"quit()\"))\n"+t+t
 
         classinit = """
-    def __init__(self,parent=None, debugMode = DEBUG_MODE, debugFileName = "signalManagerOutput.txt", verbosity = 1):
+    def __init__(self,parent=None):
         QVBox.__init__(self,parent)
-        caption = '%s'
-        if (int(qVersion()[0]) >= 3):
-            self.setCaption(caption)
-        else:
-            self.setCaption("Qt " + caption)
-        self.signalManager = orngSignalManager.SignalManager(debugMode, debugFileName, verbosity)
-        self.verbosity = verbosity""" % (fileName)
+        self.setCaption("Qt %s")
+        self.signalManager = orngSignalManager.SignalManager()""" % (fileName)
 
         if asTabs == 1:
             classinit += """
@@ -696,7 +691,7 @@ orngRegistry.addWidgetDirectories()\n"""
 
         handlerFunct = """
     def eventHandler(self, text, eventVerbosity = 1):
-        if self.verbosity >= eventVerbosity:
+        if orngDebugging.orngVerbosity >= eventVerbosity:
             self.status.setText(text)
 
     def progressHandler(self, widget, val):
@@ -725,7 +720,7 @@ orngRegistry.addWidgetDirectories()\n"""
         saveSettings = """
 
     def saveSettings(self):
-        if DEBUG_MODE: return
+        if orngDebugging.orngDebuggingEnabled: return
         %s
         strSettings = {}
         """ % (synchronizeContexts) + saveSett + n+t+t + """file = open("%s", "w")

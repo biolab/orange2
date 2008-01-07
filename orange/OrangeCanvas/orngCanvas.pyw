@@ -1,4 +1,4 @@
-    # Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
+# Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
 # Description:
 #    main file, that creates the MDI environment
 
@@ -385,16 +385,21 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemNewWizard(self):
         return
 
-    def menuItemOpen(self, freeze = 0):
+    def menuItemOpen(self):
         name = QFileDialog.getOpenFileName( self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)", self, "", "Open File")
         if name.isEmpty():
             return
         win = self.menuItemNewSchema(0)
-        win.loadDocument(str(name), freeze = freeze)
+        win.loadDocument(str(name), freeze = 0)
         self.addToRecentMenu(str(name))
 
     def menuItemOpenFreeze(self):
-        self.menuItemOpen(freeze = 1)
+        name = QFileDialog.getOpenFileName( self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)", self, "", "Open File")
+        if name.isEmpty():
+            return
+        win = self.menuItemNewSchema(0)
+        win.loadDocument(str(name), freeze = 1)
+        self.addToRecentMenu(str(name))
 
     def menuItemOpenLastSchema(self):
         if os.path.exists(os.path.join(self.outputDir, "_lastSchema.ows")):
