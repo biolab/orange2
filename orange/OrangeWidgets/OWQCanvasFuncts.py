@@ -36,6 +36,7 @@ def OWCanvasRectangle(canvas, x = 0, y = 0, width = 0, height = 0, penColor = Qt
     rect.setZValue(z)
     if tooltip: rect.setToolTip(tooltip)
     if show: rect.show()
+    else: rect.hide()
     return rect
 
 
@@ -47,7 +48,10 @@ def OWCanvasLine(canvas, x1 = 0, y1 = 0, x2 = 0, y2 = 0, penWidth = 1, penColor 
         r.setPen(QPen(penColor, penWidth))
     r.setZValue(z)
     if tooltip: r.setToolTip(tooltip)
+    
     if show: r.show()
+    else: r.hide()
+    
     return r
 
 def OWCanvasEllipse(canvas, x = 0, y = 0, width = 0, height = 0, penWidth = 1, startAngle = 0, angles = 360, penColor = Qt.black, brushColor = None, z = 0, penStyle = Qt.SolidLine, pen = None, tooltip = None, show = 1):
@@ -60,7 +64,10 @@ def OWCanvasEllipse(canvas, x = 0, y = 0, width = 0, height = 0, penWidth = 1, s
     e.setStartAngle(startAngle)
     e.setSpanAngle(angles*16)
     if tooltip: e.setToolTip(tooltip)
+    
     if show: e.show()
+    else: e.hide()
+    
     return e
 
 #    if penColor != None and brushColor == None:

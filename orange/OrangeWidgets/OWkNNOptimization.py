@@ -46,7 +46,6 @@ class OWVizRank(VizRank, OWWidget):
         self.boxStopOptimization = 1
 
         self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
-        #self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
         self.lastSaveDirName = os.getcwd()
 
         self.evaluatedAttributes = None   # save last evaluated attributes

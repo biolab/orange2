@@ -24,7 +24,10 @@ class OWWidget(OWBaseWidget):
         self.leftWidgetPart = OWGUI.widgetBox(self.topWidgetPart, orientation = "vertical", margin = 0)
         if wantMainArea:
             self.leftWidgetPart.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding))
+            self.leftWidgetPart.updateGeometry()
             self.mainArea = OWGUI.widgetBox(self.topWidgetPart, orientation = "vertical", sizePolicy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding), margin = 0)
+            self.mainArea.layout().setMargin(4)
+            self.mainArea.updateGeometry()
         self.controlArea = OWGUI.widgetBox(self.leftWidgetPart, orientation = "vertical", margin = wantMainArea and 0 or 4)
 
         self.space = self.controlArea
@@ -49,13 +52,14 @@ class OWWidget(OWBaseWidget):
             self.statusBarTextArea.setFrameStyle (QFrame.Panel + QFrame.Sunken)
             #self.statusBarTextArea.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
             self.statusBarTextArea.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
+            self.statusBarTextArea.updateGeometry()
             #self.statusBarIconArea.setFixedSize(16*2,18)
             self.statusBarIconArea.hide()
 
             # create pixmaps used in statusbar to show info, warning and error messages
-            #self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-blue.png")
-            self._warningWidget = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-orange.png")
-            self._errorWidget = self.createPixmapWidget(self.statusBarIconArea, self.widgetDir + "icons/triangle-red.png")
+            #self._infoWidget, self._infoPixmap = self.createPixmapWidget(self.statusBarIconArea, os.path.join(self.widgetDir + "icons/triangle-blue.png"))
+            self._warningWidget = self.createPixmapWidget(self.statusBarIconArea, os.path.join(self.widgetDir + "icons/triangle-orange.png"))
+            self._errorWidget = self.createPixmapWidget(self.statusBarIconArea, os.path.join(self.widgetDir + "icons/triangle-red.png"))
         else:
             self.widgetStatusArea = None
 
@@ -63,6 +67,7 @@ class OWWidget(OWBaseWidget):
             self.resize(640,480)
         else:
             self.resize(200,200)
+        
 
 
     # status bar handler functions

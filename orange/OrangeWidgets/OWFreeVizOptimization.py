@@ -134,7 +134,7 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.controlArea.addWidget(self.statusBar)
         #self.controlArea.activate()
 
-        self.resize(310,650)
+        self.resize(320,650)
         self.setMinimumWidth(310)
         self.tabs.setMinimumWidth(310)
 
@@ -284,13 +284,13 @@ class FreeVizOptimization(OWBaseWidget, FreeViz):
         self.graph.repaint()
 
     def findPCAProjection(self):
-        self.findProjection(DR_PCA)
+        self.findProjection(DR_PCA, setAnchors = 1)
 
     def findSPCAProjection(self):
-        self.findProjection(DR_SPCA)
+        self.findProjection(DR_SPCA, setAnchors = 1)
 
     def findPLSProjection(self):
-        self.findProjection(DR_PLS)
+        self.findProjection(DR_PLS, setAnchors = 1)
 
     def setStatusBarText(self, text):
         self.statusBar.message(text)
