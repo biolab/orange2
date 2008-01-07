@@ -799,7 +799,9 @@ class OWNomogram(OWWidget):
     # Callbacks
     def showNomogram(self):
         if self.bnomogram and self.cl:
+            #self.bnomogram.hide()
             self.bnomogram.show()
+            self.bnomogram.update()
 
 
 # test widget appearance
@@ -808,16 +810,17 @@ if __name__=="__main__":
 
     a=QApplication(sys.argv)
     ow=OWNomogram()
-
+    ow.show()
+    
     #data = orange.ExampleTable("heart_disease.tab")
-    data = orange.ExampleTable(r"E:\development\orange datasets\uci\zoo.tab")
+    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
 
     bayes = orange.BayesLearner(data)
     bayes.setattr("data",data)
     ow.classifier(bayes)
 
     # here you can test setting some stuff
-    ow.show()
+    
     a.exec_()
 
     # save settings

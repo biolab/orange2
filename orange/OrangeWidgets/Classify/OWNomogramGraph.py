@@ -1,7 +1,7 @@
 # Nomogram visualization widget. It is used together with OWNomogram
 
 from OWWidget import *
-import Numeric
+import numpy
 import math
 import time, statc
 import OWQCanvasFuncts
@@ -250,7 +250,9 @@ class Descriptor(QGraphicsRectItem):
 # Attribute value selector -- a small circle
 class AttValueMarker(QGraphicsEllipseItem):
     def __init__(self, attribute, canvas, z=50):
-        apply(QGraphicsEllipseItem.__init__,(self,None,canvas))
+        self.r = 5
+        apply(QGraphicsEllipseItem.__init__,(self,0,0,2*self.r,2*self.r,None,canvas))
+        
         #self.canvas = canvas
         self.setZValue(z)
         self.setBrush(QBrush(Qt.blue))
@@ -261,8 +263,14 @@ class AttValueMarker(QGraphicsEllipseItem):
         self.descriptor = Descriptor(canvas, attribute, z+1)
         self.hide()
 
+    def x(self):
+        return QGraphicsEllipseItem.x(self)+self.r
+    
+    def y(self):
+        return QGraphicsEllipseItem.y(self)+self.r
+
     def setPos(self, x, y):
-        QGraphicsEllipseItem.setPos(self, x, y)
+        QGraphicsEllipseItem.setPos(self, x-self.r, y-self.r)
         #self.borderCircle.setX(x)
         #self.borderCircle.setY(y)
         if not self.descriptor.drawAll(x,y):
@@ -275,7 +283,7 @@ class AttValueMarker(QGraphicsEllipseItem):
     def showSelected(self):
         #self.borderCircle.show()
         self.setBrush(QBrush(QColor(253,151,51), self.brush().style()))
-        if self.canvas().parent.bubble:
+        if self.scene().parent.bubble:
             self.descriptor.showAll()
 
     def hideSelected(self):
@@ -332,11 +340,11 @@ class AttValue:
             if canvas.parent.histogram and isinstance(canvas, BasicNomogram):
                 canvasLength = 2+self.lineWidth*canvas.parent.histogram_size
             if self.over:
-                self.text.setPos(self.text.x(), rect.bottom()-4*canvas.fontSize/3)
+                self.text.setPos(self.x, rect.bottom()-4*canvas.fontSize/3)
                 self.labelMarker.setLine(self.x, rect.bottom(), self.x, rect.bottom()+lineLength)
                 self.histogram.setLine(self.x, rect.bottom(), self.x, rect.bottom()+canvasLength)
             else:
-                self.text.setPos(self.text.x(), rect.bottom()+4*canvas.fontSize/3)
+                self.text.setPos(self.x, rect.bottom()+4*canvas.fontSize/3)
                 self.labelMarker.setLine(self.x, rect.bottom(), self.x, rect.bottom()-lineLength)
                 self.histogram.setLine(self.x, rect.bottom(), self.x, rect.bottom()-canvasLength)
             if not self.hideAtValue:
@@ -515,7 +523,7 @@ class AttrLine:
 
         atLine = AttrLine("marker", canvas)
         d = 5*(self.maxValue-self.minValue)/max((max_mapped-min_mapped),aproxZero)
-        for xc in Numeric.arange(self.minValue, self.maxValue+d, d):
+        for xc in numpy.arange(self.minValue, self.maxValue+d, d):
             atLine.addAttValue(AttValue("", xc))
 
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -643,7 +651,7 @@ class AttrLineCont(AttrLine):
 
         atLine = AttrLine("marker", canvas)
         d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/max(max_mapped-min_mapped,aproxZero)
-        for xc in Numeric.arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
+        for xc in numpy.arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
             atLine.addAttValue(AttValue("", xc))
 
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -957,7 +965,7 @@ class BasicNomogramFooter(QGraphicsScene):
         maxPercent = self.linkFunc(atLine.maxValue)#math.exp(atLine.maxValue)/(1+math.exp(atLine.maxValue))
 
         percentLine = AttrLine(atLine.name, self)
-        percentList = filter(lambda x:x>minPercent and x<maxPercent,Numeric.arange(0, maxPercent+0.1, 0.05))
+        percentList = filter(lambda x:x>minPercent and x<maxPercent,numpy.arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
             if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
                 percentLine.addAttValue(AttValue(" "+str(p)+" ", self.invLinkFunc(p), markerWidth = 1, enable = False))
@@ -1060,7 +1068,7 @@ class BasicNomogramFooter(QGraphicsScene):
         self.leftArc.setRect(ax_minError, self.footer.marker.y()+10, 10, 10)
         self.leftArc.setStartAngle(0)
         self.leftArc.setSpanAngle(180*16)
-        #self.leftArc.setBrush(QBrush(Qt.blue))
+        self.leftArc.setBrush(QBrush(Qt.blue))
 
         self.rightArc.setRect(ax_maxError-10, self.footer.marker.y()-5, 10, 10)
         self.rightArc.setStartAngle(90*16)
@@ -1080,14 +1088,13 @@ class BasicNomogramFooter(QGraphicsScene):
         ax = max(ax, axMin)
         ax = min(ax, axMax)
         self.errorLine.setLine(ax_minError, self.footer.marker.y(), ax_maxError, self.footer.marker.y())
-        self.errorLine.show()
         ax_minError = min(ax_minError, axPercentMax)
         ax_minError = max(ax_minError, axPercentMin)
         ax_maxError = min(ax_maxError, axPercentMax)
         ax_maxError = max(ax_maxError, axPercentMin)
 
         self.errorPercentLine.setLine(ax_minError, self.footerPercent.marker.y(), ax_maxError, self.footerPercent.marker.y())
-        self.errorPercentLine.show()
+        #self.errorPercentLine.show()
 
         self.footer.selectedValue = [ax,self.footer.marker.y(),self.m.mapBetaToLinear(sum, self.footer)]
         self.footer.marker.setPos(ax, self.footer.marker.y())
@@ -1153,7 +1160,7 @@ class BasicNomogram(QGraphicsScene):
         self.max_difference = 0
 
         self.fontSize = parent.fontSize
-        self.zeroLine = OWQCanvasFuncts.OWCanvasLine(self, pen = QPen(Qt.DotLine), show = 0, z = -10)
+        self.zeroLine = OWQCanvasFuncts.OWCanvasLine(self, 0,0,100,100,pen = QPen(QBrush(Qt.black), 1, Qt.DotLine), show = 0, z = -10)
 
 
     def destroy_and_init(self, parent, constant):
@@ -1164,7 +1171,6 @@ class BasicNomogram(QGraphicsScene):
 
         self.header.destroy_and_init(self,parent)
         self.footerCanvas.destroy_and_init(self,parent)
-
         self.initVars(parent, constant)
 
     def addAttribute(self, attr):
@@ -1195,7 +1201,6 @@ class BasicNomogram(QGraphicsScene):
             self.footerCanvas.showCI()
         if self.footerCanvas.footer.marker.x() == self.footerCanvas.footerPercent.marker.x():
             self.footerCanvas.connectedLine.setLine(self.footerCanvas.footer.marker.x(), self.footerCanvas.footer.marker.y(), self.footerCanvas.footerPercent.marker.x(), self.footerCanvas.footerPercent.marker.y())
-            #self.footerCanvas.connectedLine.setCanvas(self.footerCanvas)
             self.footerCanvas.connectedLine.show()
         self.update()
         self.footerCanvas.update()
@@ -1269,7 +1274,7 @@ class BasicNomogram(QGraphicsScene):
 
     def show(self):
         for item in self.items():
-            self.removeItem(item)
+            item.hide()
 
         self.header.destroy_and_init(self,self.parent)
         self.footerCanvas.destroy_and_init(self,self.parent)
@@ -1333,6 +1338,8 @@ class BasicNomogram(QGraphicsScene):
         self.header.headerAttrLine.marker.hide()
         self.header.update()
 
+    def size(self):
+        return self.sceneRect() 
 
 
 # ####################################################################
@@ -1360,11 +1367,11 @@ class OWNomogramHeader(QGraphicsView):
                     self.mouseOverObject.hideSelected()
                 self.mouseOverObject = items[0]
                 self.mouseOverObject.showSelected()
-                self.canvas().update()
+                self.scene().update()
             elif self.mouseOverObject:
                 self.mouseOverObject.hideSelected()
                 self.mouseOverObject = None
-                self.canvas().update()
+                self.scene().update()
 
 
 class OWNomogramGraph(QGraphicsView):
@@ -1381,13 +1388,13 @@ class OWNomogramGraph(QGraphicsView):
         QGraphicsView.resizeEvent(self,event)
         if self.scene():
             self.resizing = True
-            #self.scene().show()
+            self.scene().show()
         self.setSceneRect(0, 0, self.width(), self.height())
 
     # ###################################################################
     # mouse button was pressed #########################################
     def mousePressEvent(self, ev):
-        if self.scene() and ev.button() == QMouseEvent.LeftButton:
+        if self.scene() and ev.button() == Qt.LeftButton:
             items = filter(lambda ci: ci.zValue()==50, self.scene().items(QPointF(ev.pos())))
             if len(items)>0:
                 self.selectedObject = items[0]
@@ -1439,7 +1446,7 @@ def createSetOfVisibleValues(min, max, dif):
 #    add = round((min-dif)/dif)*dif
     add = math.ceil((min-0.9*dif)/dif)*dif
 
-    dSum = Numeric.arange(0, upper, dif)
+    dSum = numpy.arange(0, upper, dif)
     dSum = map(lambda x:x+add, dSum)
     return dSum
 
@@ -1732,9 +1739,9 @@ class Mapper_Linear_Left:
         d = self.maxLinearValue/maxnum
         dif = max(getDiff(d),10e-6)
         dSum = []
-        dSum = Numeric.arange(0, self.maxLinearValue+dif, dif)
+        dSum = numpy.arange(0, self.maxLinearValue+dif, dif)
         if len(dSum)<1:
-            dSum = Numeric.arange(0, self.maxLinearValue+dif, dif/2.)
+            dSum = numpy.arange(0, self.maxLinearValue+dif, dif/2.)
         dSum = map(lambda x:x, dSum)
         if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
             conv = int
