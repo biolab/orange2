@@ -7,6 +7,7 @@ from OWTools import *
 from OWContexts import *
 import sys, time, random, user, os, os.path, cPickle, copy, orngMisc
 import orange
+import orngDebugging
 from string import *
 from orngSignalManager import *
 
