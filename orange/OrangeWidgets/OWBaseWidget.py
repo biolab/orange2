@@ -187,12 +187,14 @@ class OWBaseWidget(QDialog):
     def setWidgetIcon(self, iconName):
         if os.path.exists(iconName):
             QDialog.setIcon(self, QPixmap(iconName))
-        elif os.path.exists(self.widgetDir + iconName):
-            QDialog.setIcon(self, QPixmap(self.widgetDir + iconName))
-        elif os.path.exists(self.widgetDir + "icons/" + iconName):
-            QDialog.setIcon(self, QPixmap(self.widgetDir + "icons/" + iconName))
-        elif os.path.exists(self.widgetDir + "icons/Unknown.png"):
-            QDialog.setIcon(self, QPixmap(self.widgetDir + "icons/Unknown.png"))
+        elif os.path.exists(os.path.join(self.widgetDir, iconName)):
+            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, iconName)))
+        elif os.path.exists(os.path.join(self.widgetDir, "icons/" + iconName)):
+            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, "icons/" + iconName)))
+        elif os.path.exists(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)):        # search for icons also in the folder where the module is
+            QDialog.setIcon(self, QPixmap(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)))
+        elif os.path.exists(os.path.join(self.widgetDir, "icons/Unknown.png")):
+            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, "icons/Unknown.png")))
 
     # ##############################################
     def createAttributeIconDict(self):
@@ -517,6 +519,7 @@ class OWBaseWidget(QDialog):
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
         if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
+        newSignal = 0        # did we get any new signals
 
         # we define only a way to handle signals that have defined a handler function
         for signal in self.inputs:        # we go from the first to the last defined input
@@ -525,6 +528,7 @@ class OWBaseWidget(QDialog):
                 for i in range(len(self.linksIn[key])):
                     (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
                     if not (handler and dirty): continue
+                    newSignal = 1
 
                     qApp.setOverrideCursor(QWidget.waitCursor)
                     try:
@@ -542,7 +546,7 @@ class OWBaseWidget(QDialog):
                     qApp.restoreOverrideCursor()
                     self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
-        if hasattr(self, "handleNewSignals"):
+        if hasattr(self, "handleNewSignals") and newSignal == 1:
             self.handleNewSignals()
 
         if self.processingHandler:
