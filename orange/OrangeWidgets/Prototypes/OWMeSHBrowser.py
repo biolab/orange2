@@ -165,9 +165,9 @@ class OWMeSHBrowser(OWWidget):
         self.optionsBox.setDisabled(1)
 
     def download(self):
-        pb = OWGUI.ProgressBar(self, iterations=100)
-        self.mesh.downloadOntology(callback=pb.advance)
-        pb.finish()
+        self.progressBarInit()
+        self.mesh.downloadOntology(callback=self.progressBarSet)
+        self.progressBarFinished()
 
     def tableSelectionChanged(self):
         return True
@@ -184,17 +184,20 @@ class OWMeSHBrowser(OWWidget):
 
     def viewSelectionChanged(self):
         items = list()
+        self.progressBarInit()
         for i in self.lvItem2Mesh.iterkeys():
             if i.isSelected():
                 items.append(self.lvItem2Mesh[i])
         
         if self.reference:
-            data=self.mesh.findSubset(self.reference, items)
+            data=self.mesh.findSubset(self.reference, items, callback=self.progressBarSet)
         else:
-            data=self.mesh.findSubset(self.cluster, items)
+            data=self.mesh.findSubset(self.cluster, items, callback=self.progressBarSet)
+        
         
         #print items
         self.send("Selected examples", data)
+        self.progressBarFinished()
 
     def __updateData__(self):
         self.lvItem2Mesh = dict()
@@ -207,9 +210,9 @@ class OWMeSHBrowser(OWWidget):
 
             # everything is ok, now we can calculate enrichment and update labels, tree view and table data
             self.optionsBox.setDisabled(0)
-
-            self.treeInfo, self.results = self.mesh.findEnrichedTerms(self.reference,self.cluster,self.maxPValue, treeData= True)
-            
+            self.progressBarInit()
+            self.treeInfo, self.results = self.mesh.findEnrichedTerms(self.reference,self.cluster,self.maxPValue, treeData= True, callback= self.progressBarSet)
+            self.progressBarFinished()
             self.ratio.setText("ratio = %.4g" % self.mesh.ratio)
             self.clu_att.setText("cluster MeSH att: " + self.mesh.clu_att)
             self.ref_att.setText("reference MeSH att: " + self.mesh.ref_att)
@@ -261,9 +264,9 @@ class OWMeSHBrowser(OWWidget):
                 current_data = self.cluster
 
             self.optionsBox.setDisabled(0)
-
-            self.treeInfo, self.results = self.mesh.findFrequentTerms(current_data,self.minExamplesInTerm, treeData= True)
-            
+            self.progressBarInit()
+            self.treeInfo, self.results = self.mesh.findFrequentTerms(current_data,self.minExamplesInTerm, treeData= True, callback= self.progressBarSet)
+            self.progressBarFinished()
             if self.reference:
                 self.ref_att.setText("reference MeSH att: " + self.mesh.solo_att)
             else:
