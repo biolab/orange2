@@ -39,25 +39,26 @@ class orngMeSH(object):
     def downloadOntology(self,callback=None):
         # ftp://nlmpubs.nlm.nih.gov/online/mesh/.meshtrees/mtrees2008.bin
         # ftp://nlmpubs.nlm.nih.gov/online/mesh/.asciimesh/d2008.bin
+        if callback:
+            callback(1)
+        
         ontology = urlopen("ftp://nlmpubs.nlm.nih.gov/online/mesh/.asciimesh/d2008.bin")
         size = int(ontology.info().getheader("Content-Length"))
-        rsize = size
+        rsize = 0
 
         results = list()
 
         for i in ontology:
-            rsize -= len(i)
+            rsize += len(i)
             line = i.rstrip("\t\n")
             if(line == "*NEWRECORD"):
                 if(len(results) > 0 and results[-1][1] == []):				# we skip nodes with missing mesh id
                     results[-1] = ["",[],"No description."]
                 else:
                     results.append(["",[],"No description."])	
-                if(len(results)%400 == 0):
-                    if not callback:
-                        callback(int(rsize*100/size))
-                    if not self.widgetMode:
-                        print "remaining " + str(rsize*100/size) + "%."			
+                if(len(results)%40 == 0):
+                    if callback:
+                        callback(1+int(rsize*94/size))			
 	
             parts = line.split(" = ")
             if(len(parts) == 2 and len(results)>0):
@@ -75,6 +76,9 @@ class orngMeSH(object):
         __dataPath = os.path.join(os.path.dirname(__file__), self.path)
         output = file(os.path.join(__dataPath,'mesh-ontology.dat'), 'w')
 
+        if callback:
+            callback(98)
+        
         for i in results:
             #			print i[0] + "\t"
             output.write(i[0] + "\t")
@@ -90,6 +94,8 @@ class orngMeSH(object):
 
         output.close()
         self.__loadOntologyFromDisk()
+        if callback:
+            callback(100)
         print "Ontology database has been updated."
 
     def findSubset(self,examples,meshTerms, callback = None):
@@ -99,6 +105,8 @@ class orngMeSH(object):
         newdata = orange.ExampleTable(examples.domain)
         self.solo_att = self.__findMeshAttribute(examples)
         ids = list()
+        l = len(examples)
+        c = 0.0
         
         # we couldn't find any mesh attribute
         if self.solo_att == "Unknown":
@@ -109,9 +117,12 @@ class orngMeSH(object):
 
         for e in examples:
             try:
+                if callback:
+                    callback(int(c*100.0/l))
+                c = c + 1.0
                 ends = eval(e[self.solo_att].value)
             except SyntaxError:
-                print "Error in parsing ", e[self.solo_att].value
+                #print "Error in parsing ", e[self.solo_att].value
                 continue
             endids = list()
             for i in ends:
@@ -173,11 +184,17 @@ class orngMeSH(object):
                 return ret
 
         # plain frequency
+        t = 0.0
+        n = len(data)
         for i in data:
+            t = t + 1
+            if callback:
+                callback(int(t*100/n))
+                
             try:
                 endNodes = eval(i[self.solo_att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
             except SyntaxError:
-                print "Error in parsing ",i[self.solo_att].value
+                #print "Error in parsing ",i[self.solo_att].value
                 continue
             # we find ID of end nodes
             endIDs = []
@@ -193,11 +210,12 @@ class orngMeSH(object):
             for k in allIDs:						        # for every meshID we update statistics dictionary
                 if(not self.statistics.has_key(k)):		    # first time meshID
                     self.statistics[k] = 0
-                self.statistics[k] += 1				    # counter increased
+                self.statistics[k] += 1				        # counter increased
 
         # post processing
         for i in self.statistics.iterkeys():
-            if(self.statistics[i] >= minSizeInTerm ) : 
+
+            if(self.statistics[i] >= minSizeInTerm ): 
                 ret[i] = self.statistics[i]
                 ids.append(i)
 
@@ -247,7 +265,7 @@ class orngMeSH(object):
         if((not self.calculated or self.reference != reference or self.cluster != cluster) and self.ref_att != "Unknown" and self.clu_att != "Unknown"):	# Do have new data? Then we have to recalculate everything.
             self.reference = reference
             self.cluster = cluster			
-            self.__calculateAll()
+            self.__calculateAll(callback)
 
         # declarations
         ret = dict()
@@ -266,32 +284,6 @@ class orngMeSH(object):
             if(self.statistics[i][2] <= pThreshold ) :#or self.statistics[i][4] <= pThreshold ): # 
                 ret[i] = self.statistics[i]
                 ids.append(i)
-        
-        """for i in ids:
-            succesors[i] = []
-            for j in ids:
-                if(i != j and self.__isPrecedesor(i,j)):
-                    succesors[i].append(j)
-        
-        # for each node from list above we remove its indirect succesors
-        # only  i -1-> j   remain
-        for i in succesors.iterkeys():
-            succs = succesors[i]
-            second_level_succs = []
-            for k in succs:     
-                second_level_succs.extend(succesors[k])
-            for m in second_level_succs:
-                if succesors[i].count(m)>0:
-                    succesors[i].remove(m)
-		
-        # we make a list of top nodes
-        tops = list(ids)
-        for i in ids:
-            for j in succesors[i]:
-                tops.remove(j)
-
-        # we pack tops table and succesors hash
-        succesors["tops"] = tops """
     
         if treeData:
             return self.__treeData(ids),ret 
@@ -403,18 +395,22 @@ class orngMeSH(object):
             return True
         return False
 		
-    def __calculateAll(self):
+    def __calculateAll(self, callback):
         """calculates all statistics"""
         # we build a dictionary 		meshID -> [description, noReference,noCluster, enrichment, deprivement, [cids] ]
         self.statistics = dict()
         n = len(self.reference) 										# reference size
         cln = len(self.cluster)											# cluster size
         # frequency from reference list
+        r = 0.0
         for i in self.reference:
+            if callback:
+                r += 1.0
+                callback(int(100*r/(n+cln)))
             try:
                 endNodes = eval(i[self.ref_att].value)	    # for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
             except SyntaxError:                     # where was a parse error
-                print "Error in parsing ",i[self.ref_att].value
+                #print "Error in parsing ",i[self.ref_att].value
                 n=n-1
                 continue
             #we find ID of end nodes
@@ -439,11 +435,15 @@ class orngMeSH(object):
                 self.statistics[k][0] += 1				    # increased noReference
 		
         # frequency from cluster list
+        r=0.0
         for i in self.cluster:
             try:
+                if callback:
+                    r += 1.0
+                    callback(int(100*r/(n+cln)))
                 endNodes = eval(i[self.clu_att].value)	# for every CID we look up for end nodes in mesh. for every end node we have to find its ID	
             except SyntaxError:
-                print "Error in parsing ",i[self.clu_att].value
+                #print "Error in parsing ",i[self.clu_att].value
                 cln = cln - 1
                 continue
             # we find ID of end nodes
