@@ -97,7 +97,7 @@ public:
 	int nLinks;
 	int nVertices;
 	vector<int> links[2];
-  set<int> vertices;
+	set<int> vertices;
 	double **pos;
 	int *level;
 	double *kVector;

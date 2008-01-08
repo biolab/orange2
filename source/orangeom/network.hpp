@@ -50,6 +50,36 @@
 using namespace std;
 
 WRAPPER(ExampleTable)
+
+class TNetworkHierarchyNode
+{
+public:
+	TNetworkHierarchyNode();
+	~TNetworkHierarchyNode();
+
+  int getLevel();
+
+	//vector<int> vertices;
+  int vertex;
+	vector<TNetworkHierarchyNode *> childs;
+	TNetworkHierarchyNode *parent;
+};
+
+class TNetworkHierarchy
+{
+public:
+	TNetworkHierarchy();
+	TNetworkHierarchy(vector<int> &topVertices);
+	~TNetworkHierarchy();
+	void setTop(vector<int> &vertices);
+  void addToNewMeta(vector<int> &vertices);
+  void printChilds(TNetworkHierarchyNode *node);
+
+	TNetworkHierarchyNode *top;
+  TNetworkHierarchyNode *getNodeByVertex(int vertex);
+  TNetworkHierarchyNode *getNodeByVertex(int vertex, TNetworkHierarchyNode &start);
+};
+
 OMWRAPPER(Network)
 
 class ORANGEOM_API TNetwork : public TGraphAsList
@@ -60,8 +90,15 @@ public:
   TNetwork(TGraphAsList *graph);
   TNetwork(const int &nVert, const int &nEdge, const bool dir);
   ~TNetwork();
+  
+  void printHierarchy();
+  void hideVertices(vector<int> vertices);
+  void showVertices(vector<int> vertices);
+  void showAll();
 
   PExampleTable items; //P ExampleTable of vertices data
+  TNetworkHierarchy hierarchy;
+  set<int> optimize;
 }; 
 
 #endif
