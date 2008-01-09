@@ -82,7 +82,7 @@ class ListViewToolTip(QToolTip):
                 print item.text(self.__col) + " not found in toDecs"
 
 class OWMeSHBrowser(OWWidget):
-    settingsList = ["showAll", "maxPValue", "minExamplesInTerm"]
+    settingsList = ["multi", "maxPValue", "minExamplesInTerm"]
     def __init__(self,parent=None,signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"MeshBrowser")
         self.inputs = [("Reference data", ExampleTable, self.getReferenceData),("Cluster data", ExampleTable, self.getClusterData) ]
@@ -93,7 +93,7 @@ class OWMeSHBrowser(OWWidget):
         self.loadedClu = 0
         self.maxPValue = 0.05
         self.minExamplesInTerm = 5
-        self.showAll = 0
+        self.multi = 1
         self.reference = None
         self.cluster = None
         self.loadSettings()        
@@ -113,7 +113,7 @@ class OWMeSHBrowser(OWWidget):
         self.optionsBox = QVGroupBox("Options", self.controlArea)
         self.maxp = OWGUI.lineEdit(self.optionsBox, self, "maxPValue", label="threshold:", orientation="horizontal", labelWidth=120, valueType=float)
         self.minf = OWGUI.lineEdit(self.optionsBox, self, "minExamplesInTerm", label="min. frequency:", orientation="horizontal", labelWidth=120, valueType=int)        
-        #OWGUI.checkBox(self.optionsBox, self, 'showAll', 'Display full ontology path?')
+        OWGUI.checkBox(self.optionsBox, self, 'multi', 'Multiple selection', callback= self.checkCLicked)
         OWGUI.button(self.optionsBox, self, "Refresh", callback=self.refresh)
         OWGUI.button(self.optionsBox, self, "Update MeSH ontology", callback=self.download)
 
@@ -128,7 +128,7 @@ class OWMeSHBrowser(OWWidget):
 
         # list view
         self.meshLV = QListView(splitter)
-        self.meshLV.setMultiSelection(1)
+        self.meshLV.setMultiSelection(self.multi)
         self.meshLV.setAllColumnsShowFocus(1)
         self.meshLV.addColumn(self.columns[0])
         self.meshLV.setColumnWidth(0, self.col_size[0])
@@ -181,6 +181,11 @@ class OWMeSHBrowser(OWWidget):
             
         self.sigTermsTable.sortColumn(self.sort_col,self.sort_dir,True)
         #print "sortiram ", col, " ",row
+
+    def checkCLicked(self):
+        if self.multi == 0:
+            self.meshLV.clearSelection()
+        self.meshLV.setMultiSelection(self.multi)
 
     def viewSelectionChanged(self):
         items = list()
