@@ -273,15 +273,11 @@ class OWFile(OWWidget):
         self.send("Examples", data)
         self.send("Attribute Definitions", data.domain)
 
-
-
-
 if __name__ == "__main__":
-    a=QApplication(sys.argv)
-    owf=OWFile()
-    owf.activateLoadedSettings()
-    a.setMainWidget(owf)
-    owf.show()
+    a = QApplication(sys.argv)
+    ow = OWFile()
+    ow.activateLoadedSettings()
+    a.setMainWidget(ow)
+    ow.show()
     a.exec_loop()
-##    owf.openFile(r"c:\Documents and Settings\peterjuv\My Documents\STEROLTALK\Sterolgene v.0 mouse\Natasa Debeljak\12631098-A2flipped.txt", 1)
-    owf.saveSettings()
+    ow.saveSettings()
