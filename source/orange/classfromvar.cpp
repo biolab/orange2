@@ -109,15 +109,15 @@ TValue TClassifierFromVar::operator ()(const TExample &example)
     return processValue(transformer, whichVar->computeValue(example), distributionForUnknown, transformUnknowns);
 
   int varType;
-  if (distributionForUnknown->variable)
+  if (distributionForUnknown && distributionForUnknown->variable)
     varType = distributionForUnknown->variable->varType;
   else if (classVar)
     varType = classVar->varType;
   else if (!transformer)
     varType = whichVar->varType;
-  else if (distributionForUnknown->supportsDiscrete)
+  else if (distributionForUnknown && distributionForUnknown->supportsDiscrete)
     varType = TValue::INTVAR;
-  else if (distributionForUnknown->supportsContinuous)
+  else if (distributionForUnknown && distributionForUnknown->supportsContinuous)
     varType = TValue::FLOATVAR;
   else
     varType = TValue::NONE;
