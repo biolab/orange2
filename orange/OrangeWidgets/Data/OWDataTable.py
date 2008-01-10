@@ -44,6 +44,7 @@ class OWDataTable(OWWidget):
         self.infoClass = QLabel('', infoBox)
         infoBox.setMinimumWidth(200)
         #infoBox.setMaximumHeight(infoBox.sizeHint().height())
+        OWGUI.separator(self.controlArea)
 
         # settings box        
         boxSettings = QVGroupBox("Settings", self.controlArea)
@@ -54,8 +55,9 @@ class OWDataTable(OWWidget):
         self.btnResetSort = QPushButton("Restore Original Order", boxSettings)
         self.connect(self.btnResetSort, SIGNAL("clicked()"), self.btnResetSortClicked)
         boxSettings.setMaximumHeight(boxSettings.sizeHint().height())
+        OWGUI.rubber(self.controlArea)
         
-        # GUI with tabs
+        # GUI with tabs (right-hand side)
         layout=QVBoxLayout(self.mainArea)
         self.tabs = QTabWidget(self.mainArea, 'tabWidget')
         self.id2table = {}  # key: widget id, value: table
@@ -67,8 +69,7 @@ class OWDataTable(OWWidget):
     def dataset(self, data, id=None):
         """Generates a new table and adds it to a new tab when new data arrives;
         or hides the table and removes a tab when data==None;
-        or replaces the table when new data arrives together with already existing id.
-        """
+        or replaces the table when new data arrives together with already existing id."""
         if data != None:  # can be an empty table!
             if self.data.has_key(id):
                 # remove existing table
