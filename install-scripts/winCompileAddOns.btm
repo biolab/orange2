@@ -47,8 +47,12 @@ for %ver in (%PYTHONVERSIONS) (
   echo *** Compiling GOlib %ver
   if exist %COMPILELOG del %COMPILELOG
   del /sye %SNAPSHOTDIR\%ver
-  %PYTHON\python setup.py build -c mingw32 bdist_wininst > COMPILELOG
-  rem  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
+  if %ver == "23" (
+    %PYTHON\python setup.py build bdist_wininst > COMPILELOG
+  ) else (
+    %PYTHON\python setup.py build -c mingw32 bdist_wininst > COMPILELOG
+    rem  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
+  )
   popd
 )
 
