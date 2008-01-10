@@ -1,8 +1,9 @@
 pushd
+
+######
+# compile orngText
 cdd %WEBDIR
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- orngText
-
-cd source
 
 set PATH=%PATH;c:\MinGW\bin
 set SWIGLIB=C:\swigwin-1.3.31\Lib
@@ -25,5 +26,30 @@ for %ver in (%PYTHONVERSIONS) (
   popd
 )
 
-popd
+######
+# compile GOlib
+cdd %WEBDIR
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- GOlib
 
+set PATH=%PATH;c:\MinGW\bin
+set SWIGLIB=C:\swigwin-1.3.31\Lib
+
+cdd %WEBDIR\GOlib
+
+del /sye dist 
+del /sye build
+
+for %ver in (%PYTHONVERSIONS) (
+  set PYTHON=%pythonbase%%ver
+  set COMPILELOG=%WEBDOWNLOAD\regressionResults\win-compile-GOlib-%ver.log
+
+  pushd
+  echo *** Compiling GOlib %ver
+  if exist %COMPILELOG del %COMPILELOG
+  del /sye %SNAPSHOTDIR\%ver
+  %PYTHON\python setup.py build -c mingw32 bdist_wininst > COMPILELOG
+  rem  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
+  popd
+)
+
+popd

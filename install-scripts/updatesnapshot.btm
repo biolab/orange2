@@ -71,6 +71,17 @@ REM    set ERRORS=%errorlevel
   ) else (
     except (%OUTNAME) del /ke %WEBDOWNLOAD\orangeAddOn-snapshot-textmining-????-??-??-py%npver.exe
   )
+
+  REM ### GOlib
+  set OUTNAME="%WEBDOWNLOAD\%WIN_GOLIB_SNAPSHOT-py%npver.exe"
+  move /Z %WEBDIR\GOlib\dist\GOlib-*.win32-py%npver.exe %OUTNAME
+  if %errorlevel != 0 (
+REM    set ERRORS=%errorlevel
+    echo "ignore error"
+    ren %WEBDOWNLOAD\GOlib-snapshot-????-??-??-py%npver.exe %OUTNAME
+  ) else (
+    except (%OUTNAME) del /ke %WEBDOWNLOAD\GOlib-snapshot-????-??-??-py%npver.exe
+  )
 )
 
 del /qke snapshotfiles_*.inc
