@@ -288,6 +288,61 @@ PyObject *__arrayDistance(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(tab
 }
 
 
+#include <set>
+#include "symmatrix.hpp"
+#include "converts.hpp"
+
+PyObject *textCos(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(examples, type = 0-cos, 1-inv-cos, 2-eucl, metaClass = 7) -> SymMatrix")
+{
+  PyTRY
+    PExampleGenerator egen;
+    int type = 0;
+    int metaClass = 7;
+    if (!PyArg_ParseTuple(args, "O&|ii:cos", pt_ExampleGenerator, &egen, &type, &metaClass))
+      return PYNULL;
+      
+    const int &nExamples = egen->numberOfExamples();
+    TSymMatrix *sym = new TSymMatrix(nExamples);
+    PSymMatrix psym = sym;
+    
+    set<int> validIds;
+    ITERATE(TMetaVector, mi, egen->domain->metas)
+      if (mi->optional == metaClass)
+        validIds.insert(mi->id);
+    
+    vector<float> lengths;
+        
+    int i1 = 0;
+    for(TExampleIterator ei1=egen->begin(); ei1; ++ei1, i1++) {
+      float l1 = 0;
+      ITERATE(TMetaValues, mi1, (*ei1).meta)
+        if ((validIds.find(mi1->first) != validIds.end()) && !mi1->second.isSpecial())
+          l1 += mi1->second.floatV;
+      lengths.push_back(l1);
+
+      int i2 = 0;
+      for(TExampleIterator ei2=egen->begin(); ei2 != ei1; ++ei2, i2++) {
+        float prod = 0;
+        ITERATE(TMetaValues, mi1, (*ei1).meta) {
+          if ((validIds.find(mi1->first) != validIds.end()) && !mi1->second.isSpecial()) {
+            const TValue &meta2 = (*ei2).meta.getValueIfExists(mi1->first);
+            if (!meta2.isSpecial()) {
+              prod += (type == 2) ? mi1->second.floatV * meta2.floatV : sqr(mi1->second.floatV - meta2.floatV);
+            }
+          }
+        }
+        switch(type) {
+          case 0: sym->getref(i1, i2) = prod / sqrt(float(lengths[i1] * lengths[i2])); break;
+          case 1: sym->getref(i1, i2) = prod > 1e-10 ? sqrt(float(lengths[i1] * lengths[i2])) / prod : 1e10; break;
+          case 2: sym->getref(i1, i2) = prod;
+        }
+      }
+    }
+    
+    return WrapOrange(psym);
+  PyCATCH
+}
+
 /********** OBSOLETE ***************/
 
 PyObject *setrandseed(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(int seed) -> None")
