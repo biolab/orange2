@@ -48,9 +48,9 @@ for %ver in (%PYTHONVERSIONS) (
   if exist %COMPILELOG del %COMPILELOG
   del /sye %SNAPSHOTDIR\%ver
   if %ver == "23" (
-    %PYTHON\python setup.py build bdist_wininst > COMPILELOG
+    %PYTHON\python setup.py build bdist_wininst --install-script=post_install_script.py > COMPILELOG
   ) else (
-    %PYTHON\python setup.py build -c mingw32 bdist_wininst > COMPILELOG
+    %PYTHON\python setup.py build -c mingw32 bdist_wininst --install-script=post_install_script.py > COMPILELOG
     rem  %PYTHON\python setup.py install --skip-build --prefix %SNAPSHOTDIR\%ver
   )
   popd
