@@ -1,7 +1,7 @@
 pushd
 
-######
-# compile orngText
+rem ######
+rem # compile orngText
 cdd %WEBDIR
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- orngText
 
@@ -17,6 +17,7 @@ for %ver in (%PYTHONVERSIONS) (
   set PYTHON=%pythonbase%%ver
   set COMPILELOG=%WEBDOWNLOAD\regressionResults\win-compile-textmining-%ver.log
 
+  echo %COMPILELOG
   pushd
   echo *** Compiling module orngText %ver
   if exist %COMPILELOG del %COMPILELOG
@@ -26,8 +27,8 @@ for %ver in (%PYTHONVERSIONS) (
   popd
 )
 
-######
-# compile GOlib
+rem ######
+rem # compile GOlib
 cdd %WEBDIR
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -P -A -d -C -- GOlib
 
@@ -43,6 +44,7 @@ for %ver in (%PYTHONVERSIONS) (
   set PYTHON=%pythonbase%%ver
   set COMPILELOG=%WEBDOWNLOAD\regressionResults\win-compile-GOlib-%ver.log
 
+  echo %COMPILELOG
   pushd
   echo *** Compiling GOlib %ver
   if exist %COMPILELOG del %COMPILELOG
