@@ -1,3 +1,5 @@
+# FIXME: Sortiranje nekaterih vrednosti v tabeli je se vedno narobe.
+
 """
 <name>MeSH Term Browser</name>
 <description>Browser over MeSH ontology</description>

@@ -1,5 +1,5 @@
-# todo
-# 
+# TODO: Popravi moznost izbire enrichanig termov.
+
 
 import orange
 from xml.sax import make_parser
@@ -179,7 +179,7 @@ class orngMeSH(object):
         # if we can't identify mesh attribute we return empty data structures
         if self.solo_att == "Unknown":
             if treeData:
-                return succesors, tops
+                return succesors, ret
             else:
                 return ret
 
@@ -276,9 +276,9 @@ class orngMeSH(object):
         # if some attributes were unknown
         if (self.clu_att == "Unknown" or self.ref_att == "Unknown"):
             if treeData:
-                return ret
+                return  succesors, ret
             else:
-                return succesors, ret
+                return  ret
 
         for i in self.statistics.iterkeys():
             if(self.statistics[i][2] <= pThreshold ) :#or self.statistics[i][4] <= pThreshold ): # 
