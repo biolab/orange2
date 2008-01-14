@@ -57,7 +57,8 @@ class OWNetwork(OWWidget):
         self.visualize = None
 
         self.graph = OWNetworkCanvas(self, self.mainArea, "Network")
-
+        self.mainArea.layout().addWidget(self.graph)
+        
         self.tabs = OWGUI.tabWidget(self.controlArea)
         self.displayTab = OWGUI.createTabPage(self.tabs, "Display")
         self.markTab = OWGUI.createTabPage(self.tabs, "Mark")
@@ -92,8 +93,8 @@ class OWNetwork(OWWidget):
         OWGUI.button(self.displayTab, self, "Save network", callback=self.saveNetwork)
         
         ib = OWGUI.widgetBox(self.markTab, "Info", orientation="vertical", addSpace = True)
-        OWGUI.label(ib, self, "Vertices shown/hidden: %(nVertices)i (%(nShown)i/%(nHidden)i)")
-        #OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
+        OWGUI.label(ib, self, "Vertices (shown/hidden): %(nVertices)i (%(nShown)i/%(nHidden)i)")
+        OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
         
         ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setHubs, addSpace = True)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal")
@@ -140,20 +141,20 @@ class OWNetwork(OWWidget):
         btnUN.setToolTip("Unselected")
         OWGUI.button(self.hideBox, self, "Show", callback=self.showAllNodes)
                 
-#        T = OWToolbars.NavigateSelectToolbar
-#        self.zoomSelectToolbar = OWToolbars.NavigateSelectToolbar(self, self.controlArea, self.graph, self.autoSendSelection,
-#                                                              buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
-#                                                                         ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1, "select"),
-#                                                                         T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
-#        
+        T = OWToolbars.NavigateSelectToolbar
+        self.zoomSelectToolbar = T(self, self.controlArea, self.graph, self.autoSendSelection,
+                                  buttons = (T.IconZoom, T.IconZoomExtent, T.IconZoomSelection, ("", "", "", None, None, 0, "navigate"), T.IconPan, 
+                                             ("Move selection", "buttonMoveSelection", "activateMoveSelection", QIcon(OWToolbars.dlg_select), Qt.ArrowCursor, 1, "select"),
+                                             T.IconRectangle, T.IconPolygon, ("", "", "", None, None, 0, "select"), T.IconSendSelection))
+
         #OWGUI.button(self.controlArea, self, "test replot", callback=self.testRefresh)
         
-        ib = OWGUI.widgetBox(self.infoTab, "General", addSpace = True)
-        #OWGUI.label(ib, self, "Number of vertices: %(nVertices)i")
-        #OWGUI.label(ib, self, "Number of edges: %(nEdges)i")
-        #OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
-        #OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
-        #OWGUI.label(ib, self, "Diameter: %(diameter)i")
+        ib = OWGUI.widgetBox(self.infoTab, "General", addSpace = False)
+        OWGUI.label(ib, self, "Number of vertices: %(nVertices)i")
+        OWGUI.label(ib, self, "Number of edges: %(nEdges)i")
+        OWGUI.label(ib, self, "Vertices per edge: %(verticesPerEdge).2f")
+        OWGUI.label(ib, self, "Edges per vertex: %(edgesPerVertex).2f")
+        OWGUI.label(ib, self, "Diameter: %(diameter)i")
         
         self.insideView = 0
         self.insideViewNeighbours = 2
@@ -448,9 +449,9 @@ class OWNetwork(OWWidget):
         if self.visualize == None:   #grafa se ni
             return
               
-        if not self.frButton.isOn():
+        if not self.frButton.isDown():
             self.stopOptimization = 1
-            self.frButton.setOn(0)
+            self.frButton.setDown(0)
             self.frButton.setText("Fruchterman Reingold")
             return
         

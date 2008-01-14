@@ -85,11 +85,12 @@ class ZoomSelectToolbar(QGroupBox):
         self.graph.removeAllSelections()
 
 class NavigateSelectToolbar(QGroupBox):
-#                (tooltip, attribute containing the button, callback function, button icon, button cursor, toggle)
-                 
+                   
     IconSpace, IconZoom, IconPan, IconSelect, IconRectangle, IconPolygon, IconRemoveLast, IconRemoveAll, IconSendSelection, IconZoomExtent, IconZoomSelection = range(11)
 
     def __init__(self, widget, parent, graph, autoSend = 0, buttons = (1, 4, 5, 0, 6, 7, 8)):
+        QGroupBox.__init__(self, "Navigate / Select", parent)
+        
         if not hasattr(NavigateSelectToolbar, "builtinFunctions"):
             NavigateSelectToolbar.builtinFunctions = (None,
                  ("Zooming", "buttonZoom", "activateZooming", QIcon(dlg_zoom), Qt.CrossCursor, 1, "navigate"), 
@@ -104,11 +105,17 @@ class NavigateSelectToolbar(QGroupBox):
                  ("Zoom selection", "buttonZoomSelection", "zoomSelection", QIcon(dlg_zoom_selection), None, 0, "navigate")
                 )
 
-        #QHButtonGroup.__init__(self, "Zoom / Select", parent)
-        QGroupBox.__init__(self, "NavigateSelect", parent)
+        self.setLayout(QVBoxLayout())
+        if parent.layout():
+            parent.layout().addWidget(self)
+            
+        self.navigate = QGroupBox(self)
+        self.navigate.setLayout(QHBoxLayout())
+        self.layout().addWidget(self.navigate)
         
-        self.navigate = QWidget(self)
-        self.select = QWidget(self)   
+        self.select = QGroupBox(self)   
+        self.select.setLayout(QHBoxLayout())
+        self.layout().addWidget(self.select)
         
         self.graph = graph # save graph. used to send signals
         self.widget = widget    # we set widget here so that it doesn't affect the value of self.widget.toolbarSelection
@@ -149,9 +156,9 @@ class NavigateSelectToolbar(QGroupBox):
             for fi, ff in enumerate(self.functions):
                 if ff and ff[5]:
                     if ff[6] == "navigate":
-                        getattr(self.navigate, ff[1]).setDown(fi == b)
+                        getattr(self.navigate, ff[1]).setDown(fi != b)
                     if ff[6] == "select":
-                        getattr(self.select, ff[1]).setDown(fi == b)
+                        getattr(self.select, ff[1]).setDown(fi != b)
                         
             
         getattr(self.graph, f[2])()

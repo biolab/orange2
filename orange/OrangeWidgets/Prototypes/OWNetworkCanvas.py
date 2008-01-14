@@ -30,7 +30,7 @@ class NetworkEdge():
     self.arrowv = 0
     
     self.pen = QPen(Qt.black)
-    self.pen.setWidth(3)
+    self.pen.setWidth(1)
 
 class NetworkCurve(QwtPlotCurve):
   def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
@@ -56,7 +56,7 @@ class NetworkCurve(QwtPlotCurve):
       else:
           return None
       
-  def draw(self, painter, style, xMap, yMap, start, stop):
+  def draw(self, painter, xMap, yMap, rect):
     for edge in self.edges:
       px1 = xMap.transform(self.x(edge.u))   #ali pa tudi self.x1, itd
       py1 = yMap.transform(self.y(edge.u))
@@ -64,15 +64,18 @@ class NetworkCurve(QwtPlotCurve):
       py2 = yMap.transform(self.y(edge.v))
       
       painter.drawLine(px1, py1, px2, py2)
-      
+    
     for vertex in self.vertices:
       painter.setPen(vertex.pen) #ze ima:style=SolidLine
       painter.setBrush(vertex.brushColor) #barva (style je po default solidPattern)
     
+      print "x: " + str(self.x(vertex.index))
+      print "y: " + str(self.y(vertex.index))
+      
       pX = xMap.transform(self.x(vertex.index))   #dobimo koordinati v pikslih (tipa integer)
       pY = yMap.transform(self.y(vertex.index))   #ki se stejeta od zgornjega levega kota canvasa
       
-      painter.drawEllipse(pX, pY, 1, 1)
+      painter.drawEllipse(pX, pY, 6, 6)
 
 class OWNetworkCanvas(OWGraph):
   def __init__(self, master, parent = None, name = "None"):
@@ -875,8 +878,12 @@ class OWNetworkCanvas(OWGraph):
       #dodajanje vozlisc
       #print "OWNeteorkCanvas/addVisualizer: adding vertices..."
       self.vertices = {}
+      vertices = []
       for v in range(0, self.nVertices):
           self.vertices[v] = (None, [])
+          vertex = NetworkVertex()
+          vertex.index = v
+          vertices.append(vertex)
       #print "done."
       
       #dodajanje povezav
@@ -884,21 +891,20 @@ class OWNetworkCanvas(OWGraph):
       self.edges = {}
       self.nEdges = 0
       
+      edges = []
       for (i, j) in visualizer.graph.getEdges():
           self.edges[self.nEdges] = (None, i, j)
-          
-#            (key, neighbours) = self.vertices[i]
-#            neighbours.append(j)
-#            self.vertices[i] = (key, neighbours)
-#            (key, neighbours) = self.vertices[j]
-#            neighbours.append(i)
-#            self.vertices[j] = (key, neighbours)
-          
+          edge = NetworkEdge()
+          edge.u = i
+          edge.v = j
+          edges.append(edge)
           self.nEdges += 1
       print visualizer.coors[0]
           
       self.networkCurve.setData(visualizer.coors[0], visualizer.coors[1])
-      
+      self.networkCurve.vertices = vertices
+      self.networkCurve.edges = edges
+
   def resetValues(self):
       self.vertices={}
       self.edges={}
