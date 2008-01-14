@@ -1,26 +1,79 @@
 import math
+import random
+import numpy
 import orange
 import orangeom
 
-from random import *
-from numpy import *
-
-class NetworkVisualizer(orangeom.NetworkOptimization):
-    def __init__(self, graph, parent = None, name = "None"):
-        
-        #print "orngNetwork/init: setGraph..."
+class NetworkOptimization(orangeom.NetworkOptimization):
+    def __init__(self, graph=None, parent=None, name="None"):
+        if graph is None:
+            graph = orangeom.Network(2, 0)
+            
         self.setGraph(graph)
-        #print "orngNetwork/init: getCoors..."
-        #self.coors = self.getCoors()
         self.graph = graph
-
         self.parent = parent
         self.maxWidth  = 1000
         self.maxHeight = 1000
         
         self.attributeList = {}
         self.attributeValues = {}
-    
+        
+    def collapse(self):
+        if len(self.graph.getNodes(1)) > 0:
+            nodes = list(set(range(self.graph.nVertices)) - set(self.graph.getNodes(1)))
+                
+            if len(nodes) > 0:
+                subgraph = orangeom.Network(self.graph.getSubGraph(nodes))
+                oldcoors = self.coors
+                self.setGraph(subgraph)
+                self.graph = subgraph
+                    
+                for i in range(len(nodes)):
+                    self.coors[0][i] = oldcoors[0][nodes[i]]
+                    self.coors[1][i] = oldcoors[1][nodes[i]]
+
+        else:
+            fullgraphs = self.graph.getLargestFullGraphs()
+            subgraph = self.graph
+            
+            if len(fullgraphs) > 0:
+                used = set()
+                graphstomerge = list()
+                #print fullgraphs
+                for fullgraph in fullgraphs:
+                    #print fullgraph
+                    fullgraph_set = set(fullgraph)
+                    if len(used & fullgraph_set) == 0:
+                        graphstomerge.append(fullgraph)
+                        used |= fullgraph_set
+                        
+                #print graphstomerge
+                #print used
+                subgraph = orangeom.Network(subgraph.getSubGraphMergeClusters(graphstomerge))
+                                   
+                nodescomp = list(set(range(self.graph.nVertices)) - used)
+                
+                #subgraph.setattr("items", self.graph.items.getitems(nodescomp))
+                #subgraph.items.append(self.graph.items[0])
+                oldcoors = self.coors
+                self.setGraph(subgraph)
+                self.graph = subgraph
+                for i in range(len(nodescomp)):
+                    self.coors[0][i] = oldcoors[0][nodescomp[i]]
+                    self.coors[1][i] = oldcoors[1][nodescomp[i]]
+                    
+                # place meta vertex in center of cluster    
+                x, y = 0, 0
+                for node in used:
+                    x += oldcoors[0][node]
+                    y += oldcoors[1][node]
+                    
+                x = x / len(used)
+                y = y / len(used)
+                
+                self.coors[0][len(nodescomp)] = x
+                self.coors[1][len(nodescomp)] = y
+            
     def getVars(self):
         vars = []
         if (self.graph != None):
@@ -100,7 +153,10 @@ class NetworkVisualizer(orangeom.NetworkOptimization):
 
         graphFile.write('### This file was generated with Orange Network Visualizer ### \n\n\n')
         if name == '':
-            graphFile.write('*Network ' + '"Qt network" \n\n')
+            if (int(qVersion()[0]) >= 3):
+                graphFile.write('*Network ' + '"network" \n\n')
+            else:
+                graphFile.write('*Network ' + '"Qt network" \n\n')
         else:
             graphFile.write('*Network ' + str(name) + ' \n\n')
 
@@ -124,8 +180,8 @@ class NetworkVisualizer(orangeom.NetworkOptimization):
             except:
                 graphFile.write(str('"'+ str(v) + '"') + ' \t')
             
-            x = self.coors[v][0] / 1000
-            y = self.coors[v][1] / 1000
+            x = self.coors[0][v] / 1000
+            y = self.coors[1][v] / 1000
             if x < 0: x = 0
             if x >= 1: x = 0.9999
             if y < 0: y = 0
@@ -150,8 +206,7 @@ class NetworkVisualizer(orangeom.NetworkOptimization):
             if len(self.graph[i,j]) > 0:
                 graphFile.write('% 8d % 8d %d' % (i+1, j+1, int(self.graph[i,j][0])))
                 graphFile.write('\n')
-#                    
-        #self.graph.
+
 #        for v1 in edgesParms.keys():
 #            for v2 in edgesParms[v1].keys():
 #                if edgesParms[v1][v2].type==UNDIRECTED:
@@ -181,4 +236,11 @@ class NetworkVisualizer(orangeom.NetworkOptimization):
         graphFile.write('\n')
         graphFile.close()
 
-        return 0  #uspesen konec
+        return 0
+    
+    def readNetwork(self, fn, directed=0):
+        graph = orangeom.NetworkOptimization.readNetwork(self, fn, directed)
+        self.setGraph(graph)
+        self.graph = graph
+        return graph
+    

@@ -34,7 +34,7 @@ class NetworkEdge():
 
 class NetworkCurve(QwtPlotCurve):
   def __init__(self, parent, pen = QPen(Qt.black), xData = None, yData = None):
-      QwtPlotCurve.__init__(self, parent)
+      QwtPlotCurve.__init__(self, "NetworkCurve")
 
       if xData != None and yData != None:
           self.setData(xData, yData)
@@ -567,7 +567,7 @@ class OWNetworkCanvas(OWGraph):
               
           self.addCurve("radius", fillColor, Qt.green, 1, style = QwtCurve.Lines, xData = x, yData = y, showFilledSymbols = False)
       
-      self.insertCurve(self.networkCurve)
+      self.networkCurve.attach(self)
       
 #      xData = []
 #      yData = []
@@ -925,8 +925,9 @@ class OWNetworkCanvas(OWGraph):
       self.setAxisAutoScale(self.yLeft)
 
   def setAxisFixedScale(self):
-      self.setAxisScale(self.xBottom, self.axisScale(self.xBottom).lBound(), self.axisScale(self.xBottom).hBound())
-      self.setAxisScale(self.yLeft, self.axisScale(self.yLeft).lBound(), self.axisScale(self.yLeft).hBound())
+      #self.setAxisScale(self.xBottom, self.axisScale(self.xBottom).lBound(), self.axisScale(self.xBottom).hBound())
+      #self.setAxisScale(self.yLeft, self.axisScale(self.yLeft).lBound(), self.axisScale(self.yLeft).hBound())
+      pass
       
   def sendData(self):
       try:
