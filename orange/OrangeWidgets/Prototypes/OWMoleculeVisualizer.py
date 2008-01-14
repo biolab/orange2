@@ -41,10 +41,13 @@ class BigImage(QDialog):
         self.renderImage()
 
     def renderImage(self):
-        if self.context.fragment:
-            moleculeFragment2BMP(self.context.molecule, self.context.fragment, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
-        else:
-            molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
+        try:
+            if self.context.fragment:
+                moleculeFragment2BMP(self.context.molecule, self.context.fragment, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
+            else:
+                molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
+        except IOError, er:
+            return
         pix=QPixmap()
         pix.load(self.imagename)
         self.label.setPixmap(pix)
@@ -61,9 +64,9 @@ class MolWidget(QVBox):
         self.master=master
         self.context=context
         self.label=QLabel(self)
+        self.selected=False
         self.image=MolImage(master, self, context)
         self.show()
-        self.selected=False
         self.label.setText(context.title)
         self.label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         self.label.setMaximumWidth(context.size)
@@ -80,11 +83,19 @@ class MolImage(QLabel):
         self.context=context
         self.master=master
         imagename=context.imagename or context.imageprefix+".bmp"
-        if not context.useCached:
-            if context.fragment:
-                moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, grayedBackground=context.grayedBackground)
-            else:
-                molecule2BMP(context.molecule, imagename, context.size, grayedBackground=context.grayedBackground)
+        try:
+            if not context.useCached:
+                if context.fragment:
+                    moleculeFragment2BMP(context.molecule, context.fragment, imagename, context.size, grayedBackground=context.grayedBackground)
+                else:
+                    molecule2BMP(context.molecule, imagename, context.size, grayedBackground=context.grayedBackground)
+        except IOError, err:
+            self.selected=False
+            self.setFrameStyle(QFrame.Panel | QFrame.Raised)
+            self.show()
+            #print err , "MI"
+            raise err
+    
         self.load(imagename)
         self.selected=False
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)
@@ -130,13 +141,13 @@ class ScrollView(QScrollView):
         numColumns=min(w/(self.master.imageSize) or 1, 100)
         if numColumns!=oldNumColumns:
             self.master.numColumns=numColumns
-            self.master.redrawImages(useCached=True)
+            self.master.redrawImages(useCached=not self.master.overRideCache)
 ##        print self.maximumSize().height(), self.viewport().maximumSize().height()
         
 
 class OWMoleculeVisualizer(OWWidget):
-    settingsList=["colorFragmets","showFragments"]
-    serverPwd = "makeitwork"
+    settingsList=["colorFragmets","showFragments", "serverPassword"]
+    serverPwd = ""
     def __init__(self, parent=None, signalManager=None, name="Molecule visualizer"):
         apply(OWWidget.__init__,(self, parent, signalManager, name))
         self.inputs=[("Molecules", ExampleTable, self.setMoleculeTable), ("Molecule subset", ExampleTable, self.setMoleculeSubset), ("Fragments", ExampleTable, self.setFragmentTable)]
@@ -154,7 +165,13 @@ class OWMoleculeVisualizer(OWWidget):
         self.numColumns=4
         self.commitOnChange=0
         self.serverPassword=OWMoleculeVisualizer.serverPwd
+        self.overRideCache=True
         ##GUI
+        box=OWGUI.widgetBox(self.controlArea, "Info", addSpace = True)
+        self.infoLabel=OWGUI.label(box, self, "Chemicals: ")
+        if not localOpenEye:
+            OWGUI.label(box, self, "OpenEye not installed, access to server required.")
+            self.serverInfo = OWGUI.label(box, self, "")
         box=OWGUI.radioButtonsInBox(self.controlArea, self, "showFragments", ["Show molecules", "Show fragments"], "Show", callback=self.showImages)
         self.showFragmentsRadioButton=box.buttons[-1]
         self.markFragmentsCheckBox=OWGUI.checkBox(box, self, "colorFragments", "Mark fragments", callback=self.redrawImages)
@@ -164,7 +181,7 @@ class OWMoleculeVisualizer(OWWidget):
         self.moleculeSmilesCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
         OWGUI.separator(self.controlArea)
 ##        self.moleculeTitleCombo=OWGUI.comboBox(self.controlArea, self, "moleculeTitleAttr", "Molecule title attribute", callback=self.redrawImages)
-        box=OWGUI.widgetBox(self.controlArea, "Molecule title attributes")
+        box=OWGUI.widgetBox(self.controlArea, "Molecule title attributes", addSpace = True)
         self.moleculeTitleListBox=QListBox(box)
         self.moleculeTitleListBox.setSelectionMode(QListBox.Extended)
         self.moleculeTitleListBox.setMinimumHeight(100)
@@ -178,11 +195,11 @@ class OWMoleculeVisualizer(OWWidget):
         box=OWGUI.spin(self.controlArea, self, "imageSize", 50, 500, 50, box="Image size", callback=self.redrawImages, callbackOnReturn = True)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
         OWGUI.separator(self.controlArea)
-        box=OWGUI.widgetBox(self.controlArea,"Selection")
+        box=OWGUI.widgetBox(self.controlArea,"Selection", addSpace = True)
         OWGUI.checkBox(box, self, "commitOnChange", "Commit on change")
         self.selectMarkedMoleculesButton=OWGUI.button(box, self, "Select &matched molecules", self.selectMarked)
         OWGUI.button(box, self, "&Commit", callback=self.commit)
-        box=OWGUI.widgetBox(self.controlArea,"Server Password")
+        box=OWGUI.widgetBox(self.controlArea,"Server Password", addSpace=True)
         OWGUI.lineEdit(box, self, "serverPassword", callback=self.setServPwd)
         OWGUI.separator(self.controlArea)
         OWGUI.button(self.controlArea, self, "&Save to HTML", self.saveToHTML)
@@ -227,6 +244,8 @@ class OWMoleculeVisualizer(OWWidget):
         self.selectMarkedMoleculesButton.setDisabled(True)
         self.markFragmentsCheckBox.setDisabled(True)
         self.showFragmentsRadioButton.setDisabled(True)
+        self.loadSettings()
+        OWMoleculeVisualizer.serverPwd=self.serverPassword
         
     def setMoleculeTable(self, data):
         self.molData=data
@@ -277,6 +296,7 @@ class OWMoleculeVisualizer(OWWidget):
     def setServPwd(self):
         if self.serverPassword:
             OWMoleculeVisualizer.serverPwd=self.serverPassword
+            self.showImages()
 
     def filterSmilesVariables(self, data):
         candidates=data.domain.variables+data.domain.getmetas().values()
@@ -381,6 +401,7 @@ class OWMoleculeVisualizer(OWWidget):
         self.imageWidgets=[]
         if self.showFragments and self.fragmentSmiles:
             correctedNumColumns=fixNumColumns(len(self.fragmentSmiles[1:]), self.numColumns)
+            self.progressBarInit()
             for i,fragment in enumerate(self.fragmentSmiles[1:]):
                 imagename=self.imageprefix+str(i)+".bmp"
                 #vis.molecule2BMP(fragment, imagename, self.imageSize)
@@ -388,6 +409,8 @@ class OWMoleculeVisualizer(OWWidget):
                 image=MolWidget(self, self.molWidget, DrawContext(molecule=fragment, imagename=imagename, size=self.imageSize, useCached=useCached))
                 self.gridLayout.addWidget(image, i/correctedNumColumns, i%correctedNumColumns)
                 self.imageWidgets.append(image)
+                self.progressBarSet(i*100/len(self.fragmentSmiles))
+            self.progressBarFinished()
         elif self.molData and self.candidateMolSmilesAttr:
             sAttr=self.candidateMolSmilesAttr[min(self.moleculeSmilesAttr, len(self.candidateMolSmilesAttr)-1)]
             tAttr=self.candidateMolTitleAttr[min(self.moleculeTitleAttr, len(self.candidateMolTitleAttr)-1)]
@@ -399,6 +422,7 @@ class OWMoleculeVisualizer(OWWidget):
                     return
             molSmiles=[(str(e[sAttr]), e) for e in self.molData if not e[sAttr].isSpecial()]
             correctedNumColumns=fixNumColumns(len(molSmiles), self.numColumns)
+            self.progressBarInit()
             for i,((molecule, example), title) in enumerate(zip(molSmiles, titleList or [""]*len(molSmiles))):
                 imagename=self.imageprefix+str(i)+".bmp"
                 if self.colorFragments:
@@ -411,10 +435,13 @@ class OWMoleculeVisualizer(OWWidget):
                 image=MolWidget(self, self.molWidget, context)
                 self.gridLayout.addWidget(image, i/correctedNumColumns, i%correctedNumColumns)
                 self.imageWidgets.append(image)
+                self.progressBarSet(i*100/len(molSmiles))
+            self.progressBarFinished()
             self.updateTitles()
         #print "done drawing"
         for w in self.imageWidgets:
             w.show()
+        self.overRideCache=False
 ##        if self.imageWidgets:
 ##            self.scrollView.viewport().setMaximumHeight(self.imageSize*(len(self.imageWidgets)/self.numColumns+1))
 ##            print self.imageWidgets[-1].y()+self.imageWidgets[-1].height(), viewportHeight
@@ -427,9 +454,21 @@ class OWMoleculeVisualizer(OWWidget):
     def showImages(self, useCached=False):
         self.destroyImageWidgets()
         #print "destroyed"
-        self.renderImages(useCached)
+        if not localOpenEye:
+            self.serverInfo.setText("")
+        self.error()
+        try:
+            self.renderImages(useCached)
+        except IOError, err:
+            self.error("Failed to connect to server")
+            self.serverInfo.setText("Failed to connect to server")
+            self.overRideCache=True
+            
 
     def redrawImages(self, useCached=False):
+        #print "redraw", useCached
+        #import traceback
+        #traceback.print_stack()
         selected=map(lambda i:self.imageWidgets.index(i), filter(lambda i:i.selected, self.imageWidgets))
         self.showImages(useCached=useCached)
         for i in selected:
@@ -628,17 +667,12 @@ def remoteMoleculeFragment2BMP(molSmiles, fragSmiles, filename, size=200, title=
         imgstr = f.read()
     except IOError, er:
         print er
-        return
+        raise er
     im = cStringIO.StringIO(imgstr)
-    try:
-        img = Image.open(im)
-        #print img.format, img.size, img.mode
-        img.save(filename)
-        #del img
-    except:
-        print "error generating image: "
-        print imgstr
-    
+    img = Image.open(im)
+    #print img.format, img.size, img.mode
+    img.save(filename)
+    #del img
 
 def remoteMolecule2BMP(molSmiles, filename, size=200, title="", grayedBackground=False):
     import cStringIO
@@ -650,17 +684,13 @@ def remoteMolecule2BMP(molSmiles, filename, size=200, title="", grayedBackground
         f = urllib.urlopen("http://212.235.189.52/openEye/drawMol.py", params)
         imgstr = f.read()
     except IOError, er:
-        print er
-        return
+        print er, "rm2BMP"
+        raise er
     im = cStringIO.StringIO(imgstr)
-    try:
-        img = Image.open(im)
-        #print img.format, img.size, img.mode
-        img.save(filename)
-        #del img
-    except:
-        print "error generating image: "
-        print imgstr
+    img = Image.open(im)
+    #print img.format, img.size, img.mode
+    img.save(filename)
+    #del img
 
 def map_fragments(fragments, smiles, binary=True):
     ret={}
@@ -717,3 +747,4 @@ if __name__=="__main__":
 ##    data=orange.ExampleTable("E://chem//new//sf.tab")
 ##    w.setFragmentTable(data)
     app.exec_loop()
+    w.saveSettings()
