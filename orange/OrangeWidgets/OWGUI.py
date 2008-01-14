@@ -87,8 +87,8 @@ def label(widget, master, label, labelWidth = None):
     lbl = QLabel("", widget)
     if widget.layout(): widget.layout().addWidget(lbl)
 
-    reprint = CallFront_Label(lbl, label, master)
-    for mo in __re_frmt.finditer(label) and hasattr(master, "controlledAttributes"):
+    reprint = CallFrontLabel(lbl, label, master)
+    for mo in __re_frmt.finditer(label):
         master.controlledAttributes[mo.group("value")] = reprint
     reprint()
 
@@ -173,7 +173,7 @@ def spin(widget, master, value, min, max, step=1,
     if value:
         wa.setValue(getdeepattr(master, value))
 
-    cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and "valueChanged(int)", CallFront_spin(wa))
+    cfront, wa.cback, wa.cfunc = connectControl(wa, master, value, callback, not (callback and callbackOnReturn) and "valueChanged(int)", CallFrontSpin(wa))
 
     if checked:
         wb.disables = [wa]
@@ -213,7 +213,7 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     if tooltip:
         wa.setToolTip(tooltip)
 
-    connectControl(wa, master, value, callback, "valueChanged(int)", CallFront_doubleSpin(wa), fvcb=wa.clamp)
+    connectControl(wa, master, value, callback, "valueChanged(int)", CallFrontDoubleSpin(wa), fvcb=wa.clamp)
     return b
 
 
@@ -230,7 +230,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     if tooltip:
         wa.setToolTip(tooltip)
 
-    cfront, cback, cfunc = connectControl(wa, master, value, None, "toggled(bool)", CallFront_checkBox(wa),
+    cfront, cback, cfunc = connectControl(wa, master, value, None, "toggled(bool)", CallFrontCheckBox(wa),
                                           cfunc = callback and FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
     wa.disables = disables or [] # need to create a new instance of list (in case someone would want to append...)
     wa.makeConsistent = Disabler(wa, master, value)
@@ -328,7 +328,7 @@ def lineEdit(widget, master, value,
     if validator:
         wa.setValidator(validator)
 
-    wa.cback = connectControl(wa, master, value, callback and callbackOnType, "textChanged(const QString &)", CallFront_lineEdit(wa), fvcb = value and valueType)[1]
+    wa.cback = connectControl(wa, master, value, callback and callbackOnType, "textChanged(const QString &)", CallFrontLineEdit(wa), fvcb = value and valueType)[1]
 
     wa.box = b
     return wa
@@ -416,11 +416,11 @@ def listBox(widget, master, value = None, labels = None, box = None, tooltip = N
     if tooltip:
         lb.setToolTip(tooltip)
 
-    connectControl(lb, master, value, callback, "itemSelectionChanged()", CallFront_ListBox(lb), ListBoxCallback(lb, master))
+    connectControl(lb, master, value, callback, "itemSelectionChanged()", CallFrontListBox(lb), CallBackListBox(lb, master))
     if value != None:
         setattr(master, value, getattr(master, value))
     if hasattr(master, "controlledAttributes") and labels != None:
-        master.controlledAttributes[labels] = CallFront_ListBoxLabels(lb)
+        master.controlledAttributes[labels] = CallFrontListBoxLabels(lb)
     if labels != None:
         setattr(master, labels, getattr(master, labels))
     if debuggingEnabled:
@@ -440,51 +440,53 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
 
     bg.buttons = []
     for i in range(len(btnLabels)):
-        appendRadioButton(bg, master, value, btnLabels[i], tooltips and tooltips[i])
+        appendRadioButton(bg, master, value, btnLabels[i], tooltips and tooltips[i], callback = callback)
 
-    connectControl(bg, master, value, callback, "clicked(int)", CallFront_radioButtons(bg))
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("radioButtonsInBox", bg, value, callback)]
     return bg
 
 
-def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = None):
-    i = len(bg.buttons)
+def appendRadioButton(bg, master, value, label, tooltip = None, insertInto = None, callback = None):
     dest = insertInto or bg
+    i = len(dest.buttons)
     if type(label) in (str, unicode):
         w = QRadioButton(label, dest)
     else:
         w = QRadioButton(unicode(i), dest)
         w.setIcon(QIcon(label))
+    w.ogValue = value
     if dest.layout(): dest.layout().addWidget(w)
 
     w.setChecked(getdeepattr(master, value) == i)
-    bg.buttons.append(w)
+    dest.buttons.append(w)
+    if callback != None:
+        connectControl(w, master, value, callback, "clicked()", CallFrontRadioButtons(dest), CallBackRadioButton(w, master, dest))
     if tooltip:
         w.setToolTip(tooltip)
     return w
 
-def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None, debuggingEnabled = 1):
-    if box:
-        bg = widgetBox(widget, box, orientation="horizontal")
-    else:
-        bg = widget
-
-    if type(label) in (str, unicode):
-        w = QRadioButton(label, bg)
-    else:
-        w = QRadioButton("X")
-        w.setPixmap(label)
-    if bg.layout(): bg.layout().addWidget(w)
-
-    w.setChecked(getdeepattr(master, value))
-    if tooltip:
-        w.setToolTip(tooltip)
-
-    connectControl(w, master, value, callback, "stateChanged(int)", CallFront_checkBox(w))
-    if debuggingEnabled:
-        master._guiElements = getattr(master, "_guiElements", []) + [("radioButton", w, value, callback)]
-    return w
+#def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None, debuggingEnabled = 1):
+#    if box:
+#        bg = widgetBox(widget, box, orientation="horizontal")
+#    else:
+#        bg = widget
+#
+#    if type(label) in (str, unicode):
+#        w = QRadioButton(label, bg)
+#    else:
+#        w = QRadioButton("X")
+#        w.setPixmap(label)
+#    if bg.layout(): bg.layout().addWidget(w)
+#
+#    w.setChecked(getdeepattr(master, value))
+#    if tooltip:
+#        w.setToolTip(tooltip)
+#
+#    connectControl(w, master, value, callback, "stateChanged(int)", CallFrontCheckBox(w))
+#    if debuggingEnabled:
+#        master._guiElements = getattr(master, "_guiElements", []) + [("radioButton", w, value, callback)]
+#    return w
 
 
 def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, label=None, labelFormat=" %d", ticks=0, divideFactor = 1.0, debuggingEnabled = 1, vertical = False, createLabel = 1, tooltip = None):
@@ -526,7 +528,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
         label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
         QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
 
-    connectControl(slider, master, value, callback, "valueChanged(int)", CallFront_hSlider(slider))
+    connectControl(slider, master, value, callback, "valueChanged(int)", CallFrontHSlider(slider))
 
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("hSlider", slider, value, minValue, maxValue, step, callback)]
@@ -579,11 +581,11 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
         lbl.setText(format % init)
 
     if logarithmic:
-        cfront = CallFront_logSlider(slider)
+        cfront = CallFrontLogSlider(slider)
         cback = ValueCallback(master, value, f=lambda x: 10**x)
         if showValueLabel: master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format, f=lambda x: 10**x))
     else:
-        cfront = CallFront_hSlider(slider)
+        cfront = CallFrontHSlider(slider)
         cback = ValueCallback(master, value)
         if showValueLabel: master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
     connectControl(slider, master, value, callback, "valueChanged(double)", cfront, cback)
@@ -619,10 +621,10 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
             if emptyString:
                 control2attributeDict[emptyString] = ""
             connectControl(combo, master, value, callback, "activated( const QString & )",
-                           CallFront_comboBox(combo, valueType, control2attributeDict),
+                           CallFrontComboBox(combo, valueType, control2attributeDict),
                            ValueCallbackCombo(master, value, valueType, control2attributeDict))
         else:
-            connectControl(combo, master, value, callback, "activated(int)", CallFront_comboBox(combo, None, control2attributeDict))
+            connectControl(combo, master, value, callback, "activated(int)", CallFrontComboBox(combo, None, control2attributeDict))
 
     if debuggingEnabled:
         master._guiElements = getattr(master, "_guiElements", []) + [("comboBox", combo, value, sendSelectedValue, valueType, callback)]
@@ -843,8 +845,7 @@ class ControlledList(list):
         list.remove(self, item)
 
 
-
-def connectValueControl(control, master, value, signal, cfront, cback = None, fvcb = None):
+def connectControl(control, master, value, f, signal, cfront, cback = None, cfunc = None, fvcb = None):
     cback = cback or value and ValueCallback(master, value, fvcb)
     if cback:
         if signal:
@@ -852,10 +853,6 @@ def connectValueControl(control, master, value, signal, cfront, cback = None, fv
         cback.opposite = cfront
         if value and cfront and hasattr(master, "controlledAttributes"):
             master.controlledAttributes[value] = cfront
-    return cback
-
-def connectControl(control, master, value, f, signal, cfront, cback = None, cfunc = None, fvcb = None):
-    cback = connectValueControl(control, master, value, signal, cfront, cback, fvcb)
 
     cfunc = cfunc or f and FunctionCallback(master, f)
     if cfunc:
@@ -977,7 +974,7 @@ class FunctionCallback:
                 self.f(**kwds)
 
 
-class ListBoxCallback:
+class CallBackListBox:
     def __init__(self, control, widget):
         self.control = control
         self.widget = widget
@@ -993,6 +990,18 @@ class ListBoxCallback:
                     list.append(clist, i)
             self.widget.__setattr__(self.control.ogValue, clist)
 
+
+class CallBackRadioButton:
+    def __init__(self, control, widget, box):
+        self.control = control
+        self.widget = widget
+        self.box = box
+        self.disabled = False
+
+    def __call__(self, *args): # triggered by toggled()
+        if not self.disabled and self.control.ogValue != None:
+            arr = [butt.isChecked() for butt in self.box.buttons] 
+            self.widget.__setattr__(self.control.ogValue, arr.index(1))
 
 
 ##############################################################################
@@ -1019,26 +1028,26 @@ class ControlledCallFront:
                 self.action(*args)
 
 
-class CallFront_spin(ControlledCallFront):
+class CallFrontSpin(ControlledCallFront):
     def action(self, value):
         if value != None:
             self.control.setValue(value)
 
 
-class CallFront_doubleSpin(ControlledCallFront):
+class CallFrontDoubleSpin(ControlledCallFront):
     def action(self, value):
         if value != None:
             self.control.setValue(self.control.expand(value))
 
 
-class CallFront_checkBox(ControlledCallFront):
+class CallFrontCheckBox(ControlledCallFront):
     def action(self, value):
         if value != None:
             values = [Qt.Unchecked, Qt.Checked, Qt.PartiallyChecked]
             self.control.setCheckState(values[value])
 
 
-class CallFront_comboBox(ControlledCallFront):
+class CallFrontComboBox(ControlledCallFront):
     def __init__(self, control, valType = None, control2attributeDict = {}):
         ControlledCallFront.__init__(self, control)
         self.valType = valType
@@ -1060,13 +1069,13 @@ class CallFront_comboBox(ControlledCallFront):
                 self.control.setCurrentIndex(value)
 
 
-class CallFront_hSlider(ControlledCallFront):
+class CallFrontHSlider(ControlledCallFront):
     def action(self, value):
         if value != None:
             self.control.setValue(value)
 
 
-class CallFront_logSlider(ControlledCallFront):
+class CallFrontLogSlider(ControlledCallFront):
     def action(self, value):
         if value != None:
             if value < 1e-30:
@@ -1075,19 +1084,19 @@ class CallFront_logSlider(ControlledCallFront):
                 self.control.setValue(math.log10(value))
 
 
-class CallFront_lineEdit(ControlledCallFront):
+class CallFrontLineEdit(ControlledCallFront):
     def action(self, value):
         self.control.setText(unicode(value))
 
 
-class CallFront_radioButtons(ControlledCallFront):
+class CallFrontRadioButtons(ControlledCallFront):
     def action(self, value):
         if value < 0 or value >= len(self.control.buttons):
             value = 0
         self.control.buttons[value].setChecked(1)
 
 
-class CallFront_ListBox(ControlledCallFront):
+class CallFrontListBox(ControlledCallFront):
     def action(self, value):
         if value != None and self.control.ogValue != None:
             if not type(value) <= ControlledList:
@@ -1097,7 +1106,7 @@ class CallFront_ListBox(ControlledCallFront):
                 self.control.item(i).setSelected(1)
 
 
-class CallFront_ListBoxLabels(ControlledCallFront):
+class CallFrontListBoxLabels(ControlledCallFront):
     def action(self, value):
         icons = getAttributeIcons()
         self.control.clear()
@@ -1112,7 +1121,7 @@ class CallFront_ListBoxLabels(ControlledCallFront):
                     self.control.addItem(i)
 
 
-class CallFront_Label:
+class CallFrontLabel:
     def __init__(self, control, label, master):
         self.control = control
         self.label = label
