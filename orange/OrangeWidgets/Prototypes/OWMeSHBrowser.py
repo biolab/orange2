@@ -1,4 +1,5 @@
 # FIXME: Sortiranje nekaterih vrednosti v tabeli je se vedno narobe.
+# FIXME: Zapomni si zadnji klik na vrstico v QListView. Ta vrstica naj potem ostala izbrana med prehodom iz multi-solo izbiro.
 
 """
 <name>MeSH Term Browser</name>

@@ -1,11 +1,13 @@
-# TODO: Popravi moznost izbire enrichanig termov.
-
+# TODO: Popravi moznost izbire enrichanih termov. Namesto tresholda daj funkcijo.
+# TODO: Buffering za izbiro termov. Dodaj optimizacijo, ki uposteva vsebovanost.
+# TODO: Dodaj callback pri iskanju MeSH termov.
 
 import orange
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 from math import log,exp
 from urllib import urlopen
+from sgmllib import SGMLParser
 import os.path
 
 class orngMeSH(object):
@@ -142,7 +144,7 @@ class orngMeSH(object):
 
         return newdata	
 
-    def findTerms(self,ids, idType="cid"):
+    def findTerms(self,ids, idType="cid", callback = None):
         """ returns a dictionary with terms (term id) that apply to ids (cids or pmids). """
 
         ret = dict()
@@ -151,8 +153,24 @@ class orngMeSH(object):
             return ret
 
         if idType=="cid": 
-            database = self.fromCID
-        elif idType == "pmid":
+            for i in ids:
+                if self.fromCID.has_key(i): # maybe it is on our database
+                    ret[int(i)] = self.fromCID[i]
+                else:   # no it is not, let's go in the internet    
+                    l = self.findTermsForCID(i)
+                    self.fromCID[int(i)] = l
+                    ret[int(i)] = l
+                    
+                    if len(l)>0:
+                        # if we found something lets save it to a file
+                        __dataPath = os.path.join(os.path.dirname(__file__), self.path)
+                        fileHandle = open(os.path.join(__dataPath,'cid-annotation.dat'), 'a')
+                        for s in l:
+                            fileHandle.write('\n' + str(i) + ';' + s )
+                        fileHandle.close()
+                    
+            return ret
+        elif idType == "pmid":  #FIXME PMID annotation
             database = self.fromPMID
         else:
             return ret
@@ -161,6 +179,30 @@ class orngMeSH(object):
             if(database.has_key(int(i))):
                 ret[i] = database[int(i)]
         return ret
+        
+    def findTermsForCID(self,cid):
+        """ functions tries to find MeSH terms for given CID on the internet """
+        usock = urlopen("http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid="+ str(cid)  +"&viewopt=PubChem&hcount=100&tree=t#MeSH")
+        parser = PubChemMeSHParser()
+        parser.feed(usock.read())
+
+        usock.close()
+        parser.close()
+
+        allTerms = parser.directTerms
+
+        for (k,i) in parser.indirectTerms:
+            usock = urlopen(i)
+            parser = MappedMeSHParser()
+            parser.feed(usock.read())
+            allTerms.extend(parser.terms)     
+            usock.close()
+            parser.close()
+
+        # from allTerms make a set
+        allTerms = list(set(allTerms))
+
+        return allTerms
 
     
     def findFrequentTerms(self,data,minSizeInTerm, treeData = False, callback=None):
@@ -478,6 +520,9 @@ class orngMeSH(object):
         t - number of all chemicals in observed term group
         tc - number of cluster chemicals in observed term group"""
         #print "choose ", n, " ", c, " ", t, " ", tc		
+        
+        # FIXME: Popravi cudno racunanje enrichmenta v mejnih primerih.
+        
         result=0
         for i in range(0,tc):
             result = result + exp(self.log_comb(t,i) + self.log_comb(n-t,c-i))
@@ -600,6 +645,77 @@ class pubMedHandler(ContentHandler):
 		self.state = 0
 		if name == "PubmedArticle":
 			self.articles.append([self.pmid,self.title,self.abstract,self.mesh, self.affiliation])
+			
+class MappedMeSHParser(SGMLParser):
+    def reset(self):
+        self.pieces = []
+        self.terms = []
+        self.foundMeSH = False
+        self.nextIsTerm = False
+        self.endTags = ['Display','Write to the Help Desk', 'Previous Indexing:', 'Entry Terms:','Pharmacologic Action:' ]
+        SGMLParser.reset(self)
+
+    def unknown_starttag(self, tag, attrs): 
+        strattrs = "".join([' %s="%s"' % (key, value) for key, value in attrs])
+
+        if self.foundMeSH and tag=='a':
+            self.nextIsTerm = True
+
+    def handle_data(self, text):
+        text = text.strip()
+        if text == '':
+            return
+
+        if text == 'Heading Mapped to:':
+            self.foundMeSH = True
+
+        if self.endTags.count(text)>0:
+            self.foundMeSH = False
+        elif self.nextIsTerm:
+            self.terms.append(text)
+            self.nextIsTerm = False
+
+class PubChemMeSHParser(SGMLParser):
+    def reset(self):
+        self.pieces = []
+        self.current_term = ''
+        self.nextLink = ''
+        self.directTerms = []
+        self.indirectTerms = []
+        self.foundMeSH = False
+        self.nextIsTerm = 0 # looking for term
+        SGMLParser.reset(self)
+
+    def unknown_starttag(self, tag, attrs): 
+        if self.foundMeSH and tag=='a':
+            if self.nextIsTerm == 0 and attrs[0][0] == 'name' and attrs[0][1] == 'gomesh':
+                    self.nextIsTerm = 1 # next token is term
+                    self.nextLink = attrs[1][1]
+
+    def handle_data(self, text):
+        text = text.strip()
+        if text == '':
+            return
+
+        if text == 'Medical Subject Annotations:' or text == 'PubMed MeSH Keyword Summary':
+            self.foundMeSH = True
+            self.current_term = ''
+            self.nextLink = ''
+            self.nextIsTerm = 0
+
+        if self.foundMeSH and (text == 'PubMed via MeSH' or text == 'Pharmacological Action:'):
+            self.foundMeSH = False
+            self.nextIsTerm = 3
+            self.indirectTerms.append((self.current_term, self.nextLink))
+
+        elif self.nextIsTerm == 1:
+            self.current_term = text
+            self.nextIsTerm = 2 # term waiting to be saved
+
+        elif text == 'Hide MeSH Tree Structure':
+            self.foundMeSH = False
+            self.directTerms.append(self.current_term)
+            self.nextIsTerm = 3
 
 #load data
 #reference_data = orange.ExampleTable("data/D06-reference.tab")
