@@ -826,17 +826,12 @@ class OWBaseWidget(QDialog):
                 else:
                     callback()
         except:
-            import traceback
-            if not hasattr(self, "_seenExceptions"):
-                self._seenExceptions = {}
-            eType, val, tb = sys.exc_info()
-            eStr = "".join(traceback.format_exception(eType, val, tb))
-            if not self._seenExceptions.has_key(eStr):      # don't repeat writing the already seen exceptions to the output
-                self._seenExceptions[eStr] = 1
+            excType, value, tracebackInfo = sys.exc_info()
+            if not self.signalManager.exceptionSeen(type, value, tracebackInfo):
                 sys.stderr.write("------------------\n")
                 if newValue != "":
                     sys.stderr.write("Widget %s. %s\n" % (str(self.caption()), newValue))
-                sys.excepthook(eType, val, tb)  # print the exception
+                sys.excepthook(excType, value, tracebackInfo)  # print the exception
                 sys.stderr.write("Widget settings are:\n")
                 for i, setting in enumerate(getattr(self, "settingsList", [])):
                     sys.stderr.write("%30s: %7s\n" % (setting, str(self.getdeepattr(setting))))
