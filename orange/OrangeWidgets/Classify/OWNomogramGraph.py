@@ -543,7 +543,7 @@ class AttrLine:
             
         atLine = AttrLine("marker", canvas)
         d = 5*(self.maxValue-self.minValue)/max((max_mapped-min_mapped),aproxZero)
-        for xc in numpy.arange(self.minValue, self.maxValue+d, d):
+        for xc in numpy.arange(self.minValue, self.maxValue+d, max(d, aproxZero)):
             atLine.addAttValue(AttValue("", xc))
         
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -683,7 +683,7 @@ class AttrLineCont(AttrLine):
 
         atLine = AttrLine("marker", canvas)
         d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/max(max_mapped-min_mapped,aproxZero)
-        for xc in numpy.arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
+        for xc in numpy.arange(self.cAtt.minValue, self.cAtt.maxValue+d, max(d, aproxZero)):
             atLine.addAttValue(AttValue("", xc))
         
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
