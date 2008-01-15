@@ -570,6 +570,7 @@ class CanvasOptionsDlg(QDialog):
         self.upButton.setMaximumWidth(60)
         self.downButton.setMaximumWidth(60)
         self.removeButton.setMaximumWidth(60)
+        self.removeButton.setEnabled(0)
         sep = QWidget(hbox2)
         sep.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred))
         self.connect(self.upButton, SIGNAL("clicked()"), self.moveUp)

@@ -90,12 +90,6 @@ class OWLinProj(OWVisWidget):
 ##        self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, name)
 ##        self.graph.clusterOptimization = self.clusterDlg
 
-        # freeviz dialog
-        self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
-        if name.lower() == "linear projection":
-            self.freeVizLearner = FreeVizLearner(self.freeVizDlg)
-            self.send("FreeViz Learner", self.freeVizLearner)
-
         # optimization dialog
         if name.lower() == "radviz":
             self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.RADVIZ, name)
@@ -125,7 +119,17 @@ class OWLinProj(OWVisWidget):
 
         self.optimizationButtons = OWGUI.widgetBox(self.GeneralTab, "Optimization Dialogs", orientation = "horizontal")
         self.vizrankButton = OWGUI.button(self.optimizationButtons, self, "VizRank", callback = self.vizrank.reshow, tooltip = "Opens VizRank dialog, where you can search for interesting projections with different subsets of attributes.", debuggingEnabled = 0)
-        self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
+        self.wdChildDialogs = [self.vizrank]    # used when running widget debugging
+
+        # freeviz dialog
+        if name.lower() in ["linear projection", "radviz"]:
+            self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, name)
+            self.wdChildDialogs.append(self.freeVizDlg)
+            self.freeVizDlgButton = OWGUI.button(self.optimizationButtons, self, "FreeViz", callback = self.freeVizDlg.reshow, tooltip = "Opens FreeViz dialog, where the position of attribute anchors is optimized so that class separation is improved", debuggingEnabled = 0)
+            if name.lower() == "linear projection":
+                self.freeVizLearner = FreeVizLearner(self.freeVizDlg)
+                self.send("FreeViz Learner", self.freeVizLearner)
+                
 ##        self.clusterDetectionDlgButton = OWGUI.button(self.optimizationButtons, self, "Cluster", callback = self.clusterDlg.reshow, debuggingEnabled = 0)
 ##        self.vizrankButton.setMaximumWidth(63)
 ##        self.clusterDetectionDlgButton.setMaximumWidth(63)
@@ -356,7 +360,8 @@ class OWLinProj(OWVisWidget):
         self.data = data
         self.vizrank.setData(data)
 ##        self.clusterDlg.setData(data)
-        self.freeVizDlg.setData(data)
+        if hasattr(self, "freeVizDlg"):
+            self.freeVizDlg.setData(data)
         self.classificationResults = None
         self.outlierValues = None
 
@@ -481,12 +486,14 @@ class OWLinProj(OWVisWidget):
     def saveSettings(self):
         OWWidget.saveSettings(self)
         self.vizrank.saveSettings()
-        self.freeVizDlg.saveSettings()
+        if hasattr(self, "freeVizDlg"):
+            self.freeVizDlg.saveSettings()
 
     def destroy(self, dw = 1, dsw = 1):
 ##        self.clusterDlg.hide()
         self.vizrank.hide()
-        self.freeVizDlg.hide()
+        if hasattr(self, "freeVizDlg"):
+            self.freeVizDlg.hide()
         OWVisWidget.destroy(self, dw, dsw)
 
 
@@ -496,7 +503,7 @@ if __name__=="__main__":
     ow=OWLinProj()
     a.setMainWidget(ow)
     ow.show()
-    ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\zoo"))
+    ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\zoo.tab"))
     a.exec_loop()
 
     #save settings

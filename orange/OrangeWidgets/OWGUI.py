@@ -1147,7 +1147,8 @@ class CallFront_comboBox(ControlledCallFront):
                     values += str(self.control.text(i)) + (i < self.control.count()-1 and ", " or ".")
                 print "unable to set %s to value '%s'. Possible values are %s" % (self.control, value, values)
             else:
-                self.control.setCurrentItem(value)
+                if value < self.control.count():
+                    self.control.setCurrentItem(value)
 
 
 class CallFront_hSlider(ControlledCallFront):

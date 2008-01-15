@@ -1088,7 +1088,7 @@ class VizRank:
                                 proj.sort()
                                 if newProjDict.has_key(str(proj)): continue
                                 newProjDict[str(proj)] = 1
-                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, setAnchors = 0, percentDataUsed = self.percentDataUsed)
+                                xanchors, yanchors, (attrNames, newIndices) = self.freeviz.findProjection(self.projOptimizationMethod, proj, setAnchors = 0, percentDataUsed = self.percentDataUsed)
                                 table = self.graph.createProjectionAsExampleTable(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                                 if len(table) < self.minNumOfExamples: continue
                                 self.optimizedProjectionsCount += 1
