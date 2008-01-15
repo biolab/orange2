@@ -607,8 +607,6 @@ class OWNomogram(OWWidget):
                 self.lrClassifier(self.cl)
             else:
                 setNone()
-        elif type(self.cl) == orange.RuleClassifier_logit or type(self.cl) == orange.RuleClassifier_logit_bestRule:
-            self.ruleClassifier(self.cl)
         else:
             setNone()
         if self.sort_type>0:
@@ -818,7 +816,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("heart_disease.tab")
+    data = orange.ExampleTable("../../doc/datasets/heart_disease.tab")
 
     bayes = orange.BayesLearner(data)
     bayes.setattr("data",data)

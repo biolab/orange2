@@ -188,7 +188,9 @@ class OWITree(OWClassificationTreeViewer):
 
     def handleSelectionChanged(self, item):
         """called when new node in the tree is selected"""
-        self.btnPrune.setEnabled(self.nodeClassDict[item].branchSelector <> None)
+        if self.nodeClassDict.has_key(item):
+            Prune.setEnabled(self.nodeClassDict[item].branchSelector <> None)
+        
 
 
 if __name__ == "__main__":
