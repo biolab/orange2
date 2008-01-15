@@ -147,6 +147,10 @@ class ScrollView(QScrollView):
 
 class OWMoleculeVisualizer(OWWidget):
     settingsList=["colorFragmets","showFragments", "serverPassword"]
+    contextHandlers={"":DomainContextHandler("", [ContextField("moleculeTitleAttributeList",
+                                                    DomainContextHandler.List + DomainContextHandler.SelectedRequired,
+                                                    selected="selectedMoleculeTitleAttrs"),
+                                                  "moleculeSmilesAttr"])}
     serverPwd = ""
     def __init__(self, parent=None, signalManager=None, name="Molecule visualizer"):
         apply(OWWidget.__init__,(self, parent, signalManager, name))
@@ -157,9 +161,11 @@ class OWMoleculeVisualizer(OWWidget):
         self.selectedFragment=""
         self.moleculeSmiles=[]
         self.fragmentSmiles=[]
-        self.defFragmentSmiles=[]
+        self.defFragmentSmiles=[]                                                               
         self.moleculeSmilesAttr=0
         self.moleculeTitleAttr=0
+        self.moleculeTitleAttributeList=[]
+        self.selectedMoleculeTitleAttrs=[]
         self.fragmentSmilesAttr=0
         self.imageSize=200
         self.numColumns=4
@@ -182,10 +188,12 @@ class OWMoleculeVisualizer(OWWidget):
         OWGUI.separator(self.controlArea)
 ##        self.moleculeTitleCombo=OWGUI.comboBox(self.controlArea, self, "moleculeTitleAttr", "Molecule title attribute", callback=self.redrawImages)
         box=OWGUI.widgetBox(self.controlArea, "Molecule title attributes", addSpace = True)
-        self.moleculeTitleListBox=QListBox(box)
-        self.moleculeTitleListBox.setSelectionMode(QListBox.Extended)
+##        self.moleculeTitleListBox=QListBox(box)
+##        self.moleculeTitleListBox.setSelectionMode(QListBox.Extended)
+##        self.moleculeTitleListBox.setMinimumHeight(100)
+##        self.connect(self.moleculeTitleListBox, SIGNAL("selectionChanged()"), self.updateTitles)
+        self.moleculeTitleListBox=OWGUI.listBox(box, self, "selectedMoleculeTitleAttrs", "moleculeTitleAttributeList", selectionMode = QListBox.Extended, callback=self.updateTitles)
         self.moleculeTitleListBox.setMinimumHeight(100)
-        self.connect(self.moleculeTitleListBox, SIGNAL("selectionChanged()"), self.updateTitles)
 ##        OWGUI.separator(self.controlArea)
 ##        self.moleculeTitleCombo.box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))
         OWGUI.separator(self.controlArea)
@@ -248,6 +256,7 @@ class OWMoleculeVisualizer(OWWidget):
         OWMoleculeVisualizer.serverPwd=self.serverPassword
         
     def setMoleculeTable(self, data):
+        self.closeContext()
         self.molData=data
         if data:
             self.setMoleculeSmilesCombo()
@@ -259,7 +268,8 @@ class OWMoleculeVisualizer(OWWidget):
                     self.molSubset=self.molSubset.select(self.molData.domain)
                 except:
                     self.molSubset=[]
-                
+
+            self.openContext("",data)                
             self.showImages()
         else:
             self.moleculeSmilesCombo.clear()
@@ -268,7 +278,9 @@ class OWMoleculeVisualizer(OWWidget):
             if not self.fragmentSmilesAttr:
                 self.listBox.clear()
             self.destroyImageWidgets()
+            self.openContext("",data)
             self.send("Selected Molecules", None)
+        
 
     def setMoleculeSubset(self, data):
         self.molSubset=data
@@ -344,22 +356,26 @@ class OWMoleculeVisualizer(OWWidget):
             self.moleculeSmilesAttr=0
 
     def setMoleculeTitleListBox(self):
+        self.icons=self.createAttributeIconDict()
         vars=self.molData.domain.variables+self.molData.domain.getmetas().values()
+        self.moleculeTitleAttributeList=[attr.name for attr in vars]
+        """vars=self.molData.domain.variables+self.molData.domain.getmetas().values()
 ##        self.moleculeTitleCombo.clear()
 ##        self.moleculeTitleCombo.insertStrList(["None"]+[v.name for v in vars])
         self.moleculeTitleListBox.clear()
         self.moleculeTitleListBox.insertStrList(["None"]+[v.name for v in vars])
         if self.moleculeTitleAttr>len(vars):
             self.moleculeTitleAttr=0
-        self.candidateMolTitleAttr=[None]+[v for v in vars]
+        self.candidateMolTitleAttr=[None]+[v for v in vars]"""
 
     def updateTitles(self):
         if not self.molData:
             return
-        selected=filter(lambda (i,attr):self.moleculeTitleListBox.isSelected(i), list(enumerate(self.candidateMolTitleAttr))[1:])
+        #selected=filter(lambda (i,attr):self.moleculeTitleListBox.isSelected(i), list(enumerate(self.candidateMolTitleAttr))[1:])
         smilesAttr=self.candidateMolSmilesAttr[min(self.moleculeSmilesAttr, len(self.candidateMolSmilesAttr)-1)]
+        selected=[self.molData.domain[i] for i in self.selectedMoleculeTitleAttrs]
         for widget, example in zip(self.imageWidgets, filter(lambda e:not e[smilesAttr].isSpecial(),self.molData)):
-            text=" / ".join(map(str, [example[attr] for i, attr in selected]))
+            text=" / ".join(map(str, [example[attr] for attr in selected]))
             widget.label.setText(text)
 
     def setFragmentSmilesCombo(self):
