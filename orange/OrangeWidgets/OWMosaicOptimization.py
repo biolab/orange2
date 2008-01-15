@@ -266,6 +266,13 @@ class OWMosaicOptimization(OWBaseWidget, orngMosaic):
         self.statusBar = QStatusBar(self)
         self.controlArea.addWidget(self.statusBar)
         self.controlArea.activate()
+        
+        # reset some parameters if we are debugging so that it won't take too much time
+        if orngDebugging.orngDebuggingEnabled:
+            self.useTimeLimit = 1
+            self.timeLimit = 0.3
+            self.useProjectionLimit = 1
+            self.projectionLimit = 100
 
         self.updateMestimateComboState()
         self.updateClassMethodsCombo()

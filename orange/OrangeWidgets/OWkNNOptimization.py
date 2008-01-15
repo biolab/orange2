@@ -250,10 +250,19 @@ class OWVizRank(VizRank, OWBaseWidget):
         self.tabs.setMinimumWidth(375)
         self.resize(375, 700)
 
+        # reset some parameters if we are debugging so that it won't take too much time
+        if orngDebugging.orngDebuggingEnabled:
+            self.useTimeLimit = 1
+            self.useProjectionLimit = 1
+            self.timeLimit = 0.3
+            self.optimizeTimeLimit = 0.3
+            self.projectionLimit = 20
+            self.optimizeProjectionLimit = 20
+            self.attributeCount = 6
+
 
     # ##############################################################
     # EVENTS
-    # ##############################################################
 
     # the heuristic checkbox is enabled only if the signal to noise OVA measure is selected
     def removeEvaluatedAttributes(self):
@@ -312,7 +321,6 @@ class OWVizRank(VizRank, OWBaseWidget):
                 self.resultList.removeItem(i)
                 self.shownResults.remove(self.shownResults[i])
 
-    # ##############################################################
     # ##############################################################
 
     def getSelectedClassValues(self):
@@ -549,7 +557,6 @@ class OWVizRank(VizRank, OWBaseWidget):
 
     # ##############################################################
     # Loading and saving projection files
-    # ##############################################################
     def abortOperation(self):
         self.abortCurrentOperation = 1
 
