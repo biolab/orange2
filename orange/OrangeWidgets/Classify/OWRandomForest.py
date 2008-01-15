@@ -111,7 +111,7 @@ class OWRandomForest(OWWidget):
 
 	self.learner.learner.storeExamples = 1
 	self.learner.learner.storeNodeClassifier = 1
-	self.learner.learner.storeContigencies = 1
+	self.learner.learner.storeContingencies = 1
 	self.learner.learner.storeDistributions = 1
 
 	if self.limitDepth: self.learner.learner.maxDepth = self.limitDepthP
