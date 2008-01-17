@@ -150,8 +150,19 @@ def proportionTest(learners, examples, learnProp, times=10,
         basevalue = examples.domain.classVar.baseValue
     else:
         basevalue = values = None
-    testResults = ExperimentResults(times, [l.name for l in learners],
-                                    values, weight!=0, basevalue)
+        classVar = examples.domain.classVar
+        if examples.domain.classVar.varType == orange.VarTypes.Discrete:
+            values = classVar.values.native()
+            baseValue = classVar.baseValue
+        else:
+            values = None
+            baseValue = -1
+        testResults = ExperimentResults(times, [l.name for l in learners], values, weight!=0, baseValue)
+
+        # 
+        # testResults = ExperimentResults(times, [l.name for l in learners],
+        #                            values, weight!=0, basevalue)
+        
     for time in range(times):
         indices = pick(examples)
         learnset = examples.selectref(indices, 0)
