@@ -25,7 +25,7 @@ class PCA:
 
     def __call__(self, data, atts=None, precision=10e-9):
         """ Performs principal component analysis on attributes atts form data"""
-        # Z = X*U; U^TU=I; coloumns of U are uncorrelated
+        # Z = X*U; U^TU=I; columns of U are uncorrelated
         self.data = data
         self.n = len(data)
         if atts == None:
