@@ -8,7 +8,7 @@ import orngTabs, orngDoc, orngDlgs, orngOutput
 import orange, user, orngMisc, orngRegistry, orngOrangeFoldersQt4
 
 class OrangeCanvasDlg(QMainWindow):
-    def __init__(self, parent = None, flags = 0):
+    def __init__(self, app, parent = None, flags = 0):
         QMainWindow.__init__(self, parent)
         self.debugMode = 1        # print extra output for debuging
         self.setWindowTitle("Qt Orange Canvas")
@@ -972,11 +972,19 @@ class WidgetWorkspace(QWorkspace):
                 item.parentWidget().move((k+1)*self.off,(k+1)*self.off)
                 item.parentWidget().resize(self.width()-(k+1)*self.off, self.height()-(k+1)*self.off)
 
-app = QApplication(sys.argv)
-dlg = OrangeCanvasDlg(None)
-dlg.show()
-for arg in sys.argv[1:]:
-    if arg == "-reload":
-        dlg.menuItemOpenLastSchema()
-app.exec_()
-app.closeAllWindows()
+
+def main(argv = None):
+    if argv == None:
+        argv = sys.argv
+    
+    app = QApplication(sys.argv)
+    dlg = OrangeCanvasDlg(app)
+    dlg.show()
+    for arg in sys.argv[1:]:
+        if arg == "-reload":
+            dlg.menuItemOpenLastSchema()
+    app.exec_()
+    app.closeAllWindows()
+
+if __name__ == "__main__":
+    sys.exit(main())
