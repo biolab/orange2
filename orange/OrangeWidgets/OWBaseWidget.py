@@ -153,15 +153,15 @@ class OWBaseWidget(QDialog):
 
     def setWidgetIcon(self, iconName):
         if os.path.exists(iconName):
-            QDialog.setIcon(self, QPixmap(iconName))
+            self.setWindowIcon(QIcon(iconName))
         elif os.path.exists(os.path.join(self.widgetDir, iconName)):
-            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, iconName)))
+            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, iconName)))
         elif os.path.exists(os.path.join(self.widgetDir, "icons/" + iconName)):
-            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, "icons/" + iconName)))
+            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, "icons/" + iconName)))
         elif os.path.exists(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)):        # search for icons also in the folder where the module is
-            QDialog.setIcon(self, QPixmap(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)))
+            self.setWindowIcon(QIcon(os.path.join(os.path.dirname(sys.modules[self.__module__].__file__), "icons/" + iconName)))
         elif os.path.exists(os.path.join(self.widgetDir, "icons/Unknown.png")):
-            QDialog.setIcon(self, QPixmap(os.path.join(self.widgetDir, "icons/Unknown.png")))
+            self.setWindowIcon(QIcon(os.path.join(self.widgetDir, "icons/Unknown.png")))
 
     # ##############################################
     def createAttributeIconDict(self):

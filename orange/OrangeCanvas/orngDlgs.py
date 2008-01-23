@@ -502,6 +502,7 @@ class CanvasOptionsDlg(QDialog):
         self.downButton = orngGui.button(w, self, "Down", callback = self.moveDown)
         w.layout().addSpacing(20)
         self.removeButton = orngGui.button(w, self, "Remove", callback = self.removeCategory)
+        self.removeButton.setEnabled(0)
         w.layout().addStretch(1)
 
         # OK, Cancel buttons
