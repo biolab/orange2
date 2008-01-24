@@ -440,20 +440,20 @@ class OWNetwork(OWWidget):
             return    
             
         self.visualize.random()
-        
+        #print self.visualize.coors
         #print "OWNetwork/random: updating canvas..."
         self.updateCanvas();
         
     def fr(self):
-        from qt import qApp
         if self.visualize == None:   #grafa se ni
             return
               
-        if not self.frButton.isDown():
-            self.stopOptimization = 1
-            self.frButton.setDown(0)
-            self.frButton.setText("Fruchterman Reingold")
-            return
+        if not self.frButton.isChecked():
+          print "not"
+          self.stopOptimization = 1
+          self.frButton.setChecked(False)
+          self.frButton.setText("Fruchterman Reingold")
+          return
         
         self.frButton.setText("Stop")
         qApp.processEvents()
@@ -492,7 +492,7 @@ class OWNetwork(OWWidget):
                 qApp.processEvents()
                 self.updateCanvas()
                 
-        self.frButton.setOn(0)
+        self.frButton.setChecked(False)
         self.frButton.setText("Fruchterman Reingold")
         
     def frSpecial(self):

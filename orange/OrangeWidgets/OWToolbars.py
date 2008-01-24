@@ -156,9 +156,9 @@ class NavigateSelectToolbar(QGroupBox):
             for fi, ff in enumerate(self.functions):
                 if ff and ff[5]:
                     if ff[6] == "navigate":
-                        getattr(self.navigate, ff[1]).setDown(fi != b)
+                        getattr(self.navigate, ff[1]).setChecked(fi == b)
                     if ff[6] == "select":
-                        getattr(self.select, ff[1]).setDown(fi != b)
+                        getattr(self.select, ff[1]).setChecked(fi == b)
                         
             
         getattr(self.graph, f[2])()
