@@ -20,6 +20,7 @@ class NetworkVertex():
     self.index = -1
     self.marked = False
     self.show = True
+    self.selected = False
     self.lebel = []
     self.tooltip = []
     
@@ -42,8 +43,9 @@ class NetworkCurve(QwtPlotCurve):
       QwtPlotCurve.__init__(self, "NetworkCurve")
 
       if xData != None and yData != None:
-          self.setData(xData, yData)
+          self.setRawData(xData, yData)
 
+      self.coors = None
       self.vertices = []
       self.edges = []
       self.setItemAttribute(QwtPlotItem.Legend, 0)
@@ -62,32 +64,44 @@ class NetworkCurve(QwtPlotCurve):
       else:
           return None
       
+  def moveSelectedVertices(self, dx, dy):
+    for vertex in self.vertices:
+      if vertex.selected:
+        self.coors[0][vertex.index] = self.coors[0][vertex.index] + dx
+        self.coors[1][vertex.index] = self.coors[1][vertex.index] + dy  
+      
+    self.setData(self.coors[0], self.coors[1])
+    
   def draw(self, painter, xMap, yMap, rect):
     for edge in self.edges:
       if edge.u.show and edge.v.show:
         painter.setPen(edge.pen)
-        
-        px1 = xMap.transform(self.x(edge.u.index))   #ali pa tudi self.x1, itd
-        py1 = yMap.transform(self.y(edge.u.index))
-        px2 = xMap.transform(self.x(edge.v.index))
-        py2 = yMap.transform(self.y(edge.v.index))
+
+        px1 = xMap.transform(self.coors[0][edge.u.index])   #ali pa tudi self.x1, itd
+        py1 = yMap.transform(self.coors[1][edge.u.index])
+        px2 = xMap.transform(self.coors[0][edge.v.index])
+        py2 = yMap.transform(self.coors[1][edge.v.index])
         
         painter.drawLine(px1, py1, px2, py2)
     
     for vertex in self.vertices:
-      if vertex.show:
-        painter.setPen(vertex.pen) #ze ima:style=SolidLine
-        
+      if vertex.show:        
         if vertex.marked:
           painter.setBrush(vertex.markColor)
         else:
           painter.setBrush(vertex.fillColor) #barva (style je po default solidPattern)
-  
-        pX = xMap.transform(self.x(vertex.index))   #dobimo koordinati v pikslih (tipa integer)
-        pY = yMap.transform(self.y(vertex.index))   #ki se stejeta od zgornjega levega kota canvasa
-        
-        painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
 
+        pX = xMap.transform(self.coors[0][vertex.index])   #dobimo koordinati v pikslih (tipa integer)
+        pY = yMap.transform(self.coors[1][vertex.index])   #ki se stejeta od zgornjega levega kota canvasa
+        
+        if vertex.selected:    
+          painter.setPen(QPen(Qt.yellow, 3))
+          painter.setBrush(vertex.markColor)
+          painter.drawEllipse(pX - (vertex.size + 4) / 2, pY - (vertex.size + 4) / 2, vertex.size + 4, vertex.size + 4)
+        else:
+          painter.setPen(vertex.pen)
+          painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
+        
 class OWNetworkCanvas(OWGraph):
   def __init__(self, master, parent = None, name = "None"):
       OWGraph.__init__(self, parent, name)
@@ -100,7 +114,7 @@ class OWNetworkCanvas(OWGraph):
       self.vertices = []
       self.edges = []
       self.indexPairs = {}       # distionary of type CurveKey: orngIndex   (for nodes)
-      self.selection = []        # list of selected nodes (indices)
+      #self.selection = []        # list of selected nodes (indices)
       self.selectionStyles = {}  # dictionary of styles of selected nodes
       self.markerKeys = {}       # dictionary of type NodeNdx : markerCurveKey
       self.tooltipKeys = {}      # dictionary of type NodeNdx : tooltipCurveKey
@@ -217,36 +231,13 @@ class OWNetworkCanvas(OWGraph):
           return True
       return False
       
-  def removeSelection(self, ndx = None, replot = True):
-      #print("remove selection")
-      change = False
-      if ndx is None:
-          for v in self.selection:
-              (key, neighbours) = self.vertices_old[v]
-              color = self.selectionStyles[v]
-              #print color
-              newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(QColor(color)), QSize(self.getVertexSize(v), self.getVertexSize(v)))
-              self.setCurveSymbol(key, newSymbol)
-          
-          self.selection = []
-          #self.visualizer.unselectAll()
-          self.selectionStyles = {}
-          change = True
-          
-      elif isinstance(ndx, list):
-          for v in ndx:
-              change = self.removeVertex(v) or change
-                  
-      else:
-          change = self.removeVertex(ndx)
+  def removeSelection(self, replot = True):
+      print "remove selection"
+      for vertex in self.vertices:
+        vertex.selected = False
       
-      if change:
-          if replot:
-              self.replot()
-              
-          self.markSelectionNeighbours()
-          
-      self.master.nSelected = len(self.selection)
+      if replot:
+        self.replot()
       
   def selectConnectedNodes(self, distance):
       if distance <= 0:
@@ -368,89 +359,6 @@ class OWNetworkCanvas(OWGraph):
           neighbours |= newNeighbours
       return neighbours
    
-  def onMouseMoved(self, event):
-      if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
-          if len(self.selection) > 0:
-              border = 6 / 2
-              maxx = max(take(self.visualizer.coors[0, :], self.selection))
-              maxy = max(take(self.visualizer.coors[1, :], self.selection))
-              minx = min(take(self.visualizer.coors[0, :], self.selection))
-              miny = min(take(self.visualizer.coors[1, :], self.selection))
-              #relativni premik v pikslih
-              dx = event.pos().x() - self.GMmouseStartEvent.x()
-              dy = event.pos().y() - self.GMmouseStartEvent.y()
-
-              maxx = self.transform(self.xBottom, maxx) + border + dx
-              maxy = self.transform(self.yLeft, maxy) + border + dy
-              minx = self.transform(self.xBottom, minx) - border + dx
-              miny = self.transform(self.yLeft, miny) - border + dy
-              maxx = self.invTransform(self.xBottom, maxx)
-              maxy = self.invTransform(self.yLeft, maxy)
-              minx = self.invTransform(self.xBottom, minx)
-              miny = self.invTransform(self.yLeft, miny)
-
-              if maxx >= self.axisScale(self.xBottom).hBound():
-                  return
-              if minx <= self.axisScale(self.xBottom).lBound():
-                  return
-              if maxy >= self.axisScale(self.yLeft).hBound():
-                  return
-              if miny <=self.axisScale(self.yLeft).lBound():
-                  return
-
-              for ind in self.selection:
-                  self.selectedVertex = ind
-                  (key, neighbours) = self.vertices_old[ind]
-                  self.selectedCurve = key
-
-                  vObj = self.curve(self.selectedCurve)
-                  tx = self.transform(vObj.xAxis(), vObj.x(0)) + dx
-                  ty = self.transform(vObj.yAxis(), vObj.y(0)) + dy
-                  
-                  tempPoint = QPoint(tx, ty)
-                  self.moveVertex(tempPoint)
-
-              self.GMmouseStartEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
-              self.GMmouseStartEvent.setY(event.pos().y())
-              self.replot()
-      else:
-          OWGraph.onMouseMoved(self, event)
-              
-      if not self.freezeNeighbours and self.tooltipNeighbours:
-          print "moving"
-          px = self.invTransform(2, event.x())
-          py = self.invTransform(0, event.y())   
-          ndx, mind = self.visualizer.closestVertex(px, py)
-          if ndx != -1 and mind < 50:
-              toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
-              toMark -= set(self.selection)
-              self.setMarkedNodes(toMark)
-          else:
-              self.setMarkedNodes([])
-                     
-      if self.smoothOptimization:
-          px = self.invTransform(2, event.x())
-          py = self.invTransform(0, event.y())   
-          ndx, mind = self.visualizer.closestVertex(px, py)
-          if ndx != -1 and mind < 30:
-              if not self.optimizing:
-                  self.optimizing = 1
-                  initTemp = 1000
-                  coolFactor = exp(log(10.0/10000.0) / 500)
-                  from qt import qApp
-                  for i in range(10):
-                      if self.stopOptimizing:
-                          self.stopOptimizing = 0
-                          break
-                      initTemp = self.visualizer.smoothFruchtermanReingold(ndx, 50, initTemp, coolFactor)
-                      qApp.processEvents()
-                      self.updateData()
-                      self.replot()
-                  
-                  self.optimizing = 0
-          else:
-              self.stopOptimizing = 1
-
   def markSelectionNeighbours(self):
       if not self.freezeNeighbours and self.selectionNeighbours:
           toMark = set()
@@ -488,22 +396,108 @@ class OWNetworkCanvas(OWGraph):
   def activateMoveSelection(self):
       self.state = MOVE_SELECTION
 
-  def onMousePressed(self, event):
-      if self.state == MOVE_SELECTION:
-          self.mouseCurrentlyPressed = 1
-          if self.isPointSelected(self.invTransform(self.xBottom, event.pos().x()), self.invTransform(self.yLeft, event.pos().y())) and self.selection!=[]:
-              self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
-          else:
-              #pritisk na gumb izven izbranega podrocja ali pa ni izbranega podrocja
-              self.selectVertex(event.pos())
-              self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
+  def mouseMoveEvent(self, event):
+      if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
+          #if len(self.selection) > 0:
+#              border = 6 / 2
+#              maxx = max(take(self.visualizer.coors[0, :], self.selection))
+#              maxy = max(take(self.visualizer.coors[1, :], self.selection))
+#              minx = min(take(self.visualizer.coors[0, :], self.selection))
+#              miny = min(take(self.visualizer.coors[1, :], self.selection))
+#              #relativni premik v pikslih
+#              dx = event.pos().x() - self.GMmouseStartEvent.x()
+#              dy = event.pos().y() - self.GMmouseStartEvent.y()
+#
+#              maxx = self.transform(self.xBottom, maxx) + border + dx
+#              maxy = self.transform(self.yLeft, maxy) + border + dy
+#              minx = self.transform(self.xBottom, minx) - border + dx
+#              miny = self.transform(self.yLeft, miny) - border + dy
+#              maxx = self.invTransform(self.xBottom, maxx)
+#              maxy = self.invTransform(self.yLeft, maxy)
+#              minx = self.invTransform(self.xBottom, minx)
+#              miny = self.invTransform(self.yLeft, miny)
+#
+#              if maxx >= self.axisScale(self.xBottom).hBound():
+#                  return
+#              if minx <= self.axisScale(self.xBottom).lBound():
+#                  return
+#              if maxy >= self.axisScale(self.yLeft).hBound():
+#                  return
+#              if miny <=self.axisScale(self.yLeft).lBound():
+#                  return
 
-          #self.removeAllSelections()
-          #self.selectionCurveKeyList=[]
+#              for ind in self.selection:
+#                  self.selectedVertex = ind
+#                  (key, neighbours) = self.vertices_old[ind]
+#                  self.selectedCurve = key
+#
+#                  vObj = self.curve(self.selectedCurve)
+#                  tx = self.transform(vObj.xAxis(), vObj.x(0)) + dx
+#                  ty = self.transform(vObj.yAxis(), vObj.y(0)) + dy
+#                  
+#                  tempPoint = QPoint(tx, ty)
+#                  self.moveVertex(tempPoint)
+
+              dx = self.invTransform(2, event.pos().x()) - self.invTransform(2, self.GMmouseStartEvent.x())
+              dy = self.invTransform(0, event.pos().y()) - self.invTransform(0, self.GMmouseStartEvent.y())
+              self.networkCurve.moveSelectedVertices(dx, dy)
+
+              self.GMmouseStartEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
+              self.GMmouseStartEvent.setY(event.pos().y())
+              self.replot()
       else:
-          OWGraph.onMousePressed(self, event)     
+          OWGraph.mouseMoveEvent(self, event)
+              
+      if not self.freezeNeighbours and self.tooltipNeighbours:
+          print "moving"
+          px = self.invTransform(2, event.x())
+          py = self.invTransform(0, event.y())   
+          ndx, mind = self.visualizer.closestVertex(px, py)
+          if ndx != -1 and mind < 50:
+              toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
+              toMark -= set(self.selection)
+              self.setMarkedNodes(toMark)
+          else:
+              self.setMarkedNodes([])
+                     
+      if self.smoothOptimization:
+          px = self.invTransform(2, event.x())
+          py = self.invTransform(0, event.y())   
+          ndx, mind = self.visualizer.closestVertex(px, py)
+          if ndx != -1 and mind < 30:
+              if not self.optimizing:
+                  self.optimizing = 1
+                  initTemp = 1000
+                  coolFactor = exp(log(10.0/10000.0) / 500)
+                  from qt import qApp
+                  for i in range(10):
+                      if self.stopOptimizing:
+                          self.stopOptimizing = 0
+                          break
+                      initTemp = self.visualizer.smoothFruchtermanReingold(ndx, 50, initTemp, coolFactor)
+                      qApp.processEvents()
+                      self.updateData()
+                      self.replot()
+                  
+                  self.optimizing = 0
+          else:
+              self.stopOptimizing = 1
 
-  def onMouseReleased(self, event):  
+  def mousePressEvent(self, event):
+    if self.state == MOVE_SELECTION:
+      self.mouseCurrentlyPressed = 1
+      if self.isPointSelected(self.invTransform(self.xBottom, event.pos().x()), self.invTransform(self.yLeft, event.pos().y())) and self.selection != []:
+        self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
+      else:
+        #pritisk na gumb izven izbranega podrocja ali pa ni izbranega podrocja
+        self.selectVertex(event.pos())
+        self.GMmouseStartEvent = QPoint(event.pos().x(), event.pos().y())
+        self.replot()
+
+    else:
+        OWGraph.mousePressEvent(self, event)     
+
+  def mouseReleaseEvent(self, event):  
       if self.state == MOVE_SELECTION:
           self.mouseCurrentlyPressed = 0
           
@@ -515,15 +509,15 @@ class OWNetworkCanvas(OWGraph):
           
       elif self.state == SELECT_RECTANGLE:
           self.selectVertices()
-          OWGraph.onMouseReleased(self, event)
+          OWGraph.mouseReleaseEvent(self, event)
           self.removeAllSelections()
 
       elif self.state == SELECT_POLYGON:
-              OWGraph.onMouseReleased(self, event)
+              OWGraph.mouseReleaseEvent(self, event)
               if self.tempSelectionCurve == None:   #ce je OWVisGraph zakljucil poligon
                   self.selectVertices()
       else:
-          OWGraph.onMouseReleased(self, event)
+          OWGraph.mouseReleaseEvent(self, event)
       
   def selectVertices(self):
       #print "selecting vertices.."
@@ -536,20 +530,16 @@ class OWNetworkCanvas(OWGraph):
       self.replot()
               
   def selectVertex(self, pos):
-      #print "select vertex"
-      #key, dist, xVal, yVal, index = self.closestCurve(pos.x(), pos.y())
-      #curve = self.curve(key)
       min = 1000000
       ndx = -1
-      #print "x: " + str(pos.x()) + " y: " + str(pos.y()) 
+
       px = self.invTransform(2, pos.x())
       py = self.invTransform(0, pos.y())   
-      #print "xAxis: " + str(curve.xAxis()) + " yAxis: " + str(curve.yAxis())
-      #print "px: " + str(px) + " py: " + str(py)
+
       ndx, min = self.visualizer.closestVertex(px, py)
-      #print "ndx: " + str(ndx) + " min: " + str(min)
+
       if min < 50 and ndx != -1:
-          self.addSelection(ndx) # do not replot if we replot later anyway
+          self.vertices[ndx].selected = True
       else:
           self.removeSelection()
               
@@ -806,27 +796,14 @@ class OWNetworkCanvas(OWGraph):
           self.nEdges += 1
           
       self.networkCurve.setData(visualizer.coors[0], visualizer.coors[1])
+      self.networkCurve.coors = visualizer.coors
       self.networkCurve.vertices = self.vertices
       self.networkCurve.edges = self.edges
-
-  def resetValues(self):
-      self.vertices_old={}
-      self.edges_old={}
-      self.indexPairs={}
-      #self.xCoors = None
-      #self.yCoors = None
-      self.n = 0
   
-  def updateCanvas(self): #, xCoors, yCoors):
-      #self.xCoors = xCoors
-      #self.yCoors = yCoors
-      
+  def updateCanvas(self):
       self.setAxisAutoScaled()
-
-      #self.drawGraph(self.nVertices);
       self.updateData()
       self.replot()
-      
       # preprecimo avtomatsko primikanje plota (kadar smo odmaknili neko skrajno tocko)
       self.setAxisFixedScale()    
   
