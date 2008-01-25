@@ -415,17 +415,19 @@ class OWNetwork(OWWidget):
 
     def showDegreeDistribution(self):
         from matplotlib import rcParams
-        rcParams['text.fontname'] = 'cmr10'
         import pylab as p
         
         x = self.visualize.graph.getDegrees()
+        nbins = len(set(x))
+        if nbins > 500:
+          bbins = 500
         #print len(x)
-        #print x
+        print x
         # the histogram of the data
-        n, bins, patches = p.hist(x, 500)
+        n, bins, patches = p.hist(x, nbins)
         
-        p.xlabel('No. of nodes')
-        p.ylabel('Degree')
+        p.xlabel('Degree')
+        p.ylabel('No. of nodes')
         p.title(r'Degree distribution')
         
         p.show()
@@ -521,8 +523,10 @@ class OWNetwork(OWWidget):
         tolerance = 5
         initTemp = 100
         centerNdx = 0
-        if len(self.graph.selection) > 0:
-            centerNdx = self.graph.selection[0]
+        
+        selection = self.graph.getSelection()
+        if len(selection) > 0:
+            centerNdx = selection[0]
             
         #print "center ndx: " + str(centerNdx)
         initTemp = self.visualize.radialFruchtermanReingold(centerNdx, refreshRate, initTemp)

@@ -25,7 +25,7 @@ class NetworkVertex():
     self.tooltip = []
     
     self.pen = QPen(Qt.blue, 1)
-    self.fillColor = Qt.white
+    self.nocolor = Qt.white
     self.markColor = Qt.blue
     self.size = 5
     
@@ -71,7 +71,15 @@ class NetworkCurve(QwtPlotCurve):
         self.coors[1][vertex.index] = self.coors[1][vertex.index] + dy  
       
     self.setData(self.coors[0], self.coors[1])
-    
+  
+  def getSelectedVertices(self):
+    selection = []
+    for vertex in self.vertices:  
+      if vertex.selected:
+        selection.append(vertex.index)
+        
+    return selection
+  
   def draw(self, painter, xMap, yMap, rect):
     for edge in self.edges:
       if edge.u.show and edge.v.show:
@@ -85,12 +93,7 @@ class NetworkCurve(QwtPlotCurve):
         painter.drawLine(px1, py1, px2, py2)
     
     for vertex in self.vertices:
-      if vertex.show:        
-        if vertex.marked:
-          painter.setBrush(vertex.markColor)
-        else:
-          painter.setBrush(vertex.fillColor) #barva (style je po default solidPattern)
-
+      if vertex.show:
         pX = xMap.transform(self.coors[0][vertex.index])   #dobimo koordinati v pikslih (tipa integer)
         pY = yMap.transform(self.coors[1][vertex.index])   #ki se stejeta od zgornjega levega kota canvasa
         
@@ -98,8 +101,13 @@ class NetworkCurve(QwtPlotCurve):
           painter.setPen(QPen(Qt.yellow, 3))
           painter.setBrush(vertex.markColor)
           painter.drawEllipse(pX - (vertex.size + 4) / 2, pY - (vertex.size + 4) / 2, vertex.size + 4, vertex.size + 4)
+        elif vertex.marked:
+          painter.setPen(vertex.pen)
+          painter.setBrush(vertex.markColor)
+          painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
         else:
           painter.setPen(vertex.pen)
+          painter.setBrush(vertex.nocolor)
           painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
         
 class OWNetworkCanvas(OWGraph):
@@ -147,6 +155,9 @@ class OWNetworkCanvas(OWGraph):
       self.enableGridYL(False)
     
       self.networkCurve = NetworkCurve(self)
+      
+  def getSelection(self):
+    return self.networkCurve.getSelectedVertices()
       
   def getVertexSize(self, index):
       return 6
@@ -572,7 +583,7 @@ class OWNetworkCanvas(OWGraph):
               y.append(r * sin(fi) + 5000)
               fi += step
               
-          self.addCurve("radius", Qt.white, Qt.green, 1, style = QwtCurve.Lines, xData = x, yData = y, showFilledSymbols = False)
+          self.addCurve("radius", Qt.white, Qt.green, 1, style = QwtPlotCurve.Lines, xData = x, yData = y, showFilledSymbols = False)
       
       self.networkCurve.attach(self)
       self.drawLabels()
@@ -827,19 +838,22 @@ class OWNetworkCanvas(OWGraph):
       self.replot()
       self.setAxisFixedScale()
       
-  def zoomSelection(self):           
-      if len(self.selection) > 0: 
-          x = [self.visualizer.coors[0][v] for v in self.selection]
-          y = [self.visualizer.coors[1][v] for v in self.selection]
+  def zoomSelection(self):       
+      selection = self.networkCurve.getSelectedVertices()
+      if len(selection) > 0: 
+          x = [self.visualizer.coors[0][v] for v in selection]
+          y = [self.visualizer.coors[1][v] for v in selection]
 
-          oldXMin = self.axisScale(QwtPlot.xBottom).lBound()
-          oldXMax = self.axisScale(QwtPlot.xBottom).hBound()
-          oldYMin = self.axisScale(QwtPlot.yLeft).lBound()
-          oldYMax = self.axisScale(QwtPlot.yLeft).hBound()
+          oldXMin = self.axisScaleDiv(QwtPlot.xBottom).lBound()
+          oldXMax = self.axisScaleDiv(QwtPlot.xBottom).hBound()
+          oldYMin = self.axisScaleDiv(QwtPlot.yLeft).lBound()
+          oldYMax = self.axisScaleDiv(QwtPlot.yLeft).hBound()
           newXMin = min(x)
           newXMax = max(x)
           newYMin = min(y)
           newYMax = max(y)
           self.zoomStack.append((oldXMin, oldXMax, oldYMin, oldYMax))
-          self.setNewZoom(oldXMin, oldXMax, oldYMin, oldYMax, newXMin - 100, newXMax + 100, newYMin - 100, newYMax + 100)
+          self.setAxisScale(QwtPlot.xBottom, newXMin - 100, newXMax + 100)
+          self.setAxisScale(QwtPlot.yLeft, newYMin - 100, newYMax + 100)
+          self.replot()
                   
