@@ -98,7 +98,6 @@ class OWNetwork(OWWidget):
         
         ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setHubs, addSpace = True)
         OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal")
-        #OWGUI.separator(ribg) 
         OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain")
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
@@ -212,6 +211,7 @@ class OWNetwork(OWWidget):
         self.searchStringTimer.start(750, True)
          
     def setHubs(self, i = None):
+        print "se hubs"
         if not i is None:
             self.hubs = i
             
@@ -367,25 +367,13 @@ class OWNetwork(OWWidget):
                 print "Error. Index column does not exists."
         
     def hideSelected(self):
-        #print self.graph.selection
-        toHide = self.graph.selection + self.graph.hiddenNodes
-        self.nHidden = len(toHide)
-        self.nShown = self.nVertices - self.nHidden 
-        self.graph.setHiddenNodes(toHide)
-        self.graph.removeSelection()
+        self.graph.hideSelectedVertices()
                 
     def hideAllButSelected(self):
-        allNodes = set(range(self.graph.nVertices))
-        allButSelected = list(allNodes - set(self.graph.selection))
-        toHide = allButSelected + self.graph.hiddenNodes
-        self.nHidden = len(toHide)
-        self.nShown = self.nVertices - self.nHidden 
-        self.graph.setHiddenNodes(toHide)
+        self.graph.hideUnSelectedVertices()
       
     def showAllNodes(self):
-        self.graph.setHiddenNodes([])
-        self.nHidden = 0
-        self.nShown = self.nVertices
+        self.graph.showAllVertices()
                                
     def updateCanvas(self):
         #ce imamo graf

@@ -80,6 +80,27 @@ class NetworkCurve(QwtPlotCurve):
         
     return selection
   
+  def setHiddenVertices(self, nodes):
+    for vertex in self.vertices:
+      if vertex.index in nodes:
+        self.vertices[index].show = False
+      else:
+        self.vertices[index].show = True
+      
+  def hideSelectedVertices(self):
+    for vertex in self.vertices:
+      if vertex.selected:
+        vertex.show = False
+  
+  def hideUnSelectedVertices(self):
+    for vertex in self.vertices:
+      if not vertex.selected:
+        vertex.show = False
+    
+  def showAllVertices(self):
+    for vertex in self.vertices:
+      vertex.show = True
+    
   def draw(self, painter, xMap, yMap, rect):
     for edge in self.edges:
       if edge.u.show and edge.v.show:
@@ -162,11 +183,21 @@ class OWNetworkCanvas(OWGraph):
   def getVertexSize(self, index):
       return 6
       
-  def setHiddenNodes(self, nodes):
-      self.hiddenNodes = nodes
-      self.updateData()
-      self.updateCanvas()
-      
+  def setHiddenVertices(self, nodes):
+      self.networkCurve.setHiddenVertices(nodes)
+  
+  def hideSelectedVertices(self):
+    self.networkCurve.hideSelectedVertices()
+    self.replot()
+    
+  def hideUnSelectedVertices(self):
+    self.networkCurve.hideUnSelectedVertices()
+    self.replot()
+    
+  def showAllVertices(self):
+    self.networkCurve.showAllVertices()
+    self.replot()
+    
   def optimize(self, frSteps):
       qApp.processEvents()
       tolerance = 5
@@ -409,53 +440,13 @@ class OWNetworkCanvas(OWGraph):
 
   def mouseMoveEvent(self, event):
       if self.mouseCurrentlyPressed and self.state == MOVE_SELECTION:
-          #if len(self.selection) > 0:
-#              border = 6 / 2
-#              maxx = max(take(self.visualizer.coors[0, :], self.selection))
-#              maxy = max(take(self.visualizer.coors[1, :], self.selection))
-#              minx = min(take(self.visualizer.coors[0, :], self.selection))
-#              miny = min(take(self.visualizer.coors[1, :], self.selection))
-#              #relativni premik v pikslih
-#              dx = event.pos().x() - self.GMmouseStartEvent.x()
-#              dy = event.pos().y() - self.GMmouseStartEvent.y()
-#
-#              maxx = self.transform(self.xBottom, maxx) + border + dx
-#              maxy = self.transform(self.yLeft, maxy) + border + dy
-#              minx = self.transform(self.xBottom, minx) - border + dx
-#              miny = self.transform(self.yLeft, miny) - border + dy
-#              maxx = self.invTransform(self.xBottom, maxx)
-#              maxy = self.invTransform(self.yLeft, maxy)
-#              minx = self.invTransform(self.xBottom, minx)
-#              miny = self.invTransform(self.yLeft, miny)
-#
-#              if maxx >= self.axisScale(self.xBottom).hBound():
-#                  return
-#              if minx <= self.axisScale(self.xBottom).lBound():
-#                  return
-#              if maxy >= self.axisScale(self.yLeft).hBound():
-#                  return
-#              if miny <=self.axisScale(self.yLeft).lBound():
-#                  return
+          dx = self.invTransform(2, event.pos().x()) - self.invTransform(2, self.GMmouseStartEvent.x())
+          dy = self.invTransform(0, event.pos().y()) - self.invTransform(0, self.GMmouseStartEvent.y())
+          self.networkCurve.moveSelectedVertices(dx, dy)
 
-#              for ind in self.selection:
-#                  self.selectedVertex = ind
-#                  (key, neighbours) = self.vertices_old[ind]
-#                  self.selectedCurve = key
-#
-#                  vObj = self.curve(self.selectedCurve)
-#                  tx = self.transform(vObj.xAxis(), vObj.x(0)) + dx
-#                  ty = self.transform(vObj.yAxis(), vObj.y(0)) + dy
-#                  
-#                  tempPoint = QPoint(tx, ty)
-#                  self.moveVertex(tempPoint)
-
-              dx = self.invTransform(2, event.pos().x()) - self.invTransform(2, self.GMmouseStartEvent.x())
-              dy = self.invTransform(0, event.pos().y()) - self.invTransform(0, self.GMmouseStartEvent.y())
-              self.networkCurve.moveSelectedVertices(dx, dy)
-
-              self.GMmouseStartEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
-              self.GMmouseStartEvent.setY(event.pos().y())
-              self.replot()
+          self.GMmouseStartEvent.setX(event.pos().x())  #zacetni dogodek postane trenutni
+          self.GMmouseStartEvent.setY(event.pos().y())
+          self.replot()
       else:
           OWGraph.mouseMoveEvent(self, event)
               
