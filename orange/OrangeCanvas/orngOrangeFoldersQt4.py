@@ -67,7 +67,7 @@ def addOrangeDirectoriesToPath(registryFileName = None):
     if os.path.exists(widgetDir):
         for name in os.listdir(widgetDir):
             fullName = os.path.join(widgetDir, name)
-            if os.path.isdir(fullName) and fullName not in sys.path:
+            if os.path.isdir(fullName) and fullName not in sys.path and name.lower() not in ["cvs", "icons"]:
                 sys.path.insert(0, fullName)
 
     if registryFileName != None and os.path.exists(registryFileName):

@@ -487,7 +487,7 @@ class SchemaDoc(QMainWindow):
                 (self.documentpath, self.documentname) = os.path.split(filename)
                 (self.applicationpath, self.applicationname) = os.path.split(filename)
                 self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
-                self.canvasDlg.settings["saveApplicationDir"] = self.applicationpath
+                self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
                 self.loadedSettingsDict = settingsDict
 
             # read widgets
@@ -579,10 +579,12 @@ class SchemaDoc(QMainWindow):
         #format string with file content
         t = "    "  # instead of tab
         n = "\n"
+
         start = """#This is automatically created file containing an Orange schema
+        
 import orngOrangeFoldersQt4
+import orngDebugging
 import sys, os, cPickle, orange, orngSignalManager, OWGUI
-DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput.txt'
 
 """
 
@@ -601,8 +603,7 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
                     if self.widgets[i].caption == widgetName: widget = self.widgets[i]
 
                 shown = widgetName in saveDlg.shownWidgetList
-                name = widget.caption
-                name = name.replace(" ", "_").replace("(", "").replace(")", "").replace(".", "").replace("-", "").replace("+", "")
+                name = widget.caption.replace(" ", "_").replace("(", "").replace(")", "").replace(".", "").replace("-", "").replace("+", "")
                 start += "from %s import *\n" % (widget.widget.getFileName())
                 instancesT += "self.ow%s = %s (self.tabs, signalManager = self.signalManager)\n" % (name, widget.widget.getFileName())+t+t
                 instancesB += "self.ow%s = %s(signalManager = self.signalManager)\n" %(name, widget.widget.getFileName()) +t+t
@@ -616,10 +617,8 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
         for line in self.lines:
             if not line.getEnabled(): continue
 
-            outWidgetName = line.outWidget.caption
-            outWidgetName = outWidgetName.replace(" ", "_").replace("(", "").replace(")", "").replace(".", "").replace("-", "").replace("+", "")
-            inWidgetName = line.inWidget.caption
-            inWidgetName = inWidgetName.replace(" ", "_").replace("(", "").replace(")", "").replace(".", "").replace("-", "").replace("+", "")
+            outWidgetName = line.outWidget.caption.replace(" ", "_").replace("(", "").replace(")", "").replace(".", "").replace("-", "").replace("+", "")
+            inWidgetName = line.inWidget.caption.replace(" ", "_").replace("(", "").replace(")", "").replace(".", "").replace("-", "").replace("+", "")
 
             for (outName, inName) in line.getSignals():
                 links += "self.signalManager.addLink( self.ow" + outWidgetName + ", self.ow" + inWidgetName + ", '" + outName + "', '" + inName + "', 1)\n" +t+t
@@ -630,7 +629,7 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
         box2 = OWGUI.widgetBox(self, 1)
         exitButton = OWGUI.button(box2, self, "Exit", callback = self.accept)
         self.layout().addStretch(100)"""
-
+        
         progress = """
         statusBar = QStatusBar(self)
         self.layout().addWidget(statusBar)
@@ -644,6 +643,12 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
         statusBar.addWidget(self.caption)
         statusBar.addWidget(self.status)"""
 
+        if asTabs:
+            guiText = "OWGUI.createTabPage(self.tabs, caption, widget)"
+        else:
+            guiText = "OWGUI.button(self, self, caption, callback = widget.reshow)"
+
+
         handlerFuncts = """
     def setWidgetParameters(self, widget, iconName, caption, shown):
         widget.setEventHandler(self.eventHandler)
@@ -652,17 +657,15 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
         widget.setWindowTitle(caption)
         self.signalManager.addWidget(widget)
         self.widgets.append(widget)
-        if shown: """
-
-        if asTabs:
-            handlerFuncts += "OWGUI.createTabPage(self.tabs, caption, widget)\n"+t+t
-        else:
-            handlerFuncts += "OWGUI.button(self.box, self, caption, callback = widget.reshow)\n"
-
-        handlerFuncts += """
-
-    def eventHandler(self, text):
-        self.status.setText(text)
+        if shown: %s
+        for dlg in getattr(widget, "wdChildDialogs", []):
+            self.widgets.append(dlg)
+            dlg.setEventHandler(self.eventHandler)
+            dlg.setProgressBarHandler(self.progressHandler)
+        
+    def eventHandler(self, text, eventVerbosity = 1):
+        if orngDebugging.orngVerbosity >= eventVerbosity:
+            self.status.setText(text)
 
     def progressHandler(self, widget, val):
         if val < 0:
@@ -683,11 +686,12 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
 
             %s
         except:
+            print "unable to load settings" 
             pass
 
     def closeEvent(self, ev):
         OWBaseWidget.closeEvent(self, ev)
-        if DEBUG_MODE: return
+        if orngDebugging.orngDebuggingEnabled: return
         for widget in self.widgets[::-1]:
             widget.synchronizeContexts()
             widget.close()
@@ -696,19 +700,19 @@ DEBUG_MODE = 0   #set to 1 to output debugging info to file 'signalManagerOutput
         file = open("%s", "w")
         cPickle.dump(strSettings, file)
         file.close()
-
+        
 if __name__ == "__main__":
     application = QApplication(sys.argv)
     ow = GUIApplication()
     ow.show()
     # comment the next line if in debugging mode and are interested only in output text in 'signalManagerOutput.txt' file
     application.exec_()
-        """ % (fileName + ".sav", loadSett, saveSett, fileName + ".sav")
+        """ % (guiText, fileName + ".sav", loadSett, saveSett, fileName + ".sav")
 
         start += n+n + """
 class GUIApplication(OWBaseWidget):
-    def __init__(self,parent=None, debugMode = DEBUG_MODE, debugFileName = "signalManagerOutput.txt", verbosity = 1):
-        self.signalManager = orngSignalManager.SignalManager(debugMode, debugFileName, verbosity)
+    def __init__(self,parent=None):
+        self.signalManager = orngSignalManager.SignalManager()
         OWBaseWidget.__init__(self, title = '%s', signalManager = self.signalManager)
         self.widgets = []
         """ % (fileName)
@@ -744,6 +748,7 @@ class GUIApplication(OWBaseWidget):
         cPickle.dump(list, file)
         file.close()
 
+
     def dumpWidgetVariables(self):
         for widget in self.widgets:
             self.canvasDlg.output.write("<hr><b>%s</b><br>" % (widget.caption))
@@ -773,4 +778,3 @@ class GUIApplication(OWBaseWidget):
         else:
             #e.ignore()
             QMainWindow.keyPressEvent(self, e)
-

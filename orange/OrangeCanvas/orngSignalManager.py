@@ -5,6 +5,7 @@
 
 import sys, time
 import orange
+import orngDebugging
 
 Single = 2
 Multiple = 4
@@ -71,13 +72,14 @@ class SignalManager:
     freezing = 0            # do we want to process new signal immediately
     signalProcessingInProgress = 0 # this is set to 1 when manager is propagating new signal values
 
-    def __init__(self, debugMode = 0, debugFileName = "signalManagerOutput.txt", verbosity = 1):
+    def __init__(self, *args):
         self.debugFile = None
-        self.verbosity = verbosity
+        self.verbosity = orngDebugging.orngVerbosity
         self.stderr = sys.stderr
+        self._seenExceptions = {}
         #self.stdout = sys.stdout
-        if debugMode:
-            self.debugFile = open(debugFileName, "wt")
+        if orngDebugging.orngDebuggingEnabled:
+            self.debugFile = open(orngDebugging.orngDebuggingFileName, "wt")
             sys.excepthook = self.exceptionHandler
             sys.stderr = self.debugFile
             #sys.stdout = self.debugFile
@@ -119,8 +121,8 @@ class SignalManager:
         if not self.debugFile: return
         if self.verbosity < eventVerbosity: return
 
-        self.debugFile.write(strValue)
-        if type(object) == orange.ExampleTable:
+        self.debugFile.write(str(strValue))
+        if isinstance(object, orange.ExampleTable):
             name = " " + getattr(object, "name", "")
             self.debugFile.write(". Token type = ExampleTable" + name + ". len = " + str(len(object)))
         elif type(object) == list:
@@ -131,9 +133,20 @@ class SignalManager:
         self.debugFile.flush()
 
 
-    def exceptionHandler(self, type, value, tracebackInfo):
-        if not self.debugFile: return
+    def exceptionSeen(self, type, value, tracebackInfo):
         import traceback, os
+        shortEStr = "".join(traceback.format_exception(type, value, tracebackInfo))[-2:]
+        return self._seenExceptions.has_key(shortEStr)
+
+    def exceptionHandler(self, type, value, tracebackInfo):
+        import traceback, os
+        if not self.debugFile: return
+
+        # every exception show only once
+        shortEStr = "".join(traceback.format_exception(type, value, tracebackInfo))[-2:]
+        if self._seenExceptions.has_key(shortEStr): return
+        self._seenExceptions[shortEStr] = 1
+        
         list = traceback.extract_tb(tracebackInfo, 10)
         space = "\t"
         totalSpace = space

@@ -116,8 +116,15 @@ class OrangeCanvasDlg(QMainWindow):
         self.resize(width, height)
 
         # center window in the desktop
-        deskH = app.desktop().height()
-        deskW = app.desktop().width()
+        # in newer versions of Qt we can also find the center of a primary screen
+        # on multiheaded desktops
+        if (int(qVersion()[0]) >= 3):
+            desktop = app.desktop()
+            deskH = desktop.screenGeometry(desktop.primaryScreen()).height()
+            deskW = desktop.screenGeometry(desktop.primaryScreen()).width()
+        else:
+            deskH = app.desktop().height()
+            deskW = app.desktop().width()
         h = max(0, deskH/2 - height/2)  # if the window is too small, resize the window to desktop size
         w = max(0, deskW/2 - width/2)
         self.move(w,h)
@@ -390,16 +397,21 @@ class OrangeCanvasDlg(QMainWindow):
     def menuItemNewWizard(self):
         return
 
-    def menuItemOpen(self, freeze = 0):
+    def menuItemOpen(self):
         name = QFileDialog.getOpenFileName(self, "Open File", self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)")
         if name.isEmpty():
             return
         win = self.menuItemNewSchema(0)
-        win.loadDocument(str(name), freeze = freeze)
+        win.loadDocument(str(name), freeze = 0)
         self.addToRecentMenu(str(name))
 
     def menuItemOpenFreeze(self):
-        self.menuItemOpen(freeze = 1)
+        name = QFileDialog.getOpenFileName( self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)", self, "", "Open File")
+        if name.isEmpty():
+            return
+        win = self.menuItemNewSchema(0)
+        win.loadDocument(str(name), freeze = 1)
+        self.addToRecentMenu(str(name))
 
     def menuItemOpenLastSchema(self):
         if os.path.exists(os.path.join(self.canvasSettingsDir, "_lastSchema.ows")):
