@@ -96,27 +96,27 @@ class OWNetwork(OWWidget):
         OWGUI.label(ib, self, "Vertices (shown/hidden): %(nVertices)i (%(nShown)i/%(nHidden)i)")
         OWGUI.label(ib, self, "Selected and marked vertices: %(nSelected)i - %(nMarked)i")
         
-        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setHubs, addSpace = True)
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain")
+        ribg = OWGUI.radioButtonsInBox(self.markTab, self, "hubs", [], "Method", callback = self.setMarkMode, addSpace = True)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark vertices given in the input signal", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Find vertices which label contain", callback = self.setMarkMode)
         self.ctrlMarkSearchString = OWGUI.lineEdit(OWGUI.indentedBox(ribg), self, "markSearchString", callback=self.setSearchStringTimer, callbackOnType=True)
         self.searchStringTimer = QTimer(self)
-        self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.setHubs)
+        self.connect(self.searchStringTimer, SIGNAL("timeout()"), self.setMarkMode)
         
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertex")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices")
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of focused vertex", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "Mark neighbours of selected vertices", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg, orientation = 0)
-        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setHubs(h)))
+        self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.setMarkMode(h)))
         self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
         OWGUI.widgetLabel(ribg, "Mark  vertices with ...")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections")
-        self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.setHubs(h)))
-        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than any neighbour")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour")
-        OWGUI.appendRadioButton(ribg, self, "hubs", "most connections")
+        OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections", callback = self.setMarkMode)
+        self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.setMarkMode(h)))
+        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than any neighbour", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour", callback = self.setMarkMode)
+        OWGUI.appendRadioButton(ribg, self, "hubs", "most connections", callback = self.setMarkMode)
         ib = OWGUI.indentedBox(ribg)
-        self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.setHubs(h)))
+        self.ctrlMarkNumber = OWGUI.spin(ib, self, "markNumber", 0, 1000000, 1, label="Number of vertices" + ": ", callback=(lambda h=8: self.setMarkMode(h)))
         OWGUI.widgetLabel(ib, "(More vertices are marked in case of ties)")
 #        self.ctrlMarkProportion = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markProportion", 0, 100, 1, label="Percentage" + ": ", callback=self.setHubs)
         
@@ -162,8 +162,11 @@ class OWNetwork(OWWidget):
         OWGUI.button(self.protoTab, self, "Collapse", callback=self.collapse)
         
         self.icons = self.createAttributeIconDict()
-        self.setHubs()
-        
+        self.setMarkMode()
+        self.displayTab.layout().addStretch(1)
+        self.markTab.layout().addStretch(1)
+        self.infoTab.layout().addStretch(1)
+        self.protoTab.layout().addStretch(1)
         self.resize(850, 700)    
 
     def collapse(self):
@@ -210,8 +213,7 @@ class OWNetwork(OWWidget):
         self.searchStringTimer.stop()
         self.searchStringTimer.start(750, True)
          
-    def setHubs(self, i = None):
-        print "se hubs"
+    def setMarkMode(self, i = None):
         if not i is None:
             self.hubs = i
             
@@ -225,23 +227,28 @@ class OWNetwork(OWWidget):
         vgraph = self.visualize.graph
 
         if hubs == 0:
+            print "mark on input"
             return
         
         elif hubs == 1:
+            print "mark on given label"
             txt = self.markSearchString
             labelText = self.graph.labelText
             self.graph.markWithRed = self.graph.nVertices > 200
-            self.graph.setMarkedNodes([i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])])
-            print [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])]
+            toMark = [i for i, values in enumerate(vgraph.items) if txt in " ".join([str(values[ndx]) for ndx in labelText])]
+            self.graph.setMarkedVertices(toMark)
+            self.graph.replot()
             return
         
         elif hubs == 2:
-            self.graph.setMarkedNodes([])
+            print "mark on focus"
+            self.graph.unMark()
             self.graph.tooltipNeighbours = self.markDistance
             return
 
         elif hubs == 3:
-            self.graph.setMarkedNodes([])
+            print "mark selected"
+            self.graph.unMark()
             self.graph.selectionNeighbours = self.markDistance
             self.graph.markSelectionNeighbours()
             return
@@ -250,23 +257,33 @@ class OWNetwork(OWWidget):
         powers = vgraph.getDegrees()
         
         if hubs == 4: # at least N connections
+            print "mark at least N connections"
             N = self.markNConnections
-            self.graph.setMarkedNodes([i for i, power in enumerate(powers) if power >= N])
+            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power >= N])
+            self.graph.replot()
         elif hubs == 5:
+            print "mark at most N connections"
             N = self.markNConnections
-            self.graph.setMarkedNodes([i for i, power in enumerate(powers) if power <= N])
+            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power <= N])
+            self.graph.replot()
         elif hubs == 6:
-            self.graph.setMarkedNodes([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            print "mark more than any"
+            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            self.graph.replot()
         elif hubs == 7:
-            self.graph.setMarkedNodes([i for i, power in enumerate(powers) if power > mean([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            print "mark more than avg"
+            self.graph.setMarkedVertices([i for i, power in enumerate(powers) if power > mean([0]+[powers[nn] for nn in vgraph.getNeighbours(i)])])
+            self.graph.replot()
         elif hubs == 8:
+            print "mark most"
             sortedIdx = range(len(powers))
             sortedIdx.sort(lambda x,y: -cmp(powers[x], powers[y]))
-            cutP = self.markNumber
+            cutP = self.markNumber - 1
             cutPower = powers[sortedIdx[cutP]]
             while cutP < len(powers) and powers[sortedIdx[cutP]] == cutPower:
                 cutP += 1
-            self.graph.setMarkedNodes(sortedIdx[:cutP-1])
+            self.graph.setMarkedVertices(sortedIdx[:cutP])
+            self.graph.replot()
        
     def testRefresh(self):
         start = time()
@@ -580,6 +597,6 @@ class OWNetwork(OWWidget):
 if __name__=="__main__":    
     appl = QApplication(sys.argv)
     ow = OWNetwork()
-    appl.setMainWidget(ow)
     ow.show()
-    appl.exec_loop()
+    appl.exec_()
+    

@@ -26,7 +26,7 @@ class NetworkVertex():
     
     self.pen = QPen(Qt.blue, 1)
     self.nocolor = Qt.white
-    self.markColor = Qt.blue
+    self.color = Qt.blue
     self.size = 5
     
 class NetworkEdge():
@@ -80,12 +80,23 @@ class NetworkCurve(QwtPlotCurve):
         
     return selection
   
+  def setMarkedVertices(self, vertices):
+    for vertex in self.vertices:
+      if vertex.index in vertices:
+        vertex.marked = True
+      else:
+        vertex.marked = False
+  
+  def unMark(self):
+    for vertex in self.vertices:
+      vertex.marked = False
+        
   def setHiddenVertices(self, nodes):
     for vertex in self.vertices:
       if vertex.index in nodes:
-        self.vertices[index].show = False
+        vertex.show = False
       else:
-        self.vertices[index].show = True
+        vertex.show = True
       
   def hideSelectedVertices(self):
     for vertex in self.vertices:
@@ -120,11 +131,11 @@ class NetworkCurve(QwtPlotCurve):
         
         if vertex.selected:    
           painter.setPen(QPen(Qt.yellow, 3))
-          painter.setBrush(vertex.markColor)
+          painter.setBrush(vertex.color)
           painter.drawEllipse(pX - (vertex.size + 4) / 2, pY - (vertex.size + 4) / 2, vertex.size + 4, vertex.size + 4)
         elif vertex.marked:
           painter.setPen(vertex.pen)
-          painter.setBrush(vertex.markColor)
+          painter.setBrush(vertex.color)
           painter.drawEllipse(pX - vertex.size / 2, pY - vertex.size / 2, vertex.size, vertex.size)
         else:
           painter.setPen(vertex.pen)
@@ -404,36 +415,17 @@ class OWNetworkCanvas(OWGraph):
   def markSelectionNeighbours(self):
       if not self.freezeNeighbours and self.selectionNeighbours:
           toMark = set()
-          for ndx in self.selection:
+          for ndx in self.networkCurve.getSelectedVertices():
               toMark |= self.getNeighboursUpTo(ndx, self.selectionNeighbours)
-          toMark -= set(self.selection)
-          self.setMarkedNodes(toMark)
-      
-  def setMarkedNodes(self, marked):
-      print "marking"
-      if not isinstance(marked, set):
-          marked = set(marked)
-      if marked == self.markedNodes:
-          return
-
-      redColor = self.markWithRed and Qt.red
-      # mark 
-      for m in marked - self.markedNodes:
-          (key, neighbours) = self.vertices_old[m]
-          markedSize = self.markWithRed and self.getVertexSize(m) + 3 or self.getVertexSize(m)
-          newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(redColor or self.nodeColor[m]), QPen(self.nodeColor[m]), QSize(markedSize, markedSize))
-          self.setCurveSymbol(key, newSymbol)
-#            self.curve(key).setBrush(QBrush(redColor or self.nodeColor[m]))
-      # unmark
-      for m in self.markedNodes - marked - set(self.selection):
-          (key, neighbours) = self.vertices[m]
-          newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(self.nodeColor[m]), QSize(self.getVertexSize(m), self.getVertexSize(m)))
-          self.setCurveSymbol(key, newSymbol)
-  
-      self.markedNodes = marked
-      self.master.nMarked = len(self.markedNodes)
-      self.drawLabels()
-      self.replot()
+          
+          self.networkCurve.setMarkedVertices(toMark)
+          self.replot()
+          
+  def unMark(self):
+    self.networkCurve.unMark()
+    
+  def setMarkedVertices(self, vertices):
+    self.networkCurve.setMarkedVertices(vertices)
       
   def activateMoveSelection(self):
       self.state = MOVE_SELECTION
@@ -451,16 +443,17 @@ class OWNetworkCanvas(OWGraph):
           OWGraph.mouseMoveEvent(self, event)
               
       if not self.freezeNeighbours and self.tooltipNeighbours:
-          print "moving"
           px = self.invTransform(2, event.x())
           py = self.invTransform(0, event.y())   
           ndx, mind = self.visualizer.closestVertex(px, py)
           if ndx != -1 and mind < 50:
               toMark = set(self.getNeighboursUpTo(ndx, self.tooltipNeighbours))
-              toMark -= set(self.selection)
-              self.setMarkedNodes(toMark)
+              self.networkCurve.setMarkedVertices(toMark)
+              self.replot()
           else:
-              self.setMarkedNodes([])
+              self.networkCurve.unMark()
+              self.replot()
+              
                      
       if self.smoothOptimization:
           px = self.invTransform(2, event.x())
