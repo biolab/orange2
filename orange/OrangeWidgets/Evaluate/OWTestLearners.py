@@ -169,7 +169,7 @@ class OWTestLearners(OWWidget):
 
     # scoring and painting of score table
     def isclassification(self):
-        if not self.data:
+        if not self.data or not self.data.domain.classVar:
             return True
         return self.data.domain.classVar.varType == orange.VarTypes.Discrete
         

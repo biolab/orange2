@@ -929,7 +929,7 @@ class OWROC(OWWidget):
             graph.pChanged(float(self.pvalueList[index]) / float(self.maxp))
 
     def setDefaultPValues(self):
-        if self.defaultPerfLinePValues:
+        if self.defaultPerfLinePValues and self.targetClass != None:
             self.pvaluesList = [v for v in self.defaultPerfLinePValues]
             self.pvalue = self.pvaluesList[self.targetClass]
             self.pvaluesUpdated()

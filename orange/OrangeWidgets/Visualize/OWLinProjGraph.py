@@ -339,7 +339,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 ys.append(y_positions[i])
                 self.addTooltipKey(x_positions[i], y_positions[i], Qt.black, i)
                 if self.showValueLines:
-                    self.addValueLineCurve(x_positions[i], y_positions[i], Qt.black, i, indices)
+                    self.addValueLineCurve(x_positions[i], y_positions[i], (0,0,0), i, indices)
             self.addCurve(str(1), Qt.black, Qt.black, self.pointWidth, symbol = self.curveSymbols[0], xData = xs, yData = ys)
 
         # ##############################################################

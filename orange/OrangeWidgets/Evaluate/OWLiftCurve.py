@@ -131,8 +131,9 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
             costx.append(x)
             costy.append(minc)
 
-        self.setCurveData(self.performanceLineCKey, costx, costy)
-        self.curve(self.performanceLineCKey).setEnabled(b)
+        if self.curve(self.performanceLineCKey):
+            self.setCurveData(self.performanceLineCKey, costx, costy)
+            self.curve(self.performanceLineCKey).setEnabled(b)
         self.update()
 
         nOnMinc = {}
