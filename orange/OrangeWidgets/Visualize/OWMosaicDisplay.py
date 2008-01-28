@@ -229,6 +229,7 @@ class OWMosaicDisplay(OWWidget):
         # this is needed so that the tabs are wide enough!
         self.safeProcessEvents()
         self.tabs.updateGeometry()
+        self.wdChildDialogs = [self.optimizationDlg]        # used when running widget debugging
 
     def permutationListToggle(self):
         if self.exploreAttrPermutations:
