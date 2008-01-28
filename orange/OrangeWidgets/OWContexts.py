@@ -403,7 +403,7 @@ class DomainContextHandler(ContextHandler):
         if not self.syncWithGlobal:
             self.globalContexts.extend(getattr(widget, self.localContextName))
         mp = self.maxAttributesToPickle
-        self.globalContexts = filter(lambda c: (c.attributes and len(c.attributes)) + (c.metas and len(c.metas)) < mp, self.globalContexts)
+        self.globalContexts = filter(lambda c: len(c.attributes) + len(c.metas) < mp, self.globalContexts)
         self.globalContexts.sort(lambda c1,c2: -cmp(c1.time, c2.time))
         self.globalContexts = self.globalContexts[:self.maxSavedContexts]
 
