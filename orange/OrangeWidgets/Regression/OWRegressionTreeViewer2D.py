@@ -6,6 +6,8 @@
 <priority>2110</priority>
 """
 from OWTreeViewer2D import *
+import re
+import sets
 
 class RegressionNode(CanvasNode):
     def __init__(self, attrVal, *args):
@@ -61,8 +63,7 @@ class RegressionNode(CanvasNode):
             self.textObj[i].move(x+1, y+(i-1)*self.textAdvance)
         self.spliterObj[0].move(x, y+self.height()-self.textAdvance)
 
-import re
-import sets
+
 def parseRules(rules):
     def joinCont(rule1, rule2):
         int1, int2=["(",-1e1000,1e1000,")"], ["(",-1e1000,1e1000,")"]
@@ -135,9 +136,9 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable)]
         
-        self.canvas=TreeCanvas(self)
-        self.canvasView=TreeCanvasView(self, self.canvas, self.mainArea, "CView")
-        layout=QVBoxLayout(self.mainArea)
+        self.canvas = TreeCanvas(self)
+        self.canvasView = TreeCanvasView(self, self.canvas, self.mainArea, "CView")
+        layout = QVBoxLayout(self.mainArea)
         layout.addWidget(self.canvasView)
         self.canvas.resize(800,800)
         self.canvasView.bubbleConstructor=self.regressionBubbleConstructor
@@ -149,10 +150,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         self.navWidget.lay.addWidget(self.treeNav)
         self.canvasView.setNavigator(self.treeNav)
         self.navWidget.resize(400,400)
-        if (int(qVersion()[0]) >= 3):
-            self.navWidget.setCaption("Navigator")
-        else:
-            self.navWidget.setCaption("Qt Navigator")
+        self.navWidget.setCaption("Qt Navigator")
         self.setMouseTracking(True)
 
         nodeInfoBox = QVButtonGroup("Show Info On", self.NodeTab)
@@ -168,7 +166,7 @@ class OWRegressionTreeViewer2D(OWTreeViewer2D):
         OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in node', 'Variance', 'Deviance', 'Error'], box='Node Color',                            
                                 callback=self.toggleNodeColor)
         
-        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
+        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph, debuggingEnabled = 0)
         self.NodeInfoSorted=list(self.NodeInfo)
         self.NodeInfoSorted.sort()
 
