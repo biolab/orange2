@@ -36,7 +36,6 @@ class OWParallelCoordinates(OWVisWidget):
         self.sliderRange = 0
         self.slider.setRange(0, 0)
         self.slider.setTickmarks(QSlider.Below)
-        self.isResizing = 0
         self.showAllAttributes = 0
 
         self.box.addWidget(self.graph)
@@ -80,7 +79,7 @@ class OWParallelCoordinates(OWVisWidget):
         self.tabs.insertTab(self.GeneralTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
-        #add controls to self.controlArea widget
+        # GENERAL tab
         self.targetValueCombo = OWGUI.comboBox(self.GeneralTab, self, "targetValue", box = "Target class value", sendSelectedValue = 1, valueType = str, callback = self.updateGraph)
 
         self.createShowHiddenLists(self.GeneralTab, callback = self.updateGraph)
@@ -96,25 +95,23 @@ class OWParallelCoordinates(OWVisWidget):
         self.connect(self.slider, SIGNAL("valueChanged(int)"), self.updateGraphSlider)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
-        # ####################################
-        # SETTINGS functionality
-
+        # SETTINGS tab
         boxX = OWGUI.widgetBox(self.SettingsTab, "Graph settings")
         OWGUI.comboBox(boxX, self, "graph.jitterSize", label = 'Jittering size (% of size):  ', orientation='horizontal', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.comboBox(boxX, self, "linesDistance", label = 'Minimum axis distance:  ', orientation='horizontal', callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "The minimum distance between two adjacent attribute axis", sendSelectedValue = 1, valueType = int)
 
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, "Visual settings")
-        OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateValues)
-        OWGUI.checkBox(box, self, 'graph.hidePureExamples', 'Hide pure examples', callback = self.updateValues, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
-        OWGUI.checkBox(box, self, 'graph.useSplines', 'Show splines', callback = self.updateValues, tooltip  = "Show lines using splines")
-        OWGUI.checkBox(box, self, 'graph.lineTracking', 'Line tracking', callback = self.updateValues, tooltip = "Show nearest example with a wider line. The rest of the lines \nwill be shown in lighter colors.")
-        OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateValues)
+        OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateGraph)
+        OWGUI.checkBox(box, self, 'graph.hidePureExamples', 'Hide pure examples', callback = self.updateGraph, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
+        OWGUI.checkBox(box, self, 'graph.useSplines', 'Show splines', callback = self.updateGraph, tooltip  = "Show lines using splines")
+        OWGUI.checkBox(box, self, 'graph.lineTracking', 'Line tracking', callback = self.updateGraph, tooltip = "Show nearest example with a wider line. The rest of the lines \nwill be shown in lighter colors.")
+        OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
         OWGUI.checkBox(box, self, 'graph.globalValueScaling', 'Global value scaling', callback = self.setGlobalValueScaling)
 
         box3 = OWGUI.widgetBox(self.SettingsTab, "Statistics")
-        OWGUI.comboBox(box3, self, "graph.showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateValues, sendSelectedValue = 0, valueType = int)
-        OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
+        OWGUI.comboBox(box3, self, "graph.showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateGraph, sendSelectedValue = 0, valueType = int)
+        OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
 
         OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = "Middle labels", items = ["No labels", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "The information do you wish to view on top in the middle of coordinate axes", sendSelectedValue = 1, valueType = str)
 
@@ -135,9 +132,6 @@ class OWParallelCoordinates(OWVisWidget):
         self.resize(900, 700)
 
 
-    # #########################
-    # OPTIONS
-    # #########################
     def activateLoadedSettings(self):
         dlg = self.createColorDialog()
         self.graph.contPalette = dlg.getContinuousPalette("contPalette")
@@ -157,13 +151,11 @@ class OWParallelCoordinates(OWVisWidget):
         attrs = self.getShownAttributeList()
         maxAttrs = self.mainArea.width() / self.linesDistance
         if len(attrs) > maxAttrs:
+            self.slider.setEnabled(1)
             rest = len(attrs) - maxAttrs
             if self.sliderRange != rest:
                 self.slider.setRange(0, rest)
                 self.sliderRange = rest
-            elif self.isResizing:
-                self.isResizing = 0
-                return  # if we resized widget and it doesn't change the number of attributes that are shown then we return
             start = min(self.slider.value(), len(attrs)-maxAttrs)
             if self.setSliderIndex != -1:
                 if self.setSliderIndex == 0: start = 0
@@ -174,6 +166,7 @@ class OWParallelCoordinates(OWVisWidget):
         else:
             self.slider.setRange(0,0)
             self.sliderRange = 0
+            self.slider.setEnabled(0)
             maxAttrs = len(attrs)
             start = 0
 
@@ -222,7 +215,8 @@ class OWParallelCoordinates(OWVisWidget):
         OWWidget.show(self)
         self.updateGraph()
 
-    def setSubsetData(self, data, update = 1):
+    # input signal. subset data
+    def setSubsetData(self, data, update = 0):
         self.warning(10)
         if self.graph.rawSubsetData != None and data != None and self.graph.rawSubsetData.checksum() == data.checksum():
             return    # check if the new data set is the same as the old one
@@ -237,13 +231,12 @@ class OWParallelCoordinates(OWVisWidget):
             self.warning(10, "'Examples' and 'Example Subset' data do not have copatible domains. Unable to draw 'Example Subset' data.")
 
         self.graph.setSubsetData(subsetData)
-        qApp.processEvents()
-        if update:
-            self.updateGraph()
-            qApp.processEvents()
+#        qApp.processEvents()
+#        if update:
+#            self.updateGraph()
+#            qApp.processEvents()
 
-    # ------------- SIGNALS --------------------------
-    # receive new data and update all fields
+    # input signal. receive new data and update all fields
     def setData(self, data):
         if data:
             name = getattr(data, "name", "")
@@ -277,7 +270,7 @@ class OWParallelCoordinates(OWVisWidget):
             self.targetValueCombo.setCurrentItem(0)
         self.resetAttrManipulation()    # update up down buttons
 
-    # attribute selection signal - info about which attributes to show
+    # attribute selection signal - list of attributes to show
     def setShownAttributes(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
         if self.data and self.attributeSelectionList:
@@ -291,12 +284,12 @@ class OWParallelCoordinates(OWVisWidget):
 
     # this is called by OWBaseWidget after setData and setSubsetData are called. this way the graph is updated only once
     def handleNewSignals(self):
+        qApp.processEvents()
         self.updateGraph()
         self.selectionChanged()
 
-    # ------------------------------------------------
     def sendShownAttributes(self, attrList = None):
-        if not attrList:
+        if attrList == None:
             attrList = self.getShownAttributeList()
         self.send("Attribute Selection List", attrList)
 
@@ -321,25 +314,17 @@ class OWParallelCoordinates(OWVisWidget):
         self.send("Selected Examples", selected)
         self.send("Unselected Examples", unselected)
 
-    # ------------------------------------------------
 
-    def updateValues(self):
-        self.isResizing = 0
-        self.updateGraph()
-
-    def resizeEvent(self, e):
-        OWWidget.resizeEvent(self,e)
-        self.isResizing = 1
-        # self.updateGraph()  # had to comment, otherwise python throws an exception
+#    def resizeEvent(self, e):
+#        OWWidget.resizeEvent(self,e)
+#        # self.updateGraph()  # had to comment, otherwise python throws an exception
 
     # jittering options
     def setJitteringSize(self):
-        self.isResizing = 0
         self.graph.setData(self.data)
         self.updateGraph()
 
     def setGlobalValueScaling(self):
-        self.isResizing = 0
         self.graph.setData(self.data)
         if self.graph.globalValueScaling:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())        # we need to call this so that attributes are really rescaled in respect to the CURRENTLY SHOWN ATTRIBUTES
@@ -347,7 +332,6 @@ class OWParallelCoordinates(OWVisWidget):
 
     # update attribute ordering
     def updateShownAttributeList(self):
-        self.isResizing = 0
         self.setShownAttributeList(self.data)
         self.updateGraph()
 
