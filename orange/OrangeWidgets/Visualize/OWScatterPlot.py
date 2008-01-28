@@ -179,6 +179,7 @@ class OWScatterPlot(OWWidget):
         self.debugSettings = ["attrX", "attrY", "attrColor", "attrLabel", "attrShape", "attrSize"]
         self.activateLoadedSettings()
         self.resize(700, 550)
+        self.wdChildDialogs = [self.vizrank]        # used when running widget debugging
 
 
     def activateLoadedSettings(self):
@@ -510,6 +511,9 @@ if __name__=="__main__":
     ow=OWScatterPlot()
     a.setMainWidget(ow)
     ow.show()
+    ow.setData(orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab"))
+    #ow.setData(orange.ExampleTable("..\\..\\doc\\datasets\\wine.tab"))
+    ow.handleNewSignals()
     a.exec_loop()
     #save settings
     ow.saveSettings()
