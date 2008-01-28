@@ -31,8 +31,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 self.graph = subgraph
                     
                 for i in range(len(nodes)):
-                    self.coors[i][0] = oldcoors[nodes[i]][0]
-                    self.coors[i][1] = oldcoors[nodes[i]][1]
+                    self.coors[0][i] = oldcoors[0][nodes[i]]
+                    self.coors[1][i] = oldcoors[1][nodes[i]]
 
         else:
             fullgraphs = self.graph.getLargestFullGraphs()
@@ -61,20 +61,20 @@ class NetworkOptimization(orangeom.NetworkOptimization):
                 self.setGraph(subgraph)
                 self.graph = subgraph
                 for i in range(len(nodescomp)):
-                    self.coors[i][0] = oldcoors[nodescomp[i]][0]
-                    self.coors[i][1] = oldcoors[nodescomp[i]][1]
+                    self.coors[0][i] = oldcoors[0][nodescomp[i]]
+                    self.coors[1][i] = oldcoors[1][nodescomp[i]]
                     
                 # place meta vertex in center of cluster    
                 x, y = 0, 0
                 for node in used:
-                    x += oldcoors[node][0]
-                    y += oldcoors[node][1]
+                    x += oldcoors[0][node]
+                    y += oldcoors[1][node]
                     
                 x = x / len(used)
                 y = y / len(used)
                 
-                self.coors[len(nodescomp)][0] = x
-                self.coors[len(nodescomp)][1] = y
+                self.coors[0][len(nodescomp)] = x
+                self.coors[1][len(nodescomp)] = y
             
     def getVars(self):
         vars = []
@@ -182,8 +182,8 @@ class NetworkOptimization(orangeom.NetworkOptimization):
             except:
                 graphFile.write(str('"'+ str(v) + '"') + ' \t')
             
-            x = self.coors[v][0] / 1000
-            y = self.coors[v][1] / 1000
+            x = self.coors[0][v] / 1000
+            y = self.coors[1][v] / 1000
             if x < 0: x = 0
             if x >= 1: x = 0.9999
             if y < 0: y = 0

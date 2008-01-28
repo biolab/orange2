@@ -5,9 +5,9 @@
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>2040</priority>
 """
-import OWGUI
-
 from OWWidget import *
+
+import OWGUI
 from qwt import *
 from qt import *
 from OWNetworkCanvas import *
