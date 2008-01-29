@@ -31,15 +31,15 @@ class OWSave(OWWidget):
         self.data = None
         self.loadSettings()
         
-        vb = OWGUI.widgetBox(self.space, orientation="horizontal")
+        vb = OWGUI.widgetBox(self.space, orientation="vertical")
         
-        rfbox = OWGUI.widgetBox(vb, "Save", orientation="horizontal")
+        rfbox = OWGUI.widgetBox(vb, "File name", orientation="horizontal")
         self.filecombo = QComboBox(rfbox)
         self.filecombo.setFixedWidth(140)
-        browse = QPushButton("&Browse...", rfbox)
+        OWGUI.button(rfbox, self, "...", callback = self.browseFile, width=30)
 
-        fbox = OWGUI.widgetBox(vb, "Filename")
-        self.save = QPushButton("&Save", fbox)
+        fbox = OWGUI.widgetBox(vb, "Save data")
+        self.save = OWGUI.button(fbox, self, "Save current data", callback = self.saveFile)
         self.save.setDisabled(1)
 
         self.adjustSize()
@@ -48,8 +48,7 @@ class OWSave(OWWidget):
         self.filecombo.setCurrentItem(0)
         
         self.connect(self.filecombo, SIGNAL('activated ( int ) '),self.saveFile)        
-        self.connect(browse, SIGNAL('clicked()'),self.browseFile)        
-        self.connect(self.save, SIGNAL('clicked()'),self.saveFile)
+        
 
     savers = {".txt": orange.saveTxt, ".tab": orange.saveTabDelimited,
               ".names": orange.saveC45, ".test": orange.saveC45, ".data": orange.saveC45,
@@ -89,6 +88,10 @@ class OWSave(OWWidget):
     def saveFile(self, *index):
         self.error()
         if self.data is not None:
+            combotext = str(self.filecombo.currentText())
+            if combotext == "(none)": 
+                QMessageBox.information( None, "Error saving data", "Unable to save data. Select first a file name by clicking the '...' button.", QMessageBox.Ok + QMessageBox.Default)
+                return
             filename = self.recentFiles[self.filecombo.currentItem()]
             fileExt = lower(os.path.splitext(filename)[1])
             if fileExt == "":
