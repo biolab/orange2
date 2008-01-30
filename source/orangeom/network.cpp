@@ -98,7 +98,7 @@ void TNetwork::printHierarchy()
 TNetworkHierarchyNode::TNetworkHierarchyNode()
 {
 	parent = NULL;
-  vertex = -1;
+  vertex = INT_MIN;
 }
 
 TNetworkHierarchyNode::~TNetworkHierarchyNode()
@@ -133,14 +133,16 @@ int TNetworkHierarchyNode::getLevel()
 TNetworkHierarchy::TNetworkHierarchy()
 {
 	top = new TNetworkHierarchyNode();
-  top->vertex = -1;
+  meta_index = 0;
+  top->vertex = getNextMetaIndex();
   top->parent = NULL;
 }
 
 TNetworkHierarchy::TNetworkHierarchy(vector<int> &topVertices)
 {
 	top = new TNetworkHierarchyNode();
-  top->vertex = -1;
+  meta_index = 0;
+  top->vertex = getNextMetaIndex();
   top->parent = NULL;
 	setTop(topVertices);
 }
@@ -151,6 +153,33 @@ TNetworkHierarchy::~TNetworkHierarchy()
 	{
 		delete top;
 	}
+}
+
+int TNetworkHierarchy::getNextMetaIndex()
+{
+  meta_index--;
+  return meta_index;
+}
+
+int TNetworkHierarchy::getMetaChildsCount(TNetworkHierarchyNode *node)
+{
+  int rv = 0;
+  int i;
+  
+  for (i = 0; i < node->childs.size(); i++)
+  {
+    if (node->childs[i]->vertex < 0)
+      rv++;
+
+    rv += getMetaChildsCount(node->childs[i]);
+  }
+
+  return rv;
+}
+
+int TNetworkHierarchy::getMetasCount()
+{
+  return getMetaChildsCount(top);
 }
 
 void TNetworkHierarchy::printChilds(TNetworkHierarchyNode *node)
@@ -213,6 +242,7 @@ void TNetworkHierarchy::addToNewMeta(vector<int> &vertices)
   
   TNetworkHierarchyNode *meta = new TNetworkHierarchyNode();
   meta->parent = highest_parent;
+  meta->vertex = getNextMetaIndex();
   highest_parent->childs.push_back(meta);
 
   for (i = 0; i < nodes.size(); i++)
@@ -222,13 +252,41 @@ void TNetworkHierarchy::addToNewMeta(vector<int> &vertices)
       if ((*it)->vertex == nodes[i]->vertex)
       {
         nodes[i]->parent->childs.erase(it);
+
+        // TODO: erase meta-nodes with 1 or 0 childs
       }
     }
 
-    TNetworkHierarchyNode *node = nodes[i];
-    node->parent = meta;
-    meta->childs.push_back(node);
+    nodes[i]->parent = meta;
+    meta->childs.push_back(nodes[i]);
   }
+}
+
+void TNetworkHierarchy::expandMeta(int meta)
+{
+  TNetworkHierarchyNode *metaNode = getNodeByVertex(meta);
+
+  int i;
+  for (i = 0; i < metaNode->childs.size(); i++)
+  {
+    TNetworkHierarchyNode *node = node->childs[i];
+
+    node->parent = metaNode->parent;
+    metaNode->parent->childs.push_back(node);
+  }
+
+  // erase meta from parent
+  for (vector<TNetworkHierarchyNode *>::iterator it = metaNode->parent->childs.begin(); it != metaNode->parent->childs.end(); ++it) 
+  {
+    if ((*it)->vertex == metaNode->vertex)
+    {
+      metaNode->parent->childs.erase(it);
+      break;
+    }
+  }
+
+  metaNode->childs.clear();
+  metaNode->parent = NULL;
 }
 
 TNetworkHierarchyNode *TNetworkHierarchy::getNodeByVertex(int vertex, TNetworkHierarchyNode &start)
@@ -344,6 +402,20 @@ PyObject *Network_groupVerticesInHierarchy(PyObject *self, PyObject *args) PYARG
 
     CAST_TO(TNetwork, network);
     network->hierarchy.addToNewMeta(vertices);
+    RETURN_NONE
+  PyCATCH;
+}
+
+PyObject *Network_expandMeta(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(index) -> None")
+{
+  PyTRY
+    int meta;
+
+    if (!PyArg_ParseTuple(args, "u:Network.groupVerticesInHierarchy", &meta))
+		  return PYNULL;
+
+    CAST_TO(TNetwork, network);
+    network->hierarchy.expandMeta(meta);
     RETURN_NONE
   PyCATCH;
 }

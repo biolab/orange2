@@ -92,6 +92,7 @@ public:
 	double width; 
 	double height; 
 	PyArrayObject *coors;
+  PyArrayObject *metaCoors;
 	TNetwork *graphStructure;
 
 	int nLinks;
@@ -99,6 +100,7 @@ public:
 	vector<int> links[2];
 	set<int> vertices;
 	double **pos;
+  double **metapos;
 	int *level;
 	double *kVector;
 	double *levelMin;

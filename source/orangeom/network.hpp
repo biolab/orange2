@@ -73,8 +73,13 @@ public:
 	~TNetworkHierarchy();
 	void setTop(vector<int> &vertices);
   void addToNewMeta(vector<int> &vertices);
+  void expandMeta(int meta);
   void printChilds(TNetworkHierarchyNode *node);
+  int getNextMetaIndex();
+  int getMetaChildsCount(TNetworkHierarchyNode *node);
+  int getMetasCount();
 
+  int meta_index;
 	TNetworkHierarchyNode *top;
   TNetworkHierarchyNode *getNodeByVertex(int vertex);
   TNetworkHierarchyNode *getNodeByVertex(int vertex, TNetworkHierarchyNode &start);

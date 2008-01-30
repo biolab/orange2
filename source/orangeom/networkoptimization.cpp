@@ -53,6 +53,7 @@ TNetworkOptimization::~TNetworkOptimization()
 	//cout << "destructor" << endl;
 	free_Carrayptrs(pos);
 	Py_DECREF(coors);
+  Py_DECREF(metaCoors);
 }
 
 void TNetworkOptimization::dumpCoordinates()
@@ -64,7 +65,7 @@ void TNetworkOptimization::dumpCoordinates()
 	{
 		for (int j = 0; j < columns; j++)
 		{
-			cout << pos[i][j] << "  ";
+			cout << pos[j][i] << "  ";
 		}
 
 		cout << endl;
@@ -78,8 +79,8 @@ void TNetworkOptimization::random()
 	int i;
 	for (i = 0; i < nVertices; i++)
 	{
-		pos[i][0] = rand() % (int)width;
-		pos[i][1] = rand() % (int)height;
+		pos[0][i] = rand() % (int)width;
+		pos[1][i] = rand() % (int)height;
 	}
 }
 
@@ -221,8 +222,8 @@ int TNetworkOptimization::circularCrossingReduction()
 
 	for (i = 0; i < nVertices; i++)
 	{
-		pos[positions[i]][0] = r * cos(fi) + xCenter;
-		pos[positions[i]][1] = r * sin(fi) + yCenter;
+		pos[0][positions[i]] = r * cos(fi) + xCenter;
+		pos[1][positions[i]] = r * sin(fi) + yCenter;
 	
 		fi = fi - fiStep;
 	}
@@ -259,15 +260,15 @@ int TNetworkOptimization::circular(int type)
 	{
 		if (type == 0)
 		{
-			pos[i][0] = r * cos(fi) + xCenter;
-			pos[i][1] = r * sin(fi) + yCenter;
+			pos[0][i] = r * cos(fi) + xCenter;
+			pos[1][i] = r * sin(fi) + yCenter;
 		}
 		else if (type == 1)
 		{
 			int ndx = rand() % vertices.size();
 
-			pos[vertices[ndx]][0] = r * cos(fi) + xCenter;
-			pos[vertices[ndx]][1] = r * sin(fi) + yCenter;
+			pos[0][vertices[ndx]] = r * cos(fi) + xCenter;
+			pos[1][vertices[ndx]] = r * sin(fi) + yCenter;
 			
 			vertices.erase(vertices.begin() + ndx);
 		}
@@ -325,8 +326,8 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 		{
 			for (int u = v + 1; u < nVertices; u++)
 			{
-				double difX = pos[v][0] - pos[u][0];
-				double difY = pos[v][1] - pos[u][1];
+				double difX = pos[0][v] - pos[0][u];
+				double difY = pos[1][v] - pos[1][u];
 
 				double dif2 = difX * difX + difY * difY; 
 
@@ -355,8 +356,8 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 			int v = links[0][j];
 			int u = links[1][j];
 
-			double difX = pos[v][0] - pos[u][0];
-			double difY = pos[v][1] - pos[u][1];
+			double difX = pos[0][v] - pos[0][u];
+			double difY = pos[1][v] - pos[1][u];
 
 			double dif = sqrt(difX * difX + difY * difY);
 
@@ -379,8 +380,8 @@ int TNetworkOptimization::fruchtermanReingold(int steps)
 			if (dif == 0)
 				dif = 1;
 
-			pos[v][0] = pos[v][0] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
-			pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
+			pos[0][v] = pos[0][v] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
+			pos[1][v] = pos[1][v] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
 
 			//pos[v][0] = min((double)width,  max((double)0, pos[v][0]));
 			//pos[v][1] = min((double)height, max((double)0, pos[v][1]));
@@ -467,8 +468,8 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 				//kk = 2 * k;
 				k2 = k*k;
 
-				double difX = pos[v][0] - pos[u][0];
-				double difY = pos[v][1] - pos[u][1];
+				double difX = pos[0][v] - pos[0][u];
+				double difY = pos[1][v] - pos[1][u];
 
 				double dif2 = difX * difX + difY * difY; 
 
@@ -506,8 +507,8 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 			kk = 2 * k;
 			k2 = k*k;
 
-			double difX = pos[v][0] - pos[u][0];
-			double difY = pos[v][1] - pos[u][1];
+			double difX = pos[0][v] - pos[0][u];
+			double difY = pos[1][v] - pos[1][u];
 
 			double dif = sqrt(difX * difX + difY * difY);
 
@@ -536,10 +537,10 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 			if (dif == 0)
 				dif = 1;
 
-			pos[v][0] = pos[v][0] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
-			pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
+			pos[0][v] = pos[0][v] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
+			pos[1][v] = pos[1][v] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
 
-			double distance = (pos[v][0] - (width/2)) * (pos[v][0] - (width/2)) + (pos[v][1] - (height/2)) * (pos[v][1] - (height/2));
+			double distance = (pos[0][v] - (width/2)) * (pos[0][v] - (width/2)) + (pos[1][v] - (height/2)) * (pos[1][v] - (height/2));
 			
 			if (distance < levelMin[level[v]])
 				levelMin[level[v]] = distance;
@@ -560,13 +561,13 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 		
 		for (v = 0; v < nVertices; v++)
 		{
-			double distance = sqrt((pos[v][0] - (width/2)) * (pos[v][0] - (width/2)) + (pos[v][1] - (height/2)) * (pos[v][1] - (height/2)));
+			double distance = sqrt((pos[0][v] - (width/2)) * (pos[0][v] - (width/2)) + (pos[1][v] - (height/2)) * (pos[1][v] - (height/2)));
 
 			if (level[v] == 0)
 			{
 				// move to center
-				pos[v][0] = width / 2;
-				pos[v][1] = height / 2;
+				pos[0][v] = width / 2;
+				pos[1][v] = height / 2;
 
 				//cout << "center, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
 			}
@@ -576,8 +577,8 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 				if (levelMax[level[v]] < 1)
 				{
 					double fi = 0;
-					double x = pos[v][0] - (width / 2);
-					double y = pos[v][1] - (height / 2);
+					double x = pos[0][v] - (width / 2);
+					double y = pos[1][v] - (height / 2);
 					
 					if (x < 0)
 						fi = atan(y / x) + PI;
@@ -590,8 +591,8 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 					else if ((x == 0) && (y < 0))
 						fi = 3 * PI / 2;
 					
-					pos[v][0] = levelMax[level[v]] * distance * cos(fi) + (width / 2);
-					pos[v][1] = levelMax[level[v]] * distance * sin(fi) + (height / 2);
+					pos[0][v] = levelMax[level[v]] * distance * cos(fi) + (width / 2);
+					pos[1][v] = levelMax[level[v]] * distance * sin(fi) + (height / 2);
 
 					//cout << "outer, x: " << pos[v][0] << " y: " << pos[v][1] << " radius: " << radius << " fi: " << fi << " level: " << level[v] << " v: " << v << endl;
 				}
@@ -602,8 +603,8 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 				if (levelMin[level[v]] > 1)
 				{
 					double fi = 0;
-					double x = pos[v][0] - (width / 2);
-					double y = pos[v][1] - (height / 2);
+					double x = pos[0][v] - (width / 2);
+					double y = pos[1][v] - (height / 2);
 					
 					if (x < 0)
 						fi = atan(y / x) + PI;
@@ -616,8 +617,8 @@ int TNetworkOptimization::radialFruchtermanReingold(int steps, int nCircles)
 					else if ((x == 0) && (y < 0))
 						fi = 3 * PI / 2;
 
-					pos[v][0] = levelMin[level[v]] * distance * cos(fi) + (width / 2);
-					pos[v][1] = levelMin[level[v]] * distance * sin(fi) + (height / 2);
+					pos[0][v] = levelMin[level[v]] * distance * cos(fi) + (width / 2);
+					pos[1][v] = levelMin[level[v]] * distance * sin(fi) + (height / 2);
 
 					//cout << "inner, x: " << pos[v][0] << " y: " << pos[v][1] << endl;
 				}
@@ -707,8 +708,8 @@ int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
 				k2 = k * k;
 				kk2 = 4 * k2;
 
-				double difX = pos[v][0] - pos[u][0];
-				double difY = pos[v][1] - pos[u][1];
+				double difX = pos[0][v] - pos[0][u];
+				double difY = pos[1][v] - pos[1][u];
 
 				double dif2 = difX * difX + difY * difY; 
 
@@ -746,8 +747,8 @@ int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
 			k2 = k * k;
 			kk = 2 * k;
 
-			double difX = pos[v][0] - pos[u][0];
-			double difY = pos[v][1] - pos[u][1];
+			double difX = pos[0][v] - pos[0][u];
+			double difY = pos[1][v] - pos[1][u];
 
 			double dif = sqrt(difX * difX + difY * difY);
 
@@ -772,8 +773,8 @@ int TNetworkOptimization::smoothFruchtermanReingold(int steps, int center)
 
 			if (v != center)
 			{
-				pos[v][0] = pos[v][0] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
-				pos[v][1] = pos[v][1] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
+				pos[0][v] = pos[0][v] + (disp[v][0] * min(fabs(disp[v][0]), temperature) / dif);
+				pos[1][v] = pos[1][v] + (disp[v][1] * min(fabs(disp[v][1]), temperature) / dif);
 			}
 		}
 		//cout << temperature << ", ";
@@ -853,11 +854,16 @@ int TNetworkOptimization::setNetwork(TNetwork *network)
 
 	nVertices = network->nVertices;
 	int dims[2];
-	dims[0] = nVertices;
-	dims[1] = 2;
-	//cout << "0" << endl;
+	dims[0] = 2;
+	dims[1] = nVertices;
 	coors = (PyArrayObject *) PyArray_FromDims(2, dims, NPY_DOUBLE);
 	pos = pymatrix_to_Carrayptrs(coors);
+
+  int metaDims[2];
+	metaDims[0] = 2;
+  metaDims[1] = network->hierarchy.getMetasCount();
+	metaCoors = (PyArrayObject *) PyArray_FromDims(2, metaDims, NPY_DOUBLE);
+	metapos = pymatrix_to_Carrayptrs(metaCoors);
 
 	random();
  
@@ -1102,8 +1108,8 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 
 	CAST_TO(TNetworkOptimization, graph);
 
-	graph->pos[center][0] = graph->width / 2;
-	graph->pos[center][1] = graph->height / 2;
+	graph->pos[0][center] = graph->width / 2;
+	graph->pos[1][center] = graph->height / 2;
 
 	int nCircles = 6;
 	int r = graph->width / nCircles / 2;
@@ -1138,8 +1144,8 @@ PyObject *NetworkOptimization_radialFruchtermanReingold(PyObject *self, PyObject
 			double x = i * r * cos(v * fi * PI / 180) + (graph->width / 2);
 			double y = i * r * sin(v * fi * PI / 180) + (graph->height / 2);
 
-			graph->pos[vertices[v]][0] = x;
-			graph->pos[vertices[v]][1] = y;
+			graph->pos[0][vertices[v]] = x;
+			graph->pos[1][vertices[v]] = y;
 
 			//cout << "v: " << vertices[v] << " X: " << x << " Y: " << y << " level: " << graph->level[vertices[v]] << endl;
 		}
@@ -1337,6 +1343,7 @@ PyObject *NetworkOptimization_circularCrossingReduction(PyObject *self, PyObject
 	RETURN_NONE;
   PyCATCH
 }
+
 PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> Coors")*/
 {
   PyTRY
@@ -1346,6 +1353,14 @@ PyObject *NetworkOptimization_get_coors(PyObject *self, PyObject *args) /*P Y A 
   PyCATCH
 }
 
+PyObject *NetworkOptimization_get_metaCoors(PyObject *self, PyObject *args) /*P Y A RGS(METH_VARARGS, "() -> MetaCoors")*/
+{
+  PyTRY
+	CAST_TO(TNetworkOptimization, graph);	
+	Py_INCREF(graph->metaCoors);
+	return (PyObject *)graph->metaCoors;  
+  PyCATCH
+}
 int *getVertexPowers(TNetworkOptimization *graph)
 {
 	int *vertexPower = new int[graph->nVertices];
@@ -1394,8 +1409,8 @@ PyObject *NetworkOptimization_closestVertex(PyObject *self, PyObject *args) PYAR
 	int ndx = -1;
 	for (i=0; i < graph->nVertices; i++)
 	{
-		double dX = graph->pos[i][0] - x;
-		double dY = graph->pos[i][1] - y;
+		double dX = graph->pos[0][i] - x;
+		double dY = graph->pos[1][i] - y;
 		double d = dX*dX + dY*dY;
 
 		if (d < min)
