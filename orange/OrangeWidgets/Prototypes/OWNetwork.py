@@ -185,19 +185,22 @@ class OWNetwork(OWWidget):
     def insideviewneighbours(self):
         if self.graph.insideview == 1:
             self.graph.insideviewNeighbours = self.insideViewNeighbours
-            self.frButton.setOn(True)
+            self.frButton.setDown(True)
             self.fr()
         
     def insideview(self):
-        if len(self.graph.selection) == 1:
+        print self.graph.getSelectedVertices()
+        if len(self.graph.getSelectedVertices()) == 1:
             if self.graph.insideview == 1:
+                print "i: 1"
                 self.graph.insideview = 0
-                self.graph.hiddenNodes = []
+                self.graph.showAllVertices()
                 self.updateCanvas()
             else:
+                print "i: 0"
                 self.graph.insideview = 1
                 self.graph.insideviewNeighbors = self.insideViewNeighbours
-                self.frButton.setOn(True)
+                self.frButton.setDown(True)
                 self.fr()
     
         else:
