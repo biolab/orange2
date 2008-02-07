@@ -690,6 +690,51 @@ class FragmentMiner(object):
             self.TraverseTree(fragment)
         #self.foundFragments=filter(lambda f:f.Support(self.inactive)<=self.maxSupport, self.foundFragments)
         return self.foundFragments
+
+    def TraverseTreeIterator(self, fragment):
+        if self.canonicalPruning:
+            codeWord=fragment.ToCannonicalSmiles()
+            if codeWord in self.canonicalPruningSet:
+                raise StopIteration
+            else:
+                self.canonicalPruningSet[codeWord]=fragment.Support(self.activeSet)
+        extended=fragment.Extend()
+        extended=filter(lambda f:f.Support(self.activeSet)>=self.minSupport, extended)
+        superStructSupport=[]
+        for frag in extended:
+            #print self.loader.WriteString(frag.ToOBMol())
+            iter=self.TraverseTreeIterator(frag)
+            try:
+                while True:
+                    f=iter.next()
+                    superStructSupport.append(f.Support(self.active))
+                    yield f
+            except StopIteration:
+                pass
+                
+            superStructSupport.append(self.TraverseTree(frag))
+        support=fragment.Support(self.activeSet)
+        if support>=self.minSupport and fragment.Support(self.inactiveSet)<=self.maxSupport:
+            if not self.findClosed or (support not in superStructSupport):
+                #print fragment.ToSmiles().strip()+" %.2f %.2f" % (support, fragment.Support(self.inactiveSet))
+                #self.foundFragments.append(fragment)
+                yield fragment
+        #return support
+
+    def SearchIterator(self):
+        """Runs the search and returns the found fragments one by one"""
+        self.Initialize()
+##        set_trace()
+        self.foundFragments=[]
+        for fragment in self.initialFragments:
+            iter=self.TraverseTreeIterator(fragment)
+            try:
+                while True:
+                    yield iter.next()
+            except StopIteration:
+                pass
+        #self.foundFragments=filter(lambda f:f.Support(self.inactive)<=self.maxSupport, self.foundFragments)
+        #return self.foundFragments    
     
 def LoadMolFromSmiles(smiles):
     """Returns an OBMol construcetd from an SMILES code"""
