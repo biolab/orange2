@@ -107,6 +107,13 @@ class BigImage(QDialog):
             else:
                 molecule2BMP(self.context.molecule, self.imagename, self.imageSize, self.context.title, self.context.grayedBackground)
         except IOError, er:
+            pix=QPixmap(self.imageSize, self.imageSize)
+            pix.fill()
+            painter=QPainter(pix)
+            painter.drawText(6, self.height()/2-4, "Unable to load")
+            painter.end()
+            self.label.setPixmap(pix)
+            self.label.resize(pix.width(), pix.height())
             return
         pix=QPixmap()
         pix.load(self.imagename)
@@ -183,7 +190,7 @@ class MolImage(QLabel):
             self.pix=QPixmap(self.context.size, self.context.size)
             self.pix.fill()
             painter=QPainter(self.pix)
-            painter.begin()
+            #painter.begin(self.pix)
             painter.drawText(6, self.height()/2-4, "Unable to load")
             painter.end()
             #print "Failed to load "+filename
@@ -231,7 +238,7 @@ class OWMoleculeVisualizer(OWWidget):
     contextHandlers={"":DomainContextHandler("", [ContextField("moleculeTitleAttributeList",
                                                     DomainContextHandler.List + DomainContextHandler.SelectedRequired,
                                                     selected="selectedMoleculeTitleAttrs"),
-                                                  "moleculeSmilesAttr"])}
+                                                  ContextField("moleculeSmilesAttr", DomainContextHandler.Required + DomainContextHandler.IncludeMetaAttributes)])}
     serverPwd = ""
     def __init__(self, parent=None, signalManager=None, name="Molecule visualizer"):
         apply(OWWidget.__init__,(self, parent, signalManager, name))
@@ -335,7 +342,7 @@ class OWMoleculeVisualizer(OWWidget):
         self.showFragmentsRadioButton.setDisabled(True)
         self.loadSettings()
         OWMoleculeVisualizer.serverPwd=self.serverPassword
-        self.imageCache=ImageCacheManager(1000, self.imageprefix, ".bmp")
+        self.imageCache=ImageCacheManager(1000, self.imageprefix, ".png")
         self.failedCount=0
         
     def setMoleculeTable(self, data):
@@ -352,7 +359,8 @@ class OWMoleculeVisualizer(OWWidget):
                 except:
                     self.molSubset=[]
 
-            self.openContext("",data)                
+            print "open"
+            self.openContext("",data)
             self.showImages()
         else:
             self.moleculeSmilesCombo.clear()
@@ -361,7 +369,6 @@ class OWMoleculeVisualizer(OWWidget):
             if not self.fragmentSmilesAttr:
                 self.listBox.clear()
             self.destroyImageWidgets()
-            self.openContext("",data)
             self.send("Selected Molecules", None)
         
 
@@ -433,15 +440,15 @@ class OWMoleculeVisualizer(OWWidget):
         candidates, self.defFragmentSmiles=self.filterSmilesVariables(self.molData)
         self.candidateMolSmilesAttr=[c[1] for c in candidates]
         best = reduce(lambda best,current:best[0]<current[0] and current or best, candidates)
-        self.moleculeSmilesAttr=candidates.index(best)
         self.moleculeSmilesCombo.clear()
         self.moleculeSmilesCombo.insertStrList([v.name for v in self.candidateMolSmilesAttr])
-        self.moleculeSmilesCombo.setCurrentItem(self.moleculeSmilesAttr)
+        self.moleculeSmilesAttr=candidates.index(best)
 
     def setMoleculeTitleListBox(self):
         self.icons=self.createAttributeIconDict()
         vars=self.molData.domain.variables+self.molData.domain.getmetas().values()
         self.moleculeTitleAttributeList=[attr.name for attr in vars]
+        self.selectedMoleculeTitleAttrs=[]
         """vars=self.molData.domain.variables+self.molData.domain.getmetas().values()
 ##        self.moleculeTitleCombo.clear()
 ##        self.moleculeTitleCombo.insertStrList(["None"]+[v.name for v in vars])
@@ -497,6 +504,7 @@ class OWMoleculeVisualizer(OWWidget):
                 return numItems/(30000/(self.imageSize+4))
             else:
                 return numColumns
+        
         self.numColumns=self.scrollView.width()/(self.imageSize+4) or 1
         self.imageWidgets=[]
         self.imageCache.newEpoch()
@@ -567,9 +575,6 @@ class OWMoleculeVisualizer(OWWidget):
             self.infoLabel.setText("Chemicals %i" % len(self.imageWidgets))
 
     def redrawImages(self, useCached=False):
-        #print "redraw", useCached
-        #import traceback
-        #traceback.print_stack()
         selected=map(lambda i:self.imageWidgets.index(i), filter(lambda i:i.selected, self.imageWidgets))
         self.showImages(useCached=useCached)
         for i in selected:
@@ -764,7 +769,7 @@ def remoteMoleculeFragment2BMP(molSmiles, fragSmiles, filename, size=200, title=
     
     params = urllib.urlencode({'password': OWMoleculeVisualizer.serverPwd, 'molSmiles': molSmiles, 'fragSmiles': fragSmiles, 'size': size, 'title': title, 'grayBack': grayedBackground})
     try:
-        f = urllib.urlopen("http://212.235.189.52/openEye/drawMol.py", params)
+        f = urllib.urlopen("http://212.235.189.53/openEye/drawMol.py", params)
         imgstr = f.read()
     except IOError, er:
         #print er
@@ -782,7 +787,7 @@ def remoteMolecule2BMP(molSmiles, filename, size=200, title="", grayedBackground
     
     params = urllib.urlencode({'password': OWMoleculeVisualizer.serverPwd, 'molSmiles': molSmiles, 'size': size, 'title': title, 'grayBack': grayedBackground})
     try:
-        f = urllib.urlopen("http://212.235.189.52/openEye/drawMol.py", params)
+        f = urllib.urlopen("http://212.235.189.53/openEye/drawMol.py", params)
         imgstr = f.read()
     except IOError, er:
         #print er, "rm2BMP"
